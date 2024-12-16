@@ -1,4 +1,4 @@
-const { Scale, Note, Chord } = require("@tonaljs/tonal");
+const { Scale, Note, Chord } = require("tonal");
 const fs = require('fs');
 const config = require('./config');
 
@@ -39,7 +39,7 @@ class MeasureGenerator {
     return randomInt(this.config.OCTAVE_RANGE.MIN, this.config.OCTAVE_RANGE.MAX);
   }
 
-  generatePolyphonicNotes(measure, beat, division, beatsInMeasure) {
+  generateNotes(measure, beat, division, beatsInMeasure) {
     const voices = randomInt(1, this.config.MAX_VOICES);
     const uniqueNotes = new Set();
     const notes = [];
@@ -162,7 +162,7 @@ const createCsv = (measureGenerator, config) => {
     const measure = measureGenerator.generateMeter();
     const [numerator, denominator] = measure.meter;
     const { spoofedMeter, tempoFactor } = spoofMeter(numerator, denominator);
-    const spoofedTempo = Math.round(config.BASE_TEMPO * tempoFactor);
+    const spoofedTempo = config.BASE_TEMPO * tempoFactor;
     const ticksPerBeat = config.PPQ * 4 / spoofedMeter[1];
     const ticksPerMeasure = ticksPerBeat * numerator;
     const secondsPerBeat = (60 / spoofedTempo) * (4 / spoofedMeter[1]);
@@ -196,7 +196,7 @@ const createCsv = (measureGenerator, config) => {
 
         midiEvents.push(generateAuditEvent('Division', division + 1, divisionStartSeconds, divisionStartSeconds + secondsPerDivision, divisionStartTicks, divisionStartTicks + ticksPerDivision));
 
-        const notes = measureGenerator.generatePolyphonicNotes(measure, beat, division, numerator);
+        const notes = measureGenerator.generateNotes(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const channel = 0;
           const velocity = 99;
@@ -206,7 +206,7 @@ const createCsv = (measureGenerator, config) => {
             values: [channel, note, velocity]
           });
           midiEvents.push({
-            startTicks: Math.round(divisionStartTicks + (ticksPerDivision * (Math.random() * 3))),
+            startTicks: Math.round(divisionStartTicks + (ticksPerDivision * randomFloat(.3, 3))),
             type: 'Note_off_c',
             values: [channel, note, 0]
           });
@@ -238,4 +238,4 @@ const createCsv = (measureGenerator, config) => {
 const noteGeneratorConfig = config.NOTE_GENERATORS[randomInt(0, config.NOTE_GENERATORS.length - 1)];
 const measureGenerator = createMeasureGenerator(noteGeneratorConfig, config);
 createCsv(measureGenerator, config);
-console.log("'output.csv' created.");
+console.log('output.csv created');
