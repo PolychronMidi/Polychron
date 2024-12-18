@@ -33,6 +33,7 @@ You'll need a MIDI player with a soundfont installed to play MIDI files. One opt
 
 Other MIDI players:
 https://soundfont-midi-player.en.softonic.com/download
+
 https://github.com/jingkaimori/midieditor
 
-Current implementation is a simple demo of random meters, random scales, and notes at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "Marker_t" entries of the CSV file.
+Current implementation is a simple demo of random meters, scales, and chords at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "Marker_t" entries of the CSV file.

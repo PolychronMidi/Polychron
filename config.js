@@ -1,12 +1,12 @@
 module.exports = {
-    PPQ: 480,
-    BASE_TEMPO: 120,
+    PPQ: 30000,
+    BASE_TEMPO: 80,
     MIN_NUMERATOR: 2,
-    MAX_NUMERATOR: 24,
+    MAX_NUMERATOR: 15,
     MIN_DENOMINATOR: 3,
-    MAX_DENOMINATOR: 24,
+    MAX_DENOMINATOR: 15,
     MIN_DIVISIONS: 1,
-    MAX_DIVISIONS: 24,
+    MAX_DIVISIONS: 15,
     OCTAVE_RANGE: {
         MIN: 1,
         MAX: 8
@@ -21,9 +21,10 @@ module.exports = {
     MIN_MEASURES: 20,
     MAX_MEASURES: 40,
     MAX_VOICES: 5,
-    NOTE_GENERATORS: [
-        { type: 'randomScale' },
+    COMPOSERS: [
         { type: 'scale', name: 'major', root: 'C' },
-        { type: 'chord', progression: ['Cmaj', 'Dm', 'G', 'Cmaj'] }
+        { type: 'randomScale' },
+        { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'] },
+        { type: 'randomChordProgression' }
     ]
 };
