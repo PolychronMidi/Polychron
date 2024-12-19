@@ -56,29 +56,29 @@ class MeasureComposer {
   getOctave() {
       return randomInt(this.config.OCTAVE_RANGE.MIN, this.config.OCTAVE_RANGE.MAX);
   }
-  composeNotes(measure, beat, division, beatsInMeasure) {
-      const voices = randomInt(1, this.config.MAX_VOICES);
-      const uniqueNotes = new Set();
-      const notes = [];
-      while (uniqueNotes.size < voices) {
-          const note = this.composeNote(measure, beat, division, beatsInMeasure);
-          if (uniqueNotes.add(note)) {
-              notes.push({ note });
-          }
-      }
-      return notes;
-  }
+  composeRawNote(measure, beat, division, beatsInMeasure) {
+    throw new Error("Method 'composeRawNote()' must be implemented.");
+}
   composeNote(measure, beat, division, beatsInMeasure) {
       const rawNote = this.composeRawNote(measure, beat, division, beatsInMeasure);
       const octave = this.getOctave();
-      const midiNote = t.Note.midi(`${rawNote}${octave}`);
-      if (midiNote === null) {
+      const composedNote = t.Note.midi(`${rawNote}${octave}`);
+      if (composedNote === null) {
           throw new Error(`Invalid note composed: ${rawNote}${octave}`);
       }
-      return midiNote;
+      return composedNote;
   }
-  composeRawNote(measure, beat, division, beatsInMeasure) {
-      throw new Error("Method 'composeRawNote()' must be implemented.");
+  composeNotes(measure, beat, division, beatsInMeasure) {
+      const voices = randomInt(1, this.config.MAX_VOICES);
+      const uniqueNotes = new Set();
+      const composedNotes = [];
+      while (uniqueNotes.size < voices) {
+          const note = this.composeNote(measure, beat, division, beatsInMeasure);
+          if (uniqueNotes.add(note)) {
+              composedNotes.push({ note });
+          }
+      }
+      return composedNotes;
   }
 }
 class ScaleComposer extends MeasureComposer {
@@ -86,12 +86,12 @@ class ScaleComposer extends MeasureComposer {
         super(config);
         this.setScale(scaleName, root);
     }
+    composeRawNote() {
+      return this.notes[Math.floor(Math.random() * this.notes.length)];
+  }
     setScale(scaleName, root) {
         this.scale = t.Scale.get(`${root} ${scaleName}`);
         this.notes = this.scale.notes;
-    }
-    composeRawNote() {
-        return this.notes[Math.floor(Math.random() * this.notes.length)];
     }
 }
 class RandomScaleComposer extends ScaleComposer {
@@ -100,6 +100,12 @@ class RandomScaleComposer extends ScaleComposer {
         this.scales = t.Scale.names();
         this.randomScale();
     }
+    composeRawNote(measure) {
+      if (this.notes.length === 0) {
+          this.randomScale();
+      }
+      return super.composeRawNote();
+  }
     randomScale() {
         const validScales = this.scales.filter(scaleName => {
             return allNotes.some(root => {
@@ -117,17 +123,17 @@ class RandomScaleComposer extends ScaleComposer {
             this.randomScale();
         }
     }
-    composeRawNote(measure) {
-        if (this.notes.length === 0) {
-            this.randomScale();
-        }
-        return super.composeRawNote();
-    }
 }
 class ChordProgressionComposer extends MeasureComposer {
   constructor(config, progression) {
     super(config);
     this.setProgression(progression);
+  }
+  composeRawNote() {
+    const chord = this.progression[this.currentChordIndex];
+    const noteIndex = Math.floor(Math.random() * chord.notes.length);
+    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    return chord.notes[noteIndex];
   }
   setProgression(progression) {
     const validatedProgression = progression.filter(chordSymbol => {
@@ -143,17 +149,17 @@ class ChordProgressionComposer extends MeasureComposer {
     this.progression = validatedProgression.map(t.Chord.get);
     this.currentChordIndex = 0;
   }
-  composeRawNote() {
-    const chord = this.progression[this.currentChordIndex];
-    const noteIndex = Math.floor(Math.random() * chord.notes.length);
-    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
-    return chord.notes[noteIndex];
-  }
 }
 class RandomChordProgressionComposer extends ChordProgressionComposer {
   constructor(config) {
     super(config, []);
     this.randomProgression();
+  }
+  composeRawNote() {
+    if (this.progression.length === 0) {
+      this.randomProgression();
+    }
+    return super.composeRawNote();
   }
   randomProgression() {
     const progressionLength = randomInt(3, 8);
@@ -163,12 +169,6 @@ class RandomChordProgressionComposer extends ChordProgressionComposer {
       randomProgression.push(randomChord);
     }
     this.setProgression(randomProgression);
-  }
-  composeRawNote() {
-    if (this.progression.length === 0) {
-      this.randomProgression();
-    }
-    return super.composeRawNote();
   }
 }
 const composeCsv = (config) => {
