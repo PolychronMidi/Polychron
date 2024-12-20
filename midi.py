@@ -1,9 +1,6 @@
-import py_midicsv
+import py_midicsv as x
 
-midi_object = py_midicsv.csv_to_midi("output.csv")
-
-with open("output.mid", "wb") as output_file:
-    midi_writer = py_midicsv.FileWriter(output_file)
-    midi_writer.write(midi_object)
+with open("output.mid", "wb") as i:
+    x.FileWriter(i).write(x.csv_to_midi("output.csv"))
 
 print("output.mid created from output.csv")

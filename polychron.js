@@ -6,7 +6,7 @@ const randomFloat = (min, max) => Math.random() * (max - min) + min;
 const allNotes = t.Scale.get("C chromatic").notes.map(note => 
   t.Note.enharmonic(t.Note.get(note))
 );
-function getAllChords() {
+const allChords = (function() {
   function getChordNotes(chordType, root) {
     try {
       const chord = t.Chord.get(`${root} ${chordType}`);
@@ -26,114 +26,102 @@ function getAllChords() {
     });
   });
   return Array.from(allChords);
+})();
+function midiCompatibleMeter(numerator, denominator) {
+  function isPowerOf2(n) {
+    return (n & (n - 1)) === 0;
+  }
+  if (isPowerOf2(denominator)) {
+    return { midiMeter: [numerator, denominator], tempoFactor: 1 };
+  } else {
+    const ceilDenominator = 2 ** Math.ceil(Math.log2(denominator));
+    const floorDenominator = 2 ** Math.floor(Math.log2(denominator));
+    const meterRatio = numerator / denominator;
+    const ceilRatio = numerator / ceilDenominator;
+    const floorRatio = numerator / floorDenominator;
+    return Math.abs(meterRatio - ceilRatio) < Math.abs(meterRatio - floorRatio) 
+    ? { midiMeter: [numerator, ceilDenominator], tempoFactor: meterRatio / ceilRatio }
+    : { midiMeter: [numerator, floorDenominator], tempoFactor: meterRatio / floorRatio };
+  }
 }
-const allChords = getAllChords();
-const spoofMeter = (numerator, denominator) => {
-    return ((denominator & (denominator - 1)) === 0)
-      ? { spoofedMeter: [numerator, denominator], tempoFactor: 1 }
-      : (() => {
-          const ceilDenominator = Math.pow(2, Math.ceil(Math.log2(denominator)));
-          const floorDenominator = Math.pow(2, Math.floor(Math.log2(denominator)));
-          const ceilTempoFactor = ceilDenominator / denominator;
-          const floorTempoFactor = floorDenominator / denominator;
-          return floorTempoFactor < ceilTempoFactor
-            ? { spoofedMeter: [numerator, floorDenominator], tempoFactor: floorTempoFactor }
-            : { spoofedMeter: [numerator, ceilDenominator], tempoFactor: ceilTempoFactor };
-        })();
-  };
 class MeasureComposer {
   constructor(config) {
-      this.config = config;
+    this.config = config;
   }
   setMeter() {
-      const numerator = randomInt(this.config.MIN_NUMERATOR, this.config.MAX_NUMERATOR);
-      const denominator = randomInt(this.config.MIN_DENOMINATOR, this.config.MAX_DENOMINATOR);
-      return { meter: [numerator, denominator] };
+    const numerator = randomInt(this.config.NUMERATOR.MIN, this.config.NUMERATOR.MAX);
+    const denominator = randomInt(this.config.DENOMINATOR.MIN, this.config.DENOMINATOR.MAX);
+    return { meter: [numerator, denominator] };
   }
-  applyDivision(beatsInMeasure, currentBeat) {
-      return randomInt(this.config.MIN_DIVISIONS, this.config.MAX_DIVISIONS);
+  setDivisions(beatsInMeasure, currentBeat) {
+    return randomInt(this.config.DIVISIONS.MIN, this.config.DIVISIONS.MAX);
   }
-  getOctave() {
-      return randomInt(this.config.OCTAVE_RANGE.MIN, this.config.OCTAVE_RANGE.MAX);
+  setOctave() {
+    return randomInt(this.config.OCTAVE.MIN, this.config.OCTAVE.MAX);
   }
-  composeRawNote(measure, beat, division, beatsInMeasure) {
-    throw new Error("Method 'composeRawNote()' must be implemented.");
-}
   composeNote(measure, beat, division, beatsInMeasure) {
-      const rawNote = this.composeRawNote(measure, beat, division, beatsInMeasure);
-      const octave = this.getOctave();
-      const composedNote = t.Note.midi(`${rawNote}${octave}`);
-      if (composedNote === null) {
-          throw new Error(`Invalid note composed: ${rawNote}${octave}`);
-      }
-      return composedNote;
+    const rawNote = this.composeRawNote(measure, beat, division, beatsInMeasure);
+    const octave = this.setOctave();
+    const composedNote = t.Note.midi(`${rawNote}${octave}`);
+    if (composedNote === null) {
+      throw new Error(`Invalid note composed: ${rawNote}${octave}`);
+    }
+    return composedNote;
   }
-  composeNotes(measure, beat, division, beatsInMeasure) {
-      const voices = randomInt(1, this.config.MAX_VOICES);
-      const uniqueNotes = new Set();
-      const composedNotes = [];
-      while (uniqueNotes.size < voices) {
-          const note = this.composeNote(measure, beat, division, beatsInMeasure);
-          if (uniqueNotes.add(note)) {
-              composedNotes.push({ note });
-          }
+  composeChord(measure, beat, division, beatsInMeasure) {
+    const voices = randomInt(this.config.VOICES.MIN, this.config.VOICES.MAX);
+    const uniqueNotes = new Set();
+    const composedChord = [];
+    while (uniqueNotes.size < voices) {
+      const note = this.composeNote(measure, beat, division, beatsInMeasure);
+      if (uniqueNotes.add(note)) {
+        composedChord.push({ note });
       }
-      return composedNotes;
+    }
+    return composedChord;
   }
 }
 class ScaleComposer extends MeasureComposer {
-    constructor(config, scaleName, root) {
-        super(config);
-        this.setScale(scaleName, root);
-    }
-    composeRawNote() {
-      return this.notes[Math.floor(Math.random() * this.notes.length)];
+  constructor(config, scaleName, root) {
+    super(config);
+    this.setScale(scaleName, root);
   }
-    setScale(scaleName, root) {
-        this.scale = t.Scale.get(`${root} ${scaleName}`);
-        this.notes = this.scale.notes;
-    }
+  setScale(scaleName, root) {
+    this.scale = t.Scale.get(`${root} ${scaleName}`);
+    this.notes = this.scale.notes;
+  }
+  composeRawNote() {
+    return this.notes[Math.floor(Math.random() * this.notes.length)];
+  }
 }
 class RandomScaleComposer extends ScaleComposer {
-    constructor(config) {
-        super(config, '', '');
-        this.scales = t.Scale.names();
-        this.randomScale();
-    }
-    composeRawNote(measure) {
-      if (this.notes.length === 0) {
-          this.randomScale();
-      }
-      return super.composeRawNote();
+  constructor(config) {
+    super(config, '', '');
+    this.scales = t.Scale.names();
+    this.randomScale();
   }
-    randomScale() {
-        const validScales = this.scales.filter(scaleName => {
-            return allNotes.some(root => {
-                const scale = t.Scale.get(`${root} ${scaleName}`);
-                return scale.notes.length > 0;
-            });
-        });
-        if (validScales.length === 0) {
-            throw new Error("No valid scales found");
-        }
-        const randomScale = validScales[Math.floor(Math.random() * validScales.length)];
-        const randomRoot = allNotes[Math.floor(Math.random() * allNotes.length)];
-        this.setScale(randomScale, randomRoot);
-        if (this.scale.notes.length === 0) {
-            this.randomScale();
-        }
+  randomScale() {
+    const validScales = this.scales.filter(scaleName => {
+      return allNotes.some(root => {
+        const scale = t.Scale.get(`${root} ${scaleName}`);
+        return scale.notes.length > 0;
+      });
+    });
+    const randomScale = validScales[Math.floor(Math.random() * validScales.length)];
+    const randomRoot = allNotes[Math.floor(Math.random() * allNotes.length)];
+    this.setScale(randomScale, randomRoot);
+  }
+  composeRawNote(measure) {
+    if (this.notes.length === 0) {
+      this.randomScale();
     }
+    return super.composeRawNote();
+  }
 }
-class ChordProgressionComposer extends MeasureComposer {
+class ChordComposer extends MeasureComposer {
   constructor(config, progression) {
     super(config);
     this.setProgression(progression);
-  }
-  composeRawNote() {
-    const chord = this.progression[this.currentChordIndex];
-    const noteIndex = Math.floor(Math.random() * chord.notes.length);
-    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
-    return chord.notes[noteIndex];
   }
   setProgression(progression) {
     const validatedProgression = progression.filter(chordSymbol => {
@@ -143,23 +131,20 @@ class ChordProgressionComposer extends MeasureComposer {
       }
       return true;
     });
-    if (validatedProgression.length !== progression.length) {
-      console.warn('Some chord symbols were removed due to invalidity');
-    }
     this.progression = validatedProgression.map(t.Chord.get);
     this.currentChordIndex = 0;
   }
+  composeRawNote() {
+    const chord = this.progression[this.currentChordIndex];
+    const noteIndex = Math.floor(Math.random() * chord.notes.length);
+    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    return chord.notes[noteIndex];
+  }
 }
-class RandomChordProgressionComposer extends ChordProgressionComposer {
+class RandomChordComposer extends ChordComposer {
   constructor(config) {
     super(config, []);
     this.randomProgression();
-  }
-  composeRawNote() {
-    if (this.progression.length === 0) {
-      this.randomProgression();
-    }
-    return super.composeRawNote();
   }
   randomProgression() {
     const progressionLength = randomInt(3, 8);
@@ -170,15 +155,21 @@ class RandomChordProgressionComposer extends ChordProgressionComposer {
     }
     this.setProgression(randomProgression);
   }
+  composeRawNote() {
+    if (this.progression.length === 0) {
+      this.randomProgression();
+    }
+    return super.composeRawNote();
+  }
 }
-const composeCsv = (config) => {
+const csvMaestro = (config) => {
   let csvContent = `0, 0, Header, 1, 1, ${config.PPQ}\n`;
   csvContent += "1, 0, Start_track\n";
   let totalTicks = 0;
   let totalSeconds = 0;
   let trackEnd = 0;
   let midiEvents = [];
-  const numberOfMeasures = randomInt(config.MIN_MEASURES, config.MAX_MEASURES);
+  const numberOfMeasures = randomInt(config.MEASURES.MIN, config.MEASURES.MAX);
   const setUnitMarker = (type, number, startTime, endTime, ticksStart, ticksEnd) => {
     return {
       startTicks: Math.round(ticksStart),
@@ -193,9 +184,9 @@ const composeCsv = (config) => {
       case 'randomScale':
         return new RandomScaleComposer(config);
       case 'chordProgression':
-        return new ChordProgressionComposer(config, composerConfig.progression);
+        return new ChordComposer(config, composerConfig.progression);
       case 'randomChordProgression':
-        return new RandomChordProgressionComposer(config);
+        return new RandomChordComposer(config);
       default:
         throw new Error(`Unknown COMPOSERS type: ${composerConfig.type}`);
     }
@@ -205,16 +196,17 @@ const composeCsv = (config) => {
     const composer = compose(randomComposer, config);
     const measure = composer.setMeter();
     const [numerator, denominator] = measure.meter;
-    const { spoofedMeter, tempoFactor } = spoofMeter(numerator, denominator);
+    const { midiMeter, tempoFactor } = midiCompatibleMeter(numerator, denominator);
     const spoofedTempo = config.BASE_TEMPO * tempoFactor;
-    const ticksPerBeat = config.PPQ * 4 / spoofedMeter[1];
-    const ticksPerMeasure = ticksPerBeat * numerator;
-    const secondsPerBeat = (60 / spoofedTempo) * (4 / spoofedMeter[1]);
-    const secondsPerMeasure = secondsPerBeat * numerator;
+    const ticksPerMeasure = Math.round((config.PPQ * 4) * (numerator / denominator));
+    const ticksPerBeat = ticksPerMeasure / numerator;
+    const ticksPerSecond = (spoofedTempo * config.PPQ) / 60;
+    const secondsPerBeat = ticksPerBeat / ticksPerSecond;
+    const secondsPerMeasure = ticksPerMeasure / ticksPerSecond;
     midiEvents.push({
       startTicks: totalTicks,
       type: 'Time_signature',
-      values: [spoofedMeter[0], Math.log2(spoofedMeter[1]), 24, 8]
+      values: [midiMeter[0], Math.log2(midiMeter[1]), 24, 8]
     });
     midiEvents.push({
       startTicks: totalTicks,
@@ -225,7 +217,7 @@ const composeCsv = (config) => {
     for (let beat = 0; beat < numerator; beat++) {
       const beatStartTicks = totalTicks + beat * ticksPerBeat;
       const beatStartSeconds = totalSeconds + beat * secondsPerBeat;
-      const divisionsForBeat = composer.applyDivision(numerator, beat);
+      const divisionsForBeat = composer.setDivisions(numerator, beat);
       const ticksPerDivision = ticksPerBeat / divisionsForBeat;
       const secondsPerDivision = secondsPerBeat / divisionsForBeat;
       midiEvents.push(setUnitMarker('Beat', beat + 1, beatStartSeconds, beatStartSeconds + secondsPerBeat, beatStartTicks, beatStartTicks + ticksPerBeat));
@@ -233,7 +225,7 @@ const composeCsv = (config) => {
         const divisionStartTicks = beatStartTicks + division * ticksPerDivision;
         const divisionStartSeconds = beatStartSeconds + division * secondsPerDivision;
         midiEvents.push(setUnitMarker('Division', division + 1, divisionStartSeconds, divisionStartSeconds + secondsPerDivision, divisionStartTicks, divisionStartTicks + ticksPerDivision));
-        const notes = composer.composeNotes(measure, beat, division, numerator);
+        const notes = composer.composeChord(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const channel = 0;
           const velocity = 99;
@@ -266,5 +258,5 @@ const composeCsv = (config) => {
   csvContent += `0, ${trackEnd}, End_of_file`;
   fs.writeFileSync('output.csv', csvContent);
 };
-composeCsv(config);
+csvMaestro(config);
 console.log('output.csv created');
