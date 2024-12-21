@@ -9,9 +9,9 @@ Because MIDI has been around since the 80's, one artifact is that it only allows
 
 Using the `midiCompatibleMeter` function allows for playing any meter (yes, even 420/69) within the constraints of MIDI. Here's how it works:
 
-If the denominator is a power of 2 (standard MIDI meter), it returns the original meter with no changes.
-For non-standard denominators, it calculates the nearest power of 2 (either ceiling or floor).
-It then determines a tempo factor to compensate for the measure duration difference between the actual meter and the MIDI compatible spoofed meter.
+If the denominator is a power of 2 (MIDI compatible meter), it returns the original meter with no changes.
+For denominators that aren't MIDI compatible, it calculates the nearest power of 2.
+It then determines a tempo factor to compensate for the measure duration difference between the actual meter and the spoofed MIDI compatible meter.
 
 This approach allows Polychron to represent and work with any meter while maintaining compatibility with standard MIDI playback systems. The result is a composition system that can explore previously inaccessible rhythmic territories within the MIDI framework.
 
@@ -36,6 +36,6 @@ https://soundfont-midi-player.en.softonic.com/download
 
 https://github.com/jingkaimori/midieditor
 
-Current implementation is a simple demo of random meters, scales, and chords at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "Marker_t" entries of the CSV file.
+Current implementation is a simple demo of random meters, scales, and chords at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "marker_t" entries of the CSV file.
 
 [LibreOffice] is a good program for CSV files.

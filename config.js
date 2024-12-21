@@ -1,3 +1,7 @@
+let TUNING = {
+    FREQUENCY: 432, // Set to 440 for standard tuning (A4), which ignores PITCH_BEND. 
+    PITCH_BEND: 6891 // After saving non-standard value to FREQUENCY, run 'node tune.js' to update PITCH_BEND value accordingly.
+};
 module.exports = {
     PPQ: 30000,
     BASE_TEMPO: 60,
@@ -42,5 +46,10 @@ module.exports = {
         { type: 'randomScale' },
         { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'] },
         { type: 'randomChordProgression' }
-    ]
+    ],
+    TUNING: TUNING,
+    updatePitchBend: function(newPitchBend) {
+        TUNING.PITCH_BEND = newPitchBend;
+    },
+    SILENT_OUTRO_SECONDS: 5
 };
