@@ -36,6 +36,9 @@ https://soundfont-midi-player.en.softonic.com/download
 
 https://github.com/jingkaimori/midieditor
 
+You can convert MIDI files to mp3, wav, or flac with:
+https://coolsoft.altervista.org/virtualmidisynth
+
 Current implementation is a simple demo of random meters, scales, and chords at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "marker_t" entries of the CSV file.
 
-[LibreOffice] is a good program for CSV files.
+[LibreOffice](https://libreoffice.org/) is a good program for CSV files.
