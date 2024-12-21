@@ -29,6 +29,8 @@ py -m pip install py_midicsv
 py midi.py
 ```
 
+Current implementation is a simple demo of random meters, scales, and chords at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "marker_t" entries of the CSV file.
+
 You'll need a MIDI player with a soundfont installed to play MIDI files. One option is [VLC player](https://www.reddit.com/r/VLC/comments/sxb7h0/vlc_cant_play_midi_files/)
 
 Other MIDI players:
@@ -38,7 +40,5 @@ https://github.com/jingkaimori/midieditor
 
 You can convert MIDI files to mp3, wav, or flac with:
 https://coolsoft.altervista.org/virtualmidisynth
-
-Current implementation is a simple demo of random meters, scales, and chords at random divisions. Settings can be customized in `config.js`. Timing markers for each unit can be found in the "marker_t" entries of the CSV file.
 
 [LibreOffice](https://libreoffice.org/) is a good program for CSV files.
