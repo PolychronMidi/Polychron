@@ -17,16 +17,16 @@ It then determines a tempo factor to compensate for the measure duration differe
 
 This approach allows Polychron to represent and work with any meter while maintaining compatibility with standard MIDI playback systems. The result is a composition system that can explore previously inaccessible rhythmic territories within the MIDI framework.
 
-Uses [tonal](https://github.com/tonaljs/tonal) and my own custom fork of [py_midicsv](https://github.com/timwedde/py_midicsv), called [CSV Maestro]. We create our MIDI data in CSV format first for a nice human-readable version, which allows easier auditing and more direct data control.
+Uses [tonal](https://github.com/tonaljs/tonal) and my own custom fork of [py_midicsv](https://github.com/timwedde/py_midicsv), called [CSV Maestro](https://github.com/i1li/csv_maestro). We create our MIDI data in CSV format first for a nice human-readable version, which allows easier auditing and more direct data control.
 
 To install tonal and create the CSV file, run the following (requires Node.js installed):
-```bash
+```js
 npm i tonal
 node polychron.js
 ```
 
 To create the MIDI file from the CSV, run the following (requires Python installed):
-```bash
+```python
 py c2m.py
 ```
 
@@ -37,8 +37,9 @@ https://soundfont-midi-player.en.softonic.com/download
 https://github.com/jingkaimori/midieditor
 
 You can convert MIDI files to MP3, WAV, or FLAC with:
+
 https://coolsoft.altervista.org/virtualmidisynth
 
 [LibreOffice](https://libreoffice.org/) is a good program for CSV files.
 
-Here's a list I've saved for inspiration of [music related repos](https://github.com/stars/i1li/lists/music).
+Here's a list of [music related repos](https://github.com/stars/i1li/lists/music) I've saved for inspiration.
