@@ -1,8 +1,14 @@
 const t = require("tonal");
 const fs = require('fs');
 const config = require('./config');
-const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const randomFloat = (min, max) => Math.random() * (max - min) + min;
+const randomFloat = (min = 0, max) => {
+  if (max === undefined) { max = min; min = 0; }
+  return Math.random() * (max - min) + min;
+};
+const randomInt = (min = 0, max) => {
+  const floatValue = randomFloat(min, max);
+  return Math.floor(floatValue);
+};
 const allNotes = t.Scale.get("C chromatic").notes.map(note => 
   t.Note.enharmonic(t.Note.get(note))
 );
@@ -91,8 +97,7 @@ class ScaleComposer extends MeasureComposer {
     this.notes = this.scale.notes;
   }
   composeRawNote() {
-    return this.notes[Math.floor(Math.random() * this.notes.length)];
-  }
+    return this.notes[randomInt(this.notes.length)];  }
 }
 class RandomScaleComposer extends ScaleComposer {
   constructor(config) {
@@ -107,8 +112,8 @@ class RandomScaleComposer extends ScaleComposer {
         return scale.notes.length > 0;
       });
     });
-    const randomScale = validScales[Math.floor(Math.random() * validScales.length)];
-    const randomRoot = allNotes[Math.floor(Math.random() * allNotes.length)];
+    const randomScale = validScales[randomInt(validScales.length)];
+    const randomRoot = allNotes[randomInt(allNotes.length)];
     this.setScale(randomScale, randomRoot);
   }
   composeRawNote(measure) {
@@ -136,8 +141,8 @@ class ChordComposer extends MeasureComposer {
   }
   composeRawNote() {
     const chord = this.progression[this.currentChordIndex];
-    const noteIndex = Math.floor(Math.random() * chord.notes.length);
-    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    const noteIndex = randomInt(chord.notes.length);
+    this.currentChordIndex = (this.currentChordIndex + 1) % (this.progression.length - 1);
     return chord.notes[noteIndex];
   }
 }
@@ -150,7 +155,7 @@ class RandomChordComposer extends ChordComposer {
     const progressionLength = randomInt(3, 8);
     const randomProgression = [];
     for (let i = 0; i < progressionLength; i++) {
-      const randomChord = allChords[Math.floor(Math.random() * allChords.length)];
+      const randomChord = allChords[randomInt(allChords.length)];
       randomProgression.push(randomChord);
     }
     this.setProgression(randomProgression);
@@ -163,24 +168,34 @@ class RandomChordComposer extends ChordComposer {
   }
 }
 const csvMaestro = (config) => {
-  let csvContent = `0, 0, Header, 1, 1, ${config.PPQ}\n`;
-  csvContent += "1, 0, Start_track\n";
+  let csvContent = `0, 0, header, 1, 1, ${config.PPQ}\n`;
+  csvContent += "1, 0, start_track\n";
   let midiEvents = [];
   const channel = 0;
   if (config.TUNING.FREQUENCY != 440) {
     midiEvents.push({
       startTick: 0,
-      type: 'Pitch_bend_c',
+      type: 'pitch_bend_c',
       values: [channel, config.TUNING.PITCH_BEND]
     });
   }
-  let totalTicks = totalTime = 0;
+  let midiEventsLeft = [], midiEventsRight = [];
+  midiEvents.push({
+    startTick: 0,
+    type: 'control_c',
+    values: [1, 10, 0]
+  });
+  midiEvents.push({
+    startTick: 0,
+    type: 'control_c',
+    values: [2, 10, 127]
+  });
+  let currentTick = currentTime = 0;
   const totalMeasures = randomInt(config.MEASURES.MIN, config.MEASURES.MAX);
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    const milliseconds = Math.floor((seconds - Math.floor(seconds)) * 1000);
-    return `${minutes}:${remainingSeconds.toFixed(3).padStart(6, '0')}`;
+    seconds = (seconds % 60).toFixed(4).padStart(7, '0');
+    return `${minutes}:${seconds}`;
   };
   const setUnitMarker = (type, number, startTime, endTime, startTick, endTick, originalMeter = [], midiMeter = null) => {
     let meterInfo = '';
@@ -190,10 +205,10 @@ const csvMaestro = (config) => {
         : `Meter: ${originalMeter.join('/')}`;
     }
     return {
-      startTick: Math.round(startTick),
-      type: 'Marker_t',
+      startTick: startTick,
+      type: 'marker_t',
       endTime: endTime,
-      values: [`${type} ${number} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${Math.round(endTick)} ${meterInfo ? meterInfo : ''}`]
+      values: [`${type} ${number} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
     };
   };
   const compose = (composerConfig, config) => {
@@ -211,7 +226,7 @@ const csvMaestro = (config) => {
     }
   };
   for (let measureIndex = 0; measureIndex < totalMeasures; measureIndex++) {
-    const randomComposer = config.COMPOSERS[randomInt(0, config.COMPOSERS.length - 1)];
+    const randomComposer = config.COMPOSERS[randomInt(config.COMPOSERS.length)];
     const composer = compose(randomComposer, config);
     const measure = composer.setMeter();
     const [numerator, denominator] = measure.meter;
@@ -223,19 +238,40 @@ const csvMaestro = (config) => {
     const secondsPerMeasure = ticksPerMeasure / ticksPerSecond;
     const secondsPerBeat = ticksPerBeat / ticksPerSecond;
     midiEvents.push({
-      startTick: totalTicks,
-      type: 'Time_signature',
-      values: [midiMeter[0], Math.log2(midiMeter[1]), 24, 8]
+      startTick: currentTick,
+      type: 'meter',
+      values: [midiMeter[0], midiMeter[1]]
     });
     midiEvents.push({
-      startTick: totalTicks,
-      type: 'Tempo',
-      values: [Math.round(60000000 / spoofedTempo)]
+      startTick: currentTick,
+      type: 'bpm',
+      values: [spoofedTempo]
     });
-    midiEvents.push(setUnitMarker('Measure', measureIndex + 1, totalTime, totalTime + secondsPerMeasure, totalTicks, totalTicks + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
+    const neutralPitchBend = 8192;
+    const semitone = neutralPitchBend / 2;
+    const initialFrequency = config.TUNING.FREQUENCY;
+    const initialPitchBend = config.TUNING.PITCH_BEND
+    const frequencyOffset = randomFloat(7, 13);
+    const targetFrequencyLeft = initialFrequency + frequencyOffset;
+    const targetFrequencyRight = initialFrequency - frequencyOffset;
+    const centsToTargetLeft = 1200 * Math.log2(targetFrequencyLeft / initialFrequency);
+    const centsToTargetRight = 1200 * Math.log2(targetFrequencyRight / initialFrequency);
+    const pitchBendLeft = Math.round(initialPitchBend + (semitone * (centsToTargetLeft / 100)));
+    const pitchBendRight = Math.round(initialPitchBend + (semitone * (centsToTargetRight / 100)));
+    midiEvents.push({
+      startTick: currentTick,
+      type: 'pitch_bend_c',
+      values: [1, pitchBendLeft]
+    });
+    midiEvents.push({
+      startTick: currentTick,
+      type: 'pitch_bend_c',
+      values: [2, pitchBendRight]
+    });
+    midiEvents.push(setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
     for (let beat = 0; beat < numerator; beat++) {
-      const beatStartTick = totalTicks + beat * ticksPerBeat;
-      const beatStartTime = totalTime + beat * secondsPerBeat;
+      const beatStartTick = currentTick + beat * ticksPerBeat;
+      const beatStartTime = currentTime + beat * secondsPerBeat;
       const divisionsForBeat = composer.setDivisions(numerator, beat);
       const ticksPerDivision = ticksPerBeat / divisionsForBeat;
       const secondsPerDivision = secondsPerBeat / divisionsForBeat;
@@ -247,35 +283,57 @@ const csvMaestro = (config) => {
         const notes = composer.composeChord(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const velocity = 99;
+          const noteOnTick = divisionStartTick + Math.random() * ticksPerDivision * 0.05;
+          const noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.1, 5);
           midiEvents.push({
-            startTick: Math.round(divisionStartTick + Math.random() * ticksPerDivision * 0.05),
-            type: 'Note_on_c',
+            startTick: noteOnTick,
+            type: 'note_on_c',
             values: [channel, note, velocity]
           });
           midiEvents.push({
-            startTick: Math.round(divisionStartTick + ticksPerDivision * randomFloat(.1, 5)),
-            type: 'Note_off_c',
-            values: [channel, note, 0]
+            startTick: noteOffTick,
+            type: 'note_off_c',
+            values: [channel, note]
+          });
+          const randVel = velocity * randomFloat(.3,.5);
+          midiEvents.push({
+            startTick: noteOnTick,
+            type: 'note_on_c',
+            values: [1, note, randVel]
+          });
+          midiEvents.push({
+            startTick: noteOffTick,
+            type: 'note_off_c',
+            values: [1, note]
+          });
+          midiEvents.push({
+            startTick: noteOnTick,
+            type: 'note_on_c',
+            values: [2, note, randVel]
+          });
+          midiEvents.push({
+            startTick: noteOffTick,
+            type: 'note_off_c',
+            values: [2, note]
           });
         });
       }
     }
-    totalTicks += ticksPerMeasure;
-    totalTime += secondsPerMeasure;
+    currentTick += ticksPerMeasure;
+    currentTime += secondsPerMeasure;
   }
   midiEvents.sort((a, b) => a.startTick - b.startTick);
   midiEvents.forEach(event => {
-    if (event.type === 'Marker_t') {
-      csvContent += `1, ${event.startTick}, Marker_t, ${event.values.join(' ')}\n`;
+    if (event.type === 'marker_t') {
+      csvContent += `1, ${event.startTick}, marker_t, ${event.values.join(' ')}\n`;
     } else {
       csvContent += `1, ${event.startTick}, ${event.type}, ${event.values.join(', ')}\n`;
     }
     const outroSilence = ticksPerSecond * config.SILENT_OUTRO_SECONDS;
-    trackEndTick = Math.round(Math.max(event.startTick + outroSilence));
+    trackEndTick = Math.max(event.startTick + outroSilence);
   });
-  trackEndTime = formatTime(totalTime + config.SILENT_OUTRO_SECONDS);
-  csvContent += `1, ${trackEndTick}, End_track\n`;
-  csvContent += `0, ${trackEndTick}, End_of_file`;
+  trackEndTime = formatTime(currentTime + config.SILENT_OUTRO_SECONDS);
+  csvContent += `1, ${trackEndTick}, end_track\n`;
   fs.writeFileSync('output.csv', csvContent);
 };
 csvMaestro(config);
