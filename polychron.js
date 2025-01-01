@@ -171,24 +171,25 @@ const csvMaestro = (config) => {
   let csvContent = `0, 0, header, 1, 1, ${config.PPQ}\n`;
   csvContent += "1, 0, start_track\n";
   let midiEvents = [];
-  const channel = 0;
+  const channelCenter = 0;
+  const channelLeft = 1;
+  const channelRight = 2;
   if (config.TUNING.FREQUENCY != 440) {
     midiEvents.push({
       startTick: 0,
       type: 'pitch_bend_c',
-      values: [channel, config.TUNING.PITCH_BEND]
+      values: [channelCenter, config.TUNING.PITCH_BEND]
     });
   }
-  let midiEventsLeft = [], midiEventsRight = [];
   midiEvents.push({
     startTick: 0,
     type: 'control_c',
-    values: [1, 10, 0]
+    values: [channelLeft, 10, 0]
   });
   midiEvents.push({
     startTick: 0,
     type: 'control_c',
-    values: [2, 10, 127]
+    values: [channelRight, 10, 127]
   });
   let currentTick = currentTime = 0;
   const totalMeasures = randomInt(config.MEASURES.MIN, config.MEASURES.MAX);
@@ -249,34 +250,45 @@ const csvMaestro = (config) => {
     });
     const neutralPitchBend = 8192;
     const semitone = neutralPitchBend / 2;
-    const initialFrequency = config.TUNING.FREQUENCY;
-    const initialPitchBend = config.TUNING.PITCH_BEND
     const frequencyOffset = randomFloat(7, 13);
-    const targetFrequencyLeft = initialFrequency + frequencyOffset;
-    const targetFrequencyRight = initialFrequency - frequencyOffset;
-    const centsToTargetLeft = 1200 * Math.log2(targetFrequencyLeft / initialFrequency);
-    const centsToTargetRight = 1200 * Math.log2(targetFrequencyRight / initialFrequency);
-    const pitchBendLeft = Math.round(initialPitchBend + (semitone * (centsToTargetLeft / 100)));
-    const pitchBendRight = Math.round(initialPitchBend + (semitone * (centsToTargetRight / 100)));
-    midiEvents.push({
-      startTick: currentTick,
-      type: 'pitch_bend_c',
-      values: [1, pitchBendLeft]
-    });
-    midiEvents.push({
-      startTick: currentTick,
-      type: 'pitch_bend_c',
-      values: [2, pitchBendRight]
-    });
+    const targetFrequencyLeft = config.TUNING.FREQUENCY + frequencyOffset;
+    const targetFrequencyRight = config.TUNING.FREQUENCY - frequencyOffset;
+    const centsToTargetLeft = 1200 * Math.log2(targetFrequencyLeft / config.TUNING.FREQUENCY);
+    const centsToTargetRight = 1200 * Math.log2(targetFrequencyRight / config.TUNING.FREQUENCY);
+    const pitchBendLeft = Math.round(config.TUNING.PITCH_BEND + (semitone * (centsToTargetLeft / 100)));
+    const pitchBendRight = Math.round(config.TUNING.PITCH_BEND + (semitone * (centsToTargetRight / 100)));
+    if (Math.random() > 0.5) {
+      midiEvents.push({
+        startTick: currentTick,
+        type: 'pitch_bend_c',
+        values: [channelLeft, pitchBendLeft]
+      });
+      midiEvents.push({
+        startTick: currentTick,
+        type: 'pitch_bend_c',
+        values: [channelRight, pitchBendRight]
+      });
+    } else {
+      midiEvents.push({
+        startTick: currentTick,
+        type: 'pitch_bend_c',
+        values: [channelRight, pitchBendLeft]
+      });
+      midiEvents.push({
+        startTick: currentTick,
+        type: 'pitch_bend_c',
+        values: [channelLeft, pitchBendRight]
+      });
+    }
     midiEvents.push(setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
     for (let beat = 0; beat < numerator; beat++) {
       const beatStartTick = currentTick + beat * ticksPerBeat;
       const beatStartTime = currentTime + beat * secondsPerBeat;
-      const divisionsForBeat = composer.setDivisions(numerator, beat);
-      const ticksPerDivision = ticksPerBeat / divisionsForBeat;
-      const secondsPerDivision = secondsPerBeat / divisionsForBeat;
+      const divisionsPerBeat = composer.setDivisions(numerator, beat);
+      const ticksPerDivision = ticksPerBeat / divisionsPerBeat;
+      const secondsPerDivision = secondsPerBeat / divisionsPerBeat;
       midiEvents.push(setUnitMarker('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
-      for (let division = 0; division < divisionsForBeat; division++) {
+      for (let division = 0; division < divisionsPerBeat; division++) {
         const divisionStartTick = beatStartTick + division * ticksPerDivision;
         const divisionStartTime = beatStartTime + division * secondsPerDivision;
         midiEvents.push(setUnitMarker('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
@@ -288,33 +300,33 @@ const csvMaestro = (config) => {
           midiEvents.push({
             startTick: noteOnTick,
             type: 'note_on_c',
-            values: [channel, note, velocity]
+            values: [channelCenter, note, velocity]
           });
           midiEvents.push({
             startTick: noteOffTick,
             type: 'note_off_c',
-            values: [channel, note]
+            values: [channelCenter, note]
           });
-          const randVel = velocity * randomFloat(.3,.5);
+          const randVel = velocity * randomFloat(.3,.45);
           midiEvents.push({
             startTick: noteOnTick,
             type: 'note_on_c',
-            values: [1, note, randVel]
+            values: [channelLeft, note, randVel]
           });
           midiEvents.push({
             startTick: noteOffTick,
             type: 'note_off_c',
-            values: [1, note]
+            values: [channelLeft, note]
           });
           midiEvents.push({
             startTick: noteOnTick,
             type: 'note_on_c',
-            values: [2, note, randVel]
+            values: [channelRight, note, randVel]
           });
           midiEvents.push({
             startTick: noteOffTick,
             type: 'note_off_c',
-            values: [2, note]
+            values: [channelRight, note]
           });
         });
       }
