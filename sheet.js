@@ -11,15 +11,18 @@ module.exports = {
     BASE_TEMPO: 60,
     NUMERATOR: {
         MIN: 2,
-        MAX: 15
+        MAX: 15,
+        WEIGHTS: [0.1, 0.2, 0.3, 0.4, 0.2, 0.1, 0.05, 0.01]
     },
     DENOMINATOR: {
         MIN: 3,
-        MAX: 11
+        MAX: 11,
+        WEIGHTS: [0.1, 0.2, 0.3, 0.4, 0.2, 0.1, 0.05, 0.01]
     },
     DIVISIONS: {
         MIN: 1,
-        MAX: 10
+        MAX: 20,
+        WEIGHTS: [0.3, 0.2, 0.2, 0.1, 0.05, 0.05, 0.02, 0.01]
     },
     OCTAVE: {
         MIN: 1,
@@ -27,8 +30,9 @@ module.exports = {
         WEIGHTS: [0.1, 0.2, 0.3, 0.4, 0.4, 0.3, 0.2, 0.1]
     },
     VOICES: {
-        MIN: 1,
-        MAX: 5
+        MIN: 0,
+        MAX: 7,
+        WEIGHTS: [0.15, 0.2, 0.3, 0.2, 0.1, 0.05, 0.02, 0.01]
     },
     // MEASURES_PER_PHRASE: {
     //     MIN: 2,

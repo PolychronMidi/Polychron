@@ -50,31 +50,53 @@ function midiCompatibleMeter(numerator, denominator) {
     : { midiMeter: [numerator, floorDenominator], tempoFactor: meterRatio / floorRatio };
   }
 }
+function randomWeightedSelection(min, max, weights) {
+  const range = max - min + 1;
+  let expandedWeights = weights;
+  if (weights.length < range) {
+    const weightPerGroup = Math.floor(range / weights.length);
+    const remainder = range % weights.length;
+    expandedWeights = [];
+    weights.forEach((weight, index) => {
+      const count = index < remainder ? weightPerGroup + 1 : weightPerGroup;
+      expandedWeights.push(...Array(count).fill(weight));
+    });
+  }
+  const totalWeight = expandedWeights.reduce((acc, w) => acc + w, 0);
+  const normalizedWeights = expandedWeights.map(w => w / totalWeight);
+  let random = Math.random();
+  let cumulativeProbability = 0;
+  for (let i = 0; i < normalizedWeights.length; i++) {
+    cumulativeProbability += normalizedWeights[i];
+    if (random <= cumulativeProbability) {
+      return i + min;
+    }
+  }
+}
 class MeasureComposer {
   constructor(sheet) {
     this.sheet = sheet;
   }
   setMeter() {
-    const numerator = randomInt(this.sheet.NUMERATOR.MIN, this.sheet.NUMERATOR.MAX);
-    const denominator = randomInt(this.sheet.DENOMINATOR.MIN, this.sheet.DENOMINATOR.MAX);
-    return { meter: [numerator, denominator] };
-  }
-  setDivisions(beatsInMeasure, currentBeat) {
-    return randomInt(this.sheet.DIVISIONS.MIN, this.sheet.DIVISIONS.MAX);
+    const { MIN: nMin, MAX: nMax, WEIGHTS: nWeights } = this.sheet.NUMERATOR;
+    const { MIN: dMin, MAX: dMax, WEIGHTS: dWeights } = this.sheet.DENOMINATOR;
+    return {
+      meter: [
+        randomWeightedSelection(nMin, nMax, nWeights),
+        randomWeightedSelection(dMin, dMax, dWeights)
+      ]
+    };
   }
   setOctave() {
     const { MIN, MAX, WEIGHTS } = this.sheet.OCTAVE;
-    const totalWeight = WEIGHTS.reduce((acc, w) => acc + w, 0);
-    let random = Math.random() * totalWeight;
-    for (let i = MIN - 1; i < MAX; i++) {
-      random -= WEIGHTS[i];
-      if (random <= 0) {
-        return i + MIN;
-      }
-    }
+    return randomWeightedSelection(MIN, MAX, WEIGHTS);
   }
-  composeNote(measure, beat, division, beatsInMeasure) {
-    const rawNote = this.composeRawNote(measure, beat, division, beatsInMeasure);
+  setDivisions(beatsPerMeasure, currentBeat) {
+    const { MIN, MAX, WEIGHTS } = this.sheet.DIVISIONS;
+    return randomWeightedSelection(MIN, MAX, WEIGHTS);
+  }
+  composeNote(measure, beat, division, beatsPerMeasure) {
+    const rawNote = this.composeRawNote(measure, beat, division, beatsPerMeasure);
     const octave = this.setOctave();
     const composedNote = t.Note.midi(`${rawNote}${octave}`);
     if (composedNote === null) {
@@ -82,12 +104,13 @@ class MeasureComposer {
     }
     return composedNote;
   }
-  composeChord(measure, beat, division, beatsInMeasure) {
-    const voices = randomInt(this.sheet.VOICES.MIN, this.sheet.VOICES.MAX);
+  composeChord(measure, beat, division, beatsPerMeasure) {
+    const { MIN, MAX, WEIGHTS } = this.sheet.VOICES;
+    const voices = randomWeightedSelection(MIN, MAX, WEIGHTS);
     const uniqueNotes = new Set();
     const composedChord = [];
     while (uniqueNotes.size < voices) {
-      const note = this.composeNote(measure, beat, division, beatsInMeasure);
+      const note = this.composeNote(measure, beat, division, beatsPerMeasure);
       if (uniqueNotes.add(note)) {
         composedChord.push({ note });
       }
@@ -290,8 +313,8 @@ const csvMaestro = (sheet) => {
         const notes = composer.composeChord(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const velocity = 99;
-          const noteOnTick = divisionStartTick + Math.random() * ticksPerDivision * 0.05;
-          const noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.1, 5);
+          const noteOnTick = divisionStartTick + Math.random() * ticksPerDivision * 0.07;
+          const noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.2, 4);
           conductor.push({
             startTick: noteOnTick,
             type: 'note_on_c',
@@ -302,11 +325,11 @@ const csvMaestro = (sheet) => {
             type: 'note_off_c',
             values: [channelCenter, note]
           });
-          const randVel = velocity * randomFloat(.3,.45);
+          const randomVelocity = velocity * randomFloat(.3,.45);
           conductor.push({
             startTick: noteOnTick,
             type: 'note_on_c',
-            values: [channelLeft, note, randVel]
+            values: [channelLeft, note, randomVelocity]
           });
           conductor.push({
             startTick: noteOffTick,
@@ -316,7 +339,7 @@ const csvMaestro = (sheet) => {
           conductor.push({
             startTick: noteOnTick,
             type: 'note_on_c',
-            values: [channelRight, note, randVel]
+            values: [channelRight, note, randomVelocity]
           });
           conductor.push({
             startTick: noteOffTick,
@@ -330,13 +353,13 @@ const csvMaestro = (sheet) => {
     currentTime += secondsPerMeasure;
   }
   conductor.sort((a, b) => a.startTick - b.startTick);
-  conductor.forEach(event => {
-    if (event.type === 'marker_t') {
-      csvContent += `1, ${event.startTick}, marker_t, ${event.values.join(' ')}\n`;
+  conductor.forEach(_ => {
+    if (_.type === 'marker_t') {
+      csvContent += `1, ${_.startTick}, marker_t, ${_.values.join(' ')}\n`;
     } else {
-      csvContent += `1, ${event.startTick}, ${event.type}, ${event.values.join(', ')}\n`;
+      csvContent += `1, ${_.startTick}, ${_.type}, ${_.values.join(', ')}\n`;
     }
-    trackEndTick = Math.max(event.startTick + ticksPerSecond * sheet.SILENT_OUTRO_SECONDS);
+    trackEndTick = Math.max(_.startTick + ticksPerSecond * sheet.SILENT_OUTRO_SECONDS);
   });
   trackEndTime = formatTime(currentTime + sheet.SILENT_OUTRO_SECONDS);
   csvContent += `1, ${trackEndTick}, end_track\n`;
