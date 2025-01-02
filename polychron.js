@@ -1,6 +1,6 @@
 const t = require("tonal");
 const fs = require('fs');
-const config = require('./config');
+const sheet = require('./sheet');
 const randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
   return Math.random() * (max - min) + min;
@@ -51,19 +51,27 @@ function midiCompatibleMeter(numerator, denominator) {
   }
 }
 class MeasureComposer {
-  constructor(config) {
-    this.config = config;
+  constructor(sheet) {
+    this.sheet = sheet;
   }
   setMeter() {
-    const numerator = randomInt(this.config.NUMERATOR.MIN, this.config.NUMERATOR.MAX);
-    const denominator = randomInt(this.config.DENOMINATOR.MIN, this.config.DENOMINATOR.MAX);
+    const numerator = randomInt(this.sheet.NUMERATOR.MIN, this.sheet.NUMERATOR.MAX);
+    const denominator = randomInt(this.sheet.DENOMINATOR.MIN, this.sheet.DENOMINATOR.MAX);
     return { meter: [numerator, denominator] };
   }
   setDivisions(beatsInMeasure, currentBeat) {
-    return randomInt(this.config.DIVISIONS.MIN, this.config.DIVISIONS.MAX);
+    return randomInt(this.sheet.DIVISIONS.MIN, this.sheet.DIVISIONS.MAX);
   }
   setOctave() {
-    return randomInt(this.config.OCTAVE.MIN, this.config.OCTAVE.MAX);
+    const { MIN, MAX, WEIGHTS } = this.sheet.OCTAVE;
+    const totalWeight = WEIGHTS.reduce((acc, w) => acc + w, 0);
+    let random = Math.random() * totalWeight;
+    for (let i = MIN - 1; i < MAX; i++) {
+      random -= WEIGHTS[i];
+      if (random <= 0) {
+        return i + MIN;
+      }
+    }
   }
   composeNote(measure, beat, division, beatsInMeasure) {
     const rawNote = this.composeRawNote(measure, beat, division, beatsInMeasure);
@@ -75,7 +83,7 @@ class MeasureComposer {
     return composedNote;
   }
   composeChord(measure, beat, division, beatsInMeasure) {
-    const voices = randomInt(this.config.VOICES.MIN, this.config.VOICES.MAX);
+    const voices = randomInt(this.sheet.VOICES.MIN, this.sheet.VOICES.MAX);
     const uniqueNotes = new Set();
     const composedChord = [];
     while (uniqueNotes.size < voices) {
@@ -88,8 +96,8 @@ class MeasureComposer {
   }
 }
 class ScaleComposer extends MeasureComposer {
-  constructor(config, scaleName, root) {
-    super(config);
+  constructor(sheet, scaleName, root) {
+    super(sheet);
     this.setScale(scaleName, root);
   }
   setScale(scaleName, root) {
@@ -100,8 +108,8 @@ class ScaleComposer extends MeasureComposer {
     return this.notes[randomInt(this.notes.length)];  }
 }
 class RandomScaleComposer extends ScaleComposer {
-  constructor(config) {
-    super(config, '', '');
+  constructor(sheet) {
+    super(sheet, '', '');
     this.scales = t.Scale.names();
     this.randomScale();
   }
@@ -124,8 +132,8 @@ class RandomScaleComposer extends ScaleComposer {
   }
 }
 class ChordComposer extends MeasureComposer {
-  constructor(config, progression) {
-    super(config);
+  constructor(sheet, progression) {
+    super(sheet);
     this.setProgression(progression);
   }
   setProgression(progression) {
@@ -147,8 +155,8 @@ class ChordComposer extends MeasureComposer {
   }
 }
 class RandomChordComposer extends ChordComposer {
-  constructor(config) {
-    super(config, []);
+  constructor(sheet) {
+    super(sheet, []);
     this.randomProgression();
   }
   randomProgression() {
@@ -167,32 +175,30 @@ class RandomChordComposer extends ChordComposer {
     return super.composeRawNote();
   }
 }
-const csvMaestro = (config) => {
-  let csvContent = `0, 0, header, 1, 1, ${config.PPQ}\n`;
+const csvMaestro = (sheet) => {
+  let csvContent = `0, 0, header, 1, 1, ${sheet.PPQ}\n`;
   csvContent += "1, 0, start_track\n";
-  let midiEvents = [];
-  const channelCenter = 0;
-  const channelLeft = 1;
-  const channelRight = 2;
-  if (config.TUNING.FREQUENCY != 440) {
-    midiEvents.push({
+  let conductor = [];
+  const channelCenter = 0;  const channelLeft = 1;  const channelRight = 2;
+  if (sheet.TUNING.FREQUENCY != 440) {
+    conductor.push({
       startTick: 0,
       type: 'pitch_bend_c',
-      values: [channelCenter, config.TUNING.PITCH_BEND]
+      values: [channelCenter, sheet.TUNING.PITCH_BEND]
     });
   }
-  midiEvents.push({
+  conductor.push({
     startTick: 0,
     type: 'control_c',
     values: [channelLeft, 10, 0]
   });
-  midiEvents.push({
+  conductor.push({
     startTick: 0,
     type: 'control_c',
     values: [channelRight, 10, 127]
   });
   let currentTick = currentTime = 0;
-  const totalMeasures = randomInt(config.MEASURES.MIN, config.MEASURES.MAX);
+  const totalMeasures = randomInt(sheet.MEASURES.MIN, sheet.MEASURES.MAX);
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     seconds = (seconds % 60).toFixed(4).padStart(7, '0');
@@ -212,38 +218,29 @@ const csvMaestro = (config) => {
       values: [`${type} ${number} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
     };
   };
-  const compose = (composerConfig, config) => {
-    switch (composerConfig.type) {
-      case 'scale':
-        return new ScaleComposer(config, composerConfig.name, composerConfig.root);
-      case 'randomScale':
-        return new RandomScaleComposer(config);
-      case 'chordProgression':
-        return new ChordComposer(config, composerConfig.progression);
-      case 'randomChordProgression':
-        return new RandomChordComposer(config);
-      default:
-        throw new Error(`Unknown COMPOSERS type: ${composerConfig.type}`);
-    }
-  };
+  const composers = (function(sheet) {
+    return sheet.COMPOSERS.map(composer => 
+      eval(`(function(sheet) { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}}, sheet)`)
+    );
+  })(sheet);
   for (let measureIndex = 0; measureIndex < totalMeasures; measureIndex++) {
-    const randomComposer = config.COMPOSERS[randomInt(config.COMPOSERS.length)];
-    const composer = compose(randomComposer, config);
+    const randomComposer = randomInt(sheet.COMPOSERS.length);
+    const composer = composers[randomComposer];
     const measure = composer.setMeter();
     const [numerator, denominator] = measure.meter;
     const { midiMeter, tempoFactor } = midiCompatibleMeter(numerator, denominator);
-    const spoofedTempo = config.BASE_TEMPO * tempoFactor;
-    ticksPerSecond = spoofedTempo * config.PPQ / 60;
-    const ticksPerMeasure = config.PPQ * 4 * (midiMeter[0] / midiMeter[1]);
+    const spoofedTempo = sheet.BASE_TEMPO * tempoFactor;
+    ticksPerSecond = spoofedTempo * sheet.PPQ / 60;
+    const ticksPerMeasure = sheet.PPQ * 4 * (midiMeter[0] / midiMeter[1]);
     const ticksPerBeat = ticksPerMeasure / numerator;
     const secondsPerMeasure = ticksPerMeasure / ticksPerSecond;
     const secondsPerBeat = ticksPerBeat / ticksPerSecond;
-    midiEvents.push({
+    conductor.push({
       startTick: currentTick,
       type: 'meter',
       values: [midiMeter[0], midiMeter[1]]
     });
-    midiEvents.push({
+    conductor.push({
       startTick: currentTick,
       type: 'bpm',
       values: [spoofedTempo]
@@ -251,79 +248,77 @@ const csvMaestro = (config) => {
     const neutralPitchBend = 8192;
     const semitone = neutralPitchBend / 2;
     const frequencyOffset = randomFloat(7, 13);
-    const targetFrequencyLeft = config.TUNING.FREQUENCY + frequencyOffset;
-    const targetFrequencyRight = config.TUNING.FREQUENCY - frequencyOffset;
-    const centsToTargetLeft = 1200 * Math.log2(targetFrequencyLeft / config.TUNING.FREQUENCY);
-    const centsToTargetRight = 1200 * Math.log2(targetFrequencyRight / config.TUNING.FREQUENCY);
-    const pitchBendLeft = Math.round(config.TUNING.PITCH_BEND + (semitone * (centsToTargetLeft / 100)));
-    const pitchBendRight = Math.round(config.TUNING.PITCH_BEND + (semitone * (centsToTargetRight / 100)));
+    const centsToOffsetPlus = 1200 * Math.log2((sheet.TUNING.FREQUENCY + frequencyOffset) / sheet.TUNING.FREQUENCY);
+    const centsToOffsetMinus = 1200 * Math.log2((sheet.TUNING.FREQUENCY - frequencyOffset) / sheet.TUNING.FREQUENCY);
+    const binauralPitchBendPlus = Math.round(sheet.TUNING.PITCH_BEND + (semitone * (centsToOffsetPlus / 100)));
+    const binauralPitchBendMinus = Math.round(sheet.TUNING.PITCH_BEND + (semitone * (centsToOffsetMinus / 100)));
     if (Math.random() > 0.5) {
-      midiEvents.push({
+      conductor.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
-        values: [channelLeft, pitchBendLeft]
+        values: [channelLeft, binauralPitchBendPlus]
       });
-      midiEvents.push({
+      conductor.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
-        values: [channelRight, pitchBendRight]
+        values: [channelRight, binauralPitchBendMinus]
       });
     } else {
-      midiEvents.push({
+      conductor.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
-        values: [channelRight, pitchBendLeft]
+        values: [channelRight, binauralPitchBendPlus]
       });
-      midiEvents.push({
+      conductor.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
-        values: [channelLeft, pitchBendRight]
+        values: [channelLeft, binauralPitchBendMinus]
       });
     }
-    midiEvents.push(setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
+    conductor.push(setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
     for (let beat = 0; beat < numerator; beat++) {
       const beatStartTick = currentTick + beat * ticksPerBeat;
       const beatStartTime = currentTime + beat * secondsPerBeat;
       const divisionsPerBeat = composer.setDivisions(numerator, beat);
       const ticksPerDivision = ticksPerBeat / divisionsPerBeat;
       const secondsPerDivision = secondsPerBeat / divisionsPerBeat;
-      midiEvents.push(setUnitMarker('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
+      conductor.push(setUnitMarker('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
       for (let division = 0; division < divisionsPerBeat; division++) {
         const divisionStartTick = beatStartTick + division * ticksPerDivision;
         const divisionStartTime = beatStartTime + division * secondsPerDivision;
-        midiEvents.push(setUnitMarker('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
+        conductor.push(setUnitMarker('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
         const notes = composer.composeChord(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const velocity = 99;
           const noteOnTick = divisionStartTick + Math.random() * ticksPerDivision * 0.05;
           const noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.1, 5);
-          midiEvents.push({
+          conductor.push({
             startTick: noteOnTick,
             type: 'note_on_c',
             values: [channelCenter, note, velocity]
           });
-          midiEvents.push({
+          conductor.push({
             startTick: noteOffTick,
             type: 'note_off_c',
             values: [channelCenter, note]
           });
           const randVel = velocity * randomFloat(.3,.45);
-          midiEvents.push({
+          conductor.push({
             startTick: noteOnTick,
             type: 'note_on_c',
             values: [channelLeft, note, randVel]
           });
-          midiEvents.push({
+          conductor.push({
             startTick: noteOffTick,
             type: 'note_off_c',
             values: [channelLeft, note]
           });
-          midiEvents.push({
+          conductor.push({
             startTick: noteOnTick,
             type: 'note_on_c',
             values: [channelRight, note, randVel]
           });
-          midiEvents.push({
+          conductor.push({
             startTick: noteOffTick,
             type: 'note_off_c',
             values: [channelRight, note]
@@ -334,19 +329,18 @@ const csvMaestro = (config) => {
     currentTick += ticksPerMeasure;
     currentTime += secondsPerMeasure;
   }
-  midiEvents.sort((a, b) => a.startTick - b.startTick);
-  midiEvents.forEach(event => {
+  conductor.sort((a, b) => a.startTick - b.startTick);
+  conductor.forEach(event => {
     if (event.type === 'marker_t') {
       csvContent += `1, ${event.startTick}, marker_t, ${event.values.join(' ')}\n`;
     } else {
       csvContent += `1, ${event.startTick}, ${event.type}, ${event.values.join(', ')}\n`;
     }
-    const outroSilence = ticksPerSecond * config.SILENT_OUTRO_SECONDS;
-    trackEndTick = Math.max(event.startTick + outroSilence);
+    trackEndTick = Math.max(event.startTick + ticksPerSecond * sheet.SILENT_OUTRO_SECONDS);
   });
-  trackEndTime = formatTime(currentTime + config.SILENT_OUTRO_SECONDS);
+  trackEndTime = formatTime(currentTime + sheet.SILENT_OUTRO_SECONDS);
   csvContent += `1, ${trackEndTick}, end_track\n`;
   fs.writeFileSync('output.csv', csvContent);
 };
-csvMaestro(config);
+csvMaestro(sheet);
 console.log('output.csv created. Track Length:', trackEndTime);
