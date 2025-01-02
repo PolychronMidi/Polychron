@@ -3,7 +3,7 @@ Polychron aims to:
 - Develop a system that allows for any musical meter (time signature) in MIDI composition, maintaining compatibility with standard MIDI playback systems
 - Provide a flexible framework for creating and manipulating complex metrical structures, offering unrestricted polyphony and note granularity, without compromising timing accuracy.
 
-Current implementation is a relatively simple (although impossible for any human to play) demo of (weighted)random meters, scales, and chords at random divisions. Tuning to 432 hz with binaural effects in the alpha range (7-13hz) have been added (use headphone for binaural effect). Some settings can be customized in `sheet.js`, with plans to move more settings from `polychron.js` to `sheet.js`. Timing markers for each unit can be found in the "marker_t" entries of the CSV file.
+Current implementation is a relatively simple (although impossible for any human to play) demo of (weighted)random meters, scales, and chords at random divisions. Tuning to 432 hz with [binaural beat](https://search.brave.com/search?q=how+does+binaural+beats+work&source=web&conversation=80d48ba0c8ba0614ef212e&summary=1) effects in the alpha range (8-12hz) have been added (use headphone for binaural effect). Some settings can be customized in `sheet.js`, with plans to move more settings from `polychron.js` to `sheet.js`. Timing markers for each unit can be found in the "marker_t" entries of the CSV file.
 
 Polychron is a MIDI composition system that breaks free from traditional MIDI limitations, particularly in the realm of time signatures (A.K.A. meters). The core innovation of Polychron lies in its ability to work with any musical meter through a process called "meter spoofing."
 

@@ -199,26 +199,38 @@ class RandomChordComposer extends ChordComposer {
   }
 }
 const csvMaestro = (sheet) => {
-  let csvContent = `0, 0, header, 1, 1, ${sheet.PPQ}\n`;
-  csvContent += "1, 0, start_track\n";
-  let conductor = [];
+  let composition = `0, 0, header, 1, 1, ${sheet.PPQ}\n`;
+  composition += "1, 0, start_track\n";
+  let c = [];
   const channelCenter = 0;  const channelLeft = 1;  const channelRight = 2;
-  if (sheet.TUNING.FREQUENCY != 440) {
-    conductor.push({
-      startTick: 0,
-      type: 'pitch_bend_c',
-      values: [channelCenter, sheet.TUNING.PITCH_BEND]
-    });
-  }
-  conductor.push({
+  const channelLeftInverted = 3;  const channelRightInverted = 4; 
+  c.push({
     startTick: 0,
     type: 'control_c',
     values: [channelLeft, 10, 0]
   });
-  conductor.push({
+  c.push({
     startTick: 0,
     type: 'control_c',
     values: [channelRight, 10, 127]
+  });
+  c.push({
+    startTick: 0,
+    type: 'control_c',
+    values: [channelLeftInverted, 10, 0]
+  });
+  c.push({
+    startTick: 0,
+    type: 'control_c',
+    values: [channelRightInverted, 10, 127]
+  });
+  const neutralPitchBend = 8192; const semitone = neutralPitchBend / 2;
+  const centsToTuningFreq = 1200 * Math.log2(sheet.TUNING_FREQ / 440);
+  const tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
+  c.push({
+    startTick: 0,
+    type: 'pitch_bend_c',
+    values: [channelCenter, tuningPitchBend]
   });
   let currentTick = currentTime = 0;
   const totalMeasures = randomInt(sheet.MEASURES.MIN, sheet.MEASURES.MAX);
@@ -258,112 +270,135 @@ const csvMaestro = (sheet) => {
     const ticksPerBeat = ticksPerMeasure / numerator;
     const secondsPerMeasure = ticksPerMeasure / ticksPerSecond;
     const secondsPerBeat = ticksPerBeat / ticksPerSecond;
-    conductor.push({
+    c.push({
       startTick: currentTick,
       type: 'meter',
       values: [midiMeter[0], midiMeter[1]]
     });
-    conductor.push({
+    c.push({
       startTick: currentTick,
       type: 'bpm',
       values: [spoofedTempo]
     });
-    const neutralPitchBend = 8192;
-    const semitone = neutralPitchBend / 2;
-    const frequencyOffset = randomFloat(7, 13);
-    const centsToOffsetPlus = 1200 * Math.log2((sheet.TUNING.FREQUENCY + frequencyOffset) / sheet.TUNING.FREQUENCY);
-    const centsToOffsetMinus = 1200 * Math.log2((sheet.TUNING.FREQUENCY - frequencyOffset) / sheet.TUNING.FREQUENCY);
-    const binauralPitchBendPlus = Math.round(sheet.TUNING.PITCH_BEND + (semitone * (centsToOffsetPlus / 100)));
-    const binauralPitchBendMinus = Math.round(sheet.TUNING.PITCH_BEND + (semitone * (centsToOffsetMinus / 100)));
+    const binauralFreqOffset = randomFloat(sheet.BINAURAL.MIN, sheet.BINAURAL.MAX);
+    const centsToOffsetPlus = 1200 * Math.log2((sheet.TUNING_FREQ + binauralFreqOffset) / sheet.TUNING_FREQ);
+    const centsToOffsetMinus = 1200 * Math.log2((sheet.TUNING_FREQ - binauralFreqOffset) / sheet.TUNING_FREQ);
+    binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
+    binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
     if (Math.random() > 0.5) {
-      conductor.push({
+      invertBinaural = false;
+      c.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
         values: [channelLeft, binauralPitchBendPlus]
       });
-      conductor.push({
+      c.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
         values: [channelRight, binauralPitchBendMinus]
       });
     } else {
-      conductor.push({
+      invertBinaural = true;
+      c.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
-        values: [channelRight, binauralPitchBendPlus]
+        values: [channelLeftInverted, binauralPitchBendMinus]
       });
-      conductor.push({
+      c.push({
         startTick: currentTick,
         type: 'pitch_bend_c',
-        values: [channelLeft, binauralPitchBendMinus]
+        values: [channelRightInverted, binauralPitchBendPlus]
       });
     }
-    conductor.push(setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
+    c.push(setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
     for (let beat = 0; beat < numerator; beat++) {
       const beatStartTick = currentTick + beat * ticksPerBeat;
       const beatStartTime = currentTime + beat * secondsPerBeat;
       const divisionsPerBeat = composer.setDivisions(numerator, beat);
       const ticksPerDivision = ticksPerBeat / divisionsPerBeat;
       const secondsPerDivision = secondsPerBeat / divisionsPerBeat;
-      conductor.push(setUnitMarker('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
+      c.push(setUnitMarker('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
       for (let division = 0; division < divisionsPerBeat; division++) {
         const divisionStartTick = beatStartTick + division * ticksPerDivision;
         const divisionStartTime = beatStartTime + division * secondsPerDivision;
-        conductor.push(setUnitMarker('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
+        c.push(setUnitMarker('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
         const notes = composer.composeChord(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const velocity = 99;
           const noteOnTick = divisionStartTick + Math.random() * ticksPerDivision * 0.07;
           const noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.2, 4);
-          conductor.push({
+          c.push({
             startTick: noteOnTick,
             type: 'note_on_c',
             values: [channelCenter, note, velocity]
           });
-          conductor.push({
+          c.push({
             startTick: noteOffTick,
             type: 'note_off_c',
             values: [channelCenter, note]
           });
-          const randomVelocity = velocity * randomFloat(.3,.45);
-          conductor.push({
-            startTick: noteOnTick,
-            type: 'note_on_c',
-            values: [channelLeft, note, randomVelocity]
-          });
-          conductor.push({
-            startTick: noteOffTick,
-            type: 'note_off_c',
-            values: [channelLeft, note]
-          });
-          conductor.push({
-            startTick: noteOnTick,
-            type: 'note_on_c',
-            values: [channelRight, note, randomVelocity]
-          });
-          conductor.push({
-            startTick: noteOffTick,
-            type: 'note_off_c',
-            values: [channelRight, note]
-          });
+          const randomVelocity = velocity * randomFloat(.33,.44);
+          if (invertBinaural = false) {
+            c.push({
+              startTick: noteOnTick,
+              type: 'note_on_c',
+              values: [channelLeft, note, randomVelocity]
+            });
+            c.push({
+              startTick: noteOffTick,
+              type: 'note_off_c',
+              values: [channelLeft, note]
+            });
+            c.push({
+              startTick: noteOnTick,
+              type: 'note_on_c',
+              values: [channelRight, note, randomVelocity]
+            });
+            c.push({
+              startTick: noteOffTick,
+              type: 'note_off_c',
+              values: [channelRight, note]
+            });
+          } else {
+            c.push({
+              startTick: noteOnTick,
+              type: 'note_on_c',
+              values: [channelLeftInverted, note, randomVelocity]
+            });
+            c.push({
+              startTick: noteOffTick,
+              type: 'note_off_c',
+              values: [channelLeftInverted, note]
+            });
+            c.push({
+              startTick: noteOnTick,
+              type: 'note_on_c',
+              values: [channelRightInverted, note, randomVelocity]
+            });
+            c.push({
+              startTick: noteOffTick,
+              type: 'note_off_c',
+              values: [channelRightInverted, note]
+            });
+          }
         });
       }
     }
     currentTick += ticksPerMeasure;
     currentTime += secondsPerMeasure;
   }
-  conductor.sort((a, b) => a.startTick - b.startTick);
-  conductor.forEach(_ => {
+  c.sort((a, b) => a.startTick - b.startTick);
+  c.forEach(_ => {
     if (_.type === 'marker_t') {
-      csvContent += `1, ${_.startTick}, marker_t, ${_.values.join(' ')}\n`;
+      composition += `1, ${_.startTick}, marker_t, ${_.values.join(' ')}\n`;
     } else {
-      csvContent += `1, ${_.startTick}, ${_.type}, ${_.values.join(', ')}\n`;
+      composition += `1, ${_.startTick}, ${_.type}, ${_.values.join(', ')}\n`;
     }
     trackEndTick = Math.max(_.startTick + ticksPerSecond * sheet.SILENT_OUTRO_SECONDS);
   });
   trackEndTime = formatTime(currentTime + sheet.SILENT_OUTRO_SECONDS);
-  csvContent += `1, ${trackEndTick}, end_track\n`;
-  fs.writeFileSync('output.csv', csvContent);
+  composition += `1, ${trackEndTick}, end_track\n`;
+  fs.writeFileSync('output.csv', composition);
 };
 csvMaestro(sheet);
 console.log('output.csv created. Track Length:', trackEndTime);

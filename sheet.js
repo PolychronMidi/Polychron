@@ -1,11 +1,8 @@
-let TUNING = {
-    FREQUENCY: 432, // Set to 440 for standard tuning (A4), which ignores PITCH_BEND. 
-    PITCH_BEND: 6891 // After saving non-standard value to FREQUENCY, run 'node tune.js' to update PITCH_BEND value accordingly.
-};
 module.exports = {
-    TUNING: TUNING,
-    updatePitchBend: function(newPitchBend) {
-        TUNING.PITCH_BEND = newPitchBend;
+    TUNING_FREQ: 432,
+    BINAURAL: {
+        MIN: 8,
+        MAX: 12
     },
     PPQ: 30000,
     BASE_TEMPO: 60,
