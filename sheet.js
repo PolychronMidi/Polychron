@@ -19,17 +19,17 @@ module.exports = {
     DIVISIONS: {
         MIN: 1,
         MAX: 20,
-        WEIGHTS: [0.3, 0.2, 0.2, 0.1, 0.05, 0.05, 0.02, 0.01]
+        WEIGHTS: [0.3, 0.3, 0.2, 0.04, 0.03, 0.02, 0.02, 0.01]
     },
     OCTAVE: {
         MIN: 1,
         MAX: 8,
-        WEIGHTS: [0.1, 0.2, 0.3, 0.4, 0.4, 0.3, 0.2, 0.1]
+        WEIGHTS: [0.1, 0.2, 0.3, 0.4, 0.4, 0.3, 0.1, 0.05]
     },
     VOICES: {
         MIN: 0,
         MAX: 7,
-        WEIGHTS: [0.15, 0.2, 0.3, 0.2, 0.1, 0.05, 0.02, 0.01]
+        WEIGHTS: [0.15, 0.3, 0.3, 0.15, 0.04, 0.03, 0.02, 0.01]
     },
     // MEASURES_PER_PHRASE: {
     //     MIN: 2,
@@ -48,10 +48,10 @@ module.exports = {
         MAX: 20
     },
     COMPOSERS: [
-        { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(sheet, this.name, this.root)' },
-        { type: 'randomScale', return: 'new RandomScaleComposer(sheet)' },
-        { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(sheet, this.progression)' },
-        { type: 'randomChordProgression', return: 'new RandomChordComposer(sheet)' }
+        { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(s, this.name, this.root)' },
+        { type: 'randomScale', return: 'new RandomScaleComposer(s)' },
+        { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(s, this.progression)' },
+        { type: 'randomChordProgression', return: 'new RandomChordComposer(s)' }
     ],
     SILENT_OUTRO_SECONDS: 5
 };
