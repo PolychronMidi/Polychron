@@ -1,6 +1,5 @@
-const t = require("tonal");
-const fs = require('fs');
-const s = require('./sheet');
+t = require("tonal");
+s = require('./sheet');
 const randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
   return Math.random() * (max - min) + min;
@@ -78,12 +77,10 @@ const minutes = Math.floor(seconds / 60);
 seconds = (seconds % 60).toFixed(4).padStart(7, '0');
 return `${minutes}:${seconds}`;
 };
-const setUnitMarker = (type, number, startTime, endTime, startTick, endTick, originalMeter = [], midiMeter = null) => {
+const logUnit = (type, number, startTime, endTime, startTick, endTick, originalMeter = [], midiMeter = null) => {
 let meterInfo = '';
 if (type === 'Measure') {
-    meterInfo = midiMeter 
-    ? `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')}`
-    : `Meter: ${originalMeter.join('/')}`;
+    meterInfo = midiMeter ? `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')}` : `Meter: ${originalMeter.join('/')}`;
 }
 return {
     startTick: startTick,
@@ -102,6 +99,7 @@ centsToTuningFreq = 1200 * Math.log2(s.TUNING_FREQ / 440);
 tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
 currentTick = currentTime = 0;
 module.exports = {
+    s,
     randomFloat,
     randomInt,
     allNotes,
@@ -109,6 +107,5 @@ module.exports = {
     midiCompatibleMeter,
     randomWeightedSelection,
     formatTime,
-    setUnitMarker,
-    
+    logUnit,
   };

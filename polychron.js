@@ -1,6 +1,4 @@
-const t = require("tonal");
 const fs = require('fs');
-const s = require('./sheet');
 const u = require('./utils');
 class MeasureComposer {
   constructor(s) {
@@ -203,18 +201,18 @@ class RandomChordComposer extends ChordComposer {
         values: [channelRightInverted, binauralPitchBendPlus]
       });
     }
-    c.push(u.setUnitMarker('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
+    c.push(u.logUnit('Measure', measureIndex + 1, currentTime, currentTime + secondsPerMeasure, currentTick, currentTick + ticksPerMeasure, measure.meter, midiMeter[0] !== measure.meter[0] || midiMeter[1] !== measure.meter[1] ? midiMeter : null));
     for (let beat = 0; beat < numerator; beat++) {
       const beatStartTick = currentTick + beat * ticksPerBeat;
       const beatStartTime = currentTime + beat * secondsPerBeat;
       const divisionsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
       const ticksPerDivision = ticksPerBeat / divisionsPerBeat;
       const secondsPerDivision = secondsPerBeat / divisionsPerBeat;
-      c.push(u.setUnitMarker('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
+      c.push(u.logUnit('Beat', beat + 1, beatStartTime, beatStartTime + secondsPerBeat, beatStartTick, beatStartTick + ticksPerBeat));
       for (let division = 0; division < divisionsPerBeat; division++) {
         const divisionStartTick = beatStartTick + division * ticksPerDivision;
         const divisionStartTime = beatStartTime + division * secondsPerDivision;
-        c.push(u.setUnitMarker('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
+        c.push(u.logUnit('Division', division + 1, divisionStartTime, divisionStartTime + secondsPerDivision, divisionStartTick, divisionStartTick + ticksPerDivision));
         const notes = composer.composeChord(measure, beat, division, numerator);
         notes.forEach(({ note }) => {
           const velocity = 99;
