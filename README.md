@@ -1,9 +1,9 @@
 Polychron aims to:
 
-- Develop a system that allows for any musical meter (time signature) in MIDI composition, maintaining compatibility with standard MIDI playback systems
+- Develop a system that allows for any musical meter (time signature) in MIDI composition, while still maintaining compatibility with standard MIDI playback systems
 - Provide a flexible framework for creating and manipulating complex metrical structures, offering unrestricted polyphony and note granularity, without compromising timing accuracy.
 
-Current implementation is a relatively simple (although impossible for any human to play) demo of (weighted)random meters, scales, and chords at random divisions. Tuning to 432 hz with [binaural beat](https://search.brave.com/search?q=how+does+binaural+beats+work&source=web&conversation=80d48ba0c8ba0614ef212e&summary=1) effects in the alpha range (8-12hz) have been added (must use headphones for binaural effect). 
+Current implementation is a relatively simple (although impossible for any human to play) demo of (weighted) random, scales, & chords played at random divisions & meters. Tuning to 432 hz with [binaural beat](https://search.brave.com/search?q=how+does+binaural+beats+work&source=web&conversation=80d48ba0c8ba0614ef212e&summary=1) effects in the alpha range (8-12hz) have been added (must use headphones for binaural effect). 
 
 Some settings can be customized in `sheet.js`. Timing log markers for each unit can be found in the "marker_t" entries of the CSV file. Log level can be changed in `sheet.js` under LOG, from the default 'measure' value to 'all', 'none', or comma-separated unit names. (If you play the MIDI file with [Soundfont MIDI Player](#players), you can view unit log markers in realtime by clicking the button on the left for 'MIDI text'.)
 
@@ -21,7 +21,7 @@ This approach allows Polychron to represent and work with any meter while mainta
 
 Uses [tonal](https://github.com/tonaljs/tonal) and my own custom fork of [py_midicsv](https://github.com/timwedde/py_midicsv), called [CSV Maestro](https://github.com/i1li/csv_maestro). We create our MIDI data in CSV format first for a nice human-readable version, which allows easier auditing and more direct data control.
 
-To install tonal and create the CSV file, run the following (requires Node.js installed):
+To install tonal and create the CSV (spreadsheet) file, run the following (requires Node.js installed):
 ```js
 npm i tonal
 node polychron.js

@@ -31,18 +31,18 @@ VOICES = {
   MAX: 7,
   WEIGHTS: [0.15, 0.3, 0.3, 0.15, 0.04, 0.03, 0.02, 0.01]
 };
-MEASURES_PER_PHRASE = {
-  MIN: 2,
-  MAX: 4
-};
-PHRASES_PER_SECTION = {
-  MIN: 2,
-  MAX: 4
-};
-SECTIONS = {
-  MIN: 2,
-  MAX: 4
-};
+// MEASURES_PER_PHRASE = {
+//   MIN: 2,
+//   MAX: 4
+// };
+// PHRASES_PER_SECTION = {
+//   MIN: 2,
+//   MAX: 4
+// };
+// SECTIONS = {
+//   MIN: 2,
+//   MAX: 4
+// };
 MEASURES = {
   MIN: 10,
   MAX: 20
