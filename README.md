@@ -34,13 +34,13 @@ py c2m.py
 <span id="players">
 You'll need a MIDI player with a soundfont installed to play MIDI files. Standard midi players will likely have playback issues due to data overload, the following have been tested to work:
 
-[Soundfont MIDI Player]https://soundfont-midi-player.en.softonic.com/download
+[Soundfont MIDI Player](https://soundfont-midi-player.en.softonic.com)
 
-[MIDI Editor]https://github.com/jingkaimori/midieditor
+[MIDI Editor](https://github.com/jingkaimori/midieditor)
 
 You can convert MIDI files to MP3, WAV, or FLAC with:
 
-https://coolsoft.altervista.org/virtualmidisynth
+[Virtual MIDI Synth](https://coolsoft.altervista.org/virtualmidisynth)
 </span>
 
 [LibreOffice](https://libreoffice.org/) is a good program for CSV files.
