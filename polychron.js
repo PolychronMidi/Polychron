@@ -19,8 +19,8 @@ class MeasureComposer {
     const { MIN, MAX, WEIGHTS } = DIVISIONS;
     return randomWeightedSelection(MIN, MAX, WEIGHTS);
   }
-  composeNote(measure, beatIndex, divisionIndex, beatsPerMeasure) {
-    const rawNote = this.composeRawNote(measure, beatIndex, divisionIndex, beatsPerMeasure);
+  composeNote() {
+    const rawNote = this.composeRawNote();
     const octave = this.setOctave();
     const composedNote = t.Note.midi(`${rawNote}${octave}`);
     if (composedNote === null) {
@@ -28,13 +28,13 @@ class MeasureComposer {
     }
     return composedNote;
   }
-  composeChord(measure, beatIndex, divisionIndex, beatsPerMeasure) {
+  composeChord() {
     const { MIN, MAX, WEIGHTS } = VOICES;
     const voices = randomWeightedSelection(MIN, MAX, WEIGHTS);
     const uniqueNotes = new Set();
     const composedChord = [];
     while (uniqueNotes.size < voices) {
-      const note = this.composeNote(measure, beatIndex, divisionIndex, beatsPerMeasure);
+      const note = this.composeNote();
       if (uniqueNotes.add(note)) {
         composedChord.push({ note });
       }
@@ -201,7 +201,7 @@ class RandomChordComposer extends ChordComposer {
         divisionStartTick = beatStartTick + divisionIndex * ticksPerDivision;
         divisionStartTime = beatStartTime + divisionIndex * secondsPerDivision;
         c.push(logUnit('division'));
-        notes = composer.composeChord(measure, beatIndex, divisionIndex, numerator);
+        notes = composer.composeChord();
         notes.forEach(({ note }) => {
           noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.3, 4);
           c.push({
