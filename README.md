@@ -5,7 +5,7 @@ Polychron aims to:
 
 Current implementation is a relatively simple (although impossible for any human to play) demo of (weighted)random meters, scales, and chords at random divisions. Tuning to 432 hz with [binaural beat](https://search.brave.com/search?q=how+does+binaural+beats+work&source=web&conversation=80d48ba0c8ba0614ef212e&summary=1) effects in the alpha range (8-12hz) have been added (must use headphones for binaural effect). 
 
-Some settings can be customized in `sheet.js`. Timing log markers for each unit can be found in the "marker_t" entries of the CSV file. Log level can be changed in `sheet.js` under LOG, from the default 'measure' value to 'all', 'none', or comma-separated unit names. (If you play the MIDI file with [Soundfont MIDI Player][#players], you can view unit log markers in realtime by clicking the button on the left for 'MIDI text'.)
+Some settings can be customized in `sheet.js`. Timing log markers for each unit can be found in the "marker_t" entries of the CSV file. Log level can be changed in `sheet.js` under LOG, from the default 'measure' value to 'all', 'none', or comma-separated unit names. (If you play the MIDI file with [Soundfont MIDI Player](#players), you can view unit log markers in realtime by clicking the button on the left for 'MIDI text'.)
 
 Polychron is a MIDI composition system that breaks free from traditional MIDI limitations, particularly in the realm of time signatures (A.K.A. meters). The core innovation of Polychron lies in its ability to work with any musical meter through a process called "meter spoofing."
 
@@ -31,7 +31,7 @@ To create the MIDI file from the CSV, run the following (requires Python install
 ```python
 py c2m.py
 ```
-<span id="#players">
+<span id="players">
 You'll need a MIDI player with a soundfont installed to play MIDI files. Standard midi players will likely have playback issues due to data overload, the following have been tested to work:
 
 [Soundfont MIDI Player]https://soundfont-midi-player.en.softonic.com/download
