@@ -62,6 +62,30 @@ midiCompatibleMeter = (numerator, denominator) => {
   }
 };
 
+randomWeightedSelection = (min, max, weights) => {
+  const range = max - min + 1;
+  let expandedWeights = weights;
+  if (weights.length < range) {
+    const weightPerGroup = Math.floor(range / weights.length);
+    const remainder = range % weights.length;
+    expandedWeights = [];
+    weights.forEach((weight, index) => {
+      const count = index < remainder ? weightPerGroup + 1 : weightPerGroup;
+      expandedWeights.push(...Array(count).fill(weight));
+    });
+  }
+  const totalWeight = expandedWeights.reduce((acc, w) => acc + w, 0);
+  const normalizedWeights = expandedWeights.map(w => w / totalWeight);
+  let random = Math.random();
+  let cumulativeProbability = 0;
+  for (let i = 0; i < normalizedWeights.length; i++) {
+    cumulativeProbability += normalizedWeights[i];
+    if (random <= cumulativeProbability) {
+      return i + min;
+    }
+  }
+}
+
 logUnit = (type) => {
   let shouldLog = false;
   if (LOG === 'none') shouldLog = false;
@@ -121,29 +145,7 @@ logUnit = (type) => {
   };
 };
 
-randomWeightedSelection = (min, max, weights) => {
-  const range = max - min + 1;
-  let expandedWeights = weights;
-  if (weights.length < range) {
-    const weightPerGroup = Math.floor(range / weights.length);
-    const remainder = range % weights.length;
-    expandedWeights = [];
-    weights.forEach((weight, index) => {
-      const count = index < remainder ? weightPerGroup + 1 : weightPerGroup;
-      expandedWeights.push(...Array(count).fill(weight));
-    });
-  }
-  const totalWeight = expandedWeights.reduce((acc, w) => acc + w, 0);
-  const normalizedWeights = expandedWeights.map(w => w / totalWeight);
-  let random = Math.random();
-  let cumulativeProbability = 0;
-  for (let i = 0; i < normalizedWeights.length; i++) {
-    cumulativeProbability += normalizedWeights[i];
-    if (random <= cumulativeProbability) {
-      return i + min;
-    }
-  }
-}
+p = pushMultiple = (array, ...items) => {  array.push(...items);  };
 
 composition = `0, 0, header, 1, 1, ${PPQ}\n`;
 composition += "1, 0, start_track\n";

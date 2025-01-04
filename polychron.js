@@ -1,15 +1,10 @@
 u = require('./utils');
 class MeasureComposer {
-  constructor() {}
   setMeter() {
     const { MIN: nMin, MAX: nMax, WEIGHTS: nWeights } = NUMERATOR;
     const { MIN: dMin, MAX: dMax, WEIGHTS: dWeights } = DENOMINATOR;
-    return {
-      meter: [
-        randomWeightedSelection(nMin, nMax, nWeights),
-        randomWeightedSelection(dMin, dMax, dWeights)
-      ]
-    };
+    return {  meter: [  randomWeightedSelection(nMin, nMax, nWeights),
+      randomWeightedSelection(dMin, dMax, dWeights)  ]  };
   }
   setOctave() {
     const { MIN, MAX, WEIGHTS } = OCTAVE;
@@ -20,26 +15,21 @@ class MeasureComposer {
     return randomWeightedSelection(MIN, MAX, WEIGHTS);
   }
   composeNote() {
-    const rawNote = this.composeRawNote();
-    const octave = this.setOctave();
-    const composedNote = t.Note.midi(`${rawNote}${octave}`);
-    if (composedNote === null) {
-      throw new Error(`Invalid note composed: ${rawNote}${octave}`);
-    }
+    const note = this.composeRawNote();
+    const composedNote = t.Note.midi(`${note}${this.setOctave()}`);
+    if (composedNote === null) throw new Error(`Invalid note composed: ${note}${this.setOctave()}`);
     return composedNote;
   }
   composeChord() {
     const { MIN, MAX, WEIGHTS } = VOICES;
     const voices = randomWeightedSelection(MIN, MAX, WEIGHTS);
     const uniqueNotes = new Set();
-    const composedChord = [];
-    while (uniqueNotes.size < voices) {
-      const note = this.composeNote();
-      if (uniqueNotes.add(note)) {
-        composedChord.push({ note });
-      }
-    }
-    return composedChord;
+    return Array(voices).fill().map(() => {
+      let note; do {  note = this.composeNote();
+      } while (uniqueNotes.has(note));
+      uniqueNotes.add(note);
+      return { note };
+    });
   }
 }
 class ScaleComposer extends MeasureComposer {
@@ -51,9 +41,7 @@ class ScaleComposer extends MeasureComposer {
     this.scale = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.scale.notes;
   }
-  composeRawNote() {
-    return this.notes[randomInt(this.notes.length)];
-  }
+  composeRawNote = () => this.notes[randomInt(this.notes.length)];
 }
 class RandomScaleComposer extends ScaleComposer {
   constructor() {
@@ -66,7 +54,7 @@ class RandomScaleComposer extends ScaleComposer {
     const randomRoot = allNotes[randomInt(allNotes.length)];
     this.setScale(randomScale, randomRoot);
   }
-  composeRawNote(measure) {
+  composeRawNote() {
     this.randomScale();
     return super.composeRawNote();
   }
@@ -114,31 +102,18 @@ class RandomChordComposer extends ChordComposer {
   }
 }
 (function csvMaestro() {
-  c.push({
-    type: 'control_c',
-    values: [channelLeft, 8, 0]
-  });
-  c.push({
-    type: 'control_c',
-    values: [channelRight, 8, 127]
-  });
-  c.push({
-    type: 'control_c',
-    values: [channelLeftInverted, 8, 0]
-  });
-  c.push({
-    type: 'control_c',
-    values: [channelRightInverted, 8, 127]
-  });
-  c.push({
-    type: 'pitch_bend_c',
-    values: [channelCenter, tuningPitchBend]
-  });
+  p(c,
+    { type: 'control_c', values: [channelLeft, 8, 0] },
+    { type: 'control_c', values: [channelRight, 8, 127] },
+    { type: 'control_c', values: [channelLeftInverted, 8, 0] },
+    { type: 'control_c', values: [channelRightInverted, 8, 127] },
+    { type: 'pitch_bend_c', values: [channelCenter, tuningPitchBend] }
+  );
   totalMeasures = randomInt(MEASURES.MIN, MEASURES.MAX);
   for (measureIndex = 0; measureIndex < totalMeasures; measureIndex++) {
     randomComposer = randomInt(COMPOSERS.length);
-    composers = (function(s) {  return COMPOSERS.map(composer => 
-      eval(`(function(s) { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}}, s)`)  );  })(s);
+    composers = (function() {  return COMPOSERS.map(composer => 
+      eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
     composer = composers[randomComposer];
     measure = composer.setMeter();
     [numerator, denominator] = measure.meter;
@@ -149,16 +124,10 @@ class RandomChordComposer extends ChordComposer {
     ticksPerBeat = ticksPerMeasure / numerator;
     secondsPerMeasure = ticksPerMeasure / ticksPerSecond;
     secondsPerBeat = ticksPerBeat / ticksPerSecond;
-    c.push({
-      startTick: currentTick,
-      type: 'meter',
-      values: [midiMeter[0], midiMeter[1]]
-    });
-    c.push({
-      startTick: currentTick,
-      type: 'bpm',
-      values: [spoofedTempo]
-    });
+    p(c,
+      { startTick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
+      { startTick: currentTick, type: 'bpm', values: [spoofedTempo] }
+      );
     binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
     centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
     centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
@@ -166,28 +135,16 @@ class RandomChordComposer extends ChordComposer {
     binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
     if (Math.random() > 0.5) {
       invertBinaural = false;
-      c.push({
-        startTick: currentTick,
-        type: 'pitch_bend_c',
-        values: [channelLeft, binauralPitchBendPlus]
-      });
-      c.push({
-        startTick: currentTick,
-        type: 'pitch_bend_c',
-        values: [channelRight, binauralPitchBendMinus]
-      });
+      p(c,
+        { startTick: currentTick, type: 'pitch_bend_c', values: [channelLeft, binauralPitchBendPlus] },
+        { startTick: currentTick, type: 'pitch_bend_c', values: [channelRight, binauralPitchBendMinus] }
+      );
     } else {
       invertBinaural = true;
-      c.push({
-        startTick: currentTick,
-        type: 'pitch_bend_c',
-        values: [channelLeftInverted, binauralPitchBendMinus]
-      });
-      c.push({
-        startTick: currentTick,
-        type: 'pitch_bend_c',
-        values: [channelRightInverted, binauralPitchBendPlus]
-      });
+      p(c,
+        { startTick: currentTick, type: 'pitch_bend_c', values: [channelLeftInverted, binauralPitchBendMinus] },
+        { startTick: currentTick, type: 'pitch_bend_c', values: [channelRightInverted, binauralPitchBendPlus] }
+      );
     }
     c.push(logUnit('measure'));
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
@@ -204,62 +161,32 @@ class RandomChordComposer extends ChordComposer {
         notes = composer.composeChord();
         notes.forEach(({ note }) => {
           noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.3, 4);
-          c.push({
-            startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07,
-            type: 'note_on_c',
-            values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)]
-          });
-          c.push({
-            startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05),
-            values: [channelCenter, note]
-          });
+          p(c,
+            { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)] },
+            { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelCenter, note] }
+          );
           randomVelocity = velocity * randomFloat(.33,.4);
-          if (invertBinaural = false) {
-            c.push({
-              startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07,
-              type: 'note_on_c',
-              values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)]
-            });
-            c.push({
-              startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05),
-              values: [channelLeft, note]
-            });
-            c.push({
-              startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07,
-              type: 'note_on_c',
-              values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)]
-            });
-            c.push({
-              startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05),
-              values: [channelRight, note]
-            });
+          if (invertBinaural === false) {
+            p(c,
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelLeft, note] },
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelRight, note] }
+            );
           } else {
-            c.push({
-              startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07,
-              type: 'note_on_c',
-              values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)]
-            });
-            c.push({
-              startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05),
-              values: [channelLeftInverted, note]
-            });
-            c.push({
-              startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07,
-              type: 'note_on_c',
-              values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)]
-            });
-            c.push({
-              startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05),
-              values: [channelRightInverted, note]
-            });
+            p(c,
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelLeftInverted, note] },
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelRightInverted, note] }
+            );
           }
         });
       }
     }
     currentTick += ticksPerMeasure;  currentTime += secondsPerMeasure;
   }
-  c = c.filter(item => item !== null);
-  c.sort((a, b) => a.startTick - b.startTick);
+  c = c.filter(item => item !== null).sort((a, b) => a.startTick - b.startTick);
   c.forEach(_ => {
     if (_.type === 'marker_t') {
       composition += `1, ${_.startTick}, marker_t, ${_.values.join(' ')}\n`;

@@ -51,6 +51,6 @@ COMPOSERS = [
   // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
   { type: 'randomScale', return: 'new RandomScaleComposer()' },
   // { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
-  { type: 'randomChordProgression', return: 'new RandomChordComposer(s)' }
+  { type: 'randomChordProgression', return: 'new RandomChordComposer()' }
 ];
 SILENT_OUTRO_SECONDS = 5;
