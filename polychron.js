@@ -128,24 +128,6 @@ class RandomChordComposer extends ChordComposer {
       { startTick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { startTick: currentTick, type: 'bpm', values: [spoofedTempo] }
       );
-    binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
-    centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
-    centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
-    binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
-    binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
-    if (Math.random() > 0.5) {
-      invertBinaural = false;
-      p(c,
-        { startTick: currentTick, type: 'pitch_bend_c', values: [channelLeft, binauralPitchBendPlus] },
-        { startTick: currentTick, type: 'pitch_bend_c', values: [channelRight, binauralPitchBendMinus] }
-      );
-    } else {
-      invertBinaural = true;
-      p(c,
-        { startTick: currentTick, type: 'pitch_bend_c', values: [channelLeftInverted, binauralPitchBendMinus] },
-        { startTick: currentTick, type: 'pitch_bend_c', values: [channelRightInverted, binauralPitchBendPlus] }
-      );
-    }
     c.push(logUnit('measure'));
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
       beatStartTick = currentTick + beatIndex * ticksPerBeat;
@@ -153,11 +135,29 @@ class RandomChordComposer extends ChordComposer {
       divisionsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
       ticksPerDivision = ticksPerBeat / divisionsPerBeat;
       secondsPerDivision = secondsPerBeat / divisionsPerBeat;
+      binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
+      centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
+      centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
+      binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
+      binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
       c.push(logUnit('beat'));
       for (divisionIndex = 0; divisionIndex < divisionsPerBeat; divisionIndex++) {
         divisionStartTick = beatStartTick + divisionIndex * ticksPerDivision;
         divisionStartTime = beatStartTime + divisionIndex * secondsPerDivision;
         c.push(logUnit('division'));
+        if (Math.random() > 0.5) {
+          invertBinaural = false;
+          p(c,
+            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeft, binauralPitchBendPlus] },
+            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelRight, binauralPitchBendMinus] }
+          );
+        } else {
+          invertBinaural = true;
+          p(c,
+            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeftInverted, binauralPitchBendMinus] },
+            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelRightInverted, binauralPitchBendPlus] }
+          );
+        }
         notes = composer.composeChord();
         notes.forEach(({ note }) => {
           noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.3, 4);
@@ -165,7 +165,7 @@ class RandomChordComposer extends ChordComposer {
             { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)] },
             { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelCenter, note] }
           );
-          randomVelocity = velocity * randomFloat(.33,.44);
+          randomVelocity = variate(velocity * randomFloat(.33, .44));
           if (invertBinaural === false) {
             p(c,
               { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
@@ -188,14 +188,10 @@ class RandomChordComposer extends ChordComposer {
   }
   c = c.filter(item => item !== null).sort((a, b) => a.startTick - b.startTick);
   c.forEach(_ => {
-    if (_.type === 'marker_t') {
-      composition += `1, ${_.startTick}, marker_t, ${_.values.join(' ')}\n`;
-    } else {
-      composition += `1, ${_.startTick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
-    }
-    trackEndTick = Math.max(_.startTick + ticksPerSecond * SILENT_OUTRO_SECONDS);
+    composition += `1, ${_.startTick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
+    finalTick = _.startTick;
   });
-  composition += `1, ${trackEndTick}, end_track\n`;
+  composition += `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track\n`;
   fs.writeFileSync('output.csv', composition);
   console.log('output.csv created. Track Length:', formatTime(currentTime + SILENT_OUTRO_SECONDS));
 })();

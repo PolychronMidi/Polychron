@@ -1,22 +1,27 @@
 s = require('./sheet');
 t = require("tonal");
 fs = require('fs');
+
 randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
   return Math.random() * (max - min) + min;
 };
+
 randomInt = (min = 0, max) => {
   const floatValue = randomFloat(min, max);
   return Math.floor(floatValue);
 };
-formatTime = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
-  seconds = (seconds % 60).toFixed(4).padStart(7, '0');
-  return `${minutes}:${seconds}`;
-};
+
 allNotes = t.Scale.get("C chromatic").notes.map(note => 
   t.Note.enharmonic(t.Note.get(note))
 );
+
+allScales = t.Scale.names().filter(scaleName => {
+  return allNotes.some(root => {
+    const scale = t.Scale.get(`${root} ${scaleName}`);
+    return scale.notes.length > 0;
+  });
+});
 
 allChords = (function() {
   function getChordNotes(chordType, root) {
@@ -36,13 +41,6 @@ allChords = (function() {
   });
   return Array.from(allChords);
 })();
-
-allScales = t.Scale.names().filter(scaleName => {
-  return allNotes.some(root => {
-    const scale = t.Scale.get(`${root} ${scaleName}`);
-    return scale.notes.length > 0;
-  });
-});
 
 midiCompatibleMeter = (numerator, denominator) => {
   function isPowerOf2(n) {
@@ -85,6 +83,22 @@ randomWeightedSelection = (min, max, weights) => {
     }
   }
 }
+
+variate = (value, boostRange = [0.05, 0.10], deboostRange = boostRange, frequency = 0.05) => {
+  const singleRange = Array.isArray(deboostRange) ? deboostRange : boostRange;
+  const isSingleRange = singleRange.length === 2 && typeof singleRange[0] === 'number' && typeof singleRange[1] === 'number';
+  let factor;
+  if (isSingleRange) {
+    const variation = randomFloat(...singleRange);
+    factor = Math.random() < frequency ? 1 + variation : 1;
+  } else {
+    const range = Math.random() < 0.5 ? boostRange : deboostRange;
+    factor = Math.random() < frequency 
+      ? 1 + randomFloat(...range)
+      : 1;
+  }
+  return value * factor;
+};
 
 logUnit = (type) => {
   let shouldLog = false;
@@ -145,11 +159,17 @@ logUnit = (type) => {
   };
 };
 
+formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  seconds = (seconds % 60).toFixed(4).padStart(7, '0');
+  return `${minutes}:${seconds}`;
+};
+
 p = pushMultiple = (array, ...items) => {  array.push(...items);  };
 
+c = [];
 composition = `0, 0, header, 1, 1, ${PPQ}\n`;
 composition += "1, 0, start_track\n";
-c = [];
 channelCenter = 0;  channelLeft = 1;  channelRight = 2;
 channelLeftInverted = 3;  channelRightInverted = 4; 
 neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
