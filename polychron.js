@@ -165,20 +165,20 @@ class RandomChordComposer extends ChordComposer {
             { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)] },
             { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelCenter, note] }
           );
-          randomVelocity = velocity * randomFloat(.33,.4);
+          randomVelocity = velocity * randomFloat(.33,.44);
           if (invertBinaural === false) {
             p(c,
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelLeft, note] },
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelRight, note] }
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelLeft, note] },
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelRight, note] }
             );
           } else {
             p(c,
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelLeftInverted, note] },
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelRightInverted, note] }
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelLeftInverted, note] },
+              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelRightInverted, note] }
             );
           }
         });
