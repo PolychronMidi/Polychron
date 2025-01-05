@@ -1,6 +1,4 @@
-s = require('./sheet');
-t = require("tonal");
-fs = require('fs');
+s = require('./sheet'); t = require("tonal"); fs = require('fs');
 
 randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
@@ -119,21 +117,23 @@ logUnit = (type) => {
     endTick = currentTick + ticksPerMeasure;
     originalMeter = measure.meter;
     midiMeter = midiMeter;
+    secondsPerBeat = ticksPerBeat / ticksPerSecond;
   }
   else if (type === 'beat') {
     thisUnit = beatIndex + 1;
     unitsPerParent = numerator;
     startTime = currentTime + beatIndex * secondsPerBeat;
     endTime = startTime + secondsPerBeat;
-    startTick = currentTick + beatIndex * ticksPerBeat;
+    startTick = beatStartTick;
     endTick = startTick + ticksPerBeat;
+    secondsPerDivision = secondsPerBeat / divisionsPerBeat;
   }
   else if (type === 'division') {
     thisUnit = divisionIndex + 1;
     unitsPerParent = divisionsPerBeat;
     startTime = currentTime + beatIndex * secondsPerBeat + divisionIndex * secondsPerDivision;
     endTime = startTime + secondsPerDivision;
-    startTick = currentTick + beatIndex * ticksPerBeat + divisionIndex * ticksPerDivision;
+    startTick = divisionStartTick;
     endTick = startTick + ticksPerDivision;
   }
   let meterInfo = '';
@@ -159,21 +159,29 @@ logUnit = (type) => {
   };
 };
 
+timing = () => [ticksPerSecond, secondsPerMeasure] = [spoofedTempo * PPQ / 60, ticksPerMeasure / (spoofedTempo * PPQ / 60)];
+p = pushMultiple = (array, ...items) => {  array.push(...items);  };
+c = [];
+composition = `0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
+finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track\n`;
+
+neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
+centsToTuningFreq = 1200 * Math.log2(TUNING_FREQ / 440);
+tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
+
+binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
+centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
+centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
+binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
+binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
+
+channelCenter = 0;  channelLeft = 1;  channelRight = 2;
+channelLeftInverted = 3;  channelRightInverted = 4;
+currentTick = currentTime = 0;
+velocity = 99;
+
 formatTime = (seconds) => {
   const minutes = Math.floor(seconds / 60);
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
-
-p = pushMultiple = (array, ...items) => {  array.push(...items);  };
-
-c = [];
-composition = `0, 0, header, 1, 1, ${PPQ}\n`;
-composition += "1, 0, start_track\n";
-channelCenter = 0;  channelLeft = 1;  channelRight = 2;
-channelLeftInverted = 3;  channelRightInverted = 4; 
-neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
-centsToTuningFreq = 1200 * Math.log2(TUNING_FREQ / 440);
-tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
-currentTick = currentTime = 0;
-velocity = 99;
