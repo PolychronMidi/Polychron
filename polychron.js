@@ -119,31 +119,22 @@ class RandomChordComposer extends ChordComposer {
     [numerator, denominator] = measure.meter;
     ({ midiMeter, tempoFactor } = midiCompatibleMeter(numerator, denominator));
     spoofedTempo = BASE_TEMPO * tempoFactor;
-    ticksPerSecond = spoofedTempo * PPQ / 60;
     ticksPerMeasure = PPQ * 4 * (midiMeter[0] / midiMeter[1]);
     ticksPerBeat = ticksPerMeasure / numerator;
-    secondsPerMeasure = ticksPerMeasure / ticksPerSecond;
-    secondsPerBeat = ticksPerBeat / ticksPerSecond;
     p(c,
       { startTick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { startTick: currentTick, type: 'bpm', values: [spoofedTempo] }
       );
+    timing();
     c.push(logUnit('measure'));
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
       beatStartTick = currentTick + beatIndex * ticksPerBeat;
-      beatStartTime = currentTime + beatIndex * secondsPerBeat;
       divisionsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
       ticksPerDivision = ticksPerBeat / divisionsPerBeat;
-      secondsPerDivision = secondsPerBeat / divisionsPerBeat;
       binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
-      centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
-      centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
-      binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
-      binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
       c.push(logUnit('beat'));
       for (divisionIndex = 0; divisionIndex < divisionsPerBeat; divisionIndex++) {
         divisionStartTick = beatStartTick + divisionIndex * ticksPerDivision;
-        divisionStartTime = beatStartTime + divisionIndex * secondsPerDivision;
         c.push(logUnit('division'));
         if (Math.random() > 0.5) {
           invertBinaural = false;
@@ -191,7 +182,7 @@ class RandomChordComposer extends ChordComposer {
     composition += `1, ${_.startTick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
     finalTick = _.startTick;
   });
-  composition += `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track\n`;
+  composition += finale();
   fs.writeFileSync('output.csv', composition);
   console.log('output.csv created. Track Length:', formatTime(currentTime + SILENT_OUTRO_SECONDS));
 })();
