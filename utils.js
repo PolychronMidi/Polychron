@@ -1,4 +1,4 @@
-s = require('./sheet'); t = require("tonal"); fs = require('fs');
+require('./sheet'); t = require("tonal"); fs = require('fs');
 
 randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
@@ -45,7 +45,7 @@ midiCompatibleMeter = (numerator, denominator) => {
     return (n & (n - 1)) === 0;
   }
   if (isPowerOf2(denominator)) {
-    return { midiMeter: [numerator, denominator], tempoFactor: 1 };
+    return { midiMeter: [numerator, denominator], bpmFactor: 1 };
   } else {
     const ceilDenominator = 2 ** Math.ceil(Math.log2(denominator));
     const floorDenominator = 2 ** Math.floor(Math.log2(denominator));
@@ -53,8 +53,8 @@ midiCompatibleMeter = (numerator, denominator) => {
     const ceilRatio = numerator / ceilDenominator;
     const floorRatio = numerator / floorDenominator;
     return Math.abs(meterRatio - ceilRatio) < Math.abs(meterRatio - floorRatio) 
-    ? { midiMeter: [numerator, ceilDenominator], tempoFactor: meterRatio / ceilRatio }
-    : { midiMeter: [numerator, floorDenominator], tempoFactor: meterRatio / floorRatio };
+    ? { midiMeter: [numerator, ceilDenominator], bpmFactor: meterRatio / ceilRatio }
+    : { midiMeter: [numerator, floorDenominator], bpmFactor: meterRatio / floorRatio };
   }
 };
 
@@ -108,18 +108,31 @@ logUnit = (type) => {
   }
   if (!shouldLog) return null;
   let thisUnit = 1, startTime = 0, endTime = 0, startTick = 0, endTick = 0, originalMeter = [], midiMeter = null;
+  let meterInfo = '';
   if (type === 'measure') {
     thisUnit = measureIndex + 1;
     unitsPerParent = totalMeasures;
     startTime = currentTime;
+    ticksPerSecond = midiBPM * PPQ / 60;
+    secondsPerMeasure = ticksPerMeasure / (midiBPM * PPQ / 60);
     endTime = currentTime + secondsPerMeasure;
     startTick = currentTick;
     endTick = currentTick + ticksPerMeasure;
     originalMeter = measure.meter;
     midiMeter = midiMeter;
     secondsPerBeat = ticksPerBeat / ticksPerSecond;
-  }
-  else if (type === 'beat') {
+    composerDetails = `${composer.constructor.name} `;
+    if (composer.scale && composer.scale.name) {
+      composerDetails += `${composer.scale.name}`;
+    }
+    if (composer.progression) {
+      progressionSymbols = composer.progression.map(chord => {
+        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
+      }).join(' ');
+      composerDetails += `${progressionSymbols}`;
+    }
+    meterInfo = midiMeter ? `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}` : `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}`;
+  } else if (type === 'beat') {
     thisUnit = beatIndex + 1;
     unitsPerParent = numerator;
     startTime = currentTime + beatIndex * secondsPerBeat;
@@ -127,43 +140,33 @@ logUnit = (type) => {
     startTick = beatStartTick;
     endTick = startTick + ticksPerBeat;
     secondsPerDivision = secondsPerBeat / divisionsPerBeat;
-  }
-  else if (type === 'division') {
+  } else if (type === 'division') {
     thisUnit = divisionIndex + 1;
     unitsPerParent = divisionsPerBeat;
     startTime = currentTime + beatIndex * secondsPerBeat + divisionIndex * secondsPerDivision;
     endTime = startTime + secondsPerDivision;
     startTick = divisionStartTick;
     endTick = startTick + ticksPerDivision;
-  }
-  let meterInfo = '';
-  if (type === 'measure') {
-    let composerDetails = '';
-    composerDetails += `${composer.constructor.name} `;
-    if (composer.scale && composer.scale.name) {
-      composerDetails += `${composer.scale.name}`;
-    }
-    if (composer.progression) {
-      const progressionSymbols = composer.progression.map(chord => {
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails += `${progressionSymbols}`;
-    }
-    meterInfo = midiMeter ? `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}` : `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}`;
+    secondsPerSubdiv = secondsPerDivision / subdivsPerDiv;
+  } else if (type === 'subdivision') {
+    thisUnit = subdivIndex + 1;
+    unitsPerParent = subdivsPerDiv;
+    startTime = currentTime + beatIndex * secondsPerBeat + divisionIndex * secondsPerDivision + subdivIndex * secondsPerSubdiv;
+    endTime = startTime + secondsPerSubdiv;
+    startTick = subdivStartTick;
+    endTick = startTick + ticksPerSubdiv;
   }
   return {
-    startTick: startTick,
+    tick: startTick,
     type: 'marker_t',
-    endTime: endTime,
     values: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
   };
 };
 
-timing = () => [ticksPerSecond, secondsPerMeasure] = [spoofedTempo * PPQ / 60, ticksPerMeasure / (spoofedTempo * PPQ / 60)];
 p = pushMultiple = (array, ...items) => {  array.push(...items);  };
 c = [];
 composition = `0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
-finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track\n`;
+finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
 
 neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
 centsToTuningFreq = 1200 * Math.log2(TUNING_FREQ / 440);

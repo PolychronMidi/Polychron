@@ -1,4 +1,5 @@
-u = require('./utils');
+// Clean minimal code, with direct & clear naming & structure, avoiding distracting comments & empty lines. Global scope used where possible for cleaner simplicity.
+require('./utils');
 class MeasureComposer {
   setMeter() {
     const { MIN: nMin, MAX: nMax, WEIGHTS: nWeights } = NUMERATOR;
@@ -117,70 +118,78 @@ class RandomChordComposer extends ChordComposer {
     composer = composers[randomComposer];
     measure = composer.setMeter();
     [numerator, denominator] = measure.meter;
-    ({ midiMeter, tempoFactor } = midiCompatibleMeter(numerator, denominator));
-    spoofedTempo = BASE_TEMPO * tempoFactor;
+    ({ midiMeter, bpmFactor } = midiCompatibleMeter(numerator, denominator));
+    midiBPM = BPM * bpmFactor;
     ticksPerMeasure = PPQ * 4 * (midiMeter[0] / midiMeter[1]);
     ticksPerBeat = ticksPerMeasure / numerator;
     p(c,
-      { startTick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
-      { startTick: currentTick, type: 'bpm', values: [spoofedTempo] }
+      { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
+      { tick: currentTick, type: 'bpm', values: [midiBPM] }
       );
-    timing();
     c.push(logUnit('measure'));
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
       beatStartTick = currentTick + beatIndex * ticksPerBeat;
       divisionsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
-      ticksPerDivision = ticksPerBeat / divisionsPerBeat;
+      ticksPerDivision = ticksPerBeat / Math.max(1, divisionsPerBeat);
       binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
       c.push(logUnit('beat'));
       for (divisionIndex = 0; divisionIndex < divisionsPerBeat; divisionIndex++) {
         divisionStartTick = beatStartTick + divisionIndex * ticksPerDivision;
+        const { MIN, MAX, WEIGHTS } = SUBDIVS;
+        subdivsPerDiv = randomWeightedSelection(MIN, MAX, WEIGHTS);
+        ticksPerSubdiv = ticksPerDivision / Math.max(1, subdivsPerDiv);
         c.push(logUnit('division'));
         if (Math.random() > 0.5) {
           invertBinaural = false;
           p(c,
-            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeft, binauralPitchBendPlus] },
-            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelRight, binauralPitchBendMinus] }
+            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeft, binauralPitchBendPlus] },
+            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelRight, binauralPitchBendMinus] }
           );
         } else {
           invertBinaural = true;
           p(c,
-            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeftInverted, binauralPitchBendMinus] },
-            { startTick: divisionStartTick, type: 'pitch_bend_c', values: [channelRightInverted, binauralPitchBendPlus] }
+            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeftInverted, binauralPitchBendMinus] },
+            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelRightInverted, binauralPitchBendPlus] }
           );
         }
-        notes = composer.composeChord();
-        notes.forEach(({ note }) => {
-          noteOffTick = divisionStartTick + ticksPerDivision * randomFloat(.3, 4);
-          p(c,
-            { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.07, type: 'note_on_c', values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)] },
-            { startTick: noteOffTick + ticksPerDivision * randomFloat(-.05, .05), values: [channelCenter, note] }
-          );
-          randomVelocity = variate(velocity * randomFloat(.33, .44));
-          if (invertBinaural === false) {
+        for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+          subdivStartTick = divisionStartTick + subdivIndex * ticksPerSubdiv;
+          c.push(logUnit('subdivision'));
+          notes = composer.composeChord();
+          notes.forEach(({ note }) => {
+            useSubdiv = variate(Math.random() > 0.2, [-.3,.3], (.3));
+            sustain = useSubdiv ? randomFloat(Math.max(ticksPerDivision * .5, ticksPerDivision / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))) : randomFloat(ticksPerDivision * .8, (ticksPerBeat * (.3 + Math.random() * .7)));
+            onTick = subdivStartTick + Math.random() * sustain * 0.07;
+            offTick = subdivStartTick + variate(sustain * randomFloat(.3, 4), [0.1, 0.2], [-.05, -0.1], 0.1);
             p(c,
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelLeft, note] },
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelRight, note] }
+              { tick: onTick, type: 'note_on_c', values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)] },
+              { tick: offTick + sustain * randomFloat(-.05, .05), values: [channelCenter, note] }
             );
-          } else {
-            p(c,
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelLeftInverted, note] },
-              { startTick: divisionStartTick + Math.random() * ticksPerDivision * 0.03, type: 'note_on_c', values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-              { startTick: noteOffTick + ticksPerDivision * randomFloat(-.02, .02), values: [channelRightInverted, note] }
-            );
-          }
-        });
+            const randomVelocity = variate(velocity * randomFloat(.33, .44));
+            if (invertBinaural === false) {
+              p(c,
+                { tick: onTick, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelLeft, note] },
+                { tick: onTick, type: 'note_on_c', values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelRight, note] }
+              );
+            } else {
+              p(c,
+                { tick: onTick, type: 'note_on_c', values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelLeftInverted, note] },
+                { tick: onTick, type: 'note_on_c', values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
+                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelRightInverted, note] }
+              );
+            }
+          });
+        }
       }
     }
     currentTick += ticksPerMeasure;  currentTime += secondsPerMeasure;
   }
-  c = c.filter(item => item !== null).sort((a, b) => a.startTick - b.startTick);
-  c.forEach(_ => {
-    composition += `1, ${_.startTick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
-    finalTick = _.startTick;
+  c = c.filter(item => item !== null).sort((a, b) => a.tick - b.tick);  c.forEach(_ => {
+    composition += `1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
+    finalTick = _.tick;
   });
   composition += finale();
   fs.writeFileSync('output.csv', composition);
