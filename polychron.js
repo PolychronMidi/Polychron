@@ -1,5 +1,5 @@
 // Clean minimal code, with direct & clear naming & structure, avoiding distracting comments & empty lines. Global scope used where possible for cleaner simplicity.
-require('./utils');
+require('./stage');
 class MeasureComposer {
   setMeter() {
     const { MIN: nMin, MAX: nMax, WEIGHTS: nWeights } = NUMERATOR;
@@ -128,59 +128,46 @@ class RandomChordComposer extends ChordComposer {
       );
     c.push(logUnit('measure'));
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-      beatStartTick = currentTick + beatIndex * ticksPerBeat;
-      divisionsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
-      ticksPerDivision = ticksPerBeat / Math.max(1, divisionsPerBeat);
-      binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
-      c.push(logUnit('beat'));
-      for (divisionIndex = 0; divisionIndex < divisionsPerBeat; divisionIndex++) {
-        divisionStartTick = beatStartTick + divisionIndex * ticksPerDivision;
-        const { MIN, MAX, WEIGHTS } = SUBDIVS;
-        subdivsPerDiv = randomWeightedSelection(MIN, MAX, WEIGHTS);
-        ticksPerSubdiv = ticksPerDivision / Math.max(1, subdivsPerDiv);
-        c.push(logUnit('division'));
-        if (Math.random() > 0.5) {
-          invertBinaural = false;
-          p(c,
-            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeft, binauralPitchBendPlus] },
-            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelRight, binauralPitchBendMinus] }
-          );
-        } else {
-          invertBinaural = true;
-          p(c,
-            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelLeftInverted, binauralPitchBendMinus] },
-            { tick: divisionStartTick, type: 'pitch_bend_c', values: [channelRightInverted, binauralPitchBendPlus] }
-          );
+      beatStart = currentTick + beatIndex * ticksPerBeat;
+      divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
+      ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
+        if (beatCount % beatsUntilBinauralShift === 0) {
+          binauralFreqOffset = randomFloat(Math.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), Math.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));
+          invertBinaural = !invertBinaural;
+          beatsUntilBinauralShift = randomInt(2, 5);
+          beatCount = 0;
         }
+        p(c,
+          { tick: beatStart, type: 'pitch_bend_c', values: [invertBinaural ? channelLeftInverted : channelLeft, invertBinaural ? binauralPitchBendMinus : binauralPitchBendPlus] },
+          { tick: beatStart, type: 'pitch_bend_c', values: [invertBinaural ? channelRightInverted : channelRight, invertBinaural ? binauralPitchBendPlus : binauralPitchBendMinus] }
+        );
+      c.push(logUnit('beat')); beatCount++;
+      for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+        divStart = beatStart + divIndex * ticksPerDiv;
+        c.push(logUnit('division'));
+        const { MIN, MAX, WEIGHTS } = SUBDIVISIONS;
+        subdivsPerDiv = randomWeightedSelection(MIN, MAX, WEIGHTS);
+        ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
+        useSubdiv = Math.random() < variate(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-          subdivStartTick = divisionStartTick + subdivIndex * ticksPerSubdiv;
+          subdivStart = divStart + subdivIndex * ticksPerSubdiv;
           c.push(logUnit('subdivision'));
           notes = composer.composeChord();
           notes.forEach(({ note }) => {
-            useSubdiv = variate(Math.random() > 0.2, [-.3,.3], (.3));
-            sustain = useSubdiv ? randomFloat(Math.max(ticksPerDivision * .5, ticksPerDivision / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))) : randomFloat(ticksPerDivision * .8, (ticksPerBeat * (.3 + Math.random() * .7)));
-            onTick = subdivStartTick + Math.random() * sustain * 0.07;
-            offTick = subdivStartTick + variate(sustain * randomFloat(.3, 4), [0.1, 0.2], [-.05, -0.1], 0.1);
+            sustain = useSubdiv ? variate(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1) : variate(randomFloat(ticksPerDiv * .8, (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .3], [-.05, -.1], .1);
+            mainOn = subdivStart + variate(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
+            mainSustain = sustain * variate(randomFloat(.9, 1.2));
             p(c,
-              { tick: onTick, type: 'note_on_c', values: [channelCenter, note, velocity + (randomFloat(-.05,.05) * velocity)] },
-              { tick: offTick + sustain * randomFloat(-.05, .05), values: [channelCenter, note] }
+              { tick: mainOn, type: 'note_on_c', values: [channelCenter, note, velocity * (randomFloat(.95, 1.05))] },
+              { tick: mainOn + mainSustain, values: [channelCenter, note] }
             );
             const randomVelocity = variate(velocity * randomFloat(.33, .44));
-            if (invertBinaural === false) {
-              p(c,
-                { tick: onTick, type: 'note_on_c', values: [channelLeft, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelLeft, note] },
-                { tick: onTick, type: 'note_on_c', values: [channelRight, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelRight, note] }
-              );
-            } else {
-              p(c,
-                { tick: onTick, type: 'note_on_c', values: [channelLeftInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelLeftInverted, note] },
-                { tick: onTick, type: 'note_on_c', values: [channelRightInverted, note, randomVelocity + (randomFloat(-.05,.05) * randomVelocity)] },
-                { tick: offTick + sustain * randomFloat(-.02, .02), values: [channelRightInverted, note] }
-              );
-            }
+            p(c,
+              { tick: mainOn + variate(ticksPerSubdiv * Math.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: invertBinaural ? [channelLeftInverted, note, randomVelocity * randomFloat(.97, 1.03)] : [channelLeft, note, randomVelocity * randomFloat(.97, 1.03)] },
+              { tick: mainOn + mainSustain * variate(randomFloat(.96, 1.01)), values: [invertBinaural ? channelLeftInverted : channelLeft, note] },
+              { tick: mainOn + variate(ticksPerSubdiv * Math.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [invertBinaural ? channelRightInverted : channelRight, note, randomVelocity * randomFloat(.97, 1.03)] },
+              { tick: mainOn + mainSustain * variate(randomFloat(.96, 1.01)), values: [invertBinaural ? channelRightInverted : channelRight, note] }
+            );
           });
         }
       }

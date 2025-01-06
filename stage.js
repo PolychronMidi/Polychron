@@ -82,7 +82,7 @@ randomWeightedSelection = (min, max, weights) => {
   }
 }
 
-variate = (value, boostRange = [0.05, 0.10], deboostRange = boostRange, frequency = 0.05) => {
+variate = (value, boostRange = [.05, .10], deboostRange = boostRange, frequency = .05) => {
   const singleRange = Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange = singleRange.length === 2 && typeof singleRange[0] === 'number' && typeof singleRange[1] === 'number';
   let factor;
@@ -90,7 +90,7 @@ variate = (value, boostRange = [0.05, 0.10], deboostRange = boostRange, frequenc
     const variation = randomFloat(...singleRange);
     factor = Math.random() < frequency ? 1 + variation : 1;
   } else {
-    const range = Math.random() < 0.5 ? boostRange : deboostRange;
+    const range = Math.random() < .5 ? boostRange : deboostRange;
     factor = Math.random() < frequency 
       ? 1 + randomFloat(...range)
       : 1;
@@ -137,23 +137,23 @@ logUnit = (type) => {
     unitsPerParent = numerator;
     startTime = currentTime + beatIndex * secondsPerBeat;
     endTime = startTime + secondsPerBeat;
-    startTick = beatStartTick;
+    startTick = beatStart;
     endTick = startTick + ticksPerBeat;
-    secondsPerDivision = secondsPerBeat / divisionsPerBeat;
+    secondsPerDiv = secondsPerBeat / divsPerBeat;
   } else if (type === 'division') {
-    thisUnit = divisionIndex + 1;
-    unitsPerParent = divisionsPerBeat;
-    startTime = currentTime + beatIndex * secondsPerBeat + divisionIndex * secondsPerDivision;
-    endTime = startTime + secondsPerDivision;
-    startTick = divisionStartTick;
-    endTick = startTick + ticksPerDivision;
-    secondsPerSubdiv = secondsPerDivision / subdivsPerDiv;
+    thisUnit = divIndex + 1;
+    unitsPerParent = divsPerBeat;
+    startTime = currentTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv;
+    endTime = startTime + secondsPerDiv;
+    startTick = divStart;
+    endTick = startTick + ticksPerDiv;
+    secondsPerSubdiv = secondsPerDiv / subdivsPerDiv;
   } else if (type === 'subdivision') {
     thisUnit = subdivIndex + 1;
     unitsPerParent = subdivsPerDiv;
-    startTime = currentTime + beatIndex * secondsPerBeat + divisionIndex * secondsPerDivision + subdivIndex * secondsPerSubdiv;
+    startTime = currentTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv + subdivIndex * secondsPerSubdiv;
     endTime = startTime + secondsPerSubdiv;
-    startTick = subdivStartTick;
+    startTick = subdivStart;
     endTick = startTick + ticksPerSubdiv;
   }
   return {
@@ -177,6 +177,7 @@ centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING
 centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
 binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
 binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
+invertBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = 0;
 
 channelCenter = 0;  channelLeft = 1;  channelRight = 2;
 channelLeftInverted = 3;  channelRightInverted = 4;
