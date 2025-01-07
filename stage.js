@@ -1,6 +1,6 @@
 require('./sheet'); require('./backstage'); 
 
-getMidiMeter = (numerator, denominator) => {
+midiSync = () => {
   function isPowerOf2(n) { return (n & (n - 1)) === 0; }
   if (isPowerOf2(denominator)) { midiMeter = [numerator, denominator]; syncFactor = 1; }
   else {

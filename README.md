@@ -11,7 +11,7 @@ Polychron is a MIDI composition system that breaks free from traditional MIDI li
 
 Because MIDI has been around since the 80's, one artifact is that it only allows standard meters like 4/4. (Some less common meters are allowed, but only if their denominator is a power of 2, like 2, 4, 8, 16, etc.)
 
-Using the `getMidiMeter` function allows for playing any meter (yes, even 420/69) within the constraints of MIDI. Here's how it works:
+Using the `midiSync` function allows for playing any meter (yes, even 420/69) within the constraints of MIDI. Here's how it works:
 
 If the denominator is a power of 2 (MIDI compatible meter), it returns the original meter with no changes.
 For denominators that aren't MIDI compatible, it calculates the nearest power of 2.
