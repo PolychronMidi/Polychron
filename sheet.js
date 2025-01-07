@@ -1,3 +1,4 @@
+INSTRUMENT = 'glockenspiel';
 LOG = 'measure';
 TUNING_FREQ = 432;
 BINAURAL = {
@@ -16,16 +17,6 @@ DENOMINATOR = {
   MAX: 11,
   WEIGHTS: [.1, .2, .3, .4, .2, .1, .05, .01]
 };
-DIVISIONS = {
-  MIN: 0,
-  MAX: 11,
-  WEIGHTS: [.1, 2, 2, 1, .4, .2, .04, .03, .02, .02, .01]
-};
-SUBDIVISIONS = {
-  MIN: 0,
-  MAX: 5,
-  WEIGHTS: [.4, 4, 3, .04, .02, .01]
-};
 OCTAVE = {
   MIN: 1,
   MAX: 8,
@@ -36,7 +27,7 @@ VOICES = {
   MAX: 7,
   WEIGHTS: [.15, .3, .25, .07, .04, .03, .02, .01]
 };
-// MEASURES_PER_PHRASE = {
+// SECTIONS = {
 //   MIN: 2,
 //   MAX: 4
 // };
@@ -44,13 +35,23 @@ VOICES = {
 //   MIN: 2,
 //   MAX: 4
 // };
-// SECTIONS = {
+// MEASURES_PER_PHRASE = {
 //   MIN: 2,
 //   MAX: 4
 // };
 MEASURES = {
   MIN: 10,
   MAX: 20
+};
+DIVISIONS = {
+  MIN: 0,
+  MAX: 11,
+  WEIGHTS: [.1, 2, 2, 1, .4, .2, .04, .03, .02, .02, .01]
+};
+SUBDIVISIONS = {
+  MIN: 0,
+  MAX: 5,
+  WEIGHTS: [.4, 4, 3, .04, .02, .01]
 };
 COMPOSERS = [
   // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
@@ -59,3 +60,4 @@ COMPOSERS = [
   { type: 'randomChordProgression', return: 'new RandomChordComposer()' }
 ];
 SILENT_OUTRO_SECONDS = 5;
+INSTRUMENT = getMidiValue('program', INSTRUMENT);

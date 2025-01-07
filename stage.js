@@ -1,4 +1,4 @@
-require('./sheet'); t = require("tonal"); fs = require('fs');
+require('./backstage'); require('./sheet'); t = require("tonal"); fs = require('fs');
 
 randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
@@ -60,18 +60,36 @@ midiCompatibleMeter = (numerator, denominator) => {
 
 randomWeightedSelection = (min, max, weights) => {
   const range = max - min + 1;
-  let expandedWeights = weights;
-  if (weights.length < range) {
-    const weightPerGroup = Math.floor(range / weights.length);
-    const remainder = range % weights.length;
-    expandedWeights = [];
-    weights.forEach((weight, index) => {
-      const count = index < remainder ? weightPerGroup + 1 : weightPerGroup;
-      expandedWeights.push(...Array(count).fill(weight));
-    });
+  let effectiveWeights = weights;
+  if (weights.length !== range) {
+    const firstWeight = weights[0];
+    const lastWeight = weights[weights.length - 1];
+    if (weights.length < range) {
+      const newWeights = [firstWeight];
+      for (let i = 1; i < range - 1; i++) {
+        const fraction = i / (range - 1);
+        const lowerIndex = Math.floor(fraction * (weights.length - 1));
+        const upperIndex = Math.ceil(fraction * (weights.length - 1));
+        const weightDiff = weights[upperIndex] - weights[lowerIndex];
+        const interpolatedWeight = weights[lowerIndex] + (fraction * (weights.length - 1) - lowerIndex) * weightDiff;
+        newWeights.push(interpolatedWeight);
+      }
+      newWeights.push(lastWeight);
+      effectiveWeights = newWeights;
+    } else if (weights.length > range) {
+      effectiveWeights = [firstWeight];
+      const groupSize = Math.floor(weights.length / (range - 1));
+      for (let i = 1; i < range - 1; i++) {
+        const startIndex = i * groupSize;
+        const endIndex = Math.min(startIndex + groupSize, weights.length - 1);
+        const groupSum = weights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0);
+        effectiveWeights.push(groupSum / (endIndex - startIndex));
+      }
+      effectiveWeights.push(lastWeight);
+    }
   }
-  const totalWeight = expandedWeights.reduce((acc, w) => acc + w, 0);
-  const normalizedWeights = expandedWeights.map(w => w / totalWeight);
+  const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
+  const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
   let random = Math.random();
   let cumulativeProbability = 0;
   for (let i = 0; i < normalizedWeights.length; i++) {
@@ -175,12 +193,12 @@ tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq /
 binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
 centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
 centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
-binauralPitchBendPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
-binauralPitchBendMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
-invertBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = 0;
+binauralPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
+binauralMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
+flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = 0;
 
-channelCenter = 0;  channelLeft = 1;  channelRight = 2;
-channelLeftInverted = 3;  channelRightInverted = 4;
+centerCH = 0;  leftCH = 1;  rightCH = 2;
+leftCH2 = 3;  rightCH2 = 4;
 currentTick = currentTime = 0;
 velocity = 99;
 
