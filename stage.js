@@ -125,7 +125,6 @@ logUnit = (type) => {
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
   if (!shouldLog) return null;
-  let thisUnit = 1, startTime = 0, endTime = 0, startTick = 0, endTick = 0, originalMeter = [], midiMeter = null;
   let meterInfo = '';
   if (type === 'measure') {
     thisUnit = measureIndex + 1;
@@ -136,8 +135,7 @@ logUnit = (type) => {
     endTime = currentTime + secondsPerMeasure;
     startTick = currentTick;
     endTick = currentTick + ticksPerMeasure;
-    originalMeter = measure.meter;
-    midiMeter = midiMeter;
+    originalMeter = [numerator, denominator];
     secondsPerBeat = ticksPerBeat / ticksPerSecond;
     composerDetails = `${composer.constructor.name} `;
     if (composer.scale && composer.scale.name) {
