@@ -4,7 +4,7 @@ class MeasureComposer {
   setMeter() {
     const { MIN: nMin, MAX: nMax, WEIGHTS: nWeights } = NUMERATOR;
     const { MIN: dMin, MAX: dMax, WEIGHTS: dWeights } = DENOMINATOR;
-    return {  meter: [  randomWeightedSelection(nMin, nMax, nWeights), randomWeightedSelection(dMin, dMax, dWeights)  ]  };
+    return [ randomWeightedSelection(nMin, nMax, nWeights), randomWeightedSelection(dMin, dMax, dWeights) ];
   }
   setOctave() {
     const { MIN, MAX, WEIGHTS } = OCTAVE;
@@ -65,8 +65,7 @@ class ChordComposer extends MeasureComposer {
   }
   setProgression(progression) {
     const validatedProgression = progression.filter(chordSymbol => {
-      if (!allChords.includes(chordSymbol)) {
-        console.warn(`Invalid chord symbol: ${chordSymbol}`);
+      if (!allChords.includes(chordSymbol)) {  console.warn(`Invalid chord symbol: ${chordSymbol}`);
         return false;
       }
       return true;
@@ -101,8 +100,7 @@ class RandomChordComposer extends ChordComposer {
   }
 }
 (function csvMaestro() {
-  p(c, 
-    ...['control_c', 'program_c'].flatMap(type => [
+  p(c,  ...['control_c', 'program_c'].flatMap(type => [
       { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type === 'control_c' ? [8, 0] : [INSTRUMENT])] },
       { type, values: [flipBinaural ? rightCH2 : rightCH, ...(type === 'control_c' ? [8, 127] : [INSTRUMENT])] },      
       { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])] }
@@ -113,11 +111,10 @@ class RandomChordComposer extends ChordComposer {
     composers = (function() {  return COMPOSERS.map(composer => 
       eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
     composer = composers[randomComposer];
-    measure = composer.setMeter();
-    [numerator, denominator] = measure.meter;
+    [numerator, denominator] = composer.setMeter();
     ({ midiMeter, bpmFactor } = midiCompatibleMeter(numerator, denominator));
     midiBPM = BPM * bpmFactor;
-    ticksPerMeasure = PPQ * 4 * (midiMeter[0] / midiMeter[1]);
+    ticksPerMeasure = PPQ * 4 * (numerator / denominator) * bpmFactor;
     ticksPerBeat = ticksPerMeasure / numerator;
     c.push(logUnit('measure'));
     p(c,
