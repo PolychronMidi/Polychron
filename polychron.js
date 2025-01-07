@@ -82,7 +82,7 @@ class RandomChordComposer extends ChordComposer {
       eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
-    ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = getMidiMeter(numerator, denominator));
+    ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
     c.push(logUnit('measure'));
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
@@ -91,9 +91,9 @@ class RandomChordComposer extends ChordComposer {
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
       beatStart = currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
         if (beatCount % beatsUntilBinauralShift === 0) {  beatCount = 0;
-          binauralFreqOffset = randomFloat(Math.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), Math.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));
           flipBinaural = !flipBinaural;
           beatsUntilBinauralShift = randomInt(2, 5);
+          binauralFreqOffset = randomFloat(Math.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), Math.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));
         }
         p(c,
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [leftCH2, binauralMinus] : [leftCH, binauralPlus]] },
