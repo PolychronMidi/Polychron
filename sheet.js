@@ -27,6 +27,7 @@ VOICES = {
   MAX: 7,
   WEIGHTS: [.15, .3, .25, .07, .04, .03, .02, .01]
 };
+// TODO: implement motifs, phrases, sections, and section types (introduction, exposition, development, conclusion, fugue).
 // SECTIONS = {
 //   MIN: 2,
 //   MAX: 4
@@ -60,4 +61,3 @@ COMPOSERS = [
   { type: 'randomChordProgression', return: 'new RandomChordComposer()' }
 ];
 SILENT_OUTRO_SECONDS = 5;
-INSTRUMENT = getMidiValue('program', INSTRUMENT);

@@ -1,28 +1,18 @@
 // Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity.
 require('./stage');
 class MeasureComposer {
-  setMeter() {
-    const { MIN: nMin, MAX: nMax, WEIGHTS: nWeights } = NUMERATOR;
-    const { MIN: dMin, MAX: dMax, WEIGHTS: dWeights } = DENOMINATOR;
-    return [ randomWeightedSelection(nMin, nMax, nWeights), randomWeightedSelection(dMin, dMax, dWeights) ];
-  }
-  setOctave() {
-    const { MIN, MAX, WEIGHTS } = OCTAVE;
-    return randomWeightedSelection(MIN, MAX, WEIGHTS);
-  }
-  setDivisions() {
-    const { MIN, MAX, WEIGHTS } = DIVISIONS;
-    return randomWeightedSelection(MIN, MAX, WEIGHTS);
-  }
+  setMeter() {const {MIN:a,MAX:b,WEIGHTS:c}=NUMERATOR; const {MIN:x,MAX:y,WEIGHTS:z}=DENOMINATOR; 
+  return [ r(a,b,c), r(x,y,z) ]; }
+  setOctave() {const { MIN, MAX, WEIGHTS } = OCTAVE; return r(MIN, MAX, WEIGHTS);}
+  setDivisions() {const { MIN, MAX, WEIGHTS } = DIVISIONS; return r(MIN, MAX, WEIGHTS);}
   composeNote() {
     const note = this.composeRawNote();
-    const composedNote = t.Note.midi(`${note}${this.setOctave()}`);
-    if (composedNote === null) throw new Error(`Invalid note composed: ${note}${this.setOctave()}`);
-    return composedNote;
+    const midiNote = t.Note.midi(`${note}${this.setOctave()}`);
+    if (midiNote === null) throw new Error(`Invalid note composed: ${note}${this.setOctave()}`);
+    return midiNote;
   }
   composeChord() {
-    const { MIN, MAX, WEIGHTS } = VOICES;
-    const voices = randomWeightedSelection(MIN, MAX, WEIGHTS);
+    const { MIN, MAX, WEIGHTS } = VOICES; const voices = r(MIN, MAX, WEIGHTS);
     const uniqueNotes = new Set();
     return Array(voices).fill().map(() => {
       let note; do {  note = this.composeNote();
@@ -32,10 +22,7 @@ class MeasureComposer {
   });  }
 }
 class ScaleComposer extends MeasureComposer {
-  constructor(scaleName, root) {
-    super();
-    this.setScale(scaleName, root);
-  }
+  constructor(scaleName, root) {  super();  this.setScale(scaleName, root);  }
   setScale(scaleName, root) {
     this.scale = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.scale.notes;
@@ -43,26 +30,16 @@ class ScaleComposer extends MeasureComposer {
   composeRawNote = () => this.notes[randomInt(this.notes.length)];
 }
 class RandomScaleComposer extends ScaleComposer {
-  constructor() {
-    super('', '');
-    this.scales = t.Scale.names();
-    this.randomScale();
-  }
+  constructor() {  super('', '');  this.scales = t.Scale.names();  this.randomScale();  }
   randomScale() {
     const randomScale = allScales[randomInt(allScales.length)];
     const randomRoot = allNotes[randomInt(allNotes.length)];
     this.setScale(randomScale, randomRoot);
   }
-  composeRawNote() {
-    this.randomScale();
-    return super.composeRawNote();
-  }
+  composeRawNote() {  this.randomScale();  return super.composeRawNote();  }
 }
 class ChordComposer extends MeasureComposer {
-  constructor(progression) {
-    super();
-    this.setProgression(progression);
-  }
+  constructor(progression) {  super();  this.setProgression(progression);  }
   setProgression(progression) {
     const validatedProgression = progression.filter(chordSymbol => {
       if (!allChords.includes(chordSymbol)) {  console.warn(`Invalid chord symbol: ${chordSymbol}`);
@@ -70,8 +47,7 @@ class ChordComposer extends MeasureComposer {
       }
       return true;
     });
-    this.progression = validatedProgression.map(t.Chord.get);
-    this.currentChordIndex = 0;
+    this.progression = validatedProgression.map(t.Chord.get); this.currentChordIndex = 0;
   }
   composeRawNote() {
     const chord = this.progression[this.currentChordIndex];
@@ -81,10 +57,7 @@ class ChordComposer extends MeasureComposer {
   }
 }
 class RandomChordComposer extends ChordComposer {
-  constructor() {
-    super([]);
-    this.randomProgression();
-  }
+  constructor() {  super([]);  this.randomProgression();  }
   randomProgression() {
     const progressionLength = randomInt(3, 8);
     const randomProgression = [];
@@ -94,10 +67,7 @@ class RandomChordComposer extends ChordComposer {
     }
     this.setProgression(randomProgression);
   }
-  composeRawNote() {
-    this.randomProgression();
-    return super.composeRawNote();
-  }
+  composeRawNote() {  this.randomProgression();  return super.composeRawNote();  }
 }
 (function csvMaestro() {
   p(c,  ...['control_c', 'program_c'].flatMap(type => [
@@ -112,10 +82,7 @@ class RandomChordComposer extends ChordComposer {
       eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
-    ({ midiMeter, bpmFactor } = midiCompatibleMeter(numerator, denominator));
-    midiBPM = BPM * bpmFactor;
-    ticksPerMeasure = PPQ * 4 * (numerator / denominator) * bpmFactor;
-    ticksPerBeat = ticksPerMeasure / numerator;
+    ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = getMidiMeter(numerator, denominator));
     c.push(logUnit('measure'));
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
@@ -136,7 +103,7 @@ class RandomChordComposer extends ChordComposer {
             balanceOffset = randomInt(11);
             leftOffset = Math.min(0, balanceOffset + randomInt(11));
             rightOffset = Math.max(127, 127 - balanceOffset - randomInt(11));
-            centerOffset = 64 + Math.round(variate(balanceOffset / 2)) * (Math.random() < 0.5 ? -1 : 1);
+            centerOffset = 64 + Math.round(v(balanceOffset / 2)) * (Math.random() < 0.5 ? -1 : 1);
             _ = { tick: beatStart, type: 'control_c' };
             return [
               { ..._, values: [flipBinaural ? leftCH2 : leftCH, 8, leftOffset] },
@@ -148,20 +115,20 @@ class RandomChordComposer extends ChordComposer {
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);
-        subdivsPerDiv = randomWeightedSelection(MIN, MAX, WEIGHTS);
+        subdivsPerDiv = r(MIN, MAX, WEIGHTS);
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
-        useSubdiv = Math.random() < variate(.3, [-.2, .2], .3);
+        useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart = divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
           composer.composeChord().forEach(({ note }) => {
-            on = subdivStart + variate(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
-            subdivSustain = variate(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1);
-            divSustain = variate(randomFloat(ticksPerDiv * .8, (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .3], [-.05, -.1], .1);
-            sustain = (useSubdiv ? subdivSustain : divSustain) * variate(randomFloat(.9, 1.2));
-            binauralVelocity = variate(velocity * randomFloat(.33, .44));
+            on = subdivStart + v(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
+            subdivSustain = v(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1);
+            divSustain = v(randomFloat(ticksPerDiv * .8, (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .3], [-.05, -.1], .1);
+            sustain = (useSubdiv ? subdivSustain : divSustain) * v(randomFloat(.9, 1.2));
+            binauralVelocity = v(velocity * randomFloat(.33, .44));
             p(c,  ...['C', 'L', 'R'].map(side => [
-                { tick: side === 'C' ? on : on + variate(ticksPerSubdiv * Math.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note, side === 'C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
-                { tick: on + sustain * (side === 'C' ? 1 : variate(randomFloat(.96, 1.01))), values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note] }
+                { tick: side === 'C' ? on : on + v(ticksPerSubdiv * Math.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note, side === 'C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
+                { tick: on + sustain * (side === 'C' ? 1 : v(randomFloat(.96, 1.01))), values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note] }
             ]).flat()  );
           });
         }
@@ -174,5 +141,5 @@ class RandomChordComposer extends ChordComposer {
     finalTick = _.tick;
   });
   composition += finale();  fs.writeFileSync('output.csv', composition);
-  console.log('output.csv created. Track Length:', formatTime(currentTime + SILENT_OUTRO_SECONDS));
+  console.log('output.csv created. Track Length:', finalTime);
 })();

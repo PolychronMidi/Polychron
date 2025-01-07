@@ -159,3 +159,74 @@ getMidiValue = (category, name) => {
   const item = midiData[category].find(item => item.name.toLowerCase() === name.toLowerCase());
   return item ? item.number : null;
 };
+INSTRUMENT = getMidiValue('program', INSTRUMENT);
+
+
+randomFloat = (min = 0, max) => {
+  if (max === undefined) { max = min; min = 0; }
+  return Math.random() * (max - min) + min;
+};
+
+randomInt = (min = 0, max) => {
+  const floatValue = randomFloat(min, max);
+  return Math.floor(floatValue);
+};
+
+formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  seconds = (seconds % 60).toFixed(4).padStart(7, '0');
+  return `${minutes}:${seconds}`;
+};
+
+
+neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
+centsToTuningFreq = 1200 * Math.log2(TUNING_FREQ / 440);
+tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
+
+binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
+centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING_FREQ);
+centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
+binauralPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
+binauralMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
+flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = 0;
+
+centerCH = 0;  leftCH = 1;  rightCH = 2;
+leftCH2 = 3;  rightCH2 = 4;
+velocity = 99;
+currentTick = currentTime = 0;
+composition = `0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
+finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
+fs = require('fs');
+
+
+t = require("tonal");
+
+allNotes = t.Scale.get("C chromatic").notes.map(note => 
+  t.Note.enharmonic(t.Note.get(note))
+);
+
+allScales = t.Scale.names().filter(scaleName => {
+  return allNotes.some(root => {
+    const scale = t.Scale.get(`${root} ${scaleName}`);
+    return scale.notes.length > 0;
+  });
+});
+
+allChords = (function() {
+  function getChordNotes(chordType, root) {
+    const chord = t.Chord.get(`${root} ${chordType}`);
+    if (!chord.empty && chord.symbol) {
+      return { symbol: chord.symbol, notes: chord.notes };
+    }
+  }
+  const allChords = new Set();
+  t.ChordType.all().forEach(chordType => {
+    allNotes.forEach(root => {
+      const chord = getChordNotes(chordType.name, root);
+      if (chord) {
+        allChords.add(chord.symbol);
+      }
+    });
+  });
+  return Array.from(allChords);
+})();
