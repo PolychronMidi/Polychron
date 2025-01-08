@@ -51,7 +51,7 @@ DIVISIONS = {
 };
 SUBDIVISIONS = {
   MIN: 0,
-  MAX: 7,
+  MAX: 15,
   WEIGHTS: [.4, 4, 3, .04, .02, .01]
 };
 COMPOSERS = [

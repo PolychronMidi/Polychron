@@ -5,6 +5,9 @@ class MeasureComposer {
   return [ r(a,b,c), r(x,y,z) ]; }
   setOctave() {const { MIN, MAX, WEIGHTS } = OCTAVE; return r(MIN, MAX, WEIGHTS);}
   setDivisions() {const { MIN, MAX, WEIGHTS } = DIVISIONS; return r(MIN, MAX, WEIGHTS);}
+  setRhythm(length, probability = .5) {
+    return t.RhythmPattern.random(length, probability);
+  }
   composeNote() {
     const note = this.composeRawNote();
     const midiNote = t.Note.midi(`${note}${this.setOctave()}`);
@@ -30,7 +33,7 @@ class ScaleComposer extends MeasureComposer {
   composeRawNote = () => this.notes[randomInt(this.notes.length)];
 }
 class RandomScaleComposer extends ScaleComposer {
-  constructor() {  super('', '');  this.scales = t.Scale.names();  this.randomScale();  }
+  constructor() {  super('', '');  this.randomScale();  }
   randomScale() {
     const randomScale = allScales[randomInt(allScales.length)];
     const randomRoot = allNotes[randomInt(allNotes.length)];
@@ -91,9 +94,9 @@ class RandomModeComposer extends ModeComposer {
 }
 (function csvMaestro() {
   p(c,  ...['control_c', 'program_c'].flatMap(type => [
-      { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type === 'control_c' ? [8, 0] : [INSTRUMENT])] },
-      { type, values: [flipBinaural ? rightCH2 : rightCH, ...(type === 'control_c' ? [8, 127] : [INSTRUMENT])] },      
-      { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])] }
+    { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type === 'control_c' ? [10, 0] : [INSTRUMENT])] },
+    { type, values: [flipBinaural ? rightCH2 : rightCH, ...(type === 'control_c' ? [10, 127] : [INSTRUMENT])] },      
+    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])] }
   ])  );
   totalMeasures = randomInt(MEASURES.MIN, MEASURES.MAX);
   for (measureIndex = 0; measureIndex < totalMeasures; measureIndex++) {
@@ -103,12 +106,13 @@ class RandomModeComposer extends ModeComposer {
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
-    c.push(logUnit('measure', composer));
+    c.push(logUnit('measure'));
+    beatRhythm = composer.setRhythm(numerator, v(.97,[-.3,.3],.2));
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
       );
-    for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
+    for (beatIndex = 0; beatIndex < numerator; beatIndex++) { 
       beatStart = currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
         if (beatCount % beatsUntilBinauralShift === 0) {  beatCount = 0;
           flipBinaural = !flipBinaural;
@@ -119,39 +123,47 @@ class RandomModeComposer extends ModeComposer {
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [leftCH2, binauralMinus] : [leftCH, binauralPlus]] },
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [rightCH2, binauralPlus] : [rightCH, binauralMinus]] }
         );
-        p(c,  ...['control_c'].flatMap(() => {
-            balanceOffset = randomInt(11);
-            leftOffset = Math.min(0, balanceOffset + randomInt(11));
-            rightOffset = Math.max(127, 127 - balanceOffset - randomInt(11));
-            centerOffset = 64 + Math.round(v(balanceOffset / 2)) * (Math.random() < 0.5 ? -1 : 1);
-            _ = { tick: beatStart, type: 'control_c' };
-            return [
-              { ..._, values: [flipBinaural ? leftCH2 : leftCH, 8, leftOffset] },
-              { ..._, values: [flipBinaural ? rightCH2 : rightCH, 8, rightOffset] },
-              { ..._, values: [centerCH, 8, centerOffset] }
-        ];  })  );
+        if (Math.random() > .7) { p(c,  ...['control_c'].flatMap(() => {
+          balanceOffset = randomInt(33);
+          sideBias = randomInt(-11,11);
+          leftOffset = Math.min(127,Math.max(0, balanceOffset + randomInt(11) + sideBias));
+          rightOffset = Math.min(127,Math.max(0, 127 - balanceOffset - randomInt(11) + sideBias));
+          centerOffset = Math.min(127,(Math.max(0, 64 + Math.round(v(balanceOffset / 2)) * (Math.random() < 0.5 ? -1 : 1) + sideBias)));
+          _ = { tick: beatStart, type: 'control_c' };
+          return [
+            { ..._, values: [flipBinaural ? leftCH2 : leftCH, 10, leftOffset] },
+            { ..._, values: [flipBinaural ? rightCH2 : rightCH, 10, rightOffset] },
+            { ..._, values: [centerCH, 10, centerOffset] }
+        ];  })  );  }
         divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
+        divRhythm = composer.setRhythm(divsPerBeat, v(.9,[-.3,.3],.3));
         ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);
         subdivsPerDiv = r(MIN, MAX, WEIGHTS);
+        subdivRhythm = composer.setRhythm(subdivsPerDiv, v(.6,[-.3,.3],.3));
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
         useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart = divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
-          composer.composeChord().forEach(({ note }) => {
-            on = subdivStart + v(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
-            subdivSustain = v(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1);
-            divSustain = v(randomFloat(ticksPerDiv * .8, (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .3], [-.05, -.1], .1);
-            sustain = (useSubdiv ? subdivSustain : divSustain) * v(randomFloat(.9, 1.2));
-            binauralVelocity = v(velocity * randomFloat(.33, .44));
-            p(c,  ...['C', 'L', 'R'].map(side => [
-                { tick: side === 'C' ? on : on + v(ticksPerSubdiv * Math.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note, side === 'C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
-                { tick: on + sustain * (side === 'C' ? 1 : v(randomFloat(.96, 1.01))), values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note] }
-            ]).flat()  );
-          });
+          if (beatRhythm[beatIndex] === 0 && divRhythm[divIndex] === 0 && subdivRhythm[subdivIndex] === 0 ) {
+          composer.composeChord().forEach(({ note }) => {  noteCount++;
+          if (noteCount % notesUntil === 0 || beatCount === randomInt(5)) {  noteCount = 0;
+            notesUntil = Math.max(10,randomInt(3, 30) / Math.min(20,(divsPerBeat * subdivsPerDiv)));
+          } else {
+          on = subdivStart + v(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
+          subdivSustain = v(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1);
+          divSustain = v(randomFloat(ticksPerDiv * .8, (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .3], [-.05, -.1], .1);
+          sustain = (useSubdiv ? subdivSustain : divSustain) * v(randomFloat(.9, 1.2));
+          binauralVelocity = v(velocity * randomFloat(.33, .44));
+          p(c,  ...['C', 'L', 'R'].map(side => [
+            { tick: side === 'C' ? on : on + v(ticksPerSubdiv * Math.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note, side === 'C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
+            { tick: on + sustain * (side === 'C' ? 1 : v(randomFloat(.96, 1.01))), values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note] }
+          ]).flat()  );
         }
+          });
+        }}
       }
     }
     currentTick += ticksPerMeasure;  currentTime += secondsPerMeasure;
