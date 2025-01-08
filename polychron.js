@@ -1,12 +1,20 @@
 // Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity.
 require('./stage');
-class MeasureComposer {
+class RhythmComposer {
+  onsets(numbers) { return t.RhythmPattern.onsets(numbers); }
+  random(length, probabilityOfOn = 0.5) { return t.RhythmPattern.random(length, probabilityOfOn - 1); }
+  probability(probabilities) { return t.RhythmPattern.probability(probabilities); }
+  euclid(length, numberOfOn) { return t.RhythmPattern.euclid(length, numberOfOn); }
+  rotate(pattern, rotationsRight) { return t.RhythmPattern.rotate(pattern, rotationsRight); }
+}
+class MeasureComposer extends RhythmComposer {
   setMeter() {const {MIN:a,MAX:b,WEIGHTS:c}=NUMERATOR; const {MIN:x,MAX:y,WEIGHTS:z}=DENOMINATOR; 
   return [ r(a,b,c), r(x,y,z) ]; }
   setOctave() {const { MIN, MAX, WEIGHTS } = OCTAVE; return r(MIN, MAX, WEIGHTS);}
   setDivisions() {const { MIN, MAX, WEIGHTS } = DIVISIONS; return r(MIN, MAX, WEIGHTS);}
-  setRhythm(length, probability = .5) {
-    return t.RhythmPattern.random(length, probability);
+  setRhythm(method, ...args) {
+    if (!this[method] || typeof this[method] !== 'function') {throw new Error(`Unknown rhythm method: ${method}`);}
+    return this[method](...args);
   }
   composeNote() {
     const note = this.composeRawNote();
@@ -107,7 +115,7 @@ class RandomModeComposer extends ModeComposer {
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
     c.push(logUnit('measure'));
-    beatRhythm = composer.setRhythm(numerator, v(.97,[-.3,.3],.2));
+    beatRhythm = Math.random < .6 ? composer.setRhythm('euclid', numerator, closestDivisor(numerator, randomInt(2,3))) : composer.setRhythm('random',numerator, v(.97,[-.3,.3],.2));
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
@@ -136,21 +144,21 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
-        divRhythm = composer.setRhythm(divsPerBeat, v(.9,[-.3,.3],.3));
+        divRhythm = Math.random < .8 ? composer.setRhythm('euclid', divsPerDiv, closestDivisor(divsPerDiv, randomInt(2,3))) : composer.setRhythm('random',divsPerBeat, v(.9,[-.3,.3],.3));
         ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);
         subdivsPerDiv = r(MIN, MAX, WEIGHTS);
-        subdivRhythm = composer.setRhythm(subdivsPerDiv, v(.6,[-.3,.3],.3));
+        subdivRhythm = Math.random < .9 ? composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, randomInt(2,3))) : composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3));
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
         useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart = divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
-          if (beatRhythm[beatIndex] === 0 && divRhythm[divIndex] === 0 && subdivRhythm[subdivIndex] === 0 ) {
+          if (beatRhythm[beatIndex] === 1 && divRhythm[divIndex] === 1 && subdivRhythm[subdivIndex] === 1 ) {
           composer.composeChord().forEach(({ note }) => {  noteCount++;
           if (noteCount % notesUntil === 0 || beatCount === randomInt(5)) {  noteCount = 0;
-            notesUntil = Math.max(10,randomInt(3, 30) / Math.min(20,(divsPerBeat * subdivsPerDiv)));
+            notesUntil = Math.round(Math.max(10,randomInt(3, 30) / Math.min(20,(divsPerBeat * subdivsPerDiv))));
           } else {
           on = subdivStart + v(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
           subdivSustain = v(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1);
