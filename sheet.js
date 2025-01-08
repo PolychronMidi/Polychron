@@ -46,12 +46,12 @@ MEASURES = {
 };
 DIVISIONS = {
   MIN: 0,
-  MAX: 15,
+  MAX: 10,
   WEIGHTS: [.1, 2, 2, 1, .4, .2, .04, .03, .02, .02, .01]
 };
 SUBDIVISIONS = {
   MIN: 0,
-  MAX: 15,
+  MAX: 10,
   WEIGHTS: [.4, 4, 3, .04, .02, .01]
 };
 COMPOSERS = [
