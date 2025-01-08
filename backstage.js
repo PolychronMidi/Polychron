@@ -190,6 +190,8 @@ binauralPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100
 binauralMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
 flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = 0;
 
+notesUntil = noteCount = 0;
+
 centerCH = 0;  leftCH = 1;  rightCH = 2;
 leftCH2 = 3;  rightCH2 = 4;
 velocity = 99;

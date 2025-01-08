@@ -81,7 +81,7 @@ v = (value, boostRange = [.05, .10], deboostRange = boostRange, frequency = .05)
 
 p = pushMultiple = (array, ...items) => {  array.push(...items);  };
 c = csvRows = [];
-logUnit = (type, composer) => {
+logUnit = (type) => {
   let shouldLog = false;
   if (LOG === 'none') shouldLog = false;
   else if (LOG === 'all') shouldLog = true;
@@ -113,7 +113,7 @@ logUnit = (type, composer) => {
     } else if (composer.mode && composer.mode.name) {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
-    meterInfo = midiMeter ? `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}` : `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}`;
+    meterInfo = midiMeter[1] === originalMeter[1] ? `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}` : `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
   } else if (type === 'beat') {
     thisUnit = beatIndex + 1;
     unitsPerParent = numerator;
