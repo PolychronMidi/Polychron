@@ -22,7 +22,7 @@ class MeasureComposer {
   });  }
 }
 class ScaleComposer extends MeasureComposer {
-  constructor(scaleName, root) {  super();  this.setScale(scaleName, root);  }
+  constructor(scaleName, root) {  super(); this.root = root; this.setScale(scaleName, root);  }
   setScale(scaleName, root) {
     this.scale = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.scale.notes;
@@ -69,6 +69,26 @@ class RandomChordComposer extends ChordComposer {
   }
   composeRawNote() {  this.randomProgression();  return super.composeRawNote();  }
 }
+class ModeComposer extends MeasureComposer {
+  constructor(modeName, root) {  super(); this.root = root; this.setMode(modeName, root);  }
+  setMode(modeName, root) {
+    this.mode = t.Mode.get(modeName);
+    this.notes = t.Mode.notes(this.mode, root);
+  }
+  composeRawNote = () => this.notes[randomInt(this.notes.length)];
+}
+class RandomModeComposer extends ModeComposer {
+  constructor() {
+    super('', '');
+    this.randomMode();
+  }
+  randomMode() {
+    const randomMode = allModes[randomInt(allModes.length)];
+    const [root, modeName] = randomMode.split(' ');
+    this.root = root; this.setMode(modeName, root);    
+  }
+  composeRawNote() {  this.randomMode();  return super.composeRawNote();  }
+}
 (function csvMaestro() {
   p(c,  ...['control_c', 'program_c'].flatMap(type => [
       { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type === 'control_c' ? [8, 0] : [INSTRUMENT])] },
@@ -83,7 +103,7 @@ class RandomChordComposer extends ChordComposer {
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
-    c.push(logUnit('measure'));
+    c.push(logUnit('measure', composer));
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }

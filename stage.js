@@ -81,7 +81,7 @@ v = (value, boostRange = [.05, .10], deboostRange = boostRange, frequency = .05)
 
 p = pushMultiple = (array, ...items) => {  array.push(...items);  };
 c = csvRows = [];
-logUnit = (type) => {
+logUnit = (type, composer) => {
   let shouldLog = false;
   if (LOG === 'none') shouldLog = false;
   else if (LOG === 'all') shouldLog = true;
@@ -104,13 +104,14 @@ logUnit = (type) => {
     secondsPerBeat = ticksPerBeat / ticksPerSecond;
     composerDetails = `${composer.constructor.name} `;
     if (composer.scale && composer.scale.name) {
-      composerDetails += `${composer.scale.name}`;
-    }
-    if (composer.progression) {
+      composerDetails += `${composer.root} ${composer.scale.name}`;
+    } else if (composer.progression) {
       progressionSymbols = composer.progression.map(chord => {
         return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
       }).join(' ');
       composerDetails += `${progressionSymbols}`;
+    } else if (composer.mode && composer.mode.name) {
+      composerDetails += `${composer.root} ${composer.mode.name}`;
     }
     meterInfo = midiMeter ? `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}` : `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}`;
   } else if (type === 'beat') {
