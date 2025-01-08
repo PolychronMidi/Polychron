@@ -172,6 +172,28 @@ randomInt = (min = 0, max) => {
   return Math.floor(floatValue);
 };
 
+closestDivisor = (x, target = 2) => {
+  let closest = Infinity;
+  let smallestDiff = Infinity;
+  for (let i = 1; i <= Math.sqrt(x); i++) {
+    if (x % i === 0) {
+      [i, x / i].forEach(divisor => {
+        if (divisor !== closest) {
+          let diff = Math.abs(divisor - target);
+          if (diff < smallestDiff) {
+            smallestDiff = diff;
+            closest = divisor;
+          }
+        }
+      });
+    }
+  }
+  if (closest === Infinity) {
+    return x;
+  }
+  return x % target === 0 ? target : closest;
+};
+
 formatTime = (seconds) => {
   const minutes = Math.floor(seconds / 60);
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');
