@@ -230,3 +230,14 @@ allChords = (function() {
   });
   return Array.from(allChords);
 })();
+
+allModes = (() => {
+  const allModes = new Set();
+  t.Mode.all().forEach(mode => {
+    allNotes.forEach(root => {
+      const modeName = `${root} ${mode.name}`;
+      allModes.add(modeName);
+    });
+  });
+  return Array.from(allModes);
+})();
