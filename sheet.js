@@ -6,7 +6,7 @@ BINAURAL = {
   MAX: 12
 };
 PPQ = 30000;
-BPM = 60;
+BPM = 80;
 NUMERATOR = {
   MIN: 2,
   MAX: 15,
@@ -47,12 +47,12 @@ MEASURES = {
 DIVISIONS = {
   MIN: 0,
   MAX: 10,
-  WEIGHTS: [.1, 2, 2, 1, .4, .2, .04, .03, .02, .02, .01]
+  WEIGHTS: [.01, 3, 2.5, 2, 1, .5, .06, .03, .02, .02, .01]
 };
 SUBDIVISIONS = {
   MIN: 0,
   MAX: 10,
-  WEIGHTS: [.4, 4, 3, .04, .02, .01]
+  WEIGHTS: [.05, 1, 2, 4, 3, 1, .5, .04, .02, .01]
 };
 COMPOSERS = [
   // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
