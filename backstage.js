@@ -256,7 +256,7 @@ centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING
 centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
 binauralPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
 binauralMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
-flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatOnCount = beatOffCount = 0;
+flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatOnCount = beatOffCount = beatIndex = 0;
 
 notesUntilRest = noteCount = 0;
 
@@ -311,3 +311,8 @@ allModes = (() => {
   });
   return Array.from(allModes);
 })();
+
+
+lastBeatRhythm = t.RhythmPattern.random(20, .8);
+lastDivRhythm = t.RhythmPattern.random(20, .5);
+lastSubdivRhythm = t.RhythmPattern.random(20, .3);

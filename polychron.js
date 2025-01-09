@@ -14,10 +14,11 @@ class RhythmComposer {
     if (direction === 'left') {  rotations = (pattern.length - rotations) % pattern.length;  }
     return t.RhythmPattern.rotate(pattern, rotations);
   }
-  morph(pattern, direction = 'both', lowProbability = 0.1, highProbability) {
-    if (highProbability === undefined) { highProbability = lowProbabilty;
-      let morph = randomFloat(lowProbability);
-     } else {  let morph = randomFloat(lowProbability, highProbability);  }
+  morph(pattern, direction = 'both', length = pattern.length, lowProbability = 0.1, highProbability) {
+    let morph;
+    if (highProbability === undefined) { highProbability = lowProbability;
+      morph = randomFloat(lowProbability);
+     } else {  morph = randomFloat(lowProbability, highProbability);  }
     let morphedPattern = pattern.map((v, index) => {
       let d = direction === 'random' ? (['up', 'down', 'both'][randomInt(2)]) : direction;
       let morphUp = v === 0 ? Math.min(v + morph, 1) : v;
@@ -25,6 +26,13 @@ class RhythmComposer {
       return (  d === 'up' ? morphUp : d === 'down' ? morphDown :
         d === 'both' ? (v === 0 ? morphUp : morphDown) : v  );
     });
+    if (length > pattern.length) {
+      while (morphedPattern.length < length) {
+        morphedPattern = morphedPattern.concat(morphedPattern.slice(0, length - morphedPattern.length));
+      }
+    } else if (length < pattern.length) {
+      morphedPattern = morphedPattern.slice(0, length);
+    }  
     return this.probability(morphedPattern.map(val => val));
   }
 }
@@ -136,7 +144,7 @@ class RandomModeComposer extends ModeComposer {
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
     c.push(logUnit('measure'));
-    beatRhythm = generateRhythm('beat');
+    beatRhythm = rhythm('beat');
     lastBeatRhythm = beatRhythm;
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
@@ -168,14 +176,14 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
-        divRhythm = generateRhythm('div');
+        divRhythm = rhythm('div');
         lastDivRhythm = divRhythm;
         ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);
         subdivsPerDiv = r(MIN, MAX, WEIGHTS);
-        subdivRhythm = generateRhythm('subdiv');
+        subdivRhythm = rhythm('subdiv');
         lastSubdivRhythm = subdivRhythm;
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
         useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
