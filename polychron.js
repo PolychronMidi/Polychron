@@ -14,9 +14,11 @@ class RhythmComposer {
     if (direction === 'left') {  rotations = (pattern.length - rotations) % pattern.length;  }
     return t.RhythmPattern.rotate(pattern, rotations);
   }
-  morph(pattern, percent = [0.1, 0.3], direction = 'both') {
+  morph(pattern, direction = 'both', lowProbability = 0.1, highProbability) {
+    if (highProbability === undefined) { highProbability = lowProbabilty;
+      let morph = randomFloat(lowProbability);
+     } else {  let morph = randomFloat(lowProbability, highProbability);  }
     let morphedPattern = pattern.map((v, index) => {
-      let morph = percent[1] ? randomFloat(percent[0], percent[1]) : randomFloat(percent);
       let d = direction === 'random' ? (['up', 'down', 'both'][randomInt(2)]) : direction;
       let morphUp = v === 0 ? Math.min(v + morph, 1) : v;
       let morphDown = v === 1 ? Math.max(v - morph, 0) : v;
@@ -134,9 +136,8 @@ class RandomModeComposer extends ModeComposer {
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
     c.push(logUnit('measure'));
-    beatRhythm = Math.random() < .1 ? composer.setRhythm('onsets',{ build: [numerator,  () => [1, 3]] }) : 
-    Math.random() < .9 ? composer.setRhythm('random', numerator, v(.97,[-.3,.3],.2)) : 
-      composer.setRhythm('euclid', numerator, closestDivisor(numerator, Math.ceil(randomFloat(2, numerator / randomFloat(numerator / numerator - randomFloat(1.2))))));
+    beatRhythm = generateRhythm('beat');
+    lastBeatRhythm = beatRhythm;
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
@@ -167,17 +168,15 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
-        divRhythm = Math.random() < .6 ? composer.setRhythm('onsets',{ build: [divsPerBeat, () => [1, 3]] }) : 
-        Math.random < .1 ? composer.setRhythm('random',divsPerBeat, v(.9,[-.3,.3],.3)) : 
-        composer.setRhythm('euclid', divsPerBeat, closestDivisor(divsPerBeat, Math.ceil(randomFloat(2, divsPerBeat / randomFloat(divsPerBeat / divsPerBeat - randomFloat(1.2))))));
+        divRhythm = generateRhythm('div');
+        lastDivRhythm = divRhythm;
         ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);
         subdivsPerDiv = r(MIN, MAX, WEIGHTS);
-        subdivRhythm = Math.random() < .5 ? composer.setRhythm('onsets',{ build: [subdivsPerDiv,  () => [1, 3]] }) : 
-        Math.random < .07 ? composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3)) : 
-        composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, Math.ceil(randomFloat(2, subdivsPerDiv / randomFloat(subdivsPerDiv / subdivsPerDiv - randomFloat(1.2))))));
+        subdivRhythm = generateRhythm('subdiv');
+        lastSubdivRhythm = subdivRhythm;
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
         useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {

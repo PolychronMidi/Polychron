@@ -62,6 +62,77 @@ r = randomWeightedSelection = (min, max, weights) => {
   }
 }
 
+selectFromWeightedOptions = (options) => {
+  const types = Object.keys(options);
+  const weights = types.map(type => options[type]);
+  const selectedIndex = r(0, types.length - 1, weights);
+  return types[selectedIndex];
+};
+
+rhythmWeights = {
+  'beat': {
+    'onsets': 0.1,
+    'random': 0.8,
+    'euclid': 0.1
+  },
+  'div': {
+    'onsets': 0.3,
+    'random': 0.5,
+    'euclid': 0.2
+  },
+  'subdiv': {
+    'onsets': 0.2,
+    'random': 0.6,
+    'euclid': 0.2
+  }
+};
+
+generateRhythm = (level) => {
+  const rhythm = selectFromWeightedOptions(rhythmWeights[level]);
+  switch (level) {
+    case 'beatRhythm':
+      switch (rhythm) {
+        case 'onsets':
+          return composer.setRhythm('onsets', { build: [numerator, () => [1, 3]] });
+        case 'random':
+          return composer.setRhythm('random', numerator, v(.97,[-.3,.3],.2));
+        case 'euclid':
+          return composer.setRhythm('euclid', numerator, closestDivisor(numerator, Math.ceil(randomFloat(2, numerator / randomFloat(1.2)))));
+        default:
+          return composer.setRhythm('random', numerator, 0.5);
+      }
+    case 'divRhythm':
+      switch (rhythm) {
+        case 'onsets':
+          return composer.setRhythm('onsets',{ build: [divsPerBeat, () => [1, 3]] });
+        case 'random':
+          return composer.setRhythm('random',divsPerBeat, v(.9,[-.3,.3],.3));
+        case 'euclid':
+          return composer.setRhythm('euclid', divsPerBeat, closestDivisor(divsPerBeat, Math.ceil(randomFloat(2, divsPerBeat / randomFloat(divsPerBeat / divsPerBeat - randomFloat(1.2))))));
+        default:
+          return composer.setRhythm('random', numerator, 0.5);
+      }
+    case 'subdivRhythm':
+      switch (rhythm) {
+        case 'onsets':
+          return composer.setRhythm('onsets',{ build: [subdivsPerDiv,  () => [1, 3]] });
+        case 'random':
+          return composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3));
+        case 'euclid':
+          return composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, Math.ceil(randomFloat(2, subdivsPerDiv / randomFloat(subdivsPerDiv / subdivsPerDiv - randomFloat(1.2))))));
+        default:
+          return composer.setRhythm('random', numerator, 0.5);
+        }
+    default:
+      return composer.setRhythm('random', numerator, 0.5);
+    }
+};
+// Example usage:
+// const beatRhythm = generateRhythm('beatRhythm', numerator, composer);
+// const divRhythm = generateRhythm('divRhythm', numerator, composer);
+// const subdivRhythm = generateRhythm('subdivRhythm', numerator, composer);
+
+
 // Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
 v = (value, boostRange = [.05, .10], deboostRange = boostRange, frequency = .05) => {
   const singleRange = Array.isArray(deboostRange) ? deboostRange : boostRange;
