@@ -155,7 +155,7 @@ class RandomModeComposer extends ModeComposer {
         divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
         divRhythm = Math.random() < .6 ? 
         composer.setRhythm('euclid', divsPerBeat, closestDivisor(divsPerBeat, Math.ceil(randomFloat(2, divsPerBeat / randomFloat(divsPerBeat / divsPerBeat - randomFloat(1.2)))))) : 
-        Math.random < .8 ? composer.setRhythm('euclid', divsPerBeat, closestDivisor(divsPerBeat, randomInt(2,5))) : composer.setRhythm('random',divsPerBeat, v(.9,[-.3,.3],.3));
+        Math.random < .8 ? composer.setRhythm('onsets',{ build: [divsPerBeat,  () => [1, 3]] }) : composer.setRhythm('random',divsPerBeat, v(.9,[-.3,.3],.3));
         ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
@@ -163,7 +163,7 @@ class RandomModeComposer extends ModeComposer {
         subdivsPerDiv = r(MIN, MAX, WEIGHTS);
         subdivRhythm = Math.random() < .5 ? 
         composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, Math.ceil(randomFloat(2, subdivsPerDiv / randomFloat(subdivsPerDiv / subdivsPerDiv - randomFloat(1.2)))))) : 
-        Math.random < .9 ? composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, randomInt(2,5))) : composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3));
+        Math.random < .9 ? composer.setRhythm('onsets',{ build: [subdivsPerDiv,  () => [1, 3]] }) : composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3));
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
         useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
