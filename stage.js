@@ -83,14 +83,15 @@ rhythmWeights = {
   'subdiv': {
     'onsets': 0.2,
     'random': 0.6,
-    'euclid': 0.2
+    'euclid': 0.2,
+    'morph': 1
   }
 };
 
-generateRhythm = (level) => {
+rhythm = (level) => {
   const rhythm = selectFromWeightedOptions(rhythmWeights[level]);
   switch (level) {
-    case 'beatRhythm':
+    case 'beat':
       switch (rhythm) {
         case 'onsets':
           return composer.setRhythm('onsets', { build: [numerator, () => [1, 3]] });
@@ -99,9 +100,9 @@ generateRhythm = (level) => {
         case 'euclid':
           return composer.setRhythm('euclid', numerator, closestDivisor(numerator, Math.ceil(randomFloat(2, numerator / randomFloat(1.2)))));
         default:
-          return composer.setRhythm('random', numerator, 0.5);
+          return console.warn('unknown rhythm');
       }
-    case 'divRhythm':
+    case 'div':
       switch (rhythm) {
         case 'onsets':
           return composer.setRhythm('onsets',{ build: [divsPerBeat, () => [1, 3]] });
@@ -110,9 +111,9 @@ generateRhythm = (level) => {
         case 'euclid':
           return composer.setRhythm('euclid', divsPerBeat, closestDivisor(divsPerBeat, Math.ceil(randomFloat(2, divsPerBeat / randomFloat(divsPerBeat / divsPerBeat - randomFloat(1.2))))));
         default:
-          return composer.setRhythm('random', numerator, 0.5);
+          return console.warn('unknown rhythm');
       }
-    case 'subdivRhythm':
+    case 'subdiv':
       switch (rhythm) {
         case 'onsets':
           return composer.setRhythm('onsets',{ build: [subdivsPerDiv,  () => [1, 3]] });
@@ -120,18 +121,15 @@ generateRhythm = (level) => {
           return composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3));
         case 'euclid':
           return composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, Math.ceil(randomFloat(2, subdivsPerDiv / randomFloat(subdivsPerDiv / subdivsPerDiv - randomFloat(1.2))))));
+        case 'morph':
+          return composer.setRhythm('morph', lastSubdivRhythm, 'random');        
         default:
-          return composer.setRhythm('random', numerator, 0.5);
+          return console.warn('unknown rhythm');
         }
     default:
-      return composer.setRhythm('random', numerator, 0.5);
+      return console.warn('unknown rhythm level');
     }
 };
-// Example usage:
-// const beatRhythm = generateRhythm('beatRhythm', numerator, composer);
-// const divRhythm = generateRhythm('divRhythm', numerator, composer);
-// const subdivRhythm = generateRhythm('subdivRhythm', numerator, composer);
-
 
 // Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
 v = (value, boostRange = [.05, .10], deboostRange = boostRange, frequency = .05) => {
