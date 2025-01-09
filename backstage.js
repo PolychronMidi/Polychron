@@ -164,12 +164,12 @@ INSTRUMENT = getMidiValue('program', INSTRUMENT);
 
 randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
-  return Math.random() * (max - min) + min;
+  return Math.random() * (max - min + Number.EPSILON) + min;
 };
 
 randomInt = (min = 0, max) => {
-  const floatValue = randomFloat(min, max);
-  return Math.round(floatValue);
+  if (max === undefined) { max = min; min = 0; }
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
 closestDivisor = (x, target = 2) => {
