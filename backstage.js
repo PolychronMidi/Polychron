@@ -169,7 +169,7 @@ randomFloat = (min = 0, max) => {
 
 randomInt = (min = 0, max) => {
   const floatValue = randomFloat(min, max);
-  return Math.floor(floatValue);
+  return Math.round(floatValue);
 };
 
 closestDivisor = (x, target = 2) => {
@@ -194,6 +194,52 @@ closestDivisor = (x, target = 2) => {
   return x % target === 0 ? target : closest;
 };
 
+buildOnsetsOfLength = (length, valuesOrRange) => {
+  let onsets = [];
+  let total = 0;
+  function randomValueInRange(val) {
+    if (Array.isArray(val)) {
+      return val[0] === val[1] ? val[0] : randomInt(val[0], val[1]);
+    } else if (typeof val === 'function') {
+      // Assuming function returns a number or a range [min, max]
+      const result = val();
+      return Array.isArray(result) ? randomValueInRange(result) : result;
+    }
+    return val;
+  }
+  // Build onsets until we reach or exceed length or run out of values to use
+  while (total < length) {
+    let v = randomValueInRange(valuesOrRange);
+    if (total + (v + 1) <= length) { // +1 because each onset adds 1 to length
+      onsets.push(v);
+      total += v + 1;
+    } else if (Array.isArray(valuesOrRange) && valuesOrRange.length === 2) {
+      // Try one more time with the lower end of the range
+      v = valuesOrRange[0];
+      if (total + (v + 1) <= length) {
+        onsets.push(v);
+        total += v + 1;
+      }
+      break; // Stop after trying with the lower end or if it doesn't fit
+    } else {
+      break; // If not a range or if the range doesn't fit even with the lower value
+    }
+  }
+  // Convert onsets to actual rhythm pattern
+  let rhythm = [];
+  for (let onset of onsets) {
+    rhythm.push(1);
+    for (let i = 0; i < onset; i++) {
+      rhythm.push(0);
+    }
+  }
+  // If total length is less than desired length, pad with zeros
+  while (rhythm.length < length) {
+    rhythm.push(0);
+  }
+  return rhythm;
+};
+
 formatTime = (seconds) => {
   const minutes = Math.floor(seconds / 60);
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');
@@ -210,9 +256,9 @@ centsToOffsetPlus = 1200 * Math.log2((TUNING_FREQ + binauralFreqOffset) / TUNING
 centsToOffsetMinus = 1200 * Math.log2((TUNING_FREQ - binauralFreqOffset) / TUNING_FREQ);
 binauralPlus = Math.round(tuningPitchBend + (semitone * (centsToOffsetPlus / 100)));
 binauralMinus = Math.round(tuningPitchBend + (semitone * (centsToOffsetMinus / 100)));
-flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = 0;
+flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatOnCount = beatOffCount = 0;
 
-notesUntil = noteCount = 0;
+notesUntilRest = noteCount = 0;
 
 centerCH = 0;  leftCH = 1;  rightCH = 2;
 leftCH2 = 3;  rightCH2 = 4;
