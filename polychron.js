@@ -10,18 +10,24 @@ class RhythmComposer {
   random(length, probOn = 0.5, rnd = Math.random) { return t.RhythmPattern.random(length, probOn - 1); }
   prob(probs, rnd = Math.random) { return t.RhythmPattern.probability(probs); }
   euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
-  rotate(pattern, rotations, direction = 'R') {
+  rotate(pattern, rotations, direction = 'R', length = pattern.length) {
     if (direction === '?') {  direction = Math.random() < 0.5 ? 'L' : 'R';  }
-    if (direction.toLower === 'L') {  rotations = (pattern.length - rotations) % pattern.length;  }
-    return t.RhythmPattern.rotate(pattern, rotations);
+    if (direction.toUpperCase() === 'L') {  rotations = (pattern.length - rotations) % pattern.length;  }
+    let rotatedPattern = t.RhythmPattern.rotate(pattern, rotations);
+    if (length > pattern.length) {
+      while (rotatedPattern.length < length) {
+        rotatedPattern = rotatedPattern.concat(rotatedPattern.slice(0, length - rotatedPattern.length));
+      }
+    } else if (length < pattern.length) {  rotatedPattern = rotatedPattern.slice(0, length);  }
+    return rotatedPattern;
   }
-  morph(pattern, direction = 'both', probLow = 0.1, probHigh, length = pattern.length) {
+  morph(pattern, direction = 'both', length = pattern.length, probLow = 0.1, probHigh) {
     let morph;
-    if (probHigh === undefined || typeof probHigh === 'string') { probHigh = probLow;
+    if (probHigh === undefined) { probHigh = probLow;
       morph = randomFloat(probLow);
      } else {  morph = randomFloat(probLow, probHigh);  }
     let morpheus = pattern.map((v, index) => {
-      let d = direction === '?' ? (['up', 'down', 'both'][randomInt(2)]) : direction.toLower;
+      let d = direction === '?' ? (['up', 'down', 'both'][randomInt(2)]) : direction.toLowerCase();
       let up = v === 0 ? Math.min(v + morph, 1) : v;
       let down = v === 1 ? Math.max(v - morph, 0) : v;
       return (  d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v === 0 ? up : down) : v  );

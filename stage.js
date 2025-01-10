@@ -91,14 +91,18 @@ rhythmWeights = {
   }
 };
 
+getLastRhythm = (level) => {
+  const safeLevel = String(level || '');
+  return this[`last${safeLevel.charAt(0).toUpperCase() + safeLevel.slice(1)}Rhythm`] || [];
+};
 const rhythms = {
   'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
   'random': { method: 'random', args: (length) => [length, v(.97, [-.3, .3], .2)] },
   'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
   'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1.2))))] },
-  'rotate': { method: 'rotate', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], randomInt(2), '?'] },
-  'morph': { method: 'morph', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], '?'] }
+  'rotate': { method: 'rotate', args: (level, length) => [getLastRhythm(level), randomInt(2), '?', length] },
+  'morph': { method: 'morph', args: (level, length) => [getLastRhythm(level), '?', length] }
 };
 
 rhythm = (level) => {
