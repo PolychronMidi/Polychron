@@ -117,7 +117,7 @@ const rhythms = {
   'morph': { method: 'morph', args: (level, length) => [getLastRhythm(level), '?', length] }
 };
 
-rhythm = (level) => {
+rhythm = (level, childLevel) => {
   const rhythm = selectFromWeightedOptions(rhythmWeights[level]);
   switch (level) {
     case 'beat':
@@ -131,7 +131,7 @@ rhythm = (level) => {
         case 'morph':
           if (rhythms[rhythm]) {
             const methodInfo = rhythms[rhythm];
-            const args = methodInfo.args(numerator);
+            const args = methodInfo.args(level, childLevel);
             return composer.setRhythm(methodInfo.method, ...args);
           }
           break;
@@ -149,7 +149,7 @@ rhythm = (level) => {
           case 'morph':
             if (rhythms[rhythm]) {
               const methodInfo = rhythms[rhythm];
-              const args = methodInfo.args(divsPerBeat);
+              const args = methodInfo.args(level, childLevel);
               return composer.setRhythm(methodInfo.method, ...args);
             }
             break;
@@ -167,7 +167,7 @@ rhythm = (level) => {
         case 'morph':
           if (rhythms[rhythm]) {
             const methodInfo = rhythms[rhythm];
-            const args = methodInfo.args(subdivsPerDiv);
+            const args = methodInfo.args(level, childLevel);
             return composer.setRhythm(methodInfo.method, ...args);
           }
           break;

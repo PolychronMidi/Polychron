@@ -47,12 +47,12 @@ MEASURES = {
 DIVISIONS = {
   MIN: 0,
   MAX: 10,
-  WEIGHTS: [.01, 1.5, 2.5, 3, 2, 1, .1, .07, .02, .02, .01]
+  WEIGHTS: [.01, 1.5, 2, 2.5, 2, 1, .1, .07, .02, .02, .01]
 };
 SUBDIVISIONS = {
   MIN: 0,
   MAX: 10,
-  WEIGHTS: [.05, 1, 3, 2, 3, 1, .5, .04, .02, .01]
+  WEIGHTS: [.05, 1, 2, 1.5, 2, 1, .5, .04, .02, .01]
 };
 COMPOSERS = [
   // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
