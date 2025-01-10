@@ -69,19 +69,19 @@ selectFromWeightedOptions = (options) => {
 
 rhythmWeights = {
   'beat': {
-    'onsets': 0.1,
-    'random': 0.8,
-    'euclid': 0.1
+    'onsets': 1,
+    'random': 10,
+    'euclid': 1
   },
   'div': {
-    'onsets': 0.3,
-    'random': 0.5,
-    'euclid': 0.2
+    'onsets': 2,
+    'random': 1,
+    'euclid': 2
   },
   'subdiv': {
-    'onsets': 0.2,
-    'random': 0.6,
-    'euclid': 0.2,
+    'onsets': 2,
+    'random': 1,
+    'euclid': 2,
     'rotate': 1,
     'morph': 1
   }
