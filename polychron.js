@@ -4,21 +4,22 @@ class RhythmComposer {
   binary(numbers) { return t.RhythmPattern.binary(numbers); }
   hex(hexNumber) { return t.RhythmPattern.hex(hexNumber); }
   onsets(numbers) { if (typeof numbers === 'object' && numbers.hasOwnProperty('build')) {
-    numbers = buildOnsetsOfLength(...numbers.build); }
+    numbers = buildOnsets(...numbers.build); }
     return t.RhythmPattern.onsets(numbers);
   }
-  random(length, probabilityOfOn = 0.5, rnd = Math.random) { return t.RhythmPattern.random(length, probabilityOfOn - 1); }
-  probability(probabilities, rnd = Math.random) { return t.RhythmPattern.probability(probabilities); }
-  euclid(length, numberOfOn) { return t.RhythmPattern.euclid(length, numberOfOn); }
+  random(length, probOn = 0.5, rnd = Math.random) { return t.RhythmPattern.random(length, probOn - 1); }
+  prob(probs, rnd = Math.random) { return t.RhythmPattern.probability(probs); }
+  euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
   rotate(pattern, rotations, direction = 'right') {
+    if (direction === 'random') {  direction = Math.random() < 0.5 ? 'left' : 'right';  }
     if (direction === 'left') {  rotations = (pattern.length - rotations) % pattern.length;  }
     return t.RhythmPattern.rotate(pattern, rotations);
   }
-  morph(pattern, direction = 'both', length = pattern.length, lowProbability = 0.1, highProbability) {
+  morph(pattern, direction = 'both', length = pattern.length, probFloor = 0.1, probCeil) {
     let morph;
-    if (highProbability === undefined) { highProbability = lowProbability;
-      morph = randomFloat(lowProbability);
-     } else {  morph = randomFloat(lowProbability, highProbability);  }
+    if (probCeil === undefined) { probCeil = probFloor;
+      morph = randomFloat(probFloor);
+     } else {  morph = randomFloat(probFloor, probCeil);  }
     let morphedPattern = pattern.map((v, index) => {
       let d = direction === 'random' ? (['up', 'down', 'both'][randomInt(2)]) : direction;
       let morphUp = v === 0 ? Math.min(v + morph, 1) : v;
@@ -33,7 +34,7 @@ class RhythmComposer {
     } else if (length < pattern.length) {
       morphedPattern = morphedPattern.slice(0, length);
     }  
-    return this.probability(morphedPattern.map(val => val));
+    return this.prob(morphedPattern.map(val => val));
   }
 }
 class MeasureComposer extends RhythmComposer {

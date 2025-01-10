@@ -56,9 +56,7 @@ r = randomWeightedSelection = (min, max, weights) => {
   let cumulativeProbability = 0;
   for (let i = 0; i < normalizedWeights.length; i++) {
     cumulativeProbability += normalizedWeights[i];
-    if (random <= cumulativeProbability) {
-      return i + min;
-    }
+    if (random <= cumulativeProbability) { return i + min; }
   }
 }
 
@@ -84,8 +82,27 @@ rhythmWeights = {
     'onsets': 0.2,
     'random': 0.6,
     'euclid': 0.2,
+    'rotate': 1,
     'morph': 1
   }
+};
+
+const beatRhythms = {
+  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
+  'random': { method: 'random', args: (length) => [length, v(.97,[-.3,.3],.2)] },
+  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1.2))))] },
+};
+const divRhythms = {
+  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
+  'random': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
+  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(length / length - randomFloat(1.2))))) ] },
+};
+const subdivRhythms = {
+  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
+  'random': { method: 'random', args: (length) => [length, v(.6,[-.3,.3],.3)] },
+  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(length / length - randomFloat(1.2))))) ] },
+  'rotate': { method: 'rotate', args: () => [lastSubdivRhythm, 1, 'random'] },
+  'morph': { method: 'morph', args: () => [lastSubdivRhythm, 'random'] }
 };
 
 rhythm = (level) => {
@@ -94,38 +111,47 @@ rhythm = (level) => {
     case 'beat':
       switch (rhythm) {
         case 'onsets':
-          return composer.setRhythm('onsets', { build: [numerator, () => [1, 3]] });
         case 'random':
-          return composer.setRhythm('random', numerator, v(.97,[-.3,.3],.2));
         case 'euclid':
-          return composer.setRhythm('euclid', numerator, closestDivisor(numerator, Math.ceil(randomFloat(2, numerator / randomFloat(1.2)))));
+          if (beatRhythms[rhythm]) {
+            const methodInfo = beatRhythms[rhythm];
+            const args = methodInfo.args(numerator);
+            return composer.setRhythm(methodInfo.method, ...args);
+          }
+          break;
         default:
           return console.warn('unknown rhythm');
       }
-    case 'div':
-      switch (rhythm) {
-        case 'onsets':
-          return composer.setRhythm('onsets',{ build: [divsPerBeat, () => [1, 3]] });
-        case 'random':
-          return composer.setRhythm('random',divsPerBeat, v(.9,[-.3,.3],.3));
-        case 'euclid':
-          return composer.setRhythm('euclid', divsPerBeat, closestDivisor(divsPerBeat, Math.ceil(randomFloat(2, divsPerBeat / randomFloat(divsPerBeat / divsPerBeat - randomFloat(1.2))))));
-        default:
-          return console.warn('unknown rhythm');
-      }
+      case 'div':
+        switch (rhythm) {
+          case 'onsets':
+          case 'random':
+          case 'euclid':
+            if (divRhythms[rhythm]) {
+              const methodInfo = divRhythms[rhythm];
+              const args = methodInfo.args(divsPerBeat);
+              return composer.setRhythm(methodInfo.method, ...args);
+            }
+            break;
+          default:
+            return console.warn('unknown rhythm');
+        }
     case 'subdiv':
       switch (rhythm) {
         case 'onsets':
-          return composer.setRhythm('onsets',{ build: [subdivsPerDiv,  () => [1, 3]] });
         case 'random':
-          return composer.setRhythm('random',subdivsPerDiv, v(.6,[-.3,.3],.3));
         case 'euclid':
-          return composer.setRhythm('euclid', subdivsPerDiv, closestDivisor(subdivsPerDiv, Math.ceil(randomFloat(2, subdivsPerDiv / randomFloat(subdivsPerDiv / subdivsPerDiv - randomFloat(1.2))))));
+        case 'rotate':
         case 'morph':
-          return composer.setRhythm('morph', lastSubdivRhythm, 'random');        
+          if (subdivRhythms[rhythm]) {
+            const methodInfo = subdivRhythms[rhythm];
+            const args = methodInfo.args(subdivsPerDiv);
+            return composer.setRhythm(methodInfo.method, ...args);
+          }
+          break;
         default:
           return console.warn('unknown rhythm');
-        }
+      }
     default:
       return console.warn('unknown rhythm level');
     }
