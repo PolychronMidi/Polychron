@@ -240,6 +240,18 @@ buildOnsets = (length, valuesOrRange) => {
   return rhythm;
 };
 
+adjustPatternLength = (pattern, length) => {
+  if (length === undefined) return pattern;
+  if (length > pattern.length) {
+    while (pattern.length < length) {
+      pattern = pattern.concat(pattern.slice(0, length - pattern.length));
+    }
+  } else if (length < pattern.length) {
+    pattern = pattern.slice(0, length);
+  }
+  return pattern;
+};
+
 formatTime = (seconds) => {
   const minutes = Math.floor(seconds / 60);
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');

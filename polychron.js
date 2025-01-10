@@ -1,8 +1,18 @@
 // Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity.
 require('./stage');
 class RhythmComposer {
-  binary(numbers) { return t.RhythmPattern.binary(numbers); }
-  hex(hexNumber) { return t.RhythmPattern.hex(hexNumber); }
+  binary(length = 8) { let pattern = [];
+    while (pattern.length < length) {
+      pattern = pattern.concat(t.RhythmPattern.binary(randomInt(99)));
+    }
+    return adjustPatternLength(pattern, length);
+  }
+  hex(length = 8) { let pattern = [];
+    while (pattern.length < length) {
+      pattern = pattern.concat(t.RhythmPattern.hex(randomInt(99).toString(16)));
+    }
+    return adjustPatternLength(pattern, length);
+  }
   onsets(numbers) { if (typeof numbers === 'object' && numbers.hasOwnProperty('build')) {
     numbers = buildOnsets(...numbers.build); }
     return t.RhythmPattern.onsets(numbers);
@@ -11,35 +21,25 @@ class RhythmComposer {
   prob(probs, rnd = Math.random) { return t.RhythmPattern.probability(probs); }
   euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
   rotate(pattern, rotations, direction = 'R', length = pattern.length) {
-    if (direction === '?') {  direction = Math.random() < 0.5 ? 'L' : 'R';  }
-    if (direction.toUpperCase() === 'L') {  rotations = (pattern.length - rotations) % pattern.length;  }
-    let rotatedPattern = t.RhythmPattern.rotate(pattern, rotations);
-    if (length > pattern.length) {
-      while (rotatedPattern.length < length) {
-        rotatedPattern = rotatedPattern.concat(rotatedPattern.slice(0, length - rotatedPattern.length));
-      }
-    } else if (length < pattern.length) {  rotatedPattern = rotatedPattern.slice(0, length);  }
-    return rotatedPattern;
+    if (direction === '?') { direction = Math.random() < 0.5 ? 'L' : 'R'; }
+    if (direction.toUpperCase() === 'L') { rotations = (pattern.length - rotations) % pattern.length; }
+    return adjustPatternLength(t.RhythmPattern.rotate(pattern, rotations), length);
   }
   morph(pattern, direction = 'both', length = pattern.length, probLow = 0.1, probHigh) {
     let morph;
-    if (probHigh === undefined) { probHigh = probLow;
+    if (probHigh === undefined) { 
+      probHigh = probLow;
       morph = randomFloat(probLow);
-     } else {  morph = randomFloat(probLow, probHigh);  }
+    } else { 
+      morph = randomFloat(probLow, probHigh); 
+    }
     let morpheus = pattern.map((v, index) => {
       let d = direction === '?' ? (['up', 'down', 'both'][randomInt(2)]) : direction.toLowerCase();
       let up = v === 0 ? Math.min(v + morph, 1) : v;
       let down = v === 1 ? Math.max(v - morph, 0) : v;
-      return (  d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v === 0 ? up : down) : v  );
+      return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v === 0 ? up : down) : v);
     });
-    if (length > pattern.length) {
-      while (morpheus.length < length) {
-        morpheus = morpheus.concat(morpheus.slice(0, length - morpheus.length));
-      }
-    } else if (length < pattern.length) {
-      morpheus = morpheus.slice(0, length);
-    }  
-    return this.prob(morpheus.map(val => val));
+    return this.prob(adjustPatternLength(morpheus, length));
   }
 }
 class MeasureComposer extends RhythmComposer {

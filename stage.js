@@ -69,6 +69,8 @@ selectFromWeightedOptions = (options) => {
 
 rhythmWeights = {
   'beat': {
+    'binary': 1,
+    'hex': 1,
     'onsets': 1,
     'random': 10,
     'euclid': 1,
@@ -76,6 +78,8 @@ rhythmWeights = {
     'morph': 1
   },
   'div': {
+    'binary': 1,
+    'hex': 1,
     'onsets': 2,
     'random2': 1,
     'euclid': 2,
@@ -83,6 +87,8 @@ rhythmWeights = {
     'morph': 1
   },
   'subdiv': {
+    'binary': 1,
+    'hex': 1,
     'onsets': 2,
     'random3': 1,
     'euclid': 2,
@@ -96,7 +102,10 @@ getLastRhythm = (level) => {
   return this[`last${safeLevel.charAt(0).toUpperCase() + safeLevel.slice(1)}Rhythm`] || [];
 };
 const rhythms = {
-  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
+  'binary': { method: 'binary', args: (length) => [length] },
+  'hex': { method: 'hex', args: (length) => [length] },
+  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },//range
+  'onsets2': { method: 'onsets', args: (length) => [{ build: [length, [1, 3]] }] },//values
   'random': { method: 'random', args: (length) => [length, v(.97, [-.3, .3], .2)] },
   'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
@@ -110,6 +119,8 @@ rhythm = (level) => {
   switch (level) {
     case 'beat':
       switch (rhythm) {
+        case 'binary':
+        case 'hex':
         case 'onsets':
         case 'random':
         case 'euclid':
@@ -126,6 +137,8 @@ rhythm = (level) => {
       }
       case 'div':
         switch (rhythm) {
+          case 'binary':
+          case 'hex':
           case 'onsets':
           case 'random2':
           case 'euclid':
@@ -142,6 +155,8 @@ rhythm = (level) => {
         }
     case 'subdiv':
       switch (rhythm) {
+        case 'binary':
+        case 'hex':
         case 'onsets':
         case 'random3':
         case 'euclid':
