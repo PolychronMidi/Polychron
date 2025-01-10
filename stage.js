@@ -71,11 +71,11 @@ rhythmWeights = {
   'beat': {
     'binary': 1,
     'hex': 1,
-    'onsets': 1,
-    'random': 10,
-    'euclid': 1,
-    'rotate': 1,
-    'morph': 1
+    'onsets2': 5,
+    'random': 20,
+    'euclid': 3,
+    'rotate': 2,
+    'morph': 2
   },
   'div': {
     'binary': 1,
@@ -83,8 +83,8 @@ rhythmWeights = {
     'onsets': 2,
     'random2': 1,
     'euclid': 2,
-    'rotate': 1,
-    'morph': 1
+    'rotate': 2,
+    'morph': 3
   },
   'subdiv': {
     'binary': 1,
@@ -92,24 +92,27 @@ rhythmWeights = {
     'onsets': 2,
     'random3': 1,
     'euclid': 2,
-    'rotate': 1,
-    'morph': 1
+    'rotate': 2,
+    'morph': 3
   }
 };
 
-getLastRhythm = (level) => {
-  const safeLevel = String(level || '');
-  return this[`last${safeLevel.charAt(0).toUpperCase() + safeLevel.slice(1)}Rhythm`] || [];
+dynamicStringBuilder = (prefix = '', root, suffix = '') => {
+  const rootString = String(root || '');
+  const capitalizedRoot = prefix ? rootString.charAt(0).toUpperCase() + rootString.slice(1) : rootString;
+  return prefix + capitalizedRoot + suffix;
 };
+getLastRhythm = (level) => {return this[dynamicStringBuilder('last', level, 'Rhythm')] || [];};
+
 const rhythms = {
   'binary': { method: 'binary', args: (length) => [length] },
   'hex': { method: 'hex', args: (length) => [length] },
   'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },//range
-  'onsets2': { method: 'onsets', args: (length) => [{ build: [length, [1, 3]] }] },//values
-  'random': { method: 'random', args: (length) => [length, v(.97, [-.3, .3], .2)] },
+  'onsets2': { method: 'onsets', args: (length) => [{ build: [length, [1, 2]] }] },//values
+  'random': { method: 'random', args: (length) => [length, v(.97, [-.1, .3], .2)] },
   'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
-  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1.2))))] },
+  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
   'rotate': { method: 'rotate', args: (level, length) => [getLastRhythm(level), randomInt(2), '?', length] },
   'morph': { method: 'morph', args: (level, length) => [getLastRhythm(level), '?', length] }
 };
@@ -121,14 +124,14 @@ rhythm = (level) => {
       switch (rhythm) {
         case 'binary':
         case 'hex':
-        case 'onsets':
+        case 'onsets2':
         case 'random':
         case 'euclid':
         case 'rotate':
         case 'morph':
           if (rhythms[rhythm]) {
             const methodInfo = rhythms[rhythm];
-            const args = methodInfo.args(level);
+            const args = methodInfo.args(numerator);
             return composer.setRhythm(methodInfo.method, ...args);
           }
           break;

@@ -266,9 +266,8 @@ tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq /
 binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
 binauralOffset = (plusOrMinus) => Math.round(tuningPitchBend + semitone * (12 * Math.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
-flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatOnCount = beatOffCount = 0;
-
-notesUntilRest = noteCount = 0;
+flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatsOn = beatsOff = divsOn = divsOff = subdivsOn = subdivsOff = noteCount = 0;
+notesUntilRest = randomInt(11,33);
 
 centerCH = 0;  leftCH = 1;  rightCH = 2;
 leftCH2 = 3;  rightCH2 = 4;
@@ -326,3 +325,5 @@ allModes = (() => {
 lastBeatRhythm = t.RhythmPattern.random(NUMERATOR.MAX, .8);
 lastDivRhythm = t.RhythmPattern.random(DIVISIONS.MAX, .5);
 lastSubdivRhythm = t.RhythmPattern.random(SUBDIVISIONS.MAX, .3);
+
+actuallyDontRest = true;
