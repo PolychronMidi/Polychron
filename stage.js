@@ -71,38 +71,34 @@ rhythmWeights = {
   'beat': {
     'onsets': 1,
     'random': 10,
-    'euclid': 1
+    'euclid': 1,
+    'rotate': 1,
+    'morph': 1
   },
   'div': {
     'onsets': 2,
-    'random': 1,
-    'euclid': 2
+    'random2': 1,
+    'euclid': 2,
+    'rotate': 1,
+    'morph': 1
   },
   'subdiv': {
     'onsets': 2,
-    'random': 1,
+    'random3': 1,
     'euclid': 2,
     'rotate': 1,
     'morph': 1
   }
 };
 
-const beatRhythms = {
+const rhythms = {
   'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
-  'random': { method: 'random', args: (length) => [length, v(.97,[-.3,.3],.2)] },
+  'random': { method: 'random', args: (length) => [length, v(.97, [-.3, .3], .2)] },
+  'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
+  'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
   'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1.2))))] },
-};
-const divRhythms = {
-  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
-  'random': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
-  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(length / length - randomFloat(1.2))))) ] },
-};
-const subdivRhythms = {
-  'onsets': { method: 'onsets', args: (length) => [{ build: [length, () => [1, 3]] }] },
-  'random': { method: 'random', args: (length) => [length, v(.6,[-.3,.3],.3)] },
-  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(length / length - randomFloat(1.2))))) ] },
-  'rotate': { method: 'rotate', args: () => [lastSubdivRhythm, 1, 'random'] },
-  'morph': { method: 'morph', args: () => [lastSubdivRhythm, 'random'] }
+  'rotate': { method: 'rotate', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], 1, 'random'] },
+  'morph': { method: 'morph', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], 'random'] }
 };
 
 rhythm = (level) => {
@@ -113,9 +109,11 @@ rhythm = (level) => {
         case 'onsets':
         case 'random':
         case 'euclid':
-          if (beatRhythms[rhythm]) {
-            const methodInfo = beatRhythms[rhythm];
-            const args = methodInfo.args(numerator);
+        case 'rotate':
+        case 'morph':
+          if (rhythms[rhythm]) {
+            const methodInfo = rhythms[rhythm];
+            const args = methodInfo.args(level);
             return composer.setRhythm(methodInfo.method, ...args);
           }
           break;
@@ -125,10 +123,12 @@ rhythm = (level) => {
       case 'div':
         switch (rhythm) {
           case 'onsets':
-          case 'random':
+          case 'random2':
           case 'euclid':
-            if (divRhythms[rhythm]) {
-              const methodInfo = divRhythms[rhythm];
+          case 'rotate':
+          case 'morph':
+            if (rhythms[rhythm]) {
+              const methodInfo = rhythms[rhythm];
               const args = methodInfo.args(divsPerBeat);
               return composer.setRhythm(methodInfo.method, ...args);
             }
@@ -139,12 +139,12 @@ rhythm = (level) => {
     case 'subdiv':
       switch (rhythm) {
         case 'onsets':
-        case 'random':
+        case 'random3':
         case 'euclid':
         case 'rotate':
         case 'morph':
-          if (subdivRhythms[rhythm]) {
-            const methodInfo = subdivRhythms[rhythm];
+          if (rhythms[rhythm]) {
+            const methodInfo = rhythms[rhythm];
             const args = methodInfo.args(subdivsPerDiv);
             return composer.setRhythm(methodInfo.method, ...args);
           }
