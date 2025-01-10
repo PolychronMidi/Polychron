@@ -10,31 +10,30 @@ class RhythmComposer {
   random(length, probOn = 0.5, rnd = Math.random) { return t.RhythmPattern.random(length, probOn - 1); }
   prob(probs, rnd = Math.random) { return t.RhythmPattern.probability(probs); }
   euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
-  rotate(pattern, rotations, direction = 'right') {
-    if (direction === 'random') {  direction = Math.random() < 0.5 ? 'left' : 'right';  }
-    if (direction === 'left') {  rotations = (pattern.length - rotations) % pattern.length;  }
+  rotate(pattern, rotations, direction = 'R') {
+    if (direction === '?') {  direction = Math.random() < 0.5 ? 'L' : 'R';  }
+    if (direction.toLower === 'L') {  rotations = (pattern.length - rotations) % pattern.length;  }
     return t.RhythmPattern.rotate(pattern, rotations);
   }
-  morph(pattern, direction = 'both', length = pattern.length, probFloor = 0.1, probCeil) {
+  morph(pattern, direction = 'both', probLow = 0.1, probHigh, length = pattern.length) {
     let morph;
-    if (probCeil === undefined) { probCeil = probFloor;
-      morph = randomFloat(probFloor);
-     } else {  morph = randomFloat(probFloor, probCeil);  }
-    let morphedPattern = pattern.map((v, index) => {
-      let d = direction === 'random' ? (['up', 'down', 'both'][randomInt(2)]) : direction;
-      let morphUp = v === 0 ? Math.min(v + morph, 1) : v;
-      let morphDown = v === 1 ? Math.max(v - morph, 0) : v;
-      return (  d === 'up' ? morphUp : d === 'down' ? morphDown :
-        d === 'both' ? (v === 0 ? morphUp : morphDown) : v  );
+    if (probHigh === undefined || typeof probHigh === 'string') { probHigh = probLow;
+      morph = randomFloat(probLow);
+     } else {  morph = randomFloat(probLow, probHigh);  }
+    let morpheus = pattern.map((v, index) => {
+      let d = direction === '?' ? (['up', 'down', 'both'][randomInt(2)]) : direction.toLower;
+      let up = v === 0 ? Math.min(v + morph, 1) : v;
+      let down = v === 1 ? Math.max(v - morph, 0) : v;
+      return (  d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v === 0 ? up : down) : v  );
     });
     if (length > pattern.length) {
-      while (morphedPattern.length < length) {
-        morphedPattern = morphedPattern.concat(morphedPattern.slice(0, length - morphedPattern.length));
+      while (morpheus.length < length) {
+        morpheus = morpheus.concat(morpheus.slice(0, length - morpheus.length));
       }
     } else if (length < pattern.length) {
-      morphedPattern = morphedPattern.slice(0, length);
+      morpheus = morpheus.slice(0, length);
     }  
-    return this.prob(morphedPattern.map(val => val));
+    return this.prob(morpheus.map(val => val));
   }
 }
 class MeasureComposer extends RhythmComposer {
@@ -143,7 +142,7 @@ class RandomModeComposer extends ModeComposer {
       eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
-    ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat } = midiSync());
+    ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio } = midiSync());
     c.push(logUnit('measure'));
     beatRhythm = rhythm('beat');
     lastBeatRhythm = beatRhythm;
@@ -176,7 +175,7 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [flipBinaural ? rightCH2 : rightCH, 10, rightOffset] },
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
-        divsPerBeat = Math.ceil(composer.setDivisions() * ((numerator / denominator) < 1 ? (numerator / denominator) : 1 / (numerator / denominator)));
+        divsPerBeat = Math.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
         divRhythm = rhythm('div');
         lastDivRhythm = divRhythm;
         ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
