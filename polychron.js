@@ -149,7 +149,7 @@ class RandomModeComposer extends ModeComposer {
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio } = midiSync());
-    c.push(logUnit('measure')); beatRhythm = rhythm('beat'); lastBeatRhythm = beatRhythm;
+    c.push(logUnit('measure')); beatRhythm = rhythm('beat', 'numerator'); lastBeatRhythm = beatRhythm;
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
@@ -168,7 +168,7 @@ class RandomModeComposer extends ModeComposer {
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [rightCH2, binauralPlus] : [rightCH, binauralMinus]] }
         );
         if (Math.random() < .3) { p(c,  ...['control_c'].flatMap(() => {
-          balanceOffset = randomInt(33);
+          balanceOffset = Math.round(v(randomInt(22)));
           sideBias = randomInt(-11,11);
           leftOffset = Math.min(127,Math.max(0, balanceOffset + randomInt(11) + sideBias));
           rightOffset = Math.min(127,Math.max(0, 127 - balanceOffset - randomInt(11) + sideBias));
@@ -180,24 +180,27 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat = Math.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
-        divRhythm = rhythm('div'); lastDivRhythm = divRhythm; ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
+        divRhythm = rhythm('div', 'divsPerBeat'); lastDivRhythm = divRhythm; ticksPerDiv = ticksPerBeat / Math.max(1, divsPerBeat);
 
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         if (divRhythm[divIndex] === 1) {divsOn++; divsOff = 0}
         else {divsOn = 0; divsOff++;}
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);  subdivsPerDiv = r(MIN, MAX, WEIGHTS);
-        subdivRhythm = rhythm('subdiv');  lastSubdivRhythm = subdivRhythm;
+        subdivRhythm = rhythm('subdiv', 'subdivsPerDiv');  lastSubdivRhythm = subdivRhythm;
         ticksPerSubdiv = ticksPerDiv / Math.max(1, subdivsPerDiv);
         useSubdiv = Math.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart = divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
-          if (beatsOff > 0 || beatRhythm[beatIndex] === 1 && divRhythm[divIndex] === 1 && subdivRhythm[subdivIndex] === 1) {
-          composer.composeChord().forEach(({ note }) => {  noteCount++; rest = Math.random() < .07;
-          if (noteCount % notesUntilRest === 0 || subdivsOn > randomInt(11, 33) || divsOn > randomInt(33,44) && rest) {  
-          rest=false; subdivsOff++;
+          let playChance = (beatRhythm[beatIndex] === 1 ? 1 : 1 / numerator + beatsOff * 1 / numerator) +
+          (divRhythm[divIndex] === 1 ? 1 : 1 / divsPerBeat + divsOff * 1 / divsPerBeat) +
+          (subdivRhythm[subdivIndex] === 1 ? 1 : 1 / subdivsPerDiv + subdivsOff * 1 / subdivsPerDiv);
+          if (Math.random() < Math.max(1, playChance)) {
+          composer.composeChord().forEach(({ note }) => {  noteCount++; rest = Math.random() < .15;
+          if (noteCount % notesUntilRest === 0 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33) && rest) {  
+          rest = false;  subdivsOff++;
           subdivsOn = noteCount = notesUntilRest = 0;
-          notesUntilRest = Math.max(randomInt(33,66),randomInt(randomInt(33,66), randomInt(66, 111) / Math.max(20, divsPerBeat * subdivsPerDiv)));
+          notesUntilRest = Math.max(randomInt(3,11), randomInt(randomInt(22,66), randomInt(111, 333) / Math.max(20, divsPerBeat * subdivsPerDiv)));
           } else if (subdivsOff < randomInt(11)) {  subdivsOn++; subdivsOff = 0
           on = subdivStart + v(Math.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
           subdivSustain = v(randomFloat(Math.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + Math.random() * .7))), [.1, .2], [-.05, -.1], .1);
