@@ -3,18 +3,18 @@ require('./sheet'); require('./backstage');
 midiSync = () => {
   function isPowerOf2(n) { return (n & (n - 1)) === 0; }
   const meterRatio = numerator / denominator;
-  if (isPowerOf2(denominator)) { midiMeter = [numerator, denominator]; syncFactor = 1; }
+  let syncFactorBPM = syncFactorTicks = 1;
+  if (isPowerOf2(denominator)) { midiMeter = [numerator, denominator]; }
   else {
-    const high = 2 ** Math.ceil(Math.log2(denominator));
-    const low = 2 ** Math.floor(Math.log2(denominator));
-    const highRatio = numerator / high;
-    const lowRatio = numerator / low;
-    if (Math.abs(meterRatio - highRatio) < Math.abs(meterRatio - lowRatio)) 
-      { midiMeter = [numerator, high]; syncFactor = meterRatio / highRatio; }
-    else { midiMeter = [numerator, low]; syncFactor = meterRatio / lowRatio; }
+    const high = 2 ** m.ceil(m.log2(denominator));  const highRatio = numerator / high;
+    const low = 2 ** m.floor(m.log2(denominator));  const lowRatio = numerator / low;
+    midiMeter = m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ? [numerator, high] : [numerator, low];
   }
-  const midiBPM = BPM * syncFactor;
-  const ticksPerMeasure = PPQ * 4 * meterRatio * syncFactor;
+  const midiMeterRatio = midiMeter[0] / midiMeter[1];
+  syncFactorBPM = midiMeterRatio / meterRatio;
+  const midiBPM = BPM * syncFactorBPM;
+  syncFactorTicks = meterRatio / midiMeterRatio;
+  const ticksPerMeasure = PPQ * 4 * midiMeterRatio * syncFactorTicks;
   const ticksPerBeat = ticksPerMeasure / numerator;
   return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio };
 };
@@ -30,8 +30,8 @@ r = randomWeightedSelection = (min, max, weights) => {
       const newWeights = [firstWeight];
       for (let i = 1; i < range - 1; i++) {
         const fraction = i / (range - 1);
-        const lowerIndex = Math.floor(fraction * (weights.length - 1));
-        const upperIndex = Math.ceil(fraction * (weights.length - 1));
+        const lowerIndex = m.floor(fraction * (weights.length - 1));
+        const upperIndex = m.ceil(fraction * (weights.length - 1));
         const weightDiff = weights[upperIndex] - weights[lowerIndex];
         const interpolatedWeight = weights[lowerIndex] + (fraction * (weights.length - 1) - lowerIndex) * weightDiff;
         newWeights.push(interpolatedWeight);
@@ -40,10 +40,10 @@ r = randomWeightedSelection = (min, max, weights) => {
       effectiveWeights = newWeights;
     } else if (weights.length > range) {
       effectiveWeights = [firstWeight];
-      const groupSize = Math.floor(weights.length / (range - 1));
+      const groupSize = m.floor(weights.length / (range - 1));
       for (let i = 1; i < range - 1; i++) {
         const startIndex = i * groupSize;
-        const endIndex = Math.min(startIndex + groupSize, weights.length - 1);
+        const endIndex = m.min(startIndex + groupSize, weights.length - 1);
         const groupSum = weights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0);
         effectiveWeights.push(groupSum / (endIndex - startIndex));
       }
@@ -52,7 +52,7 @@ r = randomWeightedSelection = (min, max, weights) => {
   }
   const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
   const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
-  let random = Math.random();
+  let random = m.random();
   let cumulativeProbability = 0;
   for (let i = 0; i < normalizedWeights.length; i++) {
     cumulativeProbability += normalizedWeights[i];
@@ -69,20 +69,20 @@ selectFromWeightedOptions = (options) => {
 
 rhythmWeights = {
   'beat': {
-    'binary': 1,
-    'hex': 1,
+    'binary': 2,
+    'hex': 2,
     'onsets2': 5,
-    'random': 20,
+    'random': 7,
     'euclid': 3,
     'rotate': 2,
     'morph': 2
   },
   'div': {
-    'binary': 1,
-    'hex': 1,
+    'binary': 3,
+    'hex': 3,
     'onsets': 2,
-    'random2': 1,
-    'euclid': 2,
+    'random2': 3,
+    'euclid': 3,
     'rotate': 2,
     'morph': 3
   },
@@ -112,7 +112,7 @@ const rhythms = {
   'random': { method: 'random', args: (length) => [length, v(.97, [-.1, .3], .2)] },
   'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
-  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
+  'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, m.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
   'rotate': { method: 'rotate', args: (level, length) => [getLastRhythm(level), randomInt(2), '?', length] },
   'morph': { method: 'morph', args: (level, length) => [getLastRhythm(level), '?', length] }
 };
@@ -186,10 +186,10 @@ v = (value, boostRange = [.05, .10], deboostRange = boostRange, frequency = .05)
   let factor;
   if (isSingleRange) {
     const variation = randomFloat(...singleRange);
-    factor = Math.random() < frequency ? 1 + variation : 1;
+    factor = m.random() < frequency ? 1 + variation : 1;
   } else {
-    const range = Math.random() < .5 ? boostRange : deboostRange;
-    factor = Math.random() < frequency 
+    const range = m.random() < .5 ? boostRange : deboostRange;
+    factor = m.random() < frequency 
       ? 1 + randomFloat(...range)
       : 1;
   }

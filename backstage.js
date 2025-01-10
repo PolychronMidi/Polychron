@@ -161,25 +161,25 @@ getMidiValue = (category, name) => {
 };
 INSTRUMENT = getMidiValue('program', INSTRUMENT);
 
-
+m = Math;
 randomFloat = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
-  return Math.random() * (max - min + Number.EPSILON) + min;
+  return m.random() * (max - min + Number.EPSILON) + min;
 };
 
 randomInt = (min = 0, max) => {
   if (max === undefined) { max = min; min = 0; }
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return m.floor(m.random() * (max - min + 1)) + min;
 };
 
 closestDivisor = (x, target = 2) => {
   let closest = Infinity;
   let smallestDiff = Infinity;
-  for (let i = 1; i <= Math.sqrt(x); i++) {
+  for (let i = 1; i <= m.sqrt(x); i++) {
     if (x % i === 0) {
       [i, x / i].forEach(divisor => {
         if (divisor !== closest) {
-          let diff = Math.abs(divisor - target);
+          let diff = m.abs(divisor - target);
           if (diff < smallestDiff) {
             smallestDiff = diff;
             closest = divisor;
@@ -253,18 +253,18 @@ adjustPatternLength = (pattern, length) => {
 };
 
 formatTime = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
+  const minutes = m.floor(seconds / 60);
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
 
 
 neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
-centsToTuningFreq = 1200 * Math.log2(TUNING_FREQ / 440);
-tuningPitchBend = Math.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
+centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
+tuningPitchBend = m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
 
 binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
-binauralOffset = (plusOrMinus) => Math.round(tuningPitchBend + semitone * (12 * Math.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
+binauralOffset = (plusOrMinus) => m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
 flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatsOn = beatsOff = divsOn = divsOff = subdivsOn = subdivsOff = noteCount = 0;
 notesUntilRest = randomInt(11,33);
