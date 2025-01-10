@@ -2,21 +2,21 @@ require('./sheet'); require('./backstage');
 
 midiSync = () => {
   function isPowerOf2(n) { return (n & (n - 1)) === 0; }
+  const meterRatio = numerator / denominator;
   if (isPowerOf2(denominator)) { midiMeter = [numerator, denominator]; syncFactor = 1; }
   else {
-    const ceilDenominator = 2 ** Math.ceil(Math.log2(denominator));
-    const floorDenominator = 2 ** Math.floor(Math.log2(denominator));
-    const meterRatio = numerator / denominator;
-    const ceilRatio = numerator / ceilDenominator;
-    const floorRatio = numerator / floorDenominator;
-    if (Math.abs(meterRatio - ceilRatio) < Math.abs(meterRatio - floorRatio)) 
-      { midiMeter = [numerator, ceilDenominator]; syncFactor = meterRatio / ceilRatio; }
-    else { midiMeter = [numerator, floorDenominator]; syncFactor = meterRatio / floorRatio; }
+    const high = 2 ** Math.ceil(Math.log2(denominator));
+    const low = 2 ** Math.floor(Math.log2(denominator));
+    const highRatio = numerator / high;
+    const lowRatio = numerator / low;
+    if (Math.abs(meterRatio - highRatio) < Math.abs(meterRatio - lowRatio)) 
+      { midiMeter = [numerator, high]; syncFactor = meterRatio / highRatio; }
+    else { midiMeter = [numerator, low]; syncFactor = meterRatio / lowRatio; }
   }
   const midiBPM = BPM * syncFactor;
-  const ticksPerMeasure = PPQ * 4 * (numerator / denominator) * syncFactor;
+  const ticksPerMeasure = PPQ * 4 * meterRatio * syncFactor;
   const ticksPerBeat = ticksPerMeasure / numerator;
-  return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat };
+  return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio };
 };
 
 // Random weighted selection. Any sized list of weights with any values will be normalized to fit the range.
@@ -97,8 +97,8 @@ const rhythms = {
   'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
   'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, Math.ceil(randomFloat(2, length / randomFloat(1.2))))] },
-  'rotate': { method: 'rotate', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], 1, 'random'] },
-  'morph': { method: 'morph', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], 'random'] }
+  'rotate': { method: 'rotate', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], randomInt(2), '?'] },
+  'morph': { method: 'morph', args: (level) => [this[`last${String(level || '').charAt(0).toUpperCase() + String(level || '').slice(1)}Rhythm`] || [], '?'] }
 };
 
 rhythm = (level) => {
