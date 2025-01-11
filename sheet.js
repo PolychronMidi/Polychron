@@ -1,60 +1,60 @@
-INSTRUMENT = 'glockenspiel';
-LOG = 'measure';
-TUNING_FREQ = 432;
-BINAURAL = {
+INSTRUMENT='glockenspiel';
+LOG='measure';
+TUNING_FREQ=432;
+BINAURAL={
   MIN: 8,
   MAX: 12
 };
-PPQ = 30000;
-BPM = 80;
-NUMERATOR = {
+PPQ=30000;
+BPM=80;
+NUMERATOR={
   MIN: 2,
   MAX: 15,
-  WEIGHTS: [.1, .2, .3, .4, .2, .1, .05, .01]
+  WEIGHTS: [10, 20, 30, 40, 20, 10, 5, 1]
 };
-DENOMINATOR = {
+DENOMINATOR={
   MIN: 3,
   MAX: 11,
-  WEIGHTS: [.1, .2, .3, .4, .2, .1, .05, .01]
+  WEIGHTS: [10, 20, 30, 40, 20, 10, 5, 1]
 };
-OCTAVE = {
+OCTAVE={
   MIN: 1,
   MAX: 8,
-  WEIGHTS: [.12, .24, .33, .4, .4, .33, .07, .03]
+  WEIGHTS: [12, 24, 33, 40, 40, 33, 7, 3]
 };
-VOICES = {
+VOICES={
   MIN: 0,
   MAX: 7,
-  WEIGHTS: [.15, .3, .25, .07, .04, .03, .02, .01]
+  WEIGHTS: [15, 30, 25, 7, 4, 3, 2, 1]
 };
 // TODO: implement motifs, phrases, sections, and section types (introduction, exposition, development, conclusion, fugue).
-// SECTIONS = {
+// SECTIONS={
 //   MIN: 2,
 //   MAX: 4
 // };
-// PHRASES_PER_SECTION = {
+// PHRASES_PER_SECTION={
 //   MIN: 2,
 //   MAX: 4
 // };
-// MEASURES_PER_PHRASE = {
+// MEASURES_PER_PHRASE={
 //   MIN: 2,
 //   MAX: 4
 // };
-MEASURES = {
+MEASURES={
   MIN: 10,
   MAX: 20
 };
-DIVISIONS = {
+DIVISIONS={
   MIN: 0,
   MAX: 10,
-  WEIGHTS: [.01, 1.5, 2, 2.5, 2, 1, .1, .07, .02, .02, .01]
+  WEIGHTS: [1, 15, 20, 25, 20, 10, 10, 7, 2, 2, 1]
 };
-SUBDIVISIONS = {
+SUBDIVISIONS={
   MIN: 0,
   MAX: 10,
-  WEIGHTS: [.05, 1, 2, 1.5, 2, 1, .5, .04, .02, .01]
+  WEIGHTS: [5, 10, 20, 15, 20, 10, 50, 4, 2, 1]
 };
-COMPOSERS = [
+COMPOSERS=[
   // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
   // { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
   // { type: 'mode', name: 'ionian', root: 'C', return: 'new ModeComposer(this.name, this.root)' },
@@ -62,4 +62,4 @@ COMPOSERS = [
   { type: 'randomChordProgression', return: 'new RandomChordComposer()' },
   { type: 'randomMode', return: 'new RandomModeComposer()' }
 ];
-SILENT_OUTRO_SECONDS = 5;
+SILENT_OUTRO_SECONDS=5;
