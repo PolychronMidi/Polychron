@@ -17,8 +17,8 @@ class RhythmComposer {
     numbers = makeOnsets(...numbers.make); }
     return t.RhythmPattern.onsets(numbers);
   }
-  random(length, probOn = 0.5, rnd = m.random) { return t.RhythmPattern.random(length, probOn - 1); }
-  prob(probs, rnd = m.random) { return t.RhythmPattern.probability(probs); }
+  random(length, probOn = 0.5) { return t.RhythmPattern.random(length, 1 - probOn); }
+  prob(probs) { return t.RhythmPattern.probability(probs); }
   euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
   rotate(pattern, rotations, direction = 'R', length = pattern.length) {
     if (direction === '?') { direction = m.random() < 0.5 ? 'L' : 'R'; }
@@ -31,9 +31,9 @@ class RhythmComposer {
     probHigh = probHigh === undefined ? probLow : probHigh;
     let morpheus = pattern.map((v, index) => {
       let _ = ['up', 'down', 'both']; let d = direction === '?' ? (_[randomInt(_.length - 1)]) : direction.toLowerCase();
-      let up = v === 0 ? m.min(v + morph, 1) : v;
-      let down = v === 1 ? m.max(v - morph, 0) : v;
-      return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v === 0 ? up : down) : v);
+      let up = v < 1 ? m.min(v + morph, 1) : v;
+      let down = v > 0 ? m.max(v - morph, 0) : v;
+      return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v < 1 ? up : down) : v);
     });
     return this.prob(adjustPatternLength(morpheus, length));
   }
@@ -145,16 +145,17 @@ class RandomModeComposer extends ModeComposer {
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio } = midiSync());
-    c.push(logUnit('measure')); beatRhythm = rhythm('beat', numerator); lastBeatRhythm = beatRhythm;
+    lastBeatRhythm = lastBeatRhythm < 1 ? new RhythmComposer().random(numerator) : lastBeatRhythm;
+    c.push(logUnit('measure')); beatRhythm = rhythm('beat', numerator, lastBeatRhythm); lastBeatRhythm = beatRhythm;
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
       );
     for (beatIndex = 0; beatIndex < numerator; beatIndex++) { 
-      if (beatRhythm[beatIndex] === 1) {beatsOn++; beatsOff = 0}
+      if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff = 0}
       else {beatsOn = 0; beatsOff++;}
       beatStart = currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
-        if (beatCount % beatsUntilBinauralShift === 0) {  beatCount = 0;
+        if (beatCount % beatsUntilBinauralShift < 1) {  beatCount = 0;
           flipBinaural = !flipBinaural;
           beatsUntilBinauralShift = randomInt(2, 5);
           binauralFreqOffset = randomFloat(m.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), m.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));
@@ -176,26 +177,26 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat = m.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
-        divRhythm = rhythm('div', divsPerBeat); lastDivRhythm = divRhythm; ticksPerDiv = ticksPerBeat / m.max(1, divsPerBeat);
-
+        lastDivRhythm = lastDivRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : lastDivRhythm;
+        divRhythm = rhythm('div', divsPerBeat, lastDivRhythm); lastDivRhythm = divRhythm; ticksPerDiv = ticksPerBeat / m.max(1, divsPerBeat);
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-        if (divRhythm[divIndex] === 1) {divsOn++; divsOff = 0}
+        if (divRhythm[divIndex] > 0) {divsOn++; divsOff = 0}
         else {divsOn = 0; divsOff++;}
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);  subdivsPerDiv = r(MIN, MAX, WEIGHTS);
-        subdivRhythm = rhythm('subdiv', subdivsPerDiv);  lastSubdivRhythm = subdivRhythm;
+        lastSubdivRhythm = lastSubdivRhythm < 1 ? new RhythmComposer().random(subdivsPerDiv) : lastSubdivRhythm;
+        subdivRhythm = rhythm('subdiv', subdivsPerDiv, lastSubdivRhythm);  lastSubdivRhythm = subdivRhythm;
         ticksPerSubdiv = ticksPerDiv / m.max(1, subdivsPerDiv);
         useSubdiv = m.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart = divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
-          let playChance = (beatRhythm[beatIndex] === 1 ? 1 : 1 / numerator + beatsOff * 1 / numerator) +
-          (divRhythm[divIndex] === 1 ? 1 : 1 / divsPerBeat + divsOff * 1 / divsPerBeat) +
-          (subdivRhythm[subdivIndex] === 1 ? 1 : 1 / subdivsPerDiv + subdivsOff * 1 / subdivsPerDiv);
+          let playChance = (beatRhythm[beatIndex] > 0 ? 1 : 1 / numerator + beatsOff * 1 / numerator) +
+          (divRhythm[divIndex] > 0 ? 1 : 1 / divsPerBeat + divsOff * 1 / divsPerBeat) +
+          (subdivRhythm[subdivIndex] > 0 ? 1 : 1 / subdivsPerDiv + subdivsOff * 1 / subdivsPerDiv);
           if (m.random() < m.max(1, playChance)) {
           composer.composeChord().forEach(({ note }) => {  noteCount++; rest = m.random() < .15;
-          if (noteCount % notesUntilRest === 0 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33) && rest) {  
-          rest = false;  subdivsOff++;
-          subdivsOn = noteCount = notesUntilRest = 0;
+          if (noteCount % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33) && rest) {  
+          rest = false;  subdivsOff++;  subdivsOn = noteCount = notesUntilRest = 0;
           notesUntilRest = m.max(randomInt(3,11), randomInt(randomInt(22,66), randomInt(111, 333) / m.max(20, divsPerBeat * subdivsPerDiv)));
           } else if (subdivsOff < randomInt(11)) {  subdivsOn++; subdivsOff = 0
           on = subdivStart + v(m.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
@@ -207,17 +208,11 @@ class RandomModeComposer extends ModeComposer {
             { tick: side === 'C' ? on : on + v(ticksPerSubdiv * m.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note, side === 'C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
             { tick: on + sustain * (side === 'C' ? 1 : v(randomFloat(.96, 1.01))), values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note] }
           ]).flat()  );
-        }
-          });
-        }}
-      }
-    }
-    currentTick += ticksPerMeasure;  currentTime += secondsPerMeasure;
-  }
+    }});}}}}
+    currentTick += ticksPerMeasure;  currentTime += secondsPerMeasure;  }
   c = c.filter(item => item !== null).sort((a, b) => a.tick - b.tick);  c.forEach(_ => {
     composition += `1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
-    finalTick = _.tick;
-  });
+    finalTick = _.tick;  });
   composition += finale();  fs.writeFileSync('output.csv', composition);
   console.log('output.csv created. Track Length:', finalTime);
 })();

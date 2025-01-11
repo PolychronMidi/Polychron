@@ -194,22 +194,22 @@ closestDivisor = (x, target = 2) => {
   return x % target === 0 ? target : closest;
 };
 
+randomInSetOrRange = (val) => {
+  if (Array.isArray(val)) {
+    return val[0] === val[1] ? val[0] : randomInt(val[0], val[1]);
+  } else if (typeof val === 'function') {
+    const result = val();
+    return Array.isArray(result) ? randomInSetOrRange(result) : result;
+  }
+  return val;
+};
+
 makeOnsets = (length, valuesOrRange) => {
   let onsets = [];
   let total = 0;
-  function randomValueInRange(val) {
-    if (Array.isArray(val)) {
-      return val[0] === val[1] ? val[0] : randomInt(val[0], val[1]);
-    } else if (typeof val === 'function') {
-      // Assuming function returns a number or a range [min, max]
-      const result = val();
-      return Array.isArray(result) ? randomValueInRange(result) : result;
-    }
-    return val;
-  }
   // Build onsets until we reach or exceed length or run out of values to use
   while (total < length) {
-    let v = randomValueInRange(valuesOrRange);
+    let v = randomInSetOrRange(valuesOrRange);
     if (total + (v + 1) <= length) { // +1 because each onset adds 1 to length
       onsets.push(v);
       total += v + 1;
@@ -258,6 +258,13 @@ formatTime = (seconds) => {
   return `${minutes}:${seconds}`;
 };
 
+centerCH = 0;  leftCH = 1;  rightCH = 2;
+leftCH2 = 3;  rightCH2 = 4;
+velocity = 99;
+currentTick = currentTime = 0;
+composition = `0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
+finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
+fs = require('fs');
 
 neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
 centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
@@ -266,16 +273,8 @@ tuningPitchBend = m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 10
 binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
 binauralOffset = (plusOrMinus) => m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
-flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatsOn = beatsOff = divsOn = divsOff = subdivsOn = subdivsOff = noteCount = 0;
+flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatsOn = beatsOff = divsOn = divsOff = subdivsOn = subdivsOff = noteCount = lastBeatRhythm = lastDivRhythm = lastSubdivRhythm = 0;
 notesUntilRest = randomInt(11,33);
-
-centerCH = 0;  leftCH = 1;  rightCH = 2;
-leftCH2 = 3;  rightCH2 = 4;
-velocity = 99;
-currentTick = currentTime = 0;
-composition = `0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
-finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
-fs = require('fs');
 
 
 t = require("tonal");
@@ -320,8 +319,3 @@ allModes = (() => {
   });
   return Array.from(allModes);
 })();
-
-
-lastBeatRhythm = t.RhythmPattern.random(NUMERATOR.MAX, .8);
-lastDivRhythm = t.RhythmPattern.random(DIVISIONS.MAX, .5);
-lastSubdivRhythm = t.RhythmPattern.random(SUBDIVISIONS.MAX, .3);
