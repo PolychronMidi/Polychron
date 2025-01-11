@@ -13,7 +13,7 @@ class RhythmComposer {
     }
     return patternLength(pattern, length);
   }
-  onsets(numbers) { if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
+  onsets(numbers) { if (typeof numbers==='object' && numbers.hasOwnProperty('make')) {
     numbers=makeOnsets(...numbers.make); }
     return t.RhythmPattern.onsets(numbers);
   }
@@ -21,19 +21,19 @@ class RhythmComposer {
   prob(probs) { return t.RhythmPattern.probability(probs); }
   euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
   rotate(pattern, rotations, direction='R', length=pattern.length) {
-    if (direction === '?') { direction=m.random() < .5 ? 'L' : 'R'; }
-    if (direction.toUpperCase() === 'L') { rotations=(pattern.length - rotations) % pattern.length; }
+    if (direction==='?') { direction=m.random() < .5 ? 'L' : 'R'; }
+    if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
     return patternLength(t.RhythmPattern.rotate(pattern, rotations), length);
   }
   morph(pattern, direction='both', length=pattern.length, probLow=.1, probHigh) {
     let morph;
-    morph=probHigh === undefined ? randomFloat(probLow) : randomFloat(probLow, probHigh);
-    probHigh=probHigh === undefined ? probLow : probHigh;
+    morph=probHigh===undefined ? randomFloat(probLow) : randomFloat(probLow, probHigh);
+    probHigh=probHigh===undefined ? probLow : probHigh;
     let morpheus=pattern.map((v, index)=>{
-      let _=['up', 'down', 'both']; let d=direction === '?' ? (_[randomInt(_.length - 1)]) : direction.toLowerCase();
+      let _=['up', 'down', 'both']; let d=direction==='?' ? (_[randomInt(_.length - 1)]) : direction.toLowerCase();
       let up=v < 1 ? m.min(v + morph, 1) : v;
       let down=v > 0 ? m.max(v - morph, 0) : v;
-      return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v < 1 ? up : down) : v);
+      return (d==='up' ? up : d==='down' ? down : d==='both' ? (v < 1 ? up : down) : v);
     });
     return this.prob(patternLength(morpheus, length));
   }
@@ -50,7 +50,7 @@ class MeasureComposer extends RhythmComposer {
   composeNote() {
     const note=this.composeRawNote();
     const midiNote=t.Note.midi(`${note}${this.setOctave()}`);
-    if (midiNote === null) throw new Error(`Invalid note composed: ${note}${this.setOctave()}`);
+    if (midiNote===null) throw new Error(`Invalid note composed: ${note}${this.setOctave()}`);
     return midiNote;
   }
   composeChord() {
@@ -133,9 +133,9 @@ class RandomModeComposer extends ModeComposer {
 }
 (function csvMaestro() {
   p(c,  ...['control_c', 'program_c'].flatMap(type=>[
-    { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type === 'control_c' ? [10, 0] : [INSTRUMENT])] },
-    { type, values: [flipBinaural ? rightCH2 : rightCH, ...(type === 'control_c' ? [10, 127] : [INSTRUMENT])] },      
-    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])] }
+    { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type==='control_c' ? [10, 0] : [INSTRUMENT])] },
+    { type, values: [flipBinaural ? rightCH2 : rightCH, ...(type==='control_c' ? [10, 127] : [INSTRUMENT])] },      
+    { type: type==='control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type==='control_c' ? [tuningPitchBend] : [INSTRUMENT])] }
   ])  );
   totalMeasures=randomInt(MEASURES.MIN, MEASURES.MAX);
   for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
@@ -155,18 +155,19 @@ class RandomModeComposer extends ModeComposer {
       if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0}
       else {beatsOn=0; beatsOff++;}
       beatStart=currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
-        if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0;
-          flipBinaural=!flipBinaural;
+        if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0; flipBinaural=!flipBinaural;
           beatsUntilBinauralShift=randomInt(2, 5);
-          binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), m.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));
+          binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), m.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));   lastBinauralFreqOffset = binauralFreqOffset;
         }
         p(c,
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [leftCH2, binauralMinus] : [leftCH, binauralPlus]] },
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [rightCH2, binauralPlus] : [rightCH, binauralMinus]] }
         );
         if (m.random() < .3) { p(c,  ...['control_c'].flatMap(()=>{
-          balanceOffset=m.round(v(randomInt(22)));
-          sideBias=randomInt(-11,11);
+          balanceOffset=randomInt(m.max(0, lastBalanceOffset - 7), m.min(22, lastBalanceOffset + 7));
+          lastBalanceOffset = balanceOffset;
+          sideBias=randomInt(m.max(-11, lastSideBias - 7), m.min(11, lastSideBias + 7));
+          lastSideBias = sideBias;
           leftOffset=m.min(127,m.max(0, balanceOffset + randomInt(11) + sideBias));
           rightOffset=m.min(127,m.max(0, 127 - balanceOffset - randomInt(11) + sideBias));
           centerOffset=m.min(127,(m.max(0, 64 + m.round(v(balanceOffset / 2)) * (m.random() < .5 ? -1 : 1) + sideBias)));
@@ -191,11 +192,11 @@ class RandomModeComposer extends ModeComposer {
         for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart=divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
           playChance=0;
-          playChance += (beatRhythm[beatIndex] > 0 ? 1 : 1 / numerator + beatsOff * 1 / numerator) +
+          playChance+=(beatRhythm[beatIndex] > 0 ? 1 : 1 / numerator + beatsOff * 1 / numerator) +
           (divRhythm[divIndex] > 0 ? 1 : 1 / divsPerBeat + divsOff * 1 / divsPerBeat) +
           (subdivRhythm[subdivIndex] > 0 ? 1 : 1 / subdivsPerDiv + subdivsOff * 1 / subdivsPerDiv);
           composer.composeChord().forEach(({ note })=>{  
-          if (m.random() * randomFloat(2,6) > playChance) {  noteCount++;  rest=m.random() < .15;
+          if (m.random() * randomFloat(2,4) > playChance) {  noteCount++;  rest=m.random() < .15;
           if (noteCount % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33) && rest) {  
           rest=false;  subdivsOff++;  subdivsOn=noteCount=notesUntilRest=0;
           notesUntilRest=m.max(randomInt(3,11), randomInt(randomInt(22,66), randomInt(111, 333) / m.max(20, divsPerBeat * subdivsPerDiv)));
@@ -206,14 +207,13 @@ class RandomModeComposer extends ModeComposer {
           sustain=(useSubdiv ? subdivSustain : divSustain) * v(randomFloat(.9, 1.2));
           binauralVelocity=v(velocity * randomFloat(.33, .44));
           p(c,  ...['C', 'L', 'R'].map(side=>[
-            { tick: side === 'C' ? on : on + v(ticksPerSubdiv * m.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note, side === 'C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
-            { tick: on + sustain * (side === 'C' ? 1 : v(randomFloat(.96, 1.01))), values: [side === 'C' ? centerCH : (flipBinaural ? (side === 'L' ? leftCH2 : rightCH2) : (side === 'L' ? leftCH : rightCH)), note] }
-          ]).flat()  );
-    }}});}}}
-    currentTick += ticksPerMeasure;  currentTime += secondsPerMeasure;  }
+            { tick: side==='C' ? on : on + v(ticksPerSubdiv * m.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side==='C' ? centerCH : (flipBinaural ? (side==='L' ? leftCH2 : rightCH2) : (side==='L' ? leftCH : rightCH)), note, side==='C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
+            { tick: on + sustain * (side==='C' ? 1 : v(randomFloat(.96, 1.01))), values: [side==='C' ? centerCH : (flipBinaural ? (side==='L' ? leftCH2 : rightCH2) : (side==='L' ? leftCH : rightCH)), note] }
+          ]).flat()  );   }}});}}}
+    currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
   c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
-    composition += `1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
+    composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
     finalTick=_.tick;  });
-  composition += finale();  fs.writeFileSync('output.csv', composition);
+  composition+=finale();  fs.writeFileSync('output.csv', composition);
   console.log('output.csv created. Track Length:', finalTime);
 })();
