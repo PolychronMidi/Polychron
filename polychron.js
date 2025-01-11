@@ -13,8 +13,8 @@ class RhythmComposer {
     }
     return adjustPatternLength(pattern, length);
   }
-  onsets(numbers) { if (typeof numbers === 'object' && numbers.hasOwnProperty('build')) {
-    numbers = buildOnsets(...numbers.build); }
+  onsets(numbers) { if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
+    numbers = makeOnsets(...numbers.make); }
     return t.RhythmPattern.onsets(numbers);
   }
   random(length, probOn = 0.5, rnd = m.random) { return t.RhythmPattern.random(length, probOn - 1); }
@@ -27,14 +27,10 @@ class RhythmComposer {
   }
   morph(pattern, direction = 'both', length = pattern.length, probLow = 0.1, probHigh) {
     let morph;
-    if (probHigh === undefined) { 
-      probHigh = probLow;
-      morph = randomFloat(probLow);
-    } else { 
-      morph = randomFloat(probLow, probHigh); 
-    }
+    morph = probHigh === undefined ? randomFloat(probLow) : randomFloat(probLow, probHigh);
+    probHigh = probHigh === undefined ? probLow : probHigh;
     let morpheus = pattern.map((v, index) => {
-      let d = direction === '?' ? (['up', 'down', 'both'][randomInt(2)]) : direction.toLowerCase();
+      let _ = ['up', 'down', 'both']; let d = direction === '?' ? (_[randomInt(_.length - 1)]) : direction.toLowerCase();
       let up = v === 0 ? m.min(v + morph, 1) : v;
       let down = v === 1 ? m.max(v - morph, 0) : v;
       return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v === 0 ? up : down) : v);
@@ -149,7 +145,7 @@ class RandomModeComposer extends ModeComposer {
     composer = composers[randomComposer];
     [numerator, denominator] = composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio } = midiSync());
-    c.push(logUnit('measure')); beatRhythm = rhythm('beat', 'numerator'); lastBeatRhythm = beatRhythm;
+    c.push(logUnit('measure')); beatRhythm = rhythm('beat', numerator); lastBeatRhythm = beatRhythm;
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
@@ -180,14 +176,14 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat = m.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
-        divRhythm = rhythm('div', 'divsPerBeat'); lastDivRhythm = divRhythm; ticksPerDiv = ticksPerBeat / m.max(1, divsPerBeat);
+        divRhythm = rhythm('div', divsPerBeat); lastDivRhythm = divRhythm; ticksPerDiv = ticksPerBeat / m.max(1, divsPerBeat);
 
       for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
         if (divRhythm[divIndex] === 1) {divsOn++; divsOff = 0}
         else {divsOn = 0; divsOff++;}
         divStart = beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS } = SUBDIVISIONS);  subdivsPerDiv = r(MIN, MAX, WEIGHTS);
-        subdivRhythm = rhythm('subdiv', 'subdivsPerDiv');  lastSubdivRhythm = subdivRhythm;
+        subdivRhythm = rhythm('subdiv', subdivsPerDiv);  lastSubdivRhythm = subdivRhythm;
         ticksPerSubdiv = ticksPerDiv / m.max(1, subdivsPerDiv);
         useSubdiv = m.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {

@@ -194,7 +194,7 @@ closestDivisor = (x, target = 2) => {
   return x % target === 0 ? target : closest;
 };
 
-buildOnsets = (length, valuesOrRange) => {
+makeOnsets = (length, valuesOrRange) => {
   let onsets = [];
   let total = 0;
   function randomValueInRange(val) {
@@ -325,5 +325,3 @@ allModes = (() => {
 lastBeatRhythm = t.RhythmPattern.random(NUMERATOR.MAX, .8);
 lastDivRhythm = t.RhythmPattern.random(DIVISIONS.MAX, .5);
 lastSubdivRhythm = t.RhythmPattern.random(SUBDIVISIONS.MAX, .3);
-
-actuallyDontRest = true;
