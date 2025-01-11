@@ -106,19 +106,13 @@ const rhythms = {
   'random2': { method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
   'euclid': { method: 'euclid', args: (length) => [length, closestDivisor(length, m.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
-  'rotate': { method: 'rotate', args: (length, lastRhythm) => [lastRhythm, randomInt(2), '?', length] },
-  'morph': { method: 'morph', args: (length, lastRhythm) => [lastRhythm, '?', length] }
+  'rotate': { method: 'rotate', args: (length, pattern) => [pattern, randomInt(2), '?', length] },
+  'morph': { method: 'morph', args: (length, pattern) => [pattern, '?', length] }
 };
 
-dynamicStringBuilder = (prefix = '', root, suffix = '') => {
-  const rootString = String(root || '');
-  const capitalizedRoot = prefix ? rootString.charAt(0).toUpperCase() + rootString.slice(1) : rootString;
-  const varName = prefix + capitalizedRoot + suffix;
-  return eval(varName);
-};
 
-rhythm = (level, length) => {
-  lastRhythm = dynamicStringBuilder('last', level, 'Rhythm');
+
+rhythm = (level, length, pattern) => {
   const rhythm = selectFromWeightedOptions(rhythmWeights[level]);
   switch (level) {
     case 'beat':
@@ -132,7 +126,7 @@ rhythm = (level, length) => {
         case 'morph':
           if (rhythms[rhythm]) {
             const methodInfo = rhythms[rhythm];
-            const args = methodInfo.args(length, lastRhythm);
+            const args = methodInfo.args(length, pattern);
             return composer.setRhythm(methodInfo.method, ...args);
           }
           break;
@@ -150,7 +144,7 @@ rhythm = (level, length) => {
           case 'morph':
             if (rhythms[rhythm]) {
               const methodInfo = rhythms[rhythm];
-              const args = methodInfo.args(length, lastRhythm);
+              const args = methodInfo.args(length, pattern);
               return composer.setRhythm(methodInfo.method, ...args);
             }
             break;
@@ -168,7 +162,7 @@ rhythm = (level, length) => {
         case 'morph':
           if (rhythms[rhythm]) {
             const methodInfo = rhythms[rhythm];
-            const args = methodInfo.args(length, lastRhythm);
+            const args = methodInfo.args(length, pattern);
             return composer.setRhythm(methodInfo.method, ...args);
           }
           break;
