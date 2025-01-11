@@ -1,4 +1,4 @@
-const midiData = {
+const midiData={
   program: [
     { number: 0, name: "Acoustic Grand Piano" },
     { number: 1, name: "Bright Acoustic Piano" },
@@ -151,38 +151,38 @@ const midiData = {
     { number: 123, name: "Notes Off" }
   ]
 };
-getMidiValue = (category, name) => {
+getMidiValue=(category, name)=>{
   if (!midiData[category]) {
     console.warn(`Invalid MIDI category: ${category}`);
     return null;
   }
-  const item = midiData[category].find(item => item.name.toLowerCase() === name.toLowerCase());
+  const item=midiData[category].find(item=>item.name.toLowerCase() === name.toLowerCase());
   return item ? item.number : null;
 };
-INSTRUMENT = getMidiValue('program', INSTRUMENT);
+INSTRUMENT=getMidiValue('program', INSTRUMENT);
 
-m = Math;
-randomFloat = (min = 0, max) => {
-  if (max === undefined) { max = min; min = 0; }
+m=Math;
+randomFloat=(min=0, max)=>{
+  if (max === undefined) { max=min; min=0; }
   return m.random() * (max - min + Number.EPSILON) + min;
 };
 
-randomInt = (min = 0, max) => {
-  if (max === undefined) { max = min; min = 0; }
+randomInt=(min=0, max)=>{
+  if (max === undefined) { max=min; min=0; }
   return m.floor(m.random() * (max - min + 1)) + min;
 };
 
-closestDivisor = (x, target = 2) => {
-  let closest = Infinity;
-  let smallestDiff = Infinity;
-  for (let i = 1; i <= m.sqrt(x); i++) {
+closestDivisor=(x, target=2)=>{
+  let closest=Infinity;
+  let smallestDiff=Infinity;
+  for (let i=1; i <= m.sqrt(x); i++) {
     if (x % i === 0) {
-      [i, x / i].forEach(divisor => {
+      [i, x / i].forEach(divisor=>{
         if (divisor !== closest) {
-          let diff = m.abs(divisor - target);
+          let diff=m.abs(divisor - target);
           if (diff < smallestDiff) {
-            smallestDiff = diff;
-            closest = divisor;
+            smallestDiff=diff;
+            closest=divisor;
           }
         }
       });
@@ -194,126 +194,107 @@ closestDivisor = (x, target = 2) => {
   return x % target === 0 ? target : closest;
 };
 
-randomInSetOrRange = (val) => {
+randomInSetOrRange=(val)=>{
   if (Array.isArray(val)) {
     return val[0] === val[1] ? val[0] : randomInt(val[0], val[1]);
-  } else if (typeof val === 'function') {
-    const result = val();
-    return Array.isArray(result) ? randomInSetOrRange(result) : result;
-  }
+  } else if (typeof val === 'function') {  const result=val();
+    return Array.isArray(result) ? randomInSetOrRange(result) : result; }
   return val;
 };
 
-makeOnsets = (length, valuesOrRange) => {
-  let onsets = [];
-  let total = 0;
-  // Build onsets until we reach or exceed length or run out of values to use
+makeOnsets=(length, valuesOrRange)=>{
+  let onsets=[];  let total=0;
+  // Build onsets until reach or exceed length or run out of values to use
   while (total < length) {
-    let v = randomInSetOrRange(valuesOrRange);
+    let v=randomInSetOrRange(valuesOrRange);
     if (total + (v + 1) <= length) { // +1 because each onset adds 1 to length
-      onsets.push(v);
-      total += v + 1;
+      onsets.push(v);  total += v + 1;
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length === 2) {
-      // Try one more time with the lower end of the range
-      v = valuesOrRange[0];
-      if (total + (v + 1) <= length) {
-        onsets.push(v);
-        total += v + 1;
-      }
+      // Try one more time with the low end of the range
+      v=valuesOrRange[0];
+      if (total + (v + 1) <= length) { onsets.push(v);  total += v + 1; }
       break; // Stop after trying with the lower end or if it doesn't fit
     } else {
       break; // If not a range or if the range doesn't fit even with the lower value
     }
   }
-  // Convert onsets to actual rhythm pattern
-  let rhythm = [];
+  // Convert onsets to rhythm pattern
+  let rhythm=[];
   for (let onset of onsets) {
     rhythm.push(1);
-    for (let i = 0; i < onset; i++) {
-      rhythm.push(0);
-    }
+    for (let i=0; i < onset; i++) { rhythm.push(0); }
   }
-  // If total length is less than desired length, pad with zeros
-  while (rhythm.length < length) {
-    rhythm.push(0);
-  }
+  // If length less than desired length, pad with zeros
+  while (rhythm.length < length) { rhythm.push(0); }
   return rhythm;
 };
 
-adjustPatternLength = (pattern, length) => {
+patternLength=(pattern, length)=>{
   if (length === undefined) return pattern;
   if (length > pattern.length) {
-    while (pattern.length < length) {
-      pattern = pattern.concat(pattern.slice(0, length - pattern.length));
-    }
-  } else if (length < pattern.length) {
-    pattern = pattern.slice(0, length);
-  }
+    while (pattern.length < length) {  pattern=pattern.concat(pattern.slice(0, length - pattern.length));  }
+  } else if (length < pattern.length) {  pattern=pattern.slice(0, length);  }
   return pattern;
 };
 
-formatTime = (seconds) => {
-  const minutes = m.floor(seconds / 60);
-  seconds = (seconds % 60).toFixed(4).padStart(7, '0');
+formatTime=(seconds)=>{ const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
 
-centerCH = 0;  leftCH = 1;  rightCH = 2;
-leftCH2 = 3;  rightCH2 = 4;
-velocity = 99;
-currentTick = currentTime = 0;
-composition = `0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
-finale = () => `1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
-fs = require('fs');
+centerCH=0;  leftCH=1;  rightCH=2;
+leftCH2=3;  rightCH2=4;
+velocity=99;
+currentTick=currentTime=0;
+composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
+finale=()=>`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
+fs=require('fs');
 
-neutralPitchBend = 8192; semitone = neutralPitchBend / 2;
-centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
-tuningPitchBend = m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
+neutralPitchBend=8192; semitone=neutralPitchBend / 2;
+centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
+tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
 
-binauralFreqOffset = randomFloat(BINAURAL.MIN, BINAURAL.MAX);
-binauralOffset = (plusOrMinus) => m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
-[binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
-flipBinaural = lastBinauralFreqOffset = beatsUntilBinauralShift = beatCount = beatsOn = beatsOff = divsOn = divsOff = subdivsOn = subdivsOff = noteCount = lastBeatRhythm = lastDivRhythm = lastSubdivRhythm = 0;
-notesUntilRest = randomInt(11,33);
+binauralFreqOffset=randomFloat(BINAURAL.MIN, BINAURAL.MAX);
+binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
+[binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
+flipBinaural=lastBinauralFreqOffset=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=lastBeatRhythm=lastDivRhythm=lastSubdivRhythm=0;
+notesUntilRest=randomInt(11,33);
 
 
-t = require("tonal");
+t=require("tonal");
 
-allNotes = t.Scale.get("C chromatic").notes.map(note => 
+allNotes=t.Scale.get("C chromatic").notes.map(note=>
   t.Note.enharmonic(t.Note.get(note))
 );
 
-allScales = t.Scale.names().filter(scaleName => {
-  return allNotes.some(root => {
-    const scale = t.Scale.get(`${root} ${scaleName}`);
+allScales=t.Scale.names().filter(scaleName=>{
+  return allNotes.some(root=>{
+    const scale=t.Scale.get(`${root} ${scaleName}`);
     return scale.notes.length > 0;
   });
 });
 
-allChords = (function() {
+allChords=(function() {
   function getChordNotes(chordType, root) {
-    const chord = t.Chord.get(`${root} ${chordType}`);
+    const chord=t.Chord.get(`${root} ${chordType}`);
     if (!chord.empty && chord.symbol) {
       return { symbol: chord.symbol, notes: chord.notes };
     }
   }
-  const allChords = new Set();
-  t.ChordType.all().forEach(chordType => {
-    allNotes.forEach(root => {
-      const chord = getChordNotes(chordType.name, root);
-      if (chord) {
-        allChords.add(chord.symbol);
-      }
+  const allChords=new Set();
+  t.ChordType.all().forEach(chordType=>{
+    allNotes.forEach(root=>{
+      const chord=getChordNotes(chordType.name, root);
+      if (chord) {  allChords.add(chord.symbol);  }
     });
   });
   return Array.from(allChords);
 })();
 
-allModes = (() => {
-  const allModes = new Set();
-  t.Mode.all().forEach(mode => {
-    allNotes.forEach(root => {
-      const modeName = `${root} ${mode.name}`;
+allModes=(()=>{
+  const allModes=new Set();
+  t.Mode.all().forEach(mode=>{
+    allNotes.forEach(root=>{
+      const modeName=`${root} ${mode.name}`;
       allModes.add(modeName);
     });
   });
