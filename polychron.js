@@ -145,8 +145,8 @@ class RandomModeComposer extends ModeComposer {
     composer=composers[randomComposer];
     [numerator, denominator]=composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio }=midiSync());
-    lastBeatRhythm=lastBeatRhythm < 1 ? new RhythmComposer().random(numerator) : lastBeatRhythm;
-    c.push(logUnit('measure')); beatRhythm=rhythm('beat', numerator, lastBeatRhythm); lastBeatRhythm=beatRhythm;
+    beatRhythm=beatRhythm < 1 ? new RhythmComposer().random(numerator) : beatRhythm;
+    c.push(logUnit('measure')); beatRhythm=rhythm('beat', numerator, beatRhythm);
     p(c,
       { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
       { tick: currentTick, type: 'bpm', values: [midiBPM] }
@@ -157,17 +157,15 @@ class RandomModeComposer extends ModeComposer {
       beatStart=currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
         if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0; flipBinaural=!flipBinaural;
           beatsUntilBinauralShift=randomInt(2, 5);
-          binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, lastBinauralFreqOffset - 1), m.min(BINAURAL.MAX, lastBinauralFreqOffset + 1));   lastBinauralFreqOffset = binauralFreqOffset;
+          binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, binauralFreqOffset - 1), m.min(BINAURAL.MAX, binauralFreqOffset + 1));
         }
         p(c,
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [leftCH2, binauralMinus] : [leftCH, binauralPlus]] },
           { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [rightCH2, binauralPlus] : [rightCH, binauralMinus]] }
         );
         if (m.random() < .3) { p(c,  ...['control_c'].flatMap(()=>{
-          balanceOffset=randomInt(m.max(0, lastBalanceOffset - 7), m.min(22, lastBalanceOffset + 7));
-          lastBalanceOffset = balanceOffset;
-          sideBias=randomInt(m.max(-11, lastSideBias - 7), m.min(11, lastSideBias + 7));
-          lastSideBias = sideBias;
+          balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(22, balanceOffset + 7));
+          sideBias=randomInt(m.max(-11, sideBias - 7), m.min(11, sideBias + 7));
           leftOffset=m.min(127,m.max(0, balanceOffset + randomInt(11) + sideBias));
           rightOffset=m.min(127,m.max(0, 127 - balanceOffset - randomInt(11) + sideBias));
           centerOffset=m.min(127,(m.max(0, 64 + m.round(v(balanceOffset / 2)) * (m.random() < .5 ? -1 : 1) + sideBias)));
@@ -178,15 +176,15 @@ class RandomModeComposer extends ModeComposer {
             { ..._, values: [centerCH, 10, centerOffset] }
         ];  })  );  }
         divsPerBeat=m.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
-        lastDivRhythm=lastDivRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : lastDivRhythm;
-        divRhythm=rhythm('div', divsPerBeat, lastDivRhythm); lastDivRhythm=divRhythm; ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
+        divRhythm=divRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : divRhythm;
+        divRhythm=rhythm('div', divsPerBeat, divRhythm); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
       for (divIndex=0; divIndex < divsPerBeat; divIndex++) {
         if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0}
         else {divsOn=0; divsOff++;}
         divStart=beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS }=SUBDIVISIONS);  subdivsPerDiv=r(MIN, MAX, WEIGHTS);
-        lastSubdivRhythm=lastSubdivRhythm < 1 ? new RhythmComposer().random(subdivsPerDiv) : lastSubdivRhythm;
-        subdivRhythm=rhythm('subdiv', subdivsPerDiv, lastSubdivRhythm);  lastSubdivRhythm=subdivRhythm;
+        subdivRhythm=subdivRhythm < 1 ? new RhythmComposer().random(subdivsPerDiv) : subdivRhythm;
+        subdivRhythm=rhythm('subdiv', subdivsPerDiv, subdivRhythm);
         ticksPerSubdiv=ticksPerDiv / m.max(1, subdivsPerDiv);
         useSubdiv=m.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {

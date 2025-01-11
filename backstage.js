@@ -312,7 +312,7 @@ tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)
 binauralFreqOffset=randomFloat(BINAURAL.MIN, BINAURAL.MAX);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
-flipBinaural=lastBinauralFreqOffset=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=lastBeatRhythm=lastDivRhythm=lastSubdivRhythm=lastBalanceOffset=lastSideBias=0;
+flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=0;
 notesUntilRest=randomInt(11,33);
 
 
