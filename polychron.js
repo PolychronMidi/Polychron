@@ -174,15 +174,15 @@ class RandomModeComposer extends ModeComposer {
         useSubdiv=m.random() < v(.3, [-.2, .2], .3);
         for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart=divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
-          playChance=0;
-          playChance+=randomFloat(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(1.5, 3 / numerator + beatsOff * (1 / numerator)))) +
-          randomFloat(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(1, 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) +
-          randomFloat(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(.5, 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv))));
+          crossModulateRhythms=0;
+          crossModulateRhythms+=randomFloat(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(randomFloat(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) +
+          randomFloat(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(randomFloat(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) +
+          randomFloat(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(randomFloat(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv))));
           composer.composeChord().forEach(({ note })=>{  
-          if (playChance > 3) {  rest=m.random() < .07;
-          if (rest && (subdivsOn % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33))) {
-          subdivsOff++;  subdivsOn=notesUntilRest=0;
-          notesUntilRest=m.max(randomInt(3,11), randomInt(randomInt(22,66), randomInt(111, 333) / m.max(20, divsPerBeat * subdivsPerDiv)));
+          if (crossModulateRhythms > randomFloat(1,9)) {  rest=m.random() * crossModulateRhythms < 1;
+          if (subdivsOn % subdivsUntilNextRest<3 && (rest && (subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33)))) {
+          subdivsOff++;  subdivsOn=0;
+          subdivsUntilNextRest=m.min(randomInt(7), m.ceil(111 / m.max(33, divsPerBeat * subdivsPerDiv)));
           } else if (subdivsOff < randomInt(11)) {  subdivsOn++; subdivsOff=0
           on=subdivStart + v(m.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
           subdivSustain=v(randomFloat(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
