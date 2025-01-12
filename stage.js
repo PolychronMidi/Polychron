@@ -9,12 +9,11 @@ midiSync=()=>{
     const low=2 ** m.floor(m.log2(denominator));  const lowRatio=numerator / low;
     midiMeter=m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ? [numerator, high] : [numerator, low];
   }
-  const midiMeterRatio=midiMeter[0] / midiMeter[1];
-  syncFactorBPM=midiMeterRatio / meterRatio;
-  const midiBPM=BPM * syncFactorBPM;
-  syncFactorTicks=meterRatio / midiMeterRatio;
-  const ticksPerMeasure=PPQ * 4 * midiMeterRatio * syncFactorTicks;
-  const ticksPerBeat=ticksPerMeasure / numerator;
+  midiMeterRatio=midiMeter[0] / midiMeter[1];
+  syncFactor=midiMeterRatio / meterRatio;
+  midiBPM=BPM * syncFactor;
+  ticksPerMeasure=PPQ * 4 * midiMeterRatio;
+  ticksPerBeat=ticksPerMeasure / numerator;
   return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio };
 };
 rhythmWeights={

@@ -1,38 +1,32 @@
 // Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity.
 require('./stage');
 class RhythmComposer {
-  binary(length=8) { let pattern=[];
-    while (pattern.length < length) {
-      pattern=pattern.concat(t.RhythmPattern.binary(randomInt(99)));
-    }
+  binary(length) { let pattern=[];
+    while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.binary(randomInt(99))); }
     return patternLength(pattern, length);
   }
-  hex(length=8) { let pattern=[];
-    while (pattern.length < length) {
-      pattern=pattern.concat(t.RhythmPattern.hex(randomInt(99).toString(16)));
-    }
+  hex(length) { let pattern=[];
+    while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.hex(randomInt(99).toString(16))); }
     return patternLength(pattern, length);
   }
   onsets(numbers) { if (typeof numbers==='object' && numbers.hasOwnProperty('make')) {
     numbers=makeOnsets(...numbers.make); }
     return t.RhythmPattern.onsets(numbers);
   }
-  random(length, probOn=.5) { return t.RhythmPattern.random(length, 1 - probOn); }
+  random(length, probOn) { return t.RhythmPattern.random(length, 1 - probOn); }
   prob(probs) { return t.RhythmPattern.probability(probs); }
   euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
-  rotate(pattern, rotations, direction='R', length=pattern.length) {
+  rotate(pattern, rotations, direction="R", length=pattern.length) {
     if (direction==='?') { direction=m.random() < .5 ? 'L' : 'R'; }
     if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
     return patternLength(t.RhythmPattern.rotate(pattern, rotations), length);
   }
-  morph(pattern, direction='both', length=pattern.length, probLow=.1, probHigh) {
-    let morph;
+  morph(pattern, direction='both', length=pattern.length, probLow=.1, probHigh) {  let morph;
     morph=probHigh===undefined ? randomFloat(probLow) : randomFloat(probLow, probHigh);
     probHigh=probHigh===undefined ? probLow : probHigh;
     let morpheus=pattern.map((v, index)=>{
       let _=['up', 'down', 'both']; let d=direction==='?' ? (_[randomInt(_.length - 1)]) : direction.toLowerCase();
-      let up=v < 1 ? m.min(v + morph, 1) : v;
-      let down=v > 0 ? m.max(v - morph, 0) : v;
+      let up=v < 1 ? m.min(v + morph, 1) : v;  let down=v > 0 ? m.max(v - morph, 0) : v;
       return (d==='up' ? up : d==='down' ? down : d==='both' ? (v < 1 ? up : down) : v);
     });
     return this.prob(patternLength(morpheus, length));
@@ -60,6 +54,7 @@ class MeasureComposer extends RhythmComposer {
       let note; do {  note=this.composeNote();
       } while (uniqueNotes.has(note));
       uniqueNotes.add(note);
+      console.log({note});
       return { note };
   });  }
 }
@@ -132,11 +127,10 @@ class RandomModeComposer extends ModeComposer {
   composeRawNote() {  this.randomMode();  return super.composeRawNote();  }
 }
 (function csvMaestro() {
-  p(c,  ...['control_c', 'program_c'].flatMap(type=>[
-    { type, values: [flipBinaural ? leftCH2 : leftCH, ...(type==='control_c' ? [10, 0] : [INSTRUMENT])] },
-    { type, values: [flipBinaural ? rightCH2 : rightCH, ...(type==='control_c' ? [10, 127] : [INSTRUMENT])] },      
-    { type: type==='control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type==='control_c' ? [tuningPitchBend] : [INSTRUMENT])] }
-  ])  );
+  p(c, ...['control_c', 'program_c'].flatMap(type => [
+    ...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({
+      type, values: [ch, ...(ch === leftCH || ch === leftCH2 ? (type === 'control_c' ? [10, 0] : [INSTRUMENT]) : (type === 'control_c' ? [10, 127] : [INSTRUMENT]))]})),
+    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])]}]));
   totalMeasures=randomInt(MEASURES.MIN, MEASURES.MAX);
   for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
     randomComposer=randomInt(COMPOSERS.length - 1);
@@ -159,10 +153,9 @@ class RandomModeComposer extends ModeComposer {
           beatsUntilBinauralShift=randomInt(2, 5);
           binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, binauralFreqOffset - 1), m.min(BINAURAL.MAX, binauralFreqOffset + 1));
         }
-        p(c,
-          { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [leftCH2, binauralMinus] : [leftCH, binauralPlus]] },
-          { tick: beatStart, type: 'pitch_bend_c', values: [flipBinaural ? [rightCH2, binauralPlus] : [rightCH, binauralMinus]] }
-        );
+        p(c, ...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({
+          tick: beatStart, type: 'pitch_bend_c', 
+          values: [ch, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)] })));
         if (m.random() < .3) { p(c,  ...['control_c'].flatMap(()=>{
           balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(22, balanceOffset + 7));
           sideBias=randomInt(m.max(-11, sideBias - 7), m.min(11, sideBias + 7));
@@ -170,11 +163,9 @@ class RandomModeComposer extends ModeComposer {
           rightOffset=m.min(127,m.max(0, 127 - balanceOffset - randomInt(11) + sideBias));
           centerOffset=m.min(127,(m.max(0, 64 + m.round(v(balanceOffset / 2)) * (m.random() < .5 ? -1 : 1) + sideBias)));
           _={ tick: beatStart, type: 'control_c' };
-          return [
-            { ..._, values: [flipBinaural ? leftCH2 : leftCH, 10, leftOffset] },
-            { ..._, values: [flipBinaural ? rightCH2 : rightCH, 10, rightOffset] },
-            { ..._, values: [centerCH, 10, centerOffset] }
-        ];  })  );  }
+          return [...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({  ..._,
+            values: [ch, 10, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? leftOffset : rightOffset) : (flipBinaural ? rightOffset : leftOffset)]
+          })), { ..._, values: [centerCH, 10, centerOffset] }];  })  );  }
         divsPerBeat=m.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
         divRhythm=divRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : divRhythm;
         divRhythm=rhythm('div', divsPerBeat, divRhythm); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);

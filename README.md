@@ -15,7 +15,7 @@ Using the `midiSync` function allows for playing any meter (yes, even 420/69) wi
 
 If the denominator is a power of 2 (MIDI compatible meter), it returns the original meter with no changes.
 For denominators that aren't MIDI compatible, it calculates the nearest power of 2.
-It then determines adjustment factors, used to sync the measure (bar) durations of the actual played meter and the spoofed MIDI compatible meter.
+It then determines an adjustment factor, used to sync measure (bar) durations of actual played meters and spoofed MIDI compatible meters.
 
 This approach allows Polychron to represent and work with any meter while maintaining compatibility with standard MIDI playback systems. The result is a composition system that can explore previously inaccessible rhythmic territories within the MIDI framework.
 
