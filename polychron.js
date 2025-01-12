@@ -141,13 +141,9 @@ class RandomModeComposer extends ModeComposer {
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio }=midiSync());
     beatRhythm=beatRhythm < 1 ? new RhythmComposer().random(numerator) : beatRhythm;
     c.push(logUnit('measure')); beatRhythm=rhythm('beat', numerator, beatRhythm);
-    p(c,
-      { tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] },
-      { tick: currentTick, type: 'bpm', values: [midiBPM] }
-      );
+    p(c,{ tick: currentTick, type: 'bpm', values: [midiBPM] },{ tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] });
     for (beatIndex=0; beatIndex < numerator; beatIndex++) { 
-      if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0}
-      else {beatsOn=0; beatsOff++;}
+      if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0} else {beatsOn=0; beatsOff++;}
       beatStart=currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
         if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0; flipBinaural=!flipBinaural;
           beatsUntilBinauralShift=randomInt(2, 5);
@@ -170,8 +166,7 @@ class RandomModeComposer extends ModeComposer {
         divRhythm=divRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : divRhythm;
         divRhythm=rhythm('div', divsPerBeat, divRhythm); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
       for (divIndex=0; divIndex < divsPerBeat; divIndex++) {
-        if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0}
-        else {divsOn=0; divsOff++;}
+        if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0} else {divsOn=0; divsOff++;}
         divStart=beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
         ({ MIN, MAX, WEIGHTS }=SUBDIVISIONS);  subdivsPerDiv=r(MIN, MAX, WEIGHTS);
         subdivRhythm=subdivRhythm < 1 ? new RhythmComposer().random(subdivsPerDiv) : subdivRhythm;
@@ -185,8 +180,8 @@ class RandomModeComposer extends ModeComposer {
           (divRhythm[divIndex] > 0 ? 1 : 1 / divsPerBeat + divsOff * 1 / divsPerBeat) +
           (subdivRhythm[subdivIndex] > 0 ? 1 : 1 / subdivsPerDiv + subdivsOff * 1 / subdivsPerDiv);
           composer.composeChord().forEach(({ note })=>{  
-          if (m.random() * randomFloat(2,4) > playChance) {  noteCount++;  rest=m.random() < .15;
-          if (noteCount % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33) && rest) {  
+          if (m.random() * randomFloat(2,4) > playChance) {  noteCount++;  rest=m.random() < .07;
+          if (rest && (noteCount % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33))) {
           rest=false;  subdivsOff++;  subdivsOn=noteCount=notesUntilRest=0;
           notesUntilRest=m.max(randomInt(3,11), randomInt(randomInt(22,66), randomInt(111, 333) / m.max(20, divsPerBeat * subdivsPerDiv)));
           } else if (subdivsOff < randomInt(11)) {  subdivsOn++; subdivsOff=0
