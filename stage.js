@@ -20,7 +20,7 @@ rhythmWeights={
   'beat': {
     'binary': 2,
     'hex': 2,
-    'onsets2': 5,
+    'onsets': 5,
     'random': 7,
     'euclid': 3,
     'rotate': 2,
@@ -29,7 +29,7 @@ rhythmWeights={
   'div': {
     'binary': 3,
     'hex': 3,
-    'onsets': 2,
+    'onsets2': 2,
     'random2': 3,
     'euclid': 3,
     'rotate': 2,
@@ -38,18 +38,19 @@ rhythmWeights={
   'subdiv': {
     'binary': 1,
     'hex': 1,
-    'onsets': 2,
+    'onsets3': 7,
     'random3': 1,
-    'euclid': 2,
+    'euclid': 3,
     'rotate': 2,
-    'morph': 1
+    'morph': 3
   }
 };
 const rhythms={
   'binary': { method: 'binary', args: (length)=>[length] },
   'hex': { method: 'hex', args: (length)=>[length] },
-  'onsets': { method: 'onsets', args: (length)=>[{ make: [length, ()=>[1, 3]] }] },//range
-  'onsets2': { method: 'onsets', args: (length)=>[{ make: [length, [1, 2]] }] },//values
+  'onsets': { method: 'onsets', args: (length)=>[{ make: [length, ()=>[1, 2]] }] },//range
+  'onsets2': { method: 'onsets', args: (length)=>[{ make: [length, [2, 3, 4]] }] },//values
+  'onsets3': { method: 'onsets', args: (length)=>[{ make: [length, ()=>[3, 7]] }] },
   'random': { method: 'random', args: (length)=>[length, v(.97, [-.1, .3], .2)] },
   'random2': { method: 'random', args: (length)=>[length, v(.9, [-.3, .3], .3)] },
   'random3': { method: 'random', args: (length)=>[length, v(.6, [-.3, .3], .3)] },
@@ -64,7 +65,7 @@ rhythm=(level, length, pattern)=>{
       switch (rhythm) {
         case 'binary':
         case 'hex':
-        case 'onsets2':
+        case 'onsets':
         case 'random':
         case 'euclid':
         case 'rotate':
@@ -82,7 +83,7 @@ rhythm=(level, length, pattern)=>{
         switch (rhythm) {
           case 'binary':
           case 'hex':
-          case 'onsets':
+          case 'onsets2':
           case 'random2':
           case 'euclid':
           case 'rotate':
@@ -100,7 +101,7 @@ rhythm=(level, length, pattern)=>{
       switch (rhythm) {
         case 'binary':
         case 'hex':
-        case 'onsets':
+        case 'onsets3':
         case 'random3':
         case 'euclid':
         case 'rotate':
