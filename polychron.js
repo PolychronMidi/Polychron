@@ -54,7 +54,6 @@ class MeasureComposer extends RhythmComposer {
       let note; do {  note=this.composeNote();
       } while (uniqueNotes.has(note));
       uniqueNotes.add(note);
-      console.log({note});
       return { note };
   });  }
 }
@@ -176,13 +175,13 @@ class RandomModeComposer extends ModeComposer {
         for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {
           subdivStart=divStart + subdivIndex * ticksPerSubdiv;  c.push(logUnit('subdivision'));
           playChance=0;
-          playChance+=(beatRhythm[beatIndex] > 0 ? 1 : 1 / numerator + beatsOff * 1 / numerator) +
-          (divRhythm[divIndex] > 0 ? 1 : 1 / divsPerBeat + divsOff * 1 / divsPerBeat) +
-          (subdivRhythm[subdivIndex] > 0 ? 1 : 1 / subdivsPerDiv + subdivsOff * 1 / subdivsPerDiv);
+          playChance+=randomFloat(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(1.5, 3 / numerator + beatsOff * (1 / numerator)))) +
+          randomFloat(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(1, 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) +
+          randomFloat(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(.5, 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv))));
           composer.composeChord().forEach(({ note })=>{  
-          if (m.random() * randomFloat(2,4) > playChance) {  noteCount++;  rest=m.random() < .07;
-          if (rest && (noteCount % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33))) {
-          rest=false;  subdivsOff++;  subdivsOn=noteCount=notesUntilRest=0;
+          if (playChance > 3) {  rest=m.random() < .07;
+          if (rest && (subdivsOn % notesUntilRest < 1 || subdivsOn > randomInt(7, 22) || divsOn > randomInt(11,33))) {
+          subdivsOff++;  subdivsOn=notesUntilRest=0;
           notesUntilRest=m.max(randomInt(3,11), randomInt(randomInt(22,66), randomInt(111, 333) / m.max(20, divsPerBeat * subdivsPerDiv)));
           } else if (subdivsOff < randomInt(11)) {  subdivsOn++; subdivsOff=0
           on=subdivStart + v(m.random() * ticksPerSubdiv * .07, [-.07, .07], .3);
@@ -193,7 +192,8 @@ class RandomModeComposer extends ModeComposer {
           p(c,  ...['C', 'L', 'R'].map(side=>[
             { tick: side==='C' ? on : on + v(ticksPerSubdiv * m.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [side==='C' ? centerCH : (flipBinaural ? (side==='L' ? leftCH2 : rightCH2) : (side==='L' ? leftCH : rightCH)), note, side==='C' ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)] },
             { tick: on + sustain * (side==='C' ? 1 : v(randomFloat(.96, 1.01))), values: [side==='C' ? centerCH : (flipBinaural ? (side==='L' ? leftCH2 : rightCH2) : (side==='L' ? leftCH : rightCH)), note] }
-          ]).flat()  );   }}});}}}
+          ]).flat()  );            
+          } else {  subdivsOff++; subdivsOn=0  }}});}}}
     currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
   c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
     composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;
