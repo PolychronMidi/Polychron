@@ -33,85 +33,153 @@ class RhythmComposer {
   }
 }
 class MeasureComposer extends RhythmComposer {
-  setMeter() {const {MIN:a,MAX:b,WEIGHTS:c}=NUMERATOR; const {MIN:x,MAX:y,WEIGHTS:z}=DENOMINATOR; 
-  return [ r(a,b,c), r(x,y,z) ]; }
-  setOctave() {const { MIN, MAX, WEIGHTS }=OCTAVE; return r(MIN, MAX, WEIGHTS);}
-  setDivisions() {const { MIN, MAX, WEIGHTS }=DIVISIONS; return r(MIN, MAX, WEIGHTS);}
+  setMeter() {const {MIN:a,MAX:b,WEIGHTS:c}=NUMERATOR; const {MIN:x,MAX:y,WEIGHTS:z}=DENOMINATOR; return [ r(a,b,c), r(x,y,z) ]; }
   setRhythm(method, ...args) {
     if (!this[method] || typeof this[method] !== 'function') {throw new Error(`Unknown rhythm method: ${method}`);}
     return this[method](...args);
   }
-  composeNote() {
-    const note=this.composeRawNote();
-    const midiNote=t.Note.midi(`${note}${this.setOctave()}`);
-    if (midiNote===null) throw new Error(`Invalid note composed: ${note}${this.setOctave()}`);
-    return midiNote;
+  setDivisions() {const { MIN, MAX, WEIGHTS }=DIVISIONS; return r(MIN, MAX, WEIGHTS);}
+  setOctaveRange() {
+    const { MIN, MAX, WEIGHTS } = OCTAVE;
+    let [o1, o2] = [r(MIN, MAX, WEIGHTS), r(MIN, MAX, WEIGHTS)];
+    while(o1===o2 && m.random<.3) o2 = o1 > MIN && o2 < MAX ? o2 + randomInt(-1,-2,1,2) : o1 > MIN ? o2 - randomInt(1,3) : o2 < MAX ? o2 + randomInt(1,3) : o1 > MIN ? o1 - randomInt(1,3) : o1 + randomInt(1,3);
+    while (o1 < MIN ? o1++ : o1 > MAX ? o1-- : false);
+    while (o2 < MIN ? o2++ : o2 > MAX ? o2-- : false);
+    return [ o1, o2 ];
   }
-  composeChord() {
-    const { MIN, MAX, WEIGHTS }=VOICES; const voices=r(MIN, MAX, WEIGHTS);
-    const uniqueNotes=new Set();
-    return Array(voices).fill().map(()=>{
-      let note; do {  note=this.composeNote();
-      } while (uniqueNotes.has(note));
-      uniqueNotes.add(note);
-      return { note };
-  });  }
+  composeChord(octaveRange = null) {
+    const { MIN, MAX, WEIGHTS } = VOICES;
+    const voices = m.min(r(MIN, MAX, WEIGHTS), this.notes.length * 4);
+    const uniqueNotes = new Set();
+    const [minOctave, maxOctave] = octaveRange || this.setOctaveRange();
+    const rootNote = this.notes[randomInt(this.notes.length - 1)];
+    let intervals = [], fallback = false;
+    try {
+      switch (randomInt(2)) {
+        case 0:
+          intervals = [0, 2, 3, 6].map(interval => interval * Math.floor(this.notes.length / 7));
+          break;
+        case 1:
+          intervals = [0, 1, 3, 5].map(interval => interval * Math.floor(this.notes.length / 7));
+          break;
+        default:
+          intervals = Array.from({length: this.notes.length}, (_, i) => i);
+          fallback = true;
+      }
+      return intervals.slice(0, voices).map((interval, index) => {
+        const noteIndex = (this.notes.indexOf(rootNote) + interval) % this.notes.length;
+        let octave = randomInt(minOctave, maxOctave);
+        let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
+        let triedAllSoftLimits = false;
+        while (uniqueNotes.has(note)) {
+          octave = octave < maxOctave ? octave + 1 : 
+                  (octave > minOctave ? octave - 1 : 
+                  (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.MIN) : 
+                  (octave < OCTAVE.MAX ? octave + 1 : 
+                  (() => { console.warn("No unique note found within hard limits, using existing note."); return false; })())));
+          if (octave === false) break;
+          note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
+        }
+        return { note };
+      }).filter((noteObj, index, self) => 
+        index === self.findIndex(n => n.note === noteObj.note)
+      );
+    } catch (e) {
+      if (!fallback) {
+        return this.composeChord(octaveRange);
+      } else {
+        console.warn(e.message);
+        return this.composeChord(octaveRange);
+      }
+    }
+  }
 }
 class ScaleComposer extends MeasureComposer {
-  constructor(scaleName, root) {  super(); this.root=root; this.setScale(scaleName, root);  }
-  setScale(scaleName, root) {
-    this.scale=t.Scale.get(`${root} ${scaleName}`);
-    this.notes=this.scale.notes;
+  constructor(scaleName, root) { 
+    super(); 
+    this.root = root; 
+    this.setScale(scaleName, root);  
   }
-  composeRawNote=()=>this.notes[randomInt(this.notes.length - 1)];
+  setScale(scaleName, root) {
+    this.scale = t.Scale.get(`${root} ${scaleName}`);
+    this.notes = this.scale.notes;
+  }
+  getNotes = () => this.composeChord();
 }
 class RandomScaleComposer extends ScaleComposer {
-  constructor() {  super('', '');  this.randomScale();  }
+  constructor() { 
+    super('', '');  
+    this.randomScale();  
+  }
   randomScale() {
-    const randomScale=allScales[randomInt(allScales.length - 1)];
-    const randomRoot=allNotes[randomInt(allNotes.length - 1)];
+    const randomScale = allScales[randomInt(allScales.length - 1)];
+    const randomRoot = allNotes[randomInt(allNotes.length - 1)];
     this.setScale(randomScale, randomRoot);
   }
-  composeRawNote() {  this.randomScale();  return super.composeRawNote();  }
+  getNotes = () => {
+    this.randomScale();  
+    return super.getNotes();  
+  }
 }
 class ChordComposer extends MeasureComposer {
-  constructor(progression) {  super();  this.setProgression(progression);  }
+  constructor(progression) { 
+    super();  
+    this.setProgression(progression);  
+  }
   setProgression(progression) {
-    const validatedProgression=progression.filter(chordSymbol=>{
-      if (!allChords.includes(chordSymbol)) {  console.warn(`Invalid chord symbol: ${chordSymbol}`);
+    const validatedProgression = progression.filter(chordSymbol => {
+      if (!allChords.includes(chordSymbol)) {  
+        console.warn(`Invalid chord symbol: ${chordSymbol}`);
         return false;
       }
       return true;
     });
-    this.progression=validatedProgression.map(t.Chord.get); this.currentChordIndex=0;
+    this.progression = validatedProgression.map(t.Chord.get); 
+    this.currentChordIndex = 0;
+    this.notes = this.progression[0] ? this.progression[0].notes : [];
   }
-  composeRawNote() {
-    const chord=this.progression[this.currentChordIndex];
-    const noteIndex=randomInt(chord.notes.length - 1);
-    this.currentChordIndex=(this.currentChordIndex + 1) % (this.progression.length - 1);
-    return chord.notes[noteIndex];
+  getNotes = () => {
+    if (!this.progression.length) {
+      console.warn('No valid chords in progression');
+    } else {
+      const chord = this.progression[this.currentChordIndex];
+      this.notes = chord.notes;
+    }
+    const note = this.composeChord();
+    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    return note;
   }
 }
 class RandomChordComposer extends ChordComposer {
-  constructor() {  super([]);  this.randomProgression();  }
+  constructor() { 
+    super([]);  
+    this.randomProgression();  
+  }
   randomProgression() {
-    const progressionLength=randomInt(3, 8);
-    const randomProgression=[];
-    for (let i=0; i < progressionLength; i++) {
-      const randomChord=allChords[randomInt(allChords.length - 1)];
+    const progressionLength = randomInt(3, 8);
+    const randomProgression = [];
+    for (let i = 0; i < progressionLength; i++) {
+      const randomChord = allChords[randomInt(allChords.length - 1)];
       randomProgression.push(randomChord);
     }
     this.setProgression(randomProgression);
   }
-  composeRawNote() {  this.randomProgression();  return super.composeRawNote();  }
+  getNotes = () => {
+    this.randomProgression();  
+    return super.getNotes();  
+  }
 }
 class ModeComposer extends MeasureComposer {
-  constructor(modeName, root) {  super(); this.root=root; this.setMode(modeName, root);  }
-  setMode(modeName, root) {
-    this.mode=t.Mode.get(modeName);
-    this.notes=t.Mode.notes(this.mode, root);
+  constructor(modeName, root) { 
+    super(); 
+    this.root = root; 
+    this.setMode(modeName, root);  
   }
-  composeRawNote=()=>this.notes[randomInt(this.notes.length - 1)];
+  setMode(modeName, root) {
+    this.mode = t.Mode.get(modeName);
+    this.notes = t.Mode.notes(this.mode, root);
+  }
+  getNotes = () => this.composeChord();
 }
 class RandomModeComposer extends ModeComposer {
   constructor() {
@@ -119,11 +187,15 @@ class RandomModeComposer extends ModeComposer {
     this.randomMode();
   }
   randomMode() {
-    const randomMode=allModes[randomInt(allModes.length - 1)];
-    const [root, modeName]=randomMode.split(' ');
-    this.root=root; this.setMode(modeName, root);    
+    const randomMode = allModes[randomInt(allModes.length - 1)];
+    const [root, modeName] = randomMode.split(' ');
+    this.root = root; 
+    this.setMode(modeName, root);    
   }
-  composeRawNote() {  this.randomMode();  return super.composeRawNote();  }
+  getNotes = () => {
+    this.randomMode();  
+    return super.getNotes();  
+  }
 }
 (function csvMaestro() {
   p(c, ...['control_c', 'program_c'].flatMap(type => [
