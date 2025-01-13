@@ -163,13 +163,32 @@ midiValue=(category, name)=>{
 INSTRUMENT=midiValue('program', INSTRUMENT);
 
 m=Math;
-randomFloat=(min=0, max)=>{
-  if (max===undefined) { max=min; min=0; }
-  return m.random() * (max - min + Number.EPSILON) + min;
+randomFloat = (min1=0, max1, min2, max2) => {
+  if (max1 === undefined) { max1 = min1; min1 = 0; }
+  [min1, max1] = [Math.min(min1, max1), Math.max(min1, max1)];
+  if (min2 !== undefined && max2 !== undefined) {
+    [min2, max2] = [Math.min(min2, max2), Math.max(min2, max2)];
+    const range1 = max1 - min1;
+    const range2 = max2 - min2;
+    const choice = m.random() < 0.5 ? {min: min1, max: max1, range: range1} : {min: min2, max: max2, range: range2};
+    return m.random() * (choice.range + Number.EPSILON) + choice.min;
+  } else {
+    return m.random() * (max1 - min1 + Number.EPSILON) + min1;
+  }
 };
-randomInt=(min=0, max)=>{
-  if (max===undefined) { max=min; min=0; }
-  return m.floor(m.random() * (max - min + 1)) + min;
+
+randomInt = (min1=0, max1, min2, max2) => {
+  if (max1 === undefined) { max1 = min1; min1 = 0; }
+  [min1, max1] = [Math.min(min1, max1), Math.max(min1, max1)];
+  if (min2 !== undefined && max2 !== undefined) {
+    [min2, max2] = [Math.min(min2, max2), Math.max(min2, max2)];
+    const range1 = max1 - min1 + 1;
+    const range2 = max2 - min2 + 1;
+    const choice = m.random() < 0.5 ? {min: min1, max: max1, range: range1} : {min: min2, max: max2, range: range2};
+    return m.floor(m.random() * choice.range) + choice.min;
+  } else {
+    return m.floor(m.random() * (max1 - min1 + 1)) + min1;
+  }
 };
 // Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
 v=(value, boostRange=[.05, .10], deboostRange=boostRange, frequency=.05)=>{ let factor;
@@ -229,10 +248,10 @@ r=randomWeightedSelection=(min, max, weights)=>{
   }
 }
 
-selectFromWeightedOptions=(options)=>{
-  const types=Object.keys(options);
-  const weights=types.map(type=>options[type]);
-  const selectedIndex=r(0, types.length - 1, weights);
+selectFromWeightedOptions = (options) => {
+  const types = Object.keys(options);
+  const weights = types.map(type => options[type].weights[0]);
+  const selectedIndex = r(0, types.length - 1, weights);
   return types[selectedIndex];
 };
 

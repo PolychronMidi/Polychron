@@ -16,109 +16,39 @@ midiSync=()=>{
   ticksPerBeat=ticksPerMeasure / numerator;
   return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio };
 };
-rhythmWeights={
-  'beat': {
-    'binary': 2,
-    'hex': 2,
-    'onsets': 5,
-    'random': 7,
-    'euclid': 3,
-    'rotate': 2,
-    'morph': 2
-  },
-  'div': {
-    'binary': 3,
-    'hex': 3,
-    'onsets2': 2,
-    'random2': 3,
-    'euclid': 3,
-    'rotate': 2,
-    'morph': 3
-  },
-  'subdiv': {
-    'binary': 1,
-    'hex': 1,
-    'onsets3': 7,
-    'random3': 1,
-    'euclid': 3,
-    'rotate': 2,
-    'morph': 3
+
+
+
+rhythms = {
+  'binary': { weights: [2, 3, 1], method: 'binary', args: (length) => [length] },
+  'hex': { weights: [2, 3, 1], method: 'hex', args: (length) => [length] },
+  'onsets': { weights: [5, 0, 0], method: 'onsets', args: (length) => [{ make: [length, () => [1, 2]] }] },
+  'onsets2': { weights: [0, 2, 0], method: 'onsets', args: (length) => [{ make: [length, [2, 3, 4]] }] },
+  'onsets3': { weights: [0, 0, 7], method: 'onsets', args: (length) => [{ make: [length, () => [3, 7]] }] },
+  'random': { weights: [7, 0, 0], method: 'random', args: (length) => [length, v(.97, [-.1, .3], .2)] },
+  'random2': { weights: [0, 3, 0], method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
+  'random3': { weights: [0, 0, 1], method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
+  'euclid': { weights: [3, 3, 3], method: 'euclid', args: (length) => [length, closestDivisor(length, m.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
+  'rotate': { weights: [2, 2, 2], method: 'rotate', args: (length, pattern) => [pattern, randomInt(2), '?', length] },
+  'morph': { weights: [2, 3, 3], method: 'morph', args: (length, pattern) => [pattern, '?', length] }
+};
+
+rhythm = (level, length, pattern) => {
+  const levelIndex = ['beat', 'div', 'subdiv'].indexOf(level);
+  const filteredRhythms = Object.fromEntries(
+    Object.entries(rhythms).filter(([_, { weights }]) => weights[levelIndex] > 0)
+  );
+
+  const rhythmKey = selectFromWeightedOptions(filteredRhythms);
+  
+  if (rhythmKey && rhythms[rhythmKey]) {
+    const { method, args } = rhythms[rhythmKey];
+    return composer.setRhythm(method, ...args(length, pattern));
   }
+  
+  return console.warn('unknown rhythm');
 };
-const rhythms={
-  'binary': { method: 'binary', args: (length)=>[length] },
-  'hex': { method: 'hex', args: (length)=>[length] },
-  'onsets': { method: 'onsets', args: (length)=>[{ make: [length, ()=>[1, 2]] }] },//range
-  'onsets2': { method: 'onsets', args: (length)=>[{ make: [length, [2, 3, 4]] }] },//values
-  'onsets3': { method: 'onsets', args: (length)=>[{ make: [length, ()=>[3, 7]] }] },
-  'random': { method: 'random', args: (length)=>[length, v(.97, [-.1, .3], .2)] },
-  'random2': { method: 'random', args: (length)=>[length, v(.9, [-.3, .3], .3)] },
-  'random3': { method: 'random', args: (length)=>[length, v(.6, [-.3, .3], .3)] },
-  'euclid': { method: 'euclid', args: (length)=>[length, closestDivisor(length, m.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
-  'rotate': { method: 'rotate', args: (length, pattern)=>[pattern, randomInt(2), '?', length] },
-  'morph': { method: 'morph', args: (length, pattern)=>[pattern, '?', length] }
-};
-rhythm=(level, length, pattern)=>{
-  const rhythm=selectFromWeightedOptions(rhythmWeights[level]);
-  switch (level) {
-    case 'beat':
-      switch (rhythm) {
-        case 'binary':
-        case 'hex':
-        case 'onsets':
-        case 'random':
-        case 'euclid':
-        case 'rotate':
-        case 'morph':
-          if (rhythms[rhythm]) {
-            const methodInfo=rhythms[rhythm];
-            const args=methodInfo.args(length, pattern);
-            return composer.setRhythm(methodInfo.method, ...args);
-          }
-          break;
-        default:
-          return console.warn('unknown rhythm');
-      }
-      case 'div':
-        switch (rhythm) {
-          case 'binary':
-          case 'hex':
-          case 'onsets2':
-          case 'random2':
-          case 'euclid':
-          case 'rotate':
-          case 'morph':
-            if (rhythms[rhythm]) {
-              const methodInfo=rhythms[rhythm];
-              const args=methodInfo.args(length, pattern);
-              return composer.setRhythm(methodInfo.method, ...args);
-            }
-            break;
-          default:
-            return console.warn('unknown rhythm');
-        }
-    case 'subdiv':
-      switch (rhythm) {
-        case 'binary':
-        case 'hex':
-        case 'onsets3':
-        case 'random3':
-        case 'euclid':
-        case 'rotate':
-        case 'morph':
-          if (rhythms[rhythm]) {
-            const methodInfo=rhythms[rhythm];
-            const args=methodInfo.args(length, pattern);
-            return composer.setRhythm(methodInfo.method, ...args);
-          }
-          break;
-        default:
-          return console.warn('unknown rhythm');
-      }
-    default:
-      return console.warn('unknown rhythm level');
-    }
-};
+
 p=pushMultiple=(array, ...items)=>{  array.push(...items);  };  c=csvRows=[];
 logUnit=(type)=>{  let shouldLog=false;
   if (LOG==='none') shouldLog=false;
