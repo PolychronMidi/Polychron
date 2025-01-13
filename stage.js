@@ -17,8 +17,6 @@ midiSync=()=>{
   return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio };
 };
 
-
-
 rhythms = {
   'binary': { weights: [2, 3, 1], method: 'binary', args: (length) => [length] },
   'hex': { weights: [2, 3, 1], method: 'hex', args: (length) => [length] },
@@ -38,14 +36,11 @@ rhythm = (level, length, pattern) => {
   const filteredRhythms = Object.fromEntries(
     Object.entries(rhythms).filter(([_, { weights }]) => weights[levelIndex] > 0)
   );
-
   const rhythmKey = selectFromWeightedOptions(filteredRhythms);
-  
   if (rhythmKey && rhythms[rhythmKey]) {
     const { method, args } = rhythms[rhythmKey];
     return composer.setRhythm(method, ...args(length, pattern));
   }
-  
   return console.warn('unknown rhythm');
 };
 

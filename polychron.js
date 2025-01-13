@@ -49,7 +49,8 @@ class MeasureComposer extends RhythmComposer {
   }
   composeChord(octaveRange = null) {
     const { MIN, MAX, WEIGHTS } = VOICES;
-    const voices = m.min(r(MIN, MAX, WEIGHTS), this.notes.length * 4);
+    let voices = m.min(r(MIN, MAX, WEIGHTS), this.notes.length * 4);
+    voices = subdivFreq > randomInt(10,20) ? m.max(1,m.floor(voices / randomInt(2,3))) : voices;
     const uniqueNotes = new Set();
     const [minOctave, maxOctave] = octaveRange || this.setOctaveRange();
     const rootNote = this.notes[randomInt(this.notes.length - 1)];
@@ -146,7 +147,7 @@ class ChordComposer extends MeasureComposer {
       this.notes = chord.notes;
     }
     const note = this.composeChord();
-    this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    this.currentChordIndex = m.random > (randomInt(150) / subdivFreq) ? this.currentChordIndex + randomInt(-2,2) % (this.progression.length - 1) : this.currentChordIndex;
     return note;
   }
 }
@@ -156,7 +157,7 @@ class RandomChordComposer extends ChordComposer {
     this.randomProgression();  
   }
   randomProgression() {
-    const progressionLength = randomInt(3, 8);
+    const progressionLength = randomInt(1, 5);
     const randomProgression = [];
     for (let i = 0; i < progressionLength; i++) {
       const randomChord = allChords[randomInt(allChords.length - 1)];
@@ -239,7 +240,8 @@ class RandomModeComposer extends ModeComposer {
       for (divIndex=0; divIndex < divsPerBeat; divIndex++) {
         if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0} else {divsOn=0; divsOff++;}
         divStart=beatStart + divIndex * ticksPerDiv;  c.push(logUnit('division'));
-        ({ MIN, MAX, WEIGHTS }=SUBDIVISIONS);  subdivsPerDiv=r(MIN, MAX, WEIGHTS);
+        ({ MIN, MAX, WEIGHTS }=SUBDIVISIONS);
+        subdivsPerDiv=r(MIN, MAX, WEIGHTS);  subdivFreq=subdivsPerDiv * divsPerBeat / meterRatio;
         subdivRhythm=subdivRhythm < 1 ? new RhythmComposer().random(subdivsPerDiv) : subdivRhythm;
         subdivRhythm=rhythm('subdiv', subdivsPerDiv, subdivRhythm);
         ticksPerSubdiv=ticksPerDiv / m.max(1, subdivsPerDiv);
