@@ -224,15 +224,15 @@ composers=(function() {  return COMPOSERS.map(composer=>
           tick: beatStart, type: 'pitch_bend_c', 
           values: [ch, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]  })));
         if (m.random() < .3) { p(c,  ...['control_c'].flatMap(()=>{
-          balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(44, balanceOffset + 7));
+          balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(55, balanceOffset + 7));
           sideBias=randomInt(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
-          leftOffset=m.min(127,m.max(0, balanceOffset + randomInt(7) + sideBias));
-          rightOffset=m.min(127,m.max(0, 127 - balanceOffset - randomInt(7) + sideBias));
-          centerOffset=m.min(127,(m.max(0, 64 + m.round(v(balanceOffset / randomInt(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
+          leftBalance=m.min(0,m.max(56, balanceOffset + randomInt(7) + sideBias));
+          rightBalance=m.max(127,m.min(72, 127 - balanceOffset - randomInt(7) + sideBias));
+          centerBalance=m.min(96,(m.max(32, 64 + m.round(v(balanceOffset / randomInt(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
           _={ tick: beatStart, type: 'control_c' };
           return [...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({  ..._,
-            values: [ch, 10, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? leftOffset : rightOffset) : (flipBinaural ? rightOffset : leftOffset)]
-          })), { ..._, values: [centerCH, 10, centerOffset] }];  })  );  }
+            values: [ch, 10, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? leftBalance : rightBalance) : (flipBinaural ? rightBalance : leftBalance)]
+          })), { ..._, values: [centerCH, 10, centerBalance] }];  })  );  }
         divsPerBeat=m.ceil(composer.setDivisions() * (meterRatio < 1 ? meterRatio : 1 / meterRatio));
         divRhythm=divRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : divRhythm;
         divRhythm=rhythm('div', divsPerBeat, divRhythm); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
