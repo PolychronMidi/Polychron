@@ -56,12 +56,13 @@ class MeasureComposer extends RhythmComposer {
     const rootNote = this.notes[randomInt(this.notes.length - 1)];
     let intervals = [], fallback = false;
     try {
+      const shift=randomInt(1);
       switch (randomInt(2)) {
         case 0:
-          intervals = [0, 2, 3, 6].map(interval => interval * Math.floor(this.notes.length / 7));
+          intervals = [0, 2, 3 + m.round(m.random()*shift), 6 - m.round(m.random()*shift)].map(interval => interval * Math.floor(this.notes.length / 7));
           break;
         case 1:
-          intervals = [0, 1, 3, 5].map(interval => interval * Math.floor(this.notes.length / 7));
+          intervals = [0, 1, 3 + m.round(m.random()*shift), 5 + m.round(m.random()*shift)].map(interval => interval * Math.floor(this.notes.length / 7));
           break;
         default:
           intervals = Array.from({length: this.notes.length}, (_, i) => i);
@@ -198,6 +199,8 @@ class RandomModeComposer extends ModeComposer {
     return super.getNotes();  
   }
 }
+composers=(function() {  return COMPOSERS.map(composer=>
+  eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
 (function csvMaestro() {
   p(c, ...['control_c', 'program_c'].flatMap(type => [
     ...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({
@@ -205,10 +208,7 @@ class RandomModeComposer extends ModeComposer {
     { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])]}]));
   totalMeasures=randomInt(MEASURES.MIN, MEASURES.MAX);
   for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
-    randomComposer=randomInt(COMPOSERS.length - 1);
-    composers=(function() {  return COMPOSERS.map(composer=>
-      eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
-    composer=composers[randomComposer];
+    composer=composers[randomInt(COMPOSERS.length - 1)];
     [numerator, denominator]=composer.setMeter();
     ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio }=midiSync());
     beatRhythm=beatRhythm < 1 ? new RhythmComposer().random(numerator) : beatRhythm;
@@ -219,17 +219,16 @@ class RandomModeComposer extends ModeComposer {
       beatStart=currentTick + beatIndex * ticksPerBeat;  c.push(logUnit('beat')); beatCount++;
         if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0; flipBinaural=!flipBinaural;
           beatsUntilBinauralShift=randomInt(2, 5);
-          binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, binauralFreqOffset - 1), m.min(BINAURAL.MAX, binauralFreqOffset + 1));
-        }
+          binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, binauralFreqOffset - 1), m.min(BINAURAL.MAX, binauralFreqOffset + 1));  }
         p(c, ...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({
           tick: beatStart, type: 'pitch_bend_c', 
-          values: [ch, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)] })));
+          values: [ch, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]  })));
         if (m.random() < .3) { p(c,  ...['control_c'].flatMap(()=>{
-          balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(22, balanceOffset + 7));
-          sideBias=randomInt(m.max(-11, sideBias - 7), m.min(11, sideBias + 7));
-          leftOffset=m.min(127,m.max(0, balanceOffset + randomInt(11) + sideBias));
-          rightOffset=m.min(127,m.max(0, 127 - balanceOffset - randomInt(11) + sideBias));
-          centerOffset=m.min(127,(m.max(0, 64 + m.round(v(balanceOffset / 2)) * (m.random() < .5 ? -1 : 1) + sideBias)));
+          balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(44, balanceOffset + 7));
+          sideBias=randomInt(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
+          leftOffset=m.min(127,m.max(0, balanceOffset + randomInt(7) + sideBias));
+          rightOffset=m.min(127,m.max(0, 127 - balanceOffset - randomInt(7) + sideBias));
+          centerOffset=m.min(127,(m.max(0, 64 + m.round(v(balanceOffset / randomInt(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
           _={ tick: beatStart, type: 'control_c' };
           return [...[leftCH, leftCH2, rightCH, rightCH2].map(ch => ({  ..._,
             values: [ch, 10, (ch === leftCH || ch === leftCH2) ? (flipBinaural ? leftOffset : rightOffset) : (flipBinaural ? rightOffset : leftOffset)]
