@@ -338,8 +338,8 @@ leftCH2=3;  rightCH2=4;
 source=[centerCH1, leftCH1, leftCH2, rightCH1, rightCH2];
 centerCH2=5; leftCH3=6; rightCH3=7;
 leftCH4=8;  rightCH4=10;//ch9=percussion
-reflections=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
-reflect = {[centerCH1]: centerCH2, [leftCH1]: leftCH3, [rightCH1]: rightCH3, [leftCH2]: leftCH4, [rightCH2]: rightCH4}[side] || [];
+mirror=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
+reflections = {[centerCH1]: centerCH2, [leftCH1]: leftCH3, [rightCH1]: rightCH3, [leftCH2]: leftCH4, [rightCH2]: rightCH4}[side] || [];
 channel = side === centerCH1 ? centerCH1 : side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : rightCH2;
 reflectionInstruments = [79, 98, 104, 114, ...Array.from({length: 6}, (_, i) => i + 9)];
 
