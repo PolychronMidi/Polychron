@@ -1,4 +1,5 @@
 INSTRUMENT='glockenspiel';
+INSTRUMENT2='music box';
 LOG='measure';
 TUNING_FREQ=432;
 BINAURAL={
@@ -59,7 +60,7 @@ COMPOSERS=[
   // { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
   // { type: 'mode', name: 'ionian', root: 'C', return: 'new ModeComposer(this.name, this.root)' },
   { type: 'randomScale', return: 'new RandomScaleComposer()' },
-  { type: 'randomChordProgression', return: 'new RandomChordComposer()' },
+  { type: 'randomChord', return: 'new RandomChordComposer()' },
   { type: 'randomMode', return: 'new RandomModeComposer()' }
 ];
 SILENT_OUTRO_SECONDS=5;
