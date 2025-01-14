@@ -161,6 +161,7 @@ midiValue=(category, name)=>{
   return item ? item.number : null;
 };
 INSTRUMENT=midiValue('program', INSTRUMENT);
+INSTRUMENT2=midiValue('program', INSTRUMENT2);
 
 m=Math;
 randomFloat = (min1=0, max1, min2, max2) => {
@@ -316,8 +317,6 @@ formatTime=(seconds)=>{ const minutes=m.floor(seconds / 60); seconds=(seconds % 
   return `${minutes}:${seconds}`;
 };
 
-centerCH=0;  leftCH=1;  rightCH=2;
-leftCH2=3;  rightCH2=4;
 velocity=99;
 currentTick=currentTime=0;
 composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
@@ -331,8 +330,18 @@ tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)
 binauralFreqOffset=randomFloat(BINAURAL.MIN, BINAURAL.MAX);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
-flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=0;
+flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 subdivsUntilNextRest=randomInt(11,33);
+
+centerCH1=0;  leftCH1=1;  rightCH1=2;
+leftCH2=3;  rightCH2=4;
+source=[centerCH1, leftCH1, leftCH2, rightCH1, rightCH2];
+centerCH2=5; leftCH3=6; rightCH3=7;
+leftCH4=8;  rightCH4=10;//ch9=percussion
+reflections=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
+reflect = {[centerCH1]: centerCH2, [leftCH1]: leftCH3, [rightCH1]: rightCH3, [leftCH2]: leftCH4, [rightCH2]: rightCH4}[side] || [];
+channel = side === centerCH1 ? centerCH1 : side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : rightCH2;
+reflectionInstruments = [79, 98, 104, 114, ...Array.from({length: 6}, (_, i) => i + 9)];
 
 
 t=require("tonal");
