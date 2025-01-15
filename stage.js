@@ -1,7 +1,7 @@
 require('./sheet'); require('./backstage'); 
 midiSync=()=>{
   function isPowerOf2(n) { return (n & (n - 1))===0; }
-  const meterRatio=numerator / denominator;
+  meterRatio=numerator / denominator;
   let syncFactorBPM=syncFactorTicks=1;
   if (isPowerOf2(denominator)) { midiMeter=[numerator, denominator]; }
   else {

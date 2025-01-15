@@ -42,9 +42,7 @@ class MeasureComposer extends RhythmComposer {
   setOctaveRange() {
     const { MIN, MAX, WEIGHTS } = OCTAVE;
     let [o1, o2] = [r(MIN, MAX, WEIGHTS), r(MIN, MAX, WEIGHTS)];
-    while(o1===o2 && m.random<.3) o2 = o1 > MIN && o2 < MAX ? o2 + randomInt(-1,-2,1,2) : o1 > MIN ? o2 - randomInt(1,3) : o2 < MAX ? o2 + randomInt(1,3) : o1 > MIN ? o1 - randomInt(1,3) : o1 + randomInt(1,3);
-    while (o1 < MIN ? o1++ : o1 > MAX ? o1-- : false);
-    while (o2 < MIN ? o2++ : o2 > MAX ? o2-- : false);
+    while (o1 === o2) {  o2 = m.max(MIN, m.min(MAX, o2 + randomInt(-3, 3)));  }
     return [ o1, o2 ];
   }
   composeChord(octaveRange = null) {
@@ -74,28 +72,13 @@ class MeasureComposer extends RhythmComposer {
         let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
         let triedAllSoftLimits = false;
         while (uniqueNotes.has(note)) {
-          octave = octave < maxOctave ? octave + 1 : 
-                  (octave > minOctave ? octave - 1 : 
-                  (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.MIN) : 
-                  (octave < OCTAVE.MAX ? octave + 1 : 
-                  (() => { console.warn("No unique note found within hard limits, using existing note."); return false; })())));
-          if (octave === false) break;
-          note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-        }
+octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.MIN) : (octave < OCTAVE.MAX ? octave++ : (() => { return false; })())));
+if (octave === false) break; note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;  }
         return { note };
       }).filter((noteObj, index, self) => 
         index === self.findIndex(n => n.note === noteObj.note)
-      );
-    } catch (e) {
-      if (!fallback) {
-        return this.composeChord(octaveRange);
-      } else {
-        console.warn(e.message);
-        return this.composeChord(octaveRange);
-      }
-    }
-  }
-}
+      ); }  catch (e) { if (!fallback) { return this.composeChord(octaveRange); } else {
+      console.warn(e.message);  return this.composeChord(octaveRange);  }}}}
 class ScaleComposer extends MeasureComposer {
   constructor(scaleName, root) { 
     super(); 
@@ -208,8 +191,7 @@ p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
   { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH2, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT2])]}]));
 for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   composer=composers[randomInt(COMPOSERS.length - 1)];
-  [numerator, denominator]=composer.setMeter();
-  ({ midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio }=midiSync());
+  [numerator, denominator]=composer.setMeter();  midiSync();
   beatRhythm=beatRhythm < 1 ? new RhythmComposer().random(numerator) : beatRhythm;//init
   c.push(logUnit('measure')); beatRhythm=rhythm('beat', numerator, beatRhythm);
   p(c,{ tick: currentTick, type: 'bpm', values: [midiBPM] },{ tick: currentTick, type: 'meter', values: [midiMeter[0], midiMeter[1]] });
@@ -265,12 +247,12 @@ composer.composeChord().forEach(({ note }) => {
     sustain=(useSubdiv ? subdivSustain : divSustain) * v(randomFloat(.9, 1.2));
     binauralVelocity=v(velocity * randomFloat(.33, .44));
 const events = source.map(side => {  let result = [
-{tick: side === centerCH1 ? on : on + v(ticksPerSubdiv * m.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)]},
-{tick: on + sustain * (side === centerCH1 ? 1 : v(randomFloat(.96, 1.01))), values: [channel, note]},
+{tick: side === centerCH1 ? on : on + v(ticksPerSubdiv * randomFloat(.07), [-.03, .05], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * randomFloat(.9, 1.1) : binauralVelocity * randomFloat(.97, 1.03)]},
+{tick: on + sustain * (side === centerCH1 ? 1 : v(randomFloat(.92, 1.03))), values: [channel, note]},
 ...(reflections !== centerCH2 && (beatCount % randomInt(33)) < 3 ? [{tick: on, type: 'program_c', values: [reflections, reflectionInstruments[randomInt(reflectionInstruments.length - 1)]]}] : [])
     ];  return [  ...result,
-{tick: side === centerCH1 ? on : on + v(ticksPerSubdiv * m.random() * .1, [-.06, .03], .3), type: 'note_on_c', values: [reflections, note, side === centerCH1 ? velocity * randomFloat(.95, 1.05) : binauralVelocity * randomFloat(.97, 1.03)]},
-{tick: on + sustain * (side === centerCH1 ? 1 : v(randomFloat(.96, 1.01))), values: [reflections, note]}  ];  }).flat();
+{tick: side === centerCH1 ? on : on + v(ticksPerSubdiv * randomFloat(.15), [-.03, .1], .5), type: 'note_on_c', values: [reflections, note, side === centerCH1 ? velocity * randomFloat(.85, 1.15) : binauralVelocity * randomFloat(.8, 1.2)]},
+{tick: on + sustain * (side === centerCH1 ? 1 : v(randomFloat(.85, 1.1))), values: [reflections, note]}  ];  }).flat();
     p(c, ...events);  } else {  subdivsOff++; subdivsOn=0  }}});}}}
   currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
 c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
