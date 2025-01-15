@@ -160,33 +160,44 @@ midiValue=(category, name)=>{
   const item=midiData[category].find(item=>item.name.toLowerCase()===name);
   return item ? item.number : null;
 };
-INSTRUMENT=midiValue('program', INSTRUMENT);
-INSTRUMENT2=midiValue('program', INSTRUMENT2);
+primaryInstrument=midiValue('program', primaryInstrument);
+secondaryInstrument=midiValue('program', secondaryInstrument);
 
-m=Math;
-randomFloat = (min1=0, max1, min2, max2) => {
+m = Math;
+randomFloat = (min1, max1, min2, max2) => {
   if (max1 === undefined) { max1 = min1; min1 = 0; }
   [min1, max1] = [Math.min(min1, max1), Math.max(min1, max1)];
+  
   if (min2 !== undefined && max2 !== undefined) {
     [min2, max2] = [Math.min(min2, max2), Math.max(min2, max2)];
     const range1 = max1 - min1;
     const range2 = max2 - min2;
-    const choice = m.random() < 0.5 ? {min: min1, max: max1, range: range1} : {min: min2, max: max2, range: range2};
-    return m.random() * (choice.range + Number.EPSILON) + choice.min;
+    const totalRange = range1 + range2;
+    const rand = m.random() * totalRange;
+    if (rand < range1) {
+      return m.random() * range1 + min1;
+    } else {
+      return m.random() * range2 + min2;
+    }
   } else {
     return m.random() * (max1 - min1 + Number.EPSILON) + min1;
   }
 };
 
-randomInt = (min1=0, max1, min2, max2) => {
+randomInt = (min1, max1, min2, max2) => {
   if (max1 === undefined) { max1 = min1; min1 = 0; }
   [min1, max1] = [Math.min(min1, max1), Math.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
     [min2, max2] = [Math.min(min2, max2), Math.max(min2, max2)];
     const range1 = max1 - min1 + 1;
     const range2 = max2 - min2 + 1;
-    const choice = m.random() < 0.5 ? {min: min1, max: max1, range: range1} : {min: min2, max: max2, range: range2};
-    return m.floor(m.random() * choice.range) + choice.min;
+    const totalRange = range1 + range2;
+    const rand = m.random() * totalRange;
+    if (rand < range1) {
+      return m.floor(m.random() * range1) + min1;
+    } else {
+      return m.floor(m.random() * range2) + min2;
+    }
   } else {
     return m.floor(m.random() * (max1 - min1 + 1)) + min1;
   }
@@ -341,7 +352,6 @@ leftCH4=8;  rightCH4=10;//ch9=percussion
 mirror=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
 reflectionMap = {[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
 channel = side === centerCH1 ? centerCH1 : side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : rightCH2;
-reflectionInstruments = [79, 98, 104, 114, ...Array.from({length: 6}, (_, i) => i + 9)];
 
 
 t=require("tonal");
