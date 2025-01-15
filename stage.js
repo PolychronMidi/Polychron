@@ -2,7 +2,6 @@ require('./sheet'); require('./backstage');
 midiSync=()=>{
   function isPowerOf2(n) { return (n & (n - 1))===0; }
   meterRatio=numerator / denominator;
-  let syncFactorBPM=syncFactorTicks=1;
   if (isPowerOf2(denominator)) { midiMeter=[numerator, denominator]; }
   else {
     const high=2 ** m.ceil(m.log2(denominator));  const highRatio=numerator / high;
@@ -14,7 +13,7 @@ midiSync=()=>{
   midiBPM=BPM * syncFactor;
   ticksPerMeasure=PPQ * 4 * midiMeterRatio;
   ticksPerBeat=ticksPerMeasure / numerator;
-  return { midiMeter, midiBPM, ticksPerMeasure, ticksPerBeat, meterRatio };
+  return;
 };
 
 rhythms = {
