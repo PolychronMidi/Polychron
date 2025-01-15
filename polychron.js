@@ -186,9 +186,9 @@ composers=(function() {  return COMPOSERS.map(composer=>
   eval(`(function() { return ${composer.return}; }).call({name: '${composer.name || ''}', root: '${composer.root || ''}', progression: ${JSON.stringify(composer.progression || [])}})`)  );  })();
 (function csvMaestro() {  totalMeasures=randomInt(MEASURES.MIN, MEASURES.MAX);
 p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
-  type, values: [ch, ...(ch.toString().startsWith('leftCH') ? (type === 'control_c' ? [10, 0] : [INSTRUMENT]) : (type === 'control_c' ? [10, 127] : [INSTRUMENT]))]})),
-  { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH1, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT])]},
-  { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH2, ...(type === 'control_c' ? [tuningPitchBend] : [INSTRUMENT2])]}]));
+  type, values: [ch, ...(ch.toString().startsWith('leftCH') ? (type === 'control_c' ? [10, 0] : [primaryInstrument]) : (type === 'control_c' ? [10, 127] : [primaryInstrument]))]})),
+  { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH1, ...(type === 'control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+  { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c', values: [centerCH2, ...(type === 'control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
 for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   composer=composers[randomInt(COMPOSERS.length - 1)]; [numerator, denominator]=composer.setMeter(); midiSync();
   beatRhythm=beatRhythm < 1 ? new RhythmComposer().random(numerator) : beatRhythm;//init
@@ -197,12 +197,12 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   for (beatIndex=0; beatIndex < numerator; beatIndex++) { 
     if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}
     beatStart=currentTick + beatIndex * ticksPerBeat; c.push(logUnit('beat')); beatCount++;
-    if ((beatCount % beatsUntilBinauralShift) < 1) {  beatCount=0; flipBinaural=!flipBinaural;
-      beatsUntilBinauralShift=randomInt(3, 7);
+    if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0; flipBinaural=!flipBinaural;
+      beatsUntilBinauralShift=randomInt(numerator * meterRatio, 7);
       binauralFreqOffset=randomFloat(m.max(BINAURAL.MIN, binauralFreqOffset - 1), m.min(BINAURAL.MAX, binauralFreqOffset + 1));  }
     p(c, ...[...source, ...mirror].map(ch => ({
       tick: beatStart, type: 'pitch_bend_c', values: [ch, ch.toString().startsWith('leftCH') ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]  })));
-    if (m.random() < .3 || firstLoop<1 || (beatCount % beatsUntilBinauralShift) < 1) { firstLoop=1; 
+    if (m.random() < .3 || firstLoop<1 || beatCount % beatsUntilBinauralShift < 1) { firstLoop=1; 
       p(c, ...['control_c'].flatMap(()=>{
       balanceOffset=randomInt(m.max(0, balanceOffset - 7), m.min(55, balanceOffset + 7));
       sideBias=randomInt(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
@@ -246,7 +246,7 @@ composer.composeChord().forEach(({ note }) => {
 events = source.map(side => { reflection=reflectionMap[side]; sourceToReflect = [
 {tick: side === centerCH1 ? on : on + v(ticksPerSubdiv * randomFloat(.07), [-.01, .05], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * randomFloat(.9, 1.1) : binauralVelocity * randomFloat(.97, 1.03)]},
 {tick: on + sustain * (side === centerCH1 ? 1 : v(randomFloat(.92, 1.03))), values: [channel, note]},
-...(reflection !== centerCH2 && (beatCount % randomInt(111)) < 3 ? [{tick: on, type: 'program_c', values: [reflection, reflectionInstruments[randomInt(reflectionInstruments.length - 1)]]}] : [])
+...(reflection !== centerCH2 && (beatCount % randomInt(111)) < 3 ? [{tick: on, type: 'program_c', values: [reflection, tertiaryInstruments[randomInt(tertiaryInstruments.length - 1)]]}] : [])
     ];  return [  ...sourceToReflect,
 {tick: side === centerCH1 ? on + v(ticksPerSubdiv * randomFloat(-.01,.1)) : on + v(ticksPerSubdiv * randomFloat(-.03,.15), [-.01, .1], .5), type: 'note_on_c', values: [reflection, note, side === centerCH1 ? velocity * randomFloat(.8, 1.1) : binauralVelocity * randomFloat(.8, 1.15)]},
 {tick: on + sustain * (side === centerCH1 ? randomFloat(.75,1.2) : v(randomFloat(.85, 1.1))), values: [reflection, note]}  ];  }).flat();

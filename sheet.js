@@ -1,5 +1,6 @@
-INSTRUMENT='glockenspiel';
-INSTRUMENT2='music box';
+primaryInstrument='glockenspiel';
+secondaryInstrument='music box';
+tertiaryInstruments = [79, 98, 104, 114, ...Array.from({length: 6}, (_, i) => i + 9)];
 LOG='measure';
 TUNING_FREQ=432;
 BINAURAL={
@@ -21,7 +22,7 @@ DENOMINATOR={
 OCTAVE={
   MIN: 1,
   MAX: 8,
-  WEIGHTS: [12, 24, 33, 40, 40, 33, 7, 3]
+  WEIGHTS: [12, 26, 35, 40, 40, 35, 7, 3]
 };
 VOICES={
   MIN: 0,
