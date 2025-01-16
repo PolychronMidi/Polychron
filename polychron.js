@@ -230,18 +230,18 @@ composer.getNotes().forEach(({ note }) => {
     subdivsOff++;  subdivsOn=0;
     subdivsUntilNextRest=m.min(ri(7), m.ceil(111 / m.max(33, divsPerBeat * subdivsPerDiv)));
     } else if (subdivsOff < ri(11)) {  subdivsOn++; subdivsOff=0;
-    on=subdivStart + rv(m.random() * ticksPerSubdiv * .07, [-.01, .07], .3);
+    on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
     subdivSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
     divSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1, .3], [-.05, -.1], .1);
-    sustain=(useSubdiv ? subdivSustain : divSustain) * rv(rf(.9, 1.2));
+    sustain=(useSubdiv ? subdivSustain : divSustain) * rv(rf(.8, 1.3));
     binauralVelocity=rv(velocity * rf(.33, .44));
 events = source.map(side => { reflection=reflectionMap[side]; sourceToReflect = [
-{tick: side === centerCH1 ? on : on + rv(ticksPerSubdiv * rf(.07), [-.01, .05], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
+{tick: side === centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .05], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
 {tick: on + sustain * (side === centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [channel, note]},
 ...(reflection !== centerCH2 && (beatCount % ri(111)) < 3 ? [{tick: on, type: 'program_c', values: [reflection, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]}] : [])
     ];  return [  ...sourceToReflect,
-{tick: side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.01,.1)) : on + rv(ticksPerSubdiv * rf(-.03,.15), [-.01, .1], .5), type: 'note_on_c', values: [reflection, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
-{tick: on + sustain * (side === centerCH1 ? rf(.75,1.2) : rv(rf(.85, 1.1))), values: [reflection, note]}  ];  }).flat();
+{tick: side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.2,.2)) : on + rv(ticksPerSubdiv * rf(-1/3,1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflection, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
+{tick: on + sustain * (side === centerCH1 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflection, note]}  ];  }).flat();
     p(c, ...events);  } else {  subdivsOff++; subdivsOn=0;  }}});}}}
   currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
 c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
