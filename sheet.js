@@ -12,22 +12,22 @@ BPM=80;
 NUMERATOR={
   min: 2,
   max: 15,
-  weight: [10, 20, 30, 40, 20, 10, 5, 1]
+  weights: [10, 20, 30, 40, 20, 10, 5, 1]
 };
 DENOMINATOR={
   min: 3,
   max: 11,
-  weight: [10, 20, 30, 40, 20, 10, 5, 1]
+  weights: [10, 20, 30, 40, 20, 10, 5, 1]
 };
 OCTAVE={
   min: 0,
   max: 8,
-  weight: [7, 27, 33, 35, 40, 35, 35, 7, 3]
+  weights: [7, 27, 33, 35, 40, 35, 35, 7, 3]
 };
 VOICES={
   min: 0,
   max: 7,
-  weight: [15, 30, 25, 7, 4, 3, 2, 1]
+  weights: [15, 30, 25, 7, 4, 3, 2, 1]
 };
 // TODO: implement motifs, phrases, sections, and section types (introduction, exposition, development, conclusion, fugue).
 // SECTIONS={
@@ -49,12 +49,12 @@ MEASURES={
 DIVISIONS={
   min: 0,
   max: 12,
-  weight: [1, 15, 20, 25, 20, 10, 10, 7, 2, 2, 1]
+  weights: [1, 15, 20, 25, 20, 10, 10, 7, 2, 2, 1]
 };
 SUBDIVISIONS={
   min: 0,
   max: 12,
-  weight: [5, 10, 20, 15, 20, 10, 20, 4, 2, 1]
+  weights: [5, 10, 20, 15, 20, 10, 20, 4, 2, 1]
 };
 COMPOSERS=[
   { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
