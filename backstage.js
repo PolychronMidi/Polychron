@@ -164,12 +164,11 @@ primaryInstrument=midiValue('program', primaryInstrument);
 secondaryInstrument=midiValue('program', secondaryInstrument);
 
 m = Math;
-randomFloat = (min1, max1, min2, max2) => {
+randomFloat = rf = (min1, max1, min2, max2) => {
   if (max1 === undefined) { max1 = min1; min1 = 0; }
-  [min1, max1] = [Math.min(min1, max1), Math.max(min1, max1)];
-  
+  [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
-    [min2, max2] = [Math.min(min2, max2), Math.max(min2, max2)];
+    [min2, max2] = [m.min(min2, max2), m.max(min2, max2)];
     const range1 = max1 - min1;
     const range2 = max2 - min2;
     const totalRange = range1 + range2;
@@ -184,37 +183,37 @@ randomFloat = (min1, max1, min2, max2) => {
   }
 };
 
-randomInt = (min1, max1, min2, max2) => {
+randomInt = ri = (min1, max1, min2, max2) => {
   if (max1 === undefined) { max1 = min1; min1 = 0; }
-  [min1, max1] = [Math.min(min1, max1), Math.max(min1, max1)];
+  [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
-    [min2, max2] = [Math.min(min2, max2), Math.max(min2, max2)];
-    const range1 = max1 - min1 + 1;
-    const range2 = max2 - min2 + 1;
+    [min2, max2] = [m.min(min2, max2), m.max(min2, max2)];
+    const range1 = max1 - min1;
+    const range2 = max2 - min2;
     const totalRange = range1 + range2;
     const rand = m.random() * totalRange;
     if (rand < range1) {
-      return m.floor(m.random() * range1) + min1;
+      return m.max(min1, m.min(m.round(rand) + min1, max1));
     } else {
-      return m.floor(m.random() * range2) + min2;
+      return m.max(min2, m.min(m.round(rand - range1) + min2, max2));
     }
   } else {
-    return m.floor(m.random() * (max1 - min1 + 1)) + min1;
+    return m.max(min1, m.min(m.round(m.random() * (max1 - min1)) + min1, max1));
   }
 };
 // Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
-v=(value, boostRange=[.05, .10], deboostRange=boostRange, frequency=.05)=>{ let factor;
+randomVariation = rv = (value, boostRange=[.05, .10], deboostRange=boostRange, frequency=.05)=>{ let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
-  if (isSingleRange) {  const variation=randomFloat(...singleRange);
+  if (isSingleRange) {  const variation=rf(...singleRange);
     factor=m.random() < frequency ? 1 + variation : 1;
   } else {  const range=m.random() < .5 ? boostRange : deboostRange;
-    factor=m.random() < frequency ? 1 + randomFloat(...range) : 1;  }
+    factor=m.random() < frequency ? 1 + rf(...range) : 1;  }
   return value * factor;
 };
 randomInSetOrRange=(val)=>{
   if (Array.isArray(val)) {
-    return val[0]===val[1] ? val[0] : randomInt(val[0], val[1]);
+    return val[0]===val[1] ? val[0] : ri(val[0], val[1]);
   } else if (typeof val==='function') {  const result=val();
     return Array.isArray(result) ? randomInSetOrRange(result) : result; }
   return val;
@@ -293,13 +292,13 @@ makeOnsets=(length, valuesOrRange)=>{
   let onsets=[];  let total=0;
   // Build onsets until reach or exceed length or run out of values to use
   while (total < length) {
-    let v=randomInSetOrRange(valuesOrRange);
-    if (total + (v+1) <= length) { // +1 because each onset adds 1 to length
-      onsets.push(v);  total+=v+1;
+    let rv=randomInSetOrRange(valuesOrRange);
+    if (total + (rv+1) <= length) { // +1 because each onset adds 1 to length
+      onsets.push(rv);  total+=rv+1;
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
       // Try one more time with the low end of the range
-      v=valuesOrRange[0];
-      if (total + (v+1) <= length) { onsets.push(v);  total+=v+1; }
+      rv=valuesOrRange[0];
+      if (total + (rv+1) <= length) { onsets.push(rv);  total+=rv+1; }
       break; // Stop after trying with the lower end or if it doesn't fit
     } else {
       break; // If not a range or if the range doesn't fit even with the lower value
@@ -324,25 +323,20 @@ patternLength=(pattern, length)=>{
   return pattern;
 };
 
-formatTime=(seconds)=>{ const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
+formatTime=(seconds)=>{ 
+  const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
 
-velocity=99;
-currentTick=currentTime=0;
-composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
-finale=()=>`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
-fs=require('fs');
+currentTick=currentTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
 tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
 
-binauralFreqOffset=randomFloat(BINAURAL.MIN, BINAURAL.MAX);
+binauralFreqOffset=rf(BINAURAL.min, BINAURAL.max);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
-flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
-subdivsUntilNextRest=randomInt(11,33);
 
 centerCH1=0;  leftCH1=1;  rightCH1=2;
 leftCH2=3;  rightCH2=4;
@@ -353,6 +347,12 @@ mirror=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
 reflectionMap = {[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
 channel = side === centerCH1 ? centerCH1 : side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : rightCH2;
 
+subdivFreq=300;
+subdivsUntilNextRest=ri(11,33);
+velocity=99;
+composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
+finale=()=>`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
+fs=require('fs');
 
 t=require("tonal");
 

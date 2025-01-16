@@ -22,11 +22,11 @@ rhythms = {
   'onsets': { weights: [5, 0, 0], method: 'onsets', args: (length) => [{ make: [length, () => [1, 2]] }] },
   'onsets2': { weights: [0, 2, 0], method: 'onsets', args: (length) => [{ make: [length, [2, 3, 4]] }] },
   'onsets3': { weights: [0, 0, 7], method: 'onsets', args: (length) => [{ make: [length, () => [3, 7]] }] },
-  'random': { weights: [7, 0, 0], method: 'random', args: (length) => [length, v(.97, [-.1, .3], .2)] },
-  'random2': { weights: [0, 3, 0], method: 'random', args: (length) => [length, v(.9, [-.3, .3], .3)] },
-  'random3': { weights: [0, 0, 1], method: 'random', args: (length) => [length, v(.6, [-.3, .3], .3)] },
-  'euclid': { weights: [3, 3, 3], method: 'euclid', args: (length) => [length, closestDivisor(length, m.ceil(randomFloat(2, length / randomFloat(1,1.2))))] },
-  'rotate': { weights: [2, 2, 2], method: 'rotate', args: (length, pattern) => [pattern, randomInt(2), '?', length] },
+  'random': { weights: [7, 0, 0], method: 'random', args: (length) => [length, rv(.97, [-.1, .3], .2)] },
+  'random2': { weights: [0, 3, 0], method: 'random', args: (length) => [length, rv(.9, [-.3, .3], .3)] },
+  'random3': { weights: [0, 0, 1], method: 'random', args: (length) => [length, rv(.6, [-.3, .3], .3)] },
+  'euclid': { weights: [3, 3, 3], method: 'euclid', args: (length) => [length, closestDivisor(length, m.ceil(rf(2, length / rf(1,1.2))))] },
+  'rotate': { weights: [2, 2, 2], method: 'rotate', args: (length, pattern) => [pattern, ri(2), '?', length] },
   'morph': { weights: [2, 3, 3], method: 'morph', args: (length, pattern) => [pattern, '?', length] }
 };
 
@@ -38,7 +38,7 @@ rhythm = (level, length, pattern) => {
   const rhythmKey = selectFromWeightedOptions(filteredRhythms);
   if (rhythmKey && rhythms[rhythmKey]) {
     const { method, args } = rhythms[rhythmKey];
-    return composer.setRhythm(method, ...args(length, pattern));
+    return composer.getRhythm(method, ...args(length, pattern));
   }
   return console.warn('unknown rhythm');
 };
