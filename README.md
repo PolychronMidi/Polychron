@@ -38,13 +38,13 @@ You'll need a MIDI player with a soundfont installed to play MIDI files. Standar
 
 [MIDI Editor](https://github.com/jingkaimori/midieditor)
 
-Note that accurate MIDI playback may not be possible on some devices due to extreme data density. In this case you can just render the MIDI file as typical audio formats like MP3. You can convert MIDI files to MP3, WAV, or FLAC with:
+Note that accurate MIDI playback may not be possible on some devices due to extreme data density. In this case you can just render the MIDI file as typical audio formats like MP3. 
+
+You can convert MIDI files to MP3, WAV, or FLAC with:
 
 [Virtual MIDI Synth](https://coolsoft.altervista.org/virtualmidisynth)
-</span>
 
-
-
+</span><br>
 [LibreOffice](https://libreoffice.org/) is a good program for CSV files.
 
 Here's a list of [music related repos](https://github.com/stars/i1li/lists/music) I've saved for inspiration.
