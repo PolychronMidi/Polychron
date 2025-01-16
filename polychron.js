@@ -33,23 +33,23 @@ class RhythmComposer {
   }
 }
 class MeasureComposer extends RhythmComposer {
-  getMeter() {const {min:a,max:b,weight:c}=NUMERATOR; const {min:x,max:y,weight:z}=DENOMINATOR; return [ r(a,b,c), r(x,y,z) ]; }
+  getMeter() {const {min:a,max:b,weights:c}=NUMERATOR; const {min:x,max:y,weights:z}=DENOMINATOR; return [ rw(a,b,c), rw(x,y,z) ]; }
   getRhythm(method, ...args) {
     if (!this[method] || typeof this[method] !== 'function') {throw new Error(`Unknown rhythm method: ${method}`);}
     return this[method](...args);
   }
-  getDivisions() {const { min, max, weight }=DIVISIONS; return r(min, max, weight);}
-  getSubdivisions() {const { min, max, weight }=SUBDIVISIONS; return r(min, max, weight);}
+  getDivisions() {const { min, max, weights }=DIVISIONS; return rw(min, max, weights);}
+  getSubdivisions() {const { min, max, weights }=SUBDIVISIONS; return rw(min, max, weights);}
   getOctaveRange() {
-    const { min, max, weight } = OCTAVE;
-    let [o1, o2] = [r(min, max, weight), r(min, max, weight)];
+    const { min, max, weights } = OCTAVE;
+    let [o1, o2] = [rw(min, max, weights), rw(min, max, weights)];
     while (o1 === o2) {  o2 = m.max(min, m.min(max, o2 + ri(-3, 3)));  }
     return [ o1, o2 ];
   }
   getVoices() {
-    const { min, max, weight } = VOICES;
-    const V = m.min(r(min, max, weight), this.notes.length * 4);
-    return subdivFreq > ri(10,20) ? m.max(1,m.floor(V / ri(2,3))) : V;
+    const { min, max, weights } = VOICES;
+    const v = m.min(rw(min, max, weights), this.notes.length * 4);
+    return subdivFreq > ri(10,20) ? m.max(1,m.floor(v / ri(2,3))) : v;
   }
   getNotes(octaveRange = null) {
     const voices = this.getVoices();
@@ -92,7 +92,7 @@ class ScaleComposer extends MeasureComposer {
 }
 class RandomScaleComposer extends ScaleComposer {
   constructor() { 
-    super('', '');  
+    super('','');  
     this.noteSet();  
   }
   noteSet() {

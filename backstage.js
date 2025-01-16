@@ -211,50 +211,54 @@ randomVariation = rv = (value, boostRange=[.05, .10], deboostRange=boostRange, f
     factor=m.random() < frequency ? 1 + rf(...range) : 1;  }
   return value * factor;
 };
-randomInSetOrRange=(val)=>{
-  if (Array.isArray(val)) {
-    return val[0]===val[1] ? val[0] : ri(val[0], val[1]);
-  } else if (typeof val==='function') {  const result=val();
+randomInSetOrRange=(v)=>{
+  if (Array.isArray(v)) {
+    return v[0]===v[1] ? v[0] : ri(v[0], v[1]);
+  } else if (typeof v==='function') {  const result=v();
     return Array.isArray(result) ? randomInSetOrRange(result) : result; }
-  return val;
+  return v;
 };
-// Random weighted selection. Any sized list of weights with any values will be normalized to fit the range.
-r=randomWeightedSelection=(min, max, weights)=>{
-  const range=max - min + 1;
-  let effectiveWeights=weights;
-  if (weights.length !== range) {
-    const firstWeight=weights[0];
-    const lastWeight=weights[weights.length - 1];
-    if (weights.length < range) {
-      const newWeights=[firstWeight];
-      for (let i=1; i < range - 1; i++) {
-        const fraction=i / (range - 1);
-        const lowerIndex=m.floor(fraction * (weights.length - 1));
-        const upperIndex=m.ceil(fraction * (weights.length - 1));
-        const weightDiff=weights[upperIndex] - weights[lowerIndex];
-        const interpolatedWeight=weights[lowerIndex] + (fraction * (weights.length - 1) - lowerIndex) * weightDiff;
+// Random weighted selection. Any sized list of weights with any values are normalized to fit the range.
+rw = randomWeightedSelection = (min, max, weights) => {
+  const range = max - min + 1;
+  let effectiveWeights = weights;
+  effectiveWeights = weights.map(weight => {
+    const randomFactor = rf(-0.3, 0.3);
+    return weight * (1 + randomFactor);
+  });
+  if (effectiveWeights.length !== range) {
+    const firstWeight = effectiveWeights[0];
+    const lastWeight = effectiveWeights[effectiveWeights.length - 1];
+    if (effectiveWeights.length < range) {
+      const newWeights = [firstWeight];
+      for (let i = 1; i < range - 1; i++) {
+        const fraction = i / (range - 1);
+        const lowerIndex = m.floor(fraction * (effectiveWeights.length - 1));
+        const upperIndex = m.ceil(fraction * (effectiveWeights.length - 1));
+        const weightDiff = effectiveWeights[upperIndex] - effectiveWeights[lowerIndex];
+        const interpolatedWeight = effectiveWeights[lowerIndex] + (fraction * (effectiveWeights.length - 1) - lowerIndex) * weightDiff;
         newWeights.push(interpolatedWeight);
       }
       newWeights.push(lastWeight);
-      effectiveWeights=newWeights;
-    } else if (weights.length > range) {
-      effectiveWeights=[firstWeight];
-      const groupSize=m.floor(weights.length / (range - 1));
-      for (let i=1; i < range - 1; i++) {
-        const startIndex=i * groupSize;
-        const endIndex=m.min(startIndex + groupSize, weights.length - 1);
-        const groupSum=weights.slice(startIndex, endIndex).reduce((sum, w)=>sum + w, 0);
+      effectiveWeights = newWeights;
+    } else if (effectiveWeights.length > range) {
+      effectiveWeights = [firstWeight];
+      const groupSize = m.floor(effectiveWeights.length / (range - 1));
+      for (let i = 1; i < range - 1; i++) {
+        const startIndex = i * groupSize;
+        const endIndex = m.min(startIndex + groupSize, effectiveWeights.length - 1);
+        const groupSum = effectiveWeights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0);
         effectiveWeights.push(groupSum / (endIndex - startIndex));
       }
       effectiveWeights.push(lastWeight);
     }
   }
-  const totalWeight=effectiveWeights.reduce((acc, w)=>acc + w, 0);
-  const normalizedWeights=effectiveWeights.map(w=>w / totalWeight);
-  let random=m.random();
-  let cumulativeProbability=0;
-  for (let i=0; i < normalizedWeights.length; i++) {
-    cumulativeProbability+=normalizedWeights[i];
+  const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
+  const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
+  let random = m.random();
+  let cumulativeProbability = 0;
+  for (let i = 0; i < normalizedWeights.length; i++) {
+    cumulativeProbability += normalizedWeights[i];
     if (random <= cumulativeProbability) { return i + min; }
   }
 }
@@ -262,7 +266,7 @@ r=randomWeightedSelection=(min, max, weights)=>{
 selectFromWeightedOptions = (options) => {
   const types = Object.keys(options);
   const weights = types.map(type => options[type].weights[0]);
-  const selectedIndex = r(0, types.length - 1, weights);
+  const selectedIndex = rw(0, types.length - 1, weights);
   return types[selectedIndex];
 };
 
@@ -292,13 +296,13 @@ makeOnsets=(length, valuesOrRange)=>{
   let onsets=[];  let total=0;
   // Build onsets until reach or exceed length or run out of values to use
   while (total < length) {
-    let rv=randomInSetOrRange(valuesOrRange);
-    if (total + (rv+1) <= length) { // +1 because each onset adds 1 to length
-      onsets.push(rv);  total+=rv+1;
+    let v=randomInSetOrRange(valuesOrRange);
+    if (total + (v+1) <= length) { // +1 because each onset adds 1 to length
+      onsets.push(v);  total+=v+1;
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
       // Try one more time with the low end of the range
-      rv=valuesOrRange[0];
-      if (total + (rv+1) <= length) { onsets.push(rv);  total+=rv+1; }
+      v=valuesOrRange[0];
+      if (total + (v+1) <= length) { onsets.push(v);  total+=v+1; }
       break; // Stop after trying with the lower end or if it doesn't fit
     } else {
       break; // If not a range or if the range doesn't fit even with the lower value
