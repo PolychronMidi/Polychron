@@ -349,7 +349,6 @@ centerCH2=5; leftCH3=6; rightCH3=7;
 leftCH4=8;  rightCH4=10;//ch9=percussion
 mirror=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
 reflectionMap = {[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
-channel = side === centerCH1 ? centerCH1 : side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : rightCH2;
 
 subdivFreq=300;
 subdivsUntilNextRest=ri(11,33);

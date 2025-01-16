@@ -1,4 +1,4 @@
-// Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity.
+// Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity. https://github.com/PolychronMidi/Polychron
 require('./stage');
 class RhythmComposer {
   binary(length) { let pattern=[];
@@ -205,7 +205,7 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
       return [  ...[...source, ...mirror].map(ch => ({  ..._,
         values: [ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : (flipBinaural ? rightBalance : leftBalance)]  })),
         { ..._, values: [centerCH1, 10, centerBalance] },{ ..._, values: [centerCH2, 10, centerBalance] },
-        ...mirror.map(ch =>({ ..._, values: [ch, 7, ch===centerCH2 ? ri(35,50) : ri(55,85)]//volume
+        ...mirror.map(ch =>({ ..._, values: [ch, 7, ch===centerCH2 ? ri(45,65) : ri(65,90)]//volume
     }))  ];  })  );  }
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.98,1.1) : rf(rf(.99,1.05),meterRatio) / meterRatio));
     divRhythm=divRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : divRhythm;
@@ -229,20 +229,22 @@ composer.getNotes().forEach(({ note }) => {
     if (subdivsOn % subdivsUntilNextRest<3 && (rest && (subdivsOn > ri(7, 22) || divsOn > ri(11,33)))) {
     subdivsOff++;  subdivsOn=0;
     subdivsUntilNextRest=m.min(ri(7), m.ceil(111 / m.max(33, divsPerBeat * subdivsPerDiv)));
-    } else if (subdivsOff < ri(11)) {  subdivsOn++; subdivsOff=0;
+    } else if (m.random() < .7 && (subdivsOff > ri(11) || subdivsOn < ri(33))) {  subdivsOn++; subdivsOff=0;
     on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
     subdivSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
     divSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1, .3], [-.05, -.1], .1);
     sustain=(useSubdiv ? subdivSustain : divSustain) * rv(rf(.8, 1.3));
-    binauralVelocity=rv(velocity * rf(.33, .44));
-events = source.map(side => { reflection=reflectionMap[side]; sourceToReflect = [
+    binauralVelocity=rv(velocity * rf(.35, .5));
+events = source.map(side => {  
+channel = side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : side === rightCH2 ? rightCH2 : side;
+reflection=reflectionMap[side]; sourceToReflect = [
 {tick: side === centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .05], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
 {tick: on + sustain * (side === centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [channel, note]},
 ...(reflection !== centerCH2 && (beatCount % ri(111)) < 3 ? [{tick: on, type: 'program_c', values: [reflection, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]}] : [])
     ];  return [  ...sourceToReflect,
 {tick: side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.2,.2)) : on + rv(ticksPerSubdiv * rf(-1/3,1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflection, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
 {tick: on + sustain * (side === centerCH1 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflection, note]}  ];  }).flat();
-    p(c, ...events);  } else {  subdivsOff++; subdivsOn=0;  }}});}}}
+    p(c, ...events);  } else {  subdivsOff++; subdivsOn=0;  }}else {  subdivsOff++; subdivsOn=0;  }});}}}
   currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
 c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
 composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;  finalTick=_.tick;  });
