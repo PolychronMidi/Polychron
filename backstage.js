@@ -347,8 +347,8 @@ leftCH2=3;  rightCH2=4;
 source=[centerCH1, leftCH1, leftCH2, rightCH1, rightCH2];
 centerCH2=5; leftCH3=6; rightCH3=7;
 leftCH4=8;  rightCH4=10;//ch9=percussion
-mirror=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
-reflectionMap = {[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
+reflection=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
+mirror={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
 
 initializeRhythm=(level)=> {
   random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
@@ -365,7 +365,6 @@ initializeRhythm=(level)=> {
 }
 
 subdivFreq=300;
-subdivsUntilNextRest=ri(11,33);
 velocity=99;
 composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
 finale=()=>`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;

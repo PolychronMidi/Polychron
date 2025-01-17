@@ -192,7 +192,7 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
     if (beatCount % beatsUntilBinauralShift < 1) {  beatCount=0; flipBinaural=!flipBinaural;
       beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
       binauralFreqOffset=rf(m.max(BINAURAL.min, binauralFreqOffset - 1), m.min(BINAURAL.max, binauralFreqOffset + 1));  }
-    p(c, ...[...source, ...mirror].map(ch => ({
+    p(c, ...[...source, ...reflection].map(ch => ({
       tick:beatStart, type:'pitch_bend_c', values:[ch, ch.toString().startsWith('leftCH') ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]  })));
     if (m.random() < .3 || firstLoop<1 || beatCount % beatsUntilBinauralShift < 1) { firstLoop=1; 
       p(c, ...['control_c'].flatMap(()=>{
@@ -202,10 +202,10 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
       rightBalance=m.max(127,m.min(72, 127 - balanceOffset - ri(7) + sideBias));
       centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
       _={ tick:beatStart, type:'control_c' };
-      return [  ...[...source, ...mirror].map(ch => ({  ..._,
+      return [  ...[...source, ...reflection].map(ch => ({  ..._,
         values: [ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : (flipBinaural ? rightBalance : leftBalance)]  })),
         { ..._, values:[centerCH1, 10, centerBalance] },{ ..._, values:[centerCH2, 10, centerBalance] },
-        ...mirror.map(ch =>({ ..._, values:[ch, 7, ch===centerCH2 ? ri(45,65) : ri(65,90)]//volume
+        ...reflection.map(ch =>({ ..._, values:[ch, 7, ch===centerCH2 ? ri(45,65) : ri(65,90)]//volume
     }))  ];  })  );  }
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(1,12));
     divRhythm=initializeRhythm('div'); divRhythm=rhythm('div', divsPerBeat, divRhythm); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
@@ -233,13 +233,13 @@ divSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1
 sustain=(useSubdiv ? subdivSustain : divSustain) * rv(rf(.8, 1.3));
 binauralVelocity=rv(velocity * rf(.35, .5));
 events=source.map(side=>{channel=side===leftCH1?(flipBinaural?leftCH2:leftCH1):side===rightCH1?(flipBinaural?rightCH2:rightCH1):side===leftCH2?leftCH2:side===rightCH2?rightCH2:side;
-reflection=reflectionMap[side]; sourceToReflect = [
+reflectionCH=mirror[side]; sourceToReflect = [
 {tick:side === centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .05], .3), type:'note_on_c', values:[channel, note, side === centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
 {tick:on + sustain * (side === centerCH1 ? 1 : rv(rf(.92, 1.03))), values:[channel, note]},
-...(reflection !== centerCH2 && (beatCount % ri(111)) < 3 ? [{tick:on, type:'program_c', values:[reflection, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]}] : [])
+...(reflectionCH !== centerCH2 && (beatCount % ri(111)) < 3 ? [{tick:on, type:'program_c', values:[reflectionCH, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]}] : [])
     ];  return [  ...sourceToReflect,
-{tick:side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.2,.2)) : on + rv(ticksPerSubdiv * rf(-1/3,1/3), [-.01, .1], .5), type:'note_on_c', values:[reflection, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
-{tick:on + sustain * (side === centerCH1 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values:[reflection, note]}  ];  }).flat();
+{tick:side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.2,.2)) : on + rv(ticksPerSubdiv * rf(-1/3,1/3), [-.01, .1], .5), type:'note_on_c', values:[reflectionCH, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
+{tick:on + sustain * (side === centerCH1 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values:[reflectionCH, note]}  ];  }).flat();
     p(c, ...events);  });} else {  subdivsOff++; subdivsOn=0;  }}}}
   currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
 c=c.filter(item=>item!==null).map(item=>({...item,tick:item.tick<0?Math.abs(item.tick)*rf(.1,.3):item.tick})).sort((a,b)=>a.tick-b.tick);  c.forEach(_=>{  composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;  finalTick=_.tick;  });
