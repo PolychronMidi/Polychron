@@ -219,12 +219,10 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
       subdivRhythm=rhythm('subdiv', subdivsPerDiv, subdivRhythm);
       ticksPerSubdiv=ticksPerDiv / m.max(1, subdivsPerDiv);
       useSubdiv=m.random() < rv(.3, [-.2, .2], .3);
-      for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-        subdivStart=divStart + subdivIndex * ticksPerSubdiv; c.push(logUnit('subdivision')); crossModulateRhythms=0;
-        crossModulateRhythms+=rf(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) +
-        rf(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) +
-        rf(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv))));
-if ((subdivsOn < ri(15, 21) || subdivsOff > ri(3) || divsOn < ri(9,15) || divsOff > ri(3,12) || beatsOn < ri(3) || beatsOff > ri(2) ) || crossModulateRhythms > rf(1,11)) {  subdivsOn++; subdivsOff=0;
+      for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { crossModulateRhythms=0;
+        subdivStart=divStart + subdivIndex * ticksPerSubdiv; c.push(logUnit('subdivision'));
+        crossModulateRhythms += rf(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + rf(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + rf(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + (subdivsOn < ri(15, 21) ? rf(.2) : 0) + (subdivsOff > ri(3) ? rf(.2) : 0) + (divsOn < ri(9,15) ? rf(.2) : 0) + (divsOff > ri(3,12) ? rf(.2) : 0) + (beatsOn < ri(3) ? rf(.2) : 0) + (beatsOff > ri(2) ? rf(.2) : 0);
+if (crossModulateRhythms>rf(1.7,4)) {  subdivsOn++; subdivsOff=0;
 composer.getNotes().forEach(({ note }) => {
 on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
 subdivSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
