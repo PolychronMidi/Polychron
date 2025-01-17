@@ -119,7 +119,7 @@ class ChordComposer extends MeasureComposer {
       switch (direction) {
         case 'R': increment = 1; break;
         case 'L': increment = -1; break;
-        case 'E': increment = Math.random() < 0.5 ? 1 : -1; break;
+        case 'E': increment = Math.random() < .5 ? 1 : -1; break;
         case '?': increment = ri(-2, 2); break;
         default:
           console.warn('Invalid direction specified, defaulting to right');
@@ -221,8 +221,14 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
       useSubdiv=m.random() < rv(.3, [-.2, .2], .3);
       for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { crossModulateRhythms=0;
         subdivStart=divStart + subdivIndex * ticksPerSubdiv; c.push(logUnit('subdivision'));
-        crossModulateRhythms += rf(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + rf(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + rf(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + (subdivsOn < ri(15, 21) ? rf(.2) : 0) + (subdivsOff > ri(3) ? rf(.2) : 0) + (divsOn < ri(9,15) ? rf(.2) : 0) + (divsOff > ri(3,12) ? rf(.2) : 0) + (beatsOn < ri(3) ? rf(.2) : 0) + (beatsOff > ri(2) ? rf(.2) : 0);
-if (crossModulateRhythms>rf(1.7,4)) {  subdivsOn++; subdivsOff=0;
+crossModulateRhythms += rf(1.5,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + 
+rf(1,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + 
+rf(.5,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
+(subdivsOn < ri(15, 21) ? rf(.1,.3) : 0) + (subdivsOff > ri(3) ? rf(.1,.3) : 0) + 
+(divsOn < ri(9,15) ? rf(.1,.3) : 0) + (divsOff > ri(3,12) ? rf(.1,.3) : 0) + 
+(beatsOn < ri(3) ? rf(.1,.3) : 0) + (beatsOff > ri(2) ? rf(.1,.3) : 0);
+console.log('crossModulateRhythms:', crossModulateRhythms);
+if (crossModulateRhythms>rf(2.5,3)) {  subdivsOn++; subdivsOff=0;
 composer.getNotes().forEach(({ note }) => {
 on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
 subdivSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
@@ -237,10 +243,9 @@ reflection=reflectionMap[side]; sourceToReflect = [
     ];  return [  ...sourceToReflect,
 {tick: side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.2,.2)) : on + rv(ticksPerSubdiv * rf(-1/3,1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflection, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
 {tick: on + sustain * (side === centerCH1 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflection, note]}  ];  }).flat();
-    p(c, ...events);  });} else {  subdivsOff++; subdivsOn=0; subdivsUntilNextRest=m.min(ri(7), m.ceil(111 / m.max(33, divsPerBeat * subdivsPerDiv)));  }}}}
+    p(c, ...events);  });} else {  subdivsOff++; subdivsOn=0;  }}}}
   currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
-c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
-composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;  finalTick=_.tick;  });
+  c = c.filter(item => item !== null).map(item => ({...item, tick: item.tick < 0 ? Math.abs(item.tick) * rf(.1,.3) : item.tick})).sort((a, b) => a.tick - b.tick);  c.forEach(_=>{  composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;  finalTick=_.tick;  });
 composition+=finale();  fs.writeFileSync('output.csv', composition);
 console.log('output.csv created. Track Length:', finalTime);
 })();
