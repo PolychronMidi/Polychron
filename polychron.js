@@ -207,13 +207,13 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
         { ..._, values: [centerCH1, 10, centerBalance] },{ ..._, values: [centerCH2, 10, centerBalance] },
         ...mirror.map(ch =>({ ..._, values: [ch, 7, ch===centerCH2 ? ri(45,65) : ri(65,90)]//volume
     }))  ];  })  );  }
-    divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.98,1.1) : rf(rf(.99,1.05),meterRatio) / meterRatio));
+    divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(1,12));
     divRhythm=divRhythm < 1 ? new RhythmComposer().random(divsPerBeat) : divRhythm;
     divRhythm=rhythm('div', divsPerBeat, divRhythm); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
     for (divIndex=0; divIndex < divsPerBeat; divIndex++) {
       if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}
       divStart=beatStart + divIndex * ticksPerDiv; c.push(logUnit('division'));
-      subdivsPerDiv=m.ceil(composer.getSubdivisions() * (meterRatio < 1 ? rf(.98,1.1) : rf(rf(.99,1.05),meterRatio) / meterRatio));
+      subdivsPerDiv=m.ceil(composer.getSubdivisions() * (meterRatio < 1 ? rf(.95,1.1) : rf(rf(.95,1.05),meterRatio) / (numerator / meterRatio))/ri(1,12));
       subdivFreq=subdivsPerDiv * divsPerBeat * (meterRatio < 1 ? rf(.98,1.1) : rf(rf(.99,1.05),meterRatio) / meterRatio);
       subdivRhythm=subdivRhythm < 1 ? new RhythmComposer().random(subdivsPerDiv) : subdivRhythm;
       subdivRhythm=rhythm('subdiv', subdivsPerDiv, subdivRhythm);
@@ -224,19 +224,14 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
         crossModulateRhythms+=rf(2/3,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) +
         rf(.5,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) +
         rf(1/3,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv))));
+if ((subdivsOn < ri(15, 21) || subdivsOff > ri(3) || divsOn < ri(9,15) || divsOff > ri(3,12) || beatsOn < ri(3) || beatsOff > ri(2) ) || crossModulateRhythms > rf(1,11)) {  subdivsOn++; subdivsOff=0;
 composer.getNotes().forEach(({ note }) => {
-  if (crossModulateRhythms > rf(1,9)) {  rest=m.random() * crossModulateRhythms < 1;
-    if (subdivsOn % subdivsUntilNextRest<3 && (rest && (subdivsOn > ri(7, 22) || divsOn > ri(11,33)))) {
-    subdivsOff++;  subdivsOn=0;
-    subdivsUntilNextRest=m.min(ri(7), m.ceil(111 / m.max(33, divsPerBeat * subdivsPerDiv)));
-    } else if (m.random() < .7 && (subdivsOff > ri(11) || subdivsOn < ri(33))) {  subdivsOn++; subdivsOff=0;
-    on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
-    subdivSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
-    divSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1, .3], [-.05, -.1], .1);
-    sustain=(useSubdiv ? subdivSustain : divSustain) * rv(rf(.8, 1.3));
-    binauralVelocity=rv(velocity * rf(.35, .5));
-events = source.map(side => {  
-channel = side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : side === rightCH2 ? rightCH2 : side;
+on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
+subdivSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
+divSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1, .3], [-.05, -.1], .1);
+sustain=(useSubdiv ? subdivSustain : divSustain) * rv(rf(.8, 1.3));
+binauralVelocity=rv(velocity * rf(.35, .5));
+events = source.map(side => {  channel = side === leftCH1 ? (flipBinaural ? leftCH2 : leftCH1) : side === rightCH1 ? (flipBinaural ? rightCH2 : rightCH1) : side === leftCH2 ? leftCH2 : side === rightCH2 ? rightCH2 : side;
 reflection=reflectionMap[side]; sourceToReflect = [
 {tick: side === centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .05], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
 {tick: on + sustain * (side === centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [channel, note]},
@@ -244,7 +239,7 @@ reflection=reflectionMap[side]; sourceToReflect = [
     ];  return [  ...sourceToReflect,
 {tick: side === centerCH1 ? on + rv(ticksPerSubdiv * rf(-.2,.2)) : on + rv(ticksPerSubdiv * rf(-1/3,1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflection, note, side === centerCH1 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
 {tick: on + sustain * (side === centerCH1 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflection, note]}  ];  }).flat();
-    p(c, ...events);  } else {  subdivsOff++; subdivsOn=0;  }}else {  subdivsOff++; subdivsOn=0;  }});}}}
+    p(c, ...events);  });} else {  subdivsOff++; subdivsOn=0; subdivsUntilNextRest=m.min(ri(7), m.ceil(111 / m.max(33, divsPerBeat * subdivsPerDiv)));  }}}}
   currentTick+=ticksPerMeasure;  currentTime+=secondsPerMeasure;  }
 c=c.filter(item=>item !== null).sort((a, b)=>a.tick - b.tick);  c.forEach(_=>{
 composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;  finalTick=_.tick;  });
