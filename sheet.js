@@ -1,6 +1,6 @@
 primaryInstrument='glockenspiel';
 secondaryInstrument='music box';
-tertiaryInstruments = [79, 98, 104, 114, ...Array.from({length: 6}, (_, i) => i + 9)];
+tertiaryInstruments = [79, 98, 104, 112, 114, 119, 120, 121, ...Array.from({length: 6}, (_, i) => i + 9)];
 LOG='measure';
 TUNING_FREQ=432;
 BINAURAL={

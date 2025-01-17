@@ -363,6 +363,8 @@ initializeRhythm=(level)=> {
       throw new Error('Invalid level provided to initializeRhythm');
   }
 }
+//midi cc 123 "all notes off" prevents sustain across measures
+allNotesOff=()=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:currentTick, type:'control_c', values:[ch, 123, 0]  })));}
 
 subdivFreq=300;
 velocity=99;
