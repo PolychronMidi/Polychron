@@ -350,6 +350,20 @@ leftCH4=8;  rightCH4=10;//ch9=percussion
 mirror=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
 reflectionMap = {[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
 
+initializeRhythm=(level)=> {
+  random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
+  switch(level) {
+    case 'beat':
+      return beatRhythm < 1 ? random(numerator) : beatRhythm;
+    case 'div':
+      return divRhythm < 1 ? random(divsPerBeat) : divRhythm;
+    case 'subdiv':
+      return subdivRhythm < 1 ? random(subdivsPerDiv) : subdivRhythm;
+    default:
+      throw new Error('Invalid level provided to initializeRhythm');
+  }
+}
+
 subdivFreq=300;
 subdivsUntilNextRest=ri(11,33);
 velocity=99;
