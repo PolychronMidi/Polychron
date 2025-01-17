@@ -7,7 +7,7 @@ BINAURAL={
   min: 8,
   max: 12
 };
-PPQ=1000;
+PPQ=30000;
 BPM=80;
 NUMERATOR={
   min: 2,
