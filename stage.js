@@ -1,7 +1,7 @@
-require('./sheet'); require('./backstage'); 
+require('./sheet'); require('./backstage');
 midiSync=()=>{
-  function isPowerOf2(n) { return (n & (n - 1))===0; }
   meterRatio=numerator / denominator;
+  isPowerOf2=(n)=>{ return (n & (n - 1))===0; }
   if (isPowerOf2(denominator)) { midiMeter=[numerator, denominator]; }
   else {
     const high=2 ** m.ceil(m.log2(denominator));  const highRatio=numerator / high;
@@ -14,6 +14,49 @@ midiSync=()=>{
   ticksPerMeasure=PPQ * 4 * midiMeterRatio;
   ticksPerBeat=ticksPerMeasure / numerator;
   return;
+};
+//todo:
+// makePolyrhythm(numerator*ri(1,3), denominator*ri(1,3));
+makePolyrhythm = (polyNumerator, polyDenominator) => {
+  const meterRatio = numerator / denominator;
+  const polyMeterRatio = polyNumerator / polyDenominator;
+  let allMatches = [];
+  let bestMatch = {
+    originalMeasures: Infinity,
+    polyMeasures: Infinity,
+    totalMeasures: Infinity,
+    polyNumerator: polyNumerator,
+    polyDenominator: polyDenominator
+  };
+  for (let originalMeasures = 1; originalMeasures <= 20; originalMeasures++) {
+    for (let polyMeasures = 1; polyMeasures <= 20; polyMeasures++) {
+      if (Math.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < 0.0001) {
+        let currentMatch = {
+          originalMeasures: originalMeasures,
+          polyMeasures: polyMeasures,
+          totalMeasures: originalMeasures + polyMeasures,
+          polyNumerator: polyNumerator,
+          polyDenominator: polyDenominator
+        };
+        allMatches.push(currentMatch);
+        if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
+          bestMatch = currentMatch;
+        }
+      }
+    }
+  }
+  console.log("All Matches:");
+  allMatches.forEach(match => {
+    console.log(`Original Measures: ${match.originalMeasures}, Poly Measures: ${match.polyMeasures}, Total Measures: ${match.totalMeasures}`);
+  });
+  if (bestMatch.totalMeasures === Infinity) {
+    console.log("No polyrhythm match found within the given range.");
+    return null; // or throw new Error('No polyrhythm match found within the given range.');
+  } else {
+    console.log("Best Match:");
+    console.log(`Original Measures: ${bestMatch.originalMeasures}, Poly Measures: ${bestMatch.polyMeasures}, Total Measures: ${bestMatch.totalMeasures}`);
+  }
+  return bestMatch;
 };
 
 rhythms = {
@@ -44,6 +87,7 @@ rhythm = (level, length, pattern) => {
 };
 
 p=pushMultiple=(array, ...items)=>{  array.push(...items);  };  c=csvRows=[];
+
 logUnit=(type)=>{  let shouldLog=false;
   if (LOG==='none') shouldLog=false;
   else if (LOG==='all') shouldLog=true;
@@ -73,6 +117,7 @@ logUnit=(type)=>{  let shouldLog=false;
       composerDetails+=`${composer.root} ${composer.mode.name}`;
     }
     meterInfo=midiMeter[1]===originalMeter[1] ? `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}` : `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
+    setTiming();
   } else if (type==='beat') {
     thisUnit=beatIndex + 1;
     unitsPerParent=numerator;
@@ -98,9 +143,7 @@ logUnit=(type)=>{  let shouldLog=false;
     endTick=startTick + ticksPerSubdiv;
   }
   finalTime=formatTime(endTime + SILENT_OUTRO_SECONDS);
-  return {
-    tick: startTick,
-    type: 'marker_t',
-    values: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
-  };
+  return (() => {  c.push({
+    tick: startTick, type: 'marker_t', values: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+  });  })();
 };
