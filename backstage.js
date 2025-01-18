@@ -193,12 +193,12 @@ randomInt = ri = (min1, max1, min2, max2) => {
     const totalRange = range1 + range2;
     const rand = m.random() * totalRange;
     if (rand < range1) {
-      return m.max(min1, m.min(m.round(rand) + min1, max1));
+      return m.max(min1, m.min(m.round(rand + min1, max1)));
     } else {
-      return m.max(min2, m.min(m.round(rand - range1) + min2, max2));
+      return m.max(min2, m.min(m.round(rand - range1 + min2, max2)));
     }
   } else {
-    return m.max(min1, m.min(m.round(m.random() * (max1 - min1)) + min1, max1));
+    return m.max(min1, m.min(m.round(m.random() * (max1 - min1) + min1, max1)));
   }
 };
 // Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
@@ -332,7 +332,18 @@ formatTime=(seconds)=>{
   return `${minutes}:${seconds}`;
 };
 
-currentTick=currentTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+setTiming=()=>{  p(c,  { tick:currentTick, type:'bpm', values:[midiBPM] },
+  { tick:currentTick, type:'meter', values:[midiMeter[0], midiMeter[1]] });  };
+
+setTuningAndInstruments=()=>{  
+  p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
+  type, values:[ch, ...(ch.toString().startsWith('leftCH') ? (type === 'control_c' ? [10, 0] : [primaryInstrument]) : (type === 'control_c' ? [10, 127] : [primaryInstrument]))]})),
+  { type:type === 'control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH1, ...(type === 'control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+  { type:type === 'control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH2, ...(type === 'control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
+trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
+trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}};
+
+divsPerDiv=subdivsPerDiv=currentTick=currentTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -349,22 +360,24 @@ centerCH2=5; leftCH3=6; rightCH3=7;
 leftCH4=8;  rightCH4=10;//ch9=percussion
 reflection=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
 mirror={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
+binauralL=[leftCH1, leftCH2, leftCH3, leftCH4];
+binauralR=[rightCH1, rightCH2, rightCH3, rightCH4];
 
-initializeRhythm=(level)=> {
+setRhythm=(level)=> {
   random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
   switch(level) {
     case 'beat':
-      return beatRhythm < 1 ? random(numerator) : beatRhythm;
+      return beatRhythm = beatRhythm < 1 ? t.RhythmPattern.random(numerator, 0) : rhythm('beat', numerator, beatRhythm);
     case 'div':
-      return divRhythm < 1 ? random(divsPerBeat) : divRhythm;
+      return divRhythm = divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv, 0) : rhythm('div', divsPerDiv, divRhythm);
     case 'subdiv':
-      return subdivRhythm < 1 ? random(subdivsPerDiv) : subdivRhythm;
+      return subdivRhythm = subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv, 0) : rhythm('subdiv', subdivsPerDiv, subdivRhythm)
     default:
-      throw new Error('Invalid level provided to initializeRhythm');
+      throw new Error('Invalid level provided to setRhythm');
   }
 }
 //midi cc 123 "all notes off" prevents sustain across measures
-allNotesOff=()=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:currentTick, type:'control_c', values:[ch, 123, 0]  })));}
+allNotesOff=(tick=currentTick)=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:tick, type:'control_c', values:[ch, 123, 0]  })));}
 
 subdivFreq=300;
 velocity=99;
