@@ -49,7 +49,7 @@ makePolyrhythm = (polyNumerator, polyDenominator) => {
   allMatches.forEach(match => {
     console.log(`Original Measures: ${match.originalMeasures}, Poly Measures: ${match.polyMeasures}, Total Measures: ${match.totalMeasures}`);
   });
-  if (bestMatch.totalMeasures === Infinity) {
+  if (bestMatch.totalMeasures===Infinity) {
     console.log("No polyrhythm match found within the given range.");
     return null; // or throw new Error('No polyrhythm match found within the given range.');
   } else {
