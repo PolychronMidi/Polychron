@@ -101,8 +101,8 @@ logUnit=(type)=>{  let shouldLog=false;
     ticksPerSecond=midiBPM * PPQ / 60;
     secondsPerMeasure=ticksPerMeasure / (midiBPM * PPQ / 60);
     endTime=measureStartTime + secondsPerMeasure;
-    startTick=measureStartTick;
-    endTick=measureStartTick + ticksPerMeasure;
+    startTick=measureStart;
+    endTick=measureStart + ticksPerMeasure;
     originalMeter=[numerator, denominator];
     secondsPerBeat=ticksPerBeat / ticksPerSecond;
     composerDetails=`${composer.constructor.name} `;
@@ -146,4 +146,32 @@ logUnit=(type)=>{  let shouldLog=false;
   return (() => {  c.push({
     tick: startTick, type: 'marker_t', values: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
   });  })();
+};
+crossModulateRhythms=()=>{ crossModulation=0;
+  crossModulation += rf(1.5,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + 
+  rf(1,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + 
+  rf(.5,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
+  (subdivsOn < ri(15,21) ? rf(.1,.3) : 0) + (subdivsOff > ri(3) ? rf(.1,.3) : 0) + 
+  (divsOn < ri(9,15) ? rf(.1,.3) : 0) + (divsOff > ri(3,12) ? rf(.1,.3) : 0) + 
+  (beatsOn < ri(3) ? rf(.1,.3) : 0) + (beatsOff > ri(2) ? rf(.1,.3) : 0);
+};
+setNoteParams=()=>{
+  subdivsOn++; subdivsOff=0;
+  on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
+  shorterSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
+  longerSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1, .3], [-.05, -.1], .1);
+  sustain=(useShorterSustain ? shorterSustain : longerSustain) * rv(rf(.8, 1.3));
+  binauralVelocity=rv(velocity * rf(.35, .5));
+};
+playNotes=()=>{
+  composer.getNotes().forEach(({ note }) => {  events = source.map(sourceCH => {
+    CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
+    if (CHsToPlay) {  reflectionCH = reflect[sourceCH];  x=[
+    {tick: sourceCH===centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.1, .1], .3), type: 'note_on_c', values: [sourceCH, note, sourceCH===centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
+    {tick: on + sustain * (sourceCH===centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [sourceCH, note]},
+  
+    {tick: reflectionCH===centerCH2 ? on + rv(ticksPerSubdiv * rf(.2)) : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflectionCH, note, reflectionCH===centerCH2 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
+    {tick: on + sustain * (reflectionCH===centerCH2 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflectionCH, note]}
+  ]; return x; } else { return null; }  }).filter(_=>_!==null).flat();
+    p(c, ...events);  });
 };
