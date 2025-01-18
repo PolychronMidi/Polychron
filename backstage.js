@@ -332,8 +332,8 @@ formatTime=(seconds)=>{
   return `${minutes}:${seconds}`;
 };
 
-setTiming=()=>{  p(c,  { tick:currentTick, type:'bpm', values:[midiBPM] },
-  { tick:currentTick, type:'meter', values:[midiMeter[0], midiMeter[1]] });  };
+setTiming=()=>{  p(c,  { tick:measureStartTick, type:'bpm', values:[midiBPM] },
+  { tick:measureStartTick, type:'meter', values:[midiMeter[0], midiMeter[1]] });  };
 
 setTuningAndInstruments=()=>{  
   p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
@@ -343,7 +343,7 @@ setTuningAndInstruments=()=>{
 trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}};
 
-divsPerDiv=subdivsPerDiv=currentTick=currentTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -353,15 +353,55 @@ binauralFreqOffset=rf(BINAURAL.min, BINAURAL.max);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
 
-centerCH1=0;  leftCH1=1;  rightCH1=2;
-leftCH2=3;  rightCH2=4;
+centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; //skip ch9=percussion
 source=[centerCH1, leftCH1, leftCH2, rightCH1, rightCH2];
-centerCH2=5; leftCH3=6; rightCH3=7;
-leftCH4=8;  rightCH4=10;//ch9=percussion
 reflection=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
-mirror={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
+reflect={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
 binauralL=[leftCH1, leftCH2, leftCH3, leftCH4];
 binauralR=[rightCH1, rightCH2, rightCH3, rightCH4];
+flipBinauralF = [centerCH1, centerCH2, leftCH1, rightCH1, leftCH3, rightCH3];
+flipBinauralT = [centerCH1, centerCH2, leftCH2, rightCH2, leftCH4, rightCH4];
+
+setBinaural=()=>{
+  if (beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {  beatCount=0; flipBinaural=!flipBinaural;
+    beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
+    binauralFreqOffset=rf(m.max(BINAURAL.min, binauralFreqOffset - 1), m.min(BINAURAL.max, binauralFreqOffset + 1));  }
+    p(c, ...binauralL.map(ch => ({tick:beatStart, type:'pitch_bend_c', values:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
+    ...binauralR.map(ch => ({tick:beatStart, type:'pitch_bend_c', values:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
+};
+
+setBalanceAndFX=()=>{
+if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
+  p(c, ...['control_c'].flatMap(()=>{
+  balanceOffset=ri(m.max(0, balanceOffset - 7), m.min(55, balanceOffset + 7));
+  sideBias=ri(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
+  leftBalance=m.min(0,m.max(56, balanceOffset + ri(7) + sideBias));
+  rightBalance=m.max(127,m.min(72, 127 - balanceOffset - ri(7) + sideBias));
+  centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
+  reflectionVariation=ri(1,10); centerBalance2=m.random()<.5?centerBalance+m.ceil(reflectionVariation*.5) : centerBalance+m.floor(reflectionVariation * .5 * -1);
+  _={ tick:beatStart, type:'control_c' };
+return [
+    ...source.map(ch => ({..._,values:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
+    ...reflection.map(ch => ({..._,values:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance)+reflectionVariation : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance)-reflectionVariation : centerBalance2 ]})),
+    ...source.map(ch => ({..._,values:[ch, 1, ri(20)]})),//fx
+    ...source.map(ch => ({..._,values:[ch, 5, ri(88)]})),
+    ...source.map(ch => ({..._,values:[ch, 11, ri(115,127)]})),
+    ...source.map(ch => ({..._,values:[ch, 65, ri(1)]})),
+    ...source.map(ch => ({..._,values:[ch, 66, ri(20)]})),
+    ...source.map(ch => ({..._,values:[ch, 67, ri(7)]})),
+    ...source.map(ch => ({..._,values:[ch, 91, ri(33)]})),
+    ...source.map(ch => ({..._,values:[ch, 93, ri(33)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 1, ri(88)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 5, ri(127)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 11, ri(127)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 65, ri(1)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 66, ri(77)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 67, ri(64)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 91, ri(77)]})),
+    ...reflection.map(ch => ({..._,values:[ch, 93, ri(77)]})),
+    ...reflection.map(ch =>({ ..._, values:[ch, 7, ch===centerCH2 ? ri(50,75) : ri(75,100)]//volume
+}))  ];  })  );  }
+}
 
 setRhythm=(level)=> {
   random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
@@ -376,8 +416,8 @@ setRhythm=(level)=> {
       throw new Error('Invalid level provided to setRhythm');
   }
 }
-//midi cc 123 "all notes off" prevents sustain across measures
-allNotesOff=(tick=currentTick)=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:tick, type:'control_c', values:[ch, 123, 0]  })));}
+//midi cc 123 "all notes off" prevents sustain across measures / chord transitions
+allNotesOff=(tick=measureStartTick)=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:tick, type:'control_c', values:[ch, 123, 0]  })));}
 
 subdivFreq=300;
 velocity=99;
