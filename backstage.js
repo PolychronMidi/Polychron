@@ -165,7 +165,7 @@ secondaryInstrument=midiValue('program', secondaryInstrument);
 
 m = Math;
 randomFloat = rf = (min1, max1, min2, max2) => {
-  if (max1 === undefined) { max1 = min1; min1 = 0; }
+  if (max1===undefined) { max1 = min1; min1 = 0; }
   [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
     [min2, max2] = [m.min(min2, max2), m.max(min2, max2)];
@@ -184,7 +184,7 @@ randomFloat = rf = (min1, max1, min2, max2) => {
 };
 
 randomInt = ri = (min1, max1, min2, max2) => {
-  if (max1 === undefined) { max1 = min1; min1 = 0; }
+  if (max1===undefined) { max1 = min1; min1 = 0; }
   [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
     [min2, max2] = [m.min(min2, max2), m.max(min2, max2)];
@@ -337,9 +337,9 @@ setTiming=()=>{  p(c,  { tick:measureStartTick, type:'bpm', values:[midiBPM] },
 
 setTuningAndInstruments=()=>{  
   p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
-  type, values:[ch, ...(ch.toString().startsWith('leftCH') ? (type === 'control_c' ? [10, 0] : [primaryInstrument]) : (type === 'control_c' ? [10, 127] : [primaryInstrument]))]})),
-  { type:type === 'control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH1, ...(type === 'control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { type:type === 'control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH2, ...(type === 'control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
+  type, values:[ch, ...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10, 0] : [primaryInstrument]) : (type==='control_c' ? [10, 127] : [primaryInstrument]))]})),
+  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH1, ...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
 trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}};
 

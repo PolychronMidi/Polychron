@@ -43,7 +43,7 @@ class MeasureComposer extends RhythmComposer {
   getOctaveRange() {
     const { min, max, weights } = OCTAVE;
     let [o1, o2] = [rw(min, max, weights), rw(min, max, weights)];
-    while (o1 === o2) {  o2 = m.max(min, m.min(max, o2 + ri(-3, 3)));  }
+    while (o1===o2) {  o2 = m.max(min, m.min(max, o2 + ri(-3, 3)));  }
     return [ o1, o2 ];
   }
   getVoices() {
@@ -72,10 +72,10 @@ class MeasureComposer extends RhythmComposer {
         let triedAllSoftLimits = false;
         while (uniqueNotes.has(note)) {
 octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.min) : (octave < OCTAVE.max ? octave++ : (() => { return false; })())));
-if (octave === false) break; note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;  }
+if (octave===false) break; note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;  }
         return { note };
       }).filter((noteObj, index, self) => 
-        index === self.findIndex(n => n.note === noteObj.note)
+        index===self.findIndex(n => n.note===noteObj.note)
       ); }  catch (e) { if (!fallback) { return this.getNotes(octaveRange); } else {
       console.warn(e.message);  return this.getNotes(octaveRange);  }}}}
 class ScaleComposer extends MeasureComposer {
@@ -111,7 +111,7 @@ class ChordComposer extends MeasureComposer {
     const validatedProgression = progression.filter(chordSymbol => {
       if (!allChords.includes(chordSymbol)) { console.warn(`Invalid chord symbol: ${chordSymbol}`);
         return false;  }  return true;  });
-    if (validatedProgression.length === 0) {console.warn('No valid chords in progression');
+    if (validatedProgression.length===0) {console.warn('No valid chords in progression');
     } else {
       this.progression = validatedProgression.map(t.Chord.get); 
       this.currentChordIndex = this.currentChordIndex || 0;
@@ -210,19 +210,15 @@ longerSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), 
 sustain=(useShorterSustain ? shorterSustain : longerSustain) * rv(rf(.8, 1.3));
 binauralVelocity=rv(velocity * rf(.35, .5));
 
-composer.getNotes().forEach(({ note }) => {  events = source.map(side => {
-    reflectionCH = reflect[side];  channel = side;
-  if (flipBinaural ? flipBinauralT.includes(side) || flipBinauralT.includes(reflectionCH) : flipBinauralF.includes(side) || flipBinauralF.includes(reflectionCH)) {
-sourceEvents = [
-  {tick: side === centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.1, .1], .3), type: 'note_on_c', values: [channel, note, side === centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
-  {tick: on + sustain * (side === centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [channel, note]},
-];
-reflectionEvents = [
-  {tick: reflectionCH === centerCH2 ? on + rv(ticksPerSubdiv * rf(.2)) : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflectionCH, note, reflectionCH === centerCH2 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
-  {tick: on + sustain * (reflectionCH === centerCH2 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflectionCH, note]}
-];
-return [...sourceEvents, ...reflectionEvents]; } else { return null; }
-  }).filter(event => event !== null).flat();
+composer.getNotes().forEach(({ note }) => {  events = source.map(sourceCH => {
+  CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
+  if (CHsToPlay) {  reflectionCH = reflect[sourceCH];  x=[
+  {tick: sourceCH===centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.1, .1], .3), type: 'note_on_c', values: [sourceCH, note, sourceCH===centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
+  {tick: on + sustain * (sourceCH===centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [sourceCH, note]},
+
+  {tick: reflectionCH===centerCH2 ? on + rv(ticksPerSubdiv * rf(.2)) : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflectionCH, note, reflectionCH===centerCH2 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
+  {tick: on + sustain * (reflectionCH===centerCH2 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflectionCH, note]}
+]; return x; } else { return null; }  }).filter(_=>_!==null).flat();
   p(c, ...events);  });  } else {  subdivsOff++; subdivsOn=0;  }}}}
   measureStartTick+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure; }
 c=c.filter(item=>item!==null).map(item=>({...item,tick:item.tick<0?Math.abs(item.tick)*rf(.1,.3):item.tick})).sort((a,b)=>a.tick-b.tick);  c.forEach(_=>{  composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`;  finalTick=_.tick;  });
