@@ -332,8 +332,8 @@ formatTime=(seconds)=>{
   return `${minutes}:${seconds}`;
 };
 
-setTiming=()=>{  p(c,  { tick:measureStartTick, type:'bpm', values:[midiBPM] },
-  { tick:measureStartTick, type:'meter', values:[midiMeter[0], midiMeter[1]] });  };
+setTiming=()=>{  p(c,  { tick:measureStart, type:'bpm', values:[midiBPM] },
+  { tick:measureStart, type:'meter', values:[midiMeter[0], midiMeter[1]] });  };
 
 setTuningAndInstruments=()=>{  
   p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
@@ -343,7 +343,7 @@ setTuningAndInstruments=()=>{
 trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}};
 
-divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -366,6 +366,7 @@ setBinaural=()=>{
   if (beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {  beatCount=0; flipBinaural=!flipBinaural;
     beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
     binauralFreqOffset=rf(m.max(BINAURAL.min, binauralFreqOffset - 1), m.min(BINAURAL.max, binauralFreqOffset + 1));  }
+    allNotesOff(beatStart);
     p(c, ...binauralL.map(ch => ({tick:beatStart, type:'pitch_bend_c', values:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
     ...binauralR.map(ch => ({tick:beatStart, type:'pitch_bend_c', values:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
 };
@@ -416,8 +417,12 @@ setRhythm=(level)=> {
       throw new Error('Invalid level provided to setRhythm');
   }
 }
-//midi cc 123 "all notes off" prevents sustain across measures / chord transitions
-allNotesOff=(tick=measureStartTick)=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:tick, type:'control_c', values:[ch, 123, 0]  })));}
+//midi cc 123 "all notes off" prevents sustain across measures, or other transitions
+allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:m.max(0,tick-1), type:'control_c', values:[ch, 123, 0]  })));}
+
+grandFinale=()=>{
+  c=c.filter(item=>item!==null).map(item=>({...item,tick:item.tick<0?Math.abs(item.tick)*rf(.1,.3):item.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`; finalTick=_.tick; }); composition+=finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
+};
 
 subdivFreq=300;
 velocity=99;
