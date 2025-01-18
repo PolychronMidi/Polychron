@@ -97,12 +97,12 @@ logUnit=(type)=>{  let shouldLog=false;
   if (type==='measure') {
     thisUnit=measureIndex + 1;
     unitsPerParent=totalMeasures;
-    startTime=currentTime;
+    startTime=measureStartTime;
     ticksPerSecond=midiBPM * PPQ / 60;
     secondsPerMeasure=ticksPerMeasure / (midiBPM * PPQ / 60);
-    endTime=currentTime + secondsPerMeasure;
-    startTick=currentTick;
-    endTick=currentTick + ticksPerMeasure;
+    endTime=measureStartTime + secondsPerMeasure;
+    startTick=measureStartTick;
+    endTick=measureStartTick + ticksPerMeasure;
     originalMeter=[numerator, denominator];
     secondsPerBeat=ticksPerBeat / ticksPerSecond;
     composerDetails=`${composer.constructor.name} `;
@@ -121,7 +121,7 @@ logUnit=(type)=>{  let shouldLog=false;
   } else if (type==='beat') {
     thisUnit=beatIndex + 1;
     unitsPerParent=numerator;
-    startTime=currentTime + beatIndex * secondsPerBeat;
+    startTime=measureStartTime + beatIndex * secondsPerBeat;
     endTime=startTime + secondsPerBeat;
     startTick=beatStart;
     endTick=startTick + ticksPerBeat;
@@ -129,7 +129,7 @@ logUnit=(type)=>{  let shouldLog=false;
   } else if (type==='division') {
     thisUnit=divIndex + 1;
     unitsPerParent=divsPerBeat;
-    startTime=currentTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv;
+    startTime=measureStartTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv;
     endTime=startTime + secondsPerDiv;
     startTick=divStart;
     endTick=startTick + ticksPerDiv;
@@ -137,7 +137,7 @@ logUnit=(type)=>{  let shouldLog=false;
   } else if (type==='subdivision') {
     thisUnit=subdivIndex + 1;
     unitsPerParent=subdivsPerDiv;
-    startTime=currentTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv + subdivIndex * secondsPerSubdiv;
+    startTime=measureStartTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv + subdivIndex * secondsPerSubdiv;
     endTime=startTime + secondsPerSubdiv;
     startTick=subdivStart;
     endTick=startTick + ticksPerSubdiv;
