@@ -1,168 +1,3 @@
-const midiData={
-  program: [
-    { number: 0, name: "Acoustic Grand Piano" },
-    { number: 1, name: "Bright Acoustic Piano" },
-    { number: 2, name: "Electric Grand Piano" },
-    { number: 3, name: "Honky-tonk Piano" },
-    { number: 4, name: "Electric Piano 1" },
-    { number: 5, name: "Electric Piano 2" },
-    { number: 6, name: "Harpsichord" },
-    { number: 7, name: "Clavi" },
-    { number: 8, name: "Celesta" },
-    { number: 9, name: "Glockenspiel" },
-    { number: 10, name: "Music Box" },
-    { number: 11, name: "Vibraphone" },
-    { number: 12, name: "Marimba" },
-    { number: 13, name: "Xylophone" },
-    { number: 14, name: "Tubular Bells" },
-    { number: 15, name: "Dulcimer" },
-    { number: 16, name: "Drawbar Organ" },
-    { number: 17, name: "Percussive Organ" },
-    { number: 18, name: "Rock Organ" },
-    { number: 19, name: "Church Organ" },
-    { number: 20, name: "Reed Organ" },
-    { number: 21, name: "Accordion" },
-    { number: 22, name: "Harmonica" },
-    { number: 23, name: "Tango Accordion" },
-    { number: 24, name: "Acoustic Guitar (nylon)" },
-    { number: 25, name: "Acoustic Guitar (steel)" },
-    { number: 26, name: "Electric Guitar (jazz)" },
-    { number: 27, name: "Electric Guitar (clean)" },
-    { number: 28, name: "Electric Guitar (muted)" },
-    { number: 29, name: "Overdriven Guitar" },
-    { number: 30, name: "Distortion Guitar" },
-    { number: 31, name: "Guitar Harmonics" },
-    { number: 32, name: "Acoustic Bass" },
-    { number: 33, name: "Electric Bass (finger)" },
-    { number: 34, name: "Electric Bass (pick)" },
-    { number: 35, name: "Fretless Bass" },
-    { number: 36, name: "Slap Bass 1" },
-    { number: 37, name: "Slap Bass 2" },
-    { number: 38, name: "Synth Bass 1" },
-    { number: 39, name: "Synth Bass 2" },
-    { number: 40, name: "Violin" },
-    { number: 41, name: "Viola" },
-    { number: 42, name: "Cello" },
-    { number: 43, name: "Contrabass" },
-    { number: 44, name: "Tremolo Strings" },
-    { number: 45, name: "Pizzicato Strings" },
-    { number: 46, name: "Orchestral Harp" },
-    { number: 47, name: "Timpani" },
-    { number: 48, name: "String Ensemble 1" },
-    { number: 49, name: "String Ensemble 2" },
-    { number: 50, name: "Synth Strings 1" },
-    { number: 51, name: "Synth Strings 2" },
-    { number: 52, name: "Choir Aahs" },
-    { number: 53, name: "Voice Oohs" },
-    { number: 54, name: "Synth Voice" },
-    { number: 55, name: "Orchestra Hit" },
-    { number: 56, name: "Trumpet" },
-    { number: 57, name: "Trombone" },
-    { number: 58, name: "Tuba" },
-    { number: 59, name: "Muted Trumpet" },
-    { number: 60, name: "French Horn" },
-    { number: 61, name: "Brass Section" },
-    { number: 62, name: "Synth Brass 1" },
-    { number: 63, name: "Synth Brass 2" },
-    { number: 64, name: "Soprano Sax" },
-    { number: 65, name: "Alto Sax" },
-    { number: 66, name: "Tenor Sax" },
-    { number: 67, name: "Baritone Sax" },
-    { number: 68, name: "Oboe" },
-    { number: 69, name: "English Horn" },
-    { number: 70, name: "Bassoon" },
-    { number: 71, name: "Clarinet" },
-    { number: 72, name: "Piccolo" },
-    { number: 73, name: "Flute" },
-    { number: 74, name: "Recorder" },
-    { number: 75, name: "Pan Flute" },
-    { number: 76, name: "Blown Bottle" },
-    { number: 77, name: "Shakuhachi" },
-    { number: 78, name: "Whistle" },
-    { number: 79, name: "Ocarina" },
-    { number: 80, name: "Lead 1 (square)" },
-    { number: 81, name: "Lead 2 (sawtooth)" },
-    { number: 82, name: "Lead 3 (calliope)" },
-    { number: 83, name: "Lead 4 (chiff)" },
-    { number: 84, name: "Lead 5 (charang)" },
-    { number: 85, name: "Lead 6 (voice)" },
-    { number: 86, name: "Lead 7 (fifths)" },
-    { number: 87, name: "Lead 8 (bass + lead)" },
-    { number: 88, name: "Pad 1 (new age)" },
-    { number: 89, name: "Pad 2 (warm)" },
-    { number: 90, name: "Pad 3 (polysynth)" },
-    { number: 91, name: "Pad 4 (choir)" },
-    { number: 92, name: "Pad 5 (bowed)" },
-    { number: 93, name: "Pad 6 (metallic)" },
-    { number: 94, name: "Pad 7 (halo)" },
-    { number: 95, name: "Pad 8 (sweep)" },
-    { number: 96, name: "FX 1 (rain)" },
-    { number: 97, name: "FX 2 (soundtrack)" },
-    { number: 98, name: "FX 3 (crystal)" },
-    { number: 99, name: "FX 4 (atmosphere)" },
-    { number: 100, name: "FX 5 (brightness)" },
-    { number: 101, name: "FX 6 (goblins)" },
-    { number: 102, name: "FX 7 (echoes)" },
-    { number: 103, name: "FX 8 (sci-fi)" },
-    { number: 104, name: "Sitar" },
-    { number: 105, name: "Banjo" },
-    { number: 106, name: "Shamisen" },
-    { number: 107, name: "Koto" },
-    { number: 108, name: "Kalimba" },
-    { number: 109, name: "Bagpipe" },
-    { number: 110, name: "Fiddle" },
-    { number: 111, name: "Shanai" },
-    { number: 112, name: "Tinkle Bell" },
-    { number: 113, name: "Agogo" },
-    { number: 114, name: "Steel Drums" },
-    { number: 115, name: "Woodblock" },
-    { number: 116, name: "Taiko Drum" },
-    { number: 117, name: "Melodic Tom" },
-    { number: 118, name: "Synth Drum" },
-    { number: 119, name: "Reverse Cymbal" },
-    { number: 120, name: "Guitar Fret Noise" },
-    { number: 121, name: "Breath Noise" },
-    { number: 122, name: "Seashore" },
-    { number: 123, name: "Bird Tweet" },
-    { number: 124, name: "Telephone Ring" },
-    { number: 125, name: "Helicopter" },
-    { number: 126, name: "Applause" },
-    { number: 127, name: "Gunshot" }
-  ],
-  control: [
-    { number: 0, name: "Bank Select" },
-    { number: 1, name: "Modulation Wheel" },
-    { number: 2, name: "Breath Controller" },
-    { number: 4, name: "Foot Controller" },
-    { number: 5, name: "Portamento Time" },
-    { number: 6, name: "Data Entry MSB" },
-    { number: 7, name: "Volume" },
-    { number: 8, name: "Balance" },
-    { number: 10, name: "Pan" },
-    { number: 11, name: "Expression" },
-    { number: 64, name: "Sustain" },
-    { number: 65, name: "Portamento" },
-    { number: 66, name: "Sostenuto" },
-    { number: 67, name: "Soft Pedal" },
-    { number: 91, name: "Reverb" },
-    { number: 93, name: "Chorus" },
-    { number: 120, name: "Mute" },
-    { number: 121, name: "Reset" },
-    { number: 123, name: "Notes Off" }
-  ]
-};
-midiValue=(category, name)=>{
-  category=category.toLowerCase();  name=name.toLowerCase();
-  if (!midiData[category]) {
-    console.warn(`Invalid MIDI category: ${category}`);
-    return null;
-  }
-  const item=midiData[category].find(item=>item.name.toLowerCase()===name);
-  return item ? item.number : null;
-};
-primaryInstrument=midiValue('program', primaryInstrument);
-secondaryInstrument=midiValue('program', secondaryInstrument);
-
 m = Math;
 randomFloat = rf = (min1, max1, min2, max2) => {
   if (max1===undefined) { max1 = min1; min1 = 0; }
@@ -202,7 +37,7 @@ randomInt = ri = (min1, max1, min2, max2) => {
   }
 };
 // Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
-randomVariation = rv = (value, boostRange=[.05, .10], deboostRange=boostRange, frequency=.05)=>{ let factor;
+randomVariation=rv=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
   if (isSingleRange) {  const variation=rf(...singleRange);
@@ -219,7 +54,7 @@ randomInSetOrRange=(v)=>{
   return v;
 };
 // Random weighted selection. Any sized list of weights with any values are normalized to fit the range.
-rw = randomWeightedSelection = (min, max, weights) => {
+rw=randomWeightedSelection=(min,max,weights)=>{
   const range = max - min + 1;
   let effectiveWeights = weights;
   effectiveWeights = weights.map(weight => {
@@ -247,7 +82,7 @@ rw = randomWeightedSelection = (min, max, weights) => {
       for (let i = 1; i < range - 1; i++) {
         const startIndex = i * groupSize;
         const endIndex = m.min(startIndex + groupSize, effectiveWeights.length - 1);
-        const groupSum = effectiveWeights.slice(startIndex, endIndex).reduce((sum, w)=>sum + w, 0);
+        const groupSum=effectiveWeights.slice(startIndex,endIndex).reduce((sum,w)=>sum+w,0);
         effectiveWeights.push(groupSum / (endIndex - startIndex));
       }
       effectiveWeights.push(lastWeight);
@@ -263,14 +98,14 @@ rw = randomWeightedSelection = (min, max, weights) => {
   }
 }
 
-selectFromWeightedOptions = (options) => {
+selectFromWeightedOptions=(options)=>{
   const types = Object.keys(options);
   const weights = types.map(type => options[type].weights[0]);
   const selectedIndex = rw(0, types.length - 1, weights);
   return types[selectedIndex];
 };
 
-closestDivisor=(x, target=2)=>{
+closestDivisor=(x,target=2)=>{
   let closest=Infinity;
   let smallestDiff=Infinity;
   for (let i=1; i <= m.sqrt(x); i++) {
@@ -292,7 +127,7 @@ closestDivisor=(x, target=2)=>{
   return x % target===0 ? target : closest;
 };
 
-makeOnsets=(length, valuesOrRange)=>{
+makeOnsets=(length,valuesOrRange)=>{
   let onsets=[];  let total=0;
   // Build onsets until reach or exceed length or run out of values to use
   while (total < length) {
@@ -335,14 +170,6 @@ formatTime=(seconds)=>{
 setTiming=()=>{  p(c,  { tick:measureStart, type:'bpm', vals:[midiBPM] },
   { tick:measureStart, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
 
-setTuningAndInstruments=()=>{  
-  p(c, ...['control_c', 'program_c'].flatMap(type=>[ ...source.map(ch=>({
-  type, vals:[ch, ...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10, 0] : [primaryInstrument]) : (type==='control_c' ? [10, 127] : [primaryInstrument]))]})),
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH1, ...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
-trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
-trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}};
-
 divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
@@ -363,67 +190,14 @@ binauralR=[rightCH1, rightCH2, rightCH3, rightCH4];
 flipBinauralF = [centerCH1, centerCH2, leftCH1, rightCH1, leftCH3, rightCH3];
 flipBinauralT = [centerCH1, centerCH2, leftCH2, rightCH2, leftCH4, rightCH4];
 
-setBinaural=()=>{
-  if (beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {  beatCount=0; flipBinaural=!flipBinaural;
-    beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
-    binauralFreqOffset=rf(m.max(BINAURAL.min, binauralFreqOffset - 1), m.min(BINAURAL.max, binauralFreqOffset + 1));  }
-    allNotesOff(beatStart);
-    p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
-    ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
-};
-setTertiaryInstruments=()=>{
-  if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
-p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'program_c' };
-  return [
-    ...reflectionBinaural.map(ch=>({..._,vals:[ch, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]})),
-  ];  })  );  }
-}
-setBalanceAndFX=()=>{
-if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
-  p(c, ...['control_c'].flatMap(()=>{
-  balanceOffset=ri(m.max(0, balanceOffset - 7), m.min(45, balanceOffset + 7));
-  sideBias=ri(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
-  leftBalance=m.min(0,m.max(56, balanceOffset + ri(7) + sideBias));
-  rightBalance=m.max(127,m.min(72, 127 - balanceOffset - ri(7) + sideBias));
-  centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
-  reflectionVariation=ri(1,10); centerBalance2=m.random()<.5?centerBalance+m.ceil(reflectionVariation*.5) : centerBalance+m.floor(reflectionVariation * .5 * -1);
-  _={ tick:beatStart, type:'control_c' };
-return [
-    ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
-    ...source.map(ch=>({..._,vals:[ch, 1, ch===centerCH1 ? ri(10) : ri(60)]})),
-    ...source.map(ch=>({..._,vals:[ch, 5, ri(88)]})),
-    ...source.map(ch=>({..._,vals:[ch, 11, ch===centerCH1 ? ri(115,127) : ri(64,127)]})),
-    ...source.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
-    ...source.map(ch=>({..._,vals:[ch, 66, ri(20)]})),
-    ...source.map(ch=>({..._,vals:[ch, 67, ri(64)]})),
-    ...source.map(ch=>({..._,vals:[ch, 91, ri(33)]})),
-    ...source.map(ch=>({..._,vals:[ch, 93, ri(33)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 1, ch===centerCH2 ? ri(15) : ri(90)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 5, ri(127)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 11, ch===centerCH2 ? ri(66,99) : ri(77,111)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 66, ri(77)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 67, ri(32)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 91, ch===centerCH2 ? ri(32) : ri(77)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 93, ch===centerCH2 ? ri(32) : ri(77)]})),
-  ];  })  );  }
-}
-
-setRhythm=(level)=> {
-  random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
-  switch(level) {
-    case 'beat':
-      return beatRhythm = beatRhythm < 1 ? t.RhythmPattern.random(numerator, 0) : rhythm('beat', numerator, beatRhythm);
-    case 'div':
-      return divRhythm = divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv, 0) : rhythm('div', divsPerDiv, divRhythm);
-    case 'subdiv':
-      return subdivRhythm = subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv, 0) : rhythm('subdiv', subdivsPerDiv, subdivRhythm)
-    default:throw new Error('Invalid level provided to setRhythm');
-  }
-}
 //midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
+
+incrementMeasure=()=>{
+  logUnit('measure');
+  allNotesOff();
+  measureStart+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure;
+}
 
 grandFinale=()=>{
   c=c.filter(i=>i!==null).map(i=>({...i,tick:i.tick<0?Math.abs(i.tick)*rf(.1,.3):i.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=_.tick; }); composition+=finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
@@ -434,44 +208,3 @@ velocity=99;
 composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
 finale=()=>`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
 fs=require('fs');
-
-t=require("tonal");
-
-allNotes=t.Scale.get("C chromatic").notes.map(note=>
-  t.Note.enharmonic(t.Note.get(note))
-);
-
-allScales=t.Scale.names().filter(scaleName=>{
-  return allNotes.some(root=>{
-    const scale=t.Scale.get(`${root} ${scaleName}`);
-    return scale.notes.length > 0;
-  });
-});
-
-allChords=(function() {
-  function getChordNotes(chordType, root) {
-    const chord=t.Chord.get(`${root} ${chordType}`);
-    if (!chord.empty && chord.symbol) {
-      return { symbol: chord.symbol, notes: chord.notes };
-    }
-  }
-  const allChords=new Set();
-  t.ChordType.all().forEach(chordType=>{
-    allNotes.forEach(root=>{
-      const chord=getChordNotes(chordType.name, root);
-      if (chord) {  allChords.add(chord.symbol);  }
-    });
-  });
-  return Array.from(allChords);
-})();
-
-allModes=(()=>{
-  const allModes=new Set();
-  t.Mode.all().forEach(mode=>{
-    allNotes.forEach(root=>{
-      const modeName=`${root} ${mode.name}`;
-      allModes.add(modeName);
-    });
-  });
-  return Array.from(allModes);
-})();
