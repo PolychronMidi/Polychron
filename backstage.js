@@ -247,14 +247,14 @@ rw = randomWeightedSelection = (min, max, weights) => {
       for (let i = 1; i < range - 1; i++) {
         const startIndex = i * groupSize;
         const endIndex = m.min(startIndex + groupSize, effectiveWeights.length - 1);
-        const groupSum = effectiveWeights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0);
+        const groupSum = effectiveWeights.slice(startIndex, endIndex).reduce((sum, w)=>sum + w, 0);
         effectiveWeights.push(groupSum / (endIndex - startIndex));
       }
       effectiveWeights.push(lastWeight);
     }
   }
-  const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
-  const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
+  const totalWeight = effectiveWeights.reduce((acc, w)=>acc + w, 0);
+  const normalizedWeights = effectiveWeights.map(w=>w / totalWeight);
   let random = m.random();
   let cumulativeProbability = 0;
   for (let i = 0; i < normalizedWeights.length; i++) {
@@ -332,14 +332,14 @@ formatTime=(seconds)=>{
   return `${minutes}:${seconds}`;
 };
 
-setTiming=()=>{  p(c,  { tick:measureStart, type:'bpm', values:[midiBPM] },
-  { tick:measureStart, type:'meter', values:[midiMeter[0], midiMeter[1]] });  };
+setTiming=()=>{  p(c,  { tick:measureStart, type:'bpm', vals:[midiBPM] },
+  { tick:measureStart, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
 
 setTuningAndInstruments=()=>{  
-  p(c, ...['control_c', 'program_c'].flatMap(type => [ ...source.map(ch => ({
-  type, values:[ch, ...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10, 0] : [primaryInstrument]) : (type==='control_c' ? [10, 127] : [primaryInstrument]))]})),
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH1, ...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', values:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
+  p(c, ...['control_c', 'program_c'].flatMap(type=>[ ...source.map(ch=>({
+  type, vals:[ch, ...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10, 0] : [primaryInstrument]) : (type==='control_c' ? [10, 127] : [primaryInstrument]))]})),
+  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH1, ...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
 trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}};
 
@@ -367,8 +367,8 @@ setBinaural=()=>{
     beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
     binauralFreqOffset=rf(m.max(BINAURAL.min, binauralFreqOffset - 1), m.min(BINAURAL.max, binauralFreqOffset + 1));  }
     allNotesOff(beatStart);
-    p(c, ...binauralL.map(ch => ({tick:beatStart, type:'pitch_bend_c', values:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
-    ...binauralR.map(ch => ({tick:beatStart, type:'pitch_bend_c', values:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
+    p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
+    ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
 };
 
 setBalanceAndFX=()=>{
@@ -382,26 +382,25 @@ if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) 
   reflectionVariation=ri(1,10); centerBalance2=m.random()<.5?centerBalance+m.ceil(reflectionVariation*.5) : centerBalance+m.floor(reflectionVariation * .5 * -1);
   _={ tick:beatStart, type:'control_c' };
 return [
-    ...source.map(ch => ({..._,values:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
-    ...reflection.map(ch => ({..._,values:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance)+reflectionVariation : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance)-reflectionVariation : centerBalance2 ]})),
-    ...source.map(ch => ({..._,values:[ch, 1, ri(20)]})),//fx
-    ...source.map(ch => ({..._,values:[ch, 5, ri(88)]})),
-    ...source.map(ch => ({..._,values:[ch, 11, ri(115,127)]})),
-    ...source.map(ch => ({..._,values:[ch, 65, ri(1)]})),
-    ...source.map(ch => ({..._,values:[ch, 66, ri(20)]})),
-    ...source.map(ch => ({..._,values:[ch, 67, ri(7)]})),
-    ...source.map(ch => ({..._,values:[ch, 91, ri(33)]})),
-    ...source.map(ch => ({..._,values:[ch, 93, ri(33)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 1, ri(88)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 5, ri(127)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 11, ri(127)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 65, ri(1)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 66, ri(77)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 67, ri(64)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 91, ri(77)]})),
-    ...reflection.map(ch => ({..._,values:[ch, 93, ri(77)]})),
-    ...reflection.map(ch =>({ ..._, values:[ch, 7, ch===centerCH2 ? ri(50,75) : ri(75,100)]//volume
-}))  ];  })  );  }
+    ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
+    ...source.map(ch=>({..._,vals:[ch, 1, ri(20)]})),
+    ...source.map(ch=>({..._,vals:[ch, 5, ri(88)]})),
+    ...source.map(ch=>({..._,vals:[ch, 11, ri(115,127)]})),
+    ...source.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
+    ...source.map(ch=>({..._,vals:[ch, 66, ri(20)]})),
+    ...source.map(ch=>({..._,vals:[ch, 67, ri(64)]})),
+    ...source.map(ch=>({..._,vals:[ch, 91, ri(33)]})),
+    ...source.map(ch=>({..._,vals:[ch, 93, ri(33)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 1, ch===centerCH2 ? ri(20) : ri(60)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 5, ri(127)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 11, ri(88,111)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 66, ri(77)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 67, ri(32)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 91, ch===centerCH2 ? ri(32) : ri(77)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 93, ch===centerCH2 ? ri(32) : ri(77)]})),
+  ];  })  );  }
 }
 
 setRhythm=(level)=> {
@@ -417,11 +416,11 @@ setRhythm=(level)=> {
       throw new Error('Invalid level provided to setRhythm');
   }
 }
-//midi cc 123 "all notes off" prevents sustain across measures, or other transitions
-allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch => ({tick:m.max(0,tick-1), type:'control_c', values:[ch, 123, 0]  })));}
+//midi cc 123 "all notes off" prevents sustain across transitions
+allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
 
 grandFinale=()=>{
-  c=c.filter(item=>item!==null).map(item=>({...item,tick:item.tick<0?Math.abs(item.tick)*rf(.1,.3):item.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.values.join(', ')}\n`; finalTick=_.tick; }); composition+=finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick:i.tick<0?Math.abs(i.tick)*rf(.1,.3):i.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=_.tick; }); composition+=finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
 };
 
 subdivFreq=300;

@@ -144,7 +144,7 @@ logUnit=(type)=>{  let shouldLog=false;
   }
   finalTime=formatTime(endTime + SILENT_OUTRO_SECONDS);
   return (() => {  c.push({
-    tick: startTick, type: 'marker_t', values: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+    tick: startTick, type: 'marker_t', vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
   });  })();
 };
 incrementMeasure=()=>{
@@ -169,14 +169,14 @@ setNoteParams=()=>{
   binauralVelocity=rv(velocity * rf(.35, .5));
 };
 playNotes=()=>{if (crossModulation>rf(2,4)) {subdivsOff=0; subdivsOn++;
-  composer.getNotes().forEach(({ note }) => {  events = source.map(sourceCH => {
+  composer.getNotes().forEach(({ note })=>{  events=source.map(sourceCH=>{
     CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
     if (CHsToPlay) {  reflectionCH = reflect[sourceCH];  x=[
-    {tick: sourceCH===centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.1, .1], .3), type: 'note_on_c', values: [sourceCH, note, sourceCH===centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.97, 1.03)]},
-    {tick: on + sustain * (sourceCH===centerCH1 ? 1 : rv(rf(.92, 1.03))), values: [sourceCH, note]},
+    {tick: sourceCH===centerCH1 ? on : on + rv(ticksPerSubdiv * rf(1/3), [-.1, .1], .3), type: 'note_on_c', vals: [sourceCH, note, sourceCH===centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.95, 1.03)]},
+    {tick: on + sustain * (sourceCH===centerCH1 ? 1 : rv(rf(.92, 1.03))), vals: [sourceCH, note]},
   
-    {tick: reflectionCH===centerCH2 ? on + rv(ticksPerSubdiv * rf(.2)) : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .1], .5), type: 'note_on_c', values: [reflectionCH, note, reflectionCH===centerCH2 ? velocity * rf(.8, 1.1) : binauralVelocity * rf(.8, 1.15)]},
-    {tick: on + sustain * (reflectionCH===centerCH2 ? rf(.7,1.3) : rv(rf(.65, 1.5))), values: [reflectionCH, note]}
+    {tick: reflectionCH===centerCH2 ? on + rv(ticksPerSubdiv * rf(.2)) : on + rv(ticksPerSubdiv * rf(1/3), [-.01, .1], .5), type: 'note_on_c', vals: [reflectionCH, note, reflectionCH===centerCH2 ? velocity * rf(.6, 1.05) : binauralVelocity * rf(.55, 1.05)]},
+    {tick: on + sustain * (reflectionCH===centerCH2 ? rf(.7,1.3) : rv(rf(.65, 1.5))), vals: [reflectionCH, note]}
   ]; return x; } else { return null; }  }).filter(_=>_!==null).flat();
     p(c, ...events);  });  } else { subdivsOff++; subdivsOn=0; }
 };

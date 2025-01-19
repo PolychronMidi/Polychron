@@ -21,10 +21,10 @@ class RhythmComposer {
     if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
     return patternLength(t.RhythmPattern.rotate(pattern, rotations), length);
   }
-  morph(pattern, direction='both', length=pattern.length, probLow=.1, probHigh) {  let morph;
-    morph=probHigh===undefined ? rf(probLow) : rf(probLow, probHigh);
+  morph(pattern, direction='both', length=pattern.length, probLow=.1, probHigh) {
     probHigh=probHigh===undefined ? probLow : probHigh;
     let morpheus=pattern.map((v, index)=>{
+      let morph=probHigh===probLow ? rf(probLow) : rf(probLow, probHigh);
       let _=['up', 'down', 'both']; let d=direction==='?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
       let up=v < 1 ? m.min(v + morph, 1) : v;  let down=v > 0 ? m.max(v - morph, 0) : v;
       return (d==='up' ? up : d==='down' ? down : d==='both' ? (v < 1 ? up : down) : v);
@@ -60,18 +60,18 @@ class MeasureComposer extends RhythmComposer {
     try {  const shift=ri(1);
       switch (ri(2)) {
         case 0:
-          intervals = [0, 2, 3 + m.round(m.random()*shift), 6 - m.round(m.random()*shift)].map(interval => interval * m.floor(this.notes.length / 7));  break;
+          intervals = [0, 2, 3 + m.round(m.random()*shift), 6 - m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
         case 1:
-          intervals = [0, 1, 3 + m.round(m.random()*shift), 5 + m.round(m.random()*shift)].map(interval => interval * m.floor(this.notes.length / 7));  break;
+          intervals = [0, 1, 3 + m.round(m.random()*shift), 5 + m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
         default:
-          intervals = Array.from({length: this.notes.length}, (_, i) => i);  fallback = true;  }
-      return intervals.slice(0, voices).map((interval, index) => {
+          intervals = Array.from({length: this.notes.length}, (_, i)=>i);  fallback = true;  }
+      return intervals.slice(0, voices).map((interval, index)=>{
         const noteIndex = (this.notes.indexOf(rootNote) + interval) % this.notes.length;
         let octave = ri(minOctave, maxOctave);
         let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
         let triedAllSoftLimits = false;
         while (uniqueNotes.has(note)) {
-octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.min) : (octave < OCTAVE.max ? octave++ : (() => { return false; })())));
+octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.min) : (octave < OCTAVE.max ? octave++ : (()=>{ return false; })())));
 if (octave===false) break; note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;  }
         return { note };
       }).filter((noteObj, index, self) => 
@@ -88,7 +88,7 @@ class ScaleComposer extends MeasureComposer {
     this.scale = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.scale.notes;
   }
-  x = () => this.getNotes();
+  x=()=>this.getNotes();
 }
 class RandomScaleComposer extends ScaleComposer {
   constructor() { 
@@ -100,7 +100,7 @@ class RandomScaleComposer extends ScaleComposer {
     const randomRoot = allNotes[ri(allNotes.length - 1)];
     super.noteSet(randomScale, randomRoot);
   }
-  x = () => { this.noteSet();  return super.x();  }
+  x=()=>{ this.noteSet(); return super.x(); }
 }
 class ChordComposer extends MeasureComposer {
   constructor(progression) { 
@@ -121,9 +121,7 @@ class ChordComposer extends MeasureComposer {
         case 'L': increment = -1; break;
         case 'E': increment = Math.random() < .5 ? 1 : -1; break;
         case '?': increment = ri(-2, 2); break;
-        default:
-          console.warn('Invalid direction specified, defaulting to right');
-          increment = 1;
+        default:console.warn('Invalid direction, defaulting to right'); increment = 1;
       }
       let progressChord=m.random > (ri(150) / subdivFreq);
       if (progressChord) { allNotesOff(subdivStart); }
@@ -132,7 +130,7 @@ class ChordComposer extends MeasureComposer {
       this.notes = this.progression[this.currentChordIndex].notes;
     }
   }
-  x = () => this.getNotes();
+  x=()=>this.getNotes();
 }
 class RandomChordComposer extends ChordComposer {
   constructor() { 
@@ -148,7 +146,7 @@ class RandomChordComposer extends ChordComposer {
     }
     super.noteSet(randomProgression, '?');
   }
-  x = () => { this.noteSet();  return super.x();  }
+  x=()=>{ this.noteSet(); return super.x(); }
 }
 class ModeComposer extends MeasureComposer {
   constructor(modeName, root) { 
@@ -160,7 +158,7 @@ class ModeComposer extends MeasureComposer {
     this.mode = t.Mode.get(modeName);
     this.notes = t.Mode.notes(this.mode, root);
   }
-  x = () => this.getNotes();
+  x=()=>this.getNotes();
 }
 class RandomModeComposer extends ModeComposer {
   constructor() {
@@ -173,7 +171,7 @@ class RandomModeComposer extends ModeComposer {
     this.root = root; 
     super.noteSet(modeName, root);    
   }
-  x = () => { this.noteSet();  return super.x();  }
+  x=()=>{ this.noteSet(); return super.x(); }
 }
 composers=(function() {  return COMPOSERS.map(composer=>
   eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}', root:'${composer.root || ''}', progression:${JSON.stringify(composer.progression || [])}})`)  );  })();
@@ -195,6 +193,6 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
       useShorterSustain=m.random() < rv(.3, [-.2, .2], .3);
       for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
         subdivStart=divStart + subdivIndex * ticksPerSubdiv; logUnit('subdivision');
-        crossModulateRhythms();  setNoteParams(); playNotes(); }}}
+        crossModulateRhythms(); setNoteParams(); playNotes(); }}}
   incrementMeasure();  }
 grandFinale();  })();
