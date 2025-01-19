@@ -69,9 +69,9 @@ class MeasureComposer extends RhythmComposer {
         const noteIndex = (this.notes.indexOf(rootNote) + interval) % this.notes.length;
         let octave = ri(minOctave, maxOctave);
         let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-        let triedAllSoftLimits = false;
+        let triedSofLimits = false;
         while (uniqueNotes.has(note)) {
-octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedAllSoftLimits ? (triedAllSoftLimits = true, OCTAVE.min) : (octave < OCTAVE.max ? octave++ : (()=>{ return false; })())));
+octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedSofLimits ? (triedSofLimits = true, OCTAVE.min) : (octave < OCTAVE.max ? octave++ : (()=>{ return false; })())));
 if (octave===false) break; note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;  }
         return { note };
       }).filter((noteObj, index, self) => 
@@ -116,7 +116,7 @@ class ChordComposer extends MeasureComposer {
       this.progression = validatedProgression.map(t.Chord.get); 
       this.currentChordIndex = this.currentChordIndex || 0;
       let increment = 0;
-      switch (direction) {
+      switch (direction.toUpperCase()) {
         case 'R': increment = 1; break;
         case 'L': increment = -1; break;
         case 'E': increment = Math.random() < .5 ? 1 : -1; break;
@@ -182,7 +182,7 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   midiSync(); beatRhythm=setRhythm('beat');
   for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
     beatStart=measureStart + beatIndex * ticksPerBeat; logUnit('beat');
-    setBinaural();  setBalanceAndFX();
+    setBinaural();  setBalanceAndFX(); setTertiaryInstruments();
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
     divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
     for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();

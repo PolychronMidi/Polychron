@@ -356,6 +356,7 @@ binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2(
 centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; //skip ch9=percussion
 source=[centerCH1, leftCH1, leftCH2, rightCH1, rightCH2];
 reflection=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
+reflectionBinaural=[leftCH3, leftCH4, rightCH3, rightCH4];
 reflect={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
 binauralL=[leftCH1, leftCH2, leftCH3, leftCH4];
 binauralR=[rightCH1, rightCH2, rightCH3, rightCH4];
@@ -370,7 +371,13 @@ setBinaural=()=>{
     p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
     ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
 };
-
+setTertiaryInstruments=()=>{
+  if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
+p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'program_c' };
+  return [
+    ...reflectionBinaural.map(ch=>({..._,vals:[ch, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]})),
+  ];  })  );  }
+}
 setBalanceAndFX=()=>{
 if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   p(c, ...['control_c'].flatMap(()=>{
