@@ -381,7 +381,7 @@ p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'program_c' };
 setBalanceAndFX=()=>{
 if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   p(c, ...['control_c'].flatMap(()=>{
-  balanceOffset=ri(m.max(0, balanceOffset - 7), m.min(55, balanceOffset + 7));
+  balanceOffset=ri(m.max(0, balanceOffset - 7), m.min(45, balanceOffset + 7));
   sideBias=ri(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
   leftBalance=m.min(0,m.max(56, balanceOffset + ri(7) + sideBias));
   rightBalance=m.max(127,m.min(72, 127 - balanceOffset - ri(7) + sideBias));
@@ -391,17 +391,17 @@ if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) 
 return [
     ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
     ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
-    ...source.map(ch=>({..._,vals:[ch, 1, ri(20)]})),
+    ...source.map(ch=>({..._,vals:[ch, 1, ch===centerCH1 ? ri(10) : ri(60)]})),
     ...source.map(ch=>({..._,vals:[ch, 5, ri(88)]})),
-    ...source.map(ch=>({..._,vals:[ch, 11, ri(115,127)]})),
+    ...source.map(ch=>({..._,vals:[ch, 11, ch===centerCH1 ? ri(115,127) : ri(64,127)]})),
     ...source.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
     ...source.map(ch=>({..._,vals:[ch, 66, ri(20)]})),
     ...source.map(ch=>({..._,vals:[ch, 67, ri(64)]})),
     ...source.map(ch=>({..._,vals:[ch, 91, ri(33)]})),
     ...source.map(ch=>({..._,vals:[ch, 93, ri(33)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 1, ch===centerCH2 ? ri(20) : ri(60)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 1, ch===centerCH2 ? ri(15) : ri(90)]})),
     ...reflection.map(ch=>({..._,vals:[ch, 5, ri(127)]})),
-    ...reflection.map(ch=>({..._,vals:[ch, 11, ri(88,111)]})),
+    ...reflection.map(ch=>({..._,vals:[ch, 11, ch===centerCH2 ? ri(66,99) : ri(77,111)]})),
     ...reflection.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
     ...reflection.map(ch=>({..._,vals:[ch, 66, ri(77)]})),
     ...reflection.map(ch=>({..._,vals:[ch, 67, ri(32)]})),
@@ -419,8 +419,7 @@ setRhythm=(level)=> {
       return divRhythm = divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv, 0) : rhythm('div', divsPerDiv, divRhythm);
     case 'subdiv':
       return subdivRhythm = subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv, 0) : rhythm('subdiv', subdivsPerDiv, subdivRhythm)
-    default:
-      throw new Error('Invalid level provided to setRhythm');
+    default:throw new Error('Invalid level provided to setRhythm');
   }
 }
 //midi cc 123 "all notes off" prevents sustain across transitions

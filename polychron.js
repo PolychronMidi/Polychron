@@ -182,7 +182,7 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   midiSync(); beatRhythm=setRhythm('beat');
   for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
     beatStart=measureStart + beatIndex * ticksPerBeat; logUnit('beat');
-    setBinaural();  setBalanceAndFX(); setTertiaryInstruments();
+    setTertiaryInstruments(); setBinaural();  setBalanceAndFX();
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
     divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
     for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
