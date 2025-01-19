@@ -167,10 +167,10 @@ formatTime=(seconds)=>{
   return `${minutes}:${seconds}`;
 };
 
-setTiming=()=>{  p(c,  { tick:measureStart, type:'bpm', vals:[midiBPM] },
-  { tick:measureStart, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
+setTiming=()=>{  p(c,  { tick:measureStartTick, type:'bpm', vals:[midiBPM] },
+  { tick:measureStartTick, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
 
-divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -191,12 +191,12 @@ flipBinauralF = [centerCH1, centerCH2, leftCH1, rightCH1, leftCH3, rightCH3];
 flipBinauralT = [centerCH1, centerCH2, leftCH2, rightCH2, leftCH4, rightCH4];
 
 //midi cc 123 "all notes off" prevents sustain across transitions
-allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
+allNotesOff=(tick=measureStartTick)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
 
 incrementMeasure=()=>{
   logUnit('measure');
   allNotesOff();
-  measureStart+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure;
+  measureStartTick+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure;
 }
 
 grandFinale=()=>{
