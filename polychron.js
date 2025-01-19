@@ -181,7 +181,7 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   composer=composers[ri(COMPOSERS.length - 1)]; [numerator, denominator]=composer.getMeter();
   midiSync(); beatRhythm=setRhythm('beat');
   for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
-    beatStart=measureStart + beatIndex * ticksPerBeat; logUnit('beat');
+    beatStart=measureStartTick + beatIndex * ticksPerBeat; logUnit('beat');
     setTertiaryInstruments(); setBinaural();  setBalanceAndFX();
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
     divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
@@ -193,6 +193,6 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
       useShorterSustain=m.random() < rv(.3, [-.2, .2], .3);
       for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
         subdivStart=divStart + subdivIndex * ticksPerSubdiv; logUnit('subdivision');
-        crossModulateRhythms(); setNoteParams(); playNotes(); }}}
+        playNotes();  }}}
   incrementMeasure();  }
 grandFinale();  })();

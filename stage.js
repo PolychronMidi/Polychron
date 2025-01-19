@@ -99,13 +99,14 @@ setRhythm=(level)=>{
   }
 }
 
+trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };
+trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;} };
+
 setTuningAndInstruments=()=>{  
   p(c, ...['control_c', 'program_c'].flatMap(type=>[ ...source.map(ch=>({
   type, vals:[ch, ...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10, 0] : [primaryInstrument]) : (type==='control_c' ? [10, 127] : [primaryInstrument]))]})),
   { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH1, ...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  };
-trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;}};
-trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;}
+  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  
 };
 
 setTertiaryInstruments=()=>{
@@ -158,37 +159,38 @@ return [
 }
 
 crossModulateRhythms=()=>{ crossModulation=0;
-  crossModulation += rf(1.5,(beatRhythm[beatIndex] > 0 ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + 
-  rf(1,(divRhythm[divIndex] > 0 ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + 
-  rf(.5,(subdivRhythm[subdivIndex] > 0 ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
-  (subdivsOn < ri(15,21) ? rf(.1,.3) : 0) + (subdivsOff > ri(3) ? rf(.1,.3) : 0) + 
-  (divsOn < ri(9,15) ? rf(.1,.3) : 0) + (divsOff > ri(3,12) ? rf(.1,.3) : 0) + 
-  (beatsOn < ri(3) ? rf(.1,.3) : 0) + (beatsOff > ri(2) ? rf(.1,.3) : 0);
+  crossModulation += rf(1.5,(beatRhythm[beatIndex] > rf(-.1) ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + 
+  rf(1,(divRhythm[divIndex] > rf(-.1) ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + 
+  rf(.5,(subdivRhythm[subdivIndex] > rf(-.1) ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
+  (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri(1) ? rf(.1,.3) : rf(-.1)) + 
+  (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,12) ? rf(.1,.3) : rf(-.1)) + 
+  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(2) ? rf(.1,.3) : rf(-.1));
 };
 
 setNoteParams=()=>{
-  subdivsOn++; subdivsOff=0;
   on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
-  shorterSustain=rv(rf(m.max(ticksPerDiv * .5, ticksPerDiv / subdivsPerDiv), (ticksPerBeat * (.3 + m.random() * .7))), [.1, .2], [-.05, -.1], .1);
-  longerSustain=rv(rf(ticksPerDiv * .8, (ticksPerBeat * (.3 + m.random() * .7))), [.1, .3], [-.05, -.1], .1);
-  sustain=(useShorterSustain ? shorterSustain : longerSustain) * rv(rf(.8, 1.3));
+  shorterSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+m.random()*.7))),[.1,.2],[-.05,-.1],.1);
+  longerSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+m.random()*.7))),[.1,.3],[-.05,-.1],.1);
+  sustain=(useShorterSustain ? shorterSustain : longerSustain)*rv(rf(.8,1.3));
   binauralVelocity=rv(velocity * rf(.35, .5));
 };
 
-playNotes=()=>{if (crossModulation>rf(2,4)) {subdivsOff=0; subdivsOn++;
+playNotes=()=>{  crossModulateRhythms(); setNoteParams();
+  if (crossModulation>rf(3.5,4)) {subdivsOff=0; subdivsOn++;
   composer.getNotes().forEach(({ note })=>{  events=source.map(sourceCH=>{
     CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
     if (CHsToPlay) {  reflectionCH = reflect[sourceCH];  x=[
-    {tick: sourceCH===centerCH1 ? on + rv(ticksPerSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubdiv*rf(1/3),[-.1,.1],.3), type: 'note_on_c', vals: [sourceCH, note, sourceCH===centerCH1 ? velocity * rf(.9, 1.1) : binauralVelocity * rf(.95, 1.03)]},
-    {tick: on + sustain * (sourceCH===centerCH1 ? 1 : rv(rf(.92, 1.03))), vals: [sourceCH, note]},
+    {tick:sourceCH===centerCH1 ? on + rv(ticksPerSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubdiv*rf(1/3),[-.1,.1],.3),type:'note_on_c',vals:[sourceCH,note,sourceCH===centerCH1 ? velocity*rf(.9,1.1) : binauralVelocity*rf(.95,1.03)]},
+    {tick:on+sustain*(sourceCH===centerCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]},
   
-    {tick: reflectionCH===centerCH2 ? on + rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on + rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5), type: 'note_on_c', vals: [reflectionCH, note, reflectionCH===centerCH2 ? velocity * rf(.5, .8) : binauralVelocity * rf(.55, .9)]},
-    {tick: on + sustain * (reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65, 1.3))), vals: [reflectionCH, note]}
+    {tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
+    {tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]}
   ]; return x; } else { return null; }  }).filter(_=>_!==null).flat();
     p(c, ...events);  });  } else { subdivsOff++; subdivsOn=0; }
 };
 
-p=pushMultiple=(array,...items)=>{  array.push(...items);  };  c=csvRows=[];
+p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
+c=csvRows=[];
 
 logUnit=(type)=>{  let shouldLog=false;
   if (LOG==='none') shouldLog=false;
@@ -197,15 +199,15 @@ logUnit=(type)=>{  let shouldLog=false;
     shouldLog=logList.length===1 ? logList[0]===type : logList.includes(type);  }
   if (!shouldLog) return null;  let meterInfo='';
   if (type==='measure') {
-    thisUnit=measureIndex + 1;
+    unit=measureIndex + 1;
     unitsPerParent=totalMeasures;
     startTime=measureStartTime;
     ticksPerSecond=midiBPM * PPQ / 60;
     secondsPerMeasure=ticksPerMeasure / (midiBPM * PPQ / 60);
     endTime=measureStartTime + secondsPerMeasure;
-    startTick=measureStart;
-    endTick=measureStart + ticksPerMeasure;
-    originalMeter=[numerator, denominator];
+    startTick=measureStartTick;
+    endTick=measureStartTick + ticksPerMeasure;
+    actualMeter=[numerator, denominator];
     secondsPerBeat=ticksPerBeat / ticksPerSecond;
     composerDetails=`${composer.constructor.name} `;
     if (composer.scale && composer.scale.name) {
@@ -218,10 +220,10 @@ logUnit=(type)=>{  let shouldLog=false;
     } else if (composer.mode && composer.mode.name) {
       composerDetails+=`${composer.root} ${composer.mode.name}`;
     }
-    meterInfo=midiMeter[1]===originalMeter[1] ? `Meter: ${originalMeter.join('/')} Composer: ${composerDetails}` : `Original Meter: ${originalMeter.join('/')} Spoofed Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
+    meterInfo=midiMeter[1]===actualMeter[1] ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}` : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
     setTiming();
   } else if (type==='beat') {
-    thisUnit=beatIndex + 1;
+    unit=beatIndex + 1;
     unitsPerParent=numerator;
     startTime=measureStartTime + beatIndex * secondsPerBeat;
     endTime=startTime + secondsPerBeat;
@@ -229,23 +231,23 @@ logUnit=(type)=>{  let shouldLog=false;
     endTick=startTick + ticksPerBeat;
     secondsPerDiv=secondsPerBeat / divsPerBeat;
   } else if (type==='division') {
-    thisUnit=divIndex + 1;
+    unit=divIndex + 1;
     unitsPerParent=divsPerBeat;
-    startTime=measureStartTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv;
+    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv;
     endTime=startTime + secondsPerDiv;
     startTick=divStart;
     endTick=startTick + ticksPerDiv;
     secondsPerSubdiv=secondsPerDiv / subdivsPerDiv;
   } else if (type==='subdivision') {
-    thisUnit=subdivIndex + 1;
+    unit=subdivIndex + 1;
     unitsPerParent=subdivsPerDiv;
-    startTime=measureStartTime + beatIndex * secondsPerBeat + divIndex * secondsPerDiv + subdivIndex * secondsPerSubdiv;
+    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv+subdivIndex*secondsPerSubdiv;
     endTime=startTime + secondsPerSubdiv;
     startTick=subdivStart;
     endTick=startTick + ticksPerSubdiv;
   }
   finalTime=formatTime(endTime + SILENT_OUTRO_SECONDS);
   return (()=>{  c.push({
-    tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${thisUnit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+    tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
   });  })();
 };
