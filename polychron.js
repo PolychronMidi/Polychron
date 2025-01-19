@@ -179,9 +179,9 @@ composers=(function() {  return COMPOSERS.map(composer=>
   eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}', root:'${composer.root || ''}', progression:${JSON.stringify(composer.progression || [])}})`)  );  })();
 (function csvMaestro() {
 totalMeasures=ri(MEASURES.min, MEASURES.max);  setTuningAndInstruments();
-for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) { allNotesOff();
+for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   composer=composers[ri(COMPOSERS.length - 1)]; [numerator, denominator]=composer.getMeter();
-  midiSync(); beatRhythm=setRhythm('beat'); logUnit('measure');
+  midiSync(); beatRhythm=setRhythm('beat');
   for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
     beatStart=measureStart + beatIndex * ticksPerBeat; logUnit('beat');
     setBinaural();  setBalanceAndFX();
@@ -195,7 +195,6 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) { allNotesOff
       useShorterSustain=m.random() < rv(.3, [-.2, .2], .3);
       for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
         subdivStart=divStart + subdivIndex * ticksPerSubdiv; logUnit('subdivision');
-        crossModulateRhythms();  setNoteParams();
-if (crossModulation>rf(2,4)) { playNotes(); } else { subdivsOff++; subdivsOn=0; }}}}
-  measureStart+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure; }
-    grandFinale();  })();
+        crossModulateRhythms();  setNoteParams(); playNotes(); }}}
+  incrementMeasure();  }
+grandFinale();  })();
