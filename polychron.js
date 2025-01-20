@@ -1,90 +1,89 @@
-// Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity. https://github.com/PolychronMidi/Polychron
+// Clean minimal code style with focus on direct & clear naming & structure,instead of distracting comments,excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity. https://github.com/PolychronMidi/Polychron
 require('./stage');
 class RhythmComposer {
   binary(length) { let pattern=[];
     while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.binary(ri(99))); }
-    return patternLength(pattern, length);
+    return patternLength(pattern,length);
   }
   hex(length) { let pattern=[];
     while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.hex(ri(99).toString(16))); }
-    return patternLength(pattern, length);
+    return patternLength(pattern,length);
   }
   onsets(numbers) { if (typeof numbers==='object' && numbers.hasOwnProperty('make')) {
     numbers=makeOnsets(...numbers.make); }
     return t.RhythmPattern.onsets(numbers);
   }
-  random(length, probOn) { return t.RhythmPattern.random(length, 1 - probOn); }
+  random(length,probOn) { return t.RhythmPattern.random(length,1 - probOn); }
   prob(probs) { return t.RhythmPattern.probability(probs); }
-  euclid(length, ones) { return t.RhythmPattern.euclid(length, ones); }
-  rotate(pattern, rotations, direction="R", length=pattern.length) {
+  euclid(length,ones) { return t.RhythmPattern.euclid(length,ones); }
+  rotate(pattern,rotations,direction="R",length=pattern.length) {
     if (direction==='?') { direction=m.random() < .5 ? 'L' : 'R'; }
     if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
-    return patternLength(t.RhythmPattern.rotate(pattern, rotations), length);
+    return patternLength(t.RhythmPattern.rotate(pattern,rotations),length);
   }
-  morph(pattern, direction='both', length=pattern.length, probLow=.1, probHigh) {
+  morph(pattern,direction='both',length=pattern.length,probLow=.1,probHigh) {
     probHigh=probHigh===undefined ? probLow : probHigh;
-    let morpheus=pattern.map((v, index)=>{
-      let morph=probHigh===probLow ? rf(probLow) : rf(probLow, probHigh);
-      let _=['up', 'down', 'both']; let d=direction==='?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
-      let up=v < 1 ? m.min(v + morph, 1) : v;  let down=v > 0 ? m.max(v - morph, 0) : v;
+    let morpheus=pattern.map((v,index)=>{
+      let morph=probHigh===probLow ? rf(probLow) : rf(probLow,probHigh);
+      let _=['up','down','both']; let d=direction==='?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
+      let up=v < 1 ? m.min(v + morph,1) : v;  let down=v > 0 ? m.max(v - morph,0) : v;
       return (d==='up' ? up : d==='down' ? down : d==='both' ? (v < 1 ? up : down) : v);
     });
-    return this.prob(patternLength(morpheus, length));
+    return this.prob(patternLength(morpheus,length));
   }
 }
 class MeasureComposer extends RhythmComposer {
-  getMeter() {const {min:a,max:b,weights:c}=NUMERATOR; const {min:x,max:y,weights:z}=DENOMINATOR; return [ rw(a,b,c), rw(x,y,z) ]; }
-  getRhythm(method, ...args) {
+  getMeter() {const {min:a,max:b,weights:c}=NUMERATOR; const {min:x,max:y,weights:z}=DENOMINATOR; return [ rw(a,b,c),rw(x,y,z) ]; }
+  getRhythm(method,...args) {
     if (!this[method] || typeof this[method] !== 'function') {throw new Error(`Unknown rhythm method: ${method}`);}
     return this[method](...args);
   }
-  getDivisions() {const { min, max, weights }=DIVISIONS; return rw(min, max, weights);}
-  getSubdivisions() {const { min, max, weights }=SUBDIVISIONS; return rw(min, max, weights);}
+  getDivisions() {const { min,max,weights }=DIVISIONS; return rw(min,max,weights);}
+  getSubdivisions() {const { min,max,weights }=SUBDIVISIONS; return rw(min,max,weights);}
   getOctaveRange() {
-    const { min, max, weights } = OCTAVE;
-    let [o1, o2] = [rw(min, max, weights), rw(min, max, weights)];
-    while (o1===o2) {  o2 = m.max(min, m.min(max, o2 + ri(-3, 3)));  }
-    return [ o1, o2 ];
+    const { min,max,weights } = OCTAVE;
+    let [o1,o2] = [rw(min,max,weights),rw(min,max,weights)];
+    while (o1===o2) {  o2 = m.max(min,m.min(max,o2 + ri(-3,3)));  }
+    return [ o1,o2 ];
   }
   getVoices() {
-    const { min, max, weights } = VOICES;
-    const v = m.min(rw(min, max, weights), this.notes.length * 4);
+    const { min,max,weights } = VOICES;
+    const v = m.min(rw(min,max,weights),this.notes.length * 4);
     return subdivFreq > ri(10,20) ? m.max(1,m.floor(v / ri(2,3))) : v;
   }
   getNotes(octaveRange = null) {
     const voices = this.getVoices();
     const uniqueNotes = new Set();
-    const [minOctave, maxOctave] = octaveRange || this.getOctaveRange();
+    const [minOctave,maxOctave] = octaveRange || this.getOctaveRange();
     const rootNote = this.notes[ri(this.notes.length - 1)];
-    let intervals = [], fallback = false;
+    let intervals = [],fallback = false;
     try {  const shift=ri(1);
       switch (ri(2)) {
         case 0:
-          intervals = [0, 2, 3 + m.round(m.random()*shift), 6 - m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
+          intervals=[0,2,3+m.round(m.random()*shift),6 - m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
         case 1:
-          intervals = [0, 1, 3 + m.round(m.random()*shift), 5 + m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
+          intervals=[0,1,3+m.round(m.random()*shift),5+m.round(m.random()*shift)].map(interval=>interval*m.floor(this.notes.length / 7));  break;
         default:
-          intervals = Array.from({length: this.notes.length}, (_, i)=>i);  fallback = true;  }
-      return intervals.slice(0, voices).map((interval, index)=>{
-        const noteIndex = (this.notes.indexOf(rootNote) + interval) % this.notes.length;
-        let octave = ri(minOctave, maxOctave);
-        let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-        let triedSofLimits = false;
+          intervals=Array.from({length:this.notes.length},(_,i)=>i);  fallback=true;  }
+      return intervals.slice(0,voices).map((interval,index)=>{
+        const noteIndex=(this.notes.indexOf(rootNote)+interval) % this.notes.length;
+        let octave=ri(minOctave,maxOctave);  let triedSofLimits=false;
+        let note=t.Note.chroma(this.notes[noteIndex])+12*octave;
         while (uniqueNotes.has(note)) {
-octave = octave < maxOctave ? octave++ : (octave > minOctave ? octave-- : (!triedSofLimits ? (triedSofLimits = true, OCTAVE.min) : (octave < OCTAVE.max ? octave++ : (()=>{ return false; })())));
-if (octave===false) break; note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;  }
+octave = octave < maxOctave ? octave++ : octave > minOctave ? octave-- : octave < OCTAVE.max ? octave++ : octave > OCTAVE.min ? octave-- : (()=>{ return false; })();
+if (octave===false) break; note=t.Note.chroma(this.notes[noteIndex])+12*octave;  }
         return { note };
-      }).filter((noteObj, index, self) => 
+      }).filter((noteObj,index,self) => 
         index===self.findIndex(n => n.note===noteObj.note)
       ); }  catch (e) { if (!fallback) { return this.getNotes(octaveRange); } else {
       console.warn(e.message);  return this.getNotes(octaveRange);  }}}}
 class ScaleComposer extends MeasureComposer {
-  constructor(scaleName, root) { 
+  constructor(scaleName,root) { 
     super(); 
     this.root = root; 
-    this.noteSet(scaleName, root);  
+    this.noteSet(scaleName,root);  
   }
-  noteSet(scaleName, root) {
+  noteSet(scaleName,root) {
     this.scale = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.scale.notes;
   }
@@ -98,16 +97,16 @@ class RandomScaleComposer extends ScaleComposer {
   noteSet() {
     const randomScale = allScales[ri(allScales.length - 1)];
     const randomRoot = allNotes[ri(allNotes.length - 1)];
-    super.noteSet(randomScale, randomRoot);
+    super.noteSet(randomScale,randomRoot);
   }
   x=()=>{ this.noteSet(); return super.x(); }
 }
 class ChordComposer extends MeasureComposer {
   constructor(progression) { 
     super();  
-    this.noteSet(progression, 'R');
+    this.noteSet(progression,'R');
   }
-  noteSet(progression, direction = 'R') {
+  noteSet(progression,direction = 'R') {
     const validatedProgression = progression.filter(chordSymbol => {
       if (!allChords.includes(chordSymbol)) { console.warn(`Invalid chord symbol: ${chordSymbol}`);
         return false;  }  return true;  });
@@ -120,13 +119,13 @@ class ChordComposer extends MeasureComposer {
         case 'R': increment = 1; break;
         case 'L': increment = -1; break;
         case 'E': increment = Math.random() < .5 ? 1 : -1; break;
-        case '?': increment = ri(-2, 2); break;
-        default:console.warn('Invalid direction, defaulting to right'); increment = 1;
+        case '?': increment = ri(-2,2); break;
+        default:console.warn('Invalid direction,defaulting to right'); increment = 1;
       }
       let progressChord=m.random > (ri(150) / subdivFreq);
       if (progressChord) { allNotesOff(subdivStart); }
       this.currentChordIndex +=  progressChord ? increment % (this.progression.length) : 0;
-      this.currentChordIndex = (this.currentChordIndex + this.progression.length) % this.progression.length;
+      this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
       this.notes = this.progression[this.currentChordIndex].notes;
     }
   }
@@ -138,59 +137,59 @@ class RandomChordComposer extends ChordComposer {
     this.noteSet();  
   }
   noteSet() {
-    const progressionLength = ri(1, 5);
+    const progressionLength = ri(1,5);
     const randomProgression = [];
     for (let i = 0; i < progressionLength; i++) {
       const randomChord = allChords[ri(allChords.length - 1)];
       randomProgression.push(randomChord);
     }
-    super.noteSet(randomProgression, '?');
+    super.noteSet(randomProgression,'?');
   }
   x=()=>{ this.noteSet(); return super.x(); }
 }
 class ModeComposer extends MeasureComposer {
-  constructor(modeName, root) { 
+  constructor(modeName,root) { 
     super(); 
     this.root = root; 
-    this.noteSet(modeName, root);  
+    this.noteSet(modeName,root);  
   }
-  noteSet(modeName, root) {
+  noteSet(modeName,root) {
     this.mode = t.Mode.get(modeName);
-    this.notes = t.Mode.notes(this.mode, root);
+    this.notes = t.Mode.notes(this.mode,root);
   }
   x=()=>this.getNotes();
 }
 class RandomModeComposer extends ModeComposer {
   constructor() {
-    super('', '');
+    super('','');
     this.noteSet();
   }
   noteSet() {
     const randomMode = allModes[ri(allModes.length - 1)];
-    const [root, modeName] = randomMode.split(' ');
+    const [root,modeName] = randomMode.split(' ');
     this.root = root; 
-    super.noteSet(modeName, root);    
+    super.noteSet(modeName,root);    
   }
   x=()=>{ this.noteSet(); return super.x(); }
 }
 composers=(function() {  return COMPOSERS.map(composer=>
-  eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}', root:'${composer.root || ''}', progression:${JSON.stringify(composer.progression || [])}})`)  );  })();
+  eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}',root:'${composer.root || ''}',progression:${JSON.stringify(composer.progression || [])}})`)  );  })();
 (function csvMaestro() {
-totalMeasures=ri(MEASURES.min, MEASURES.max);  setTuningAndInstruments();
+totalMeasures=ri(MEASURES.min,MEASURES.max);  setTuningAndInstruments();
 for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
-  composer=composers[ri(COMPOSERS.length - 1)]; [numerator, denominator]=composer.getMeter();
+  composer=composers[ri(COMPOSERS.length - 1)]; [numerator,denominator]=composer.getMeter();
   midiSync(); beatRhythm=setRhythm('beat');
   for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
     beatStart=measureStartTick + beatIndex * ticksPerBeat; logUnit('beat');
     setTertiaryInstruments(); setBinaural();  setBalanceAndFX();
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
-    divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1, divsPerBeat);
+    divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1,divsPerBeat);
     for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
       divStart=beatStart + divIndex * ticksPerDiv; logUnit('division');
       subdivsPerDiv=m.ceil(composer.getSubdivisions() * (meterRatio < 1 ? rf(.95,1.1) : rf(rf(.95,1.05),meterRatio) / (numerator / meterRatio))/ri(3,10));
       subdivFreq=subdivsPerDiv * divsPerBeat * (meterRatio < 1 ? rf(.98,1.1) : rf(rf(.99,1.05),meterRatio) / meterRatio);
-      subdivRhythm=setRhythm('subdiv'); ticksPerSubdiv=ticksPerDiv / m.max(1, subdivsPerDiv);
-      useShorterSustain=m.random() < rv(.3, [-.2, .2], .3);
+      subdivRhythm=setRhythm('subdiv'); ticksPerSubdiv=ticksPerDiv / m.max(1,subdivsPerDiv);
+      useShorterSustain=m.random() < rv(.3,[-.2,.2],.3);
       for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
         subdivStart=divStart + subdivIndex * ticksPerSubdiv; logUnit('subdivision');
         playNotes();  }}}
