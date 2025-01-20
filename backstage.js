@@ -170,7 +170,7 @@ formatTime=(seconds)=>{
 setTiming=()=>{  p(c,  { tick:measureStartTick, type:'bpm', vals:[midiBPM] },
   { tick:measureStartTick, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
 
-divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);

@@ -163,14 +163,15 @@ crossModulateRhythms=()=>{ crossModulation=0;
   rf(1,(divRhythm[divIndex] > rf(-.1) ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + 
   rf(.5,(subdivRhythm[subdivIndex] > rf(-.1) ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
   (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri(1) ? rf(.1,.3) : rf(-.1)) + 
-  (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,12) ? rf(.1,.3) : rf(-.1)) + 
-  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(2) ? rf(.1,.3) : rf(-.1));
+  (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) + 
+  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1));
 };
 
 setNoteParams=()=>{
   on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
   shorterSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+m.random()*.7))),[.1,.2],[-.05,-.1],.1);
   longerSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+m.random()*.7))),[.1,.3],[-.05,-.1],.1);
+  useShorterSustain=subdivFreq > ri(100,150);
   sustain=(useShorterSustain ? shorterSustain : longerSustain)*rv(rf(.8,1.3));
   binauralVelocity=rv(velocity * rf(.35, .5));
 };

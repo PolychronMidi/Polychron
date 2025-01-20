@@ -49,7 +49,7 @@ class MeasureComposer extends RhythmComposer {
   getVoices() {
     const { min,max,weights } = VOICES;
     const v = m.min(rw(min,max,weights),this.notes.length * 4);
-    return subdivFreq > ri(10,20) ? m.max(1,m.floor(v / ri(2,3))) : v;
+    return subdivFreq > ri(100,250) ? m.max(1,m.floor(v / ri(2,3))) : v;
   }
   getNotes(octaveRange = null) {
     const voices = this.getVoices();
@@ -118,11 +118,11 @@ class ChordComposer extends MeasureComposer {
       switch (direction.toUpperCase()) {
         case 'R': increment = 1; break;
         case 'L': increment = -1; break;
-        case 'E': increment = Math.random() < .5 ? 1 : -1; break;
+        case 'E': increment = m.random() < .5 ? 1 : -1; break;
         case '?': increment = ri(-2,2); break;
-        default:console.warn('Invalid direction,defaulting to right'); increment = 1;
+        default:console.warn('Invalid direction,defaulting to right'); increment=1;
       }
-      let progressChord=m.random > (ri(150) / subdivFreq);
+      let progressChord=beatCount % m.floor(meterRatio/3) < 1;
       if (progressChord) { allNotesOff(subdivStart); }
       this.currentChordIndex +=  progressChord ? increment % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
@@ -187,9 +187,8 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
     for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
       divStart=beatStart + divIndex * ticksPerDiv; logUnit('division');
       subdivsPerDiv=m.ceil(composer.getSubdivisions() * (meterRatio < 1 ? rf(.95,1.1) : rf(rf(.95,1.05),meterRatio) / (numerator / meterRatio))/ri(3,10));
-      subdivFreq=subdivsPerDiv * divsPerBeat * (meterRatio < 1 ? rf(.98,1.1) : rf(rf(.99,1.05),meterRatio) / meterRatio);
+      subdivFreq=subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm=setRhythm('subdiv'); ticksPerSubdiv=ticksPerDiv / m.max(1,subdivsPerDiv);
-      useShorterSustain=m.random() < rv(.3,[-.2,.2],.3);
       for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
         subdivStart=divStart + subdivIndex * ticksPerSubdiv; logUnit('subdivision');
         playNotes();  }}}
