@@ -59,15 +59,12 @@ class MeasureComposer extends RhythmComposer {
     let intervals = [],fallback = false;
     try {  const shift=ri(1);
       switch (ri(2)) {
-        case 0:
-          intervals=[0,2,3+m.round(m.random()*shift),6 - m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
-        case 1:
-          intervals=[0,1,3+m.round(m.random()*shift),5+m.round(m.random()*shift)].map(interval=>interval*m.floor(this.notes.length / 7));  break;
-        default:
-          intervals=Array.from({length:this.notes.length},(_,i)=>i);  fallback=true;  }
+        case 0:intervals=[0,2,3+m.round(m.random()*shift),6 - m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
+        case 1:intervals=[0,1,3+m.round(m.random()*shift),5+m.round(m.random()*shift)].map(interval=>interval*m.floor(this.notes.length / 7));  break;
+        default:intervals=Array.from({length:this.notes.length},(_,i)=>i);  fallback=true;  }
       return intervals.slice(0,voices).map((interval,index)=>{
         const noteIndex=(this.notes.indexOf(rootNote)+interval) % this.notes.length;
-        let octave=ri(minOctave,maxOctave);  let triedSofLimits=false;
+        let octave=ri(minOctave,maxOctave);
         let note=t.Note.chroma(this.notes[noteIndex])+12*octave;
         while (uniqueNotes.has(note)) {
 octave = octave < maxOctave ? octave++ : octave > minOctave ? octave-- : octave < OCTAVE.max ? octave++ : octave > OCTAVE.min ? octave-- : (()=>{ return false; })();
@@ -181,7 +178,7 @@ for (measureIndex=0; measureIndex < totalMeasures; measureIndex++) {
   midiSync(); beatRhythm=setRhythm('beat');
   for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
     beatStart=measureStartTick + beatIndex * ticksPerBeat; logUnit('beat');
-    setTertiaryInstruments(); setBinaural();  setBalanceAndFX();
+    setTertiaryInstruments(); setBinaural(); setBalanceAndFX();
     divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
     divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1,divsPerBeat);
     for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();

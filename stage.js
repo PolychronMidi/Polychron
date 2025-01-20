@@ -51,7 +51,7 @@ makePolyrhythm=(polyNumerator,polyDenominator)=>{
   });
   if (bestMatch.totalMeasures===Infinity) {
     console.log("No polyrhythm match found within the given range.");
-    return null; // or throw new Error('No polyrhythm match found within the given range.');
+    return null;
   } else {
     console.log("Best Match:");
     console.log(`Original Measures: ${bestMatch.originalMeasures}, Poly Measures: ${bestMatch.polyMeasures}, Total Measures: ${bestMatch.totalMeasures}`);
@@ -60,17 +60,17 @@ makePolyrhythm=(polyNumerator,polyDenominator)=>{
 };
 
 rhythms={
-  'binary': { weights: [2, 3, 1], method: 'binary', args: (length) => [length] },
-  'hex': { weights: [2, 3, 1], method: 'hex', args: (length) => [length] },
-  'onsets': { weights: [5, 0, 0], method: 'onsets', args: (length) => [{ make: [length, () => [1, 2]] }] },
-  'onsets2': { weights: [0, 2, 0], method: 'onsets', args: (length) => [{ make: [length, [2, 3, 4]] }] },
-  'onsets3': { weights: [0, 0, 7], method: 'onsets', args: (length) => [{ make: [length, () => [3, 7]] }] },
-  'random': { weights: [7, 0, 0], method: 'random', args: (length) => [length, rv(.97, [-.1, .3], .2)] },
-  'random2': { weights: [0, 3, 0], method: 'random', args: (length) => [length, rv(.9, [-.3, .3], .3)] },
-  'random3': { weights: [0, 0, 1], method: 'random', args: (length) => [length, rv(.6, [-.3, .3], .3)] },
-  'euclid': { weights: [3, 3, 3], method: 'euclid', args: (length) => [length, closestDivisor(length, m.ceil(rf(2, length / rf(1,1.2))))] },
-  'rotate': { weights: [2, 2, 2], method: 'rotate', args: (length, pattern) => [pattern, ri(2), '?', length] },
-  'morph': { weights: [2, 3, 3], method: 'morph', args: (length, pattern) => [pattern, '?', length] }
+  'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
+  'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
+  'onsets':{weights:[5,0,0],method:'onsets',args:(length)=>[{make:[length,()=>[1,2]]}]},
+  'onsets2':{weights:[0,2,0],method:'onsets',args:(length)=>[{make:[length,[2,3,4]]}]},
+  'onsets3':{weights:[0,0,7],method:'onsets',args:(length)=>[{make:[length,()=>[3,7]]}]},
+  'random':{weights:[7,0,0],method:'random',args:(length)=>[length,rv(.97,[-.1,.3],.2)]},
+  'random2':{weights:[0,3,0],method:'random',args:(length)=>[length,rv(.9,[-.3,.3],.3)]},
+  'random3':{weights:[0,0,1],method:'random',args:(length)=>[length,rv(.6,[-.3,.3],.3)]},
+  'euclid':{weights:[3,3,3],method:'euclid',args:(length)=>[length,closestDivisor(length,m.ceil(rf(2,length / rf(1,1.2))))]},
+  'rotate':{weights:[2,2,2],method:'rotate',args:(length,pattern)=>[pattern,ri(2),'?',length]},
+  'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
 };
 
 rhythm=(level,length,pattern)=>{
