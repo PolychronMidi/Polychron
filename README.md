@@ -3,9 +3,9 @@ Polychron aims to:
 - Develop a system that allows for any musical meter (time signature) in MIDI composition, while still maintaining compatibility with standard MIDI playback systems
 - Provide a flexible framework for creating and manipulating complex metrical structures, offering unrestricted polyphony and note granularity, without compromising timing accuracy.
 
-Current implementation is a [~~relatively simple~~](#players) (although impossible for any human to play) demo of (weighted) random, scales, chords, & modes played at random rhythms, divisions & meters. Tuning to 432 hz with [binaural beat](https://search.brave.com/search?q=how+does+binaural+beats+work&source=web&conversation=80d48ba0c8ba0614ef212e&summary=1) effects in the alpha range (8-12hz) have been added, plus random left / right balance variation (must use headphones for binaural effect).
+Current implementation is a [~~relatively simple~~](#players) (although impossible for any human to play) demo of (weighted) random, scales, chords, & modes played at random rhythms, divisions, meters, & even polyrhythms (2 meters at once). Tuning to 432 hz with [binaural beat](https://search.brave.com/search?q=how+does+binaural+beats+work&source=web&conversation=80d48ba0c8ba0614ef212e&summary=1) effects in the alpha range (8-12hz) have been added, plus random left / right balance variation (must use headphones for binaural effect).
 
-The `Composer` classes and `csvMaestro` main logic is in `polychron.js`. Some settings can be customized in `sheet.js`. To keep the logic flow of `polychron.js` clear, support functions and initialization variables are in `stage.js`, `backstage.js`, & `venue.js` roughly in order of decreasing specificity. Timing log markers for each unit can be found in the "marker_t" entries of the CSV file. Log level can be changed in `sheet.js` under LOG, from the default 'measure' to 'all', 'none', or comma-separated unit names. (If you play the MIDI file with [Soundfont MIDI Player](#players), you can view unit log markers in realtime by clicking the button on the left for 'MIDI text'.)
+The main logic is in `play.js`. Some settings can be customized in `sheet.js`. To keep the main logic flow clear, support functions and initialization variables are in `composers.js`, `rhythm.js`, `stage.js`, `backstage.js`, & `venue.js` roughly in order of decreasing specificity. Timing log markers for each unit can be found in the "marker_t" entries of the CSV file. Log level can be changed in `sheet.js` under LOG, from the default 'measure' to 'all', 'none', or comma-separated unit names. (If you play the MIDI file with [Soundfont MIDI Player](#players), you can view unit log markers in realtime by clicking the button on the left for 'MIDI text'.)
 
 Polychron is a MIDI composition system that breaks free from traditional MIDI limitations, particularly in the realm of time signatures (A.K.A. meters). The core innovation of Polychron lies in its ability to work with any musical meter through a process called "meter spoofing."
 
@@ -24,7 +24,7 @@ Uses [tonal](https://github.com/tonaljs/tonal) and my own custom fork of [py_mid
 To install tonal and create the CSV file, run the following (requires Node.js installed):
 ```js
 npm i tonal
-node polychron.js
+node play.js
 ```
 
 To create the MIDI file from the CSV, run the following (requires Python installed):
@@ -48,3 +48,6 @@ You can convert MIDI files to MP3, WAV, or FLAC with:
 [LibreOffice](https://libreoffice.org/) is a good program for CSV files.
 
 Here's a list of [music related repos](https://github.com/stars/i1li/lists/music) I've saved for inspiration.
+
+Other music projects that I haven't found repos for:
+[GenJam by Al Biles](https://genjam.org/)
