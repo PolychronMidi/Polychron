@@ -37,109 +37,40 @@ rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency
 // Random weighted selection: any sized list of weights with any values are normalized to fit the inclusive range.
 rw=randomWeightedSelection=(min,max,weights)=>{
   const range = max - min + 1;
-  let effectiveWeights = weights;
-  effectiveWeights = weights.map(weight=>{
-    const randomFactor = rf(-0.3, 0.3);
-    return weight * (1 + randomFactor);
-  });
+  let effectiveWeights = weights.map(weight=>weight * (1 + rf(-0.3, 0.3)));
   if (effectiveWeights.length !== range) {
-    const firstWeight = effectiveWeights[0];
-    const lastWeight = effectiveWeights[effectiveWeights.length - 1];
     if (effectiveWeights.length < range) {
-      const newWeights = [firstWeight];
-      for (let i = 1; i < range - 1; i++) {
+      const newWeights = [];
+      for (let i = 0; i < range; i++) {
         const fraction = i / (range - 1);
-        const lowerIndex = m.floor(fraction * (effectiveWeights.length - 1));
-        const upperIndex = m.ceil(fraction * (effectiveWeights.length - 1));
-        const weightDiff=effectiveWeights[upperIndex]-effectiveWeights[lowerIndex];
-        const interpolatedWeight=effectiveWeights[lowerIndex]+(fraction*(effectiveWeights.length-1)-lowerIndex)*weightDiff;
+        const lowerIndex = Math.floor(fraction * (effectiveWeights.length - 1));
+        const upperIndex = Math.min(lowerIndex + 1, effectiveWeights.length - 1);
+        const weightDiff = effectiveWeights[upperIndex] - effectiveWeights[lowerIndex];
+        const interpolatedWeight = effectiveWeights[lowerIndex] + (fraction * (effectiveWeights.length - 1) - lowerIndex) * weightDiff;
         newWeights.push(interpolatedWeight);
       }
-      newWeights.push(lastWeight);
       effectiveWeights = newWeights;
-    } else if (effectiveWeights.length > range) {
-      effectiveWeights = [firstWeight];
-      const groupSize = m.floor(effectiveWeights.length / (range - 1));
-      for (let i = 1; i < range - 1; i++) {
+    } else {
+      const groupSize = Math.floor(effectiveWeights.length / range);
+      effectiveWeights = Array(range).fill(0).map((_, i) => {
         const startIndex = i * groupSize;
-        const endIndex=m.min(startIndex+groupSize,effectiveWeights.length-1);
-        const groupSum=effectiveWeights.slice(startIndex,endIndex).reduce((sum,w)=>sum+w,0);
-        effectiveWeights.push(groupSum / (endIndex - startIndex));
-      }
-      effectiveWeights.push(lastWeight);
+        const endIndex = Math.min(startIndex + groupSize, effectiveWeights.length);
+        return effectiveWeights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0) / (endIndex - startIndex);
+      });
     }
   }
-  const totalWeight = effectiveWeights.reduce((acc, w)=>acc + w, 0);
-  const normalizedWeights = effectiveWeights.map(w=>w / totalWeight);
-  let random = m.random();
-  let cumulativeProbability = 0;
+  const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
+  const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
+  let random = Math.random();
   for (let i = 0; i < normalizedWeights.length; i++) {
-    cumulativeProbability += normalizedWeights[i];
-    if (random <= cumulativeProbability) { return i + min; }
+    random -= normalizedWeights[i];
+    if (random <= 0) return i + min;
   }
+  return max;
 }
 
-selectFromWeightedOptions=(options)=>{
-  const types = Object.keys(options);
-  const weights = types.map(type=>options[type].weights[0]);
-  const selectedIndex = rw(0, types.length - 1, weights);
-  return types[selectedIndex];
-};
-
-randomInSetOrRange=(v)=>{
-  if (Array.isArray(v)) {
-    return v[0]===v[1] ? v[0] : ri(v[0], v[1]);
-  } else if (typeof v==='function') {  const result=v();
-    return Array.isArray(result) ? randomInSetOrRange(result) : result; }
-  return v;
-};
-
-makeOnsets=(length,valuesOrRange)=>{
-  let onsets=[];  let total=0;
-  // Build onsets until reach or exceed length or run out of values to use
-  while (total < length) {
-    let v=randomInSetOrRange(valuesOrRange);
-    if (total + (v+1) <= length) {  onsets.push(v);  total+=v+1;
-    } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
-      // Try one more time with the low end of the range
-      v=valuesOrRange[0];
-      if (total + (v+1) <= length) { onsets.push(v);  total+=v+1; }
-      break; // Stop after trying with the lower end or if it doesn't fit
-    } else {  break; // If not a range or if the range doesn't fit even with the lower value
-  } }
-  // Convert onsets to rhythm pattern
-  let rhythm=[];
-  for (let onset of onsets) {  rhythm.push(1);
-    for (let i=0; i < onset; i++) { rhythm.push(0); }
-  }
-  // If length less than desired length, pad with zeros
-  while (rhythm.length < length) { rhythm.push(0); }
-  return rhythm;
-};
-
-patternLength=(pattern, length)=>{
-  if (length===undefined) return pattern;
-  if (length > pattern.length) {
-    while (pattern.length < length) {  pattern=pattern.concat(pattern.slice(0, length - pattern.length));  }
-  } else if (length < pattern.length) {  pattern=pattern.slice(0, length);  }
-  return pattern;
-};
-
-closestDivisor=(x,target=2)=>{
-  let closest=Infinity;
-  let smallestDiff=Infinity;
-  for (let i=1; i <= m.sqrt(x); i++) {
-    if (x % i===0) {
-      [i, x / i].forEach(divisor=>{
-        if (divisor !== closest) { let diff=m.abs(divisor - target);
-          if (diff < smallestDiff) {smallestDiff=diff;closest=divisor;}
-        }});}}
-  if (closest===Infinity) { return x; }
-  return x % target===0 ? target : closest;
-};
-
 velocity=99;
-subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStartTick=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -165,19 +96,21 @@ allNotesOff=(tick=measureStartTick)=>{return p(c, ...[...source, ...reflection].
 incrementMeasure=()=>{ logUnit('measure'); allNotesOff();
   measureStartTick+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure;
 }
-
+incrementPhrase=()=>{
+  phraseStartTick+=ticksPerPhrase;  phraseStartTime+=secondsPerPhrase;
+}
 formatTime=(seconds)=>{ 
   const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
 
-setTiming=()=>{  p(c,  { tick:measureStartTick, type:'bpm', vals:[midiBPM] },
-  { tick:measureStartTick, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
+setTiming=()=>{  p(c,  { tick:phraseStartTick, type:'bpm', vals:[midiBPM] },
+  { tick:phraseStartTick, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
 
 grandFinale=()=>{
-  c=c.filter(i=>i!==null).map(i=>({...i,tick:i.tick<0?Math.abs(i.tick)*rf(.1,.3):i.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=_.tick; }); composition+=finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick:i.tick<0?Math.abs(i.tick)*rf(.1,.3):i.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=_.tick; }); finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
 };
 
 composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
-finale=()=>`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
+finale=()=>composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
 fs=require('fs');

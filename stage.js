@@ -1,4 +1,4 @@
-require('./sheet'); require('./venue'); require('./backstage');
+require('./sheet'); require('./venue'); require('./backstage'); require('./rhythm'); require('./composers');
 midiSync=()=>{
   meterRatio=numerator / denominator;
   isPowerOf2=(n)=>{ return (n & (n - 1))===0; }
@@ -13,24 +13,25 @@ midiSync=()=>{
   midiBPM=BPM * syncFactor;
   ticksPerMeasure=PPQ * 4 * midiMeterRatio;
   ticksPerBeat=ticksPerMeasure / numerator;
+  ticksPerSecond=midiBPM * PPQ / 60;
+  setTiming(); 
   return;
 };
-//todo:
-// makePolyrhythm(numerator*ri(1,3), denominator*ri(1,3));
-makePolyrhythm=(polyNumerator,polyDenominator)=>{
-  const meterRatio = numerator / denominator;
-  const polyMeterRatio = polyNumerator / polyDenominator;
+
+makePolyrhythm=()=>{
+  [polyNumerator,polyDenominator]=composer.getMeter()
+  polyMeterRatio = polyNumerator / polyDenominator;
   let allMatches = [];
-  let bestMatch = {
+  bestMatch = {
     originalMeasures: Infinity,
     polyMeasures: Infinity,
     totalMeasures: Infinity,
     polyNumerator: polyNumerator,
     polyDenominator: polyDenominator
   };
-  for (let originalMeasures = 1; originalMeasures <= 20; originalMeasures++) {
-    for (let polyMeasures = 1; polyMeasures <= 20; polyMeasures++) {
-      if (Math.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < 0.0001) {
+  for (let originalMeasures = 1; originalMeasures <= 7; originalMeasures++) {
+    for (let polyMeasures = 1; polyMeasures <= 7; polyMeasures++) {
+      if (Math.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
         let currentMatch = {
           originalMeasures: originalMeasures,
           polyMeasures: polyMeasures,
@@ -45,62 +46,74 @@ makePolyrhythm=(polyNumerator,polyDenominator)=>{
       }
     }
   }
-  console.log("All Matches:");
-  allMatches.forEach(match => {
-    console.log(`Original Measures: ${match.originalMeasures}, Poly Measures: ${match.polyMeasures}, Total Measures: ${match.totalMeasures}`);
-  });
   if (bestMatch.totalMeasures===Infinity) {
-    console.log("No polyrhythm match found within the given range.");
-    return null;
-  } else {
-    console.log("Best Match:");
-    console.log(`Original Measures: ${bestMatch.originalMeasures}, Poly Measures: ${bestMatch.polyMeasures}, Total Measures: ${bestMatch.totalMeasures}`);
+    return makePolyrhythm();
   }
-  return bestMatch;
+  measuresPerPhrase1=bestMatch.originalMeasures;
+  measuresPerPhrase2=bestMatch.polyMeasures;
+  return;
 };
 
-rhythms={
-  'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
-  'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
-  'onsets':{weights:[5,0,0],method:'onsets',args:(length)=>[{make:[length,()=>[1,2]]}]},
-  'onsets2':{weights:[0,2,0],method:'onsets',args:(length)=>[{make:[length,[2,3,4]]}]},
-  'onsets3':{weights:[0,0,7],method:'onsets',args:(length)=>[{make:[length,()=>[3,7]]}]},
-  'random':{weights:[7,0,0],method:'random',args:(length)=>[length,rv(.97,[-.1,.3],.2)]},
-  'random2':{weights:[0,3,0],method:'random',args:(length)=>[length,rv(.9,[-.3,.3],.3)]},
-  'random3':{weights:[0,0,1],method:'random',args:(length)=>[length,rv(.6,[-.3,.3],.3)]},
-  'euclid':{weights:[3,3,3],method:'euclid',args:(length)=>[length,closestDivisor(length,m.ceil(rf(2,length / rf(1,1.2))))]},
-  'rotate':{weights:[2,2,2],method:'rotate',args:(length,pattern)=>[pattern,ri(2),'?',length]},
-  'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
-};
+p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
+c=csvRows=[];
 
-rhythm=(level,length,pattern)=>{
-  const levelIndex = ['beat', 'div', 'subdiv'].indexOf(level);
-  const filteredRhythms = Object.fromEntries(
-    Object.entries(rhythms).filter(([_, { weights }]) => weights[levelIndex] > 0)
-  );
-  const rhythmKey = selectFromWeightedOptions(filteredRhythms);
-  if (rhythmKey && rhythms[rhythmKey]) {
-    const { method, args } = rhythms[rhythmKey];
-    return composer.getRhythm(method, ...args(length, pattern));
+logUnit=(type)=>{  let shouldLog=false;
+  if (LOG==='none') shouldLog=false;
+  else if (LOG==='all') shouldLog=true;
+  else {  const logList=LOG.split(',').map(item=>item.trim());
+    shouldLog=logList.length===1 ? logList[0]===type : logList.includes(type);  }
+  if (!shouldLog) return null;  let meterInfo='';
+  if (type==='measure') {
+    unit=measureIndex + 1;
+    unitsPerParent=measuresPerPhrase;
+    startTime=measureStartTime;
+    secondsPerMeasure=ticksPerMeasure / ticksPerSecond;
+    secondsPerPhrase=ticksPerPhrase / ticksPerSecond;
+    endTime=measureStartTime + secondsPerMeasure;
+    startTick=measureStartTick;
+    endTick=measureStartTick + ticksPerMeasure;
+    actualMeter=[numerator, denominator];
+    secondsPerBeat=ticksPerBeat / ticksPerSecond;
+    composerDetails=`${composer.constructor.name} `;
+    if (composer.scale && composer.scale.name) {
+      composerDetails+=`${composer.root} ${composer.scale.name}`;
+    } else if (composer.progression) {
+      progressionSymbols=composer.progression.map(chord=>{
+        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
+      }).join(' ');
+      composerDetails+=`${progressionSymbols}`;
+    } else if (composer.mode && composer.mode.name) {
+      composerDetails+=`${composer.root} ${composer.mode.name}`;
+    }
+    meterInfo=midiMeter[1]===actualMeter[1] ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}` : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
+  } else if (type==='beat') {
+    unit=beatIndex + 1;
+    unitsPerParent=numerator;
+    startTime=measureStartTime + beatIndex * secondsPerBeat;
+    endTime=startTime + secondsPerBeat;
+    startTick=beatStart;
+    endTick=startTick + ticksPerBeat;
+    secondsPerDiv=secondsPerBeat / divsPerBeat;
+  } else if (type==='division') {
+    unit=divIndex + 1;
+    unitsPerParent=divsPerBeat;
+    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv;
+    endTime=startTime + secondsPerDiv;
+    startTick=divStart;
+    endTick=startTick + ticksPerDiv;
+    secondsPerSubdiv=secondsPerDiv / subdivsPerDiv;
+  } else if (type==='subdivision') {
+    unit=subdivIndex + 1;
+    unitsPerParent=subdivsPerDiv;
+    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv+subdivIndex*secondsPerSubdiv;
+    endTime=startTime + secondsPerSubdiv;
+    startTick=subdivStart;
+    endTick=startTick + ticksPerSubdiv;
   }
-  return console.warn('unknown rhythm');
+  return (()=>{  c.push({
+    tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+  });  })();
 };
-
-setRhythm=(level)=>{
-  random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
-  switch(level) {
-    case 'beat':
-      return beatRhythm = beatRhythm < 1 ? t.RhythmPattern.random(numerator, 0) : rhythm('beat', numerator, beatRhythm);
-    case 'div':
-      return divRhythm = divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv, 0) : rhythm('div', divsPerDiv, divRhythm);
-    case 'subdiv':
-      return subdivRhythm = subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv, 0) : rhythm('subdiv', subdivsPerDiv, subdivRhythm)
-    default:throw new Error('Invalid level provided to setRhythm');
-  }
-}
-
-trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };
-trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;} };
 
 setTuningAndInstruments=()=>{  
   p(c, ...['control_c', 'program_c'].flatMap(type=>[ ...source.map(ch=>({
@@ -174,9 +187,9 @@ setNoteParams=()=>{
   useShorterSustain=subdivFreq > ri(100,150);
   sustain=(useShorterSustain ? shorterSustain : longerSustain)*rv(rf(.8,1.3));
   binauralVelocity=rv(velocity * rf(.35, .5));
-};
+}
 
-playNotes=()=>{  crossModulateRhythms(); setNoteParams();
+playNotes=()=>{ setNoteParams(); crossModulateRhythms()
   if (crossModulation>rf(3.5,4)) {subdivsOff=0; subdivsOn++;
   composer.getNotes().forEach(({ note })=>{  events=source.map(sourceCH=>{
     CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
@@ -188,67 +201,4 @@ playNotes=()=>{  crossModulateRhythms(); setNoteParams();
     {tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]}
   ]; return x; } else { return null; }  }).filter(_=>_!==null).flat();
     p(c, ...events);  });  } else { subdivsOff++; subdivsOn=0; }
-};
-
-p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
-c=csvRows=[];
-
-logUnit=(type)=>{  let shouldLog=false;
-  if (LOG==='none') shouldLog=false;
-  else if (LOG==='all') shouldLog=true;
-  else {  const logList=LOG.split(',').map(item=>item.trim());
-    shouldLog=logList.length===1 ? logList[0]===type : logList.includes(type);  }
-  if (!shouldLog) return null;  let meterInfo='';
-  if (type==='measure') {
-    unit=measureIndex + 1;
-    unitsPerParent=totalMeasures;
-    startTime=measureStartTime;
-    ticksPerSecond=midiBPM * PPQ / 60;
-    secondsPerMeasure=ticksPerMeasure / (midiBPM * PPQ / 60);
-    endTime=measureStartTime + secondsPerMeasure;
-    startTick=measureStartTick;
-    endTick=measureStartTick + ticksPerMeasure;
-    actualMeter=[numerator, denominator];
-    secondsPerBeat=ticksPerBeat / ticksPerSecond;
-    composerDetails=`${composer.constructor.name} `;
-    if (composer.scale && composer.scale.name) {
-      composerDetails+=`${composer.root} ${composer.scale.name}`;
-    } else if (composer.progression) {
-      progressionSymbols=composer.progression.map(chord=>{
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails+=`${progressionSymbols}`;
-    } else if (composer.mode && composer.mode.name) {
-      composerDetails+=`${composer.root} ${composer.mode.name}`;
-    }
-    meterInfo=midiMeter[1]===actualMeter[1] ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}` : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
-    setTiming();
-  } else if (type==='beat') {
-    unit=beatIndex + 1;
-    unitsPerParent=numerator;
-    startTime=measureStartTime + beatIndex * secondsPerBeat;
-    endTime=startTime + secondsPerBeat;
-    startTick=beatStart;
-    endTick=startTick + ticksPerBeat;
-    secondsPerDiv=secondsPerBeat / divsPerBeat;
-  } else if (type==='division') {
-    unit=divIndex + 1;
-    unitsPerParent=divsPerBeat;
-    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv;
-    endTime=startTime + secondsPerDiv;
-    startTick=divStart;
-    endTick=startTick + ticksPerDiv;
-    secondsPerSubdiv=secondsPerDiv / subdivsPerDiv;
-  } else if (type==='subdivision') {
-    unit=subdivIndex + 1;
-    unitsPerParent=subdivsPerDiv;
-    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv+subdivIndex*secondsPerSubdiv;
-    endTime=startTime + secondsPerSubdiv;
-    startTick=subdivStart;
-    endTick=startTick + ticksPerSubdiv;
-  }
-  finalTime=formatTime(endTime + SILENT_OUTRO_SECONDS);
-  return (()=>{  c.push({
-    tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
-  });  })();
 };

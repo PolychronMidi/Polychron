@@ -29,31 +29,23 @@ VOICES={
   max: 7,
   weights: [15, 30, 25, 7, 4, 3, 2, 1]
 };
-// TODO: implement motifs, phrases, sections, and section types (introduction, exposition, development, conclusion, fugue).
-// SECTIONS={
-//   min: 2,
-//   max: 4
-// };
-// PHRASES_PER_SECTION={
-//   min: 2,
-//   max: 4
-// };
-// MEASURES_PER_PHRASE={
-//   min: 2,
-//   max: 4
-// };
-MEASURES={
-  min: 10,
-  max: 20
+// TODO: implement motifs and section types (introduction, exposition, development, conclusion, fugue).
+PHRASES_PER_SECTION={
+  min: 2,
+  max: 4
+};
+SECTIONS={
+  min: 6,
+  max: 9
 };
 DIVISIONS={
   min: 0,
-  max: 12,
+  max: 3,
   weights: [1, 15, 20, 25, 20, 10, 10, 7, 2, 2, 1]
 };
 SUBDIVISIONS={
   min: 0,
-  max: 12,
+  max: 7,
   weights: [5, 10, 20, 15, 20, 10, 20, 4, 2, 1]
 };
 COMPOSERS=[
