@@ -29,7 +29,7 @@ VOICES={
   max: 7,
   weights: [15, 30, 25, 7, 4, 3, 2, 1]
 };
-// TODO: implement motifs and section types (introduction, exposition, development, conclusion, fugue).
+// TODO: implement motifs & section types (introduction, exposition, development, conclusion, fugue).
 PHRASES_PER_SECTION={
   min: 2,
   max: 4
@@ -49,9 +49,9 @@ SUBDIVISIONS={
   weights: [5, 10, 20, 15, 20, 10, 20, 4, 2, 1]
 };
 COMPOSERS=[
-  { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
-  { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
-  { type: 'mode', name: 'ionian', root: 'C', return: 'new ModeComposer(this.name, this.root)' },
+  // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
+  // { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
+  // { type: 'mode', name: 'ionian', root: 'C', return: 'new ModeComposer(this.name, this.root)' },
   { type: 'randomScale', return: 'new RandomScaleComposer()' },
   { type: 'randomChord', return: 'new RandomChordComposer()' },
   { type: 'randomMode', return: 'new RandomModeComposer()' }

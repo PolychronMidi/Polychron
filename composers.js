@@ -74,17 +74,17 @@ class ChordComposer extends MeasureComposer {
     } else {
       this.progression = validatedProgression.map(t.Chord.get); 
       this.currentChordIndex = this.currentChordIndex || 0;
-      let increment = 0;
+      let next
       switch (direction.toUpperCase()) {
-        case 'R': increment = 1; break;
-        case 'L': increment = -1; break;
-        case 'E': increment = m.random() < .5 ? 1 : -1; break;
-        case '?': increment = ri(-2,2); break;
-        default:console.warn('Invalid direction,defaulting to right'); increment=1;
+        case 'R': next = 1; break;
+        case 'L': next = -1; break;
+        case 'E': next = m.random() < .5 ? 1 : -1; break;
+        case '?': next = ri(-2,2); break;
+        default:console.warn('Invalid direction,defaulting to right'); next=1;
       }
       let progressChord=beatCount % m.floor(meterRatio/3) < 1;
       if (progressChord) { allNotesOff(subdivStart); }
-      this.currentChordIndex +=  progressChord ? increment % (this.progression.length) : 0;
+      this.currentChordIndex +=  progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
       this.notes = this.progression[this.currentChordIndex].notes;
     }

@@ -1,6 +1,7 @@
-m = Math;
-
-// Random float(decimal) inclusive of min(s) and max(s). If only one number given, it's the max and min is 0.
+p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
+c=csvRows=[];
+m=Math;
+// Random float(decimal) inclusive of min(s) & max(s). If only one number given, it's the max & min is 0.
 rf=randomFloat=(min1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1, max1]=[m.min(min1, max1),m.max(min1, max1)];
@@ -12,7 +13,7 @@ rf=randomFloat=(min1, max1, min2, max2)=>{
     } else { return m.random()*range2+min2; }
   } else { return m.random()*(max1-min1+Number.EPSILON)+min1; }
 };
-// Random integer(whole number) inclusive of min(s) and max(s). If only one number given, it's the max and min is 0. Although result is rounded, providing decimals in the range allows for more precision.
+// Random integer(whole number) inclusive of min(s) & max(s). If only one number given, it's the max & min is 0. Although result is rounded, providing decimals in the range allows for more precision.
 ri=randomInt=(min1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1,max1]=[m.min(min1, max1),m.max(min1, max1)];
@@ -24,7 +25,7 @@ ri=randomInt=(min1, max1, min2, max2)=>{
     } else { return m.max(min2,m.min(m.round(rand-range1+min2,max2))); }
   } else { return m.max(min1, m.min(m.round(m.random()*(max1-min1)+min1,max1))); }
 };
-// Random variation within range(s) at frequency. Give one range or a separate boost and deboost range.
+// Random variation within range(s) at frequency. Give one range or a separate boost & deboost range.
 rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
@@ -81,38 +82,17 @@ binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2(
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
 
 centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; //skip ch9=percussion
-source=[centerCH1, leftCH1, leftCH2, rightCH1, rightCH2];
-reflection=[centerCH2, leftCH3, leftCH4, rightCH3, rightCH4];
-reflectionBinaural=[leftCH3, leftCH4, rightCH3, rightCH4];
+source=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2];
+reflection=[centerCH2,leftCH3,leftCH4,rightCH3,rightCH4];
+reflectionBinaural=[leftCH3,leftCH4,rightCH3,rightCH4];
 reflect={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
-binauralL=[leftCH1, leftCH2, leftCH3, leftCH4];
-binauralR=[rightCH1, rightCH2, rightCH3, rightCH4];
-flipBinauralF=[centerCH1, centerCH2, leftCH1, rightCH1, leftCH3, rightCH3];
-flipBinauralT=[centerCH1, centerCH2, leftCH2, rightCH2, leftCH4, rightCH4];
+binauralL=[leftCH1,leftCH2,leftCH3,leftCH4];
+binauralR=[rightCH1,rightCH2,rightCH3,rightCH4];
+flipBinauralF=[centerCH1,centerCH2,leftCH1,rightCH1,leftCH3,rightCH3];
+flipBinauralT=[centerCH1,centerCH2,leftCH2,rightCH2,leftCH4,rightCH4];
 
 //midi cc 123 "all notes off" prevents sustain across transitions
-allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
-
-incrementMeasure=()=>{ 
-  measureStart=phraseStart + measureIndex * ticksPerMeasure;  measureStartTime=phraseStartTime + measureIndex * secondsPerMeasure;
-};
-incrementPhrase=()=>{ 
-  phraseStart+=ticksPerPhrase; phraseStartTime+=secondsPerPhrase;
-  ticksPerSection+=ticksPerPhrase; secondsPerSection+=secondsPerPhrase;
-};
-incrementSection=()=>{  allNotesOff('sectionStart');
-  sectionStart+=ticksPerSection; sectionStartTime+=secondsPerSection;
-  finalTime=formatTime(sectionStartTime+SILENT_OUTRO_SECONDS);
-  ticksPerSection=secondsPerSection=0;
-};
-
-formatTime=(seconds)=>{ 
-  const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
-  return `${minutes}:${seconds}`;
-};
-
-setTiming=()=>{  p(c,  { tick:sectionStart, type:'bpm', vals:[midiBPM] },
-  { tick:sectionStart, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
+allNotesOff=(tick=measureStart)=>{return p(c, ...[...source,...reflection].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
 
 grandFinale=()=>{
   c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=Math.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:", _); } }); (function finale(){composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`})(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);

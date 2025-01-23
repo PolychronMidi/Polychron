@@ -151,10 +151,8 @@ midiData={
     { number: 123, name: "Notes Off" }
   ]
 };
-midiValue=(category, name)=>{
-  category=category.toLowerCase();  name=name.toLowerCase();
-  if (!midiData[category]) {
-    console.warn(`Invalid MIDI category: ${category}`);
+midiValue=(category, name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
+  if (!midiData[category]) {  console.warn(`Invalid MIDI category: ${category}`);
     return null;
   }
   const item=midiData[category].find(item=>item.name.toLowerCase()===name);
