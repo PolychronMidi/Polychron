@@ -21,10 +21,25 @@ ri=randomInt=(min1, max1, min2, max2)=>{
     [min2,max2]=[m.min(min2,max2),m.max(min2,max2)];
     const range1=max1-min1; const range2=max2-min2;
     const totalRange=range1+range2; const rand=m.random()*totalRange;
-    if (rand < range1) { return m.max(min1,m.min(m.round(rand+min1,max1)));
-    } else { return m.max(min2,m.min(m.round(rand-range1+min2,max2))); }
-  } else { return m.max(min1, m.min(m.round(m.random()*(max1-min1)+min1,max1))); }
+    if (rand < range1) { 
+      return m.min(m.floor(max1),m.max(m.floor(min1),m.round(m.random()*range1+min1)));
+    } else {
+      return m.min(m.floor(max2),m.max(m.floor(min2),m.round(rand-range1+min2)));
+    }
+  } else {
+    return m.min(m.floor(max1),m.max(m.floor(min1),m.round(m.random()*(max1-min1)+min1)));
+  }
 };
+
+// Random Limited Increment: random value within range, with limited change per iteration
+rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,type='i')=>{
+  const adjustedMinChange = m.min(minChange, maxChange);
+  const adjustedMaxChange = m.max(minChange, maxChange);
+  const newMin = m.max(minValue, currentValue + adjustedMinChange);
+  const newMax = m.min(maxValue, currentValue + adjustedMaxChange);
+  return type === 'f' ? rf(newMin, newMax) : ri(newMin, newMax);
+};
+
 // Random variation within range(s) at frequency. Give one range or a separate boost & deboost range.
 rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
