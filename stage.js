@@ -1,148 +1,5 @@
 require('./sheet'); require('./venue'); require('./backstage'); 
-require('./rhythm'); require('./composers');
-getMidiMeter=()=>{
-  meterRatio=numerator / denominator;
-  isPowerOf2=(n)=>{ return (n & (n - 1))===0; }
-  if (isPowerOf2(denominator)) { midiMeter=[numerator, denominator]; }
-  else {
-    const high=2 ** m.ceil(m.log2(denominator));  const highRatio=numerator / high;
-    const low=2 ** m.floor(m.log2(denominator));  const lowRatio=numerator / low;
-    midiMeter=m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ? [numerator, high] : [numerator, low];
-  }
-  midiMeterRatio=midiMeter[0] / midiMeter[1];
-  syncFactor=midiMeterRatio / meterRatio;
-  midiBPM=BPM * syncFactor;
-  ticksPerSecond=midiBPM * PPQ / 60;
-  setTiming(); 
-  return;
-};
-
-getPolyrhythm=()=>{
-  [polyNumerator,polyDenominator]=composer.getMeter()
-  polyMeterRatio = polyNumerator / polyDenominator;
-  let allMatches = [];
-  bestMatch = {
-    originalMeasures: Infinity,
-    polyMeasures: Infinity,
-    totalMeasures: Infinity,
-    polyNumerator: polyNumerator,
-    polyDenominator: polyDenominator
-  };
-  for (let originalMeasures = 1; originalMeasures <= 7; originalMeasures++) {
-    for (let polyMeasures = 1; polyMeasures <= 7; polyMeasures++) {
-      if (Math.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
-        let currentMatch = {
-          originalMeasures: originalMeasures,
-          polyMeasures: polyMeasures,
-          totalMeasures: originalMeasures + polyMeasures,
-          polyNumerator: polyNumerator,
-          polyDenominator: polyDenominator
-        };
-        allMatches.push(currentMatch);
-        if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
-          bestMatch = currentMatch;
-        }
-      }
-    }
-  }
-  if (bestMatch.totalMeasures===Infinity) {
-    return getPolyrhythm();
-  }
-  ticksPerMeasure=PPQ * 4 * midiMeterRatio;
-  ticksPerBeat=ticksPerMeasure / numerator;
-  measuresPerPhrase1=bestMatch.originalMeasures;
-  measuresPerPhrase2=bestMatch.polyMeasures;
-  ticksPerPhrase=ticksPerMeasure * measuresPerPhrase1;
-  return;
-};
-
-p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
-c=csvRows=[];
-
-logUnit=(type)=>{  let shouldLog=false;
-  type=type.toLowerCase();
-  if (LOG==='none') shouldLog=false;
-  else if (LOG==='all') shouldLog=true;
-  else {  const logList=LOG.split(',').map(item=>item.trim());
-    shouldLog=logList.length===1 ? logList[0]===type : logList.includes(type);  }
-  if (!shouldLog) return null;  let meterInfo='';
-  if (type==='section') {
-    unit=sectionIndex + 1;
-    unitsPerParent=totalSections;
-    startTick=sectionStart;
-    secondsPerSection=ticksPerSection / ticksPerSecond;
-    endTick=startTick + ticksPerSection;
-    startTime=sectionStartTime;
-    endTime=startTime + secondsPerSection;
-    composerDetails=`${composer.constructor.name} `;
-    if (composer.scale && composer.scale.name) {
-      composerDetails+=`${composer.root} ${composer.scale.name}`;
-    } else if (composer.progression) {
-      progressionSymbols=composer.progression.map(chord=>{
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails+=`${progressionSymbols}`;
-    } else if (composer.mode && composer.mode.name) {
-      composerDetails+=`${composer.root} ${composer.mode.name}`;
-    }
-  } else if (type==='phrase') {
-    unit=phraseIndex + 1;
-    unitsPerParent=phrasesPerSection;
-    startTick=phraseStart;
-    endTick=startTick + ticksPerPhrase;
-    startTime=phraseStartTime;
-    secondsPerPhrase=ticksPerPhrase / ticksPerSecond;
-    endTime=startTime + secondsPerPhrase;
-  } else if (type==='measure') {
-    unit=measureIndex + 1;
-    unitsPerParent=measuresPerPhrase;
-    startTick=measureStart;
-    endTick=measureStart + ticksPerMeasure;
-    startTime=measureStartTime;
-    secondsPerMeasure=ticksPerMeasure / ticksPerSecond;
-    endTime=measureStartTime + secondsPerMeasure;
-    composerDetails=`${composer.constructor.name} `;
-    if (composer.scale && composer.scale.name) {
-      composerDetails+=`${composer.root} ${composer.scale.name}`;
-    } else if (composer.progression) {
-      progressionSymbols=composer.progression.map(chord=>{
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails+=`${progressionSymbols}`;
-    } else if (composer.mode && composer.mode.name) {
-      composerDetails+=`${composer.root} ${composer.mode.name}`;
-    }
-    actualMeter=[numerator, denominator];
-    meterInfo=midiMeter[1]===actualMeter[1] ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}` : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
-  } else if (type==='beat') {
-    unit=beatIndex + 1;
-    unitsPerParent=numerator;
-    startTick=beatStart;
-    endTick=startTick + ticksPerBeat;
-    startTime=measureStartTime + beatIndex * secondsPerBeat;
-    secondsPerBeat=ticksPerBeat / ticksPerSecond;
-    endTime=startTime + secondsPerBeat;
-  } else if (type==='division') {
-    unit=divIndex + 1;
-    unitsPerParent=divsPerBeat;
-    startTick=divStart;
-    endTick=startTick + ticksPerDiv;
-    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv;
-    endTime=startTime + secondsPerDiv;
-    secondsPerDiv=ticksPerDiv / ticksPerSecond;
-  } else if (type==='subdivision') {
-    unit=subdivIndex + 1;
-    unitsPerParent=subdivsPerDiv;
-    startTick=subdivStart;
-    endTick=startTick + ticksPerSubdiv;
-    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv+subdivIndex*secondsPerSubdiv;
-    secondsPerSubdiv=ticksPerSubdiv / ticksPerSecond;
-    endTime=startTime + secondsPerSubdiv;
-  }
-  return (()=>{  c.push({
-    tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
-  });  })();
-};
+require('./rhythm'); require('./time'); require('./composers');
 
 setTuningAndInstruments=()=>{  
   p(c, ...['control_c', 'program_c'].flatMap(type=>[ ...source.map(ch=>({
@@ -169,14 +26,14 @@ setBinaural=()=>{
 };
 
 setBalanceAndFX=()=>{
-if (m.random() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
+if (m.random() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   p(c, ...['control_c'].flatMap(()=>{
-  balanceOffset=ri(m.max(0, balanceOffset - 7), m.min(45, balanceOffset + 7));
-  sideBias=ri(m.max(-15, sideBias - 5), m.min(15, sideBias + 5));
-  leftBalance=m.min(0,m.max(56, balanceOffset + ri(7) + sideBias));
-  rightBalance=m.max(127,m.min(72, 127 - balanceOffset - ri(7) + sideBias));
+  balanceOffset=ri(m.max(0, balanceOffset - 5), m.min(45, balanceOffset + 5));
+  sideBias=ri(m.max(-20, sideBias - 3), m.min(20, sideBias + 3));
+  leftBalance=m.max(0,m.min(54, balanceOffset + ri(5) + sideBias));
+  rightBalance=m.min(127,m.max(74, 127 - balanceOffset - ri(5) + sideBias));
   centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
-  reflectionVariation=ri(1,10); centerBalance2=m.random()<.5?centerBalance+m.ceil(reflectionVariation*.5) : centerBalance+m.floor(reflectionVariation * .5 * -1);
+  reflectionVariation=ri(1,10); centerBalance2=m.random()<.5?centerBalance+m.round(reflectionVariation*.5) : centerBalance+m.round(reflectionVariation*-.5);
   _={ tick:beatStart, type:'control_c' };
 return [
     ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
