@@ -11,7 +11,7 @@ class MeasureComposer {
   getVoices() {
     const { min,max,weights } = VOICES;
     const v = m.min(rw(min,max,weights),this.notes.length * 4);
-    return subdivFreq > ri(100,250) ? m.max(1,m.floor(v / ri(2,3))) : v;
+    return subdivFreq > ri(100,150) ? m.max(1,m.floor(v / ri(2,3))) : v;
   }
   getNotes(octaveRange = null) {
     const voices = this.getVoices();

@@ -1,5 +1,6 @@
-require('./sheet'); require('./venue'); require('./backstage'); require('./rhythm'); require('./composers');
-midiSync=()=>{
+require('./sheet'); require('./venue'); require('./backstage'); 
+require('./rhythm'); require('./composers');
+getMidiMeter=()=>{
   meterRatio=numerator / denominator;
   isPowerOf2=(n)=>{ return (n & (n - 1))===0; }
   if (isPowerOf2(denominator)) { midiMeter=[numerator, denominator]; }
@@ -11,14 +12,12 @@ midiSync=()=>{
   midiMeterRatio=midiMeter[0] / midiMeter[1];
   syncFactor=midiMeterRatio / meterRatio;
   midiBPM=BPM * syncFactor;
-  ticksPerMeasure=PPQ * 4 * midiMeterRatio;
-  ticksPerBeat=ticksPerMeasure / numerator;
   ticksPerSecond=midiBPM * PPQ / 60;
   setTiming(); 
   return;
 };
 
-makePolyrhythm=()=>{
+getPolyrhythm=()=>{
   [polyNumerator,polyDenominator]=composer.getMeter()
   polyMeterRatio = polyNumerator / polyDenominator;
   let allMatches = [];
@@ -47,10 +46,13 @@ makePolyrhythm=()=>{
     }
   }
   if (bestMatch.totalMeasures===Infinity) {
-    return makePolyrhythm();
+    return getPolyrhythm();
   }
+  ticksPerMeasure=PPQ * 4 * midiMeterRatio;
+  ticksPerBeat=ticksPerMeasure / numerator;
   measuresPerPhrase1=bestMatch.originalMeasures;
   measuresPerPhrase2=bestMatch.polyMeasures;
+  ticksPerPhrase=ticksPerMeasure * measuresPerPhrase1;
   return;
 };
 
@@ -58,22 +60,20 @@ p=pushMultiple=(array,...items)=>{  array.push(...items);  };
 c=csvRows=[];
 
 logUnit=(type)=>{  let shouldLog=false;
+  type=type.toLowerCase();
   if (LOG==='none') shouldLog=false;
   else if (LOG==='all') shouldLog=true;
   else {  const logList=LOG.split(',').map(item=>item.trim());
     shouldLog=logList.length===1 ? logList[0]===type : logList.includes(type);  }
   if (!shouldLog) return null;  let meterInfo='';
-  if (type==='measure') {
-    unit=measureIndex + 1;
-    unitsPerParent=measuresPerPhrase;
-    startTime=measureStartTime;
-    secondsPerMeasure=ticksPerMeasure / ticksPerSecond;
-    secondsPerPhrase=ticksPerPhrase / ticksPerSecond;
-    endTime=measureStartTime + secondsPerMeasure;
-    startTick=measureStartTick;
-    endTick=measureStartTick + ticksPerMeasure;
-    actualMeter=[numerator, denominator];
-    secondsPerBeat=ticksPerBeat / ticksPerSecond;
+  if (type==='section') {
+    unit=sectionIndex + 1;
+    unitsPerParent=totalSections;
+    startTick=sectionStart;
+    secondsPerSection=ticksPerSection / ticksPerSecond;
+    endTick=startTick + ticksPerSection;
+    startTime=sectionStartTime;
+    endTime=startTime + secondsPerSection;
     composerDetails=`${composer.constructor.name} `;
     if (composer.scale && composer.scale.name) {
       composerDetails+=`${composer.root} ${composer.scale.name}`;
@@ -85,30 +85,59 @@ logUnit=(type)=>{  let shouldLog=false;
     } else if (composer.mode && composer.mode.name) {
       composerDetails+=`${composer.root} ${composer.mode.name}`;
     }
+  } else if (type==='phrase') {
+    unit=phraseIndex + 1;
+    unitsPerParent=phrasesPerSection;
+    startTick=phraseStart;
+    endTick=startTick + ticksPerPhrase;
+    startTime=phraseStartTime;
+    secondsPerPhrase=ticksPerPhrase / ticksPerSecond;
+    endTime=startTime + secondsPerPhrase;
+  } else if (type==='measure') {
+    unit=measureIndex + 1;
+    unitsPerParent=measuresPerPhrase;
+    startTick=measureStart;
+    endTick=measureStart + ticksPerMeasure;
+    startTime=measureStartTime;
+    secondsPerMeasure=ticksPerMeasure / ticksPerSecond;
+    endTime=measureStartTime + secondsPerMeasure;
+    composerDetails=`${composer.constructor.name} `;
+    if (composer.scale && composer.scale.name) {
+      composerDetails+=`${composer.root} ${composer.scale.name}`;
+    } else if (composer.progression) {
+      progressionSymbols=composer.progression.map(chord=>{
+        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
+      }).join(' ');
+      composerDetails+=`${progressionSymbols}`;
+    } else if (composer.mode && composer.mode.name) {
+      composerDetails+=`${composer.root} ${composer.mode.name}`;
+    }
+    actualMeter=[numerator, denominator];
     meterInfo=midiMeter[1]===actualMeter[1] ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}` : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
   } else if (type==='beat') {
     unit=beatIndex + 1;
     unitsPerParent=numerator;
-    startTime=measureStartTime + beatIndex * secondsPerBeat;
-    endTime=startTime + secondsPerBeat;
     startTick=beatStart;
     endTick=startTick + ticksPerBeat;
-    secondsPerDiv=secondsPerBeat / divsPerBeat;
+    startTime=measureStartTime + beatIndex * secondsPerBeat;
+    secondsPerBeat=ticksPerBeat / ticksPerSecond;
+    endTime=startTime + secondsPerBeat;
   } else if (type==='division') {
     unit=divIndex + 1;
     unitsPerParent=divsPerBeat;
-    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv;
-    endTime=startTime + secondsPerDiv;
     startTick=divStart;
     endTick=startTick + ticksPerDiv;
-    secondsPerSubdiv=secondsPerDiv / subdivsPerDiv;
+    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv;
+    endTime=startTime + secondsPerDiv;
+    secondsPerDiv=ticksPerDiv / ticksPerSecond;
   } else if (type==='subdivision') {
     unit=subdivIndex + 1;
     unitsPerParent=subdivsPerDiv;
-    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv+subdivIndex*secondsPerSubdiv;
-    endTime=startTime + secondsPerSubdiv;
     startTick=subdivStart;
     endTick=startTick + ticksPerSubdiv;
+    startTime=measureStartTime+beatIndex*secondsPerBeat+divIndex*secondsPerDiv+subdivIndex*secondsPerSubdiv;
+    secondsPerSubdiv=ticksPerSubdiv / ticksPerSecond;
+    endTime=startTime + secondsPerSubdiv;
   }
   return (()=>{  c.push({
     tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
@@ -177,7 +206,10 @@ crossModulateRhythms=()=>{ crossModulation=0;
   rf(.5,(subdivRhythm[subdivIndex] > rf(-.1) ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
   (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri(1) ? rf(.1,.3) : rf(-.1)) + 
   (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) + 
-  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1));
+  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) + 
+  (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri(1) ? rf(-.3,-.5) : rf(.1)) + 
+  (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
+  (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1));
 };
 
 setNoteParams=()=>{
