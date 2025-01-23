@@ -28,10 +28,10 @@ setBinaural=()=>{
 setBalanceAndFX=()=>{
 if (m.random() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   p(c, ...['control_c'].flatMap(()=>{
-  balanceOffset=ri(m.max(0, balanceOffset - 5), m.min(45, balanceOffset + 5));
-  sideBias=ri(m.max(-20, sideBias - 3), m.min(20, sideBias + 3));
-  leftBalance=m.max(0,m.min(54, balanceOffset + ri(5) + sideBias));
-  rightBalance=m.min(127,m.max(74, 127 - balanceOffset - ri(5) + sideBias));
+  balanceOffset=ri(m.max(0, balanceOffset - 4), m.min(45, balanceOffset + 4));
+  sideBias=ri(m.max(-20, sideBias - 2), m.min(20, sideBias + 2));
+  leftBalance=m.max(0,m.min(54, balanceOffset + ri(3) + sideBias));
+  rightBalance=m.min(127,m.max(74, 127 - balanceOffset - ri(3) + sideBias));
   centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
   reflectionVariation=ri(1,10); centerBalance2=m.random()<.5?centerBalance+m.round(reflectionVariation*.5) : centerBalance+m.round(reflectionVariation*-.5);
   _={ tick:beatStart, type:'control_c' };
@@ -66,7 +66,8 @@ crossModulateRhythms=()=>{ crossModulation=0;
   (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) + 
   (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri(1) ? rf(-.3,-.5) : rf(.1)) + 
   (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
-  (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1));
+  (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) + 
+  (subdivFreq > ri(100,200) ? rf(-.4,-.6) : rf(.1));
 };
 
 setNoteParams=()=>{
