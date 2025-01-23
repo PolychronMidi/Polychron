@@ -70,7 +70,7 @@ rw=randomWeightedSelection=(min,max,weights)=>{
 }
 
 velocity=99;
-finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStartTick=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStartTick=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+secondsPerMeasure=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=totalTicks=totalTime=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -91,26 +91,32 @@ flipBinauralF=[centerCH1, centerCH2, leftCH1, rightCH1, leftCH3, rightCH3];
 flipBinauralT=[centerCH1, centerCH2, leftCH2, rightCH2, leftCH4, rightCH4];
 
 //midi cc 123 "all notes off" prevents sustain across transitions
-allNotesOff=(tick=measureStartTick)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
+allNotesOff=(tick=measureStart)=>{return p(c, ...[...source, ...reflection].map(ch=>({tick:m.max(0,tick-1), type:'control_c', vals:[ch, 123, 0]  })));}
 
-incrementMeasure=()=>{ logUnit('measure'); allNotesOff();
-  measureStartTick+=ticksPerMeasure;  measureStartTime+=secondsPerMeasure;
-}
-incrementPhrase=()=>{
-  phraseStartTick+=ticksPerPhrase;  phraseStartTime+=secondsPerPhrase;
-}
+incrementMeasure=()=>{ 
+  measureStart=phraseStart + measureIndex * ticksPerMeasure;  measureStartTime=phraseStartTime + measureIndex * secondsPerMeasure;
+};
+incrementPhrase=()=>{ 
+  phraseStart+=ticksPerPhrase; phraseStartTime+=secondsPerPhrase;
+  ticksPerSection+=ticksPerPhrase; secondsPerSection+=secondsPerPhrase;
+};
+incrementSection=()=>{  allNotesOff('sectionStart');
+  sectionStart+=ticksPerSection; sectionStartTime+=secondsPerSection;
+  finalTime=formatTime(sectionStartTime+SILENT_OUTRO_SECONDS);
+  ticksPerSection=secondsPerSection=0;
+};
+
 formatTime=(seconds)=>{ 
   const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
 
-setTiming=()=>{  p(c,  { tick:phraseStartTick, type:'bpm', vals:[midiBPM] },
-  { tick:phraseStartTick, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
+setTiming=()=>{  p(c,  { tick:sectionStart, type:'bpm', vals:[midiBPM] },
+  { tick:sectionStart, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
 
 grandFinale=()=>{
-  c=c.filter(i=>i!==null).map(i=>({...i,tick:i.tick<0?Math.abs(i.tick)*rf(.1,.3):i.tick})).sort((a,b)=>a.tick-b.tick); c.forEach(_=>{ composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=_.tick; }); finale(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=Math.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:", _); } }); (function finale(){composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`})(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
 };
 
 composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;
-finale=()=>composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`;
 fs=require('fs');

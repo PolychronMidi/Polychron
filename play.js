@@ -10,16 +10,15 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
 
   for (phraseIndex=0; phraseIndex < phrasesPerSection; phraseIndex++) {
     [numerator,denominator]=composer.getMeter();
-    midiSync(); makePolyrhythm();
+    getMidiMeter(); getPolyrhythm();
+    logUnit('phrase');
 
     measuresPerPhrase=measuresPerPhrase1;
-    ticksPerPhrase=ticksPerMeasure * measuresPerPhrase;
-    secondsPerPhrase=ticksPerPhrase / ticksPerSecond;
-
     for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) {
-    beatRhythm=setRhythm('beat');
+      incrementMeasure(); logUnit('measure');
+      beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
-        beatStart=phraseStartTick + measureIndex * ticksPerMeasure + beatIndex * ticksPerBeat; logUnit('beat');
+        beatStart=phraseStart + measureIndex * ticksPerMeasure + beatIndex * ticksPerBeat; logUnit('beat');
         setTertiaryInstruments(); setBinaural(); setBalanceAndFX();
         divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
         divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1,divsPerBeat);
@@ -32,17 +31,17 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
             subdivStart=divStart + subdivIndex * ticksPerSubdiv; logUnit('subdivision');
             playNotes(); }}}
         }
-
     beatRhythm=divRhythm=subdivRhythm=0; 
     numerator=polyNumerator;  meterRatio=polyMeterRatio;
-    ticksPerMeasure=ticksPerPhrase / measuresPerPhrase2;
-    ticksPerBeat=ticksPerMeasure / numerator;
     measuresPerPhrase=measuresPerPhrase2;
+    ticksPerMeasure=ticksPerPhrase / measuresPerPhrase;
+    ticksPerBeat=ticksPerMeasure / numerator;
 
     for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) {
+      incrementMeasure(); logUnit('measure');
       beatRhythm=setRhythm('beat');
        for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
-         beatStart=phraseStartTick + measureIndex * ticksPerMeasure + beatIndex * ticksPerBeat; logUnit('beat');
+         beatStart=phraseStart + measureIndex * ticksPerMeasure + beatIndex * ticksPerBeat; logUnit('beat');
          divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12));
          divRhythm=setRhythm('div'); ticksPerDiv=ticksPerBeat / m.max(1,divsPerBeat);
          for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
@@ -55,7 +54,8 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
              playNotes(); }}}
          }
     incrementPhrase();
-  }    
+  }
+  logUnit('section');
+  incrementSection();
 }
-  finalTime=formatTime(phraseStartTime + SILENT_OUTRO_SECONDS);
 grandFinale(); 
