@@ -28,8 +28,8 @@ setBinaural=()=>{
 setBalanceAndFX=()=>{
 if (m.random() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   p(c, ...['control_c'].flatMap(()=>{
-  balanceOffset=ri(m.max(0, balanceOffset - 4), m.min(45, balanceOffset + 4));
-  sideBias=ri(m.max(-20, sideBias - 2), m.min(20, sideBias + 2));
+  balanceOffset=rl(balanceOffset, -4, 4, 0, 45);
+  sideBias=rl(sideBias, -2, 2, -20, 20);
   leftBalance=m.max(0,m.min(54, balanceOffset + ri(3) + sideBias));
   rightBalance=m.min(127,m.max(74, 127 - balanceOffset - ri(3) + sideBias));
   centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (m.random() < .5 ? -1 : 1) + sideBias)));
