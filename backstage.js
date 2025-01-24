@@ -9,8 +9,8 @@ rf=randomFloat=(min1, max1, min2, max2)=>{
     [min2,max2]=[m.min(min2,max2),m.max(min2,max2)];
     const range1=max1-min1; const range2=max2-min2;
     const totalRange=range1+range2; const rand=m.random()*totalRange;
-    if (rand < range1) { return m.random()*range1+min1;
-    } else { return m.random()*range2+min2; }
+    if (rand < range1) { return m.random()*(range1+Number.EPSILON)+min1;
+    } else { return m.random()*(range2+Number.EPSILON)+min2; }
   } else { return m.random()*(max1-min1+Number.EPSILON)+min1; }
 };
 // Random integer(whole number) inclusive of min(s) & max(s). If only one number given, it's the max & min is 0. Although result is rounded, providing decimals in the range allows for more precision.
@@ -41,7 +41,7 @@ rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,ty
 };
 // Use a nested structure in Map to store effect values for each channel and effect type
 const channelEffects = new Map();
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const clamp = (value, min, max) => m.min(m.max(value, min), max);
 withMidiEffect = (ch, effectNum, minValue, maxValue, condition = null, conditionMin = null, conditionMax = null) => {
   if (!channelEffects.has(ch)) {
     channelEffects.set(ch, {});
@@ -87,25 +87,25 @@ rw=randomWeightedSelection=(min,max,weights)=>{
       const newWeights = [];
       for (let i = 0; i < range; i++) {
         const fraction = i / (range - 1);
-        const lowerIndex = Math.floor(fraction * (effectiveWeights.length - 1));
-        const upperIndex = Math.min(lowerIndex + 1, effectiveWeights.length - 1);
+        const lowerIndex = m.floor(fraction * (effectiveWeights.length - 1));
+        const upperIndex = m.min(lowerIndex + 1, effectiveWeights.length - 1);
         const weightDiff = effectiveWeights[upperIndex] - effectiveWeights[lowerIndex];
         const interpolatedWeight = effectiveWeights[lowerIndex] + (fraction * (effectiveWeights.length - 1) - lowerIndex) * weightDiff;
         newWeights.push(interpolatedWeight);
       }
       effectiveWeights = newWeights;
     } else {
-      const groupSize = Math.floor(effectiveWeights.length / range);
+      const groupSize = m.floor(effectiveWeights.length / range);
       effectiveWeights = Array(range).fill(0).map((_, i) => {
         const startIndex = i * groupSize;
-        const endIndex = Math.min(startIndex + groupSize, effectiveWeights.length);
+        const endIndex = m.min(startIndex + groupSize, effectiveWeights.length);
         return effectiveWeights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0) / (endIndex - startIndex);
       });
     }
   }
   const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
   const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
-  let random = Math.random();
+  let random = m.random();
   for (let i = 0; i < normalizedWeights.length; i++) {
     random -= normalizedWeights[i];
     if (random <= 0) return i + min;
@@ -138,7 +138,7 @@ flipBinauralT=[centerCH1,centerCH2,leftCH2,rightCH2,leftCH4,rightCH4];
 allNotesOff=(tick=measureStart)=>{return p(c, ...[...source,...reflection].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
 
 grandFinale=()=>{
-  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=Math.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:", _); } }); (function finale(){composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`})(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:", _); } }); (function finale(){composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`})(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
 };
 
 composition=`0, 0, header, 1, 1, ${PPQ}\n1, 0, start_track\n`;

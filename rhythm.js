@@ -1,4 +1,4 @@
-rhythms={
+rhythms={//weights: [beat,div,subdiv]
   'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
   'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
   'onsets':{weights:[5,0,0],method:'onsets',args:(length)=>[{make:[length,()=>[1,2]]}]},
