@@ -41,7 +41,7 @@ return [
     ...source.map(ch => rlFX(ch, 1, 0, 60, (c) => c === centerCH1, 0, 10)),
     ...source.map(ch => rlFX(ch, 5, 0, 88)),
     ...source.map(ch => rlFX(ch, 11, 64, 127, (c) => c === centerCH1, 115, 127)),
-    ...source.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
+    ...source.map(ch => rlFX(ch, 65, 0, 1)),
     ...source.map(ch => rlFX(ch, 66, 0, 20)),
     ...source.map(ch => rlFX(ch, 67, 0, 64)),
     ...source.map(ch => rlFX(ch, 91, 0, 33)),
@@ -49,7 +49,7 @@ return [
     ...reflection.map(ch => rlFX(ch, 1, 0, 90, (c) => c === centerCH2, 0, 15)),
     ...reflection.map(ch => rlFX(ch, 5, 0, 127)),
     ...reflection.map(ch => rlFX(ch, 11, 77, 111, (c) => c === centerCH2, 66, 99)),
-    ...reflection.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
+    ...reflection.map(ch => rlFX(ch, 65, 0, 1)),
     ...reflection.map(ch => rlFX(ch, 66, 0, 77)),
     ...reflection.map(ch => rlFX(ch, 67, 0, 32)),
     ...reflection.map(ch => rlFX(ch, 91, 0, 77, (c) => c === centerCH2, 0, 32)),
@@ -103,9 +103,9 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
             stutterNote=clamp(note+octaveShift,OCTAVE.min,OCTAVE.max);
           }
           x.push({tick:currentTick,vals:[sourceCH,stutterNote]});
-          x.push({tick:currentTick+stutterDuration*rf(.8,1.2),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1?velocity*rf(.3,.7):binauralVelocity*rf(.45,.8)]});
+          x.push({tick:currentTick+stutterDuration*rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1?velocity*rf(.3,.7):binauralVelocity*rf(.45,.8)]});
         }
-        x.push({tick:on+sustain,vals:[sourceCH,note]});
+        x.push({tick:on+sustain*rf(1,1.5),vals:[sourceCH,note]});
       }
 
       x.push({tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
@@ -124,9 +124,9 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
             stutterNote=clamp(note+octaveShift,OCTAVE.min,OCTAVE.max);
           }
           x.push({tick:currentTick,vals:[reflectionCH,stutterNote]});
-          x.push({tick:currentTick+stutterDuration*rf(.8,1.2),type:'note_on_c',vals:[reflectionCH,stutterNote,reflectionCH===centerCH2?velocity*rf(.25,.65):binauralVelocity*rf(.4,.75)]});
+          x.push({tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[reflectionCH,stutterNote,reflectionCH===centerCH2?velocity*rf(.25,.65):binauralVelocity*rf(.4,.75)]});
         }
-        x.push({tick:on+sustain,vals:[reflectionCH,note]});
+        x.push({tick:on+sustain*rf(1,2.5),vals:[reflectionCH,note]});
       }
 
       return x; } else { return null; }  }).filter(_=>_!==null).flat();
