@@ -1,7 +1,7 @@
 p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
 c=csvRows=[];
 m=Math;
-// Random float(decimal) inclusive of min(s) & max(s). If only one number given, it's the max & min is 0.
+// Random float(decimal) inclusive of min(s) & max(s). If only one number given, max=number & min=0.
 rf=randomFloat=(min1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1, max1]=[m.min(min1, max1),m.max(min1, max1)];
@@ -15,7 +15,7 @@ rf=randomFloat=(min1, max1, min2, max2)=>{
 };
 
 clamp = (value, min, max) => m.min(m.max(value, min), max);
-// Random integer(whole number) inclusive of min(s) & max(s). If only one number given, it's the max & min is 0. Although result is rounded, providing decimals in the range allows for more precision.
+// Random integer(whole number) inclusive of min(s) & max(s). If only one number given, max=number & min=0. Although result is rounded, providing decimals in the range allows for more precision.
 ri=randomInt=(min1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1,max1]=[m.min(min1, max1),m.max(min1, max1)];
@@ -33,7 +33,7 @@ ri=randomInt=(min1, max1, min2, max2)=>{
   }
 };
 
-// Random Limited Increment: random value from inclusive range, with limited change per iteration
+// Random limited increment: random value from inclusive range, with limited change per iteration.
 rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,type='i')=>{
   const adjustedMinChange = m.min(minChange, maxChange);
   const adjustedMaxChange = m.max(minChange, maxChange);
@@ -41,19 +41,19 @@ rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,ty
   const newMax = m.min(maxValue, currentValue + adjustedMaxChange);
   return type === 'f' ? rf(newMin, newMax) : ri(newMin, newMax);
 };
-// Use rl & a nested structure in Map to store effect values for each channel and effect type
-channelEffects = new Map();
+// Use rl & nested structure in Map to store & increment effect values for each channel & effect type.
 rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionMax=null)=>{
-  if (!channelEffects.has(ch)) {
-    channelEffects.set(ch, {});
+  chFX = new Map();
+  if (!chFX.has(ch)) {
+    chFX.set(ch, {});
   }
-  const channelEffectsMap = channelEffects.get(ch);
-  if (!(effectNum in channelEffectsMap)) {
-    channelEffectsMap[effectNum] = clamp(0, minValue, maxValue);
+  const chFXMap = chFX.get(ch);
+  if (!(effectNum in chFXMap)) {
+    chFXMap[effectNum] = clamp(0, minValue, maxValue);
   }
   const midiEffect = {
     getValue: () => {
-      let effectValue = channelEffectsMap[effectNum];
+      let effectValue = chFXMap[effectNum];
       let newMin = minValue, newMax = maxValue;
       if (condition !== null && typeof condition === 'function' && condition(ch)) {
         newMin = conditionMin;
@@ -62,14 +62,14 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
       } else {
         effectValue=clamp(randomLimitedIncrement(effectValue,-15,15,newMin,newMax),newMin,newMax);
       }
-      channelEffectsMap[effectNum] = effectValue;
+      chFXMap[effectNum] = effectValue;
       return effectValue;
     }
   };
   return {..._, vals: [ch, effectNum, midiEffect.getValue()]};
 };
 
-// Random variation within range(s) at frequency. Give one range or a separate boost & deboost range.
+// Random variation within range(s) at frequency: give one range or a separate boost & deboost range.
 rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
@@ -79,7 +79,8 @@ rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency
     factor=m.random() < frequency ? 1 + rf(...range) : 1;  }
   return value * factor;
 };
-// Random weighted selection: any sized list of weights with any values are normalized to fit the inclusive range.
+
+// Random weighted selection: any sized list of weights with any values are normalized to fit inclusive range.
 rw=randomWeightedSelection=(min,max,weights)=>{
   const range = max - min + 1;
   let effectiveWeights = weights.map(weight=>weight * (1 + rf(-0.3, 0.3)));
@@ -125,7 +126,7 @@ binauralFreqOffset=rf(BINAURAL.min, BINAURAL.max);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
 
-centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; //skip ch9=percussion
+centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; // skip ch9=percussion
 source=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2];
 reflection=[centerCH2,leftCH3,leftCH4,rightCH3,rightCH4];
 reflectionBinaural=[leftCH3,leftCH4,rightCH3,rightCH4];
@@ -135,7 +136,7 @@ binauralR=[rightCH1,rightCH2,rightCH3,rightCH4];
 flipBinauralF=[centerCH1,centerCH2,leftCH1,rightCH1,leftCH3,rightCH3];
 flipBinauralT=[centerCH1,centerCH2,leftCH2,rightCH2,leftCH4,rightCH4];
 
-//midi cc 123 "all notes off" prevents sustain across transitions
+// midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c, ...[...source,...reflection].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
 
 grandFinale=()=>{
