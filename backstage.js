@@ -13,6 +13,8 @@ rf=randomFloat=(min1, max1, min2, max2)=>{
     } else { return m.random()*(range2+Number.EPSILON)+min2; }
   } else { return m.random()*(max1-min1+Number.EPSILON)+min1; }
 };
+
+clamp = (value, min, max) => m.min(m.max(value, min), max);
 // Random integer(whole number) inclusive of min(s) & max(s). If only one number given, it's the max & min is 0. Although result is rounded, providing decimals in the range allows for more precision.
 ri=randomInt=(min1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
@@ -22,16 +24,16 @@ ri=randomInt=(min1, max1, min2, max2)=>{
     const range1=max1-min1; const range2=max2-min2;
     const totalRange=range1+range2; const rand=m.random()*totalRange;
     if (rand < range1) { 
-      return m.min(m.floor(max1),m.max(m.floor(min1),m.round(m.random()*range1+min1)));
+      return clamp(m.round(m.random() * range1 + min1), m.ceil(min1), m.floor(max1));
     } else {
-      return m.min(m.floor(max2),m.max(m.floor(min2),m.round(rand-range1+min2)));
+      return clamp(m.round(rand - range1 + min2), m.ceil(min2), m.floor(max2));
     }
   } else {
-    return m.min(m.floor(max1),m.max(m.floor(min1),m.round(m.random()*(max1-min1)+min1)));
+    return clamp(m.round(m.random() * (max1 - min1) + min1), m.ceil(min1), m.floor(max1));
   }
 };
 
-// Random Limited Increment: random value within range, with limited change per iteration
+// Random Limited Increment: random value from inclusive range, with limited change per iteration
 rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,type='i')=>{
   const adjustedMinChange = m.min(minChange, maxChange);
   const adjustedMaxChange = m.max(minChange, maxChange);
@@ -39,10 +41,9 @@ rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,ty
   const newMax = m.min(maxValue, currentValue + adjustedMaxChange);
   return type === 'f' ? rf(newMin, newMax) : ri(newMin, newMax);
 };
-// Use a nested structure in Map to store effect values for each channel and effect type
-const channelEffects = new Map();
-const clamp = (value, min, max) => m.min(m.max(value, min), max);
-withMidiEffect = (ch, effectNum, minValue, maxValue, condition = null, conditionMin = null, conditionMax = null) => {
+// Use rl & a nested structure in Map to store effect values for each channel and effect type
+channelEffects = new Map();
+rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionMax=null)=>{
   if (!channelEffects.has(ch)) {
     channelEffects.set(ch, {});
   }
@@ -57,9 +58,9 @@ withMidiEffect = (ch, effectNum, minValue, maxValue, condition = null, condition
       if (condition !== null && typeof condition === 'function' && condition(ch)) {
         newMin = conditionMin;
         newMax = conditionMax;
-        effectValue = clamp(randomLimitedIncrement(effectValue, -15, 15, newMin, newMax), newMin, newMax);
+        effectValue=clamp(randomLimitedIncrement(effectValue,-15,15,newMin,newMax),newMin,newMax);
       } else {
-        effectValue = clamp(randomLimitedIncrement(effectValue, -15, 15, newMin, newMax), newMin, newMax);
+        effectValue=clamp(randomLimitedIncrement(effectValue,-15,15,newMin,newMax),newMin,newMax);
       }
       channelEffectsMap[effectNum] = effectValue;
       return effectValue;
@@ -114,7 +115,7 @@ rw=randomWeightedSelection=(min,max,weights)=>{
 }
 
 velocity=99;
-secondsPerMeasure=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=totalTicks=totalTime=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+secondsPerMeasure=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);

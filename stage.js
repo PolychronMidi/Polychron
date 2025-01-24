@@ -19,7 +19,7 @@ p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'program_c' };
 setBinaural=()=>{
   if (beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {  beatCount=0; flipBinaural=!flipBinaural;
     beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
-    binauralFreqOffset=rf(m.max(BINAURAL.min, binauralFreqOffset - 1), m.min(BINAURAL.max, binauralFreqOffset + 1));  }
+    binauralFreqOffset=rl(binauralFreqOffset,-1,1,BINAURAL.min,BINAURAL.max);  }
     allNotesOff(beatStart);
     p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
     ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
@@ -38,22 +38,22 @@ if (m.random() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) 
 return [
     ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
     ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
-    ...source.map(ch => withMidiEffect(ch, 1, 0, 60, (c) => c === centerCH1, 0, 10)),
-    ...source.map(ch => withMidiEffect(ch, 5, 0, 88)),
-    ...source.map(ch => withMidiEffect(ch, 11, 64, 127, (c) => c === centerCH1, 115, 127)),
+    ...source.map(ch => rlFX(ch, 1, 0, 60, (c) => c === centerCH1, 0, 10)),
+    ...source.map(ch => rlFX(ch, 5, 0, 88)),
+    ...source.map(ch => rlFX(ch, 11, 64, 127, (c) => c === centerCH1, 115, 127)),
     ...source.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
-    ...source.map(ch => withMidiEffect(ch, 66, 0, 20)),
-    ...source.map(ch => withMidiEffect(ch, 67, 0, 64)),
-    ...source.map(ch => withMidiEffect(ch, 91, 0, 33)),
-    ...source.map(ch => withMidiEffect(ch, 93, 0, 33)),
-    ...reflection.map(ch => withMidiEffect(ch, 1, 0, 90, (c) => c === centerCH2, 0, 15)),
-    ...reflection.map(ch => withMidiEffect(ch, 5, 0, 127)),
-    ...reflection.map(ch => withMidiEffect(ch, 11, 77, 111, (c) => c === centerCH2, 66, 99)),
+    ...source.map(ch => rlFX(ch, 66, 0, 20)),
+    ...source.map(ch => rlFX(ch, 67, 0, 64)),
+    ...source.map(ch => rlFX(ch, 91, 0, 33)),
+    ...source.map(ch => rlFX(ch, 93, 0, 33)),
+    ...reflection.map(ch => rlFX(ch, 1, 0, 90, (c) => c === centerCH2, 0, 15)),
+    ...reflection.map(ch => rlFX(ch, 5, 0, 127)),
+    ...reflection.map(ch => rlFX(ch, 11, 77, 111, (c) => c === centerCH2, 66, 99)),
     ...reflection.map(ch=>({..._,vals:[ch, 65, ri(1)]})),
-    ...reflection.map(ch => withMidiEffect(ch, 66, 0, 77)),
-    ...reflection.map(ch => withMidiEffect(ch, 67, 0, 32)),
-    ...reflection.map(ch => withMidiEffect(ch, 91, 0, 77, (c) => c === centerCH2, 0, 32)),
-    ...reflection.map(ch => withMidiEffect(ch, 93, 0, 77, (c) => c === centerCH2, 0, 32)),
+    ...reflection.map(ch => rlFX(ch, 66, 0, 77)),
+    ...reflection.map(ch => rlFX(ch, 67, 0, 32)),
+    ...reflection.map(ch => rlFX(ch, 91, 0, 77, (c) => c === centerCH2, 0, 32)),
+    ...reflection.map(ch => rlFX(ch, 93, 0, 77, (c) => c === centerCH2, 0, 32)),
   ];  })  );  }
 }
 
