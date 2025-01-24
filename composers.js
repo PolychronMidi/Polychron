@@ -21,8 +21,8 @@ class MeasureComposer {
     let intervals = [],fallback = false;
     try {  const shift=ri(1);
       switch (ri(2)) {
-        case 0:intervals=[0,2,3+m.round(m.random()*shift),6 - m.round(m.random()*shift)].map(interval=>interval * m.floor(this.notes.length / 7));  break;
-        case 1:intervals=[0,1,3+m.round(m.random()*shift),5+m.round(m.random()*shift)].map(interval=>interval*m.floor(this.notes.length / 7));  break;
+        case 0:intervals=[0,2,3+shift,6-shift].map(interval=>clamp(interval*m.round(this.notes.length / 7),0,this.notes.length-1));  break;
+        case 1:intervals=[0,1,3+shift,5+shift].map(interval=>clamp(interval*m.round(this.notes.length / 7),0,this.notes.length-1));  break;
         default:intervals=Array.from({length:this.notes.length},(_,i)=>i);  fallback=true;  }
       return intervals.slice(0,voices).map((interval,index)=>{
         const noteIndex=(this.notes.indexOf(rootNote)+interval) % this.notes.length;
@@ -80,9 +80,9 @@ class ChordComposer extends MeasureComposer {
         case 'L': next = -1; break;
         case 'E': next = m.random() < .5 ? 1 : -1; break;
         case '?': next = ri(-2,2); break;
-        default:console.warn('Invalid direction,defaulting to right'); next=1;
+        default:console.warn('Invalid direction, defaulting to right'); next=1;
       }
-      let progressChord=beatCount % m.floor(meterRatio/3) < 1;
+      let progressChord=beatCount % m.floor(meterRatio / 3) < 1;
       if (progressChord) { allNotesOff(subdivStart); }
       this.currentChordIndex +=  progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
@@ -133,4 +133,4 @@ class RandomModeComposer extends ModeComposer {
   x=()=>{ this.noteSet(); return super.x(); }
 }
 composers=(function() {  return COMPOSERS.map(composer=>
-  eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}',root:'${composer.root || ''}',progression:${JSON.stringify(composer.progression || [])}})`)  );  })();
+  eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}',root:'${composer.root || ''}',progression:${JSON.stringify(composer.progression || [])}})`) ); })();
