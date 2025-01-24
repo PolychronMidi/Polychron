@@ -39,6 +39,34 @@ rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,ty
   const newMax = m.min(maxValue, currentValue + adjustedMaxChange);
   return type === 'f' ? rf(newMin, newMax) : ri(newMin, newMax);
 };
+// Use a nested structure in Map to store effect values for each channel and effect type
+const channelEffects = new Map();
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+withMidiEffect = (ch, effectNum, minValue, maxValue, condition = null, conditionMin = null, conditionMax = null) => {
+  if (!channelEffects.has(ch)) {
+    channelEffects.set(ch, {});
+  }
+  const channelEffectsMap = channelEffects.get(ch);
+  if (!(effectNum in channelEffectsMap)) {
+    channelEffectsMap[effectNum] = clamp(0, minValue, maxValue);
+  }
+  const midiEffect = {
+    getValue: () => {
+      let effectValue = channelEffectsMap[effectNum];
+      let newMin = minValue, newMax = maxValue;
+      if (condition !== null && typeof condition === 'function' && condition(ch)) {
+        newMin = conditionMin;
+        newMax = conditionMax;
+        effectValue = clamp(randomLimitedIncrement(effectValue, -15, 15, newMin, newMax), newMin, newMax);
+      } else {
+        effectValue = clamp(randomLimitedIncrement(effectValue, -15, 15, newMin, newMax), newMin, newMax);
+      }
+      channelEffectsMap[effectNum] = effectValue;
+      return effectValue;
+    }
+  };
+  return {..._, vals: [ch, effectNum, midiEffect.getValue()]};
+};
 
 // Random variation within range(s) at frequency. Give one range or a separate boost & deboost range.
 rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
