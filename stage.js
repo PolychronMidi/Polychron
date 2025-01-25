@@ -71,20 +71,20 @@ crossModulateRhythms=()=>{ crossModulation=0;
   (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) + 
   (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
   (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) + 
-  (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1));
+  (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatIndex<1?rf(.2,.3):0) + (divIndex<1?rf(.2,.3):0) + (subdivIndex<1?rf(.2,.3):0);
 };
 
 setNoteParams=()=>{
   on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
   shorterSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
   longerSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
-  useShorterSustain=subdivsPerMinute > ri(400,1000);
+  useShorterSustain=subdivsPerMinute > ri(400,750);
   sustain=(useShorterSustain ? shorterSustain : longerSustain)*rv(rf(.8,1.3));
   binauralVelocity=rv(velocity * rf(.35, .5));
 }
 
 playNotes=()=>{ setNoteParams(); crossModulateRhythms()
-  if (crossModulation>rf(3.8,4.2)) {subdivsOff=0; subdivsOn++;
+  if (crossModulation>rf(3.9,4.4)) {subdivsOff=0; subdivsOn++;
   composer.getNotes().forEach(({ note })=>{  
     events=source.map(sourceCH=>{
       CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
@@ -109,7 +109,7 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
           x.push({tick:currentTick-stutterDuration*rf(.15),vals:[sourceCH,stutterNote]});
           x.push({tick:currentTick+stutterDuration*rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1?velocity*rf(.3,.7):binauralVelocity*rf(.45,.8)]});
         }
-        x.push({tick:on+sustain*rf(1,1.5),vals:[sourceCH,note]});
+        x.push({tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
       }
 
       x.push({tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
@@ -130,7 +130,7 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
           x.push({tick:currentTick-stutterDuration*rf(.3),vals:[reflectionCH,stutterNote]});
           x.push({tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[reflectionCH,stutterNote,reflectionCH===centerCH2?velocity*rf(.25,.65):binauralVelocity*rf(.4,.75)]});
         }
-        x.push({tick:on+sustain*rf(1,2.5),vals:[reflectionCH,note]});
+        x.push({tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
       }
 
       return x; } else { return null; }  }).filter(_=>_!==null).flat();
