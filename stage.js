@@ -71,7 +71,7 @@ crossModulateRhythms=()=>{ crossModulation=0;
   (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) + 
   (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
   (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) + 
-  (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatIndex<1?rf(.2,.3):0) + (divIndex<1?rf(.2,.3):0) + (subdivIndex<1?rf(.2,.3):0);
+  (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatIndex<1?rf(.4,.5):0) + (divIndex<1?rf(.3,.4):0) + (subdivIndex<1?rf(.2,.3):0);
 };
 
 setNoteParams=()=>{
@@ -84,7 +84,7 @@ setNoteParams=()=>{
 }
 
 playNotes=()=>{ setNoteParams(); crossModulateRhythms()
-  if (crossModulation>rf(3.9,4.4)) {subdivsOff=0; subdivsOn++;
+  if (crossModulation>rf(4.3,5.1)) {subdivsOff=0; subdivsOn++;
   composer.getNotes().forEach(({ note })=>{  
     events=source.map(sourceCH=>{
       CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
