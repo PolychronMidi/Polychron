@@ -1,21 +1,52 @@
 class MeasureComposer {
-  getMeter() {const {min:a,max:b,weights:c}=NUMERATOR; const {min:x,max:y,weights:z}=DENOMINATOR; return [ rw(a,b,c),rw(x,y,z) ]; }
-  getDivisions() {const { min,max,weights }=DIVISIONS; return rw(min,max,weights);}
-  getSubdivisions() {const { min,max,weights }=SUBDIVISIONS; return rw(min,max,weights);}
-  getOctaveRange() {
-    const { min,max,weights } = OCTAVE;
-    let [o1,o2] = [rw(min,max,weights),rw(min,max,weights)];
-    while (o1===o2) {  o2 = m.max(min,m.min(max,o2 + ri(-3,3)));  }
-    return [ o1,o2 ];
+  constructor() {
+    this.lastMeter = null;
+    this.isFirstCall = true;
   }
-  getVoices() {
-    const { min,max,weights } = VOICES;
-    const v = m.min(rw(min,max,weights),this.notes.length * 4);
-    return subdivFreq > ri(100,150) ? m.max(1,m.floor(v / ri(2,3))) : v;
+  getDivisions(){const{min,max,weights}=DIVISIONS;return m.floor(rw(min,max,weights)*bpmRatio);}
+  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;return m.floor(rw(min,max,weights)*bpmRatio);}
+  getVoices() { const { min,max,weights } = VOICES;
+    const v = rw(min,max,weights) / (subdivsPerMinute / 1000)
+    return subdivsPerMinute/1000 < 1 ? m.max(1,m.floor(v / (subdivsPerMinute / 1000))) : m.max(0,m.ceil(v / (subdivsPerMinute / 1000)));
   }
-  getNotes(octaveRange = null) {
+  getOctaveRange() { const { min,max,weights } = OCTAVE;
+  let [o1,o2] = [rw(min,max,weights),rw(min,max,weights)];
+  while (o1===o2) {  o2 = m.max(min,m.min(max,o2 + ri(-3,3)));  }
+  return [ o1,o2 ];
+  }
+  getMeter(ignoreRatioCheck = false, polyMeter = false) {
+    if (this.isFirstCall) {
+      let firstValue = ri(3, 5);
+      this.lastMeter = [firstValue, firstValue];
+      this.isFirstCall = false;
+      return this.lastMeter;
+    }
+    while (true) { let newNumerator; let newDenominator; let polyMeter;
+      if (polyMeter===true) {
+        newNumerator = ri(3, 14);
+        newDenominator = metaClamp(newNumerator + ri(-6, 6), newNumerator, 0.5, 2,3,14);
+      } else {
+      newNumerator = ri(2, 9);
+      newDenominator = metaClamp(newNumerator + ri(-3, 3), newNumerator, 0.8, 1.2);
+      }
+      let newMeterRatio = newNumerator * (newNumerator / newDenominator) / 4;
+      if (ignoreRatioCheck || (newMeterRatio >= 0.3 && newMeterRatio <= 3)) {
+        if (this.lastMeter && !ignoreRatioCheck) {
+          let lastMeterRatio = this.lastMeter[0] * (this.lastMeter[0] / this.lastMeter[1]) / 4;
+          let ratioChange = Math.abs(newMeterRatio - lastMeterRatio);
+          if (ratioChange <= 0.75) {
+            this.lastMeter = [newNumerator, newDenominator];
+            return this.lastMeter;
+          }
+        } else {
+          this.lastMeter = [newNumerator, newDenominator];
+          return this.lastMeter;
+        }
+      }
+    }
+  }
+  getNotes(octaveRange = null) { const uniqueNotes = new Set();
     const voices = this.getVoices();
-    const uniqueNotes = new Set();
     const [minOctave,maxOctave] = octaveRange || this.getOctaveRange();
     const rootNote = this.notes[ri(this.notes.length - 1)];
     let intervals = [],fallback = false;
@@ -35,7 +66,8 @@ class MeasureComposer {
       }).filter((noteObj,index,self) => 
         index===self.findIndex(n => n.note===noteObj.note)
       ); }  catch (e) { if (!fallback) { return this.getNotes(octaveRange); } else {
-      console.warn(e.message);  return this.getNotes(octaveRange);  }}}
+      console.warn(e.message);  return this.getNotes(octaveRange);  }}
+  }
 }
 class ScaleComposer extends MeasureComposer {
   constructor(scaleName,root) { 

@@ -11,7 +11,7 @@ PPQ=30000;
 BPM=80;
 NUMERATOR={
   min: 2,
-  max: 15,
+  max: 11,
   weights: [10, 20, 30, 40, 20, 10, 5, 1]
 };
 DENOMINATOR={
@@ -50,10 +50,10 @@ SUBDIVISIONS={
 };
 COMPOSERS=[
   // { type: 'scale', name: 'major', root: 'C', return: 'new ScaleComposer(this.name, this.root)' },
-  // { type: 'chordProgression', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
+  // { type: 'chords', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'], return: 'new ChordComposer(this.progression)' },
   // { type: 'mode', name: 'ionian', root: 'C', return: 'new ModeComposer(this.name, this.root)' },
   { type: 'randomScale', return: 'new RandomScaleComposer()' },
-  { type: 'randomChord', return: 'new RandomChordComposer()' },
+  { type: 'randomChords', return: 'new RandomChordComposer()' },
   { type: 'randomMode', return: 'new RandomModeComposer()' }
 ];
 SILENT_OUTRO_SECONDS=5;

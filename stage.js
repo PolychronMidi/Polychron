@@ -8,6 +8,11 @@ setTuningAndInstruments=()=>{
   { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  
 };
 
+setKick=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,12,ri(111,127)] });
+setKick2=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,14,ri(111,127)] });
+setSnare=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,31,ri(111,127)] });
+setSnare2=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,33,ri(111,127)] });
+
 setTertiaryInstruments=()=>{
   if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
 p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'program_c' };
@@ -27,14 +32,13 @@ setBinaural=()=>{
 
 setBalanceAndFX=()=>{
 if (rf() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
-  p(c, ...['control_c'].flatMap(()=>{
   balanceOffset=rl(balanceOffset, -4, 4, 0, 45);
   sideBias=rl(sideBias, -2, 2, -20, 20);
   leftBalance=m.max(0,m.min(54, balanceOffset + ri(3) + sideBias));
   rightBalance=m.min(127,m.max(74, 127 - balanceOffset - ri(3) + sideBias));
   centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
   reflectionVariation=ri(1,10); centerBalance2=rf()<.5?centerBalance+m.round(reflectionVariation*.5) : centerBalance+m.round(reflectionVariation*-.5);
-  _={ tick:beatStart, type:'control_c' };
+  p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'control_c' };
 return [
     ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
     ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
@@ -67,14 +71,14 @@ crossModulateRhythms=()=>{ crossModulation=0;
   (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) + 
   (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
   (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) + 
-  (subdivFreq > ri(100,200) ? rf(-.4,-.6) : rf(.1));
+  (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1));
 };
 
 setNoteParams=()=>{
   on=subdivStart + rv(ticksPerSubdiv * rf(1/3), [-.01, .07], .3);
   shorterSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
   longerSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
-  useShorterSustain=subdivFreq > ri(100,150);
+  useShorterSustain=subdivsPerMinute > ri(400,1000);
   sustain=(useShorterSustain ? shorterSustain : longerSustain)*rv(rf(.8,1.3));
   binauralVelocity=rv(velocity * rf(.35, .5));
 }
@@ -88,9 +92,9 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
       {tick:sourceCH===centerCH1 ? on + rv(ticksPerSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubdiv*rf(1/3),[-.1,.1],.3),type:'note_on_c',vals:[sourceCH,note,sourceCH===centerCH1 ? velocity*rf(.9,1.1) : binauralVelocity*rf(.95,1.03)]},
       {tick:on+sustain*(sourceCH===centerCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]}  ];
 
-      // Use Maps to store channel-specific stutter and octave shift values
+      // Use Maps to store channel-unique stutter and octave shift values
       const chStutters = new Map(); const chOctaveShifts = new Map();
-      // Source Channel Stutter
+      // Source Channels Stutter
       if (rf()<rv(.33,[.5,1],.3)){
         if (!chStutters.has(sourceCH)) chStutters.set(sourceCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
         const numStutters = chStutters.get(sourceCH);
@@ -111,7 +115,7 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
       x.push({tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
       {tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]} );
 
-      // Reflection Channel Stutter
+      // Reflection Channels Stutter
       if (rf()<.33){
         if (!chStutters.has(reflectionCH)) chStutters.set(reflectionCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
         const numStutters = chStutters.get(reflectionCH);
