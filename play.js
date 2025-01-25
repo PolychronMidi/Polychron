@@ -15,6 +15,13 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
+        if (beatIndex % 2 === 0) {
+          if (!(numerator % 2 === 1 && beatIndex === numerator - 1 && Math.random() < 0.5)) {
+            setKick();
+          }
+        } else {
+          setSnare();
+        }
         setTertiaryInstruments(); setBinaural(); setBalanceAndFX();
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
@@ -29,6 +36,13 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
+        if (beatIndex % 2 === 0) {
+          if (!(numerator % 2 === 1 && beatIndex === numerator - 1 && Math.random() < 0.5)) {
+            setKick2();
+          }
+        } else {
+          setSnare2();
+        }
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 

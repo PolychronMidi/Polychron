@@ -16,19 +16,18 @@ getMidiMeter=()=>{
   return;
 };
 
-getPolyrhythm=()=>{
-  [polyNumerator,polyDenominator]=composer.getMeter()
+getPolyrhythm = () => {  while (true) {
+  [polyNumerator, polyDenominator] = composer.getMeter(true,true);
   polyMeterRatio = polyNumerator / polyDenominator;
-  let allMatches = [];
-  bestMatch = {
+  let allMatches = []; let bestMatch = {
     originalMeasures: Infinity,
     polyMeasures: Infinity,
     totalMeasures: Infinity,
     polyNumerator: polyNumerator,
     polyDenominator: polyDenominator
   };
-  for (let originalMeasures = 1; originalMeasures < 5; originalMeasures++) {
-    for (let polyMeasures = 1; polyMeasures < 5; polyMeasures++) {
+  for (let originalMeasures = 1; originalMeasures < 6; originalMeasures++) {
+    for (let polyMeasures = 1; polyMeasures < 6; polyMeasures++) {
       if (m.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
         let currentMatch = {
           originalMeasures: originalMeasures,
@@ -44,13 +43,13 @@ getPolyrhythm=()=>{
       }
     }
   }
-  if (bestMatch.totalMeasures===Infinity) {
-    return getPolyrhythm();
+  if (bestMatch.totalMeasures !== Infinity && (bestMatch.totalMeasures > 2 && (bestMatch.originalMeasures > 1 || bestMatch.polyMeasures > 1)) && (numerator !== polyNumerator || denominator !== polyDenominator)) {
+    measuresPerPhrase1 = bestMatch.originalMeasures;
+    measuresPerPhrase2 = bestMatch.polyMeasures;
+    ticksPerPhrase = ticksPerMeasure * measuresPerPhrase1;
+    return;
   }
-  measuresPerPhrase1=bestMatch.originalMeasures;
-  measuresPerPhrase2=bestMatch.polyMeasures;
-  ticksPerPhrase=ticksPerMeasure * measuresPerPhrase1;
-  return;
+}
 };
 
 logUnit=(type)=>{  let shouldLog=false;
@@ -149,18 +148,20 @@ setMeasureTiming=()=>{ ticksPerMeasure=ticksPerPhrase / measuresPerPhrase;
 };
 setBeatTiming=()=>{ ticksPerBeat=ticksPerMeasure / numerator;
   secondsPerBeat=ticksPerBeat / ticksPerSecond;
+  trueBPM=60 / secondsPerBeat; bpmRatio=BPM / trueBPM;
   beatStart=phraseStart + measureIndex * ticksPerMeasure + beatIndex * ticksPerBeat;  beatStartTime=measureStartTime + beatIndex * secondsPerBeat;
-  divsPerBeat=m.ceil(composer.getDivisions() * (meterRatio < 1 ? rf(.7,1.1) : rf(rf(.7,1.05),meterRatio) * (numerator / meterRatio))/ri(3,12)); 
+  divsPerBeat=composer.getDivisions(); 
 };
 setDivTiming=()=>{ ticksPerDiv=ticksPerBeat / m.max(1,divsPerBeat);
   secondsPerDiv=ticksPerDiv / ticksPerSecond;
   divStart=beatStart + divIndex * ticksPerDiv;
   divStartTime=beatStartTime + divIndex * secondsPerDiv;
-  subdivsPerDiv=m.ceil(composer.getSubdivisions() * (meterRatio < 1 ? rf(.95,1.1) : rf(rf(.95,1.05),meterRatio) / (numerator / meterRatio))/ri(3,10));
+  subdivsPerDiv=composer.getSubdivisions();
   subdivFreq=subdivsPerDiv * divsPerBeat * numerator * meterRatio;
 };
 setSubdivTiming=()=>{ ticksPerSubdiv=ticksPerDiv / m.max(1,subdivsPerDiv);
   secondsPerSubdiv=ticksPerSubdiv / ticksPerSecond;
+  subdivsPerMinute=60 / secondsPerSubdiv;
   subdivStart=divStart + subdivIndex * ticksPerSubdiv;
   subdivStartTime=divStartTime + subdivIndex * secondsPerSubdiv;
 };

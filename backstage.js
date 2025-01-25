@@ -15,6 +15,12 @@ rf=randomFloat=(min1=1, max1, min2, max2)=>{
 };
 
 clamp = (value, min, max) => m.min(m.max(value, min), max);
+metaClamp = (value, base, lowerScale, upperScale, minBound = 2, maxBound = 9) => {
+  const lowerBound = Math.max(minBound, Math.floor(base * lowerScale));
+  const upperBound = Math.min(maxBound, Math.ceil(base * upperScale));
+  return clamp(value, lowerBound, upperBound);
+};
+
 // Random integer(whole number) inclusive of min(s) & max(s). If only one number given, max=number & min=0. Although result is rounded, providing decimals in the range allows for more precision.
 ri=randomInt=(min1=1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
@@ -116,7 +122,7 @@ rw=randomWeightedSelection=(min,max,weights)=>{
 }
 
 velocity=99;
-secondsPerMeasure=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivFreq=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+secondsPerMeasure=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
