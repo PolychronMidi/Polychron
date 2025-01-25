@@ -28,7 +28,7 @@ random=(length,probOn)=>{ return t.RhythmPattern.random(length,1 - probOn); };
 prob=(probs)=>{ return t.RhythmPattern.probability(probs); };
 euclid=(length,ones)=>{ return t.RhythmPattern.euclid(length,ones); };
 rotate=(pattern,rotations,direction="R",length=pattern.length)=>{
-  if (direction==='?') { direction=m.random() < .5 ? 'L' : 'R'; }
+  if (direction==='?') { direction=rf() < .5 ? 'L' : 'R'; }
   if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
   return patternLength(t.RhythmPattern.rotate(pattern,rotations),length);
 };

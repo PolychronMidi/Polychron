@@ -2,7 +2,7 @@ p=pushMultiple=(array,...items)=>{  array.push(...items);  };
 c=csvRows=[];
 m=Math;
 // Random float(decimal) inclusive of min(s) & max(s). If only one number given, max=number & min=0.
-rf=randomFloat=(min1, max1, min2, max2)=>{
+rf=randomFloat=(min1=1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1, max1]=[m.min(min1, max1),m.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
@@ -16,20 +16,20 @@ rf=randomFloat=(min1, max1, min2, max2)=>{
 
 clamp = (value, min, max) => m.min(m.max(value, min), max);
 // Random integer(whole number) inclusive of min(s) & max(s). If only one number given, max=number & min=0. Although result is rounded, providing decimals in the range allows for more precision.
-ri=randomInt=(min1, max1, min2, max2)=>{
+ri=randomInt=(min1=1, max1, min2, max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1,max1]=[m.min(min1, max1),m.max(min1, max1)];
   if (min2 !== undefined && max2 !== undefined) {
     [min2,max2]=[m.min(min2,max2),m.max(min2,max2)];
     const range1=max1-min1; const range2=max2-min2;
-    const totalRange=range1+range2; const rand=m.random()*totalRange;
+    const totalRange=range1+range2; const rand=rf()*totalRange;
     if (rand < range1) { 
-      return clamp(m.round(m.random() * range1 + min1), m.ceil(min1), m.floor(max1));
+      return clamp(m.round(rf() * range1 + min1), m.ceil(min1), m.floor(max1));
     } else {
       return clamp(m.round(rand - range1 + min2), m.ceil(min2), m.floor(max2));
     }
   } else {
-    return clamp(m.round(m.random() * (max1 - min1) + min1), m.ceil(min1), m.floor(max1));
+    return clamp(m.round(rf() * (max1 - min1) + min1), m.ceil(min1), m.floor(max1));
   }
 };
 
@@ -74,9 +74,9 @@ rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
   if (isSingleRange) {  const variation=rf(...singleRange);
-    factor=m.random() < frequency ? 1 + variation : 1;
-  } else {  const range=m.random() < .5 ? boostRange : deboostRange;
-    factor=m.random() < frequency ? 1 + rf(...range) : 1;  }
+    factor=rf() < frequency ? 1 + variation : 1;
+  } else {  const range=rf() < .5 ? boostRange : deboostRange;
+    factor=rf() < frequency ? 1 + rf(...range) : 1;  }
   return value * factor;
 };
 
@@ -107,7 +107,7 @@ rw=randomWeightedSelection=(min,max,weights)=>{
   }
   const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
   const normalizedWeights = effectiveWeights.map(w => w / totalWeight);
-  let random = m.random();
+  let random = rf();
   for (let i = 0; i < normalizedWeights.length; i++) {
     random -= normalizedWeights[i];
     if (random <= 0) return i + min;

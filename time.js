@@ -27,8 +27,8 @@ getPolyrhythm=()=>{
     polyNumerator: polyNumerator,
     polyDenominator: polyDenominator
   };
-  for (let originalMeasures = 1; originalMeasures <= 7; originalMeasures++) {
-    for (let polyMeasures = 1; polyMeasures <= 7; polyMeasures++) {
+  for (let originalMeasures = 1; originalMeasures < 5; originalMeasures++) {
+    for (let polyMeasures = 1; polyMeasures < 5; polyMeasures++) {
       if (m.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
         let currentMatch = {
           originalMeasures: originalMeasures,
