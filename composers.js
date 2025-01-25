@@ -19,7 +19,7 @@ class MeasureComposer {
     const [minOctave,maxOctave] = octaveRange || this.getOctaveRange();
     const rootNote = this.notes[ri(this.notes.length - 1)];
     let intervals = [],fallback = false;
-    try {  const shift=ri(1);
+    try {  const shift=ri();
       switch (ri(2)) {
         case 0:intervals=[0,2,3+shift,6-shift].map(interval=>clamp(interval*m.round(this.notes.length / 7),0,this.notes.length-1));  break;
         case 1:intervals=[0,1,3+shift,5+shift].map(interval=>clamp(interval*m.round(this.notes.length / 7),0,this.notes.length-1));  break;
@@ -78,7 +78,7 @@ class ChordComposer extends MeasureComposer {
       switch (direction.toUpperCase()) {
         case 'R': next = 1; break;
         case 'L': next = -1; break;
-        case 'E': next = m.random() < .5 ? 1 : -1; break;
+        case 'E': next = rf() < .5 ? 1 : -1; break;
         case '?': next = ri(-2,2); break;
         default:console.warn('Invalid direction, defaulting to right'); next=1;
       }
