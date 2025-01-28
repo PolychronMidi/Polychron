@@ -8,10 +8,110 @@ setTuningAndInstruments=()=>{
   { type:type==='control_c' ? 'pitch_bend_c' : 'program_c', vals:[centerCH2, ...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));  
 };
 
-setKick=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,12,ri(111,127)] });
-setKick2=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,14,ri(111,127)] });
-setSnare=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,31,ri(111,127)] });
-setSnare2=()=> p(c, {tick:beatStart, type:'note_on_c',vals:[9,33,ri(111,127)] });
+
+drumMap = {
+  'snare1': {note: 31, velocityRange: [99, 111]},
+  'snare2': {note: 33, velocityRange: [99, 111]},
+  'snare3': {note: 124, velocityRange: [77, 88]},
+  'snare4': {note: 125, velocityRange: [77, 88]},
+  'snare5': {note: 75, velocityRange: [77, 88]},
+  'snare6': {note: 85, velocityRange: [77, 88]},
+  'snare7': {note: 118, velocityRange: [66, 77]},
+  'snare8': {note: 41, velocityRange: [66, 77]},
+
+  'kick1': {note: 12, velocityRange: [111, 127]},
+  'kick2': {note: 14, velocityRange: [111, 127]},
+  'kick3': {note: 0, velocityRange: [99, 111]},
+  'kick4': {note: 2, velocityRange: [99, 111]},
+  'kick5': {note: 4, velocityRange: [88, 99]},
+  'kick6': {note: 5, velocityRange: [88, 99]},
+  'kick7': {note: 6, velocityRange: [88, 99]},
+
+  'cymbal1': {note: 59, velocityRange: [66, 77]},
+  'cymbal2': {note: 53, velocityRange: [66, 77]},
+  'cymbal3': {note: 80, velocityRange: [66, 77]},
+  'cymbal4': {note: 81, velocityRange: [66, 77]},
+
+  'conga1': {note: 60, velocityRange: [66, 77]},
+  'conga2': {note: 61, velocityRange: [66, 77]},
+  'conga3': {note: 62, velocityRange: [66, 77]},
+  'conga4': {note: 63, velocityRange: [66, 77]},
+  'conga5': {note: 64, velocityRange: [66, 77]},
+  
+
+};
+playDrums = (drumNames, beatOffsets = [0]) => {
+  const drums = typeof drumNames === 'string' ? drumNames.split(',').map(d => d.trim()) : drumNames;
+  const offsets = Array.isArray(beatOffsets) 
+    ? beatOffsets 
+    : new Array(drums.length).fill(0);
+  if (offsets.length < drums.length) {
+    offsets.push(...new Array(drums.length - offsets.length).fill(0));
+  }
+  drums.forEach((drumName, index) => {
+    const drum = drumMap[drumName];
+    if (drum) {
+      let tickOffset = typeof offsets[index] === 'number' ? offsets[index] * ticksPerBeat : offsets[index];
+      p(c, {
+        tick: beatStart + tickOffset,
+        type: 'note_on_c',
+        vals: [9, drum.note, ri(...drum.velocityRange)]
+      });
+    } else {
+      console.warn(`Drum type "${drumName}" not recognized.`);
+    }
+  });
+};
+drummer = (drumNames, beatOffsets, offsetJitter = .05) => {
+  if (drumNames === 'random') {
+    // Use keys from drumMap to get all drum names
+    const allDrums = Object.keys(drumMap);
+    drumNames = [allDrums[Math.floor(Math.random() * allDrums.length)]];
+    beatOffsets = [0]; // Default to playing at beat start for random drum
+  }
+
+  // Convert drumNames to array if it's not already
+  const drums = Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d => d.trim());
+  
+  // Convert beatOffsets to array if it's not
+  const offsets = Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
+
+  // If drums and offsets don't match, adjust offsets
+  if (offsets.length < drums.length) {
+    offsets.push(...new Array(drums.length - offsets.length).fill(0));
+  } else if (offsets.length > drums.length) {
+    offsets.length = drums.length; // Truncate offsets if too many
+  }
+
+  // Randomize the order of drums and offsets
+  const combined = drums.map((drum, index) => ({ drum, offset: offsets[index] }));
+  if (rf() < .7) {
+    if (rf() < .5) {
+      combined.reverse();
+    } else {
+      return playDrums(combined.map(item => item.drum), combined.map(item => item.offset));
+    }
+  } else {
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [combined[i], combined[j]] = [combined[j], combined[i]]; // Swap elements
+    }
+  }
+
+  // Adjust offsets with jitter
+  const adjustedOffsets = combined.map(({ offset }) => {
+    if (rf() < .3) {
+      return offset;
+    } else {
+      let adjusted = offset + (Math.random() < 0.5 ? -offsetJitter : offsetJitter);
+      // Ensure the offset is within [0, 1) by using modulus
+      return adjusted - Math.floor(adjusted); // This effectively gives us the fractional part
+    }
+  });
+
+  // Call playDrums with randomized and adjusted data
+  playDrums(combined.map(item => item.drum), adjustedOffsets);
+};
 
 setTertiaryInstruments=()=>{
   if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
@@ -40,7 +140,7 @@ if (rf() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firs
   reflectionVariation=ri(1,10); centerBalance2=rf()<.5?centerBalance+m.round(reflectionVariation*.5) : centerBalance+m.round(reflectionVariation*-.5);
   p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'control_c' };
 return [
-    ...source.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
+    ...source2.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
     ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
     ...source.map(ch => rlFX(ch, 1, 0, 60, (c) => c === centerCH1, 0, 10)),
     ...source.map(ch => rlFX(ch, 5, 0, 88)),
@@ -48,8 +148,8 @@ return [
     ...source.map(ch => rlFX(ch, 65, 0, 1)),
     ...source.map(ch => rlFX(ch, 66, 0, 20)),
     ...source.map(ch => rlFX(ch, 67, 0, 64)),
-    ...source.map(ch => rlFX(ch, 91, 0, 33)),
-    ...source.map(ch => rlFX(ch, 93, 0, 33)),
+    ...source2.map(ch => rlFX(ch, 91, 0, 33)),
+    ...source2.map(ch => rlFX(ch, 93, 0, 33)),
     ...reflection.map(ch => rlFX(ch, 1, 0, 90, (c) => c === centerCH2, 0, 15)),
     ...reflection.map(ch => rlFX(ch, 5, 0, 127)),
     ...reflection.map(ch => rlFX(ch, 11, 77, 111, (c) => c === centerCH2, 66, 99)),
@@ -62,9 +162,9 @@ return [
 }
 
 crossModulateRhythms=()=>{ crossModulation=0;
-  crossModulation += rf(1.5,(beatRhythm[beatIndex] > rf(-.1) ? 3 : m.min(rf(.75,1.5), 3 / numerator + beatsOff * (1 / numerator)))) + 
-  rf(1,(divRhythm[divIndex] > rf(-.1) ? 2 : m.min(rf(.5,1), 2 / divsPerBeat + divsOff * (1 / divsPerBeat)))) + 
-  rf(.5,(subdivRhythm[subdivIndex] > rf(-.1) ? 1 : m.min(rf(.25,.5), 1 / subdivsPerDiv + subdivsOff * (1 / subdivsPerDiv)))) + 
+  crossModulation += beatRhythm[beatIndex] > 1 ? rf(1.5,3) : m.max(rf(.625,1.25), (1 / numerator) * beatsOff + (1 / numerator) * beatsOn) + 
+  divRhythm[divIndex] > 1 ? rf(1,2) : m.max(rf(.5,1), (1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) + 
+  subdivRhythm[subdivIndex] > 1 ? rf(.5,1) : m.max(rf(.25,.5), (1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) + 
   (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri() ? rf(.1,.3) : rf(-.1)) + 
   (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) + 
   (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) + 
@@ -84,7 +184,7 @@ setNoteParams=()=>{
 }
 
 playNotes=()=>{ setNoteParams(); crossModulateRhythms()
-  if (crossModulation>rf(4.3,5.1)) {subdivsOff=0; subdivsOn++;
+  if (crossModulation>rf(.8,1)) {subdivsOff=0; subdivsOn++;
   composer.getNotes().forEach(({ note })=>{  
     events=source.map(sourceCH=>{
       CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
@@ -92,18 +192,21 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
       {tick:sourceCH===centerCH1 ? on + rv(ticksPerSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubdiv*rf(1/3),[-.1,.1],.3),type:'note_on_c',vals:[sourceCH,note,sourceCH===centerCH1 ? velocity*rf(.9,1.1) : binauralVelocity*rf(.95,1.03)]},
       {tick:on+sustain*(sourceCH===centerCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]}  ];
 
+      x.push({tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
+      {tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]} );
+
       // Use Maps to store channel-unique stutter and octave shift values
-      const chStutters = new Map(); const chOctaveShifts = new Map();
-      // Source Channels Stutter
+      const stutters = new Map(); const shifts = new Map();
+      // Source Channels Stutter-Shift
       if (rf()<rv(.33,[.5,1],.3)){
-        if (!chStutters.has(sourceCH)) chStutters.set(sourceCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
-        const numStutters = chStutters.get(sourceCH);
+        if (!stutters.has(sourceCH)) stutters.set(sourceCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
+        const numStutters = stutters.get(sourceCH);
         const stutterDuration = sustain/numStutters;
         for (let i=0;i<numStutters;i++) {
           const currentTick=on+stutterDuration*i; let stutterNote=note;
           if(rf()<.5){
-            if (!chOctaveShifts.has(sourceCH)) chOctaveShifts.set(sourceCH, ri(-2,2)*12);
-            const octaveShift = chOctaveShifts.get(sourceCH);
+            if (!shifts.has(sourceCH)) shifts.set(sourceCH, ri(-2,2)*12);
+            const octaveShift = shifts.get(sourceCH);
             stutterNote=clamp(note+octaveShift,OCTAVE.min,OCTAVE.max);
           }
           x.push({tick:currentTick-stutterDuration*rf(.15),vals:[sourceCH,stutterNote]});
@@ -111,20 +214,16 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
         }
         x.push({tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
       }
-
-      x.push({tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
-      {tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]} );
-
-      // Reflection Channels Stutter
+      // Reflection Channels Stutter-Shift
       if (rf()<.33){
-        if (!chStutters.has(reflectionCH)) chStutters.set(reflectionCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
-        const numStutters = chStutters.get(reflectionCH);
+        if (!stutters.has(reflectionCH)) stutters.set(reflectionCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
+        const numStutters = stutters.get(reflectionCH);
         const stutterDuration = sustain/numStutters;
         for (let i=0;i<numStutters;i++) {
           const currentTick=on+stutterDuration*i; let stutterNote=note;
           if(rf()<.7){
-            if (!chOctaveShifts.has(reflectionCH)) chOctaveShifts.set(reflectionCH, ri(-2,2)*12);
-            const octaveShift = chOctaveShifts.get(reflectionCH);
+            if (!shifts.has(reflectionCH)) shifts.set(reflectionCH, ri(-2,2)*12);
+            const octaveShift = shifts.get(reflectionCH);
             stutterNote=clamp(note+octaveShift,OCTAVE.min,OCTAVE.max);
           }
           x.push({tick:currentTick-stutterDuration*rf(.3),vals:[reflectionCH,stutterNote]});

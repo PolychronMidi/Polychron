@@ -11,7 +11,7 @@ class MeasureComposer {
   }
   getOctaveRange() { const { min,max,weights } = OCTAVE;
   let [o1,o2] = [rw(min,max,weights),rw(min,max,weights)];
-  while (o1===o2) {  o2 = m.max(min,m.min(max,o2 + ri(-3,3)));  }
+  while (m.abs(o1-o2)<ri(2,3)) { o2=circularClamp(o2+ri(-3,3),min,max); }
   return [ o1,o2 ];
   }
   getMeter(ignoreRatioCheck = false, polyMeter = false) {

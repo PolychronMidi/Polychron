@@ -15,9 +15,13 @@ rf=randomFloat=(min1=1, max1, min2, max2)=>{
 };
 
 clamp = (value, min, max) => m.min(m.max(value, min), max);
+circularClamp = (value, min, max) => {
+  const range = max - min + 1;
+  return ((value - min) % range + range) % range + min;
+};
 metaClamp = (value, base, lowerScale, upperScale, minBound = 2, maxBound = 9) => {
-  const lowerBound = Math.max(minBound, Math.floor(base * lowerScale));
-  const upperBound = Math.min(maxBound, Math.ceil(base * upperScale));
+  const lowerBound = m.max(minBound, m.floor(base * lowerScale));
+  const upperBound = m.min(maxBound, m.ceil(base * upperScale));
   return clamp(value, lowerBound, upperBound);
 };
 
@@ -134,6 +138,7 @@ binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2(
 
 centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; // skip ch9=percussion
 source=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2];
+source2=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2,9];
 reflection=[centerCH2,leftCH3,leftCH4,rightCH3,rightCH4];
 reflectionBinaural=[leftCH3,leftCH4,rightCH3,rightCH4];
 reflect={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
