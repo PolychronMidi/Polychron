@@ -35,7 +35,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
             setSubdivTiming(); logUnit('subdivision'); playNotes(); }}}
-        }
+      }
 
     beatRhythm=divRhythm=subdivRhythm=0; 
     numerator=polyNumerator;  meterRatio=polyMeterRatio;
@@ -63,7 +63,8 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
             setSubdivTiming(); logUnit('subdivision'); playNotes(); }}}
-        }
+      }
+
     nextPhrase();
   }
   logUnit('section'); nextSection();

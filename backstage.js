@@ -51,6 +51,7 @@ rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,ty
   const newMax = m.min(maxValue, currentValue + adjustedMaxChange);
   return type === 'f' ? rf(newMin, newMax) : ri(newMin, newMax);
 };
+
 // Use rl & nested structure in Map to store & increment effect values for each channel & effect type.
 rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionMax=null)=>{
   chFX = new Map();
@@ -136,16 +137,18 @@ binauralFreqOffset=rf(BINAURAL.min, BINAURAL.max);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
 
-centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; rightCH4=10; // skip ch9=percussion
+centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; drumCH=9; rightCH4=10; centerCH3=11; leftCH5=12; rightCH5=13; leftCH6=14; rightCH6=15;
+bass=[centerCH3, leftCH5, rightCH5, leftCH6, rightCH6];
 source=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2];
-source2=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2,9];
+source2=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2,drumCH];
 reflection=[centerCH2,leftCH3,leftCH4,rightCH3,rightCH4];
 reflectionBinaural=[leftCH3,leftCH4,rightCH3,rightCH4];
 reflect={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
-binauralL=[leftCH1,leftCH2,leftCH3,leftCH4];
-binauralR=[rightCH1,rightCH2,rightCH3,rightCH4];
-flipBinauralF=[centerCH1,centerCH2,leftCH1,rightCH1,leftCH3,rightCH3];
-flipBinauralT=[centerCH1,centerCH2,leftCH2,rightCH2,leftCH4,rightCH4];
+reflect2={[centerCH1]:centerCH3,[leftCH1]:leftCH5,[rightCH1]:rightCH5,[leftCH2]:leftCH6,[rightCH2]:rightCH6};
+binauralL=[leftCH1,leftCH2,leftCH3,leftCH4,leftCH5,leftCH6];
+binauralR=[rightCH1,rightCH2,rightCH3,rightCH4,rightCH5,rightCH6];
+flipBinauralF=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
+flipBinauralT=[centerCH1,centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c, ...[...source,...reflection].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
