@@ -141,11 +141,12 @@ if (rf() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firs
   rightBalance=m.min(127,m.max(74, 127 - balanceOffset - ri(3) + sideBias));
   centerBalance=m.min(96,(m.max(32, 64 + m.round(rv(balanceOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
   reflectionVariation=ri(1,10); centerBalance2=rf()<.5?centerBalance+m.round(reflectionVariation*.5) : centerBalance+m.round(reflectionVariation*-.5);
+  bassVariation=reflectionVariation*2; centerBalance3=rf()<.5?centerBalance2+m.round(bassVariation*.5) : centerBalance2+m.round(bassVariation*-.5);
   p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'control_c' };
 return [
     ...source2.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
     ...reflection.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
-    ...bass.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : centerBalance]})),
+    ...bass.map(ch=>({..._,vals:[ch, 10, ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+bassVariation : rightBalance-bassVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-bassVariation : leftBalance+bassVariation) : centerBalance3+m.round((rf(-.5,.5)*bassVariation)) ]})),
     ...source.map(ch => rlFX(ch, 1, 0, 60, (c) => c === centerCH1, 0, 10)),
     ...source.map(ch => rlFX(ch, 5, 0, 88)),
     ...source.map(ch => rlFX(ch, 11, 64, 127, (c) => c === centerCH1, 115, 127)),
