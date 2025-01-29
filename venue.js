@@ -160,7 +160,8 @@ midiValue=(category, name)=>{  category=category.toLowerCase();  name=name.toLow
 };
 primaryInstrument=midiValue('program', primaryInstrument);
 secondaryInstrument=midiValue('program', secondaryInstrument);
-
+bassInstrument=midiValue('program', bassInstrument);
+bassInstrument2=midiValue('program', bassInstrument2);
 t=require("tonal");
 
 allNotes=t.Scale.get("C chromatic").notes.map(note=>
