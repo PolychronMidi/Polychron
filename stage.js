@@ -250,22 +250,22 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
         x.push({tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(.95,1.15) : binauralVelocity*rf(1.25,1.75)]},
         {tick:on+sustain*(bassCH===centerCH3 ? rf(.7,1.2)*rf(1.5,3) : rv(rf(.65,1.3))*rf(2,5)),vals:[bassCH,bassNote]} );
         // Bass Channels Stutter-Shift
-        if (rf()<.33){
-          if (!stutters.has(bassCH)) stutters.set(bassCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
-          const numStutters = stutters.get(bassCH);
-          const stutterDuration = sustain/numStutters;
-          for (let i=0;i<numStutters;i++) {
-            const currentTick=on+stutterDuration*i; let stutterNote=bassNote;
-            if(rf()<.7){
-              if (!shifts.has(bassCH)) shifts.set(bassCH, ri(-2,2)*12);
-              const octaveShift = shifts.get(bassCH);
-              stutterNote=circularClamp(bassNote+octaveShift,1,5);
+          if (rf()<.7){
+            if (!stutters.has(bassCH)) stutters.set(bassCH, m.round(rv(rv(ri(2,5),[2,3],.33),[2,5],.1)));
+            const numStutters = stutters.get(bassCH);
+            const stutterDuration = sustain/numStutters;
+            for (let i=0;i<numStutters;i++) {
+              const currentTick=on+stutterDuration*i; let stutterNote=bassNote;
+              if(rf()<.7){
+                if (!shifts.has(bassCH)) shifts.set(bassCH, ri(-2,2)*12);
+                const octaveShift = shifts.get(bassCH);
+                stutterNote=circularClamp(bassNote+octaveShift,12,59);
+              }
+              x.push({tick:currentTick-stutterDuration*rf(.3),vals:[bassCH,stutterNote]});
+              x.push({tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[bassCH,stutterNote,bassCH===centerCH2?velocity*rf(.35,.65):binauralVelocity*rf(.45,.75)]});
             }
-            x.push({tick:currentTick-stutterDuration*rf(.3),vals:[bassCH,stutterNote]});
-            x.push({tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[bassCH,stutterNote,bassCH===centerCH2?velocity*rf(.25,.65):binauralVelocity*rf(.4,.75)]});
+            x.push({tick:on+sustain*rf(.75,2),vals:[bassCH,note]});
           }
-          x.push({tick:on+sustain*rf(.75,2),vals:[bassCH,note]});
-        }
         }
 
       return x; } else { return null; }  }).filter(_=>_!==null).flat();
