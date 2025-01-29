@@ -1,7 +1,7 @@
 primaryInstrument='glockenspiel';
 secondaryInstrument='music box';
-bassInstrument='FX 3 (crystal)';
-bassInstrument2='Pad 2 (warm)';
+bassInstrument='Acoustic Bass';
+bassInstrument2='Synth Bass 2';
 tertiaryInstruments = [79, 98, 104, 112, 114, 119, 120, 121, ...Array.from({length: 6}, (_, i) => i + 9)];
 LOG='section,phrase,measure';
 TUNING_FREQ=432;
