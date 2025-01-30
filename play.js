@@ -13,7 +13,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
     measuresPerPhrase=measuresPerPhrase1;
     for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) { measureCount++;
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
-      for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
+      for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();beatCount++;
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
         if (beatIndex % 2 === 0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
           drummer(['kick1','kick3'],[0,.5]);
