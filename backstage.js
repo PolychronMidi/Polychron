@@ -126,8 +126,9 @@ rw=randomWeightedSelection=(min,max,weights)=>{
   return max;
 }
 
+flipBinaural=false;
 velocity=99;
-measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -149,7 +150,8 @@ reflect2={[centerCH1]:centerCH3,[leftCH1]:leftCH5,[rightCH1]:rightCH5,[leftCH2]:
 binauralL=[leftCH1,leftCH2,leftCH3,leftCH4,leftCH5,leftCH6];
 binauralR=[rightCH1,rightCH2,rightCH3,rightCH4,rightCH5,rightCH6];
 flipBinauralF=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
-flipBinauralT=[centerCH1,centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
+flipBinauralT=[centerCH1,centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];flipBinauralF2=[leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
+flipBinauralT2=[leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c, ...[...source,...reflection].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}

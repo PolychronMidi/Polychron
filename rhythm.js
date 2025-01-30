@@ -138,5 +138,5 @@ randomInSetOrRange=(v)=>{
   return v;
 };
 
-trackBeatRhythm=()=>{beatCount++; if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };
+trackBeatRhythm=()=>{if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;} };
