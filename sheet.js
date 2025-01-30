@@ -1,8 +1,10 @@
 primaryInstrument='glockenspiel';
 secondaryInstrument='music box';
+otherInstruments = [79, 98, 104, 112, 114, 119, 120, 121, ...Array.from({length: 6}, (_, i) => i + 9)];
 bassInstrument='Acoustic Bass';
 bassInstrument2='Synth Bass 2';
-tertiaryInstruments = [79, 98, 104, 112, 114, 119, 120, 121, ...Array.from({length: 6}, (_, i) => i + 9)];
+otherBassInstruments = [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 48, 49, 50, 51, 89,98,98,98,98,98,98,98,98,98,98];
+drumSets=[0, 8, 16, 24,25, 32, 40, 48,127];
 LOG='section,phrase,measure';
 TUNING_FREQ=432;
 BINAURAL={

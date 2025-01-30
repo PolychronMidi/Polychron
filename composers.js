@@ -106,7 +106,7 @@ class ChordComposer extends MeasureComposer {
     } else {
       this.progression = validatedProgression.map(t.Chord.get); 
       this.currentChordIndex = this.currentChordIndex || 0;
-      let next
+      let next;
       switch (direction.toUpperCase()) {
         case 'R': next = 1; break;
         case 'L': next = -1; break;
@@ -114,8 +114,9 @@ class ChordComposer extends MeasureComposer {
         case '?': next = ri(-2,2); break;
         default:console.warn('Invalid direction, defaulting to right'); next=1;
       }
-      let progressChord=beatCount % m.floor(meterRatio / 3) < 1;
-      if (progressChord) { allNotesOff(subdivStart); }
+      let startingMeasure = measureCount;
+      let progressChord=measureCount>startingMeasure || rf()<.05;
+      if (progressChord) { allNotesOff(subdivStart); startingMeasure=measureCount; }
       this.currentChordIndex +=  progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
       this.notes = this.progression[this.currentChordIndex].notes;
@@ -129,7 +130,7 @@ class RandomChordComposer extends ChordComposer {
     this.noteSet();  
   }
   noteSet() {
-    const progressionLength = ri(1,5);
+    const progressionLength = ri(2,5);
     const randomProgression = [];
     for (let i = 0; i < progressionLength; i++) {
       const randomChord = allChords[ri(allChords.length - 1)];

@@ -69,9 +69,9 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
       if (condition !== null && typeof condition === 'function' && condition(ch)) {
         newMin = conditionMin;
         newMax = conditionMax;
-        effectValue=clamp(randomLimitedIncrement(effectValue,-15,15,newMin,newMax),newMin,newMax);
+        effectValue=clamp(rl(effectValue,-15,15,newMin,newMax),newMin,newMax);
       } else {
-        effectValue=clamp(randomLimitedIncrement(effectValue,-15,15,newMin,newMax),newMin,newMax);
+        effectValue=clamp(rl(effectValue,-15,15,newMin,newMax),newMin,newMax);
       }
       chFXMap[effectNum] = effectValue;
       return effectValue;
@@ -127,7 +127,7 @@ rw=randomWeightedSelection=(min,max,weights)=>{
 }
 
 velocity=99;
-secondsPerMeasure=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=flipBinaural=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -138,7 +138,8 @@ binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2(
 [binauralPlus, binauralMinus]=[1, -1].map(binauralOffset);
 
 centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; drumCH=9; rightCH4=10; centerCH3=11; leftCH5=12; rightCH5=13; leftCH6=14; rightCH6=15;
-bass=[centerCH3, leftCH5, rightCH5, leftCH6, rightCH6];
+bass=[centerCH3,leftCH5,rightCH5,leftCH6,rightCH6];
+bassBinaural=[leftCH5,rightCH5,leftCH6,rightCH6];
 source=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2];
 source2=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2,drumCH];
 reflection=[centerCH2,leftCH3,leftCH4,rightCH3,rightCH4];
