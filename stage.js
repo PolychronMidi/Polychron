@@ -136,7 +136,7 @@ setBinaural=()=>{
 };
 
 setBalanceAndFX=()=>{
-if (rf() < .5 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
+if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   balanceOffset=rl(balanceOffset, -4, 4, 0, 45);
   sideBias=rl(sideBias, -2, 2, -20, 20);
   leftBalance=m.max(0,m.min(54, balanceOffset + ri(3) + sideBias));
@@ -199,7 +199,7 @@ setNoteParams=()=>{
 }
 
 playNotes=()=>{ setNoteParams(); crossModulateRhythms()
-  if (crossModulation>rf(.8,1)) {subdivsOff=0; subdivsOn++;
+  if (crossModulation>rf(.82,1)) {subdivsOff=0; subdivsOn++;
   composer.getNotes().forEach(({ note })=>{  
     events=source.map(sourceCH=>{
       CHsToPlay=flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH);
@@ -252,15 +252,15 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
       if (rf()<clamp(.4*bpmRatio3,.2,.7)) {
         bassCH = reflect2[sourceCH]; bassNote = circularClamp(note, 12, 35);
         x.push({tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(.95,1.15) : binauralVelocity*rf(1.75,2.25)]},
-        {tick:on+sustain*(bassCH===centerCH3 ? rf(.7,1.2)*rf(1.5,3) : rv(rf(.65,1.3))*rf(5,7)),vals:[bassCH,bassNote]} );
+        {tick:on+sustain*(bassCH===centerCH3 ? rf(.7,3) : rv(rf(.65,3.5))),vals:[bassCH,bassNote]} );
       // Bass Channels Stutter-Shift
-        if (rf()<.7){
-          if (!stutters.has(bassCH)) stutters.set(bassCH, m.round(rv(rv(ri(2,5),[2,3],.33),[2,5],.1)));
+        if (rf()<.5){
+          if (!stutters.has(bassCH)) stutters.set(bassCH, m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
           const numStutters = stutters.get(bassCH);
           const stutterDuration = sustain/numStutters;
           for (let i=0;i<numStutters;i++) {
             const currentTick=on+stutterDuration*i; let stutterNote=bassNote;
-            if(rf()<.7){
+            if(rf()<.5){
               if (!shifts.has(bassCH)) shifts.set(bassCH, ri(-2,2)*12);
               const octaveShift = shifts.get(bassCH);
               stutterNote=circularClamp(bassNote+octaveShift,0,59);
