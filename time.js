@@ -149,7 +149,7 @@ setMeasureTiming=()=>{ ticksPerMeasure=ticksPerPhrase / measuresPerPhrase;
 setBeatTiming=()=>{ ticksPerBeat=ticksPerMeasure / numerator;
   secondsPerBeat=ticksPerBeat / ticksPerSecond;
   trueBPM=60 / secondsPerBeat; bpmRatio=BPM / trueBPM; bpmRatio2=trueBPM / BPM;
-  trueBPM2=numerator * (numerator / denominator) / 4;
+  trueBPM2=numerator * (numerator / denominator) / 4; bpmRatio3=1/trueBPM2;
   beatStart=phraseStart + measureIndex * ticksPerMeasure + beatIndex * ticksPerBeat;  beatStartTime=measureStartTime + beatIndex * secondsPerBeat;
   divsPerBeat=composer.getDivisions(); 
 };

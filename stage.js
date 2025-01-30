@@ -116,11 +116,13 @@ drummer = (drumNames, beatOffsets, offsetJitter = .05) => {
   playDrums(combined.map(item => item.drum), adjustedOffsets);
 };
 
-setTertiaryInstruments=()=>{
+setOtherInstruments=()=>{
   if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
 p(c, ...['control_c'].flatMap(()=>{ _={ tick:beatStart, type:'program_c' };
   return [
-    ...reflectionBinaural.map(ch=>({..._,vals:[ch, tertiaryInstruments[ri(tertiaryInstruments.length - 1)]]})),
+    ...reflectionBinaural.map(ch=>({..._,vals:[ch, otherInstruments[ri(otherInstruments.length - 1)]]})),
+    ...bassBinaural.map(ch=>({..._,vals:[ch, otherBassInstruments[ri(otherBassInstruments.length - 1)]]})),
+    { ..._, vals: [drumCH, drumSets[ri(drumSets.length - 1)]] }
   ];  })  );  }
 }
 
@@ -128,9 +130,9 @@ setBinaural=()=>{
   if (beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {  beatCount=0; flipBinaural=!flipBinaural;
     beatsUntilBinauralShift=ri(numerator * meterRatio, 7);
     binauralFreqOffset=rl(binauralFreqOffset,-1,1,BINAURAL.min,BINAURAL.max);  }
-    allNotesOff(beatStart);
-    p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
-    ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
+    allNotesOff(beatStart-1);
+    p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 || ch===leftCH5 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
+    ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 || ch===rightCH5 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})));
 };
 
 setBalanceAndFX=()=>{
@@ -169,8 +171,8 @@ return [
     ...bass.map(ch => rlFX(ch, 65, 0, 1)),
     ...bass.map(ch => rlFX(ch, 66, 0, 20)),
     ...bass.map(ch => rlFX(ch, 67, 0, 64)),
-    ...bass.map(ch => rlFX(ch, 91, 0, 33)),
-    ...bass.map(ch => rlFX(ch, 93, 0, 33)),
+    ...bass.map(ch => rlFX(ch, 91, 0, 77, (c) => c === centerCH3, 0, 32)),
+    ...bass.map(ch => rlFX(ch, 93, 0, 77, (c) => c === centerCH3, 0, 32)),
   ];  })  );  }
 }
 
@@ -247,7 +249,7 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
         x.push({tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
       }
 
-      if (rf()<.4) {
+      if (rf()<clamp(.4*bpmRatio3,.2,.7)) {
         bassCH = reflect2[sourceCH]; bassNote = circularClamp(note, 12, 35);
         x.push({tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(.95,1.15) : binauralVelocity*rf(1.75,2.25)]},
         {tick:on+sustain*(bassCH===centerCH3 ? rf(.7,1.2)*rf(1.5,3) : rv(rf(.65,1.3))*rf(5,7)),vals:[bassCH,bassNote]} );
@@ -266,7 +268,7 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
             x.push({tick:currentTick-stutterDuration*rf(.3),vals:[bassCH,stutterNote]});
             x.push({tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[bassCH,stutterNote,bassCH===centerCH2?velocity*rf(.35,.65):binauralVelocity*rf(.45,.75)]});
           }
-          x.push({tick:on+sustain*rf(.75,2),vals:[bassCH,note]});
+          x.push({tick:on+sustain*rf(.05,.25),vals:[bassCH,note]});
         }
       }
 
