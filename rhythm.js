@@ -44,14 +44,14 @@ morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
 };
 
 setRhythm=(level)=>{
-  random=(length, probOn)=> { return t.RhythmPattern.random(length, 1 - probOn); };
+  random=(length,probOn)=> { return t.RhythmPattern.random(length,1 - probOn); };
   switch(level) {
     case 'beat':
-      return beatRhythm = beatRhythm < 1 ? t.RhythmPattern.random(numerator, 0) : getRhythm('beat', numerator, beatRhythm);
+      return beatRhythm=beatRhythm < 1 ? t.RhythmPattern.random(numerator,0) : getRhythm('beat',numerator,beatRhythm);
     case 'div':
-      return divRhythm = divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv, 0) : getRhythm('div', divsPerDiv, divRhythm);
+      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv,0) : getRhythm('div',divsPerDiv,divRhythm);
     case 'subdiv':
-      return subdivRhythm = subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv, 0) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm)
+      return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv,0) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
   }
 };
@@ -75,11 +75,11 @@ makeOnsets=(length,valuesOrRange)=>{
   return rhythm;
 };
 
-patternLength=(pattern, length)=>{
+patternLength=(pattern,length)=>{
   if (length===undefined) return pattern;
   if (length > pattern.length) {
-    while (pattern.length < length) {  pattern=pattern.concat(pattern.slice(0, length - pattern.length));  }
-  } else if (length < pattern.length) {  pattern=pattern.slice(0, length);  }
+    while (pattern.length < length) {  pattern=pattern.concat(pattern.slice(0,length - pattern.length));  }
+  } else if (length < pattern.length) {  pattern=pattern.slice(0,length);  }
   return pattern;
 };
 
@@ -88,7 +88,7 @@ closestDivisor=(x,target=2)=>{
   let smallestDiff=Infinity;
   for (let i=1; i <= m.sqrt(x); i++) {
     if (x % i===0) {
-      [i, x / i].forEach(divisor=>{
+      [i,x / i].forEach(divisor=>{
         if (divisor !== closest) { let diff=m.abs(divisor - target);
           if (diff < smallestDiff) {smallestDiff=diff;closest=divisor;}
         }});}}
@@ -96,9 +96,9 @@ closestDivisor=(x,target=2)=>{
   return x % target===0 ? target : closest;
 };
 
-getRhythm = (level, length, pattern, method, ...args) => {
-  const levelIndex = ['beat', 'div', 'subdiv'].indexOf(level);
-  const checkMethod = (m) => {
+getRhythm=(level,length,pattern,method,...args)=>{
+  const levelIndex=['beat','div','subdiv'].indexOf(level);
+  const checkMethod=(m)=>{
     if (!global[m] || typeof global[m] !== 'function') {
       console.warn(`Unknown rhythm method: ${m}`);
       return null;
@@ -106,17 +106,17 @@ getRhythm = (level, length, pattern, method, ...args) => {
     return global[m];
   };
   if (method) {
-    const rhythmMethod = checkMethod(method);
+    const rhythmMethod=checkMethod(method);
     if (rhythmMethod) return rhythmMethod(...args);
   } else {
-    const filteredRhythms = Object.fromEntries(
-      Object.entries(rhythms).filter(([_, { weights }]) => weights[levelIndex] > 0)
+    const filteredRhythms=Object.fromEntries(
+      Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
     );
-    const rhythmKey = selectFromWeightedOptions(filteredRhythms);
+    const rhythmKey=selectFromWeightedOptions(filteredRhythms);
     if (rhythmKey && rhythms[rhythmKey]) {
-      const { method: rhythmMethodKey, args: rhythmArgs } = rhythms[rhythmKey];
-      const rhythmMethod = checkMethod(rhythmMethodKey);
-      if (rhythmMethod) return rhythmMethod(...rhythmArgs(length, pattern));
+      const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
+      const rhythmMethod=checkMethod(rhythmMethodKey);
+      if (rhythmMethod) return rhythmMethod(...rhythmArgs(length,pattern));
     }
   }
   console.warn('unknown rhythm');
@@ -124,15 +124,15 @@ getRhythm = (level, length, pattern, method, ...args) => {
 };
 
 selectFromWeightedOptions=(options)=>{
-  const types = Object.keys(options);
-  const weights = types.map(type=>options[type].weights[0]);
-  const selectedIndex = rw(0, types.length - 1, weights);
+  const types=Object.keys(options);
+  const weights=types.map(type=>options[type].weights[0]);
+  const selectedIndex=rw(0,types.length - 1,weights);
   return types[selectedIndex];
 };
 
 randomInSetOrRange=(v)=>{
   if (Array.isArray(v)) {
-    return v[0]===v[1] ? v[0] : ri(v[0], v[1]);
+    return v[0]===v[1] ? v[0] : ri(v[0],v[1]);
   } else if (typeof v==='function') {  const result=v();
     return Array.isArray(result) ? randomInSetOrRange(result) : result; }
   return v;
