@@ -236,9 +236,9 @@ let globalStutterData = null;
 
       // Stutter-Shift: Uses Maps to store channel-unique stutter and octave shift values
       const stutters = new Map(); const shifts = new Map();
-      if (!stutterApplied && rf() < rv(.25,[.5,1],.3)) {
+      if (!stutterApplied && rf() < rv(.2,[.5,1],.3)) {
         // Calculate stutter once for all channels
-        const numStutters = m.round(rv(rv(ri(2,5),[2,5],.33),[2,5],.1));
+        const numStutters = m.round(rv(rv(ri(3,9),[2,5],.33),[2,5],.1));
         globalStutterData = {
           numStutters,
           stutterDuration: .25 * ri(1,6) * sustain / numStutters,
@@ -249,14 +249,13 @@ let globalStutterData = null;
         };
         stutterApplied = true; // Ensure this stutter is only calculated once
       }
-  
       if (globalStutterData) {
         const { numStutters, stutterDuration, minVelocity, maxVelocity, isFadeIn, stutterDecayFactor } = globalStutterData;
         for (let i = 0; i < numStutters; i++) {
           const currentTick = on + stutterDuration * i;
           let stutterNote = note;
-          if (rf() < .5) {
-            if (!shifts.has(sourceCH)) shifts.set(sourceCH, ri(-2,2)*12);
+          if (rf() < .25) {
+            if (!shifts.has(sourceCH)) shifts.set(sourceCH, ri(-3,3)*12);
             const octaveShift = shifts.get(sourceCH);
             stutterNote = circularClamp(note + octaveShift, OCTAVE.min * 12, OCTAVE.max * 12);
           }
@@ -273,6 +272,23 @@ let globalStutterData = null;
         }
         x.push({tick: on + sustain * rf(.5, 1.5), vals: [sourceCH, note]});
       }
+      if (rf()<rv(.1,[.5,1],.3)){
+        if (!stutters.has(sourceCH)) stutters.set(sourceCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
+        const numStutters = stutters.get(sourceCH);
+        const stutterDuration = .25 * ri(1,5) * sustain / numStutters;
+        for (let i=0;i<numStutters;i++) {
+          const currentTick=on+stutterDuration*i; let stutterNote=note;
+          if(rf()<.15){
+            if (!shifts.has(sourceCH)) shifts.set(sourceCH, ri(-3,3)*12);
+            const octaveShift = shifts.get(sourceCH);
+            stutterNote=circularClamp(note+octaveShift,OCTAVE.min*12,OCTAVE.max*12);
+          }
+          x.push({tick:currentTick-stutterDuration*rf(.15),vals:[sourceCH,stutterNote]});
+          x.push({tick:currentTick+stutterDuration*rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1?velocity*rf(.3,.7):binauralVelocity*rf(.45,.8)]});
+        }
+        x.push({tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
+      }
+
 
       reflectionCH = reflect[sourceCH]; 
       x.push({tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]},
