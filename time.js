@@ -1,11 +1,11 @@
 getMidiMeter=()=>{
   meterRatio=numerator / denominator;
   isPowerOf2=(n)=>{ return (n & (n - 1))===0; }
-  if (isPowerOf2(denominator)) { midiMeter=[numerator, denominator]; }
+  if (isPowerOf2(denominator)) { midiMeter=[numerator,denominator]; }
   else {
     const high=2 ** m.ceil(m.log2(denominator));  const highRatio=numerator / high;
     const low=2 ** m.floor(m.log2(denominator));  const lowRatio=numerator / low;
-    midiMeter=m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ? [numerator, high] : [numerator, low];
+    midiMeter=m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ? [numerator,high] : [numerator,low];
   }
   midiMeterRatio=midiMeter[0] / midiMeter[1];
   syncFactor=midiMeterRatio / meterRatio;
@@ -16,20 +16,20 @@ getMidiMeter=()=>{
   return;
 };
 
-getPolyrhythm = () => {  while (true) {
-  [polyNumerator, polyDenominator] = composer.getMeter(true,true);
-  polyMeterRatio = polyNumerator / polyDenominator;
-  let allMatches = []; let bestMatch = {
+getPolyrhythm=()=>{  while (true) {
+  [polyNumerator,polyDenominator]=composer.getMeter(true,true);
+  polyMeterRatio=polyNumerator / polyDenominator;
+  let allMatches=[]; let bestMatch={
     originalMeasures: Infinity,
     polyMeasures: Infinity,
     totalMeasures: Infinity,
     polyNumerator: polyNumerator,
     polyDenominator: polyDenominator
   };
-  for (let originalMeasures = 1; originalMeasures < 6; originalMeasures++) {
-    for (let polyMeasures = 1; polyMeasures < 6; polyMeasures++) {
+  for (let originalMeasures=1; originalMeasures < 6; originalMeasures++) {
+    for (let polyMeasures=1; polyMeasures < 6; polyMeasures++) {
       if (m.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
-        let currentMatch = {
+        let currentMatch={
           originalMeasures: originalMeasures,
           polyMeasures: polyMeasures,
           totalMeasures: originalMeasures + polyMeasures,
@@ -38,15 +38,15 @@ getPolyrhythm = () => {  while (true) {
         };
         allMatches.push(currentMatch);
         if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
-          bestMatch = currentMatch;
+          bestMatch=currentMatch;
         }
       }
     }
   }
   if (bestMatch.totalMeasures !== Infinity && (bestMatch.totalMeasures > 2 && (bestMatch.originalMeasures > 1 || bestMatch.polyMeasures > 1)) && (numerator !== polyNumerator || denominator !== polyDenominator)) {
-    measuresPerPhrase1 = bestMatch.originalMeasures;
-    measuresPerPhrase2 = bestMatch.polyMeasures;
-    ticksPerPhrase = ticksPerMeasure * measuresPerPhrase1;
+    measuresPerPhrase1=bestMatch.originalMeasures;
+    measuresPerPhrase2=bestMatch.polyMeasures;
+    ticksPerPhrase=ticksPerMeasure * measuresPerPhrase1;
     return;
   }
 }
@@ -104,7 +104,7 @@ logUnit=(type)=>{  let shouldLog=false;
     } else if (composer.mode && composer.mode.name) {
       composerDetails+=`${composer.root} ${composer.mode.name}`;
     }
-    actualMeter=[numerator, denominator];
+    actualMeter=[numerator,denominator];
     meterInfo=midiMeter[1]===actualMeter[1] ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}` : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
   } else if (type==='beat') {
     unit=beatIndex + 1;
@@ -167,10 +167,10 @@ setSubdivTiming=()=>{ ticksPerSubdiv=ticksPerDiv / m.max(1,subdivsPerDiv);
   subdivStartTime=divStartTime + subdivIndex * secondsPerSubdiv;
 };
 
-setMidiTiming=()=>{  p(c,  { tick:sectionStart, type:'bpm', vals:[midiBPM] },
-  { tick:sectionStart, type:'meter', vals:[midiMeter[0], midiMeter[1]] });  };
+setMidiTiming=()=>{  p(c, { tick:sectionStart,type:'bpm',vals:[midiBPM] },
+  { tick:sectionStart,type:'meter',vals:[midiMeter[0],midiMeter[1]] });  };
 
 formatTime=(seconds)=>{ 
-  const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7, '0');
+  const minutes=m.floor(seconds / 60); seconds=(seconds % 60).toFixed(4).padStart(7,'0');
   return `${minutes}:${seconds}`;
 };
