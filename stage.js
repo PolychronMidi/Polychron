@@ -41,7 +41,6 @@ drumMap = {
   'conga4': {note: 63, velocityRange: [66, 77]},
   'conga5': {note: 64, velocityRange: [66, 77]},
   
-
 };
 playDrums = (drumNames, beatOffsets = [0]) => {
   const drums = typeof drumNames === 'string' ? drumNames.split(',').map(d => d.trim()) : drumNames;
@@ -65,13 +64,13 @@ playDrums = (drumNames, beatOffsets = [0]) => {
     }
   });
 };
-drummer = (drumNames, beatOffsets, offsetJitter = .05, stutterChance = .4, stutterRange = [2, m.round(rv(3,[2,3],.3))], stutterDecayFactor = 1.0) => {
+
+drummer = (drumNames, beatOffsets, offsetJitter = .05, stutterChance = .4, stutterRange = [2, m.round(rv(11,[2,3],.3))], stutterDecayFactor = rf(.75,2)) => {
   if (drumNames === 'random') {
     const allDrums = Object.keys(drumMap);
     drumNames = [allDrums[Math.floor(Math.random() * allDrums.length)]];
     beatOffsets = [0];
   }
-
   const drums = Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d => d.trim());
   const offsets = Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
 
@@ -106,34 +105,31 @@ drummer = (drumNames, beatOffsets, offsetJitter = .05, stutterChance = .4, stutt
     }
   });
 
-  // Apply stutter or play normally
+  // Apply stutter
   combined.forEach(({ drum, offset }) => {
     const drumInfo = drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {
         const numStutters = ri(...stutterRange);
-        const stutterDuration = 1 / numStutters; // Assuming one beat for simplicity
+        const stutterDuration = .25* ri(1,8) / numStutters;
         const [minVelocity, maxVelocity] = drumInfo.velocityRange;
-        const isFadeIn = rf() < 0.7; // % chance for fade in
+        const isFadeIn = rf() < 0.7;
         
         for (let i = 0; i < numStutters; i++) {
           const currentTick = beatStart + (offset + i * stutterDuration) * ticksPerBeat;
           let currentVelocity;
           
           if (isFadeIn) {
-            // Fade in effect
-            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters - 1));
-            currentVelocity = Math.min(maxVelocity, maxVelocity * fadeInMultiplier);
+            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1));
+            currentVelocity = clamp(Math.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier),0,127);
           } else {
-            // Fade out effect
-            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters - 1)));
-            currentVelocity = Math.max(0, maxVelocity * fadeOutMultiplier);
+            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1)));
+            currentVelocity = clamp(Math.max(0, ri(33) + maxVelocity * fadeOutMultiplier),0,127);
           }
 
           p(c, {tick: currentTick, type: 'note_on_c', vals: [9, drumInfo.note, Math.floor(currentVelocity)]});
         }
-      } else {
-        // Play without stutter, using the full range
+      } else {// Play without stutter
         p(c, {tick: beatStart + offset * ticksPerBeat, type: 'note_on_c', vals: [9, drumInfo.note, ri(...drumInfo.velocityRange)]});
       }
     }
@@ -158,8 +154,8 @@ setBinaural=()=>{
     allNotesOff(beatStart);
     p(c, ...binauralL.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===leftCH1 || ch===leftCH3 || ch===leftCH5 ? (flipBinaural ? binauralMinus : binauralPlus) : (flipBinaural ? binauralPlus : binauralMinus)]})), 
     ...binauralR.map(ch=>({tick:beatStart, type:'pitch_bend_c', vals:[ch, ch===rightCH1 || ch===rightCH3 || ch===rightCH5 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})),
-    ...flipBinauralF2.map(ch=>({tick:beatStart-1, type:'control_c',vals:[ch, 120, flipBinaural ? 0 : 64]})),
-    ...flipBinauralT2.map(ch=>({tick:beatStart-1, type:'control_c',vals:[ch, 120, flipBinaural ? 64 : 0]})),  
+    ...flipBinauralF2.map(ch=>({tick:beatStart-1, type:'control_c',vals:[ch, 7, flipBinaural ? 0 : 127]})),
+    ...flipBinauralT2.map(ch=>({tick:beatStart-1, type:'control_c',vals:[ch, 7, flipBinaural ? 127 : 0]})),  
   );
 };
 
@@ -228,6 +224,8 @@ setNoteParams=()=>{
 
 playNotes=()=>{ setNoteParams(); crossModulateRhythms()
   if (crossModulation>rf(.85,.95)) {subdivsOff=0; subdivsOn++;
+    let stutterApplied = false;
+let globalStutterData = null;
   composer.getNotes().forEach(({ note })=>{  
     events = source.filter(sourceCH => 
       flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH)
@@ -238,22 +236,42 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
 
       // Stutter-Shift: Uses Maps to store channel-unique stutter and octave shift values
       const stutters = new Map(); const shifts = new Map();
-      // Source Channels Stutter-Shift
-      if (rf()<rv(.33,[.5,1],.3)){
-        if (!stutters.has(sourceCH)) stutters.set(sourceCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
-        const numStutters = stutters.get(sourceCH);
-        const stutterDuration = sustain/numStutters;
-        for (let i=0;i<numStutters;i++) {
-          const currentTick=on+stutterDuration*i; let stutterNote=note;
-          if(rf()<.5){
+      if (!stutterApplied && rf() < rv(.25,[.5,1],.3)) {
+        // Calculate stutter once for all channels
+        const numStutters = m.round(rv(rv(ri(2,5),[2,5],.33),[2,5],.1));
+        globalStutterData = {
+          numStutters,
+          stutterDuration: .25 * ri(1,6) * sustain / numStutters,
+          minVelocity: 11,
+          maxVelocity: 111,
+          isFadeIn: rf() < 0.5,
+          stutterDecayFactor: rf(.75, 1.5)
+        };
+        stutterApplied = true; // Ensure this stutter is only calculated once
+      }
+  
+      if (globalStutterData) {
+        const { numStutters, stutterDuration, minVelocity, maxVelocity, isFadeIn, stutterDecayFactor } = globalStutterData;
+        for (let i = 0; i < numStutters; i++) {
+          const currentTick = on + stutterDuration * i;
+          let stutterNote = note;
+          if (rf() < .5) {
             if (!shifts.has(sourceCH)) shifts.set(sourceCH, ri(-2,2)*12);
             const octaveShift = shifts.get(sourceCH);
-            stutterNote=circularClamp(note+octaveShift,OCTAVE.min,OCTAVE.max);
+            stutterNote = circularClamp(note + octaveShift, OCTAVE.min * 12, OCTAVE.max * 12);
           }
-          x.push({tick:currentTick-stutterDuration*rf(.15),vals:[sourceCH,stutterNote]});
-          x.push({tick:currentTick+stutterDuration*rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1?velocity*rf(.3,.7):binauralVelocity*rf(.45,.8)]});
+          let currentVelocity;
+          if (isFadeIn) {
+            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4,2.2) - 1));
+            currentVelocity = clamp(Math.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 127);
+          } else {
+            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4,2.2) - 1)));
+            currentVelocity = clamp(Math.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
+          }
+          x.push({tick: currentTick - stutterDuration * rf(.15), vals: [sourceCH, stutterNote]});
+          x.push({tick: currentTick + stutterDuration * rf(.15,.6), type: 'note_on_c', vals: [sourceCH, stutterNote, sourceCH === centerCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
         }
-        x.push({tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
+        x.push({tick: on + sustain * rf(.5, 1.5), vals: [sourceCH, note]});
       }
 
       reflectionCH = reflect[sourceCH]; 
@@ -263,13 +281,13 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
       if (rf()<.33){
         if (!stutters.has(reflectionCH)) stutters.set(reflectionCH, m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
         const numStutters = stutters.get(reflectionCH);
-        const stutterDuration = sustain/numStutters;
+        const stutterDuration = .25 * ri(1,8) * sustain / numStutters;
         for (let i=0;i<numStutters;i++) {
           const currentTick=on+stutterDuration*i; let stutterNote=note;
           if(rf()<.7){
-            if (!shifts.has(reflectionCH)) shifts.set(reflectionCH, ri(-2,2)*12);
+            if (!shifts.has(reflectionCH)) shifts.set(reflectionCH, ri(-3,3)*12);
             const octaveShift = shifts.get(reflectionCH);
-            stutterNote=circularClamp(note+octaveShift,OCTAVE.min,OCTAVE.max);
+            stutterNote=circularClamp(note+octaveShift,OCTAVE.min*12,OCTAVE.max*12);
           }
           x.push({tick:currentTick-stutterDuration*rf(.3),vals:[reflectionCH,stutterNote]});
           x.push({tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[reflectionCH,stutterNote,reflectionCH===centerCH2?velocity*rf(.25,.65):binauralVelocity*rf(.4,.75)]});
@@ -285,7 +303,7 @@ playNotes=()=>{ setNoteParams(); crossModulateRhythms()
         if (rf()<.7){
           if (!stutters.has(bassCH)) stutters.set(bassCH, m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
           const numStutters = stutters.get(bassCH);
-          const stutterDuration = sustain/numStutters;
+          const stutterDuration = .25 * ri(1,8) * sustain / numStutters;
           for (let i=0;i<numStutters;i++) {
             const currentTick=on+stutterDuration*i; let stutterNote=bassNote;
             if(rf()<.5){
