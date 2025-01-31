@@ -154,7 +154,7 @@ flipBinauralT=[centerCH1,centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,l
 flipBinauralT2=[leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
-allNotesOff=(tick=measureStart)=>{return p(c, ...[...source,...reflection].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
+allNotesOff=(tick=measureStart)=>{return p(c, ...[...source2,...reflection,...bass].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
 
 grandFinale=()=>{
   c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1, ${_.tick || 0}, ${_.type || 'note_off_c'}, ${_.vals.join(', ')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:", _); } }); (function finale(){composition+=`1, ${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS}, end_track`})(); fs.writeFileSync('output.csv', composition); console.log('output.csv created. Track Length:', finalTime);
