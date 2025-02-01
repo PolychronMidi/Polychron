@@ -15,7 +15,6 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();beatCount++;
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
-        stutterFade(stutterFadeCHs);
         if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
           drummer(['kick1','kick3'],[0,.5]);
           if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
@@ -32,6 +31,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
           drummer(['snare6'],[0]);
         }
         setOtherInstruments(); setBinaural(); setBalanceAndFX();
+        flipBinaural ? stutterFade(flipBinauralT3) : stutterFade(flipBinauralF3);
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
@@ -45,7 +45,6 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div');
-        stutterFade(stutterFadeCHs);
         if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
           drummer(['kick2','kick5','kick7'],[0,.5,.25]);
           if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
