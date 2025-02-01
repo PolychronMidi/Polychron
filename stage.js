@@ -140,9 +140,9 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   ...binauralR.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===rightCH1 || ch===rightCH3 || ch===rightCH5 ? (flipBinaural ? binauralPlus : binauralMinus) : (flipBinaural ? binauralMinus : binauralPlus)]})),
   );
   // flipBinaural volume transition
-  const startTick = beatStart - 1; const endTick = beatStart + ticksPerSecond/2;
+  const startTick = beatStart - ticksPerSecond/4; const endTick = beatStart + ticksPerSecond/4;
   const steps = 10; const tickIncrement = (endTick - startTick) / steps;
-  for (let i = 0; i <= steps; i++) {
+  for (let i = steps/2-1; i <= steps; i++) {
     const currentTick = startTick + (tickIncrement * i);
     const currentVolumeF2 = flipBinaural ? Math.floor(127 * (1 - (i / steps))) : Math.floor(127 * (i / steps));
     const currentVolumeT2 = flipBinaural ? Math.floor(127 * (i / steps)) : Math.floor(127 * (1 - (i / steps)));
@@ -154,6 +154,24 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
     });
   }
 }
+};
+
+stutterFade = (stutterFadeCHs, numberOfStutters = ri(30,50), stutterDuration = ticksPerSecond*rf(.02,.2)) => {
+  const channelToStutter = stutterFadeCHs[Math.floor(Math.random() * stutterFadeCHs.length)];
+  const isFadeIn = Math.random() < 0.5;
+  let currentTick;
+  for (let i = m.floor(numberOfStutters*(2/3)); i < numberOfStutters; i++) {
+    currentTick = beatStart + (i * (stutterDuration * rf(.5,2.5)));
+    let volume;
+    if (isFadeIn) {
+      volume = circularClamp(Math.floor(127 * (i / (numberOfStutters - 1))),64,111);
+    } else {
+      volume = circularClamp(Math.floor(127 * (1 - (i / (numberOfStutters - 1)))),64,96);
+    }
+    p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume/ri(2,5))]});
+    p(c, {tick: currentTick + stutterDuration, type: 'control_c', vals: [channelToStutter, 7, volume]});
+  }
+  p(c, {tick: currentTick + stutterDuration*3, type: 'control_c', vals: [channelToStutter, 7, 127]});
 };
 
 setBalanceAndFX=()=>{

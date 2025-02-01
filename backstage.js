@@ -152,6 +152,7 @@ binauralR=[rightCH1,rightCH2,rightCH3,rightCH4,rightCH5,rightCH6];
 flipBinauralF=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
 flipBinauralT=[centerCH1,centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];flipBinauralF2=[leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
 flipBinauralT2=[leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
+stutterFadeCHs=[centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c,...[...source2,...reflection,...bass].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
