@@ -24,10 +24,10 @@ class MeasureComposer {
     while (true) { let newNumerator; let newDenominator; let polyMeter;
       if (polyMeter===true) {
         newNumerator=ri(3,14);
-        newDenominator=metaClamp(newNumerator + ri(-6,6),newNumerator,0.5,2,3,14);
+        newDenominator=scaleBoundClamp(newNumerator + ri(-6,6),newNumerator,0.5,2,3,14);
       } else {
       newNumerator=ri(2,9);
-      newDenominator=metaClamp(newNumerator + ri(-3,3),newNumerator,0.8,1.2);
+      newDenominator=scaleBoundClamp(newNumerator + ri(-3,3),newNumerator,0.8,1.2);
       }
       let newMeterRatio=newNumerator * (newNumerator / newDenominator) / 4;
       if (ignoreRatioCheck || (newMeterRatio >= 0.3 && newMeterRatio <= 3)) {

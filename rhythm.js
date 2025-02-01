@@ -1,3 +1,105 @@
+drumMap={
+  'snare1': {note: 31,velocityRange: [99,111]},
+  'snare2': {note: 33,velocityRange: [99,111]},
+  'snare3': {note: 124,velocityRange: [77,88]},
+  'snare4': {note: 125,velocityRange: [77,88]},
+  'snare5': {note: 75,velocityRange: [77,88]},
+  'snare6': {note: 85,velocityRange: [77,88]},
+  'snare7': {note: 118,velocityRange: [66,77]},
+  'snare8': {note: 41,velocityRange: [66,77]},
+
+  'kick1': {note: 12,velocityRange: [111,127]},
+  'kick2': {note: 14,velocityRange: [111,127]},
+  'kick3': {note: 0,velocityRange: [99,111]},
+  'kick4': {note: 2,velocityRange: [99,111]},
+  'kick5': {note: 4,velocityRange: [88,99]},
+  'kick6': {note: 5,velocityRange: [88,99]},
+  'kick7': {note: 6,velocityRange: [88,99]},
+
+  'cymbal1': {note: 59,velocityRange: [66,77]},
+  'cymbal2': {note: 53,velocityRange: [66,77]},
+  'cymbal3': {note: 80,velocityRange: [66,77]},
+  'cymbal4': {note: 81,velocityRange: [66,77]},
+
+  'conga1': {note: 60,velocityRange: [66,77]},
+  'conga2': {note: 61,velocityRange: [66,77]},
+  'conga3': {note: 62,velocityRange: [66,77]},
+  'conga4': {note: 63,velocityRange: [66,77]},
+  'conga5': {note: 64,velocityRange: [66,77]},
+};
+playDrums=(drumNames,beatOffsets=[0])=>{
+  const drums=typeof drumNames==='string' ? drumNames.split(',').map(d=>d.trim()) : drumNames;
+  const offsets=Array.isArray(beatOffsets) ? beatOffsets : new Array(drums.length).fill(0);
+  if (offsets.length < drums.length) {
+    offsets.push(...new Array(drums.length - offsets.length).fill(0));
+  }
+  drums.forEach((drumName,index)=>{ const drum=drumMap[drumName];
+    if (drum) {
+      let tickOffset=typeof offsets[index]==='number' ? offsets[index] * ticksPerBeat : offsets[index];
+      p(c,{tick:beatStart+tickOffset,type:'note_on_c',vals:[drumCH,drum.note,ri(...drum.velocityRange)]});
+    } else { console.warn(`Drum type "${drumName}" not recognized.`); }
+  });
+};
+
+drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
+  if (drumNames==='random') {
+    const allDrums=Object.keys(drumMap);
+    drumNames=[allDrums[m.floor(m.random() * allDrums.length)]];
+    beatOffsets=[0];
+  }
+  const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
+  const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
+  if (offsets.length < drums.length) { // Adjust offsets if needed
+    offsets.push(...new Array(drums.length - offsets.length).fill(0));
+  } else if (offsets.length > drums.length) {
+    offsets.length=drums.length;
+  }
+  const combined=drums.map((drum,index)=>({ drum,offset: offsets[index] }));
+  if (rf() < .7) { // Reverse or randomize the order of drums and offsets
+    if (rf() < .5) {
+      combined.reverse();
+    }
+  } else {
+    for (let i=combined.length - 1; i > 0; i--) {
+      const j=m.floor(m.random() * (i + 1));
+      [combined[i],combined[j]]=[combined[j],combined[i]];
+    }
+  }
+  const adjustedOffsets=combined.map(({ offset })=>{ // Adjust offsets with jitter
+    if (rf() < .3) {
+      return offset;
+    } else {
+      let adjusted=offset + (m.random() < 0.5 ? -offsetJitter*rf(.5,1) : offsetJitter*rf(.5,1));
+      return adjusted - m.floor(adjusted);
+    }
+  });
+  combined.forEach(({ drum,offset })=>{ // Apply stutter
+    const drumInfo=drumMap[drum];
+    if (drumInfo) {
+      if (rf() < stutterChance) {
+        const numStutters=ri(...stutterRange);
+        const stutterDuration=.25* ri(1,8) / numStutters;
+        const [minVelocity,maxVelocity]=drumInfo.velocityRange;
+        const isFadeIn=rf() < 0.7;
+        for (let i=0; i < numStutters; i++) {
+          const currentTick=beatStart + (offset + i * stutterDuration) * ticksPerBeat;
+          let currentVelocity;
+          if (isFadeIn) {
+            const fadeInMultiplier=stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1));
+            currentVelocity=clamp(m.min(maxVelocity,ri(33) + maxVelocity * fadeInMultiplier),0,127);
+          } else {
+            const fadeOutMultiplier=1 - (stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1)));
+            currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,127);
+          }
+          p(c,{tick: currentTick,type: 'note_on_c',vals: [drumCH,drumInfo.note,m.floor(currentVelocity)]});
+        }
+      } else { // Play without stutter
+        p(c,{tick: beatStart + offset * ticksPerBeat,type: 'note_on_c',vals: [drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
+      }
+    }
+  });
+};
+
 rhythms={//weights: [beat,div,subdiv]
   'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
   'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
@@ -121,21 +223,6 @@ getRhythm=(level,length,pattern,method,...args)=>{
   }
   console.warn('unknown rhythm');
   return null;
-};
-
-selectFromWeightedOptions=(options)=>{
-  const types=Object.keys(options);
-  const weights=types.map(type=>options[type].weights[0]);
-  const selectedIndex=rw(0,types.length - 1,weights);
-  return types[selectedIndex];
-};
-
-randomInSetOrRange=(v)=>{
-  if (Array.isArray(v)) {
-    return v[0]===v[1] ? v[0] : ri(v[0],v[1]);
-  } else if (typeof v==='function') {  const result=v();
-    return Array.isArray(result) ? randomInSetOrRange(result) : result; }
-  return v;
 };
 
 trackBeatRhythm=()=>{if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };

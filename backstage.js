@@ -1,6 +1,18 @@
 p=pushMultiple=(array,...items)=>{  array.push(...items);  };  
 c=csvRows=[];
 m=Math;
+
+clamp=(value,min,max)=>m.min(m.max(value,min),max);
+circularClamp=(value,min,max)=>{
+  const range=max - min + 1;
+  return ((value - min) % range + range) % range + min;
+};
+scaleBoundClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
+  const lowerBound=m.max(minBound,m.floor(base * lowerScale));
+  const upperBound=m.min(maxBound,m.ceil(base * upperScale));
+  return clamp(value,lowerBound,upperBound);
+};
+
 // Random float(decimal) inclusive of min(s) & max(s). If only one number given,max=number & min=0.
 rf=randomFloat=(min1=1,max1,min2,max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
@@ -14,18 +26,7 @@ rf=randomFloat=(min1=1,max1,min2,max2)=>{
   } else { return m.random()*(max1-min1+Number.EPSILON)+min1; }
 };
 
-clamp=(value,min,max)=>m.min(m.max(value,min),max);
-circularClamp=(value,min,max)=>{
-  const range=max - min + 1;
-  return ((value - min) % range + range) % range + min;
-};
-metaClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
-  const lowerBound=m.max(minBound,m.floor(base * lowerScale));
-  const upperBound=m.min(maxBound,m.ceil(base * upperScale));
-  return clamp(value,lowerBound,upperBound);
-};
-
-// Random integer(whole number) inclusive of min(s) & max(s). If only one number given,max=number & min=0. Although result is rounded,providing decimals in the range allows for more precision.
+// Random integer(whole number) inclusive of min(s) & max(s). If only one number given,max=number & min=0. Although result is rounded, providing decimals in the range allows for more precision.
 ri=randomInt=(min1=1,max1,min2,max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1,max1]=[m.min(min1,max1),m.max(min1,max1)];
@@ -43,7 +44,7 @@ ri=randomInt=(min1=1,max1,min2,max2)=>{
   }
 };
 
-// Random limited increment: random value from inclusive range,with limited change per iteration.
+// Random limited increment: random value from inclusive range, with limited change per iteration.
 rl=randomLimitedIncrement=(currentValue,minChange,maxChange,minValue,maxValue,type='i')=>{
   const adjustedMinChange=m.min(minChange,maxChange);
   const adjustedMaxChange=m.max(minChange,maxChange);
@@ -126,9 +127,24 @@ rw=randomWeightedSelection=(min,max,weights)=>{
   return max;
 }
 
+selectFromWeightedOptions=(options)=>{
+  const types=Object.keys(options);
+  const weights=types.map(type=>options[type].weights[0]);
+  const selectedIndex=rw(0,types.length - 1,weights);
+  return types[selectedIndex];
+};
+
+randomInSetOrRange=(v)=>{
+  if (Array.isArray(v)) {
+    return v[0]===v[1] ? v[0] : ri(v[0],v[1]);
+  } else if (typeof v==='function') {  const result=v();
+    return Array.isArray(result) ? randomInSetOrRange(result) : result; }
+  return v;
+};
+
 flipBinaural=false;
 velocity=99;
-measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=side=0;
+measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=0;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
