@@ -15,6 +15,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();beatCount++;
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
+        stutterFade(stutterFadeCHs);
         if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
           drummer(['kick1','kick3'],[0,.5]);
           if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
@@ -43,7 +44,8 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
     for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) {
       setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {  trackBeatRhythm();
-        setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
+        setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div');
+        stutterFade(stutterFadeCHs);
         if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
           drummer(['kick2','kick5','kick7'],[0,.5,.25]);
           if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
