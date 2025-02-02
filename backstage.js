@@ -3,9 +3,21 @@ c=csvRows=[];
 m=Math;
 
 clamp=(value,min,max)=>m.min(m.max(value,min),max);
-circularClamp=(value,min,max)=>{
+modClamp=(value,min,max)=>{ // Modulo-based clamp: value wraps around within range.
   const range=max - min + 1;
   return ((value - min) % range + range) % range + min;
+};
+lowModClamp=(value,min,max)=>{ // Regular clamp at high end, mod clamp at low end.
+  if (value >= max) { return max;
+  } else if (value < min) { return modClamp(value, min, max);
+  } else { return value;
+  }
+};
+highModClamp=(value,min,max)=>{ // Regular clamp at low end, mod clamp at high end.
+  if (value <= min) { return min;
+  } else if (value > max) { return modClamp(value, min, max);
+  } else { return value;
+  }
 };
 scaleBoundClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
   const lowerBound=m.max(minBound,m.floor(base * lowerScale));
@@ -13,7 +25,7 @@ scaleBoundClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
   return clamp(value,lowerBound,upperBound);
 };
 
-// Random float(decimal) inclusive of min(s) & max(s). If only one number given,max=number & min=0.
+// Random float(decimal) inclusive of min(s) & max(s). If only 1 number given, max=number & min=0.
 rf=randomFloat=(min1=1,max1,min2,max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1,max1]=[m.min(min1,max1),m.max(min1,max1)];
@@ -26,7 +38,7 @@ rf=randomFloat=(min1=1,max1,min2,max2)=>{
   } else { return m.random()*(max1-min1+Number.EPSILON)+min1; }
 };
 
-// Random integer(whole number) inclusive of min(s) & max(s). If only one number given,max=number & min=0. Although result is rounded, providing decimals in the range allows for more precision.
+// Random integer(whole number) inclusive of min(s) & max(s). If only 1 number given, max=number & min=0. Although result is rounded, providing decimals in the range allows for more precision.
 ri=randomInt=(min1=1,max1,min2,max2)=>{
   if (max1===undefined) { max1=min1; min1=0; }
   [min1,max1]=[m.min(min1,max1),m.max(min1,max1)];
@@ -81,7 +93,7 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
   return {..._,vals: [ch,effectNum,midiEffect.getValue()]};
 };
 
-// Random variation within range(s) at frequency: give one range or a separate boost & deboost range.
+// Random variation within range(s) at frequency: give 1 range or a separate boost & deboost range.
 rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
@@ -171,11 +183,13 @@ flipBinauralT2=[leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
 flipBinauralF3=[centerCH2,centerCH3,leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
 flipBinauralT3=[centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
 stutterFadeCHs=[centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6];
+allCHs=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6,drumCH];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
-allNotesOff=(tick=measureStart)=>{return p(c,...[...source2,...reflection,...bass].map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
+allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
+muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
-grandFinale=()=>{
+grandFinale=()=>{ allNotesOff(sectionStart+PPQ);muteAll(sectionStart+PPQ*2);
   c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1,${_.tick || 0},${_.type || 'note_off_c'},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
 };
 
