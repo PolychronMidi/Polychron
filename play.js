@@ -1,4 +1,4 @@
-// Clean minimal code style with focus on direct & clear naming & structure,instead of distracting comments,excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity. https://github.com/PolychronMidi/Polychron
+// Clean minimal code style with focus on direct & clear naming & structure, instead of distracting comments, excessive line breaks & empty lines. Global scope used where possible for cleaner simplicity. https://github.com/PolychronMidi/Polychron
 require('./stage');
 setTuningAndInstruments();
 totalSections=ri(SECTIONS.min,SECTIONS.max);  
