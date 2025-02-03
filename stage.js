@@ -50,7 +50,7 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
 };
 
 let lastUsedChannels=new Set();
-stutterFade=(stutterFadeCHs, numberOfStutters=ri(10,20), stutterDuration=ticksPerSecond*numberOfStutters/rf(600,900)) => {
+stutterFade=(stutterFadeCHs,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*rf(.2,1.5))=>{
   const channelsToStutter=new Set();
   const CHsToStutter=ri(1,5);
   const availableChannels=stutterFadeCHs.filter(ch => !lastUsedChannels.has(ch));
@@ -66,7 +66,7 @@ stutterFade=(stutterFadeCHs, numberOfStutters=ri(10,20), stutterDuration=ticksPe
   channelsArray.forEach(channelToStutter => { const maxVol=ri(90,120);
     const isFadeIn=rf() < 0.5; let currentTick,volume;
     for (let i=m.floor(numberOfStutters*(rf(1/3,2/3))); i < numberOfStutters; i++) {
-      currentTick=beatStart + (i * (stutterDuration * rf(.5,2.5)));
+      currentTick=beatStart + i * (stutterDuration/numberOfStutters) * rf(.9,1.1);
       if (isFadeIn) {
         volume=modClamp(m.floor(maxVol * (i / (numberOfStutters - 1))),25,maxVol);
       } else {
@@ -97,26 +97,50 @@ return [
     ...source2.map(ch=>rlFX(ch,5,125,127,(c)=>c===centerCH1,126,127)),
     ...source2.map(ch=>rlFX(ch,11,64,127,(c)=>c===centerCH1||c===drumCH,115,127)),
     ...source2.map(ch=>rlFX(ch,65,45,64,(c)=>c===centerCH1,35,64)),
-    ...source2.map(ch=>rlFX(ch,69,63,64)),
     ...source2.map(ch=>rlFX(ch,67,63,64)),
+    ...source2.map(ch=>rlFX(ch,68,63,64)),
+    ...source2.map(ch=>rlFX(ch,69,63,64)),
+    ...source2.map(ch=>rlFX(ch,70,0,127)),
+    ...source2.map(ch=>rlFX(ch,71,0,127)),
+    ...source2.map(ch=>rlFX(ch,72,64,127)),
+    ...source2.map(ch=>rlFX(ch,73,0,64)),
+    ...source2.map(ch=>rlFX(ch,74,80,127)),
     ...source2.map(ch=>rlFX(ch,91,0,33)),
+    ...source2.map(ch=>rlFX(ch,92,0,33)),
     ...source2.map(ch=>rlFX(ch,93,0,33)),
+    ...source2.map(ch=>rlFX(ch,95,0,33)),
     ...reflection.map(ch=>rlFX(ch,1,0,90,(c)=>c===centerCH2,0,15)),
     ...reflection.map(ch=>rlFX(ch,5,125,127,(c)=>c===centerCH2,126,127)),
     ...reflection.map(ch=>rlFX(ch,11,77,111,(c)=>c===centerCH2,66,99)),
     ...reflection.map(ch=>rlFX(ch,65,45,64,(c)=>c===centerCH2,35,64)),
-    ...reflection.map(ch=>rlFX(ch,69,63,64)),
     ...reflection.map(ch=>rlFX(ch,67,63,64)),
+    ...reflection.map(ch=>rlFX(ch,68,63,64)),
+    ...reflection.map(ch=>rlFX(ch,69,63,64)),
+    ...reflection.map(ch=>rlFX(ch,70,0,127)),
+    ...reflection.map(ch=>rlFX(ch,71,0,127)),
+    ...reflection.map(ch=>rlFX(ch,72,64,127)),
+    ...reflection.map(ch=>rlFX(ch,73,0,64)),
+    ...reflection.map(ch=>rlFX(ch,74,80,127)),
     ...reflection.map(ch=>rlFX(ch,91,0,77,(c)=>c===centerCH2,0,32)),
+    ...reflection.map(ch=>rlFX(ch,92,0,77,(c)=>c===centerCH2,0,32)),
     ...reflection.map(ch=>rlFX(ch,93,0,77,(c)=>c===centerCH2,0,32)),
+    ...reflection.map(ch=>rlFX(ch,95,0,77,(c)=>c===centerCH2,0,32)),
     ...bass.map(ch=>rlFX(ch,1,0,60,(c)=>c===centerCH3,0,10)),
     ...bass.map(ch=>rlFX(ch,5,125,127,(c)=>c===centerCH3,126,127)),
     ...bass.map(ch=>rlFX(ch,11,88,127,(c)=>c===centerCH3,115,127)),
     ...bass.map(ch=>rlFX(ch,65,45,64,(c)=>c===centerCH3,35,64)),
-    ...bass.map(ch=>rlFX(ch,69,63,64)),
     ...bass.map(ch=>rlFX(ch,67,63,64)),
+    ...bass.map(ch=>rlFX(ch,68,63,64)),
+    ...bass.map(ch=>rlFX(ch,69,63,64)),
+    ...bass.map(ch=>rlFX(ch,70,0,127)),
+    ...bass.map(ch=>rlFX(ch,71,0,127)),
+    ...bass.map(ch=>rlFX(ch,72,64,127)),
+    ...bass.map(ch=>rlFX(ch,73,0,64)),
+    ...bass.map(ch=>rlFX(ch,74,80,127)),
     ...bass.map(ch=>rlFX(ch,91,0,99,(c)=>c===centerCH3,0,64)),
+    ...bass.map(ch=>rlFX(ch,92,0,99,(c)=>c===centerCH3,0,64)),
     ...bass.map(ch=>rlFX(ch,93,0,99,(c)=>c===centerCH3,0,64)),
+    ...bass.map(ch=>rlFX(ch,95,0,99,(c)=>c===centerCH3,0,64)),
   ];  })  );  }
 }
 
