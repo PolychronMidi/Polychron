@@ -161,7 +161,7 @@ setRhythm=(level)=>{
 makeOnsets=(length,valuesOrRange)=>{
   let onsets=[];  let total=0;
   while (total < length) {
-    let v=randomInSetOrRange(valuesOrRange);
+    let v=randomInRangeOrArray(valuesOrRange);
     if (total + (v+1) <= length) {  onsets.push(v);  total+=v+1;
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
       v=valuesOrRange[0];
@@ -214,7 +214,7 @@ getRhythm=(level,length,pattern,method,...args)=>{
     const filteredRhythms=Object.fromEntries(
       Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
     );
-    const rhythmKey=selectFromWeightedOptions(filteredRhythms);
+    const rhythmKey=randomWeightedSelection(filteredRhythms);
     if (rhythmKey && rhythms[rhythmKey]) {
       const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
       const rhythmMethod=checkMethod(rhythmMethodKey);
