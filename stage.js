@@ -10,7 +10,6 @@ setTuningAndInstruments=()=>{
   p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
     type,vals:[ch,...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[centerCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
-
   p(c, {type: 'control_c', vals: [drumCH, 7, 127]});
 };
 
@@ -50,10 +49,10 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
 };
 
 let lastUsedChannels=new Set();
-stutterFade=(stutterFadeCHs,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*rf(.2,1.5))=>{
+stutterFade=(channels,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*rf(.2,1.5))=>{
   const channelsToStutter=new Set();
   const CHsToStutter=ri(1,5);
-  const availableChannels=stutterFadeCHs.filter(ch => !lastUsedChannels.has(ch));
+  const availableChannels=channels.filter(ch => !lastUsedChannels.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableChannels.length > 0) {
     const ch=availableChannels[Math.floor(Math.random() * availableChannels.length)];
     channelsToStutter.add(ch);
@@ -79,6 +78,40 @@ stutterFade=(stutterFadeCHs,numberOfStutters=ri(10,20),stutterDuration=ticksPerS
   });
 };
 
+let lastUsedChannels2 = new Set();
+stutterPan = (channels, numberOfStutters = ri(30,60), stutterDuration = ticksPerSecond*rf(.1,1)) => {
+  const channelsToStutter = new Set();
+  const CHsToStutter = ri(1,2);
+  const availableChannels = channels.filter(ch => !lastUsedChannels2.has(ch));
+  while (channelsToStutter.size < CHsToStutter && availableChannels.length > 0) {
+    const ch = availableChannels[Math.floor(Math.random() * availableChannels.length)];
+    channelsToStutter.add(ch);
+    availableChannels.splice(availableChannels.indexOf(ch), 1);
+  }
+  if (channelsToStutter.size < CHsToStutter) {lastUsedChannels2.clear();
+  } else {lastUsedChannels2 = new Set(channelsToStutter);
+  }
+  const channelsArray = Array.from(channelsToStutter);
+  channelsArray.forEach(channelToStutter => { 
+    const edgeMargin = ri(7,25);
+    const maxPan = 127-edgeMargin;
+    const minPan = edgeMargin;
+    const isFadeIn = rf() < 0.5; 
+    let currentTick, pan;
+    for (let i = m.floor(numberOfStutters*(rf(1/3))); i < numberOfStutters; i++) {
+      currentTick = beatStart + i * (stutterDuration/numberOfStutters) * rf(.7,1.3);
+      if (isFadeIn) {
+        pan = modClamp(m.floor(maxPan * (i / (numberOfStutters - 1))),edgeMargin,maxPan);
+      } else {
+        pan = modClamp(m.floor(maxPan * (1 - (i / (numberOfStutters - 1)))),edgeMargin,maxPan);
+      }
+      p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, 10, modClamp(pan+ri(32,96),0,127)]});
+      p(c, {tick: currentTick + stutterDuration*rf(.8,1.2), type: 'control_c', vals: [channelToStutter, 10, pan]});
+    }
+    p(c, {tick: currentTick + stutterDuration*rf(), type: 'control_c', vals: [channelToStutter, 10, ri(58,70)]});
+  });
+};
+
 setBalanceAndFX=()=>{
 if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   balanceOffset=rl(balanceOffset,-4,4,0,45);
@@ -91,7 +124,7 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<
   p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart,type:'control_c' };
 return [
     ...source2.map(ch=>({..._,vals:[ch,10,ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : ch===drumCH ? centerBalance3+m.round((rf(-.5,.5)*bassVariation)) : centerBalance]})),
-    ...reflection.map(ch=>({..._,vals:[ch,10,ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+reflectionVariation : rightBalance-reflectionVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-reflectionVariation : leftBalance+reflectionVariation) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
+    ...reflection.map(ch=>({..._,vals:[ch,10,ch.toString().startsWith('leftCH') ? (flipBinaural ? (rf()<.1 ? leftBalance+reflectionVariation*2 : leftBalance+reflectionVariation) : (rf()<.1 ? rightBalance-reflectionVariation*2 : rightBalance-reflectionVariation)) : ch.toString().startsWith('rightCH') ? (flipBinaural ? (rf()<.1 ? rightBalance-reflectionVariation*2 : rightBalance-reflectionVariation) : (rf()<.1 ? leftBalance+reflectionVariation*2 : leftBalance+reflectionVariation)) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),
     ...bass.map(ch=>({..._,vals:[ch,10,ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance+bassVariation : rightBalance-bassVariation) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance-bassVariation : leftBalance+bassVariation) : centerBalance3+m.round((rf(-.5,.5)*bassVariation)) ]})),
     ...source2.map(ch=>rlFX(ch,1,0,60,(c)=>c===centerCH1,0,10)),
     ...source2.map(ch=>rlFX(ch,5,125,127,(c)=>c===centerCH1,126,127)),
@@ -166,7 +199,7 @@ setNoteParams=()=>{
   binauralVelocity=rv(velocity * rf(.35,.5));
 }
 
-playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rf(.85,.95)){ 
+playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rf(.88,.92)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -252,7 +285,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
 
   if (rf()<clamp(.45*bpmRatio3,.2,.7)) {
     bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,35);
-    p(c,{tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(.95,1.15) : binauralVelocity*rf(1.75,2.25)]});
+    p(c,{tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(1.1,1.3) : binauralVelocity*rf(1.8,2.4)]});
     p(c,{tick:on+sustain*(bassCH===centerCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     if (rf()<.7){ // Bass Channels Stutter-Shift
       if (!stutters.has(bassCH)) stutters.set(bassCH,m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
@@ -266,7 +299,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
           stutterNote=modClamp(bassNote+octaveShift,0,59);
         }
         p(c,{tick:currentTick-stutterDuration*rf(.3),vals:[bassCH,stutterNote]});
-        p(c,{tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[bassCH,stutterNote,bassCH===centerCH3?velocity*rf(.45,.75):binauralVelocity*rf(.55,.85)]});
+        p(c,{tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[bassCH,stutterNote,bassCH===centerCH3?velocity*rf(.55,.85):binauralVelocity*rf(.75,1.05)]});
       }
       p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,note]});
     }
