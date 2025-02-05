@@ -32,6 +32,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
         }
         setOtherInstruments(); setBinaural(); setBalanceAndFX();
         stutterFade(flipBinaural ? flipBinauralT3 : flipBinauralF3);
+        rf()<.05 ? stutterPan(flipBinaural ? flipBinauralT3 : flipBinauralF3) : stutterPan(stutterPanCHs);
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
