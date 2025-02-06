@@ -187,12 +187,17 @@ randomWeightedSelection = (options) => {
   return types[selectedIndex];
 };
 
-randomInRangeOrArray=(v)=>{
-  if (Array.isArray(v)) {
-    return v[0]===v[1] ? v[0] : ri(v[0],v[1]);
-  } else if (typeof v==='function') {  const result=v();
-    return Array.isArray(result) ? randomInRangeOrArray(result) : result; }
-  return v;
+randomInRangeOrArray = (v) => {
+  if (typeof v === 'function') {
+    const result = v();
+    if (Array.isArray(result) && result.length === 2 && typeof result[0] === 'number' && typeof result[1] === 'number') {
+      return ri(result[0], result[1]); // Treat function result as range if it's an array of two numbers
+    }
+    return Array.isArray(result) ? randomInRangeOrArray(result) : result; // Handle nested arrays or direct return
+  } else if (Array.isArray(v)) {
+    return v[ri(0, v.length - 1)]; // Return a random element from the array
+  }
+  return v; // Return the value if it's neither a function nor an array
 };
 
 velocity=99; flipBinaural=false;
@@ -225,6 +230,7 @@ flipBinauralT3=[centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,ri
 stutterFadeCHs=[centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6];
 allCHs=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6,drumCH];
 stutterPanCHs=[centerCH1,centerCH2,centerCH3,drumCH];
+FX=[1,5,11,65,67,68,69,70,71,72,73,74,91,92,93,95];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}

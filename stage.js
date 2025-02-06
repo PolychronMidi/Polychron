@@ -112,6 +112,41 @@ stutterPan = (channels, numberOfStutters = ri(30,60), stutterDuration = ticksPer
   });
 };
 
+let lastUsedChannels3 = new Set();
+stutterFX = (channels, numberOfStutters = ri(30,70), stutterDuration = ticksPerSecond*rf(.1,2)) => {
+  const channelsToStutter = new Set();
+  const CHsToStutter = ri(1,3);
+  const availableChannels = channels.filter(ch => !lastUsedChannels3.has(ch));
+  while (channelsToStutter.size < CHsToStutter && availableChannels.length > 0) {
+    const ch = availableChannels[Math.floor(Math.random() * availableChannels.length)];
+    channelsToStutter.add(ch);
+    availableChannels.splice(availableChannels.indexOf(ch), 1);
+  }
+  if (channelsToStutter.size < CHsToStutter) {lastUsedChannels3.clear();
+  } else {lastUsedChannels3 = new Set(channelsToStutter);
+  }
+  const channelsArray = Array.from(channelsToStutter);
+  channelsArray.forEach(channelToStutter => { 
+    const FXToStutter=randomInRangeOrArray(FX);
+    const edgeMargin = ri(7,25);
+    const maxPan = 127-edgeMargin;
+    const minPan = edgeMargin;
+    const isFadeIn = rf() < 0.5; 
+    let currentTick, pan;
+    for (let i = m.floor(numberOfStutters*(rf(1/3))); i < numberOfStutters; i++) {
+      currentTick = beatStart + i * (stutterDuration/numberOfStutters) * rf(.7,1.3);
+      if (isFadeIn) {
+        pan = modClamp(m.floor(maxPan * (i / (numberOfStutters - 1))),edgeMargin,maxPan);
+      } else {
+        pan = modClamp(m.floor(maxPan * (1 - (i / (numberOfStutters - 1)))),edgeMargin,maxPan);
+      }
+      p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, FXToStutter, modClamp(pan+ri(32,96),0,127)]});
+      p(c, {tick: currentTick + stutterDuration*rf(.8,1.2), type: 'control_c', vals: [channelToStutter, FXToStutter, pan]});
+    }
+    p(c, {tick: currentTick + stutterDuration*rf(), type: 'control_c', vals: [channelToStutter, FXToStutter, ri(58,70)]});
+  });
+};
+
 setBalanceAndFX=()=>{
 if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
   balanceOffset=rl(balanceOffset,-4,4,0,45);
@@ -121,7 +156,7 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<
   centerBalance=m.min(96,(m.max(32,64 + m.round(rv(balanceOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
   reflectionVariation=ri(1,10); centerBalance2=rf()<.5?centerBalance+m.round(reflectionVariation*.5) : centerBalance+m.round(reflectionVariation*-.5);
   bassVariation=reflectionVariation*rf(-2,2); centerBalance3=rf()<.5?centerBalance2+m.round(bassVariation*.5) : centerBalance2+m.round(bassVariation*-.5);
-  p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart,type:'control_c' };
+  p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart-1,type:'control_c' };
 return [
     ...source2.map(ch=>({..._,vals:[ch,10,ch.toString().startsWith('leftCH') ? (flipBinaural ? leftBalance : rightBalance) : ch.toString().startsWith('rightCH') ? (flipBinaural ? rightBalance : leftBalance) : ch===drumCH ? centerBalance3+m.round((rf(-.5,.5)*bassVariation)) : centerBalance]})),
     ...reflection.map(ch=>({..._,vals:[ch,10,ch.toString().startsWith('leftCH') ? (flipBinaural ? (rf()<.1 ? leftBalance+reflectionVariation*2 : leftBalance+reflectionVariation) : (rf()<.1 ? rightBalance-reflectionVariation*2 : rightBalance-reflectionVariation)) : ch.toString().startsWith('rightCH') ? (flipBinaural ? (rf()<.1 ? rightBalance-reflectionVariation*2 : rightBalance-reflectionVariation) : (rf()<.1 ? leftBalance+reflectionVariation*2 : leftBalance+reflectionVariation)) : centerBalance2+m.round((rf(-.5,.5)*reflectionVariation)) ]})),

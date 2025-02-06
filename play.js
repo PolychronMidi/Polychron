@@ -31,6 +31,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
           drummer(['snare6'],[0]);
         }
         setOtherInstruments(); setBinaural(); setBalanceAndFX();
+        stutterFX(flipBinaural ? flipBinauralT3 : flipBinauralF3);
         stutterFade(flipBinaural ? flipBinauralT3 : flipBinauralF3);
         rf()<.05 ? stutterPan(flipBinaural ? flipBinauralT3 : flipBinauralF3) : stutterPan(stutterPanCHs);
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
