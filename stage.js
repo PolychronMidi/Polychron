@@ -48,7 +48,6 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
 }
 };
 
-let lastUsedChannels=new Set();
 stutterFade=(channels,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*rf(.2,1.5))=>{
   const channelsToStutter=new Set();
   const CHsToStutter=ri(1,5);
@@ -78,8 +77,7 @@ stutterFade=(channels,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*
   });
 };
 
-let lastUsedChannels2 = new Set();
-stutterPan = (channels, numberOfStutters = ri(30,60), stutterDuration = ticksPerSecond*rf(.1,1)) => {
+stutterPan = (channels, numberOfStutters = ri(30,90), stutterDuration = ticksPerSecond*rf(.1,1.2)) => {
   const channelsToStutter = new Set();
   const CHsToStutter = ri(1,2);
   const availableChannels = channels.filter(ch => !lastUsedChannels2.has(ch));
@@ -95,7 +93,6 @@ stutterPan = (channels, numberOfStutters = ri(30,60), stutterDuration = ticksPer
   channelsArray.forEach(channelToStutter => { 
     const edgeMargin = ri(7,25);
     const maxPan = 127-edgeMargin;
-    const minPan = edgeMargin;
     const isFadeIn = rf() < 0.5; 
     let currentTick, pan;
     for (let i = m.floor(numberOfStutters*(rf(1/3))); i < numberOfStutters; i++) {
@@ -112,10 +109,9 @@ stutterPan = (channels, numberOfStutters = ri(30,60), stutterDuration = ticksPer
   });
 };
 
-let lastUsedChannels3 = new Set();
-stutterFX = (channels, numberOfStutters = ri(30,70), stutterDuration = ticksPerSecond*rf(.1,2)) => {
+stutterFX = (channels, numberOfStutters = ri(30,100), stutterDuration = ticksPerSecond*rf(.1,2)) => {
   const channelsToStutter = new Set();
-  const CHsToStutter = ri(1,3);
+  const CHsToStutter = ri(1,2);
   const availableChannels = channels.filter(ch => !lastUsedChannels3.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableChannels.length > 0) {
     const ch = availableChannels[Math.floor(Math.random() * availableChannels.length)];
@@ -129,16 +125,15 @@ stutterFX = (channels, numberOfStutters = ri(30,70), stutterDuration = ticksPerS
   channelsArray.forEach(channelToStutter => { 
     const FXToStutter=randomInRangeOrArray(FX);
     const edgeMargin = ri(7,25);
-    const maxPan = 127-edgeMargin;
-    const minPan = edgeMargin;
+    const max = 127-edgeMargin;
     const isFadeIn = rf() < 0.5; 
     let currentTick, pan;
     for (let i = m.floor(numberOfStutters*(rf(1/3))); i < numberOfStutters; i++) {
       currentTick = beatStart + i * (stutterDuration/numberOfStutters) * rf(.7,1.3);
       if (isFadeIn) {
-        pan = modClamp(m.floor(maxPan * (i / (numberOfStutters - 1))),edgeMargin,maxPan);
+        pan = modClamp(m.floor(max * (i / (numberOfStutters - 1))),edgeMargin,max);
       } else {
-        pan = modClamp(m.floor(maxPan * (1 - (i / (numberOfStutters - 1)))),edgeMargin,maxPan);
+        pan = modClamp(m.floor(max * (1 - (i / (numberOfStutters - 1)))),edgeMargin,max);
       }
       p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, FXToStutter, modClamp(pan+ri(32,96),0,127)]});
       p(c, {tick: currentTick + stutterDuration*rf(.8,1.2), type: 'control_c', vals: [channelToStutter, FXToStutter, pan]});
