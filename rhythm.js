@@ -27,20 +27,6 @@ drumMap={
   'conga4': {note: 63,velocityRange: [66,77]},
   'conga5': {note: 64,velocityRange: [66,77]},
 };
-playDrums=(drumNames,beatOffsets=[0])=>{
-  const drums=typeof drumNames==='string' ? drumNames.split(',').map(d=>d.trim()) : drumNames;
-  const offsets=Array.isArray(beatOffsets) ? beatOffsets : new Array(drums.length).fill(0);
-  if (offsets.length < drums.length) {
-    offsets.push(...new Array(drums.length - offsets.length).fill(0));
-  }
-  drums.forEach((drumName,index)=>{ const drum=drumMap[drumName];
-    if (drum) {
-      let tickOffset=typeof offsets[index]==='number' ? offsets[index] * ticksPerBeat : offsets[index];
-      p(c,{tick:beatStart+tickOffset,type:'note_on_c',vals:[drumCH,drum.note,ri(...drum.velocityRange)]});
-    } else { console.warn(`Drum type "${drumName}" not recognized.`); }
-  });
-};
-
 drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (drumNames==='random') {
     const allDrums=Object.keys(drumMap);
@@ -99,6 +85,40 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
     }
   });
 };
+playDrums=()=>{
+  if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
+    drummer(['kick1','kick3'],[0,.5]);
+    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
+      drummer(['kick2','kick5'],[0,.5]);
+    }
+  } else if (beatRhythm[beatIndex] > 0  && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
+    drummer(['snare1','kick4','kick7','snare4'],[0,.5,.75,.25]);
+  } else if (beatIndex % 2===0) {
+    drummer('random');
+    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
+      drummer(['snare5'],[0]);
+    }
+  } else  {
+    drummer(['snare6'],[0]);
+  }
+};
+playDrums2=()=>{
+  if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
+    drummer(['kick2','kick5','kick7'],[0,.5,.25]);
+    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
+      drummer(['kick1','kick3','kick7'],[0,.5,.25]);
+    }
+  } else if (beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
+    drummer(['snare2','kick6','snare3'],[0,.5,.75]);
+  } else if (beatIndex % 2===0) {
+    drummer(['snare7'],[0]);
+    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
+      drummer(['snare7'],[0]);
+    }
+  } else  {
+    drummer('random');
+  }
+};
 
 rhythms={//weights: [beat,div,subdiv]
   'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
@@ -153,9 +173,9 @@ setRhythm=(level)=>{
     case 'beat':
       return beatRhythm=beatRhythm < 1 ? t.RhythmPattern.random(numerator) : getRhythm('beat',numerator,beatRhythm);
     case 'div':
-      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv) : getRhythm('div',divsPerDiv,divRhythm);
+      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv,.4) : getRhythm('div',divsPerDiv,divRhythm);
     case 'subdiv':
-      return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
+      return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
   }
 };
