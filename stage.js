@@ -10,7 +10,7 @@ setTuningAndInstruments=()=>{
   p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
     type,vals:[ch,...(ch.toString().startsWith('leftCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[centerCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
-  p(c, {type: 'control_c', vals: [drumCH, 7, 127]});
+  p(c, {type:'control_c', vals:[drumCH, 7, 127]});
 };
 
 setOtherInstruments=()=>{
@@ -19,7 +19,7 @@ p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart,type:'program_c' };
   return [
     ...reflectionBinaural.map(ch=>({..._,vals:[ch,otherInstruments[ri(otherInstruments.length - 1)]]})),
     ...bassBinaural.map(ch=>({..._,vals:[ch,otherBassInstruments[ri(otherBassInstruments.length - 1)]]})),
-    { ..._,vals: [drumCH,drumSets[ri(drumSets.length - 1)]] }
+    { ..._,vals:[drumCH,drumSets[ri(drumSets.length - 1)]] }
   ];  })  );  }
 }
 
@@ -48,7 +48,7 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
 }
 };
 
-stutterFade=(channels,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*rf(.2,1.5))=>{
+stutterFade=(channels,numberOfStutters=ri(10,70),stutterDuration=ticksPerSecond*rf(.2,1.5))=>{
   const channelsToStutter=new Set();
   const CHsToStutter=ri(1,5);
   const availableChannels=channels.filter(ch => !lastUsedChannels.has(ch));
@@ -70,10 +70,10 @@ stutterFade=(channels,numberOfStutters=ri(10,20),stutterDuration=ticksPerSecond*
       } else {
         volume=modClamp(m.floor(100 * (1 - (i / (numberOfStutters - 1)))),25,100);
       }
-      p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume/rf(1.5,5))]});
-      p(c, {tick: currentTick + stutterDuration*rf(.8,1.2), type: 'control_c', vals: [channelToStutter, 7, volume]});
+      p(c, {tick:currentTick, type:'control_c', vals:[channelToStutter, 7, m.round(volume/rf(1.5,5))]});
+      p(c, {tick:currentTick + stutterDuration*rf(.95,1.95), type:'control_c', vals:[channelToStutter, 7, volume]});
     }
-    p(c, {tick: currentTick + stutterDuration*rf(2,3), type: 'control_c', vals: [channelToStutter, 7, maxVol]});
+    p(c, {tick:currentTick + stutterDuration*rf(.5,3), type:'control_c', vals:[channelToStutter, 7, maxVol]});
   });
 };
 
@@ -102,10 +102,10 @@ stutterPan = (channels, numberOfStutters = ri(30,90), stutterDuration = ticksPer
       } else {
         pan = modClamp(m.floor(maxPan * (1 - (i / (numberOfStutters - 1)))),edgeMargin,maxPan);
       }
-      p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, 10, modClamp(pan+ri(32,96),0,127)]});
-      p(c, {tick: currentTick + stutterDuration*rf(.8,1.2), type: 'control_c', vals: [channelToStutter, 10, pan]});
+      p(c, {tick:currentTick, type:'control_c', vals:[channelToStutter, 10, modClamp(pan+ri(32,96),0,127)]});
+      p(c, {tick:currentTick + stutterDuration*rf(.5,1.75), type:'control_c', vals:[channelToStutter, 10, pan]});
     }
-    p(c, {tick: currentTick + stutterDuration*rf(), type: 'control_c', vals: [channelToStutter, 10, ri(58,70)]});
+    p(c, {tick:currentTick + stutterDuration*rf(), type:'control_c', vals:[channelToStutter, 10, ri(58,70)]});
   });
 };
 
@@ -135,10 +135,10 @@ stutterFX = (channels, numberOfStutters = ri(30,100), stutterDuration = ticksPer
       } else {
         pan = modClamp(m.floor(max * (1 - (i / (numberOfStutters - 1)))),edgeMargin,max);
       }
-      p(c, {tick: currentTick, type: 'control_c', vals: [channelToStutter, FXToStutter, modClamp(pan+ri(32,96),0,127)]});
-      p(c, {tick: currentTick + stutterDuration*rf(.8,1.2), type: 'control_c', vals: [channelToStutter, FXToStutter, pan]});
+      p(c, {tick:currentTick, type:'control_c', vals:[channelToStutter, FXToStutter, modClamp(pan+ri(32,96),0,127)]});
+      p(c, {tick:currentTick + stutterDuration*rf(.75,1.5), type:'control_c', vals:[channelToStutter, FXToStutter, pan]});
     }
-    p(c, {tick: currentTick + stutterDuration*rf(), type: 'control_c', vals: [channelToStutter, FXToStutter, ri(58,70)]});
+    p(c, {tick:currentTick + stutterDuration*rf(), type:'control_c', vals:[channelToStutter, FXToStutter, ri(58,70)]});
   });
 };
 
@@ -222,11 +222,11 @@ crossModulateRhythms=()=>{ crossModulation=0;
 
 setNoteParams=()=>{
   on=subdivStart+(ticksPerSubdiv*rv(rf(.2),[-.1,.07],.3));
-  shorterSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
-  longerSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
-  useShorterSustain=subdivsPerMinute > ri(400,650);
-  sustain=(useShorterSustain ? shorterSustain : longerSustain)*rv(rf(.8,1.3));
-  binauralVelocity=rv(velocity * rf(.35,.5));
+  shortSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
+  longSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
+  useShort=subdivsPerMinute > ri(400,650);
+  sustain=(useShort ? shortSustain : longSustain)*rv(rf(.8,1.3));
+  binauralVelocity=rv(velocity * rf(.4,.6));
 }
 
 playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rf(.88,.92)){ 
@@ -234,7 +234,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH)
   ).map(sourceCH=>{
 
-  p(c,{tick:sourceCH===centerCH1 ? on + rv(ticksPerSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubdiv*rf(1/3),[-.1,.1],.3),type:'note_on_c',vals:[sourceCH,note,sourceCH===centerCH1 ? velocity*rf(.9,1.1) : binauralVelocity*rf(.95,1.03)]});
+  p(c,{tick:sourceCH===centerCH1 ? on + rv(ticksPerSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubdiv*rf(1/3),[-.1,.1],.3),type:'note_on_c',vals:[sourceCH,note,sourceCH===centerCH1 ? velocity*rf(.95,1.15) : binauralVelocity*rf(.95,1.03)]});
   p(c,{tick:on+sustain*(sourceCH===centerCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
 
   // Stutter-Shift: Random note stutter and octave shift.
@@ -271,10 +271,10 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
         const fadeOutMultiplier=1 - (stutterDecayFactor * (i / (numStutters * rf(0.4,2.2) - 1)));
         currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,100);
       }
-      p(c,{tick: currentTick - stutterDuration * rf(.15),vals: [sourceCH,stutterNote]});
-      p(c,{tick: currentTick + stutterDuration * rf(.15,.6),type: 'note_on_c',vals: [sourceCH,stutterNote,sourceCH===centerCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
+      p(c,{tick:currentTick - stutterDuration * rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:currentTick + stutterDuration * rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
     }
-    p(c,{tick: on + sustain * rf(.5,1.5),vals: [sourceCH,note]});
+    p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,note]});
   }
   if (rf()<rv(.1,[.5,1],.3)){ // Source Channels Stutter-Shift #2: Unique per channel.
     if (!stutters.has(sourceCH)) stutters.set(sourceCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
@@ -315,7 +315,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
 
   if (rf()<clamp(.45*bpmRatio3,.2,.7)) {
     bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,35);
-    p(c,{tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(1.1,1.3) : binauralVelocity*rf(1.8,2.4)]});
+    p(c,{tick:bassCH===centerCH3 ? on+rv(ticksPerSubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(1.15,1.35) : binauralVelocity*rf(1.85,2.45)]});
     p(c,{tick:on+sustain*(bassCH===centerCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     if (rf()<.7){ // Bass Channels Stutter-Shift
       if (!stutters.has(bassCH)) stutters.set(bassCH,m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
