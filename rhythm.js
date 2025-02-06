@@ -122,8 +122,10 @@ hex=(length)=>{ let pattern=[];
   while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.hex(ri(99).toString(16))); }
   return patternLength(pattern,length);
 };
-onsets=(numbers)=>{ if (typeof numbers==='object' && numbers.hasOwnProperty('make')) {
-  numbers=makeOnsets(...numbers.make); }
+onsets = (numbers) => {
+if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
+    return makeOnsets(...numbers.make);
+  }
   return t.RhythmPattern.onsets(numbers);
 };
 random=(length,probOn)=>{ return t.RhythmPattern.random(length,1 - probOn); };
@@ -149,11 +151,11 @@ setRhythm=(level)=>{
   random=(length,probOn)=> { return t.RhythmPattern.random(length,1 - probOn); };
   switch(level) {
     case 'beat':
-      return beatRhythm=beatRhythm < 1 ? t.RhythmPattern.random(numerator,0) : getRhythm('beat',numerator,beatRhythm);
+      return beatRhythm=beatRhythm < 1 ? t.RhythmPattern.random(numerator) : getRhythm('beat',numerator,beatRhythm);
     case 'div':
-      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv,0) : getRhythm('div',divsPerDiv,divRhythm);
+      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv) : getRhythm('div',divsPerDiv,divRhythm);
     case 'subdiv':
-      return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv,0) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
+      return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
   }
 };
