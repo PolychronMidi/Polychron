@@ -349,7 +349,7 @@ setNoteParams2=()=>{
   binauralVelocity=rv(velocity * rf(.4,.6));
 }
 
-playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rf(.88,.92)){ 
+playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rf(.9,.95)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -396,7 +396,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     }
     p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,note]});
   }
-  if (rf()<rv(.1,[.5,1],.3)){ // Source Channels Stutter-Shift #2: Unique per channel.
+  if (rf()<rv(.07,[.5,1],.2)){ // Source Channels Stutter-Shift #2: Unique per channel.
     if (!stutters.has(sourceCH)) stutters.set(sourceCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
     const numStutters=stutters.get(sourceCH);
     const stutterDuration=.25 * ri(1,5) * sustain / numStutters;
@@ -416,7 +416,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   reflectionCH=reflect[sourceCH]; 
   p(c,{tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubsubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]});
   p(c,{tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
-  if (rf()<.33){ // Reflection Channels Stutter-Shift
+  if (rf()<.2){ // Reflection Channels Stutter-Shift
     if (!stutters.has(reflectionCH)) stutters.set(reflectionCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
     const numStutters=stutters.get(reflectionCH);
     const stutterDuration=.25 * ri(1,8) * sustain / numStutters;
@@ -433,7 +433,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
   }
 
-  if (rf()<clamp(.45*bpmRatio3,.2,.7)) {
+  if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
     bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,35);
     p(c,{tick:bassCH===centerCH3 ? on+rv(ticksPerSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubsubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(1.15,1.35) : binauralVelocity*rf(1.85,2.45)]});
     p(c,{tick:on+sustain*(bassCH===centerCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
