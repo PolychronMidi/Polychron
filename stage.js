@@ -337,3 +337,123 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
 
   }); }); subdivsOff=0; subdivsOn++; } else { subdivsOff++; subdivsOn=0; }
 };
+
+
+
+setNoteParams2=()=>{
+  on=subsubdivStart+(ticksPerSubsubdiv*rv(rf(.2),[-.1,.07],.3));
+  shortSustain=rv(rf(m.max(ticksPerDiv*.5,ticksPerDiv / subdivsPerDiv),(ticksPerBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
+  longSustain=rv(rf(ticksPerDiv*.8,(ticksPerBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
+  useShort=subdivsPerMinute > ri(400,650);
+  sustain=(useShort ? shortSustain : longSustain)*rv(rf(.8,1.3));
+  binauralVelocity=rv(velocity * rf(.4,.6));
+}
+
+playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rf(.88,.92)){ 
+composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
+  flipBinaural ? flipBinauralT.includes(sourceCH) : flipBinauralF.includes(sourceCH)
+  ).map(sourceCH=>{
+
+  p(c,{tick:sourceCH===centerCH1 ? on + rv(ticksPerSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(ticksPerSubsubdiv*rf(1/3),[-.1,.1],.3),type:'note_on_c',vals:[sourceCH,note,sourceCH===centerCH1 ? velocity*rf(.95,1.15) : binauralVelocity*rf(.95,1.03)]});
+  p(c,{tick:on+sustain*(sourceCH===centerCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
+
+  // Stutter-Shift: Random note stutter and octave shift.
+  const stutters=new Map(); const shifts=new Map();
+  let stutterApplied=false; let globalStutterData=null;
+  if (!stutterApplied && rf() < rv(.2,[.5,1],.3)) {
+    // Calculate stutter once for all Source channels
+    const numStutters=m.round(rv(rv(ri(3,9),[2,5],.33),[2,5],.1));
+    globalStutterData={
+      numStutters,
+      stutterDuration: .25 * ri(1,6) * sustain / numStutters,
+      minVelocity: 11,
+      maxVelocity: 111,
+      isFadeIn: rf() < 0.5,
+      stutterDecayFactor: rf(.75,1.25)
+    };
+    stutterApplied=true;
+  }
+  if (globalStutterData) {
+    const { numStutters,stutterDuration,minVelocity,maxVelocity,isFadeIn,stutterDecayFactor }=globalStutterData;
+    for (let i=0; i < numStutters; i++) {
+      const currentTick=on + stutterDuration * i;
+      let stutterNote=note;
+      if (rf() < .25) {
+        if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
+        const octaveShift=shifts.get(sourceCH);
+        stutterNote=modClamp(note + octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
+      }
+      let currentVelocity;
+      if (isFadeIn) {
+        const fadeInMultiplier=stutterDecayFactor * (i / (numStutters * rf(0.4,2.2) - 1));
+        currentVelocity=clamp(m.min(maxVelocity,ri(33) + maxVelocity * fadeInMultiplier),0,100);
+      } else {
+        const fadeOutMultiplier=1 - (stutterDecayFactor * (i / (numStutters * rf(0.4,2.2) - 1)));
+        currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,100);
+      }
+      p(c,{tick:currentTick - stutterDuration * rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:currentTick + stutterDuration * rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
+    }
+    p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,note]});
+  }
+  if (rf()<rv(.1,[.5,1],.3)){ // Source Channels Stutter-Shift #2: Unique per channel.
+    if (!stutters.has(sourceCH)) stutters.set(sourceCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
+    const numStutters=stutters.get(sourceCH);
+    const stutterDuration=.25 * ri(1,5) * sustain / numStutters;
+    for (let i=0;i<numStutters;i++) {
+      const currentTick=on+stutterDuration*i; let stutterNote=note;
+      if(rf()<.15){
+        if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
+        const octaveShift=shifts.get(sourceCH);
+        stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
+      }
+      p(c,{tick:currentTick-stutterDuration*rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:currentTick+stutterDuration*rf(.15,.6),type:'note_on_c',vals:[sourceCH,stutterNote,sourceCH===centerCH1?velocity*rf(.3,.7):binauralVelocity*rf(.45,.8)]});
+    }
+    p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
+  }
+
+  reflectionCH=reflect[sourceCH]; 
+  p(c,{tick:reflectionCH===centerCH2 ? on+rv(ticksPerSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(ticksPerSubsubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[reflectionCH,note,reflectionCH===centerCH2 ? velocity*rf(.5,.8) : binauralVelocity*rf(.55,.9)]});
+  p(c,{tick:on+sustain*(reflectionCH===centerCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
+  if (rf()<.33){ // Reflection Channels Stutter-Shift
+    if (!stutters.has(reflectionCH)) stutters.set(reflectionCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
+    const numStutters=stutters.get(reflectionCH);
+    const stutterDuration=.25 * ri(1,8) * sustain / numStutters;
+    for (let i=0;i<numStutters;i++) {
+      const currentTick=on+stutterDuration*i; let stutterNote=note;
+      if(rf()<.7){
+        if (!shifts.has(reflectionCH)) shifts.set(reflectionCH,ri(-3,3)*12);
+        const octaveShift=shifts.get(reflectionCH);
+        stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
+      }
+      p(c,{tick:currentTick-stutterDuration*rf(.3),vals:[reflectionCH,stutterNote]});
+      p(c,{tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[reflectionCH,stutterNote,reflectionCH===centerCH2?velocity*rf(.25,.65):binauralVelocity*rf(.4,.75)]});
+    }
+    p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
+  }
+
+  if (rf()<clamp(.45*bpmRatio3,.2,.7)) {
+    bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,35);
+    p(c,{tick:bassCH===centerCH3 ? on+rv(ticksPerSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(ticksPerSubsubdiv*rf(1/3),[-.01,.1],.5),type:'note_on_c',vals:[bassCH,bassNote,bassCH===centerCH3 ? velocity*rf(1.15,1.35) : binauralVelocity*rf(1.85,2.45)]});
+    p(c,{tick:on+sustain*(bassCH===centerCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
+    if (rf()<.7){ // Bass Channels Stutter-Shift
+      if (!stutters.has(bassCH)) stutters.set(bassCH,m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
+      const numStutters=stutters.get(bassCH);
+      const stutterDuration=.25 * ri(1,8) * sustain / numStutters;
+      for (let i=0;i<numStutters;i++) {
+        const currentTick=on+stutterDuration*i; let stutterNote=bassNote;
+        if(rf()<.5){
+          if (!shifts.has(bassCH)) shifts.set(bassCH,ri(-2,2)*12);
+          const octaveShift=shifts.get(bassCH);
+          stutterNote=modClamp(bassNote+octaveShift,0,59);
+        }
+        p(c,{tick:currentTick-stutterDuration*rf(.3),vals:[bassCH,stutterNote]});
+        p(c,{tick:currentTick+stutterDuration*rf(.25,.7),type:'note_on_c',vals:[bassCH,stutterNote,bassCH===centerCH3?velocity*rf(.55,.85):binauralVelocity*rf(.75,1.05)]});
+      }
+      p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,note]});
+    }
+  }
+
+  }); }); }
+};
