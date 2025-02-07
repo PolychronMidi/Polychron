@@ -3,7 +3,7 @@ require('./stage');
 setTuningAndInstruments();
 totalSections=ri(SECTIONS.min,SECTIONS.max);  
 for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
-  composer=composers[ri(COMPOSERS.length - 1)];
+  composer=ra(composers);
   phrasesPerSection=ri(PHRASES_PER_SECTION.min,PHRASES_PER_SECTION.max);  
 
   for (phraseIndex=0; phraseIndex < phrasesPerSection; phraseIndex++) {
@@ -25,8 +25,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
             setSubdivTiming(); logUnit('subdivision'); playNotes(); }
             for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) { 
               setSubsubdivTiming(); logUnit('subsubdivision'); playNotes2(); }
-          }}
-      }
+    }}}
 
     beatRhythm=divRhythm=subdivRhythm=0; 
     numerator=polyNumerator;  meterRatio=polyMeterRatio;
@@ -41,8 +40,7 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
             setSubdivTiming(); logUnit('subdivision'); playNotes(); }
             for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) { 
               setSubsubdivTiming(); logUnit('subsubdivision'); playNotes2(); }
-          }}
-      }
+    }}}
 
     nextPhrase();
   }
