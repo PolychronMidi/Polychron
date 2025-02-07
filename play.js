@@ -22,7 +22,10 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
-            setSubdivTiming(); logUnit('subdivision'); playNotes(); }}}
+            setSubdivTiming(); logUnit('subdivision'); playNotes(); }
+            for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) { 
+              setSubsubdivTiming(); logUnit('subsubdivision'); playNotes2(); }
+          }}
       }
 
     beatRhythm=divRhythm=subdivRhythm=0; 
@@ -35,7 +38,10 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
-            setSubdivTiming(); logUnit('subdivision'); playNotes(); }}}
+            setSubdivTiming(); logUnit('subdivision'); playNotes(); }
+            for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) { 
+              setSubsubdivTiming(); logUnit('subsubdivision'); playNotes2(); }
+          }}
       }
 
     nextPhrase();

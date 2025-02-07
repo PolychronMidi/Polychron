@@ -200,7 +200,7 @@ randomInRangeOrArray = (v) => {
   return v; // Return the value if it's neither a function nor an array
 };
 
-measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=0;
+measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=0;
 lastUsedChannels = new Set();lastUsedChannels2 = new Set();lastUsedChannels3 = new Set();
 velocity=99; flipBinaural=false;
 

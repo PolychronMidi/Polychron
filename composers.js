@@ -5,6 +5,7 @@ class MeasureComposer {
   }
   getDivisions(){const{min,max,weights}=DIVISIONS;return m.floor(rw(min,max,weights)*bpmRatio);}
   getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;return m.floor(rw(min,max,weights)*bpmRatio);}
+  getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*bpmRatio);}
   getVoices() { const { min,max,weights }=VOICES;
     const v=rw(min,max,weights) / (subdivsPerMinute / 1000)
     return subdivsPerMinute/1000 < 1 ? m.max(1,m.floor(v / (subdivsPerMinute / 1000))) : m.max(0,m.ceil(v / (subdivsPerMinute / 1000)));

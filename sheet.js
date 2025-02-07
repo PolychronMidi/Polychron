@@ -52,6 +52,11 @@ SUBDIVISIONS={
   max: 10,
   weights: [5,10,20,15,20,10,20,4,2,1]
 };
+SUBSUBDIVS={
+  min: 0,
+  max: 5,
+  weights: [5,20,30,20,10,5]
+};
 COMPOSERS=[
   // { type: 'scale',name: 'major',root: 'C',return: 'new ScaleComposer(this.name,this.root)' },
   // { type: 'chords',progression: ['Cmaj7','Dm','G','Cmaj7'],return: 'new ChordComposer(this.progression)' },

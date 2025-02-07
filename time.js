@@ -127,8 +127,14 @@ logUnit=(type)=>{  let shouldLog=false;
     endTick=startTick + ticksPerSubdiv;
     startTime=subdivStartTime;
     endTime=startTime + secondsPerSubdiv;
-  }
-  return (()=>{  c.push({
+  } else if (type==='subsubdivision') {
+    unit=subsubdivIndex + 1;
+    unitsPerParent=subsubdivsPerSubdiv;
+    startTick=subsubdivStart;
+    endTick=startTick + ticksPerSubsubdiv;
+    startTime=subsubdivStartTime;
+    endTime=startTime + secondsPerSubsubdiv;
+  }  return (()=>{  c.push({
     tick:startTick,type:'marker_t',vals:[`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
   });  })();
 };
@@ -165,6 +171,13 @@ setSubdivTiming=()=>{ ticksPerSubdiv=ticksPerDiv / m.max(1,subdivsPerDiv);
   subdivsPerMinute=60 / secondsPerSubdiv;
   subdivStart=divStart + subdivIndex * ticksPerSubdiv;
   subdivStartTime=divStartTime + subdivIndex * secondsPerSubdiv;
+  subsubdivsPerSub=composer.getSubsubdivs();
+};
+setSubsubdivTiming=()=>{ ticksPerSubsubdiv=ticksPerSubdiv / m.max(1,subsubdivsPerSubdiv);
+  secondsPerSubsubdiv=ticksPerSubsubdiv / ticksPerSecond;
+  subsubdivsPerMinute=60 / secondsPerSubsubdiv;
+  subsubdivStart=subdivStart + subsubdivIndex * ticksPerSubsubdiv;
+  subsubdivStartTime=subdivStartTime + subsubdivIndex * secondsPerSubsubdiv;
 };
 
 setMidiTiming=()=>{  p(c, { tick:sectionStart,type:'bpm',vals:[midiBPM] },
