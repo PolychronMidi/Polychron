@@ -183,7 +183,7 @@ setRhythm=(level)=>{
 makeOnsets=(length,valuesOrRange)=>{
   let onsets=[];  let total=0;
   while (total < length) {
-    let v=randomInRangeOrArray(valuesOrRange);
+    let v=ra(valuesOrRange);
     if (total + (v+1) <= length) {  onsets.push(v);  total+=v+1;
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
       v=valuesOrRange[0];

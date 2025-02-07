@@ -187,13 +187,15 @@ randomWeightedSelection = (options) => {
   return types[selectedIndex];
 };
 
-randomInRangeOrArray = (v) => {
+// Provide params as a function for range, otherwise returns random value from array.
+// Example usage: ra([1,2,3]) or ra(()=>[1,3])
+ra=randomInRangeOrArray = (v) => {
   if (typeof v === 'function') {
     const result = v();
     if (Array.isArray(result) && result.length === 2 && typeof result[0] === 'number' && typeof result[1] === 'number') {
       return ri(result[0], result[1]); // Treat function result as range if it's an array of two numbers
     }
-    return Array.isArray(result) ? randomInRangeOrArray(result) : result; // Handle nested arrays or direct return
+    return Array.isArray(result) ? ra(result) : result; // Handle nested arrays or direct return
   } else if (Array.isArray(v)) {
     return v[ri(0, v.length - 1)]; // Return a random element from the array
   }

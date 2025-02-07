@@ -17,9 +17,9 @@ setOtherInstruments=()=>{
   if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
 p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart,type:'program_c' };
   return [
-    ...reflectionBinaural.map(ch=>({..._,vals:[ch,otherInstruments[ri(otherInstruments.length - 1)]]})),
-    ...bassBinaural.map(ch=>({..._,vals:[ch,otherBassInstruments[ri(otherBassInstruments.length - 1)]]})),
-    { ..._,vals:[drumCH,drumSets[ri(drumSets.length - 1)]] }
+    ...reflectionBinaural.map(ch=>({..._,vals:[ch,ra(otherInstruments)]})),
+    ...bassBinaural.map(ch=>({..._,vals:[ch,ra(otherBassInstruments)]})),
+    { ..._,vals:[drumCH,ra(drumSets)] }
   ];  })  );  }
 }
 
@@ -123,7 +123,7 @@ stutterFX = (channels, numberOfStutters = ri(30,100), stutterDuration = ticksPer
   }
   const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => { 
-    const FXToStutter=randomInRangeOrArray(FX);
+    const FXToStutter=ra(FX);
     const edgeMargin = ri(7,25);
     const max = 127-edgeMargin;
     const isFadeIn = rf() < 0.5; 
