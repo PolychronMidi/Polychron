@@ -197,7 +197,7 @@ ra=randomInRangeOrArray = (v) => {
     }
     return Array.isArray(result) ? ra(result) : result; // Handle nested arrays or direct return
   } else if (Array.isArray(v)) {
-    return v[ri(0, v.length - 1)]; // Return a random element from the array
+    return v[ri(v.length - 1)]; // Return a random element from the array
   }
   return v; // Return the value if it's neither a function nor an array
 };
@@ -240,7 +240,7 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
 grandFinale=()=>{ allNotesOff(sectionStart+PPQ);muteAll(sectionStart+PPQ*2);
-  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) { composition+=`1,${_.tick || 0},${_.type || 'note_off_c'},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) {let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c'); composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
 };
 
 composition=`0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
