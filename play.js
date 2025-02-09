@@ -16,9 +16,9 @@ for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
       for (beatIndex=0; beatIndex < numerator; beatIndex++) {trackBeatRhythm();beatCount++;
         setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
         setOtherInstruments(); setBinaural(); setBalanceAndFX(); playDrums();
-        stutterFX(flipBinaural ? flipBinauralT3 : flipBinauralF3);
-        stutterFade(flipBinaural ? flipBinauralT3 : flipBinauralF3);
-        rf()<.05 ? stutterPan(flipBinaural ? flipBinauralT3 : flipBinauralF3) : stutterPan(stutterPanCHs);
+        stutterFX(flipBin ? flipBinT3 : flipBinF3);
+        stutterFade(flipBin ? flipBinT3 : flipBinF3);
+        rf()<.05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
           setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
           for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
