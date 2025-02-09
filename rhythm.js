@@ -68,7 +68,7 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
         const [minVelocity,maxVelocity]=drumInfo.velocityRange;
         const isFadeIn=rf() < 0.7;
         for (let i=0; i < numStutters; i++) {
-          const currentTick=beatStart + (offset + i * stutterDuration) * ticksPerBeat;
+          const currentTick=beatStart + (offset + i * stutterDuration) * tpBeat;
           let currentVelocity;
           if (isFadeIn) {
             const fadeInMultiplier=stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1));
@@ -80,7 +80,7 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
           p(c,{tick: currentTick,type: 'note_on_c',vals: [drumCH,drumInfo.note,m.floor(currentVelocity)]});
         }
       } else { // Play without stutter
-        p(c,{tick: beatStart + offset * ticksPerBeat,type: 'note_on_c',vals: [drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
+        p(c,{tick: beatStart + offset * tpBeat,type: 'note_on_c',vals: [drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
       }
     }
   });

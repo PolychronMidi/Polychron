@@ -202,9 +202,9 @@ ra=randomInRangeOrArray = (v) => {
   return v; // Return the value if it's neither a function nor an array
 };
 
-measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=ticksPerSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=ticksPerSecond=finalTime=endTime=phraseStart=ticksPerPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balanceOffset=sideBias=firstLoop=0;
+measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSection=secondsPerSection=finalTick=divsPerBeat=bestMatch=polyMeterRatio=polyNumerator=tpSecond=finalTime=endTime=phraseStart=tpPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerDiv=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balOffset=sideBias=firstLoop=0;
 lastUsedChannels = new Set();lastUsedChannels2 = new Set();lastUsedChannels3 = new Set();
-velocity=99; flipBinaural=false;
+velocity=99; flipBin=false;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
 centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
@@ -214,25 +214,25 @@ binauralFreqOffset=rf(BINAURAL.min,BINAURAL.max);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus,binauralMinus]=[1,-1].map(binauralOffset);
 
-centerCH1=0;centerCH2=1;leftCH1=2;rightCH1=3; leftCH3=4; rightCH3=5; leftCH2=6; rightCH2=7; leftCH4=8; drumCH=9; rightCH4=10; centerCH3=11; leftCH5=12; rightCH5=13; leftCH6=14; rightCH6=15;
-bass=[centerCH3,leftCH5,rightCH5,leftCH6,rightCH6];
-bassBinaural=[leftCH5,rightCH5,leftCH6,rightCH6];
-source=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2];
-source2=[centerCH1,leftCH1,leftCH2,rightCH1,rightCH2,drumCH];
-reflection=[centerCH2,leftCH3,leftCH4,rightCH3,rightCH4];
-reflectionBinaural=[leftCH3,leftCH4,rightCH3,rightCH4];
-reflect={[centerCH1]:centerCH2,[leftCH1]:leftCH3,[rightCH1]:rightCH3,[leftCH2]:leftCH4,[rightCH2]:rightCH4};
-reflect2={[centerCH1]:centerCH3,[leftCH1]:leftCH5,[rightCH1]:rightCH5,[leftCH2]:leftCH6,[rightCH2]:rightCH6};
-binauralL=[leftCH1,leftCH2,leftCH3,leftCH4,leftCH5,leftCH6];
-binauralR=[rightCH1,rightCH2,rightCH3,rightCH4,rightCH5,rightCH6];
-flipBinauralF=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
-flipBinauralT=[centerCH1,centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];flipBinauralF2=[leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
-flipBinauralT2=[leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
-flipBinauralF3=[centerCH2,centerCH3,leftCH1,rightCH1,leftCH3,rightCH3,leftCH5,rightCH5];
-flipBinauralT3=[centerCH2,centerCH3,leftCH2,rightCH2,leftCH4,rightCH4,leftCH6,rightCH6];
-stutterFadeCHs=[centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6];
-allCHs=[centerCH1,centerCH2,centerCH3,leftCH1,rightCH1,leftCH2,rightCH2,leftCH3,rightCH3,leftCH4,rightCH4,leftCH5,rightCH5,leftCH6,rightCH6,drumCH];
-stutterPanCHs=[centerCH1,centerCH2,centerCH3,drumCH];
+cCH1=0;cCH2=1;lCH1=2;rCH1=3; lCH3=4; rCH3=5; lCH2=6; rCH2=7; lCH4=8; drumCH=9; rCH4=10; cCH3=11; lCH5=12; rCH5=13; lCH6=14; rCH6=15;
+bass=[cCH3,lCH5,rCH5,lCH6,rCH6];
+bassBinaural=[lCH5,rCH5,lCH6,rCH6];
+source=[cCH1,lCH1,lCH2,rCH1,rCH2];
+source2=[cCH1,lCH1,lCH2,rCH1,rCH2,drumCH];
+reflection=[cCH2,lCH3,lCH4,rCH3,rCH4];
+reflectionBinaural=[lCH3,lCH4,rCH3,rCH4];
+reflect={[cCH1]:cCH2,[lCH1]:lCH3,[rCH1]:rCH3,[lCH2]:lCH4,[rCH2]:rCH4};
+reflect2={[cCH1]:cCH3,[lCH1]:lCH5,[rCH1]:rCH5,[lCH2]:lCH6,[rCH2]:rCH6};
+binauralL=[lCH1,lCH2,lCH3,lCH4,lCH5,lCH6];
+binauralR=[rCH1,rCH2,rCH3,rCH4,rCH5,rCH6];
+flipBinF=[cCH1,cCH2,cCH3,lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
+flipBinT=[cCH1,cCH2,cCH3,lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];flipBinF2=[lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
+flipBinT2=[lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];
+flipBinF3=[cCH2,cCH3,lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
+flipBinT3=[cCH2,cCH3,lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];
+stutterFadeCHs=[cCH2,cCH3,lCH1,rCH1,lCH2,rCH2,lCH3,rCH3,lCH4,rCH4,lCH5,rCH5,lCH6,rCH6];
+allCHs=[cCH1,cCH2,cCH3,lCH1,rCH1,lCH2,rCH2,lCH3,rCH3,lCH4,rCH4,lCH5,rCH5,lCH6,rCH6,drumCH];
+stutterPanCHs=[cCH1,cCH2,cCH3,drumCH];
 FX=[1,5,11,65,67,68,69,70,71,72,73,74,91,92,93,95];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
@@ -240,7 +240,7 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
 grandFinale=()=>{ allNotesOff(sectionStart+PPQ);muteAll(sectionStart+PPQ*2);
-  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) {let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c'); composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + ticksPerSecond * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) {let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c'); composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + tpSecond * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
 };
 
 composition=`0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
