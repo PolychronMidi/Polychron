@@ -139,18 +139,18 @@ normalizeWeights = (weights, min, max, variationLow=.7, variationHigh=1.3) => {
       const newWeights = [];
       for (let i = 0; i < range; i++) {
         const fraction = i / (range - 1);
-        const lowerIndex = Math.floor(fraction * (effectiveWeights.length - 1));
-        const upperIndex = Math.min(lowerIndex + 1, effectiveWeights.length - 1);
+        const lowerIndex = m.floor(fraction * (effectiveWeights.length - 1));
+        const upperIndex = m.min(lowerIndex + 1, effectiveWeights.length - 1);
         const weightDiff = effectiveWeights[upperIndex] - effectiveWeights[lowerIndex];
         const interpolatedWeight = effectiveWeights[lowerIndex] + (fraction * (effectiveWeights.length - 1) - lowerIndex) * weightDiff;
         newWeights.push(interpolatedWeight);
       }
       effectiveWeights = newWeights;
     } else {
-      const groupSize = Math.floor(effectiveWeights.length / range);
+      const groupSize = m.floor(effectiveWeights.length / range);
       effectiveWeights = Array(range).fill(0).map((_, i) => {
         const startIndex = i * groupSize;
-        const endIndex = Math.min(startIndex + groupSize, effectiveWeights.length);
+        const endIndex = m.min(startIndex + groupSize, effectiveWeights.length);
         return effectiveWeights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0) / (endIndex - startIndex);
       });
     }
