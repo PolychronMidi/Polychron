@@ -10,7 +10,7 @@ setTuningAndInstruments=()=>{
   p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
     type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
-  p(c, {type:'control_c', vals:[drumCH, 7, 127]});
+  p(c,{type:'control_c', vals:[drumCH, 7, 127]});
 };
 
 setOtherInstruments=()=>{
@@ -34,15 +34,15 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   const startTick=beatStart - tpSecond/4; const endTick=beatStart + tpSecond/4;
   const steps=10; const tickIncrement=(endTick - startTick) / steps;
   for (let i=steps/2-1; i <= steps; i++) {
-    const currentTick=startTick + (tickIncrement * i);
-    const currentVolumeF2=flipBin ? Math.floor(100 * (1 - (i / steps))) : Math.floor(100 * (i / steps));
-    const currentVolumeT2=flipBin ? Math.floor(100 * (i / steps)) : Math.floor(100 * (1 - (i / steps)));
+    const tick=startTick + (tickIncrement * i);
+    const currentVolumeF2=flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
+    const currentVolumeT2=flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
     const maxVol=rf(.9,1.2);
     flipBinF2.forEach(ch => {
-      p(c,{tick:currentTick,type:'control_c',vals:[ch,7,m.round(currentVolumeF2*maxVol)]});
+      p(c,{tick:tick,type:'control_c',vals:[ch,7,m.round(currentVolumeF2*maxVol)]});
     });
     flipBinT2.forEach(ch => {
-      p(c,{tick:currentTick,type:'control_c',vals:[ch,7,m.round(currentVolumeT2*maxVol)]});
+      p(c,{tick:tick,type:'control_c',vals:[ch,7,m.round(currentVolumeT2*maxVol)]});
     });
   }
 }
@@ -52,7 +52,7 @@ stutterFade=(channels,numStutters=ri(10,70),duration=tpSecond*rf(.2,1.5))=>{
   const CHsToStutter=ri(1,5); const channelsToStutter=new Set();
   const availableCHs=channels.filter(ch => !lastUsedChannels.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch=availableCHs[Math.floor(Math.random() * availableCHs.length)];
+    const ch=availableCHs[m.floor(m.random() * availableCHs.length)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
@@ -61,18 +61,18 @@ stutterFade=(channels,numStutters=ri(10,70),duration=tpSecond*rf(.2,1.5))=>{
   }
   const channelsArray=Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => { const maxVol=ri(90,120);
-    const isFadeIn=rf() < 0.5; let currentTick,volume;
+    const isFadeIn=rf() < 0.5; let tick,volume;
     for (let i=m.floor(numStutters*(rf(1/3,2/3))); i < numStutters; i++) {
-      currentTick=beatStart + i * (duration/numStutters) * rf(.9,1.1);
+      tick=beatStart + i * (duration/numStutters) * rf(.9,1.1);
       if (isFadeIn) {
         volume=modClamp(m.floor(maxVol * (i / (numStutters - 1))),25,maxVol);
       } else {
         volume=modClamp(m.floor(100 * (1 - (i / (numStutters - 1)))),25,100);
       }
-      p(c, {tick:currentTick, type:'control_c', vals:[channelToStutter, 7, m.round(volume/rf(1.5,5))]});
-      p(c, {tick:currentTick + duration*rf(.95,1.95), type:'control_c', vals:[channelToStutter, 7, volume]});
+      p(c,{tick:tick, type:'control_c', vals:[channelToStutter, 7, m.round(volume/rf(1.5,5))]});
+      p(c,{tick:tick + duration*rf(.95,1.95), type:'control_c', vals:[channelToStutter, 7, volume]});
     }
-    p(c, {tick:currentTick + duration*rf(.5,3), type:'control_c', vals:[channelToStutter, 7, maxVol]});
+    p(c,{tick:tick + duration*rf(.5,3), type:'control_c', vals:[channelToStutter, 7, maxVol]});
   });
 };
 
@@ -80,7 +80,7 @@ stutterPan = (channels, numStutters = ri(30,90), duration = tpSecond*rf(.1,1.2))
   const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
   const availableCHs = channels.filter(ch => !lastUsedChannels2.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[Math.floor(Math.random() * availableCHs.length)];
+    const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
@@ -92,18 +92,18 @@ stutterPan = (channels, numStutters = ri(30,90), duration = tpSecond*rf(.1,1.2))
     const edgeMargin = ri(7,25);
     const maxPan = 127-edgeMargin;
     const isFadeIn = rf() < 0.5; 
-    let currentTick, pan;
+    let tick, pan;
     for (let i = m.floor(numStutters*(rf(1/3))); i < numStutters; i++) {
-      currentTick = beatStart + i * (duration/numStutters) * rf(.7,1.3);
+      tick = beatStart + i * (duration/numStutters) * rf(.7,1.3);
       if (isFadeIn) {
         pan = modClamp(m.floor(maxPan * (i / (numStutters - 1))),edgeMargin,maxPan);
       } else {
         pan = modClamp(m.floor(maxPan * (1 - (i / (numStutters - 1)))),edgeMargin,maxPan);
       }
-      p(c, {tick:currentTick, type:'control_c', vals:[channelToStutter, 10, modClamp(pan+ri(32,96),0,127)]});
-      p(c, {tick:currentTick + duration*rf(.5,1.75), type:'control_c', vals:[channelToStutter, 10, pan]});
+      p(c,{tick:tick, type:'control_c', vals:[channelToStutter, 10, modClamp(pan+ri(32,96),0,127)]});
+      p(c,{tick:tick + duration*rf(.5,1.75), type:'control_c', vals:[channelToStutter, 10, pan]});
     }
-    p(c, {tick:currentTick + duration*rf(), type:'control_c', vals:[channelToStutter, 10, ri(58,70)]});
+    p(c,{tick:tick + duration*rf(), type:'control_c', vals:[channelToStutter, 10, ri(58,70)]});
   });
 };
 
@@ -111,7 +111,7 @@ stutterFX = (channels, numStutters = ri(30,100), duration = tpSecond*rf(.1,2)) =
   const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
   const availableCHs = channels.filter(ch => !lastUsedChannels3.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[Math.floor(Math.random() * availableCHs.length)];
+    const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
@@ -124,18 +124,18 @@ stutterFX = (channels, numStutters = ri(30,100), duration = tpSecond*rf(.1,2)) =
     const edgeMargin = ri(7,25);
     const max = 127-edgeMargin;
     const isFadeIn = rf() < 0.5; 
-    let currentTick, pan;
+    let tick, pan;
     for (let i = m.floor(numStutters*(rf(1/3))); i < numStutters; i++) {
-      currentTick = beatStart + i * (duration/numStutters) * rf(.7,1.3);
+      tick = beatStart + i * (duration/numStutters) * rf(.7,1.3);
       if (isFadeIn) {
         pan = modClamp(m.floor(max * (i / (numStutters - 1))),edgeMargin,max);
       } else {
         pan = modClamp(m.floor(max * (1 - (i / (numStutters - 1)))),edgeMargin,max);
       }
-      p(c, {tick:currentTick, type:'control_c', vals:[channelToStutter, FXToStutter, modClamp(pan+ri(32,96),0,127)]});
-      p(c, {tick:currentTick + duration*rf(.75,1.5), type:'control_c', vals:[channelToStutter, FXToStutter, pan]});
+      p(c,{tick:tick, type:'control_c', vals:[channelToStutter, FXToStutter, modClamp(pan+ri(32,96),0,127)]});
+      p(c,{tick:tick + duration*rf(.75,1.5), type:'control_c', vals:[channelToStutter, FXToStutter, pan]});
     }
-    p(c, {tick:currentTick + duration*rf(), type:'control_c', vals:[channelToStutter, FXToStutter, ri(58,70)]});
+    p(c,{tick:tick + duration*rf(), type:'control_c', vals:[channelToStutter, FXToStutter, ri(58,70)]});
   });
 };
 
@@ -256,7 +256,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   if (globalStutterData) {
     const {numStutters,duration,minVelocity,maxVelocity,isFadeIn,decay}=globalStutterData;
     for (let i=0; i < numStutters; i++) {
-      const currentTick=on + duration * i; let stutterNote=note;
+      const tick=on + duration * i; let stutterNote=note;
       if (rf() < .25) {
         if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
         const octaveShift=shifts.get(sourceCH);
@@ -270,8 +270,8 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
         const fadeOutMultiplier=1 - (decay * (i / (numStutters * rf(0.4,2.2) - 1)));
         currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,100);
       }
-      p(c,{tick:currentTick - duration * rf(.15),vals:[sourceCH,stutterNote]});
-      p(c,{tick:currentTick + duration * rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
+      p(c,{tick:tick - duration * rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:tick + duration * rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
     }
     p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,note]});
   }
@@ -280,14 +280,14 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     const numStutters=stutters.get(sourceCH);
     const duration=.25 * ri(1,5) * sustain / numStutters;
     for (let i=0;i<numStutters;i++) {
-      const currentTick=on+duration*i; let stutterNote=note;
+      const tick=on+duration*i; let stutterNote=note;
       if(rf()<.15){
         if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
         const octaveShift=shifts.get(sourceCH);
         stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
-      p(c,{tick:currentTick-duration*rf(.15),vals:[sourceCH,stutterNote]});
-      p(c,{tick:currentTick+duration*rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1?velocity*rf(.3,.7):binVel*rf(.45,.8)]});
+      p(c,{tick:tick-duration*rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:tick+duration*rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1?velocity*rf(.3,.7):binVel*rf(.45,.8)]});
     }
     p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
   }
@@ -300,20 +300,20 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     const numStutters=stutters.get(reflectionCH);
     const duration=.25 * ri(1,8) * sustain / numStutters;
     for (let i=0;i<numStutters;i++) {
-      const currentTick=on+duration*i; let stutterNote=note;
+      const tick=on+duration*i; let stutterNote=note;
       if(rf()<.7){
         if (!shifts.has(reflectionCH)) shifts.set(reflectionCH,ri(-3,3)*12);
         const octaveShift=shifts.get(reflectionCH);
         stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
-      p(c,{tick:currentTick-duration*rf(.3),vals:[reflectionCH,stutterNote]});
-      p(c,{tick:currentTick+duration*rf(.25,.7),type:'on',vals:[reflectionCH,stutterNote,reflectionCH===cCH2?velocity*rf(.25,.65):binVel*rf(.4,.75)]});
+      p(c,{tick:tick-duration*rf(.3),vals:[reflectionCH,stutterNote]});
+      p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[reflectionCH,stutterNote,reflectionCH===cCH2?velocity*rf(.25,.65):binVel*rf(.4,.75)]});
     }
     p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
   }
 
   if (rf()<clamp(.45*bpmRatio3,.2,.7)) {
-    bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,35);
+    bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,47);
     p(c,{tick:bassCH===cCH3 ? on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : binVel*rf(1.85,2.45)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     if (rf()<.7){ // Bass Channels Stutter-Shift
@@ -321,14 +321,16 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
       const numStutters=stutters.get(bassCH);
       const duration=.25 * ri(1,8) * sustain / numStutters;
       for (let i=0;i<numStutters;i++) {
-        const currentTick=on+duration*i; let stutterNote=bassNote;
+        const tick=on+duration*i; let stutterNote=bassNote;
         if(rf()<.5){
           if (!shifts.has(bassCH)) shifts.set(bassCH,ri(-2,2)*12);
           const octaveShift=shifts.get(bassCH);
           stutterNote=modClamp(bassNote+octaveShift,0,59);
         }
-        p(c,{tick:currentTick-duration*rf(.3),vals:[bassCH,stutterNote]});
-        p(c,{tick:currentTick+duration*rf(.25,.7),type:'on',vals:[bassCH,stutterNote,bassCH===cCH3?velocity*rf(.55,.85):binVel*rf(.75,1.05)]});
+        if(rf()<.5){
+        p(c,{tick:tick-duration*rf(.3),vals:[bassCH,stutterNote]});
+        p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[bassCH,stutterNote,bassCH===cCH3?velocity*rf(.55,.85):binVel*rf(.75,1.05)]});
+        }
       }
       p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,note]});
     }
@@ -374,7 +376,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   if (globalStutterData) {
     const {numStutters,duration,minVelocity,maxVelocity,isFadeIn,decay}=globalStutterData;
     for (let i=0; i < numStutters; i++) {
-      const currentTick=on + duration * i; let stutterNote=note;
+      const tick=on + duration * i; let stutterNote=note;
       if (rf() < .25) {
         if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
         const octaveShift=shifts.get(sourceCH);
@@ -388,8 +390,8 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
         const fadeOutMultiplier=1 - (decay * (i / (numStutters * rf(0.4,2.2) - 1)));
         currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,100);
       }
-      p(c,{tick:currentTick - duration * rf(.15),vals:[sourceCH,stutterNote]});
-      p(c,{tick:currentTick + duration * rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
+      p(c,{tick:tick - duration * rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:tick + duration * rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
     }
     p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,note]});
   }
@@ -398,14 +400,16 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     const numStutters=stutters.get(sourceCH);
     const duration=.25 * ri(1,5) * sustain / numStutters;
     for (let i=0;i<numStutters;i++) {
-      const currentTick=on+duration*i; let stutterNote=note;
+      const tick=on+duration*i; let stutterNote=note;
       if(rf()<.15){
         if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
         const octaveShift=shifts.get(sourceCH);
         stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
-      p(c,{tick:currentTick-duration*rf(.15),vals:[sourceCH,stutterNote]});
-      p(c,{tick:currentTick+duration*rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1?velocity*rf(.3,.7):binVel*rf(.45,.8)]});
+      if(rf()<.6){
+      p(c,{tick:tick-duration*rf(.15),vals:[sourceCH,stutterNote]});
+      p(c,{tick:tick+duration*rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1?velocity*rf(.3,.7):binVel*rf(.45,.8)]});
+      }
     }
     p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
   }
@@ -418,14 +422,16 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     const numStutters=stutters.get(reflectionCH);
     const duration=.25 * ri(1,8) * sustain / numStutters;
     for (let i=0;i<numStutters;i++) {
-      const currentTick=on+duration*i; let stutterNote=note;
+      const tick=on+duration*i; let stutterNote=note;
       if(rf()<.7){
         if (!shifts.has(reflectionCH)) shifts.set(reflectionCH,ri(-3,3)*12);
         const octaveShift=shifts.get(reflectionCH);
         stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
-      p(c,{tick:currentTick-duration*rf(.3),vals:[reflectionCH,stutterNote]});
-      p(c,{tick:currentTick+duration*rf(.25,.7),type:'on',vals:[reflectionCH,stutterNote,reflectionCH===cCH2?velocity*rf(.25,.65):binVel*rf(.4,.75)]});
+      if(rf()<.5){
+      p(c,{tick:tick-duration*rf(.3),vals:[reflectionCH,stutterNote]});
+      p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[reflectionCH,stutterNote,reflectionCH===cCH2?velocity*rf(.25,.65):binVel*rf(.4,.75)]});
+      }
     }
     p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
   }
@@ -439,14 +445,16 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
       const numStutters=stutters.get(bassCH);
       const duration=.25 * ri(1,8) * sustain / numStutters;
       for (let i=0;i<numStutters;i++) {
-        const currentTick=on+duration*i; let stutterNote=bassNote;
+        const tick=on+duration*i; let stutterNote=bassNote;
         if(rf()<.5){
           if (!shifts.has(bassCH)) shifts.set(bassCH,ri(-2,2)*12);
           const octaveShift=shifts.get(bassCH);
           stutterNote=modClamp(bassNote+octaveShift,0,59);
         }
-        p(c,{tick:currentTick-duration*rf(.3),vals:[bassCH,stutterNote]});
-        p(c,{tick:currentTick+duration*rf(.25,.7),type:'on',vals:[bassCH,stutterNote,bassCH===cCH3?velocity*rf(.55,.85):binVel*rf(.75,1.05)]});
+        if(rf()<.3){
+        p(c,{tick:tick-duration*rf(.3),vals:[bassCH,stutterNote]});
+        p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[bassCH,stutterNote,bassCH===cCH3?velocity*rf(.55,.85):binVel*rf(.75,1.05)]});
+        }
       }
       p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,note]});
     }
