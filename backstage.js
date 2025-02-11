@@ -105,12 +105,13 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
     getValue: ()=>{
       let effectValue=chFXMap[effectNum];
       let newMin=minValue,newMax=maxValue;
+      let change=(newMax-newMin)*rf(.1,.3);
       if (condition !== null && typeof condition==='function' && condition(ch)) {
         newMin=conditionMin;
         newMax=conditionMax;
-        effectValue=clamp(rl(effectValue,-15,15,newMin,newMax),newMin,newMax);
+        effectValue=clamp(rl(effectValue,m.floor(-change),m.ceil(change),newMin,newMax),newMin,newMax);
       } else {
-        effectValue=clamp(rl(effectValue,-15,15,newMin,newMax),newMin,newMax);
+        effectValue=clamp(rl(effectValue,m.floor(-change),m.ceil(change),newMin,newMax),newMin,newMax);
       }
       chFXMap[effectNum]=effectValue;
       return effectValue;
@@ -133,30 +134,30 @@ rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency
 // Normalize Weights: Any sized list of weights with any values are normalized to fit inclusive range.
 normalizeWeights = (weights, min, max, variationLow=.7, variationHigh=1.3) => {
   const range = max - min + 1;
-  let effectiveWeights = weights.map(weight => weight * rf(variationLow, variationHigh));
-  if (effectiveWeights.length !== range) {
-    if (effectiveWeights.length < range) {
+  let w = weights.map(weight => weight * rf(variationLow, variationHigh));
+  if (w.length !== range) {
+    if (w.length < range) {
       const newWeights = [];
       for (let i = 0; i < range; i++) {
         const fraction = i / (range - 1);
-        const lowerIndex = m.floor(fraction * (effectiveWeights.length - 1));
-        const upperIndex = m.min(lowerIndex + 1, effectiveWeights.length - 1);
-        const weightDiff = effectiveWeights[upperIndex] - effectiveWeights[lowerIndex];
-        const interpolatedWeight = effectiveWeights[lowerIndex] + (fraction * (effectiveWeights.length - 1) - lowerIndex) * weightDiff;
+        const lowerIndex = m.floor(fraction * (w.length - 1));
+        const upperIndex = m.min(lowerIndex + 1, w.length - 1);
+        const weightDiff = w[upperIndex] - w[lowerIndex];
+        const interpolatedWeight = w[lowerIndex] + (fraction * (w.length - 1) - lowerIndex) * weightDiff;
         newWeights.push(interpolatedWeight);
       }
-      effectiveWeights = newWeights;
+      w = newWeights;
     } else {
-      const groupSize = m.floor(effectiveWeights.length / range);
-      effectiveWeights = Array(range).fill(0).map((_, i) => {
+      const groupSize = m.floor(w.length / range);
+      w = Array(range).fill(0).map((_, i) => {
         const startIndex = i * groupSize;
-        const endIndex = m.min(startIndex + groupSize, effectiveWeights.length);
-        return effectiveWeights.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0) / (endIndex - startIndex);
+        const endIndex = m.min(startIndex + groupSize, w.length);
+        return w.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0) / (endIndex - startIndex);
       });
     }
   }
-  const totalWeight = effectiveWeights.reduce((acc, w) => acc + w, 0);
-  return effectiveWeights.map(w => w / totalWeight);
+  const totalWeight = w.reduce((acc, w) => acc + w, 0);
+  return w.map(w => w / totalWeight);
 };
 
 rw = randomWeightedInRange = (min, max, weights) => {
@@ -233,7 +234,7 @@ flipBinT3=[cCH2,cCH3,lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];
 stutterFadeCHs=[cCH2,cCH3,lCH1,rCH1,lCH2,rCH2,lCH3,rCH3,lCH4,rCH4,lCH5,rCH5,lCH6,rCH6];
 allCHs=[cCH1,cCH2,cCH3,lCH1,rCH1,lCH2,rCH2,lCH3,rCH3,lCH4,rCH4,lCH5,rCH5,lCH6,rCH6,drumCH];
 stutterPanCHs=[cCH1,cCH2,cCH3,drumCH];
-FX=[1,5,11,65,67,68,69,70,71,72,73,74,91,92,93,95];
+FX=[1,5,11,65,67,68,69,70,71,72,73,74,91,92,93,94,95];
 
 // midi cc 123 "all notes off" prevents sustain across transitions
 allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}

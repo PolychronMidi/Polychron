@@ -168,7 +168,7 @@ return [
     ...source2.map(ch=>rlFX(ch,91,0,33)),
     ...source2.map(ch=>rlFX(ch,92,0,33)),
     ...source2.map(ch=>rlFX(ch,93,0,33)),
-    ...source2.map(ch=>rlFX(ch,94,0,5,(c)=>c===drumCH,0,127)),
+    ...source2.map(ch=>rlFX(ch,94,0,5,(c)=>c===drumCH,0,64)),
     ...source2.map(ch=>rlFX(ch,95,0,33)),
     ...reflection.map(ch=>rlFX(ch,1,0,90,(c)=>c===cCH2,0,15)),
     ...reflection.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH2,126,127)),
@@ -229,7 +229,7 @@ setNoteParams=()=>{
   binVel=rv(velocity * rf(.42,.57));
 }
 
-playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rf(.88,.92)){ 
+playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rf(.90,.94)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -349,7 +349,7 @@ setNoteParams2=()=>{
   binVel=rv(velocity * rf(.42,.57));
 }
 
-playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rf(.9,.95)){ 
+playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rf(.91,.96)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
