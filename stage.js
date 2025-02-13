@@ -218,6 +218,7 @@ crossModulateRhythms=()=>{ crossModulation=0;
   (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
   (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) + 
   (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatIndex<1?rf(.4,.5):0) + (divIndex<1?rf(.3,.4):0) + (subdivIndex<1?rf(.2,.3):0);
+  console.log('crossModulation:',crossModulation);
 };
 
 setNoteParams=()=>{
@@ -229,7 +230,7 @@ setNoteParams=()=>{
   binVel=rv(velocity * rf(.42,.57));
 }
 
-playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rf(.90,.94)){ 
+playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rv(rf(1.7,1.95),[-.5,-.3],.05)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -349,7 +350,7 @@ setNoteParams2=()=>{
   binVel=rv(velocity * rf(.42,.57));
 }
 
-playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rf(.91,.96)){ 
+playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rv(rf(1.7,1.9),[-.5,-.3],.1)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
