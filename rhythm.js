@@ -64,11 +64,11 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
     if (drumInfo) {
       if (rf() < stutterChance) {
         const numStutters=ri(...stutterRange);
-        const stutterDuration=.25* ri(1,8) / numStutters;
+        const stutterDuration=.25*ri(1,8) / numStutters;
         const [minVelocity,maxVelocity]=drumInfo.velocityRange;
         const isFadeIn=rf() < 0.7;
         for (let i=0; i < numStutters; i++) {
-          const currentTick=beatStart + (offset + i * stutterDuration) * tpBeat;
+          const tick=beatStart + (offset + i * stutterDuration) * tpBeat;
           let currentVelocity;
           if (isFadeIn) {
             const fadeInMultiplier=stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1));
@@ -77,10 +77,10 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
             const fadeOutMultiplier=1 - (stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1)));
             currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,127);
           }
-          p(c,{tick: currentTick,type: 'note_on_c',vals: [drumCH,drumInfo.note,m.floor(currentVelocity)]});
+          p(c,{tick:tick,type:'on',vals:[drumCH,drumInfo.note,m.floor(currentVelocity)]});
         }
       } else { // Play without stutter
-        p(c,{tick: beatStart + offset * tpBeat,type: 'note_on_c',vals: [drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
+        p(c,{tick:beatStart + offset * tpBeat,type:'on',vals:[drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
       }
     }
   });
@@ -173,7 +173,7 @@ setRhythm=(level)=>{
     case 'beat':
       return beatRhythm=beatRhythm < 1 ? t.RhythmPattern.random(numerator) : getRhythm('beat',numerator,beatRhythm);
     case 'div':
-      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerDiv,.4) : getRhythm('div',divsPerDiv,divRhythm);
+      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerBeat,.4) : getRhythm('div',divsPerBeat,divRhythm);
     case 'subdiv':
       return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
