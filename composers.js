@@ -1,39 +1,31 @@
 class MeasureComposer {
   constructor() {
     this.lastMeter=null;
-    this.isFirstCall=true;
   }
-  getDivisions(){const{min,max,weights}=DIVISIONS;return m.floor(rw(min,max,weights)*bpmRatio);}
-  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;return m.floor(rw(min,max,weights)*bpmRatio);}
-  getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*bpmRatio);}
-  getVoices() { const { min,max,weights }=VOICES;
-    const v=rw(min,max,weights) / (subdivsPerMinute / 1000)
-    return subdivsPerMinute/1000 < 1 ? m.max(1,m.floor(v / (subdivsPerMinute / 1000))) : m.max(0,m.ceil(v / (subdivsPerMinute / 1000)));
-  }
+  getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getDivisions(){const{min,max,weights}=DIVISIONS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getVoices(){const{min,max,weights}=VOICES;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   getOctaveRange() { const { min,max,weights }=OCTAVE;
   let [o1,o2]=[rw(min,max,weights),rw(min,max,weights)];
   while (m.abs(o1-o2)<ri(2,3)) { o2=modClamp(o2+ri(-3,3),min,max); }
   return [ o1,o2 ];
   }
   getMeter(ignoreRatioCheck=false,polyMeter=false) {
-    if (this.isFirstCall) {
-      let firstValue=ri(3,5);
-      this.lastMeter=[firstValue,firstValue];
-      this.isFirstCall=false;
-      return this.lastMeter;
-    }
     while (true) { let newNumerator; let newDenominator; let polyMeter;
       if (polyMeter===true) {
-        newNumerator=ri(3,14);
-        newDenominator=scaleBoundClamp(newNumerator + ri(-6,6),newNumerator,0.5,2,3,14);
+        newNumerator=getNumerator();
+        newDenominator=getDenominator();
       } else {
       newNumerator=ri(2,9);
       newDenominator=scaleBoundClamp(newNumerator + ri(-3,3),newNumerator,0.8,1.2);
       }
-      let newMeterRatio=newNumerator * (newNumerator / newDenominator) / 4;
+      let newMeterRatio=newNumerator / newDenominator;
       if (ignoreRatioCheck || (newMeterRatio >= 0.3 && newMeterRatio <= 3)) {
         if (this.lastMeter && !ignoreRatioCheck) {
-          let lastMeterRatio=this.lastMeter[0] * (this.lastMeter[0] / this.lastMeter[1]) / 4;
+          let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
           let ratioChange=m.abs(newMeterRatio - lastMeterRatio);
           if (ratioChange <= 0.75) {
             this.lastMeter=[newNumerator,newDenominator];

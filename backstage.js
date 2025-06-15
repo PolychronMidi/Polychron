@@ -203,8 +203,8 @@ ra=randomInRangeOrArray = (v) => {
   return v; // Return the value if it's neither a function nor an array
 };
 
-measureCount=secondsPerMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSection=secondsPerSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSecond=finalTime=endTime=phraseStart=tpPhrase=phraseStartTime=secondsPerPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balOffset=sideBias=firstLoop=0;
-lastUsedChannels = new Set();lastUsedChannels2 = new Set();lastUsedChannels3 = new Set();
+measureCount=spMeasure=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balOffset=sideBias=firstLoop=0;
+lastUsedCHs=new Set();lastUsedCHs2=new Set();lastUsedCHs3=new Set();
 velocity=99; flipBin=false;
 
 neutralPitchBend=8192; semitone=neutralPitchBend / 2;
@@ -215,7 +215,7 @@ binauralFreqOffset=rf(BINAURAL.min,BINAURAL.max);
 binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 [binauralPlus,binauralMinus]=[1,-1].map(binauralOffset);
 
-cCH1=0;cCH2=1;lCH1=2;rCH1=3; lCH3=4; rCH3=5; lCH2=6; rCH2=7; lCH4=8; drumCH=9; rCH4=10; cCH3=11; lCH5=12; rCH5=13; lCH6=14; rCH6=15;
+cCH1=0;cCH2=1;lCH1=2;rCH1=3;lCH3=4;rCH3=5;lCH2=6;rCH2=7;lCH4=8;drumCH=9;rCH4=10;cCH3=11;lCH5=12;rCH5=13;lCH6=14;rCH6=15;
 bass=[cCH3,lCH5,rCH5,lCH6,rCH6];
 bassBinaural=[lCH5,rCH5,lCH6,rCH6];
 source=[cCH1,lCH1,lCH2,rCH1,rCH2];
@@ -241,7 +241,7 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
 grandFinale=()=>{ allNotesOff(sectionStart+PPQ);muteAll(sectionStart+PPQ*2);
-  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) {let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c'); composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + tpSecond * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
+  c=c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); let finalTick=-Infinity; c.forEach(_=>{ if (!isNaN(_.tick)) {let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c'); composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`; finalTick=m.max(finalTick,_.tick); } else { console.error("NaN tick value encountered:",_); } }); (function finale(){composition+=`1,${finalTick + tpSec * SILENT_OUTRO_SECONDS},end_track`})(); fs.writeFileSync('output.csv',composition); console.log('output.csv created. Track Length:',finalTime);
 };
 
 composition=`0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
