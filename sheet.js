@@ -12,7 +12,7 @@ BINAURAL={
   max: 12
 };
 PPQ=30000;
-BPM=80;
+BPM=72;
 NUMERATOR={
   min: 2,
   max: 11,

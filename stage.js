@@ -31,7 +31,7 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   ...binauralR.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===rCH1 || ch===rCH3 || ch===rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)]})),
   );
   // flipBin volume transition
-  const startTick=beatStart - tpSecond/4; const endTick=beatStart + tpSecond/4;
+  const startTick=beatStart - tpSec/4; const endTick=beatStart + tpSec/4;
   const steps=10; const tickIncrement=(endTick - startTick) / steps;
   for (let i=steps/2-1; i <= steps; i++) {
     const tick=startTick + (tickIncrement * i);
@@ -48,16 +48,16 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
 }
 };
 
-stutterFade=(channels,numStutters=ri(10,70),duration=tpSecond*rf(.2,1.5))=>{
+stutterFade=(channels,numStutters=ri(10,70),duration=tpSec*rf(.2,1.5))=>{
   const CHsToStutter=ri(1,5); const channelsToStutter=new Set();
-  const availableCHs=channels.filter(ch => !lastUsedChannels.has(ch));
+  const availableCHs=channels.filter(ch => !lastUsedCHs.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
     const ch=availableCHs[m.floor(m.random() * availableCHs.length)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
-  if (channelsToStutter.size < CHsToStutter) {lastUsedChannels.clear();
-  } else {lastUsedChannels=new Set(channelsToStutter);
+  if (channelsToStutter.size < CHsToStutter) {lastUsedCHs.clear();
+  } else {lastUsedCHs=new Set(channelsToStutter);
   }
   const channelsArray=Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => { const maxVol=ri(90,120);
@@ -76,16 +76,16 @@ stutterFade=(channels,numStutters=ri(10,70),duration=tpSecond*rf(.2,1.5))=>{
   });
 };
 
-stutterPan = (channels, numStutters = ri(30,90), duration = tpSecond*rf(.1,1.2)) => {
+stutterPan = (channels, numStutters = ri(30,90), duration = tpSec*rf(.1,1.2)) => {
   const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
-  const availableCHs = channels.filter(ch => !lastUsedChannels2.has(ch));
+  const availableCHs = channels.filter(ch => !lastUsedCHs2.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
     const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
-  if (channelsToStutter.size < CHsToStutter) {lastUsedChannels2.clear();
-  } else {lastUsedChannels2 = new Set(channelsToStutter);
+  if (channelsToStutter.size < CHsToStutter) {lastUsedCHs2.clear();
+  } else {lastUsedCHs2 = new Set(channelsToStutter);
   }
   const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => { 
@@ -107,16 +107,16 @@ stutterPan = (channels, numStutters = ri(30,90), duration = tpSecond*rf(.1,1.2))
   });
 };
 
-stutterFX = (channels, numStutters = ri(30,100), duration = tpSecond*rf(.1,2)) => {
+stutterFX = (channels, numStutters = ri(30,100), duration = tpSec*rf(.1,2)) => {
   const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
-  const availableCHs = channels.filter(ch => !lastUsedChannels3.has(ch));
+  const availableCHs = channels.filter(ch => !lastUsedCHs3.has(ch));
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
     const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
-  if (channelsToStutter.size < CHsToStutter) {lastUsedChannels3.clear();
-  } else {lastUsedChannels3 = new Set(channelsToStutter);
+  if (channelsToStutter.size < CHsToStutter) {lastUsedCHs3.clear();
+  } else {lastUsedCHs3 = new Set(channelsToStutter);
   }
   const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => { 
@@ -230,7 +230,8 @@ setNoteParams=()=>{
   binVel=rv(velocity * rf(.42,.57));
 }
 
-playNotes=()=>{setNoteParams();crossModulateRhythms();if(crossModulation>rv(rf(1.7,2.7),[-.5,-.3],.05)){ 
+playNotes=()=>{setNoteParams();crossModulateRhythms();
+  if(crossModulation>rv(rf(1.9,2.7),[-.2,-.3],.05)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -350,7 +351,8 @@ setNoteParams2=()=>{
   binVel=rv(velocity * rf(.42,.57));
 }
 
-playNotes2=()=>{setNoteParams2();crossModulateRhythms();if(crossModulation>rv(rf(1.8,2.8),[-.5,-.3],.1)){ 
+playNotes2=()=>{setNoteParams2();crossModulateRhythms();
+  if(crossModulation>rv(rf(2,2.8),[-.2,-.3],.1)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
