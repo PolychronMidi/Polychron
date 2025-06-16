@@ -84,7 +84,7 @@ ri=randomInt=(min1=1,max1,min2,max2)=>{
   }
 };
 
-// Random limited Change: Random value from inclusive range, with limited change per iteration.
+// Random Limited Change: Random value from inclusive range, with limited change per iteration.
 rl=randomLimitedChange=(currentValue,minChange,maxChange,minValue,maxValue,type='i')=>{
   const adjustedMinChange=m.min(minChange,maxChange);
   const adjustedMaxChange=m.max(minChange,maxChange);
@@ -121,7 +121,7 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
 };
 
 // Random variation within range(s) at frequency: Give 1 range or separate boost/deboost ranges.
-rv=randomVariation=(value,boostRange=[.05,.10],deboostRange=boostRange,frequency=.05)=>{let factor;
+rv=randomVariation=(value,boostRange=[.05,.10],frequency=.05,deboostRange=boostRange)=>{let factor;
   const singleRange=Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange=singleRange.length===2 && typeof singleRange[0]==='number' && typeof singleRange[1]==='number';
   if (isSingleRange) {  const variation=rf(...singleRange);
@@ -227,7 +227,8 @@ reflect2={[cCH1]:cCH3,[lCH1]:lCH5,[rCH1]:rCH5,[lCH2]:lCH6,[rCH2]:rCH6};
 binauralL=[lCH1,lCH2,lCH3,lCH4,lCH5,lCH6];
 binauralR=[rCH1,rCH2,rCH3,rCH4,rCH5,rCH6];
 flipBinF=[cCH1,cCH2,cCH3,lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
-flipBinT=[cCH1,cCH2,cCH3,lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];flipBinF2=[lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
+flipBinT=[cCH1,cCH2,cCH3,lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];
+flipBinF2=[lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
 flipBinT2=[lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];
 flipBinF3=[cCH2,cCH3,lCH1,rCH1,lCH3,rCH3,lCH5,rCH5];
 flipBinT3=[cCH2,cCH3,lCH2,rCH2,lCH4,rCH4,lCH6,rCH6];
