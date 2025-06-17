@@ -15,13 +15,13 @@ class MeasureComposer {
   }
   getMeter(ignoreRatioCheck=false,polyMeter=false) {
     while (true) { let newNumerator; let newDenominator; let polyMeter;
-      if (polyMeter===true) {
-        newNumerator=getNumerator();
-        newDenominator=getDenominator();
-      } else {
-      newNumerator=ri(2,9);
-      newDenominator=scaleBoundClamp(newNumerator + ri(-3,3),newNumerator,0.8,1.2);
-      }
+      // if (polyMeter===true) {
+        newNumerator=this.getNumerator();
+        newDenominator=this.getDenominator();
+      // } else {
+      // newNumerator=ri(2,9);
+      // newDenominator=scaleBoundClamp(newNumerator + ri(-3,3),newNumerator,0.8,1.2);
+      // }
       let newMeterRatio=newNumerator / newDenominator;
       if (ignoreRatioCheck || (newMeterRatio >= 0.3 && newMeterRatio <= 3)) {
         if (this.lastMeter && !ignoreRatioCheck) {

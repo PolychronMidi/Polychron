@@ -207,7 +207,7 @@ return [
   ];  })  );  }
 }
 
-crossModulateRhythms=()=>{ crossModulation=0;
+crossModulateRhythms=()=>{ lastCrossMod=crossModulation; crossModulation=0;
   crossModulation+=beatRhythm[beatIndex] > 0 ? rf(1.5,3) : m.max(rf(.625,1.25),(1 / numerator) * beatsOff + (1 / numerator) * beatsOn) + 
   divRhythm[divIndex] > 0 ? rf(1,2) : m.max(rf(.5,1),(1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) + 
   subdivRhythm[subdivIndex] > 0 ? rf(.5,1) : m.max(rf(.25,.5),(1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) + 
@@ -223,15 +223,15 @@ crossModulateRhythms=()=>{ crossModulation=0;
 
 setNoteParams=()=>{
   on=subdivStart+(tpSubdiv*rv(rf(.2),[-.1,.07],.3));
-  shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
-  longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
+  shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],.1,[-.05,-.1]);
+  longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],.1,[-.05,-.1]);
   useShort=subdivsPerMinute > ri(400,650);
   sustain=(useShort ? shortSustain : longSustain)*rv(rf(.8,1.3));
   binVel=rv(velocity * rf(.42,.57));
 }
 
 playNotes=()=>{setNoteParams();crossModulateRhythms();
-  if(crossModulation>rv(rf(1.9,2.7),[-.2,-.3],.05)){ 
+  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -344,15 +344,15 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
 
 setNoteParams2=()=>{
   on=subsubdivStart+(tpSubsubdiv*rv(rf(.2),[-.1,.07],.3));
-  shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],[-.05,-.1],.1);
-  longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],[-.05,-.1],.1);
+  shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],.1,[-.05,-.1]);
+  longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],.1,[-.05,-.1]);
   useShort=subdivsPerMinute > ri(400,650);
   sustain=(useShort ? shortSustain : longSustain)*rv(rf(.8,1.3));
   binVel=rv(velocity * rf(.42,.57));
 }
 
 playNotes2=()=>{setNoteParams2();crossModulateRhythms();
-  if(crossModulation>rv(rf(2,2.8),[-.2,-.3],.1)){ 
+  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(2,3),[.2,.3],.1)){ 
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
