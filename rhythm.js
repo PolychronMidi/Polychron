@@ -120,6 +120,7 @@ playDrums2=()=>{
   }
 };
 
+
 rhythms={//weights: [beat,div,subdiv]
   'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
   'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
@@ -134,27 +135,28 @@ rhythms={//weights: [beat,div,subdiv]
   'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
 };
 
+const { binary: _binary, hex: _hex, onsets: _onsets, random: _random, probability: _probability, euclid: _euclid, rotate: _rotate } = require('@tonaljs/rhythm-pattern');
 binary=(length)=>{ let pattern=[];
-  while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.binary(ri(99))); }
+  while (pattern.length < length) { pattern=pattern.concat(_binary(ri(99))); }
   return patternLength(pattern,length);
 };
 hex=(length)=>{ let pattern=[];
-  while (pattern.length < length) { pattern=pattern.concat(t.RhythmPattern.hex(ri(99).toString(16))); }
+  while (pattern.length < length) { pattern=pattern.concat(_hex(ri(99).toString(16))); }
   return patternLength(pattern,length);
 };
 onsets = (numbers) => {
-if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
+  if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
     return makeOnsets(...numbers.make);
   }
-  return t.RhythmPattern.onsets(numbers);
+  return _onsets(numbers);
 };
-random=(length,probOn)=>{ return t.RhythmPattern.random(length,1 - probOn); };
-prob=(probs)=>{ return t.RhythmPattern.probability(probs); };
-euclid=(length,ones)=>{ return t.RhythmPattern.euclid(length,ones); };
+random=(length,probOn)=>{ return _random(length,1 - probOn); };
+prob=(probs)=>{ return _probability(probs); };
+euclid=(length,ones)=>{ return _euclid(length,ones); };
 rotate=(pattern,rotations,direction="R",length=pattern.length)=>{
   if (direction==='?') { direction=rf() < .5 ? 'L' : 'R'; }
   if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
-  return patternLength(t.RhythmPattern.rotate(pattern,rotations),length);
+  return patternLength(_rotate(pattern,rotations),length);
 };
 morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
   probHigh=probHigh===undefined ? probLow : probHigh;
@@ -168,14 +170,14 @@ morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
 };
 
 setRhythm=(level)=>{
-  random=(length,probOn)=> { return t.RhythmPattern.random(length,1 - probOn); };
+  random=(length,probOn)=> { return _random(length,1 - probOn); };
   switch(level) {
     case 'beat':
-      return beatRhythm=beatRhythm < 1 ? t.RhythmPattern.random(numerator) : getRhythm('beat',numerator,beatRhythm);
+      return beatRhythm=beatRhythm < 1 ? _random(numerator) : getRhythm('beat',numerator,beatRhythm);
     case 'div':
-      return divRhythm=divRhythm < 1 ? t.RhythmPattern.random(divsPerBeat,.4) : getRhythm('div',divsPerBeat,divRhythm);
+      return divRhythm=divRhythm < 1 ? _random(divsPerBeat,.4) : getRhythm('div',divsPerBeat,divRhythm);
     case 'subdiv':
-      return subdivRhythm=subdivRhythm < 1 ? t.RhythmPattern.random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
+      return subdivRhythm=subdivRhythm < 1 ? _random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
   }
 };
