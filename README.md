@@ -1,3 +1,5 @@
+# Polychron
+
 Polychron aims to:
 
 - Develop a system that allows for any musical meter (time signature) in MIDI composition, while still maintaining compatibility with standard MIDI playback systems
@@ -21,6 +23,32 @@ This approach allows Polychron to represent and work with any meter while mainta
 
 Uses [tonal](https://github.com/tonaljs/tonal) and my own custom fork of [py_midicsv](https://github.com/timwedde/py_midicsv), called [CSV Maestro](https://github.com/i1li/csv_maestro). We create our MIDI data in CSV (spreadsheet) format first for a nice human-readable version, which allows easier auditing and more direct data control.
 
+## File Architecture Overview
+
+The Polychron system is built using a **"clean minimal"** code philosophy with 8 specialized JavaScript modules, each with comprehensive documentation:
+
+### Core System Files
+
+- **[play.js](play.md)** - Main composition engine and orchestrator. Contains the primary execution loop that coordinates all other modules to generate complete MIDI compositions.
+
+- **[composers.js](composers.md)** - Musical content generation and intelligence system. Implements sophisticated composer classes for scales, chords, and modes with advanced music theory integration.
+
+- **[rhythm.js](rhythm.md)** - Rhythmic pattern generation and drum programming system. Features algorithmic rhythm generation, Euclidean patterns, and context-aware drum programming.
+
+- **[time.js](time.md)** - Timing engine and temporal management system. Houses the revolutionary "meter spoofing" technology and polyrhythm calculation algorithms.
+
+- **[stage.js](stage.md)** - Audio processing and performance engine. Handles binaural beat generation, advanced stutter effects, and comprehensive MIDI event creation.
+
+- **[backstage.js](backstage.md)** - Core utility functions and global state management. Provides mathematical utilities, randomization systems, and MIDI infrastructure.
+
+- **[venue.js](venue.md)** - MIDI data specifications and music theory constants. Contains complete MIDI reference data and music theory databases from Tonal.js.
+
+- **[sheet.js](sheet.md)** - Configuration and musical parameters. Central configuration file with weighted probability distributions for all musical parameters.
+
+Each module README provides detailed documentation including function-by-function analysis, architectural role, integration patterns, and performance characteristics.
+
+## Installation & Usage
+
 To install tonal and create the CSV file, run the following (requires Node.js installed):
 ```js
 npm i tonal
@@ -31,6 +59,7 @@ To create the MIDI file from the CSV, run the following (requires Python install
 ```python
 py c2m.py
 ```
+
 <span id="players">
 You'll need a MIDI player with a soundfont installed to play MIDI files. Standard midi players may have playback issues due to data overload, the following have been tested to work:
 
