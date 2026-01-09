@@ -1,7 +1,9 @@
-require('./sheet'); require('./venue'); require('./backstage'); 
+/** Stage module: MIDI event generation for playback, effects, and channel management. */
+require('./sheet'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers');
 
-setTuningAndInstruments=()=>{  
+/** Sets program, pitch bend, and volume for all instrument channels */
+setTuningAndInstruments=()=>{
   p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
   type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
   { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
@@ -13,6 +15,7 @@ setTuningAndInstruments=()=>{
   p(c,{type:'control_c', vals:[drumCH, 7, 127]});
 };
 
+/** Randomly updates binaural beat instruments and FX on beat shifts */
 setOtherInstruments=()=>{
   if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
 p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart,type:'program_c' };
@@ -23,6 +26,7 @@ p(c,...['control_c'].flatMap(()=>{ _={ tick:beatStart,type:'program_c' };
   ];  })  );  }
 }
 
+/** Manages binaural beat pitch shifts and volume crossfades at beat boundaries */
 setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   beatCount=0; flipBin=!flipBin; allNotesOff(beatStart);
   beatsUntilBinauralShift=ri(numerator,numerator*2*bpmRatio3);
@@ -48,6 +52,7 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
 }
 };
 
+/** Applies rapid volume stutter/fade effect to selected channels */
 stutterFade=(channels,numStutters=ri(10,70),duration=tpSec*rf(.2,1.5))=>{
   const CHsToStutter=ri(1,5); const channelsToStutter=new Set();
   const availableCHs=channels.filter(ch => !lastUsedCHs.has(ch));
@@ -76,6 +81,7 @@ stutterFade=(channels,numStutters=ri(10,70),duration=tpSec*rf(.2,1.5))=>{
   });
 };
 
+/** Applies rapid pan stutter effect to selected channels */
 stutterPan = (channels, numStutters = ri(30,90), duration = tpSec*rf(.1,1.2)) => {
   const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
   const availableCHs = channels.filter(ch => !lastUsedCHs2.has(ch));
@@ -88,10 +94,10 @@ stutterPan = (channels, numStutters = ri(30,90), duration = tpSec*rf(.1,1.2)) =>
   } else {lastUsedCHs2 = new Set(channelsToStutter);
   }
   const channelsArray = Array.from(channelsToStutter);
-  channelsArray.forEach(channelToStutter => { 
+  channelsArray.forEach(channelToStutter => {
     const edgeMargin = ri(7,25);
     const maxPan = 127-edgeMargin;
-    const isFadeIn = rf() < 0.5; 
+    const isFadeIn = rf() < 0.5;
     let tick, pan;
     for (let i = m.floor(numStutters*(rf(1/3))); i < numStutters; i++) {
       tick = beatStart + i * (duration/numStutters) * rf(.7,1.3);
@@ -107,6 +113,7 @@ stutterPan = (channels, numStutters = ri(30,90), duration = tpSec*rf(.1,1.2)) =>
   });
 };
 
+/** Applies rapid FX parameter stutter effect to selected channels */
 stutterFX = (channels, numStutters = ri(30,100), duration = tpSec*rf(.1,2)) => {
   const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
   const availableCHs = channels.filter(ch => !lastUsedCHs3.has(ch));
@@ -119,11 +126,11 @@ stutterFX = (channels, numStutters = ri(30,100), duration = tpSec*rf(.1,2)) => {
   } else {lastUsedCHs3 = new Set(channelsToStutter);
   }
   const channelsArray = Array.from(channelsToStutter);
-  channelsArray.forEach(channelToStutter => { 
+  channelsArray.forEach(channelToStutter => {
     const FXToStutter=ra(FX);
     const edgeMargin = ri(7,25);
     const max = 127-edgeMargin;
-    const isFadeIn = rf() < 0.5; 
+    const isFadeIn = rf() < 0.5;
     let tick, pan;
     for (let i = m.floor(numStutters*(rf(1/3))); i < numStutters; i++) {
       tick = beatStart + i * (duration/numStutters) * rf(.7,1.3);
@@ -139,8 +146,9 @@ stutterFX = (channels, numStutters = ri(30,100), duration = tpSec*rf(.1,2)) => {
   });
 };
 
+/** Sets pan positions, balance offsets, and detailed FX parameters for all channels */
 setBalanceAndFX=()=>{
-if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1; 
+if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) { firstLoop=1;
   balOffset=rl(balOffset,-4,4,0,45);
   sideBias=rl(sideBias,-2,2,-20,20);
   lBal=m.max(0,m.min(54,balOffset + ri(3) + sideBias));
@@ -208,15 +216,15 @@ return [
 }
 
 crossModulateRhythms=()=>{ lastCrossMod=crossModulation; crossModulation=0;
-  crossModulation+=beatRhythm[beatIndex] > 0 ? rf(1.5,3) : m.max(rf(.625,1.25),(1 / numerator) * beatsOff + (1 / numerator) * beatsOn) + 
-  divRhythm[divIndex] > 0 ? rf(1,2) : m.max(rf(.5,1),(1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) + 
-  subdivRhythm[subdivIndex] > 0 ? rf(.5,1) : m.max(rf(.25,.5),(1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) + 
-  (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri() ? rf(.1,.3) : rf(-.1)) + 
-  (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) + 
-  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) + 
-  (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) + 
-  (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) + 
-  (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) + 
+  crossModulation+=beatRhythm[beatIndex] > 0 ? rf(1.5,3) : m.max(rf(.625,1.25),(1 / numerator) * beatsOff + (1 / numerator) * beatsOn) +
+  divRhythm[divIndex] > 0 ? rf(1,2) : m.max(rf(.5,1),(1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) +
+  subdivRhythm[subdivIndex] > 0 ? rf(.5,1) : m.max(rf(.25,.5),(1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) +
+  (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri() ? rf(.1,.3) : rf(-.1)) +
+  (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) +
+  (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) +
+  (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) +
+  (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) +
+  (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) +
   (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatRhythm[beatIndex]<1?rf(.4,.5):0) + (divRhythm[divIndex]<1?rf(.3,.4):0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3):0);
   console.log('crossModulation:',crossModulation);
 };
@@ -231,7 +239,7 @@ setNoteParams=()=>{
 }
 
 playNotes=()=>{setNoteParams();crossModulateRhythms();
-  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){ 
+  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -294,7 +302,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
   }
 
-  reflectionCH=reflect[sourceCH]; 
+  reflectionCH=reflect[sourceCH];
   p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
   p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
   if (rf()<.33){ // Reflection Channels Stutter-Shift
@@ -352,7 +360,7 @@ setNoteParams2=()=>{
 }
 
 playNotes2=()=>{setNoteParams2();crossModulateRhythms();
-  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(2,3),[.2,.3],.1)){ 
+  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(2,3),[.2,.3],.1)){
 composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -417,7 +425,7 @@ composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
     p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
   }
 
-  reflectionCH=reflect[sourceCH]; 
+  reflectionCH=reflect[sourceCH];
   p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
   p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
   if (rf()<.2){ // Reflection Channels Stutter-Shift

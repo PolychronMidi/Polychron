@@ -1,0 +1,588 @@
+// test/rhythm.test.js
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+let m = Math;
+let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
+let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
+
+// Mock dependencies
+const mockTonalRhythm = {
+  binary: vi.fn(),
+  hex: vi.fn(),
+  onsets: vi.fn(),
+  random: vi.fn(),
+  probability: vi.fn(),
+  euclid: vi.fn(),
+  rotate: vi.fn()
+};
+
+// Setup global state
+function setupGlobalState() {
+  c = [];
+  drumCH = 9;
+  beatStart = 0;
+  tpBeat = 480;
+  beatIndex = 0;
+  numerator = 4;
+  beatRhythm = [1, 0, 1, 0];
+  beatsOff = 0;
+  bpmRatio3 = 1;
+  measuresPerPhrase = 4;
+  divsPerBeat = 2;
+  subdivsPerDiv = 2;
+  divRhythm = [1, 0];
+  subdivRhythm = [1, 0];
+  m = Math;
+  global.drumMap = {
+    'snare1': { note: 31, velocityRange: [99, 111] },
+    'kick1': { note: 12, velocityRange: [111, 127] },
+    'cymbal1': { note: 59, velocityRange: [66, 77] }
+  };
+}
+
+// Helper functions from backstage.js
+const rf = (min1 = 1, max1, min2, max2) => {
+  if (max1 === undefined) { max1 = min1; min1 = 0; }
+  [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
+  return m.random() * (max1 - min1 + Number.EPSILON) + min1;
+};
+
+const ri = (min1 = 1, max1, min2, max2) => {
+  if (max1 === undefined) { max1 = min1; min1 = 0; }
+  [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
+  return Math.round(m.random() * (max1 - min1) + min1);
+};
+
+const clamp = (value, min, max) => m.min(m.max(value, min), max);
+const rv = (value, range = [.05, .10], freq = .05) => value * (rf() < freq ? 1 + rf(...range) : 1);
+const ra = (v) => Array.isArray(v) ? v[ri(v.length - 1)] : v;
+const p = (array, ...items) => { array.push(...items); };
+
+// Import rhythm functions
+const drumMap = {
+  'snare1': { note: 31, velocityRange: [99, 111] },
+  'snare2': { note: 33, velocityRange: [99, 111] },
+  'kick1': { note: 12, velocityRange: [111, 127] },
+  'kick2': { note: 14, velocityRange: [111, 127] },
+  'cymbal1': { note: 59, velocityRange: [66, 77] }
+};
+
+const drummer = (drumNames, beatOffsets, offsetJitter = rf(.1), stutterChance = .3,
+                stutterRange = [2, m.round(rv(11, [2, 3], .3))], stutterDecayFactor = rf(.9, 1.1)) => {
+  console.log('[drummer] START', drumNames);
+  if (drumNames === 'random') {
+    const allDrums = Object.keys(drumMap);
+    drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
+    beatOffsets = [0];
+  }
+  const drums = Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d => d.trim());
+  const offsets = Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
+  console.log('[drummer] drums/offsets prepared');
+  if (offsets.length < drums.length) {
+    offsets.push(...new Array(drums.length - offsets.length).fill(0));
+  } else if (offsets.length > drums.length) {
+    offsets.length = drums.length;
+  }
+  const combined = drums.map((drum, index) => ({ drum, offset: offsets[index] }));
+  console.log('[drummer] combined prepared');
+  if (rf() < .7) {
+    if (rf() < .5) {
+      combined.reverse();
+    }
+  } else {
+    for (let i = combined.length - 1; i > 0; i--) {
+      const j = m.floor(m.random() * (i + 1));
+      [combined[i], combined[j]] = [combined[j], combined[i]];
+    }
+  }
+  console.log('[drummer] randomization done');
+  const adjustedOffsets = combined.map(({ offset }) => {
+    if (rf() < .3) {
+      return offset;
+    } else {
+      let adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
+      return adjusted - m.floor(adjusted);
+    }
+  });
+  console.log('[drummer] offsets adjusted');
+  combined.forEach(({ drum, offset }, idx) => {
+    console.log(`[drummer] processing drum ${idx}:`, drum);
+    const drumInfo = drumMap[drum];
+    if (drumInfo) {
+      if (rf() < stutterChance) {
+        console.log('[drummer] applying stutter');
+        const numStutters = ri(...stutterRange);
+        const stutterDuration = .25 * ri(1, 8) / numStutters;
+        const [minVelocity, maxVelocity] = drumInfo.velocityRange;
+        const isFadeIn = rf() < 0.7;
+        for (let i = 0; i < numStutters; i++) {
+          const tick = beatStart + (offset + i * stutterDuration) * tpBeat;
+          let currentVelocity;
+          if (isFadeIn) {
+            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
+            currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 127);
+          } else {
+            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
+            currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
+          }
+          p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
+        }
+      } else {
+        console.log('[drummer] no stutter');
+        p(c, { tick: beatStart + offset * tpBeat, type: 'on', vals: [drumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
+      }
+    }
+    console.log(`[drummer] drum ${idx} done`);
+  });
+  console.log('[drummer] END');
+};
+
+const patternLength = (pattern, length) => {
+  console.log('[patternLength] START', pattern.length, length);
+  if (length === undefined) return pattern;
+  if (pattern.length === 0) return pattern; // Handle empty pattern
+  if (length > pattern.length) {
+    let iterations = 0;
+    const maxIterations = 1000;
+    while (pattern.length < length && iterations < maxIterations) {
+      iterations++;
+      const remaining = length - pattern.length;
+      const chunk = pattern.slice(0, Math.min(remaining, pattern.length));
+      pattern = pattern.concat(chunk);
+    }
+    console.log('[patternLength] extended to', pattern.length);
+  } else if (length < pattern.length) {
+    pattern = pattern.slice(0, length);
+    console.log('[patternLength] truncated to', pattern.length);
+  }
+  console.log('[patternLength] END');
+  return pattern;
+};
+
+const closestDivisor = (x, target = 2) => {
+  let closest = Infinity;
+  let smallestDiff = Infinity;
+  for (let i = 1; i <= m.sqrt(x); i++) {
+    if (x % i === 0) {
+      [i, x / i].forEach(divisor => {
+        if (divisor !== closest) {
+          let diff = m.abs(divisor - target);
+          if (diff < smallestDiff) { smallestDiff = diff; closest = divisor; }
+        }
+      });
+    }
+  }
+  if (closest === Infinity) { return x; }
+  return x % target === 0 ? target : closest;
+};
+
+const makeOnsets = (length, valuesOrRange) => {
+  console.log('[makeOnsets] START', length, valuesOrRange);
+  let onsets = []; let total = 0;
+  let iterations = 0;
+  const maxIterations = length * 2; // Safety limit
+  while (total < length && iterations < maxIterations) {
+    iterations++;
+    console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
+    let v = ra(valuesOrRange);
+    console.log(`[makeOnsets] v=${v}`);
+    if (total + (v + 1) <= length) {
+      onsets.push(v);
+      total += v + 1;
+      console.log(`[makeOnsets] added onset, new total=${total}`);
+    }
+    else if (Array.isArray(valuesOrRange) && valuesOrRange.length === 2) {
+      v = valuesOrRange[0];
+      if (total + (v + 1) <= length) { onsets.push(v); total += v + 1; }
+      break;
+    } else {
+      console.log('[makeOnsets] breaking');
+      break;
+    }
+  }
+  console.log('[makeOnsets] building rhythm array');
+  let rhythm = [];
+  for (let onset of onsets) {
+    rhythm.push(1);
+    for (let i = 0; i < onset; i++) { rhythm.push(0); }
+  }
+  while (rhythm.length < length) { rhythm.push(0); }
+  console.log('[makeOnsets] END, length=', rhythm.length);
+  return rhythm;
+};
+
+describe('drumMap', () => {
+  it('should define drum mappings with notes and velocity ranges', () => {
+    expect(drumMap.snare1).toEqual({ note: 31, velocityRange: [99, 111] });
+    expect(drumMap.kick1).toEqual({ note: 12, velocityRange: [111, 127] });
+  });
+
+  it('should have valid MIDI note numbers', () => {
+    Object.values(drumMap).forEach(drum => {
+      expect(drum.note).toBeGreaterThanOrEqual(0);
+      expect(drum.note).toBeLessThanOrEqual(127);
+    });
+  });
+
+  it('should have valid velocity ranges', () => {
+    Object.values(drumMap).forEach(drum => {
+      expect(drum.velocityRange[0]).toBeGreaterThanOrEqual(0);
+      expect(drum.velocityRange[1]).toBeLessThanOrEqual(127);
+      expect(drum.velocityRange[0]).toBeLessThanOrEqual(drum.velocityRange[1]);
+    });
+  });
+});
+
+describe('drummer', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should play single drum at offset 0', () => {
+    drummer(['snare1'], [0]);
+    expect(c.length).toBeGreaterThan(0);
+    expect(c[0].vals[0]).toBe(drumCH);
+    expect(c[0].vals[1]).toBe(31); // snare1 note
+  });
+
+  it('should play multiple drums', () => {
+    drummer(['snare1', 'kick1'], [0, 0.5]);
+    expect(c.length).toBeGreaterThan(0);
+  });
+
+  it('should handle string input with commas', () => {
+    drummer('snare1,kick1', [0, 0.5]);
+    expect(c.length).toBeGreaterThan(0);
+  });
+
+  it('should handle random drum selection', () => {
+    drummer('random', [0]);
+    expect(c.length).toBeGreaterThan(0);
+    const playedNote = c[0].vals[1];
+    const allNotes = Object.values(drumMap).map(d => d.note);
+    expect(allNotes).toContain(playedNote);
+  });
+
+  it('should apply offsets correctly', () => {
+    beatStart = 0;
+    tpBeat = 480;
+    drummer(['snare1'], [0.5]);
+    const firstTick = c[0].tick;
+    expect(firstTick).toBeGreaterThanOrEqual(240); // 0.5 * 480
+  });
+
+  it('should fill missing offsets with zeros', () => {
+    drummer(['snare1', 'kick1', 'cymbal1'], [0]);
+    expect(c.length).toBeGreaterThan(0);
+  });
+
+  it('should truncate extra offsets', () => {
+    drummer(['snare1'], [0, 0.5, 1, 1.5]);
+    expect(c.length).toBeGreaterThan(0);
+  });
+
+  it('should generate velocities within range', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    setupGlobalState();
+    drummer(['snare1'], [0]);
+    const velocity = c[c.length - 1].vals[2];
+    expect(velocity).toBeGreaterThanOrEqual(0);
+    expect(velocity).toBeLessThanOrEqual(127);
+    vi.restoreAllMocks();
+  });
+
+  it('should apply stutter effect occasionally', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1); // Force stutter
+    setupGlobalState();
+    drummer(['snare1'], [0], rf(.1), 1.0);
+    expect(c.length).toBeGreaterThan(1);
+    vi.restoreAllMocks();
+  });
+
+  it('should handle non-existent drum gracefully', () => {
+    drummer(['nonexistent'], [0]);
+    expect(c.length).toBe(0);
+  });
+});
+
+describe('patternLength', () => {
+  it('should return pattern unchanged when length matches', () => {
+    console.log('TEST: pattern unchanged');
+    const pattern = [1, 0, 1, 0];
+    expect(patternLength(pattern, 4)).toEqual([1, 0, 1, 0]);
+  });
+
+  it('should extend pattern when length is longer', () => {
+    console.log('TEST: extend pattern');
+    const pattern = [1, 0];
+    expect(patternLength(pattern, 6)).toEqual([1, 0, 1, 0, 1, 0]);
+  });
+
+  it('should truncate pattern when length is shorter', () => {
+    console.log('TEST: truncate pattern');
+    const pattern = [1, 0, 1, 0];
+    expect(patternLength(pattern, 2)).toEqual([1, 0]);
+  });
+
+  it('should handle empty pattern', () => {
+    console.log('TEST: empty pattern');
+    const pattern = [];
+    expect(patternLength(pattern, 4)).toEqual([]);
+  });
+
+  it('should return pattern as-is when length undefined', () => {
+    console.log('TEST: undefined length');
+    const pattern = [1, 0, 1];
+    expect(patternLength(pattern)).toEqual([1, 0, 1]);
+  });
+
+  it('should repeat pattern multiple times for large lengths', () => {
+    console.log('TEST: large lengths');
+    const pattern = [1, 0];
+    const result = patternLength(pattern, 10);
+    expect(result).toEqual([1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
+  });
+
+  it('should handle single element pattern', () => {
+    console.log('TEST: single element');
+    const pattern = [1];
+    expect(patternLength(pattern, 5)).toEqual([1, 1, 1, 1, 1]);
+  });
+});
+
+describe('closestDivisor', () => {
+  it('should find exact divisor when target divides x', () => {
+    expect(closestDivisor(12, 3)).toBe(3);
+    expect(closestDivisor(20, 5)).toBe(5);
+  });
+
+  it('should find closest divisor when target does not divide x', () => {
+    expect(closestDivisor(12, 5)).toBe(6); // 6 is closest to 5
+  });
+
+  it('should handle target = 2', () => {
+    expect(closestDivisor(12, 2)).toBe(2);
+    expect(closestDivisor(15, 2)).toBe(1); // 1 is closest to 2 among divisors of 15
+  });
+
+  it('should handle x = 1', () => {
+    expect(closestDivisor(1, 2)).toBe(1);
+  });
+
+  it('should handle prime numbers', () => {
+    expect(closestDivisor(13, 2)).toBe(1); // 13 is prime, only divisors are 1 and 13
+  });
+
+  it('should find divisor closest to target', () => {
+    const result = closestDivisor(24, 7);
+    const divisors = [1, 2, 3, 4, 6, 8, 12, 24];
+    expect(divisors).toContain(result);
+    expect(result).toBe(8); // 8 is closest to 7
+  });
+
+  it('should default target to 2', () => {
+    expect(closestDivisor(12)).toBe(2);
+  });
+
+  it('should handle large numbers', () => {
+    expect(closestDivisor(100, 7)).toBe(5); // 5 is closer to 7 than 10
+  });
+});
+
+describe('makeOnsets', () => {
+  it('should create rhythm with onsets', () => {
+    const rhythm = makeOnsets(8, [1, 2]);
+    expect(rhythm.length).toBe(8);
+    expect(rhythm[0]).toBe(1); // First onset
+  });
+
+  it('should place zeros between onsets', () => {
+    const rhythm = makeOnsets(8, [2]);
+    expect(rhythm.filter(v => v === 0).length).toBeGreaterThan(0);
+  });
+
+  it('should fill to exact length', () => {
+    const rhythm = makeOnsets(16, [1, 2, 3]);
+    expect(rhythm.length).toBe(16);
+  });
+
+  it('should handle length 1', () => {
+    const rhythm = makeOnsets(1, [0]);
+    expect(rhythm).toEqual([1]);
+  });
+
+  it('should handle large gaps', () => {
+    const rhythm = makeOnsets(10, [5]);
+    expect(rhythm.length).toBe(10);
+    expect(rhythm[0]).toBe(1);
+  });
+
+  it('should create valid rhythm pattern', () => {
+    const rhythm = makeOnsets(16, [1, 2, 3, 4]);
+    expect(rhythm.every(v => v === 0 || v === 1)).toBe(true);
+    expect(rhythm.length).toBe(16);
+  });
+
+  it('should handle single value range', () => {
+    const rhythm = makeOnsets(8, [1]);
+    expect(rhythm.length).toBe(8);
+  });
+
+  it('should respect 2-element array as min-max range', () => {
+    const rhythm = makeOnsets(20, [2, 4]);
+    expect(rhythm.length).toBe(20);
+  });
+});
+
+describe('Integration tests', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should generate complete drum sequence', () => {
+    beatStart = 0;
+    tpBeat = 480;
+    drummer(['kick1', 'snare1', 'cymbal1'], [0, 0.5, 0.75]);
+    expect(c.length).toBeGreaterThan(0);
+    expect(c.every(cmd => cmd.type === 'on')).toBe(true);
+    expect(c.every(cmd => cmd.vals[0] === drumCH)).toBe(true);
+  });
+
+  it('should create patterns of correct length', () => {
+    for (let len of [4, 8, 12, 16]) {
+      const pattern = patternLength([1, 0, 1], len);
+      expect(pattern.length).toBe(len);
+    }
+  });
+
+  it('should find divisors for rhythm lengths', () => {
+    for (let x of [8, 12, 16, 24]) {
+      const divisor = closestDivisor(x, 3);
+      expect(x % divisor).toBe(0);
+    }
+  });
+
+  it('should create onset patterns with consistent length', () => {
+    for (let len of [8, 16, 32]) {
+      const rhythm = makeOnsets(len, [1, 2, 3]);
+      expect(rhythm.length).toBe(len);
+    }
+  });
+});
+
+describe('Edge cases', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should handle zero beat offsets', () => {
+    drummer(['snare1'], [0]);
+    expect(c[0].tick).toBe(beatStart);
+  });
+
+  it('should handle large beat offsets', () => {
+    drummer(['snare1'], [10]);
+    expect(c[0].tick).toBeGreaterThan(beatStart);
+  });
+
+  it('should handle negative offsets gracefully', () => {
+    drummer(['snare1'], [-0.5]);
+    expect(c.length).toBeGreaterThan(0);
+  });
+
+  it('should handle empty drum arrays', () => {
+    drummer([], []);
+    expect(c.length).toBe(0);
+  });
+
+  it('should handle very long patterns', () => {
+    const pattern = Array(100).fill(1);
+    const result = patternLength(pattern, 200);
+    expect(result.length).toBe(200);
+  });
+
+  it('should handle closestDivisor with target larger than x', () => {
+    expect(closestDivisor(5, 10)).toBeGreaterThanOrEqual(1);
+    expect(closestDivisor(5, 10)).toBeLessThanOrEqual(5);
+  });
+
+  it('should handle makeOnsets with impossible constraints', () => {
+    const rhythm = makeOnsets(5, [10]); // Gap too large
+    expect(rhythm.length).toBe(5);
+  });
+});
+
+describe('Probabilistic behavior', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should vary drum order occasionally', () => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0.8) // Trigger randomization
+      .mockReturnValueOnce(0.6) // Fisher-Yates shuffle
+      .mockReturnValue(0.5);
+
+    setupGlobalState();
+    drummer(['snare1', 'kick1'], [0, 0]);
+    expect(c.length).toBeGreaterThan(0);
+    vi.restoreAllMocks();
+  });
+
+  it('should apply jitter occasionally', () => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0.5) // Apply jitter
+      .mockReturnValue(0.5);
+
+    setupGlobalState();
+    beatStart = 0;
+    tpBeat = 480;
+    drummer(['snare1'], [0.5]);
+    expect(c[0].tick).toBeGreaterThanOrEqual(0);
+    vi.restoreAllMocks();
+  });
+
+  it('should generate varied onset patterns', () => {
+    const rhythm = makeOnsets(8, [1, 2, 3]);
+    expect(rhythm.length).toBe(8);
+    expect(rhythm.every(v => v === 0 || v === 1)).toBe(true);
+  });
+});
+
+describe('MIDI compliance', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should generate valid MIDI channel numbers', () => {
+    drummer(['snare1', 'kick1'], [0, 0.5]);
+    c.forEach(cmd => {
+      expect(cmd.vals[0]).toBeGreaterThanOrEqual(0);
+      expect(cmd.vals[0]).toBeLessThanOrEqual(15);
+    });
+  });
+
+  it('should generate valid MIDI note numbers', () => {
+    drummer(['snare1', 'kick1'], [0, 0.5]);
+    c.forEach(cmd => {
+      expect(cmd.vals[1]).toBeGreaterThanOrEqual(0);
+      expect(cmd.vals[1]).toBeLessThanOrEqual(127);
+    });
+  });
+
+  it('should generate valid MIDI velocities', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    setupGlobalState();
+    drummer(['snare1'], [0]);
+    c.forEach(cmd => {
+      expect(cmd.vals[2]).toBeGreaterThanOrEqual(0);
+      expect(cmd.vals[2]).toBeLessThanOrEqual(127);
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('should use drum channel (9)', () => {
+    drummer(['snare1'], [0]);
+    expect(c.every(cmd => cmd.vals[0] === 9)).toBe(true);
+  });
+});

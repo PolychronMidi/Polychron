@@ -1,6 +1,6 @@
 primaryInstrument='glockenspiel';
 secondaryInstrument='music box';
-otherInstruments=[79,89,97,98,98,98,104,112,114,119,120,121,...Array.from({length: 6},(_,i)=>i + 9)];
+otherInstruments=[9,10,11,12,13,14,79,89,97,98,98,98,104,112,114,119,120,121];
 bassInstrument='Acoustic Bass';
 bassInstrument2='Synth Bass 2';
 otherBassInstruments=[32,33,34,35,36,37,38,39,40,41,43,44,45,46,48,49,50,51,89,98,98,98,98,98,98,98,98,98,98];
@@ -33,7 +33,7 @@ VOICES={
   max: 7,
   weights: [15,30,25,7,4,3,2,1]
 };
-// TODO: implement motifs & section types (introduction,exposition,development,conclusion,fugue).
+// TODO: motifs & section types (introduction,exposition,development,conclusion,fugue).
 PHRASES_PER_SECTION={
   min: 2,
   max: 4

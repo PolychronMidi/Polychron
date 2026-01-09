@@ -1,43 +1,69 @@
+/**
+ * Composes meter-related values with randomization.
+ * @class
+ */
 class MeasureComposer {
   constructor() {
+    /** @type {number[]|null} Previous meter [numerator, denominator] */
     this.lastMeter=null;
   }
+  /** @returns {number} Random numerator from NUMERATOR config */
   getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  /** @returns {number} Random denominator from DENOMINATOR config */
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  /** @returns {number} Random divisions count from DIVISIONS config */
   getDivisions(){const{min,max,weights}=DIVISIONS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  /** @returns {number} Random subdivisions count from SUBDIVISIONS config */
   getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  /** @returns {number} Random sub-subdivisions count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  /** @returns {number} Random voice count from VOICES config */
   getVoices(){const{min,max,weights}=VOICES;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  /** @returns {number[]} Two octaves with minimum 2-3 octave difference */
   getOctaveRange() { const { min,max,weights }=OCTAVE;
   let [o1,o2]=[rw(min,max,weights),rw(min,max,weights)];
   while (m.abs(o1-o2)<ri(2,3)) { o2=modClamp(o2+ri(-3,3),min,max); }
   return [ o1,o2 ];
   }
-  getMeter(ignoreRatioCheck=false,polyMeter=false) {
-    while (true) { let newNumerator; let newDenominator; let polyMeter;
-      // if (polyMeter===true) {
-        newNumerator=this.getNumerator();
-        newDenominator=this.getDenominator();
-      // } else {
-      // newNumerator=ri(2,9);
-      // newDenominator=scaleBoundClamp(newNumerator + ri(-3,3),newNumerator,0.8,1.2);
-      // }
-      let newMeterRatio=newNumerator / newDenominator;
-      if (ignoreRatioCheck || (newMeterRatio >= 0.3 && newMeterRatio <= 3)) {
-        if (this.lastMeter && !ignoreRatioCheck) {
-          let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
-          let ratioChange=m.abs(newMeterRatio - lastMeterRatio);
-          if (ratioChange <= 0.75) {
-            this.lastMeter=[newNumerator,newDenominator];
-            return this.lastMeter;
-          }
-        } else {
+  /**
+   * Generates a valid meter [numerator, denominator] with log-based ratio check.
+   * @param {boolean} [ignoreRatioCheck=false] - Skip ratio validation
+   * @param {boolean} [polyMeter=false] - Allow larger ratio jumps for polyrhythm
+   * @param {number} [maxIterations=100] - Maximum attempts before fallback
+   * @returns {number[]} [numerator, denominator]
+   */
+getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
+  let iterations=0;
+  const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
+
+  while (++iterations <= maxIterations) {
+    let newNumerator=this.getNumerator();
+    let newDenominator=this.getDenominator();
+
+    let newMeterRatio=newNumerator / newDenominator;
+    if (ignoreRatioCheck || (newMeterRatio >= 0.25 && newMeterRatio <= 4)) {
+      if (this.lastMeter) {
+        let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
+        // Log ratio: 0 = same, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x difference
+        let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
+        if (logSteps <= maxLogSteps) {
           this.lastMeter=[newNumerator,newDenominator];
           return this.lastMeter;
         }
+      } else {
+        this.lastMeter=[newNumerator,newDenominator];
+        return this.lastMeter;
       }
     }
   }
+  console.warn('Max iterations reached in getMeter()');
+  return this.lastMeter || [4, 4];
+}
+  /**
+   * Generates note objects within octave range.
+   * @param {number[]|null} [octaveRange=null] - [min, max] octaves, or auto-generate
+   * @returns {{note: number}[]} Array of note objects
+   */
   getNotes(octaveRange=null) { const uniqueNotes=new Set();
     const voices=this.getVoices();
     const [minOctave,maxOctave]=octaveRange || this.getOctaveRange();
@@ -62,42 +88,74 @@ class MeasureComposer {
       console.warn(e.message);  return this.getNotes(octaveRange);  }}
   }
 }
+/**
+ * Composes notes from a specific scale.
+ * @extends MeasureComposer
+ */
 class ScaleComposer extends MeasureComposer {
-  constructor(scaleName,root) { 
-    super(); 
-    this.root=root; 
-    this.noteSet(scaleName,root);  
+  /**
+   * @param {string} scaleName - e.g., 'major', 'minor'
+   * @param {string} root - e.g., 'C', 'D#'
+   */
+  constructor(scaleName,root) {
+    super();
+    this.root=root;
+    this.noteSet(scaleName,root);
   }
+  /**
+   * Sets scale and extracts notes.
+   * @param {string} scaleName
+   * @param {string} root
+   */
   noteSet(scaleName,root) {
     this.scale=t.Scale.get(`${root} ${scaleName}`);
     this.notes=this.scale.notes;
   }
+  /** @returns {{note: number}[]} Scale notes */
   x=()=>this.getNotes();
 }
+/**
+ * Random scale selection from all available scales.
+ * @extends ScaleComposer
+ */
 class RandomScaleComposer extends ScaleComposer {
-  constructor() { 
-    super('','');  
-    this.noteSet();  
+  constructor() {
+    super('','');
+    this.noteSet();
   }
+  /** Randomly selects scale and root from venue.js data */
   noteSet() {
     const randomScale=allScales[ri(allScales.length - 1)];
     const randomRoot=allNotes[ri(allNotes.length - 1)];
     super.noteSet(randomScale,randomRoot);
   }
+  /** @returns {{note: number}[]} Random scale notes */
   x=()=>{ this.noteSet(); return super.x(); }
 }
+/**
+ * Composes notes from a chord progression.
+ * @extends MeasureComposer
+ */
 class ChordComposer extends MeasureComposer {
-  constructor(progression) { 
-    super();  
+  /**
+   * @param {string[]} progression - Array of chord symbols, e.g., ['CM', 'Dm', 'Em']
+   */
+  constructor(progression) {
+    super();
     this.noteSet(progression,'R');
   }
+  /**
+   * Sets progression and validates chords.
+   * @param {string[]} progression
+   * @param {string} [direction='R'] - 'R' (right), 'L' (left), 'E' (either), '?' (random)
+   */
   noteSet(progression,direction='R') {
     const validatedProgression=progression.filter(chordSymbol=>{
       if (!allChords.includes(chordSymbol)) { console.warn(`Invalid chord symbol: ${chordSymbol}`);
         return false;  }  return true;  });
     if (validatedProgression.length===0) {console.warn('No valid chords in progression');
     } else {
-      this.progression=validatedProgression.map(t.Chord.get); 
+      this.progression=validatedProgression.map(t.Chord.get);
       this.currentChordIndex=this.currentChordIndex || 0;
       let next;
       switch (direction.toUpperCase()) {
@@ -115,13 +173,19 @@ class ChordComposer extends MeasureComposer {
       this.notes=this.progression[this.currentChordIndex].notes;
     }
   }
+  /** @returns {{note: number}[]} Chord notes */
   x=()=>this.getNotes();
 }
+/**
+ * Random chord progression from all available chords.
+ * @extends ChordComposer
+ */
 class RandomChordComposer extends ChordComposer {
-  constructor() { 
-    super([]);  
-    this.noteSet();  
+  constructor() {
+    super([]);
+    this.noteSet();
   }
+  /** Generates 2-5 random chords */
   noteSet() {
     const progressionLength=ri(2,5);
     const randomProgression=[];
@@ -131,32 +195,57 @@ class RandomChordComposer extends ChordComposer {
     }
     super.noteSet(randomProgression,'?');
   }
+  /** @returns {{note: number}[]} Random progression notes */
   x=()=>{ this.noteSet(); return super.x(); }
 }
+/**
+ * Composes notes from a specific mode.
+ * @extends MeasureComposer
+ */
 class ModeComposer extends MeasureComposer {
-  constructor(modeName,root) { 
-    super(); 
-    this.root=root; 
-    this.noteSet(modeName,root);  
+  /**
+   * @param {string} modeName - e.g., 'ionian', 'aeolian'
+   * @param {string} root - e.g., 'A', 'C'
+   */
+  constructor(modeName,root) {
+    super();
+    this.root=root;
+    this.noteSet(modeName,root);
   }
+  /**
+   * Sets mode and extracts notes.
+   * @param {string} modeName
+   * @param {string} root
+   */
   noteSet(modeName,root) {
     this.mode=t.Mode.get(modeName);
     this.notes=t.Mode.notes(this.mode,root);
   }
+  /** @returns {{note: number}[]} Mode notes */
   x=()=>this.getNotes();
 }
+/**
+ * Random mode selection from all available modes.
+ * @extends ModeComposer
+ */
 class RandomModeComposer extends ModeComposer {
   constructor() {
     super('','');
     this.noteSet();
   }
+  /** Randomly selects mode and root from venue.js data */
   noteSet() {
     const randomMode=allModes[ri(allModes.length - 1)];
     const [root,modeName]=randomMode.split(' ');
-    this.root=root; 
-    super.noteSet(modeName,root);    
+    this.root=root;
+    super.noteSet(modeName,root);
   }
+  /** @returns {{note: number}[]} Random mode notes */
   x=()=>{ this.noteSet(); return super.x(); }
 }
+/**
+ * Instantiates all composers from COMPOSERS config.
+ * @type {MeasureComposer[]}
+ */
 composers=(function() {  return COMPOSERS.map(composer=>
   eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}',root:'${composer.root || ''}',progression:${JSON.stringify(composer.progression || [])}})`) ); })();

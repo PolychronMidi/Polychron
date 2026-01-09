@@ -1,0 +1,31 @@
+*Clean ultra-minimalist self-documenting code style. Prefer the simplicity of global scope, avoiding abstraction and classes unless otherwise needed for absolute timing accuracy and unlimited dynamism. Always use absolute time as the source of truth, as ticks per second changes often at each meter/bpm change.
+
+## Dual-Context Timing Pattern
+- Primary and poly meters share accumulated `phraseStartTime` (absolute seconds, always matches)
+- Each meter has its own `tpSec` (ticks/second, differs for each meter/bpm change)
+- Calculate ticks from time: `endTick = (time + silence) * context.tpSec`
+- Never use tick accumulation for cross-context synchronization
+
+## MCP Workflow
+filesystem: read/write Polychron files only
+contextstream: timing/meter/CSV analysis
+code-mode: orchestrate multi-file analysis
+supermemory: store ALL style decisions
+
+## TDD + Quality Gates
+List edge cases + failure modes, explaining every change and why.
+Write code that is easy for you to edit later.
+
+## Module System
+- Use CommonJS (`require`, global scope) - NOT ES modules
+- Use `globalThis.variableName` to expose variables for testing, do not create mock functions in test files instead of importing with globalThis
+
+## DONT_DO
+❌ Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
+❌ Assume this is a standard JavaScript or MIDI project, or impose standards that don't fit.
+
+## Review Gates
+AFTER every completion:
+List what might be broken + solutions.
+"How would future self modify this?"
+Store/update decision in supermemory
