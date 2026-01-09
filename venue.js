@@ -1,4 +1,9 @@
-midiData={
+/**
+ * MIDI program and control change definitions for Polychron.
+ * @namespace midiData
+ */
+const midiData={
+  /** @type {Array<{number: number, name: string}>} */
   program:[
     { number:0,name:'Acoustic Grand Piano' },
     { number:1,name:'Bright Acoustic Piano' },
@@ -129,6 +134,7 @@ midiData={
     { number:126,name:'Applause' },
     { number:127,name:'Gunshot' }
   ],
+  /** @type {Array<{number: number, name: string}>} */
   control:[ // http://midi.teragonaudio.com/tech/midispec.htm
     { number:0,name:'Bank Select (coarse)' },
     { number:1,name:'Modulation Wheel (coarse)' },
@@ -199,32 +205,59 @@ midiData={
     { number:127,name:'Poly Operation' }
   ]
 };
-getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
+
+/**
+ * Looks up a MIDI value (number) by category and name.
+ * @param {string} category - Category name ('program' or 'control')
+ * @param {string} name - The instrument or control name to look up
+ * @returns {number|null} The MIDI number, or null if not found
+ * @example
+ * getMidiValue('program', 'Acoustic Grand Piano'); // returns 0
+ * getMidiValue('control', 'Volume (coarse)'); // returns 7
+ */
+const getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
   if (!midiData[category]) {  console.warn(`Invalid MIDI category: ${category}`);
     return null;
   }
   const item=midiData[category].find(item=>item.name.toLowerCase()===name);
   return item ? item.number : null;
 };
-primaryInstrument=getMidiValue('program',primaryInstrument);
-secondaryInstrument=getMidiValue('program',secondaryInstrument);
-bassInstrument=getMidiValue('program',bassInstrument);
-bassInstrument2=getMidiValue('program',bassInstrument2);
 
-t=require('tonal');
+/** Tonal.js library for music theory operations */
+const t=require('tonal');
+globalThis.t=t;
 
-allNotes=t.Scale.get('C chromatic').notes.map(note=>
+/**
+ * All chromatic notes in standardized enharmonic form.
+ * @type {string[]}
+ * @example
+ * allNotes[0]; // 'C'
+ */
+const allNotes=t.Scale.get('C chromatic').notes.map(note=>
   t.Note.enharmonic(t.Note.get(note))
 );
 
-allScales=t.Scale.names().filter(scaleName=>{
+/**
+ * All available scale names that have valid note configurations.
+ * @type {string[]}
+ * @example
+ * allScales[0]; // 'major'
+ */
+const allScales=t.Scale.names().filter(scaleName=>{
   return allNotes.some(root=>{
     const scale=t.Scale.get(`${root} ${scaleName}`);
     return scale.notes.length > 0;
   });
 });
 
-allChords=(function() {
+/**
+ * All available chord symbols that exist in the tonal library.
+ * @type {string[]}
+ * @example
+ * allChords[0]; // 'CM'
+ */
+const allChords=(function() {
+  /** @param {string} chordType @param {string} root @returns {{symbol: string, notes: string[]}|undefined} */
   function getChordNotes(chordType,root) {
     const chord=t.Chord.get(`${root} ${chordType}`);
     if (!chord.empty && chord.symbol) {
@@ -241,7 +274,13 @@ allChords=(function() {
   return Array.from(allChords);
 })();
 
-allModes=(()=>{
+/**
+ * All available mode names for each root note.
+ * @type {string[]}
+ * @example
+ * allModes[0]; // 'C ionian'
+ */
+const allModes=(()=>{
   const allModes=new Set();
   t.Mode.all().forEach(mode=>{
     allNotes.forEach(root=>{
@@ -251,3 +290,11 @@ allModes=(()=>{
   });
   return Array.from(allModes);
 })();
+
+// Export to global scope for testing
+globalThis.midiData=midiData;
+globalThis.getMidiValue=getMidiValue;
+globalThis.allNotes=allNotes;
+globalThis.allScales=allScales;
+globalThis.allChords=allChords;
+globalThis.allModes=allModes;

@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Drum mapping and rhythm generation for Polychron.
+ * @module rhythm
+ * @requires @tonaljs/rhythm-pattern
+ */
+
+/**
+ * Drum map containing MIDI note numbers and velocity ranges.
+ * @type {Object.<string, {note: number, velocityRange: number[]}>}
+ */
 drumMap={
   'snare1': {note: 31,velocityRange: [99,111]},
   'snare2': {note: 33,velocityRange: [99,111]},
@@ -27,6 +37,17 @@ drumMap={
   'conga4': {note: 63,velocityRange: [66,77]},
   'conga5': {note: 64,velocityRange: [66,77]},
 };
+
+/**
+ * Generate drum pattern for a beat.
+ * @param {string|string[]} drumNames - Drum name(s) or 'random'.
+ * @param {number|number[]} beatOffsets - Offset(s) within the beat.
+ * @param {number} [offsetJitter=rf(.1)] - Random offset jitter amount.
+ * @param {number} [stutterChance=.3] - Probability of stutter effect.
+ * @param {number[]} [stutterRange=[2,ri(1,11)]] - Range of stutter counts.
+ * @param {number} [stutterDecayFactor=rf(.9,1.1)] - Velocity decay per stutter.
+ * @returns {void}
+ */
 drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (drumNames==='random') {
     const allDrums=Object.keys(drumMap);
@@ -35,13 +56,13 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
   }
   const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
   const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
-  if (offsets.length < drums.length) { // Adjust offsets if needed
+  if (offsets.length < drums.length) {
     offsets.push(...new Array(drums.length - offsets.length).fill(0));
   } else if (offsets.length > drums.length) {
     offsets.length=drums.length;
   }
   const combined=drums.map((drum,index)=>({ drum,offset: offsets[index] }));
-  if (rf() < .7) { // Reverse or randomize the order of drums and offsets
+  if (rf() < .7) {
     if (rf() < .5) {
       combined.reverse();
     }
@@ -51,7 +72,7 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
-  const adjustedOffsets=combined.map(({ offset })=>{ // Adjust offsets with jitter
+  const adjustedOffsets=combined.map(({ offset })=>{
     if (rf() < .3) {
       return offset;
     } else {
@@ -59,7 +80,7 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
       return adjusted - m.floor(adjusted);
     }
   });
-  combined.forEach(({ drum,offset })=>{ // Apply stutter
+  combined.forEach(({ drum,offset })=>{
     const drumInfo=drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {
@@ -79,12 +100,17 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
           }
           p(c,{tick:tick,type:'on',vals:[drumCH,drumInfo.note,m.floor(currentVelocity)]});
         }
-      } else { // Play without stutter
+      } else {
         p(c,{tick:beatStart + offset * tpBeat,type:'on',vals:[drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
       }
     }
   });
 };
+
+/**
+ * Play drums for primary meter (beat index 0-3 pattern).
+ * @returns {void}
+ */
 playDrums=()=>{
   if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
     drummer(['kick1','kick3'],[0,.5]);
@@ -102,6 +128,11 @@ playDrums=()=>{
     drummer(['snare6'],[0]);
   }
 };
+
+/**
+ * Play drums for poly meter (different pattern from primary).
+ * @returns {void}
+ */
 playDrums2=()=>{
   if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
     drummer(['kick2','kick5','kick7'],[0,.5,.25]);
@@ -120,8 +151,11 @@ playDrums2=()=>{
   }
 };
 
-
-rhythms={//weights: [beat,div,subdiv]
+/**
+ * Rhythm patterns library with weighted selection.
+ * @type {Object}
+ */
+rhythms={
   'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
   'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
   'onsets':{weights:[5,0,0],method:'onsets',args:(length)=>[{make:[length,()=>[1,2]]}]},
@@ -135,29 +169,87 @@ rhythms={//weights: [beat,div,subdiv]
   'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
 };
 
+// @tonaljs/rhythm-pattern exports
 const { binary: _binary, hex: _hex, onsets: _onsets, random: _random, probability: _probability, euclid: _euclid, rotate: _rotate } = require('@tonaljs/rhythm-pattern');
+
+/**
+ * Generate binary rhythm pattern.
+ * @param {number} length - Target pattern length.
+ * @returns {number[]} Binary rhythm pattern.
+ */
 binary=(length)=>{ let pattern=[];
   while (pattern.length < length) { pattern=pattern.concat(_binary(ri(99))); }
   return patternLength(pattern,length);
 };
+
+/**
+ * Generate hexadecimal rhythm pattern.
+ * @param {number} length - Target pattern length.
+ * @returns {number[]} Hex rhythm pattern.
+ */
 hex=(length)=>{ let pattern=[];
   while (pattern.length < length) { pattern=pattern.concat(_hex(ri(99).toString(16))); }
   return patternLength(pattern,length);
 };
+
+/**
+ * Generate onsets rhythm pattern.
+ * @param {number|Object} numbers - Number or config object.
+ * @returns {number[]} Onsets pattern.
+ */
 onsets = (numbers) => {
   if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
     return makeOnsets(...numbers.make);
   }
   return _onsets(numbers);
 };
+
+/**
+ * Generate random rhythm with probability.
+ * @param {number} length - Pattern length.
+ * @param {number} probOn - Probability of "on" (1) notes.
+ * @returns {number[]} Random pattern.
+ */
 random=(length,probOn)=>{ return _random(length,1 - probOn); };
+
+/**
+ * Generate probability-based rhythm.
+ * @param {number[]} probs - Probability array.
+ * @returns {number[]} Probability pattern.
+ */
 prob=(probs)=>{ return _probability(probs); };
+
+/**
+ * Generate Euclidean rhythm pattern.
+ * @param {number} length - Pattern length.
+ * @param {number} ones - Number of "on" beats.
+ * @returns {number[]} Euclidean pattern.
+ */
 euclid=(length,ones)=>{ return _euclid(length,ones); };
+
+/**
+ * Rotate rhythm pattern.
+ * @param {number[]} pattern - Pattern to rotate.
+ * @param {number} rotations - Number of rotations.
+ * @param {string} [direction='R'] - 'L' (left), 'R' (right), or '?' (random).
+ * @param {number} [length=pattern.length] - Output length.
+ * @returns {number[]} Rotated pattern.
+ */
 rotate=(pattern,rotations,direction="R",length=pattern.length)=>{
   if (direction==='?') { direction=rf() < .5 ? 'L' : 'R'; }
   if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
   return patternLength(_rotate(pattern,rotations),length);
 };
+
+/**
+ * Morph rhythm pattern by adjusting probabilities.
+ * @param {number[]} pattern - Pattern to morph.
+ * @param {string} [direction='both'] - 'up', 'down', 'both', or '?'.
+ * @param {number} [length=pattern.length] - Output length.
+ * @param {number} [probLow=.1] - Low probability bound.
+ * @param {number} [probHigh] - High probability bound (defaults to probLow).
+ * @returns {number[]} Morphed pattern.
+ */
 morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
   probHigh=probHigh===undefined ? probLow : probHigh;
   let morpheus=pattern.map((v,index)=>{
@@ -169,6 +261,12 @@ morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
   return prob(patternLength(morpheus,length));
 };
 
+/**
+ * Set rhythm for a given level.
+ * @param {string} level - 'beat', 'div', or 'subdiv'.
+ * @returns {number[]} Rhythm pattern for the level.
+ * @throws {Error} If invalid level provided.
+ */
 setRhythm=(level)=>{
   random=(length,probOn)=> { return _random(length,1 - probOn); };
   switch(level) {
@@ -182,6 +280,12 @@ setRhythm=(level)=>{
   }
 };
 
+/**
+ * Create custom onsets pattern.
+ * @param {number} length - Target length.
+ * @param {number|number[]|function} valuesOrRange - Onset values or range.
+ * @returns {number[]} Onset pattern.
+ */
 makeOnsets=(length,valuesOrRange)=>{
   let onsets=[];  let total=0;
   while (total < length) {
@@ -201,6 +305,12 @@ makeOnsets=(length,valuesOrRange)=>{
   return rhythm;
 };
 
+/**
+ * Adjust pattern to desired length.
+ * @param {number[]} pattern - Input pattern.
+ * @param {number} [length] - Target length.
+ * @returns {number[]} Pattern adjusted to length.
+ */
 patternLength=(pattern,length)=>{
   if (length===undefined) return pattern;
   if (length > pattern.length) {
@@ -209,6 +319,12 @@ patternLength=(pattern,length)=>{
   return pattern;
 };
 
+/**
+ * Find closest divisor to target value.
+ * @param {number} x - Value to find divisor for.
+ * @param {number} [target=2] - Target divisor value.
+ * @returns {number} Closest divisor.
+ */
 closestDivisor=(x,target=2)=>{
   let closest=Infinity;
   let smallestDiff=Infinity;
@@ -222,6 +338,15 @@ closestDivisor=(x,target=2)=>{
   return x % target===0 ? target : closest;
 };
 
+/**
+ * Get rhythm using weighted selection or specific method.
+ * @param {string} level - Rhythm level ('beat', 'div', 'subdiv').
+ * @param {number} length - Pattern length.
+ * @param {number[]} pattern - Current pattern.
+ * @param {string} [method] - Specific rhythm method to use.
+ * @param {...*} [args] - Arguments for the method.
+ * @returns {number[]} Rhythm pattern.
+ */
 getRhythm=(level,length,pattern,method,...args)=>{
   const levelIndex=['beat','div','subdiv'].indexOf(level);
   const checkMethod=(m)=>{
@@ -249,5 +374,14 @@ getRhythm=(level,length,pattern,method,...args)=>{
   return null;
 };
 
+/**
+ * Track beat rhythm state (on/off).
+ * @returns {void}
+ */
 trackBeatRhythm=()=>{if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };
+
+/**
+ * Track division rhythm state (on/off).
+ * @returns {void}
+ */
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;} };
