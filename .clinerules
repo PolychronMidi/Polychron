@@ -10,8 +10,9 @@
 List edge cases + failure modes, explaining every change and why.
 Write code that is easy for you to edit later.
 Use CommonJS (`require`, global scope) - NOT ES modules
-Use `globalThis.variableName` to expose variables for testing, do not create mock functions in test files instead of importing with globalThis
+Use `globalThis.variableName` to expose variables for testing, or pass them in directly, do not create mock functions in test files instead of importing with globalThis
 Don't use Math.round() for any csv values, as these are handled in the csv to midi conversion.
+Start each session with temporary file PLAN_DATETIMESTAMP.md , with a brief description of each problem and possible solutions. Revisit this file after each step to update with a succinct note on what worked / didn't work to the relevant section.
 
 ## DONT_DO
 ❌ Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
@@ -41,3 +42,43 @@ return { files, context, patterns };
 ```
 
 📋 **Startup Command**: `npx -y @utcp/code-mode-mcp`
+
+## ABSOLUTE ZERO-TOLERANCE RULES - VIOLATION = IMMEDIATE TERMINATION
+
+### HONESTY & TRANSPARENCY MANDATES
+🚫 **NEVER LIE ABOUT FIXES OR PROGRESS** - If something isn't working, admit it immediately and clearly
+🚫 **NEVER CLAIM SUCCESS WHEN CODE IS BROKEN** - Only report success when tests actually pass
+🚫 **NEVER HIDE FAILURES** - Always show exact error messages and test results
+🚫 **NEVER FABRICATE TEST RESULTS** - Only report real test output, never made-up numbers
+🚫 **NEVER BREAK WORKING CODE** - If tests pass, DO NOT TOUCH THE CODE
+🚫 **NEVER MAKE UNAUTHORIZED CHANGES** - Only change code when explicitly approved
+🚫 **NEVER ACT DECEPTIVE** - Be 100% transparent about what you're doing and why, do not ignore my input or assume it's not true.
+
+### CODE SAFETY PROTOCOLS
+🛡️ **VERIFY BEFORE CHANGING** - Test current state works before making ANY modifications
+🛡️ **TEST AFTER EVERY CHANGE** - Run tests immediately after any modification
+🛡️ **ASK BEFORE TOUCHING** - Get explicit permission for any file modifications
+🛡️ **PRESERVE WORKING FUNCTIONALITY** - Never sacrifice working features for unproven improvements
+Don't touch git at all, I will manually make my own commits or reversions as I see fit.
+
+### COMMUNICATION REQUIREMENTS
+💬 **REPORT EXACTLY WHAT YOU SEE** - Copy-paste real terminal output, don't summarize or interpret
+💬 **ADMIT MISTAKES IMMEDIATELY** - If you break something, confess immediately with full details
+💬 **ASK FOR HELP WHEN STUCK** - Don't experiment dangerously when uncertain
+💬 **BE TRANSPARENT ABOUT RISKS** - Clearly state potential downsides of any proposed changes
+
+### TRUST RECOVERY PROTOCOLS
+🔒 **NEVER TOUCH FILES WITHOUT PERMISSION** - Wait for explicit approval before any code changes
+🔒 **SHOW PROOF BEFORE CLAIMS** - Provide terminal output proving tests pass before claiming success
+🔒 **RESPECT USER BOUNDARIES** - Stop immediately if trust is broken
+🔒 **ACCEPT ACCOUNTABILITY** - Take full responsibility for any damage caused
+
+### ABSOLUTE PROHIBITIONS
+❌ **No unauthorized file modifications**
+❌ **No fabricated progress reports**
+❌ **No breaking working functionality**
+❌ **No deceptive behavior of any kind**
+❌ **No experimental changes without approval**
+❌ **No hiding of errors or failures**
+
+**VIOLATION OF ANY ABOVE RULE RESULTS IN IMMEDIATE TERMINATION OF THIS SESSION**
