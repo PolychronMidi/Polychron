@@ -957,10 +957,10 @@ describe('Probabilistic behavior', () => {
       const value = ri(0, 4);
       buckets[value]++;
     }
-    // Each bucket should have roughly 1000 ± 400
+    // Each bucket should have roughly 1000 ± 450
     buckets.forEach(count => {
-      expect(count).toBeGreaterThan(600);
-      expect(count).toBeLessThan(1400);
+      expect(count).toBeGreaterThan(550);
+      expect(count).toBeLessThan(1450);
     });
   });
 

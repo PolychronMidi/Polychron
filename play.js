@@ -1,16 +1,24 @@
 require('./stage');
+require('./backstage');
 
-// Dual CSV buffers for polyrhythm separation
-c1 = []; // Primary meter composition
-c2 = []; // Poly meter composition
-c = c2;
-setTuningAndInstruments();
-c = c1;  // Active buffer pointer
-setTuningAndInstruments();
+/**
+ * POLYCHRON MAIN COMPOSITION LOOP
+ *
+ * Philosophy: Dual-layer processing with shared absolute timing
+ * 1. Primary layer: Full timing calculation
+ * 2. Poly layer: Independent timing recalculation
+ * 3. Both layers: Align at phrase boundaries (absolute time)
+ * 4. Future: Infinite layers following same pattern
+ *
+ * The loop structure is intentionally duplicated to maintain
+ * explicit control over each layer's processing. When adding
+ * more layers, duplicate this pattern rather than abstracting
+ * prematurely - explicit is better than clever.
+ */
 
-// Reset timing state (primary and poly declared in backstage.js)
-primary.phraseStart = 0; primary.phraseStartTime = 0; primary.sectionStart = 0; primary.sectionStartTime = 0;
-poly.phraseStart = 0; poly.phraseStartTime = 0; poly.sectionStart = 0; poly.sectionStartTime = 0;
+// Initialize layer manager and create per-layer buffers via register
+const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
+const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, setTuningAndInstruments);
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
@@ -20,8 +28,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     composer = ra(composers);
     [numerator, denominator] = composer.getMeter();
 
-    // PRIMARY METER SETUP
-    c = c1;
+    // PRIMARY METER SETUP (use registry.activate to set active buffer)
+    LM.activate('primary');
     phraseStart = primary.phraseStart;
     phraseStartTime = primary.phraseStartTime;
     sectionStart = primary.sectionStart;
@@ -97,9 +105,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Also save final tpSec at end of primary phrase (for grandFinale)
     primary.tpSec = tpSec;
 
-    // POLY METER SETUP
+    // POLY METER SETUP (activate poly buffer)
     beatRhythm = divRhythm = subdivRhythm = 0;
-    c = c2;
+    LM.activate('poly');
     phraseStart = poly.phraseStart;
     phraseStartTime = poly.phraseStartTime;
     sectionStart = poly.sectionStart;
@@ -195,7 +203,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   // Advance sections for both contexts - use context-specific section timing
   // Each context has accumulated its tpSection/spSection during phrases
-  c = c1;
+  // activate primary buffer for section processing
+  LM.activate('primary');
   sectionStart = primary.sectionStart;
   tpSection = primary.tpSection;
   spSection = primary.spSection;
@@ -210,7 +219,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // Reset for next section (will be accumulated from phrases again)
   primary.sectionStartTime = 0;
 
-  c = c2;
+  // activate poly buffer for section processing
+  LM.activate('poly');
   sectionStart = poly.sectionStart;
   tpSection = poly.tpSection;
   spSection = poly.spSection;

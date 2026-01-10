@@ -6,19 +6,12 @@
 - Calculate ticks from time: `endTick = (time + silence) * context.tpSec`
 - Never use tick accumulation for cross-context synchronization
 
-## MCP Workflow
-filesystem: read/write Polychron files only
-contextstream: timing/meter/CSV analysis
-code-mode: orchestrate multi-file analysis
-supermemory: store ALL style decisions
-
-## TDD + Quality Gates
+## Quality Gates
 List edge cases + failure modes, explaining every change and why.
 Write code that is easy for you to edit later.
-
-## Module System
-- Use CommonJS (`require`, global scope) - NOT ES modules
-- Use `globalThis.variableName` to expose variables for testing, do not create mock functions in test files instead of importing with globalThis
+Use CommonJS (`require`, global scope) - NOT ES modules
+Use `globalThis.variableName` to expose variables for testing, do not create mock functions in test files instead of importing with globalThis
+Don't use Math.round() for any csv values, as these are handled in the csv to midi conversion.
 
 ## DONT_DO
 ❌ Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
@@ -29,3 +22,22 @@ AFTER every completion:
 List what might be broken + solutions.
 "How would future self modify this?"
 Store/update decision in supermemory
+
+## MCP Tool Integration
+🔧 Use all MCP tools in concert for maximum effectiveness:
+- **@code-mode**: Execute TypeScript code with access to all registered tools (start with: `npx -y @utcp/code-mode-mcp`)
+- **filesystem tools**: Read/write files, list directories for code analysis
+- **contextstream tools**: Get smart context, search knowledge base
+- **supermemory tools**: Search patterns, store important decisions
+
+💡 Example workflow:
+```typescript
+@code-mode
+// Combine tools for powerful analysis
+const files = await filesystem_tools.list_directory('src');
+const context = await contextstream_tools.context_smart('analyze MIDI code');
+const patterns = await supermemory_tools.searchSupermemory('timing patterns');
+return { files, context, patterns };
+```
+
+📋 **Startup Command**: `npx -y @utcp/code-mode-mcp`
