@@ -35,7 +35,16 @@ clamp=(value,min,max)=>m.min(m.max(value,min),max);
  * @returns {number} Wrapped value within range.
  */
 modClamp=(value,min,max)=>{
+  // Validate inputs to prevent edge cases
+  if (min > max) {
+    // Swap min and max if they're reversed
+    [min, max] = [max, min];
+  }
   const range=max - min + 1;
+  // Handle edge case where range is 0 or negative
+  if (range <= 0) {
+    return min; // Return min as fallback
+  }
   return ((value - min) % range + range) % range + min;
 };
 
@@ -416,17 +425,107 @@ ra=randomInRangeOrArray = (v) => {
  * @property {number} spSection - Seconds per section.
  */
 
-/**
- * Global timing context for primary meter.
- * @type {TimingContext}
- */
-primary = { phraseStart: 0, phraseStartTime: 0, sectionStart: 0, sectionStartTime: 0, finalSectionTime: 0, sectionEnd: 0, tpSec: 0, tpSection: 0, spSection: 0 };
+// Layer timing globals are created by `LM.register` at startup to support infinite layers
 
 /**
- * Global timing context for poly meter.
- * @type {TimingContext}
+ * LayerManager - Current Implementation: Dual-layer (primary/poly)
+ * Future Vision: Infinite musical layers with independent timing
+ *
+ * Design Principles:
+ * 1. Each layer has independent timing state
+ * 2. All layers share absolute time references
+ * 3. Phrase boundaries are universal sync points
+ * 4. Layer processing follows identical patterns
+ *
+ * Adding new layers:
+ * 1. Register with LM.register(name, buffer)
+ * 2. Follow the same processing pattern as primary/poly
+ * 3. Verify synchronization at phrase boundaries
+ * 4. Output will be automatically handled by grandFinale
  */
-poly = { phraseStart: 0, phraseStartTime: 0, sectionStart: 0, sectionStartTime: 0, finalSectionTime: 0, sectionEnd: 0, tpSec: 0, tpSection: 0, spSection: 0 };
+const LM = layerManager ={
+  layers: {},
+  activeLayer: null,
+
+  register: (name, buffer, initialState = {}, setupFn = null) => {
+    const defaultState = {
+      phraseStart: 0,
+      phraseStartTime: 0,
+      sectionStart: 0,
+      sectionStartTime: 0,
+      finalSectionTime: 0,
+      sectionEnd: 0,
+      tpSec: 0,
+      tpSection: 0,
+      spSection: 0
+    };
+    const state = Object.assign({}, defaultState, initialState);
+    // Accept a buffer array, or a string name (create a new buffer), or undefined
+    let buf;
+    if (typeof buffer === 'string') {
+      // caller provided a friendly name for the buffer — create it here
+      state.bufferName = buffer;
+      buf = [];
+    } else {
+      buf = Array.isArray(buffer) ? buffer : [];
+    }
+    // attach buffer onto both registry entry and the returned state
+    LM.layers[name] = { buffer: buf, state };
+    state.buffer = buf;
+    // If a per-layer setup function was provided, call it with `c` set
+    // to the layer buffer so existing setup functions that rely on
+    // the active buffer continue to work.
+    const prevC = typeof c !== 'undefined' ? c : undefined;
+    try {
+      c = buf;
+      if (typeof setupFn === 'function') setupFn(state, buf);
+    } catch (e) {}
+    // restore previous `c`
+    if (prevC === undefined) c = undefined; else c = prevC;
+    // return both the state and direct buffer reference so callers can
+    // destructure in one line and avoid separate buffer assignment lines
+    return { state, buffer: buf };
+  },
+
+  activate: (name) => {
+    const layer = LM.layers[name];
+    c = layer.buffer;
+    LM.activeLayer = name;
+
+    // Return state for easy assignment
+    return {
+      phraseStart: layer.state.phraseStart,
+      phraseStartTime: layer.state.phraseStartTime,
+      sectionStart: layer.state.sectionStart,
+      sectionStartTime: layer.state.sectionStartTime,
+      finalSectionTime: layer.state.finalSectionTime,
+      sectionEnd: layer.state.sectionEnd,
+      tpSec: layer.state.tpSec,
+      tpSection: layer.state.tpSection,
+      spSection: layer.state.spSection,
+      // provide direct access to the state object if callers need additional fields
+      state: layer.state
+    };
+  },
+
+  // Get the state object for a layer without changing active buffer
+  getState: (name) => {
+    const entry = LM.layers[name];
+    return entry ? entry.state : null;
+  },
+
+  advanceAll: (advancementFn) => {
+    Object.values(LM.layers).forEach(layer => {
+      advancementFn(layer.state);
+    });
+  }
+};
+
+// Export layer manager to global scope for access from other modules
+globalThis.LM = LM;
+
+// layer manager is initialized in play.js after buffers are created
+// This ensures c1 and c2 are available when registering layers
 
 // Timing and counter variables (documented inline for brevity)
 measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=0;
@@ -647,96 +746,106 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
 /**
- * Outputs two separate MIDI files for polyrhythm accuracy.
+ * Outputs separate MIDI files for each layer with automatic synchronization.
  * @description
  * Architecture:
- * - output1.csv/mid: Primary meter with its syncFactor
- * - output2.csv/mid: Poly meter with independent syncFactor
+ * - output1.csv/mid: Primary layer with its syncFactor
+ * - output2.csv/mid: Poly layer with independent syncFactor
+ * - output3.csv/mid+: Additional layers (when added)
  * - Phrase boundaries align perfectly in absolute time (seconds)
  * - Tick counts differ due to different tempo adjustments
+ * - Automatically handles any number of layers
  * @returns {void}
  */
 grandFinale = () => {
   console.log('=== GRAND FINALE TIMING DEBUG ===');
-  console.log('PRIMARY:');
-  console.log('  phraseStartTime:', primary.phraseStartTime);
-  console.log('  sectionStartTime:', primary.sectionStartTime);
-  console.log('  finalSectionTime:', primary.finalSectionTime);
-  console.log('  sectionEnd (ticks):', primary.sectionEnd);
-  console.log('  tpSec:', primary.tpSec);
-  console.log('  Calculated finalTime = finalSectionTime + 5s =', primary.finalSectionTime + SILENT_OUTRO_SECONDS);
-
-  console.log('POLY:');
-  console.log('  phraseStartTime:', poly.phraseStartTime);
-  console.log('  sectionStartTime:', poly.sectionStartTime);
-  console.log('  finalSectionTime:', poly.finalSectionTime);
-  console.log('  sectionEnd (ticks):', poly.sectionEnd);
-  console.log('  tpSec:', poly.tpSec);
-  console.log('  Calculated finalTime = finalSectionTime + 5s =', poly.finalSectionTime + SILENT_OUTRO_SECONDS);
-
-  console.log('EXPECTED: Both should be same (phrases are synced in time)');
-
-  // Calculate track lengths in seconds
-  const primaryFinalTime = primary.finalSectionTime + SILENT_OUTRO_SECONDS;
-  const polyFinalTime = poly.finalSectionTime + SILENT_OUTRO_SECONDS;
-
-  // Process primary meter (c1)
-  c = c1;
-  // Use sectionEnd (accumulated across phrases) for allNotesOff position
-  allNotesOff((primary.sectionEnd || primary.sectionStart) + PPQ);
-  muteAll((primary.sectionEnd || primary.sectionStart) + PPQ * 2);
-  c1 = c1.filter(i => i !== null).map(i => ({
-    ...i,
-    tick: isNaN(i.tick) || i.tick < 0 ? m.abs(i.tick || 0) * rf(.1, .3) : i.tick
-  })).sort((a, b) => a.tick - b.tick);
-
-  let composition1 = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
-  let finalTick1 = -Infinity;
-  c1.forEach(_ => {
-    if (!isNaN(_.tick)) {
-      let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
-      composition1 += `1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
-      finalTick1 = m.max(finalTick1, _.tick);
-    } else {
-      console.error("NaN tick value encountered:", _);
-    }
+  // Ensure each layer has finalized fields before reporting.
+  // This centralizes small per-layer finalization logic so callers
+  // don't need to repeat it. For example, set `finalSectionTime`
+  // to the current `phraseStartTime` if it's still zero and ensure
+  // `sectionEnd` has a sensible fallback.
+  LM.advanceAll((state) => {
+    if (!state.finalSectionTime) state.finalSectionTime = state.phraseStartTime;
+    if (state.sectionEnd === undefined) state.sectionEnd = state.sectionStart;
   });
-  // Calculate end_track position including 5s silence
-  // finalTime * tpSec gives the tick position where time = finalTime
-  const primaryEndTick = Math.round(primaryFinalTime * primary.tpSec);
-  composition1 += `1,${primaryEndTick},end_track`;
-  fs.writeFileSync('output1.csv', composition1);
-  console.log('output1.csv created (Primary meter). Track Length:', formatTime(primaryFinalTime));
 
-  // Process poly meter (c2)
-  c = c2;
-  allNotesOff((poly.sectionEnd || poly.sectionStart) + PPQ);
-  muteAll((poly.sectionEnd || poly.sectionStart) + PPQ * 2);
-  c2 = c2.filter(i => i !== null).map(i => ({
-    ...i,
-    tick: isNaN(i.tick) || i.tick < 0 ? m.abs(i.tick || 0) * rf(.1, .3) : i.tick
-  })).sort((a, b) => a.tick - b.tick);
+  // Collect all layer data
+  const layerData = Object.entries(LM.layers).map(([name, layer]) => {
+    const finalTime = layer.state.finalSectionTime + SILENT_OUTRO_SECONDS;
+    const endTick = Math.round(finalTime * layer.state.tpSec);
 
-  let composition2 = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
-  let finalTick2 = -Infinity;
-  c2.forEach(_ => {
-    if (!isNaN(_.tick)) {
-      let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
-      composition2 += `1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
-      finalTick2 = m.max(finalTick2, _.tick);
-    } else {
-      console.error("NaN tick value encountered:", _);
-    }
+    console.log(`${name.toUpperCase()}:`);
+    console.log(`  phraseStartTime: ${layer.state.phraseStartTime.toFixed(4)}s`);
+    console.log(`  sectionStartTime: ${layer.state.sectionStartTime.toFixed(4)}s`);
+    console.log(`  finalSectionTime: ${layer.state.finalSectionTime.toFixed(4)}s`);
+    console.log(`  sectionEnd (ticks): ${layer.state.sectionEnd}`);
+    console.log(`  tpSec: ${layer.state.tpSec}`);
+    console.log(`  Calculated finalTime: ${finalTime.toFixed(4)}s`);
+
+    return {
+      name,
+      layer: layer.state,
+      finalTime,
+      endTick,
+      buffer: layer.buffer
+    };
   });
-  // Calculate end_track position including 5s silence for poly
-  const polyEndTick = Math.round(polyFinalTime * poly.tpSec);
-  composition2 += `1,${polyEndTick},end_track`;
-  try {
-    fs.writeFileSync('output2.csv', composition2);
-    console.log('output2.csv created (Poly meter). Track Length:', formatTime(polyFinalTime));
-  } catch (err) {
-    console.error('Failed to write output2.csv:', err);
+
+  // Verify all layers have same final time
+  const finalTimes = layerData.map(d => d.finalTime);
+  const maxDiff = Math.max(...finalTimes) - Math.min(...finalTimes);
+
+  if (maxDiff > 0.001) {
+    console.warn(`Final time mismatch: ${maxDiff.toFixed(6)}s difference across ${layerData.length} layers`);
+  } else {
+    console.log(` All ${layerData.length} layers synchronized at ${finalTimes[0].toFixed(4)}s`);
   }
+
+  // Process each layer's output
+  layerData.forEach(({ name, layer: layerState, endTick, finalTime, buffer }) => {
+    c = buffer;
+
+    // Cleanup
+    allNotesOff((layerState.sectionEnd || layerState.sectionStart) + PPQ);
+    muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
+
+    // Finalize buffer
+    const finalBuffer = buffer
+      .filter(i => i !== null)
+      .map(i => ({
+        ...i,
+        tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * rf(.1, .3) : i.tick
+      }))
+      .sort((a, b) => a.tick - b.tick);
+
+    // Generate CSV
+    let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
+    let finalTick = -Infinity;
+
+    finalBuffer.forEach(_ => {
+      if (!isNaN(_.tick)) {
+        let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
+        composition += `1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
+        finalTick = Math.max(finalTick, _.tick);
+      }
+    });
+
+    composition += `1,${endTick},end_track`;
+
+    // Determine output filename based on layer name
+    let outputFilename;
+    if (name === 'primary') {
+      outputFilename = 'output1.csv';
+    } else if (name === 'poly') {
+      outputFilename = 'output2.csv';
+    } else {
+      // For additional layers, use name-based numbering
+      outputFilename = `output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+    }
+
+    fs.writeFileSync(outputFilename, composition);
+    console.log(`${outputFilename} created (${name} layer). Track Length: ${formatTime(finalTime)}`);
+  });
 };
 
 /**

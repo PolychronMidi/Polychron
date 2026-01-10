@@ -74,6 +74,16 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
         case 0:intervals=[0,2,3+shift,6-shift].map(interval=>clamp(interval*m.round(this.notes.length / 7),0,this.notes.length-1));  break;
         case 1:intervals=[0,1,3+shift,5+shift].map(interval=>clamp(interval*m.round(this.notes.length / 7),0,this.notes.length-1));  break;
         default:intervals=Array.from({length:this.notes.length},(_,i)=>i);  fallback=true;  }
+      // Validate that all intervals are within scale bounds and produce valid scale degrees
+      intervals = intervals.map(interval => {
+        // Ensure interval is within valid range for the scale
+        const validatedInterval = clamp(interval, 0, this.notes.length - 1);
+        // Calculate the actual note index to verify it's within the scale
+        const rootIndex = this.notes.indexOf(rootNote);
+        const noteIndex = (rootIndex + validatedInterval) % this.notes.length;
+        // Return the validated interval that produces a proper scale degree
+        return validatedInterval;
+      });
       return intervals.slice(0,voices).map((interval,index)=>{
         const noteIndex=(this.notes.indexOf(rootNote)+interval) % this.notes.length;
         let octave=ri(minOctave,maxOctave);

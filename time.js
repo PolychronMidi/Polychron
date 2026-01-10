@@ -1,14 +1,15 @@
 /**
- * TIME.JS - Timing Engine with Dual-Context Polyrhythm Support
+ * TIME.JS - Timing Engine with Dual-Layer Polyrhythm Support
  *
- * Core innovation: "Meter spoofing" + dual-context architecture for perfect polyrhythm accuracy.
- * Each meter maintains independent timing state, outputs to separate MIDI files.
+ * Core innovation: "Meter spoofing" + dual-layer architecture for perfect polyrhythm accuracy.
+ * Each layer maintains independent timing state, outputs to separate MIDI files.
  * Phrase boundaries align in absolute time (verified via millisecond timestamps).
  *
  * Architecture:
- * - Primary meter: Full timing calculation, writes to c1/output1.csv
- * - Poly meter: Independent timing recalculation, writes to c2/output2.csv
+ * - Primary layer: Full timing calculation, writes to c1/output1.csv
+ * - Poly layer: Independent timing recalculation, writes to c2/output2.csv
  * - Final output: Two MIDI files rendered to audio and layered in DAW
+ * - Future: Infinite layers with same synchronization principles
  *
  * Terminology vs Traditional 4/4:
  * - Beat = quarter note in 4/4, but generalized to numerator unit in any meter
@@ -16,6 +17,26 @@
  * - Division/Subdivision = tuplets, 16ths, 32nds (rhythm-dependent, not fixed)
  *
  * Hierarchy: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
+ */
+
+/**
+ * METER SPOOFING: THE CORE INNOVATION
+ *
+ * Problem: MIDI only supports power-of-2 denominators
+ * Solution: "Spoof" the meter while preserving actual duration
+ *
+ * Example: 7/9 meter
+ * 1. Actual ratio: 7/9 = 0.777...
+ * 2. MIDI-compatible: 7/8 = 0.875 (nearest power-of-2)
+ * 3. Sync factor: 0.875/0.777 = 1.126
+ * 4. Adjusted BPM: original_BPM * 1.126
+ *
+ * Result: MIDI sees valid 7/8 but plays at adjusted tempo
+ * to match the actual 7/9 duration in absolute time.
+ *
+ * This applies independently to each layer, enabling
+ * polyrhythms with different spoofing factors that still
+ * align perfectly in absolute time.
  */
 
 /**
@@ -351,6 +372,41 @@ setSubsubdivTiming = () => {
   subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
   subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
 };
+
+/**
+ * DUAL-LAYER SYNCHRONIZATION PHILOSOPHY
+ *
+ * 1. ABSOLUTE TIME IS TRUTH: All layers must align in seconds
+ * 2. TICKS ARE RELATIVE: Different meters have different tick rates
+ * 3. PHRASE BOUNDARIES: The synchronization point for all layers
+ * 4. TOLERANCE: 0.001s (1ms) is the maximum allowed drift
+ *
+ * When adding infinite layers:
+ * - Each layer maintains independent tick calculations
+ * - All layers share the same absolute time references
+ * - Phrase boundaries remain the universal sync point
+ */
+
+function verifyLayerSync(layerNames, phraseIndex) {
+  const times = layerNames.map(name => {
+    const layerState = LM.getState(name);
+    return layerState ? layerState.phraseStartTime + (layerState.tpPhrase / layerState.tpSec) : 0;
+  });
+
+  const baseTime = times[0];
+  const maxDiff = Math.max(...times.map(t => Math.abs(t - baseTime)));
+
+  if (maxDiff > 0.001) {
+    console.warn(`Phrase ${phraseIndex}: Max sync drift ${maxDiff.toFixed(6)}s across ${layerNames.length} layers`);
+    times.forEach((time, i) => {
+      console.log(`  ${layerNames[i]}: ${time.toFixed(6)}s (diff: ${(time - baseTime).toFixed(6)}s)`);
+    });
+  } else {
+    console.log(`Phrase ${phraseIndex}: ✓ All ${layerNames.length} layers synced at ${baseTime.toFixed(6)}s`);
+  }
+
+  return maxDiff;
+}
 
 /**
  * Format seconds as MM:SS.ssss time string.

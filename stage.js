@@ -2,6 +2,12 @@
 require('./sheet'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers');
 
+// Convert instrument names to MIDI numbers
+primaryInstrument = getMidiValue('program', primaryInstrument);
+secondaryInstrument = getMidiValue('program', secondaryInstrument);
+bassInstrument = getMidiValue('program', bassInstrument);
+bassInstrument2 = getMidiValue('program', bassInstrument2);
+
 /** Sets program, pitch bend, and volume for all instrument channels */
 setTuningAndInstruments=()=>{
   p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
