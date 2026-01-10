@@ -1,8 +1,5 @@
 // test/stage.test.js
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-// Import the stage module which loads all dependencies
-require('../stage');
+require('../stage');  // Load stage module and all dependencies
 
 describe('Stage Module', () => {
   beforeEach(() => {
@@ -343,4 +340,3 @@ describe('Stage Module', () => {
     });
   });
 });
-      expect(globalThis.primaryInstrument).toBeDefined();
