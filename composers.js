@@ -140,7 +140,7 @@ class RandomScaleComposer extends ScaleComposer {
     super.noteSet(randomScale,randomRoot);
   }
   /** @returns {{note: number}[]} Random scale notes */
-  x=()=>{ this.noteSet(); return super.x(); }
+  x() { this.noteSet(); return super.x(); }
 }
 /**
  * Composes notes from a chord progression.
@@ -206,7 +206,7 @@ class RandomChordComposer extends ChordComposer {
     super.noteSet(randomProgression,'?');
   }
   /** @returns {{note: number}[]} Random progression notes */
-  x=()=>{ this.noteSet(); return super.x(); }
+  x() { this.noteSet(); return super.x(); }
 }
 /**
  * Composes notes from a specific mode.
@@ -251,7 +251,7 @@ class RandomModeComposer extends ModeComposer {
     super.noteSet(modeName,root);
   }
   /** @returns {{note: number}[]} Random mode notes */
-  x=()=>{ this.noteSet(); return super.x(); }
+  x() { this.noteSet(); return super.x(); }
 }
 /**
  * Instantiates all composers from COMPOSERS config.
@@ -259,3 +259,12 @@ class RandomModeComposer extends ModeComposer {
  */
 composers=(function() {  return COMPOSERS.map(composer=>
   eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}',root:'${composer.root || ''}',progression:${JSON.stringify(composer.progression || [])}})`) ); })();
+
+// Export classes globally for testing
+globalThis.MeasureComposer = MeasureComposer;
+globalThis.ScaleComposer = ScaleComposer;
+globalThis.RandomScaleComposer = RandomScaleComposer;
+globalThis.ChordComposer = ChordComposer;
+globalThis.RandomChordComposer = RandomChordComposer;
+globalThis.ModeComposer = ModeComposer;
+globalThis.RandomModeComposer = RandomModeComposer;

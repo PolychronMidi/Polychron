@@ -100,7 +100,7 @@ getMidiMeter = () => {
   tpSec = midiBPM * PPQ / 60;
   tpMeasure = PPQ * 4 * midiMeterRatio;
   setMidiTiming();
-  return;
+  return midiMeter; // Return the midiMeter for testing
 };
 
 /**
