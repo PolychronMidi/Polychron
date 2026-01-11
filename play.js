@@ -1,6 +1,4 @@
 require('./stage');
-require('./backstage');
-
 /**
  * POLYCHRON MAIN COMPOSITION LOOP
  *
@@ -43,7 +41,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // PRIMARY METER LOOP
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
-      composer = ra(composers);
       setMeasureTiming();
       logUnit('measure');
       beatRhythm = setRhythm('beat');
@@ -86,9 +83,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Store primary phrase end
     const primaryPhraseEnd = phraseStartTime + spPhrase;
 
-    // Advance primary context
+    // Advance primary layer
     LM.advance('primary');
-    beatRhythm = divRhythm = subdivRhythm = 0;
 
     // POLY METER SETUP (activate poly buffer and timing)
     LM.activate('poly', null, true);
@@ -144,7 +140,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Store poly phrase end
     const polyPhraseEnd = phraseStartTime + spPhrase;
 
-    // Advance poly context
+    // Advance poly layer
     LM.advance('poly');
 
     // VERIFY PHRASE ALIGNMENT
@@ -167,8 +163,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   console.log(`  poly.phraseStartTime: ${poly.phraseStartTime.toFixed(4)}s`);
   console.log(`  Difference: ${Math.abs(primary.phraseStartTime - poly.phraseStartTime).toFixed(6)}s`);
 
-  // Advance sections for both contexts - use context-specific section timing
-  // Each context has accumulated its tpSection/spSection during phrases
+  // Advance sections for both layers - use layer-specific section timing
+  // Each layer has accumulated its tpSection/spSection during phrases
   // activate primary buffer for section processing
   LM.activate('primary');
   // Variables already set by activate method
