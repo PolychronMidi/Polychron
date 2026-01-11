@@ -15,8 +15,8 @@ Don't use Math.round() for any csv values, as these are handled in the csv to mi
 Start each session with temporary file PLAN_DATETIMESTAMP.md , with a brief description of each problem and possible solutions. Revisit this file after each step to update with a succinct note on what worked / didn't work to the relevant section.
 
 ## DONT_DO
-❌ Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
-❌ Assume this is a standard JavaScript or MIDI project, or impose standards that don't fit.
+Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
+Assume this is a standard JavaScript or MIDI project, or impose standards that don't fit.
 
 ## Review Gates
 AFTER every completion:
@@ -25,60 +25,74 @@ List what might be broken + solutions.
 Store/update decision in supermemory
 
 ## MCP Tool Integration
-🔧 Use all MCP tools in concert for maximum effectiveness:
-- **@code-mode**: Execute TypeScript code with access to all registered tools (start with: `npx -y @utcp/code-mode-mcp`)
-- **filesystem tools**: Read/write files, list directories for code analysis
-- **contextstream tools**: Get smart context, search knowledge base
-- **supermemory tools**: Search patterns, store important decisions
+Use all 4 MCPs in concert for maximum effectiveness:
 
-💡 Example workflow:
-```typescript
-@code-mode
-// Combine tools for powerful analysis
-const files = await filesystem_tools.list_directory('src');
-const context = await contextstream_tools.context_smart('analyze MIDI code');
-const patterns = await supermemory_tools.searchSupermemory('timing patterns');
-return { files, context, patterns };
+### MCP Usage Pattern
+1. **@code-mode**: Execute analysis code (browser-compatible, no require())
+2. **@contextstream**: Initialize session with `allow_no_workspace: true`
+3. **@file-system**: List directories with absolute paths
+4. **@supermemory**: Store insights and search patterns
+
+### Quick MCP Commands
+```javascript
+// 1. Code analysis
+@code-mode: "Analyze project structure and generate insights"
+
+// 2. Context setup
+@contextstream: { allow_no_workspace: true, folder_path: "c:/path/to/project" }
+
+// 3. File system access
+@file-system: { path: "c:/path/to/project" }
+
+// 4. Memory operations
+@supermemory: { thingToRemember: "key insights" }
+@supermemory: { informationToGet: "search terms" }
 ```
 
-📋 **Startup Command**: `npx -y @utcp/code-mode-mcp`
+### MCP Error Recovery
+- @code-mode: Use console.log, avoid Node.js features
+- @contextstream: Use allow_no_workspace if UUID fails
+- @file-system: Use absolute paths, check permissions
+- @supermemory: Store first, then search with broad terms
+
+**Startup**: `npx -y @utcp/code-mode-mcp`
 
 ## ABSOLUTE ZERO-TOLERANCE RULES - VIOLATION = IMMEDIATE TERMINATION
 
 ### HONESTY & TRANSPARENCY MANDATES
-🚫 **NEVER LIE ABOUT FIXES OR PROGRESS** - If something isn't working, admit it immediately and clearly
-🚫 **NEVER CLAIM SUCCESS WHEN CODE IS BROKEN** - Only report success when tests actually pass
-🚫 **NEVER HIDE FAILURES** - Always show exact error messages and test results
-🚫 **NEVER FABRICATE TEST RESULTS** - Only report real test output, never made-up numbers
-🚫 **NEVER BREAK WORKING CODE** - If tests pass, DO NOT TOUCH THE CODE
-🚫 **NEVER MAKE UNAUTHORIZED CHANGES** - Only change code when explicitly approved
-🚫 **NEVER ACT DECEPTIVE** - Be 100% transparent about what you're doing and why, do not ignore my input or assume it's not true.
+**NEVER LIE ABOUT FIXES OR PROGRESS** - If something isn't working, admit it immediately and clearly
+**NEVER CLAIM SUCCESS WHEN CODE IS BROKEN** - Only report success when tests actually pass
+**NEVER HIDE FAILURES** - Always show exact error messages and test results
+**NEVER FABRICATE TEST RESULTS** - Only report real test output, never made-up numbers
+**NEVER BREAK WORKING CODE** - If tests pass, DO NOT TOUCH THE CODE
+**NEVER MAKE UNAUTHORIZED CHANGES** - Only change code when explicitly approved
+**NEVER ACT DECEPTIVE** - Be 100% transparent about what you're doing and why, do not ignore my input or assume it's not true.
 
 ### CODE SAFETY PROTOCOLS
-🛡️ **VERIFY BEFORE CHANGING** - Test current state works before making ANY modifications
-🛡️ **TEST AFTER EVERY CHANGE** - Run tests immediately after any modification
-🛡️ **ASK BEFORE TOUCHING** - Get explicit permission for any file modifications
-🛡️ **PRESERVE WORKING FUNCTIONALITY** - Never sacrifice working features for unproven improvements
+**VERIFY BEFORE CHANGING** - Test current state works before making ANY modifications
+**TEST AFTER EVERY CHANGE** - Run tests immediately after any modification
+**ASK BEFORE TOUCHING** - Get explicit permission for any file modifications
+**PRESERVE WORKING FUNCTIONALITY** - Never sacrifice working features for unproven improvements
 Don't touch git at all, I will manually make my own commits or reversions as I see fit.
 
 ### COMMUNICATION REQUIREMENTS
-💬 **REPORT EXACTLY WHAT YOU SEE** - Copy-paste real terminal output, don't summarize or interpret
-💬 **ADMIT MISTAKES IMMEDIATELY** - If you break something, confess immediately with full details
-💬 **ASK FOR HELP WHEN STUCK** - Don't experiment dangerously when uncertain
-💬 **BE TRANSPARENT ABOUT RISKS** - Clearly state potential downsides of any proposed changes
+**REPORT EXACTLY WHAT YOU SEE** - Copy-paste real terminal output, don't summarize or interpret
+**ADMIT MISTAKES IMMEDIATELY** - If you break something, confess immediately with full details
+**ASK FOR HELP WHEN STUCK** - Don't experiment dangerously when uncertain
+**BE TRANSPARENT ABOUT RISKS** - Clearly state potential downsides of any proposed changes
 
 ### TRUST RECOVERY PROTOCOLS
-🔒 **NEVER TOUCH FILES WITHOUT PERMISSION** - Wait for explicit approval before any code changes
-🔒 **SHOW PROOF BEFORE CLAIMS** - Provide terminal output proving tests pass before claiming success
-🔒 **RESPECT USER BOUNDARIES** - Stop immediately if trust is broken
-🔒 **ACCEPT ACCOUNTABILITY** - Take full responsibility for any damage caused
+**NEVER TOUCH FILES WITHOUT PERMISSION** - Wait for explicit approval before any code changes
+**SHOW PROOF BEFORE CLAIMS** - Provide terminal output proving tests pass before claiming success
+**RESPECT USER BOUNDARIES** - Stop immediately if trust is broken
+**ACCEPT ACCOUNTABILITY** - Take full responsibility for any damage caused
 
 ### ABSOLUTE PROHIBITIONS
-❌ **No unauthorized file modifications**
-❌ **No fabricated progress reports**
-❌ **No breaking working functionality**
-❌ **No deceptive behavior of any kind**
-❌ **No experimental changes without approval**
-❌ **No hiding of errors or failures**
+**No unauthorized file modifications**
+**No fabricated progress reports**
+**No breaking working functionality**
+**No deceptive behavior of any kind**
+**No experimental changes without approval**
+**No hiding of errors or failures**
 
 **VIOLATION OF ANY ABOVE RULE RESULTS IN IMMEDIATE TERMINATION OF THIS SESSION**
