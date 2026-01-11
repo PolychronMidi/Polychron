@@ -26,38 +26,71 @@ List what might be broken + solutions.
 "How would future self modify this?"
 Store/update decision in supermemory
 
-## MCP Tool Integration
-Use all 4 MCPs in concert for maximum effectiveness:
+## MCP Tool Integration - FOOLPROOF MANDATORY USAGE
+**VIOLATION = IMMEDIATE TERMINATION** - Use ALL 4 MCPs in EXACT sequence for EVERY code review/analysis task:
 
-### MCP Usage Pattern
-1. **@code-mode**: Execute analysis code (browser-compatible, no require())
-2. **@contextstream**: Initialize session with `allow_no_workspace: true`
-3. **@file-system**: List directories with absolute paths
-4. **@supermemory**: Store insights and search patterns
+### ABSOLUTE MANDATORY MCP SEQUENCE
+1. **context_smart FIRST** - Call BEFORE every AI response to get relevant context
+2. **session_init SECOND** - Initialize session with context_hint and allow_no_workspace: true
+3. **@file-system THIRD** - List directories with absolute paths
+4. **@code-mode FOURTH** - Execute browser-compatible analysis code (no require())
+5. **@supermemory LAST** - Store insights and search historical patterns
 
-### Quick MCP Commands
+### EXACT MCP Command Format
 ```javascript
-// 1. Code analysis
-@code-mode: "Analyze project structure and generate insights"
+// 1. CONTEXT_SMART - ALWAYS FIRST (MANDATORY)
+context_smart({
+  user_message: "your task description here",
+  max_tokens: 800,
+  format: "minified",
+  mode: "pack"
+})
 
-// 2. Context setup
-@contextstream: { allow_no_workspace: true, folder_path: "c:/path/to/project" }
+// 2. SESSION_INIT - SECOND (MANDATORY)
+session_init({
+  folder_path: "c:/Users/jackb/Documents/GitHub/polychron",
+  context_hint: "your task description here",
+  allow_no_workspace: true
+})
 
-// 3. File system access
-@file-system: { path: "c:/path/to/project" }
+// 3. FILE-SYSTEM - THIRD (MANDATORY)
+list_directory({
+  path: "c:/Users/jackb/Documents/GitHub/polychron"
+})
 
-// 4. Memory operations
-@supermemory: { thingToRemember: "key insights" }
-@supermemory: { informationToGet: "search terms" }
+// 4. CODE-MODE - FOURTH (MANDATORY)
+call_tool_chain({
+  code: "console.log('Analysis results here');",
+  timeout: 30000,
+  max_output_size: 200000
+})
+
+// 5. SUPERMEMORY - LAST (MANDATORY)
+addToSupermemory({
+  thingToRemember: "your insights here"
+})
+searchSupermemory({
+  informationToGet: "search terms here"
+})
 ```
 
-### MCP Error Recovery
-- @code-mode: Use console.log, avoid Node.js features
-- @contextstream: Use allow_no_workspace if UUID fails
-- @file-system: Use absolute paths, check permissions
-- @supermemory: Store first, then search with broad terms
+### MCP FAILURE PROTOCOLS
+**NEVER SKIP ANY MCP** - If one fails, document the failure but CONTINUE with all others
+**context_smart failures**: May show [NO_WORKSPACE] - proceed anyway
+**session_init failures**: May show workspace warnings - proceed with allow_no_workspace
+**Network errors**: Document but don't abort - use what works
+**Permission errors**: Use absolute paths, check environment
 
-**Startup**: `npx -y @utcp/code-mode-mcp`
+### VERIFICATION CHECKLIST
+- [ ] context_smart called with user_message and mode: "pack"
+- [ ] session_init called with folder_path, context_hint, allow_no_workspace: true
+- [ ] file-system list_directory used with absolute path
+- [ ] code-mode call_tool_chain executed with browser-compatible code
+- [ ] supermemory addToSupermemory and searchSupermemory both used
+
+**NO EXCEPTIONS** - All 4 MCPs must be used in sequence or task is INVALID.
+**NO SUBSTITUTIONS** - Cannot replace one MCP with another.
+**NO OMISSIONS** - Missing any MCP = complete task failure.
 
 ## ABSOLUTE ZERO-TOLERANCE RULES - VIOLATION = IMMEDIATE TERMINATION
 
