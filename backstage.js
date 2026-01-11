@@ -487,10 +487,33 @@ const LM = layerManager ={
     return { state, buffer: buf };
   },
 
-  activate: (name) => {
+  activate: (name, measuresPerPhraseValue = null, isPoly = false) => {
     const layer = LM.layers[name];
     c = layer.buffer;
     LM.activeLayer = name;
+
+    // Store meter values from globals into layer state
+    layer.state.numerator = numerator;
+    layer.state.denominator = denominator;
+    layer.state.meterRatio = numerator / denominator;
+
+    // Set measures for this layer if provided
+    if (measuresPerPhraseValue !== null) {
+      measuresPerPhrase = measuresPerPhraseValue;
+    }
+
+    // Set up timing variables from layer state (moved from play.js duplication)
+    phraseStart = layer.state.phraseStart;
+    phraseStartTime = layer.state.phraseStartTime;
+    sectionStart = layer.state.sectionStart;
+    sectionStartTime = layer.state.sectionStartTime;
+
+    // Handle poly-specific setup
+    if (isPoly) {
+      numerator = polyNumerator;
+      denominator = polyDenominator;
+      meterRatio = polyMeterRatio;
+    }
 
     // Return state for easy assignment
     return {
@@ -512,6 +535,26 @@ const LM = layerManager ={
   getState: (name) => {
     const entry = LM.layers[name];
     return entry ? entry.state : null;
+  },
+
+  advance: (name) => {
+    const layer = LM.layers[name];
+    if (!layer) return;
+
+    // Advance layer context with current global timing values
+    layer.state.phraseStart = phraseStart + tpPhrase;
+    layer.state.phraseStartTime = phraseStartTime + spPhrase;
+    // Update section's accumulated time with this phrase
+    layer.state.sectionStartTime = sectionStartTime + spPhrase;
+    // Update sectionEnd (the actual tick position where this section ends)
+    // Accumulate across phrases: sectionEnd = previous sectionEnd + this phrase's ticks
+    if (layer.state.sectionEnd === undefined) layer.state.sectionEnd = sectionStart;
+    layer.state.sectionEnd += tpPhrase;
+    // Capture accumulated section timing
+    layer.state.tpSection = tpSection;
+    layer.state.spSection = spSection;
+    // Also save final tpSec at end of phrase (for grandFinale)
+    layer.state.tpSec = tpSec;
   },
 
   advanceAll: (advancementFn) => {
