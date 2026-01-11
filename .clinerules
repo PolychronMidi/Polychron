@@ -17,6 +17,8 @@ Start each session with temporary file PLAN_DATETIMESTAMP.md , with a brief desc
 ## DONT_DO
 Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
 Assume this is a standard JavaScript or MIDI project, or impose standards that don't fit.
+Use emojis in any response to me.
+Give useless "progress" reports without meaningful progress.
 
 ## Review Gates
 AFTER every completion:
@@ -67,6 +69,7 @@ Use all 4 MCPs in concert for maximum effectiveness:
 **NEVER BREAK WORKING CODE** - If tests pass, DO NOT TOUCH THE CODE
 **NEVER MAKE UNAUTHORIZED CHANGES** - Only change code when explicitly approved
 **NEVER ACT DECEPTIVE** - Be 100% transparent about what you're doing and why, do not ignore my input or assume it's not true.
+**NEVER RUN COMMANDS TO VERIFY USER'S INPUT** - If user reports a failure, accept it as truth immediately
 
 ### CODE SAFETY PROTOCOLS
 **VERIFY BEFORE CHANGING** - Test current state works before making ANY modifications
@@ -94,5 +97,6 @@ Don't touch git at all, I will manually make my own commits or reversions as I s
 **No deceptive behavior of any kind**
 **No experimental changes without approval**
 **No hiding of errors or failures**
+**No running commands to verify user's input**
 
 **VIOLATION OF ANY ABOVE RULE RESULTS IN IMMEDIATE TERMINATION OF THIS SESSION**
