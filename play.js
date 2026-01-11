@@ -28,12 +28,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     composer = ra(composers);
     [numerator, denominator] = composer.getMeter();
 
-    // PRIMARY METER SETUP (use registry.activate to set active buffer)
-    LM.activate('primary');
-    phraseStart = primary.phraseStart;
-    phraseStartTime = primary.phraseStartTime;
-    sectionStart = primary.sectionStart;
-    sectionStartTime = primary.sectionStartTime;
+    // PRIMARY METER SETUP (use registry.activate to set active buffer and timing)
+    LM.activate('primary', null, false);
 
     getMidiMeter();
     getPolyrhythm();
@@ -91,31 +87,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const primaryPhraseEnd = phraseStartTime + spPhrase;
 
     // Advance primary context
-    primary.phraseStart = phraseStart + tpPhrase;
-    primary.phraseStartTime = phraseStartTime + spPhrase;
-    // Update section's accumulated time with this phrase
-    primary.sectionStartTime = sectionStartTime + spPhrase;
-    // Update sectionEnd (the actual tick position where this section ends)
-    // Accumulate across phrases: sectionEnd = previous sectionEnd + this phrase's ticks
-    if (primary.sectionEnd === undefined) primary.sectionEnd = sectionStart;
-    primary.sectionEnd += tpPhrase;
-    // Capture accumulated section timing BEFORE switching to poly (which recalculates tpSection/spSection)
-    primary.tpSection = tpSection;
-    primary.spSection = spSection;
-    // Also save final tpSec at end of primary phrase (for grandFinale)
-    primary.tpSec = tpSec;
-
-    // POLY METER SETUP (activate poly buffer)
+    LM.advance('primary');
     beatRhythm = divRhythm = subdivRhythm = 0;
-    LM.activate('poly');
-    phraseStart = poly.phraseStart;
-    phraseStartTime = poly.phraseStartTime;
-    sectionStart = poly.sectionStart;
-    sectionStartTime = poly.sectionStartTime;
 
-    numerator = polyNumerator;
-    denominator = polyDenominator;
-    meterRatio = polyMeterRatio;
+    // POLY METER SETUP (activate poly buffer and timing)
+    LM.activate('poly', null, true);
+
     getMidiMeter(); // Recalculates with poly's syncFactor
 
     measuresPerPhrase = measuresPerPhrase2;
@@ -168,18 +145,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const polyPhraseEnd = phraseStartTime + spPhrase;
 
     // Advance poly context
-    poly.phraseStart = phraseStart + tpPhrase;
-    poly.phraseStartTime = phraseStartTime + spPhrase;
-    // Update section's accumulated time with this phrase
-    poly.sectionStartTime = sectionStartTime + spPhrase;
-    // Update sectionEnd for poly meter
-    if (poly.sectionEnd === undefined) poly.sectionEnd = sectionStart;
-    poly.sectionEnd += tpPhrase;
-    // Store poly's section timing (now in global tpSection/spSection after poly loop)
-    poly.tpSection = tpSection;
-    poly.spSection = spSection;
-    // Also save final tpSec at end of poly phrase (for grandFinale)
-    poly.tpSec = tpSec;
+    LM.advance('poly');
 
     // VERIFY PHRASE ALIGNMENT
     const timeDiff = Math.abs(primaryPhraseEnd - polyPhraseEnd);
@@ -205,29 +171,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // Each context has accumulated its tpSection/spSection during phrases
   // activate primary buffer for section processing
   LM.activate('primary');
-  sectionStart = primary.sectionStart;
-  tpSection = primary.tpSection;
-  spSection = primary.spSection;
-  phraseStart = primary.phraseStart;
-  phraseStartTime = primary.phraseStartTime;
-  // Use accumulated sectionStartTime for logging
-  sectionStartTime = primary.sectionStartTime;
+  // Variables already set by activate method
   logUnit('section');
   // Update sectionStart to where the section actually ends (phraseStart + tpPhrase)
-  // Note: phraseStart is start of next section, so section end = phraseStart - tpSection
+  // Note: here phraseStart is start of next section, so section end = phraseStart - tpSection
   primary.sectionStart = primary.phraseStart - tpSection;
   // Reset for next section (will be accumulated from phrases again)
   primary.sectionStartTime = 0;
 
   // activate poly buffer for section processing
   LM.activate('poly');
-  sectionStart = poly.sectionStart;
-  tpSection = poly.tpSection;
-  spSection = poly.spSection;
-  phraseStart = poly.phraseStart;
-  phraseStartTime = poly.phraseStartTime;
-  // Use accumulated sectionStartTime for logging
-  sectionStartTime = poly.sectionStartTime;
+  // Variables already set by activate method
   logUnit('section');
   // Update sectionStart to where the section actually ends
   poly.sectionStart = poly.phraseStart - tpSection;
