@@ -246,7 +246,7 @@ setNoteParams=()=>{
 
 playNotes=()=>{setNoteParams();crossModulateRhythms();
   if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
-composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
+if (composer) composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
 
@@ -366,8 +366,8 @@ setNoteParams2=()=>{
 }
 
 playNotes2=()=>{setNoteParams2();crossModulateRhythms();
-  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(2,3),[.2,.3],.1)){
-composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
+  if(true){
+if (composer) composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
 

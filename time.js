@@ -108,10 +108,11 @@ getMidiMeter = () => {
  * Writes MIDI timing events to active buffer (c).
  * Context-aware: writes to c1 or c2 depending on current meter.
  */
-setMidiTiming = () => {
+setMidiTiming = (tick=measureStart) => {
   p(c,
-    { tick: measureStart, type: 'bpm', vals: [midiBPM] },
-    { tick: measureStart, type: 'meter', vals: [midiMeter[0], midiMeter[1]] }
+    { tick: tick, type: 'bpm', vals: [midiBPM] },
+    { tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
+    { tick: tick, type: 'marker_t', vals: [`tpSec: ${tpSec}`] },
   );
 };
 
@@ -143,6 +144,7 @@ setMidiTiming = () => {
  * // Result: 10:9 polyrhythm (within tolerance)
  */
 getPolyrhythm = () => {
+  if (!composer) return;
   while (true) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
     polyMeterRatio = polyNumerator / polyDenominator;
@@ -211,15 +213,15 @@ logUnit = (type) => {
     endTick = startTick + tpSection;
     startTime = sectionStartTime;
     endTime = startTime + spSection;
-    composerDetails = `${composer.constructor.name} `;
-    if (composer.scale && composer.scale.name) {
+    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
+    if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer.progression) {
+    } else if (composer && composer.progression) {
       progressionSymbols = composer.progression.map(chord => {
         return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
       }).join(' ');
       composerDetails += `${progressionSymbols}`;
-    } else if (composer.mode && composer.mode.name) {
+    } else if (composer && composer.mode && composer.mode.name) {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
   } else if (type === 'phrase') {
@@ -237,15 +239,15 @@ logUnit = (type) => {
     endTick = measureStart + tpMeasure;
     startTime = measureStartTime;
     endTime = measureStartTime + spMeasure;
-    composerDetails = `${composer.constructor.name} `;
-    if (composer.scale && composer.scale.name) {
+    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
+    if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer.progression) {
+    } else if (composer && composer.progression) {
       progressionSymbols = composer.progression.map(chord => {
         return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
       }).join(' ');
       composerDetails += `${progressionSymbols}`;
-    } else if (composer.mode && composer.mode.name) {
+    } else if (composer && composer.mode && composer.mode.name) {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
     actualMeter = [numerator, denominator];
@@ -299,10 +301,9 @@ nextSection = (layerName) => {
   const layer = LM.layers[layerName];
   if (!layer) return;
 
-  // Set sectionStart to the start of the current section (phraseStart - tpSection)
+  // Advance section timing in layer state
   layer.state.sectionStart += layer.state.tpSection;
   layer.state.sectionStartTime += layer.state.spSection;
-
   // Reset section accumulation for next section
   layer.state.tpSection = layer.state.spSection = 0;
 };
@@ -315,7 +316,7 @@ nextPhrase = (layerName) => {
   const layer = LM.layers[layerName];
   if (!layer) return;
 
-  // Advance the layer's phrase timing
+  // Advance phrase timing in layer state
   layer.state.phraseStart += tpPhrase;
   layer.state.phraseStartTime += spPhrase;
 
@@ -325,84 +326,79 @@ nextPhrase = (layerName) => {
 };
 
 /**
- * Sets measure timing within the current phrase for a specific layer.
- * @param {string} layerName - Name of the layer ('primary' or 'poly').
+ * Universal timing calculation and logging function for all musical units.
+ * Handles the hierarchical timing structure: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
+ * Automatically uses current loop indices from global scope and logs the unit.
+ *
+ * @param {string} unitType - The unit type: 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
  */
-setMeasureTiming = (layerName) => {
-  const layer = LM.layers[layerName];
+setUnitTiming = (unitType) => {
+  const layer = LM.layers[LM.activeLayer];
   if (!layer) return;
 
-  measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
-  measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
-};
+  switch (unitType) {
+    case 'phrase':
+      // Phrase timing is special - calculated from measures
+      tpPhrase = tpMeasure * measuresPerPhrase;
+      spPhrase = tpPhrase / tpSec;
+      break;
 
-setPhraseTiming = (layerName) => {
-  const layer = LM.layers[layerName];
-  if (!layer) return;
+    case 'measure':
+      // Measure timing within phrase
+      measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
+      measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
+      break;
 
-  tpPhrase = tpMeasure * measuresPerPhrase;
-  spPhrase = tpPhrase / tpSec;
-};
+    case 'beat':
+      // Beat timing with tempo calculations
+      tpBeat = tpMeasure / numerator;
+      spBeat = tpBeat / tpSec;
+      trueBPM = 60 / spBeat;
+      bpmRatio = BPM / trueBPM;
+      bpmRatio2 = trueBPM / BPM;
+      trueBPM2 = numerator * (numerator / denominator) / 4;
+      bpmRatio3 = 1 / trueBPM2;
+      beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat;
+      beatStartTime = measureStartTime + beatIndex * spBeat;
+      divsPerBeat = composer ? composer.getDivisions() : 1;
+      break;
 
-/**
- * Calculates beat timing and tempo metrics.
- *
- * Beat Definition (Universal):
- * - In 4/4: beat = quarter note, tpBeat = 480
- * - In 7/8: beat = eighth note, tpBeat = 240
- *
- * True BPM: Actual beat frequency varies by meter.
- * BPM Ratios: Used for meter-aware rhythm adjustments.
- */
-setBeatTiming = () => {
-  tpBeat = tpMeasure / numerator;
-  spBeat = tpBeat / tpSec;
-  trueBPM = 60 / spBeat;
-  bpmRatio = BPM / trueBPM;
-  bpmRatio2 = trueBPM / BPM;
-  trueBPM2 = numerator * (numerator / denominator) / 4;
-  bpmRatio3 = 1 / trueBPM2;
-  beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat;
-  beatStartTime = measureStartTime + beatIndex * spBeat;
-  divsPerBeat = composer.getDivisions();
-};
+    case 'division':
+      // Division timing within beat
+      tpDiv = tpBeat / m.max(1, divsPerBeat);
+      spDiv = tpDiv / tpSec;
+      divStart = beatStart + divIndex * tpDiv;
+      divStartTime = beatStartTime + divIndex * spDiv;
+      subdivsPerDiv = m.max(1, composer ? composer.getSubdivisions() : 1);
+      subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
+      break;
 
-/**
- * Calculates division timing - primary rhythmic subdivisions.
- * Not fixed (like 8th notes) - dynamically set by composer per measure.
- */
-setDivTiming = () => {
-  tpDiv = tpBeat / m.max(1, divsPerBeat);
-  spDiv = tpDiv / tpSec;
-  divStart = beatStart + divIndex * tpDiv;
-  divStartTime = beatStartTime + divIndex * spDiv;
-  subdivsPerDiv = m.max(1, composer.getSubdivisions());
-  subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
-};
+    case 'subdivision':
+      // Subdivision timing within division
+      tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
+      spSubdiv = tpSubdiv / tpSec;
+      subdivsPerMinute = 60 / spSubdiv;
+      subdivStart = divStart + subdivIndex * tpSubdiv;
+      subdivStartTime = divStartTime + subdivIndex * spSubdiv;
+      subsubdivsPerSub = composer ? composer.getSubsubdivs() : 1;
+      break;
 
-/**
- * Calculates subdivision timing - finer rhythmic granularity.
- * Enables ultra-fine note placement beyond traditional notation.
- */
-setSubdivTiming = () => {
-  tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
-  spSubdiv = tpSubdiv / tpSec;
-  subdivsPerMinute = 60 / spSubdiv;
-  subdivStart = divStart + subdivIndex * tpSubdiv;
-  subdivStartTime = divStartTime + subdivIndex * spSubdiv;
-  subsubdivsPerSub = composer.getSubsubdivs();
-};
+    case 'subsubdivision':
+      // Subsubdivision timing within subdivision
+      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
+      spSubsubdiv = tpSubsubdiv / tpSec;
+      subsubdivsPerMinute = 60 / spSubsubdiv;
+      subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
+      subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
+      break;
 
-/**
- * Calculates subsubdivision timing - finest rhythmic level.
- * Enables note placement beyond 128th notes for extreme complexity.
- */
-setSubsubdivTiming = () => {
-  tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSubdiv);
-  spSubsubdiv = tpSubsubdiv / tpSec;
-  subsubdivsPerMinute = 60 / spSubsubdiv;
-  subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
-  subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
+    default:
+      console.warn(`Unknown unit type: ${unitType}`);
+      return;
+  }
+
+  // Log the unit after calculating timing
+  logUnit(unitType);
 };
 
 /**
