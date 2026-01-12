@@ -276,6 +276,8 @@ setRhythm=(level)=>{
       return divRhythm=divRhythm < 1 ? _random(divsPerBeat,.4) : getRhythm('div',divsPerBeat,divRhythm);
     case 'subdiv':
       return subdivRhythm=subdivRhythm < 1 ? _random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
+    case 'subsubdiv':
+      return subdubdivRhythm=subsubdivRhythm < 1 ? _random(subsubdivsPerSubdiv,.3) : getRhythm('subsubdiv',subsubdivsPerSubdiv,subsubdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
   }
 };
