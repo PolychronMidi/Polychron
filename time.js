@@ -181,7 +181,8 @@ getPolyrhythm = () => {
         (numerator !== polyNumerator || denominator !== polyDenominator)) {
       measuresPerPhrase1 = bestMatch.originalMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
-      tpPhrase = tpMeasure * measuresPerPhrase1;
+      tpPhrase1 = tpMeasure * measuresPerPhrase1;
+      tpPhrase2 = tpMeasure * measuresPerPhrase2;
       return;
     }
   }
@@ -213,6 +214,14 @@ logUnit = (type) => {
     endTick = startTick + tpSection;
     startTime = sectionStartTime;
     endTime = startTime + spSection;
+  } else if (type === 'phrase') {
+    unit = phraseIndex + 1;
+    unitsPerParent = phrasesPerSection;
+    startTick = phraseStart;
+    endTick = startTick + tpPhrase;
+    startTime = phraseStartTime;
+    spPhrase = tpPhrase / tpSec;
+    endTime = startTime + spPhrase;
     composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
@@ -224,14 +233,10 @@ logUnit = (type) => {
     } else if (composer && composer.mode && composer.mode.name) {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
-  } else if (type === 'phrase') {
-    unit = phraseIndex + 1;
-    unitsPerParent = phrasesPerSection;
-    startTick = phraseStart;
-    endTick = startTick + tpPhrase;
-    startTime = phraseStartTime;
-    spPhrase = tpPhrase / tpSec;
-    endTime = startTime + spPhrase;
+    actualMeter = [numerator, denominator];
+    meterInfo = midiMeter[1] === actualMeter[1]
+      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
+      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
   } else if (type === 'measure') {
     unit = measureIndex + 1;
     unitsPerParent = measuresPerPhrase;
@@ -252,8 +257,8 @@ logUnit = (type) => {
     }
     actualMeter = [numerator, denominator];
     meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails}`;
+      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
+      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
   } else if (type === 'beat') {
     unit = beatIndex + 1;
     unitsPerParent = numerator;
@@ -293,44 +298,7 @@ logUnit = (type) => {
   })();
 };
 
-/**
- * Advances to the next section for a specific layer.
- * @param {string} layerName - Name of the layer to advance ('primary' or 'poly').
- */
-nextSection = (layerName) => {
-  const layer = LM.layers[layerName];
-  if (!layer) return;
 
-  // Advance section timing in layer state
-  layer.state.sectionStart += layer.state.tpSection;
-  layer.state.sectionStartTime += layer.state.spSection;
-  // Reset section accumulation for next section
-  layer.state.tpSection = layer.state.spSection = 0;
-};
-
-/**
- * Advances phrase timing for a layer (Context Switching Pattern).
- *
- * WHY LAYER-SPECIFIC: Each layer has independent phrase progression.
- * Primary might advance by tpPhrase₁, poly by tpPhrase₂ (polyrhythm).
- * Global tpPhrase is calculated per layer during activation.
- *
- * TIME INCREMENTATION: phraseStart accumulates absolute tick positions,
- * enabling layers to start phrases at different absolute times while
- * maintaining synchronization at phrase boundaries.
- */
-nextPhrase = (layerName) => {
-  const layer = LM.layers[layerName];
-  if (!layer) return;
-
-  // Advance phrase timing in layer state (not globals - avoids cross-contamination)
-  layer.state.phraseStart += tpPhrase;
-  layer.state.phraseStartTime += spPhrase;
-
-  // Accumulate into section timing (sections grow as phrases accumulate)
-  layer.state.tpSection += tpPhrase;
-  layer.state.spSection += spPhrase;
-};
 
 /**
  * Universal timing calculation and logging function for all musical units.

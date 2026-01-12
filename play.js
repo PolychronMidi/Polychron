@@ -29,11 +29,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     composer = ra(composers);
     [numerator, denominator] = composer.getMeter();
     getMidiMeter();
-    getPolyrhythm();
+    getPolyrhythm(); // sets measuresPerPhrase for both layers
 
-    LM.activate('primary', null, false);
+    LM.activate('primary', false);
 
-    measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
 
     // PRIMARY METER LOOP
@@ -73,18 +72,13 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
-    nextPhrase('primary');
-
-    // Set poly meter for getMidiMeter()
-    numerator = polyNumerator;
-    denominator = polyDenominator;
+    LM.advance('primary', 'phrase');
 
     getMidiMeter(); // Calculate poly's meter
 
     // POLY METER SETUP (activate poly buffer and timing)
-    LM.activate('poly', null, true);
+    LM.activate('poly', true);
 
-    measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
 
     // POLY METER LOOP
@@ -122,14 +116,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
-    nextPhrase('poly');
+    LM.advance('poly', 'phrase');
 
   }
 
-  nextSection('primary');
+  LM.advance('primary', 'section');
   logUnit('section');
 
-  nextSection('poly');
+  LM.advance('poly', 'section');
   logUnit('section');
 
 }
