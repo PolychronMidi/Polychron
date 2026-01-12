@@ -29,12 +29,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getMidiMeter();
     getPolyrhythm();
 
-    // PRIMARY METER SETUP (use LM.activate to set active buffer and timing)
     LM.activate('primary', null, false);
 
     measuresPerPhrase = measuresPerPhrase1;
-    tpPhrase = tpMeasure * measuresPerPhrase1;
-    spPhrase = tpPhrase / tpSec;
+    setPhraseTiming('primary');
 
     logUnit('phrase');
 
@@ -80,7 +78,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
-    // Advance primary layer
     nextPhrase('primary');
 
     // Set poly meter for getMidiMeter()
@@ -93,8 +90,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.activate('poly', null, true);
 
     measuresPerPhrase = measuresPerPhrase2;
-    tpPhrase = tpMeasure * measuresPerPhrase2;
-    spPhrase = tpPhrase / tpSec;
+    setPhraseTiming('poly');
 
     logUnit('phrase');
 
@@ -138,12 +134,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
-    // Advance poly layer
     nextPhrase('poly');
 
   }
 
-  // Advance sections for both layers using the proper nextSection() functions
   nextSection('primary');
   logUnit('section');
 

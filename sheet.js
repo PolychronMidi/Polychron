@@ -15,12 +15,12 @@ PPQ=30000;
 BPM=72;
 NUMERATOR={
   min: 2,
-  max: 11,
+  max: 20,
   weights: [10,20,30,40,20,10,5,1]
 };
 DENOMINATOR={
   min: 3,
-  max: 11,
+  max: 20,
   weights: [10,20,30,40,20,10,5,1]
 };
 OCTAVE={
