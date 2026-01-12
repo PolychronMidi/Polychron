@@ -155,8 +155,8 @@ getPolyrhythm = () => {
       polyDenominator: polyDenominator
     };
 
-    for (let originalMeasures = 1; originalMeasures < 6; originalMeasures++) {
-      for (let polyMeasures = 1; polyMeasures < 6; polyMeasures++) {
+    for (let originalMeasures = 1; originalMeasures < 7; originalMeasures++) {
+      for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
         if (m.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
           let currentMatch = {
             originalMeasures: originalMeasures,
@@ -299,19 +299,9 @@ nextSection = (layerName) => {
   const layer = LM.layers[layerName];
   if (!layer) return;
 
-  // Send all notes off for this layer's buffer
-  const prevC = c;
-  c = layer.buffer;
-  allNotesOff(layer.state.sectionStart);
-  c = prevC;
-
   // Set sectionStart to the start of the current section (phraseStart - tpSection)
-  layer.state.sectionStart = layer.state.phraseStart - layer.state.tpSection;
-  // Reset sectionStartTime to 0 for next section (sections are relative to composition start)
-  layer.state.sectionStartTime = 0;
-
-  // Update finalTime for logging
-  finalTime = formatTime(layer.state.sectionStartTime + SILENT_OUTRO_SECONDS);
+  layer.state.sectionStart += layer.state.tpSection;
+  layer.state.sectionStartTime += layer.state.spSection;
 
   // Reset section accumulation for next section
   layer.state.tpSection = layer.state.spSection = 0;
@@ -344,6 +334,14 @@ setMeasureTiming = (layerName) => {
 
   measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
   measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
+};
+
+setPhraseTiming = (layerName) => {
+  const layer = LM.layers[layerName];
+  if (!layer) return;
+
+  tpPhrase = tpMeasure * measuresPerPhrase;
+  spPhrase = tpPhrase / tpSec;
 };
 
 /**
@@ -406,41 +404,6 @@ setSubsubdivTiming = () => {
   subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
   subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
 };
-
-/**
- * DUAL-LAYER SYNCHRONIZATION PHILOSOPHY
- *
- * 1. ABSOLUTE TIME IS TRUTH: All layers must align in seconds
- * 2. TICKS ARE RELATIVE: Different meters have different tick rates
- * 3. PHRASE BOUNDARIES: The synchronization point for all layers
- * 4. TOLERANCE: 0.001s (1ms) is the maximum allowed drift
- *
- * When adding infinite layers:
- * - Each layer maintains independent tick calculations
- * - All layers share the same absolute time references
- * - Phrase boundaries remain the universal sync point
- */
-
-function verifyLayerSync(layerNames, phraseIndex) {
-  const times = layerNames.map(name => {
-    const layerState = LM.getState(name);
-    return layerState ? layerState.phraseStartTime + (layerState.tpPhrase / layerState.tpSec) : 0;
-  });
-
-  const baseTime = times[0];
-  const maxDiff = Math.max(...times.map(t => Math.abs(t - baseTime)));
-
-  if (maxDiff > 0.001) {
-    console.warn(`Phrase ${phraseIndex}: Max sync drift ${maxDiff.toFixed(6)}s across ${layerNames.length} layers`);
-    times.forEach((time, i) => {
-      console.log(`  ${layerNames[i]}: ${time.toFixed(6)}s (diff: ${(time - baseTime).toFixed(6)}s)`);
-    });
-  } else {
-    console.log(`Phrase ${phraseIndex}: ✓ All ${layerNames.length} layers synced at ${baseTime.toFixed(6)}s`);
-  }
-
-  return maxDiff;
-}
 
 /**
  * Format seconds as MM:SS.ssss time string.
