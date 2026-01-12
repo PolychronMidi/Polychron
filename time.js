@@ -309,28 +309,50 @@ nextSection = (layerName) => {
 };
 
 /**
- * Advances to the next phrase for a specific layer.
- * @param {string} layerName - Name of the layer to advance ('primary' or 'poly').
+ * Advances phrase timing for a layer (Context Switching Pattern).
+ *
+ * WHY LAYER-SPECIFIC: Each layer has independent phrase progression.
+ * Primary might advance by tpPhrase₁, poly by tpPhrase₂ (polyrhythm).
+ * Global tpPhrase is calculated per layer during activation.
+ *
+ * TIME INCREMENTATION: phraseStart accumulates absolute tick positions,
+ * enabling layers to start phrases at different absolute times while
+ * maintaining synchronization at phrase boundaries.
  */
 nextPhrase = (layerName) => {
   const layer = LM.layers[layerName];
   if (!layer) return;
 
-  // Advance phrase timing in layer state
+  // Advance phrase timing in layer state (not globals - avoids cross-contamination)
   layer.state.phraseStart += tpPhrase;
   layer.state.phraseStartTime += spPhrase;
 
-  // Accumulate into section timing
+  // Accumulate into section timing (sections grow as phrases accumulate)
   layer.state.tpSection += tpPhrase;
   layer.state.spSection += spPhrase;
 };
 
 /**
  * Universal timing calculation and logging function for all musical units.
- * Handles the hierarchical timing structure: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
- * Automatically uses current loop indices from global scope and logs the unit.
  *
- * @param {string} unitType - The unit type: 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
+ * CONTEXT SWITCHING PATTERN: Calculates timing using current global context
+ * (switched by LM.activate), but accesses layer.state for position references.
+ * This enables polyrhythmic layers with different phrase lengths while maintaining
+ * absolute time synchronization.
+ *
+ * TIME INCREMENTATION HIERARCHY:
+ * - Section: Accumulates phrase durations (variable)
+ * - Phrase: Fixed duration (tpMeasure × measuresPerPhrase)
+ * - Measure: Fixed duration (tpMeasure) within phrase
+ * - Beat: tpMeasure ÷ numerator within measure
+ * - Division: tpBeat ÷ divsPerBeat within beat
+ * - Subdivision: tpDiv ÷ subdivsPerDiv within division
+ * - Subsubdivision: tpSubdiv ÷ subsubdivsPerSub within subdivision
+ *
+ * WHY: Each level calculates absolute positions from parent start + index × duration.
+ * Layer.state provides parent start positions, globals provide durations and indices.
+ *
+ * @param {string} unitType - Unit type for timing calculation and logging
  */
 setUnitTiming = (unitType) => {
   const layer = LM.layers[LM.activeLayer];

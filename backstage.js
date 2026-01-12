@@ -428,20 +428,18 @@ ra=randomInRangeOrArray = (v) => {
 // Layer timing globals are created by `LM.register` at startup to support infinite layers
 
 /**
- * LayerManager - Current Implementation: Dual-layer (primary/poly)
- * Future Vision: Infinite musical layers with independent timing
+ * LayerManager (LM) - Context Switching Pattern for Multi-Layer Timing
  *
- * Design Principles:
- * 1. Each layer has independent timing state
- * 2. All layers share absolute time references
- * 3. Phrase boundaries are universal sync points
- * 4. Layer processing follows identical patterns
+ * ARCHITECTURE: Each layer maintains private timing state, but calculations
+ * use shared global variables. LM switches contexts between layers.
  *
- * Adding new layers:
- * 1. Register with LM.register(name, buffer)
- * 2. Follow the same processing pattern as primary/poly
- * 3. Verify synchronization at phrase boundaries
- * 4. Output will be automatically handled by grandFinale
+ * PATTERN:
+ * 1. register() → Create layer with initial state
+ * 2. activate(layer) → Save current globals → Restore layer's globals
+ * 3. Process with globals → Layer state accessed as needed
+ * 4. advance(layer) → Save updated globals to layer state
+ *
+ * WHY: Enables complex per-layer timing while keeping calculation code simple
  */
 const LM = layerManager ={
   layers: {},
