@@ -99,6 +99,7 @@ getMidiMeter = () => {
   midiBPM = BPM * syncFactor;
   tpSec = midiBPM * PPQ / 60;
   tpMeasure = PPQ * 4 * midiMeterRatio;
+  spMeasure = tpMeasure / tpSec;
   setMidiTiming();
   return midiMeter; // Return the midiMeter for testing
 };
@@ -290,26 +291,59 @@ logUnit = (type) => {
   })();
 };
 
-nextSection = () => {
-  allNotesOff('sectionStart');
-  sectionStart += tpSection;
-  sectionStartTime += spSection;
-  finalTime = formatTime(sectionStartTime + SILENT_OUTRO_SECONDS);
-  tpSection = spSection = 0;
+/**
+ * Advances to the next section for a specific layer.
+ * @param {string} layerName - Name of the layer to advance ('primary' or 'poly').
+ */
+nextSection = (layerName) => {
+  const layer = LM.layers[layerName];
+  if (!layer) return;
+
+  // Send all notes off for this layer's buffer
+  const prevC = c;
+  c = layer.buffer;
+  allNotesOff(layer.state.sectionStart);
+  c = prevC;
+
+  // Set sectionStart to the start of the current section (phraseStart - tpSection)
+  layer.state.sectionStart = layer.state.phraseStart - layer.state.tpSection;
+  // Reset sectionStartTime to 0 for next section (sections are relative to composition start)
+  layer.state.sectionStartTime = 0;
+
+  // Update finalTime for logging
+  finalTime = formatTime(layer.state.sectionStartTime + SILENT_OUTRO_SECONDS);
+
+  // Reset section accumulation for next section
+  layer.state.tpSection = layer.state.spSection = 0;
 };
 
-nextPhrase = () => {
-  phraseStart += tpPhrase;
-  phraseStartTime += spPhrase;
-  tpSection += tpPhrase;
-  spSection += spPhrase;
+/**
+ * Advances to the next phrase for a specific layer.
+ * @param {string} layerName - Name of the layer to advance ('primary' or 'poly').
+ */
+nextPhrase = (layerName) => {
+  const layer = LM.layers[layerName];
+  if (!layer) return;
+
+  // Advance the layer's phrase timing
+  layer.state.phraseStart += tpPhrase;
+  layer.state.phraseStartTime += spPhrase;
+
+  // Accumulate into section timing
+  layer.state.tpSection += tpPhrase;
+  layer.state.spSection += spPhrase;
 };
 
-setMeasureTiming = () => {
-  tpMeasure = tpPhrase / measuresPerPhrase;
-  spMeasure = tpMeasure / tpSec;
-  measureStart = phraseStart + measureIndex * tpMeasure;
-  measureStartTime = phraseStartTime + measureIndex * spMeasure;
+/**
+ * Sets measure timing within the current phrase for a specific layer.
+ * @param {string} layerName - Name of the layer ('primary' or 'poly').
+ */
+setMeasureTiming = (layerName) => {
+  const layer = LM.layers[layerName];
+  if (!layer) return;
+
+  measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
+  measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
 };
 
 /**
@@ -344,7 +378,7 @@ setDivTiming = () => {
   spDiv = tpDiv / tpSec;
   divStart = beatStart + divIndex * tpDiv;
   divStartTime = beatStartTime + divIndex * spDiv;
-  subdivsPerDiv = composer.getSubdivisions();
+  subdivsPerDiv = m.max(1, composer.getSubdivisions());
   subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
 };
 

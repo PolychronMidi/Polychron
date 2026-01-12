@@ -469,7 +469,7 @@ const LM = layerManager ={
     } else {
       buf = Array.isArray(buffer) ? buffer : [];
     }
-    // attach buffer onto both registry entry and the returned state
+    // attach buffer onto both LM entry and the returned state
     LM.layers[name] = { buffer: buf, state };
     state.buffer = buf;
     // If a per-layer setup function was provided, call it with `c` set
@@ -501,6 +501,9 @@ const LM = layerManager ={
     if (measuresPerPhraseValue !== null) {
       measuresPerPhrase = measuresPerPhraseValue;
     }
+
+    // Store the current tpSec value for this layer (critical for final tick calculation)
+    layer.state.tpSec = tpSec;
 
     // Set up timing variables from layer state (moved from play.js duplication)
     phraseStart = layer.state.phraseStart;
@@ -541,6 +544,7 @@ const LM = layerManager ={
     const layer = LM.layers[name];
     if (!layer) return;
 
+    beatRhythm = divRhythm = subdivRhythm = 0;
     // Advance layer context with current global timing values
     layer.state.phraseStart = phraseStart + tpPhrase;
     layer.state.phraseStartTime = phraseStartTime + spPhrase;
@@ -553,8 +557,6 @@ const LM = layerManager ={
     // Capture accumulated section timing
     layer.state.tpSection = tpSection;
     layer.state.spSection = spSection;
-    // Also save final tpSec at end of phrase (for grandFinale)
-    layer.state.tpSec = tpSec;
   },
 
   advanceAll: (advancementFn) => {
@@ -801,60 +803,26 @@ muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1
  * @returns {void}
  */
 grandFinale = () => {
-  console.log('=== GRAND FINALE TIMING DEBUG ===');
-  // Ensure each layer has finalized fields before reporting.
-  // This centralizes small per-layer finalization logic so callers
-  // don't need to repeat it. For example, set `finalSectionTime`
-  // to the current `phraseStartTime` if it's still zero and ensure
-  // `sectionEnd` has a sensible fallback.
-  LM.advanceAll((state) => {
-    if (!state.finalSectionTime) state.finalSectionTime = state.phraseStartTime;
-    if (state.sectionEnd === undefined) state.sectionEnd = state.sectionStart;
-  });
 
   // Collect all layer data
   const layerData = Object.entries(LM.layers).map(([name, layer]) => {
-    const finalTime = layer.state.finalSectionTime + SILENT_OUTRO_SECONDS;
-    const endTick = Math.round(finalTime * layer.state.tpSec);
 
-    console.log(`${name.toUpperCase()}:`);
-    console.log(`  phraseStartTime: ${layer.state.phraseStartTime.toFixed(4)}s`);
-    console.log(`  sectionStartTime: ${layer.state.sectionStartTime.toFixed(4)}s`);
-    console.log(`  finalSectionTime: ${layer.state.finalSectionTime.toFixed(4)}s`);
-    console.log(`  sectionEnd (ticks): ${layer.state.sectionEnd}`);
-    console.log(`  tpSec: ${layer.state.tpSec}`);
-    console.log(`  Calculated finalTime: ${finalTime.toFixed(4)}s`);
 
     return {
       name,
       layer: layer.state,
-      finalTime,
-      endTick,
       buffer: layer.buffer
     };
   });
 
-  // Verify all layers have same final time
-  const finalTimes = layerData.map(d => d.finalTime);
-  const maxDiff = Math.max(...finalTimes) - Math.min(...finalTimes);
-
-  if (maxDiff > 0.001) {
-    console.warn(`Final time mismatch: ${maxDiff.toFixed(6)}s difference across ${layerData.length} layers`);
-  } else {
-    console.log(` All ${layerData.length} layers synchronized at ${finalTimes[0].toFixed(4)}s`);
-  }
-
   // Process each layer's output
-  layerData.forEach(({ name, layer: layerState, endTick, finalTime, buffer }) => {
+  layerData.forEach(({ name, layer: layerState, buffer }) => {
     c = buffer;
-
     // Cleanup
     allNotesOff((layerState.sectionEnd || layerState.sectionStart) + PPQ);
     muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
-
     // Finalize buffer
-    const finalBuffer = buffer
-      .filter(i => i !== null)
+    buffer = buffer.filter(i => i !== null)
       .map(i => ({
         ...i,
         tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * rf(.1, .3) : i.tick
@@ -865,15 +833,16 @@ grandFinale = () => {
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
     let finalTick = -Infinity;
 
-    finalBuffer.forEach(_ => {
+    buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
         let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
         composition += `1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
         finalTick = Math.max(finalTick, _.tick);
+
       }
     });
 
-    composition += `1,${endTick},end_track`;
+    composition += `1,${finalTick + (SILENT_OUTRO_SECONDS * tpSec)},end_track`;
 
     // Determine output filename based on layer name
     let outputFilename;
@@ -887,7 +856,7 @@ grandFinale = () => {
     }
 
     fs.writeFileSync(outputFilename, composition);
-    console.log(`${outputFilename} created (${name} layer). Track Length: ${formatTime(finalTime)}`);
+    console.log(`${outputFilename} created (${name} layer).`);
   });
 };
 
