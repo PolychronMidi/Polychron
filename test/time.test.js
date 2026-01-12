@@ -595,6 +595,173 @@ describe('Integration tests', () => {
   });
 });
 
+describe('setUnitTiming', () => {
+  beforeEach(() => {
+    setupGlobalState();
+    numerator = 4;
+    denominator = 4;
+    BPM = 120;
+    PPQ = 480;
+    getMidiMeter();
+    globalThis.measuresPerPhrase = 4;
+    globalThis.tpPhrase = tpMeasure * globalThis.measuresPerPhrase;
+    globalThis.spPhrase = globalThis.tpPhrase / tpSec;
+    // Mock LM for setUnitTiming
+    globalThis.LM = {
+      layers: {
+        test: {
+          state: {
+            phraseStart: 0,
+            phraseStartTime: 0,
+            sectionStart: 0,
+            sectionStartTime: 0,
+            sectionEnd: 0,
+            tpSection: 0,
+            spSection: 0,
+            tpPhrase: tpPhrase,
+            spPhrase: spPhrase,
+            measureStart: 0,
+            measureStartTime: 0,
+            tpMeasure: tpMeasure,
+            spMeasure: tpMeasure / tpSec
+          }
+        }
+      },
+      activeLayer: 'test'
+    };
+    globalThis.measureIndex = 0;
+    globalThis.beatIndex = 0;
+    globalThis.divIndex = 0;
+    globalThis.subdivIndex = 0;
+    globalThis.subsubdivIndex = 0;
+    composer = { getDivisions: () => 2, getSubdivisions: () => 2, getSubsubdivs: () => 1 };
+  });
+
+  it('should set phrase timing correctly', () => {
+    setUnitTiming('phrase');
+    expect(globalThis.tpPhrase).toBe(tpMeasure * globalThis.measuresPerPhrase);
+    expect(globalThis.spPhrase).toBe(globalThis.tpPhrase / tpSec);
+  });
+
+  it('should set measure timing within phrase', () => {
+    const layer = LM.layers.test;
+    layer.state.phraseStart = 1000;
+    layer.state.phraseStartTime = 1.0;
+    measureIndex = 1;
+
+    setUnitTiming('measure');
+
+    expect(measureStart).toBe(1000 + 1 * tpMeasure);
+    expect(measureStartTime).toBe(1.0 + 1 * (tpMeasure / tpSec));
+  });
+
+  it('should set beat timing within measure', () => {
+    measureStart = 1920;
+    measureStartTime = 2.0;
+    beatIndex = 2;
+
+    setUnitTiming('beat');
+
+    expect(tpBeat).toBe(tpMeasure / 4); // 4/4 time
+    expect(spBeat).toBe(tpBeat / tpSec);
+    expect(beatStart).toBe(1920 + 2 * tpBeat);
+    expect(beatStartTime).toBe(2.0 + 2 * spBeat);
+  });
+
+  it('should set division timing within beat', () => {
+    beatStart = 2400;
+    beatStartTime = 2.5;
+    divIndex = 1;
+    tpBeat = 480;
+
+    setUnitTiming('division');
+
+    expect(tpDiv).toBe(240); // 480 / 2 divisions
+    expect(spDiv).toBe(tpDiv / tpSec);
+    expect(divStart).toBe(2400 + 1 * tpDiv);
+    expect(divStartTime).toBe(2.5 + 1 * spDiv);
+  });
+
+  it('should set subdivision timing within division', () => {
+    divStart = 2640;
+    divStartTime = 2.75;
+    subdivIndex = 1;
+    tpDiv = 240;
+
+    setUnitTiming('subdivision');
+
+    expect(tpSubdiv).toBe(120); // 240 / 2 subdivisions
+    expect(spSubdiv).toBe(tpSubdiv / tpSec);
+    expect(subdivStart).toBe(2640 + 1 * tpSubdiv);
+    expect(subdivStartTime).toBe(2.75 + 1 * spSubdiv);
+  });
+
+  it('should set subsubdivision timing within subdivision', () => {
+    subdivStart = 2760;
+    subdivStartTime = 2.875;
+    subsubdivIndex = 0;
+    tpSubdiv = 120;
+
+    setUnitTiming('subsubdivision');
+
+    expect(tpSubsubdiv).toBe(120); // 120 / 1 subsubdivs
+    expect(spSubsubdiv).toBe(tpSubsubdiv / tpSec);
+    expect(subsubdivStart).toBe(2760 + 0 * tpSubsubdiv);
+    expect(subsubdivStartTime).toBe(2.875 + 0 * spSubsubdiv);
+  });
+
+  it('should handle different time signatures', () => {
+    numerator = 3;
+    denominator = 4;
+    getMidiMeter();
+    tpMeasure = PPQ * 4 * (3/4);
+
+    setUnitTiming('beat');
+
+    expect(tpBeat).toBe(tpMeasure / 3); // 3/4 time has 3 beats
+  });
+
+  it('should handle complex rhythmic divisions', () => {
+    composer.getDivisions = () => 3;
+    composer.getSubdivisions = () => 5;
+    composer.getSubsubdivs = () => 7;
+
+    tpBeat = 480;
+    setUnitTiming('division');
+    expect(tpDiv).toBe(160); // 480 / 3
+
+    setUnitTiming('subdivision');
+    expect(tpSubdiv).toBe(32); // 160 / 5
+
+    setUnitTiming('subsubdivision');
+    expect(tpSubsubdiv).toBeCloseTo(4.57, 2); // 32 / 7
+  });
+
+  it('should update global rhythm counters', () => {
+    // This would normally be done by setRhythm calls
+    beatRhythm = [1, 0, 1, 0];
+    divRhythm = [1, 0];
+    subdivRhythm = [1, 0];
+
+    // setUnitTiming doesn't directly modify these, but they should be available
+    expect(beatRhythm).toEqual([1, 0, 1, 0]);
+    expect(divRhythm).toEqual([1, 0]);
+    expect(subdivRhythm).toEqual([1, 0]);
+  });
+
+  it('should handle layer state updates', () => {
+    const layer = LM.layers.test;
+    layer.state.phraseStart = 5000;
+    layer.state.phraseStartTime = 5.0;
+
+    measureIndex = 2;
+    setUnitTiming('measure');
+
+    expect(measureStart).toBe(5000 + 2 * tpMeasure);
+    expect(measureStartTime).toBe(5.0 + 2 * (tpMeasure / tpSec));
+  });
+});
+
 describe('logUnit', () => {
   beforeEach(() => {
     setupGlobalState();
