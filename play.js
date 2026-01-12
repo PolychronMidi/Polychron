@@ -1,20 +1,21 @@
 require('./stage');
+
 /**
  * POLYCHRON MAIN COMPOSITION LOOP
  *
- * Philosophy: Dual-layer processing with shared absolute timing
- * 1. Primary layer: Full timing calculation
- * 2. Poly layer: Independent timing recalculation
- * 3. Both layers: Align at phrase boundaries (absolute time)
- * 4. Future: Infinite layers following same pattern
+ * CONTEXT SWITCHING PATTERN: Each layer has private timing state, but processing
+ * uses shared global variables. LM.activate() switches contexts between layers.
  *
- * The loop structure is intentionally duplicated to maintain
- * explicit control over each layer's processing. When adding
- * more layers, duplicate this pattern rather than abstracting
- * prematurely - explicit is better than clever.
+ * TIME INCREMENTATION HIERARCHY:
+ * Section → accumulates Phrase durations → accumulates Measure durations
+ * Phrase → fixed duration (tpMeasure * measuresPerPhrase)
+ * Measure → fixed duration (tpMeasure) → Beat → Division → Subdivision → Subsubdivision
+ *
+ * WHY: Enables polyrhythmic layers with different phrase tick lengths(tpSec) while maintaining
+ * absolute time synchronization at phrase boundaries.
  */
 
-// Initialize layer manager and create per-layer buffers via register
+// Initialize layer manager with private state per layer
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, setTuningAndInstruments);
 
