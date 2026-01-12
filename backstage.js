@@ -418,12 +418,13 @@ ra=randomInRangeOrArray = (v) => {
  * @property {number} phraseStartTime - Phrase start time in seconds.
  * @property {number} sectionStart - Section start tick.
  * @property {number} sectionStartTime - Section start time in seconds.
- * @property {number} finalSectionTime - Final section time in seconds.
  * @property {number} sectionEnd - Section end tick.
  * @property {number} tpSec - Ticks per second.
  * @property {number} tpSection - Ticks per section.
  * @property {number} spSection - Seconds per section.
  */
+
+
 
 // Layer timing globals are created by `LM.register` at startup to support infinite layers
 
@@ -451,7 +452,6 @@ const LM = layerManager ={
       phraseStartTime: 0,
       sectionStart: 0,
       sectionStartTime: 0,
-      finalSectionTime: 0,
       sectionEnd: 0,
       tpSec: 0,
       tpSection: 0,
@@ -494,7 +494,7 @@ const LM = layerManager ={
     return { state, buffer: buf };
   },
 
-  activate: (name, measuresPerPhraseValue = null, isPoly = false) => {
+  activate: (name, isPoly = false) => {
     const layer = LM.layers[name];
     c = layer.buffer;
     LM.activeLayer = name;
@@ -503,11 +503,6 @@ const LM = layerManager ={
   layer.state.numerator = numerator;
   layer.state.denominator = denominator;
   layer.state.meterRatio = numerator / denominator;
-
-  // Set measures for this layer if provided
-  if (measuresPerPhraseValue !== null) {
-    measuresPerPhrase = measuresPerPhraseValue;
-  }
 
   // Store the current tpSec and tpMeasure values for this layer (critical for timing calculations)
   layer.state.tpSec = tpSec;
@@ -521,7 +516,6 @@ const LM = layerManager ={
   sectionEnd = layer.state.sectionEnd;
   tpSection = layer.state.tpSection;
   spSection = layer.state.spSection;
-  finalSectionTime = layer.state.finalSectionTime;
   tpPhrase = layer.state.tpPhrase;
   spPhrase = layer.state.spPhrase;
   measureStart = layer.state.measureStart;
@@ -536,6 +530,11 @@ const LM = layerManager ={
       numerator = polyNumerator;
       denominator = polyDenominator;
       meterRatio = polyMeterRatio;
+      measuresPerPhrase = measuresPerPhrase2;
+      tpPhrase = tpPhrase2;
+    } else {
+      measuresPerPhrase = measuresPerPhrase1;
+      tpPhrase = tpPhrase1;
     }
 
     // Return state for easy assignment
@@ -544,7 +543,6 @@ const LM = layerManager ={
       phraseStartTime: layer.state.phraseStartTime,
       sectionStart: layer.state.sectionStart,
       sectionStartTime: layer.state.sectionStartTime,
-      finalSectionTime: layer.state.finalSectionTime,
       sectionEnd: layer.state.sectionEnd,
       tpSec: layer.state.tpSec,
       tpSection: layer.state.tpSection,
@@ -554,28 +552,25 @@ const LM = layerManager ={
     };
   },
 
-  // Get the state object for a layer without changing active buffer
-  getState: (name) => {
-    const entry = LM.layers[name];
-    return entry ? entry.state : null;
-  },
-
-  advance: (name) => {
+  // Consolidated advancement: handles both phrase and section progression and state save
+  advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
     if (!layer) return;
 
     beatRhythm = divRhythm = subdivRhythm = 0;
-    // Save current global timing state to layer (phrase/section already advanced)
-    layer.state.phraseStart = phraseStart;
-    layer.state.phraseStartTime = phraseStartTime;
-    layer.state.sectionStart = sectionStart;
-    layer.state.sectionStartTime = sectionStartTime;
-    layer.state.sectionEnd = sectionEnd;
-    layer.state.tpSection = tpSection;
-    layer.state.spSection = spSection;
-    layer.state.finalSectionTime = finalSectionTime;
 
-    // Save current layer-specific variables to state
+    if (advancementType === 'phrase') {
+      layer.state.phraseStart += tpPhrase;
+      layer.state.phraseStartTime += spPhrase;
+      layer.state.tpSection += tpPhrase;
+      layer.state.spSection += spPhrase;
+    } else if (advancementType === 'section') {
+      layer.state.sectionStart += layer.state.tpSection;
+      layer.state.sectionStartTime += layer.state.spSection;
+      layer.state.sectionEnd += layer.state.tpSection;
+      layer.state.tpSection = layer.state.spSection = 0;
+    }
+
     layer.state.numerator = numerator;
     layer.state.denominator = denominator;
     layer.state.measuresPerPhrase = measuresPerPhrase;
@@ -587,11 +582,6 @@ const LM = layerManager ={
     layer.state.spMeasure = spMeasure;
   },
 
-  advanceAll: (advancementFn) => {
-    Object.values(LM.layers).forEach(layer => {
-      advancementFn(layer.state);
-    });
-  }
 };
 
 // Export layer manager to global scope for access from other modules
@@ -601,7 +591,7 @@ globalThis.LM = LM;
 // This ensures c1 and c2 are available when registering layers
 
 // Timing and counter variables (documented inline for brevity)
-measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=0;
+measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=0;
 
 /**
  * Cross-modulation factor for polyrhythmic interference.
@@ -885,7 +875,9 @@ grandFinale = () => {
 
     fs.writeFileSync(outputFilename, composition);
     console.log(`${outputFilename} created (${name} layer).`);
+
   });
+
 };
 
 /**
