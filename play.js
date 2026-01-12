@@ -24,6 +24,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
+    // Select shared composer for both layers in this phrase
     composer = ra(composers);
     [numerator, denominator] = composer.getMeter();
     getMidiMeter();
@@ -32,22 +33,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.activate('primary', null, false);
 
     measuresPerPhrase = measuresPerPhrase1;
-    setPhraseTiming('primary');
-
-    logUnit('phrase');
+    setUnitTiming('phrase');
 
     // PRIMARY METER LOOP
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
-      setMeasureTiming('primary');
-      logUnit('measure');
+      setUnitTiming('measure');
       beatRhythm = setRhythm('beat');
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         trackBeatRhythm();
         beatCount++;
-        setBeatTiming();
-        logUnit('beat');
+        setUnitTiming('beat');
         divRhythm = setRhythm('div');
         setOtherInstruments();
         setBinaural();
@@ -59,19 +56,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           trackDivRhythm();
-          setDivTiming();
-          logUnit('division');
+          setUnitTiming('division');
           subdivRhythm = setRhythm('subdiv');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-            setSubdivTiming();
-            logUnit('subdivision');
+            setUnitTiming('subdivision');
             playNotes();
           }
 
           for (subsubdivIndex = 0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) {
-            setSubsubdivTiming();
-            logUnit('subsubdivision');
+            setUnitTiming('subsubdivision');
             playNotes2();
           }
         }
@@ -90,20 +84,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.activate('poly', null, true);
 
     measuresPerPhrase = measuresPerPhrase2;
-    setPhraseTiming('poly');
-
-    logUnit('phrase');
+    setUnitTiming('phrase');
 
     // POLY METER LOOP
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
-      setMeasureTiming('poly');
-      logUnit('measure');
+      setUnitTiming('measure');
       beatRhythm = setRhythm('beat');
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         trackBeatRhythm();
-        setBeatTiming();
-        logUnit('beat');
+        setUnitTiming('beat');
         divRhythm = setRhythm('div');
         setOtherInstruments();
         setBinaural();
@@ -115,19 +105,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           trackDivRhythm();
-          setDivTiming();
-          logUnit('division');
+          setUnitTiming('division');
           subdivRhythm = setRhythm('subdiv');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-            setSubdivTiming();
-            logUnit('subdivision');
+            setUnitTiming('subdivision');
             playNotes();
           }
 
           for (subsubdivIndex = 0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) {
-            setSubsubdivTiming();
-            logUnit('subsubdivision');
+            setUnitTiming('subsubdivision');
             playNotes2();
           }
         }

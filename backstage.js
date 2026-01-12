@@ -457,7 +457,16 @@ const LM = layerManager ={
       sectionEnd: 0,
       tpSec: 0,
       tpSection: 0,
-      spSection: 0
+      spSection: 0,
+      numerator: 4,
+      denominator: 4,
+      measuresPerPhrase: 1,
+      tpPhrase: 0,
+      spPhrase: 0,
+      measureStart: 0,
+      measureStartTime: 0,
+      tpMeasure: PPQ * 4, // Default 4/4 measure
+      spMeasure: 0
     };
     const state = Object.assign({}, defaultState, initialState);
     // Accept a buffer array, or a string name (create a new buffer), or undefined
@@ -492,24 +501,37 @@ const LM = layerManager ={
     c = layer.buffer;
     LM.activeLayer = name;
 
-    // Store meter values from globals into layer state
-    layer.state.numerator = numerator;
-    layer.state.denominator = denominator;
-    layer.state.meterRatio = numerator / denominator;
+  // Store meter values from globals into layer state (meter is set externally before activation)
+  layer.state.numerator = numerator;
+  layer.state.denominator = denominator;
+  layer.state.meterRatio = numerator / denominator;
 
-    // Set measures for this layer if provided
-    if (measuresPerPhraseValue !== null) {
-      measuresPerPhrase = measuresPerPhraseValue;
-    }
+  // Set measures for this layer if provided
+  if (measuresPerPhraseValue !== null) {
+    measuresPerPhrase = measuresPerPhraseValue;
+  }
 
-    // Store the current tpSec value for this layer (critical for final tick calculation)
-    layer.state.tpSec = tpSec;
+  // Store the current tpSec and tpMeasure values for this layer (critical for timing calculations)
+  layer.state.tpSec = tpSec;
+  layer.state.tpMeasure = tpMeasure;
 
-    // Set up timing variables from layer state (moved from play.js duplication)
-    phraseStart = layer.state.phraseStart;
-    phraseStartTime = layer.state.phraseStartTime;
-    sectionStart = layer.state.sectionStart;
-    sectionStartTime = layer.state.sectionStartTime;
+  // Restore layer-specific timing state to globals
+  phraseStart = layer.state.phraseStart;
+  phraseStartTime = layer.state.phraseStartTime;
+  sectionStart = layer.state.sectionStart;
+  sectionStartTime = layer.state.sectionStartTime;
+  sectionEnd = layer.state.sectionEnd;
+  tpSection = layer.state.tpSection;
+  spSection = layer.state.spSection;
+  finalSectionTime = layer.state.finalSectionTime;
+  tpPhrase = layer.state.tpPhrase;
+  spPhrase = layer.state.spPhrase;
+  measureStart = layer.state.measureStart;
+  measureStartTime = layer.state.measureStartTime;
+  tpMeasure = layer.state.tpMeasure;
+  spMeasure = layer.state.spMeasure;
+
+  // Meter values stay as set externally (don't restore from state to avoid overwriting poly overrides)
 
     // Handle poly-specific setup
     if (isPoly) {
@@ -545,18 +567,26 @@ const LM = layerManager ={
     if (!layer) return;
 
     beatRhythm = divRhythm = subdivRhythm = 0;
-    // Advance layer context with current global timing values
-    layer.state.phraseStart = phraseStart + tpPhrase;
-    layer.state.phraseStartTime = phraseStartTime + spPhrase;
-    // Update section's accumulated time with this phrase
-    layer.state.sectionStartTime = sectionStartTime + spPhrase;
-    // Update sectionEnd (the actual tick position where this section ends)
-    // Accumulate across phrases: sectionEnd = previous sectionEnd + this phrase's ticks
-    if (layer.state.sectionEnd === undefined) layer.state.sectionEnd = sectionStart;
-    layer.state.sectionEnd += tpPhrase;
-    // Capture accumulated section timing
+    // Save current global timing state to layer (phrase/section already advanced)
+    layer.state.phraseStart = phraseStart;
+    layer.state.phraseStartTime = phraseStartTime;
+    layer.state.sectionStart = sectionStart;
+    layer.state.sectionStartTime = sectionStartTime;
+    layer.state.sectionEnd = sectionEnd;
     layer.state.tpSection = tpSection;
     layer.state.spSection = spSection;
+    layer.state.finalSectionTime = finalSectionTime;
+
+    // Save current layer-specific variables to state
+    layer.state.numerator = numerator;
+    layer.state.denominator = denominator;
+    layer.state.measuresPerPhrase = measuresPerPhrase;
+    layer.state.tpPhrase = tpPhrase;
+    layer.state.spPhrase = spPhrase;
+    layer.state.measureStart = measureStart;
+    layer.state.measureStartTime = measureStartTime;
+    layer.state.tpMeasure = tpMeasure;
+    layer.state.spMeasure = spMeasure;
   },
 
   advanceAll: (advancementFn) => {
