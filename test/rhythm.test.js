@@ -1,20 +1,11 @@
 // test/rhythm.test.js
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+require('../sheet');  // Defines constants
+require('../backstage');  // Defines utility functions
+require('../rhythm');  // Rhythm functions
 
 let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
 let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
-
-// Mock dependencies
-const mockTonalRhythm = {
-  binary: vi.fn(),
-  hex: vi.fn(),
-  onsets: vi.fn(),
-  random: vi.fn(),
-  probability: vi.fn(),
-  euclid: vi.fn(),
-  rotate: vi.fn()
-};
 
 // Setup global state
 function setupGlobalState() {

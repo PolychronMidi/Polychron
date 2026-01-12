@@ -773,6 +773,233 @@ describe('State management', () => {
   });
 });
 
+describe('LayerManager (LM)', () => {
+  beforeEach(() => {
+    setupGlobalState();
+    // Reset LM state
+    LM.layers = {};
+    LM.activeLayer = null;
+    // Set up global timing variables
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    globalThis.tpSec = 960;
+    globalThis.tpMeasure = 1920;
+    globalThis.measuresPerPhrase = 4;
+    globalThis.tpPhrase = 7680;
+    globalThis.spPhrase = 8;
+    globalThis.phraseStart = 0;
+    globalThis.phraseStartTime = 0;
+    globalThis.sectionStart = 0;
+    globalThis.sectionStartTime = 0;
+    globalThis.sectionEnd = 0;
+    globalThis.tpSection = 0;
+    globalThis.spSection = 0;
+  });
+
+  describe('register', () => {
+    it('should register a new layer with buffer', () => {
+      const { state, buffer } = LM.register('test', [], {}, () => {});
+      expect(LM.layers.test).toBeDefined();
+      expect(LM.layers.test.buffer).toBe(buffer);
+      expect(state).toBeDefined();
+      expect(buffer).toEqual([]);
+    });
+
+    it('should create buffer if name provided instead of array', () => {
+      const { state, buffer } = LM.register('test2', 'c1', {}, () => {});
+      expect(LM.layers.test2).toBeDefined();
+      expect(state.bufferName).toBe('c1');
+      expect(Array.isArray(buffer)).toBe(true);
+    });
+
+    it('should initialize default state properties', () => {
+      const { state } = LM.register('test', [], {}, () => {});
+      expect(state.phraseStart).toBe(0);
+      expect(state.phraseStartTime).toBe(0);
+      expect(state.numerator).toBe(4);
+      expect(state.denominator).toBe(4);
+      expect(state.measuresPerPhrase).toBe(1);
+      expect(state.tpMeasure).toBe(PPQ * 4);
+    });
+
+    it('should merge initial state with defaults', () => {
+      const initialState = { numerator: 3, phraseStart: 100 };
+      const { state } = LM.register('test', [], initialState, () => {});
+      expect(state.numerator).toBe(3);
+      expect(state.phraseStart).toBe(100);
+      expect(state.denominator).toBe(4); // default
+    });
+
+    it('should call setup function with state and buffer', () => {
+      const setupFn = vi.fn();
+      const { state, buffer } = LM.register('test', [], {}, setupFn);
+      expect(setupFn).toHaveBeenCalledWith(state, buffer);
+    });
+  });
+
+  describe('activate', () => {
+    beforeEach(() => {
+      LM.register('primary', [], {}, () => {});
+      LM.register('poly', [], {}, () => {});
+    });
+
+    it('should set active layer and buffer', () => {
+      LM.activate('primary');
+      expect(LM.activeLayer).toBe('primary');
+      expect(c).toBe(LM.layers.primary.buffer);
+    });
+
+    it('should restore layer timing state to globals', () => {
+      LM.layers.primary.state.phraseStart = 1000;
+      LM.layers.primary.state.phraseStartTime = 1.5;
+      LM.layers.primary.state.sectionStart = 500;
+      LM.layers.primary.state.tpSection = 2000;
+      LM.layers.primary.state.spSection = 2.0;
+
+      LM.activate('primary');
+
+      expect(phraseStart).toBe(1000);
+      expect(phraseStartTime).toBe(1.5);
+      expect(sectionStart).toBe(500);
+      expect(tpSection).toBe(2000);
+      expect(spSection).toBe(2.0);
+    });
+
+    it('should store current meter values from globals', () => {
+      globalThis.numerator = 7;
+      globalThis.denominator = 8;
+      globalThis.tpSec = 1000;
+      globalThis.tpMeasure = 1750;
+
+      LM.activate('primary');
+
+      expect(LM.layers.primary.state.numerator).toBe(7);
+      expect(LM.layers.primary.state.denominator).toBe(8);
+      expect(LM.layers.primary.state.tpSec).toBe(1000);
+      expect(LM.layers.primary.state.tpMeasure).toBe(1750);
+    });
+
+    it('should handle poly activation with different meter', () => {
+      globalThis.polyNumerator = 5;
+      globalThis.polyDenominator = 6;
+
+      LM.activate('poly', true);
+
+      expect(numerator).toBe(5);
+      expect(denominator).toBe(6);
+    });
+
+    it('should return activation state object', () => {
+      const result = LM.activate('primary');
+      expect(result).toHaveProperty('phraseStart', 0);
+      expect(result).toHaveProperty('phraseStartTime', 0);
+      expect(result).toHaveProperty('state');
+    });
+  });
+
+  describe('advance', () => {
+    beforeEach(() => {
+      LM.register('primary', [], {}, () => {});
+      LM.register('poly', [], {}, () => {});
+      LM.activate('primary');
+    });
+
+    it('should advance phrase correctly', () => {
+      LM.layers.primary.state.phraseStart = 1000;
+      LM.layers.primary.state.phraseStartTime = 1.5;
+      LM.layers.primary.state.tpSection = 500;
+      LM.layers.primary.state.spSection = 0.5;
+
+      LM.advance('primary', 'phrase');
+
+      expect(LM.layers.primary.state.phraseStart).toBe(1000 + tpPhrase);
+      expect(LM.layers.primary.state.phraseStartTime).toBe(1.5 + spPhrase);
+      expect(LM.layers.primary.state.tpSection).toBe(500 + tpPhrase);
+      expect(LM.layers.primary.state.spSection).toBe(0.5 + spPhrase);
+    });
+
+    it('should advance section correctly', () => {
+      LM.layers.primary.state.sectionStart = 2000;
+      LM.layers.primary.state.sectionStartTime = 3.0;
+      LM.layers.primary.state.sectionEnd = 4000;
+      LM.layers.primary.state.tpSection = 1000;
+      LM.layers.primary.state.spSection = 1.0;
+
+      LM.advance('primary', 'section');
+
+      expect(LM.layers.primary.state.sectionStart).toBe(2000 + 1000);
+      expect(LM.layers.primary.state.sectionStartTime).toBe(3.0 + 1.0);
+      expect(LM.layers.primary.state.sectionEnd).toBe(4000 + 1000);
+      expect(LM.layers.primary.state.tpSection).toBe(0);
+      expect(LM.layers.primary.state.spSection).toBe(0);
+    });
+
+    it('should update meter values from globals', () => {
+      globalThis.numerator = 5;
+      globalThis.denominator = 6;
+      globalThis.measuresPerPhrase = 3;
+      globalThis.tpPhrase = 5000;
+      globalThis.spPhrase = 5.0;
+
+      LM.advance('primary', 'phrase');
+
+      expect(LM.layers.primary.state.numerator).toBe(5);
+      expect(LM.layers.primary.state.denominator).toBe(6);
+      expect(LM.layers.primary.state.measuresPerPhrase).toBe(3);
+      expect(LM.layers.primary.state.tpPhrase).toBe(5000);
+      expect(LM.layers.primary.state.spPhrase).toBe(5.0);
+    });
+
+    it('should handle non-existent layer gracefully', () => {
+      expect(() => LM.advance('nonexistent')).not.toThrow();
+    });
+
+    it('should reset beatRhythm, divRhythm, subdivRhythm', () => {
+      globalThis.beatRhythm = 1;
+      globalThis.divRhythm = 1;
+      globalThis.subdivRhythm = 1;
+
+      LM.advance('primary', 'phrase');
+
+      expect(beatRhythm).toBe(0);
+      expect(divRhythm).toBe(0);
+      expect(subdivRhythm).toBe(0);
+    });
+  });
+
+  describe('integration', () => {
+    it('should maintain separate state between layers', () => {
+      LM.register('layer1', [], {}, () => {});
+      LM.register('layer2', [], {}, () => {});
+
+      LM.activate('layer1');
+      phraseStart = 100;
+      LM.advance('layer1', 'phrase');
+
+      LM.activate('layer2');
+      phraseStart = 200;
+      LM.advance('layer2', 'phrase');
+
+      // Check layer1 state unchanged
+      expect(LM.layers.layer1.state.phraseStart).toBe(tpPhrase);
+      expect(LM.layers.layer2.state.phraseStart).toBe(tpPhrase);
+    });
+
+    it('should handle complex timing scenarios', () => {
+      LM.register('complex', [], {}, () => {});
+
+      // Simulate multiple phrase advances
+      LM.activate('complex');
+      for (let i = 0; i < 3; i++) {
+        LM.advance('complex', 'phrase');
+      }
+
+      expect(LM.layers.complex.state.phraseStart).toBe(tpPhrase * 3);
+      expect(LM.layers.complex.state.phraseStartTime).toBe(spPhrase * 3);
+    });
+  });
+});
+
 describe('Probabilistic behavior', () => {
   it('should distribute random values uniformly', () => {
     const buckets = [0, 0, 0, 0, 0];
