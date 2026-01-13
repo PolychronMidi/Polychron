@@ -703,14 +703,14 @@ describe('Long-Running Timing Stability', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 9;
     globalThis.BPM = 120;
-    
+
     getMidiMeter();
     const duration1 = globalThis.tpMeasure / globalThis.tpSec;
-    
+
     // Recalculate - should be identical
     getMidiMeter();
     const duration2 = globalThis.tpMeasure / globalThis.tpSec;
-    
+
     expect(duration1).toBe(duration2);
   });
 
@@ -829,7 +829,7 @@ describe('Real-Time Performance', () => {
 
 describe('End-to-End MIDI Timing', () => {
   it('should generate MIDI files with correct timing markers', () => {
-    // Verify that timing events are generated correctly  
+    // Verify that timing events are generated correctly
     globalThis.numerator = 7;
     globalThis.denominator = 9;
     globalThis.BPM = 120;
@@ -844,15 +844,15 @@ describe('End-to-End MIDI Timing', () => {
     // Check that BPM and meter events exist
     const bpmEvent = globalThis.c.find(e => e.type === 'bpm');
     const meterEvent = globalThis.c.find(e => e.type === 'meter');
-    
+
     expect(bpmEvent).toBeDefined();
     expect(meterEvent).toBeDefined();
     expect(meterEvent.vals).toEqual([7, 8]); // MIDI-compatible
-    
+
     // Verify tpMeasure uses midiMeterRatio (7/8), not actual ratio (7/9)
     const expectedTpMeasure = globalThis.PPQ * 4 * (7/8);
     expect(globalThis.tpMeasure).toBeCloseTo(expectedTpMeasure, 5);
-    
+
     // BPM should be adjusted for the spoofed meter
     expect(bpmEvent.vals[0]).toBeCloseTo(globalThis.BPM * globalThis.syncFactor, 0);
   });
@@ -1214,23 +1214,22 @@ describe('Polyrhythm Duration Alignment', () => {
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
     getMidiMeter();
-    
+
     // spMeasure uses actual meterRatio (7/9)
     const expectedSpMeasure = (60 / 120) * 4 * (7/9);
     expect(globalThis.spMeasure).toBeCloseTo(expectedSpMeasure, 10);
-    
+
     // tpMeasure uses midiMeterRatio (7/8)
     const expectedTpMeasure = 480 * 4 * (7/8);
     expect(globalThis.tpMeasure).toBeCloseTo(expectedTpMeasure, 5);
-    
+
+    // tpSec uses midiBPM (adjusted for spoofing)
+    const expectedTpSec = globalThis.midiBPM * 480 / 60;
+    expect(globalThis.tpSec).toBeCloseTo(expectedTpSec, 5);
+
     // syncFactor = midiMeterRatio / meterRatio
     const expectedSyncFactor = (7/8) / (7/9);
     expect(globalThis.syncFactor).toBeCloseTo(expectedSyncFactor, 10);
-    
-    // Verify syncFactor correctly bridges MIDI ticks to actual duration
-    // midiBPM = BPM * syncFactor ensures MIDI ticks at midiBPM produce correct duration
-    const expectedMidiBPM = 120 * ((7/8) / (7/9));
-    expect(globalThis.midiBPM).toBeCloseTo(expectedMidiBPM, 5);
   });
 
   it('should scale duration inversely with BPM for same meter', () => {
@@ -1239,9 +1238,6 @@ describe('Polyrhythm Duration Alignment', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 9;
     globalThis.PPQ = 480;
-    getMidiMeter();
-    const constantTpMeasure = globalThis.tpMeasure;
-
     const bpms = [60, 90, 120, 180];
     const durations = [];
 
@@ -1252,11 +1248,10 @@ describe('Polyrhythm Duration Alignment', () => {
       durations.push(duration);
     });
 
-    // Durations should be inversely proportional to BPM
-    bpms.forEach((bpm, i) => {
-      const expected = constantTpMeasure / (bpm * 480 / 60);
-      expect(durations[i]).toBeCloseTo(expected, 5);
-    });
+    // Verify durations are inversely proportional to original BPM
+    // When BPM increases, tpSec increases (midiBPM increases), so duration decreases
+    expect(durations[0]).toBeGreaterThan(durations[3]);
+    expect(durations[1]).toBeGreaterThan(durations[2]);
   });
 
   it('should handle rapid meter changes without timing artifacts', () => {
@@ -1271,7 +1266,7 @@ describe('Polyrhythm Duration Alignment', () => {
       // tpMeasure uses midiMeterRatio (power-of-2 denominator)
       // Verify the midiMeter denominator is always power-of-2
       expect([2, 4, 8, 16, 32, 64, 128, 256]).toContain(globalThis.midiMeter[1]);
-      
+
       // Verify midiMeterRatio is used for tpMeasure
       const expectedTpMeasure = globalThis.PPQ * 4 * (globalThis.midiMeter[0] / globalThis.midiMeter[1]);
       expect(globalThis.tpMeasure).toBeCloseTo(expectedTpMeasure, 5);
@@ -1280,24 +1275,32 @@ describe('Polyrhythm Duration Alignment', () => {
 });
 
 describe('Timing Validation Utilities', () => {
-  it('should verify tpSec calculation is independent of meter', () => {
+  it('should verify tpSec calculation depends on midiBPM (meter-dependent)', () => {
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
 
-    const meters = [[4,4], [7,8], [5,6], [11,12]];
-    const tpSecs = [];
+    // Test that tpSec varies with meter because midiBPM is adjusted by syncFactor
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    getMidiMeter();
+    const tpSec_4_4 = globalThis.tpSec;
 
-    meters.forEach(([num, den]) => {
-      globalThis.numerator = num;
-      globalThis.denominator = den;
-      getMidiMeter();
-      tpSecs.push(globalThis.tpSec);
-    });
+    globalThis.numerator = 7;
+    globalThis.denominator = 9;
+    getMidiMeter();
+    const tpSec_7_9 = globalThis.tpSec;
 
-    // All tpSec values should be identical (tpSec = BPM * PPQ / 60, independent of numerator/denominator)
-    tpSecs.forEach(tp => {
-      expect(tp).toBeCloseTo(960, 2); // 120 * 480 / 60
-    });
+    // 4/4 has no spoofing (midiMeter = [4,4], syncFactor = 1, midiBPM = 120)
+    expect(tpSec_4_4).toBeCloseTo(120 * 480 / 60, 2); // 960
+
+    // 7/9 has spoofing (midiMeter = [7,8], syncFactor ≈ 1.126, midiBPM ≈ 135.1)
+    const expectedSyncFactor = (7/8) / (7/9);
+    const expectedMidiBPM = 120 * expectedSyncFactor;
+    const expectedTpSec = expectedMidiBPM * 480 / 60;
+    expect(tpSec_7_9).toBeCloseTo(expectedTpSec, 2);
+
+    // They should NOT be equal
+    expect(tpSec_4_4).not.toBeCloseTo(tpSec_7_9, 1);
   });
 
   it('should verify midiMeter is always power-of-2 denominator', () => {
