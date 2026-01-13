@@ -39,13 +39,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
-      beatRhythm = setRhythm('beat');
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         trackBeatRhythm();
         beatCount++;
         setUnitTiming('beat');
-        divRhythm = setRhythm('div');
         setOtherInstruments();
         setBinaural();
         setBalanceAndFX();
@@ -57,7 +55,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           trackDivRhythm();
           setUnitTiming('division');
-          subdivRhythm = setRhythm('subdiv');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdivision');
@@ -74,22 +71,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
     LM.advance('primary', 'phrase');
 
-    getMidiMeter(); // Calculate poly's meter
-
     // POLY METER SETUP (activate poly buffer and timing)
     LM.activate('poly', true);
+
+    getMidiMeter(); // Calculate poly's meter
 
     setUnitTiming('phrase');
 
     // POLY METER LOOP
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
-      beatRhythm = setRhythm('beat');
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         trackBeatRhythm();
         setUnitTiming('beat');
-        divRhythm = setRhythm('div');
         setOtherInstruments();
         setBinaural();
         setBalanceAndFX();
@@ -101,7 +96,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           trackDivRhythm();
           setUnitTiming('division');
-          subdivRhythm = setRhythm('subdiv');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdivision');

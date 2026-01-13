@@ -523,23 +523,15 @@ const LM = layerManager ={
   tpMeasure = layer.state.tpMeasure;
   spMeasure = layer.state.spMeasure;
 
-  // Meter values stay as set externally (don't restore from state to avoid overwriting poly overrides)
-
-    // Handle poly-specific setup
     if (isPoly) {
       numerator = polyNumerator;
       denominator = polyDenominator;
-      meterRatio = polyMeterRatio;
       measuresPerPhrase = measuresPerPhrase2;
-      tpPhrase = tpPhrase2;
-      spPhrase = spPhrase2; // CRITICAL FIX: Use correct spPhrase for poly layer
     } else {
       measuresPerPhrase = measuresPerPhrase1;
-      tpPhrase = tpPhrase1;
-      spPhrase = spPhrase1; // CRITICAL FIX: Use correct spPhrase for primary layer
     }
-
-    // Return state for easy assignment
+    spPhrase = spMeasure * measuresPerPhrase;
+    tpPhrase = tpMeasure * measuresPerPhrase;
     return {
       phraseStart: layer.state.phraseStart,
       phraseStartTime: layer.state.phraseStartTime,
@@ -549,7 +541,6 @@ const LM = layerManager ={
       tpSec: layer.state.tpSec,
       tpSection: layer.state.tpSection,
       spSection: layer.state.spSection,
-      // provide direct access to the state object if callers need additional fields
       state: layer.state
     };
   },
@@ -826,8 +817,6 @@ grandFinale = () => {
 
   // Collect all layer data
   const layerData = Object.entries(LM.layers).map(([name, layer]) => {
-
-
     return {
       name,
       layer: layer.state,

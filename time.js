@@ -99,8 +99,7 @@ getMidiMeter = () => {
   midiBPM = BPM * syncFactor;
   tpSec = midiBPM * PPQ / 60;
   tpMeasure = PPQ * 4 * midiMeterRatio;
-  spMeasure = tpMeasure / tpSec;
-  setMidiTiming();
+  spMeasure = (60 / midiBPM) * midiMeterRatio * 4;
   return midiMeter; // Return the midiMeter for testing
 };
 
@@ -109,7 +108,6 @@ getMidiMeter = () => {
  * Context-aware: writes to c1 or c2 depending on current meter.
  */
 setMidiTiming = (tick=measureStart) => {
-  // Use layer-specific midiBPM for proper polyrhythmic tempo differences
   p(c,
     { tick: tick, type: 'bpm', vals: [midiBPM] },
     { tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
@@ -145,64 +143,25 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
-
-  // Get primary meter's MIDI version for accurate playback alignment
-  const originalNumerator = numerator;
-  const originalDenominator = denominator;
-  getMidiMeter(); // Sets midiMeter for primary layer
-  const primaryMidiMeter = [...midiMeter];
-  const primaryMidiRatio = primaryMidiMeter[0] / primaryMidiMeter[1];
-  const primaryTpMeasure = tpMeasure; // CRITICAL: Store primary layer's tpMeasure
-  const primaryTpSec = tpSec; // CRITICAL: Store primary layer's tpSec
-
   while (true) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
     polyMeterRatio = polyNumerator / polyDenominator;
-
-    // Get poly meter's MIDI version for accurate playback alignment
-    const tempNumerator = numerator;
-    const tempDenominator = denominator;
-    numerator = polyNumerator;
-    denominator = polyDenominator;
-    getMidiMeter(); // Sets midiMeter for poly layer
-    const polyMidiMeter = [...midiMeter];
-    const polyMidiRatio = polyMidiMeter[0] / polyMidiMeter[1];
-    const polyTpMeasure = tpMeasure; // CRITICAL: Store poly layer's tpMeasure
-    const polyTpSec = tpSec; // CRITICAL: Store poly layer's tpSec
-
-    // Restore original meter
-    numerator = tempNumerator;
-    denominator = tempDenominator;
-    getMidiMeter(); // Restore primary MIDI meter
-
     let allMatches = [];
     let bestMatch = {
-      originalMeasures: Infinity,
+      primaryMeasures: Infinity,
       polyMeasures: Infinity,
       totalMeasures: Infinity,
       polyNumerator: polyNumerator,
       polyDenominator: polyDenominator
     };
 
-    // CRITICAL FIX: Find polyrhythmic alignments where cycle durations match
-    // For polyrhythm A:B, we need duration_A * A = duration_B * B
-    // This ensures the complete polyrhythmic cycle has the same total time
-    for (let originalMeasures = 1; originalMeasures < 7; originalMeasures++) {
+    for (let primaryMeasures = 1; primaryMeasures < 7; primaryMeasures++) {
       for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-        // Calculate time per measure for each layer
-        const primaryMeasureTime = primaryTpMeasure / primaryTpSec;
-        const polyMeasureTime = polyTpMeasure / polyTpSec;
-
-        // Calculate total cycle time for this measure combination
-        const primaryCycleTime = originalMeasures * primaryMeasureTime;
-        const polyCycleTime = polyMeasures * polyMeasureTime;
-
-        // Check if cycle times match (polyrhythmic alignment)
-        if (m.abs(primaryCycleTime - polyCycleTime) < 0.0001) {
+        if (m.abs(primaryMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
           let currentMatch = {
-            originalMeasures: originalMeasures,
+            primaryMeasures: primaryMeasures,
             polyMeasures: polyMeasures,
-            totalMeasures: originalMeasures + polyMeasures,
+            totalMeasures: primaryMeasures + polyMeasures,
             polyNumerator: polyNumerator,
             polyDenominator: polyDenominator
           };
@@ -216,23 +175,10 @@ getPolyrhythm = () => {
 
     if (bestMatch.totalMeasures !== Infinity &&
         (bestMatch.totalMeasures > 2 &&
-         (bestMatch.originalMeasures > 1 || bestMatch.polyMeasures > 1)) &&
-        (numerator !== polyNumerator || denominator !== polyDenominator)) {
-      measuresPerPhrase1 = bestMatch.originalMeasures;
+         (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1)) &&
+        !(numerator === polyNumerator && denominator === polyDenominator)) {
+      measuresPerPhrase1 = bestMatch.primaryMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
-      // CRITICAL FIX: Use each layer's own tpMeasure for phrase duration calculation
-      tpPhrase1 = primaryTpMeasure * measuresPerPhrase1;
-      tpPhrase2 = polyTpMeasure * measuresPerPhrase2;
-      // CRITICAL FIX: Calculate spPhrase for each layer using correct tpSec
-      spPhrase1 = tpPhrase1 / primaryTpSec;
-      spPhrase2 = tpPhrase2 / polyTpSec;
-
-      // Store both actual and MIDI meters for debugging
-      actualPrimaryMeter = [originalNumerator, originalDenominator];
-      actualPolyMeter = [polyNumerator, polyDenominator];
-      midiPrimaryMeter = primaryMidiMeter;
-      midiPolyMeter = polyMidiMeter;
-
       return;
     }
   }
@@ -270,7 +216,7 @@ logUnit = (type) => {
     startTick = phraseStart;
     endTick = startTick + tpPhrase;
     startTime = phraseStartTime;
-    // CRITICAL: Don't recalculate spPhrase - it was already set correctly per layer
+    spPhrase = tpPhrase / tpSec;
     endTime = startTime + spPhrase;
     composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
     if (composer && composer.scale && composer.scale.name) {
@@ -292,11 +238,8 @@ logUnit = (type) => {
     unitsPerParent = measuresPerPhrase;
     startTick = measureStart;
     endTick = measureStart + tpMeasure;
-    // FIX: Calculate measure timing correctly
-    const measureDuration = tpMeasure / tpSec;
-    const measureStartTimeCalc = phraseStartTime + (measureIndex * measureDuration);
-    startTime = measureStartTimeCalc;
-    endTime = measureStartTimeCalc + measureDuration;
+    startTime = measureStartTime;
+    endTime = measureStartTime + spMeasure;
     composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
@@ -382,15 +325,16 @@ setUnitTiming = (unitType) => {
   switch (unitType) {
     case 'phrase':
       // Phrase timing is special - calculated from measures
-      // CRITICAL: Don't recalculate spPhrase here - it was already set correctly per layer
       tpPhrase = tpMeasure * measuresPerPhrase;
-      // spPhrase is already set correctly in LM.activate based on layer-specific values
+      spPhrase = tpPhrase / tpSec;
       break;
 
     case 'measure':
       // Measure timing within phrase
       measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
       measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
+      setMidiTiming();
+      beatRhythm = setRhythm('beat');
       break;
 
     case 'beat':
@@ -405,6 +349,7 @@ setUnitTiming = (unitType) => {
       beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
       divsPerBeat = composer ? composer.getDivisions() : 1;
+      divRhythm = setRhythm('div');
       break;
 
     case 'division':
@@ -415,6 +360,7 @@ setUnitTiming = (unitType) => {
       divStartTime = beatStartTime + divIndex * spDiv;
       subdivsPerDiv = m.max(1, composer ? composer.getSubdivisions() : 1);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
+      subdivRhythm = setRhythm('subdiv');
       break;
 
     case 'subdivision':
