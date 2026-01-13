@@ -144,9 +144,32 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
+
+  // Get primary meter's MIDI version for accurate playback alignment
+  const originalNumerator = numerator;
+  const originalDenominator = denominator;
+  getMidiMeter(); // Sets midiMeter for primary layer
+  const primaryMidiMeter = [...midiMeter];
+  const primaryMidiRatio = primaryMidiMeter[0] / primaryMidiMeter[1];
+
   while (true) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
     polyMeterRatio = polyNumerator / polyDenominator;
+
+    // Get poly meter's MIDI version for accurate playback alignment
+    const tempNumerator = numerator;
+    const tempDenominator = denominator;
+    numerator = polyNumerator;
+    denominator = polyDenominator;
+    getMidiMeter(); // Sets midiMeter for poly layer
+    const polyMidiMeter = [...midiMeter];
+    const polyMidiRatio = polyMidiMeter[0] / polyMidiMeter[1];
+
+    // Restore original meter
+    numerator = tempNumerator;
+    denominator = tempDenominator;
+    getMidiMeter(); // Restore primary MIDI meter
+
     let allMatches = [];
     let bestMatch = {
       originalMeasures: Infinity,
@@ -156,9 +179,11 @@ getPolyrhythm = () => {
       polyDenominator: polyDenominator
     };
 
+    // CRITICAL FIX: Use MIDI ratios instead of actual ratios for alignment
+    // This ensures calculated alignments match actual MIDI playback timing
     for (let originalMeasures = 1; originalMeasures < 7; originalMeasures++) {
       for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-        if (m.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
+        if (m.abs(originalMeasures * primaryMidiRatio - polyMeasures * polyMidiRatio) < .00000001) {
           let currentMatch = {
             originalMeasures: originalMeasures,
             polyMeasures: polyMeasures,
@@ -182,6 +207,13 @@ getPolyrhythm = () => {
       measuresPerPhrase2 = bestMatch.polyMeasures;
       tpPhrase1 = tpMeasure * measuresPerPhrase1;
       tpPhrase2 = tpMeasure * measuresPerPhrase2;
+
+      // Store both actual and MIDI meters for debugging
+      actualPrimaryMeter = [originalNumerator, originalDenominator];
+      actualPolyMeter = [polyNumerator, polyDenominator];
+      midiPrimaryMeter = primaryMidiMeter;
+      midiPolyMeter = polyMidiMeter;
+
       return;
     }
   }
@@ -241,8 +273,11 @@ logUnit = (type) => {
     unitsPerParent = measuresPerPhrase;
     startTick = measureStart;
     endTick = measureStart + tpMeasure;
-    startTime = measureStartTime;
-    endTime = measureStartTime + spMeasure;
+    // FIX: Calculate measure timing correctly
+    const measureDuration = tpMeasure / tpSec;
+    const measureStartTimeCalc = phraseStartTime + (measureIndex * measureDuration);
+    startTime = measureStartTimeCalc;
+    endTime = measureStartTimeCalc + measureDuration;
     composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
