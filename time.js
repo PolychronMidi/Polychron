@@ -99,7 +99,7 @@ getMidiMeter = () => {
   midiBPM = BPM * syncFactor;
   tpSec = midiBPM * PPQ / 60;
   tpMeasure = PPQ * 4 * midiMeterRatio;
-  spMeasure = (60 / midiBPM) * midiMeterRatio * 4;
+  spMeasure = (60 / BPM) * 4 * meterRatio;
   return midiMeter; // Return the midiMeter for testing
 };
 
