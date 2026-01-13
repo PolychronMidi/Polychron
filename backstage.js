@@ -532,9 +532,11 @@ const LM = layerManager ={
       meterRatio = polyMeterRatio;
       measuresPerPhrase = measuresPerPhrase2;
       tpPhrase = tpPhrase2;
+      spPhrase = spPhrase2; // CRITICAL FIX: Use correct spPhrase for poly layer
     } else {
       measuresPerPhrase = measuresPerPhrase1;
       tpPhrase = tpPhrase1;
+      spPhrase = spPhrase1; // CRITICAL FIX: Use correct spPhrase for primary layer
     }
 
     // Return state for easy assignment

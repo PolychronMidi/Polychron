@@ -151,6 +151,8 @@ getPolyrhythm = () => {
   getMidiMeter(); // Sets midiMeter for primary layer
   const primaryMidiMeter = [...midiMeter];
   const primaryMidiRatio = primaryMidiMeter[0] / primaryMidiMeter[1];
+  const primaryTpMeasure = tpMeasure; // CRITICAL: Store primary layer's tpMeasure
+  const primaryTpSec = tpSec; // CRITICAL: Store primary layer's tpSec
 
   while (true) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
@@ -164,6 +166,8 @@ getPolyrhythm = () => {
     getMidiMeter(); // Sets midiMeter for poly layer
     const polyMidiMeter = [...midiMeter];
     const polyMidiRatio = polyMidiMeter[0] / polyMidiMeter[1];
+    const polyTpMeasure = tpMeasure; // CRITICAL: Store poly layer's tpMeasure
+    const polyTpSec = tpSec; // CRITICAL: Store poly layer's tpSec
 
     // Restore original meter
     numerator = tempNumerator;
@@ -205,8 +209,12 @@ getPolyrhythm = () => {
         (numerator !== polyNumerator || denominator !== polyDenominator)) {
       measuresPerPhrase1 = bestMatch.originalMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
-      tpPhrase1 = tpMeasure * measuresPerPhrase1;
-      tpPhrase2 = tpMeasure * measuresPerPhrase2;
+      // CRITICAL FIX: Use each layer's own tpMeasure for phrase duration calculation
+      tpPhrase1 = primaryTpMeasure * measuresPerPhrase1;
+      tpPhrase2 = polyTpMeasure * measuresPerPhrase2;
+      // CRITICAL FIX: Calculate spPhrase for each layer using correct tpSec
+      spPhrase1 = tpPhrase1 / primaryTpSec;
+      spPhrase2 = tpPhrase2 / polyTpSec;
 
       // Store both actual and MIDI meters for debugging
       actualPrimaryMeter = [originalNumerator, originalDenominator];
