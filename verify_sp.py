@@ -14,8 +14,16 @@ for line in sys.stdin:
     length_match = re.search(r'Length: ([\d:.]+)', line)
     if length_match:
         length_str = length_match.group(1)
-        minutes, seconds = length_str.split(':')
-        length_sec = float(minutes) * 60 + float(seconds)
+        # FIX: Handle the actual format "MM:SS.ssss" correctly
+        if ':' in length_str:
+            minutes, seconds = length_str.split(':')
+            # Handle seconds with decimal part (e.g., "00.0000")
+            seconds_float = float(seconds)
+        else:
+            # Fallback for unexpected formats
+            minutes = 0
+            seconds_float = float(length_str)
+        length_sec = float(minutes) * 60 + seconds_float
     else:
         continue
     if prev_time is not None:
