@@ -5,3 +5,4 @@ package.json
 /__pycache__
 *.log
 /.vscode
+/output

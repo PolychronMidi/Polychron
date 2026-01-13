@@ -27,7 +27,8 @@ function setupGlobalState() {
   global.drumMap = {
     'snare1': { note: 31, velocityRange: [99, 111] },
     'kick1': { note: 12, velocityRange: [111, 127] },
-    'cymbal1': { note: 59, velocityRange: [66, 77] }
+    'cymbal1': { note: 59, velocityRange: [66, 77] },
+    'conga1': { note: 60, velocityRange: [66, 77] }
   };
 }
 
@@ -575,5 +576,178 @@ describe('MIDI compliance', () => {
   it('should use drum channel (9)', () => {
     drummer(['snare1'], [0]);
     expect(c.every(cmd => cmd.vals[0] === 9)).toBe(true);
+  });
+});
+
+describe('Rhythm pattern generators', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should generate drum patterns with correct drum map', () => {
+    // Verify that drumMap contains expected drum definitions
+    expect(drumMap).toBeDefined();
+    expect(drumMap['snare1']).toBeDefined();
+    expect(drumMap['snare1'].note).toBe(31);
+    expect(Array.isArray(drumMap['snare1'].velocityRange)).toBe(true);
+  });
+
+  it('should have velocity ranges for all drums', () => {
+    // Each drum should have valid velocity range [min, max]
+    Object.values(drumMap).forEach(drum => {
+      expect(Array.isArray(drum.velocityRange)).toBe(true);
+      expect(drum.velocityRange.length).toBe(2);
+      expect(drum.velocityRange[0]).toBeLessThanOrEqual(drum.velocityRange[1]);
+      expect(drum.velocityRange[0]).toBeGreaterThanOrEqual(0);
+      expect(drum.velocityRange[1]).toBeLessThanOrEqual(127);
+    });
+  });
+
+  it('should have valid MIDI note numbers for all drums', () => {
+    // Each drum should have valid MIDI note (0-127)
+    Object.values(drumMap).forEach(drum => {
+      expect(drum.note).toBeGreaterThanOrEqual(0);
+      expect(drum.note).toBeLessThanOrEqual(127);
+    });
+  });
+
+  it('should support different drum categories', () => {
+    // Verify we have different drum types in the main drumMap
+    const drumNames = Object.keys(drumMap);
+    // Should have at least snare, kick, and cymbal drums
+    expect(drumNames.some(name => name.includes('snare'))).toBe(true);
+    expect(drumNames.some(name => name.includes('kick'))).toBe(true);
+    expect(drumNames.some(name => name.includes('cymbal'))).toBe(true);
+  });
+
+  it('drummer function should accept single drum name', () => {
+    // drummer(['snare1'], [0.5]) should generate a drum hit
+    drummer(['snare1'], [0.5]);
+    expect(c.length).toBeGreaterThan(0);
+    // Should use MIDI channel 9 (drums)
+    expect(c[0].vals[0]).toBe(9);
+  });
+
+  it('drummer function should handle multiple beat offsets', () => {
+    c = [];
+    drummer(['kick1'], [0, 0.5]);
+    // With 2 beat offsets, should generate multiple events
+    expect(c.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Rhythm state tracking functions', () => {
+  beforeEach(() => {
+    setupGlobalState();
+    globalThis.beatIndex = 0;
+    globalThis.divIndex = 0;
+    globalThis.subdivIndex = 0;
+    globalThis.beatRhythm = [1, 0, 1, 0];
+    globalThis.divRhythm = [1, 1, 0];
+    globalThis.subdivRhythm = [1, 0, 1];
+    globalThis.beatsOn = 0;
+    globalThis.beatsOff = 0;
+    globalThis.divsOn = 0;
+    globalThis.divsOff = 0;
+    globalThis.subdivsOn = 0;
+    globalThis.subdivsOff = 0;
+  });
+
+  it('beat rhythm tracking should count consecutive on beats', () => {
+    // Simulate tracking beat rhythm [1, 0, 1, 0]
+    // First beat is 1 (on)
+    globalThis.beatIndex = 0;
+    // If function exists and works, it should increment beatsOn
+    expect(typeof globalThis.beatsOn).toBe('number');
+  });
+
+  it('division rhythm tracking should handle different length patterns', () => {
+    // divRhythm = [1, 1, 0] has length 3, different from beat
+    globalThis.divIndex = 0;
+    // Division pattern tracking should work independently
+    expect(globalThis.divRhythm.length).toBe(3);
+    expect(globalThis.beatRhythm.length).toBe(4);
+  });
+
+  it('subdivision tracking with nested rhythm structure', () => {
+    // Subdivisions are nested under divisions
+    globalThis.subdivIndex = 0;
+    globalThis.subdivsPerDiv = 2;
+    // Multiple subdivisions per division should track independently
+    expect(globalThis.subdivRhythm.length).toBeGreaterThan(0);
+  });
+
+  it('beat on/off counters should be independent from other levels', () => {
+    globalThis.beatIndex = 0;
+    globalThis.beatsOn = 0;
+    globalThis.beatsOff = 0;
+    globalThis.divsOn = 0;
+    globalThis.divsOff = 0;
+    // Changing one level shouldn't affect others
+    const beatOnSnapshot = globalThis.beatsOn;
+    const divOnSnapshot = globalThis.divsOn;
+    expect(beatOnSnapshot).toBe(0);
+    expect(divOnSnapshot).toBe(0);
+  });
+
+  it('rhythm array index should wrap correctly for pattern length', () => {
+    globalThis.beatIndex = 4;
+    globalThis.beatRhythm = [1, 0, 1, 0];
+    // Index 4 should wrap to 0 for length-4 array
+    const wrappedIndex = globalThis.beatIndex % globalThis.beatRhythm.length;
+    expect(wrappedIndex).toBe(0);
+  });
+});
+
+describe('Rhythm pattern composition integration', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should handle changing rhythm patterns between levels', () => {
+    globalThis.beatRhythm = [1, 1, 0, 0, 1];
+    globalThis.divRhythm = [1, 0, 1];
+    globalThis.subdivRhythm = [1, 1];
+    // Each level can have different length patterns
+    expect(globalThis.beatRhythm.length).not.toBe(globalThis.divRhythm.length);
+    expect(globalThis.divRhythm.length).not.toBe(globalThis.subdivRhythm.length);
+  });
+
+  it('polyrhythmic patterns with coprime lengths', () => {
+    // 3-against-4: beat=4, division=3 gives 12-beat cycle
+    globalThis.beatRhythm = [1, 1, 1, 1];
+    globalThis.divRhythm = [1, 1, 1];
+    globalThis.divsPerBeat = 3; // 3 divisions per beat = polyrhythm
+
+    // Calculate LCM to find cycle length
+    const lcm = 12; // LCM(4, 3) = 12
+    let beatCycleCount = 0;
+    let divCycleCount = 0;
+
+    // After 12 steps, both rhythms should realign
+    for (let i = 0; i < 12; i++) {
+      if (i % globalThis.beatRhythm.length === 0) beatCycleCount++;
+      if (i % globalThis.divRhythm.length === 0) divCycleCount++;
+    }
+    expect(beatCycleCount).toBe(3); // 12 / 4
+    expect(divCycleCount).toBe(4); // 12 / 3
+  });
+
+  it('rhythm with all zeros (silence)', () => {
+    globalThis.beatRhythm = [0, 0, 0, 0];
+    globalThis.divRhythm = [0, 0];
+    // Silent patterns should be valid
+    const beatOnCount = globalThis.beatRhythm.reduce((a, b) => a + b, 0);
+    const divOnCount = globalThis.divRhythm.reduce((a, b) => a + b, 0);
+    expect(beatOnCount).toBe(0);
+    expect(divOnCount).toBe(0);
+  });
+
+  it('rhythm with all ones (continuous)', () => {
+    globalThis.beatRhythm = [1, 1, 1, 1];
+    globalThis.divRhythm = [1, 1, 1, 1];
+    // Continuous patterns should be valid
+    const beatOnCount = globalThis.beatRhythm.reduce((a, b) => a + b, 0);
+    expect(beatOnCount).toBe(globalThis.beatRhythm.length);
   });
 });

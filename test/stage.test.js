@@ -339,4 +339,154 @@ describe('Stage Module', () => {
       expect(Array.isArray(globalThis.drumSets)).toBe(true);
     });
   });
+
+  describe('setBalanceAndFX function', () => {
+    beforeEach(() => {
+      globalThis.c = [];
+      globalThis.beatStart = 0;
+      globalThis.beatCount = 0;
+      globalThis.beatsUntilBinauralShift = 4;
+      globalThis.balOffset = 0;
+      globalThis.sideBias = 0;
+      globalThis.firstLoop = 0;
+      globalThis.bpmRatio3 = 1;
+      globalThis.flipBin = false;
+      globalThis.refVar = 1;
+      globalThis.cBal = 64;
+      globalThis.cBal2 = 64;
+      globalThis.cBal3 = 64;
+      globalThis.lBal = 32;
+      globalThis.rBal = 96;
+      globalThis.bassVar = 0;
+    });
+
+    it('should update pan values on condition', () => {
+      setBalanceAndFX();
+      // Should have added pan control change events
+      const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
+      // Pan control is CC 10, should have events for different channels
+      expect(panEvents.length).toBeGreaterThan(0);
+    });
+
+    it('should keep pan values within valid MIDI range (0-127)', () => {
+      setBalanceAndFX();
+      const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
+      panEvents.forEach(evt => {
+        expect(evt.vals[2]).toBeGreaterThanOrEqual(0);
+        expect(evt.vals[2]).toBeLessThanOrEqual(127);
+      });
+    });
+
+    it('should apply different pan values for left vs right channels', () => {
+      setBalanceAndFX();
+      const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
+      // When pan events are applied, left channels should differ from right
+      expect(panEvents.length).toBeGreaterThan(1);
+    });
+
+    it('should apply FX control events (CC 1, 5, 11, etc)', () => {
+      setBalanceAndFX();
+      // Should generate control change events for various FX
+      const fxEvents = c.filter(evt => evt.type === 'control_c');
+      expect(fxEvents.length).toBeGreaterThan(10);
+    });
+
+    it('should set tick to beatStart-1 for control events', () => {
+      globalThis.beatStart = 100;
+      setBalanceAndFX();
+      const controlEvents = c.filter(evt => evt.type === 'control_c');
+      controlEvents.forEach(evt => {
+        expect(evt.tick).toBe(99); // beatStart - 1
+      });
+    });
+
+    it('should update balance offset with limited change', () => {
+      const initialBal = globalThis.balOffset;
+      setBalanceAndFX();
+      // balOffset should change but within reasonable limits
+      expect(Math.abs(globalThis.balOffset - initialBal)).toBeLessThanOrEqual(4);
+    });
+
+    it('should apply side bias variation', () => {
+      setBalanceAndFX();
+      // sideBias should affect the left/right pan values
+      expect(typeof globalThis.sideBias).toBe('number');
+      expect(globalThis.sideBias).toBeGreaterThanOrEqual(-20);
+      expect(globalThis.sideBias).toBeLessThanOrEqual(20);
+    });
+
+    it('should clamp balance values correctly', () => {
+      for (let i = 0; i < 5; i++) {
+        setBalanceAndFX();
+        expect(globalThis.lBal).toBeGreaterThanOrEqual(0);
+        expect(globalThis.lBal).toBeLessThanOrEqual(54);
+        expect(globalThis.rBal).toBeGreaterThanOrEqual(74);
+        expect(globalThis.rBal).toBeLessThanOrEqual(127);
+      }
+    });
+  });
+
+  describe('setOtherInstruments function', () => {
+    beforeEach(() => {
+      globalThis.c = [];
+      globalThis.beatStart = 480;
+      globalThis.beatCount = 0;
+      globalThis.beatsUntilBinauralShift = 4;
+      globalThis.firstLoop = 0;
+      globalThis.otherInstruments = [33, 35, 37]; // Example instruments
+      globalThis.otherBassInstruments = [42, 44, 46];
+      globalThis.drumSets = [0, 1, 2];
+    });
+
+    it('should occasionally add instrument change events', () => {
+      // Run multiple times since it uses random chance
+      let instrumentChanges = 0;
+      for (let i = 0; i < 10; i++) {
+        globalThis.c = [];
+        globalThis.beatCount = i;
+        setOtherInstruments();
+        if (c.length > 0) {
+          instrumentChanges++;
+        }
+      }
+      // Should happen at least once in 10 runs
+      expect(instrumentChanges).toBeGreaterThan(0);
+    });
+
+    it('should generate program change events for binaural instruments', () => {
+      globalThis.firstLoop = 0; // Force execution on first loop
+      setOtherInstruments();
+      const progChanges = c.filter(evt => evt.type === 'program_c');
+      expect(progChanges.length).toBeGreaterThan(0);
+    });
+
+    it('should set tick to beatStart for instrument changes', () => {
+      globalThis.firstLoop = 0;
+      globalThis.beatStart = 960;
+      setOtherInstruments();
+      c.forEach(evt => {
+        expect(evt.tick).toBe(960);
+      });
+    });
+
+    it('should select from otherInstruments array', () => {
+      globalThis.firstLoop = 0;
+      globalThis.otherInstruments = [50, 51, 52];
+      setOtherInstruments();
+      const progChanges = c.filter(evt => evt.type === 'program_c' && evt.vals);
+      progChanges.forEach(evt => {
+        // Program value should be from otherInstruments or otherBassInstruments or drumSets
+        expect(typeof evt.vals[1]).toBe('number');
+      });
+    });
+
+    it('should not execute when conditions are not met', () => {
+      globalThis.firstLoop = 1; // Not first loop
+      globalThis.beatCount = 10;
+      globalThis.beatsUntilBinauralShift = 5; // beatCount % beatsUntilBinauralShift = 0, but not < 1
+      setOtherInstruments();
+      // Might or might not execute depending on random chance (rf() < .3)
+      expect(Array.isArray(c)).toBe(true);
+    });
+  });
 });

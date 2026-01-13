@@ -1037,3 +1037,131 @@ describe('Probabilistic behavior', () => {
     expect(variations).toBeLessThan(600);
   });
 });
+
+describe('Advanced clamping functions', () => {
+  it('softClamp should handle values below minimum with softness', () => {
+    // Value 5 is 10 below min(15), softness 0.1 applies 10% of overshoot
+    expect(softClamp(5, 15, 25, 0.1)).toBe(15 + (5 - 15) * 0.1); // 15 - 1 = 14
+    expect(softClamp(5, 15, 25, 0.1)).toBe(14);
+  });
+
+  it('softClamp should handle values above maximum with softness', () => {
+    // Value 35 is 10 above max(25), softness 0.1 applies 10% of overshoot
+    expect(softClamp(35, 15, 25, 0.1)).toBe(25 - (35 - 25) * 0.1); // 25 - 1 = 24
+    expect(softClamp(35, 15, 25, 0.1)).toBe(24);
+  });
+
+  it('softClamp should pass through values within range', () => {
+    expect(softClamp(20, 15, 25, 0.1)).toBe(20);
+    expect(softClamp(15, 15, 25, 0.5)).toBe(15);
+    expect(softClamp(25, 15, 25, 0.3)).toBe(25);
+  });
+
+  it('softClamp should respect different softness levels', () => {
+    // Same overshoot (10 below min), different softness
+    expect(softClamp(5, 15, 25, 0.1)).toBe(14); // 10% reduction
+    expect(softClamp(5, 15, 25, 0.5)).toBe(10); // 50% reduction
+    expect(softClamp(5, 15, 25, 1.0)).toBe(5);  // 100% reduction (no constraint)
+  });
+
+  it('stepClamp should snap values to nearest step', () => {
+    // Value 27 with step 5: round(27/5)*5 = round(5.4)*5 = 5*5 = 25
+    expect(stepClamp(27, 10, 50, 5)).toBe(25);
+    // Value 28 with step 5: round(28/5)*5 = round(5.6)*5 = 6*5 = 30
+    expect(stepClamp(28, 10, 50, 5)).toBe(30);
+  });
+
+  it('stepClamp should respect min/max bounds after stepping', () => {
+    // Value 52 with step 5 gives 50, which is within [10, 50]
+    expect(stepClamp(52, 10, 50, 5)).toBe(50);
+    // Value 8 with step 5 gives 10, respecting min bound
+    expect(stepClamp(8, 10, 50, 5)).toBe(10);
+  });
+
+  it('stepClamp should handle values exactly on steps', () => {
+    expect(stepClamp(25, 10, 50, 5)).toBe(25);
+    expect(stepClamp(30, 10, 50, 5)).toBe(30);
+    expect(stepClamp(35, 10, 50, 5)).toBe(35);
+  });
+
+  it('logClamp should handle values in logarithmic scale', () => {
+    // logClamp maps values to log scale, clamps in log space, then exponentiates
+    const result = logClamp(1000, 1, 100, 10);
+    // log10(1000) = 3, which is > logMax(2), so clamped to 100
+    expect(result).toBe(100);
+  });
+
+  it('logClamp should preserve values within logarithmic range', () => {
+    // log10(50) ≈ 1.7, which is between log10(1)=0 and log10(100)=2
+    const result = logClamp(50, 1, 100, 10);
+    expect(result).toBeCloseTo(50, 5);
+  });
+
+  it('logClamp should clamp below minimum in log scale', () => {
+    // log10(0.5) ≈ -0.3, which is < logMin(0), should clamp to min(1)
+    const result = logClamp(0.5, 1, 100, 10);
+    expect(result).toBe(1);
+  });
+
+  it('logClamp should work with different logarithm bases', () => {
+    // Base 2: log2(8) = 3, which is > logMax(2), clamped to max(4)
+    const result = logClamp(8, 1, 4, 2);
+    expect(result).toBe(4);
+  });
+
+  it('expClamp should handle values in exponential scale', () => {
+    // expClamp inverts logClamp: input is in log domain, output is in linear domain
+    // Input 3 with base e: e^3 ≈ 20.09, within [e^0, e^2] = [1, 7.39], clamped to max(7.39)
+    const result = expClamp(3, 0, 2, Math.E);
+    expect(result).toBeCloseTo(2, 5); // Clamped at logMax
+  });
+
+  it('expClamp should preserve values within exponential range', () => {
+    // Input 1 with base e: e^1 ≈ 2.718, within [e^0, e^2] = [1, 7.39]
+    const result = expClamp(1, 0, 2, Math.E);
+    expect(result).toBeCloseTo(1, 5); // Within range, preserve
+  });
+
+  it('expClamp should clamp below minimum in exp domain', () => {
+    // Input -1 with base e: e^-1 ≈ 0.368, which is < minExp(e^0 = 1), clamped to min
+    const result = expClamp(-1, 0, 2, Math.E);
+    expect(result).toBe(0); // Clamped at logMin
+  });
+
+  it('softClamp should produce softer boundaries than hard clamp', () => {
+    // Hard clamp: hard boundary at min/max
+    const hardClamped = clamp(-5, 0, 10);
+    expect(hardClamped).toBe(0);
+
+    // Soft clamp with softness 0.5: partial penetration allowed
+    const softClamped = softClamp(-5, 0, 10, 0.5);
+    expect(softClamped).toBeLessThan(0); // Softer boundary allows -2.5
+    expect(softClamped).toBeGreaterThan(-5);
+  });
+
+  it('stepClamp with step=1 should behave like regular clamp with rounding', () => {
+    // With step=1, values just round to nearest integer
+    expect(stepClamp(5.3, 0, 10, 1)).toBe(5);
+    expect(stepClamp(5.7, 0, 10, 1)).toBe(6);
+  });
+
+  it('logClamp should scale exponential ranges to linear for clamping', () => {
+    // Example: clamp in range [1, 1000] logarithmically with base 10
+    // This makes 100 feel like the middle value (not 500 in linear space)
+    const result1 = logClamp(100, 1, 1000, 10);
+    const result2 = logClamp(10, 1, 1000, 10);
+    const result3 = logClamp(1000, 1, 1000, 10);
+
+    expect(result1).toBeCloseTo(100, 5);
+    expect(result2).toBeCloseTo(10, 5);
+    expect(result3).toBeCloseTo(1000, 5);
+  });
+
+  it('expClamp should invert logClamp behavior', () => {
+    // If logClamp takes linear values to log space, expClamp takes log values to linear space
+    const logValue = 2; // log value
+    const linearValue = expClamp(logValue, 0, 5, Math.E);
+    expect(linearValue).toBeLessThanOrEqual(5);
+    expect(linearValue).toBeGreaterThanOrEqual(0);
+  });
+});
