@@ -9,16 +9,17 @@ Don't use Math.round() for any csv values, as these are handled in the csv to mi
 Start each session with temporary file PLAN_DATETIMESTAMP.md , with a brief description of each problem and possible solutions. Revisit this file after each step to update with a succinct note on what worked / didn't work to the relevant section.
 
 ## DONT_DO
+Open any output file directly - they are too large, search csv files with grep or similar tools.
 Compromise absolute timing accuracy, polyphony, granularity, or otherwise accept any limits on dynamism.
 Assume this is a standard JavaScript or MIDI project, or impose standards that don't fit.
 Use emojis in any response to me.
-Give useless "progress" reports without meaningful progress.
+Give useless "progress" reports without meaningful progress, or present fundamental compomise as finished.
 
 ## Review Gates
 AFTER every completion:
 List what might be broken + solutions.
 "How would future self modify this?"
-Store/update decision in supermemory
+"Can I iterate over this deeper (without breaking unrelated code), how can I be clearest about future recommendations or proposals?"
 
 ### HONESTY & TRANSPARENCY MANDATES
 **NEVER LIE ABOUT FIXES OR PROGRESS** - If something isn't working, admit it immediately and clearly

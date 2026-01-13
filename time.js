@@ -112,7 +112,6 @@ setMidiTiming = (tick=measureStart) => {
   p(c,
     { tick: tick, type: 'bpm', vals: [midiBPM] },
     { tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
-    { tick: tick, type: 'marker_t', vals: [`tpSec: ${tpSec}`] },
   );
 };
 
