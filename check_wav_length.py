@@ -31,7 +31,7 @@ def format_time(seconds):
     """Format seconds as MM:SS.sss"""
     minutes = int(seconds // 60)
     secs = seconds % 60
-    return "03d"
+    return f"{minutes:02d}:{secs:05.2f}"
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -42,10 +42,8 @@ if __name__ == "__main__":
     length = get_wav_length(filename)
 
     if length is not None:
-        print(".3f")
+        print(f"{length:.3f}")
         # Also print in minutes:seconds format for clarity
-        minutes = int(length // 60)
-        seconds = length % 60
-        print("02d")
+        print(format_time(length))
     else:
         sys.exit(1)
