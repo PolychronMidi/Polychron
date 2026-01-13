@@ -277,7 +277,7 @@ setRhythm=(level)=>{
     case 'subdiv':
       return subdivRhythm=subdivRhythm < 1 ? _random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
     case 'subsubdiv':
-      return subdubdivRhythm=subsubdivRhythm < 1 ? _random(subsubdivsPerSubdiv,.3) : getRhythm('subsubdiv',subsubdivsPerSubdiv,subsubdivRhythm)
+      return subsubdivRhythm=subsubdivRhythm < 1 ? _random(subsubsPerSub,.3) : getRhythm('subsubdiv',subsubsPerSub,subsubdivRhythm)
     default:throw new Error('Invalid level provided to setRhythm');
   }
 };
@@ -389,3 +389,5 @@ trackBeatRhythm=()=>{if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} els
 trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;} };
 
 trackSubdivRhythm=()=>{if (subdivRhythm[subdivIndex] > 0) {subdivsOn++; subdivsOff=0;} else {subdivsOn=0; subdivsOff++;} };
+
+trackSubsubdivRhythm=()=>{if (subsubdivRhythm[subsubdivIndex] > 0) {subsubdivsOn++; subsubdivsOff=0;} else {subsubdivsOn=0; subsubdivsOff++;} };

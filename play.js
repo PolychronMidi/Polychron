@@ -1,21 +1,16 @@
 require('./stage');
-
 /**
  * POLYCHRON MAIN COMPOSITION LOOP
  *
- * CONTEXT SWITCHING PATTERN: Each layer has private timing state, but processing
- * uses shared global variables. LM.activate() switches contexts between layers.
+ * CONTEXT SWITCHING PATTERN: Using layerManager (LM), each layer has private timing state, but processing
+ * uses shared global variables.
  *
- * TIME INCREMENTATION HIERARCHY:
- * Section → accumulates Phrase durations → accumulates Measure durations
- * Phrase → fixed duration (tpMeasure * measuresPerPhrase)
- * Measure → fixed duration (tpMeasure) → Beat → Division → Subdivision → Subsubdivision
- *
+ * TIME INCREMENTATION HIERARCHY: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
  * WHY: Enables polyrhythmic layers with different phrase tick lengths(tpSec) while maintaining
  * absolute time synchronization at phrase boundaries.
  */
 
-// Initialize layer manager with private state per layer
+// Initialize layerManager with private state per layer
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, setTuningAndInstruments);
 
@@ -41,7 +36,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       setUnitTiming('measure');
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        trackBeatRhythm();
         beatCount++;
         setUnitTiming('beat');
         setOtherInstruments();
@@ -53,7 +47,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
 
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-          trackDivRhythm();
           setUnitTiming('division');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
@@ -61,7 +54,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             playNotes();
           }
 
-          for (subsubdivIndex = 0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) {
+          for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
             setUnitTiming('subsubdivision');
             playNotes2();
           }
@@ -83,7 +76,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       setUnitTiming('measure');
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        trackBeatRhythm();
         setUnitTiming('beat');
         setOtherInstruments();
         setBinaural();
@@ -94,7 +86,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
 
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-          trackDivRhythm();
           setUnitTiming('division');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
@@ -102,7 +93,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             playNotes();
           }
 
-          for (subsubdivIndex = 0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) {
+          for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
             setUnitTiming('subsubdivision');
             playNotes2();
           }

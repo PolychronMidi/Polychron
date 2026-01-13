@@ -278,7 +278,7 @@ logUnit = (type) => {
     endTime = startTime + spSubdiv;
   } else if (type === 'subsubdivision') {
     unit = subsubdivIndex + 1;
-    unitsPerParent = subsubdivsPerSubdiv;
+    unitsPerParent = subsubsPerSub;
     startTick = subsubdivStart;
     endTick = startTick + tpSubsubdiv;
     startTime = subsubdivStartTime;
@@ -339,6 +339,7 @@ setUnitTiming = (unitType) => {
 
     case 'beat':
       // Beat timing with tempo calculations
+      trackBeatRhythm();
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -354,6 +355,7 @@ setUnitTiming = (unitType) => {
 
     case 'division':
       // Division timing within beat
+      trackDivRhythm();
       tpDiv = tpBeat / m.max(1, divsPerBeat);
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -365,16 +367,19 @@ setUnitTiming = (unitType) => {
 
     case 'subdivision':
       // Subdivision timing within division
+      trackSubdivRhythm();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubdivsPerSub = composer ? composer.getSubsubdivs() : 1;
+      subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
     case 'subsubdivision':
       // Subsubdivision timing within subdivision
+      trackSubsubdivRhythm();
       tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivsPerMinute = 60 / spSubsubdiv;
