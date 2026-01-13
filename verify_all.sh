@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "Verifying output1.csv..."
+grep "marker_t" output1.csv | grep "Measure" | python verify_sp.py
+echo
+echo "Verifying output2.csv..."
+grep "marker_t" output2.csv | grep "Measure" | python verify_sp.py
