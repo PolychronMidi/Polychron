@@ -32,7 +32,7 @@ if __name__ == "__main__":
     length = get_audio_length_pydub(filename)
 
     if length is not None:
-        print(".3f")
+        print(f"Pydub length: {length:.3f}")
         # Also print in minutes:seconds format
         minutes = int(length // 60)
         seconds = length % 60

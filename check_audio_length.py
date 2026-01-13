@@ -37,7 +37,7 @@ def format_time(seconds):
     """Format seconds as MM:SS.sss"""
     minutes = int(seconds // 60)
     secs = seconds % 60
-    return "03d"
+    return f"{minutes:02d}:{secs:05.2f}"
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -54,27 +54,25 @@ if __name__ == "__main__":
 
     print(f"File: {filename}")
     if wave_length is not None:
-        print(".3f")
+        print(f"Wave method: {wave_length:.3f}")
     if mutagen_length is not None:
-        print(".3f")
+        print(f"Mutagen method: {mutagen_length:.3f}")
 
     if wave_length is not None and mutagen_length is not None:
         diff = abs(wave_length - mutagen_length)
         if diff > 0.001:
-            print(".3f")
+            print(f"Methods differ by: {diff:.3f} seconds")
         else:
             print("Lengths match!")
 
     # Print file size for reference
     import os
     size = os.path.getsize(filename)
-    print(",.0f")
+    print(f"File size: {size:,}")
 
     # Use the more reliable method
     final_length = mutagen_length if mutagen_length is not None else wave_length
     if final_length is not None:
-        print(".3f")
+        print(f"Final length: {final_length:.3f}")
         # Also print in minutes:seconds format
-        minutes = int(final_length // 60)
-        seconds = final_length % 60
-        print("02d")
+        print(format_time(final_length))

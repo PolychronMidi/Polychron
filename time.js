@@ -109,6 +109,7 @@ getMidiMeter = () => {
  * Context-aware: writes to c1 or c2 depending on current meter.
  */
 setMidiTiming = (tick=measureStart) => {
+  // Use layer-specific midiBPM for proper polyrhythmic tempo differences
   p(c,
     { tick: tick, type: 'bpm', vals: [midiBPM] },
     { tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
@@ -183,11 +184,21 @@ getPolyrhythm = () => {
       polyDenominator: polyDenominator
     };
 
-    // CRITICAL FIX: Use MIDI ratios instead of actual ratios for alignment
-    // This ensures calculated alignments match actual MIDI playback timing
+    // CRITICAL FIX: Find polyrhythmic alignments where cycle durations match
+    // For polyrhythm A:B, we need duration_A * A = duration_B * B
+    // This ensures the complete polyrhythmic cycle has the same total time
     for (let originalMeasures = 1; originalMeasures < 7; originalMeasures++) {
       for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-        if (m.abs(originalMeasures * primaryMidiRatio - polyMeasures * polyMidiRatio) < .00000001) {
+        // Calculate time per measure for each layer
+        const primaryMeasureTime = primaryTpMeasure / primaryTpSec;
+        const polyMeasureTime = polyTpMeasure / polyTpSec;
+
+        // Calculate total cycle time for this measure combination
+        const primaryCycleTime = originalMeasures * primaryMeasureTime;
+        const polyCycleTime = polyMeasures * polyMeasureTime;
+
+        // Check if cycle times match (polyrhythmic alignment)
+        if (m.abs(primaryCycleTime - polyCycleTime) < 0.0001) {
           let currentMatch = {
             originalMeasures: originalMeasures,
             polyMeasures: polyMeasures,
@@ -259,7 +270,7 @@ logUnit = (type) => {
     startTick = phraseStart;
     endTick = startTick + tpPhrase;
     startTime = phraseStartTime;
-    spPhrase = tpPhrase / tpSec;
+    // CRITICAL: Don't recalculate spPhrase - it was already set correctly per layer
     endTime = startTime + spPhrase;
     composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
     if (composer && composer.scale && composer.scale.name) {
@@ -371,8 +382,9 @@ setUnitTiming = (unitType) => {
   switch (unitType) {
     case 'phrase':
       // Phrase timing is special - calculated from measures
+      // CRITICAL: Don't recalculate spPhrase here - it was already set correctly per layer
       tpPhrase = tpMeasure * measuresPerPhrase;
-      spPhrase = tpPhrase / tpSec;
+      // spPhrase is already set correctly in LM.activate based on layer-specific values
       break;
 
     case 'measure':
