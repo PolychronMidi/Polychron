@@ -156,34 +156,6 @@ Polychron consists of 9 specialized JavaScript modules following a clean minimal
 - **Dynamic Application**: Randomized application with probability control
 - **Musical Integration**: Synchronized with rhythmic structure
 
-## Installation & Usage
-
-### Prerequisites
-- Node.js (for JavaScript execution)
-- Python (for CSV to MIDI conversion)
-- MIDI player with soundfont support
-
-### Setup
-```bash
-npm install tonal @tonaljs/rhythm-pattern
-```
-
-### Composition Generation
-```bash
-node play.js
-```
-
-### MIDI Conversion
-```bash
-python c2m.py
-```
-
-### Audio Rendering
-For extreme data density files, use:
-```bash
-python c2m.py && ffmpeg -i output.mid -f wav output.wav
-```
-
 ## Performance Characteristics
 
 ### Timing Accuracy
@@ -255,7 +227,7 @@ Polychron is open source software designed for musical innovation and research. 
 To install tonal and create the CSV file, run the following (requires Node.js installed):
 ```js
 npm i tonal
-node play.js
+node play
 ```
 
 To create the MIDI file from the CSV, run the following (requires Python installed):
