@@ -1,4 +1,5 @@
 // test/venue.test.js
+require('../sheet.js');  // Load sheet configuration (defines primaryInstrument etc.)
 require('../venue.js');
 
 describe('midiData', () => {

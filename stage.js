@@ -1,12 +1,8 @@
-/** Stage module: MIDI event generation for playback, effects, and channel management. */
-require('./sheet'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers');
+// stage.js - Audio processing engine with MIDI event generation and binaural effects.
+// minimalist comments, details at: stage.md
 
-// Convert instrument names to MIDI numbers
-primaryInstrument = getMidiValue('program', primaryInstrument);
-secondaryInstrument = getMidiValue('program', secondaryInstrument);
-bassInstrument = getMidiValue('program', bassInstrument);
-bassInstrument2 = getMidiValue('program', bassInstrument2);
+require('./sheet'); require('./venue'); require('./backstage');
+require('./rhythm'); require('./time'); require('./composers'); require('./writer');
 
 /** Sets program, pitch bend, and volume for all instrument channels */
 setTuningAndInstruments=()=>{
@@ -40,7 +36,7 @@ setBinaural=()=>{ if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   p(c,...binauralL.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===lCH1 || ch===lCH3 || ch===lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)]})),
   ...binauralR.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===rCH1 || ch===rCH3 || ch===rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)]})),
   );
-  // flipBin volume transition
+  // flipBin (flip binaural) volume transition
   const startTick=beatStart - tpSec/4; const endTick=beatStart + tpSec/4;
   const steps=10; const tickIncrement=(endTick - startTick) / steps;
   for (let i=steps/2-1; i <= steps; i++) {

@@ -1,7 +1,6 @@
-/**
- * MIDI program and control change definitions for Polychron.
- * @namespace midiData
- */
+// venue.js - MIDI data definitions with program changes, controls, and music theory.
+// minimalist comments, details at: venue.md
+
 const midiData={
   /** @type {Array<{number: number, name: string}>} */
   program:[
@@ -226,6 +225,10 @@ const getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=na
   }
   return item.number;
 };
+primaryInstrument = getMidiValue('program', primaryInstrument);
+secondaryInstrument = getMidiValue('program', secondaryInstrument);
+bassInstrument = getMidiValue('program', bassInstrument);
+bassInstrument2 = getMidiValue('program', bassInstrument2);
 
 /** Tonal.js library for music theory operations */
 const t=require('tonal');

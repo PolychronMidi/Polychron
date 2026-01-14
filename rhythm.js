@@ -1,13 +1,6 @@
-/**
- * @fileoverview Drum mapping and rhythm generation for Polychron.
- * @module rhythm
- * @requires @tonaljs/rhythm-pattern
- */
+// rhythm.js - Rhythmic pattern generation with drum mapping and stutter effects.
+// minimalist comments, details at: rhythm.md
 
-/**
- * Drum map containing MIDI note numbers and velocity ranges.
- * @type {Object.<string, {note: number, velocityRange: number[]}>}
- */
 drumMap={
   'snare1': {note: 31,velocityRange: [99,111]},
   'snare2': {note: 33,velocityRange: [99,111]},

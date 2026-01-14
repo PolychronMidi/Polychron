@@ -1,39 +1,14 @@
 // test/backstage.test.js
 require('../sheet');  // Load constants like TUNING_FREQ, BINAURAL, etc.
+require('../writer');  // Load writer functions (CSVBuffer, p, etc.)
 require('../backstage');  // Load all backstage functions globally
+require('../time');  // Load time functions (TimingContext, LM, etc.)
 
 // Setup function
 function setupGlobalState() {
   globalThis.c = [];
   globalThis.csvRows = [];
 }
-
-describe('pushMultiple (p)', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
-
-  it('should push single item', () => {
-    p(c, { a: 1 });
-    expect(c).toEqual([{ a: 1 }]);
-  });
-
-  it('should push multiple items', () => {
-    p(c, { a: 1 }, { b: 2 }, { c: 3 });
-    expect(c).toEqual([{ a: 1 }, { b: 2 }, { c: 3 }]);
-  });
-
-  it('should handle empty push', () => {
-    p(c);
-    expect(c).toEqual([]);
-  });
-
-  it('should work with existing array items', () => {
-    c = [{ x: 0 }];
-    p(c, { a: 1 }, { b: 2 });
-    expect(c).toEqual([{ x: 0 }, { a: 1 }, { b: 2 }]);
-  });
-});
 
 describe('Clamp functions', () => {
   describe('clamp', () => {
@@ -794,14 +769,17 @@ describe('LayerManager (LM)', () => {
     globalThis.sectionEnd = 0;
     globalThis.tpSection = 0;
     globalThis.spSection = 0;
+    globalThis.measureStart = 0;
+    globalThis.measureStartTime = 0;
+    globalThis.spMeasure = 2;
   });
 
   describe('register', () => {
-    it('should register a new layer with buffer', () => {
+    it('should register a new layer with TimingContext', () => {
       const { state, buffer } = LM.register('test', [], {}, () => {});
       expect(LM.layers.test).toBeDefined();
       expect(LM.layers.test.buffer).toBe(buffer);
-      expect(state).toBeDefined();
+      expect(state instanceof TimingContext).toBe(true);
       expect(buffer).toEqual([]);
     });
 
@@ -812,7 +790,7 @@ describe('LayerManager (LM)', () => {
       expect(buffer instanceof CSVBuffer || Array.isArray(buffer)).toBe(true);
     });
 
-    it('should initialize default state properties', () => {
+    it('should initialize default TimingContext properties', () => {
       const { state } = LM.register('test', [], {}, () => {});
       expect(state.phraseStart).toBe(0);
       expect(state.phraseStartTime).toBe(0);
@@ -822,7 +800,7 @@ describe('LayerManager (LM)', () => {
       expect(state.tpMeasure).toBe(PPQ * 4);
     });
 
-    it('should merge initial state with defaults', () => {
+    it('should merge initial state with TimingContext defaults', () => {
       const initialState = { numerator: 3, phraseStart: 100 };
       const { state } = LM.register('test', [], initialState, () => {});
       expect(state.numerator).toBe(3);
@@ -849,7 +827,7 @@ describe('LayerManager (LM)', () => {
       expect(c).toBe(LM.layers.primary.buffer);
     });
 
-    it('should restore layer timing state to globals', () => {
+    it('should restore layer timing state to globals via TimingContext', () => {
       LM.layers.primary.state.phraseStart = 1000;
       LM.layers.primary.state.phraseStartTime = 1.5;
       LM.layers.primary.state.sectionStart = 500;
@@ -882,11 +860,13 @@ describe('LayerManager (LM)', () => {
     it('should handle poly activation with different meter', () => {
       globalThis.polyNumerator = 5;
       globalThis.polyDenominator = 6;
+      globalThis.measuresPerPhrase2 = 3;
 
       LM.activate('poly', true);
 
       expect(numerator).toBe(5);
       expect(denominator).toBe(6);
+      expect(measuresPerPhrase).toBe(3);
     });
 
     it('should return activation state object', () => {
@@ -904,11 +884,13 @@ describe('LayerManager (LM)', () => {
       LM.activate('primary');
     });
 
-    it('should advance phrase correctly', () => {
-      LM.layers.primary.state.phraseStart = 1000;
-      LM.layers.primary.state.phraseStartTime = 1.5;
-      LM.layers.primary.state.tpSection = 500;
-      LM.layers.primary.state.spSection = 0.5;
+    it('should advance phrase correctly via TimingContext', () => {
+      // Activate layer and set state through globals
+      LM.activate('primary');
+      phraseStart = 1000;
+      phraseStartTime = 1.5;
+      tpSection = 500;
+      spSection = 0.5;
 
       LM.advance('primary', 'phrase');
 
@@ -918,12 +900,14 @@ describe('LayerManager (LM)', () => {
       expect(LM.layers.primary.state.spSection).toBe(0.5 + spPhrase);
     });
 
-    it('should advance section correctly', () => {
-      LM.layers.primary.state.sectionStart = 2000;
-      LM.layers.primary.state.sectionStartTime = 3.0;
-      LM.layers.primary.state.sectionEnd = 4000;
-      LM.layers.primary.state.tpSection = 1000;
-      LM.layers.primary.state.spSection = 1.0;
+    it('should advance section correctly via TimingContext', () => {
+      // Activate layer and set state through globals
+      LM.activate('primary');
+      sectionStart = 2000;
+      sectionStartTime = 3.0;
+      sectionEnd = 4000;
+      tpSection = 1000;
+      spSection = 1.0;
 
       LM.advance('primary', 'section');
 
@@ -934,7 +918,7 @@ describe('LayerManager (LM)', () => {
       expect(LM.layers.primary.state.spSection).toBe(0);
     });
 
-    it('should update meter values from globals', () => {
+    it('should update meter values from globals via saveFrom()', () => {
       globalThis.numerator = 5;
       globalThis.denominator = 6;
       globalThis.measuresPerPhrase = 3;
@@ -980,9 +964,10 @@ describe('LayerManager (LM)', () => {
       phraseStart = 200;
       LM.advance('layer2', 'phrase');
 
-      // Check layer1 state unchanged
-      expect(LM.layers.layer1.state.phraseStart).toBe(tpPhrase);
-      expect(LM.layers.layer2.state.phraseStart).toBe(tpPhrase);
+      // Check layer1 state: started at 100, advanced by tpPhrase
+      expect(LM.layers.layer1.state.phraseStart).toBe(100 + tpPhrase);
+      // layer2 state: started at 200, advanced by tpPhrase
+      expect(LM.layers.layer2.state.phraseStart).toBe(200 + tpPhrase);
     });
 
     it('should handle complex timing scenarios', () => {
@@ -996,6 +981,257 @@ describe('LayerManager (LM)', () => {
 
       expect(LM.layers.complex.state.phraseStart).toBe(tpPhrase * 3);
       expect(LM.layers.complex.state.phraseStartTime).toBe(spPhrase * 3);
+    });
+  });
+});
+
+describe('TimingContext class', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  describe('constructor', () => {
+    it('should initialize with default values', () => {
+      const ctx = new TimingContext();
+      expect(ctx.phraseStart).toBe(0);
+      expect(ctx.phraseStartTime).toBe(0);
+      expect(ctx.sectionStart).toBe(0);
+      expect(ctx.sectionStartTime).toBe(0);
+      expect(ctx.sectionEnd).toBe(0);
+      expect(ctx.tpSec).toBe(0);
+      expect(ctx.tpSection).toBe(0);
+      expect(ctx.spSection).toBe(0);
+      expect(ctx.numerator).toBe(4);
+      expect(ctx.denominator).toBe(4);
+      expect(ctx.measuresPerPhrase).toBe(1);
+      expect(ctx.tpPhrase).toBe(0);
+      expect(ctx.spPhrase).toBe(0);
+      expect(ctx.measureStart).toBe(0);
+      expect(ctx.measureStartTime).toBe(0);
+      expect(ctx.spMeasure).toBe(0);
+    });
+
+    it('should initialize with provided values', () => {
+      const ctx = new TimingContext({
+        phraseStart: 100,
+        numerator: 7,
+        denominator: 8,
+        tpMeasure: 1750
+      });
+      expect(ctx.phraseStart).toBe(100);
+      expect(ctx.numerator).toBe(7);
+      expect(ctx.denominator).toBe(8);
+      expect(ctx.tpMeasure).toBe(1750);
+      expect(ctx.phraseStartTime).toBe(0); // default
+    });
+
+    it('should calculate meterRatio automatically', () => {
+      const ctx = new TimingContext({ numerator: 7, denominator: 8 });
+      expect(ctx.meterRatio).toBe(7 / 8);
+    });
+
+    it('should handle tpMeasure when PPQ is undefined', () => {
+      const prevPPQ = globalThis.PPQ;
+      delete globalThis.PPQ;
+      const ctx = new TimingContext();
+      expect(ctx.tpMeasure).toBe(480 * 4); // fallback
+      globalThis.PPQ = prevPPQ;
+    });
+  });
+
+  describe('saveFrom', () => {
+    it('should save all timing properties from globals', () => {
+      const ctx = new TimingContext();
+      const globals = {
+        phraseStart: 1000,
+        phraseStartTime: 2.5,
+        sectionStart: 500,
+        sectionStartTime: 1.0,
+        sectionEnd: 2000,
+        tpSec: 960,
+        tpSection: 1500,
+        spSection: 2.0,
+        numerator: 7,
+        denominator: 8,
+        measuresPerPhrase: 3,
+        tpPhrase: 5250,
+        spPhrase: 6.0,
+        measureStart: 250,
+        measureStartTime: 0.5,
+        tpMeasure: 1750,
+        spMeasure: 2.0
+      };
+
+      ctx.saveFrom(globals);
+
+      expect(ctx.phraseStart).toBe(1000);
+      expect(ctx.phraseStartTime).toBe(2.5);
+      expect(ctx.sectionStart).toBe(500);
+      expect(ctx.sectionStartTime).toBe(1.0);
+      expect(ctx.sectionEnd).toBe(2000);
+      expect(ctx.tpSec).toBe(960);
+      expect(ctx.tpSection).toBe(1500);
+      expect(ctx.spSection).toBe(2.0);
+      expect(ctx.numerator).toBe(7);
+      expect(ctx.denominator).toBe(8);
+      expect(ctx.measuresPerPhrase).toBe(3);
+      expect(ctx.tpPhrase).toBe(5250);
+      expect(ctx.spPhrase).toBe(6.0);
+      expect(ctx.measureStart).toBe(250);
+      expect(ctx.measureStartTime).toBe(0.5);
+      expect(ctx.tpMeasure).toBe(1750);
+      expect(ctx.spMeasure).toBe(2.0);
+      expect(ctx.meterRatio).toBe(7 / 8);
+    });
+  });
+
+  describe('restoreTo', () => {
+    it('should restore all timing properties to globals', () => {
+      const ctx = new TimingContext({
+        phraseStart: 1000,
+        phraseStartTime: 2.5,
+        sectionStart: 500,
+        sectionStartTime: 1.0,
+        sectionEnd: 2000,
+        tpSec: 960,
+        tpSection: 1500,
+        spSection: 2.0,
+        tpPhrase: 5250,
+        spPhrase: 6.0,
+        measureStart: 250,
+        measureStartTime: 0.5,
+        tpMeasure: 1750,
+        spMeasure: 2.0
+      });
+
+      const globals = {};
+      ctx.restoreTo(globals);
+
+      expect(globals.phraseStart).toBe(1000);
+      expect(globals.phraseStartTime).toBe(2.5);
+      expect(globals.sectionStart).toBe(500);
+      expect(globals.sectionStartTime).toBe(1.0);
+      expect(globals.sectionEnd).toBe(2000);
+      expect(globals.tpSec).toBe(960);
+      expect(globals.tpSection).toBe(1500);
+      expect(globals.spSection).toBe(2.0);
+      expect(globals.tpPhrase).toBe(5250);
+      expect(globals.spPhrase).toBe(6.0);
+      expect(globals.measureStart).toBe(250);
+      expect(globals.measureStartTime).toBe(0.5);
+      expect(globals.tpMeasure).toBe(1750);
+      expect(globals.spMeasure).toBe(2.0);
+    });
+  });
+
+  describe('advancePhrase', () => {
+    it('should advance phrase timing correctly', () => {
+      const ctx = new TimingContext({
+        phraseStart: 1000,
+        phraseStartTime: 2.0,
+        tpSection: 500,
+        spSection: 0.5
+      });
+
+      ctx.advancePhrase(1920, 2.0);
+
+      expect(ctx.phraseStart).toBe(1000 + 1920);
+      expect(ctx.phraseStartTime).toBe(2.0 + 2.0);
+      expect(ctx.tpSection).toBe(500 + 1920);
+      expect(ctx.spSection).toBe(0.5 + 2.0);
+    });
+
+    it('should handle zero advancement', () => {
+      const ctx = new TimingContext({
+        phraseStart: 1000,
+        phraseStartTime: 2.0,
+        tpSection: 500,
+        spSection: 0.5
+      });
+
+      ctx.advancePhrase(0, 0);
+
+      expect(ctx.phraseStart).toBe(1000);
+      expect(ctx.phraseStartTime).toBe(2.0);
+      expect(ctx.tpSection).toBe(500);
+      expect(ctx.spSection).toBe(0.5);
+    });
+  });
+
+  describe('advanceSection', () => {
+    it('should advance section timing correctly', () => {
+      const ctx = new TimingContext({
+        sectionStart: 2000,
+        sectionStartTime: 3.0,
+        sectionEnd: 4000,
+        tpSection: 1000,
+        spSection: 1.0
+      });
+
+      ctx.advanceSection();
+
+      expect(ctx.sectionStart).toBe(2000 + 1000);
+      expect(ctx.sectionStartTime).toBe(3.0 + 1.0);
+      expect(ctx.sectionEnd).toBe(4000 + 1000);
+      expect(ctx.tpSection).toBe(0);
+      expect(ctx.spSection).toBe(0);
+    });
+
+    it('should reset section accumulators to zero', () => {
+      const ctx = new TimingContext({
+        tpSection: 5000,
+        spSection: 5.0
+      });
+
+      ctx.advanceSection();
+
+      expect(ctx.tpSection).toBe(0);
+      expect(ctx.spSection).toBe(0);
+    });
+  });
+
+  describe('roundtrip save/restore', () => {
+    it('should preserve all values through save/restore cycle', () => {
+      const globals1 = {
+        phraseStart: 1000,
+        phraseStartTime: 2.5,
+        sectionStart: 500,
+        sectionStartTime: 1.0,
+        sectionEnd: 2000,
+        tpSec: 960,
+        tpSection: 1500,
+        spSection: 2.0,
+        numerator: 7,
+        denominator: 8,
+        measuresPerPhrase: 3,
+        tpPhrase: 5250,
+        spPhrase: 6.0,
+        measureStart: 250,
+        measureStartTime: 0.5,
+        tpMeasure: 1750,
+        spMeasure: 2.0
+      };
+
+      const ctx = new TimingContext();
+      ctx.saveFrom(globals1);
+
+      const globals2 = {};
+      ctx.restoreTo(globals2);
+
+      expect(globals2.phraseStart).toBe(globals1.phraseStart);
+      expect(globals2.phraseStartTime).toBe(globals1.phraseStartTime);
+      expect(globals2.sectionStart).toBe(globals1.sectionStart);
+      expect(globals2.sectionStartTime).toBe(globals1.sectionStartTime);
+      expect(globals2.sectionEnd).toBe(globals1.sectionEnd);
+      expect(globals2.tpSec).toBe(globals1.tpSec);
+      expect(globals2.tpSection).toBe(globals1.tpSection);
+      expect(globals2.spSection).toBe(globals1.spSection);
+      expect(globals2.tpPhrase).toBe(globals1.tpPhrase);
+      expect(globals2.spPhrase).toBe(globals1.spPhrase);
+      expect(globals2.measureStart).toBe(globals1.measureStart);
+      expect(globals2.measureStartTime).toBe(globals1.measureStartTime);
+      expect(globals2.tpMeasure).toBe(globals1.tpMeasure);
+      expect(globals2.spMeasure).toBe(globals1.spMeasure);
     });
   });
 });

@@ -12,7 +12,7 @@ This is the **primary entry point** and **main execution file** for the entire P
 
 **play.js** sits at the top of the architectural hierarchy, serving as the **composition conductor**. It imports and coordinates six specialized modules:
 - `stage.js` - Core audio processing and effects
-- `composers.js` - Musical content generation (scales, chords, modes) 
+- `composers.js` - Musical content generation (scales, chords, modes)
 - `rhythm.js` - Rhythmic pattern generation
 - `time.js` - Timing calculations and meter management
 - `backstage.js` - Utility functions and global variables
@@ -51,7 +51,7 @@ setTuningAndInstruments();
 
 ### Line 3-4: Section Loop Setup
 ```javascript
-totalSections=ri(SECTIONS.min,SECTIONS.max); 
+totalSections=ri(SECTIONS.min,SECTIONS.max);
 for (sectionIndex=0; sectionIndex < totalSections; sectionIndex++) {
 ```
 - **Determines composition structure** - typically 6-9 major sections
@@ -83,7 +83,7 @@ for (phraseIndex=0; phraseIndex < phrasesPerSection; phraseIndex++) {
 ```javascript
 measuresPerPhrase=measuresPerPhrase1;
 for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) { measureCount++;
- setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
+ setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat');
  for (beatIndex=0; beatIndex < numerator; beatIndex++) {trackBeatRhythm();beatCount++;
 ```
 - **First polyrhythm section** - uses the primary time signature
@@ -93,7 +93,7 @@ for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) { measure
 
 ### Line 17-22: Beat-Level Audio Processing
 ```javascript
-setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); 
+setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div');
 setOtherInstruments(); setBinaural(); setBalanceAndFX(); playDrums();
 stutterFX(flipBin ? flipBinT3 : flipBinF3);
 stutterFade(flipBin ? flipBinT3 : flipBinF3);
@@ -111,9 +111,9 @@ rf()<.05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCH
 ```javascript
 for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
  setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
- for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
+ for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {
   setSubdivTiming(); logUnit('subdivision'); playNotes(); }
- for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) { 
+ for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) {
   setSubsubdivTiming(); logUnit('subsubdivision'); playNotes2(); }
 ```
 - **Division loop** - rhythmic subdivisions within each beat (typically 0-10 divisions)
@@ -124,18 +124,18 @@ for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
 
 ### Line 32-44: Polyrhythm Section (Secondary Meter)
 ```javascript
-beatRhythm=divRhythm=subdivRhythm=0; 
+beatRhythm=divRhythm=subdivRhythm=0;
 numerator=polyNumerator; meterRatio=polyMeterRatio;
 measuresPerPhrase=measuresPerPhrase2;
 for (measureIndex=0; measureIndex < measuresPerPhrase; measureIndex++) {
- setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat'); 
+ setMeasureTiming(); logUnit('measure'); beatRhythm=setRhythm('beat');
  for (beatIndex=0; beatIndex < numerator; beatIndex++) { trackBeatRhythm();
   setBeatTiming(); logUnit('beat'); divRhythm=setRhythm('div'); playDrums2();
   for (divIndex=0; divIndex < divsPerBeat; divIndex++) { trackDivRhythm();
    setDivTiming(); logUnit('division'); subdivRhythm=setRhythm('subdiv');
-   for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) { 
+   for (subdivIndex=0; subdivIndex < subdivsPerDiv; subdivIndex++) {
     setSubdivTiming(); logUnit('subdivision'); playNotes(); }
-   for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) { 
+   for (subsubdivIndex=0; subsubdivIndex < subdivsPerSub; subsubdivIndex++) {
     setSubsubdivTiming(); logUnit('subsubdivision'); playNotes2(); }
 ```
 - **Rhythm reset** - clears previous patterns for clean polyrhythmic transition
@@ -162,7 +162,7 @@ The nested loop structure directly mirrors musical organization:
 
 1. **Composition** (entire piece)
 2. **Sections** (6-9 major parts)
-3. **Phrases** (2-4 per section)  
+3. **Phrases** (2-4 per section)
 4. **Measures** (varies based on polyrhythm calculations)
 5. **Beats** (varies based on time signature numerator)
 6. **Divisions** (0-10 per beat)
@@ -181,7 +181,7 @@ This creates compositions with **millions of discrete timing points**, enabling 
 - **Complete subdivision hierarchy** - all 7 levels of rhythmic detail
 - **Primary musical content** - main melodic and harmonic material
 
-### Polyrhythmic Meter Section (Lines 32-44)  
+### Polyrhythmic Meter Section (Lines 32-44)
 - Uses a **mathematically compatible secondary meter** calculated by getPolyrhythm()
 - **Simplified processing** - reduced effects to highlight rhythmic relationships
 - **Same subdivision structure** - maintains rhythmic complexity in new meter
@@ -246,7 +246,7 @@ LM.advance('primary', 'phrase')          // Save globals back, advance phraseSta
 ### Timing State Management
 Each layer maintains private state:
 - `phraseStart`, `phraseStartTime` - Phrase boundary positions
-- `measureStart`, `measureStartTime` - Current measure positions  
+- `measureStart`, `measureStartTime` - Current measure positions
 - `tpMeasure`, `spMeasure` - Ticks/seconds per measure (layer-specific)
 - `tpPhrase`, `spPhrase` - Ticks/seconds per phrase
 - `numerator`, `denominator` - Current meter
@@ -280,25 +280,25 @@ for section
   for phrase
     LM.activate(layer)              // Restore: phraseStart, tpMeasure, etc.
     setUnitTiming('phrase')         // Calculate: tpPhrase, spPhrase
-    
+
     for measure (measureIndex)
       setUnitTiming('measure')      // measureStart = phraseStart + measureIndex×tpMeasure
-      
+
       for beat (beatIndex)
         setUnitTiming('beat')       // beatStart = phraseStart + measureIndex×tpMeasure + beatIndex×tpBeat
         [composition functions]     // Use beatStart for MIDI tick positions
-        
+
         for div (divIndex)
           setUnitTiming('division') // divStart = beatStart + divIndex×tpDiv
-          
+
           for subdiv (subdivIndex)
             setUnitTiming('subdivision')   // subdivStart = divStart + subdivIndex×tpSubdiv
             playNotes()             // Uses subdivStart for note timing
-          
+
           for subsubdiv (subsubdivIndex)
             setUnitTiming('subsubdivision') // subsubdivStart = subdivStart + subsubdivIndex×tpSubsubdiv
             playNotes2()            // Uses subsubdivStart for note timing
-    
+
     LM.advance('phrase')            // Save state, phraseStart += tpPhrase
 ```
 

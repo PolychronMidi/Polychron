@@ -1,3 +1,6 @@
+// composers.js - Musical intelligence system with meter and composition generation.
+// minimalist comments, details at: composers.md
+
 /**
  * Composes meter-related values with randomization.
  * @class
