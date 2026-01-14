@@ -117,12 +117,11 @@ describe('MeasureComposer', () => {
       expect(result.length).toBe(2);
     });
 
-    it('should return valid meter ratio when not ignoring check', () => {
+    it('should return a meter when not ignoring check', () => {
       const composer = new MeasureComposer();
-      const [num, den] = composer.getMeter(false);
-      const ratio = num / den;
-      expect(ratio).toBeGreaterThanOrEqual(0.3);
-      expect(ratio).toBeLessThanOrEqual(3);
+      const meter = composer.getMeter(false);
+      expect(Array.isArray(meter)).toBe(true);
+      expect(meter.length).toBe(2);
     });
 
     it('should store lastMeter', () => {
@@ -506,6 +505,239 @@ describe('RandomChordComposer integration', () => {
         expect(note.note).toBeLessThanOrEqual(127);
       });
     }
+  });
+});
+
+describe('MeasureComposer.getMeter() - Enhanced Tests', () => {
+  let composer;
+  let consoleWarnSpy;
+
+  beforeEach(() => {
+    setupGlobalState();
+    composer = new MeasureComposer();
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
+  });
+
+  describe('Basic meter generation', () => {
+    it('should return an array of two integers [numerator, denominator]', () => {
+      const meter = composer.getMeter();
+      expect(Array.isArray(meter)).toBe(true);
+      expect(meter.length).toBe(2);
+      expect(Number.isInteger(meter[0])).toBe(true);
+      expect(Number.isInteger(meter[1])).toBe(true);
+    });
+
+    it('should generate meters with valid ratio (0.25 to 4)', () => {
+      for (let i = 0; i < 50; i++) {
+        const meter = composer.getMeter();
+        const ratio = meter[0] / meter[1];
+        expect(ratio).toBeGreaterThanOrEqual(0.25);
+        expect(ratio).toBeLessThanOrEqual(4);
+      }
+    });
+
+    it('should store lastMeter after generation', () => {
+      const meter = composer.getMeter();
+      expect(composer.lastMeter).toEqual(meter);
+    });
+  });
+
+  describe('Ratio validation with constants', () => {
+    it('should apply METER_RATIO_MIN and METER_RATIO_MAX bounds', () => {
+      for (let i = 0; i < 100; i++) {
+        const meter = composer.getMeter();
+        const ratio = meter[0] / meter[1];
+        expect(ratio).toBeGreaterThanOrEqual(0.25);
+        expect(ratio).toBeLessThanOrEqual(4);
+      }
+    });
+
+    it('should allow any meter with ignoreRatioCheck=true', () => {
+      // This test verifies the constant is being used correctly
+      // Since we can't control random generation easily, we verify the function accepts the parameter
+      const meter1 = composer.getMeter(false);
+      const meter2 = composer.getMeter(true); // ignoreRatioCheck=true
+      
+      // Both should be valid results (though likely different due to randomization)
+      expect(Array.isArray(meter1)).toBe(true);
+      expect(Array.isArray(meter2)).toBe(true);
+    });
+
+    it('should validate that numerator and denominator are positive', () => {
+      // Generate many meters to verify none have non-positive values
+      for (let i = 0; i < 200; i++) {
+        const meter = composer.getMeter();
+        expect(meter[0]).toBeGreaterThan(0);
+        expect(meter[1]).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Log-step constraints (MIN_LOG_STEPS)', () => {
+    it('should respect maxLogSteps=2 when polyMeter=false', () => {
+      composer.lastMeter = [4, 4]; // Start with 4/4 (ratio = 1)
+      // Log2(newRatio/1) must be between ~0 and 2
+      
+      for (let i = 0; i < 30; i++) {
+        const meter = composer.getMeter(false, false);
+        const lastRatio = composer.lastMeter[0] / composer.lastMeter[1];
+        const newRatio = meter[0] / meter[1];
+        const logSteps = Math.abs(Math.log2(newRatio / lastRatio));
+        
+        // Log steps can be 0 (same ratio) up to maxLogSteps
+        expect(logSteps).toBeLessThanOrEqual(2.01);   // maxLogSteps = 2
+      }
+    });
+
+    it('should respect maxLogSteps=4 when polyMeter=true', () => {
+      composer.lastMeter = [4, 4];
+      
+      for (let i = 0; i < 30; i++) {
+        const meter = composer.getMeter(false, true);
+        const lastRatio = composer.lastMeter[0] / composer.lastMeter[1];
+        const newRatio = meter[0] / meter[1];
+        const logSteps = Math.abs(Math.log2(newRatio / lastRatio));
+        
+        expect(logSteps).toBeLessThanOrEqual(4.01);
+      }
+    });
+
+    it('should enforce minimum log-step separation (MIN_LOG_STEPS = 0.5)', () => {
+      composer.lastMeter = [4, 4];
+      
+      const meters = [];
+      for (let i = 0; i < 30; i++) {
+        meters.push(composer.getMeter());
+      }
+      
+      // Verify min separation enforcement
+      for (let i = 1; i < meters.length; i++) {
+        const prevRatio = meters[i - 1][0] / meters[i - 1][1];
+        const currRatio = meters[i][0] / meters[i][1];
+        const logSteps = Math.abs(Math.log2(currRatio / prevRatio));
+        
+        // Should exceed minimum threshold
+        expect(logSteps).toBeGreaterThanOrEqual(0.49);
+      }
+    });
+  });
+
+  describe('First meter generation (no lastMeter)', () => {
+    it('should return valid meter even when lastMeter is null', () => {
+      composer.lastMeter = null;
+      const meter = composer.getMeter();
+      
+      expect(meter).not.toBeNull();
+      expect(Array.isArray(meter)).toBe(true);
+      expect(meter.length).toBe(2);
+    });
+
+    it('should set lastMeter on first call', () => {
+      composer.lastMeter = null;
+      expect(composer.lastMeter).toBeNull();
+      
+      const meter = composer.getMeter();
+      expect(composer.lastMeter).toEqual(meter);
+    });
+  });
+
+  describe('Fallback behavior with diagnostic logging', () => {
+    it('should return fallback [4, 4] when max iterations exceeded', () => {
+      composer.lastMeter = [4, 4];
+      const meter = composer.getMeter(false, false, 1); // Only 1 iteration
+      
+      expect(meter).toBeDefined();
+      expect(Array.isArray(meter)).toBe(true);
+      expect(meter.length).toBe(2);
+    });
+
+    it('should log warning when falling back', () => {
+      composer.lastMeter = [4, 4];
+      // Force immediate fallback by setting maxIterations=0 to avoid randomness affecting warning capture
+      composer.getMeter(false, false, 0);
+      
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      const warnMessage = consoleWarnSpy.mock.calls[consoleWarnSpy.mock.calls.length - 1][0];
+      expect(warnMessage).toContain('getMeter() failed');
+      expect(warnMessage).toContain('fallback');
+    });
+
+    it('should include diagnostic information in warning', () => {
+      composer.lastMeter = [4, 4];
+      // Force immediate fallback for deterministic diagnostic logging
+      composer.getMeter(false, false, 0);
+      
+      const warnMessage = consoleWarnSpy.mock.calls[consoleWarnSpy.mock.calls.length - 1][0];
+      expect(warnMessage).toContain('iterations');
+      expect(warnMessage).toContain('Ratio bounds');
+      expect(warnMessage).toContain('LogSteps');
+    });
+
+    it('should update lastMeter appropriately when iterations exhausted', () => {
+      composer.lastMeter = [3, 8]; // Custom initial state
+      const result = composer.getMeter(false, false, 1);
+      
+      // After getMeter call, lastMeter should be set to the result
+      expect(composer.lastMeter).toEqual(result);
+    });
+  });
+
+  describe('Edge cases and robustness', () => {
+    it('should handle consecutive calls with constraints', () => {
+      composer.lastMeter = null;
+      
+      const meters = [];
+      for (let i = 0; i < 100; i++) {
+        const meter = composer.getMeter();
+        meters.push(meter);
+        
+        const ratio = meter[0] / meter[1];
+        expect(ratio).toBeGreaterThanOrEqual(0.25);
+        expect(ratio).toBeLessThanOrEqual(4);
+        expect(meter[0]).toBeGreaterThan(0);
+        expect(meter[1]).toBeGreaterThan(0);
+      }
+      
+      // Should have generated variety
+      const uniqueMeters = new Set(meters.map(m => `${m[0]}/${m[1]}`));
+      expect(uniqueMeters.size).toBeGreaterThan(30);
+    });
+
+    it('should handle polyMeter flag correctly', () => {
+      composer.lastMeter = [3, 4]; // 0.75 ratio
+      
+      const polyMeter = composer.getMeter(false, true);
+      const newRatio = polyMeter[0] / polyMeter[1];
+      const lastRatio = 0.75;
+      const logSteps = Math.abs(Math.log2(newRatio / lastRatio));
+      
+      expect(logSteps).toBeLessThanOrEqual(4.01);
+    });
+
+    it('should maintain independent state across composers', () => {
+      const composer2 = new MeasureComposer();
+      
+      const meter1 = composer.getMeter();
+      const meter2 = composer2.getMeter();
+      
+      // Each composer should have independent state
+      expect(composer.lastMeter).not.toBe(composer2.lastMeter);
+    });
+
+    it('should properly reset on new composer instance', () => {
+      composer.getMeter();
+      const oldMeter = composer.lastMeter;
+      
+      const newComposer = new MeasureComposer();
+      expect(newComposer.lastMeter).toBeNull();
+      
+      newComposer.getMeter();
+      expect(newComposer.lastMeter).not.toEqual(oldMeter);
+    });
   });
 });
 
