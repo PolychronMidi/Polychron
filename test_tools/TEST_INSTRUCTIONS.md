@@ -1,17 +1,143 @@
-# Polychron Measure Timing Verification Test Instructions
+# Polychron Testing & Verification Guide
 
-This guide provides instructions for testing the measure timing verification system that ensures ticks per measure matches the actual tick differences between consecutive marker_t logs.
+This guide provides comprehensive instructions for testing Polychron's timing accuracy, including measure timing verification and multi-format length verification.
 
-## Overview
+## Table of Contents
 
-The system analyzes marker_t entries in CSV output files to verify that:
+1. [Complete Length Verification](#complete-length-verification)
+2. [Measure Timing Verification](#measure-timing-verification)
+3. [Troubleshooting](#troubleshooting)
+
+---
+
+## Complete Length Verification
+
+### Overview
+
+The most critical test is verifying that all output tracks have identical absolute time lengths. This ensures multi-layer timing synchronization is working correctly.
+
+**Why This Matters:**
+- Polyrhythm layers must align at phrase/section boundaries
+- MIDI and audio conversions must preserve exact timing
+- Length discrepancies indicate timing calculation bugs
+
+### Quick Verification
+
+After generating output files, verify all tracks match in length:
+
+```bash
+# Generate CSV files
+node play.js
+
+# Convert to MIDI
+python c2m.py
+
+# Check all file lengths (MIDI, audio, etc.)
+python test_tools/check_all_lengths.py output/output1.mid output/output2.mid
+```
+
+### Supported Formats
+
+`check_all_lengths.py` supports:
+- **MIDI** (.mid, .midi) - Uses `mido` library
+- **MP3** - Uses `pydub` or `mutagen`
+- **WAV** - Uses `pydub`, `wave`, or `mutagen`
+- **OGG** - Uses `pydub` or `mutagen`
+- **FLAC** - Uses `pydub` or `mutagen`
+
+### Installation Requirements
+
+```bash
+# For MIDI support
+pip install mido
+
+# For audio support (choose one or both)
+pip install pydub          # Most reliable, supports all formats
+pip install mutagen        # Lighter weight alternative
+
+# For MP3 support with pydub
+# Windows: Download ffmpeg from ffmpeg.org
+# Linux: sudo apt-get install ffmpeg
+# Mac: brew install ffmpeg
+```
+
+### Example Output
+
+**SUCCESS (files match):**
+```
+================================================================================
+FILE LENGTH VERIFICATION
+================================================================================
+output/output1.mid                       02:34.500  [mido]
+output/output2.mid                       02:34.500  [mido]
+output/output1.wav                       02:34.500  [pydub]
+output/output2.wav                       02:34.500  [pydub]
+================================================================================
+
+Length Range:
+  Shortest: 02:34.500
+  Longest:  02:34.500
+  Difference: 0.000000 seconds (0.000 ms)
+
+✓ SUCCESS: All files match within tolerance (0.01s)
+================================================================================
+```
+
+**FAILURE (files differ):**
+```
+================================================================================
+FILE LENGTH VERIFICATION
+================================================================================
+output/output1.mid                       02:34.500  [mido]
+output/output2.mid                       02:36.250  [mido]
+================================================================================
+
+Length Range:
+  Shortest: 02:34.500
+  Longest:  02:36.250
+  Difference: 1.750000 seconds (1750.000 ms)
+
+✗ FAILURE: Files differ by 1.750000s (tolerance: 0.01s)
+
+Length discrepancies detected:
+  output/output2.mid: +1.750000s longer than shortest
+================================================================================
+```
+
+### Comprehensive Verification Scripts
+
+For automated testing, use the batch verification scripts:
+
+**Windows:**
+```bash
+verify_all.bat
+```
+
+**Linux/Mac:**
+```bash
+./verify_all.sh
+```
+
+These scripts check:
+1. File existence and generation
+2. Absolute time length matching
+3. Measure timing accuracy
+4. Polyrhythm alignment
+
+---
+
+## Measure Timing Verification
+
+### Overview
+
+The measure timing system analyzes marker_t entries in CSV output files to verify that:
 - Ticks per measure = difference between consecutive measure marker_t logs
 - Measure lengths are logged correctly as seconds (not 0:00.0000)
 - tpSec values are consistent for length calculations
 
-## Test Steps
+### Test Steps
 
-### 1. Generate Test Data
+#### 1. Generate Test Data
 
 Run the Polychron generation script to create output CSV files:
 
@@ -20,24 +146,24 @@ node play.js
 ```
 
 This generates:
-- `output1.csv` (primary layer)
-- `output2.csv` (poly layer)
+- `output/output1.csv` (primary layer)
+- `output/output2.csv` (poly layer)
 
-### 2. Verify Measure Timing
+#### 2. Verify Measure Timing
 
 Run the verification script on each output file:
 
-#### For output1.csv:
+**For output/output1.csv:**
 ```bash
-grep "marker_t" output1.csv | grep "Measure" | python verify_sp.py
+grep "marker_t" output/output1.csv | grep "Measure" | python test_tools/verify_sp.py
 ```
 
-#### For output2.csv:
+**For output/output2.csv:**
 ```bash
-grep "marker_t" output2.csv | grep "Measure" | python verify_sp.py
+grep "marker_t" output/output2.csv | grep "Measure" | python test_tools/verify_sp.py
 ```
 
-### 3. Analyze Results
+#### 3. Analyze Results
 
 The script outputs lines in the format:
 ```
@@ -212,7 +338,7 @@ Both output tracks now have **identical lengths**, ensuring perfect synchronizat
 
 ### Fixes Applied
 1. **Absolute Time Root**: All timing calculations spring from absolute seconds
-2. **Layer-Specific tpSec Scaling**: MIDI ticks = absolute_time � tpSec per layer
+2. **Layer-Specific tpSec Scaling**: MIDI ticks = absolute_time � tpSec per layer
 3. **Polyrhythm Duration Matching**: spPhrase forced identical between layers
 4. **Measure Logging Fix**: Correct absolute time accumulation
 5. **Track Length Equalization**: Dummy events ensure identical boundaries
@@ -224,3 +350,142 @@ Both output tracks now have **identical lengths**, ensuring perfect synchronizat
 - **Core Functionality**: Perfect polyrhythmic synchronization restored
 
 The system now produces polyrhythmic music with guaranteed temporal alignment between layers using absolute time as the single root.
+
+---
+
+## Troubleshooting
+
+### Length Discrepancies
+
+If `check_all_lengths.py` reports files with different lengths, follow this diagnostic procedure:
+
+#### 1. Isolate the Problem
+
+```bash
+# Check MIDI files first
+python test_tools/check_all_lengths.py output/output1.mid output/output2.mid
+
+# Check audio files
+python test_tools/check_all_lengths.py output/output1.wav output/output2.wav
+```
+
+**If MIDI files differ:** Timing calculation bug in JavaScript code
+**If only audio files differ:** Audio conversion issue (not timing bug)
+
+#### 2. Check Timing Synchronization
+
+Verify that `LM.advance()` properly syncs state back to globals:
+
+```bash
+# Look for the restore call at the end of LM.advance()
+grep -A 5 "LM.advance = function" time.js | grep "restoreTo"
+```
+
+Should see: `layer.state.restoreTo(globalThis);`
+
+#### 3. Verify Polyrhythm Calculations
+
+Check polyrhythm ratio calculations:
+
+```bash
+# Extract polyrhythm debug info from output
+grep "POLYRHYTHM" output/debug.log
+```
+
+Look for:
+- `measuresPerPhrase1` and `measuresPerPhrase2` should use MIDI ratios
+- `spPhrase1` and `spPhrase2` should be identical
+
+#### 4. Check Global vs Layer State Usage
+
+Verify `setUnitTiming()` uses globals consistently:
+
+```bash
+# Search for any layer.state usage in setUnitTiming
+grep -A 20 "function setUnitTiming" time.js | grep "layer.state"
+```
+
+Should return **no results** - all calculations should use globals.
+
+#### 5. Verify Module Loading Order
+
+Check that `writer.js` loads before `backstage.js`:
+
+```bash
+# Check require order in stage.js
+head -20 stage.js | grep "require"
+```
+
+Order should be: sheet → writer → venue → backstage → rhythm → time → composers
+
+### Common Issues
+
+**Issue:** "mido library not installed"
+```bash
+pip install mido
+```
+
+**Issue:** "pydub cannot find ffmpeg"
+```bash
+# Windows: Download from ffmpeg.org and add to PATH
+# Linux: sudo apt-get install ffmpeg
+# Mac: brew install ffmpeg
+```
+
+**Issue:** Output files still in root directory
+- Check `writer.js` line ~200 for `/output` folder paths
+- Verify `grandFinale()` creates directory if it doesn't exist
+
+**Issue:** Python scripts can't find files
+- Update `m2c.py` and `c2m.py` to use `output/` prefix
+- Verify output folder exists: `mkdir output` (if needed)
+
+**Issue:** Files differ by exact measure duration (e.g., 2.667s for 8/3 measure)
+- Check `LM.advance()` for missing `restoreTo()` call
+- Verify test passes: `npm test -- --grep "Multi-layer timing"`
+
+**Issue:** Polyrhythm layers drift apart over time
+- Verify `getPolyrhythm()` uses `primaryMidiRatio`/`polyMidiRatio`
+- Check that `spPhrase` is identical between layers
+- Ensure both layers advance through same absolute time
+
+### Debug Commands
+
+```bash
+# Full test suite
+npm test
+
+# Measure timing verification
+grep "marker_t" output/output1.csv | grep "Measure" | python test_tools/verify_sp.py
+
+# Length verification (all formats)
+python test_tools/check_all_lengths.py output/*.mid output/*.wav output/*.mp3
+
+# Comprehensive verification (Windows)
+test_tools\verify_all.bat
+
+# Comprehensive verification (Linux/Mac)
+./test_tools/verify_all.sh
+```
+
+### Format-Specific Gotchas
+
+**MIDI Files:**
+- Length includes silence/padding at the end
+- Tempo changes affect total duration
+- End-of-track markers must be present
+
+**WAV Files:**
+- Sample rate affects precision (44.1kHz = ~23µs resolution)
+- Exact sample count determines length
+- No compression = reliable length measurement
+
+**MP3 Files:**
+- Variable bit rate (VBR) can affect length calculation
+- Encoding adds small padding frames
+- Different libraries may report slightly different lengths
+
+**OGG/FLAC:**
+- Lossless compression preserves sample accuracy
+- Container format overhead minimal
+- Most reliable after WAV for length verification

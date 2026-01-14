@@ -185,9 +185,11 @@ describe('logUnit', () => {
 describe('grandFinale', () => {
   beforeEach(() => {
     setupGlobalState();
-    // Mock fs.writeFileSync
+    // Mock fs methods
     globalThis.fs = {
-      writeFileSync: vi.fn()
+      writeFileSync: vi.fn(),
+      existsSync: vi.fn(() => true),
+      mkdirSync: vi.fn()
     };
     // Reset LM
     globalThis.LM = {
@@ -221,8 +223,8 @@ describe('grandFinale', () => {
     grandFinale();
 
     expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
-    expect(fs.writeFileSync).toHaveBeenCalledWith('output1.csv', expect.any(String));
-    expect(fs.writeFileSync).toHaveBeenCalledWith('output2.csv', expect.any(String));
+    expect(fs.writeFileSync).toHaveBeenCalledWith('output/output1.csv', expect.any(String));
+    expect(fs.writeFileSync).toHaveBeenCalledWith('output/output2.csv', expect.any(String));
   });
 
   it('should include header and track markers in CSV', () => {
@@ -299,7 +301,7 @@ describe('grandFinale', () => {
 
     grandFinale();
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith('outputCustom.csv', expect.any(String));
+    expect(fs.writeFileSync).toHaveBeenCalledWith('output/outputCustom.csv', expect.any(String));
   });
 });
 

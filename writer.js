@@ -191,17 +191,24 @@ grandFinale = () => {
       }
     });
 
-    composition += `1,${finalTick + (SILENT_OUTRO_SECONDS * tpSec)},end_track`;
+    composition += `1,${finalTick + (SILENT_OUTRO_SECONDS * layerState.tpSec)},end_track`;
 
     // Determine output filename based on layer name
     let outputFilename;
     if (name === 'primary') {
-      outputFilename = 'output1.csv';
+      outputFilename = 'output/output1.csv';
     } else if (name === 'poly') {
-      outputFilename = 'output2.csv';
+      outputFilename = 'output/output2.csv';
     } else {
       // For additional layers, use name-based numbering
-      outputFilename = `output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+      outputFilename = `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+    }
+
+    // Ensure output directory exists
+    const path = require('path');
+    const outputDir = path.dirname(outputFilename);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
 
     fs.writeFileSync(outputFilename, composition);

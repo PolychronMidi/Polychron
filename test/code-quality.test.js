@@ -115,3 +115,169 @@ test('source files should end with newline', () => {
 
   expect(violations).toEqual([]);
 });
+
+/**
+ * Check that critical timing functions have JSDoc annotations.
+ */
+test('critical timing functions should have JSDoc', () => {
+  const filePath = path.join(__dirname, '..', 'time.js');
+  const content = fs.readFileSync(filePath, 'utf8');
+
+  const criticalFunctions = [
+    'getMidiMeter',
+    'setMidiTiming',
+    'setUnitTiming',
+    'getPolyrhythm'
+  ];
+
+  const violations = [];
+
+  criticalFunctions.forEach(funcName => {
+    // Look for JSDoc (/** ... */) before function declaration
+    const patterns = [
+      new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*${funcName}\\s*[=(]`, 'g'),
+      new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*function\\s+${funcName}\\s*\\(`, 'g')
+    ];
+
+    const hasJSDoc = patterns.some(pattern => pattern.test(content));
+
+    if (!hasJSDoc) {
+      violations.push(funcName);
+    }
+  });
+
+  if (violations.length > 0) {
+    expect.fail(`Missing JSDoc for critical functions: ${violations.join(', ')}`);
+  }
+
+  expect(violations).toEqual([]);
+});
+
+/**
+ * Check for common typos in the codebase.
+ */
+test('source files should not contain common typos', () => {
+  const sourceFiles = [
+    'backstage.js',
+    'composers.js',
+    'play.js',
+    'rhythm.js',
+    'sheet.js',
+    'stage.js',
+    'time.js',
+    'venue.js',
+    'writer.js'
+  ];
+
+  const typoPatterns = [
+    { pattern: /\brhtyhm\b/gi, correct: 'rhythm' },
+    { pattern: /\bsubsubdivRhthm\b/g, correct: 'subsubdivRhythm' },
+    { pattern: /\bteh\b/gi, correct: 'the' },
+    { pattern: /\bfunciton\b/gi, correct: 'function' },
+    { pattern: /\bretrun\b/gi, correct: 'return' }
+  ];
+
+  const violations = [];
+
+  sourceFiles.forEach(file => {
+    const filePath = path.join(__dirname, '..', file);
+    if (!fs.existsSync(filePath)) return;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split('\n');
+
+    typoPatterns.forEach(({ pattern, correct }) => {
+      let match;
+      const regex = new RegExp(pattern.source, pattern.flags);
+
+      while ((match = regex.exec(content)) !== null) {
+        const beforeMatch = content.substring(0, match.index);
+        const lineNumber = beforeMatch.split('\n').length;
+        const lineContent = lines[lineNumber - 1];
+
+        violations.push({
+          file,
+          line: lineNumber,
+          typo: match[0],
+          correct,
+          content: lineContent.trim()
+        });
+      }
+    });
+  });
+
+  if (violations.length > 0) {
+    const message = violations.map(v =>
+      `${v.file}:${v.line} - Typo "${v.typo}" should be "${v.correct}": ${v.content.substring(0, 60)}`
+    ).join('\n');
+    expect.fail(`Found ${violations.length} typo(s):\n${message}`);
+  }
+
+  expect(violations).toEqual([]);
+});
+
+/**
+ * Verify naming conventions: camelCase for functions/variables.
+ */
+test('function names should follow camelCase convention', () => {
+  const sourceFiles = [
+    'backstage.js',
+    'composers.js',
+    'play.js',
+    'rhythm.js',
+    'sheet.js',
+    'stage.js',
+    'time.js',
+    'venue.js',
+    'writer.js'
+  ];
+
+  const violations = [];
+
+  sourceFiles.forEach(file => {
+    const filePath = path.join(__dirname, '..', file);
+    if (!fs.existsSync(filePath)) return;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split('\n');
+
+    // Match function declarations: function name(...) or name = function(...) or name = (...) =>
+    const functionPattern = /(?:function\s+([a-zA-Z_][a-zA-Z0-9_]*)|([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(?:function|\([^)]*\)\s*=>))/g;
+
+    let match;
+    while ((match = functionPattern.exec(content)) !== null) {
+      const funcName = match[1] || match[2];
+
+      // Skip if it's all caps (constant) or starts with _ (private/unused)
+      if (/^[A-Z_]+$/.test(funcName) || funcName.startsWith('_')) continue;
+
+      // Check for snake_case or PascalCase (except class names which can be PascalCase)
+      const hasUnderscore = /_/.test(funcName) && funcName !== '_';
+      const isPascalCase = /^[A-Z]/.test(funcName);
+
+      // Allow PascalCase for known classes
+      const knownClasses = ['TimingContext', 'LayerManager'];
+      if (isPascalCase && knownClasses.includes(funcName)) continue;
+
+      if (hasUnderscore) {
+        const beforeMatch = content.substring(0, match.index);
+        const lineNumber = beforeMatch.split('\n').length;
+        violations.push({
+          file,
+          line: lineNumber,
+          name: funcName,
+          issue: 'uses snake_case instead of camelCase'
+        });
+      }
+    }
+  });
+
+  if (violations.length > 0) {
+    const message = violations.map(v =>
+      `${v.file}:${v.line} - Function "${v.name}" ${v.issue}`
+    ).join('\n');
+    expect.fail(`Found ${violations.length} naming violation(s):\n${message}`);
+  }
+
+  expect(violations).toEqual([]);
+});
