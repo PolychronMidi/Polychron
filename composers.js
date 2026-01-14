@@ -89,9 +89,9 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
    */
   getNotes(octaveRange=null) {
     if (++this.recursionDepth > this.MAX_RECURSION) {
-      console.warn('getNotes recursion limit exceeded; returning fallback middle C');
+      console.warn('getNotes recursion limit exceeded; returning fallback note 0');
       this.recursionDepth = 0;
-      return [{ note: 60 }]; // Middle C fallback
+      return [{ note: 0 }];
     }
     const uniqueNotes=new Set();
     const voices=this.getVoices();

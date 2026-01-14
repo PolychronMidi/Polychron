@@ -809,7 +809,7 @@ describe('LayerManager (LM)', () => {
       const { state, buffer } = LM.register('test2', 'c1', {}, () => {});
       expect(LM.layers.test2).toBeDefined();
       expect(state.bufferName).toBe('c1');
-      expect(Array.isArray(buffer)).toBe(true);
+      expect(buffer instanceof CSVBuffer || Array.isArray(buffer)).toBe(true);
     });
 
     it('should initialize default state properties', () => {

@@ -230,6 +230,17 @@ const mode = t.Mode.get('dorian');
 const notes = t.Mode.notes(mode, 'D');
 ```
 
+## Layer Architecture Independence
+
+**venue.js** is **completely independent of LayerManager**:
+- **Pure data module** - Contains only MIDI specifications and music theory constants
+- **No state dependencies** - Doesn't reference global timing or layer variables
+- **Universal reference** - Same MIDI/music theory data used by all layers
+- **Load once, use everywhere** - Data computed at startup, accessed throughout composition
+- **Zero layer awareness** - Functions like getMidiValue() work identically regardless of active layer
+
+This stateless design makes venue.js the most reusable component in the system.
+
 ## Performance Characteristics
 
 - **Load-time generation** - All data computed once when module loads

@@ -420,3 +420,199 @@ rlFX = (ch, effectNum, minValue, maxValue, condition=null, conditionMin=null, co
 - **CSV system** - Enables all modules to generate MIDI events through common interface
 
 This foundational design allows the entire Polychron system to operate with maximum efficiency while maintaining the clean, minimal code philosophy throughout.
+
+## CSVBuffer Class - MIDI Event Encapsulation
+
+### Purpose
+Encapsulates MIDI event collection with layer context metadata while preserving the minimalist `p(c)` syntax.
+
+### Implementation
+```javascript
+CSVBuffer = class CSVBuffer {
+  constructor(name) {
+    this.name = name;    // Layer identifier
+    this.rows = [];      // MIDI event array
+  }
+  push(...items) {
+    this.rows.push(...items);
+  }
+  get length() {
+    return this.rows.length;
+  }
+  clear() {
+    this.rows = [];
+  }
+};
+```
+
+### Usage Pattern
+```javascript
+c1 = new CSVBuffer('primary');
+c2 = new CSVBuffer('poly');
+c = c1;  // Active buffer reference
+
+p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});  // Exact same syntax as before
+```
+
+### Architecture Benefits
+- **Layer identification** - Each buffer knows its layer name
+- **Backward compatible** - `p(c)` calls work identically
+- **Metadata attached** - Layer context travels with buffer
+- **Array interop** - `.rows` provides array access when needed
+
+## LayerManager (LM) - Context Switching for Polyrhythmic Layers
+
+### Purpose
+Manages separate timing contexts for each layer, enabling polyrhythmic generation with different tick rates but synchronized absolute time.
+
+### Architecture Pattern
+```
+1. register() → Create layer with initial state
+2. activate(layer) → Restore layer's globals
+3. Process with globals → Composition functions use shared variables
+4. advance(layer) → Save updated globals to layer state
+```
+
+### Core Methods
+
+#### `LM.register(name, buffer, initialState, setupFn)`
+Creates a new layer with private timing state:
+```javascript
+const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
+```
+
+**Parameters:**
+- `name` - Layer identifier string
+- `buffer` - CSVBuffer instance, array, or string name
+- `initialState` - Optional state overrides
+- `setupFn` - Optional initialization function
+
+**Returns:** `{ state, buffer }` for destructuring
+
+**State Properties:**
+- `phraseStart`, `phraseStartTime` - Phrase boundary positions (ticks, seconds)
+- `sectionStart`, `sectionStartTime`, `sectionEnd` - Section boundaries
+- `measureStart`, `measureStartTime` - Current measure positions
+- `tpMeasure`, `spMeasure` - Ticks/seconds per measure (layer-specific)
+- `tpPhrase`, `spPhrase` - Ticks/seconds per phrase
+- `tpSec` - Ticks per second (tempo-adjusted)
+- `tpSection`, `spSection` - Accumulated ticks/seconds per section
+- `numerator`, `denominator` - Current meter
+- `measuresPerPhrase` - Measures in current phrase
+
+#### `LM.activate(name, isPoly)`
+Switches to a layer's timing context:
+```javascript
+LM.activate('primary', false);  // Restore primary layer's timing globals
+```
+
+**Process:**
+1. Switch `c` to layer's buffer
+2. Store current meter into layer state
+3. Restore layer-specific timing to globals:
+   - `phraseStart`, `measureStart`, etc. (position anchors)
+   - `tpMeasure`, `tpSec`, etc. (duration multipliers)
+4. Set layer-specific meter if `isPoly === true`
+
+**Critical:** All timing globals are now from this layer's context. Composition functions use these globals directly.
+
+#### `LM.advance(name, advancementType)`
+Advances timing boundaries and saves state:
+```javascript
+LM.advance('primary', 'phrase');  // After phrase completes
+LM.advance('primary', 'section'); // After section completes
+```
+
+**Phrase Advancement:**
+- `phraseStart += tpPhrase` - Move phrase boundary forward (layer-specific ticks)
+- `phraseStartTime += spPhrase` - Move time boundary (synchronized seconds)
+- `tpSection += tpPhrase` - Accumulate into section total
+- `spSection += spPhrase` - Accumulate time into section total
+
+**Section Advancement:**
+- `sectionStart += tpSection` - Move section boundary by accumulated ticks
+- `sectionStartTime += spSection` - Move section time
+- `sectionEnd += tpSection` - Update section end
+- Reset `tpSection`, `spSection` to 0
+
+**State Preservation:** Current timing globals saved back to layer state for next activation.
+
+### Why Context Switching?
+
+**Problem:** Different layers need different tick rates (polyrhythm) but must synchronize at phrase boundaries.
+
+**Solution:** Each layer maintains private state, but composition code uses simple global variables.
+
+**Example:**
+```javascript
+// Primary layer: 4/4 meter, 480 tpMeasure
+LM.activate('primary');
+// Now: tpMeasure = 480, phraseStart = 0
+setUnitTiming('measure');  // measureStart = 0 + measureIndex × 480
+
+// Poly layer: 3/4 meter, 360 tpMeasure
+LM.activate('poly');
+// Now: tpMeasure = 360, phraseStart = 0 (different tick rate!)
+setUnitTiming('measure');  // measureStart = 0 + measureIndex × 360
+
+// Both layers: spPhrase is synchronized (same seconds)
+// Result: Different tick counts, same absolute time at phrase boundaries
+```
+
+### Timing State Flow
+
+**Registration Phase:**
+```
+LM.register('primary', c1, {})
+  → Creates layer.state with default timing values
+  → Attaches CSVBuffer to layer
+  → Returns { state, buffer } for access
+```
+
+**Activation Phase:**
+```
+LM.activate('primary')
+  → c = layer.buffer (switch active buffer)
+  → Restore layer.state.phraseStart → phraseStart
+  → Restore layer.state.tpMeasure → tpMeasure
+  → All timing globals now from this layer
+```
+
+**Processing Phase:**
+```
+setUnitTiming('measure')
+  → Uses phraseStart (from layer.state via activation)
+  → Calculates measureStart = phraseStart + measureIndex × tpMeasure
+  → Composition functions use measureStart for MIDI tick positions
+```
+
+**Advancement Phase:**
+```
+LM.advance('primary', 'phrase')
+  → phraseStart += tpPhrase (advance boundary)
+  → Save phraseStart → layer.state.phraseStart
+  → Save tpMeasure → layer.state.tpMeasure
+  → State preserved for next activation
+```
+
+### Meter Spoofing Integration
+
+LayerManager enables meter spoofing to work across multiple layers:
+
+1. **Primary layer** processes in its meter (e.g., 7/11)
+2. **Poly layer** processes in different meter (e.g., 5/8)
+3. Both have different `tpMeasure` values (different tick rates)
+4. Both have same `spPhrase` values (synchronized seconds)
+5. Phrase boundaries align perfectly in time
+6. Result: Complex polyrhythmic relationships with perfect synchronization
+
+### Scalability
+
+The context switching pattern is infinitely scalable:
+```javascript
+LM.register('tertiary', c3, {}, setupFn);
+LM.register('quaternary', c4, {}, setupFn);
+// ... register as many layers as needed
+```
+
+Each layer maintains independent timing state, all synchronized at phrase boundaries through identical `spPhrase` values.

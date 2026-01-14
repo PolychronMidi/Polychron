@@ -460,6 +460,16 @@ Each level uses **different algorithm weights** and **probability distributions*
 - **Human-impossible complexity** - Generates patterns too intricate for human performance
 - **MIDI-optimized output** - All timing calculations produce precise MIDI tick values
 
+## CSVBuffer Integration
+
+**rhythm.js** uses the global `c` buffer for MIDI event generation:
+- **drummer() and playDrums()** - Push events directly to active CSVBuffer via `p(c, ...)`
+- **Layer awareness** - Active buffer (c) automatically set by LM.activate()
+- **No layer logic needed** - Rhythm functions work with whichever layer is currently active
+- **Preserves minimalism** - Same `p(c)` syntax works across all layers
+
+This transparent layer switching enables identical rhythm code to generate events for both primary and poly layers.
+
 ## Revolutionary Aspects
 
 ### Algorithmic Sophistication

@@ -314,3 +314,14 @@ The composers rely heavily on the Tonal.js library for music theory:
 - **Polyrhythm calculation** - Helps determine compatible secondary meters
 - **BPM ratio integration** - Scales complexity based on tempo
 - **Musical continuity** - Smooth transitions between different harmonic areas
+
+## Layer-Independent Operation
+
+Composers operate **independently of LayerManager** architecture:
+- **Shared across layers** - Same composer instance used for both primary and poly layers
+- **Meter generation** - Creates time signatures without layer awareness
+- **Global meter variables** - Works with numerator/denominator globals set by play.js
+- **Rhythmic parameters** - getDivisions(), getSubdivisions(), etc. use current global state
+- **Layer context blind** - Doesn't need to know which layer is active
+
+This design keeps composer logic simple while enabling complex multi-layer compositions.
