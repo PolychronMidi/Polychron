@@ -133,7 +133,7 @@ VOICES = {
 ```
 - **Heavily weighted toward monophony/simple polyphony**:
   - **0 voices** - 15 weight (silence/rests)
-  - **1 voice** - 30 weight (monophonic lines) 
+  - **1 voice** - 30 weight (monophonic lines)
   - **2 voices** - 25 weight (simple harmony)
   - **3+ voices** - Exponentially decreasing (7,4,3,2,1)
 - **Prevents harmonic mud** - Limits complex chord clusters
@@ -178,7 +178,7 @@ SUBDIVISIONS = {
 };
 SUBSUBDIVS = {
   min: 0,
-  max: 5,  
+  max: 5,
   weights: [5,20,30,20,10,5]
 };
 ```
@@ -202,7 +202,7 @@ COMPOSERS = [
 
 #### Active Composers - Maximum Variety Configuration
 - **RandomScaleComposer** - Constantly changing scales and roots
-- **RandomChordComposer** - Dynamic chord progressions  
+- **RandomChordComposer** - Dynamic chord progressions
 - **RandomModeComposer** - Evolving modal harmonies
 - **No fixed composers** - Commented out static composers for maximum harmonic variety
 
@@ -228,7 +228,7 @@ SILENT_OUTRO_SECONDS = 5;
 ### Dynamic Parameter Scaling
 Many parameters are modified by **BPM ratios** during composition:
 - **`bpmRatio`** - Configured BPM ÷ Actual BPM
-- **`bpmRatio2`** - Actual BPM ÷ Configured BPM  
+- **`bpmRatio2`** - Actual BPM ÷ Configured BPM
 - **`bpmRatio3`** - Specialized ratio for drum pattern probability
 
 ## User Customization Guide
@@ -239,7 +239,7 @@ Many parameters are modified by **BPM ratios** during composition:
 - **Ambient textures** - Favor pad instruments, reduce voice counts, increase octave range
 - **Experimental music** - Increase exotic meter weights, enable extreme subdivision counts
 
-### Adjusting Complexity  
+### Adjusting Complexity
 - **Simpler compositions** - Reduce subdivision weights, limit voice counts, use standard meters
 - **More complex** - Increase high-end weights for divisions/subdivisions, enable more voices
 - **Rhythmic focus** - Increase subdivision weights while reducing voice counts

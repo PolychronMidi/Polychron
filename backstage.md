@@ -129,7 +129,7 @@ rf = randomFloat = (min1=1, max1, min2, max2) => {
 
 **Multiple calling patterns**:
 - `rf()` returns 0-1
-- `rf(max)` returns 0-max  
+- `rf(max)` returns 0-max
 - `rf(min, max)` returns min-max
 - `rf(min1, max1, min2, max2)` returns value from one of two ranges randomly
 - **Dual range support** - Can select from two separate ranges
@@ -163,12 +163,12 @@ rv = randomVariation = (value, boostRange=[.05,.10], frequency=.05, deboostRange
   let factor;
   const singleRange = Array.isArray(deboostRange) ? deboostRange : boostRange;
   const isSingleRange = singleRange.length === 2 && typeof singleRange[0] === 'number';
-  if (isSingleRange) { 
+  if (isSingleRange) {
     const variation = rf(...singleRange);
     factor = rf() < frequency ? 1 + variation : 1;
-  } else { 
+  } else {
     const range = rf() < .5 ? boostRange : deboostRange;
-    factor = rf() < frequency ? 1 + rf(...range) : 1; 
+    factor = rf() < frequency ? 1 + rf(...range) : 1;
   }
   return value * factor;
 };
@@ -328,7 +328,7 @@ muteAll = (tick=measureStart) => {return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
 
 ### Global CSV System
 ```javascript
-p = pushMultiple = (array, ...items) => { array.push(...items); }; 
+p = pushMultiple = (array, ...items) => { array.push(...items); };
 c = csvRows = [];
 composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
 fs = require('fs');
@@ -340,19 +340,19 @@ fs = require('fs');
 
 ### `grandFinale()` - Final Composition Processing
 ```javascript
-grandFinale = () => { 
+grandFinale = () => {
   allNotesOff(sectionStart+PPQ);muteAll(sectionStart+PPQ*2);
-  c = c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick); 
-  let finalTick=-Infinity; 
-  c.forEach(_=>{ 
+  c = c.filter(i=>i!==null).map(i=>({...i,tick: isNaN(i.tick) || i.tick<0 ? m.abs(i.tick||0)*rf(.1,.3) : i.tick})).sort((a,b)=>a.tick-b.tick);
+  let finalTick=-Infinity;
+  c.forEach(_=>{
     if (!isNaN(_.tick)) {
-      let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c'); 
-      composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`; 
-      finalTick=m.max(finalTick,_.tick); 
-    } else { console.error("NaN tick value encountered:",_); } 
-  }); 
-  (function finale(){composition+=`1,${finalTick + tpSec * SILENT_OUTRO_SECONDS},end_track`})(); 
-  fs.writeFileSync('output.csv',composition); 
+      let type=_.type==='on' ? 'note_on_c' : (_.type || 'note_off_c');
+      composition+=`1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
+      finalTick=m.max(finalTick,_.tick);
+    } else { console.error("NaN tick value encountered:",_); }
+  });
+  (function finale(){composition+=`1,${finalTick + tpSec * SILENT_OUTRO_SECONDS},end_track`})();
+  fs.writeFileSync('output.csv',composition);
   console.log('output.csv created. Track Length:',finalTime);
 };
 ```
@@ -376,7 +376,7 @@ rlFX = (ch, effectNum, minValue, maxValue, condition=null, conditionMin=null, co
   if (!(effectNum in chFXMap)) {
     chFXMap[effectNum] = clamp(0, minValue, maxValue);
   }
-  
+
   const midiEffect = {
     getValue: () => {
       let effectValue = chFXMap[effectNum];
@@ -417,202 +417,62 @@ rlFX = (ch, effectNum, minValue, maxValue, condition=null, conditionMin=null, co
 - **Randomization functions** - Used by composers.js for musical decisions, stage.js for audio processing
 - **Global state** - Coordinates timing and musical state across all modules
 - **MIDI infrastructure** - Provides channel definitions and audio processing foundations
-- **CSV system** - Enables all modules to generate MIDI events through common interface
+- **Output functions** - `allNotesOff()` and `muteAll()` for MIDI cleanup (used by writer.js)
 
 This foundational design allows the entire Polychron system to operate with maximum efficiency while maintaining the clean, minimal code philosophy throughout.
 
-## CSVBuffer Class - MIDI Event Encapsulation
+**Note:** CSV buffer management (`CSVBuffer`, `p()`, `grandFinale()`, `logUnit()`) has been moved to **writer.js** for better separation of concerns. See [writer.md](writer.md) for complete documentation.
 
-### Purpose
-Encapsulates MIDI event collection with layer context metadata while preserving the minimalist `p(c)` syntax.
+**Note:** LayerManager (LM) and TimingContext class have been moved to **time.js** as they are timing-related. See [time.md](time.md) for complete documentation of multi-layer timing architecture.
 
-### Implementation
+## MIDI Helper Functions
+
+### `allNotesOff(tick)`
+
+**Purpose:** Send All Notes Off CC (123) to prevent sustain across transitions
+
+**Signature:**
 ```javascript
-CSVBuffer = class CSVBuffer {
-  constructor(name) {
-    this.name = name;    // Layer identifier
-    this.rows = [];      // MIDI event array
-  }
-  push(...items) {
-    this.rows.push(...items);
-  }
-  get length() {
-    return this.rows.length;
-  }
-  clear() {
-    this.rows = [];
-  }
-};
+allNotesOff = (tick=measureStart) => {
+  return p(c, ...allCHs.map(ch => ({
+    tick: m.max(0, tick-1),
+    type: 'control_c',
+    vals: [ch, 123, 0]
+  })));
+}
 ```
 
-### Usage Pattern
+**Usage:**
 ```javascript
-c1 = new CSVBuffer('primary');
-c2 = new CSVBuffer('poly');
-c = c1;  // Active buffer reference
-
-p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});  // Exact same syntax as before
+allNotesOff(measureStart + tpMeasure);  // Stop all notes at measure end
 ```
 
-### Architecture Benefits
-- **Layer identification** - Each buffer knows its layer name
-- **Backward compatible** - `p(c)` calls work identically
-- **Metadata attached** - Layer context travels with buffer
-- **Array interop** - `.rows` provides array access when needed
+**Implementation Details:**
+- Sends CC 123 to all 16 MIDI channels
+- Tick set to `tick-1` (with min 0) to ensure execution before next event
+- Returns array of control change events pushed to buffer
 
-## LayerManager (LM) - Context Switching for Polyrhythmic Layers
+### `muteAll(tick)`
 
-### Purpose
-Manages separate timing contexts for each layer, enabling polyrhythmic generation with different tick rates but synchronized absolute time.
+**Purpose:** Send Mute All CC (120) to silence all channels
 
-### Architecture Pattern
-```
-1. register() → Create layer with initial state
-2. activate(layer) → Restore layer's globals
-3. Process with globals → Composition functions use shared variables
-4. advance(layer) → Save updated globals to layer state
-```
-
-### Core Methods
-
-#### `LM.register(name, buffer, initialState, setupFn)`
-Creates a new layer with private timing state:
+**Signature:**
 ```javascript
-const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
+muteAll = (tick=measureStart) => {
+  return p(c, ...allCHs.map(ch => ({
+    tick: m.max(0, tick-1),
+    type: 'control_c',
+    vals: [ch, 120, 0]
+  })));
+}
 ```
 
-**Parameters:**
-- `name` - Layer identifier string
-- `buffer` - CSVBuffer instance, array, or string name
-- `initialState` - Optional state overrides
-- `setupFn` - Optional initialization function
-
-**Returns:** `{ state, buffer }` for destructuring
-
-**State Properties:**
-- `phraseStart`, `phraseStartTime` - Phrase boundary positions (ticks, seconds)
-- `sectionStart`, `sectionStartTime`, `sectionEnd` - Section boundaries
-- `measureStart`, `measureStartTime` - Current measure positions
-- `tpMeasure`, `spMeasure` - Ticks/seconds per measure (layer-specific)
-- `tpPhrase`, `spPhrase` - Ticks/seconds per phrase
-- `tpSec` - Ticks per second (tempo-adjusted)
-- `tpSection`, `spSection` - Accumulated ticks/seconds per section
-- `numerator`, `denominator` - Current meter
-- `measuresPerPhrase` - Measures in current phrase
-
-#### `LM.activate(name, isPoly)`
-Switches to a layer's timing context:
+**Usage:**
 ```javascript
-LM.activate('primary', false);  // Restore primary layer's timing globals
+muteAll(sectionEnd);  // Mute all channels at section end
 ```
 
-**Process:**
-1. Switch `c` to layer's buffer
-2. Store current meter into layer state
-3. Restore layer-specific timing to globals:
-   - `phraseStart`, `measureStart`, etc. (position anchors)
-   - `tpMeasure`, `tpSec`, etc. (duration multipliers)
-4. Set layer-specific meter if `isPoly === true`
-
-**Critical:** All timing globals are now from this layer's context. Composition functions use these globals directly.
-
-#### `LM.advance(name, advancementType)`
-Advances timing boundaries and saves state:
-```javascript
-LM.advance('primary', 'phrase');  // After phrase completes
-LM.advance('primary', 'section'); // After section completes
-```
-
-**Phrase Advancement:**
-- `phraseStart += tpPhrase` - Move phrase boundary forward (layer-specific ticks)
-- `phraseStartTime += spPhrase` - Move time boundary (synchronized seconds)
-- `tpSection += tpPhrase` - Accumulate into section total
-- `spSection += spPhrase` - Accumulate time into section total
-
-**Section Advancement:**
-- `sectionStart += tpSection` - Move section boundary by accumulated ticks
-- `sectionStartTime += spSection` - Move section time
-- `sectionEnd += tpSection` - Update section end
-- Reset `tpSection`, `spSection` to 0
-
-**State Preservation:** Current timing globals saved back to layer state for next activation.
-
-### Why Context Switching?
-
-**Problem:** Different layers need different tick rates (polyrhythm) but must synchronize at phrase boundaries.
-
-**Solution:** Each layer maintains private state, but composition code uses simple global variables.
-
-**Example:**
-```javascript
-// Primary layer: 4/4 meter, 480 tpMeasure
-LM.activate('primary');
-// Now: tpMeasure = 480, phraseStart = 0
-setUnitTiming('measure');  // measureStart = 0 + measureIndex × 480
-
-// Poly layer: 3/4 meter, 360 tpMeasure
-LM.activate('poly');
-// Now: tpMeasure = 360, phraseStart = 0 (different tick rate!)
-setUnitTiming('measure');  // measureStart = 0 + measureIndex × 360
-
-// Both layers: spPhrase is synchronized (same seconds)
-// Result: Different tick counts, same absolute time at phrase boundaries
-```
-
-### Timing State Flow
-
-**Registration Phase:**
-```
-LM.register('primary', c1, {})
-  → Creates layer.state with default timing values
-  → Attaches CSVBuffer to layer
-  → Returns { state, buffer } for access
-```
-
-**Activation Phase:**
-```
-LM.activate('primary')
-  → c = layer.buffer (switch active buffer)
-  → Restore layer.state.phraseStart → phraseStart
-  → Restore layer.state.tpMeasure → tpMeasure
-  → All timing globals now from this layer
-```
-
-**Processing Phase:**
-```
-setUnitTiming('measure')
-  → Uses phraseStart (from layer.state via activation)
-  → Calculates measureStart = phraseStart + measureIndex × tpMeasure
-  → Composition functions use measureStart for MIDI tick positions
-```
-
-**Advancement Phase:**
-```
-LM.advance('primary', 'phrase')
-  → phraseStart += tpPhrase (advance boundary)
-  → Save phraseStart → layer.state.phraseStart
-  → Save tpMeasure → layer.state.tpMeasure
-  → State preserved for next activation
-```
-
-### Meter Spoofing Integration
-
-LayerManager enables meter spoofing to work across multiple layers:
-
-1. **Primary layer** processes in its meter (e.g., 7/11)
-2. **Poly layer** processes in different meter (e.g., 5/8)
-3. Both have different `tpMeasure` values (different tick rates)
-4. Both have same `spPhrase` values (synchronized seconds)
-5. Phrase boundaries align perfectly in time
-6. Result: Complex polyrhythmic relationships with perfect synchronization
-
-### Scalability
-
-The context switching pattern is infinitely scalable:
-```javascript
-LM.register('tertiary', c3, {}, setupFn);
-LM.register('quaternary', c4, {}, setupFn);
-// ... register as many layers as needed
-```
-
-Each layer maintains independent timing state, all synchronized at phrase boundaries through identical `spPhrase` values.
+**Implementation Details:**
+- Sends CC 120 to all 16 MIDI channels
+- Used by `grandFinale()` in writer.js for final cleanup
+- Ensures clean audio cutoff between compositions

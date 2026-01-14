@@ -1,6 +1,7 @@
+// play.js - Main composition engine orchestrating section, phrase, measure hierarchy.
+// minimalist comments, details at: play.md
+
 require('./stage');
-// Polychron main loop: Section → Phrase → Measure → Beat → Division → Subdivision
-// LM switches layer contexts, setUnitTiming() calculates positions, composition functions generate MIDI
 
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, setTuningAndInstruments);

@@ -1,5 +1,6 @@
 // test/rhythm.test.js
 require('../sheet');  // Defines constants
+require('../writer');  // Defines writer functions (CSVBuffer, p, etc.)
 require('../backstage');  // Defines utility functions
 require('../rhythm');  // Rhythm functions
 

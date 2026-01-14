@@ -63,8 +63,8 @@ midiData = {
 
 ### `getMidiValue(category, name)` - Name-to-Number Conversion
 ```javascript
-getMidiValue = (category, name) => { 
-  category = category.toLowerCase(); 
+getMidiValue = (category, name) => {
+  category = category.toLowerCase();
   name = name.toLowerCase();
   const item = midiData[category].find(item => item.name.toLowerCase() === name);
   return item ? item.number : null;
@@ -201,7 +201,7 @@ allModes = (() => {
 // Random scale selection
 const randomScale = allScales[ri(allScales.length - 1)];
 
-// Random chord selection  
+// Random chord selection
 const randomChord = allChords[ri(allChords.length - 1)];
 
 // Random mode selection

@@ -5,7 +5,7 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 ## Key Features
 
 - **Unrestricted Meter Support**: Any musical meter (time signature) including complex and non-standard ratios
-- **Polyrhythm Capability**: Simultaneous dual-meter composition with perfect timing alignment  
+- **Polyrhythm Capability**: Simultaneous dual-meter composition with perfect timing alignment
 - **Multi-Layer Architecture**: CSVBuffer and LayerManager enable transparent context switching between layers
 - **Absolute Timing Accuracy**: Dual-context architecture ensures phrase boundaries align perfectly in absolute time
 - **Advanced Music Theory**: Integration with Tonal.js for scales, chords, modes, and music theory operations
@@ -17,7 +17,7 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 
 ### Core System Architecture
 
-Polychron consists of 8 specialized JavaScript modules following a clean minimal code philosophy:
+Polychron consists of 9 specialized JavaScript modules following a clean minimal code philosophy:
 
 #### 1. **[play.js](play.md)** - Main Composition Engine
 - Orchestrates the entire composition process
@@ -67,17 +67,24 @@ Polychron consists of 8 specialized JavaScript modules following a clean minimal
 - **Dynamic FX Processing**: Randomized effect parameters with constraints
 
 #### 6. **[backstage.js](backstage.md)** - Core Utilities & State
-- **CSVBuffer Class**: Encapsulates MIDI event arrays with layer metadata (rows, name properties)
-- **LayerManager (LM)**: Context switching object with register(), activate(), advance() methods
 - **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
 - **Randomization Systems**: Weighted, dual-range, limited-change random functions
 - **Global State Management**: Timing contexts for primary and poly meters
 - **MIDI Infrastructure**: Channel definitions, instrument mappings, constants
 - **Data Structures**: CSV row management, array utilities
+- **MIDI Helper Functions**: `allNotesOff()` and `muteAll()` for channel cleanup
 - **Performance Optimization**: Efficient state tracking and memory management
-- **Error Handling**: Wrapped filesystem operations with error logging
 
-#### 7. **[venue.js](venue.md)** - MIDI Data & Music Theory
+#### 7. **[writer.js](writer.md)** - MIDI Output & File Generation
+- **CSVBuffer Class**: Encapsulates MIDI event arrays with layer metadata (rows, name properties)
+- **pushMultiple (p)**: Efficient batch MIDI event insertion with validation
+- **Timing Markers**: Context-aware logUnit() for debugging and analysis
+- **File Generation**: grandFinale() converts CSVBuffer to MIDI .mid files
+- **Filesystem Operations**: Wrapped fs module with error handling and logging
+- **Integration Utilities**: Seamless connection between composition and output
+- **Performance Optimization**: Efficient CSV-to-MIDI conversion via csv_maestro
+
+#### 8. **[venue.js](venue.md)** - MIDI Data & Music Theory
 - **Complete MIDI Reference**: All 128 program change instruments
 - **MIDI Control Changes**: Full CC mapping with descriptions
 - **Tonal.js Integration**: Music theory databases (scales, chords, modes)
@@ -86,7 +93,7 @@ Polychron consists of 8 specialized JavaScript modules following a clean minimal
 - **Global Exports**: Music theory data exposed for testing
 - **Validation Systems**: Chord and scale validation
 
-#### 8. **[sheet.js](sheet.md)** - Configuration System
+#### 9. **[sheet.js](sheet.md)** - Configuration System
 - **Musical Parameters**: BPM, PPQ, tuning frequency (432Hz)
 - **Weighted Distributions**: Numerators, denominators, octaves, voices
 - **Structural Parameters**: Sections, phrases per section, divisions
@@ -98,8 +105,8 @@ Polychron consists of 8 specialized JavaScript modules following a clean minimal
 ## Technical Innovations
 
 ### Multi-Layer Architecture
-- **CSVBuffer Class**: Each layer (primary, poly) has its own CSVBuffer instance encapsulating MIDI event array
-- **LayerManager (LM)**: Context switching object managing per-layer timing state
+- **CSVBuffer Class** (writer.js): Each layer (primary, poly) has its own CSVBuffer instance encapsulating MIDI event array
+- **LayerManager (LM)** (time.js): Context switching object managing per-layer timing state
 - **Global State Pattern**: Shared variables (phraseStart, tpMeasure, etc.) switched between layer contexts
 - **Transparent Integration**: p(c) syntax allows code to work with active layer's buffer automatically
 - **Independent Timing**: Each layer maintains separate timing state via LM.layers[name].state
@@ -217,7 +224,7 @@ python c2m.py && ffmpeg -i output.mid -f wav output.wav
 
 Each module has a comprehensive .md file with verbose architectural details:
 - **play.md**: LayerManager context switching, timing increment hierarchy, cascading formulas
-- **backstage.md**: CSVBuffer/LayerManager API reference, context switching patterns  
+- **backstage.md**: CSVBuffer/LayerManager API reference, context switching patterns
 - **time.md**: setUnitTiming() deep dive, all 7 timing level formulas, delicate dependencies
 - **composers.md**: Layer-independent operation with shared global state
 - **rhythm.md**: CSVBuffer integration with transparent buffer switching

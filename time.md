@@ -29,14 +29,14 @@ This module provides **advanced timing capabilities** including:
 getMidiMeter = () => {
   meterRatio = numerator / denominator;
   isPowerOf2 = (n) => { return (n & (n - 1)) === 0; }
-  if (isPowerOf2(denominator)) { 
-    midiMeter = [numerator, denominator]; 
+  if (isPowerOf2(denominator)) {
+    midiMeter = [numerator, denominator];
   } else {
-    const high = 2 ** m.ceil(m.log2(denominator)); 
+    const high = 2 ** m.ceil(m.log2(denominator));
     const highRatio = numerator / high;
-    const low = 2 ** m.floor(m.log2(denominator)); 
+    const low = 2 ** m.floor(m.log2(denominator));
     const lowRatio = numerator / low;
-    midiMeter = m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ? 
+    midiMeter = m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio) ?
       [numerator, high] : [numerator, low];
   }
   midiMeterRatio = midiMeter[0] / midiMeter[1];
@@ -44,7 +44,7 @@ getMidiMeter = () => {
   midiBPM = BPM * syncFactor;
   tpSec = midiBPM * PPQ / 60;
   tpMeasure = PPQ * 4 * midiMeterRatio;
-  setMidiTiming(); 
+  setMidiTiming();
 };
 ```
 
@@ -67,17 +67,17 @@ getMidiMeter = () => {
 
 ### `getPolyrhythm()` - Mathematical Polyrhythm Discovery
 ```javascript
-getPolyrhythm = () => { 
+getPolyrhythm = () => {
   while (true) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
     polyMeterRatio = polyNumerator / polyDenominator;
-    let allMatches = []; 
+    let allMatches = [];
     let bestMatch = {
       originalMeasures: Infinity,
       polyMeasures: Infinity,
       totalMeasures: Infinity
     };
-    
+
     for (let originalMeasures = 1; originalMeasures < 6; originalMeasures++) {
       for (let polyMeasures = 1; polyMeasures < 6; polyMeasures++) {
         if (m.abs(originalMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
@@ -105,17 +105,17 @@ getPolyrhythm = () => {
 
 ### `setBeatTiming()` - Beat-Level Processing
 ```javascript
-setBeatTiming = () => { 
+setBeatTiming = () => {
   tpBeat = tpMeasure / numerator;
   spBeat = tpBeat / tpSec;
-  trueBPM = 60 / spBeat; 
-  bpmRatio = BPM / trueBPM; 
+  trueBPM = 60 / spBeat;
+  bpmRatio = BPM / trueBPM;
   bpmRatio2 = trueBPM / BPM;
-  trueBPM2 = numerator * (numerator / denominator) / 4; 
+  trueBPM2 = numerator * (numerator / denominator) / 4;
   bpmRatio3 = 1/trueBPM2;
-  beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat; 
+  beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat;
   beatStartTime = measureStartTime + beatIndex * spBeat;
-  divsPerBeat = composer.getDivisions(); 
+  divsPerBeat = composer.getDivisions();
 };
 ```
 
@@ -125,17 +125,17 @@ setBeatTiming = () => {
 
 ### `logUnit(type)` - Comprehensive Timing Documentation
 ```javascript
-logUnit = (type) => { 
+logUnit = (type) => {
   let shouldLog = false;
   type = type.toLowerCase();
   if (LOG === 'none') shouldLog = false;
   else if (LOG === 'all') shouldLog = true;
-  else { 
+  else {
     const logList = LOG.split(',').map(item => item.trim());
-    shouldLog = logList.includes(type); 
+    shouldLog = logList.includes(type);
   }
   if (!shouldLog) return null;
-  
+
   return (() => { c.push({
     tick: startTick,
     type: 'marker_t',
@@ -242,7 +242,7 @@ subsubdivStartTime = subdivStartTime + subsubdivIndex × spSubsubdiv;
 
 Each calculation requires three components:
 
-1. **Parent Position** 
+1. **Parent Position**
    - From `layer.state` (phraseStart) or previous calculation (beatStart, divStart, etc.)
    - Set by LM.activate() or previous setUnitTiming() call
    - Anchor point for this level's calculations
@@ -309,17 +309,17 @@ measureStart = 0 + 2 × 360 = 720
 for phrase
   LM.activate(layer)              // Restores phraseStart, tpMeasure, etc.
   setUnitTiming('phrase')         // Calculates tpPhrase, spPhrase
-  
+
   for measure (measureIndex)
     setUnitTiming('measure')      // Calculates measureStart from phraseStart + measureIndex×tpMeasure
-    
+
     for beat (beatIndex)
       setUnitTiming('beat')       // Calculates beatStart from cascaded position
       playNotes()                 // Uses beatStart for MIDI tick positions
-      
+
       for div (divIndex)
         setUnitTiming('division') // Calculates divStart from beatStart
-        
+
         for subdiv (subdivIndex)
           setUnitTiming('subdivision')  // Calculates subdivStart from divStart
           playNotes()             // Uses subdivStart for precise timing
@@ -331,3 +331,214 @@ currentStart = parentStart + currentIndex × currentDuration
 ```
 
 This cascading pattern enables complex polyrhythmic timing while keeping each calculation simple and direct.
+
+---
+
+## TimingContext Class - Timing State Encapsulation
+
+### Purpose
+Encapsulates all timing state for a single layer, providing methods for state management and advancement.
+
+### Implementation
+```javascript
+TimingContext = class TimingContext {
+  constructor(initialState = {}) {
+    this.phraseStart = initialState.phraseStart || 0;
+    this.phraseStartTime = initialState.phraseStartTime || 0;
+    this.sectionStart = initialState.sectionStart || 0;
+    this.sectionStartTime = initialState.sectionStartTime || 0;
+    this.sectionEnd = initialState.sectionEnd || 0;
+    this.tpSec = initialState.tpSec || 0;
+    this.tpSection = initialState.tpSection || 0;
+    this.spSection = initialState.spSection || 0;
+    this.numerator = initialState.numerator || 4;
+    this.denominator = initialState.denominator || 4;
+    this.measuresPerPhrase = initialState.measuresPerPhrase || 1;
+    this.tpPhrase = initialState.tpPhrase || 0;
+    this.spPhrase = initialState.spPhrase || 0;
+    this.measureStart = initialState.measureStart || 0;
+    this.measureStartTime = initialState.measureStartTime || 0;
+    this.tpMeasure = initialState.tpMeasure || (typeof PPQ !== 'undefined' ? PPQ * 4 : 480 * 4);
+    this.spMeasure = initialState.spMeasure || 0;
+    this.meterRatio = initialState.meterRatio || (this.numerator / this.denominator);
+    this.bufferName = initialState.bufferName || '';
+  }
+
+  saveFrom(globals) {
+    // Saves all timing properties from global variables
+  }
+
+  restoreTo(globals) {
+    // Restores all timing properties to global variables
+  }
+
+  advancePhrase(tpPhrase, spPhrase) {
+    this.phraseStart += tpPhrase;
+    this.phraseStartTime += spPhrase;
+    this.tpSection += tpPhrase;
+    this.spSection += spPhrase;
+  }
+
+  advanceSection() {
+    this.sectionStart += this.tpSection;
+    this.sectionStartTime += this.spSection;
+    this.sectionEnd += this.tpSection;
+    this.tpSection = 0;
+    this.spSection = 0;
+  }
+};
+```
+
+### Methods
+
+#### `saveFrom(globals)`
+Saves all timing properties from global variables to the TimingContext instance:
+```javascript
+ctx.saveFrom({
+  phraseStart, phraseStartTime, sectionStart, sectionStartTime,
+  sectionEnd, tpSec, tpSection, spSection, numerator, denominator,
+  measuresPerPhrase, tpPhrase, spPhrase, measureStart, measureStartTime,
+  tpMeasure, spMeasure
+});
+```
+
+#### `restoreTo(globals)`
+Restores all timing properties from TimingContext to global variables:
+```javascript
+ctx.restoreTo(globalThis);
+// Now: phraseStart, tpMeasure, etc. have values from ctx
+```
+
+#### `advancePhrase(tpPhrase, spPhrase)`
+Advances phrase boundaries:
+- Increments `phraseStart` by `tpPhrase` (ticks)
+- Increments `phraseStartTime` by `spPhrase` (seconds)
+- Accumulates into section totals
+
+#### `advanceSection()`
+Advances section boundaries and resets accumulators:
+- Increments `sectionStart` by `tpSection`
+- Increments `sectionStartTime` by `spSection`
+- Increments `sectionEnd` by `tpSection`
+- Resets `tpSection` and `spSection` to 0
+
+### Benefits
+- **Encapsulation** - All timing state in one object
+- **Type safety** - Clear structure with default values
+- **Methods** - Explicit operations instead of manual property copying
+- **Testability** - Can test TimingContext in isolation
+
+---
+
+## LayerManager (LM) - Context Switching for Polyrhythmic Layers
+
+### Purpose
+Manages separate timing contexts for each layer, enabling polyrhythmic generation with different tick rates but synchronized absolute time.
+
+### Architecture Pattern
+```
+1. register() → Create layer with TimingContext
+2. activate(layer) → Restore layer's timing to globals
+3. Process with globals → Composition uses shared variables
+4. advance(layer) → Save globals, advance boundaries
+```
+
+### Core Methods
+
+#### `LM.register(name, buffer, initialState, setupFn)`
+Creates a new layer with private timing state:
+```javascript
+const { state: primary, buffer: c1 } = LM.register('primary', c1, {}, setupFn);
+```
+
+**Parameters:**
+- `name` - Layer identifier string
+- `buffer` - CSVBuffer instance (from writer.js), array, or string name
+- `initialState` - Optional state overrides (passed to TimingContext constructor)
+- `setupFn` - Optional initialization function
+
+**Returns:** `{ state, buffer }` where:
+- `state` - TimingContext instance
+- `buffer` - The layer's CSVBuffer
+
+**Process:**
+1. Creates new `TimingContext(initialState)`
+2. Resolves buffer (CSVBuffer, array, or creates new CSVBuffer from string)
+3. Attaches buffer to LM.layers[name]
+4. Calls setupFn if provided (with c = buffer temporarily)
+5. Returns state and buffer for destructuring
+
+#### `LM.activate(name, isPoly)`
+Switches to a layer's timing context:
+```javascript
+LM.activate('primary', false);  // Restore primary layer's timing
+```
+
+**Process:**
+1. Set `c = layer.buffer` (switch active buffer)
+2. Set `LM.activeLayer = name`
+3. Store current meter into layer state
+4. Call `layer.state.restoreTo(globalThis)` - restores all timing variables
+5. If `isPoly === true`, set poly meter and measuresPerPhrase2
+6. Recalculate `spPhrase` and `tpPhrase` based on active meter
+
+**Result:** All timing globals now from this layer's context
+
+#### `LM.advance(name, advancementType)`
+Advances timing boundaries and saves state:
+```javascript
+LM.advance('primary', 'phrase');  // After phrase completes
+LM.advance('primary', 'section'); // After section completes
+```
+
+**Process:**
+1. Reset rhythm counters (beatRhythm, divRhythm, subdivRhythm)
+2. Call `layer.state.saveFrom(globals)` - save current timing
+3. Call appropriate advancement method:
+   - `'phrase'`: `layer.state.advancePhrase(tpPhrase, spPhrase)`
+   - `'section'`: `layer.state.advanceSection()`
+
+**Result:** Layer state updated with advanced boundaries
+
+### Why Context Switching?
+
+**Problem:** Different layers need different tick rates (polyrhythm) but must synchronize at phrase boundaries.
+
+**Solution:** Each layer maintains private TimingContext, but composition code uses simple global variables.
+
+**Example:**
+```javascript
+// Primary layer: 4/4 meter
+LM.activate('primary');
+// Now: tpMeasure = 1920, phraseStart = 0
+setUnitTiming('measure');  // measureStart = 0 + measureIndex × 1920
+
+// Poly layer: 7/8 meter
+LM.activate('poly');
+// Now: tpMeasure = 1680, phraseStart = 0 (different tick rate!)
+setUnitTiming('measure');  // measureStart = 0 + measureIndex × 1680
+
+// Both layers: spPhrase synchronized (same seconds)
+// Result: Different tick counts, same absolute time
+```
+
+### Integration with Meter Spoofing
+
+LayerManager enables meter spoofing across multiple layers:
+
+1. **Primary layer** (7/11): tpMeasure = calculated from spoofed meter
+2. **Poly layer** (5/8): tpMeasure = calculated from different spoofed meter
+3. Both have same `spPhrase` (synchronized seconds)
+4. Phrase boundaries align perfectly in time
+5. Each layer's CSV file has independent tick counts
+
+### Scalability
+
+Unlimited layers supported:
+```javascript
+LM.register('tertiary', c3, {}, setupFn);
+LM.register('quaternary', c4, {}, setupFn);
+// ... as many layers as needed
+```
+
+Each layer maintains independent TimingContext, all synchronized through identical `spPhrase` values.

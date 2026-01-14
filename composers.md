@@ -21,7 +21,7 @@ This module provides the **creative intelligence** for musical composition, hand
 
 Follows the same **"clean minimal"** philosophy as the rest of the project:
 - **Compact class definitions** with essential functionality only
-- **Direct method names** that clearly indicate their purpose  
+- **Direct method names** that clearly indicate their purpose
 - **Minimal error handling** - focuses on valid musical output
 - **Global scope integration** - seamlessly works with project-wide variables
 - **Tonal.js integration** - leverages professional music theory library
@@ -31,7 +31,7 @@ Follows the same **"clean minimal"** philosophy as the rest of the project:
 ```
 MeasureComposer (Base Class)
 ├── ScaleComposer
-│   └── RandomScaleComposer  
+│   └── RandomScaleComposer
 ├── ChordComposer
 │   └── RandomChordComposer
 └── ModeComposer
@@ -61,7 +61,7 @@ getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weight
 - **BPM ratio modulation** - adjusts based on current tempo for musical coherence
 - **Returns integer values** suitable for MIDI time signatures
 
-#### `getDenominator()` - Beat Value Generation  
+#### `getDenominator()` - Beat Value Generation
 ```javascript
 getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
 ```
@@ -77,7 +77,7 @@ getMeter(ignoreRatioCheck = false, ignoreLastMeterCheck = false) {
     let newNumerator = this.getNumerator();
     let newDenominator = this.getDenominator();
     let newMeterRatio = newNumerator / newDenominator;
-    
+
     if ((newMeterRatio >= 0.3 && newMeterRatio <= 3)) {
       if (this.lastMeter && !ignoreRatioCheck) {
         let lastMeterRatio = this.lastMeter[0] / this.lastMeter[1];
@@ -141,10 +141,10 @@ getNotes(octaveRange=null) { const uniqueNotes=new Set();
 
 ### Key Features
 ```javascript
-constructor(scaleName, root) { 
-  super(); 
-  this.root = root; 
-  this.noteSet(scaleName, root); 
+constructor(scaleName, root) {
+  super();
+  this.root = root;
+  this.noteSet(scaleName, root);
 }
 noteSet(scaleName, root) {
   this.scale = t.Scale.get(`${root} ${scaleName}`);
@@ -163,9 +163,9 @@ x = () => this.getNotes();
 **Dynamic scale selection**. Creates constantly changing harmonic content by randomly selecting different scales and root notes for each musical event.
 
 ```javascript
-constructor() { 
-  super('',''); 
-  this.noteSet(); 
+constructor() {
+  super('','');
+  this.noteSet();
 }
 noteSet() {
   const randomScale = allScales[ri(allScales.length - 1)];
@@ -185,17 +185,17 @@ x = () => { this.noteSet(); return super.x(); }
 
 ### Key Features
 ```javascript
-constructor(progression) { 
-  super(); 
+constructor(progression) {
+  super();
   this.noteSet(progression, 'R');
 }
 noteSet(progression, direction='R') {
   const validatedProgression = progression.filter(chordSymbol => {
-    if (!allChords.includes(chordSymbol)) { 
+    if (!allChords.includes(chordSymbol)) {
       console.warn(`Invalid chord symbol: ${chordSymbol}`);
-      return false; 
-    } 
-    return true; 
+      return false;
+    }
+    return true;
   });
   // Complex progression navigation logic
 }
@@ -206,7 +206,7 @@ noteSet(progression, direction='R') {
 let next;
 switch (direction.toUpperCase()) {
   case 'R': next = 1; break;
-  case 'L': next = -1; break;  
+  case 'L': next = -1; break;
   case 'E': next = rf() < .5 ? 1 : -1; break;
   case '?': next = ri(-2, 2); break;
   default: next = 1;
@@ -214,7 +214,7 @@ switch (direction.toUpperCase()) {
 ```
 - **Flexible progression movement** supports various harmonic rhythm patterns
 - **Direction control**:
-  - **'R'** (Right) - moves forward through progression  
+  - **'R'** (Right) - moves forward through progression
   - **'L'** (Left) - moves backward through progression
   - **'E'** (Either) - randomly chooses forward/backward
   - **'?'** - random jumps within progression
@@ -253,12 +253,12 @@ noteSet(modeName, root) {
   this.notes = t.Mode.notes(this.mode, root);
 }
 
-// RandomModeComposer  
+// RandomModeComposer
 noteSet() {
   const randomMode = allModes[ri(allModes.length - 1)];
   const [root, modeName] = randomMode.split(' ');
-  this.root = root; 
-  super.noteSet(modeName, root); 
+  this.root = root;
+  super.noteSet(modeName, root);
 }
 ```
 - **Uses Tonal.js Mode system** for authentic modal harmony
@@ -269,14 +269,14 @@ noteSet() {
 
 ### `composers` Array Creation
 ```javascript
-composers = (function() { 
+composers = (function() {
   return COMPOSERS.map(composer =>
     eval(`(function() { return ${composer.return}; }).call({
       name:'${composer.name || ''}',
       root:'${composer.root || ''}',
       progression:${JSON.stringify(composer.progression || [])}
-    })`) 
-  ); 
+    })`)
+  );
 })();
 ```
 - **Dynamic class instantiation** based on configuration from sheet.js

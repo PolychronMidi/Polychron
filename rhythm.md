@@ -74,7 +74,7 @@ drumMap = {
 
 ### `drummer()` Function - Advanced Drum Pattern Engine
 ```javascript
-drummer = (drumNames, beatOffsets, offsetJitter=rf(.1), stutterChance=.3, 
+drummer = (drumNames, beatOffsets, offsetJitter=rf(.1), stutterChance=.3,
           stutterRange=[2,m.round(rv(11,[2,3],.3))], stutterDecayFactor=rf(.9,1.1)) => {
 ```
 
@@ -141,7 +141,7 @@ if (rf() < stutterChance) {
   const stutterDuration = .25 * ri(1,8) / numStutters;
   const [minVelocity, maxVelocity] = drumInfo.velocityRange;
   const isFadeIn = rf() < 0.7;
-  
+
   for (let i = 0; i < numStutters; i++) {
     const tick = beatStart + (offset + i * stutterDuration) * tpBeat;
     let currentVelocity;
@@ -249,17 +249,17 @@ rhythms = { //weights: [beat,div,subdiv]
 
 #### `binary(length)` and `hex(length)` - Deterministic Pattern Generation
 ```javascript
-binary = (length) => { 
+binary = (length) => {
   let pattern = [];
-  while (pattern.length < length) { 
-    pattern = pattern.concat(_binary(ri(99))); 
+  while (pattern.length < length) {
+    pattern = pattern.concat(_binary(ri(99)));
   }
   return patternLength(pattern, length);
 };
-hex = (length) => { 
+hex = (length) => {
   let pattern = [];
-  while (pattern.length < length) { 
-    pattern = pattern.concat(_hex(ri(99).toString(16))); 
+  while (pattern.length < length) {
+    pattern = pattern.concat(_hex(ri(99).toString(16)));
   }
   return patternLength(pattern, length);
 };
@@ -294,8 +294,8 @@ random = (length, probOn) => { return _random(length, 1 - probOn); };
 ```javascript
 rotate = (pattern, rotations, direction="R", length=pattern.length) => {
   if (direction === '?') { direction = rf() < .5 ? 'L' : 'R'; }
-  if (direction.toUpperCase() === 'L') { 
-    rotations = (pattern.length - rotations) % pattern.length; 
+  if (direction.toUpperCase() === 'L') {
+    rotations = (pattern.length - rotations) % pattern.length;
   }
   return patternLength(_rotate(pattern, rotations), length);
 };
@@ -312,9 +312,9 @@ morph = (pattern, direction='both', length=pattern.length, probLow=.1, probHigh)
   probHigh = probHigh === undefined ? probLow : probHigh;
   let morpheus = pattern.map((v, index) => {
     let morph = probHigh === probLow ? rf(probLow) : rf(probLow, probHigh);
-    let _ = ['up','down','both']; 
+    let _ = ['up','down','both'];
     let d = direction === '?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
-    let up = v < 1 ? m.min(v + morph, 1) : v; 
+    let up = v < 1 ? m.min(v + morph, 1) : v;
     let down = v > 0 ? m.max(v - morph, 0) : v;
     return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v < 1 ? up : down) : v);
   });
@@ -378,8 +378,8 @@ makeOnsets = (length, valuesOrRange) => {
   let onsets = []; let total = 0;
   while (total < length) {
     let v = ra(valuesOrRange);
-    if (total + (v+1) <= length) { 
-      onsets.push(v); 
+    if (total + (v+1) <= length) {
+      onsets.push(v);
       total += v+1;
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length === 2) {
       v = valuesOrRange[0];
@@ -388,7 +388,7 @@ makeOnsets = (length, valuesOrRange) => {
     } else { break; }
   }
   let rhythm = [];
-  for (let onset of onsets) { 
+  for (let onset of onsets) {
     rhythm.push(1);
     for (let i = 0; i < onset; i++) { rhythm.push(0); }
   }
@@ -410,7 +410,7 @@ closestDivisor = (x, target=2) => {
   for (let i = 1; i <= m.sqrt(x); i++) {
     if (x % i === 0) {
       [i, x / i].forEach(divisor => {
-        if (divisor !== closest) { 
+        if (divisor !== closest) {
           let diff = m.abs(divisor - target);
           if (diff < smallestDiff) {smallestDiff = diff; closest = divisor;}
         }
@@ -442,7 +442,7 @@ trackDivRhythm = () => {if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else
 ## Integration with Musical Hierarchy
 
 **rhythm.js** generates patterns at three main hierarchical levels:
-1. **Beat Level** - Primary pulse patterns (typically 2-11 beats per measure)  
+1. **Beat Level** - Primary pulse patterns (typically 2-11 beats per measure)
 2. **Division Level** - Beat subdivisions (typically 0-10 divisions per beat)
 3. **Subdivision Level** - Sub-beat patterns (typically 0-10 subdivisions per division)
 

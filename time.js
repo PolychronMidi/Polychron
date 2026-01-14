@@ -1,23 +1,5 @@
-/**
- * TIME.JS - Timing Engine with Dual-Layer Polyrhythm Support
- *
- * Core innovation: "Meter spoofing" + dual-layer architecture for perfect polyrhythm accuracy.
- * Each layer maintains independent timing state, outputs to separate MIDI files.
- * Phrase boundaries align in absolute time (verified via millisecond timestamps).
- *
- * Architecture:
- * - Primary layer: Full timing calculation, writes to c1/output1.csv
- * - Poly layer: Independent timing recalculation, writes to c2/output2.csv
- * - Final output: Two MIDI files rendered to audio and layered in DAW
- * - Future: Infinite layers with same synchronization principles
- *
- * Terminology vs Traditional 4/4:
- * - Beat = quarter note in 4/4, but generalized to numerator unit in any meter
- * - Measure = bar (one complete cycle of the meter)
- * - Division/Subdivision = tuplets, 16ths, 32nds (rhythm-dependent, not fixed)
- *
- * Hierarchy: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
- */
+// time.js - Timing engine with meter spoofing and dual-layer polyrhythm support.
+// minimalist comments, details at: time.md
 
 /**
  * METER SPOOFING: THE CORE INNOVATION
@@ -185,116 +167,206 @@ getPolyrhythm = () => {
 };
 
 /**
- * Logs timing markers with context awareness.
- * Writes to active buffer (c = c1 or c2) for proper file separation.
- *
- * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
+ * TimingContext class - encapsulates all timing state for a layer.
+ * @class
  */
-logUnit = (type) => {
-  let shouldLog = false;
-  type = type.toLowerCase();
-  if (LOG === 'none') shouldLog = false;
-  else if (LOG === 'all') shouldLog = true;
-  else {
-    const logList = LOG.toLowerCase().split(',').map(item => item.trim());
-    shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
-  }
-  if (!shouldLog) return null;
-  let meterInfo = '';
-
-  if (type === 'section') {
-    unit = sectionIndex + 1;
-    unitsPerParent = totalSections;
-    startTick = sectionStart;
-    spSection = tpSection / tpSec;
-    endTick = startTick + tpSection;
-    startTime = sectionStartTime;
-    endTime = startTime + spSection;
-  } else if (type === 'phrase') {
-    unit = phraseIndex + 1;
-    unitsPerParent = phrasesPerSection;
-    startTick = phraseStart;
-    endTick = startTick + tpPhrase;
-    startTime = phraseStartTime;
-    spPhrase = tpPhrase / tpSec;
-    endTime = startTime + spPhrase;
-    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
-    if (composer && composer.scale && composer.scale.name) {
-      composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer && composer.progression) {
-      progressionSymbols = composer.progression.map(chord => {
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails += `${progressionSymbols}`;
-    } else if (composer && composer.mode && composer.mode.name) {
-      composerDetails += `${composer.root} ${composer.mode.name}`;
-    }
-    actualMeter = [numerator, denominator];
-    meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
-  } else if (type === 'measure') {
-    unit = measureIndex + 1;
-    unitsPerParent = measuresPerPhrase;
-    startTick = measureStart;
-    endTick = measureStart + tpMeasure;
-    startTime = measureStartTime;
-    endTime = measureStartTime + spMeasure;
-    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
-    if (composer && composer.scale && composer.scale.name) {
-      composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer && composer.progression) {
-      progressionSymbols = composer.progression.map(chord => {
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails += `${progressionSymbols}`;
-    } else if (composer && composer.mode && composer.mode.name) {
-      composerDetails += `${composer.root} ${composer.mode.name}`;
-    }
-    actualMeter = [numerator, denominator];
-    meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
-  } else if (type === 'beat') {
-    unit = beatIndex + 1;
-    unitsPerParent = numerator;
-    startTick = beatStart;
-    endTick = startTick + tpBeat;
-    startTime = beatStartTime;
-    endTime = startTime + spBeat;
-  } else if (type === 'division') {
-    unit = divIndex + 1;
-    unitsPerParent = divsPerBeat;
-    startTick = divStart;
-    endTick = startTick + tpDiv;
-    startTime = divStartTime;
-    endTime = startTime + spDiv;
-  } else if (type === 'subdivision') {
-    unit = subdivIndex + 1;
-    unitsPerParent = subdivsPerDiv;
-    startTick = subdivStart;
-    endTick = startTick + tpSubdiv;
-    startTime = subdivStartTime;
-    endTime = startTime + spSubdiv;
-  } else if (type === 'subsubdivision') {
-    unit = subsubdivIndex + 1;
-    unitsPerParent = subsubsPerSub;
-    startTick = subsubdivStart;
-    endTick = startTick + tpSubsubdiv;
-    startTime = subsubdivStartTime;
-    endTime = startTime + spSubsubdiv;
+TimingContext = class TimingContext {
+  constructor(initialState = {}) {
+    this.phraseStart = initialState.phraseStart || 0;
+    this.phraseStartTime = initialState.phraseStartTime || 0;
+    this.sectionStart = initialState.sectionStart || 0;
+    this.sectionStartTime = initialState.sectionStartTime || 0;
+    this.sectionEnd = initialState.sectionEnd || 0;
+    this.tpSec = initialState.tpSec || 0;
+    this.tpSection = initialState.tpSection || 0;
+    this.spSection = initialState.spSection || 0;
+    this.numerator = initialState.numerator || 4;
+    this.denominator = initialState.denominator || 4;
+    this.measuresPerPhrase = initialState.measuresPerPhrase || 1;
+    this.tpPhrase = initialState.tpPhrase || 0;
+    this.spPhrase = initialState.spPhrase || 0;
+    this.measureStart = initialState.measureStart || 0;
+    this.measureStartTime = initialState.measureStartTime || 0;
+    this.tpMeasure = initialState.tpMeasure || (typeof PPQ !== 'undefined' ? PPQ * 4 : 480 * 4);
+    this.spMeasure = initialState.spMeasure || 0;
+    this.meterRatio = initialState.meterRatio || (this.numerator / this.denominator);
+    this.bufferName = initialState.bufferName || '';
   }
 
-  return (() => {
-    c.push({
-      tick: startTick,
-      type: 'marker_t',
-      vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
-    });
-  })();
+  saveFrom(globals) {
+    this.phraseStart = globals.phraseStart;
+    this.phraseStartTime = globals.phraseStartTime;
+    this.sectionStart = globals.sectionStart;
+    this.sectionStartTime = globals.sectionStartTime;
+    this.sectionEnd = globals.sectionEnd;
+    this.tpSec = globals.tpSec;
+    this.tpSection = globals.tpSection;
+    this.spSection = globals.spSection;
+    this.numerator = globals.numerator;
+    this.denominator = globals.denominator;
+    this.measuresPerPhrase = globals.measuresPerPhrase;
+    this.tpPhrase = globals.tpPhrase;
+    this.spPhrase = globals.spPhrase;
+    this.measureStart = globals.measureStart;
+    this.measureStartTime = globals.measureStartTime;
+    this.tpMeasure = globals.tpMeasure;
+    this.spMeasure = globals.spMeasure;
+    this.meterRatio = globals.numerator / globals.denominator;
+  }
+
+  restoreTo(globals) {
+    globals.phraseStart = this.phraseStart;
+    globals.phraseStartTime = this.phraseStartTime;
+    globals.sectionStart = this.sectionStart;
+    globals.sectionStartTime = this.sectionStartTime;
+    globals.sectionEnd = this.sectionEnd;
+    globals.tpSec = this.tpSec;
+    globals.tpSection = this.tpSection;
+    globals.spSection = this.spSection;
+    globals.tpPhrase = this.tpPhrase;
+    globals.spPhrase = this.spPhrase;
+    globals.measureStart = this.measureStart;
+    globals.measureStartTime = this.measureStartTime;
+    globals.tpMeasure = this.tpMeasure;
+    globals.spMeasure = this.spMeasure;
+  }
+
+  advancePhrase(tpPhrase, spPhrase) {
+    this.phraseStart += tpPhrase;
+    this.phraseStartTime += spPhrase;
+    this.tpSection += tpPhrase;
+    this.spSection += spPhrase;
+  }
+
+  advanceSection() {
+    this.sectionStart += this.tpSection;
+    this.sectionStartTime += this.spSection;
+    this.sectionEnd += this.tpSection;
+    this.tpSection = 0;
+    this.spSection = 0;
+  }
 };
 
 
+
+// Layer timing globals are created by `LM.register` at startup to support infinite layers
+
+/**
+ * LayerManager (LM) - Context Switching Pattern for Multi-Layer Timing
+ *
+ * ARCHITECTURE: Each layer maintains private timing state, but calculations
+ * use shared global variables. LM switches contexts between layers.
+ *
+ * PATTERN:
+ * 1. register() → Create layer with initial state
+ * 2. activate(layer) → Save current globals → Restore layer's globals
+ * 3. Process with globals → Layer state accessed as needed
+ * 4. advance(layer) → Save updated globals to layer state
+ *
+ * WHY: Enables complex per-layer timing while keeping calculation code simple
+ */
+const LM = layerManager ={
+  layers: {},
+  activeLayer: null,
+
+  register: (name, buffer, initialState = {}, setupFn = null) => {
+    const state = new TimingContext(initialState);
+
+    // Accept a CSVBuffer instance, array, or string name
+    let buf;
+    if (buffer instanceof CSVBuffer) {
+      buf = buffer;
+      state.bufferName = buffer.name;
+    } else if (typeof buffer === 'string') {
+      state.bufferName = buffer;
+      buf = new CSVBuffer(buffer);
+    } else {
+      buf = Array.isArray(buffer) ? buffer : [];
+    }
+    // attach buffer onto both LM entry and the returned state
+    LM.layers[name] = { buffer: buf, state };
+    state.buffer = buf;
+    // If a per-layer setup function was provided, call it with `c` set
+    // to the layer buffer so existing setup functions that rely on
+    // the active buffer continue to work.
+    const prevC = typeof c !== 'undefined' ? c : undefined;
+    try {
+      c = buf;
+      if (typeof setupFn === 'function') setupFn(state, buf);
+    } catch (e) {}
+    // restore previous `c`
+    if (prevC === undefined) c = undefined; else c = prevC;
+    // return both the state and direct buffer reference so callers can
+    // destructure in one line and avoid separate buffer assignment lines
+    return { state, buffer: buf };
+  },
+
+  activate: (name, isPoly = false) => {
+    const layer = LM.layers[name];
+    c = layer.buffer;
+    LM.activeLayer = name;
+
+    // Store meter into layer state (set externally before activation)
+    layer.state.numerator = numerator;
+    layer.state.denominator = denominator;
+    layer.state.meterRatio = numerator / denominator;
+    layer.state.tpSec = tpSec;
+    layer.state.tpMeasure = tpMeasure;
+
+    // Restore layer timing state to globals
+    layer.state.restoreTo(globalThis);
+
+    if (isPoly) {
+      numerator = polyNumerator;
+      denominator = polyDenominator;
+      measuresPerPhrase = measuresPerPhrase2;
+    } else {
+      measuresPerPhrase = measuresPerPhrase1;
+    }
+    spPhrase = spMeasure * measuresPerPhrase;
+    tpPhrase = tpMeasure * measuresPerPhrase;
+    return {
+      phraseStart: layer.state.phraseStart,
+      phraseStartTime: layer.state.phraseStartTime,
+      sectionStart: layer.state.sectionStart,
+      sectionStartTime: layer.state.sectionStartTime,
+      sectionEnd: layer.state.sectionEnd,
+      tpSec: layer.state.tpSec,
+      tpSection: layer.state.tpSection,
+      spSection: layer.state.spSection,
+      state: layer.state
+    };
+  },
+
+  // Advance timing boundaries after phrase/section completes
+  advance: (name, advancementType = 'phrase') => {
+    const layer = LM.layers[name];
+    if (!layer) return;
+
+    beatRhythm = divRhythm = subdivRhythm = subsubdivRhthm = 0;
+
+    // Save current globals to state first
+    layer.state.saveFrom({
+      numerator, denominator, measuresPerPhrase,
+      tpPhrase, spPhrase, measureStart, measureStartTime,
+      tpMeasure, spMeasure, phraseStart, phraseStartTime,
+      sectionStart, sectionStartTime, sectionEnd,
+      tpSec, tpSection, spSection
+    });
+
+    // Then advance using saved values
+    if (advancementType === 'phrase') {
+      layer.state.advancePhrase(tpPhrase, spPhrase);
+    } else if (advancementType === 'section') {
+      layer.state.advanceSection();
+    }
+  },
+
+};
+// Export layer manager to global scope for access from other modules
+globalThis.LM = LM;
+// layer manager is initialized in play.js after buffers are created
+// This ensures c1 and c2 are available when registering layers
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
