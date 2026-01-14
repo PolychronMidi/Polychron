@@ -31,8 +31,15 @@ class MeasureComposer {
    * @param {boolean} [polyMeter=false] - Allow larger ratio jumps for polyrhythm
    * @param {number} [maxIterations=100] - Maximum attempts before fallback
    * @returns {number[]} [numerator, denominator]
+   * @throws {Error} When max iterations exceeded and no valid meter found
    */
 getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
+  // Constants for ratio validation
+  const METER_RATIO_MIN = 0.25;
+  const METER_RATIO_MAX = 4;
+  const MIN_LOG_STEPS = 0.5;
+  const FALLBACK_METER = [4, 4];
+
   let iterations=0;
   const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
 
@@ -40,13 +47,22 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
     let newNumerator=this.getNumerator();
     let newDenominator=this.getDenominator();
 
+    // Validate numerator and denominator are positive integers
+    if (!Number.isInteger(newNumerator) || !Number.isInteger(newDenominator) || newNumerator <= 0 || newDenominator <= 0) {
+      continue;
+    }
+
     let newMeterRatio=newNumerator / newDenominator;
-    if (ignoreRatioCheck || (newMeterRatio >= 0.25 && newMeterRatio <= 4)) {
+    
+    // Check if new meter ratio is within acceptable range
+    const ratioValid = ignoreRatioCheck || (newMeterRatio >= METER_RATIO_MIN && newMeterRatio <= METER_RATIO_MAX);
+    
+    if (ratioValid) {
       if (this.lastMeter) {
         let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
         // Log ratio: 0 = same, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x difference
         let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
-        if (logSteps <= maxLogSteps) {
+        if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps) {
           this.lastMeter=[newNumerator,newDenominator];
           return this.lastMeter;
         }
@@ -56,8 +72,11 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
       }
     }
   }
-  console.warn('Max iterations reached in getMeter()');
-  return this.lastMeter || [4, 4];
+  
+  // Log warning with diagnostic info
+  console.warn(`getMeter() failed after ${iterations} iterations. Ratio bounds: [${METER_RATIO_MIN}, ${METER_RATIO_MAX}]. LogSteps range: [${MIN_LOG_STEPS}, ${maxLogSteps}]. Returning fallback: [${FALLBACK_METER[0]}, ${FALLBACK_METER[1]}]`);
+  this.lastMeter=FALLBACK_METER;
+  return this.lastMeter;
 }
   /**
    * Generates note objects within octave range.
