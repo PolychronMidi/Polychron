@@ -2,63 +2,9 @@
 // minimalist comments, details at: time.md
 
 /**
- * METER SPOOFING: THE CORE INNOVATION
- *
- * Problem: MIDI only supports power-of-2 denominators
- * Solution: "Spoof" the meter while preserving actual duration
- *
- * Example: 7/9 meter
- * 1. Actual ratio: 7/9 = 0.777...
- * 2. MIDI-compatible: 7/8 = 0.875 (nearest power-of-2)
- * 3. Sync factor: 0.875/0.777 = 1.126
- * 4. Adjusted BPM: original_BPM * 1.126
- *
- * Result: MIDI sees valid 7/8 but plays at adjusted tempo
- * to match the actual 7/9 duration in absolute time.
- *
- * This applies independently to each layer, enabling
- * polyrhythms with different spoofing factors that still
- * align perfectly in absolute time.
- */
-
-/**
- * Generates MIDI-compatible meter via "meter spoofing" - Polychron's core innovation.
- * NOW CONTEXT-AWARE: Recalculated independently for primary and poly meters.
- *
- * MIDI Constraint: Time signature denominators must be power-of-2 (2,4,8,16...).
- * Solution: Convert denominator to nearest power-of-2, adjust tempo to preserve duration.
- *
- * Tick Calculation (Music Theory):
- * Standard: tpMeasure = PPQ * 4 * (numerator/denominator)
- * - PPQ * 4 = ticks in whole note (semibreve)
- * - Multiply by meter ratio to get ticks per measure
- * - Example 4/4: 480 * 4 * (4/4) = 1920 ticks/measure
- * - Example 3/4: 480 * 4 * (3/4) = 1440 ticks/measure
- * - Example 7/8: 480 * 4 * (7/8) = 1680 ticks/measure
- *
- * Meter Spoofing Mechanism:
- * 1. Calculate actual meterRatio = num/den (e.g., 7/9 = 0.777...)
- * 2. Find MIDI-compatible midiMeterRatio (e.g., 7/8 = 0.875)
- * 3. Compute syncFactor = midiMeterRatio / meterRatio (e.g., 0.875/0.777 = 1.126)
- * 4. Scale BPM by syncFactor: midiBPM = BPM * syncFactor
- * 5. Result: MIDI sees valid 7/8, but plays at adjusted tempo to match 7/9 duration
- *
- * Dual-Context Accuracy:
- * When polyrhythm uses two spoofed meters with different syncFactors, each gets
- * its own MIDI file with correct tempo. Phrase boundaries align perfectly in absolute
- * time despite different tick rates.
- *
- * @global Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure
- *
- * @example
- * // Primary meter: 7/9
- * c = c1; numerator = 7; denominator = 9;
- * getMidiMeter(); // syncFactor = 1.126, writes to c1
- *
- * // Poly meter: 5/6 (independent calculation)
- * c = c2; numerator = 5; denominator = 6;
- * getMidiMeter(); // syncFactor = 1.067, writes to c2
- * // Both phrase durations match in seconds, different in ticks
+ * Compute MIDI-compatible meter and tempo sync factor.
+ * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
+ * @returns {number[]} MIDI meter as [numerator, denominator].
  */
 getMidiMeter = () => {
   meterRatio = numerator / denominator;
@@ -97,31 +43,8 @@ setMidiTiming = (tick=measureStart) => {
 };
 
 /**
- * Finds polyrhythm alignment using ACTUAL meters (before spoofing).
- * Alignment calculated in mathematical ratios, not MIDI ticks.
- * Each meter then spoofs independently, maintaining duration accuracy.
- *
- * Musical Context:
- * "3:4 polyrhythm" means 3 measures of one meter = 4 measures of another.
- * Example: 3 measures of 4/4 (12 beats) = 4 measures of 3/4 (12 beats).
- *
- * Algorithm:
- * 1. Get candidate meter (ignoreRatioCheck=true allows any meter)
- * 2. Test combinations: where do measure boundaries align?
- * 3. Find match with fewest total measures (tightest polyrhythm)
- * 4. Validate: total > 2, at least one uses multiple measures, meters differ
- * 5. Store results: measuresPerPhrase1 (primary), measuresPerPhrase2 (poly)
- *
- * Critical: Alignment happens in TIME (seconds), not TICKS (MIDI events).
- * After spoofing, tick counts differ but durations match.
- *
- * @global Sets: measuresPerPhrase1, measuresPerPhrase2, tpPhrase
- *
- * @example
- * // Primary: 7/9 (ratio=0.777), Poly: 5/6 (ratio=0.833)
- * // Test: 5 measures * 0.777 = 3.885, 4 measures * 0.833 = 3.332 ✗
- * // Test: 10 measures * 0.777 = 7.77, 9 measures * 0.833 = 7.497 ≈ ✓
- * // Result: 10:9 polyrhythm (within tolerance)
+ * Compute phrase alignment between primary and poly meters in seconds.
+ * Sets: measuresPerPhrase1, measuresPerPhrase2.
  */
 getPolyrhythm = () => {
   if (!composer) return;
@@ -252,23 +175,20 @@ TimingContext = class TimingContext {
 // Layer timing globals are created by `LM.register` at startup to support infinite layers
 
 /**
- * LayerManager (LM) - Context Switching Pattern for Multi-Layer Timing
- *
- * ARCHITECTURE: Each layer maintains private timing state, but calculations
- * use shared global variables. LM switches contexts between layers.
- *
- * PATTERN:
- * 1. register() → Create layer with initial state
- * 2. activate(layer) → Save current globals → Restore layer's globals
- * 3. Process with globals → Layer state accessed as needed
- * 4. advance(layer) → Save updated globals to layer state
- *
- * WHY: Enables complex per-layer timing while keeping calculation code simple
+ * LayerManager (LM): manage per-layer timing contexts and buffer switching.
  */
 const LM = layerManager ={
   layers: {},
   activeLayer: null,
 
+  /**
+   * Register a layer with buffer and initial timing state.
+   * @param {string} name
+   * @param {CSVBuffer|string|Array} buffer
+   * @param {object} [initialState]
+   * @param {Function} [setupFn]
+   * @returns {{state: TimingContext, buffer: CSVBuffer|Array}}
+   */
   register: (name, buffer, initialState = {}, setupFn = null) => {
     const state = new TimingContext(initialState);
 
@@ -301,6 +221,12 @@ const LM = layerManager ={
     return { state, buffer: buf };
   },
 
+  /**
+   * Activate a layer; restores timing globals and sets meter.
+   * @param {string} name
+   * @param {boolean} [isPoly=false]
+   * @returns {object} Snapshot of key timing values.
+   */
   activate: (name, isPoly = false) => {
     const layer = LM.layers[name];
     c = layer.buffer;
@@ -338,7 +264,11 @@ const LM = layerManager ={
     };
   },
 
-  // Advance timing boundaries after phrase/section completes
+  /**
+   * Advance a layer's timing state.
+   * @param {string} name
+   * @param {'phrase'|'section'} [advancementType='phrase']
+   */
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
     if (!layer) return;
@@ -432,9 +362,14 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdivision':
-      // SUBSUBDIVISION: Finest resolution, cascaded from all parent levels\n      // Formula: subdivStart + subsubdivIndex × tpSubsubdiv\n      trackSubsubdivRhythm();  // Track subsubdivision rhythm\n      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);  // Calculate ticks per subsubdiv\n      spSubsubdiv = tpSubsubdiv / tpSec;  // Seconds per subsubdivision
-      subsubdivsPerMinute = 60 / spSubsubdiv;  // Calculate subsubdivs per minute
-      subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;  // Position within subdivision\n      subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;  // Time position\n      break;
+      // Finest resolution; cascaded from subdivision.
+      trackSubsubdivRhythm();
+      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
+      spSubsubdiv = tpSubsubdiv / tpSec;
+      subsubdivsPerMinute = 60 / spSubsubdiv;
+      subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
+      subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
+      break;
 
     default:
       console.warn(`Unknown unit type: ${unitType}`);
