@@ -25,7 +25,7 @@ m=Math;
  * @param {number} max - Maximum allowed value.
  * @returns {number} Clamped value.
  */
-clamp=(value,min,max)=>m.min(m.max(value,min),max);
+clamp=(value,min,max)=>{if(min>max)[min,max]=[max,min];return m.min(m.max(value,min),max);};
 
 /**
  * Modulo-based clamp: Value wraps around within range.
@@ -105,8 +105,10 @@ scaleClamp = (value, min, max, factor, maxFactor = factor, base = value) => {
  * @returns {number} Clamped value.
  */
 scaleBoundClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
-  const lowerBound=m.max(minBound,m.floor(base * lowerScale));
-  const upperBound=m.min(maxBound,m.ceil(base * upperScale));
+  let lowerBound=m.max(minBound,m.floor(base * lowerScale));
+  let upperBound=m.min(maxBound,m.ceil(base * upperScale));
+  // Ensure lowerBound doesn't exceed upperBound, prioritizing maxBound
+  if(lowerBound>upperBound) lowerBound=upperBound;
   return clamp(value,lowerBound,upperBound);
 };
 
@@ -316,6 +318,11 @@ rv=randomVariation=(value,boostRange=[.05,.10],frequency=.05,deboostRange=boostR
  * @returns {number[]} Normalized weights summing to fit range.
  */
 normalizeWeights = (weights, min, max, variationLow=.7, variationHigh=1.3) => {
+  // Validate weights are non-negative
+  if (!weights.every(w => w >= 0)) {
+    console.warn('normalizeWeights: negative weights detected, using absolute values');
+    weights = weights.map(w => m.abs(w));
+  }
   const range = max - min + 1;
   let w = weights.map(weight => weight * rf(variationLow, variationHigh));
   if (w.length !== range) {
@@ -390,8 +397,8 @@ randomWeightedSelection = (options) => {
 
 /**
  * Provide params as a function for range, otherwise returns random value from array.
- * @param {number|function|Array} v - Value, range function, or array.
- * @returns {number|*} Random value or original value.
+ * @param {number|number[]|Function} v - Can be: (1) number range array [min, max], (2) array of values to select from, (3) function returning a range, or (4) single number (returned as-is).
+ * @returns {number|*} Random value from range/array, or original value if single number.
  * @example
  * // Random from array
  * ra([1, 2, 3])

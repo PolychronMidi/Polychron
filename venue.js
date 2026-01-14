@@ -217,10 +217,14 @@ const midiData={
  */
 const getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
   if (!midiData[category]) {  console.warn(`Invalid MIDI category: ${category}`);
-    return null;
+    return 0; // Fallback to 0 instead of null
   }
   const item=midiData[category].find(item=>item.name.toLowerCase()===name);
-  return item ? item.number : null;
+  if (!item) {
+    console.warn(`MIDI ${category} '${name}' not found, using fallback value 0`);
+    return 0;
+  }
+  return item.number;
 };
 
 /** Tonal.js library for music theory operations */

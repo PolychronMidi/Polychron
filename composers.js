@@ -6,6 +6,10 @@ class MeasureComposer {
   constructor() {
     /** @type {number[]|null} Previous meter [numerator, denominator] */
     this.lastMeter=null;
+    /** @type {number} Recursion depth counter for getNotes */
+    this.recursionDepth=0;
+    /** @type {number} Max allowed recursion depth */
+    this.MAX_RECURSION=5;
   }
   /** @returns {number} Random numerator from NUMERATOR config */
   getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
@@ -53,10 +57,10 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
     }
 
     let newMeterRatio=newNumerator / newDenominator;
-    
+
     // Check if new meter ratio is within acceptable range
     const ratioValid = ignoreRatioCheck || (newMeterRatio >= METER_RATIO_MIN && newMeterRatio <= METER_RATIO_MAX);
-    
+
     if (ratioValid) {
       if (this.lastMeter) {
         let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
@@ -72,7 +76,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
       }
     }
   }
-  
+
   // Log warning with diagnostic info
   console.warn(`getMeter() failed after ${iterations} iterations. Ratio bounds: [${METER_RATIO_MIN}, ${METER_RATIO_MAX}]. LogSteps range: [${MIN_LOG_STEPS}, ${maxLogSteps}]. Returning fallback: [${FALLBACK_METER[0]}, ${FALLBACK_METER[1]}]`);
   this.lastMeter=FALLBACK_METER;
@@ -83,7 +87,13 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
    * @param {number[]|null} [octaveRange=null] - [min, max] octaves, or auto-generate
    * @returns {{note: number}[]} Array of note objects
    */
-  getNotes(octaveRange=null) { const uniqueNotes=new Set();
+  getNotes(octaveRange=null) {
+    if (++this.recursionDepth > this.MAX_RECURSION) {
+      console.warn('getNotes recursion limit exceeded; returning fallback middle C');
+      this.recursionDepth = 0;
+      return [{ note: 60 }]; // Middle C fallback
+    }
+    const uniqueNotes=new Set();
     const voices=this.getVoices();
     const [minOctave,maxOctave]=octaveRange || this.getOctaveRange();
     const rootNote=this.notes[ri(this.notes.length - 1)];
@@ -113,8 +123,11 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
         return { note };
       }).filter((noteObj,index,self)=>
         index===self.findIndex(n=>n.note===noteObj.note)
-      ); }  catch (e) { if (!fallback) { return this.getNotes(octaveRange); } else {
-      console.warn(e.message);  return this.getNotes(octaveRange);  }}
+      ); }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
+      console.warn(e.message); this.recursionDepth--; return this.getNotes(octaveRange);  }}
+    finally {
+      this.recursionDepth--;
+    }
   }
 }
 /**
