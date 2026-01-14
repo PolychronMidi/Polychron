@@ -4,13 +4,37 @@
  */
 
 /**
- * Push multiple items onto an array.
- * @param {Array} array - The target array to push onto.
- * @param {...*} items - Items to push onto the array.
+ * CSV Buffer class - encapsulates MIDI event collection with layer context.
+ * @class
+ */
+CSVBuffer = class CSVBuffer {
+  constructor(name) {
+    this.name = name;
+    this.rows = [];
+  }
+  push(...items) {
+    this.rows.push(...items);
+  }
+  get length() {
+    return this.rows.length;
+  }
+  clear() {
+    this.rows = [];
+  }
+};
+
+/**
+ * Push multiple items onto a buffer/array.
+ * @param {CSVBuffer|Array} buffer - The target buffer to push onto.
+ * @param {...*} items - Items to push onto the buffer.
  * @returns {void}
  */
-p=pushMultiple=(array,...items)=>{  array.push(...items);  };
-c=csvRows=[];
+p=pushMultiple=(buffer,...items)=>{  buffer.push(...items);  };
+
+// Initialize buffers (c1/c2 created here, layers register them in play.js)
+c1=new CSVBuffer('primary');
+c2=new CSVBuffer('poly');
+c=c1;  // Active buffer reference
 
 /**
  * @namespace Math
@@ -474,12 +498,14 @@ const LM = layerManager ={
       spMeasure: 0
     };
     const state = Object.assign({}, defaultState, initialState);
-    // Accept a buffer array, or a string name (create a new buffer), or undefined
+    // Accept a CSVBuffer instance, array, or string name
     let buf;
-    if (typeof buffer === 'string') {
-      // caller provided a friendly name for the buffer — create it here
+    if (buffer instanceof CSVBuffer) {
+      buf = buffer;
+      state.bufferName = buffer.name;
+    } else if (typeof buffer === 'string') {
       state.bufferName = buffer;
-      buf = [];
+      buf = new CSVBuffer(buffer);
     } else {
       buf = Array.isArray(buffer) ? buffer : [];
     }
@@ -506,16 +532,14 @@ const LM = layerManager ={
     c = layer.buffer;
     LM.activeLayer = name;
 
-  // Store meter values from globals into layer state (meter is set externally before activation)
+  // Store meter into layer state (set externally before activation)
   layer.state.numerator = numerator;
   layer.state.denominator = denominator;
   layer.state.meterRatio = numerator / denominator;
-
-  // Store the current tpSec and tpMeasure values for this layer (critical for timing calculations)
   layer.state.tpSec = tpSec;
   layer.state.tpMeasure = tpMeasure;
 
-  // Restore layer-specific timing state to globals
+  // Restore layer timing state to globals (delicately incremented by setUnitTiming)
   phraseStart = layer.state.phraseStart;
   phraseStartTime = layer.state.phraseStartTime;
   sectionStart = layer.state.sectionStart;
@@ -552,7 +576,7 @@ const LM = layerManager ={
     };
   },
 
-  // Consolidated advancement: handles both phrase and section progression and state save
+  // Advance timing boundaries after phrase/section completes
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
     if (!layer) return;
@@ -571,6 +595,7 @@ const LM = layerManager ={
       layer.state.tpSection = layer.state.spSection = 0;
     }
 
+    // Save current globals back to layer state
     layer.state.numerator = numerator;
     layer.state.denominator = denominator;
     layer.state.measuresPerPhrase = measuresPerPhrase;
@@ -827,7 +852,7 @@ grandFinale = () => {
     return {
       name,
       layer: layer.state,
-      buffer: layer.buffer
+      buffer: layer.buffer instanceof CSVBuffer ? layer.buffer.rows : layer.buffer
     };
   });
 

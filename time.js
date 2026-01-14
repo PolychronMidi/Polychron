@@ -297,25 +297,8 @@ logUnit = (type) => {
 
 
 /**
- * Universal timing calculation and logging function for all musical units.
- *
- * CONTEXT SWITCHING PATTERN: Calculates timing using current global context
- * (switched by LM.activate), but accesses layer.state for position references.
- * This enables polyrhythmic layers with different phrase lengths while maintaining
- * absolute time synchronization.
- *
- * TIME INCREMENTATION HIERARCHY:
- * - Section: Accumulates phrase durations (variable)
- * - Phrase: Fixed duration (tpMeasure × measuresPerPhrase)
- * - Measure: Fixed duration (tpMeasure) within phrase
- * - Beat: tpMeasure ÷ numerator within measure
- * - Division: tpBeat ÷ divsPerBeat within beat
- * - Subdivision: tpDiv ÷ subdivsPerDiv within division
- * - Subsubdivision: tpSubdiv ÷ subsubdivsPerSub within subdivision
- *
- * WHY: Each level calculates absolute positions from parent start + index × duration.
- * Layer.state provides parent start positions, globals provide durations and indices.
- *
+ * Set timing variables for each unit level. Calculates absolute positions using
+ * cascading parent position + index × duration pattern. See time.md for details.
  * @param {string} unitType - Unit type for timing calculation and logging
  */
 setUnitTiming = (unitType) => {
@@ -324,13 +307,12 @@ setUnitTiming = (unitType) => {
 
   switch (unitType) {
     case 'phrase':
-      // Phrase timing is special - calculated from measures
       tpPhrase = tpMeasure * measuresPerPhrase;
       spPhrase = tpPhrase / tpSec;
       break;
 
     case 'measure':
-      // Measure timing within phrase
+      // measureStart = phraseStart + measureIndex × tpMeasure
       measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
       measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
       setMidiTiming();
@@ -338,7 +320,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'beat':
-      // Beat timing with tempo calculations
+      // beatStart = phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat
       trackBeatRhythm();
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
@@ -354,7 +336,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'division':
-      // Division timing within beat
+      // divStart = beatStart + divIndex × tpDiv
       trackDivRhythm();
       tpDiv = tpBeat / m.max(1, divsPerBeat);
       spDiv = tpDiv / tpSec;
@@ -366,7 +348,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdivision':
-      // Subdivision timing within division
+      // subdivStart = divStart + subdivIndex × tpSubdiv
       trackSubdivRhythm();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
@@ -378,14 +360,9 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdivision':
-      // Subsubdivision timing within subdivision
-      trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
-      spSubsubdiv = tpSubsubdiv / tpSec;
-      subsubdivsPerMinute = 60 / spSubsubdiv;
-      subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
-      subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
-      break;
+      // SUBSUBDIVISION: Finest resolution, cascaded from all parent levels\n      // Formula: subdivStart + subsubdivIndex × tpSubsubdiv\n      trackSubsubdivRhythm();  // Track subsubdivision rhythm\n      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);  // Calculate ticks per subsubdiv\n      spSubsubdiv = tpSubsubdiv / tpSec;  // Seconds per subsubdivision
+      subsubdivsPerMinute = 60 / spSubsubdiv;  // Calculate subsubdivs per minute
+      subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;  // Position within subdivision\n      subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;  // Time position\n      break;
 
     default:
       console.warn(`Unknown unit type: ${unitType}`);

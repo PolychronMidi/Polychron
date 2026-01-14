@@ -183,6 +183,17 @@ require('./rhythm'); require('./time'); require('./composers');
 - **Global state sharing** - All modules share global variables
 - **CSV event generation** - Direct MIDI event creation using global infrastructure
 
+## CSVBuffer Layer Integration
+
+**stage.js** audio functions use the global `c` buffer transparently:
+- **All p(c, ...) calls** - Push events to whichever layer is currently active
+- **setTuningAndInstruments()** - Initializes both c1 (primary) and c2 (poly) layers
+- **Layer switching** - LM.activate() changes `c` reference, stage.js code unchanged
+- **No layer conditionals** - Same code generates events for any active layer
+- **Preserves minimalism** - Functions remain layer-agnostic while supporting multi-layer output
+
+This transparent architecture allows setBinaural(), stutterFX(), playNotes(), etc. to work identically across all layers without modification.
+
 ## Performance Characteristics
 
 - **Real-time processing** - All effects calculated on-demand during composition

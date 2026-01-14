@@ -5,7 +5,8 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 ## Key Features
 
 - **Unrestricted Meter Support**: Any musical meter (time signature) including complex and non-standard ratios
-- **Polyrhythm Capability**: Simultaneous dual-meter composition with perfect timing alignment
+- **Polyrhythm Capability**: Simultaneous dual-meter composition with perfect timing alignment  
+- **Multi-Layer Architecture**: CSVBuffer and LayerManager enable transparent context switching between layers
 - **Absolute Timing Accuracy**: Dual-context architecture ensures phrase boundaries align perfectly in absolute time
 - **Advanced Music Theory**: Integration with Tonal.js for scales, chords, modes, and music theory operations
 - **Binaural Beat Effects**: Alpha range (8-12Hz) binaural beats with headphone spatialization
@@ -66,6 +67,8 @@ Polychron consists of 8 specialized JavaScript modules following a clean minimal
 - **Dynamic FX Processing**: Randomized effect parameters with constraints
 
 #### 6. **[backstage.js](backstage.md)** - Core Utilities & State
+- **CSVBuffer Class**: Encapsulates MIDI event arrays with layer metadata (rows, name properties)
+- **LayerManager (LM)**: Context switching object with register(), activate(), advance() methods
 - **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
 - **Randomization Systems**: Weighted, dual-range, limited-change random functions
 - **Global State Management**: Timing contexts for primary and poly meters
@@ -94,12 +97,22 @@ Polychron consists of 8 specialized JavaScript modules following a clean minimal
 
 ## Technical Innovations
 
+### Multi-Layer Architecture
+- **CSVBuffer Class**: Each layer (primary, poly) has its own CSVBuffer instance encapsulating MIDI event array
+- **LayerManager (LM)**: Context switching object managing per-layer timing state
+- **Global State Pattern**: Shared variables (phraseStart, tpMeasure, etc.) switched between layer contexts
+- **Transparent Integration**: p(c) syntax allows code to work with active layer's buffer automatically
+- **Independent Timing**: Each layer maintains separate timing state via LM.layers[name].state
+- **Automatic Restoration**: LM.activate() switches global variables to target layer's preserved values
+
 ### Dual-Context Timing Architecture
 - **Primary Context**: Main meter with full timing calculation
 - **Poly Context**: Independent timing recalculation for polyrhythm
 - **Shared Timestamps**: Both contexts use accumulated `phraseStartTime` (absolute seconds)
 - **Independent Tick Rates**: Each meter has its own `tpSec` (ticks/second)
 - **Perfect Alignment**: Phrase boundaries match in absolute time despite different tick counts
+- **Cascading Calculations**: Formula pattern: currentStart = parentStart + currentIndex × currentDuration
+- **Timing Hierarchy**: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision (7 levels)
 
 ### Meter Spoofing Technology
 1. **Actual Meter**: Any ratio (e.g., 7/9 = 0.777...)
@@ -202,13 +215,17 @@ python c2m.py && ffmpeg -i output.mid -f wav output.wav
 
 ## Technical Documentation
 
-Each module contains comprehensive inline documentation:
-- **JSDoc Comments**: Complete function documentation
-- **Type Definitions**: Clear parameter and return types
-- **Architectural Notes**: System design explanations
-- **Mathematical Formulas**: Core algorithm documentation
-- **Integration Patterns**: Module interaction details
-- **Performance Notes**: Optimization strategies
+Each module has a comprehensive .md file with verbose architectural details:
+- **play.md**: LayerManager context switching, timing increment hierarchy, cascading formulas
+- **backstage.md**: CSVBuffer/LayerManager API reference, context switching patterns  
+- **time.md**: setUnitTiming() deep dive, all 7 timing level formulas, delicate dependencies
+- **composers.md**: Layer-independent operation with shared global state
+- **rhythm.md**: CSVBuffer integration with transparent buffer switching
+- **sheet.md**: Global configuration applying across all layers
+- **stage.md**: CSVBuffer layer integration with no layer conditionals
+- **venue.md**: Pure data module, completely independent of LayerManager
+
+Code files maintain ultra-minimalist style with sparse essential comments.
 
 ## Community & Resources
 

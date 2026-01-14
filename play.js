@@ -1,16 +1,7 @@
 require('./stage');
-/**
- * POLYCHRON MAIN COMPOSITION LOOP
- *
- * CONTEXT SWITCHING PATTERN: Using layerManager (LM), each layer has private timing state, but processing
- * uses shared global variables.
- *
- * TIME INCREMENTATION HIERARCHY: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
- * WHY: Enables polyrhythmic layers with different phrase tick lengths(tpSec) while maintaining
- * absolute time synchronization at phrase boundaries.
- */
+// Polychron main loop: Section → Phrase → Measure → Beat → Division → Subdivision
+// LM switches layer contexts, setUnitTiming() calculates positions, composition functions generate MIDI
 
-// Initialize layerManager with private state per layer
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, setTuningAndInstruments);
 
@@ -20,17 +11,13 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
-    // Select shared composer for both layers in this phrase
     composer = ra(composers);
     [numerator, denominator] = composer.getMeter();
     getMidiMeter();
-    getPolyrhythm(); // sets measuresPerPhrase for both layers
+    getPolyrhythm();
 
     LM.activate('primary', false);
-
     setUnitTiming('phrase');
-
-    // PRIMARY METER LOOP
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
@@ -64,14 +51,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
     LM.advance('primary', 'phrase');
 
-    // POLY METER SETUP (activate poly buffer and timing)
     LM.activate('poly', true);
-
-    getMidiMeter(); // Calculate poly's meter
-
+    getMidiMeter();
     setUnitTiming('phrase');
-
-    // POLY METER LOOP
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
 

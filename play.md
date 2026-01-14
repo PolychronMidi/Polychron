@@ -226,3 +226,93 @@ The **7-level timing hierarchy** (section through subsubdivision) creates unprec
 
 ### Human-Impossible Performance
 The resulting compositions are **intentionally unplayable by humans**, exploring musical territories only accessible through algorithmic composition and computer performance.
+
+## LayerManager Context Switching Architecture
+
+### Dual-Layer Polyrhythmic System
+**play.js** now uses LayerManager (LM) to maintain separate timing contexts for each layer:
+- **Primary layer** - First meter with full audio processing
+- **Poly layer** - Second meter with complementary content
+- Each layer has independent tick rates but synchronized absolute time
+
+### Context Switching Pattern
+```
+LM.register('primary', c1, {}, setupFn)  // Create layer with initial state
+LM.activate('primary')                   // Restore layer's timing globals
+  [process with shared globals]          // Composition functions use global variables
+LM.advance('primary', 'phrase')          // Save globals back, advance phraseStart
+```
+
+### Timing State Management
+Each layer maintains private state:
+- `phraseStart`, `phraseStartTime` - Phrase boundary positions
+- `measureStart`, `measureStartTime` - Current measure positions  
+- `tpMeasure`, `spMeasure` - Ticks/seconds per measure (layer-specific)
+- `tpPhrase`, `spPhrase` - Ticks/seconds per phrase
+- `numerator`, `denominator` - Current meter
+- `tpSec` - Ticks per second (tempo-adjusted)
+
+### Why Context Switching?
+- **Enables polyrhythm** - Different layers can have different tick rates
+- **Maintains sync** - Phrase boundaries align in absolute time (seconds)
+- **Simplifies code** - Composition functions use clean global variable access
+- **Scalable** - Easy to add more layers without refactoring
+
+## Timing Increment Hierarchy
+
+### Cascading Position Calculations
+Each timing level builds on its parent:
+
+```
+Section:        sectionStart += tpSection (accumulated phrases)
+Phrase:         phraseStart += tpPhrase (in LM.advance)
+Measure:        measureStart = phraseStart + measureIndex × tpMeasure
+Beat:           beatStart = phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat
+Division:       divStart = beatStart + divIndex × tpDiv
+Subdivision:    subdivStart = divStart + subdivIndex × tpSubdiv
+Subsubdivision: subsubdivStart = subdivStart + subsubdivIndex × tpSubsubdiv
+```
+
+### Loop Structure with Timing Increments
+
+```javascript
+for section
+  for phrase
+    LM.activate(layer)              // Restore: phraseStart, tpMeasure, etc.
+    setUnitTiming('phrase')         // Calculate: tpPhrase, spPhrase
+    
+    for measure (measureIndex)
+      setUnitTiming('measure')      // measureStart = phraseStart + measureIndex×tpMeasure
+      
+      for beat (beatIndex)
+        setUnitTiming('beat')       // beatStart = phraseStart + measureIndex×tpMeasure + beatIndex×tpBeat
+        [composition functions]     // Use beatStart for MIDI tick positions
+        
+        for div (divIndex)
+          setUnitTiming('division') // divStart = beatStart + divIndex×tpDiv
+          
+          for subdiv (subdivIndex)
+            setUnitTiming('subdivision')   // subdivStart = divStart + subdivIndex×tpSubdiv
+            playNotes()             // Uses subdivStart for note timing
+          
+          for subsubdiv (subsubdivIndex)
+            setUnitTiming('subsubdivision') // subsubdivStart = subdivStart + subsubdivIndex×tpSubsubdiv
+            playNotes2()            // Uses subsubdivStart for note timing
+    
+    LM.advance('phrase')            // Save state, phraseStart += tpPhrase
+```
+
+### Delicate Dependencies
+Each calculation requires:
+1. **Parent position** (`phraseStart` from layer.state or previous calculation)
+2. **Loop index** (`measureIndex`, `beatIndex`, etc. from play.js loops)
+3. **Duration multiplier** (`tpMeasure`, `tpBeat`, etc. from setUnitTiming calculations)
+
+### Meter Spoofing Synchronization
+Different layers have different tick rates but same absolute time:
+- **Primary layer**: e.g., 480 tpMeasure in 4/4
+- **Poly layer**: e.g., 360 tpMeasure in 3/4
+- **Both layers**: Same spPhrase (seconds per phrase)
+- **Result**: Phrase boundaries align perfectly in time despite different tick counts
+
+This is the core of **meter spoofing** - enabling any time signature while maintaining MIDI compatibility and cross-layer synchronization.

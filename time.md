@@ -155,3 +155,179 @@ logUnit = (type) => {
 - **Efficient algorithms** - Optimized for real-time calculation
 - **MIDI-optimized** - All output directly compatible with MIDI timing requirements
 - **Scalable complexity** - Handles simple 4/4 time through complex polyrhythmic structures
+
+## setUnitTiming() - Universal Timing Calculator
+
+### Purpose
+Central timing function called at every hierarchical level (phrase → measure → beat → division → subdivision → subsubdivision). Calculates absolute tick/time positions using cascading parent position calculations.
+
+### Architecture Integration
+- Called from `play.js` nested loops at each timing level
+- Uses `LM.layers[LM.activeLayer].state` for anchor positions
+- Updates global timing variables used by composition functions
+- Implements the delicate cascading increment pattern
+
+### Timing Increment Hierarchy
+
+Each level calculates position from parent position + index × duration:
+
+#### Phrase Level
+```javascript
+tpPhrase = tpMeasure × measuresPerPhrase;  // Total ticks in phrase (layer-specific)
+spPhrase = tpPhrase / tpSec;               // Total seconds in phrase (synchronized)
+```
+- **Anchor**: N/A (top of hierarchy)
+- **Duration source**: Calculated from measure count
+- **Synchronization boundary**: spPhrase is identical across layers
+
+#### Measure Level
+```javascript
+measureStart = layer.state.phraseStart + measureIndex × tpMeasure;
+measureStartTime = layer.state.phraseStartTime + measureIndex × spMeasure;
+```
+- **Anchor**: `phraseStart` from layer.state (set by LM.activate or LM.advance)
+- **Index**: `measureIndex` from play.js measure loop
+- **Duration**: `tpMeasure` (layer-specific, varies by meter)
+- **Formula**: `phraseStart + measureIndex × tpMeasure`
+
+#### Beat Level
+```javascript
+tpBeat = tpMeasure / numerator;
+beatStart = phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat;
+beatStartTime = measureStartTime + beatIndex × spBeat;
+```
+- **Anchor**: `phraseStart` (cascades through measureIndex calculation)
+- **Indices**: `measureIndex`, `beatIndex` from play.js loops
+- **Duration**: `tpBeat` calculated from measure/numerator
+- **Formula**: `phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat`
+- **Cascading**: Builds on measure calculation
+
+#### Division Level
+```javascript
+tpDiv = tpBeat / max(1, divsPerBeat);
+divStart = beatStart + divIndex × tpDiv;
+divStartTime = beatStartTime + divIndex × spDiv;
+```
+- **Anchor**: `beatStart` (already cascaded from phrase+measure+beat)
+- **Index**: `divIndex` from play.js division loop
+- **Duration**: `tpDiv` calculated from beat/divisions
+- **Formula**: `beatStart + divIndex × tpDiv`
+- **Division count**: From composer.getDivisions()
+
+#### Subdivision Level
+```javascript
+tpSubdiv = tpDiv / max(1, subdivsPerDiv);
+subdivStart = divStart + subdivIndex × tpSubdiv;
+subdivStartTime = divStartTime + subdivIndex × spSubdiv;
+```
+- **Anchor**: `divStart` (cascaded from phrase+measure+beat+div)
+- **Index**: `subdivIndex` from play.js subdivision loop
+- **Duration**: `tpSubdiv` calculated from division/subdivisions
+- **Formula**: `divStart + subdivIndex × tpSubdiv`
+- **Subdivision count**: From composer.getSubdivisions()
+
+#### Subsubdivision Level
+```javascript
+tpSubsubdiv = tpSubdiv / max(1, subsubdivsPerSub);
+subsubdivStart = subdivStart + subsubdivIndex × tpSubsubdiv;
+subsubdivStartTime = subdivStartTime + subsubdivIndex × spSubsubdiv;
+```
+- **Anchor**: `subdivStart` (cascaded from all parent levels)
+- **Index**: `subsubdivIndex` from play.js subsubdivision loop
+- **Duration**: `tpSubsubdiv` calculated from subdivision/subsubdivisions
+- **Formula**: `subdivStart + subsubdivIndex × tpSubsubdiv`
+- **Subsubdivision count**: From composer.getSubsubdivs()
+
+### Delicate Dependencies
+
+Each calculation requires three components:
+
+1. **Parent Position** 
+   - From `layer.state` (phraseStart) or previous calculation (beatStart, divStart, etc.)
+   - Set by LM.activate() or previous setUnitTiming() call
+   - Anchor point for this level's calculations
+
+2. **Loop Index**
+   - From play.js nested loops (measureIndex, beatIndex, divIndex, etc.)
+   - Determines position within parent unit
+   - Multiplied by duration to get offset
+
+3. **Duration Multiplier**
+   - Calculated in setUnitTiming() from meter/composer (tpMeasure, tpBeat, tpDiv, etc.)
+   - Layer-specific for some values (tpMeasure varies by layer)
+   - Derived from parent duration divided by count
+
+### Polyrhythm Synchronization Example
+
+**Primary Layer (4/4):**
+```
+phraseStart = 0
+tpMeasure = 480 (4/4 in MIDI ticks)
+measureIndex = 0
+measureStart = 0 + 0 × 480 = 0
+
+measureIndex = 1
+measureStart = 0 + 1 × 480 = 480
+
+measureIndex = 2
+measureStart = 0 + 2 × 480 = 960
+```
+
+**Poly Layer (3/4):**
+```
+phraseStart = 0
+tpMeasure = 360 (3/4 in MIDI ticks)
+measureIndex = 0
+measureStart = 0 + 0 × 360 = 0
+
+measureIndex = 1
+measureStart = 0 + 1 × 360 = 360
+
+measureIndex = 2
+measureStart = 0 + 2 × 360 = 720
+```
+
+**Synchronization:**
+- Both layers start at tick 0
+- Different tick rates per measure (480 vs 360)
+- After appropriate measure counts, both reach same `spPhrase` (seconds)
+- Phrase boundaries align in absolute time despite different tick counts
+- This is **meter spoofing** in action
+
+### Why Delicate?
+
+1. **Cascading calculations** - Each level depends on parent being calculated first
+2. **State dependencies** - Requires layer.state to be properly restored by LM.activate()
+3. **Loop coordination** - play.js loop indices must align with calculation expectations
+4. **Layer-specific values** - Some variables (tpMeasure) differ per layer
+5. **Synchronized values** - Some variables (spPhrase) must match across layers
+6. **Timing precision** - Small errors cascade through all child calculations
+
+### Usage Pattern in play.js
+
+```javascript
+for phrase
+  LM.activate(layer)              // Restores phraseStart, tpMeasure, etc.
+  setUnitTiming('phrase')         // Calculates tpPhrase, spPhrase
+  
+  for measure (measureIndex)
+    setUnitTiming('measure')      // Calculates measureStart from phraseStart + measureIndex×tpMeasure
+    
+    for beat (beatIndex)
+      setUnitTiming('beat')       // Calculates beatStart from cascaded position
+      playNotes()                 // Uses beatStart for MIDI tick positions
+      
+      for div (divIndex)
+        setUnitTiming('division') // Calculates divStart from beatStart
+        
+        for subdiv (subdivIndex)
+          setUnitTiming('subdivision')  // Calculates subdivStart from divStart
+          playNotes()             // Uses subdivStart for precise timing
+```
+
+Each `setUnitTiming()` call calculates the next level's absolute position using the pattern:
+```
+currentStart = parentStart + currentIndex × currentDuration
+```
+
+This cascading pattern enables complex polyrhythmic timing while keeping each calculation simple and direct.

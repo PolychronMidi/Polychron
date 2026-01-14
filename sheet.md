@@ -265,6 +265,17 @@ All parameters become global variables accessible throughout the system:
 - **Instrument name conversion** - venue.js converts string names to MIDI numbers
 - **Global state initialization** - backstage.js creates working variables from configuration
 
+## Layer Architecture Independence
+
+**sheet.js** configuration applies **globally across all layers**:
+- **No layer-specific settings** - Same instruments, ranges, weights used for all layers
+- **Meter parameters** - NUMERATOR/DENOMINATOR used by both primary and poly layers
+- **Instrument assignments** - primaryInstrument, bassInstrument shared across layers
+- **System constants** - PPQ, BPM, TUNING_FREQ, BINAURAL settings are universal
+- **LayerManager uses defaults** - LM.register() creates layers with sheet.js parameters
+
+This global configuration simplifies the system while enabling complex multi-layer compositions through context switching rather than duplication.
+
 ## Performance Characteristics
 
 - **Zero computational overhead** - Pure data definitions with no processing
