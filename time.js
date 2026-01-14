@@ -273,7 +273,7 @@ const LM = layerManager ={
     const layer = LM.layers[name];
     if (!layer) return;
 
-    beatRhythm = divRhythm = subdivRhythm = subsubdivRhthm = 0;
+    beatRhythm = divRhythm = subdivRhythm = subsubdivRhythm = 0;
 
     // Save current globals to state first
     layer.state.saveFrom({

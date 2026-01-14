@@ -1,0 +1,27 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "script"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "csv_maestro/",
+    "output/",
+    "__pycache__/",
+    "output/*.csv",
+    "output/*.mid",
+    "output/*.wav"
+  ],
+  "rules": {
+    "no-irregular-whitespace": "error",
+    "no-unexpected-multiline": "error",
+    "no-useless-escape": "warn",
+    "no-trailing-spaces": "warn",
+    "eol-last": ["warn", "always"]
+  }
+}
