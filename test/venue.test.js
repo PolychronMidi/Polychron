@@ -78,12 +78,12 @@ describe('getMidiValue', () => {
     expect(getMidiValue('control', 'Volume (coarse)')).toBe(7);
   });
 
-  it('should return null for invalid category', () => {
-    expect(getMidiValue('invalid', 'test')).toBeNull();
+  it('should return 0 fallback for invalid category', () => {
+    expect(getMidiValue('invalid', 'test')).toBe(0);
   });
 
-  it('should return null for non-existent instrument', () => {
-    expect(getMidiValue('program', 'NonExistent Instrument')).toBeNull();
+  it('should return 0 fallback for non-existent instrument', () => {
+    expect(getMidiValue('program', 'NonExistent Instrument')).toBe(0);
   });
 
   it('should be case insensitive for category', () => {
@@ -104,8 +104,8 @@ describe('getMidiValue', () => {
     expect(getMidiValue('control', 'Modulation Wheel (coarse)')).toBe(1);
   });
 
-  it('should return null for out of range control number', () => {
-    expect(getMidiValue('control', 'NonExistent Control')).toBeNull();
+  it('should return 0 fallback for out of range control number', () => {
+    expect(getMidiValue('control', 'NonExistent Control')).toBe(0);
   });
 });
 
@@ -236,8 +236,8 @@ describe('Integration tests', () => {
 });
 
 describe('Edge cases', () => {
-  it('getMidiValue should handle empty string', () => {
-    expect(getMidiValue('program', '')).toBeNull();
+  it('getMidiValue should return 0 fallback for empty string', () => {
+    expect(getMidiValue('program', '')).toBe(0);
   });
 
   it('getMidiValue should be case insensitive for exact match', () => {
