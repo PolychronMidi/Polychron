@@ -6,3 +6,4 @@ package.json
 *.log
 /.vscode
 /output
+/.serena
