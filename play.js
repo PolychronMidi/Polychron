@@ -88,9 +88,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   }
 
+  c = c1;
   LM.advance('primary', 'section');
   logUnit('section');
 
+  c = c2;
   LM.advance('poly', 'section');
   logUnit('section');
 

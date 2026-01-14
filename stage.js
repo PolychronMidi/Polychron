@@ -1,8 +1,8 @@
 // stage.js - Audio processing engine with MIDI event generation and binaural effects.
 // minimalist comments, details at: stage.md
 
-require('./sheet'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers'); require('./writer');
+require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
+require('./rhythm'); require('./time'); require('./composers');
 
 /** Sets program, pitch bend, and volume for all instrument channels */
 setTuningAndInstruments=()=>{

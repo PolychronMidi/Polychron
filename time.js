@@ -7,7 +7,14 @@
  * @returns {number[]} MIDI meter as [numerator, denominator].
  */
 getMidiMeter = () => {
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    throw new Error(`Invalid meter: ${numerator}/${denominator}`);
+  }
+  if (!Number.isFinite(BPM) || BPM <= 0) {
+    throw new Error(`Invalid BPM: ${BPM}`);
+  }
   meterRatio = numerator / denominator;
+  /** @param {number} n @returns {boolean} */
   isPowerOf2 = (n) => { return (n & (n - 1)) === 0; }
 
   if (isPowerOf2(denominator)) {
@@ -34,8 +41,12 @@ getMidiMeter = () => {
 /**
  * Writes MIDI timing events to active buffer (c).
  * Context-aware: writes to c1 or c2 depending on current meter.
+ * @param {number} [tick] - MIDI tick position.
  */
 setMidiTiming = (tick=measureStart) => {
+  if (!Number.isFinite(tpSec) || tpSec <= 0) {
+    throw new Error(`Invalid tpSec: ${tpSec}`);
+  }
   p(c,
     { tick: tick, type: 'bpm', vals: [midiBPM] },
     { tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
@@ -45,6 +56,7 @@ setMidiTiming = (tick=measureStart) => {
 /**
  * Compute phrase alignment between primary and poly meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
+ * @returns {void}
  */
 getPolyrhythm = () => {
   if (!composer) return;
@@ -94,6 +106,9 @@ getPolyrhythm = () => {
  * @class
  */
 TimingContext = class TimingContext {
+  /**
+   * @param {object} [initialState={}] - Initial timing state values.
+   */
   constructor(initialState = {}) {
     this.phraseStart = initialState.phraseStart || 0;
     this.phraseStartTime = initialState.phraseStartTime || 0;
@@ -116,6 +131,11 @@ TimingContext = class TimingContext {
     this.bufferName = initialState.bufferName || '';
   }
 
+  /**
+   * Save timing values from globals object.
+   * @param {object} globals - Global timing state.
+   * @returns {void}
+   */
   saveFrom(globals) {
     this.phraseStart = globals.phraseStart;
     this.phraseStartTime = globals.phraseStartTime;
@@ -137,6 +157,11 @@ TimingContext = class TimingContext {
     this.meterRatio = globals.numerator / globals.denominator;
   }
 
+  /**
+   * Restore timing values to globals object.
+   * @param {object} globals - Global timing state.
+   * @returns {void}
+   */
   restoreTo(globals) {
     globals.phraseStart = this.phraseStart;
     globals.phraseStartTime = this.phraseStartTime;
@@ -154,6 +179,12 @@ TimingContext = class TimingContext {
     globals.spMeasure = this.spMeasure;
   }
 
+  /**
+   * Advance phrase timing.
+   * @param {number} tpPhrase - Ticks per phrase.
+   * @param {number} spPhrase - Seconds per phrase.
+   * @returns {void}
+   */
   advancePhrase(tpPhrase, spPhrase) {
     this.phraseStart += tpPhrase;
     this.phraseStartTime += spPhrase;
@@ -161,6 +192,10 @@ TimingContext = class TimingContext {
     this.spSection += spPhrase;
   }
 
+  /**
+   * Advance section timing.
+   * @returns {void}
+   */
   advanceSection() {
     this.sectionStart += this.tpSection;
     this.sectionStartTime += this.spSection;
@@ -223,9 +258,9 @@ const LM = layerManager ={
 
   /**
    * Activate a layer; restores timing globals and sets meter.
-   * @param {string} name
-   * @param {boolean} [isPoly=false]
-   * @returns {object} Snapshot of key timing values.
+   * @param {string} name - Layer name.
+   * @param {boolean} [isPoly=false] - Whether this is a polyrhythmic layer.
+   * @returns {{numerator: number, denominator: number, tpSec: number, tpMeasure: number}} Snapshot of key timing values.
    */
   activate: (name, isPoly = false) => {
     const layer = LM.layers[name];
@@ -266,8 +301,9 @@ const LM = layerManager ={
 
   /**
    * Advance a layer's timing state.
-   * @param {string} name
-   * @param {'phrase'|'section'} [advancementType='phrase']
+   * @param {string} name - Layer name.
+   * @param {'phrase'|'section'} [advancementType='phrase'] - Type of advancement.
+   * @returns {void}
    */
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
@@ -275,21 +311,25 @@ const LM = layerManager ={
 
     beatRhythm = divRhythm = subdivRhythm = subsubdivRhythm = 0;
 
-    // Save current globals to state first
-    layer.state.saveFrom({
-      numerator, denominator, measuresPerPhrase,
-      tpPhrase, spPhrase, measureStart, measureStartTime,
-      tpMeasure, spMeasure, phraseStart, phraseStartTime,
-      sectionStart, sectionStartTime, sectionEnd,
-      tpSec, tpSection, spSection
-    });
-
-    // Then advance using saved values
+    // Advance using layer's own state values
     if (advancementType === 'phrase') {
-      layer.state.advancePhrase(tpPhrase, spPhrase);
+      // Save current globals for phrase timing (layer was just active)
+      layer.state.saveFrom({
+        numerator, denominator, measuresPerPhrase,
+        tpPhrase, spPhrase, measureStart, measureStartTime,
+        tpMeasure, spMeasure, phraseStart, phraseStartTime,
+        sectionStart, sectionStartTime, sectionEnd,
+        tpSec, tpSection, spSection
+      });
+      layer.state.advancePhrase(layer.state.tpPhrase, layer.state.spPhrase);
     } else if (advancementType === 'section') {
+      // For section advancement, use layer's own accumulated tpSection/spSection
+      // Don't pull from globals - they may be from a different layer!
       layer.state.advanceSection();
     }
+
+    // Restore advanced state back to globals so they stay in sync
+    layer.state.restoreTo(globalThis);
   },
 
 };
@@ -301,11 +341,18 @@ globalThis.LM = LM;
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
  * cascading parent position + index × duration pattern. See time.md for details.
- * @param {string} unitType - Unit type for timing calculation and logging
+ * @param {string} unitType - Unit type for timing calculation and logging.
+ * @returns {void}
  */
 setUnitTiming = (unitType) => {
+  if (!Number.isFinite(tpSec) || tpSec <= 0) {
+    throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
+  }
   const layer = LM.layers[LM.activeLayer];
   if (!layer) return;
+
+  // Use globals (not layer.state) because LM.activate() already restored layer state to globals.
+  // This ensures consistent timing across all unit calculations in cascading hierarchy.
 
   switch (unitType) {
     case 'phrase':
@@ -314,15 +361,13 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'measure':
-      // measureStart = phraseStart + measureIndex × tpMeasure
-      measureStart = layer.state.phraseStart + measureIndex * tpMeasure;
-      measureStartTime = layer.state.phraseStartTime + measureIndex * spMeasure;
+      measureStart = phraseStart + measureIndex * tpMeasure;
+      measureStartTime = phraseStartTime + measureIndex * spMeasure;
       setMidiTiming();
       beatRhythm = setRhythm('beat');
       break;
 
     case 'beat':
-      // beatStart = phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat
       trackBeatRhythm();
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
@@ -338,7 +383,6 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'division':
-      // divStart = beatStart + divIndex × tpDiv
       trackDivRhythm();
       tpDiv = tpBeat / m.max(1, divsPerBeat);
       spDiv = tpDiv / tpSec;
@@ -350,7 +394,6 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdivision':
-      // subdivStart = divStart + subdivIndex × tpSubdiv
       trackSubdivRhythm();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
@@ -362,7 +405,6 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdivision':
-      // Finest resolution; cascaded from subdivision.
       trackSubsubdivRhythm();
       tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;

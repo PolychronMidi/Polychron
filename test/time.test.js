@@ -1328,3 +1328,138 @@ describe('Timing Validation Utilities', () => {
     expect(globalThis.midiBPM).toBeCloseTo(globalThis.BPM * globalThis.syncFactor, 5);
   });
 });
+
+describe('Multi-layer timing consistency', () => {
+  beforeEach(() => {
+    setupGlobalState();
+    globalThis.composer = mockComposer;
+    // Mock setRhythm and tracking functions
+    globalThis.setRhythm = () => [1, 1, 1, 1];
+    globalThis.trackBeatRhythm = () => {};
+    globalThis.trackDivRhythm = () => {};
+    globalThis.trackSubdivRhythm = () => {};
+    globalThis.trackSubsubdivRhythm = () => {};
+    globalThis.logUnit = () => {};
+  });
+
+  it('should maintain consistent timing when switching between layers', () => {
+    // Setup two layers with different timing states
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    globalThis.BPM = 120;
+    getMidiMeter();
+
+    const { state: state1, buffer: buffer1 } = LM.register('layer1', 'c1', {
+      phraseStart: 0,
+      phraseStartTime: 0
+    });
+
+    const { state: state2, buffer: buffer2 } = LM.register('layer2', 'c2', {
+      phraseStart: 1920,
+      phraseStartTime: 2.0
+    });
+
+    // Activate layer1 and set measure timing
+    globalThis.measureIndex = 0;
+    LM.activate('layer1');
+    setUnitTiming('measure');
+    expect(globalThis.measureStart).toBe(0);
+
+    // Advance layer1
+    globalThis.measuresPerPhrase = 1;
+    globalThis.tpPhrase = globalThis.tpMeasure;
+    globalThis.spPhrase = globalThis.spMeasure;
+    LM.advance('layer1', 'phrase');
+
+    // Activate layer2 (should restore layer2's timing state to globals)
+    globalThis.measureIndex = 0;
+    LM.activate('layer2');
+    setUnitTiming('measure');
+
+    // measureStart should use layer2's phraseStart (1920), not layer1's
+    expect(globalThis.measureStart).toBe(1920);
+    expect(globalThis.phraseStart).toBe(1920);
+
+    // Switch back to layer1
+    globalThis.measureIndex = 1;
+    LM.activate('layer1');
+    setUnitTiming('measure');
+
+    // measureStart should reflect layer1's advanced state
+    // phraseStart has been advanced by tpPhrase (= tpMeasure), so measure 1 is at phraseStart + tpMeasure
+    expect(globalThis.measureStart).toBe(2 * globalThis.tpMeasure);
+  });
+
+  it('should correctly calculate cascading unit timings using globals', () => {
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    globalThis.BPM = 120;
+    getMidiMeter();
+
+    LM.register('test', 'c1', {
+      phraseStart: 0,
+      phraseStartTime: 0
+    });
+
+    LM.activate('test');
+
+    // Set measure timing
+    globalThis.measureIndex = 1;
+    setUnitTiming('measure');
+    const measureTick = globalThis.measureStart;
+    expect(measureTick).toBe(globalThis.tpMeasure); // phraseStart(0) + 1 * tpMeasure
+
+    // Set beat timing (should cascade from measureStart)
+    globalThis.beatIndex = 2;
+    setUnitTiming('beat');
+    const expectedBeatStart = measureTick + 2 * globalThis.tpBeat;
+    expect(globalThis.beatStart).toBe(expectedBeatStart);
+
+    // Set division timing (should cascade from beatStart)
+    globalThis.divIndex = 1;
+    setUnitTiming('division');
+    const expectedDivStart = globalThis.beatStart + 1 * globalThis.tpDiv;
+    expect(globalThis.divStart).toBe(expectedDivStart);
+  });
+
+  it('should handle polyrhythm layer switching correctly', () => {
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    globalThis.BPM = 120;
+    globalThis.polyNumerator = 3;
+    globalThis.polyDenominator = 4;
+    getMidiMeter();
+    // Don't call getPolyrhythm() - just set the values manually for testing
+    globalThis.measuresPerPhrase1 = 3;
+    globalThis.measuresPerPhrase2 = 4;
+
+    const { state: state1 } = LM.register('primary', 'c1', {
+      phraseStart: 0,
+      phraseStartTime: 0
+    });
+
+    const { state: state2 } = LM.register('poly', 'c2', {
+      phraseStart: 0,
+      phraseStartTime: 0
+    });
+
+    // Activate primary layer
+    LM.activate('primary', false);
+    expect(globalThis.measuresPerPhrase).toBe(globalThis.measuresPerPhrase1);
+
+    const primaryMeasures = globalThis.measuresPerPhrase;
+
+    // Activate poly layer
+    LM.activate('poly', true);
+    expect(globalThis.numerator).toBe(globalThis.polyNumerator);
+    expect(globalThis.denominator).toBe(globalThis.polyDenominator);
+    expect(globalThis.measuresPerPhrase).toBe(globalThis.measuresPerPhrase2);
+
+    // Should not equal primary measures (unless they happen to match)
+    const polyMeasures = globalThis.measuresPerPhrase;
+
+    // Switch back to primary
+    LM.activate('primary', false);
+    expect(globalThis.measuresPerPhrase).toBe(primaryMeasures);
+  });
+});

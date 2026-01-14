@@ -901,13 +901,13 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should advance section correctly via TimingContext', () => {
-      // Activate layer and set state through globals
+      // Set layer state directly (not via globals, as section advance uses layer's own accumulated values)
       LM.activate('primary');
-      sectionStart = 2000;
-      sectionStartTime = 3.0;
-      sectionEnd = 4000;
-      tpSection = 1000;
-      spSection = 1.0;
+      LM.layers.primary.state.sectionStart = 2000;
+      LM.layers.primary.state.sectionStartTime = 3.0;
+      LM.layers.primary.state.sectionEnd = 4000;
+      LM.layers.primary.state.tpSection = 1000;
+      LM.layers.primary.state.spSection = 1.0;
 
       LM.advance('primary', 'section');
 
