@@ -214,7 +214,6 @@ TimingContext = class TimingContext {
  */
 const LM = layerManager ={
   layers: {},
-  activeLayer: null,
 
   /**
    * Register a layer with buffer and initial timing state.
@@ -265,7 +264,6 @@ const LM = layerManager ={
   activate: (name, isPoly = false) => {
     const layer = LM.layers[name];
     c = layer.buffer;
-    LM.activeLayer = name;
 
     // Store meter into layer state (set externally before activation)
     layer.state.numerator = numerator;
@@ -308,6 +306,7 @@ const LM = layerManager ={
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
     if (!layer) return;
+    c = layer.buffer;
 
     beatRhythm = divRhythm = subdivRhythm = subsubdivRhythm = 0;
 
@@ -348,8 +347,6 @@ setUnitTiming = (unitType) => {
   if (!Number.isFinite(tpSec) || tpSec <= 0) {
     throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
   }
-  const layer = LM.layers[LM.activeLayer];
-  if (!layer) return;
 
   // Use globals (not layer.state) because LM.activate() already restored layer state to globals.
   // This ensures consistent timing across all unit calculations in cascading hierarchy.
