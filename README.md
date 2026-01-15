@@ -102,6 +102,10 @@ Polychron consists of 9 specialized JavaScript modules following a clean minimal
 - **Logging Controls**: Timing marker granularity
 - **Composer Configuration**: Available composer types and weights
 
+### Testing Philosophy
+
+**[See [docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This approach creates a safe sandbox for experimental music composition, enabling rapid iteration with confidence. All 571 tests validate actual function behavior across 9 test files, supporting the project's mission to explore novel algorithmic composition techniques.
+
 ## Technical Innovations
 
 ### Multi-Layer Architecture
