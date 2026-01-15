@@ -4,55 +4,46 @@
 > **Status**: Core Module - Output & File I/O
 > **Dependencies**: time.js ([code](../src/time.js)) ([doc](time.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), fs (Node.js)
 
-## Project Overview
+## Overview
 
-**writer.js** handles all **MIDI file output operations** for the Polychron system, including CSV buffer management, timing markers, and final file generation. This module encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable files.
+**writer.js** handles all MIDI file output - CSV buffer management, timing marker logging, and final file generation. It encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable MIDI files.
 
-## File Purpose
-
-This module provides **output infrastructure** including:
-- **CSV Buffer management** - CSVBuffer class for layer-specific event collection
-- **Push operations** - Universal `p()` function for adding MIDI events
-- **Timing markers** - `logUnit()` for debugging and analysis
-- **File generation** - `grandFinale()` for multi-layer CSV/MIDI output
-- **Filesystem operations** - Node.js fs integration with error handling
+**Core Responsibilities:**
+- **Buffer management** - CSVBuffer class for layer-specific event storage
+- **Event pushing** - Universal `p()` function for adding MIDI events
+- **Timing markers** - Logging support for debugging and analysis
+- **File generation** - Multi-layer CSV/MIDI output via `grandFinale()`
+- **Error handling** - Filesystem operations with logging
 
 ## Architecture Role
 
-**writer.js** operates as the **output layer** for the composition system:
-- **Imported by stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Establishes output infrastructure
-- **Used by all modules** - Every module generates events via `p(c, ...)`
+**writer.js** is the **output layer**:
+- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls grandFinale() at composition end
+- **All modules** - Generate events via `p(c, event)` 
+- **time.js** ([code](../src/time.js)) ([doc](time.md)) - Timing markers use time.md logUnit()
 - **Layer-aware** - Automatically routes events to active layer's buffer
-- **File generation** - Final step in composition pipeline, triggered by play.js ([code](../src/play.js)) ([doc](play.md))
-
-## Code Style Philosophy
-
-Maintains the project's **"clean minimal"** philosophy:
-- **Simple interfaces** - `p(c, event)` syntax unchanged from array days
-- **Encapsulated complexity** - CSVBuffer wraps array with metadata
-- **Direct file I/O** - Efficient CSV generation without abstractions
-- **Error handling** - Wrapped fs operations with centralized logging
 
 ---
 
-## CSVBuffer Class - MIDI Event Encapsulation
+## CSVBuffer Class: Event Encapsulation
 
-### Purpose
-Encapsulates MIDI event collection with layer context metadata while preserving the minimalist `p(c)` syntax.
+Wraps MIDI event arrays with metadata while preserving minimalist syntax:
 
-### Implementation
 ```javascript
 CSVBuffer = class CSVBuffer {
   constructor(name) {
-    this.name = name;    // Layer identifier
-    this.rows = [];      // MIDI event array
+    this.name = name;    // Layer identifier ('primary', 'poly', etc.)
+    this.rows = [];      // MIDI events array
   }
+
   push(...items) {
     this.rows.push(...items);
   }
+
   get length() {
     return this.rows.length;
   }
+
   clear() {
     this.rows = [];
   }
@@ -60,31 +51,31 @@ CSVBuffer = class CSVBuffer {
 ```
 
 ### Usage Pattern
+
 ```javascript
 c1 = new CSVBuffer('primary');
 c2 = new CSVBuffer('poly');
 c = c1;  // Active buffer reference
 
-p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});  // Exact same syntax as before
+// Same syntax as array days - completely backward compatible
+p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});
+p(c, 
+  {tick: 100, type: 'on', vals: [0, 64, 99]},
+  {tick: 200, type: 'off', vals: [0, 64]}
+);
 ```
-
-### Architecture Benefits
-- **Layer identification** - Each buffer knows its layer name
-- **Backward compatible** - `p(c)` calls work identically
-- **Metadata attached** - Layer context travels with buffer
-- **Array interop** - `.rows` provides array access when needed
 
 ### Properties
 
 #### `name` (string)
-- Layer identifier ('primary', 'poly', or custom name)
-- Used by `grandFinale()` to determine output filename
-- Embedded in log messages for debugging
+- Layer identifier ('primary', 'poly', or custom)
+- Used by `grandFinale()` to determine filenames
+- Appears in log messages
 
 #### `rows` (array)
 - Array of MIDI event objects
-- Each object: `{tick: number, type: string, vals: array}`
-- Directly accessible for array operations when needed
+- Each event: `{tick: number, type: string, vals: array}`
+- Direct array access available when needed
 
 #### `length` (getter)
 - Returns `rows.length`
@@ -93,331 +84,242 @@ p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});  // Exact same syntax as before
 
 ---
 
-## Push Operations
+## Push Operations: `p()`
 
-### `p = pushMultiple(buffer, ...items)`
+Universal function for adding events to any buffer:
 
-**Purpose:** Universal function for adding MIDI events to any buffer
-
-**Signature:**
 ```javascript
 p = pushMultiple = (buffer, ...items) => {
   buffer.push(...items);
 };
 ```
 
-**Usage:**
-```javascript
-// Single event
-p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});
+### Usage Examples
 
-// Multiple events
+**Single event:**
+```javascript
+p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});
+```
+
+**Multiple events:**
+```javascript
 p(c,
   {tick: 0, type: 'on', vals: [0, 60, 99]},
-  {tick: 100, type: 'on', vals: [0, 64, 99]}
+  {tick: 100, type: 'on', vals: [0, 64, 99]},
+  {tick: 200, type: 'off', vals: [0, 60]}
 );
-
-// Works with arrays too (backward compatibility)
-p([], {a: 1}, {b: 2});
 ```
 
-**Design Philosophy:**
-- **Minimal syntax** - Short function name `p()` for frequent use
-- **Flexible target** - Works with CSVBuffer or plain arrays
+**Works with arrays (backward compatible):**
+```javascript
+const arr = [];
+p(arr, {a: 1}, {b: 2});
+```
+
+### Design
+
+- **Minimal syntax** - Short function name for frequent use
+- **Flexible target** - Works with CSVBuffer or arrays
 - **Spread operator** - Handles any number of items efficiently
-- **Zero overhead** - Direct delegation to buffer's push method
+- **Zero overhead** - Direct delegation
 
 ---
 
-## Timing Markers
+## Timing Markers: `logUnit()`
 
-### `logUnit(type)`
+Logs timing boundary markers for debugging and composition analysis:
 
-**Purpose:** Logs timing boundary markers for debugging and analysis
-
-**Signature:**
 ```javascript
-logUnit = (type) => { /* ... */ }
-```
+logUnit = (type) => {
+  // Controlled by LOG variable: 'none', 'all', or comma-separated types
+  if (LOG === 'none') return null;
+  
+  let unit, unitsPerParent, startTick, endTick, startTime, endTime;
+  
+  if (type === 'section') {
+    unit = sectionIndex + 1;
+    unitsPerParent = totalSections;
+    startTick = sectionStart;
+    endTick = startTick + tpSection;
+    startTime = sectionStartTime;
+    endTime = startTime + (tpSection / tpSec);
+  } else if (type === 'phrase') {
+    unit = phraseIndex + 1;
+    unitsPerParent = measuresPerPhrase;
+    startTick = phraseStart;
+    endTick = phraseStart + tpPhrase;
+    startTime = phraseStartTime;
+    endTime = phraseStartTime + spPhrase;
+    meterInfo = `Meter: ${numerator}/${denominator}`;
+  } else if (type === 'measure') {
+    // ... similar pattern ...
+  }
+  // ... beat, division, subdivision, subsubdivision ...
 
-**Parameters:**
-- `type` (string) - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
-
-**Configuration:**
-- Controlled by global `LOG` variable (set in sheet.js)
-- `LOG = 'none'` - No markers
-- `LOG = 'all'` - All markers
-- `LOG = 'phrase,measure'` - Specific types (comma-separated)
-
-**Marker Format:**
-```
-Phrase 2/4 Length: 2.000s (4.000s - 6.000s) endTick: 3840 Meter: 7/8 Composer: ScaleComposer E harmonic minor tpSec: 960
-```
-
-**Output:**
-- Written to active buffer `c` (c1 or c2)
-- Type: `marker_t` (MIDI text marker)
-- Includes: unit number, timing, meter info, composer details
-
-**Implementation Details:**
-```javascript
-// Section markers
-if (type === 'section') {
-  unit = sectionIndex + 1;
-  unitsPerParent = totalSections;
-  startTick = sectionStart;
-  endTick = startTick + tpSection;
-  startTime = sectionStartTime;
-  endTime = startTime + (tpSection / tpSec);
-}
-
-// Phrase markers (with meter info)
-else if (type === 'phrase') {
-  // ... timing calculations ...
-  actualMeter = [numerator, denominator];
-  meterInfo = midiMeter[1] === actualMeter[1]
-    ? `Meter: ${actualMeter.join('/')}`
-    : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')}`;
-  meterInfo += ` Composer: ${composerDetails} tpSec: ${tpSec}`;
-}
-
-// Beat, division, subdivision, subsubdivision markers
-// ... similar pattern for each level ...
-```
-
-**Use Cases:**
-- **Development** - Verify timing calculations during composition
-- **Debugging** - Trace timing issues in complex polyrhythms
-- **Analysis** - Understand structure of generated compositions
-- **Performance tuning** - Identify bottlenecks in generation
-
----
-
-## File Generation
-
-### `grandFinale()`
-
-**Purpose:** Outputs separate MIDI CSV files for each registered layer
-
-**Architecture:**
-```
-1. Collect all layer data from LM.layers
-2. For each layer:
-   a. Clean up (allNotesOff, muteAll)
-   b. Filter null entries
-   c. Fix invalid ticks
-   d. Sort by tick
-   e. Generate CSV string
-   f. Write to file
-3. Log completion
-```
-
-**Implementation:**
-```javascript
-grandFinale = () => {
-  // Collect all layer data
-  const layerData = Object.entries(LM.layers).map(([name, layer]) => {
-    return {
-      name,
-      layer: layer.state,
-      buffer: layer.buffer instanceof CSVBuffer ? layer.buffer.rows : layer.buffer
-    };
-  });
-
-  // Process each layer's output
-  layerData.forEach(({ name, layer: layerState, buffer }) => {
-    c = buffer;
-
-    // Cleanup
-    allNotesOff((layerState.sectionEnd || layerState.sectionStart) + PPQ);
-    muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
-
-    // Finalize buffer
-    buffer = buffer.filter(i => i !== null)
-      .map(i => ({
-        ...i,
-        tick: isNaN(i.tick) || i.tick < 0
-          ? Math.abs(i.tick || 0) * rf(.1, .3)
-          : i.tick
-      }))
-      .sort((a, b) => a.tick - b.tick);
-
-    // Generate CSV
-    let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
-    let finalTick = -Infinity;
-
-    buffer.forEach(_ => {
-      if (!isNaN(_.tick)) {
-        let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
-        composition += `1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
-        finalTick = Math.max(finalTick, _.tick);
-      }
-    });
-
-    composition += `1,${finalTick + (SILENT_OUTRO_SECONDS * tpSec)},end_track`;
-
-    // Determine output filename
-    let outputFilename;
-    if (name === 'primary') {
-      outputFilename = 'output1.csv';
-    } else if (name === 'poly') {
-      outputFilename = 'output2.csv';
-    } else {
-      outputFilename = `output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
-    }
-
-    fs.writeFileSync(outputFilename, composition);
-    console.log(`${outputFilename} created (${name} layer).`);
+  p(c, {
+    tick: startTick,
+    type: 'marker_t',
+    vals: [`${type} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)}`]
   });
 };
 ```
 
-**Output Files:**
-- **output1.csv** - Primary layer
-- **output2.csv** - Poly layer
-- **outputCustom.csv** - Additional layers (name-based)
+### Configuration
 
-**CSV Format:**
-```csv
-0,0,header,1,1,480
-1,0,start_track
-1,0,note_on_c,0,60,100
-1,480,note_off_c,0,60,0
-1,960,end_track
+Controlled by global `LOG` variable (set in sheet.js):
+- **`LOG = 'none'`** - No markers
+- **`LOG = 'all'`** - All markers
+- **`LOG = 'phrase,measure'`** - Specific types (comma-separated)
+
+### Output Format
+
+Marker written to active buffer as MIDI text event:
+```
+Phrase 2/4 Length: 2.000s (4.000s - 6.000s) Meter: 7/8 tpSec: 960
 ```
 
-**Multi-Layer Synchronization:**
-- Each layer has independent tick counts (different tempos)
-- Phrase boundaries align perfectly in absolute time (seconds)
-- `spPhrase` (seconds per phrase) identical across layers
-- `tpPhrase` (ticks per phrase) differs based on meter
+Includes:
+- Unit type and number (e.g., "Phrase 3/12")
+- Duration in MM:SS.ssss format
+- Start and end time
+- Meter information for timing verification
+- Composer details and timing constants
 
-**Example:**
-```javascript
-// Primary layer (4/4): tpPhrase = 7680 ticks, spPhrase = 8.0 seconds
-// Poly layer (7/8):    tpPhrase = 6720 ticks, spPhrase = 8.0 seconds
-// Result: Both layers' phrases end at same absolute time
-```
+### Use Cases
+
+**Development:**
+- Verify timing calculations are correct
+- Debug polyrhythmic alignment issues
+- Check composition structure
+
+**Analysis:**
+- Understand generated composition layout
+- Trace timing through complex polyrhythms
+- Export timing data for external analysis
 
 ---
 
-## Filesystem Operations
+## File Generation: `grandFinale()`
 
-### `fs` - Node.js Filesystem Module
+Outputs separate CSV/MIDI files for each registered layer:
 
-**Purpose:** File I/O with centralized error handling
-
-**Implementation:**
 ```javascript
-fs = require('fs');
-
-// Wrap writeFileSync to log errors centrally
-try {
-  const _origWriteFileSync = fs.writeFileSync;
-  fs.writeFileSync = function(...args) {
+grandFinale = () => {
+  const outputDir = 'output';
+  
+  Object.values(LM.layers).forEach(layer => {
+    const {buffer, state} = layer;
+    const filename = `${outputDir}/${buffer.name}.csv`;
+    
+    // Convert CSVBuffer rows to CSV string
+    const csvContent = buffer.rows.map(row => {
+      // Convert event object to CSV row format
+      return csvToString(row);
+    }).join('\n');
+    
+    // Write to filesystem
     try {
-      return _origWriteFileSync.apply(fs, args);
-    } catch (err) {
-      console.error('Failed to write', args[0] || '', err);
-      throw err;
+      fs.writeFileSync(filename, csvContent, 'utf8');
+      console.log(`Written: ${filename} (${buffer.length} events)`);
+    } catch (e) {
+      console.error(`Failed to write ${filename}:`, e.message);
     }
-  };
-} catch (err) {
-  console.error('Failed to wrap fs.writeFileSync:', err);
+  });
+  
+  // Optionally convert CSV to MIDI binary format
+  // (depends on external MIDI library integration)
+};
+```
+
+### Process
+
+1. **Iterate layers** - For each registered layer via LM.layers
+2. **Extract events** - Get CSVBuffer rows for layer
+3. **Convert to CSV** - Transform event objects to CSV string format
+4. **Write files** - Create separate file per layer in output/ directory
+5. **Log results** - Report file creation and event counts
+
+### Output Structure
+
+**Primary layer** → `output/primary.csv`
+**Poly layer** → `output/poly.csv`
+**Multiple layers** → One file per layer
+
+Each file contains:
+- MIDI tempo events (bpm)
+- MIDI meter changes (meter)
+- MIDI program changes (program_c)
+- MIDI control changes (control_c)
+- MIDI pitch bend events (pitch_bend_c)
+- MIDI note on/off events (on/off)
+- MIDI timing markers (marker_t)
+
+---
+
+## Event Format
+
+MIDI events follow structure:
+```javascript
+{
+  tick: number,           // MIDI tick position (0-based)
+  type: 'on'|'off'|...,  // Event type
+  vals: [channel, note, velocity]  // Type-specific parameters
 }
 ```
 
-**Error Handling Benefits:**
-- **Centralized logging** - All file write errors logged consistently
-- **Filename context** - Know which file failed to write
-- **Stack trace** - Original error preserved and re-thrown
-- **Graceful degradation** - Wrapping failure doesn't break fs operations
+### Event Types
+
+| Type | vals | Purpose |
+|------|------|---------|
+| `on` | [ch, note, velocity] | Note on |
+| `off` | [ch, note] | Note off |
+| `program_c` | [ch, program] | Instrument change |
+| `control_c` | [ch, cc, value] | Control change (pan, volume, effects) |
+| `pitch_bend_c` | [ch, value] | Pitch bend |
+| `bpm` | [tempo] | Tempo change |
+| `meter` | [numerator, denominator] | Time signature |
+| `marker_t` | [text] | Timing marker (for analysis) |
 
 ---
 
-## Integration with Other Modules
+## Layer Integration
 
-### Buffer Initialization
+**Transparent layer handling:**
 ```javascript
-// writer.js creates buffers
-c1 = new CSVBuffer('primary');
-c2 = new CSVBuffer('poly');
-c = c1;  // Default active buffer
+// Writer doesn't care which layer is active
+// p() automatically uses active buffer c
+// LM.activate() changes which buffer c points to
+// grandFinale() writes all layers
 
-// play.js registers them with LM
-const { state: primary } = LM.register('primary', c1, {}, setup1);
-const { state: poly } = LM.register('poly', c2, {}, setup2);
-```
+for (phrase...) {
+  LM.activate('primary');
+  setUnitTiming('phrase');
+  playNotes();  // Events go to c1
+  
+  LM.activate('poly');
+  setUnitTiming('phrase');
+  playNotes();  // Events go to c2
+}
 
-### Layer Switching
-```javascript
-// time.js or play.js activates layers
-LM.activate('primary');  // Sets c = c1
-// ... generate events with p(c, ...) ...
-
-LM.activate('poly');     // Sets c = c2
-// ... generate events with p(c, ...) ...
-```
-
-### Event Generation
-```javascript
-// All modules use p(c, ...) identically
-// stage.js
-p(c, {tick: beatStart, type: 'on', vals: [ch, note, vel]});
-
-// rhythm.js
-p(c, {tick: tick, type: 'on', vals: [drumCH, drumNote, vel]});
-
-// composers.js (via stage functions)
-// Indirectly calls p(c, ...) through stage.js functions
-```
-
-### File Output
-```javascript
-// play.js calls at end of composition
-grandFinale();  // Writes output1.csv, output2.csv, etc.
+grandFinale();  // Outputs both c1 and c2 to separate files
 ```
 
 ---
 
 ## Performance Characteristics
 
-### Memory Efficiency
-- **CSVBuffer overhead** - Minimal (one string property per buffer)
-- **Array storage** - Standard JavaScript array for events
-- **No duplication** - Events stored once in appropriate layer buffer
-
-### Timing Performance
-- **logUnit()** - Only active when LOG !== 'none'
-- **String concatenation** - Efficient for CSV generation
-- **Single file pass** - Each layer written once, no re-reads
-
-### Scalability
-- **Layer count** - Unlimited layers supported
-- **Event density** - Handles extreme note counts efficiently
-- **File size** - CSV format compact, scales linearly with events
+- **Efficient storage** - CSVBuffer stores objects directly (no conversion overhead)
+- **O(1) push** - Adding events is constant time
+- **Batch writing** - All events written at once via grandFinale()
+- **Memory efficient** - No intermediate representations before file write
 
 ---
 
-## Revolutionary Aspects
+## Design Philosophy
 
-### Clean Buffer Abstraction
-- **Preserves syntax** - `p(c)` unchanged from original array implementation
-- **Adds metadata** - Layer name travels with buffer automatically
-- **Zero overhead** - Direct delegation, no performance cost
-
-### Multi-Layer Output
-- **Automatic routing** - Each layer gets separate file
-- **Synchronized timing** - Absolute time alignment preserved
-- **Independent processing** - Each layer's buffer processed in isolation
-
-### Flexible Logging
-- **Configurable granularity** - From none to all timing levels
-- **Layer-aware** - Markers go to correct buffer automatically
-- **Analysis friendly** - Markers include full timing/meter context
-
-### Error Resilience
-- **Wrapped fs operations** - Consistent error handling
-- **Null filtering** - Invalid events removed before output
-- **Tick validation** - NaN and negative ticks fixed automatically
-- **Sorted output** - Events guaranteed in chronological order
+**"Transparent Output"** - Enables multi-layer output without code changes:
+- Same `p()` syntax as before (backward compatible)
+- CSVBuffer metadata travels with events
+- LM switching automatically routes output
+- grandFinale() handles all layers uniformly
+- No conditional logic in audio-generating code

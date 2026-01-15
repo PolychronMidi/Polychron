@@ -1,36 +1,63 @@
-# stage.js - Audio Processing and Performance Engine
+# stage.js - Audio Processing and MIDI Event Generation
 
 > **Source**: `src/stage.js`
 > **Status**: Core Module - Audio Processing
 > **Dependencies**: sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md))
 
-## Project Overview
+## Overview
 
-**stage.js** is the **audio processing powerhouse** of the Polychron system, responsible for all real-time audio effects, binaural beat generation, channel management, note generation, and MIDI event creation. This file transforms the musical concepts from other modules into precise MIDI events with sophisticated audio processing.
+**stage.js** is the **audio engine** of Polychron, transforming abstract musical concepts into MIDI events. It generates binaural beats, applies sophisticated effects (stutter, pan, modulation), manages instruments across 16 MIDI channels, and orchestrates all real-time audio processing.
 
-## File Purpose
-
-This module provides **comprehensive audio processing** including:
-- **Binaural beat generation** - Psychoacoustic frequency effects for alpha brainwave entrainment
-- **Advanced stutter effects** - Volume, panning, and effects stuttering across multiple channels
-- **Dynamic instrument management** - Real-time instrument switching and channel assignment
-- **Cross-modulated note generation** - Complex note triggering based on rhythmic interactions
-- **MIDI channel orchestration** - Sophisticated 16-channel routing and effects processing
-- **Balance and effects automation** - Continuous parameter modulation and spatial processing
+**Core Responsibilities:**
+- **Instrument initialization** - Program changes and pitch bend for all channels
+- **Binaural beat generation** - Psychoacoustic frequency shifts at beat boundaries
+- **Stutter effects** - Volume, pan, and FX parameter modulation with decay
+- **Dynamic balance** - Left/right channel panning and center channel automation
+- **Note generation** - Intelligently triggered notes based on rhythmic context
 
 ## Architecture Role
 
-**stage.js** operates as the **audio processing and performance engine**:
-- **Imports all dependencies** - Loads sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md))
-- **Coordinates audio processing** - Called by play.js ([code](../src/play.js)) ([doc](play.md)) for all audio-related functions
-- **Generates MIDI events** - Creates the actual note_on, note_off, and control events
-- **Manages real-time effects** - Applies dynamic processing throughout composition generation
+**stage.js** serves as the **audio coordinator**:
+- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls playNotes(), setBinaural(), setBalanceAndFX() at each beat
+- **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) - Provides note arrays via composer.getNotes()
+- **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) - Provides rhythm patterns via drummer()
+- **time.js** ([code](../src/time.js)) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator, etc.)
+- **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) - Pushes events to active buffer c via p(c, event)
+- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
 
-## Core Audio Infrastructure
+---
 
-### `setTuningAndInstruments()` - Initial Audio Setup
+## Channel Infrastructure
+
+### MIDI Channel Layout
+```
+Channels 0-5:   Source channels (primary notes)
+Channels 6-11:  Reflection channels (effects/echo)
+Channels 12-14: Bass channels
+Channel 15:     Drum channel
+```
+
+### Channel Organization
+- **Source** (cCH1, cCH2, lCH1, lCH2, rCH1, rCH2) - Main melodic content
+- **Reflection** (cCH2*, lCH2*, rCH2*) - Echo/effects processing
+- **Bass** (cCH3, lCH3, rCH3) - Low-frequency content (two bass instruments)
+- **Drums** (drumCH) - Percussion on dedicated channel
+
+### Binaural Channel Splitting
+- **flipBinT** - Channels with high binaural frequency when flipBin=true
+- **flipBinF** - Channels with low binaural frequency when flipBin=true
+- **flipBinT2/flipBinF2** - Volume routing during binaural transitions
+- Alternates between channel sets at beat boundaries (controlled by beatsUntilBinauralShift)
+
+---
+
+## Instrument Setup: `setTuningAndInstruments()`
+
+Initializes all 16 MIDI channels with program changes, pitch bend, and panning:
+
 ```javascript
 setTuningAndInstruments = () => {
+  // Control changes (CC 10 panning) + program changes for source/reflection
   p(c, ...['control_c','program_c'].flatMap(type => [
     ...source.map(ch => ({
       type, vals: [ch, ...(ch.toString().startsWith('lCH') ?
@@ -38,170 +65,278 @@ setTuningAndInstruments = () => {
         (type === 'control_c' ? [10, 127] : [primaryInstrument]))]
     })),
     { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c',
-      vals: [cCH1, ...(type === 'control_c' ? [tuningPitchBend] : [primaryInstrument])]}
+      vals: [cCH1, ...(type === 'control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c',
+      vals: [cCH2, ...(type === 'control_c' ? [tuningPitchBend] : [secondaryInstrument])]}
   ]));
+
+  // Same for bass channels (dual bass instruments)
+  p(c, ...['control_c','program_c'].flatMap(type => [
+    ...bass.map(ch => ({
+      type, vals: [ch, ...(ch.toString().startsWith('lCH') ?
+        (type === 'control_c' ? [10, 0] : [bassInstrument]) :
+        (type === 'control_c' ? [10, 127] : [bassInstrument2]))]
+    })),
+    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c',
+      vals: [cCH3, ...(type === 'control_c' ? [tuningPitchBend] : [bassInstrument])]}
+  ]));
+
+  // Drum channel setup
   p(c, {type: 'control_c', vals: [drumCH, 7, 127]});
 };
 ```
 
-**Complete MIDI initialization**:
-- **Dual processing loops** - Handles both control and program changes
-- **Channel-specific configuration** - Left channels pan full left, right channels pan full right
-- **Tuning system setup** - Applies 432Hz pitch bend to center channels
-- **Drum channel setup** - Sets drum channel volume to maximum
+**Setup Process:**
+1. Source channels: Panning (left channels fully left, right fully right), program changes
+2. Center channels: Pitch bend for 432Hz tuning
+3. Reflection channels: Program changes to secondary instruments
+4. Bass channels: Dual instrument setup with binaural routing
+5. Drum channel: Volume to maximum (CC 7)
 
-## Binaural Beat System
+---
 
-### `setBinaural()` - Psychoacoustic Processing Engine
+## Binaural Beat System: `setBinaural()`
+
+Generates psychoacoustic effects by shifting frequency offsets on left/right channels at musically appropriate intervals:
+
 ```javascript
 setBinaural = () => {
-  if (beatCount === beatsUntilBinauralShift || firstLoop < 1 ) {
-    beatCount = 0; flipBin = !flipBin; allNotesOff(beatStart);
+  if (beatCount === beatsUntilBinauralShift || firstLoop < 1) {
+    beatCount = 0;
+    flipBin = !flipBin;  // Toggle binaural state
+    allNotesOff(beatStart);  // Clear previous notes
+    
+    // Randomize interval until next shift (1-2 × numerator beats)
     beatsUntilBinauralShift = ri(numerator, numerator * 2 * bpmRatio3);
+    
+    // Evolve binaural frequency offset within alpha range (8-12 Hz)
     binauralFreqOffset = rl(binauralFreqOffset, -1, 1, BINAURAL.min, BINAURAL.max);
-
-    p(c, ...binauralL.map(ch => ({tick: beatStart, type: 'pitch_bend_c', vals: [ch,
-      ch === lCH1 || ch === lCH3 || ch === lCH5 ?
+    
+    // Apply pitch bends to all binaural channels
+    p(c, ...binauralL.map(ch => ({
+      tick: beatStart,
+      type: 'pitch_bend_c',
+      vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ?
         (flipBin ? binauralMinus : binauralPlus) :
-        (flipBin ? binauralPlus : binauralMinus)]})));
+        (flipBin ? binauralPlus : binauralMinus)]
+    })));
+    
+    // Volume crossfade between channel sets
+    const startTick = beatStart - tpSec/4;
+    const endTick = beatStart + tpSec/4;
+    const steps = 10;
+    const tickIncrement = (endTick - startTick) / steps;
+    
+    for (let i = steps/2 - 1; i <= steps; i++) {
+      const tick = startTick + (tickIncrement * i);
+      const volumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
+      const volumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
+      
+      flipBinF2.forEach(ch => {
+        p(c, {tick: tick, type: 'control_c', vals: [ch, 7, m.round(volumeF2 * rf(.9, 1.2))]});
+      });
+      flipBinT2.forEach(ch => {
+        p(c, {tick: tick, type: 'control_c', vals: [ch, 7, m.round(volumeT2 * rf(.9, 1.2))]});
+      });
+    }
   }
 };
 ```
 
-**Advanced binaural beat generation**:
-- **Timing synchronization** - Binaural shifts occur at musically appropriate intervals
-- **State flipping** - flipBin alternates binaural frequency assignments
-- **Frequency evolution** - binauralFreqOffset gradually changes within 8-12Hz alpha range
-- **Clean transitions** - All notes off before frequency changes to prevent artifacts
+**Psychoacoustic Process:**
+1. **Shift timing** - Occurs at beat boundaries determined by beatsUntilBinauralShift
+2. **Toggle channels** - Switches which channels carry high/low frequencies
+3. **Frequency evolution** - Gradually changes binauralFreqOffset within alpha range (8-12 Hz)
+4. **Clean transition** - Cross-fade volume to prevent clicks during shift
 
-## Advanced Stutter Effects System
+---
 
-### `stutterFade()` - Dynamic Volume Stuttering
+## Stutter Effects System
+
+### `stutterFade()` - Volume Stutter Effect
+
+Applies rapid volume modulation (10-70 stutters) to selected channels:
+
 ```javascript
-stutterFade = (channels, numStutters=ri(10,70), duration=tpSec*rf(.2,1.5)) => {
-  const CHsToStutter = ri(1,5);
+stutterFade = (channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) => {
+  const CHsToStutter = ri(1, 5);
   const channelsToStutter = new Set();
   const availableCHs = channels.filter(ch => !lastUsedCHs.has(ch));
-
+  
+  // Avoid stuttering same channels consecutively
+  while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
+    const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
+    channelsToStutter.add(ch);
+    availableCHs.splice(availableCHs.indexOf(ch), 1);
+  }
+  lastUsedCHs = new Set(channelsToStutter);
+  
+  const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => {
-    const maxVol = ri(90,120);
+    const maxVol = ri(90, 120);
     const isFadeIn = rf() < 0.5;
-    for (let i = m.floor(numStutters*(rf(1/3,2/3))); i < numStutters; i++) {
-      const tick = beatStart + i * (duration/numStutters) * rf(.9,1.1);
-      let volume = isFadeIn ?
+    
+    // Generate 10-70 individual volume changes
+    for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
+      const tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
+      const volume = isFadeIn ?
         modClamp(m.floor(maxVol * (i / (numStutters - 1))), 25, maxVol) :
         modClamp(m.floor(100 * (1 - (i / (numStutters - 1)))), 25, 100);
-
-      p(c, {tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume/rf(1.5,5))]});
+      
+      p(c, {tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))]});
+      p(c, {tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume]});
     }
+    p(c, {tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol]});
   });
 };
 ```
 
-**Intelligent channel selection and stutter generation**:
-- **Avoidance system** - Prevents stuttering same channels consecutively
-- **Variable stutter count** - 10-70 individual volume changes per effect
-- **Fade direction randomization** - 50/50 chance of fade-in vs fade-out
-- **Timing jitter** - Small random variations prevent mechanical feel
+### `stutterPan()` and `stutterFX()`
 
-### `stutterPan()` and `stutterFX()` - Spatial and Effects Modulation
-Similar sophisticated algorithms for:
-- **Spatial automation** - MIDI CC 10 (pan position) modulation
-- **Effects parameter modulation** - Random effect selection with temporal patterns
-- **Organic movement** - Random offsets and timing variations
+Similar algorithms for pan position (CC 10) and effect parameter modulation with variable stutter counts and decay factors.
 
-## Balance and Effects Processing
+---
 
-### `setBalanceAndFX()` - Comprehensive Audio Processing
+## Cross-Modulation: `crossModulateRhythms()`
+
+Calculates a single **crossModulation** value that determines note trigger probability based on rhythmic context:
+
 ```javascript
-setBalanceAndFX = () => {
-  if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop < 1 ) {
-    balOffset = rl(balOffset, -4, 4, 0, 45);
-    sideBias = rl(sideBias, -2, 2, -20, 20);
-    lBal = m.max(0, m.min(54, balOffset + ri(3) + sideBias));
-    rBal = m.min(127, m.max(74, 127 - balOffset - ri(3) + sideBias));
-    cBal = m.min(96, (m.max(32, 64 + m.round(rv(balOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
-    // Extensive effects processing for all channels...
-  }
-}
+crossModulation = 0;
+
+// Add bonuses when rhythms are active
+crossModulation += beatRhythm[beatIndex] > 0 ? rf(1.5, 3) : m.max(rf(.625, 1.25), pattern) +
+                  divRhythm[divIndex] > 0 ? rf(1, 2) : m.max(rf(.5, 1), pattern) +
+                  subdivRhythm[subdivIndex] > 0 ? rf(.5, 1) : m.max(rf(.25, .5), pattern);
+
+// Penalize very high subdivision rates
+crossModulation += (subdivsPerMinute > ri(400, 600) ? rf(-.4, -.6) : rf(.1));
+
+// Bonuses for inactivity (fills silence)
+crossModulation += (beatRhythm[beatIndex] < 1 ? rf(.4, .5) : 0);
+crossModulation += (divRhythm[divIndex] < 1 ? rf(.3, .4) : 0);
+crossModulation += (subdivRhythm[subdivIndex] < 1 ? rf(.2, .3) : 0);
 ```
 
-**Dynamic balance and effects**:
-- **Evolutionary parameters** - balOffset and sideBias evolve gradually over time
-- **Mathematical balance relationships** - Complementary left/right calculations
-- **Comprehensive effects processing** - Different ranges for each channel type and effect
+**Musical Logic:**
+- **Rewards active beats** - Higher probability when beat/div/subdiv rhythms are active
+- **Fills silence** - Adds notes when rhythms are inactive to maintain density
+- **Limits density** - Penalizes when subdivision rate exceeds 400-600 subs/minute
+- **Temporal smoothing** - Uses lastCrossMod to smooth probability over time
 
-## Note Generation System
+---
 
-### `crossModulateRhythms()` - Musical Decision Engine
-```javascript
-crossModulateRhythms = () => {
-  crossModulation = 0;
-  crossModulation += beatRhythm[beatIndex] > 0 ? rf(1.5,3) : m.max(rf(.625,1.25), (1 / numerator) * beatsOff + (1 / numerator) * beatsOn) +
-  divRhythm[divIndex] > 0 ? rf(1,2) : m.max(rf(.5,1), (1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) +
-  subdivRhythm[subdivIndex] > 0 ? rf(.5,1) : m.max(rf(.25,.5), (1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) +
-  (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) +
-  (beatRhythm[beatIndex]<1?rf(.4,.5):0) + (divRhythm[divIndex]<1?rf(.3,.4):0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3):0);
-};
-```
+## Note Generation: `playNotes()`
 
-**Complex musical intelligence**:
-- **Hierarchical rhythm awareness** - Considers beat, division, and subdivision patterns
-- **Active pattern bonuses** - Higher crossModulation when rhythms are active
-- **Density considerations** - Reduces crossModulation at very high subdivision rates
-- **Pattern interaction analysis** - Multiple factors create sophisticated musical decisions
+Generates note on/off events based on crossModulation threshold and binaural channel selection:
 
-### `playNotes()` - Main Note Generation Engine
 ```javascript
 playNotes = () => {
-  setNoteParams();
-  crossModulateRhythms();
-  if((crossModulation+lastCrossMod)/rf(1.8,2.2) > rv(rf(1.8,2.8), [-.2,-.3], .05)) {
-    composer.getNotes().forEach(({ note }) => {
-      source.filter(sourceCH =>
-        flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
-      ).map(sourceCH => {
-        p(c, {tick: sourceCH === cCH1 ? on + rv(tpSubdiv*rf(1/9)) : on + rv(tpSubdiv*rf(1/3)),
-              type: 'on',
-              vals: [sourceCH, note, sourceCH === cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
-        // Complex stutter-shift processing...
+  setNoteParams();  // Calculate on-tick, sustain, velocity
+  crossModulateRhythms();  // Calculate crossModulation value
+  
+  // Only generate notes if cross-modulation exceeds threshold
+  if ((crossModulation + lastCrossMod) / rf(1.8, 2.2) > rv(rf(1.8, 2.8), [-.2, -.3], .05)) {
+    if (composer) {
+      composer.getNotes().forEach(({ note }) => {
+        // Filter to appropriate channels based on current binaural state
+        source.filter(sourceCH =>
+          flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
+        ).map(sourceCH => {
+          const noteOnTick = sourceCH === cCH1 ?
+            on + rv(tpSubdiv * rf(1/9), [-.1, .1], .3) :
+            on + rv(tpSubdiv * rf(1/3), [-.1, .1], .3);
+          
+          const noteVelocity = sourceCH === cCH1 ?
+            velocity * rf(.95, 1.15) :
+            binVel * rf(.95, 1.03);
+          
+          p(c, {tick: noteOnTick, type: 'on', vals: [sourceCH, note, noteVelocity]});
+          p(c, {tick: on + sustain * (sourceCH === cCH1 ? 1 : rv(rf(.92, 1.03))), vals: [sourceCH, note]});
+          
+          // Complex stutter-shift processing...
+        });
       });
-    });
+    }
   }
 };
 ```
 
-**Intelligent note triggering**:
-- **Cross-modulation threshold** - Only generates notes when musical conditions are met
-- **Binaural channel filtering** - Uses appropriate channels for current binaural state
-- **Advanced stutter-shift processing** - Octave changes during stutter sequences
+---
 
-## Integration Functions
+## Balance and Effects: `setBalanceAndFX()`
+
+Manages left/right channel balance, center channel modulation, and 20+ MIDI control parameters for effects processing:
 
 ```javascript
-require('./sheet'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers');
+setBalanceAndFX = () => {
+  // Trigger on probability or at binaural shift points
+  if (rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop < 1) {
+    // Evolve balance offset gradually
+    balOffset = rl(balOffset, -4, 4, 0, 45);
+    sideBias = rl(sideBias, -2, 2, -20, 20);
+    
+    // Calculate channel balances with mathematical relationships
+    lBal = m.max(0, m.min(54, balOffset + ri(3) + sideBias));
+    rBal = m.min(127, m.max(74, 127 - balOffset - ri(3) + sideBias));
+    cBal = m.min(96, (m.max(32, 64 + m.round(rv(balOffset / ri(2, 3))) * (rf() < .5 ? -1 : 1) + sideBias)));
+    
+    refVar = ri(1, 10);
+    cBal2 = rf() < .5 ? cBal + m.round(refVar * .5) : cBal + m.round(refVar * -.5);
+    bassVar = refVar * rf(-2, 2);
+    cBal3 = rf() < .5 ? cBal2 + m.round(bassVar * .5) : cBal2 + m.round(bassVar * -.5);
+    
+    // Generate 50+ pan and effect control changes across all channels
+    p(c, ...['control_c'].flatMap(() => {
+      _ = { tick: beatStart - 1, type: 'control_c' };
+      return [
+        ...source2.map(ch => ({..., vals: [ch, 10, panValue]})),
+        ...reflection.map(ch => ({..., vals: [ch, 10, reflectionPan]})),
+        ...bass.map(ch => ({..., vals: [ch, 10, bassPan]})),
+        // 50+ effect parameter controls...
+      ];
+    }));
+  }
+};
 ```
 
-- **Dependency loading** - Imports all required modules in proper order
-- **Global state sharing** - All modules share global variables
-- **CSV event generation** - Direct MIDI event creation using global infrastructure
+---
 
-## CSVBuffer Layer Integration
+## Instrument Randomization: `setOtherInstruments()`
 
-**stage.js** audio functions use the global `c` buffer transparently:
-- **All p(c, ...) calls** - Push events to whichever layer is currently active
-- **setTuningAndInstruments()** - Initializes both c1 (primary) and c2 (poly) layers
-- **Layer switching** - LM.activate() changes `c` reference, stage.js code unchanged
-- **No layer conditionals** - Same code generates events for any active layer
-- **Preserves minimalism** - Functions remain layer-agnostic while supporting multi-layer output
+Randomly updates instruments on reflection and bass binaural channels:
 
-This transparent architecture allows setBinaural(), stutterFX(), playNotes(), etc. to work identically across all layers without modification.
+```javascript
+setOtherInstruments = () => {
+  if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop < 1) {
+    p(c, ...['control_c'].flatMap(() => {
+      _ = { tick: beatStart, type: 'program_c' };
+      return [
+        ...reflectionBinaural.map(ch => ({..., vals: [ch, ra(otherInstruments)]})),
+        ...bassBinaural.map(ch => ({..., vals: [ch, ra(otherBassInstruments)]})),
+        { ..., vals: [drumCH, ra(drumSets)] }
+      ];
+    }));
+  }
+};
+```
 
-## Performance Characteristics
+---
 
-- **Real-time processing** - All effects calculated on-demand during composition
-- **Efficient algorithms** - Optimized for speed while maintaining audio quality
-- **MIDI optimization** - All output directly compatible with MIDI specifications
-- **Psychoacoustic accuracy** - Precise frequency calculations for binaural effects
-- **Musical intelligence** - Sophisticated decision-making based on multiple musical factors
+## Helper Functions
+
+### `setNoteParams()`
+Calculates on-tick, sustain duration, and velocity for each note based on timing/subdivision context.
+
+### `allNotesOff(tick)`
+Sends note-off (velocity 0) events to all active channels at specified tick for clean transitions.
+
+---
+
+## Layer-Agnostic Architecture
+
+All audio functions use the global `c` buffer transparently:
+- **p(c, ...)** automatically routes to active layer (c1 or c2)
+- **LM.activate()** changes the `c` reference
+- **No conditional logic** needed - same code works for all layers
+- **Preserves minimalism** while enabling multi-layer output
