@@ -145,7 +145,7 @@ export default [
         ModeComposer: 'writable',
         RandomModeComposer: 'writable',
         // Functions
-        getMidiMeter: 'writable',
+        getMidiTiming: 'writable',
         setMidiTiming: 'writable',
         getPolyrhythm: 'writable',
         setUnitTiming: 'writable',

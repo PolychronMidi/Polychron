@@ -124,7 +124,7 @@ test('critical timing functions should have JSDoc', () => {
   const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
-    'getMidiMeter',
+    'getMidiTiming',
     'setMidiTiming',
     'setUnitTiming',
     'getPolyrhythm'

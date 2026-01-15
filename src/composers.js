@@ -36,12 +36,12 @@ class MeasureComposer {
    * Generates a valid meter [numerator, denominator] with log-based ratio check.
    * @param {boolean} [ignoreRatioCheck=false] - Skip ratio validation
    * @param {boolean} [polyMeter=false] - Allow larger ratio jumps for polyrhythm
-   * @param {number} [maxIterations=100] - Maximum attempts before fallback
-   * @param {number} [timeLimitMs=50] - Maximum wall-clock time before fallback
+   * @param {number} [maxIterations=200] - Maximum attempts before fallback
+   * @param {number} [timeLimitMs=100] - Maximum wall-clock time before fallback
    * @returns {number[]} [numerator, denominator]
    * @throws {Error} When max iterations exceeded and no valid meter found
    */
-getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100, timeLimitMs=50) {
+getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs=100) {
   // Constants for ratio validation
   const METER_RATIO_MIN = 0.25;
   const METER_RATIO_MAX = 4;
@@ -292,37 +292,40 @@ class RandomModeComposer extends ModeComposer {
 }
 
 // Centralized factory for composer creation (avoids eval and keeps config typed)
-const composerConstructors = {
-  measure: () => new MeasureComposer(),
-  scale: ({ name = 'major', root = 'C' } = {}) => new ScaleComposer(name, root),
-  randomScale: () => new RandomScaleComposer(),
-  chords: ({ progression = ['C'] } = {}) => new ChordComposer(progression),
-  randomChords: () => new RandomChordComposer(),
-  mode: ({ name = 'ionian', root = 'C' } = {}) => new ModeComposer(name, root),
-  randomMode: () => new RandomModeComposer(),
-};
+class ComposerFactory {
+  static constructors = {
+    measure: () => new MeasureComposer(),
+    scale: ({ name = 'major', root = 'C' } = {}) => new ScaleComposer(name, root),
+    randomScale: () => new RandomScaleComposer(),
+    chords: ({ progression = ['C'] } = {}) => new ChordComposer(progression),
+    randomChords: () => new RandomChordComposer(),
+    mode: ({ name = 'ionian', root = 'C' } = {}) => new ModeComposer(name, root),
+    randomMode: () => new RandomModeComposer(),
+  };
 
-/**
- * Creates a composer instance from a COMPOSERS config entry.
- * @param {{ type?: string, name?: string, root?: string, progression?: string[] }} config
- * @returns {MeasureComposer}
- */
-function createComposer(config = {}) {
-  const type = config.type || 'randomScale';
-  const factory = composerConstructors[type];
-  if (!factory) {
-    console.warn(`Unknown composer type: ${type}. Falling back to randomScale.`);
-    return composerConstructors.randomScale();
+  /**
+   * Creates a composer instance from a config entry.
+   * @param {{ type?: string, name?: string, root?: string, progression?: string[] }} config
+   * @returns {MeasureComposer}
+   */
+  static create(config = {}) {
+    const type = config.type || 'randomScale';
+    const factory = this.constructors[type];
+    if (!factory) {
+      console.warn(`Unknown composer type: ${type}. Falling back to randomScale.`);
+      return this.constructors.randomScale();
+    }
+    return factory(config);
   }
-  return factory(config);
 }
+
 /**
  * Instantiates all composers from COMPOSERS config.
  * @type {MeasureComposer[]}
  */
-composers=(function() {  return COMPOSERS.map(createComposer); })();
+composers = COMPOSERS.map((config) => ComposerFactory.create(config));
 
-// Export classes globally for testing
+// Export classes and factory globally for testing
 globalThis.MeasureComposer = MeasureComposer;
 globalThis.ScaleComposer = ScaleComposer;
 globalThis.RandomScaleComposer = RandomScaleComposer;
@@ -330,5 +333,4 @@ globalThis.ChordComposer = ChordComposer;
 globalThis.RandomChordComposer = RandomChordComposer;
 globalThis.ModeComposer = ModeComposer;
 globalThis.RandomModeComposer = RandomModeComposer;
-globalThis.createComposer = createComposer;
-globalThis.composerConstructors = composerConstructors;
+globalThis.ComposerFactory = ComposerFactory;

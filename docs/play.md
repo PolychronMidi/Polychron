@@ -76,7 +76,7 @@ phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
   composer = ra(composers);
   [numerator, denominator] = composer.getMeter();  // Get time signature from composers.js
-  getMidiMeter();           // Calculate MIDI-compatible meter via meter spoofing
+  getMidiTiming();           // Calculate MIDI-compatible meter via meter spoofing
   getPolyrhythm();          // Find optimal polyrhythm alignment
 ```
 - **Randomly selects composer** from composers.js ([code](../src/composers.js)) ([doc](composers.md))
@@ -146,7 +146,7 @@ LM.advance('primary', 'phrase');  // Save primary's state, advance phraseStart
 ### 6. Poly Layer (Line 47-93)
 ```javascript
 LM.activate('poly', true);  // Restore poly layer's timing context
-getMidiMeter();
+getMidiTiming();
 setUnitTiming('phrase');
 for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
   setUnitTiming('measure');

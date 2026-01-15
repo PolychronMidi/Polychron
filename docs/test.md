@@ -166,7 +166,7 @@ Each module has a corresponding `.test.js` file that imports the real implementa
 |-----------|--------|--------------|-------|
 | backstage.test.js | backstage.js | Math utilities (clamp, modClamp), randomization functions (ri, rf, rw), normalization | 1404 |
 | writers.test.js | writer.js | CSVBuffer class, event pushing (p), grandFinale file generation | ~600 |
-| time.test.js | time.js | Timing calculations (getMidiMeter, setMidiTiming), polyrhythm generation (getPolyrhythm), unit timing setup | 1466 |
+| time.test.js | time.js | Timing calculations (getMidiTiming, setMidiTiming), polyrhythm generation (getPolyrhythm), unit timing setup | 1466 |
 | composers.test.js | composers.js | Meter generation (getMeter), note selection (getNotes), class hierarchy (Scale, Random, Chord, Mode) | ~1000 |
 | rhythm.test.js | rhythm.js | Drum sound mapping (drumMap), pattern generation (drummer), context-aware rhythm logic | ~800 |
 | stage.test.js | stage.js | Binaural beat generation (binaural), stutter effects (stutter), note generation (note), channel management | ~1000 |
@@ -294,7 +294,7 @@ totalSections, phrasesPerSection
 **Functions & Classes:**
 ```javascript
 clamp, modClamp, ri, rf, rw, rd, rlc,  // Utilities
-getMidiMeter, setMidiTiming, getPolyrhythm, setUnitTiming, logUnit,  // Time functions
+getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, logUnit,  // Time functions
 getMidiValue, // Venue functions
 drummer, makeOnsets, // Rhythm functions
 binaural, stutter, note, // Stage functions
@@ -522,7 +522,7 @@ describe('drummer', () => {
 **Standard Adherence**: 90% ✅ (with justified exception)
 - Loads via `require()`: sheet, writer, backstage, time
 - Uses `setupGlobalState()` properly
-- Tests real functions: `getMidiMeter()`, `setMidiTiming()`, `getPolyrhythm()`, `setUnitTiming()`
+- Tests real functions: `getMidiTiming()`, `setMidiTiming()`, `getPolyrhythm()`, `setUnitTiming()`
 
 **Mock Usage - JUSTIFIED** ⚠️ → ✅:
 ```javascript
@@ -865,7 +865,7 @@ const mockComposer = {
   constructor: { name: 'MockComposer' }
 };
 
-describe('getMidiMeter', () => {
+describe('getMidiTiming', () => {
   beforeEach(() => {
     setupGlobalState();
     globalThis.composer = { ...mockComposer };
@@ -874,7 +874,7 @@ describe('getMidiMeter', () => {
   it('should return 4/4 unchanged', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    const result = getMidiMeter();
+    const result = getMidiTiming();
     expect(result).toEqual([4, 4]);
     expect(globalThis.midiMeter).toEqual([4, 4]);
     expect(globalThis.syncFactor).toBe(1);
@@ -883,7 +883,7 @@ describe('getMidiMeter', () => {
   it('should spoof non-power-of-2 denominators', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 9;
-    getMidiMeter();
+    getMidiTiming();
     expect(globalThis.midiMeter[1]).toBe(8); // Closest power of 2
   });
 });
@@ -949,7 +949,7 @@ describe('play.js - Orchestrator Module', () => {
 
   describe('Module Integration', () => {
     it('should have all required functions available', () => {
-      expect(typeof globalThis.getMidiMeter).toBe('function');
+      expect(typeof globalThis.getMidiTiming).toBe('function');
       expect(typeof globalThis.setMidiTiming).toBe('function');
       expect(typeof globalThis.drummer).toBe('function');
       expect(typeof globalThis.binaural).toBe('function');

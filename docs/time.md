@@ -25,7 +25,7 @@
 
 ---
 
-## Meter Spoofing: `getMidiMeter()`
+## Meter Spoofing: `getMidiTiming()`
 
 ### The Problem
 MIDI supports only time signatures where the denominator is a power of 2 (2, 4, 8, 16, 32). Complex meters like 7/11 or 5/7 cannot be directly expressed in MIDI format, causing composition to fail.
@@ -34,11 +34,11 @@ MIDI supports only time signatures where the denominator is a power of 2 (2, 4, 
 **Meter spoofing** finds the nearest power-of-2 denominator while calculating a **sync factor** to preserve the original meter's musical feel:
 
 ```javascript
-getMidiMeter = () => {
+getMidiTiming = () => {
   if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
     throw new Error(`Invalid meter: ${numerator}/${denominator}`);
   }
-  
+
   meterRatio = numerator / denominator;
   isPowerOf2 = (n) => { return (n & (n - 1)) === 0; }
 
@@ -148,7 +148,7 @@ getPolyrhythm = () => {
 ### Example: 4/4 vs 3/4 Polyrhythm
 - **4/4 ratio**: 1.0, **3/4 ratio**: 0.75
 - **Test 1**: 1 × 1.0 = 1.0 vs 1 × 0.75 = 0.75 → No match
-- **Test 2**: 2 × 1.0 = 2.0 vs 3 × 0.75 = 2.25 → No match  
+- **Test 2**: 2 × 1.0 = 2.0 vs 3 × 0.75 = 2.25 → No match
 - **Test 3**: 3 × 1.0 = 3.0 vs 4 × 0.75 = 3.0 → **Match!**
 - **Result**: 3 primary measures = 4 poly measures in time
 
@@ -309,7 +309,7 @@ TimingContext = class TimingContext {
 
   saveFrom(globals) { /* Copies properties from globals object to this */ }
   restoreTo(globals) { /* Copies properties from this to globals object */ }
-  
+
   advancePhrase(tpPhrase, spPhrase) {
     this.phraseStart += tpPhrase;
     this.phraseStartTime += spPhrase;
@@ -420,7 +420,7 @@ LM.advance('primary', 'phrase');  // Advance to next phrase
 // Dual-layer composition
 for (sectionIndex = 0; sectionIndex < sections; sectionIndex++) {
   for (phraseIndex = 0; phraseIndex < measuresPerPhrase1; phraseIndex++) {
-    
+
     // PRIMARY LAYER
     LM.activate('primary', false);
     setUnitTiming('phrase');
@@ -430,7 +430,7 @@ for (sectionIndex = 0; sectionIndex < sections; sectionIndex++) {
         setUnitTiming('beat');
         playNotes();  // Primary notes on primary layer buffer
     LM.advance('primary', 'phrase');
-    
+
     // POLY LAYER
     LM.activate('poly', true);
     setUnitTiming('phrase');
@@ -480,7 +480,7 @@ formatTime = (seconds) => {
 };
 ```
 
-### `logUnit(type)` 
+### `logUnit(type)`
 Generates CSV marker events for debugging/visualization if LOG setting allows:
 - Controlled by LOG environment variable ('none', 'all', or comma-separated unit types)
 - Creates MIDI text events with timing info
@@ -506,7 +506,7 @@ Generates CSV marker events for debugging/visualization if LOG setting allows:
 
 ## Error Handling
 
-**getMidiMeter()** validates inputs:
+**getMidiTiming()** validates inputs:
 - Meter numerator and denominator must be finite numbers
 - Denominator cannot be zero
 - BPM must be positive

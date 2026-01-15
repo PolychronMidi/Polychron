@@ -17,11 +17,10 @@ class TimingCalculator {
     this.bpm = bpm;
     this.ppq = ppq;
     this.meter = [num, den];
-    this._computeMidiMeter();
-    this._computeBaseDurations();
+    this._getMidiTiming();
   }
 
-  _computeMidiMeter() {
+  _getMidiTiming() {
     const [num, den] = this.meter;
     const isPow2 = (n) => (n & (n - 1)) === 0;
     if (isPow2(den)) {
@@ -38,23 +37,24 @@ class TimingCalculator {
     this.midiMeterRatio = this.midiMeter[0] / this.midiMeter[1];
     this.syncFactor = this.midiMeterRatio / this.meterRatio;
     this.midiBPM = this.bpm * this.syncFactor;
-  }
-
-  _computeBaseDurations() {
     this.tpSec = this.midiBPM * this.ppq / 60;
     this.tpMeasure = this.ppq * 4 * this.midiMeterRatio;
     this.spMeasure = (60 / this.bpm) * 4 * this.meterRatio;
   }
 }
 
+// Export TimingCalculator to global namespace for tests and other modules
+globalThis.TimingCalculator = TimingCalculator;
+let timingCalculator = null;
+
 /**
  * Compute MIDI-compatible meter and tempo sync factor.
  * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
  * @returns {number[]} MIDI meter as [numerator, denominator].
  */
-getMidiMeter = () => {
-  const calc = new TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
-  ({ midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure } = calc);
+getMidiTiming = () => {
+  timingCalculator = new TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
+  ({ midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure } = timingCalculator);
   return midiMeter; // Return the midiMeter for testing
 };
 
@@ -80,7 +80,7 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
-  const MAX_ATTEMPTS = 10;
+  const MAX_ATTEMPTS = 200;
   let attempts = 0;
   while (attempts++ < MAX_ATTEMPTS) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);

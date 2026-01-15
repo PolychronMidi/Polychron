@@ -272,47 +272,47 @@ describe('Stage Module', () => {
 
   describe('Functions Exist', () => {
     it('should have setTuningAndInstruments function', () => {
-      expect(typeof globalThis.setTuningAndInstruments).toBe('function');
+      expect(typeof globalThis.stage.setTuningAndInstruments).toBe('function');
     });
 
     it('should have setOtherInstruments function', () => {
-      expect(typeof globalThis.setOtherInstruments).toBe('function');
+      expect(typeof globalThis.stage.setOtherInstruments).toBe('function');
     });
 
     it('should have setBinaural function', () => {
-      expect(typeof globalThis.setBinaural).toBe('function');
+      expect(typeof globalThis.stage.setBinaural).toBe('function');
     });
 
     it('should have stutterFade function', () => {
-      expect(typeof globalThis.stutterFade).toBe('function');
+      expect(typeof globalThis.stage.stutterFade).toBe('function');
     });
 
     it('should have stutterPan function', () => {
-      expect(typeof globalThis.stutterPan).toBe('function');
+      expect(typeof globalThis.stage.stutterPan).toBe('function');
     });
 
     it('should have stutterFX function', () => {
-      expect(typeof globalThis.stutterFX).toBe('function');
+      expect(typeof globalThis.stage.stutterFX).toBe('function');
     });
 
     it('should have setBalanceAndFX function', () => {
-      expect(typeof globalThis.setBalanceAndFX).toBe('function');
+      expect(typeof globalThis.stage.setBalanceAndFX).toBe('function');
     });
 
     it('should have crossModulateRhythms function', () => {
-      expect(typeof globalThis.crossModulateRhythms).toBe('function');
+      expect(typeof globalThis.stage.crossModulateRhythms).toBe('function');
     });
 
     it('should have setNoteParams function', () => {
-      expect(typeof globalThis.setNoteParams).toBe('function');
+      expect(typeof globalThis.stage.setNoteParams).toBe('function');
     });
 
     it('should have playNotes function', () => {
-      expect(typeof globalThis.playNotes).toBe('function');
+      expect(typeof globalThis.stage.playNotes).toBe('function');
     });
 
     it('should have playNotes2 function', () => {
-      expect(typeof globalThis.playNotes2).toBe('function');
+      expect(typeof globalThis.stage.playNotes2).toBe('function');
     });
   });
 
@@ -361,7 +361,7 @@ describe('Stage Module', () => {
     });
 
     it('should update pan values on condition', () => {
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       // Should have added pan control change events
       const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
       // Pan control is CC 10, should have events for different channels
@@ -369,7 +369,7 @@ describe('Stage Module', () => {
     });
 
     it('should keep pan values within valid MIDI range (0-127)', () => {
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
       panEvents.forEach(evt => {
         expect(evt.vals[2]).toBeGreaterThanOrEqual(0);
@@ -378,14 +378,14 @@ describe('Stage Module', () => {
     });
 
     it('should apply different pan values for left vs right channels', () => {
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
       // When pan events are applied, left channels should differ from right
       expect(panEvents.length).toBeGreaterThan(1);
     });
 
     it('should apply FX control events (CC 1, 5, 11, etc)', () => {
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       // Should generate control change events for various FX
       const fxEvents = c.filter(evt => evt.type === 'control_c');
       expect(fxEvents.length).toBeGreaterThan(10);
@@ -393,7 +393,7 @@ describe('Stage Module', () => {
 
     it('should set tick to beatStart-1 for control events', () => {
       globalThis.beatStart = 100;
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       const controlEvents = c.filter(evt => evt.type === 'control_c');
       controlEvents.forEach(evt => {
         expect(evt.tick).toBe(99); // beatStart - 1
@@ -402,13 +402,13 @@ describe('Stage Module', () => {
 
     it('should update balance offset with limited change', () => {
       const initialBal = globalThis.balOffset;
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       // balOffset should change but within reasonable limits
       expect(Math.abs(globalThis.balOffset - initialBal)).toBeLessThanOrEqual(4);
     });
 
     it('should apply side bias variation', () => {
-      setBalanceAndFX();
+      stage.setBalanceAndFX();
       // sideBias should affect the left/right pan values
       expect(typeof globalThis.sideBias).toBe('number');
       expect(globalThis.sideBias).toBeGreaterThanOrEqual(-20);
@@ -417,7 +417,7 @@ describe('Stage Module', () => {
 
     it('should clamp balance values correctly', () => {
       for (let i = 0; i < 5; i++) {
-        setBalanceAndFX();
+        stage.setBalanceAndFX();
         expect(globalThis.lBal).toBeGreaterThanOrEqual(0);
         expect(globalThis.lBal).toBeLessThanOrEqual(54);
         expect(globalThis.rBal).toBeGreaterThanOrEqual(74);
@@ -444,7 +444,7 @@ describe('Stage Module', () => {
       for (let i = 0; i < 10; i++) {
         globalThis.c = [];
         globalThis.beatCount = i;
-        setOtherInstruments();
+        stage.setOtherInstruments();
         if (c.length > 0) {
           instrumentChanges++;
         }
@@ -455,7 +455,7 @@ describe('Stage Module', () => {
 
     it('should generate program change events for binaural instruments', () => {
       globalThis.firstLoop = 0; // Force execution on first loop
-      setOtherInstruments();
+      stage.setOtherInstruments();
       const progChanges = c.filter(evt => evt.type === 'program_c');
       expect(progChanges.length).toBeGreaterThan(0);
     });
@@ -463,7 +463,7 @@ describe('Stage Module', () => {
     it('should set tick to beatStart for instrument changes', () => {
       globalThis.firstLoop = 0;
       globalThis.beatStart = 960;
-      setOtherInstruments();
+      stage.setOtherInstruments();
       c.forEach(evt => {
         expect(evt.tick).toBe(960);
       });
@@ -472,7 +472,7 @@ describe('Stage Module', () => {
     it('should select from otherInstruments array', () => {
       globalThis.firstLoop = 0;
       globalThis.otherInstruments = [50, 51, 52];
-      setOtherInstruments();
+      stage.setOtherInstruments();
       const progChanges = c.filter(evt => evt.type === 'program_c' && evt.vals);
       progChanges.forEach(evt => {
         // Program value should be from otherInstruments or otherBassInstruments or drumSets
@@ -484,7 +484,7 @@ describe('Stage Module', () => {
       globalThis.firstLoop = 1; // Not first loop
       globalThis.beatCount = 10;
       globalThis.beatsUntilBinauralShift = 5; // beatCount % beatsUntilBinauralShift = 0, but not < 1
-      setOtherInstruments();
+      stage.setOtherInstruments();
       // Might or might not execute depending on random chance (rf() < .3)
       expect(Array.isArray(c)).toBe(true);
     });
