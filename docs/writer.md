@@ -19,7 +19,7 @@
 
 **writer.js** is the **output layer**:
 - **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls grandFinale() at composition end
-- **All modules** - Generate events via `p(c, event)` 
+- **All modules** - Generate events via `p(c, event)`
 - **time.js** ([code](../src/time.js)) ([doc](time.md)) - Timing markers use time.md logUnit()
 - **Layer-aware** - Automatically routes events to active layer's buffer
 
@@ -296,7 +296,7 @@ c = c1;  // Active buffer reference
 
 // Same syntax as array days - completely backward compatible
 p(c, {tick: 0, type: 'on', vals: [0, 60, 99]});
-p(c, 
+p(c,
   {tick: 100, type: 'on', vals: [0, 64, 99]},
   {tick: 200, type: 'off', vals: [0, 64]}
 );
@@ -456,9 +456,9 @@ Logs timing boundary markers for debugging and composition analysis:
 logUnit = (type) => {
   // Controlled by LOG variable: 'none', 'all', or comma-separated types
   if (LOG === 'none') return null;
-  
+
   let unit, unitsPerParent, startTick, endTick, startTime, endTime;
-  
+
   if (type === 'section') {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
@@ -529,17 +529,17 @@ Outputs separate CSV/MIDI files for each registered layer:
 ```javascript
 grandFinale = () => {
   const outputDir = 'output';
-  
+
   Object.values(LM.layers).forEach(layer => {
     const {buffer, state} = layer;
     const filename = `${outputDir}/${buffer.name}.csv`;
-    
+
     // Convert CSVBuffer rows to CSV string
     const csvContent = buffer.rows.map(row => {
       // Convert event object to CSV row format
       return csvToString(row);
     }).join('\n');
-    
+
     // Write to filesystem
     try {
       fs.writeFileSync(filename, csvContent, 'utf8');
@@ -548,7 +548,7 @@ grandFinale = () => {
       console.error(`Failed to write ${filename}:`, e.message);
     }
   });
-  
+
   // Optionally convert CSV to MIDI binary format
   // (depends on external MIDI library integration)
 };
@@ -618,7 +618,7 @@ for (phrase...) {
   LM.activate('primary');
   setUnitTiming('phrase');
   playNotes();  // Events go to c1
-  
+
   LM.activate('poly');
   setUnitTiming('phrase');
   playNotes();  // Events go to c2

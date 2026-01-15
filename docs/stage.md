@@ -152,13 +152,13 @@ setBinaural = () => {
     beatCount = 0;
     flipBin = !flipBin;  // Toggle binaural state
     allNotesOff(beatStart);  // Clear previous notes
-    
+
     // Randomize interval until next shift (1-2 × numerator beats)
     beatsUntilBinauralShift = ri(numerator, numerator * 2 * bpmRatio3);
-    
+
     // Evolve binaural frequency offset within alpha range (8-12 Hz)
     binauralFreqOffset = rl(binauralFreqOffset, -1, 1, BINAURAL.min, BINAURAL.max);
-    
+
     // Apply pitch bends to all binaural channels
     p(c, ...binauralL.map(ch => ({
       tick: beatStart,
@@ -167,18 +167,18 @@ setBinaural = () => {
         (flipBin ? binauralMinus : binauralPlus) :
         (flipBin ? binauralPlus : binauralMinus)]
     })));
-    
+
     // Volume crossfade between channel sets
     const startTick = beatStart - tpSec/4;
     const endTick = beatStart + tpSec/4;
     const steps = 10;
     const tickIncrement = (endTick - startTick) / steps;
-    
+
     for (let i = steps/2 - 1; i <= steps; i++) {
       const tick = startTick + (tickIncrement * i);
       const volumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
       const volumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
-      
+
       flipBinF2.forEach(ch => {
         p(c, {tick: tick, type: 'control_c', vals: [ch, 7, m.round(volumeF2 * rf(.9, 1.2))]});
       });
@@ -209,7 +209,7 @@ stutterFade = (channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5
   const CHsToStutter = ri(1, 5);
   const channelsToStutter = new Set();
   const availableCHs = channels.filter(ch => !lastUsedCHs.has(ch));
-  
+
   // Avoid stuttering same channels consecutively
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
     const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
@@ -217,19 +217,19 @@ stutterFade = (channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
   lastUsedCHs = new Set(channelsToStutter);
-  
+
   const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => {
     const maxVol = ri(90, 120);
     const isFadeIn = rf() < 0.5;
-    
+
     // Generate 10-70 individual volume changes
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
       const tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
       const volume = isFadeIn ?
         modClamp(m.floor(maxVol * (i / (numStutters - 1))), 25, maxVol) :
         modClamp(m.floor(100 * (1 - (i / (numStutters - 1)))), 25, 100);
-      
+
       p(c, {tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))]});
       p(c, {tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume]});
     }
@@ -281,7 +281,7 @@ Generates note on/off events based on crossModulation threshold and binaural cha
 playNotes = () => {
   setNoteParams();  // Calculate on-tick, sustain, velocity
   crossModulateRhythms();  // Calculate crossModulation value
-  
+
   // Only generate notes if cross-modulation exceeds threshold
   if ((crossModulation + lastCrossMod) / rf(1.8, 2.2) > rv(rf(1.8, 2.8), [-.2, -.3], .05)) {
     if (composer) {
@@ -293,14 +293,14 @@ playNotes = () => {
           const noteOnTick = sourceCH === cCH1 ?
             on + rv(tpSubdiv * rf(1/9), [-.1, .1], .3) :
             on + rv(tpSubdiv * rf(1/3), [-.1, .1], .3);
-          
+
           const noteVelocity = sourceCH === cCH1 ?
             velocity * rf(.95, 1.15) :
             binVel * rf(.95, 1.03);
-          
+
           p(c, {tick: noteOnTick, type: 'on', vals: [sourceCH, note, noteVelocity]});
           p(c, {tick: on + sustain * (sourceCH === cCH1 ? 1 : rv(rf(.92, 1.03))), vals: [sourceCH, note]});
-          
+
           // Complex stutter-shift processing...
         });
       });
@@ -322,17 +322,17 @@ setBalanceAndFX = () => {
     // Evolve balance offset gradually
     balOffset = rl(balOffset, -4, 4, 0, 45);
     sideBias = rl(sideBias, -2, 2, -20, 20);
-    
+
     // Calculate channel balances with mathematical relationships
     lBal = m.max(0, m.min(54, balOffset + ri(3) + sideBias));
     rBal = m.min(127, m.max(74, 127 - balOffset - ri(3) + sideBias));
     cBal = m.min(96, (m.max(32, 64 + m.round(rv(balOffset / ri(2, 3))) * (rf() < .5 ? -1 : 1) + sideBias)));
-    
+
     refVar = ri(1, 10);
     cBal2 = rf() < .5 ? cBal + m.round(refVar * .5) : cBal + m.round(refVar * -.5);
     bassVar = refVar * rf(-2, 2);
     cBal3 = rf() < .5 ? cBal2 + m.round(bassVar * .5) : cBal2 + m.round(bassVar * -.5);
-    
+
     // Generate 50+ pan and effect control changes across all channels
     p(c, ...['control_c'].flatMap(() => {
       _ = { tick: beatStart - 1, type: 'control_c' };

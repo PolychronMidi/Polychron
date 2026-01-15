@@ -214,8 +214,6 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 ## Future Development
 
 ### Planned Enhancements
-- **Motif System**: Thematic development and variation (Task 3.1)
-- **Section Types**: Introduction, exposition, development, conclusion, fugue (Task 3.2)
 - **Machine Learning**: Adaptive composition based on musical analysis
 - **Real-time Processing**: Live performance capabilities
 - **Visualization**: Graphical representation of complex rhythms
@@ -227,22 +225,6 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Cross-Modal Integration**: Audio-visual synchronization
 - **Cognitive Studies**: Perception of complex polyrhythms
 - **Algorithmic Composition**: Advanced generative algorithms
-
-## Technical Documentation
-
-Each module has a comprehensive .md file with verbose architectural details:
-- **[play.md](docs/play.md)**: LayerManager context switching, timing increment hierarchy, cascading formulas
-- **[composers.md](docs/composers.md)**: Composer factory, voice leading integration
-- **[time.md](docs/time.md)**: setUnitTiming() deep dive, all 7 timing level formulas, delicate dependencies
-- **[rhythm.js](docs/rhythm.md)**: CSVBuffer integration with transparent buffer switching
-- **[stage.md](docs/stage.md)**: MIDI event generation, audio processing pipeline
-- **[voiceLeading.md](voiceLeading.md)**: Cost function optimization, voice leading rules, integration patterns
-- **[backstage.md](docs/backstage.md)**: CSVBuffer/LayerManager API reference, context switching patterns
-- **[writer.md](docs/writer.md)**: MIDI output and file generation
-- **[venue.md](docs/venue.md)**: Pure data module, music theory databases
-- **[sheet.md](docs/sheet.md)**: Global configuration applying across all layers
-
-Code files maintain ultra-minimalist style with sparse essential comments.
 
 ## Community & Resources
 
