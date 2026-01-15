@@ -55,36 +55,27 @@ Channel 15:     Drum channel
 
 Initializes all 16 MIDI channels with program changes, pitch bend, and panning:
 
+<!-- BEGIN: snippet:Stage_setTuningAndInstruments -->
+
 ```javascript
-setTuningAndInstruments = () => {
-  // Control changes (CC 10 panning) + program changes for source/reflection
-  p(c, ...['control_c','program_c'].flatMap(type => [
-    ...source.map(ch => ({
-      type, vals: [ch, ...(ch.toString().startsWith('lCH') ?
-        (type === 'control_c' ? [10, 0] : [primaryInstrument]) :
-        (type === 'control_c' ? [10, 127] : [primaryInstrument]))]
-    })),
-    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c',
-      vals: [cCH1, ...(type === 'control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c',
-      vals: [cCH2, ...(type === 'control_c' ? [tuningPitchBend] : [secondaryInstrument])]}
-  ]));
+  /**
+   * Sets program, pitch bend, and volume for all instrument channels
+   * @returns {void}
+   */
+  setTuningAndInstruments() {
+    p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
+    type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
+    { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+    { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
 
-  // Same for bass channels (dual bass instruments)
-  p(c, ...['control_c','program_c'].flatMap(type => [
-    ...bass.map(ch => ({
-      type, vals: [ch, ...(ch.toString().startsWith('lCH') ?
-        (type === 'control_c' ? [10, 0] : [bassInstrument]) :
-        (type === 'control_c' ? [10, 127] : [bassInstrument2]))]
-    })),
-    { type: type === 'control_c' ? 'pitch_bend_c' : 'program_c',
-      vals: [cCH3, ...(type === 'control_c' ? [tuningPitchBend] : [bassInstrument])]}
-  ]));
-
-  // Drum channel setup
-  p(c, {type: 'control_c', vals: [drumCH, 7, 127]});
-};
+    p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
+      type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
+      { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
+    p(c,{type:'control_c', vals:[drumCH, 7, 127]});
+  }
 ```
+
+<!-- END: snippet:Stage_setTuningAndInstruments -->
 
 **Setup Process:**
 1. Source channels: Panning (left channels fully left, right fully right), program changes
@@ -92,6 +83,62 @@ setTuningAndInstruments = () => {
 3. Reflection channels: Program changes to secondary instruments
 4. Bass channels: Dual instrument setup with binaural routing
 5. Drum channel: Volume to maximum (CC 7)
+
+---
+
+## Note Generation: `playNotes()`
+
+<!-- BEGIN: snippet:Stage_playNotes -->
+
+```javascript
+  /**
+   * Generates MIDI note events for source channels (subdivision-based timing)
+   * @returns {void}
+   */
+  playNotes() {
+    this.setNoteParams();
+    this.crossModulateRhythms();
+    const noteObjects = composer ? composer.getNotes() : [];
+    const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
+    if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
+  if (composer) motifNotes.forEach(({ note })=>{
+    // Play source channels
+    source.filter(sourceCH=>
+      flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
+    ).map(sourceCH=>{
+
+      p(c,{tick:sourceCH===cCH1 ? this.on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : this.on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : this.binVel*rf(.95,1.03)]});
+      p(c,{tick:this.on+this.sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
+
+    });
+
+    // Play reflection channels
+    reflection.filter(reflectionCH=>
+      flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
+    ).map(reflectionCH=>{
+
+      p(c,{tick:reflectionCH===cCH2 ? this.on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : this.on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : this.binVel*rf(.55,.9)]});
+      p(c,{tick:this.on+this.sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
+
+    });
+
+    // Play bass channels (with probability based on BPM)
+    if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
+      bass.filter(bassCH=>
+        flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
+      ).map(bassCH=>{
+        const bassNote=modClamp(note,12,35);
+
+        p(c,{tick:bassCH===cCH3 ? this.on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : this.on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : this.binVel*rf(1.85,2.45)]});
+        p(c,{tick:this.on+this.sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
+
+      });
+    }
+  }); subdivsOff=0; subdivsOn++; } else { subdivsOff++; subdivsOn=0; }
+  }
+```
+
+<!-- END: snippet:Stage_playNotes -->
 
 ---
 

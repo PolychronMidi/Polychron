@@ -2,6 +2,14 @@
 // minimalist comments, details at: time.md
 
 // TimingCalculator encapsulates meter spoofing and base duration math to keep globals pure and testable.
+/**
+ * Encapsulates meter spoofing and timing computations.
+ * @class TimingCalculator
+ * @param {object} options
+ * @param {number} options.bpm - Beats per minute.
+ * @param {number} options.ppq - Pulses per quarter note.
+ * @param {[number, number]} options.meter - [numerator, denominator].
+ */
 class TimingCalculator {
   constructor({ bpm, ppq, meter }) {
     const [num, den] = meter || [];

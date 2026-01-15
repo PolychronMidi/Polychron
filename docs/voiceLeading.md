@@ -107,22 +107,43 @@ const scorer = new VoiceLeadingScore({
 - **Tracks history** automatically for context-aware scoring
 
 **Example:**
+<!-- BEGIN: snippet:VoiceLeading_selectNextNote -->
+
 ```javascript
-const scorer = new VoiceLeadingScore();
+  /**
+   * Scores all available notes and returns the best candidate.
+   * @param {number[]} lastNotes - Previous notes [soprano, alto, tenor, bass]
+   * @param {number[]} availableNotes - Pool of candidate notes to evaluate
+   * @param {{ register?: string, constraints?: string[] }} [config] - Voice context
+   * @returns {number} Best scoring note
+   */
+  selectNextNote(lastNotes, availableNotes, config = {}) {
+    if (!availableNotes || availableNotes.length === 0) {
+      return lastNotes[0] ?? 60; // Fallback to C4
+    }
 
-// Last notes in each voice
-const lastNotes = [72, 60, 48, 36];  // S A T B
+    const register = config.register || 'soprano';
+    const constraints = config.constraints || [];
+    const registerRange = this.registers[register] || this.registers.soprano;
 
-// Available candidates for soprano
-const candidates = [70, 71, 72, 73, 74];
+    // Score each candidate
+    const scores = availableNotes.map((note) => ({
+      note,
+      score: this._scoreCandidate(note, lastNotes, registerRange, constraints),
+    }));
 
-// Select with voice register context
-const bestNote = scorer.selectNextNote(lastNotes, candidates, {
-  register: 'soprano',
-  constraints: ['avoidsStrident']
-});
-// Returns 71 or 73 (smooth step) instead of larger intervals
+    // Sort by score (lower is better) and return best
+    scores.sort((a, b) => a.score - b.score);
+    const bestNote = scores[0].note;
+
+    // Track history for context
+    this._updateHistory(bestNote, register);
+
+    return bestNote;
+  }
 ```
+
+<!-- END: snippet:VoiceLeading_selectNextNote -->
 
 **`analyzeQuality(noteSequence)`**
 - **Parameters:** `noteSequence`: `number[]` — Sequence to evaluate
@@ -133,12 +154,44 @@ const bestNote = scorer.selectNextNote(lastNotes, candidates, {
 - **Use case:** Post-hoc validation of generated sequences
 
 **Example:**
+<!-- BEGIN: snippet:VoiceLeading_analyzeQuality -->
+
 ```javascript
-const sequence = [60, 61, 62, 61, 60];  // Smooth stepwise motion
-const quality = scorer.analyzeQuality(sequence);
-console.log(quality);
-// { smoothness: 1.0, avgRange: 60.8, leapRecoveries: 1.0 }
+  /**
+   * Analyzes voice leading quality of a sequence.
+   * Useful for post-hoc validation or constraint scoring.
+   * @param {number[]} noteSequence - Sequence of notes to analyze
+   * @returns {{ smoothness: number, avgRange: number, leapRecoveries: number }}
+   */
+  analyzeQuality(noteSequence) {
+    if (noteSequence.length < 2) {
+      return { smoothness: 0, avgRange: 0, leapRecoveries: 0 };
+    }
+
+    let totalCost = 0;
+    let leapCount = 0;
+    let recoveryCount = 0;
+
+    for (let i = 1; i < noteSequence.length; i++) {
+      const interval = Math.abs(noteSequence[i] - noteSequence[i - 1]);
+      const motionCost = this._scoreVoiceMotion(interval, noteSequence[i - 1], noteSequence[i]);
+      totalCost += motionCost;
+
+      if (interval > 2) leapCount++;
+      if (i >= 2 && interval <= 2 && Math.abs(noteSequence[i - 1] - noteSequence[i - 2]) > 2) {
+        recoveryCount++;
+      }
+    }
+
+    return {
+      smoothness: totalCost / (noteSequence.length - 1),
+      avgRange: noteSequence.reduce((a, b) => a + b, 0) / noteSequence.length,
+      leapRecoveries: leapCount > 0 ? recoveryCount / leapCount : 1.0,
+    };
+  }
 ```
+
+<!-- END: snippet:VoiceLeading_analyzeQuality -->
 
 **`reset()`**
 - Clears historical tracking
@@ -394,8 +447,8 @@ Suitable for real-time composition in play.js measures/beats/subdivisions.
 
 ## See Also
 
-- [composers.md](docs/composers.md) — Composer factory with voice leading integration
-- [stage.md](docs/stage.md) — MIDI event generation and audio processing
-- [play.md](docs/play.md) — Main composition orchestrator
-- [time.md](docs/time.md) — Timing engine and meter spoofing
-- [README.md](README.md) — Project overview and all 10 modules
+- [composers.md](composers.md) — Composer factory with voice leading integration
+- [stage.md](stage.md) — MIDI event generation and audio processing
+- [play.md](play.md) — Main composition orchestrator
+- [time.md](time.md) — Timing engine and meter spoofing
+- [README.md](../README.md) — Project overview and all 10 modules
