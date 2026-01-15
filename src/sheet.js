@@ -61,11 +61,11 @@ SUBSUBDIVS={
   weights: [5,20,30,20,10,5]
 };
 COMPOSERS=[
-  // { type: 'scale',name: 'major',root: 'C',return: 'new ScaleComposer(this.name,this.root)' },
-  // { type: 'chords',progression: ['Cmaj7','Dm','G','Cmaj7'],return: 'new ChordComposer(this.progression)' },
-  // { type: 'mode',name: 'ionian',root: 'C',return: 'new ModeComposer(this.name,this.root)' },
-  { type: 'randomScale',return: 'new RandomScaleComposer()' },
-  { type: 'randomChords',return: 'new RandomChordComposer()' },
-  { type: 'randomMode',return: 'new RandomModeComposer()' }
+  // { type: 'scale',name: 'major',root: 'C' },
+  // { type: 'chords',progression: ['Cmaj7','Dm','G','Cmaj7'] },
+  // { type: 'mode',name: 'ionian',root: 'C' },
+  { type: 'randomScale' },
+  { type: 'randomChords' },
+  { type: 'randomMode' }
 ];
 SILENT_OUTRO_SECONDS=5;

@@ -42,7 +42,7 @@ drumMap={
  * @returns {void}
  */
 drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
-  console.log('[drummer] START',drumNames);
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] START',drumNames);
   if (drumNames==='random') {
     const allDrums=Object.keys(drumMap);
     drumNames=[allDrums[m.floor(m.random() * allDrums.length)]];
@@ -50,14 +50,14 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
   }
   const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
   const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
-  console.log('[drummer] drums/offsets prepared');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] drums/offsets prepared');
   if (offsets.length < drums.length) {
     offsets.push(...new Array(drums.length - offsets.length).fill(0));
   } else if (offsets.length > drums.length) {
     offsets.length=drums.length;
   }
   const combined=drums.map((drum,index)=>({ drum,offset: offsets[index] }));
-  console.log('[drummer] combined prepared');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] combined prepared');
   if (rf() < .7) {
     if (rf() < .5) {
       combined.reverse();
@@ -68,7 +68,7 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
-  console.log('[drummer] randomization done');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] randomization done');
   const adjustedOffsets=combined.map(({ offset })=>{
     if (rf() < .3) {
       return offset;
@@ -77,13 +77,13 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
       return adjusted - m.floor(adjusted);
     }
   });
-  console.log('[drummer] offsets adjusted');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] offsets adjusted');
   combined.forEach(({ drum,offset },idx)=>{
-    console.log(`[drummer] processing drum ${idx}:`,drum);
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] processing drum ${idx}:`,drum);
     const drumInfo=drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {
-        console.log('[drummer] applying stutter');
+        if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] applying stutter');
         const numStutters=ri(...stutterRange);
         const stutterDuration=.25*ri(1,8) / numStutters;
         const [minVelocity,maxVelocity]=drumInfo.velocityRange;
@@ -101,13 +101,13 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
           p(c,{tick:tick,type:'on',vals:[drumCH,drumInfo.note,m.floor(currentVelocity)]});
         }
       } else {
-        console.log('[drummer] no stutter');
+        if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] no stutter');
         p(c,{tick:beatStart + offset * tpBeat,type:'on',vals:[drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
       }
     }
-    console.log(`[drummer] drum ${idx} done`);
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] drum ${idx} done`);
   });
-  console.log('[drummer] END');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] END');
 };
 
 /**
@@ -292,43 +292,43 @@ setRhythm=(level)=>{
  * @returns {number[]} Onset pattern.
  */
 makeOnsets=(length,valuesOrRange)=>{
-  console.log('[makeOnsets] START',length,valuesOrRange);
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] START',length,valuesOrRange);
   let onsets=[];  let total=0;
   let iterations=0;
   while (total < length) {
-    console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
     let v=ra(valuesOrRange);
-    console.log(`[makeOnsets] v=${v}`);
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] v=${v}`);
     if (total + (v+1) <= length) {
       onsets.push(v);
       total+=v+1;
-      console.log(`[makeOnsets] added onset, new total=${total}`);
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
       v=valuesOrRange[0];
       if (total + (v+1) <= length) {
         onsets.push(v);
         total+=v+1;
-        console.log(`[makeOnsets] added onset, new total=${total}`);
+        if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
       }
-      console.log('[makeOnsets] breaking');
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
       break;
     } else {
-      console.log('[makeOnsets] breaking');
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
       break;
   }
     iterations++;
     if (iterations > length * 10) {
-      console.log('[makeOnsets] breaking');
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
       break;
     }
   }
-  console.log('[makeOnsets] building rhythm array');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] building rhythm array');
   let rhythm=[];
   for (let onset of onsets) {  rhythm.push(1);
     for (let i=0; i < onset; i++) { rhythm.push(0); }
   }
   while (rhythm.length < length) { rhythm.push(0); }
-  console.log('[makeOnsets] END, length=',rhythm.length);
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] END, length=',rhythm.length);
   return rhythm;
 };
 
@@ -339,23 +339,23 @@ makeOnsets=(length,valuesOrRange)=>{
  * @returns {number[]} Pattern adjusted to length.
  */
 patternLength=(pattern,length)=>{
-  console.log('[patternLength] START',pattern.length,length);
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] START',pattern.length,length);
   if (length===undefined) {
-    console.log('[patternLength] END');
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
     return pattern;
   }
   if (pattern.length===0) {
-    console.log('[patternLength] END');
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
     return pattern;  // Can't extend empty pattern
   }
   if (length > pattern.length) {
     while (pattern.length < length) {  pattern=pattern.concat(pattern.slice(0,length - pattern.length));  }
-    console.log('[patternLength] extended to',pattern.length);
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] extended to',pattern.length);
   } else if (length < pattern.length) {
     pattern=pattern.slice(0,length);
-    console.log('[patternLength] truncated to',pattern.length);
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] truncated to',pattern.length);
   }
-  console.log('[patternLength] END');
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
   return pattern;
 };
 
@@ -437,3 +437,4 @@ if (typeof globalThis !== 'undefined') {
     drummer, patternLength, makeOnsets, closestDivisor, drumMap
   });
 }
+

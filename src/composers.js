@@ -37,10 +37,11 @@ class MeasureComposer {
    * @param {boolean} [ignoreRatioCheck=false] - Skip ratio validation
    * @param {boolean} [polyMeter=false] - Allow larger ratio jumps for polyrhythm
    * @param {number} [maxIterations=100] - Maximum attempts before fallback
+   * @param {number} [timeLimitMs=50] - Maximum wall-clock time before fallback
    * @returns {number[]} [numerator, denominator]
    * @throws {Error} When max iterations exceeded and no valid meter found
    */
-getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
+getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100, timeLimitMs=50) {
   // Constants for ratio validation
   const METER_RATIO_MIN = 0.25;
   const METER_RATIO_MAX = 4;
@@ -49,8 +50,9 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
 
   let iterations=0;
   const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
+  const startTs=Date.now();
 
-  while (++iterations <= maxIterations) {
+  while (++iterations <= maxIterations && (Date.now() - startTs) <= timeLimitMs) {
     let newNumerator=this.getNumerator();
     let newDenominator=this.getDenominator();
 
@@ -81,7 +83,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
   }
 
   // Log warning with diagnostic info
-  console.warn(`getMeter() failed after ${iterations} iterations. Ratio bounds: [${METER_RATIO_MIN}, ${METER_RATIO_MAX}]. LogSteps range: [${MIN_LOG_STEPS}, ${maxLogSteps}]. Returning fallback: [${FALLBACK_METER[0]}, ${FALLBACK_METER[1]}]`);
+  console.warn(`getMeter() failed after ${iterations} iterations or ${(Date.now()-startTs)}ms. Ratio bounds: [${METER_RATIO_MIN}, ${METER_RATIO_MAX}]. LogSteps range: [${MIN_LOG_STEPS}, ${maxLogSteps}]. Returning fallback: [${FALLBACK_METER[0]}, ${FALLBACK_METER[1]}]`);
   this.lastMeter=FALLBACK_METER;
   return this.lastMeter;
 }
@@ -288,12 +290,37 @@ class RandomModeComposer extends ModeComposer {
   /** @returns {{note: number}[]} Random mode notes */
   x() { this.noteSet(); return super.x(); }
 }
+
+// Centralized factory for composer creation (avoids eval and keeps config typed)
+const composerConstructors = {
+  measure: () => new MeasureComposer(),
+  scale: ({ name = 'major', root = 'C' } = {}) => new ScaleComposer(name, root),
+  randomScale: () => new RandomScaleComposer(),
+  chords: ({ progression = ['C'] } = {}) => new ChordComposer(progression),
+  randomChords: () => new RandomChordComposer(),
+  mode: ({ name = 'ionian', root = 'C' } = {}) => new ModeComposer(name, root),
+  randomMode: () => new RandomModeComposer(),
+};
+
+/**
+ * Creates a composer instance from a COMPOSERS config entry.
+ * @param {{ type?: string, name?: string, root?: string, progression?: string[] }} config
+ * @returns {MeasureComposer}
+ */
+function createComposer(config = {}) {
+  const type = config.type || 'randomScale';
+  const factory = composerConstructors[type];
+  if (!factory) {
+    console.warn(`Unknown composer type: ${type}. Falling back to randomScale.`);
+    return composerConstructors.randomScale();
+  }
+  return factory(config);
+}
 /**
  * Instantiates all composers from COMPOSERS config.
  * @type {MeasureComposer[]}
  */
-composers=(function() {  return COMPOSERS.map(composer=>
-  eval(`(function() { return ${composer.return}; }).call({name:'${composer.name || ''}',root:'${composer.root || ''}',progression:${JSON.stringify(composer.progression || [])}})`) ); })();
+composers=(function() {  return COMPOSERS.map(createComposer); })();
 
 // Export classes globally for testing
 globalThis.MeasureComposer = MeasureComposer;
@@ -303,3 +330,5 @@ globalThis.ChordComposer = ChordComposer;
 globalThis.RandomChordComposer = RandomChordComposer;
 globalThis.ModeComposer = ModeComposer;
 globalThis.RandomModeComposer = RandomModeComposer;
+globalThis.createComposer = createComposer;
+globalThis.composerConstructors = composerConstructors;

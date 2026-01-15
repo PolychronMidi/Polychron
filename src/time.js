@@ -1,40 +1,60 @@
 // time.js - Timing engine with meter spoofing and dual-layer polyrhythm support.
 // minimalist comments, details at: time.md
 
+// TimingCalculator encapsulates meter spoofing and base duration math to keep globals pure and testable.
+class TimingCalculator {
+  constructor({ bpm, ppq, meter }) {
+    const [num, den] = meter || [];
+    if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) {
+      throw new Error(`Invalid meter: ${num}/${den}`);
+    }
+    if (!Number.isFinite(bpm) || bpm <= 0) {
+      throw new Error(`Invalid BPM: ${bpm}`);
+    }
+    if (!Number.isFinite(ppq) || ppq <= 0) {
+      throw new Error(`Invalid PPQ: ${ppq}`);
+    }
+    this.bpm = bpm;
+    this.ppq = ppq;
+    this.meter = [num, den];
+    this._computeMidiMeter();
+    this._computeBaseDurations();
+  }
+
+  _computeMidiMeter() {
+    const [num, den] = this.meter;
+    const isPow2 = (n) => (n & (n - 1)) === 0;
+    if (isPow2(den)) {
+      this.midiMeter = [num, den];
+    } else {
+      const hi = 2 ** m.ceil(m.log2(den));
+      const lo = 2 ** m.floor(m.log2(den));
+      const ratio = num / den;
+      this.midiMeter = m.abs(ratio - num / hi) < m.abs(ratio - num / lo)
+        ? [num, hi]
+        : [num, lo];
+    }
+    this.meterRatio = num / den;
+    this.midiMeterRatio = this.midiMeter[0] / this.midiMeter[1];
+    this.syncFactor = this.midiMeterRatio / this.meterRatio;
+    this.midiBPM = this.bpm * this.syncFactor;
+  }
+
+  _computeBaseDurations() {
+    this.tpSec = this.midiBPM * this.ppq / 60;
+    this.tpMeasure = this.ppq * 4 * this.midiMeterRatio;
+    this.spMeasure = (60 / this.bpm) * 4 * this.meterRatio;
+  }
+}
+
 /**
  * Compute MIDI-compatible meter and tempo sync factor.
  * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
  * @returns {number[]} MIDI meter as [numerator, denominator].
  */
 getMidiMeter = () => {
-  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
-    throw new Error(`Invalid meter: ${numerator}/${denominator}`);
-  }
-  if (!Number.isFinite(BPM) || BPM <= 0) {
-    throw new Error(`Invalid BPM: ${BPM}`);
-  }
-  meterRatio = numerator / denominator;
-  /** @param {number} n @returns {boolean} */
-  isPowerOf2 = (n) => { return (n & (n - 1)) === 0; }
-
-  if (isPowerOf2(denominator)) {
-    midiMeter = [numerator, denominator];
-  } else {
-    const high = 2 ** m.ceil(m.log2(denominator));
-    const highRatio = numerator / high;
-    const low = 2 ** m.floor(m.log2(denominator));
-    const lowRatio = numerator / low;
-    midiMeter = m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio)
-      ? [numerator, high]
-      : [numerator, low];
-  }
-
-  midiMeterRatio = midiMeter[0] / midiMeter[1];
-  syncFactor = midiMeterRatio / meterRatio;
-  midiBPM = BPM * syncFactor;
-  tpSec = midiBPM * PPQ / 60;
-  tpMeasure = PPQ * 4 * midiMeterRatio;
-  spMeasure = (60 / BPM) * 4 * meterRatio;
+  const calc = new TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
+  ({ midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure } = calc);
   return midiMeter; // Return the midiMeter for testing
 };
 
@@ -60,8 +80,13 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
-  while (true) {
+  const MAX_ATTEMPTS = 10;
+  let attempts = 0;
+  while (attempts++ < MAX_ATTEMPTS) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
+    if (!Number.isFinite(polyNumerator) || !Number.isFinite(polyDenominator) || polyDenominator <= 0) {
+      continue;
+    }
     polyMeterRatio = polyNumerator / polyDenominator;
     let allMatches = [];
     let bestMatch = {
@@ -99,6 +124,10 @@ getPolyrhythm = () => {
       return;
     }
   }
+  // Fallback if no valid polyrhythm found within attempts
+  measuresPerPhrase1 = 1;
+  measuresPerPhrase2 = 1;
+  console.warn(`getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); using 1:1 measures`);
 };
 
 /**
@@ -354,6 +383,9 @@ setUnitTiming = (unitType) => {
 
   switch (unitType) {
     case 'phrase':
+      if (!Number.isFinite(measuresPerPhrase) || measuresPerPhrase < 1) {
+        measuresPerPhrase = 1;
+      }
       tpPhrase = tpMeasure * measuresPerPhrase;
       spPhrase = tpPhrase / tpSec;
       break;
@@ -430,3 +462,6 @@ formatTime = (seconds) => {
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
+
+// Export for tests and __POLYCHRON_TEST__ namespace usage
+globalThis.TimingCalculator = TimingCalculator;
