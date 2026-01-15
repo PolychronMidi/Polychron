@@ -185,7 +185,7 @@ describe('logUnit', () => {
 describe('grandFinale', () => {
   beforeEach(() => {
     setupGlobalState();
-    // Mock fs methods
+    // Mock fs methods - necessary for file I/O tests  
     globalThis.fs = {
       writeFileSync: vi.fn(),
       existsSync: vi.fn(() => true),
@@ -198,6 +198,7 @@ describe('grandFinale', () => {
     globalThis.PPQ = 480;
     globalThis.SILENT_OUTRO_SECONDS = 1;
     globalThis.tpSec = 960;
+    // Mock these functions - they have external dependencies (allCHs array, etc.)
     globalThis.allNotesOff = vi.fn(() => []);
     globalThis.muteAll = vi.fn(() => []);
     globalThis.rf = (min, max) => (min + max) / 2;
