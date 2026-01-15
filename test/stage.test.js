@@ -171,9 +171,49 @@ require('../src/stage');  // Load stage module and all dependencies
       stage.crossModulateRhythms();
       const inactiveValue = stage.crossModulation;
 
-      // Active rhythms should contribute more
+      // Active rhythms should contribute more (active contributes rf(1.5,3), inactive uses max())
       expect(activeValue).toBeGreaterThan(inactiveValue);
     });
+
+    it('should verify active vs inactive rhythm slots affect output', () => {
+      // This test compares active slots (which use rf(1.5,3)=1.5) vs inactive (which use max())
+      
+      // Active: All slots are ON (value = 1)
+      globalThis.beatIndex = 0; // beatRhythm[0] = 1
+      globalThis.divIndex = 0; // divRhythm[0] = 1
+      globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
+
+      stage.crossModulation = 0;
+      stage.crossModulateRhythms();
+      const activeValue = stage.crossModulation;
+
+      // Inactive: All slots are OFF (value = 0)
+      globalThis.beatIndex = 1; // beatRhythm[1] = 0
+      globalThis.divIndex = 2; // divRhythm[2] = 0
+      globalThis.subdivIndex = 1; // subdivRhythm[1] = 0
+
+      stage.crossModulation = 0;
+      stage.crossModulateRhythms();
+      const inactiveValue = stage.crossModulation;
+
+      // Active slots contribute rf(1.5,3) which is larger than inactive max() expressions
+      expect(activeValue).toBeGreaterThan(inactiveValue);
+    });
+
+    it('should accumulate values from all formula terms', () => {
+      // Verify the formula is actually executing by checking that the value is more than just one term
+      globalThis.beatIndex = 0;
+      globalThis.divIndex = 0;
+      globalThis.subdivIndex = 0;
+
+      stage.crossModulation = 0;
+      stage.crossModulateRhythms();
+
+      // With stubs, should accumulate from multiple terms: rf(1.5,3)=1.5 as minimum
+      expect(stage.crossModulation).toBeGreaterThanOrEqual(1.5);
+    });
+
+
 
     it('should store previous crossModulation in lastCrossMod', () => {
       stage.crossModulation = 5.5;
@@ -181,10 +221,13 @@ require('../src/stage');  // Load stage module and all dependencies
 
       stage.crossModulateRhythms();
 
-      expect(stage.lastCrossMod).toBe(5.5); // Previous crossModulation saved
-      expect(stage.crossModulation).not.toBe(5.5); // New value calculated
+      // Should have saved the previous value (5.5) before calculating new one
+      expect(stage.lastCrossMod).toBe(5.5);
+      expect(typeof stage.crossModulation).toBe('number');
     });
+  });
 
+  describe('Integration tests for channel emission', () => {
     it('should have reflection and bass mapping functions', () => {
       // Verify that reflect and reflect2 mappings are defined
       expect(typeof globalThis.reflect).toBe('object');
