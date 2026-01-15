@@ -621,3 +621,12 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
  * @returns {Array} Array of CC events.
  */
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
+
+// Export to globalThis for test access
+if (typeof globalThis !== 'undefined') {
+  globalThis.rf = rf;
+  globalThis.ri = ri;
+  globalThis.clamp = clamp;
+  globalThis.rv = rv;
+  globalThis.ra = ra;
+}

@@ -10,199 +10,49 @@ let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
 
 // Setup global state
 function setupGlobalState() {
-  c = [];
-  drumCH = 9;
-  beatStart = 0;
-  tpBeat = 480;
-  beatIndex = 0;
-  numerator = 4;
-  beatRhythm = [1, 0, 1, 0];
-  beatsOff = 0;
-  bpmRatio3 = 1;
-  measuresPerPhrase = 4;
-  divsPerBeat = 2;
-  subdivsPerDiv = 2;
-  divRhythm = [1, 0];
-  subdivRhythm = [1, 0];
-  m = Math;
+  global.c = [];
+  global.drumCH = 9;
+  global.beatStart = 0;
+  global.tpBeat = 480;
+  global.beatIndex = 0;
+  global.numerator = 4;
+  global.beatRhythm = [1, 0, 1, 0];
+  global.beatsOff = 0;
+  global.bpmRatio3 = 1;
+  global.measuresPerPhrase = 4;
+  global.divsPerBeat = 2;
+  global.subdivsPerDiv = 2;
+  global.divRhythm = [1, 0];
+  global.subdivRhythm = [1, 0];
+  global.m = Math;
   global.drumMap = {
     'snare1': { note: 31, velocityRange: [99, 111] },
     'kick1': { note: 12, velocityRange: [111, 127] },
     'cymbal1': { note: 59, velocityRange: [66, 77] },
     'conga1': { note: 60, velocityRange: [66, 77] }
   };
+  // Also assign to local for convenience
+  c = global.c;
+  drumCH = global.drumCH;
+  beatStart = global.beatStart;
+  tpBeat = global.tpBeat;
+  beatIndex = global.beatIndex;
+  numerator = global.numerator;
+  beatRhythm = global.beatRhythm;
+  beatsOff = global.beatsOff;
+  bpmRatio3 = global.bpmRatio3;
+  measuresPerPhrase = global.measuresPerPhrase;
+  divsPerBeat = global.divsPerBeat;
+  subdivsPerDiv = global.subdivsPerDiv;
+  divRhythm = global.divRhythm;
+  subdivRhythm = global.subdivRhythm;
+  m = global.m;
 }
 
 // Helper functions from backstage.js
-const rf = (min1 = 1, max1, min2, max2) => {
-  if (max1 === undefined) { max1 = min1; min1 = 0; }
-  [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
-  return m.random() * (max1 - min1 + Number.EPSILON) + min1;
-};
-
-const ri = (min1 = 1, max1, min2, max2) => {
-  if (max1 === undefined) { max1 = min1; min1 = 0; }
-  [min1, max1] = [m.min(min1, max1), m.max(min1, max1)];
-  return Math.round(m.random() * (max1 - min1) + min1);
-};
-
-const clamp = (value, min, max) => m.min(m.max(value, min), max);
-const rv = (value, range = [.05, .10], freq = .05) => value * (rf() < freq ? 1 + rf(...range) : 1);
-const ra = (v) => Array.isArray(v) ? v[ri(v.length - 1)] : v;
-const p = (array, ...items) => { array.push(...items); };
-
-// Import rhythm functions
-const drumMap = {
-  'snare1': { note: 31, velocityRange: [99, 111] },
-  'snare2': { note: 33, velocityRange: [99, 111] },
-  'kick1': { note: 12, velocityRange: [111, 127] },
-  'kick2': { note: 14, velocityRange: [111, 127] },
-  'cymbal1': { note: 59, velocityRange: [66, 77] }
-};
-
-const drummer = (drumNames, beatOffsets, offsetJitter = rf(.1), stutterChance = .3,
-                stutterRange = [2, m.round(rv(11, [2, 3], .3))], stutterDecayFactor = rf(.9, 1.1)) => {
-  console.log('[drummer] START', drumNames);
-  if (drumNames === 'random') {
-    const allDrums = Object.keys(drumMap);
-    drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
-    beatOffsets = [0];
-  }
-  const drums = Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d => d.trim());
-  const offsets = Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
-  console.log('[drummer] drums/offsets prepared');
-  if (offsets.length < drums.length) {
-    offsets.push(...new Array(drums.length - offsets.length).fill(0));
-  } else if (offsets.length > drums.length) {
-    offsets.length = drums.length;
-  }
-  const combined = drums.map((drum, index) => ({ drum, offset: offsets[index] }));
-  console.log('[drummer] combined prepared');
-  if (rf() < .7) {
-    if (rf() < .5) {
-      combined.reverse();
-    }
-  } else {
-    for (let i = combined.length - 1; i > 0; i--) {
-      const j = m.floor(m.random() * (i + 1));
-      [combined[i], combined[j]] = [combined[j], combined[i]];
-    }
-  }
-  console.log('[drummer] randomization done');
-  const adjustedOffsets = combined.map(({ offset }) => {
-    if (rf() < .3) {
-      return offset;
-    } else {
-      let adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
-      return adjusted - m.floor(adjusted);
-    }
-  });
-  console.log('[drummer] offsets adjusted');
-  combined.forEach(({ drum, offset }, idx) => {
-    console.log(`[drummer] processing drum ${idx}:`, drum);
-    const drumInfo = drumMap[drum];
-    if (drumInfo) {
-      if (rf() < stutterChance) {
-        console.log('[drummer] applying stutter');
-        const numStutters = ri(...stutterRange);
-        const stutterDuration = .25 * ri(1, 8) / numStutters;
-        const [minVelocity, maxVelocity] = drumInfo.velocityRange;
-        const isFadeIn = rf() < 0.7;
-        for (let i = 0; i < numStutters; i++) {
-          const tick = beatStart + (offset + i * stutterDuration) * tpBeat;
-          let currentVelocity;
-          if (isFadeIn) {
-            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
-            currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 127);
-          } else {
-            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
-            currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
-          }
-          p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
-        }
-      } else {
-        console.log('[drummer] no stutter');
-        p(c, { tick: beatStart + offset * tpBeat, type: 'on', vals: [drumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
-      }
-    }
-    console.log(`[drummer] drum ${idx} done`);
-  });
-  console.log('[drummer] END');
-};
-
-const patternLength = (pattern, length) => {
-  console.log('[patternLength] START', pattern.length, length);
-  if (length === undefined) return pattern;
-  if (pattern.length === 0) return pattern; // Handle empty pattern
-  if (length > pattern.length) {
-    let iterations = 0;
-    const maxIterations = 1000;
-    while (pattern.length < length && iterations < maxIterations) {
-      iterations++;
-      const remaining = length - pattern.length;
-      const chunk = pattern.slice(0, Math.min(remaining, pattern.length));
-      pattern = pattern.concat(chunk);
-    }
-    console.log('[patternLength] extended to', pattern.length);
-  } else if (length < pattern.length) {
-    pattern = pattern.slice(0, length);
-    console.log('[patternLength] truncated to', pattern.length);
-  }
-  console.log('[patternLength] END');
-  return pattern;
-};
-
-const closestDivisor = (x, target = 2) => {
-  let closest = Infinity;
-  let smallestDiff = Infinity;
-  for (let i = 1; i <= m.sqrt(x); i++) {
-    if (x % i === 0) {
-      [i, x / i].forEach(divisor => {
-        if (divisor !== closest) {
-          let diff = m.abs(divisor - target);
-          if (diff < smallestDiff) { smallestDiff = diff; closest = divisor; }
-        }
-      });
-    }
-  }
-  if (closest === Infinity) { return x; }
-  return x % target === 0 ? target : closest;
-};
-
-const makeOnsets = (length, valuesOrRange) => {
-  console.log('[makeOnsets] START', length, valuesOrRange);
-  let onsets = []; let total = 0;
-  let iterations = 0;
-  const maxIterations = length * 2; // Safety limit
-  while (total < length && iterations < maxIterations) {
-    iterations++;
-    console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
-    let v = ra(valuesOrRange);
-    console.log(`[makeOnsets] v=${v}`);
-    if (total + (v + 1) <= length) {
-      onsets.push(v);
-      total += v + 1;
-      console.log(`[makeOnsets] added onset, new total=${total}`);
-    }
-    else if (Array.isArray(valuesOrRange) && valuesOrRange.length === 2) {
-      v = valuesOrRange[0];
-      if (total + (v + 1) <= length) { onsets.push(v); total += v + 1; }
-      break;
-    } else {
-      console.log('[makeOnsets] breaking');
-      break;
-    }
-  }
-  console.log('[makeOnsets] building rhythm array');
-  let rhythm = [];
-  for (let onset of onsets) {
-    rhythm.push(1);
-    for (let i = 0; i < onset; i++) { rhythm.push(0); }
-  }
-  while (rhythm.length < length) { rhythm.push(0); }
-  console.log('[makeOnsets] END, length=', rhythm.length);
-  return rhythm;
-};
+// Import from globalThis
+const { rf, ri, clamp, rv, ra, p } = globalThis;
+const { drummer, patternLength, makeOnsets, closestDivisor, drumMap } = globalThis;
 
 describe('drumMap', () => {
   it('should define drum mappings with notes and velocity ranges', () => {
@@ -630,7 +480,7 @@ describe('Rhythm pattern generators', () => {
   });
 
   it('drummer function should handle multiple beat offsets', () => {
-    c = [];
+    setupGlobalState();  // Need to setup global state including c
     drummer(['kick1'], [0, 0.5]);
     // With 2 beat offsets, should generate multiple events
     expect(c.length).toBeGreaterThan(0);
