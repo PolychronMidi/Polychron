@@ -2,7 +2,7 @@
 
 > **Source**: `src/stage.js`
 > **Status**: Core Module - Audio Processing
-> **Dependencies**: sheet, writer, venue, backstage, rhythm, time, composers
+> **Dependencies**: sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md))
 
 ## Project Overview
 
@@ -21,8 +21,8 @@ This module provides **comprehensive audio processing** including:
 ## Architecture Role
 
 **stage.js** operates as the **audio processing and performance engine**:
-- **Imports all dependencies** - Loads sheet.js, venue.js, backstage.js, rhythm.js, time.js, composers.js
-- **Coordinates audio processing** - Called by play.js for all audio-related functions
+- **Imports all dependencies** - Loads sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md))
+- **Coordinates audio processing** - Called by play.js ([code](../src/play.js)) ([doc](play.md)) for all audio-related functions
 - **Generates MIDI events** - Creates the actual note_on, note_off, and control events
 - **Manages real-time effects** - Applies dynamic processing throughout composition generation
 

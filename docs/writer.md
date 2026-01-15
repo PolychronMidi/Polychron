@@ -2,7 +2,7 @@
 
 > **Source**: `src/writer.js`
 > **Status**: Core Module - Output & File I/O
-> **Dependencies**: time, backstage, fs (Node.js)
+> **Dependencies**: time.js ([code](../src/time.js)) ([doc](time.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), fs (Node.js)
 
 ## Project Overview
 
@@ -20,10 +20,10 @@ This module provides **output infrastructure** including:
 ## Architecture Role
 
 **writer.js** operates as the **output layer** for the composition system:
-- **Imported by stage.js** - Establishes output infrastructure
+- **Imported by stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Establishes output infrastructure
 - **Used by all modules** - Every module generates events via `p(c, ...)`
 - **Layer-aware** - Automatically routes events to active layer's buffer
-- **File generation** - Final step in composition pipeline
+- **File generation** - Final step in composition pipeline, triggered by play.js ([code](../src/play.js)) ([doc](play.md))
 
 ## Code Style Philosophy
 

@@ -20,9 +20,9 @@ This module provides **complete music theory and MIDI reference data**:
 ## Architecture Role
 
 **venue.js** operates as the **data foundation layer**:
-- **Imported by backstage.js** to establish global constants
-- **Provides reference data** used by composers.js for music theory operations
-- **Supplies MIDI mappings** used by stage.js for instrument assignments
+- **Imported by backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) to establish global constants
+- **Provides reference data** used by composers.js ([code](../src/composers.js)) ([doc](composers.md)) for music theory operations
+- **Supplies MIDI mappings** used by stage.js ([code](../src/stage.js)) ([doc](stage.md)) for instrument assignments
 - **No computational logic** - Pure data definitions and simple lookup functions
 
 ## MIDI Specification Data

@@ -2,7 +2,7 @@
 
 > **Source**: `src/time.js`
 > **Status**: Core Module - Timing & Meter Spoofing
-> **Dependencies**: backstage, writer
+> **Dependencies**: backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md))
 
 ## Project Overview
 
@@ -20,11 +20,11 @@ This module provides **advanced timing capabilities** including:
 
 ## Architecture Role
 
-**time.js** operates as the **timing coordinator**, bridging musical concepts with MIDI technical requirements. It receives timing requests from **play.js** and provides precise temporal data to all other modules. The file integrates closely with:
-- **play.js** - Receives timing advancement requests and provides structural timing data
-- **composers.js** - Validates time signatures and provides meter compatibility checking
-- **stage.js** - Supplies exact tick timing for MIDI event generation
-- **backstage.js** - Uses utility functions for mathematical calculations
+**time.js** operates as the **timing coordinator**, bridging musical concepts with MIDI technical requirements. It receives timing requests from **play.js** ([code](../src/play.js)) ([doc](play.md)) and provides precise temporal data to all other modules. The file integrates closely with:
+- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Receives timing advancement requests and provides structural timing data
+- **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) - Validates time signatures and provides meter compatibility checking
+- **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Supplies exact tick timing for MIDI event generation
+- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) - Uses utility functions for mathematical calculations
 
 ## Revolutionary Meter Spoofing System
 
