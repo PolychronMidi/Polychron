@@ -1098,6 +1098,69 @@ describe('getPolyrhythm Edge Cases', () => {
     // or total > 2
     expect(result === null || result.totalMeasures > 2).toBe(true);
   });
+
+  it('should recalculate timing when fallback meter is applied', () => {
+    // Simulate getPolyrhythm reaching max attempts and requesting new primary meter
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    globalThis.BPM = 120;
+    globalThis.PPQ = 480;
+    getMidiTiming();
+
+    const originalTpMeasure = globalThis.tpMeasure;
+    const originalTpSec = globalThis.tpSec;
+    const originalSpMeasure = globalThis.spMeasure;
+
+    // Simulate fallback: change primary meter and recalculate
+    globalThis.numerator = 7;
+    globalThis.denominator = 9;
+    getMidiTiming(); // CRITICAL: this must be called after meter change
+
+    // Verify all timing globals were recalculated
+    expect(globalThis.meterRatio).toBeCloseTo(7/9, 10);
+    expect(globalThis.midiMeter[1]).toBe(8); // Spoofed to 7/8
+    expect(globalThis.tpMeasure).not.toBe(originalTpMeasure); // Should change
+    expect(globalThis.tpSec).not.toBe(originalTpSec); // Should change
+    expect(globalThis.spMeasure).not.toBe(originalSpMeasure); // Should change
+
+    // Verify new timing is internally consistent
+    expect(globalThis.tpMeasure).toBeCloseTo(globalThis.PPQ * 4 * (7/8), 5);
+    expect(globalThis.spMeasure).toBeCloseTo((60 / globalThis.BPM) * 4 * (7/9), 10);
+    expect(globalThis.syncFactor).toBeCloseTo((7/8) / (7/9), 10);
+  });
+
+  it('should maintain section timing accuracy even with meter fallback', () => {
+    // Start with 4/4
+    globalThis.numerator = 4;
+    globalThis.denominator = 4;
+    globalThis.BPM = 120;
+    globalThis.PPQ = 480;
+    getMidiTiming();
+
+    // Simulate 2 measures of 4/4
+    globalThis.measuresPerPhrase = 2;
+    globalThis.tpPhrase = globalThis.tpMeasure * 2;
+    globalThis.spPhrase = globalThis.tpPhrase / globalThis.tpSec;
+    const section1Duration = globalThis.spPhrase;
+
+    // Fallback to 7/9 and calculate next section
+    globalThis.numerator = 7;
+    globalThis.denominator = 9;
+    getMidiTiming();
+    globalThis.measuresPerPhrase = 2;
+    globalThis.tpPhrase = globalThis.tpMeasure * 2;
+    globalThis.spPhrase = globalThis.tpPhrase / globalThis.tpSec;
+    const section2Duration = globalThis.spPhrase;
+
+    // Both sections should have valid timing (no NaN, no Infinity, > 0)
+    expect(Number.isFinite(section1Duration)).toBe(true);
+    expect(Number.isFinite(section2Duration)).toBe(true);
+    expect(section1Duration).toBeGreaterThan(0);
+    expect(section2Duration).toBeGreaterThan(0);
+
+    // Durations should be different because meters are different
+    expect(section1Duration).not.toBeCloseTo(section2Duration, 2);
+  });
 });
 
 describe('Full Timing Hierarchy', () => {

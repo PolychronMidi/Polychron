@@ -3,6 +3,7 @@
 
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers'); require('./motifs');
+require('./fxManager');
 
 // Initialize global temporary variable for FX object spreading
 globalThis._ = null;
@@ -13,9 +14,8 @@ globalThis._ = null;
  */
 class Stage {
   constructor() {
-    // Channel tracking state
-    this.lastUsedCHs = new Set();
-    this.lastUsedCHs2 = new Set();
+    // FX Manager for stutter effects
+    this.fx = fxManager;
 
     // Balance and FX state
     this.firstLoop = 0;
@@ -103,107 +103,36 @@ class Stage {
   }
 
   /**
-   * Applies rapid volume stutter/fade effect to selected channels
+   * Applies rapid volume stutter/fade effect to selected channels (delegates to FxManager)
    * @param {Array} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
    * @returns {void}
    */
-  stutterFade(channels,numStutters=ri(10,70),duration=tpSec*rf(.2,1.5)) {
-    const CHsToStutter=ri(1,5); const channelsToStutter=new Set();
-    const availableCHs=channels.filter(ch => !this.lastUsedCHs.has(ch));
-    while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-      const ch=availableCHs[m.floor(m.random() * availableCHs.length)];
-      channelsToStutter.add(ch);
-      availableCHs.splice(availableCHs.indexOf(ch), 1);
-    }
-    if (channelsToStutter.size < CHsToStutter) {this.lastUsedCHs.clear();
-    } else {this.lastUsedCHs=new Set(channelsToStutter);
-    }
-    const channelsArray=Array.from(channelsToStutter);
-    channelsArray.forEach(channelToStutter => { const maxVol=ri(90,120);
-      const isFadeIn=rf() < 0.5; let tick,volume;
-      for (let i=m.floor(numStutters*(rf(1/3,2/3))); i < numStutters; i++) {
-        tick=beatStart + i * (duration/numStutters) * rf(.9,1.1);
-        if (isFadeIn) {
-          volume=modClamp(m.floor(maxVol * (i / (numStutters - 1))),25,maxVol);
-        } else {
-          volume=modClamp(m.floor(100 * (1 - (i / (numStutters - 1)))),25,100);
-        }
-        p(c,{tick:tick, type:'control_c', vals:[channelToStutter, 7, m.round(volume/rf(1.5,5))]});
-        p(c,{tick:tick + duration*rf(.95,1.95), type:'control_c', vals:[channelToStutter, 7, volume]});
-      }
-      p(c,{tick:tick + duration*rf(.5,3), type:'control_c', vals:[channelToStutter, 7, maxVol]});
-    });
+  stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
+    this.fx.stutterFade(channels, numStutters, duration);
   }
 
   /**
-   * Applies rapid pan stutter effect to selected channels
+   * Applies rapid pan stutter effect to selected channels (delegates to FxManager)
    * @param {Array} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
    * @returns {void}
    */
-  stutterPan(channels, numStutters = ri(30,90), duration = tpSec*rf(.1,1.2)) {
-    const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
-    const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
-    while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-      const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
-      channelsToStutter.add(ch);
-      availableCHs.splice(availableCHs.indexOf(ch), 1);
-    }
-    if (channelsToStutter.size < CHsToStutter) {this.lastUsedCHs2.clear();
-    } else {this.lastUsedCHs2 = new Set(channelsToStutter);
-    }
-    const channelsArray = Array.from(channelsToStutter);
-    channelsArray.forEach(channelToStutter => {
-      const edgeMargin = ri(7,25);
-      const fullRange = 127 - edgeMargin; const centerZone = fullRange / 3;
-      const leftBoundary = edgeMargin + centerZone; const rightBoundary = edgeMargin + 2 * centerZone;
-      let currentPan = edgeMargin; let direction = 1;
-      let tick;
-      for (let i = m.floor(numStutters*rf(1/3,2/3)); i < numStutters; i++) {
-        tick = beatStart + i * (duration / numStutters) * rf(.9,1.1);
-        if (currentPan >= rightBoundary) direction = -1;
-        else if (currentPan <= leftBoundary) direction = 1;
-        currentPan += direction * (fullRange / numStutters) * rf(.5,1.5);
-        currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
-        p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
-      }
-      p(c, { tick: tick + duration * rf(.5,3), type: 'control_c', vals: [channelToStutter, 10, 64] });
-    });
+  stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
+    this.fx.stutterPan(channels, numStutters, duration);
   }
 
   /**
-   * Applies rapid FX parameter stutter effect to selected channels
+   * Applies rapid FX parameter stutter effect to selected channels (delegates to FxManager)
    * @param {Array} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
    * @returns {void}
    */
-  stutterFX(channels, numStutters = ri(30,100), duration = tpSec*rf(.1,2)) {
-    const CHsToStutter = ri(1,2); const channelsToStutter = new Set();
-    const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
-    while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-      const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
-      channelsToStutter.add(ch);
-      availableCHs.splice(availableCHs.indexOf(ch), 1);
-    }
-    if (channelsToStutter.size < CHsToStutter) {this.lastUsedCHs2.clear();
-    } else {this.lastUsedCHs2 = new Set(channelsToStutter);
-    }
-    const channelsArray = Array.from(channelsToStutter);
-    channelsArray.forEach(channelToStutter => {
-      const startValue = ri(0,127); const endValue = ri(0,127); const ccParam = ra([91,92,93,71,74]);
-      let tick;
-      for (let i = m.floor(numStutters*rf(1/3,2/3)); i < numStutters; i++) {
-        tick = beatStart + i * (duration / numStutters) * rf(.9,1.1);
-        const progress = i / (numStutters - 1);
-        const currentValue = m.floor(startValue + (endValue - startValue) * progress);
-        p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
-      }
-      p(c, { tick: tick + duration * rf(.5,3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
-    });
+  stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
+    this.fx.stutterFX(channels, numStutters, duration);
   }
 
   /**
