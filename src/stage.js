@@ -2,7 +2,7 @@
 // minimalist comments, details at: stage.md
 
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers');
+require('./rhythm'); require('./time'); require('./composers'); require('./motifs');
 
 // Initialize global temporary variable for FX object spreading
 globalThis._ = null;
@@ -316,8 +316,10 @@ class Stage {
   playNotes() {
     this.setNoteParams();
     this.crossModulateRhythms();
+    const noteObjects = composer ? composer.getNotes() : [];
+    const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
-  if (composer) composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
+  if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
     ).map(sourceCH=>{
 
@@ -347,8 +349,10 @@ class Stage {
   playNotes2() {
     this.setNoteParams2();
     this.crossModulateRhythms();
+    const noteObjects = composer ? composer.getNotes() : [];
+    const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if(true){
-  if (composer) composer.getNotes().forEach(({ note })=>{ source.filter(sourceCH=>
+  if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
     ).map(sourceCH=>{
 

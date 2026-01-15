@@ -2,6 +2,9 @@
 // minimalist comments, details at: play.md
 
 require('./stage');
+require('./structure');
+
+const BASE_BPM=BPM;
 
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => stage.setTuningAndInstruments());
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => stage.setTuningAndInstruments());
@@ -9,7 +12,12 @@ const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => stage.se
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
-  phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+  const sectionProfile=resolveSectionProfile();
+  phrasesPerSection=sectionProfile.phrasesPerSection;
+  currentSectionType=sectionProfile.type;
+  currentSectionDynamics=sectionProfile.dynamics;
+  BPM=m.max(1,m.round(BASE_BPM * sectionProfile.bpmScale));
+  activeMotif=sectionProfile.motif ? new Motif(sectionProfile.motif.map(offset=>({ note: clampMotifNote(60+offset) }))) : null;
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     composer = ra(composers);
@@ -94,6 +102,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   LM.advance('poly', 'section');
   logUnit('section');
 
+  BPM=BASE_BPM;
+  activeMotif=null;
 }
 
 grandFinale();
