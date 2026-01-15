@@ -248,14 +248,40 @@ class Stage {
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
-  if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
-    flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
+  if (composer) motifNotes.forEach(({ note })=>{ 
+    // Play source channels
+    source.filter(sourceCH=>
+      flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
     ).map(sourceCH=>{
 
-    p(c,{tick:sourceCH===cCH1 ? this.on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : this.on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : this.binVel*rf(.95,1.03)]});
-    p(c,{tick:this.on+this.sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
+      p(c,{tick:sourceCH===cCH1 ? this.on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : this.on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : this.binVel*rf(.95,1.03)]});
+      p(c,{tick:this.on+this.sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
 
-    }); }); subdivsOff=0; subdivsOn++; } else { subdivsOff++; subdivsOn=0; }
+    });
+    
+    // Play reflection channels
+    reflection.filter(reflectionCH=>
+      flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
+    ).map(reflectionCH=>{
+
+      p(c,{tick:reflectionCH===cCH2 ? this.on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : this.on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : this.binVel*rf(.55,.9)]});
+      p(c,{tick:this.on+this.sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
+
+    });
+    
+    // Play bass channels (with probability based on BPM)
+    if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
+      bass.filter(bassCH=>
+        flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
+      ).map(bassCH=>{
+        const bassNote=modClamp(note,12,35);
+
+        p(c,{tick:bassCH===cCH3 ? this.on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : this.on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : this.binVel*rf(1.85,2.45)]});
+        p(c,{tick:this.on+this.sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
+
+      });
+    }
+  }); subdivsOff=0; subdivsOn++; } else { subdivsOff++; subdivsOn=0; }
   }
 
   /**
