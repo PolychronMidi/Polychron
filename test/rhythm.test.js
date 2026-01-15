@@ -4,6 +4,9 @@ require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
 require('../src/backstage');  // Defines utility functions
 require('../src/rhythm');  // Rhythm functions
 
+// Enable test logging
+globalThis.__POLYCHRON_TEST__.enableLogging = true;
+
 let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
 let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;

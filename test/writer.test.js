@@ -185,7 +185,7 @@ describe('logUnit', () => {
 describe('grandFinale', () => {
   beforeEach(() => {
     setupGlobalState();
-    // Mock fs methods - necessary for file I/O tests  
+    // Mock fs methods - necessary for file I/O tests
     globalThis.fs = {
       writeFileSync: vi.fn(),
       existsSync: vi.fn(() => true),
