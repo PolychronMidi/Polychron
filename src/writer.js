@@ -237,3 +237,8 @@ try {
 } catch (err) {
   console.error('Failed to wrap fs.writeFileSync:', err);
 }
+
+// Export to globalThis for test access
+if (typeof globalThis !== 'undefined') {
+  globalThis.p = p;
+}
