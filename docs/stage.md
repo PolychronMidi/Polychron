@@ -1,12 +1,12 @@
-# stage.js - Audio Processing and MIDI Event Generation
+# **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Audio Processing and MIDI Event Generation
 
 > **Source**: `src/stage.js`
 > **Status**: Core Module - Audio Processing
-> **Dependencies**: sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md))
+> **Dependencies**: **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)) ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)), **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)), **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)), **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)), **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md))
 
 ## Overview
 
-**stage.js** is the **audio engine** of Polychron, transforming abstract musical concepts into MIDI events. It generates binaural beats, applies sophisticated effects (stutter, pan, modulation), manages instruments across 16 MIDI channels, and orchestrates all real-time audio processing.
+****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) is the **audio engine** of Polychron, transforming abstract musical concepts into MIDI events. It generates binaural beats, applies sophisticated effects (stutter, pan, modulation), manages instruments across 16 MIDI channels, and orchestrates all real-time audio processing.
 
 **Core Responsibilities:**
 - **Instrument initialization** - Program changes and pitch bend for all channels
@@ -17,13 +17,13 @@
 
 ## Architecture Role
 
-**stage.js** serves as the **audio coordinator**:
-- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls playNotes(), setBinaural(), setBalanceAndFX() at each beat
-- **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) - Provides note arrays via composer.getNotes()
-- **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) - Provides rhythm patterns via drummer()
-- **time.js** ([code](../src/time.js)) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator, etc.)
-- **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) - Pushes events to active buffer c via p(c, event)
-- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
+****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) serves as the **audio coordinator**:
+- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls playNotes(), setBinaural(), setBalanceAndFX() at each beat
+- ****composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides note arrays via composer.getNotes()
+- ****rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) - Provides rhythm patterns via drummer()
+- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator, etc.)
+- ****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - Pushes events to active buffer c via p(c, event)
+- ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
 
 ---
 

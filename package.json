@@ -15,6 +15,7 @@
     "pretest": "npm run lint",
     "play": "node src/play && py c2m.py",
     "docs:refresh": "node scripts/refresh-doc-examples.mjs",
-    "docs:check-links": "node scripts/check-links.mjs"
+    "docs:check-links": "node scripts/check-links.mjs",
+    "docs:enforce-links": "node scripts/enforce-doc-links.mjs"
   }
 }

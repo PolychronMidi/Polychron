@@ -1,4 +1,4 @@
-# sheet.js - Configuration and Musical Parameters
+# **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)) - Configuration and Musical Parameters
 
 > **Source**: `src/sheet.js`
 > **Status**: Core Module - Configuration
@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-**sheet.js** serves as the **configuration headquarters** for the entire Polychron system, defining all musical parameters, instrument assignments, structural settings, and system behaviors. This file acts as the "sheet music" of parameters that control every aspect of composition generation.
+****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) serves as the **configuration headquarters** for the entire Polychron system, defining all musical parameters, instrument assignments, structural settings, and system behaviors. This file acts as the "sheet music" of parameters that control every aspect of composition generation.
 
 ## File Purpose
 
@@ -19,8 +19,8 @@ This module provides **comprehensive system configuration** including:
 
 ## Architecture Role
 
-**sheet.js** operates as the **configuration foundation**:
-- **Imported first** by stage.js ([code](../src/stage.js)) ([doc](stage.md)), establishing all system parameters
+****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) operates as the **configuration foundation**:
+- **Imported first** by **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)), establishing all system parameters
 - **No computational logic** - Pure parameter definitions and configuration data
 - **User-customizable** - Primary interface for users to modify Polychron's behavior
 - **Global parameter source** - All other modules reference these configuration values
@@ -35,7 +35,7 @@ bassInstrument = 'Acoustic Bass';
 bassInstrument2 = 'Synth Bass 2';
 ```
 
-- **String-based specification** - Human-readable instrument names converted to MIDI numbers by venue.js
+- **String-based specification** - Human-readable instrument names converted to MIDI numbers by **venue.js** ([code](../src/venue.js)) ([doc](venue.md))
 - **Primary instruments** - Main melodic content on center and source channels
 - **Secondary instruments** - Reflection and echo processing channels
 - **Bass separation** - Dedicated bass instruments for low-frequency content
@@ -170,7 +170,7 @@ SECTION_TYPES = [
 ```
 - **Weighted selection**: `selectSectionType()` uses weights to bias form planning.
 - **Per-section shaping**: Each profile provides phrase ranges and BPM scaling hints.
-- **Motif seeding**: Optional `motif` arrays (interval offsets) feed `activeMotif` in play.js to imprint shapes on generated notes.
+- **Motif seeding**: Optional `motif` arrays (interval offsets) feed `activeMotif` in **play.js** ([code](../src/play.js)) ([doc](play.md)) to imprint shapes on generated notes.
 ### Rhythmic Complexity Parameters
 
 #### `DIVISIONS` - Beat Subdivision Density
@@ -256,19 +256,19 @@ All parameters become global variables accessible throughout the system:
 - **Runtime modification** - Parameters can be changed during composition (though not recommended)
 
 ### Dependency Chain
-**sheet.js** → **venue.js** → **backstage.js** → **other modules**
+****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) → ****venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) → ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) → **other modules**
 - **Configuration loaded first** - Establishes all system parameters
-- **Instrument name conversion** - venue.js converts string names to MIDI numbers
-- **Global state initialization** - backstage.js creates working variables from configuration
+- **Instrument name conversion** - **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) converts string names to MIDI numbers
+- **Global state initialization** - **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) creates working variables from configuration
 
 ## Layer Architecture Independence
 
-**sheet.js** configuration applies **globally across all layers**:
+****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) configuration applies **globally across all layers**:
 - **No layer-specific settings** - Same instruments, ranges, weights used for all layers
 - **Meter parameters** - NUMERATOR/DENOMINATOR used by both primary and poly layers
 - **Instrument assignments** - primaryInstrument, bassInstrument shared across layers
 - **System constants** - PPQ, BPM, TUNING_FREQ, BINAURAL settings are universal
-- **LayerManager uses defaults** - LM.register() creates layers with sheet.js parameters
+- **LayerManager uses defaults** - LM.register() creates layers with **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)) parameters
 
 This global configuration simplifies the system while enabling complex multi-layer compositions through context switching rather than duplication.
 

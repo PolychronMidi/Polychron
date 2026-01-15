@@ -1,12 +1,12 @@
-# play.js - Main Composition Engine and Orchestrator
+# **play.js** ([code](../src/play.js)) ([doc](play.md)) - Main Composition Engine and Orchestrator
 
 > **Source**: `src/play.js`
 > **Status**: Core Module
-> **Dependencies**: stage.js ([code](../src/stage.js)) ([doc](stage.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md))
+> **Dependencies**: **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)), **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)), **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)), **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md))
 
 ## Project Overview
 
-**play.js** is the **heart and conductor** of the Polychron MIDI composition system - the main execution engine that orchestrates the entire musical generation process. This file contains the core composition loop that creates complex, polyrhythmic MIDI compositions with unlimited time signatures and dynamic musical structures through a dual-layer architecture.
+****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) is the **heart and conductor** of the Polychron MIDI composition system - the main execution engine that orchestrates the entire musical generation process. This file contains the core composition loop that creates complex, polyrhythmic MIDI compositions with unlimited time signatures and dynamic musical structures through a dual-layer architecture.
 
 ## File Purpose
 
@@ -19,22 +19,22 @@ The system generates:
 
 ## Architecture Role
 
-**play.js** sits at the top of the architectural hierarchy, serving as the **composition conductor**:
-- **Loads stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Initializes all dependencies through the module chain
-- **Coordinates all modules** - Calls functions from composers.js ([code](../src/composers.js)) ([doc](composers.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), time.js ([code](../src/time.js)) ([doc](time.md))
+****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) sits at the top of the architectural hierarchy, serving as the **composition conductor**:
+- **Loads **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Initializes all dependencies through the module chain
+- **Coordinates all modules** - Calls functions from **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md))
 - **Manages layer contexts** - Registers, activates, and advances both primary and poly layers
 - **Controls hierarchy** - Manages section → phrase → measure → beat → division → subdivision → subsubdivision nesting
 
 ## Code Architecture
 
 ### Dual-Layer Polyrhythmic System
-**play.js** implements a revolutionary dual-layer composition architecture:
+****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) implements a revolutionary dual-layer composition architecture:
 - **Primary layer** - Initial time signature with full audio processing
 - **Poly layer** - Polyrhythmic secondary meter with synchronized timing
 - **Synchronized boundaries** - Both layers complete phrases at exactly the same absolute time
 
 ### LayerManager Context Switching
-Uses LayerManager (LM) from time.js ([code](../src/time.js)) ([doc](time.md)) to maintain independent timing contexts:
+Uses LayerManager (LM) from **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) to maintain independent timing contexts:
 
 ```javascript
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, setTuningAndInstruments);
@@ -59,7 +59,7 @@ Each layer maintains private state:
 ```javascript
 require('./stage');  // Loads all dependencies
 ```
-- Imports stage.js ([code](../src/stage.js)) ([doc](stage.md)) which transitively loads all other modules
+- Imports **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) which transitively loads all other modules
 - Both layers registered with LayerManager and initialized
 
 ### 2. Section Loop (Outer Structure)
@@ -69,7 +69,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) { ... }
 ```
 - **Determines composition structure** - typically 3-5 major sections
 - **Section types** - `resolveSectionProfile()` selects a profile from `SECTION_TYPES` (intro/exposition/development/conclusion/coda) with weighted probabilities.
-- **Per-section shaping** - Profiles set phrase ranges, BPM scaling, dynamics hints, and optional motif seeds (see motifs.js) that feed `activeMotif` for note shaping.
+- **Per-section shaping** - Profiles set phrase ranges, BPM scaling, dynamics hints, and optional motif seeds (see **motifs.js** ([code](../src/motifs.js)) ([doc](motifs.md))) that feed `activeMotif` for note shaping.
 - **Outer loop** controls highest level of musical organization
 
 ### 3. Phrase Loop (Per Section)
@@ -81,9 +81,9 @@ for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
   getMidiTiming();           // Calculate MIDI-compatible meter via meter spoofing
   getPolyrhythm();          // Find optimal polyrhythm alignment
 ```
-- **Randomly selects composer** from composers.js ([code](../src/composers.js)) ([doc](composers.md))
+- **Randomly selects composer** from **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md))
 - **Gets time signature** - any arbitrary ratio (7/11, 5/13, etc.)
-- **Calculates meter spoofing** via time.js ([code](../src/time.js)) ([doc](time.md))
+- **Calculates meter spoofing** via **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md))
 - **Determines polyrhythm** - how primary and poly meters align
 
 ### 4. Primary Layer (Line 19-45)
@@ -123,13 +123,13 @@ for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
 ```
 
 **Processing chain for each beat**:
-1. **setUnitTiming()** from time.js ([code](../src/time.js)) ([doc](time.md)) - Calculate tick positions
-2. **setOtherInstruments()** from stage.js ([code](../src/stage.js)) ([doc](stage.md)) - Select instruments
-3. **setBinaural()** from stage.js ([code](../src/stage.js)) ([doc](stage.md)) - Alpha frequency shifts
-4. **setBalanceAndFX()** from stage.js ([code](../src/stage.js)) ([doc](stage.md)) - Panning/effects
-5. **playDrums()** from stage.js ([code](../src/stage.js)) ([doc](stage.md)) - Drum patterns
-6. **stutterFX/stutterFade/stutterPan()** from stage.js ([code](../src/stage.js)) ([doc](stage.md)) - Audio effects
-7. **playNotes()/playNotes2()** - Generate musical content via composers.js ([code](../src/composers.js)) ([doc](composers.md))
+1. **setUnitTiming()** from **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Calculate tick positions
+2. **setOtherInstruments()** from **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Select instruments
+3. **setBinaural()** from **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Alpha frequency shifts
+4. **setBalanceAndFX()** from **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Panning/effects
+5. **playDrums()** from **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Drum patterns
+6. **stutterFX/stutterFade/stutterPan()** from **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Audio effects
+7. **playNotes()/playNotes2()** - Generate musical content via **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md))
 
 **Hierarchical timing**:
 - Division loop - 0-10 subdivisions per beat
@@ -218,23 +218,23 @@ Each level provides input for nested loops below it. All MIDI tick positions ult
 
 ## Module Dependencies
 
-### Loaded Via stage.js ([code](../src/stage.js)) ([doc](stage.md))
-- backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)) - Utility functions and state
-- writer.js ([code](../src/writer.js)) ([doc](writer.md)) - CSV output infrastructure
-- sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)) - Configuration parameters
-- venue.js ([code](../src/venue.js)) ([doc](venue.md)) - MIDI constants
-- rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)) - Drum pattern algorithms
-- time.js ([code](../src/time.js)) ([doc](time.md)) - LayerManager and meter spoofing
-- composers.js ([code](../src/composers.js)) ([doc](composers.md)) - Musical content generation
+### Loaded Via **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md))
+- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Utility functions and state
+- **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - CSV output infrastructure
+- **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)) ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) - Configuration parameters
+- **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) - MIDI constants
+- **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) - Drum pattern algorithms
+- **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - LayerManager and meter spoofing
+- **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Musical content generation
 
 ### Direct Usage
-- composers.js ([code](../src/composers.js)) ([doc](composers.md)) - `.getMeter()` for time signatures
-- time.js ([code](../src/time.js)) ([doc](time.md)) - LayerManager for context switching
+- **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - `.getMeter()` for time signatures
+- **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - LayerManager for context switching
 
 ## Revolutionary Capabilities
 
 ### Infinite Time Signatures
-Through meter spoofing in time.js ([code](../src/time.js)) ([doc](time.md)), compose in **any** time signature including prime denominators and non-standard ratios.
+Through meter spoofing in **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)), compose in **any** time signature including prime denominators and non-standard ratios.
 
 ### Mathematically Perfect Polyrhythms
 Two independent layers with different meters but perfectly synchronized phrase boundaries in absolute time - impossible for human performers but precise in MIDI domain.

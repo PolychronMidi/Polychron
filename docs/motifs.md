@@ -1,4 +1,4 @@
-# motifs.js - Motif Transformation Utilities
+# **motifs.js** ([code](../src/motifs.js)) ([doc](motifs.md)) - Motif Transformation Utilities
 
 > **Source**: `src/motifs.js`
 > **Status**: Feature Module
@@ -29,14 +29,14 @@
 - `applyToNotes(notes, { clampMin, clampMax })`: Applies motif interval offsets to an array of `{ note }` objects (non-mutating). Offsets are measured relative to the motif's first note. Defaults clamp to MIDI `[0,127]`.
 
 ### Globals
-- `activeMotif`: Current motif used by stage note generation (set by play.js per section type).
+- `activeMotif`: Current motif used by stage note generation (set by **play.js** ([code](../src/play.js)) ([doc](play.md)) per section type).
 - `applyMotifToNotes(notes, motif?, options?)`: Helper that delegates to `motif.applyToNotes` if available.
 - `clampMotifNote(val, min?, max?)`: MIDI-safe clamping utility.
 
 ## Integration Points
 
 - **Stage**: `stage.playNotes()` / `stage.playNotes2()` call `applyMotifToNotes` when `activeMotif` is set, imprinting motif intervals onto generated notes before MIDI events are emitted.
-- **Play**: Each section selects a section type profile; if the profile supplies a `motif` array (interval offsets), play.js instantiates `activeMotif` (rooted at MIDI 60) for that section.
+- **Play**: Each section selects a section type profile; if the profile supplies a `motif` array (interval offsets), **play.js** ([code](../src/play.js)) ([doc](play.md)) instantiates `activeMotif` (rooted at MIDI 60) for that section.
 - **Tests**: `test/motifs.test.js` validates transformations and application behavior.
 
 ## Usage Examples

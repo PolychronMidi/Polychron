@@ -83,7 +83,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Interval Motifs**: Ordered `{ note, duration }` sequences
 - **Transformations**: transpose, invert, augment/diminish, reverse, develop chain
 - **Application**: `applyToNotes()` imprints motif offsets onto generated notes (used by stage)
-- **Integration**: Section types can seed `activeMotif` per section via play.js
+- **Integration**: Section types can seed `activeMotif` per section via **play.js** ([code](../src/play.js)) ([doc](play.md))
 
 #### 8. **[backstage.js](docs/backstage.md)** - Core Utilities & State
 - **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
@@ -128,8 +128,8 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 ## Technical Innovations
 
 ### Multi-Layer Architecture
-- **CSVBuffer Class** (writer.js): Each layer (primary, poly) has its own CSVBuffer instance encapsulating MIDI event array
-- **LayerManager (LM)** (time.js): Context switching object managing per-layer timing state
+- **CSVBuffer Class** (**writer.js** ([code](../src/writer.js)) ([doc](writer.md))): Each layer (primary, poly) has its own CSVBuffer instance encapsulating MIDI event array
+- **LayerManager (LM)** (**time.js** ([code](../src/time.js)) ([doc](time.md))): Context switching object managing per-layer timing state
 - **Global State Pattern**: Shared variables (phraseStart, tpMeasure, etc.) switched between layer contexts
 - **Transparent Integration**: p(c) syntax allows code to work with active layer's buffer automatically
 - **Independent Timing**: Each layer maintains separate timing state via LM.layers[name].state
