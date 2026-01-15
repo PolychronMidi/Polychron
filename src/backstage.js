@@ -622,11 +622,10 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
  */
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
-// Export to globalThis for test access
+// Export to globalThis test namespace for clean test access
 if (typeof globalThis !== 'undefined') {
-  globalThis.rf = rf;
-  globalThis.ri = ri;
-  globalThis.clamp = clamp;
-  globalThis.rv = rv;
-  globalThis.ra = ra;
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, {
+    rf, ri, clamp, rv, ra
+  });
 }

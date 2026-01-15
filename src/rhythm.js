@@ -430,11 +430,10 @@ trackSubdivRhythm=()=>{if (subdivRhythm[subdivIndex] > 0) {subdivsOn++; subdivsO
 
 trackSubsubdivRhythm=()=>{if (subsubdivRhythm[subsubdivIndex] > 0) {subsubdivsOn++; subsubdivsOff=0;} else {subsubdivsOn=0; subsubdivsOff++;} };
 
-// Export to globalThis for test access
+// Export to globalThis test namespace for clean test access
 if (typeof globalThis !== 'undefined') {
-  globalThis.drummer = drummer;
-  globalThis.patternLength = patternLength;
-  globalThis.makeOnsets = makeOnsets;
-  globalThis.closestDivisor = closestDivisor;
-  globalThis.drumMap = drumMap;
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, {
+    drummer, patternLength, makeOnsets, closestDivisor, drumMap
+  });
 }

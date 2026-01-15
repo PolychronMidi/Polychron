@@ -238,7 +238,8 @@ try {
   console.error('Failed to wrap fs.writeFileSync:', err);
 }
 
-// Export to globalThis for test access
+// Export to globalThis test namespace for clean test access
 if (typeof globalThis !== 'undefined') {
-  globalThis.p = p;
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, { p });
 }

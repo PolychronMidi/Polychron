@@ -49,10 +49,8 @@ function setupGlobalState() {
   m = global.m;
 }
 
-// Helper functions from backstage.js
-// Import from globalThis
-const { rf, ri, clamp, rv, ra, p } = globalThis;
-const { drummer, patternLength, makeOnsets, closestDivisor, drumMap } = globalThis;
+// Import from test namespace
+const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor, drumMap } = globalThis.__POLYCHRON_TEST__;
 
 describe('drumMap', () => {
   it('should define drum mappings with notes and velocity ranges', () => {
