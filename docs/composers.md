@@ -1,12 +1,12 @@
-# composers.js - Musical Content Generation
+# **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) - Musical Content Generation
 
 > **Source**: `src/composers.js`
 > **Status**: Core Module - Music Theory
-> **Dependencies**: backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), sheet.js ([code](../src/sheet.js)) ([doc](sheet.md))
+> **Dependencies**: **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)), **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)), **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)) ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md))
 
 ## Overview
 
-**composers.js** generates all musical content - notes, harmonies, time signatures, and voice counts. It provides a class hierarchy of composers that generate harmonically sophisticated music based on scales, chords, and modes.
+****composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) generates all musical content - notes, harmonies, time signatures, and voice counts. It provides a class hierarchy of composers that generate harmonically sophisticated music based on scales, chords, and modes.
 
 **Core Responsibilities:**
 - **Meter generation** - Creates complex time signatures with musical smoothing
@@ -17,11 +17,11 @@
 
 ## Architecture Role
 
-**composers.js** operates in the **content generation layer**:
-- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls composer.getNotes() at each subdivision
-- **time.js** ([code](../src/time.js)) ([doc](time.md)) - Uses getMeter(), getDivisions(), getSubdivisions()
-- **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Uses composer via play.js
-- **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) - Provides scale/chord/mode data via Tonal.js
+****composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) operates in the **content generation layer**:
+- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls composer.getNotes() at each subdivision
+- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses getMeter(), getDivisions(), getSubdivisions()
+- ****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Uses composer via **play.js** ([code](../src/play.js)) ([doc](play.md))
+- ****venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) - Provides scale/chord/mode data via Tonal.js
 
 ---
 
@@ -266,19 +266,19 @@ Similar pattern using modal harmonic systems (church modes, jazz modes, etc.).
 
 ## Integration with Other Modules
 
-**play.js** creates a composer instance:
+****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) creates a composer instance:
 ```javascript
 const composer = new RandomScaleComposer();  // or ScaleComposer, ChordComposer, etc.
 ```
 
-**play.js** calls at each subdivision:
+****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) calls at each subdivision:
 ```javascript
 setUnitTiming('subdivision');
 const notes = composer.getNotes();  // Get 1-4 notes
 playNotes();  // Send MIDI note-ons
 ```
 
-**time.js** calls for timing:
+****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) calls for timing:
 ```javascript
 divsPerBeat = composer.getDivisions();
 subdivsPerDiv = composer.getSubdivisions();

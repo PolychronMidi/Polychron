@@ -1,4 +1,4 @@
-# backstage.js - Utility Functions and Global State
+# **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) - Utility Functions and Global State
 
 > **Source**: `src/backstage.js`
 > **Status**: Core Module - Foundation
@@ -6,7 +6,7 @@
 
 ## Overview
 
-**backstage.js** provides the foundation for all other modules - mathematical utilities, randomization systems, global state, and MIDI infrastructure. It's the first file loaded, establishing the environment for everything else.
+****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) provides the foundation for all other modules - mathematical utilities, randomization systems, global state, and MIDI infrastructure. It's the first file loaded, establishing the environment for everything else.
 
 **Core Responsibilities:**
 - **Mathematical utilities** - Specialized clamping and boundary functions
@@ -17,9 +17,9 @@
 
 ## Architecture Role
 
-**backstage.js** is the **foundation layer**:
-- **Imported first** by stage.js to initialize global environment
-- **Used by all modules** - Provides utilities to play.js, time.js, composers.js, rhythm.js, stage.js
+****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) is the **foundation layer**:
+- **Imported first** by **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) to initialize global environment
+- **Used by all modules** - Provides utilities to **play.js** ([code](../src/play.js)) ([doc](play.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)), **composers.js** ([code](../src/composers.js)) ([doc](composers.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)), **stage.js** ([code](../src/stage.js)) ([doc](stage.md))
 - **Establishes globals** - Timing, channel routing, state variables
 - **No dependencies** - Self-contained utility library
 

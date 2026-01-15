@@ -52,7 +52,7 @@ New contributors to the project can:
 > **Approach**: Integration testing with real implementations, no mocks
 
 **Test Coverage:**
-- **8 Module Tests** - Direct testing of backstage.js, composers.js, rhythm.js, stage.js, time.js, venue.js, writer.js, and play.js
+- **8 Module Tests** - Direct testing of **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)), **composers.js** ([code](../src/composers.js)) ([doc](composers.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)), **stage.js** ([code](../src/stage.js)) ([doc](stage.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)), **venue.js** ([code](../src/venue.js)) ([doc](venue.md)), **writer.js** ([code](../src/writer.js)) ([doc](writer.md)), and **play.js** ([code](../src/play.js)) ([doc](play.md))
 - **1 Code Quality Test** - Static analysis to catch malformed code patterns
 
 ---
@@ -164,14 +164,14 @@ Each module has a corresponding `.test.js` file that imports the real implementa
 
 | Test File | Module | Key Coverage | Lines |
 |-----------|--------|--------------|-------|
-| backstage.test.js | backstage.js | Math utilities (clamp, modClamp), randomization functions (ri, rf, rw), normalization | 1404 |
-| writers.test.js | writer.js | CSVBuffer class, event pushing (p), grandFinale file generation | ~600 |
-| time.test.js | time.js | Timing calculations (getMidiTiming, setMidiTiming), polyrhythm generation (getPolyrhythm), unit timing setup | 1466 |
-| composers.test.js | composers.js | Meter generation (getMeter), note selection (getNotes), class hierarchy (Scale, Random, Chord, Mode) | ~1000 |
-| rhythm.test.js | rhythm.js | Drum sound mapping (drumMap), pattern generation (drummer), context-aware rhythm logic | ~800 |
-| stage.test.js | stage.js | Binaural beat generation (binaural), stutter effects (stutter), note generation (note), channel management | ~1000 |
-| venue.test.js | venue.js | MIDI note/program lookups (getMidiValue), music theory constants (scales, chords, modes) | ~400 |
-| play.test.js | play.js | Composition orchestration, subdivision handling, integration between all modules | ~600 |
+| backstage.test.js | **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) | Math utilities (clamp, modClamp), randomization functions (ri, rf, rw), normalization | 1404 |
+| writers.test.js | **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) | CSVBuffer class, event pushing (p), grandFinale file generation | ~600 |
+| time.test.js | **time.js** ([code](../src/time.js)) ([doc](time.md)) | Timing calculations (getMidiTiming, setMidiTiming), polyrhythm generation (getPolyrhythm), unit timing setup | 1466 |
+| composers.test.js | **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) | Meter generation (getMeter), note selection (getNotes), class hierarchy (Scale, Random, Chord, Mode) | ~1000 |
+| rhythm.test.js | **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) | Drum sound mapping (drumMap), pattern generation (drummer), context-aware rhythm logic | ~800 |
+| stage.test.js | **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) | Binaural beat generation (binaural), stutter effects (stutter), note generation (note), channel management | ~1000 |
+| venue.test.js | **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) | MIDI note/program lookups (getMidiValue), music theory constants (scales, chords, modes) | ~400 |
+| play.test.js | **play.js** ([code](../src/play.js)) ([doc](play.md)) | Composition orchestration, subdivision handling, integration between all modules | ~600 |
 
 ### Code Quality Test (1 file)
 
@@ -475,7 +475,7 @@ const { rf, ri, clamp } = globalThis.__POLYCHRON_TEST__;
 - Correctly loads via `require()`: sheet, writer, backstage, rhythm
 - Uses `setupGlobalState()` properly to initialize test globals
 - **Uses test namespace**: Imports all functions from `globalThis.__POLYCHRON_TEST__`
-- Tests real functions from rhythm.js: `drummer()`, `patternLength()`, `makeOnsets()`, `closestDivisor()`
+- Tests real functions from **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)): `drummer()`, `patternLength()`, `makeOnsets()`, `closestDivisor()`
 - Tests real data: `drumMap` from actual rhythm module
 - ✅ **No function redefinitions** - Removed all duplicate function definitions
 - ✅ **No mocks** - Uses real implementations throughout
@@ -513,7 +513,7 @@ describe('drummer', () => {
 - Uses `setupGlobalState()` properly
 - **No mocks used** - Tests real channel mappings, binaural settings, etc.
 
-**Why it works**: stage.js is side-effect heavy (sets many globals), so testing the resulting state is the right approach.
+**Why it works**: **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) is side-effect heavy (sets many globals), so testing the resulting state is the right approach.
 
 ---
 
@@ -539,26 +539,26 @@ const mockComposer = {
 
 **Why This Mock Exists and Why It's Justified**:
 
-1. **Architectural Constraint**: `time.js` functions require a `composer` object (set by play.js)
+1. **Architectural Constraint**: `time.js` functions require a `composer` object (set by **play.js** ([code](../src/play.js)) ([doc](play.md)))
    - The actual composer is a complex class instance that depends on full initialization
-   - Testing different time.js functions requires different composer states
+   - Testing different **time.js** ([code](../src/time.js)) ([doc](time.md)) functions requires different composer states
    - Real composers are randomized (getMeter() returns different values each call)
 
 2. **Test Isolation Need**: The mock provides **deterministic, controlled behavior**
-   - Allows testing time.js logic without being affected by composer randomization
+   - Allows testing **time.js** ([code](../src/time.js)) ([doc](time.md)) logic without being affected by composer randomization
    - Different tests can set different meter values by replacing the mock
    - Prevents timing tests from being flaky due to random composer behavior
 
 3. **Worth the Duplication**: This is a **thin interface** (5 simple properties)
    - If composer interface changes (e.g., `getSubsubdivs()` renamed), it's easy to spot in tests
    - The mock doesn't duplicate complex logic, just provides a stable interface
-   - The real time.js functions that use this interface ARE tested with real input
+   - The real **time.js** ([code](../src/time.js)) ([doc](time.md)) functions that use this interface ARE tested with real input
 
 4. **Acceptance Criteria Met**:
    - ✅ Mock is minimal (5 lines, no logic duplication)
    - ✅ Mock is at a boundaries (composer is external dependency)
-   - ✅ Real time.js logic is tested with real inputs throughout the file
-   - ✅ When composer behavior changes, tests still validate time.js correctly
+   - ✅ Real **time.js** ([code](../src/time.js)) ([doc](time.md)) logic is tested with real inputs throughout the file
+   - ✅ When composer behavior changes, tests still validate **time.js** ([code](../src/time.js)) ([doc](time.md)) correctly
 
 **Verdict**: This mock usage is **appropriate and worth keeping**.
 
@@ -567,13 +567,13 @@ const mockComposer = {
 #### ✅ venue.test.js - Full Compliance
 
 **Standard Adherence**: Perfect ✅
-- Loads via `require()`: sheet.js, venue.js
+- Loads via `require()`: **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)), **venue.js** ([code](../src/venue.js)) ([doc](venue.md))
 - Tests real data structures: `midiData.program`, `midiData.control`, `allNotes`, `allScales`, `allChords`, `allModes`
 - Tests real function: `getMidiValue()`
 - No complex state needed
 - **No mocks used** - All MIDI data is real
 
-**Why it works**: venue.js is a pure data reference module with no complex behavior, making real testing trivial.
+**Why it works**: **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) is a pure data reference module with no complex behavior, making real testing trivial.
 
 ---
 
@@ -586,7 +586,7 @@ const mockComposer = {
 - Uses `setupGlobalState()` properly
 - **No mocks used** - All file I/O and CSV operations use real implementation
 
-**Why it works**: writer.js focuses on data transformation and output, which are deterministic and easy to test with real code.
+**Why it works**: **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) focuses on data transformation and output, which are deterministic and easy to test with real code.
 
 ---
 
@@ -626,13 +626,13 @@ const mockComposer = {
 
 ### 🔴 High Priority - Fix rhythm.test.js Redefinitions
 
-**Issue**: rhythm.test.js redefines 9 functions already loaded from backstage.js and rhythm.js
+**Issue**: rhythm.test.js redefines 9 functions already loaded from **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) and **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))
 
 **Fix Strategy**:
 1. Remove lines 37-120 (all function redefinitions)
-2. Use `globalThis.rf()`, `globalThis.ri()`, etc. from loaded backstage.js
-3. Use real `drummer()` and `patternLength()` from loaded rhythm.js
-4. Use real `drumMap` from loaded rhythm.js
+2. Use `globalThis.rf()`, `globalThis.ri()`, etc. from loaded **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))
+3. Use real `drummer()` and `patternLength()` from loaded **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))
+4. Use real `drumMap` from loaded **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))
 
 **Impact**:
 - ✅ Follows testing philosophy perfectly
@@ -647,9 +647,9 @@ const mockComposer = {
 
 ### 🟡 Medium Priority - Create play.test.js
 
-**Current State**: No test file for play.js
+**Current State**: No test file for **play.js** ([code](../src/play.js)) ([doc](play.md))
 
-**Why Needed**: play.js is the orchestrator module that coordinates all other modules. Its testing is critical.
+**Why Needed**: **play.js** ([code](../src/play.js)) ([doc](play.md)) is the orchestrator module that coordinates all other modules. Its testing is critical.
 
 **Test Strategy**:
 1. Load all real modules: sheet, writer, backstage, time, composers, rhythm, stage, venue, play
@@ -891,9 +891,9 @@ describe('getMidiTiming', () => {
 
 **Why this mock is justified**:
 - ✅ Minimal (5 properties, no logic duplication)
-- ✅ At a boundary (composer is external dependency from composers.js)
+- ✅ At a boundary (composer is external dependency from **composers.js** ([code](../src/composers.js)) ([doc](composers.md)))
 - ✅ Real functions are thoroughly tested with real input
-- ✅ When composer interface changes, tests still validate time.js correctly
+- ✅ When composer interface changes, tests still validate **time.js** ([code](../src/time.js)) ([doc](time.md)) correctly
 
 **Key principle**: Mock only at boundaries, and keep mocks minimal and stable.
 

@@ -1,12 +1,12 @@
-# rhythm.js - Rhythmic Pattern Generation and Drum Programming
+# **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) - Rhythmic Pattern Generation and Drum Programming
 
 > **Source**: `src/rhythm.js`
 > **Status**: Core Module - Rhythm Engine
-> **Dependencies**: backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md)), sheet.js ([code](../src/sheet.js)) ([doc](sheet.md))
+> **Dependencies**: **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)), **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)), **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md)) ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md))
 
 ## Overview
 
-**rhythm.js** generates complex rhythmic patterns and drum sequences. It combines algorithmic pattern generation with sophisticated drum programming to create percussion that would be impossible for human drummers.
+****rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) generates complex rhythmic patterns and drum sequences. It combines algorithmic pattern generation with sophisticated drum programming to create percussion that would be impossible for human drummers.
 
 **Core Responsibilities:**
 - **Drum sound mapping** - 25+ percussion sounds with realistic velocity ranges
@@ -17,11 +17,11 @@
 
 ## Architecture Role
 
-**rhythm.js** operates in the **pattern generation layer**:
-- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls playDrums() at each beat
-- **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) - Calls drummer() and playDrums() from stage audio functions
-- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
-- **time.js** ([code](../src/time.js)) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator)
+****rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) operates in the **pattern generation layer**:
+- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls playDrums() at each beat
+- ****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Calls drummer() and playDrums() from stage audio functions
+- ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
+- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator)
 
 ---
 
@@ -232,7 +232,7 @@ playDrums = () => {
 
 ## Integration with Composition
 
-**Called from play.js beat loop:**
+**Called from **play.js** ([code](../src/play.js)) ([doc](play.md)) beat loop:**
 ```javascript
 for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
   setUnitTiming('beat');

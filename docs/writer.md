@@ -1,12 +1,12 @@
-# writer.js - MIDI Output and File Generation
+# **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) - MIDI Output and File Generation
 
 > **Source**: `src/writer.js`
 > **Status**: Core Module - Output & File I/O
-> **Dependencies**: time.js ([code](../src/time.js)) ([doc](time.md)), backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), fs (Node.js)
+> **Dependencies**: **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)), **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)), fs (Node.js)
 
 ## Overview
 
-**writer.js** handles all MIDI file output - CSV buffer management, timing marker logging, and final file generation. It encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable MIDI files.
+****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) handles all MIDI file output - CSV buffer management, timing marker logging, and final file generation. It encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable MIDI files.
 
 **Core Responsibilities:**
 - **Buffer management** - CSVBuffer class for layer-specific event storage
@@ -17,10 +17,10 @@
 
 ## Architecture Role
 
-**writer.js** is the **output layer**:
-- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls grandFinale() at composition end
+****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) is the **output layer**:
+- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls grandFinale() at composition end
 - **All modules** - Generate events via `p(c, event)`
-- **time.js** ([code](../src/time.js)) ([doc](time.md)) - Timing markers use time.md logUnit()
+- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Timing markers use time.md logUnit()
 - **Layer-aware** - Automatically routes events to active layer's buffer
 
 ---
@@ -489,7 +489,7 @@ logUnit = (type) => {
 
 ### Configuration
 
-Controlled by global `LOG` variable (set in sheet.js):
+Controlled by global `LOG` variable (set in **sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))):
 - **`LOG = 'none'`** - No markers
 - **`LOG = 'all'`** - All markers
 - **`LOG = 'phrase,measure'`** - Specific types (comma-separated)

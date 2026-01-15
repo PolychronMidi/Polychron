@@ -1,27 +1,27 @@
-# time.js - Timing Engine and Temporal Management System
+# **time.js** ([code](../src/time.js)) ([doc](time.md)) - Timing Engine and Temporal Management System
 
 > **Source**: `src/time.js`
 > **Status**: Core Module - Timing & Meter Spoofing
-> **Dependencies**: backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md))
+> **Dependencies**: **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)), **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md))
 
 ## Overview
 
-**time.js** is the **temporal engine** of Polychron, handling all timing calculations, meter management, and the revolutionary "meter spoofing" technology that enables **any time signature** to work within MIDI constraints.
+****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) is the **temporal engine** of Polychron, handling all timing calculations, meter management, and the revolutionary "meter spoofing" technology that enables **any time signature** to work within MIDI constraints.
 
 **Core Capabilities:**
 - **Meter spoofing** - Converts non-power-of-2 time signatures (7/11, 420/69, etc.) to MIDI-compatible equivalents
 - **Polyrhythm calculation** - Finds optimal measure alignments between different meters
 - **Hierarchical timing** - Precise calculations across 7 nested levels: section → phrase → measure → beat → division → subdivision → subsubdivision
 - **Dual-layer context management** - LayerManager (LM) enables independent polyrhythmic layers with synchronized time
-- **MIDI timing events** - Generates tempo and meter change events via writer.js
+- **MIDI timing events** - Generates tempo and meter change events via **writer.js** ([code](../src/writer.js)) ([doc](writer.md))
 
 ## Architecture Role
 
-**time.js** serves as the **timing coordinator**:
-- **play.js** ([code](../src/play.js)) ([doc](play.md)) - Calls setUnitTiming() at each hierarchy level and drives phrase/section advancement via LM
-- **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) - Provides division/subdivision counts that determine timing granularity
-- **writer.js** ([code](../src/writer.js)) ([doc](writer.md)) - Receives MIDI timing events (tempo, meter) via setMidiTiming()
-- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) - Mathematical utility support (pow, log, ceil, floor)
+****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) serves as the **timing coordinator**:
+- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls setUnitTiming() at each hierarchy level and drives phrase/section advancement via LM
+- ****composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides division/subdivision counts that determine timing granularity
+- ****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - Receives MIDI timing events (tempo, meter) via setMidiTiming()
+- ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Mathematical utility support (pow, log, ceil, floor)
 ## Unit Timing: `setUnitTiming()`
 
 Calculates absolute positions for each hierarchy level using cascading parent position + index × duration.
@@ -855,7 +855,7 @@ getPolyrhythm = () => {
 Central function called at each level of the timing hierarchy. Calculates absolute tick and time positions for every note by cascading parent positions through each nested level.
 
 ### Called From
-play.js nested loops at each hierarchy level:
+**play.js** ([code](../src/play.js)) ([doc](play.md)) nested loops at each hierarchy level:
 ```javascript
 for (sectionIndex = 0; ...)
   LM.activate(layer)
@@ -1109,7 +1109,7 @@ LM.advance('primary', 'phrase');  // Advance to next phrase
 
 - **Result**: Layer state updated with new phrase/section boundaries
 
-### Usage Pattern in play.js
+### Usage Pattern in **play.js** ([code](../src/play.js)) ([doc](play.md))
 
 ```javascript
 // Dual-layer composition
