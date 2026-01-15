@@ -1,0 +1,33 @@
+name: Docs Coherence
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  docs-drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install deps
+        run: npm ci || npm install
+
+      - name: Refresh docs snippets
+        run: npm run docs:refresh
+
+      - name: Check for drift
+        run: |
+          git diff --name-only --exit-code || (echo 'Docs drift detected. Run npm run docs:refresh and commit updates.' && exit 1)
+
+      - name: Check for broken links
+        run: npm run docs:check-links

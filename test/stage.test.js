@@ -177,7 +177,7 @@ require('../src/stage');  // Load stage module and all dependencies
 
     it('should verify active vs inactive rhythm slots affect output', () => {
       // This test compares active slots (which use rf(1.5,3)=1.5) vs inactive (which use max())
-      
+
       // Active: All slots are ON (value = 1)
       globalThis.beatIndex = 0; // beatRhythm[0] = 1
       globalThis.divIndex = 0; // divRhythm[0] = 1

@@ -6,12 +6,15 @@
   },
   "devDependencies": {
     "eslint": "^9.0.0",
+    "markdown-link-check": "^3.14.2",
     "vitest": "^4.0.16"
   },
   "scripts": {
     "test": "vitest",
     "lint": "eslint .",
     "pretest": "npm run lint",
-    "play": "node src/play && py c2m.py"
+    "play": "node src/play && py c2m.py",
+    "docs:refresh": "node scripts/refresh-doc-examples.mjs",
+    "docs:check-links": "node scripts/check-links.mjs"
   }
 }

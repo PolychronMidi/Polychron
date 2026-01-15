@@ -68,7 +68,7 @@ describe('Integration: Full Composition Pipeline', () => {
       globalThis.subdivIndex = 0;
 
       expect(globalThis.beatCount).toBe(0);
-      
+
       globalThis.beatCount = 10;
       expect(globalThis.beatCount).toBe(10);
     });

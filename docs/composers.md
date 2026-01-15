@@ -293,7 +293,7 @@ numerator = composer.getNumerator();  // When changing meters
 
 ## Voice Leading Integration
 
-**As of Task 3.3**, all `MeasureComposer` subclasses support optional **voice leading optimization** for smooth melodic motion and professional voice management. See [voiceLeading.md](../voiceLeading.md) for complete documentation.
+**As of Task 3.3**, all `MeasureComposer` subclasses support optional **voice leading optimization** for smooth melodic motion and professional voice management. See [voiceLeading.md](voiceLeading.md) for complete documentation.
 
 ### Quick Start
 
@@ -337,4 +337,4 @@ All subclasses inherit voice leading support:
 - **Non-breaking** - Existing code unaffected
 - **Graceful fallback** - Returns random selection if voice leading disabled
 
-For comprehensive documentation, see [voiceLeading.md](../voiceLeading.md).
+For comprehensive documentation, see [voiceLeading.md](voiceLeading.md).

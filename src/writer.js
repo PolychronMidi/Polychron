@@ -1,6 +1,14 @@
 // writer.js - MIDI output and file generation with CSV buffer management.
 // minimalist comments, details at: writer.md
 
+/**
+ * Layer-aware MIDI event buffer.
+ * @class CSVBuffer
+ * @param {string} name - Layer identifier ('primary', 'poly', etc.).
+ * @property {string} name - Layer identifier.
+ * @property {Array<object>} rows - MIDI event objects: {tick, type, vals}.
+ * @property {number} length - Read-only count of events.
+ */
 CSVBuffer = class CSVBuffer {
   constructor(name) {
     this.name = name;
