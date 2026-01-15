@@ -2,7 +2,7 @@
 
 > **Source**: `src/rhythm.js`
 > **Status**: Core Module - Rhythm Engine
-> **Dependencies**: backstage, writer, sheet, @tonaljs/rhythm-pattern
+> **Dependencies**: backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), writer.js ([code](../src/writer.js)) ([doc](writer.md)), sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)), @tonaljs/rhythm-pattern
 
 ## Project Overview
 
@@ -20,11 +20,11 @@ This module provides **advanced rhythmic capabilities** including:
 
 ## Architecture Role
 
-**rhythm.js** operates in the **pattern generation layer**, receiving requests from **play.js** for rhythmic patterns and returning arrays of rhythm values (0s and 1s). It integrates with:
+**rhythm.js** operates in the **pattern generation layer**, receiving requests from **play.js** ([code](../src/play.js)) ([doc](play.md)) for rhythmic patterns and returning arrays of rhythm values (0s and 1s). It integrates with:
 - **@tonaljs/rhythm-pattern** library for algorithmic pattern generation
-- **backstage.js** for utility functions and random number generation
-- **time.js** for tempo and timing coordination
-- **stage.js** for actual MIDI event generation
+- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) for utility functions and random number generation
+- **time.js** ([code](../src/time.js)) ([doc](time.md)) for tempo and timing coordination
+- **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) for actual MIDI event generation
 
 ## Code Style Philosophy
 

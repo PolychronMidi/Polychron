@@ -21,8 +21,8 @@ This module provides **essential infrastructure** including:
 ## Architecture Role
 
 **backstage.js** operates as the **foundation layer** supporting all other modules:
-- **Imported first** by stage.js, establishing the global environment
-- **Provides utilities** used by all other files (play.js, time.js, rhythm.js, composers.js)
+- **Imported first** by stage.js ([code](../src/stage.js)) ([doc](stage.md)), establishing the global environment
+- **Provides utilities** used by all other files: play.js ([code](../src/play.js)) ([doc](play.md)), time.js ([code](../src/time.js)) ([doc](time.md)), rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)), composers.js ([code](../src/composers.js)) ([doc](composers.md))
 - **Manages global state** that coordinates between modules
 - **Defines MIDI infrastructure** used throughout the system
 

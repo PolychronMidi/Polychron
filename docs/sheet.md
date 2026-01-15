@@ -20,7 +20,7 @@ This module provides **comprehensive system configuration** including:
 ## Architecture Role
 
 **sheet.js** operates as the **configuration foundation**:
-- **Imported first** by stage.js, establishing all system parameters
+- **Imported first** by stage.js ([code](../src/stage.js)) ([doc](stage.md)), establishing all system parameters
 - **No computational logic** - Pure parameter definitions and configuration data
 - **User-customizable** - Primary interface for users to modify Polychron's behavior
 - **Global parameter source** - All other modules reference these configuration values

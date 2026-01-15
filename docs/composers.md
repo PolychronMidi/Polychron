@@ -2,7 +2,7 @@
 
 > **Source**: `src/composers.js`
 > **Status**: Core Module - Music Theory
-> **Dependencies**: backstage, venue, sheet
+> **Dependencies**: backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)), venue.js ([code](../src/venue.js)) ([doc](venue.md)), sheet.js ([code](../src/sheet.js)) ([doc](sheet.md))
 
 ## Project Overview
 
@@ -19,7 +19,7 @@ This module provides the **creative intelligence** for musical composition, hand
 
 ## Architecture Role
 
-**composers.js** sits in the **content generation layer** of the Polychron architecture. It receives requests from **play.js** for musical parameters and returns structured musical data. The file is imported through **stage.js** and works closely with **venue.js** (for music theory data) and **time.js** (for timing calculations).
+**composers.js** sits in the **content generation layer** of the Polychron architecture. It receives requests from **play.js** ([code](../src/play.js)) ([doc](play.md)) for musical parameters and returns structured musical data. The file is imported through **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) and works closely with **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) (for music theory data) and **time.js** ([code](../src/time.js)) ([doc](time.md)) (for timing calculations).
 
 ## Code Style Philosophy
 
