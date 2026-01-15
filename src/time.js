@@ -80,7 +80,7 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
-  const MAX_ATTEMPTS = 200;
+  const MAX_ATTEMPTS = 250;
   let attempts = 0;
   while (attempts++ < MAX_ATTEMPTS) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);

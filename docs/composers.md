@@ -73,14 +73,14 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=100) {
   while (++iterations <= maxIterations) {
     let newNumerator = this.getNumerator();
     let newDenominator = this.getDenominator();
-    
+
     if (!Number.isInteger(newNumerator) || !Number.isInteger(newDenominator) ||
         newNumerator <= 0 || newDenominator <= 0) {
       continue;
     }
 
     let newMeterRatio = newNumerator / newDenominator;
-    const ratioValid = ignoreRatioCheck || 
+    const ratioValid = ignoreRatioCheck ||
       (newMeterRatio >= METER_RATIO_MIN && newMeterRatio <= METER_RATIO_MAX);
 
     if (ratioValid) {
@@ -289,7 +289,52 @@ numerator = composer.getNumerator();  // When changing meters
 
 ## Error Handling
 
-- **getMeter()** - Falls back to [4,4] after max iterations with warning
-- **getNotes()** - Recursion depth limit (5 levels) to prevent infinite loops
-- **Scale/Chord validation** - Invalid symbols logged and filtered out
 - **Graceful degradation** - Errors caught and methods retry with fallback patterns
+
+## Voice Leading Integration
+
+**As of Task 3.3**, all `MeasureComposer` subclasses support optional **voice leading optimization** for smooth melodic motion and professional voice management. See [voiceLeading.md](../voiceLeading.md) for complete documentation.
+
+### Quick Start
+
+Enable voice leading on any composer:
+```javascript
+const composer = new ScaleComposer('major', 'C');
+composer.enableVoiceLeading();  // Uses default VoiceLeadingScore
+
+// Select note using cost function
+const selectedNote = composer.selectNoteWithLeading(candidateNotes, {
+  register: 'soprano'
+});
+```
+
+### Voice Leading Methods
+
+- **`enableVoiceLeading(scorer?)`** - Activate voice leading (uses default if no scorer provided)
+- **`selectNoteWithLeading(availableNotes, config?)`** - Select note using weighted cost function
+- **`resetVoiceLeading()`** - Clear history at section boundaries
+
+### Voice Leading Rules
+
+Enforces these soft constraints via weighted penalties:
+- **Smooth Motion** - Prefers stepwise motion (1-2 semitones) over leaps
+- **Voice Range** - Enforces soprano/alto/tenor/bass register boundaries
+- **Leap Recovery** - Leaps must be followed by stepwise motion in opposite direction
+- **Voice Crossing** - Prevents soprano from crossing below alto
+- **Parallel Motion** - Discourages repeated directional motion
+
+### Integration with Composers
+
+All subclasses inherit voice leading support:
+- **ScaleComposer** - Smooth scale-based melodies with register control
+- **ChordComposer** - Smooth voice leading through progressions
+- **ModeComposer** - Modal melodies with voice leading constraints
+- Plus all random variants (RandomScaleComposer, RandomChordComposer, RandomModeComposer)
+
+### Backward Compatibility
+
+- **Opt-in only** - Voice leading disabled by default
+- **Non-breaking** - Existing code unaffected
+- **Graceful fallback** - Returns random selection if voice leading disabled
+
+For comprehensive documentation, see [voiceLeading.md](../voiceLeading.md).
