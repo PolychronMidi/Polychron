@@ -7,3 +7,5 @@ package.json
 /.vscode
 /output
 /.serena
+/.mcp
+.clinerules
