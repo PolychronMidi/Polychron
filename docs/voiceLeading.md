@@ -1,4 +1,4 @@
-# Voice Leading & Counterpoint (Task 3.3)
+# Voice Leading & Counterpoint
 
 ## Overview
 
