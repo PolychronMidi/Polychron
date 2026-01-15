@@ -80,7 +80,7 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
-  const MAX_ATTEMPTS = 250;
+  const MAX_ATTEMPTS = 100;
   let attempts = 0;
   while (attempts++ < MAX_ATTEMPTS) {
     [polyNumerator, polyDenominator] = composer.getMeter(true, true);
@@ -124,11 +124,14 @@ getPolyrhythm = () => {
       return;
     }
   }
-  // Fallback if no valid polyrhythm found within attempts
+  // Max attempts reached: try new meter on primary layer with relaxed constraints
+  console.warn(`getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new primary meter...`);
+  [numerator, denominator] = composer.getMeter(true, false);
+  // CRITICAL: Recalculate all timing after meter change to prevent sync desync
+  getMidiTiming();
   measuresPerPhrase1 = 1;
   measuresPerPhrase2 = 1;
-  console.warn(`getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); using 1:1 measures`);
-};
+};;
 
 /**
  * TimingContext class - encapsulates all timing state for a layer.
