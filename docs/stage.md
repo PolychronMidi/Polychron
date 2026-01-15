@@ -1,5 +1,9 @@
 # stage.js - Audio Processing and Performance Engine
 
+> **Source**: `src/stage.js`
+> **Status**: Core Module - Audio Processing
+> **Dependencies**: sheet, writer, venue, backstage, rhythm, time, composers
+
 ## Project Overview
 
 **stage.js** is the **audio processing powerhouse** of the Polychron system, responsible for all real-time audio effects, binaural beat generation, channel management, note generation, and MIDI event creation. This file transforms the musical concepts from other modules into precise MIDI events with sophisticated audio processing.

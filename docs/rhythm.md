@@ -1,5 +1,9 @@
 # rhythm.js - Rhythmic Pattern Generation and Drum Programming System
 
+> **Source**: `src/rhythm.js`
+> **Status**: Core Module - Rhythm Engine
+> **Dependencies**: backstage, writer, sheet, @tonaljs/rhythm-pattern
+
 ## Project Overview
 
 **rhythm.js** is the **rhythmic intelligence** of the Polychron system, responsible for creating complex rhythmic patterns, drum sequences, and polyrhythmic structures. This file combines algorithmic pattern generation with sophisticated drum programming to create rhythmic content that would be impossible for human performers.

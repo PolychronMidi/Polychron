@@ -1,5 +1,9 @@
 # sheet.js - Configuration and Musical Parameters
 
+> **Source**: `src/sheet.js`
+> **Status**: Core Module - Configuration
+> **Dependencies**: None (config-only)
+
 ## Project Overview
 
 **sheet.js** serves as the **configuration headquarters** for the entire Polychron system, defining all musical parameters, instrument assignments, structural settings, and system behaviors. This file acts as the "sheet music" of parameters that control every aspect of composition generation.

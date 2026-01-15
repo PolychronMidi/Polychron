@@ -1,5 +1,5 @@
 // test/stage.test.js
-require('../stage');  // Load stage module and all dependencies
+require('../src/stage');  // Load stage module and all dependencies
 
 describe('Stage Module', () => {
   beforeEach(() => {

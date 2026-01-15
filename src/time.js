@@ -264,6 +264,7 @@ const LM = layerManager ={
   activate: (name, isPoly = false) => {
     const layer = LM.layers[name];
     c = layer.buffer;
+    LM.activeLayer = name;
 
     // Store meter into layer state (set externally before activation)
     layer.state.numerator = numerator;

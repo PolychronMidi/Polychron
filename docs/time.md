@@ -1,5 +1,9 @@
 # time.js - Timing Engine and Temporal Management System
 
+> **Source**: `src/time.js`
+> **Status**: Core Module - Timing & Meter Spoofing
+> **Dependencies**: backstage, writer
+
 ## Project Overview
 
 **time.js** is the **temporal brain** of the Polychron system, responsible for all timing calculations, meter management, and the revolutionary "meter spoofing" technology that enables any time signature to work within MIDI constraints. This file handles the complex mathematics of polyrhythmic relationships and maintains precise timing coordination across all musical hierarchical levels.

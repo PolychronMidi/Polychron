@@ -15,7 +15,8 @@
     "__pycache__/",
     "output/*.csv",
     "output/*.mid",
-    "output/*.wav"
+    "output/*.wav",
+    "test/"
   ],
   "rules": {
     "no-irregular-whitespace": "error",

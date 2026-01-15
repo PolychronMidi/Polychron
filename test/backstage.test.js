@@ -1,8 +1,8 @@
 // test/backstage.test.js
-require('../sheet');  // Load constants like TUNING_FREQ, BINAURAL, etc.
-require('../writer');  // Load writer functions (CSVBuffer, p, etc.)
-require('../backstage');  // Load all backstage functions globally
-require('../time');  // Load time functions (TimingContext, LM, etc.)
+require('../src/sheet');  // Load constants like TUNING_FREQ, BINAURAL, etc.
+require('../src/writer');  // Load writer functions (CSVBuffer, p, etc.)
+require('../src/backstage');  // Load all backstage functions globally
+require('../src/time');  // Load time functions (TimingContext, LM, etc.)
 
 // Setup function
 function setupGlobalState() {

@@ -1,5 +1,9 @@
 # composers.js - Musical Content Generation and Intelligence System
 
+> **Source**: `src/composers.js`
+> **Status**: Core Module - Music Theory
+> **Dependencies**: backstage, venue, sheet
+
 ## Project Overview
 
 **composers.js** is the **musical brain** of the Polychron system, responsible for generating all harmonic and melodic content. This file defines a sophisticated class hierarchy of composer objects that create musical materials based on scales, chords, modes, and advanced music theory principles.

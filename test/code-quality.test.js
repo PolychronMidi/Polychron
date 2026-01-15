@@ -34,7 +34,7 @@ test('source files should not contain literal escape sequences in comments', () 
   const violations = [];
 
   sourceFiles.forEach(file => {
-    const filePath = path.join(__dirname, '..', file);
+    const filePath = path.join(__dirname, '..', 'src', file);
     if (!fs.existsSync(filePath)) return;
 
     const content = fs.readFileSync(filePath, 'utf8');
@@ -100,7 +100,7 @@ test('source files should end with newline', () => {
   const violations = [];
 
   sourceFiles.forEach(file => {
-    const filePath = path.join(__dirname, '..', file);
+    const filePath = path.join(__dirname, '..', 'src', file);
     if (!fs.existsSync(filePath)) return;
 
     const content = fs.readFileSync(filePath, 'utf8');
@@ -120,7 +120,7 @@ test('source files should end with newline', () => {
  * Check that critical timing functions have JSDoc annotations.
  */
 test('critical timing functions should have JSDoc', () => {
-  const filePath = path.join(__dirname, '..', 'time.js');
+  const filePath = path.join(__dirname, '..', 'src', 'time.js');
   const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
@@ -180,7 +180,7 @@ test('source files should not contain common typos', () => {
   const violations = [];
 
   sourceFiles.forEach(file => {
-    const filePath = path.join(__dirname, '..', file);
+    const filePath = path.join(__dirname, '..', 'src', file);
     if (!fs.existsSync(filePath)) return;
 
     const content = fs.readFileSync(filePath, 'utf8');
@@ -235,7 +235,7 @@ test('function names should follow camelCase convention', () => {
   const violations = [];
 
   sourceFiles.forEach(file => {
-    const filePath = path.join(__dirname, '..', file);
+    const filePath = path.join(__dirname, '..', 'src', file);
     if (!fs.existsSync(filePath)) return;
 
     const content = fs.readFileSync(filePath, 'utf8');

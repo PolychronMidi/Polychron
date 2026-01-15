@@ -1,8 +1,8 @@
 // test/rhythm.test.js
-require('../sheet');  // Defines constants
-require('../writer');  // Defines writer functions (CSVBuffer, p, etc.)
-require('../backstage');  // Defines utility functions
-require('../rhythm');  // Rhythm functions
+require('../src/sheet');  // Defines constants
+require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
+require('../src/backstage');  // Defines utility functions
+require('../src/rhythm');  // Rhythm functions
 
 let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
