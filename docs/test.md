@@ -52,6 +52,45 @@ require('../src/composers');  // Load ACTUAL composers with real logic
 
 **Trade-off**: Tests run slightly slower (loading full modules instead of lightweight mocks), but the accuracy and maintainability gains outweigh this cost.
 
+### Testing Real Functions Supports Experimentality
+
+Polychron is an **experimental music composition engine** - it explores novel approaches to algorithmic composition, polyrhythmic structures, and parameterized randomization. This testing philosophy directly supports that experimental mission:
+
+#### 1. **Rapid Experimentation with Confidence**
+Experimental code evolves frequently. By testing real implementations instead of mocks, developers can:
+- Change function behavior and immediately see what breaks
+- Refactor algorithms without updating parallel mock definitions
+- Try new approaches without worrying about mock/code divergence
+- Prototype new rhythm patterns, scaling algorithms, or composition strategies with safety
+
+#### 2. **Discovery Through Testing**
+Real-function testing reveals unexpected emergent behaviors:
+- When `drummer()` combines random offsets with stutter effects, tests catch subtle timing issues
+- When `getPolyrhythm()` generates coprime rhythm lengths, tests validate the mathematical properties
+- When layered composers interact, tests show integration bugs that isolated mocks would miss
+- These discoveries often lead to new features or improvements that wouldn't be found with mocks
+
+#### 3. **Courage to Refactor Complex Algorithms**
+Polychron's core algorithms (polyrhythm generation, binaural beat synthesis, context-aware randomization) are complex and intertwined. With real-function testing:
+- Developers can refactor a function knowing exactly how it affects downstream code
+- No "ghost" failures from mock/reality divergence
+- Complex interactions (e.g., how `rf()` randomization affects `drummer()` stuttering) are tested as they actually occur
+
+#### 4. **Live Validation of Artistic Choices**
+Music composition algorithms embody artistic decisions (how stutter frequency relates to velocity, how polyrhythm density affects listener perception). Testing real functions means:
+- Tweaking randomization parameters shows immediate test impact
+- Changing drum timing patterns validates against all rhythm tests
+- Experimental features can be rolled back with full confidence that tests caught the regression
+
+#### 5. **Lower Barrier to Contribution**
+New contributors to the project can:
+- See exactly what functions do (no mock interpretation) 
+- Modify algorithms and run tests to validate their experiments
+- Contribute new composition strategies knowing tests exercise the real code
+- Avoid the cognitive overhead of understanding divergent mocks
+
+**In essence**: Testing actual functions creates a safe sandbox for musical exploration. The test suite becomes a validator of experimental ideas, not an obstacle to rapid iteration.
+
 ---
 
 ## Test Structure and Setup
