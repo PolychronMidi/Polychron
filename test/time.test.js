@@ -54,7 +54,7 @@ function setupGlobalState() {
   globalThis.LOG = 'none';
 }
 
-describe('getMidiMeter', () => {
+describe('getMidiTiming', () => {
   beforeEach(() => {
     setupGlobalState();
     // Make composer available globally for getPolyrhythm tests
@@ -65,7 +65,7 @@ describe('getMidiMeter', () => {
     it('should return 4/4 unchanged', () => {
       globalThis.numerator = 4;
       globalThis.denominator = 4;
-      const result = getMidiMeter();
+      const result = getMidiTiming();
       expect(result).toEqual([4, 4]);
       expect(globalThis.midiMeter).toEqual([4, 4]);
       expect(globalThis.syncFactor).toBe(1);
@@ -74,7 +74,7 @@ describe('getMidiMeter', () => {
     it('should return 3/4 unchanged', () => {
       globalThis.numerator = 3;
       globalThis.denominator = 4;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([3, 4]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -82,7 +82,7 @@ describe('getMidiMeter', () => {
     it('should return 7/8 unchanged', () => {
       globalThis.numerator = 7;
       globalThis.denominator = 8;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([7, 8]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -90,7 +90,7 @@ describe('getMidiMeter', () => {
     it('should return 5/16 unchanged', () => {
       globalThis.numerator = 5;
       globalThis.denominator = 16;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([5, 16]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -98,7 +98,7 @@ describe('getMidiMeter', () => {
     it('should return 12/8 unchanged', () => {
       globalThis.numerator = 12;
       globalThis.denominator = 8;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([12, 8]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -108,7 +108,7 @@ describe('getMidiMeter', () => {
     it('should spoof 7/9 to nearest power of 2', () => {
       globalThis.numerator = 7;
       globalThis.denominator = 9;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter[1]).toBe(8); // 8 is closer to 9 than 16
       expect(globalThis.midiMeter[0]).toBe(7);
       expect(globalThis.syncFactor).toBeCloseTo(7/8 / (7/9), 5);
@@ -117,7 +117,7 @@ describe('getMidiMeter', () => {
     it('should spoof 5/6 correctly', () => {
       globalThis.numerator = 5;
       globalThis.denominator = 6;
-      getMidiMeter();
+      getMidiTiming();
       expect([4, 8]).toContain(globalThis.midiMeter[1]); // Either 4 or 8 could be closest
       expect(globalThis.midiMeter[0]).toBe(5);
     });
@@ -125,7 +125,7 @@ describe('getMidiMeter', () => {
     it('should spoof 11/12 correctly', () => {
       globalThis.numerator = 11;
       globalThis.denominator = 12;
-      getMidiMeter();
+      getMidiTiming();
       expect([8, 16]).toContain(globalThis.midiMeter[1]);
       expect(globalThis.midiMeter[0]).toBe(11);
     });
@@ -133,7 +133,7 @@ describe('getMidiMeter', () => {
     it('should spoof 13/17 correctly', () => {
       globalThis.numerator = 13;
       globalThis.denominator = 17;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter[1]).toBe(16); // 16 is closest power of 2 to 17
       expect(globalThis.midiMeter[0]).toBe(13);
     });
@@ -141,7 +141,7 @@ describe('getMidiMeter', () => {
     it('should handle the infamous 420/69', () => {
       globalThis.numerator = 420;
       globalThis.denominator = 69;
-      getMidiMeter();
+      getMidiTiming();
       expect([64, 128]).toContain(globalThis.midiMeter[1]); // 64 is closest to 69
       expect(globalThis.midiMeter[0]).toBe(420);
     });
@@ -151,7 +151,7 @@ describe('getMidiMeter', () => {
     it('should calculate correct sync factor for 7/9', () => {
       globalThis.numerator = 7;
       globalThis.denominator = 9;
-      getMidiMeter();
+      getMidiTiming();
       const expectedMeterRatio = 7 / 9;
       const expectedMidiMeterRatio = 7 / 8;
       const expectedSyncFactor = expectedMidiMeterRatio / expectedMeterRatio;
@@ -164,7 +164,7 @@ describe('getMidiMeter', () => {
       globalThis.numerator = 5;
       globalThis.denominator = 6;
       globalThis.BPM = 120;
-      getMidiMeter();
+      getMidiTiming();
       const expectedMidiBPM = 120 * globalThis.syncFactor;
       expect(globalThis.midiBPM).toBeCloseTo(expectedMidiBPM, 5);
     });
@@ -174,7 +174,7 @@ describe('getMidiMeter', () => {
       globalThis.denominator = 4;
       globalThis.BPM = 120;
       globalThis.PPQ = 480;
-      getMidiMeter();
+      getMidiTiming();
       const expectedTpSec = 120 * 480 / 60; // 960
       expect(globalThis.tpSec).toBeCloseTo(expectedTpSec, 5);
     });
@@ -183,7 +183,7 @@ describe('getMidiMeter', () => {
       globalThis.numerator = 3;
       globalThis.denominator = 4;
       globalThis.PPQ = 480;
-      getMidiMeter();
+      getMidiTiming();
       const expectedTpMeasure = globalThis.PPQ * 4 * (3/4); // 1440
       expect(globalThis.tpMeasure).toBeCloseTo(expectedTpMeasure, 5);
     });
@@ -193,7 +193,7 @@ describe('getMidiMeter', () => {
     it('should handle numerator of 1', () => {
       globalThis.numerator = 1;
       globalThis.denominator = 4;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([1, 4]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -201,7 +201,7 @@ describe('getMidiMeter', () => {
     it('should handle large numerators', () => {
       globalThis.numerator = 127;
       globalThis.denominator = 16;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([127, 16]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -209,7 +209,7 @@ describe('getMidiMeter', () => {
     it('should handle denominator of 2', () => {
       globalThis.numerator = 3;
       globalThis.denominator = 2;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter).toEqual([3, 2]);
       expect(globalThis.syncFactor).toBe(1);
     });
@@ -217,7 +217,7 @@ describe('getMidiMeter', () => {
     it('should handle very odd denominators like 127', () => {
       globalThis.numerator = 7;
       globalThis.denominator = 127;
-      getMidiMeter();
+      getMidiTiming();
       expect(globalThis.midiMeter[1]).toBe(128); // Closest power of 2
       expect(globalThis.midiMeter[0]).toBe(7);
     });
@@ -228,7 +228,7 @@ describe('getMidiMeter', () => {
       globalThis.numerator = 7;
       globalThis.denominator = 9;
       globalThis.BPM = 120;
-      getMidiMeter();
+      getMidiTiming();
 
       // Original measure duration in seconds
       const originalBeatsPerMeasure = globalThis.numerator;
@@ -250,7 +250,7 @@ describe('getPolyrhythm', () => {
     setupGlobalState();
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
   });
 
   const getPolyrhythm = () => {
@@ -305,7 +305,7 @@ describe('getPolyrhythm', () => {
   it('should find 3:2 polyrhythm (3/4 over 4/4)', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
@@ -318,7 +318,7 @@ describe('getPolyrhythm', () => {
   it('should find 2:3 polyrhythm (3/4 over 2/4)', () => {
     globalThis.numerator = 2;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
@@ -330,7 +330,7 @@ describe('getPolyrhythm', () => {
   it('should reject identical meters', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([4, 4]);
     const result = getPolyrhythm();
@@ -341,7 +341,7 @@ describe('getPolyrhythm', () => {
   it('should require at least 3 total measures', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     // This should create a 2-measure polyrhythm which is rejected
     globalThis.composer.getMeter = vi.fn().mockReturnValue([4, 4]);
@@ -353,7 +353,7 @@ describe('getPolyrhythm', () => {
   it('should set measuresPerPhrase1 and measuresPerPhrase2', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     getPolyrhythm();
@@ -365,7 +365,7 @@ describe('getPolyrhythm', () => {
   it('should calculate tpPhrase correctly', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     getPolyrhythm();
@@ -414,7 +414,7 @@ describe('Timing calculation functions', () => {
     denominator = 4;
     BPM = 120;
     PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
   });
 
   const setMeasureTiming = () => {
@@ -557,7 +557,7 @@ describe('Integration tests', () => {
     denominator = 4;
     BPM = 120;
     PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     // 4 measures per phrase
     measuresPerPhrase1 = 4;
@@ -579,7 +579,7 @@ describe('Integration tests', () => {
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
 
-    getMidiMeter();
+    getMidiTiming();
 
     // Measure should take same duration regardless of spoofing
     const actualBeats = globalThis.numerator;
@@ -603,7 +603,7 @@ describe('logUnit', () => {
     setupGlobalState();
     numerator = 4;
     denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
   });
 
   const logUnit = (type) => {
@@ -666,7 +666,7 @@ describe('Cross-Layer Synchronization', () => {
     globalThis.denominator = 9;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
     // tpMeasure uses MIDI meter (7/8), not actual meter (7/9)
     const primaryTpMeasure = 480 * 4 * (7/8);
     expect(globalThis.tpMeasure).toBeCloseTo(primaryTpMeasure, 5);
@@ -674,7 +674,7 @@ describe('Cross-Layer Synchronization', () => {
     // Change to different meter
     globalThis.numerator = 5;
     globalThis.denominator = 6;
-    getMidiMeter();
+    getMidiTiming();
     // midiMeter for 5/6 is 5/8
     const polyTpMeasure = 480 * 4 * (5/8);
     expect(globalThis.tpMeasure).toBeCloseTo(polyTpMeasure, 5);
@@ -684,12 +684,12 @@ describe('Cross-Layer Synchronization', () => {
     // Test with very different meters
     globalThis.numerator = 3;
     globalThis.denominator = 16;
-    getMidiMeter();
+    getMidiTiming();
     const slowTpSec = globalThis.tpSec;
 
     globalThis.numerator = 15;
     globalThis.denominator = 8;
-    getMidiMeter();
+    getMidiTiming();
     const fastTpSec = globalThis.tpSec;
 
     // Both should produce valid timing
@@ -705,11 +705,11 @@ describe('Long-Running Timing Stability', () => {
     globalThis.denominator = 9;
     globalThis.BPM = 120;
 
-    getMidiMeter();
+    getMidiTiming();
     const duration1 = globalThis.tpMeasure / globalThis.tpSec;
 
     // Recalculate - should be identical
-    getMidiMeter();
+    getMidiTiming();
     const duration2 = globalThis.tpMeasure / globalThis.tpSec;
 
     expect(duration1).toBe(duration2);
@@ -724,7 +724,7 @@ describe('Long-Running Timing Stability', () => {
       globalThis.numerator = num;
       globalThis.denominator = den;
       globalThis.BPM = 120;
-      getMidiMeter();
+      getMidiTiming();
       totalPrimaryTime += globalThis.tpMeasure / globalThis.tpSec;
     });
 
@@ -733,7 +733,7 @@ describe('Long-Running Timing Stability', () => {
       globalThis.numerator = num;
       globalThis.denominator = den;
       globalThis.BPM = 120;
-      getMidiMeter();
+      getMidiTiming();
       totalPolyTime += globalThis.tpMeasure / globalThis.tpSec;
     });
 
@@ -747,7 +747,7 @@ describe('Edge Case Meter Spoofing', () => {
     // Test denominator = 6 (between 4 and 8)
     globalThis.numerator = 5;
     globalThis.denominator = 6;
-    getMidiMeter();
+    getMidiTiming();
 
     // Should choose closest power of 2
     expect([4, 8]).toContain(globalThis.midiMeter[1]);
@@ -763,7 +763,7 @@ describe('Edge Case Meter Spoofing', () => {
   it('should handle very large denominators', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 255;
-    getMidiMeter();
+    getMidiTiming();
 
     // Should choose 256 (next power of 2)
     expect(globalThis.midiMeter[1]).toBe(256);
@@ -773,7 +773,7 @@ describe('Edge Case Meter Spoofing', () => {
   it('should handle denominator = 1', () => {
     globalThis.numerator = 3;
     globalThis.denominator = 1;
-    getMidiMeter();
+    getMidiTiming();
 
     // Should choose 1 (already power of 2)
     expect(globalThis.midiMeter[1]).toBe(1);
@@ -788,7 +788,7 @@ describe('Real-Time Performance', () => {
     globalThis.denominator = 4;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     // Test with extreme subdivisions
     const subdivisions = [2, 4, 8, 16, 32, 64, 128, 256];
@@ -815,7 +815,7 @@ describe('Real-Time Performance', () => {
       globalThis.BPM = bpm;
       globalThis.numerator = 4;
       globalThis.denominator = 4;
-      getMidiMeter();
+      getMidiTiming();
 
       // Measure duration should be consistent
       const expectedDuration = 4 * (60 / bpm); // 4 beats per measure
@@ -839,7 +839,7 @@ describe('End-to-End MIDI Timing', () => {
     globalThis.beatStart = 0;
     globalThis.measureStart = 0;
 
-    getMidiMeter();
+    getMidiTiming();
     setMidiTiming(0);
 
     // Check that BPM and meter events exist
@@ -867,7 +867,7 @@ describe('End-to-End MIDI Timing', () => {
       globalThis.numerator = num;
       globalThis.denominator = den;
       globalThis.BPM = 120;
-      getMidiMeter();
+      getMidiTiming();
 
       // 3 measures per phrase
       const phraseTicks = globalThis.tpMeasure * 3;
@@ -891,7 +891,7 @@ describe('setMidiTiming', () => {
     globalThis.denominator = 9;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
   });
 
   it('should write BPM event to buffer', () => {
@@ -958,7 +958,7 @@ describe('getPolyrhythm Edge Cases', () => {
     setupGlobalState();
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
   });
 
   const getPolyrhythm = () => {
@@ -1012,7 +1012,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should find polyrhythm between very different ratios (2/2 vs 3/4)', () => {
     globalThis.numerator = 2;
     globalThis.denominator = 2;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
@@ -1028,7 +1028,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should find polyrhythm between complex meters (5/4 vs 7/8)', () => {
     globalThis.numerator = 5;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([7, 8]);
     const result = getPolyrhythm();
@@ -1043,7 +1043,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should converge to solution within reasonable measure count', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 9;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([5, 6]);
     const result = getPolyrhythm();
@@ -1058,7 +1058,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should handle composers returning same meter after many iterations', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
 
     let callCount = 0;
     globalThis.composer.getMeter = vi.fn().mockImplementation(() => {
@@ -1074,7 +1074,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should calculate tpPhrase correctly for complex polyrhythm', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 8;
-    getMidiMeter();
+    getMidiTiming();
     const originalTpMeasure = globalThis.tpMeasure;
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([5, 8]);
@@ -1089,7 +1089,7 @@ describe('getPolyrhythm Edge Cases', () => {
     // Create a scenario where the best match would be 1:1
     globalThis.numerator = 6;
     globalThis.denominator = 8;
-    getMidiMeter();
+    getMidiTiming();
 
     globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
@@ -1110,7 +1110,7 @@ describe('Full Timing Hierarchy', () => {
     globalThis.denominator = 9;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     // Calculate all levels
     const tpMeasure = globalThis.tpMeasure;
@@ -1130,7 +1130,7 @@ describe('Full Timing Hierarchy', () => {
     globalThis.denominator = 6;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     const tpMeasure = globalThis.tpMeasure;
     const tpBeat = tpMeasure / 5;
@@ -1149,7 +1149,7 @@ describe('Full Timing Hierarchy', () => {
     globalThis.denominator = 4;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     const measure = globalThis.tpMeasure;
     const beat = measure / 4;
@@ -1166,7 +1166,7 @@ describe('Full Timing Hierarchy', () => {
     globalThis.denominator = 4;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     const tpMeasure = globalThis.tpMeasure;
     const tpSec = globalThis.tpSec;
@@ -1191,7 +1191,7 @@ describe('Polyrhythm Duration Alignment', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
     globalThis.BPM = 120;
-    getMidiMeter();
+    getMidiTiming();
     const primary_tpMeasure = globalThis.tpMeasure;
     const primary_tpSec = globalThis.tpSec;
     const primary_duration_3measures = (primary_tpMeasure * 3) / primary_tpSec;
@@ -1199,7 +1199,7 @@ describe('Polyrhythm Duration Alignment', () => {
     // Poly: 3/4
     globalThis.numerator = 3;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
     const poly_tpMeasure = globalThis.tpMeasure;
     const poly_tpSec = globalThis.tpSec;
     const poly_duration_4measures = (poly_tpMeasure * 4) / poly_tpSec;
@@ -1214,7 +1214,7 @@ describe('Polyrhythm Duration Alignment', () => {
     globalThis.denominator = 9;
     globalThis.BPM = 120;
     globalThis.PPQ = 480;
-    getMidiMeter();
+    getMidiTiming();
 
     // spMeasure uses actual meterRatio (7/9)
     const expectedSpMeasure = (60 / 120) * 4 * (7/9);
@@ -1244,7 +1244,7 @@ describe('Polyrhythm Duration Alignment', () => {
 
     bpms.forEach(bpm => {
       globalThis.BPM = bpm;
-      getMidiMeter();
+      getMidiTiming();
       const duration = globalThis.tpMeasure / globalThis.tpSec;
       durations.push(duration);
     });
@@ -1262,7 +1262,7 @@ describe('Polyrhythm Duration Alignment', () => {
       globalThis.numerator = num;
       globalThis.denominator = den;
       globalThis.BPM = 120;
-      getMidiMeter();
+      getMidiTiming();
 
       // tpMeasure uses midiMeterRatio (power-of-2 denominator)
       // Verify the midiMeter denominator is always power-of-2
@@ -1283,12 +1283,12 @@ describe('Timing Validation Utilities', () => {
     // Test that tpSec varies with meter because midiBPM is adjusted by syncFactor
     globalThis.numerator = 4;
     globalThis.denominator = 4;
-    getMidiMeter();
+    getMidiTiming();
     const tpSec_4_4 = globalThis.tpSec;
 
     globalThis.numerator = 7;
     globalThis.denominator = 9;
-    getMidiMeter();
+    getMidiTiming();
     const tpSec_7_9 = globalThis.tpSec;
 
     // 4/4 has no spoofing (midiMeter = [4,4], syncFactor = 1, midiBPM = 120)
@@ -1310,7 +1310,7 @@ describe('Timing Validation Utilities', () => {
     testMeters.forEach(([num, den]) => {
       globalThis.numerator = num;
       globalThis.denominator = den;
-      getMidiMeter();
+      getMidiTiming();
 
       const denom = globalThis.midiMeter[1];
       const isPowerOf2 = (n) => (n & (n - 1)) === 0;
@@ -1322,7 +1322,7 @@ describe('Timing Validation Utilities', () => {
     globalThis.numerator = 7;
     globalThis.denominator = 9;
     globalThis.BPM = 120;
-    getMidiMeter();
+    getMidiTiming();
 
     // midiBPM should equal BPM * syncFactor
     expect(globalThis.midiBPM).toBeCloseTo(globalThis.BPM * globalThis.syncFactor, 5);
@@ -1347,7 +1347,7 @@ describe('Multi-layer timing consistency', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
     globalThis.BPM = 120;
-    getMidiMeter();
+    getMidiTiming();
 
     const { state: state1, buffer: buffer1 } = LM.register('layer1', 'c1', {
       phraseStart: 0,
@@ -1394,7 +1394,7 @@ describe('Multi-layer timing consistency', () => {
     globalThis.numerator = 4;
     globalThis.denominator = 4;
     globalThis.BPM = 120;
-    getMidiMeter();
+    getMidiTiming();
 
     LM.register('test', 'c1', {
       phraseStart: 0,
@@ -1428,7 +1428,7 @@ describe('Multi-layer timing consistency', () => {
     globalThis.BPM = 120;
     globalThis.polyNumerator = 3;
     globalThis.polyDenominator = 4;
-    getMidiMeter();
+    getMidiTiming();
     // Don't call getPolyrhythm() - just set the values manually for testing
     globalThis.measuresPerPhrase1 = 3;
     globalThis.measuresPerPhrase2 = 4;

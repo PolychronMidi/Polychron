@@ -97,7 +97,7 @@ describe('play.js - Orchestrator Module', () => {
   describe('Module Integration', () => {
     it('should have all required functions available', () => {
       // Verify core functions exist and are callable
-      expect(typeof globalThis.getMidiMeter).toBe('function');
+      expect(typeof globalThis.getMidiTiming).toBe('function');
       expect(typeof globalThis.setMidiTiming).toBe('function');
       expect(typeof globalThis.setUnitTiming).toBe('function');
       expect(typeof globalThis.drummer).toBe('function');
@@ -204,7 +204,7 @@ describe('play.js - Orchestrator Module', () => {
     it('should support MIDI meter calculation', () => {
       globalThis.numerator = 7;
       globalThis.denominator = 9;
-      getMidiMeter();
+      getMidiTiming();
 
       expect(globalThis.midiMeter).toBeDefined();
       expect(Array.isArray(globalThis.midiMeter)).toBe(true);

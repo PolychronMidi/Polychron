@@ -437,4 +437,3 @@ if (typeof globalThis !== 'undefined') {
     drummer, patternLength, makeOnsets, closestDivisor, drumMap
   });
 }
-
