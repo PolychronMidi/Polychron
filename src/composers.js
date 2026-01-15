@@ -13,6 +13,10 @@ class MeasureComposer {
     this.recursionDepth=0;
     /** @type {number} Max allowed recursion depth */
     this.MAX_RECURSION=5;
+    /** @type {VoiceLeadingScore|null} Optional voice leading optimizer */
+    this.voiceLeading=null;
+    /** @type {number[]} Historical notes for voice leading context */
+    this.voiceHistory=[];
   }
   /** @returns {number} Random numerator from NUMERATOR config */
   getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
@@ -134,7 +138,61 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
       this.recursionDepth--;
     }
   }
+
+  /**
+   * Enables voice leading optimization for this composer.
+   * @param {VoiceLeadingScore} [scorer] - Optional custom voice leading scorer
+   * @returns {void}
+   */
+  enableVoiceLeading(scorer) {
+    this.voiceLeading = scorer || new VoiceLeadingScore();
+    this.voiceHistory = [];
+  }
+
+  /**
+   * Disables voice leading optimization.
+   * @returns {void}
+   */
+  disableVoiceLeading() {
+    this.voiceLeading = null;
+    this.voiceHistory = [];
+  }
+
+  /**
+   * Selects the best note from available candidates using voice leading cost function.
+   * Falls back to random selection if voice leading is disabled.
+   * @param {number[]} availableNotes - Pool of candidate notes
+   * @param {{ register?: string, constraints?: string[] }} [config] - Voice context
+   * @returns {number} Selected note
+   */
+  selectNoteWithLeading(availableNotes, config = {}) {
+    if (!this.voiceLeading || !availableNotes || availableNotes.length === 0) {
+      return availableNotes?.[ri(availableNotes.length - 1)] ?? 60;
+    }
+
+    const selectedNote = this.voiceLeading.selectNextNote(this.voiceHistory, availableNotes, config);
+    this.voiceHistory.push(selectedNote);
+
+    // Keep history shallow for memory efficiency
+    if (this.voiceHistory.length > 4) {
+      this.voiceHistory.shift();
+    }
+
+    return selectedNote;
+  }
+
+  /**
+   * Resets voice leading history (call at section boundaries).
+   * @returns {void}
+   */
+  resetVoiceLeading() {
+    this.voiceHistory = [];
+    if (this.voiceLeading) {
+      this.voiceLeading.reset();
+    }
+  }
 }
+
 /**
  * Composes notes from a specific scale.
  * @extends MeasureComposer
