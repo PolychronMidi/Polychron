@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) serves as the **configuration headquarters** for the entire Polychron system, defining all musical parameters, instrument assignments, structural settings, and system behaviors. This file acts as the "sheet music" of parameters that control every aspect of composition generation.
+**sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) serves as the **configuration headquarters** for the entire Polychron system, defining all musical parameters, instrument assignments, structural settings, and system behaviors. This file acts as the "sheet music" of parameters that control every aspect of composition generation.
 
 ## File Purpose
 
@@ -19,7 +19,7 @@ This module provides **comprehensive system configuration** including:
 
 ## Architecture Role
 
-****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) operates as the **configuration foundation**:
+**sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) operates as the **configuration foundation**:
 - **Imported first** by **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)), establishing all system parameters
 - **No computational logic** - Pure parameter definitions and configuration data
 - **User-customizable** - Primary interface for users to modify Polychron's behavior
@@ -256,14 +256,14 @@ All parameters become global variables accessible throughout the system:
 - **Runtime modification** - Parameters can be changed during composition (though not recommended)
 
 ### Dependency Chain
-****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) → ****venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) → ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) → **other modules**
+**sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) → **venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) → **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) → **other modules**
 - **Configuration loaded first** - Establishes all system parameters
 - **Instrument name conversion** - **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) converts string names to MIDI numbers
 - **Global state initialization** - **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md)) creates working variables from configuration
 
 ## Layer Architecture Independence
 
-****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) configuration applies **globally across all layers**:
+**sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) configuration applies **globally across all layers**:
 - **No layer-specific settings** - Same instruments, ranges, weights used for all layers
 - **Meter parameters** - NUMERATOR/DENOMINATOR used by both primary and poly layers
 - **Instrument assignments** - primaryInstrument, bassInstrument shared across layers

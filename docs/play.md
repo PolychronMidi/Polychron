@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) is the **heart and conductor** of the Polychron MIDI composition system - the main execution engine that orchestrates the entire musical generation process. This file contains the core composition loop that creates complex, polyrhythmic MIDI compositions with unlimited time signatures and dynamic musical structures through a dual-layer architecture.
+**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) is the **heart and conductor** of the Polychron MIDI composition system - the main execution engine that orchestrates the entire musical generation process. This file contains the core composition loop that creates complex, polyrhythmic MIDI compositions with unlimited time signatures and dynamic musical structures through a dual-layer architecture.
 
 ## File Purpose
 
@@ -19,7 +19,7 @@ The system generates:
 
 ## Architecture Role
 
-****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) sits at the top of the architectural hierarchy, serving as the **composition conductor**:
+**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) sits at the top of the architectural hierarchy, serving as the **composition conductor**:
 - **Loads **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Initializes all dependencies through the module chain
 - **Coordinates all modules** - Calls functions from **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md))
 - **Manages layer contexts** - Registers, activates, and advances both primary and poly layers
@@ -28,7 +28,7 @@ The system generates:
 ## Code Architecture
 
 ### Dual-Layer Polyrhythmic System
-****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) implements a revolutionary dual-layer composition architecture:
+**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) implements a revolutionary dual-layer composition architecture:
 - **Primary layer** - Initial time signature with full audio processing
 - **Poly layer** - Polyrhythmic secondary meter with synchronized timing
 - **Synchronized boundaries** - Both layers complete phrases at exactly the same absolute time

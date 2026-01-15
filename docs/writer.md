@@ -6,7 +6,7 @@
 
 ## Overview
 
-****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) handles all MIDI file output - CSV buffer management, timing marker logging, and final file generation. It encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable MIDI files.
+**writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) handles all MIDI file output - CSV buffer management, timing marker logging, and final file generation. It encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable MIDI files.
 
 **Core Responsibilities:**
 - **Buffer management** - CSVBuffer class for layer-specific event storage
@@ -17,10 +17,10 @@
 
 ## Architecture Role
 
-****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) is the **output layer**:
-- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls grandFinale() at composition end
+**writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) is the **output layer**:
+- **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls grandFinale() at composition end
 - **All modules** - Generate events via `p(c, event)`
-- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Timing markers use time.md logUnit()
+- **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Timing markers use time.md logUnit()
 - **Layer-aware** - Automatically routes events to active layer's buffer
 
 ---

@@ -20,14 +20,14 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 
 Polychron consists of 11 specialized JavaScript modules following a clean minimal code philosophy:
 
-#### 1. ****play.js** ([code](src/play.js)) ([doc](docs/play.md))** - Main Composition Engine
+#### 1. **play.js** ([code](src/play.js)) ([doc](docs/play.md))** - Main Composition Engine
 - Orchestrates the entire composition process
 - Implements dual-context architecture for primary and poly meters
 - Manages phrase-level timing synchronization
 - Coordinates all modules to generate complete MIDI compositions
 - Handles section/phrase/measure hierarchy with perfect timing alignment
 
-#### 2. ****composers.js** ([code](src/composers.js)) ([doc](docs/composers.md))** - Musical Intelligence System
+#### 2. **composers.js** ([code](src/composers.js)) ([doc](docs/composers.md))** - Musical Intelligence System
 - **MeasureComposer**: Base class for meter and division generation
 - **ScaleComposer**: Generates notes from specific scales with octave ranges
 - **RandomScaleComposer**: Random scale selection from all available scales
@@ -40,7 +40,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - Weighted random selection for all musical parameters
 - Optional voice leading integration for smoother compositions
 
-#### 3. ****rhythm.js** ([code](src/rhythm.js)) ([doc](docs/rhythm.md))** - Rhythmic Pattern Generation
+#### 3. **rhythm.js** ([code](src/rhythm.js)) ([doc](docs/rhythm.md))** - Rhythmic Pattern Generation
 - **Drum Mapping**: 25+ drum instruments with velocity ranges
 - **Drummer Function**: Advanced drum pattern generation with stutter effects
 - **Rhythm Patterns**: Binary, hex, onsets, random, Euclidean, rotate, morph
@@ -49,7 +49,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Tonal.js Integration**: Uses @tonaljs/rhythm-pattern for core algorithms
 - **Dynamic Adaptation**: Rhythm complexity adjusts based on meter and tempo
 
-#### 4. ****time.js** ([code](src/time.js)) ([doc](docs/time.md))** - Timing Engine & Meter Spoofing
+#### 4. **time.js** ([code](src/time.js)) ([doc](docs/time.md))** - Timing Engine & Meter Spoofing
 - **Core Innovation**: "Meter spoofing" technology for any meter support
 - **Dual-Context Architecture**: Independent timing for primary and poly meters
 - **Polyrhythm Calculation**: Finds optimal measure alignments between meters
@@ -59,7 +59,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Tempo Synchronization**: Adjusts BPM to preserve actual meter durations
 - **Comprehensive Logging**: Timing markers with context awareness
 
-#### 5. ****stage.js** ([code](src/stage.js)) ([doc](docs/stage.md))** - Audio Processing Engine
+#### 5. **stage.js** ([code](src/stage.js)) ([doc](docs/stage.md))** - Audio Processing Engine
 - **Binaural Beat Generation**: Alpha range (8-12Hz) with pitch bend effects
 - **Stutter Effects**: Three types (fade, pan, FX) with adaptive parameters
 - **Spatial Audio**: Left/right balance variation and channel mapping
@@ -68,7 +68,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Channel Tracking**: Avoids repetition with last-used channel tracking
 - **Dynamic FX Processing**: Randomized effect parameters with constraints
 
-#### 6. ****voiceLeading.js** ([code](src/voiceLeading.js)) ([doc](docs/voiceLeading.md))** - Voice Leading & Counterpoint
+#### 6. **voiceLeading.js** ([code](src/voiceLeading.js)) ([doc](docs/voiceLeading.md))** - Voice Leading & Counterpoint
 - **Cost Function Optimizer**: Weighted penalty system for voice leading rules
 - **Smooth Motion**: Prefers stepwise motion (1-2 semitones) over large leaps
 - **Voice Range**: Enforces soprano/alto/tenor/bass register boundaries
@@ -79,13 +79,13 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Quality Analysis**: Post-hoc validation of note sequences
 - **Customizable Weights**: Tunable preferences for different compositional styles
 
-#### 7. ****motifs.js** ([code](src/motifs.js)) ([doc](docs/motifs.md))** - Motif Transformation
+#### 7. **motifs.js** ([code](src/motifs.js)) ([doc](docs/motifs.md))** - Motif Transformation
 - **Interval Motifs**: Ordered `{ note, duration }` sequences
 - **Transformations**: transpose, invert, augment/diminish, reverse, develop chain
 - **Application**: `applyToNotes()` imprints motif offsets onto generated notes (used by stage)
 - **Integration**: Section types can seed `activeMotif` per section via **play.js** ([code](../src/play.js)) ([doc](play.md))
 
-#### 8. ****backstage.js** ([code](src/backstage.js)) ([doc](docs/backstage.md))** - Core Utilities & State
+#### 8. **backstage.js** ([code](src/backstage.js)) ([doc](docs/backstage.md))** - Core Utilities & State
 - **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
 - **Randomization Systems**: Weighted, dual-range, limited-change random functions
 - **Global State Management**: Timing contexts for primary and poly meters
@@ -94,7 +94,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **MIDI Helper Functions**: `allNotesOff()` and `muteAll()` for channel cleanup
 - **Performance Optimization**: Efficient state tracking and memory management
 
-#### 9. ****writer.js** ([code](src/writer.js)) ([doc](docs/writer.md))** - MIDI Output & File Generation
+#### 9. **writer.js** ([code](src/writer.js)) ([doc](docs/writer.md))** - MIDI Output & File Generation
 - **CSVBuffer Class**: Encapsulates MIDI event arrays with layer metadata (rows, name properties)
 - **pushMultiple (p)**: Efficient batch MIDI event insertion with validation
 - **Timing Markers**: Context-aware logUnit() for debugging and analysis
@@ -103,7 +103,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Integration Utilities**: Seamless connection between composition and output
 - **Performance Optimization**: Efficient CSV-to-MIDI conversion via csv_maestro
 
-#### 10. ****venue.js** ([code](src/venue.js)) ([doc](docs/venue.md))** - MIDI Data & Music Theory
+#### 10. **venue.js** ([code](src/venue.js)) ([doc](docs/venue.md))** - MIDI Data & Music Theory
 - **Complete MIDI Reference**: All 128 program change instruments
 - **MIDI Control Changes**: Full CC mapping with descriptions
 - **Tonal.js Integration**: Music theory databases (scales, chords, modes)
@@ -112,7 +112,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Global Exports**: Music theory data exposed for testing
 - **Validation Systems**: Chord and scale validation
 
-#### 11. ****sheet.js** ([code](src/sheet.js)) ([doc](docs/sheet.md))** - Configuration System
+#### 11. **sheet.js** ([code](src/sheet.js)) ([doc](docs/sheet.md))** - Configuration System
 - **Musical Parameters**: BPM, PPQ, tuning frequency (432Hz)
 - **Weighted Distributions**: Numerators, denominators, octaves, voices
 - **Structural Parameters**: Sections, phrases per section, divisions (plus weighted SECTION_TYPES profiles)
