@@ -49,4 +49,13 @@ globalThis.normalizeSectionType = normalizeSectionType;
 globalThis.selectSectionType = selectSectionType;
 globalThis.resolveSectionProfile = resolveSectionProfile;
 
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, {
+    normalizeSectionType,
+    selectSectionType,
+    resolveSectionProfile,
+  });
+}
+
 module.exports = { normalizeSectionType, selectSectionType, resolveSectionProfile };

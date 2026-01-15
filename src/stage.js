@@ -248,7 +248,7 @@ class Stage {
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
-  if (composer) motifNotes.forEach(({ note })=>{ 
+  if (composer) motifNotes.forEach(({ note })=>{
     // Play source channels
     source.filter(sourceCH=>
       flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
@@ -258,7 +258,7 @@ class Stage {
       p(c,{tick:this.on+this.sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
 
     });
-    
+
     // Play reflection channels
     reflection.filter(reflectionCH=>
       flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
@@ -268,7 +268,7 @@ class Stage {
       p(c,{tick:this.on+this.sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
 
     });
-    
+
     // Play bass channels (with probability based on BPM)
     if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
       bass.filter(bassCH=>
@@ -304,6 +304,7 @@ class Stage {
   playNotes2() {
     this.setNoteParams2();
     this.crossModulateRhythms();
+    let reflectionCH; let bassCH; let bassNote;
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if(true){
@@ -423,3 +424,7 @@ class Stage {
 
 // Export Stage instance to global namespace for tests
 globalThis.stage = new Stage();
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  globalThis.__POLYCHRON_TEST__.stage = globalThis.stage;
+}

@@ -39,6 +39,22 @@ require('../src/stage');  // Load stage module and all dependencies
       globalThis.divsOff = 1;
       globalThis.subdivsOn = 20;
       globalThis.subdivsOff = 5;
+
+      // Seed deterministic randomness for these tests
+      globalThis._origRf = globalThis.rf;
+      globalThis._origRv = globalThis.rv;
+      globalThis.rf = (...args) => {
+        if (args.length === 0) return 0.1; // default small value
+        if (args.length === 2) return args[0]; // return min for ranges
+        return 0.1;
+      };
+      globalThis.rv = (val) => val; // no variation
+    });
+
+    afterEach(() => {
+      // Restore randomness
+      globalThis.rf = globalThis._origRf;
+      globalThis.rv = globalThis._origRv;
     });
 
     it('should include reflection channel code in playNotes', () => {
@@ -54,6 +70,34 @@ require('../src/stage');  // Load stage module and all dependencies
       expect(playNotesCode).toContain('bass');
       expect(playNotesCode).toContain('bassCH');
       expect(playNotesCode).toContain('bassNote');
+    });
+
+    it('should emit source, reflection, and bass events from playNotes', () => {
+      // Force the cross-modulation gate to fire by making rf minimal
+      const originalCrossModulate = stage.crossModulateRhythms;
+      stage.crossModulateRhythms = () => { stage.crossModulation = 10; stage.lastCrossMod = 0; };
+      stage.playNotes();
+      stage.crossModulateRhythms = originalCrossModulate;
+
+      const noteOns = c.filter((e) => e.type === 'on');
+      expect(noteOns.length).toBeGreaterThan(0);
+
+      const channels = new Set(noteOns.map((e) => e.vals[0]));
+      expect([...channels].some((ch) => source.includes(ch))).toBe(true);
+      expect([...channels].some((ch) => reflection.includes(ch))).toBe(true);
+      expect([...channels].some((ch) => bass.includes(ch))).toBe(true);
+    });
+
+    it('should emit reflection and probabilistic bass in playNotes2', () => {
+      // rf returns 0.1 so bass probability condition passes
+      stage.playNotes2();
+
+      const noteOns = c.filter((e) => e.type === 'on');
+      expect(noteOns.length).toBeGreaterThan(0);
+
+      const channels = new Set(noteOns.map((e) => e.vals[0]));
+      expect([...channels].some((ch) => reflection.includes(ch))).toBe(true);
+      expect([...channels].some((ch) => bass.includes(ch))).toBe(true);
     });
 
     it('should have all required channel arrays defined', () => {

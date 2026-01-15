@@ -392,3 +392,18 @@ globalThis.RandomChordComposer = RandomChordComposer;
 globalThis.ModeComposer = ModeComposer;
 globalThis.RandomModeComposer = RandomModeComposer;
 globalThis.ComposerFactory = ComposerFactory;
+
+// Mirror into __POLYCHRON_TEST__ to keep test globals namespaced
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, {
+    MeasureComposer,
+    ScaleComposer,
+    RandomScaleComposer,
+    ChordComposer,
+    RandomChordComposer,
+    ModeComposer,
+    RandomModeComposer,
+    ComposerFactory,
+  });
+}

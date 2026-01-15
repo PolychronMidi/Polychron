@@ -305,3 +305,15 @@ globalThis.allNotes=allNotes;
 globalThis.allScales=allScales;
 globalThis.allChords=allChords;
 globalThis.allModes=allModes;
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, {
+    midiData,
+    getMidiValue,
+    allNotes,
+    allScales,
+    allChords,
+    allModes,
+  });
+}
