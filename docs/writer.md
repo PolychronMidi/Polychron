@@ -1,5 +1,9 @@
 # writer.js - MIDI Output and File Generation
 
+> **Source**: `src/writer.js`
+> **Status**: Core Module - Output & File I/O
+> **Dependencies**: time, backstage, fs (Node.js)
+
 ## Project Overview
 
 **writer.js** handles all **MIDI file output operations** for the Polychron system, including CSV buffer management, timing markers, and final file generation. This module encapsulates the "writing to disk" functionality that transforms in-memory MIDI events into playable files.

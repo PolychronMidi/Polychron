@@ -1,12 +1,16 @@
 # play.js - Main Composition Engine and Orchestrator
 
+> **Source**: `src/play.js`
+> **Status**: Core Module
+> **Dependencies**: stage, composers, rhythm, time, backstage, venue
+
 ## Project Overview
 
 **play.js** is the **heart and conductor** of the Polychron MIDI composition system - the main execution engine that orchestrates the entire musical generation process. This file contains the core composition loop that creates complex, polyrhythmic MIDI compositions with unlimited time signatures and dynamic musical structures.
 
 ## File Purpose
 
-This is the **primary entry point** and **main execution file** for the entire Polychron project. When you run `node play.js`, this file executes the complete composition generation process from start to finish, coordinating all other system components to create a sophisticated MIDI composition saved as a CSV file.
+This is the **primary entry point** and **main execution file** for the entire Polychron project. When you run `node src/play`, this file executes the complete composition generation process from start to finish, coordinating all other system components to create a sophisticated MIDI composition saved as a CSV file.
 
 ## Architecture Role
 

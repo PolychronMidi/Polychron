@@ -1,5 +1,9 @@
 # venue.js - MIDI Data Specifications and Music Theory Constants
 
+> **Source**: `src/venue.js`
+> **Status**: Core Module - Data Reference
+> **Dependencies**: tonal (music theory library)
+
 ## Project Overview
 
 **venue.js** serves as the **music theory and MIDI specification database** for the Polychron system. This file contains comprehensive MIDI program/control data, music theory constants generated from the Tonal.js library, and utility functions for converting between human-readable names and MIDI numbers.

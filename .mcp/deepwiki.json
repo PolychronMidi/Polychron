@@ -1,0 +1,84 @@
+{
+  "mcpServers": {
+    "deepwiki": {
+      "command": "node",
+      "args": [
+        "-e",
+        "console.log(JSON.stringify({type:'wiki',name:'polychron',docs:'./docs',config:'./deepwiki.config.json'}))"
+      ],
+      "description": "Polychron Documentation Wiki Server via MCP",
+      "disabled": false,
+      "env": {
+        "DEEPWIKI_CONFIG": "./deepwiki.config.json",
+        "DEEPWIKI_DOCS": "./docs"
+      }
+    },
+    "projectContext": {
+      "command": "node",
+      "args": [
+        "-e",
+        "console.log(JSON.stringify({projectName:'polychron',type:'music-composition-engine',version:'1.0.0'}))"
+      ],
+      "description": "Polychron Project Context Server",
+      "disabled": false
+    }
+  },
+  "tools": [
+    {
+      "name": "wiki-search",
+      "description": "Search the Polychron documentation wiki",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query for wiki content"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["modules", "architecture", "functions", "all"],
+            "description": "Category to search in"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "wiki-navigate",
+      "description": "Navigate the Polychron wiki structure",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Wiki path (e.g., 'modules/play', 'architecture/core-layer')"
+          },
+          "include_nav": {
+            "type": "boolean",
+            "description": "Include navigation info"
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "wiki-cross-references",
+      "description": "Get cross-references and relationships between modules",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string",
+            "description": "Module name (e.g., 'play', 'time', 'composers')"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["imports", "imports-from", "all"],
+            "description": "Type of relationship"
+          }
+        },
+        "required": ["module"]
+      }
+    }
+  ]
+}

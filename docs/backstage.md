@@ -1,5 +1,9 @@
 # backstage.js - Core Utility Functions and Global State Management
 
+> **Source**: `src/backstage.js`
+> **Status**: Core Module - Foundation
+> **Dependencies**: None (foundational)
+
 ## Project Overview
 
 **backstage.js** serves as the **foundational utility layer** for the entire Polychron system, providing essential mathematical functions, randomization utilities, global state variables, and core MIDI infrastructure. This file contains the "behind the scenes" functionality that supports all other modules.

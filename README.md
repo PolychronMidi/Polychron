@@ -224,32 +224,88 @@ Polychron is open source software designed for musical innovation and research. 
 
 ## Installation & Usage
 
-To install tonal and create the CSV file, run the following (requires Node.js installed):
-```js
-npm i tonal
-node play
+### Quick Start
+
+**Install dependencies** (requires Node.js):
+```bash
+npm install
 ```
 
-To create the MIDI file from the CSV, run the following (requires Python installed):
-```python
+### NPM Scripts
+
+Polychron provides convenient npm scripts for development and composition:
+
+#### `npm run lint`
+Runs ESLint to check code quality and enforce style standards across all source files.
+```bash
+npm run lint
+```
+
+#### `npm run test`
+Runs the full test suite with Vitest (527 tests across 8 test files). Automatically runs `npm run lint` first as a pretest.
+```bash
+npm run test
+```
+
+#### `npm run play` ⭐ **Main Command**
+**Generates a complete MIDI composition and converts it to playable format.**
+
+This is the primary workflow command that:
+1. Runs `node src/play` - Executes the composition engine, generates MIDI events as CSV
+2. Runs `py c2m.py` - Converts the CSV output to standard MIDI .mid files
+
+```bash
+npm run play
+```
+
+This creates output files in the `output/` directory:
+- `output1.csv` / `output1.mid` - Primary meter layer
+- `output2.csv` / `output2.mid` - Polyrhythmic layer
+
+### Python Conversion
+
+The `c2m.py` script requires Python and the csv_maestro library. If running components separately:
+
+```bash
+# Generate composition as CSV
+node src/play
+
+# Convert CSV to MIDI (requires Python)
 py c2m.py
 ```
 
-<span id="players">
-You'll need a MIDI player with a soundfont installed to play MIDI files. Standard midi players may have playback issues due to data overload, the following have been tested to work:
+### Project Structure
 
-[Soundfont MIDI Player](https://soundfont-midi-player.en.softonic.com)
+```
+polychron/
+├── src/                    # Source code (9 JavaScript modules)
+├── docs/                   # Detailed module documentation
+├── test/                   # Test suite (527 tests, 8 test files)
+├── csv_maestro/            # Python MIDI CSV converter
+├── output/                 # Generated compositions
+└── package.json            # Project configuration & scripts
+```
 
-[MIDI Editor](https://github.com/jingkaimori/midieditor)
+### Playing Generated MIDI Files
 
-Note that accurate MIDI playback may not be possible on some devices due to extreme data density. In this case you can just render the MIDI file as typical audio formats like MP3, WAV, or FLAC with:
+You'll need a MIDI player with a soundfont installed to play generated MIDI files. Standard MIDI players may experience playback issues due to extreme data density. The following players have been tested and work well:
 
-[Virtual MIDI Synth](https://coolsoft.altervista.org/virtualmidisynth)
+**Recommended MIDI Players:**
+- [Soundfont MIDI Player](https://soundfont-midi-player.en.softonic.com) ⭐ Lightweight, reliable
+- [MIDI Editor](https://github.com/jingkaimori/midieditor) - Full-featured editor
 
-</span><br>
-[LibreOffice](https://libreoffice.org/) is a good program for CSV files.
+**Audio Rendering** (for MP3/WAV/FLAC conversion):
+- [Virtual MIDI Synth](https://coolsoft.altervista.org/virtualmidisynth) - Professional rendering
 
-Here's a list of [music related repos](https://github.com/stars/i1li/lists/music) I've saved for inspiration.
+**Utilities:**
+- [LibreOffice](https://libreoffice.org/) - CSV file viewing and editing
 
-Other music projects that I haven't found repos for:
-[GenJam by Al Biles](https://genjam.org/)
+**Note**: Accurate MIDI playback may not be possible on some devices due to extreme data density. In this case, render the MIDI files as audio using Virtual MIDI Synth.
+
+### Music Resources
+
+Inspiration and related projects:
+- [Tonal.js](https://github.com/tonaljs/tonal) - Music theory library (used in Polychron)
+- [CSV Maestro](https://github.com/i1li/csv_maestro) - MIDI CSV converter
+- [GenJam by Al Biles](https://genjam.org/) - Genetic algorithm music generation
+- [Music Repos Collection](https://github.com/stars/i1li/lists/music) - Curated music projects

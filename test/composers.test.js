@@ -1,9 +1,9 @@
 // test/composers.test.js
-require('../sheet');  // Defines constants and configuration objects
-require('../venue');  // Defines tonal (t), allScales, allNotes, allChords, allModes
-require('../writer');  // Defines writer functions (CSVBuffer, p, etc.)
-require('../backstage');  // Defines helper functions like rf, ri, clamp, etc.
-require('../composers');  // Defines composer classes and composers array
+require('../src/sheet');  // Defines constants and configuration objects
+require('../src/venue');  // Defines tonal (t), allScales, allNotes, allChords, allModes
+require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
+require('../src/backstage');  // Defines helper functions like rf, ri, clamp, etc.
+require('../src/composers');  // Defines composer classes and composers array
 
 // Setup function
 function setupGlobalState() {
