@@ -1,7 +1,5 @@
 /node_modules
 package-lock.json
-package.json
-.~lock.output.csv\#
 /__pycache__
 *.log
 /.vscode
@@ -9,3 +7,4 @@ package.json
 /.serena
 /.mcp
 .clinerules
+deepwiki.config.json

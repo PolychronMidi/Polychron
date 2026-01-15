@@ -10,7 +10,7 @@
   "wiki": {
     "name": "Polychron",
     "description": "AI-powered MIDI composition system with polyrhythmic generation and infinite time signature support",
-    "homepage": "play.md",
+    "homepage": "../README.md",
     "navigation": {
       "auto_generate": true,
       "root_section": "Getting Started",

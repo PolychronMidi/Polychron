@@ -1,0 +1,17 @@
+{
+  "type": "commonjs",
+  "dependencies": {
+    "@tonaljs/rhythm-pattern": "^1.0.0",
+    "tonal": "^6.4.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "vitest": "^4.0.16"
+  },
+  "scripts": {
+    "test": "vitest",
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "play": "node src/play && py c2m.py"
+  }
+}
