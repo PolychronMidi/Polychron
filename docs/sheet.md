@@ -235,26 +235,6 @@ Many parameters are modified by **BPM ratios** during composition:
 - **`bpmRatio2`** - Actual BPM ÷ Configured BPM
 - **`bpmRatio3`** - Specialized ratio for drum pattern probability
 
-## User Customization Guide
-
-### Changing Musical Style
-- **Classical focus** - Increase weights for 3-5 voices, traditional meters (4/4, 3/4, 6/8)
-- **Jazz emphasis** - Enable specific chord progressions, increase subdivision complexity
-- **Ambient textures** - Favor pad instruments, reduce voice counts, increase octave range
-- **Experimental music** - Increase exotic meter weights, enable extreme subdivision counts
-
-### Adjusting Complexity
-- **Simpler compositions** - Reduce subdivision weights, limit voice counts, use standard meters
-- **More complex** - Increase high-end weights for divisions/subdivisions, enable more voices
-- **Rhythmic focus** - Increase subdivision weights while reducing voice counts
-- **Harmonic focus** - Increase voice counts while simplifying rhythmic parameters
-
-### Performance Optimization
-- **Faster generation** - Reduce section counts, limit subdivision complexity
-- **Smaller files** - Lower subdivision weights reduce MIDI event density
-- **Longer compositions** - Increase section and phrase counts
-- **Shorter compositions** - Reduce sections and phrases per section
-
 ## Integration with System
 
 ### Global Variable Creation
