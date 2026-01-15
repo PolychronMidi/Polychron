@@ -156,6 +156,10 @@ class FxManager {
 
 // Export FxManager instance and class to global namespace
 globalThis.fxManager = new FxManager();
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, { fxManager: globalThis.fxManager, FxManager });
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FxManager;
 }

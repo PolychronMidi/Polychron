@@ -45,6 +45,10 @@ class TimingCalculator {
 
 // Export TimingCalculator to global namespace for tests and other modules
 globalThis.TimingCalculator = TimingCalculator;
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  globalThis.__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
+}
 let timingCalculator = null;
 
 /**
@@ -467,4 +471,8 @@ formatTime = (seconds) => {
 };
 
 // Export for tests and __POLYCHRON_TEST__ namespace usage
-globalThis.TimingCalculator = TimingCalculator;
+if (typeof globalThis !== 'undefined') {
+  globalThis.TimingCalculator = TimingCalculator;
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  globalThis.__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
+}

@@ -173,4 +173,13 @@ globalThis.applyMotifToNotes = (notes, motif = globalThis.activeMotif, options =
   return motif.applyToNotes(notes, options);
 };
 
+if (typeof globalThis !== 'undefined') {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  Object.assign(globalThis.__POLYCHRON_TEST__, {
+    Motif,
+    clampMotifNote,
+    applyMotifToNotes,
+  });
+}
+
 module.exports = { Motif };
