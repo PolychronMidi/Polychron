@@ -1,7 +1,7 @@
 # csv_maestro - a fork of: py_midicsv
 This fork is used in [Polychron](https://github.com/PolychronMidi/Polychron)
 Improvements in this fork include:
-- Ability to use the actual denominator when setting meter, rather than the confusing MIDI formatted denomintor. (this is the only change that might require users to update how they create their CSV)
+- Ability to use the actual denominator when setting meter, rather than the confusing MIDI formatted denomintor. (this is the only change in this fork, vs. orginal repo that might require users to update how they format their data)
 - Users can now use the actual tempo (BPM) value, rather than the confusing MIDI formatted tempo. (backwards compatible by also still accepting MIDI formatted tempo)
 - Midi time values (ticks), and velocity automatically rounded. (MIDI requirement)
 - Velocity not needed for note off events. For note on events, defaults is 99 if no value given.
