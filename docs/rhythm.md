@@ -6,7 +6,7 @@
 
 ## Overview
 
-****rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) generates complex rhythmic patterns and drum sequences. It combines algorithmic pattern generation with sophisticated drum programming to create percussion that would be impossible for human drummers.
+**rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) generates complex rhythmic patterns and drum sequences. It combines algorithmic pattern generation with sophisticated drum programming to create percussion that would be impossible for human drummers.
 
 **Core Responsibilities:**
 - **Drum sound mapping** - 25+ percussion sounds with realistic velocity ranges
@@ -17,11 +17,11 @@
 
 ## Architecture Role
 
-****rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) operates in the **pattern generation layer**:
-- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls playDrums() at each beat
-- ****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Calls drummer() and playDrums() from stage audio functions
-- ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
-- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator)
+**rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) operates in the **pattern generation layer**:
+- **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls playDrums() at each beat
+- **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Calls drummer() and playDrums() from stage audio functions
+- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
+- **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator)
 
 ---
 
@@ -68,7 +68,7 @@ Sophisticated function for generating drum events with timing jitter and stutter
 ```javascript
 drummer = (drumNames, beatOffsets, offsetJitter=rf(.1), stutterChance=.3,
           stutterRange=[2, m.round(rv(11, [2,3], .3))], stutterDecayFactor=rf(.9, 1.1)) => {
-  
+
   // Normalize inputs
   if (drumNames === 'random') {
     const allDrums = Object.keys(drumMap);
@@ -169,7 +169,7 @@ playDrums = () => {
   if (beatIndex % 2 === 0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1, beatsOff*rf(2,3.5))*bpmRatio3) {
     // Even beats with active rhythm: kicks
     drummer(['kick1','kick3'], [0, .5]);
-    
+
     // Extra kick on final beat of odd-meter measures
     if (numerator % 2 === 1 && beatIndex === numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
       drummer(['kick2','kick5'], [0, .5]);

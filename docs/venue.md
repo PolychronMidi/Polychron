@@ -6,7 +6,7 @@
 
 ## Overview
 
-****venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) is the **music theory and MIDI database** for Polychron. It provides comprehensive General MIDI data, music theory constants from Tonal.js, and lookup utilities for converting between human-readable names and MIDI numbers.
+**venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) is the **music theory and MIDI database** for Polychron. It provides comprehensive General MIDI data, music theory constants from Tonal.js, and lookup utilities for converting between human-readable names and MIDI numbers.
 
 **Core Responsibilities:**
 - **MIDI specification** - All 128 General MIDI instruments and control changes
@@ -16,7 +16,7 @@
 
 ## Architecture Role
 
-****venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) is the **data foundation**:
+**venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) is the **data foundation**:
 - **Imported by **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** to establish music theory constants
 - **Used by **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** for scale/chord/mode selection
 - **Used by **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** for instrument assignment and effects
@@ -161,7 +161,7 @@ Convert human-readable names to MIDI numbers:
 getMidiValue = (category, name) => {
   category = category.toLowerCase();
   name = name.toLowerCase();
-  const item = midiData[category].find(item => 
+  const item = midiData[category].find(item =>
     item.name.toLowerCase() === name
   );
   return item ? item.number : null;
@@ -204,20 +204,20 @@ getMidiValue('control', 'Pan Position')          // → 10
 
 ## Integration Examples
 
-****composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Random composition:
+**composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Random composition:
 ```javascript
 const scale = allScales[ri(allScales.length - 1)];
 const root = allNotes[ri(allNotes.length - 1)];
 const notes = t.Scale.get(`${root} ${scale}`).notes;
 ```
 
-****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Instrument assignment:
+**stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Instrument assignment:
 ```javascript
 const gmNumber = getMidiValue('program', 'Glockenspiel');
 p(c, {tick: 0, type: 'program_c', vals: [channel, gmNumber]});
 ```
 
-****sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) - Configuration to MIDI:
+**sheet.js** ([code](../src/sheet.js)) ([doc](sheet.md))** ([code](../src/sheet.js ([code](../src/sheet.js)) ([doc](sheet.md)))) ([doc](sheet.md)) - Configuration to MIDI:
 ```javascript
 primaryInstrument = getMidiValue('program', primaryInstrument);  // 'glockenspiel' → 9
 ```

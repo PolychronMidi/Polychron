@@ -6,7 +6,7 @@
 
 ## Overview
 
-****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) is the **audio engine** of Polychron, transforming abstract musical concepts into MIDI events. It generates binaural beats, applies sophisticated effects (stutter, pan, modulation), manages instruments across 16 MIDI channels, and orchestrates all real-time audio processing.
+**stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) is the **audio engine** of Polychron, transforming abstract musical concepts into MIDI events. It generates binaural beats, applies sophisticated effects (stutter, pan, modulation), manages instruments across 16 MIDI channels, and orchestrates all real-time audio processing.
 
 **Core Responsibilities:**
 - **Instrument initialization** - Program changes and pitch bend for all channels
@@ -17,13 +17,13 @@
 
 ## Architecture Role
 
-****stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) serves as the **audio coordinator**:
-- ****play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls playNotes(), setBinaural(), setBalanceAndFX() at each beat
-- ****composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides note arrays via composer.getNotes()
-- ****rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) - Provides rhythm patterns via drummer()
-- ****time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator, etc.)
-- ****writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - Pushes events to active buffer c via p(c, event)
-- ****backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
+**stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) serves as the **audio coordinator**:
+- **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls playNotes(), setBinaural(), setBalanceAndFX() at each beat
+- **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides note arrays via composer.getNotes()
+- **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))** ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)) - Provides rhythm patterns via drummer()
+- **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses timing variables (beatStart, tpBeat, numerator, etc.)
+- **writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - Pushes events to active buffer c via p(c, event)
+- **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Uses utilities (ri, rf, rv, clamp, modClamp)
 
 ---
 
