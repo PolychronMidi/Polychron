@@ -158,7 +158,19 @@ SECTIONS = {
 - **Phrase structure** - 2-4 phrases per section creates manageable formal units
 - **Overall form** - 6-9 sections creates substantial compositions (typically 15-45 minutes)
 - **Mathematical implications** - 12-36 total phrases, hundreds to thousands of measures
-
+#### Section Types (new)
+```
+SECTION_TYPES = [
+  { type: 'intro', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: 0.9, dynamics: 'pp', motif: [0,2,4,7] },
+  { type: 'exposition', weight: 3, phrases: { min: 2, max: 3 }, bpmScale: 1.0, dynamics: 'mf', motif: [0,4,7,12] },
+  { type: 'development', weight: 2, phrases: { min: 3, max: 4 }, bpmScale: 1.05, dynamics: 'f', motif: [0,3,5,8,10] },
+  { type: 'conclusion', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: 0.95, dynamics: 'p', motif: [0,5,7,12] },
+  { type: 'coda', weight: 1, phrases: { min: 1, max: 1 }, bpmScale: 0.9, dynamics: 'pp', motif: [0,7,12] }
+];
+```
+- **Weighted selection**: `selectSectionType()` uses weights to bias form planning.
+- **Per-section shaping**: Each profile provides phrase ranges and BPM scaling hints.
+- **Motif seeding**: Optional `motif` arrays (interval offsets) feed `activeMotif` in play.js to imprint shapes on generated notes.
 ### Rhythmic Complexity Parameters
 
 #### `DIVISIONS` - Beat Subdivision Density

@@ -18,7 +18,7 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 
 ### Core System Architecture
 
-Polychron consists of 10 specialized JavaScript modules following a clean minimal code philosophy:
+Polychron consists of 11 specialized JavaScript modules following a clean minimal code philosophy:
 
 #### 1. **[play.js](docs/play.md)** - Main Composition Engine
 - Orchestrates the entire composition process
@@ -79,7 +79,13 @@ Polychron consists of 10 specialized JavaScript modules following a clean minima
 - **Quality Analysis**: Post-hoc validation of note sequences
 - **Customizable Weights**: Tunable preferences for different compositional styles
 
-#### 7. **[backstage.js](docs/backstage.md)** - Core Utilities & State
+#### 7. **[motifs.js](docs/motifs.md)** - Motif Transformation
+- **Interval Motifs**: Ordered `{ note, duration }` sequences
+- **Transformations**: transpose, invert, augment/diminish, reverse, develop chain
+- **Application**: `applyToNotes()` imprints motif offsets onto generated notes (used by stage)
+- **Integration**: Section types can seed `activeMotif` per section via play.js
+
+#### 8. **[backstage.js](docs/backstage.md)** - Core Utilities & State
 - **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
 - **Randomization Systems**: Weighted, dual-range, limited-change random functions
 - **Global State Management**: Timing contexts for primary and poly meters
@@ -88,7 +94,7 @@ Polychron consists of 10 specialized JavaScript modules following a clean minima
 - **MIDI Helper Functions**: `allNotesOff()` and `muteAll()` for channel cleanup
 - **Performance Optimization**: Efficient state tracking and memory management
 
-#### 8. **[writer.js](docs/writer.md)** - MIDI Output & File Generation
+#### 9. **[writer.js](docs/writer.md)** - MIDI Output & File Generation
 - **CSVBuffer Class**: Encapsulates MIDI event arrays with layer metadata (rows, name properties)
 - **pushMultiple (p)**: Efficient batch MIDI event insertion with validation
 - **Timing Markers**: Context-aware logUnit() for debugging and analysis
@@ -97,7 +103,7 @@ Polychron consists of 10 specialized JavaScript modules following a clean minima
 - **Integration Utilities**: Seamless connection between composition and output
 - **Performance Optimization**: Efficient CSV-to-MIDI conversion via csv_maestro
 
-#### 9. **[venue.js](docs/venue.md)** - MIDI Data & Music Theory
+#### 10. **[venue.js](docs/venue.md)** - MIDI Data & Music Theory
 - **Complete MIDI Reference**: All 128 program change instruments
 - **MIDI Control Changes**: Full CC mapping with descriptions
 - **Tonal.js Integration**: Music theory databases (scales, chords, modes)
@@ -106,10 +112,10 @@ Polychron consists of 10 specialized JavaScript modules following a clean minima
 - **Global Exports**: Music theory data exposed for testing
 - **Validation Systems**: Chord and scale validation
 
-#### 10. **[sheet.js](docs/sheet.md)** - Configuration System
+#### 11. **[sheet.js](docs/sheet.md)** - Configuration System
 - **Musical Parameters**: BPM, PPQ, tuning frequency (432Hz)
 - **Weighted Distributions**: Numerators, denominators, octaves, voices
-- **Structural Parameters**: Sections, phrases per section, divisions
+- **Structural Parameters**: Sections, phrases per section, divisions (plus weighted SECTION_TYPES profiles)
 - **Instrument Settings**: Primary, secondary, bass instruments
 - **Binaural Configuration**: Frequency ranges and effects
 - **Logging Controls**: Timing marker granularity
@@ -117,7 +123,7 @@ Polychron consists of 10 specialized JavaScript modules following a clean minima
 
 ### Testing Philosophy
 
-**[See [docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This approach creates a safe sandbox for experimental music composition, enabling rapid iteration with confidence. All 620 tests validate actual function behavior across 10 test files, supporting the project's mission to explore novel algorithmic composition techniques.
+**[See [docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This approach creates a safe sandbox for experimental music composition, enabling rapid iteration with confidence. All 628 tests validate actual function behavior across 12 test files, supporting the project's mission to explore novel algorithmic composition techniques.
 
 ## Technical Innovations
 

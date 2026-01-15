@@ -68,6 +68,8 @@ totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) { ... }
 ```
 - **Determines composition structure** - typically 3-5 major sections
+- **Section types** - `resolveSectionProfile()` selects a profile from `SECTION_TYPES` (intro/exposition/development/conclusion/coda) with weighted probabilities.
+- **Per-section shaping** - Profiles set phrase ranges, BPM scaling, dynamics hints, and optional motif seeds (see motifs.js) that feed `activeMotif` for note shaping.
 - **Outer loop** controls highest level of musical organization
 
 ### 3. Phrase Loop (Per Section)
