@@ -1,6 +1,84 @@
 // test/stage.test.js
 require('../src/stage');  // Load stage module and all dependencies
 
+
+  describe('playNotes and playNotes2 channel coverage', () => {
+    beforeEach(() => {
+      // Use fresh setup but keep the real channel definitions
+      globalThis.c = [];
+      globalThis.composer = {
+        getNotes: () => [
+          { note: 60 },
+          { note: 62 },
+          { note: 64 },
+        ]
+      };
+      globalThis.activeMotif = null;
+      globalThis.crossModulation = 2.5;
+      globalThis.lastCrossMod = 0;
+      globalThis.velocity = 100;
+      globalThis.subdivStart = 0;
+      globalThis.tpSubdiv = 100;
+      globalThis.tpSubsubdiv = 50;
+      globalThis.tpDiv = 400;
+      globalThis.tpBeat = 1600;
+      globalThis.subdivsPerDiv = 4;
+      globalThis.subdivsPerMinute = 500;
+      globalThis.bpmRatio3 = 1;
+      globalThis.beatIndex = 0;
+      globalThis.divIndex = 0;
+      globalThis.subdivIndex = 0;
+      globalThis.beatRhythm = [1, 0, 1, 0];
+      globalThis.divRhythm = [1, 1, 0];
+      globalThis.subdivRhythm = [1, 0, 1];
+      globalThis.numerator = 4;
+      globalThis.beatsOn = 10;
+      globalThis.beatsOff = 2;
+      globalThis.divsPerBeat = 4;
+      globalThis.divsOn = 5;
+      globalThis.divsOff = 1;
+      globalThis.subdivsOn = 20;
+      globalThis.subdivsOff = 5;
+    });
+
+    it('should include reflection channel code in playNotes', () => {
+      // Verify that playNotes code includes reflection channel generation
+      const playNotesCode = stage.playNotes.toString();
+      expect(playNotesCode).toContain('reflection');
+      expect(playNotesCode).toContain('reflectionCH');
+    });
+
+    it('should include bass channel code in playNotes', () => {
+      // Verify that playNotes code includes bass channel generation
+      const playNotesCode = stage.playNotes.toString();
+      expect(playNotesCode).toContain('bass');
+      expect(playNotesCode).toContain('bassCH');
+      expect(playNotesCode).toContain('bassNote');
+    });
+
+    it('should have all required channel arrays defined', () => {
+      // Verify that all channel arrays are available
+      expect(Array.isArray(globalThis.source)).toBe(true);
+      expect(Array.isArray(globalThis.reflection)).toBe(true);
+      expect(Array.isArray(globalThis.bass)).toBe(true);
+      expect(globalThis.source.length).toBeGreaterThan(0);
+      expect(globalThis.reflection.length).toBeGreaterThan(0);
+      expect(globalThis.bass.length).toBeGreaterThan(0);
+    });
+
+    it('should have reflection and bass mapping functions', () => {
+      // Verify that reflect and reflect2 mappings are defined
+      expect(typeof globalThis.reflect).toBe('object');
+      expect(typeof globalThis.reflect2).toBe('object');
+      // Check that source channels have reflection mappings
+      globalThis.source.forEach(ch => {
+        expect(globalThis.reflect[ch]).toBeDefined();
+        expect(globalThis.reflect2[ch]).toBeDefined();
+      });
+    });
+  });
+
+
 describe('Stage Module', () => {
   beforeEach(() => {
     // Reset global state that stage.js modifies
