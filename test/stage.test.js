@@ -109,6 +109,81 @@ require('../src/stage');  // Load stage module and all dependencies
       expect(globalThis.reflection.length).toBeGreaterThan(0);
       expect(globalThis.bass.length).toBeGreaterThan(0);
     });
+  });
+
+  describe('crossModulateRhythms deterministic behavior', () => {
+    beforeEach(() => {
+      globalThis.beatRhythm = [1, 0, 1, 0];
+      globalThis.divRhythm = [1, 1, 0];
+      globalThis.subdivRhythm = [1, 0, 1];
+      globalThis.beatIndex = 0;
+      globalThis.divIndex = 0;
+      globalThis.subdivIndex = 0;
+      globalThis.numerator = 4;
+      globalThis.beatsOn = 10;
+      globalThis.beatsOff = 2;
+      globalThis.divsPerBeat = 4;
+      globalThis.divsOn = 5;
+      globalThis.divsOff = 1;
+      globalThis.subdivsPerDiv = 4;
+      globalThis.subdivsOn = 20;
+      globalThis.subdivsOff = 5;
+      globalThis.subdivsPerMinute = 500;
+
+      // Stub randomness for deterministic testing
+      globalThis._origRf = globalThis.rf;
+      globalThis._origRi = globalThis.ri;
+      globalThis.rf = (min = 0, max = 1) => min; // Always return min
+      globalThis.ri = (min = 0, max = 1) => Math.floor(min); // Always return min as integer
+    });
+
+    afterEach(() => {
+      globalThis.rf = globalThis._origRf;
+      globalThis.ri = globalThis._origRi;
+    });
+
+    it('should calculate crossModulation value based on rhythm state', () => {
+      stage.crossModulation = 0;
+      stage.lastCrossMod = 0;
+      stage.crossModulateRhythms();
+
+      expect(typeof stage.crossModulation).toBe('number');
+      expect(stage.crossModulation).toBeGreaterThan(0);
+      expect(stage.lastCrossMod).toBe(0); // Should have saved previous value
+    });
+
+    it('should increase crossModulation when rhythm slots are active', () => {
+      // Set all rhythm indices to active slots (value 1)
+      globalThis.beatIndex = 0; // beatRhythm[0] = 1
+      globalThis.divIndex = 0; // divRhythm[0] = 1
+      globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
+
+      stage.crossModulation = 0;
+      stage.crossModulateRhythms();
+      const activeValue = stage.crossModulation;
+
+      // Reset and test with inactive slots
+      globalThis.beatIndex = 1; // beatRhythm[1] = 0
+      globalThis.divIndex = 2; // divRhythm[2] = 0
+      globalThis.subdivIndex = 1; // subdivRhythm[1] = 0
+
+      stage.crossModulation = 0;
+      stage.crossModulateRhythms();
+      const inactiveValue = stage.crossModulation;
+
+      // Active rhythms should contribute more
+      expect(activeValue).toBeGreaterThan(inactiveValue);
+    });
+
+    it('should store previous crossModulation in lastCrossMod', () => {
+      stage.crossModulation = 5.5;
+      stage.lastCrossMod = 2.2;
+
+      stage.crossModulateRhythms();
+
+      expect(stage.lastCrossMod).toBe(5.5); // Previous crossModulation saved
+      expect(stage.crossModulation).not.toBe(5.5); // New value calculated
+    });
 
     it('should have reflection and bass mapping functions', () => {
       // Verify that reflect and reflect2 mappings are defined
