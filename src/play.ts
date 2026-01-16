@@ -14,6 +14,9 @@ import './fxManager.js';   // FX processing
 import './stage.js';       // Audio processing
 import './structure.js';   // Section structure
 
+// Initialize PolychronContext (architecture migration)
+import { initializePolychronContext } from './PolychronInit.js';
+
 // Declare global dependencies
 declare const BPM: number;
 declare const SECTIONS: { min: number; max: number };
@@ -59,6 +62,9 @@ declare let composer: any;
 // Initialize the composition engine
 const initializePlayEngine = () => {
   const g = globalThis as any;
+
+  // Initialize PolychronContext singleton (lazy, on first engine startup)
+  initializePolychronContext();
 
   const BASE_BPM = g.BPM;
 

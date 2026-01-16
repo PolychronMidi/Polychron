@@ -147,29 +147,60 @@ class MeasureComposer {
         return validatedInterval;
       });
 
-      return intervals.slice(0, voices).map((interval: number) => {
+      const notes: { note: number }[] = [];
+      for (let i = 0; i < voices; i++) {
+        if (i >= intervals.length) break;
+        
+        const interval = intervals[i];
         const noteIndex = (this.notes.indexOf(rootNote) + interval) % this.notes.length;
-        let octave = ri(minOctave, maxOctave);
-        let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-        let attempts = 0;
-        while (uniqueNotes.has(note) && attempts < 10) {
-          octave =
-            octave < maxOctave
-              ? octave++
-              : octave > minOctave
-                ? octave--
-                : octave < OCTAVE.max
-                  ? octave++
-                  : octave > OCTAVE.min
-                    ? octave--
-                    : (false as any);
-          if (octave === false) break;
-          note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-          attempts++;
+        const chroma = t.Note.chroma(this.notes[noteIndex]);
+        
+        // Start with a random octave within the specified range
+        let octave = minOctave + m.floor(rf() * (maxOctave - minOctave + 1));
+        octave = clamp(octave, minOctave, maxOctave);
+        
+        let note = chroma + 12 * octave;
+        const rangeSize = maxOctave - minOctave + 1;
+        
+        // Try to find a unique note within the octave range
+        let found = false;
+        for (let attempts = 0; attempts < rangeSize; attempts++) {
+          // Validate octave is in range
+          if (octave < minOctave || octave > maxOctave) {
+            octave = clamp(octave, minOctave, maxOctave);
+          }
+          
+          note = chroma + 12 * octave;
+          
+          // If note is outside valid MIDI range, clamp it
+          if (note < 0) note = 0;
+          if (note > 127) note = 127;
+          
+          // Recompute octave from note value to ensure consistency
+          const calculatedOctave = m.floor(note / 12);
+          if (calculatedOctave < minOctave || calculatedOctave > maxOctave) {
+            // Octave is out of range, recalculate with valid octave
+            octave = clamp(calculatedOctave, minOctave, maxOctave);
+            note = chroma + 12 * octave;
+          }
+          
+          if (!uniqueNotes.has(note)) {
+            found = true;
+            break;
+          }
+          
+          octave = octave + 1;
+          if (octave > maxOctave) {
+            octave = minOctave;
+          }
         }
+        
         uniqueNotes.add(note);
-        return { note };
-      }).filter((noteObj, index, self) =>
+        notes.push({ note });
+      }
+      
+      // Filter for unique notes across all intervals
+      return notes.filter((noteObj, index, self) =>
         index === self.findIndex(n => n.note === noteObj.note)
       );
     } catch (e) {

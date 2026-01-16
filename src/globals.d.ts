@@ -290,6 +290,18 @@ declare global {
 
   // Play engine
   var initializePlayEngine: () => void;
+
+  // ============================================================
+  // POLYCHRON CONTEXT (centralized global state singleton)
+  // ============================================================
+  var PolychronContext: {
+    utils: any;
+    composers: any;
+    state: Record<string, any>;
+    test: Record<string, any>;
+    initialized: boolean;
+    init(): void;
+  };
 }
 
 export {};
