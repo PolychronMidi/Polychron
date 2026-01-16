@@ -6,17 +6,16 @@
  * Implements classical voice leading rules with configurable weights
  */
 class VoiceLeadingScore {
+  weights: Record<string, number>;
+  registers: Record<string, number[]>;
+  prevNotes: any[];
+  prevIntervals: any[];
+  history: any[];
+  maxHistoryDepth: number;
+
   /**
-   * @param {{
-   *   smoothMotionWeight?: number,
-   *   voiceRangeWeight?: number,
-   *   leapRecoveryWeight?: number,
-   *   voiceCrossingWeight?: number,
-   *   parallelMotionWeight?: number,
-   *   maxHistoryDepth?: number
-   * }} options
-   */
-  constructor(options = {}) {
+   * @param {{\n   *   smoothMotionWeight?: number,\n   *   voiceRangeWeight?: number,\n   *   leapRecoveryWeight?: number,\n   *   voiceCrossingWeight?: number,\n   *   parallelMotionWeight?: number,\n   *   maxHistoryDepth?: number\n   * }} options\n   */
+  constructor(options: any = {}) {
     // Configurable weights for different voice leading aspects
     this.weights = {
       smoothMotion: options.smoothMotionWeight ?? 1.0,
@@ -50,7 +49,7 @@ class VoiceLeadingScore {
   /**
    * Reset scorer state between compositions
    */
-  reset() {
+  reset(): void {
     this.prevNotes = [];
     this.prevIntervals = [];
     this.history = [];
@@ -63,7 +62,7 @@ class VoiceLeadingScore {
    * @param {number} fromNote
    * @param {number} toNote
    */
-  _scoreVoiceMotion(interval, fromNote, toNote) {
+  _scoreVoiceMotion(interval: number, fromNote: number, toNote: number): number {
     const absInterval = Math.abs(interval);
 
     // Unison = perfect (0 cost)
@@ -88,7 +87,7 @@ class VoiceLeadingScore {
    * @param {number} note
    * @param {number[]} range
    */
-  _scoreVoiceRange(note, range) {
+  _scoreVoiceRange(note: number, range: number[]): number {
     const [min, max] = range;
     const rangeSize = max - min;
     const idealMin = min + rangeSize * 0.25;
@@ -118,7 +117,7 @@ class VoiceLeadingScore {
    * @param {number} previousInterval
    * @param {any[]} noteHistory
    */
-  _scoreLeapRecovery(currentInterval, previousInterval, noteHistory) {
+  _scoreLeapRecovery(currentInterval: number, previousInterval: number, noteHistory: any[]): number {
     const absCurrent = Math.abs(currentInterval);
     const absPrevious = Math.abs(previousInterval);
 
@@ -153,7 +152,7 @@ class VoiceLeadingScore {
    * @param {number} sopranoNote
    * @param {any[]} otherVoices
    */
-  _scoreVoiceCrossing(sopranoNote, otherVoices) {
+  _scoreVoiceCrossing(sopranoNote: number, otherVoices: any[]): number {
     // Soprano should be at or above all other voices
     for (const voice of otherVoices) {
       if (voice > sopranoNote) {
@@ -169,7 +168,7 @@ class VoiceLeadingScore {
    * @param {number} interval1
    * @param {number} interval2
    */
-  _scoreParallelMotion(interval1, interval2) {
+  _scoreParallelMotion(interval1: number, interval2: number): number {
     // Parallel octaves or fifths (intervals of 12, 7, or 0) - heavy penalty
     const forbidden = [0, 7, 12];
     if (forbidden.includes(Math.abs(interval1 % 12)) &&
@@ -192,7 +191,7 @@ class VoiceLeadingScore {
    * @param {any[]|null} previousNotes
    * @param {string} register
    */
-  calculateCost(currentNotes, previousNotes = null, register = 'soprano') {
+  calculateCost(currentNotes: any[], previousNotes: any[] | null = null, register: string = 'soprano'): number {
     let totalCost = 0;
     /** @type {number[]} */
     const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
@@ -250,7 +249,7 @@ class VoiceLeadingScore {
    * @param {any[]} previousNotes
    * @param {string} register
    */
-  findBestVoicing(targetNotes, previousNotes, register = 'soprano') {
+  findBestVoicing(targetNotes: any[], previousNotes: any[], register: string = 'soprano'): any[] {
     if (!previousNotes || previousNotes.length === 0) {
       return targetNotes; // No optimization needed
     }
@@ -277,10 +276,10 @@ class VoiceLeadingScore {
    * @param {any[]} array
    * @returns {any[][]}
    */
-  _generatePermutations(array) {
+  _generatePermutations(array: any[]): any[][] {
     if (array.length <= 1) return [array];
 
-    const permutations = [];
+    const permutations: any[][] = [];
     for (let i = 0; i < array.length; i++) {
       const current = array[i];
       const remaining = array.slice(0, i).concat(array.slice(i + 1));
@@ -302,7 +301,7 @@ class VoiceLeadingScore {
    * @param {{ register?: string, constraints?: any[] }} options - Selection options (register, constraints)
    * @returns {number} Selected note
    */
-  selectNextNote(previousNotes, candidates, options = {}) {
+  selectNextNote(previousNotes: any[], candidates: any[], options: any = {}): number {
     // Fallback if no candidates
     if (!candidates || candidates.length === 0) {
       return previousNotes && previousNotes.length > 0 ? previousNotes[previousNotes.length - 1] : 60;
@@ -316,7 +315,7 @@ class VoiceLeadingScore {
       const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
 
       // Filter by register
-      let validCandidates = candidates.filter(note => note >= range[0] && note <= range[1]);
+      let validCandidates = candidates.filter((note: any) => note >= range[0] && note <= range[1]);
       if (validCandidates.length === 0) {
         validCandidates = candidates; // Use all candidates if none in range
       }
@@ -341,7 +340,7 @@ class VoiceLeadingScore {
     const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
 
     // Filter candidates by register if specified
-    let validCandidates = candidates.filter(note => note >= range[0] && note <= range[1]);
+    let validCandidates = candidates.filter((note: any) => note >= range[0] && note <= range[1]);
 
     // If no candidates in range, use all candidates
     if (validCandidates.length === 0) {
@@ -353,13 +352,13 @@ class VoiceLeadingScore {
     // Apply hard constraints
     if (constraints.includes('avoidsStrident')) {
       // Avoid large leaps (> 7 semitones)
-      const filtered = validCandidates.filter(note => Math.abs(note - prevNote) <= 7);
+      const filtered = validCandidates.filter((note: any) => Math.abs(note - prevNote) <= 7);
       if (filtered.length > 0) validCandidates = filtered;
     }
 
     if (constraints.includes('stepsOnly')) {
       // Only allow stepwise motion (≤ 2 semitones)
-      const filtered = validCandidates.filter(note => Math.abs(note - prevNote) <= 2);
+      const filtered = validCandidates.filter((note: any) => Math.abs(note - prevNote) <= 2);
       if (filtered.length > 0) validCandidates = filtered;
     }
 
@@ -394,7 +393,7 @@ class VoiceLeadingScore {
    * @param {any[]} sequence - Array of notes to analyze
    * @returns {Object} Quality metrics (smoothness, leapRecoveries, avgRange)
    */
-  analyzeQuality(sequence) {
+  analyzeQuality(sequence: any[]): any {
     if (!sequence || sequence.length < 2) {
       return { smoothness: 0, leapRecoveries: 0, avgRange: sequence[0] || 60 };
     }
@@ -425,7 +424,7 @@ class VoiceLeadingScore {
     const smoothness = totalCost / (sequence.length - 1);
 
     // Calculate average range
-    const sum = sequence.reduce((a, b) => a + b, 0);
+    const sum = sequence.reduce((a: any, b: any) => a + b, 0);
     const avgRange = sum / sequence.length;
 
     return {

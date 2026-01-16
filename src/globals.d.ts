@@ -261,6 +261,8 @@ declare global {
   var ModalInterchangeComposer: any;
   var MelodicDevelopmentComposer: any;
   var RandomScaleComposer: any;
+  var MeasureComposer: any;
+  var ProgressionGenerator: any;
 
   // Composition state
   var crossModulation: number;

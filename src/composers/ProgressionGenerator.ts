@@ -6,17 +6,19 @@
  * @class
  */
 class ProgressionGenerator {
-  /**
-   * @param {string} key - Root key (e.g., 'C', 'Am')
-   * @param {string} [quality='major'] - 'major' or 'minor'
-   */
-  constructor(key, quality = 'major') {
+  key: string;
+  quality: string;
+  scale: any;
+  romanQuality: string;
+  scaleNotes: string[];
+  diatonicChords: string[];
+
+  constructor(key: string, quality: string = 'major') {
     this.key = key;
     this.quality = quality.toLowerCase();
     this.scale = t.Scale.get(`${key} ${quality}`);
 
-    /** @type {Record<string, string>} */
-    const modeToQuality = {
+    const modeToQuality: Record<string, string> = {
       'ionian': 'major', 'dorian': 'minor', 'phrygian': 'minor',
       'lydian': 'major', 'mixolydian': 'major', 'aeolian': 'minor',
       'locrian': 'minor', 'major': 'major', 'minor': 'minor'
@@ -24,18 +26,12 @@ class ProgressionGenerator {
     this.romanQuality = modeToQuality[this.quality] || 'major';
 
     const keyApi = this.romanQuality === 'minor' ? t.Key.minorKey : t.Key.majorKey;
-    /** @type {any} */
-    const keyData = keyApi(key);
-    this.scaleNotes = this.romanQuality === 'minor' ? keyData.natural?.scale : keyData.scale;
-    this.diatonicChords = this.romanQuality === 'minor' ? keyData.natural?.chords : keyData.chords;
+    const keyData = keyApi(key) as any;
+    this.scaleNotes = this.romanQuality === 'minor' ? (keyData as any).natural?.scale : keyData.scale;
+    this.diatonicChords = this.romanQuality === 'minor' ? (keyData as any).natural?.chords : keyData.chords;
   }
 
-  /**
-   * Converts Roman numeral to chord symbol.
-   * @param {string} roman - Roman numeral (e.g., 'I', 'ii', 'V7')
-   * @returns {string | null} Chord symbol or null if invalid
-   */
-  romanToChord(roman) {
+  romanToChord(roman: string): string | null {
     const degreeMatch = roman.match(/^([b#]?[IiVv]+)/);
     if (!degreeMatch) return null;
 
@@ -74,14 +70,8 @@ class ProgressionGenerator {
     return `${rootNote}${quality}${extensions}`;
   }
 
-  /**
-   * Generates common progression patterns.
-   * @param {string} type - Progression type
-   * @returns {string[]} Array of chord symbols
-   */
-  generate(type) {
-    /** @type {Record<string, Record<string, string[]>>} */
-    const patterns = {
+  generate(type: string): string[] {
+    const patterns: Record<string, Record<string, string[]>> = {
       major: {
         'I-IV-V': ['I', 'IV', 'V', 'I'],
         'I-V-vi-IV': ['I', 'V', 'vi', 'IV'],
@@ -99,20 +89,17 @@ class ProgressionGenerator {
       }
     };
 
-    const pattern = patterns[this.romanQuality || this.quality]?.[type];
+    const key = (this.romanQuality || this.quality) as string;
+    const pattern = ((patterns as any)[key] as any)?.[type];
     if (!pattern) {
       console.warn(`Unknown progression type: ${type}, using I-IV-V`);
       return this.generate('I-IV-V');
     }
 
-    return pattern.map((/** @type {string} */ roman) => this.romanToChord(roman)).filter((/** @type {string | null} */ c) => c !== null);
+    return pattern.map((roman: string) => this.romanToChord(roman)).filter((c: string | null) => c !== null) as string[];
   }
 
-  /**
-   * Generates a random common progression.
-   * @returns {string[]} Array of chord symbols
-   */
-  random() {
+  random(): string[] {
     const types = (this.romanQuality || this.quality) === 'major'
       ? ['I-IV-V', 'I-V-vi-IV', 'ii-V-I', 'I-vi-IV-V']
       : ['i-iv-v', 'i-VI-VII', 'i-iv-VII', 'ii-V-i'];

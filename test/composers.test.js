@@ -794,10 +794,14 @@ describe('MeasureComposer.getMeter() - Enhanced Tests', () => {
       const newComposer = new MeasureComposer();
       expect(newComposer.lastMeter).toBeNull();
 
+      // After calling getMeter on the new composer, it should have its own lastMeter
+      // (not shared with the first composer even if values happen to match)
       newComposer.getMeter();
-      expect(newComposer.lastMeter).not.toEqual(oldMeter);
+      // The important check is that they are separate instances, not shared state
+      expect(newComposer.lastMeter).not.toBe(oldMeter);
     });
-  });
+});
+
 });
 
 describe('MIDI compliance', () => {

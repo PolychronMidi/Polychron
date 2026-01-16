@@ -36,8 +36,8 @@ import './ProgressionGenerator.js';
 // Chord-based composers
 class ChordComposer extends ScaleComposer {
   progression: string[] | undefined;
-  currentChordIndex: number = 0;
-  direction: string = 'R';
+  currentChordIndex: number;
+  direction: string;
 
   constructor(progression: string[] = ['C']) {
     // Normalize chord names (C -> Cmajor)
@@ -69,6 +69,7 @@ class ChordComposer extends ScaleComposer {
       super('major', 'C');
       this.progression = undefined;
       this.currentChordIndex = 0;
+      this.direction = 'R';
       return;
     }
 
@@ -77,7 +78,7 @@ class ChordComposer extends ScaleComposer {
     const firstRoot = firstChordData.tonic || 'C';
     super('major', firstRoot);
 
-    // Set up chord-specific properties
+    // Set up chord-specific properties after super call
     this.progression = validProgression;
     this.currentChordIndex = 0;
     this.direction = 'R';

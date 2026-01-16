@@ -1,31 +1,36 @@
 // @ts-check
 // ScaleComposer - Composes notes from specific scales
 
+import './MeasureComposer.js';
+
 /**
  * Composes notes from a specific scale.
  * @extends MeasureComposer
  */
-class ScaleComposer extends MeasureComposer {
-  /**
-   * @param {string} scaleName - e.g., 'major', 'minor'
-   * @param {string} root - e.g., 'C', 'D#'
-   */
-  constructor(scaleName,root) {
+class ScaleComposer extends (globalThis as any).MeasureComposer {
+  root: string;
+  scale: any;
+  notes: any[];
+
+  constructor(scaleName: string, root: string) {
     super();
-    this.root=root;
-    this.noteSet(scaleName,root);
+    this.root = root;
+    this.notes = [];
+    this.noteSet(scaleName, root);
   }
-  /**
-   * Sets scale and extracts notes.
-   * @param {string} scaleName
-   * @param {string} root
-   */
-  noteSet(scaleName,root) {
-    this.scale=t.Scale.get(`${root} ${scaleName}`);
-    this.notes=this.scale.notes;
+
+  noteSet(scaleName: string, root: string): void {
+    this.scale = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
+    this.notes = this.scale.notes;
   }
-  /** @returns {{note: number}[]} Scale notes */
-  x() { return this.getNotes(); }
+
+  getNotes(): any[] {
+    return (globalThis as any).MeasureComposer.prototype.getNotes.call(this);
+  }
+
+  x(): any[] {
+    return this.getNotes();
+  }
 }
 
 /**
