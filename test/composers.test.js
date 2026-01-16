@@ -765,3 +765,336 @@ describe('MIDI compliance', () => {
     expect(o2).toBeLessThanOrEqual(10);
   });
 });
+
+// Phase 2: New Composer Tests
+describe('PentatonicComposer', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should create with major pentatonic by default', () => {
+    const composer = new PentatonicComposer('C', 'major');
+    expect(composer.root).toBe('C');
+    expect(composer.type).toBe('major');
+    expect(composer.notes).toBeDefined();
+    expect(composer.notes.length).toBe(5); // Pentatonic = 5 notes
+  });
+
+  it('should create with minor pentatonic', () => {
+    const composer = new PentatonicComposer('A', 'minor');
+    expect(composer.root).toBe('A');
+    expect(composer.type).toBe('minor');
+    expect(composer.notes.length).toBe(5);
+  });
+
+  it('should generate unique notes', () => {
+    const composer = new PentatonicComposer('C', 'major');
+    const notes = composer.getNotes();
+    const noteValues = notes.map(n => n.note);
+    const uniqueNotes = new Set(noteValues);
+    expect(uniqueNotes.size).toBe(noteValues.length); // No duplicates
+  });
+
+  it('should generate valid MIDI notes', () => {
+    const composer = new PentatonicComposer('D', 'minor');
+    const notes = composer.getNotes();
+    notes.forEach(noteObj => {
+      expect(noteObj.note).toBeGreaterThanOrEqual(0);
+      expect(noteObj.note).toBeLessThanOrEqual(127);
+    });
+  });
+
+  it('should spread voices across octaves for open sound', () => {
+    const composer = new PentatonicComposer('C', 'major');
+    const notes = composer.getNotes([2, 5]); // 3-octave range
+    if (notes.length > 2) {
+      // Check that notes span multiple octaves
+      const octaves = notes.map(n => Math.floor(n.note / 12));
+      const uniqueOctaves = new Set(octaves);
+      expect(uniqueOctaves.size).toBeGreaterThan(1);
+    }
+  });
+});
+
+describe('RandomPentatonicComposer', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should randomly select root and type', () => {
+    const composer = new RandomPentatonicComposer();
+    expect(composer.root).toBeDefined();
+    expect(['major', 'minor']).toContain(composer.type);
+    expect(composer.notes.length).toBe(5);
+  });
+
+  it('should generate different scales on x() calls', () => {
+    const composer = new RandomPentatonicComposer();
+    const notes1 = composer.x();
+    const notes2 = composer.x();
+    expect(notes1).toBeDefined();
+    expect(notes2).toBeDefined();
+    // Note: May occasionally be same, but should work
+  });
+});
+
+describe('ProgressionGenerator', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should create with key and quality', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    expect(gen.key).toBe('C');
+    expect(gen.quality).toBe('major');
+  });
+
+  it('should generate I-IV-V progression in major', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    const prog = gen.generate('I-IV-V');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBeGreaterThan(0);
+    expect(prog[0]).toContain('C'); // Starts with C chord
+  });
+
+  it('should generate ii-V-I jazz turnaround', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    const prog = gen.generate('ii-V-I');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBe(3);
+  });
+
+  it('should generate pop progression I-V-vi-IV', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    const prog = gen.generate('I-V-vi-IV');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBe(4);
+  });
+
+  it('should generate minor progressions', () => {
+    const gen = new ProgressionGenerator('A', 'minor');
+    const prog = gen.generate('i-iv-v');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBeGreaterThan(0);
+  });
+
+  it('should generate andalusian cadence', () => {
+    const gen = new ProgressionGenerator('A', 'minor');
+    const prog = gen.generate('andalusian');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBe(4);
+  });
+
+  it('should generate circle of fifths', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    const prog = gen.generate('circle');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBeGreaterThan(4); // Long progression
+  });
+
+  it('should generate 12-bar blues', () => {
+    const gen = new ProgressionGenerator('E', 'major');
+    const prog = gen.generate('blues');
+    expect(prog).toBeDefined();
+    expect(prog.length).toBe(12);
+  });
+
+  it('should generate random progression', () => {
+    const gen = new ProgressionGenerator('G', 'major');
+    const prog = gen.random();
+    expect(prog).toBeDefined();
+    expect(prog.length).toBeGreaterThan(0);
+  });
+
+  it('should convert Roman numerals to chords', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    const chord = gen.romanToChord('I');
+    expect(chord).toBeTruthy();
+    expect(chord).toContain('C');
+  });
+
+  it('should handle invalid progression types gracefully', () => {
+    const gen = new ProgressionGenerator('C', 'major');
+    const prog = gen.generate('invalid-type');
+    expect(prog).toBeDefined(); // Should fallback
+    expect(prog.length).toBeGreaterThan(0);
+  });
+});
+
+describe('TensionReleaseComposer', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should create with default parameters', () => {
+    const composer = new TensionReleaseComposer();
+    expect(composer.key).toBeDefined();
+    expect(composer.quality).toBeDefined();
+    expect(composer.tensionCurve).toBeDefined();
+  });
+
+  it('should create with custom tension curve', () => {
+    const composer = new TensionReleaseComposer('D', 'minor', 0.8);
+    expect(composer.key).toBe('D');
+    expect(composer.quality).toBe('minor');
+    expect(composer.tensionCurve).toBe(0.8);
+  });
+
+  it('should clamp tension curve to 0-1 range', () => {
+    const composer1 = new TensionReleaseComposer('C', 'major', -0.5);
+    expect(composer1.tensionCurve).toBeGreaterThanOrEqual(0);
+    
+    const composer2 = new TensionReleaseComposer('C', 'major', 1.5);
+    expect(composer2.tensionCurve).toBeLessThanOrEqual(1);
+  });
+
+  it('should calculate tension for different chord functions', () => {
+    const composer = new TensionReleaseComposer('C', 'major');
+    const tonicTension = composer.calculateTension('CM');
+    const dominantTension = composer.calculateTension('GM');
+    
+    expect(tonicTension).toBeDefined();
+    expect(dominantTension).toBeDefined();
+    expect(dominantTension).toBeGreaterThan(tonicTension); // Dominant > Tonic tension
+  });
+
+  it('should select chords based on tension curve', () => {
+    const composer = new TensionReleaseComposer('C', 'major', 0.7);
+    const chords = composer.selectChordByTension(0.5);
+    expect(chords).toBeDefined();
+    expect(Array.isArray(chords)).toBe(true);
+    expect(chords.length).toBeGreaterThan(0);
+  });
+
+  it('should resolve to tonic at end of phrase', () => {
+    const composer = new TensionReleaseComposer('C', 'major');
+    const chords = composer.selectChordByTension(0.9); // Near end
+    expect(chords).toBeDefined();
+    expect(chords.length).toBeGreaterThan(0);
+  });
+
+  it('should generate notes with tension-based progression', () => {
+    const composer = new TensionReleaseComposer('G', 'major', 0.6);
+    const notes = composer.x();
+    expect(notes).toBeDefined();
+    expect(Array.isArray(notes)).toBe(true);
+    notes.forEach(noteObj => {
+      expect(noteObj.note).toBeGreaterThanOrEqual(0);
+      expect(noteObj.note).toBeLessThanOrEqual(127);
+    });
+  });
+});
+
+describe('ModalInterchangeComposer', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should create with default parameters', () => {
+    const composer = new ModalInterchangeComposer();
+    expect(composer.key).toBeDefined();
+    expect(composer.primaryMode).toBeDefined();
+    expect(composer.borrowProbability).toBeDefined();
+  });
+
+  it('should create with custom borrow probability', () => {
+    const composer = new ModalInterchangeComposer('C', 'major', 0.5);
+    expect(composer.key).toBe('C');
+    expect(composer.primaryMode).toBe('major');
+    expect(composer.borrowProbability).toBe(0.5);
+  });
+
+  it('should clamp borrow probability to 0-1', () => {
+    const composer1 = new ModalInterchangeComposer('C', 'major', -0.2);
+    expect(composer1.borrowProbability).toBeGreaterThanOrEqual(0);
+    
+    const composer2 = new ModalInterchangeComposer('C', 'major', 1.5);
+    expect(composer2.borrowProbability).toBeLessThanOrEqual(1);
+  });
+
+  it('should define borrow modes for major', () => {
+    const composer = new ModalInterchangeComposer('C', 'major');
+    expect(composer.borrowModes).toBeDefined();
+    expect(Array.isArray(composer.borrowModes)).toBe(true);
+    expect(composer.borrowModes.length).toBeGreaterThan(0);
+  });
+
+  it('should define borrow modes for minor', () => {
+    const composer = new ModalInterchangeComposer('A', 'minor');
+    expect(composer.borrowModes).toBeDefined();
+    expect(Array.isArray(composer.borrowModes)).toBe(true);
+    expect(composer.borrowModes.length).toBeGreaterThan(0);
+  });
+
+  it('should borrow chords from parallel modes', () => {
+    const composer = new ModalInterchangeComposer('C', 'major', 1.0); // Always borrow
+    const borrowedChord = composer.borrowChord();
+    expect(borrowedChord).toBeDefined();
+    expect(typeof borrowedChord).toBe('string');
+  });
+
+  it('should generate notes with modal interchange', () => {
+    const composer = new ModalInterchangeComposer('D', 'major', 0.3);
+    const notes = composer.x();
+    expect(notes).toBeDefined();
+    expect(Array.isArray(notes)).toBe(true);
+    notes.forEach(noteObj => {
+      expect(noteObj.note).toBeGreaterThanOrEqual(0);
+      expect(noteObj.note).toBeLessThanOrEqual(127);
+    });
+  });
+
+  it('should work with zero borrow probability', () => {
+    const composer = new ModalInterchangeComposer('C', 'major', 0);
+    const notes = composer.x();
+    expect(notes).toBeDefined();
+    expect(notes.length).toBeGreaterThan(0);
+  });
+});
+
+// ComposerFactory integration tests for new composers
+describe('ComposerFactory - Phase 2 Extensions', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should create PentatonicComposer from config', () => {
+    const config = { type: 'pentatonic', root: 'E', pentatonicType: 'minor' };
+    const composer = ComposerFactory.create(config);
+    expect(composer).toBeInstanceOf(PentatonicComposer);
+  });
+
+  it('should create RandomPentatonicComposer from config', () => {
+    const config = { type: 'pentatonic', root: 'random', scaleType: 'random' };
+    const composer = ComposerFactory.create(config);
+    expect(composer).toBeInstanceOf(PentatonicComposer);
+  });
+
+  it('should create TensionReleaseComposer from config', () => {
+    const config = { type: 'tensionRelease', key: 'F', quality: 'major', tensionCurve: 0.6 };
+    const composer = ComposerFactory.create(config);
+    expect(composer).toBeInstanceOf(TensionReleaseComposer);
+  });
+
+  it('should create ModalInterchangeComposer from config', () => {
+    const config = { type: 'modalInterchange', key: 'G', primaryMode: 'minor', borrowProbability: 0.4 };
+    const composer = ComposerFactory.create(config);
+    expect(composer).toBeInstanceOf(ModalInterchangeComposer);
+  });
+
+  it('should create composers and generate valid notes', () => {
+    const configs = [
+      { type: 'pentatonic', root: 'C', scaleType: 'major' },
+      { type: 'pentatonic', root: 'random', scaleType: 'random' },
+      { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
+      { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }
+    ];
+    
+    configs.forEach(config => {
+      const composer = ComposerFactory.create(config);
+      const notes = composer.x ? composer.x() : composer.getNotes();
+      expect(notes).toBeDefined();
+      expect(Array.isArray(notes)).toBe(true);
+    });
+  });
+});

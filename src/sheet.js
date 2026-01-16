@@ -67,11 +67,17 @@ SUBSUBDIVS={
   weights: [5,20,30,20,10,5]
 };
 COMPOSERS=[
-  // { type: 'scale',name: 'major',root: 'C' },
-  // { type: 'chords',progression: ['Cmaj7','Dm','G','Cmaj7'] },
-  // { type: 'mode',name: 'ionian',root: 'C' },
-  { type: 'randomScale' },
-  { type: 'randomChords' },
-  { type: 'randomMode' }
+  { type: 'scale', name: 'major', root: 'C' },
+  { type: 'chords', progression: ['Cmaj7','Dm','G','Cmaj7'] },
+  { type: 'mode', name: 'ionian', root: 'C' },
+  { type: 'scale', name: 'random', root: 'C' },
+  { type: 'scale', name: 'major', root: 'random' },
+  { type: 'chords', progression: 'random' },
+  { type: 'mode', name: 'ionian', root: 'random' },
+  { type: 'mode', name: 'random', root: 'random' },
+  { type: 'pentatonic', root: 'C', scaleType: 'major' },
+  { type: 'pentatonic', root: 'random', scaleType: 'random' },
+  { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
+  { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }
 ];
 SILENT_OUTRO_SECONDS=5;
