@@ -117,7 +117,7 @@ export const drummer = (
   const actualStutterRange = stutterRange ?? [2, g.m.round(g.rv(11, [2, 3], .3))];
   const actualDecayFactor = stutterDecayFactor ?? g.rf(.9, 1.1);
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] START', drumNames);
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] START', drumNames);
 
   if (drumNames === 'random') {
     const allDrums = Object.keys(drumMap);
@@ -128,7 +128,7 @@ export const drummer = (
   const drums = Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d => d.trim());
   const offsets: number[] = Array.isArray(actualBeatOffsets) ? [...actualBeatOffsets] : [actualBeatOffsets];
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] drums/offsets prepared');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] drums/offsets prepared');
 
   if (offsets.length < drums.length) {
     offsets.push(...new Array(drums.length - offsets.length).fill(0));
@@ -138,7 +138,7 @@ export const drummer = (
 
   const combined: Array<{ drum: string; offset: number }> = drums.map((drum, index) => ({ drum, offset: offsets[index] }));
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] combined prepared');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] combined prepared');
 
   if (g.rf() < .7) {
     if (g.rf() < .5) {
@@ -151,7 +151,7 @@ export const drummer = (
     }
   }
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] randomization done');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] randomization done');
 
   const adjustedOffsets = combined.map(({ offset }) => {
     if (g.rf() < .3) {
@@ -162,15 +162,15 @@ export const drummer = (
     }
   });
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] offsets adjusted');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] offsets adjusted');
 
   combined.forEach(({ drum, offset }, idx) => {
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] processing drum ${idx}:`, drum);
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log(`[drummer] processing drum ${idx}:`, drum);
 
     const drumInfo = drumMap[drum];
     if (drumInfo) {
       if (g.rf() < actualStutterChance) {
-        if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] applying stutter');
+        if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] applying stutter');
 
         const numStutters = g.ri(...actualStutterRange);
         const stutterDuration = .25 * g.ri(1, 8) / numStutters;
@@ -192,15 +192,15 @@ export const drummer = (
           g.p(g.c, {tick: tick, type: 'on', vals: [g.drumCH, drumInfo.note, g.m.floor(currentVelocity)]});
         }
       } else {
-        if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] no stutter');
+        if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] no stutter');
         g.p(g.c, {tick: g.beatStart + offset * g.tpBeat, type: 'on', vals: [g.drumCH, drumInfo.note, g.ri(...drumInfo.velocityRange)]});
       }
     }
 
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] drum ${idx} done`);
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log(`[drummer] drum ${idx} done`);
   });
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] END');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[drummer] END');
 };
 
 /**
@@ -432,17 +432,17 @@ export const setRhythm = (level: string): number[] => {
  * @returns {number[]} Onset pattern.
  */
 export const makeOnsets = (length: number, valuesOrRange: number | number[] | (() => number[])): number[] => {
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] START', length, valuesOrRange);
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[makeOnsets] START', length, valuesOrRange);
 
   let onsets: number[] = [];
   let total = 0;
   let iterations = 0;
 
   while (total < length) {
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
 
     let v = ra(valuesOrRange);
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] v=${v}`);
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log(`[makeOnsets] v=${v}`);
 
     if (total + (v + 1) <= length) {
       onsets.push(v);
@@ -453,23 +453,23 @@ export const makeOnsets = (length: number, valuesOrRange: number | number[] | ((
       if (total + (v + 1) <= length) {
         onsets.push(v);
         total += v + 1;
-        if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
+        if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
       }
-      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
+      if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[makeOnsets] breaking');
       break;
     } else {
-      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
+      if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[makeOnsets] breaking');
       break;
     }
 
     iterations++;
     if (iterations > length * 10) {
-      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
+      if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[makeOnsets] breaking');
       break;
     }
   }
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] building rhythm array');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[makeOnsets] building rhythm array');
 
   let rhythm: number[] = [];
   for (let onset of onsets) {
@@ -478,7 +478,7 @@ export const makeOnsets = (length: number, valuesOrRange: number | number[] | ((
   }
   while (rhythm.length < length) { rhythm.push(0); }
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] END, length=', rhythm.length);
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[makeOnsets] END, length=', rhythm.length);
 
   return rhythm;
 };
@@ -490,15 +490,15 @@ export const makeOnsets = (length: number, valuesOrRange: number | number[] | ((
  * @returns {number[]} Pattern adjusted to length.
  */
 export const patternLength = (pattern: number[], length?: number): number[] => {
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] START', pattern.length, length);
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] START', pattern.length, length);
 
   if (length === undefined) {
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] END');
     return pattern;
   }
 
   if (pattern.length === 0) {
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] END');
     return pattern;  // Can't extend empty pattern
   }
 
@@ -506,10 +506,10 @@ export const patternLength = (pattern: number[], length?: number): number[] => {
     while (pattern.length < length) {
       pattern = pattern.concat(pattern.slice(0, length - pattern.length));
     }
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] extended to', pattern.length);
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] extended to', pattern.length);
   } else if (length < pattern.length) {
     pattern = pattern.slice(0, length);
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] truncated to', pattern.length);
+    if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] truncated to', pattern.length);
   }
 
   if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');

@@ -6,6 +6,16 @@
  * Implements classical voice leading rules with configurable weights
  */
 class VoiceLeadingScore {
+  /**
+   * @param {{
+   *   smoothMotionWeight?: number,
+   *   voiceRangeWeight?: number,
+   *   leapRecoveryWeight?: number,
+   *   voiceCrossingWeight?: number,
+   *   parallelMotionWeight?: number,
+   *   maxHistoryDepth?: number
+   * }} options
+   */
   constructor(options = {}) {
     // Configurable weights for different voice leading aspects
     this.weights = {
@@ -25,10 +35,13 @@ class VoiceLeadingScore {
     };
 
     // Track previous notes for leap recovery analysis
+    /** @type {any[]} */
     this.prevNotes = [];
+    /** @type {any[]} */
     this.prevIntervals = [];
 
     // Selection history tracking
+    /** @type {any[]} */
     this.history = [];
     this.maxHistoryDepth = options.maxHistoryDepth || 8;
   }
@@ -45,6 +58,9 @@ class VoiceLeadingScore {
   /**
    * Score voice motion based on interval size
    * @private
+   * @param {number} interval
+   * @param {number} fromNote
+   * @param {number} toNote
    */
   _scoreVoiceMotion(interval, fromNote, toNote) {
     const absInterval = Math.abs(interval);
@@ -68,6 +84,8 @@ class VoiceLeadingScore {
   /**
    * Score notes based on voice range
    * @private
+   * @param {number} note
+   * @param {number[]} range
    */
   _scoreVoiceRange(note, range) {
     const [min, max] = range;
@@ -95,6 +113,9 @@ class VoiceLeadingScore {
   /**
    * Score leap recovery (leaps should be followed by step in opposite direction)
    * @private
+   * @param {number} currentInterval
+   * @param {number} previousInterval
+   * @param {any[]} noteHistory
    */
   _scoreLeapRecovery(currentInterval, previousInterval, noteHistory) {
     const absCurrent = Math.abs(currentInterval);
@@ -128,6 +149,8 @@ class VoiceLeadingScore {
   /**
    * Detect and penalize voice crossing
    * @private
+   * @param {number} sopranoNote
+   * @param {any[]} otherVoices
    */
   _scoreVoiceCrossing(sopranoNote, otherVoices) {
     // Soprano should be at or above all other voices
@@ -142,6 +165,8 @@ class VoiceLeadingScore {
   /**
    * Detect parallel fifths and octaves, and penalize same-direction motion
    * @private
+   * @param {number} interval1
+   * @param {number} interval2
    */
   _scoreParallelMotion(interval1, interval2) {
     // Parallel octaves or fifths (intervals of 12, 7, or 0) - heavy penalty
@@ -162,9 +187,13 @@ class VoiceLeadingScore {
 
   /**
    * Calculate total voice leading cost for a set of notes
+   * @param {any[]} currentNotes
+   * @param {any[]|null} previousNotes
+   * @param {string} register
    */
   calculateCost(currentNotes, previousNotes = null, register = 'soprano') {
     let totalCost = 0;
+    /** @type {number[]} */
     const range = this.registers[register] || this.registers.soprano;
 
     // Score each voice
@@ -216,6 +245,9 @@ class VoiceLeadingScore {
 
   /**
    * Find the best voice leading between two sets of notes
+   * @param {any[]} targetNotes
+   * @param {any[]} previousNotes
+   * @param {string} register
    */
   findBestVoicing(targetNotes, previousNotes, register = 'soprano') {
     if (!previousNotes || previousNotes.length === 0) {
@@ -241,6 +273,8 @@ class VoiceLeadingScore {
   /**
    * Generate all permutations of notes
    * @private
+   * @param {any[]} array
+   * @returns {any[][]}
    */
   _generatePermutations(array) {
     if (array.length <= 1) return [array];
@@ -249,6 +283,7 @@ class VoiceLeadingScore {
     for (let i = 0; i < array.length; i++) {
       const current = array[i];
       const remaining = array.slice(0, i).concat(array.slice(i + 1));
+      /** @type {any[][]} */
       const subPermutations = this._generatePermutations(remaining);
 
       for (const sub of subPermutations) {
@@ -274,6 +309,7 @@ class VoiceLeadingScore {
 
     // If no previous notes, just pick from candidates (prefer middle)
     if (!previousNotes || previousNotes.length === 0) {
+      /** @type {string} */
       const register = options.register || 'soprano';
       const range = this.registers[register];
 
@@ -295,7 +331,9 @@ class VoiceLeadingScore {
       return selected;
     }
 
+    /** @type {string} */
     const register = options.register || 'soprano';
+    /** @type {any[]} */
     const constraints = options.constraints || [];
     const range = this.registers[register];
 

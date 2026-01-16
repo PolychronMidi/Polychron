@@ -83,6 +83,10 @@ class ChordComposer extends ScaleComposer {
     this.setChordProgression(validProgression, 'R');
   }
 
+  /**
+   * @param {Array<string | object>} progression
+   * @param {string} direction
+   */
   setChordProgression(progression, direction = 'R') {
     if (!progression || progression.length === 0) {
       this.notes = ['C', 'E', 'G'];
@@ -118,7 +122,10 @@ class ChordComposer extends ScaleComposer {
     }
   }
 
-  // Keep noteSet for backwards compatibility, delegate to setChordProgression
+  /**
+   * @param {Array<string | object> | string} progression
+   * @param {string} direction
+   */
   noteSet(progression, direction = 'R') {
     // Check if being called from parent ScaleComposer constructor
     if (typeof progression === 'string') {
@@ -181,11 +188,19 @@ class RandomChordComposer extends ChordComposer {
 }
 
 class ModeComposer extends ScaleComposer {
+  /**
+   * @param {string} name
+   * @param {string} root
+   */
   constructor(name = 'ionian', root = 'C') {
     super('major', root);
     this.noteSet(name, root);
   }
 
+  /**
+   * @param {string} modeName
+   * @param {string} root
+   */
   noteSet(modeName, root) {
     this.root = root;
     this.mode = t.Mode.get(`${root} ${modeName}`);
@@ -263,6 +278,9 @@ class TensionReleaseComposer extends ScaleComposer {
     this.measureCount = 0;
   }
 
+  /**
+   * @param {string} chordOrFunction
+   */
   calculateTension(chordOrFunction) {
     // Map chord names to functions based on scale degree
     let chordFunction = chordOrFunction;
@@ -301,6 +319,9 @@ class TensionReleaseComposer extends ScaleComposer {
     return tensionMap[chordFunction] || 0.5;
   }
 
+  /**
+   * @param {number} targetTension
+   */
   selectChordByTension(targetTension) {
     // Simplified chord selection based on tension - returns chord notes array
     const chordFunctions = ['tonic', 'subdominant', 'dominant'];
@@ -323,7 +344,7 @@ class TensionReleaseComposer extends ScaleComposer {
       'dominant': [4, 6, 1]     // V chord (5-7-2)
     };
     const degrees = functionDegrees[selectedFunction];
-    return degrees.map(d => this.notes[d % this.notes.length]);
+    return degrees.map((/** @type {number} */ d) => this.notes[d % this.notes.length]);
   }
 
   getNotes(octaveRange = null) {
@@ -339,6 +360,11 @@ class TensionReleaseComposer extends ScaleComposer {
 }
 
 class ModalInterchangeComposer extends ScaleComposer {
+  /**
+   * @param {string} key
+   * @param {string} primaryMode
+   * @param {number} borrowProbability
+   */
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
     super(primaryMode, key);
     this.key = key;
@@ -347,6 +373,9 @@ class ModalInterchangeComposer extends ScaleComposer {
     this.borrowModes = this.getBorrowModes(primaryMode);
   }
 
+  /**
+   * @param {string} primaryMode
+   */
   getBorrowModes(primaryMode) {
     if (primaryMode === 'major') {
       return ['minor', 'dorian', 'phrygian', 'mixolydian'];
@@ -429,6 +458,7 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
     const rootNote = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     super(scaleName, rootNote);
     this.commonToneWeight = clamp(commonToneWeight, 0, 1);
+    /** @type {any[]} */
     this.previousNotes = [];
     this.voiceBalanceThreshold = 3;
     this.contraryMotionPreference = 0.4;

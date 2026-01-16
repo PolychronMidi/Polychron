@@ -102,7 +102,7 @@ class ProgressionGenerator {
       return this.generate('I-IV-V');
     }
 
-    return pattern.map(roman => this.romanToChord(roman)).filter(c => c !== null);
+    return pattern.map((/** @type {string} */ roman) => this.romanToChord(roman)).filter((/** @type {string | null} */ c) => c !== null);
   }
 
   /**
@@ -120,3 +120,4 @@ class ProgressionGenerator {
 
 // Export to global scope
 globalThis.ProgressionGenerator = ProgressionGenerator;
+module.exports = { ProgressionGenerator };

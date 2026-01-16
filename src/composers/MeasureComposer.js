@@ -18,6 +18,8 @@ class MeasureComposer {
     this.voiceLeading=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
+    /** @type {string[]} Notes for this composer (set by child classes) */
+    this.notes=[];
   }
   /** @returns {number} Random numerator from NUMERATOR config */
   getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
@@ -124,7 +126,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
         return { note };
       }).filter((noteObj,index,self)=>
         index===self.findIndex(n=>n.note===noteObj.note)
-      ); }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
+      ); }  catch (/** @type {any} */ e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
       console.warn(e.message); this.recursionDepth--; return this.getNotes(octaveRange);  }}
     finally {
       this.recursionDepth--;
@@ -187,3 +189,4 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
 
 // Export to global scope
 globalThis.MeasureComposer = MeasureComposer;
+module.exports = { MeasureComposer };

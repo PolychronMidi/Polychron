@@ -6,6 +6,7 @@ require('./rhythm'); require('./time'); require('./composers'); require('./motif
 require('./fxManager');
 
 // Initialize global temporary variable for FX object spreading
+/** @type {any} */
 globalThis._ = null;
 
 /**
@@ -110,7 +111,7 @@ class Stage {
 
   /**
    * Applies rapid volume stutter/fade effect to selected channels (delegates to FxManager)
-   * @param {Array} channels - Array of channel numbers to potentially stutter
+   * @param {Array<number>} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
    * @returns {void}
@@ -121,7 +122,7 @@ class Stage {
 
   /**
    * Applies rapid pan stutter effect to selected channels (delegates to FxManager)
-   * @param {Array} channels - Array of channel numbers to potentially stutter
+   * @param {Array<number>} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
    * @returns {void}
@@ -130,9 +131,8 @@ class Stage {
     this.fx.stutterPan(channels, numStutters, duration);
   }
 
-  /**
-   * Applies rapid FX parameter stutter effect to selected channels (delegates to FxManager)
-   * @param {Array} channels - Array of channel numbers to potentially stutter
+  /**\n   * Applies rapid FX parameter stutter effect to selected channels (delegates to FxManager)
+   * @param {Array<number>} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
    * @returns {void}
@@ -237,6 +237,7 @@ class Stage {
    * @returns {void}
    */
   setNoteParams() {
+    const subdivsPerMinute = subdivsPerBeat * midiBPM;
     this.on=subdivStart+(tpSubdiv*rv(rf(.2),[-.1,.07],.3));
     this.shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],.1,[-.05,-.1]);
     this.longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],.1,[-.05,-.1]);
@@ -255,7 +256,7 @@ class Stage {
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if((this.crossModulation+this.lastCrossMod)/rf(1.4,2.6)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
-  motifNotes.forEach(({ note })=>{
+  motifNotes.forEach((/** @type {{ note: any }} */ { note })=>{
     // Play source channels
     source.filter(sourceCH=>
       flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
@@ -296,6 +297,7 @@ class Stage {
    * @returns {void}
    */
   setNoteParams2() {
+    const subdivsPerMinute = subdivsPerBeat * midiBPM;
     this.on=subsubdivStart+(tpSubsubdiv*rv(rf(.2),[-.1,.07],.3));
     this.shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],.1,[-.05,-.1]);
     this.longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],.1,[-.05,-.1]);
@@ -315,7 +317,7 @@ class Stage {
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if(true){
-  motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
+  motifNotes.forEach((/** @type {{ note: any }} */ { note })=>{ source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
     ).map(sourceCH=>{
 

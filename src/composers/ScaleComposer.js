@@ -25,7 +25,7 @@ class ScaleComposer extends MeasureComposer {
     this.notes=this.scale.notes;
   }
   /** @returns {{note: number}[]} Scale notes */
-  x=()=>this.getNotes();
+  x() { return this.getNotes(); }
 }
 
 /**
@@ -51,3 +51,4 @@ class RandomScaleComposer extends ScaleComposer {
 // Export to global scope
 globalThis.ScaleComposer = ScaleComposer;
 globalThis.RandomScaleComposer = RandomScaleComposer;
+module.exports = { ScaleComposer, RandomScaleComposer };
