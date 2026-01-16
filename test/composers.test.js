@@ -943,7 +943,7 @@ describe('TensionReleaseComposer', () => {
   it('should clamp tension curve to 0-1 range', () => {
     const composer1 = new TensionReleaseComposer('C', 'major', -0.5);
     expect(composer1.tensionCurve).toBeGreaterThanOrEqual(0);
-    
+
     const composer2 = new TensionReleaseComposer('C', 'major', 1.5);
     expect(composer2.tensionCurve).toBeLessThanOrEqual(1);
   });
@@ -952,7 +952,7 @@ describe('TensionReleaseComposer', () => {
     const composer = new TensionReleaseComposer('C', 'major');
     const tonicTension = composer.calculateTension('CM');
     const dominantTension = composer.calculateTension('GM');
-    
+
     expect(tonicTension).toBeDefined();
     expect(dominantTension).toBeDefined();
     expect(dominantTension).toBeGreaterThan(tonicTension); // Dominant > Tonic tension
@@ -1007,7 +1007,7 @@ describe('ModalInterchangeComposer', () => {
   it('should clamp borrow probability to 0-1', () => {
     const composer1 = new ModalInterchangeComposer('C', 'major', -0.2);
     expect(composer1.borrowProbability).toBeGreaterThanOrEqual(0);
-    
+
     const composer2 = new ModalInterchangeComposer('C', 'major', 1.5);
     expect(composer2.borrowProbability).toBeLessThanOrEqual(1);
   });
@@ -1089,7 +1089,7 @@ describe('ComposerFactory - Phase 2 Extensions', () => {
       { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
       { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }
     ];
-    
+
     configs.forEach(config => {
       const composer = ComposerFactory.create(config);
       const notes = composer.x ? composer.x() : composer.getNotes();
@@ -1180,7 +1180,7 @@ describe('MelodicDevelopmentComposer', () => {
   it('should clamp development intensity to 0-1 range', () => {
     const composer1 = new MelodicDevelopmentComposer('major', 'C', -0.5);
     expect(composer1.developmentIntensity).toBe(0);
-    
+
     const composer2 = new MelodicDevelopmentComposer('major', 'C', 1.5);
     expect(composer2.developmentIntensity).toBe(1);
   });
@@ -1274,7 +1274,7 @@ describe('AdvancedVoiceLeadingComposer', () => {
   it('should clamp common tone weight to 0-1 range', () => {
     const composer1 = new AdvancedVoiceLeadingComposer('major', 'C', -0.5);
     expect(composer1.commonToneWeight).toBe(0);
-    
+
     const composer2 = new AdvancedVoiceLeadingComposer('major', 'C', 1.5);
     expect(composer2.commonToneWeight).toBe(1);
   });

@@ -270,7 +270,7 @@ constructor(root = 'C', type = 'major') {
 noteSet(root, type) {
   const scaleName = type === 'minor' ? 'minor pentatonic' : 'major pentatonic';
   const scale = t.Scale.get(`${root} ${scaleName}`);
-  
+
   if (scale.empty) {
     console.warn(`Pentatonic scale not found for ${root} ${type}, using random root`);
     this.root = allNotes[ri(allNotes.length - 1)];
@@ -301,8 +301,8 @@ Utility class for generating common harmonic progressions using Tonal's Key help
 constructor(key = 'C', quality = 'major') {
   this.key = key;
   this.quality = quality;
-  this.scale = quality === 'major' 
-    ? t.Key.majorKey(key) 
+  this.scale = quality === 'major'
+    ? t.Key.majorKey(key)
     : t.Key.minorKey(key);
 }
 
@@ -343,7 +343,7 @@ constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
   const generator = new ProgressionGenerator(key, quality);
   const progressionChords = generator.random();
   super(progressionChords);
-  
+
   this.generator = generator;
   this.tensionCurve = clamp(tensionCurve, 0, 1);
   this.key = key;
@@ -355,36 +355,36 @@ calculateTension(chordSymbol) {
   const chord = t.Chord.get(chordSymbol);
   const root = chord.tonic;
   const scaleIndex = this.generator.scale.notes.indexOf(root);
-  
+
   // Tonic function (I, vi) = low tension
   if ([0, 5].includes(scaleIndex)) return 0.2;
   // Subdominant (ii, IV) = medium tension
   if ([1, 3].includes(scaleIndex)) return 0.5;
   // Dominant (V, vii) = high tension
   if ([4, 6].includes(scaleIndex)) return 0.9;
-  
+
   return 0.5;
 }
 
 selectChordByTension(position) {
   const targetTension = this.tensionCurve * Math.sin(position * Math.PI);
-  
+
   // At end of phrase, resolve to tonic
   if (position > 0.85) {
     return this.generator.generate('I-IV-V').slice(-1);
   }
-  
+
   // Select chord matching target tension from pool
   const allProgressions = [
     ...this.generator.generate('I-IV-V'),
     ...this.generator.generate('ii-V-I'),
     ...this.generator.generate('I-vi-IV-V')
   ];
-  
+
   // Find chord with tension closest to target
   let bestChord = allProgressions[0];
   let bestDiff = Infinity;
-  
+
   for (const chord of allProgressions) {
     const tension = this.calculateTension(chord);
     const diff = Math.abs(tension - targetTension);
@@ -393,7 +393,7 @@ selectChordByTension(position) {
       bestChord = chord;
     }
   }
-  
+
   return [bestChord];
 }
 ```
@@ -412,12 +412,12 @@ constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
   const generator = new ProgressionGenerator(key, primaryMode);
   const progressionChords = generator.random();
   super(progressionChords);
-  
+
   this.generator = generator;
   this.key = key;
   this.primaryMode = primaryMode;
   this.borrowProbability = clamp(borrowProbability, 0, 1);
-  
+
   // Parallel mode for borrowing
   this.parallelMode = primaryMode === 'major' ? 'minor' : 'major';
   this.parallelGenerator = new ProgressionGenerator(key, this.parallelMode);
@@ -468,13 +468,13 @@ All composers use a **unified parametric configuration** where `'random'` can be
 class ComposerFactory {
   static constructors = {
     measure: () => new MeasureComposer(),
-    
+
     scale: ({ name = 'major', root = 'C' } = {}) => {
       const n = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       return new ScaleComposer(n, r);
     },
-    
+
     chords: ({ progression = ['C'] } = {}) => {
       let p = progression;
       if (progression === 'random') {
@@ -486,26 +486,26 @@ class ComposerFactory {
       }
       return new ChordComposer(p);
     },
-    
+
     mode: ({ name = 'ionian', root = 'C' } = {}) => {
       const n = name === 'random' ? allModes[ri(allModes.length - 1)] : name;
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       return new ModeComposer(n, r);
     },
-    
+
     pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
       return new PentatonicComposer(r, t);
     },
-    
-    tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => 
+
+    tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) =>
       new TensionReleaseComposer(key, quality, tensionCurve),
-    
-    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => 
+
+    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) =>
       new ModalInterchangeComposer(key, primaryMode, borrowProbability),
   };
-  
+
   static create(config = {}) {
     const type = config.type || 'scale';
     const factory = this.constructors[type];
@@ -528,18 +528,18 @@ COMPOSERS = [
   { type: 'scale', name: 'major', root: 'C' },
   { type: 'chords', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'] },
   { type: 'mode', name: 'ionian', root: 'C' },
-  
+
   // Random variations
   { type: 'scale', name: 'random', root: 'C' },           // Random scale, fixed root
   { type: 'scale', name: 'major', root: 'random' },       // Fixed scale, random root
   { type: 'chords', progression: 'random' },              // Random progression
   { type: 'mode', name: 'ionian', root: 'random' },       // Fixed mode, random root
   { type: 'mode', name: 'random', root: 'random' },       // Fully random mode
-  
+
   // Pentatonic
   { type: 'pentatonic', root: 'C', scaleType: 'major' },  // Specific pentatonic
   { type: 'pentatonic', root: 'random', scaleType: 'random' },  // Random pentatonic
-  
+
   // Advanced composers
   { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
   { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }
@@ -553,11 +553,11 @@ COMPOSERS = [
 const composers = COMPOSERS.map(config => ComposerFactory.create(config));
 
 // Create specific composer
-const composer = ComposerFactory.create({ 
-  type: 'tensionRelease', 
-  key: 'Eb', 
-  quality: 'minor', 
-  tensionCurve: 0.8 
+const composer = ComposerFactory.create({
+  type: 'tensionRelease',
+  key: 'Eb',
+  quality: 'minor',
+  tensionCurve: 0.8
 });
 ```
 
@@ -572,10 +572,10 @@ const composers = COMPOSERS.map(config => ComposerFactory.create(config));
 const composer = composers[ri(composers.length - 1)];
 
 // Or create directly
-const composer = ComposerFactory.create({ 
-  type: 'scale', 
-  name: 'random', 
-  root: 'random' 
+const composer = ComposerFactory.create({
+  type: 'scale',
+  name: 'random',
+  root: 'random'
 });
 ```
 
