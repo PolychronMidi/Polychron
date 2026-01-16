@@ -199,22 +199,102 @@ export default [
         binaural: 'writable',
         stutter: 'writable',
         note: 'writable',
-        // Backstage utils
+        // Backstage utils - Clamping functions
         clamp: 'writable',
-        clampMod: 'writable',
+        modClamp: 'writable',
+        lowModClamp: 'writable',
+        highModClamp: 'writable',
+        scaleClamp: 'writable',
+        scaleBoundClamp: 'writable',
+        softClamp: 'writable',
         clampSoft: 'writable',
+        stepClamp: 'writable',
         clampStep: 'writable',
+        logClamp: 'writable',
         clampLog: 'writable',
+        expClamp: 'writable',
         clampExp: 'writable',
+        // Backstage utils - Random functions
         rf: 'writable',
+        randomFloat: 'writable',
         ri: 'writable',
+        randomInt: 'writable',
         ra: 'writable',
         rw: 'writable',
+        randomWeightedInRange: 'writable',
+        randomWeightedInArray: 'writable',
+        randomWeightedSelection: 'writable',
+        randomInRangeOrArray: 'writable',
         rd: 'writable',
+        rl: 'writable',
         rlc: 'writable',
+        randomLimitedChange: 'writable',
+        rv: 'writable',
+        randomVariation: 'writable',
         normalizeWeights: 'writable',
         allNotesOff: 'writable',
         muteAll: 'writable',
+        // Sheet.js constants
+        OCTAVE: 'readonly',
+        NUMERATOR: 'readonly',
+        DENOMINATOR: 'readonly',
+        METER_RATIO_MIN: 'readonly',
+        METER_RATIO_MAX: 'readonly',
+        DIVISIONS: 'readonly',
+        SUBSUBDIVS: 'readonly',
+        COMPOSERS: 'readonly',
+        SECTIONS: 'readonly',
+        // Audio channels (left/right pairs)
+        lCH1: 'writable',
+        rCH1: 'writable',
+        lCH2: 'writable',
+        rCH2: 'writable',
+        lCH3: 'writable',
+        rCH3: 'writable',
+        lCH4: 'writable',
+        rCH4: 'writable',
+        lCH5: 'writable',
+        rCH5: 'writable',
+        lCH6: 'writable',
+        rCH6: 'writable',
+        // Timing state arrays
+        beatsOn: 'writable',
+        beatsOff: 'writable',
+        divsOn: 'writable',
+        divsOff: 'writable',
+        subdivsOn: 'writable',
+        subdivsOff: 'writable',
+        subsubdivsOn: 'writable',
+        subsubdivsOff: 'writable',
+        // Audio FX and binaural effects
+        rlFX: 'writable',
+        chFX: 'writable',
+        flipBin: 'writable',
+        flipBinT: 'writable',
+        flipBinF: 'writable',
+        flipBinT3: 'writable',
+        flipBinF3: 'writable',
+        flipBinF2: 'writable',
+        flipBinT2: 'writable',
+        reflection: 'writable',
+        reflectionBinaural: 'writable',
+        reflect: 'writable',
+        reflect2: 'writable',
+        source2: 'writable',
+        binauralL: 'writable',
+        binauralR: 'writable',
+        binauralFreqOffset: 'writable',
+        binauralOffset: 'writable',
+        binauralPlus: 'writable',
+        binauralMinus: 'writable',
+        bassBinaural: 'writable',
+        stutterFadeCHs: 'writable',
+        stutterPanCHs: 'writable',
+        // Audio/rhythm functions
+        playDrums: 'writable',
+        playDrums2: 'writable',
+        getRhythm: 'writable',
+        rhythms: 'writable',
         // Node.js globals
         require: 'readonly',
         module: 'readonly',
@@ -235,13 +315,30 @@ export default [
       }
     },
     rules: {
+      // Code correctness - errors that break functionality
+      'no-undef': 'warn',  // Catch undefined variables like activeMotif
+      'no-unreachable': 'error',  // Dead code after return/throw
+      'no-constant-condition': 'warn',  // Conditions always true/false (can be intentional)
+      'no-dupe-keys': 'error',  // Duplicate object keys
+      'no-dupe-args': 'error',  // Duplicate function parameters
+      'no-duplicate-case': 'error',  // Duplicate switch cases
+      'no-empty': 'warn',  // Empty blocks (may be intentional)
+      'no-ex-assign': 'error',  // Reassigning exception variable
+      'no-func-assign': 'error',  // Reassigning function declarations
+      'no-invalid-regexp': 'error',  // Invalid regex patterns
+      'use-isnan': 'error',  // Require isNaN() for NaN checks
+      'valid-typeof': 'error',  // Enforce valid typeof comparisons
+      'no-self-assign': 'error',  // Catch x = x mistakes
+      'no-cond-assign': ['error', 'except-parens'],  // No assignment in conditions (catch = vs ==)
+      'no-fallthrough': 'warn',  // Require break in switch cases
+
+      // Code quality
       'no-irregular-whitespace': 'error',
       'no-unexpected-multiline': 'error',
       'no-useless-escape': 'warn',
       'no-trailing-spaces': 'warn',
       'eol-last': ['warn', 'always'],
-      'no-undef': 'warn',  // Warn on undefined variables to catch errors like activeMotif
-      'no-unused-vars': 'off'
+      'no-unused-vars': 'off'  // Too many intentional globals
     }
   }
 ];
