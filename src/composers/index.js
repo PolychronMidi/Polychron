@@ -429,9 +429,10 @@ class ModalInterchangeComposer extends ScaleComposer {
     if (rf() < this.borrowProbability && this.borrowModes.length > 0) {
       const borrowMode = this.borrowModes[ri(this.borrowModes.length - 1)];
       const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
-      // Return chord name as string
+      // Return chord notes as array
       const chordRoot = borrowScale.notes[ri(borrowScale.notes.length - 1)];
-      return `${chordRoot}major`;
+      const chordData = t.Chord.get(`${chordRoot}major`);
+      return chordData ? chordData.notes : null;
     }
     return null;
   }
