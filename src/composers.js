@@ -1,5 +1,12 @@
+// @ts-check
 // composers.js - Musical intelligence system with meter and composition generation.
 // minimalist comments, details at: composers.md
+// Imports modular composer files for code organization
+
+// Import modular composers
+// Note: In production, these would be explicit require/import statements
+// For now, they're loaded via script tags in order:
+// MeasureComposer.js, ScaleComposer.js, ChordComposer.js, ModeComposer.js, PentatonicComposer.js
 
 /**
  * Composes meter-related values with randomization.
