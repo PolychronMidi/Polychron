@@ -21,20 +21,20 @@ declare let beatStart: number;
 declare let tpBeat: number; // ticks per beat
 declare let drumCH: number;
 declare let beatIndex: number;
-declare let beatRhythm: number[] | number;
+declare let beatRhythm: number[];
 declare let numerator: number;
 declare let measuresPerPhrase: number;
 declare let bpmRatio: number;
 declare let bpmRatio3: number;
 declare let divsPerBeat: number;
 declare let divIndex: number;
-declare let divRhythm: number[] | number;
+declare let divRhythm: number[];
 declare let subdivsPerDiv: number;
 declare let subdivIndex: number;
-declare let subdivRhythm: number[] | number;
+declare let subdivRhythm: number[];
 declare let subsubsPerSub: number;
 declare let subsubdivIndex: number;
-declare let subsubdivRhythm: number[] | number;
+declare let subsubdivRhythm: number[];
 declare let beatsOn: number;
 declare let beatsOff: number;
 declare let divsOn: number;
@@ -447,7 +447,7 @@ export const makeOnsets = (length: number, valuesOrRange: number | number[] | ((
     if (total + (v + 1) <= length) {
       onsets.push(v);
       total += v + 1;
-      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
+      if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
     } else if (Array.isArray(valuesOrRange) && valuesOrRange.length === 2) {
       v = valuesOrRange[0];
       if (total + (v + 1) <= length) {
@@ -512,7 +512,7 @@ export const patternLength = (pattern: number[], length?: number): number[] => {
     if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] truncated to', pattern.length);
   }
 
-  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
+  if ((globalThis.__POLYCHRON_TEST__ as any)?.enableLogging) console.log('[patternLength] END');
 
   return pattern;
 };

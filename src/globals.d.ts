@@ -111,13 +111,14 @@ declare global {
   var subdivsOff: number;
   var subdivsPerDiv: number;
   var subdivsPerBeat: number;
+  var subdivsPerMinute: number;
   var subsubsPerSub: number;
   var beatsOn: number;
   var beatsOff: number;
-  var beatRhythm: number | number[];
-  var divRhythm: number | number[];
-  var subdivRhythm: number | number[];
-  var subsubdivRhythm: number | number[];
+  var beatRhythm: number[];
+  var divRhythm: number[];
+  var subdivRhythm: number[];
+  var subsubdivRhythm: number[];
 
   // Timing functions
   var getMidiTiming: () => any;

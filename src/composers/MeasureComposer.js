@@ -14,7 +14,7 @@ class MeasureComposer {
     this.recursionDepth=0;
     /** @type {number} Max allowed recursion depth */
     this.MAX_RECURSION=5;
-    /** @type {VoiceLeadingScore|null} Optional voice leading optimizer */
+    /** @type {any} Optional voice leading optimizer */
     this.voiceLeading=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
@@ -135,7 +135,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
 
   /**
    * Enables voice leading optimization for this composer.
-   * @param {VoiceLeadingScore} [scorer] - Optional custom voice leading scorer
+   * @param {any} [scorer] - Optional custom voice leading scorer
    * @returns {void}
    */
   enableVoiceLeading(scorer) {

@@ -15,6 +15,7 @@ class ProgressionGenerator {
     this.quality = quality.toLowerCase();
     this.scale = t.Scale.get(`${key} ${quality}`);
 
+    /** @type {Record<string, string>} */
     const modeToQuality = {
       'ionian': 'major', 'dorian': 'minor', 'phrygian': 'minor',
       'lydian': 'major', 'mixolydian': 'major', 'aeolian': 'minor',
@@ -23,15 +24,16 @@ class ProgressionGenerator {
     this.romanQuality = modeToQuality[this.quality] || 'major';
 
     const keyApi = this.romanQuality === 'minor' ? t.Key.minorKey : t.Key.majorKey;
+    /** @type {any} */
     const keyData = keyApi(key);
-    this.scaleNotes = this.romanQuality === 'minor' ? keyData.natural.scale : keyData.scale;
-    this.diatonicChords = this.romanQuality === 'minor' ? keyData.natural.chords : keyData.chords;
+    this.scaleNotes = this.romanQuality === 'minor' ? keyData.natural?.scale : keyData.scale;
+    this.diatonicChords = this.romanQuality === 'minor' ? keyData.natural?.chords : keyData.chords;
   }
 
   /**
    * Converts Roman numeral to chord symbol.
    * @param {string} roman - Roman numeral (e.g., 'I', 'ii', 'V7')
-   * @returns {string} Chord symbol
+   * @returns {string | null} Chord symbol or null if invalid
    */
   romanToChord(roman) {
     const degreeMatch = roman.match(/^([b#]?[IiVv]+)/);
@@ -78,6 +80,7 @@ class ProgressionGenerator {
    * @returns {string[]} Array of chord symbols
    */
   generate(type) {
+    /** @type {Record<string, Record<string, string[]>>} */
     const patterns = {
       major: {
         'I-IV-V': ['I', 'IV', 'V', 'I'],

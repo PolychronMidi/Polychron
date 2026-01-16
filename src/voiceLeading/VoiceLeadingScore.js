@@ -27,6 +27,7 @@ class VoiceLeadingScore {
     };
 
     // Standard voice registers (MIDI note numbers)
+    /** @type {Record<string, number[]>} */
     this.registers = {
       soprano: [60, 84],  // C4 to C6
       alto: [48, 72],     // C3 to C5
@@ -194,7 +195,7 @@ class VoiceLeadingScore {
   calculateCost(currentNotes, previousNotes = null, register = 'soprano') {
     let totalCost = 0;
     /** @type {number[]} */
-    const range = this.registers[register] || this.registers.soprano;
+    const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
 
     // Score each voice
     for (let i = 0; i < currentNotes.length; i++) {
@@ -296,9 +297,9 @@ class VoiceLeadingScore {
 
   /**
    * Select the best next note from candidates based on voice leading
-   * @param {Array} previousNotes - Previous notes in the voice
-   * @param {Array} candidates - Candidate notes to choose from
-   * @param {Object} options - Selection options (register, constraints)
+   * @param {any[]} previousNotes - Previous notes in the voice
+   * @param {any[]} candidates - Candidate notes to choose from
+   * @param {{ register?: string, constraints?: any[] }} options - Selection options (register, constraints)
    * @returns {number} Selected note
    */
   selectNextNote(previousNotes, candidates, options = {}) {
@@ -310,8 +311,9 @@ class VoiceLeadingScore {
     // If no previous notes, just pick from candidates (prefer middle)
     if (!previousNotes || previousNotes.length === 0) {
       /** @type {string} */
-      const register = options.register || 'soprano';
-      const range = this.registers[register];
+      const register = /** @type {string} */ ((options && options.register) || 'soprano');
+      /** @type {number[]} */
+      const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
 
       // Filter by register
       let validCandidates = candidates.filter(note => note >= range[0] && note <= range[1]);
@@ -332,10 +334,11 @@ class VoiceLeadingScore {
     }
 
     /** @type {string} */
-    const register = options.register || 'soprano';
+    const register = /** @type {string} */ ((options && options.register) || 'soprano');
     /** @type {any[]} */
-    const constraints = options.constraints || [];
-    const range = this.registers[register];
+    const constraints = /** @type {any[]} */ ((options && options.constraints) || []);
+    /** @type {number[]} */
+    const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
 
     // Filter candidates by register if specified
     let validCandidates = candidates.filter(note => note >= range[0] && note <= range[1]);
@@ -388,7 +391,7 @@ class VoiceLeadingScore {
 
   /**
    * Analyze the quality of a note sequence
-   * @param {Array} sequence - Array of notes to analyze
+   * @param {any[]} sequence - Array of notes to analyze
    * @returns {Object} Quality metrics (smoothness, leapRecoveries, avgRange)
    */
   analyzeQuality(sequence) {

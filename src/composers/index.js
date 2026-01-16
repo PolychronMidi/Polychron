@@ -95,11 +95,11 @@ class ChordComposer extends ScaleComposer {
 
     // Normalize chord names - only if needed
     const normalizedProgression = Array.isArray(progression) ? progression.map(chord => {
-      if (/^[A-G][b#]?$/.test(chord)) {
+      if (typeof chord === 'string' && /^[A-G][b#]?$/.test(chord)) {
         return chord + 'major';
       }
-      return chord;
-    }) : [progression];
+      return typeof chord === 'string' ? chord : String(chord);
+    }) : [typeof progression[0] === 'string' ? progression[0] : String(progression[0])];
 
     this.progression = normalizedProgression;
     this.direction = direction;
@@ -107,7 +107,7 @@ class ChordComposer extends ScaleComposer {
     // Set initial chord
     const currentChord = this.progression[this.currentChordIndex];
     const chordData = t.Chord.get(currentChord);
-    this.notes = chordData.notes;
+    this.notes = chordData ? chordData.notes : ['C', 'E', 'G'];
 
     // Move to next chord based on direction
     if (direction === 'R') {
@@ -144,7 +144,7 @@ class ChordComposer extends ScaleComposer {
     }
     const currentChord = this.progression[this.currentChordIndex];
     const chordData = t.Chord.get(currentChord);
-    this.notes = chordData.notes;
+    this.notes = chordData ? chordData.notes : ['C', 'E', 'G'];
 
     // Move to next chord
     if (this.direction === 'R') {
@@ -294,6 +294,7 @@ class TensionReleaseComposer extends ScaleComposer {
         const degree = keyScale.notes.indexOf(root);
 
         // Map scale degree to function
+        /** @type {Record<number, string>} */
         const degreeToFunction = {
           0: 'tonic',       // I
           1: 'supertonic',  // ii
@@ -307,6 +308,7 @@ class TensionReleaseComposer extends ScaleComposer {
       }
     }
 
+    /** @type {Record<string, number>} */
     const tensionMap = {
       'tonic': 0,
       'subdominant': 0.5,
@@ -338,6 +340,7 @@ class TensionReleaseComposer extends ScaleComposer {
     // Return the notes for the selected chord function
     const selectedFunction = chordFunctions[bestIdx];
     // Get scale degrees for the function
+    /** @type {Record<string, number[]>} */
     const functionDegrees = {
       'tonic': [0, 2, 4],      // I chord (1-3-5)
       'subdominant': [3, 5, 0], // IV chord (4-6-1)
@@ -388,9 +391,10 @@ class ModalInterchangeComposer extends ScaleComposer {
     if (rf() < this.borrowProbability && this.borrowModes.length > 0) {
       const borrowMode = this.borrowModes[ri(this.borrowModes.length - 1)];
       const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
-      // Return a string representation of the borrowed chord
+      // Return chord notes array
       const chordRoot = borrowScale.notes[ri(borrowScale.notes.length - 1)];
-      return `${chordRoot}major`;
+      const chordData = t.Chord.get(`${chordRoot}major`);
+      return chordData ? chordData.notes : null;
     }
     return null;
   }
@@ -524,6 +528,7 @@ globalThis.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
  * @class
  */
 class ComposerFactory {
+  /** @type {Record<string, Function>} */
   static constructors = {
     measure: () => new MeasureComposer(),
     scale: ({ name = 'major', root = 'C' } = {}) => {
@@ -532,8 +537,8 @@ class ComposerFactory {
       return new ScaleComposer(n, r);
     },
     chords: ({ progression = ['C'] } = {}) => {
-      let p = progression;
-      if (progression === 'random') {
+      let p = Array.isArray(progression) ? progression : ['C'];
+      if (typeof progression === 'string' && progression === 'random') {
         const len = ri(2, 5);
         p = [];
         for (let i = 0; i < len; i++) {
