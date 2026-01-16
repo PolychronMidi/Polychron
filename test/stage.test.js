@@ -831,43 +831,4 @@ describe('Stage Module', () => {
       expect(channelsWithPrograms.size).toBeGreaterThan(10);
     });
   });
-
-  describe('Binaural Instrument Updates: setBinaural', () => {
-    beforeEach(() => {
-      globalThis.c = [];
-      globalThis.beatStart = 1000;
-      globalThis.beatCount = 4;
-      globalThis.beatsUntilBinauralShift = 4;
-      globalThis.numerator = 4;
-      globalThis.tpSec = 480;
-      globalThis.bpmRatio3 = 1;
-      globalThis.flipBin = false;
-      globalThis.binauralFreqOffset = 0;
-      globalThis.BINAURAL = { min: 8, max: 12 };
-      globalThis.secondaryInstrument = 'music box';
-      globalThis.lCH1 = 2;
-      globalThis.lCH3 = 4;
-      globalThis.lCH5 = 12;
-      globalThis.rCH1 = 3;
-      globalThis.rCH3 = 5;
-      globalThis.rCH5 = 13;
-    });
-
-    it('should generate program_c events for binaural reflection channels at beat shift', () => {
-      stage.setBinaural();
-      const secondaryProg = getMidiValue('program', globalThis.secondaryInstrument);
-      const binauralPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflectionBinaural.includes(e.vals[0]));
-      expect(binauralPrograms.length).toBeGreaterThan(0);
-      expect(binauralPrograms.some(e => e.vals[1] === secondaryProg)).toBe(true);
-    });
-
-    it('should update reflection instruments when beat shift occurs', () => {
-      const initialBeatCount = globalThis.beatCount;
-      stage.setBinaural();
-      expect(globalThis.beatCount).toBe(0); // Should reset
-      const reflectionPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflectionBinaural.includes(e.vals[0]));
-      expect(reflectionPrograms.length).toBeGreaterThan(0);
-    });
-  });
 });
-

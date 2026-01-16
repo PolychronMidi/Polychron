@@ -34,37 +34,352 @@ require('./ProgressionGenerator');
 // MelodicDevelopmentComposer
 // AdvancedVoiceLeadingComposer
 
-// Stub composers for missing implementations - these just extend ScaleComposer
+// Chord-based composers
 class ChordComposer extends ScaleComposer {
   constructor(progression = ['C']) {
-    super('major', progression[0] || 'C');
-    this.progression = progression;
+    // Normalize chord names (C -> Cmajor)
+    const normalizedProgression = progression.map(chord => {
+      // If it's just a note name (single letter possibly with sharp/flat), make it a major chord
+      if (/^[A-G][b#]?$/.test(chord)) {
+        return chord + 'major';
+      }
+      return chord;
+    });
+
+    // Filter invalid chords
+    const validProgression = normalizedProgression.filter(chord => {
+      try {
+        const chordData = t.Chord.get(chord);
+        if (!chordData || !chordData.notes || chordData.notes.length === 0) {
+          console.warn(`Invalid chord: ${chord}`);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.warn(`Invalid chord: ${chord}`);
+        return false;
+      }
+    });
+
+    if (validProgression.length === 0) {
+      console.warn('No valid chords in progression');
+      super('major', 'C');
+      this.progression = undefined;
+      this.currentChordIndex = 0;
+      return;
+    }
+
+    // Get the root of the first chord
+    const firstChordData = t.Chord.get(validProgression[0]);
+    const firstRoot = firstChordData.tonic || 'C';
+    super('major', firstRoot);
+
+    // Set up chord-specific properties
+    this.progression = validProgression;
+    this.currentChordIndex = 0;
+    this.direction = 'R';
+
+    // Set initial notes from first chord
+    this.setChordProgression(validProgression, 'R');
+  }
+
+  setChordProgression(progression, direction = 'R') {
+    if (!progression || progression.length === 0) {
+      this.notes = ['C', 'E', 'G'];
+      return;
+    }
+
+    // Normalize chord names - only if needed
+    const normalizedProgression = Array.isArray(progression) ? progression.map(chord => {
+      if (/^[A-G][b#]?$/.test(chord)) {
+        return chord + 'major';
+      }
+      return chord;
+    }) : [progression];
+
+    this.progression = normalizedProgression;
+    this.direction = direction;
+
+    // Set initial chord
+    const currentChord = this.progression[this.currentChordIndex];
+    const chordData = t.Chord.get(currentChord);
+    this.notes = chordData.notes;
+
+    // Move to next chord based on direction
+    if (direction === 'R') {
+      this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    } else if (direction === 'L') {
+      this.currentChordIndex = (this.currentChordIndex - 1 + this.progression.length) % this.progression.length;
+    } else if (direction === 'E') {
+      this.currentChordIndex = ri(this.progression.length - 1);
+    } else if (direction === 'J') {
+      const jump = ri(-2, 2);
+      this.currentChordIndex = (this.currentChordIndex + jump + this.progression.length) % this.progression.length;
+    }
+  }
+
+  // Keep noteSet for backwards compatibility, delegate to setChordProgression
+  noteSet(progression, direction = 'R') {
+    // Check if being called from parent ScaleComposer constructor
+    if (typeof progression === 'string') {
+      // This is being called from ScaleComposer.constructor with (scaleName, root)
+      // Let ScaleComposer handle it
+      super.noteSet(progression, direction);
+      return;
+    }
+    // Otherwise use chord-specific logic
+    this.setChordProgression(progression, direction);
+  }
+
+  x() {
+    if (!this.progression || this.progression.length === 0) {
+      return this.getNotes();
+    }
+    const currentChord = this.progression[this.currentChordIndex];
+    const chordData = t.Chord.get(currentChord);
+    this.notes = chordData.notes;
+
+    // Move to next chord
+    if (this.direction === 'R') {
+      this.currentChordIndex = (this.currentChordIndex + 1) % this.progression.length;
+    } else if (this.direction === 'L') {
+      this.currentChordIndex = (this.currentChordIndex - 1 + this.progression.length) % this.progression.length;
+    } else if (this.direction === 'E') {
+      this.currentChordIndex = ri(this.progression.length - 1);
+    } else if (this.direction === 'J') {
+      const jump = ri(-2, 2);
+      this.currentChordIndex = (this.currentChordIndex + jump + this.progression.length) % this.progression.length;
+    }
+
+    return this.getNotes();
+  }
+}
+
+class RandomChordComposer extends ChordComposer {
+  constructor() {
+    const len = ri(2, 5);
+    const progression = [];
+    for (let i = 0; i < len; i++) {
+      progression.push(allChords[ri(allChords.length - 1)]);
+    }
+    super(progression);
+  }
+
+  regenerateProgression() {
+    const len = ri(2, 5);
+    const progression = [];
+    for (let i = 0; i < len; i++) {
+      progression.push(allChords[ri(allChords.length - 1)]);
+    }
+    this.setChordProgression(progression, 'R');
+  }
+
+  x() {
+    this.regenerateProgression();
+    return ChordComposer.prototype.x.call(this);
   }
 }
 
 class ModeComposer extends ScaleComposer {
   constructor(name = 'ionian', root = 'C') {
-    super(name, root);
+    super('major', root);
+    this.noteSet(name, root);
+  }
+
+  noteSet(modeName, root) {
+    this.root = root;
+    this.mode = t.Mode.get(`${root} ${modeName}`);
+    this.notes = this.mode.notes || this.mode.intervals || [];
+    // If mode.notes is still empty, fall back to scale
+    if (!this.notes || this.notes.length === 0) {
+      const scale = t.Scale.get(`${root} ${modeName}`);
+      this.notes = scale.notes || [];
+    }
+  }
+
+  x() {
+    return this.getNotes();
+  }
+}
+
+class RandomModeComposer extends ModeComposer {
+  constructor() {
+    super('ionian', 'C');
+    this.noteSet();
+  }
+
+  noteSet() {
+    const randomMode = allModes[ri(allModes.length - 1)];
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
+    super.noteSet(randomMode, randomRoot);
+  }
+
+  x() {
+    this.noteSet();
+    return super.x();
   }
 }
 
 class PentatonicComposer extends ScaleComposer {
   constructor(root = 'C', scaleType = 'major') {
-    super(scaleType === 'major' ? 'major pentatonic' : 'minor pentatonic', root);
+    const scaleName = scaleType === 'major' ? 'major pentatonic' : 'minor pentatonic';
+    super(scaleName, root);
+    this.type = scaleType;
+  }
+
+  x() {
+    return this.getNotes();
+  }
+}
+
+class RandomPentatonicComposer extends PentatonicComposer {
+  constructor() {
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
+    const randomType = ['major', 'minor'][ri(1)];
+    super(randomRoot, randomType);
+  }
+
+  noteSet() {
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
+    const randomType = ['major', 'minor'][ri(1)];
+    this.root = randomRoot;
+    this.type = randomType;
+    const scaleName = randomType === 'major' ? 'major pentatonic' : 'minor pentatonic';
+    super.noteSet(scaleName, randomRoot);
+  }
+
+  x() {
+    this.noteSet();
+    return super.x();
   }
 }
 
 class TensionReleaseComposer extends ScaleComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
     super(quality, key);
-    this.tensionCurve = tensionCurve;
+    this.key = key;
+    this.quality = quality;
+    this.tensionCurve = clamp(tensionCurve, 0, 1);
+    this.measureCount = 0;
+  }
+
+  calculateTension(chordOrFunction) {
+    // Map chord names to functions based on scale degree
+    let chordFunction = chordOrFunction;
+
+    // If it's a chord name, try to determine its function
+    if (chordOrFunction && typeof chordOrFunction === 'string') {
+      const chordData = t.Chord.get(chordOrFunction);
+      if (chordData && chordData.tonic) {
+        const root = chordData.tonic;
+        const keyScale = t.Scale.get(`${this.key} ${this.quality}`);
+        const degree = keyScale.notes.indexOf(root);
+
+        // Map scale degree to function
+        const degreeToFunction = {
+          0: 'tonic',       // I
+          1: 'supertonic',  // ii
+          2: 'mediant',     // iii
+          3: 'subdominant', // IV
+          4: 'dominant',    // V
+          5: 'submediant',  // vi
+          6: 'leadingTone'  // vii
+        };
+        chordFunction = degreeToFunction[degree] || chordOrFunction;
+      }
+    }
+
+    const tensionMap = {
+      'tonic': 0,
+      'subdominant': 0.5,
+      'dominant': 0.8,
+      'supertonic': 0.6,
+      'mediant': 0.3,
+      'submediant': 0.4,
+      'leadingTone': 0.9
+    };
+    return tensionMap[chordFunction] || 0.5;
+  }
+
+  selectChordByTension(targetTension) {
+    // Simplified chord selection based on tension - returns chord notes array
+    const chordFunctions = ['tonic', 'subdominant', 'dominant'];
+    const tensions = chordFunctions.map(f => this.calculateTension(f));
+    let bestIdx = 0;
+    let minDiff = Math.abs(tensions[0] - targetTension);
+    for (let i = 1; i < tensions.length; i++) {
+      const diff = Math.abs(tensions[i] - targetTension);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestIdx = i;
+      }
+    }
+    // Return the notes for the selected chord function
+    const selectedFunction = chordFunctions[bestIdx];
+    // Get scale degrees for the function
+    const functionDegrees = {
+      'tonic': [0, 2, 4],      // I chord (1-3-5)
+      'subdominant': [3, 5, 0], // IV chord (4-6-1)
+      'dominant': [4, 6, 1]     // V chord (5-7-2)
+    };
+    const degrees = functionDegrees[selectedFunction];
+    return degrees.map(d => this.notes[d % this.notes.length]);
+  }
+
+  getNotes(octaveRange = null) {
+    const targetTension = this.tensionCurve;
+    const chordFunction = this.selectChordByTension(targetTension);
+    this.measureCount++;
+    return super.getNotes(octaveRange);
+  }
+
+  x() {
+    return this.getNotes();
   }
 }
 
 class ModalInterchangeComposer extends ScaleComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
     super(primaryMode, key);
-    this.borrowProbability = borrowProbability;
+    this.key = key;
+    this.primaryMode = primaryMode;
+    this.borrowProbability = clamp(borrowProbability, 0, 1);
+    this.borrowModes = this.getBorrowModes(primaryMode);
+  }
+
+  getBorrowModes(primaryMode) {
+    if (primaryMode === 'major') {
+      return ['minor', 'dorian', 'phrygian', 'mixolydian'];
+    } else {
+      return ['major', 'dorian', 'lydian', 'mixolydian'];
+    }
+  }
+
+  borrowChord() {
+    if (rf() < this.borrowProbability && this.borrowModes.length > 0) {
+      const borrowMode = this.borrowModes[ri(this.borrowModes.length - 1)];
+      const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
+      // Return a string representation of the borrowed chord
+      const chordRoot = borrowScale.notes[ri(borrowScale.notes.length - 1)];
+      return `${chordRoot}major`;
+    }
+    return null;
+  }
+
+  getNotes(octaveRange = null) {
+    const borrowedNotes = this.borrowChord();
+    if (borrowedNotes) {
+      const originalNotes = this.notes;
+      this.notes = borrowedNotes;
+      const result = super.getNotes(octaveRange);
+      this.notes = originalNotes;
+      return result;
+    }
+    return super.getNotes(octaveRange);
+  }
+
+  x() {
+    return this.getNotes();
   }
 }
 
@@ -78,22 +393,94 @@ class HarmonicRhythmComposer extends ScaleComposer {
 
 class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', developmentIntensity = 0.5) {
-    super(name, root);
-    this.developmentIntensity = developmentIntensity;
+    const scaleName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+    const rootNote = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+    super(scaleName, rootNote);
+    this.developmentIntensity = clamp(developmentIntensity, 0, 1);
+    this.measureCount = 0;
+    this.developmentPhase = 'exposition';
+    this.responseMode = false;
+  }
+
+  getNotes(octaveRange = null) {
+    const baseNotes = super.getNotes(octaveRange);
+    if (baseNotes.length === 0) {
+      return [];
+    }
+
+    this.measureCount++;
+
+    // Cycle through development phases
+    const phaseCount = Math.floor(this.measureCount / 4);
+    const phases = ['exposition', 'development', 'recapitulation'];
+    this.developmentPhase = phases[phaseCount % phases.length];
+
+    return baseNotes;
+  }
+
+  x() {
+    return this.getNotes();
   }
 }
 
 class AdvancedVoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7) {
-    super(name, root);
-    this.commonToneWeight = commonToneWeight;
+    const scaleName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+    const rootNote = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+    super(scaleName, rootNote);
+    this.commonToneWeight = clamp(commonToneWeight, 0, 1);
+    this.previousNotes = [];
+    this.voiceBalanceThreshold = 3;
+    this.contraryMotionPreference = 0.4;
+  }
+
+  getNotes(octaveRange = null) {
+    const baseNotes = super.getNotes(octaveRange);
+
+    if (!baseNotes || baseNotes === null) {
+      return baseNotes;
+    }
+
+    if (baseNotes.length === 0) {
+      return baseNotes;
+    }
+
+    if (this.previousNotes.length === 0) {
+      this.previousNotes = baseNotes;
+      return baseNotes;
+    }
+
+    // Apply voice leading optimization
+    const optimizedNotes = baseNotes.map((noteObj, idx) => {
+      if (idx < this.previousNotes.length && rf() < this.commonToneWeight) {
+        // Try to maintain common tones
+        const prevNote = this.previousNotes[idx].note;
+        const chromaPrev = prevNote % 12;
+        const chromaCurrent = noteObj.note % 12;
+
+        if (chromaPrev === chromaCurrent) {
+          return { note: prevNote };
+        }
+      }
+      return noteObj;
+    });
+
+    this.previousNotes = optimizedNotes;
+    return optimizedNotes;
+  }
+
+  x() {
+    return this.getNotes();
   }
 }
 
-// Export stub composers to global scope
+// Export composers to global scope
 globalThis.ChordComposer = ChordComposer;
+globalThis.RandomChordComposer = RandomChordComposer;
 globalThis.ModeComposer = ModeComposer;
+globalThis.RandomModeComposer = RandomModeComposer;
 globalThis.PentatonicComposer = PentatonicComposer;
+globalThis.RandomPentatonicComposer = RandomPentatonicComposer;
 globalThis.TensionReleaseComposer = TensionReleaseComposer;
 globalThis.ModalInterchangeComposer = ModalInterchangeComposer;
 globalThis.HarmonicRhythmComposer = HarmonicRhythmComposer;

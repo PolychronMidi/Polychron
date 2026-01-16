@@ -52,18 +52,12 @@ class Stage {
     const bassProg = getMidiValue('program', bassInstrument);
     const bass2Prog = getMidiValue('program', bassInstrument2);
 
-    // Source channels with primary instrument
     p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
     type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})),
+    ...reflection.map(ch=>({type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})),
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryProg])]},
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryProg])]}]));
 
-    // Reflection channels with secondary instrument
-    p(c,...['control_c','program_c'].flatMap(type=>[ ...reflection.map(ch=>({
-    type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]}))
-    ]));
-
-    // Bass channels with bass instruments (dual setup)
     p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
       type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})),
       { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassProg])]}]));
@@ -90,13 +84,11 @@ class Stage {
    */
   setBinaural() {
     if (beatCount===beatsUntilBinauralShift || this.firstLoop<1 ) {
-    const secondaryProg = getMidiValue('program', secondaryInstrument);
     beatCount=0; flipBin=!flipBin; allNotesOff(beatStart);
     beatsUntilBinauralShift=ri(numerator,numerator*2*bpmRatio3);
     binauralFreqOffset=rl(binauralFreqOffset,-1,1,BINAURAL.min,BINAURAL.max);
     p(c,...binauralL.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===lCH1 || ch===lCH3 || ch===lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)]})),
     ...binauralR.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===rCH1 || ch===rCH3 || ch===rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)]})),
-    ...reflectionBinaural.map(ch=>({tick:beatStart,type:'program_c',vals:[ch,secondaryProg]})),
     );
     // flipBin (flip binaural) volume transition
     const startTick=beatStart - tpSec/4; const endTick=beatStart + tpSec/4;
@@ -261,8 +253,8 @@ class Stage {
     this.crossModulateRhythms();
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
-    if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
-  if (composer) motifNotes.forEach(({ note })=>{
+    if((this.crossModulation+this.lastCrossMod)/rf(1.4,2.6)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
+  motifNotes.forEach(({ note })=>{
     // Play source channels
     source.filter(sourceCH=>
       flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
@@ -322,7 +314,7 @@ class Stage {
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if(true){
-  if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
+  motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
     ).map(sourceCH=>{
 

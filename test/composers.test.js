@@ -14,6 +14,64 @@ function setupGlobalState() {
 
 // Use real composer classes from Composes.js
 
+describe('Empty Notes Handling - CRITICAL', () => {
+  beforeEach(() => {
+    setupGlobalState();
+  });
+
+  it('should handle empty array from forEach without crashing', () => {
+    // Test the exact pattern from stage.js
+    const emptyArray = [];
+
+    let notesProcessed = 0;
+    expect(() => {
+      emptyArray.forEach(({ note }) => {
+        notesProcessed++;
+      });
+    }).not.toThrow();
+
+    expect(notesProcessed).toBe(0);
+  });
+
+  it('should handle null composer gracefully', () => {
+    const composer = null;
+    const noteObjects = composer ? composer.getNotes() : [];
+
+    expect(Array.isArray(noteObjects)).toBe(true);
+    expect(noteObjects.length).toBe(0);
+
+    // Verify conditional forEach pattern works correctly
+    expect(() => {
+      noteObjects.forEach(({ note }) => {
+        expect(note).toBeDefined();
+      });
+    }).not.toThrow();
+  });
+
+  it('should handle undefined composer gracefully', () => {
+    const composer = undefined;
+    const noteObjects = composer ? composer.getNotes() : [];
+
+    expect(Array.isArray(noteObjects)).toBe(true);
+    expect(noteObjects.length).toBe(0);
+  });
+
+  it('should handle empty motifNotes in playback scenario', () => {
+    // Simulate the exact pattern from stage.js playNotes()
+    const noteObjects = []; // Empty from composer
+    const activeMotif = null;
+    const motifNotes = activeMotif ? [] : noteObjects;
+
+    let notesPlayed = 0;
+    motifNotes.forEach(({ note }) => {
+      notesPlayed++;
+    });
+
+    // Should complete without error even with 0 notes
+    expect(notesPlayed).toBe(0);
+  });
+});
+
 describe('MeasureComposer', () => {
   beforeEach(() => {
     setupGlobalState();

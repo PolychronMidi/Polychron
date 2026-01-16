@@ -117,3 +117,6 @@ class ProgressionGenerator {
     return this.generate(randomType);
   }
 }
+
+// Export to global scope
+globalThis.ProgressionGenerator = ProgressionGenerator;
