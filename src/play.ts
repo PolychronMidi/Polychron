@@ -11,7 +11,7 @@ import './composers';   // Composer classes
 import './motifs';      // Motif generation
 import './rhythm';      // Rhythm generation
 import './fxManager';   // FX processing
-import './stage.js';    // Audio processing (original JS file)
+import './stage';       // Audio processing
 import './structure';   // Section structure
 
 // Declare global dependencies

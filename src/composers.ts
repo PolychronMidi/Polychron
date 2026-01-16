@@ -1,9 +1,8 @@
-// composers.ts - Stub that re-exports from composers/index.js
-// Full TypeScript migration of composers is deferred due to file size (1321 lines)
+// composers.ts - Stub that re-exports from composers/index.ts
 // This stub allows downstream modules like play.ts and stage.ts to import from .ts
 
-// Import the JavaScript module from composers directory
-import './composers/index.js';
+// Import the TypeScript module from composers directory
+import './composers/index';
 
 // Re-export all composers classes and functions from global scope
 export const MeasureComposer = (globalThis as any).MeasureComposer;
