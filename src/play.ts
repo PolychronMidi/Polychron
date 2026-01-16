@@ -1,0 +1,181 @@
+// play.ts - Main composition engine orchestrating section, phrase, measure hierarchy.
+// minimalist comments, details at: play.md
+
+// Import all dependencies in correct order
+import './sheet';       // Constants and configuration
+import './venue';       // Music theory (scales, chords)
+import './backstage';   // Utilities and global state
+import './writer';      // Output functions
+import './time';        // Timing functions
+import './composers';   // Composer classes
+import './motifs';      // Motif generation
+import './rhythm';      // Rhythm generation
+import './fxManager';   // FX processing
+import './stage.js';    // Audio processing (original JS file)
+import './structure';   // Section structure
+
+// Declare global dependencies
+declare const BPM: number;
+declare const SECTIONS: { min: number; max: number };
+declare const COMPOSERS: any[];
+declare const Motif: any;
+declare const m: any;
+declare const p: any;
+declare const rf: (min?: number, max?: number) => number;
+declare const ra: <T>(arr: T[]) => T;
+declare const ri: (min: number, max: number) => number;
+declare const LM: any;
+declare const clampMotifNote: (note: number) => number;
+
+// Global mutable state for composition hierarchy
+declare let composers: any[];
+declare let BASE_BPM: number;
+declare let sectionIndex: number;
+declare let totalSections: number;
+declare let phraseIndex: number;
+declare let phrasesPerSection: number;
+declare let currentSectionType: string;
+declare let currentSectionDynamics: string;
+declare let measureIndex: number;
+declare let measuresPerPhrase: number;
+declare let beatIndex: number;
+declare let numerator: number;
+declare let denominator: number;
+declare let divsPerBeat: number;
+declare let divIndex: number;
+declare let subdivIndex: number;
+declare let subdivsPerDiv: number;
+declare let subsubdivIndex: number;
+declare let subsubsPerSub: number;
+declare let beatCount: number;
+declare let measureCount: number;
+declare let flipBin: boolean;
+declare let flipBinT3: number;
+declare let flipBinF3: number;
+declare let stutterPanCHs: number[];
+declare let activeMotif: any;
+declare let composer: any;
+
+// Initialize the composition engine
+const initializePlayEngine = () => {
+  const g = globalThis as any;
+
+  const BASE_BPM = g.BPM;
+
+  // Initialize composers from configuration if not already done
+  if (!g.composers || g.composers.length === 0) {
+    g.composers = g.COMPOSERS.map((config: any) => g.ComposerFactory.create(config));
+  }
+
+  const { state: primary, buffer: c1 } = g.LM.register('primary', 'c1', {}, () => g.stage.setTuningAndInstruments());
+  const { state: poly, buffer: c2 } = g.LM.register('poly', 'c2', {}, () => g.stage.setTuningAndInstruments());
+
+  g.totalSections = g.ri(g.SECTIONS.min, g.SECTIONS.max);
+
+  for (g.sectionIndex = 0; g.sectionIndex < g.totalSections; g.sectionIndex++) {
+    const sectionProfile = g.resolveSectionProfile();
+    g.phrasesPerSection = sectionProfile.phrasesPerSection;
+    g.currentSectionType = sectionProfile.type;
+    g.currentSectionDynamics = sectionProfile.dynamics;
+    g.BPM = g.m.max(1, g.m.round(BASE_BPM * sectionProfile.bpmScale));
+    g.activeMotif = sectionProfile.motif
+      ? new g.Motif(sectionProfile.motif.map((offset: any) => ({ note: g.clampMotifNote(60 + offset) })))
+      : null;
+
+    for (g.phraseIndex = 0; g.phraseIndex < g.phrasesPerSection; g.phraseIndex++) {
+      g.composer = g.ra(g.composers);
+      [g.numerator, g.denominator] = g.composer.getMeter();
+      g.getMidiTiming();
+      g.getPolyrhythm();
+
+      g.LM.activate('primary', false);
+      g.setUnitTiming('phrase');
+      for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
+        g.measureCount++;
+        g.setUnitTiming('measure');
+
+        for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
+          g.beatCount++;
+          g.setUnitTiming('beat');
+          g.stage.setOtherInstruments();
+          g.stage.setBinaural();
+          g.stage.setBalanceAndFX();
+          g.playDrums();
+          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3);
+          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3);
+          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3) : g.stage.stutterPan(g.stutterPanCHs);
+
+          for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
+            g.setUnitTiming('division');
+
+            for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
+              g.setUnitTiming('subdivision');
+              g.stage.playNotes();
+            }
+
+            for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
+              g.setUnitTiming('subsubdivision');
+              g.stage.playNotes2();
+            }
+          }
+        }
+      }
+
+      g.LM.advance('primary', 'phrase');
+
+      g.LM.activate('poly', true);
+      g.getMidiTiming();
+      g.setUnitTiming('phrase');
+      for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
+        g.setUnitTiming('measure');
+
+        for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
+          g.setUnitTiming('beat');
+          g.stage.setOtherInstruments();
+          g.stage.setBinaural();
+          g.stage.setBalanceAndFX();
+          g.playDrums2();
+          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3);
+          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3);
+          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3) : g.stage.stutterPan(g.stutterPanCHs);
+
+          for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
+            g.setUnitTiming('division');
+
+            for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
+              g.setUnitTiming('subdivision');
+              g.stage.playNotes();
+            }
+
+            for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
+              g.setUnitTiming('subsubdivision');
+              g.stage.playNotes2();
+            }
+          }
+        }
+      }
+
+      g.LM.advance('poly', 'phrase');
+    }
+
+    g.LM.advance('primary', 'section');
+    g.logUnit('section');
+
+    g.LM.advance('poly', 'section');
+    g.logUnit('section');
+
+    g.BPM = BASE_BPM;
+    g.activeMotif = null;
+  }
+
+  g.grandFinale();
+};
+
+// Export initialization function
+export { initializePlayEngine };
+
+// Also expose to global for backward compatibility
+(globalThis as any).initializePlayEngine = initializePlayEngine;
+
+// Execute immediately when module is loaded
+initializePlayEngine();

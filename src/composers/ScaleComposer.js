@@ -46,3 +46,8 @@ class RandomScaleComposer extends ScaleComposer {
   /** @returns {{note: number}[]} Random scale notes */
   x() { this.noteSet(); return super.x(); }
 }
+
+
+// Export to global scope
+globalThis.ScaleComposer = ScaleComposer;
+globalThis.RandomScaleComposer = RandomScaleComposer;

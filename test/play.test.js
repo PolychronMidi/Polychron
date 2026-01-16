@@ -480,4 +480,55 @@ describe('play.js - Orchestrator Module', () => {
       expect(Array.isArray(notes2)).toBe(true);
     });
   });
+
+  describe('play module execution', () => {
+    it('should execute immediately when required', () => {
+      // Verify that play.js executed by checking if grandFinale was called
+      // or if output files exist
+      const fs = require('fs');
+      const path = require('path');
+
+      const output1Path = path.resolve(process.cwd(), 'output/output1.csv');
+      const output2Path = path.resolve(process.cwd(), 'output/output2.csv');
+
+      // At least one output file should exist after play.js loads
+      const hasOutput = fs.existsSync(output1Path) || fs.existsSync(output2Path);
+      expect(hasOutput).toBe(true);
+    });
+
+    it('should generate valid CSV output without NaN values', () => {
+      const fs = require('fs');
+      const path = require('path');
+
+      const csvPath = path.resolve(process.cwd(), 'output/output1.csv');
+
+      if (fs.existsSync(csvPath)) {
+        const csvContent = fs.readFileSync(csvPath, 'utf-8');
+
+        // Check for NaN values in the CSV
+        expect(csvContent).not.toContain('NaN');
+
+        // Verify CSV has valid structure
+        const lines = csvContent.split('\n').filter(line => line.trim());
+        expect(lines.length).toBeGreaterThan(0);
+
+        // Check that timing values (second column) are valid numbers
+        const dataLines = lines.slice(1); // Skip header
+        for (const line of dataLines) {
+          const parts = line.split(',');
+          if (parts.length > 1) {
+            const timing = parts[1];
+            const num = parseFloat(timing);
+            expect(isNaN(num)).toBe(false);
+            expect(num).toBeGreaterThanOrEqual(0);
+          }
+        }
+      }
+    });
+
+    it('should have initializePlayEngine function available', () => {
+      expect(globalThis.initializePlayEngine).toBeDefined();
+      expect(typeof globalThis.initializePlayEngine).toBe('function');
+    });
+  });
 });

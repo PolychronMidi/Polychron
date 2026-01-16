@@ -2,7 +2,7 @@
 // fxManager.ts - Audio effects manager for stutter, pan, and FX parameter automation.
 // Encapsulates fade, pan, and FX stutter effects with channel state tracking.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FxManager = void 0;
+exports.fxManager = exports.FxManager = void 0;
 /**
  * FxManager class - Manages stutter effects (fade, pan, FX parameter changes) and channel state.
  * Tracks recently-used channels to avoid repetition; applies rapid automation to MIDI events.
@@ -144,11 +144,15 @@ class FxManager {
     }
 }
 exports.FxManager = FxManager;
-// Export to global scope for backward compatibility
+// Create and export instance to global scope
+const fxManager = new FxManager();
+exports.fxManager = fxManager;
 globalThis.FxManager = FxManager;
+globalThis.fxManager = fxManager;
 // Export for tests
 if (typeof globalThis !== 'undefined') {
     globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
     globalThis.__POLYCHRON_TEST__.FxManager = FxManager;
+    globalThis.__POLYCHRON_TEST__.fxManager = fxManager;
 }
 //# sourceMappingURL=fxManager.js.map

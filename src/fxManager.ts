@@ -15,7 +15,7 @@ declare let c: any;
  * FxManager class - Manages stutter effects (fade, pan, FX parameter changes) and channel state.
  * Tracks recently-used channels to avoid repetition; applies rapid automation to MIDI events.
  */
-export class FxManager {
+class FxManager {
   private lastUsedCHs: Set<number>;
   private lastUsedCHs2: Set<number>;
 
@@ -169,11 +169,16 @@ export class FxManager {
   }
 }
 
-// Export to global scope for backward compatibility
+// Create and export instance to global scope
+const fxManager = new FxManager();
 (globalThis as any).FxManager = FxManager;
+(globalThis as any).fxManager = fxManager;
 
 // Export for tests
 if (typeof globalThis !== 'undefined') {
   (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
   (globalThis as any).__POLYCHRON_TEST__.FxManager = FxManager;
+  (globalThis as any).__POLYCHRON_TEST__.fxManager = fxManager;
 }
+
+export { FxManager, fxManager };

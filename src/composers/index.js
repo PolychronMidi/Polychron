@@ -2,6 +2,15 @@
 // composers/index.js - Modular composer system
 // This file organizes composer classes into logical modules while maintaining backward compatibility
 
+// Load dependencies
+require('../backstage');  // Load global utilities (m, rf, ri, ra, etc.)
+require('../venue');      // Load music theory (allScales, allNotes, allModes, allChords)
+
+// Load composer modules (only the ones that exist)
+require('./MeasureComposer');
+require('./ScaleComposer');
+require('./ProgressionGenerator');
+
 // Base class
 // MeasureComposer is at: ./MeasureComposer.js
 
@@ -24,6 +33,72 @@
 // HarmonicRhythmComposer
 // MelodicDevelopmentComposer
 // AdvancedVoiceLeadingComposer
+
+// Stub composers for missing implementations - these just extend ScaleComposer
+class ChordComposer extends ScaleComposer {
+  constructor(progression = ['C']) {
+    super('major', progression[0] || 'C');
+    this.progression = progression;
+  }
+}
+
+class ModeComposer extends ScaleComposer {
+  constructor(name = 'ionian', root = 'C') {
+    super(name, root);
+  }
+}
+
+class PentatonicComposer extends ScaleComposer {
+  constructor(root = 'C', scaleType = 'major') {
+    super(scaleType === 'major' ? 'major pentatonic' : 'minor pentatonic', root);
+  }
+}
+
+class TensionReleaseComposer extends ScaleComposer {
+  constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
+    super(quality, key);
+    this.tensionCurve = tensionCurve;
+  }
+}
+
+class ModalInterchangeComposer extends ScaleComposer {
+  constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
+    super(primaryMode, key);
+    this.borrowProbability = borrowProbability;
+  }
+}
+
+class HarmonicRhythmComposer extends ScaleComposer {
+  constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {
+    super(quality, key);
+    this.progression = progression;
+    this.measuresPerChord = measuresPerChord;
+  }
+}
+
+class MelodicDevelopmentComposer extends ScaleComposer {
+  constructor(name = 'major', root = 'C', developmentIntensity = 0.5) {
+    super(name, root);
+    this.developmentIntensity = developmentIntensity;
+  }
+}
+
+class AdvancedVoiceLeadingComposer extends ScaleComposer {
+  constructor(name = 'major', root = 'C', commonToneWeight = 0.7) {
+    super(name, root);
+    this.commonToneWeight = commonToneWeight;
+  }
+}
+
+// Export stub composers to global scope
+globalThis.ChordComposer = ChordComposer;
+globalThis.ModeComposer = ModeComposer;
+globalThis.PentatonicComposer = PentatonicComposer;
+globalThis.TensionReleaseComposer = TensionReleaseComposer;
+globalThis.ModalInterchangeComposer = ModalInterchangeComposer;
+globalThis.HarmonicRhythmComposer = HarmonicRhythmComposer;
+globalThis.MelodicDevelopmentComposer = MelodicDevelopmentComposer;
+globalThis.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
 
 // ComposerFactory creates instances
 
@@ -88,3 +163,7 @@ class ComposerFactory {
  * @type {MeasureComposer[]}
  */
 let composers = [];  // Lazy-loaded in play.js when all systems are ready
+
+// Export to global scope for backward compatibility
+globalThis.ComposerFactory = ComposerFactory;
+globalThis.composers = composers;

@@ -264,7 +264,7 @@ const ra = (v: any): any => {
 const randomInRangeOrArray = ra;
 
 // Timing and counter variables
-let measureCount = 0, spMeasure = 0, subsubdivStart = 0, subdivStart = 0, beatStart = 0, divStart = 0, sectionStart = 0, sectionStartTime = 0, tpSubsubdiv = 0, tpSection = 0, spSection = 0, finalTick = 0, bestMatch = 0, polyMeterRatio = 0, polyNumerator = 0, tpSec = 0, finalTime = 0, endTime = 0, phraseStart = 0, tpPhrase1 = 0, tpPhrase2 = 0, phraseStartTime = 0, spPhrase = 0, measuresPerPhrase1 = 0, measuresPerPhrase2 = 0, subdivsPerMinute = 0, subsubdivsPerMinute = 0, numerator = 0, meterRatio = 0, divsPerBeat = 0, subdivsPerBeat = 0, subdivsPerDiv = 0, subdivsPerSub = 0, measureStart = 0, measureStartTime = 0, beatsUntilBinauralShift = 0, beatCount = 0, beatsOn = 0, beatsOff = 0, divsOn = 0, divsOff = 0, subdivsOn = 0, subdivsOff = 0, noteCount = 0, beatRhythm = 0, divRhythm = 0, subdivRhythm = 0, subsubdivRhythm = 0, subsubsPerSub = 0, balOffset = 0, sideBias = 0, firstLoop = 0, lastCrossMod = 0, bpmRatio = 0, sectionIndex = 0, phraseIndex = 0, phrasesPerSection = 0, totalSections = 0;
+let measureCount = 0, spMeasure = 0, subsubdivStart = 0, subdivStart = 0, beatStart = 0, divStart = 0, sectionStart = 0, sectionStartTime = 0, tpSubsubdiv = 0, tpSection = 0, spSection = 0, finalTick = 0, bestMatch = 0, polyMeterRatio = 0, polyNumerator = 0, tpSec = 0, finalTime = 0, endTime = 0, phraseStart = 0, tpPhrase1 = 0, tpPhrase2 = 0, phraseStartTime = 0, spPhrase = 0, measuresPerPhrase1 = 0, measuresPerPhrase2 = 0, subdivsPerMinute = 0, subsubdivsPerMinute = 0, numerator = 0, meterRatio = 0, divsPerBeat = 0, subdivsPerBeat = 0, subdivsPerDiv = 0, subdivsPerSub = 0, measureStart = 0, measureStartTime = 0, beatsUntilBinauralShift = 0, beatCount = 0, beatsOn = 0, beatsOff = 0, divsOn = 0, divsOff = 0, subdivsOn = 0, subdivsOff = 0, noteCount = 0, beatRhythm = 0, divRhythm = 0, subdivRhythm = 0, subsubdivRhythm = 0, subsubsPerSub = 0, balOffset = 0, sideBias = 0, firstLoop = 0, lastCrossMod = 0, bpmRatio = 1, bpmRatio2 = 1, bpmRatio3 = 1, sectionIndex = 0, phraseIndex = 0, phrasesPerSection = 0, totalSections = 0;
 
 /**
  * Cross-modulation factor for polyrhythmic interference.
@@ -478,3 +478,40 @@ declare global {
 (globalThis as any).allCHs = allCHs;
 (globalThis as any).binauralL = binauralL;
 (globalThis as any).binauralR = binauralR;
+(globalThis as any).reflectionBinaural = reflectionBinaural;
+(globalThis as any).bass = bass;
+(globalThis as any).bassBinaural = bassBinaural;
+(globalThis as any).source = source;
+(globalThis as any).source2 = source2;
+(globalThis as any).reflection = reflection;
+(globalThis as any).reflect = reflect;
+(globalThis as any).reflect2 = reflect2;
+(globalThis as any).flipBinF = flipBinF;
+(globalThis as any).flipBinT = flipBinT;
+(globalThis as any).flipBinF2 = flipBinF2;
+(globalThis as any).flipBinT2 = flipBinT2;
+(globalThis as any).flipBinF3 = flipBinF3;
+(globalThis as any).flipBinT3 = flipBinT3;
+(globalThis as any).stutterFadeCHs = stutterFadeCHs;
+(globalThis as any).allCHs = allCHs;
+(globalThis as any).stutterPanCHs = stutterPanCHs;
+(globalThis as any).FX = FX;
+
+// Export critical timing variables needed by composers
+(globalThis as any).bpmRatio = bpmRatio;
+(globalThis as any).bpmRatio2 = bpmRatio2;
+(globalThis as any).bpmRatio3 = bpmRatio3;
+(globalThis as any).measureCount = measureCount;
+(globalThis as any).numerator = numerator;
+(globalThis as any).beatCount = beatCount;
+(globalThis as any).beatsUntilBinauralShift = beatsUntilBinauralShift;
+(globalThis as any).beatRhythm = beatRhythm;
+(globalThis as any).divRhythm = divRhythm;
+(globalThis as any).subdivRhythm = subdivRhythm;
+(globalThis as any).subsubdivRhythm = subsubdivRhythm;
+(globalThis as any).beatsOn = beatsOn;
+(globalThis as any).beatsOff = beatsOff;
+(globalThis as any).divsOn = divsOn;
+(globalThis as any).divsOff = divsOff;
+(globalThis as any).subdivsOn = subdivsOn;
+(globalThis as any).subdivsOff = subdivsOff;

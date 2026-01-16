@@ -2,7 +2,7 @@
  * FxManager class - Manages stutter effects (fade, pan, FX parameter changes) and channel state.
  * Tracks recently-used channels to avoid repetition; applies rapid automation to MIDI events.
  */
-export declare class FxManager {
+declare class FxManager {
     private lastUsedCHs;
     private lastUsedCHs2;
     constructor();
@@ -23,4 +23,6 @@ export declare class FxManager {
      */
     resetChannelTracking(): void;
 }
+declare const fxManager: FxManager;
+export { FxManager, fxManager };
 //# sourceMappingURL=fxManager.d.ts.map
