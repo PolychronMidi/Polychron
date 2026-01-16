@@ -51,4 +51,4 @@ class RandomScaleComposer extends ScaleComposer {
 // Export to global scope
 globalThis.ScaleComposer = ScaleComposer;
 globalThis.RandomScaleComposer = RandomScaleComposer;
-module.exports = { ScaleComposer, RandomScaleComposer };
+export { ScaleComposer, RandomScaleComposer };

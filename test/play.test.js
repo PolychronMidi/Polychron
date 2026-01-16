@@ -1,15 +1,15 @@
 // test/play.test.js
 // Tests play.js - the orchestrator module that coordinates all other modules
 // Uses REAL implementations from all loaded modules
-require('../src/sheet');      // Load constants and configuration
-require('../src/venue');      // Load music theory (scales, chords, etc.)
-require('../src/backstage');  // Load utilities and global state
-require('../src/writer');     // Load output functions (CSVBuffer, p, etc.)
-require('../src/time');       // Load timing functions
-require('../src/composers');  // Load composer classes
-require('../src/rhythm');     // Load rhythm generation
-require('../src/stage');      // Load audio functions
-require('../src/play');       // Load play functions (orchestrator)
+import "../dist/sheet.js";
+import "../dist/venue.js";
+import "../dist/backstage.js";
+import "../dist/writer.js";
+import "../dist/time.js";
+import "../dist/composers.js";
+import "../dist/rhythm.js";
+import "../dist/stage.js";
+import "../dist/play.js";
 
 // Setup function to initialize state
 function setupGlobalState() {

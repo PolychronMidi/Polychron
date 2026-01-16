@@ -1,8 +1,8 @@
 // test/time.test.js
-require('../src/sheet');  // Defines constants
-require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
-require('../src/backstage');  // Defines utility functions
-require('../src/time');  // Time functions
+import "../dist/sheet.js";
+import "../dist/writer.js";
+import "../dist/backstage.js";
+import "../dist/time.js";
 
 // Mock dependencies
 const mockComposer = {

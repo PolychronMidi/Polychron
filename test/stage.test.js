@@ -1,5 +1,5 @@
 // test/stage.test.js
-require('../src/stage');  // Load stage module and all dependencies
+import "../dist/stage.js";
 
 
   describe('playNotes and playNotes2 channel coverage', () => {

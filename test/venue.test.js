@@ -1,8 +1,6 @@
 // test/venue.test.js
-require('../src/sheet.js');  // Load sheet configuration (defines primaryInstrument etc.)
-require('../src/venue.js');
-
-describe('midiData', () => {
+import "../dist/sheet.js";
+import "../dist/venue.js";describe('midiData', () => {
   describe('program array', () => {
     it('should have 128 program numbers (0-127)', () => {
       expect(midiData.program.length).toBe(128);

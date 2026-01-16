@@ -1,5 +1,5 @@
 {
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@tonaljs/rhythm-pattern": "^1.0.0",
     "tonal": "^6.4.2"
@@ -18,8 +18,8 @@
   },
   "main": "src/play.js",
   "scripts": {
-    "build": "esbuild src/**/*.ts --outdir=dist --platform=node",
-    "build:watch": "esbuild src/**/*.ts --outdir=dist --platform=node --watch",
+    "build": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm",
+    "build:watch": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm --watch",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "lint": "eslint src/**/*.{js,ts}",

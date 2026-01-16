@@ -1,4 +1,4 @@
-// voiceLeading/VoiceLeadingScore.js - Voice leading optimization and scoring
+﻿// voiceLeading/VoiceLeadingScore.js - Voice leading optimization and scoring
 "use strict";
 
 /**
@@ -439,4 +439,5 @@ class VoiceLeadingScore {
 // Export to global scope
 globalThis.VoiceLeadingScore = VoiceLeadingScore;
 
-module.exports = VoiceLeadingScore;
+export { VoiceLeadingScore };
+export default VoiceLeadingScore;

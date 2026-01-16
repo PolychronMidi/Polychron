@@ -1,16 +1,7 @@
 // test/integration.test.js - Full pipeline integration tests
 // Tests the complete play.js → stage.js → writer.js → CSV/MIDI flow
 
-require('../src/sheet');
-require('../src/backstage');
-require('../src/venue');
-require('../src/composers');
-require('../src/rhythm');
-require('../src/time');
-require('../src/stage');
-require('../src/writer');
-
-const fs = require('fs');
+import "../dist/sheet.js";import "../dist/backstage.js";import "../dist/venue.js";import "../dist/composers.js";import "../dist/rhythm.js";import "../dist/time.js";import "../dist/stage.js";import "../dist/writer.js";const fs = require('fs');
 const path = require('path');
 
 describe('Integration: Full Composition Pipeline', () => {

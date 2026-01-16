@@ -189,4 +189,4 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
 
 // Export to global scope
 globalThis.MeasureComposer = MeasureComposer;
-module.exports = { MeasureComposer };
+export { MeasureComposer };

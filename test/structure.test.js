@@ -1,8 +1,5 @@
 // test/structure.test.js
-require('../src/sheet');
-require('../src/structure');
-
-describe('Section type selection', () => {
+import "../dist/sheet.js";import "../dist/structure.js";describe('Section type selection', () => {
   const originalTypes = SECTION_TYPES ? JSON.parse(JSON.stringify(SECTION_TYPES)) : null;
 
   afterAll(() => {

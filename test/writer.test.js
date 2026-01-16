@@ -1,7 +1,7 @@
 // test/writer.test.js
-require('../src/sheet');  // Load constants
-require('../src/backstage');  // Load backstage utilities (needed for tests)
-require('../src/writer');  // Load writer functions (CSVBuffer, p, grandFinale, logUnit, fs)
+import "../dist/sheet.js";
+import "../dist/backstage.js";
+import "../dist/writer.js";
 
 // Setup function
 function setupGlobalState() {

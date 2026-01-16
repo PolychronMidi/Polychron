@@ -1,8 +1,8 @@
 // test/rhythm.test.js
-require('../src/sheet');  // Defines constants
-require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
-require('../src/backstage');  // Defines utility functions
-require('../src/rhythm');  // Rhythm functions
+import "../dist/sheet.js";
+import "../dist/writer.js";
+import "../dist/backstage.js";
+import "../dist/rhythm.js";
 
 // Enable test logging
 globalThis.__POLYCHRON_TEST__.enableLogging = true;

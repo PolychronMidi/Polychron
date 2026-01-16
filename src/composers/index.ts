@@ -2,13 +2,13 @@
 // This file organizes composer classes into logical modules while maintaining backward compatibility
 
 // Load dependencies
-require('../backstage');  // Load global utilities (m, rf, ri, ra, etc.)
-require('../venue');      // Load music theory (allScales, allNotes, allModes, allChords)
+import '../backstage.js';  // Load global utilities (m, rf, ri, ra, etc.)
+import '../venue.js';      // Load music theory (allScales, allNotes, allModes, allChords)
 
 // Load composer modules (only the ones that exist)
-require('./MeasureComposer');
-require('./ScaleComposer');
-require('./ProgressionGenerator');
+import './MeasureComposer.js';
+import './ScaleComposer.js';
+import './ProgressionGenerator.js';
 
 // Base class
 // MeasureComposer is at: ./MeasureComposer.ts

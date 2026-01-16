@@ -115,7 +115,7 @@ test('source files should end with newline', () => {
  * Check that critical timing functions have JSDoc annotations.
  */
 test('critical timing functions should have JSDoc', () => {
-  const filePath = path.join(__dirname, '..', 'src', 'time.js');
+  const filePath = path.join(__dirname, '..', 'dist', 'time.js');
   const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
@@ -443,7 +443,7 @@ test('MIDI events in test files should use valid value ranges', () => {
  * Check that push/clear operations work as expected.
  */
 test('CSVBuffer operations maintain state consistency', () => {
-  const filePath = path.join(__dirname, '..', 'src', 'writer.js');
+  const filePath = path.join(__dirname, '..', 'dist', 'writer.js');
   const content = fs.readFileSync(filePath, 'utf8');
 
   // Check that CSVBuffer has push method

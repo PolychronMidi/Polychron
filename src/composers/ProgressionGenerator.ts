@@ -123,4 +123,4 @@ class ProgressionGenerator {
 
 // Export to global scope
 globalThis.ProgressionGenerator = ProgressionGenerator;
-module.exports = { ProgressionGenerator };
+export { ProgressionGenerator };
