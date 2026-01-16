@@ -144,6 +144,15 @@ export default [
         RandomChordComposer: 'writable',
         ModeComposer: 'writable',
         RandomModeComposer: 'writable',
+        TensionReleaseComposer: 'writable',
+        ModalInterchangeComposer: 'writable',
+        HarmonicRhythmComposer: 'writable',
+        MelodicDevelopmentComposer: 'writable',
+        AdvancedVoiceLeadingComposer: 'writable',
+        PentatonicComposer: 'writable',
+        RandomPentatonicComposer: 'writable',
+        ComposerFactory: 'writable',
+        ProgressionGenerator: 'writable',
         // Functions
         getMidiTiming: 'writable',
         setMidiTiming: 'writable',
@@ -165,6 +174,11 @@ export default [
         midiData: 'readonly',
         getMidiValue: 'writable',
         allCHs: 'readonly',
+        allNotes: 'readonly',
+        allScales: 'readonly',
+        allChords: 'readonly',
+        allModes: 'readonly',
+        t: 'readonly',  // Tonal.js library
         source: 'readonly',
         bass: 'readonly',
         lCH1: 'readonly',
@@ -226,7 +240,7 @@ export default [
       'no-useless-escape': 'warn',
       'no-trailing-spaces': 'warn',
       'eol-last': ['warn', 'always'],
-      'no-undef': 'off',  // Disabled: codebase uses hundreds of implicit globals
+      'no-undef': 'warn',  // Warn on undefined variables to catch errors like activeMotif
       'no-unused-vars': 'off'
     }
   }
