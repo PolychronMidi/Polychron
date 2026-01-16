@@ -154,21 +154,21 @@ class MeasureComposer {
       const notes: { note: number }[] = [];
       for (let i = 0; i < voices; i++) {
         if (i >= intervals.length) break;
-        
+
         const interval = intervals[i];
         const noteIndex = (this.notes.indexOf(rootNote) + interval) % this.notes.length;
         const noteName = this.notes[noteIndex];
         const chroma = t.Note.chroma(noteName);
-        
+
         // Skip if chroma is invalid (Tonal couldn't parse the note)
         if (chroma === null || chroma === undefined || isNaN(chroma)) {
           continue;
         }
-        
+
         let octave = ri(minOctave, maxOctave);
         let note = chroma + 12 * octave;
         let attempts = 0;
-        
+
         while (uniqueNotes.has(note) && attempts < 10) {
           octave =
             octave < maxOctave
@@ -184,11 +184,11 @@ class MeasureComposer {
           note = chroma + 12 * octave;
           attempts++;
         }
-        
+
         uniqueNotes.add(note);
         notes.push({ note });
       }
-      
+
       return notes.filter((noteObj, index, self) =>
         index === self.findIndex(n => n.note === noteObj.note)
       );

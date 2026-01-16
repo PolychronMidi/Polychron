@@ -25,7 +25,7 @@ export type ComposerFactory = (config: any) => any;
  * Centralized registry for composer classes and factory functions.
  * Replaces the previous untyped ComposerFactory static class with a
  * type-safe singleton that supports both class constructors and factory functions.
- * 
+ *
  * Usage:
  *   const registry = ComposerRegistry.getInstance();
  *   registry.register('scale', ScaleComposer);
@@ -71,7 +71,7 @@ export class ComposerRegistry {
   create(config: ComposerConfig): any {
     const type = config.type || 'scale';
     const factory = this.composers.get(type);
-    
+
     if (!factory) {
       console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
       const scaleFactory = this.composers.get('scale');
@@ -80,7 +80,7 @@ export class ComposerRegistry {
       }
       throw new Error(`ComposerRegistry: No factory registered for type '${type}' and no fallback available`);
     }
-    
+
     return factory(config);
   }
 
@@ -169,31 +169,31 @@ export class ComposerRegistry {
 
     // Register advanced composers (if they exist)
     if (TensionReleaseComposer) {
-      this.register('tensionRelease', ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => 
+      this.register('tensionRelease', ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) =>
         new TensionReleaseComposer(key, quality, tensionCurve)
       );
     }
 
     if (ModalInterchangeComposer) {
-      this.register('modalInterchange', ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => 
+      this.register('modalInterchange', ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) =>
         new ModalInterchangeComposer(key, primaryMode, borrowProbability)
       );
     }
 
     if (HarmonicRhythmComposer) {
-      this.register('harmonicRhythm', ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => 
+      this.register('harmonicRhythm', ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) =>
         new HarmonicRhythmComposer(progression, key, measuresPerChord, quality)
       );
     }
 
     if (MelodicDevelopmentComposer) {
-      this.register('melodicDevelopment', ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) => 
+      this.register('melodicDevelopment', ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) =>
         new MelodicDevelopmentComposer(name, root, developmentIntensity)
       );
     }
 
     if (AdvancedVoiceLeadingComposer) {
-      this.register('advancedVoiceLeading', ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => 
+      this.register('advancedVoiceLeading', ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) =>
         new AdvancedVoiceLeadingComposer(name, root, commonToneWeight)
       );
     }
