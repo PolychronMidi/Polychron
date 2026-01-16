@@ -258,7 +258,7 @@ const initInstrumentNumbers = () => {
   const secondaryInst = (globalThis as any).secondaryInstrument;
   const bassInst = (globalThis as any).bassInstrument;
   const bassInst2 = (globalThis as any).bassInstrument2;
-  
+
   if (primaryInst) primaryInstrumentNum = getMidiValue('program', primaryInst);
   if (secondaryInst) secondaryInstrumentNum = getMidiValue('program', secondaryInst);
   if (bassInst) bassInstrumentNum = getMidiValue('program', bassInst);

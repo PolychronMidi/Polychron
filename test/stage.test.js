@@ -729,4 +729,145 @@ describe('Stage Module', () => {
       expect(Array.isArray(c)).toBe(true);
     });
   });
+
+  describe('Instrument Setup: setTuningAndInstruments', () => {
+    beforeEach(() => {
+      globalThis.c = [];
+      globalThis.beatStart = 0;
+      globalThis.cCH1 = 0;
+      globalThis.cCH2 = 1;
+      globalThis.cCH3 = 11;
+      globalThis.tuningPitchBend = 8192;
+      globalThis.primaryInstrument = 'glockenspiel';
+      globalThis.secondaryInstrument = 'music box';
+      globalThis.bassInstrument = 'Acoustic Bass';
+      globalThis.bassInstrument2 = 'Synth Bass 2';
+    });
+
+    it('should generate program_c events for all source channels', () => {
+      stage.setTuningAndInstruments();
+      const programEvents = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
+      // Each source channel gets one program_c event
+      expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.source.length);
+    });
+
+    it('should generate center channel (cCH1, cCH2) program events', () => {
+      stage.setTuningAndInstruments();
+      const cCH1Events = c.filter(e => e.vals[0] === globalThis.cCH1 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
+      const cCH2Events = c.filter(e => e.vals[0] === globalThis.cCH2 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
+      expect(cCH1Events.length).toBeGreaterThan(0);
+      expect(cCH2Events.length).toBeGreaterThan(0);
+    });
+
+    it('should generate program_c events for all reflection channels', () => {
+      stage.setTuningAndInstruments();
+      const programEvents = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
+      // Each reflection channel gets one program_c event
+      expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.reflection.length);
+    });
+
+    it('should generate program_c events for all bass channels', () => {
+      stage.setTuningAndInstruments();
+      const programEvents = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
+      // Each bass channel gets one program_c event
+      expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.bass.length);
+    });
+
+    it('should generate center bass channel (cCH3) program event', () => {
+      stage.setTuningAndInstruments();
+      const cCH3Events = c.filter(e => e.vals[0] === globalThis.cCH3 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
+      expect(cCH3Events.length).toBeGreaterThan(0);
+    });
+
+    it('should set primary instrument on source channels', () => {
+      stage.setTuningAndInstruments();
+      const primaryProg = globalThis.getMidiValue('program', globalThis.primaryInstrument);
+      const sourcePrograms = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
+      expect(sourcePrograms.some(e => e.vals[1] === primaryProg)).toBe(true);
+    });
+
+    it('should set secondary instrument on reflection channels', () => {
+      stage.setTuningAndInstruments();
+      const secondaryProg = globalThis.getMidiValue('program', globalThis.secondaryInstrument);
+      const reflectionPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
+      expect(reflectionPrograms.some(e => e.vals[1] === secondaryProg)).toBe(true);
+    });
+
+    it('should set bass instrument on bass channels', () => {
+      stage.setTuningAndInstruments();
+      const bassProg = getMidiValue('program', globalThis.bassInstrument);
+      const bassPrograms = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
+      expect(bassPrograms.some(e => e.vals[1] === bassProg)).toBe(true);
+    });
+
+    it('should emit control_c events for pan/volume on source channels', () => {
+      stage.setTuningAndInstruments();
+      const controlEvents = c.filter(e => e.type === 'control_c' && globalThis.source.includes(e.vals[0]));
+      expect(controlEvents.length).toBeGreaterThan(0);
+    });
+
+    it('should use pitch_bend_c for center channels (cCH1, cCH2, cCH3)', () => {
+      stage.setTuningAndInstruments();
+      const centerChannels = [globalThis.cCH1, globalThis.cCH2, globalThis.cCH3];
+      const pitchBendEvents = c.filter(e => e.type === 'pitch_bend_c' && centerChannels.includes(e.vals[0]));
+      expect(pitchBendEvents.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('should convert instrument names to MIDI program numbers', () => {
+      stage.setTuningAndInstruments();
+      const allPrograms = c.filter(e => e.type === 'program_c');
+      allPrograms.forEach(e => {
+        expect(typeof e.vals[1]).toBe('number');
+        expect(e.vals[1]).toBeGreaterThanOrEqual(0);
+        expect(e.vals[1]).toBeLessThan(128);
+      });
+    });
+
+    it('should set all 16 MIDI channels with instruments', () => {
+      stage.setTuningAndInstruments();
+      const programEvents = c.filter(e => e.type === 'program_c');
+      const channelsWithPrograms = new Set(programEvents.map(e => e.vals[0]));
+      // Should cover source, reflection, bass, and drum channels
+      expect(channelsWithPrograms.size).toBeGreaterThan(10);
+    });
+  });
+
+  describe('Binaural Instrument Updates: setBinaural', () => {
+    beforeEach(() => {
+      globalThis.c = [];
+      globalThis.beatStart = 1000;
+      globalThis.beatCount = 4;
+      globalThis.beatsUntilBinauralShift = 4;
+      globalThis.numerator = 4;
+      globalThis.tpSec = 480;
+      globalThis.bpmRatio3 = 1;
+      globalThis.flipBin = false;
+      globalThis.binauralFreqOffset = 0;
+      globalThis.BINAURAL = { min: 8, max: 12 };
+      globalThis.secondaryInstrument = 'music box';
+      globalThis.lCH1 = 2;
+      globalThis.lCH3 = 4;
+      globalThis.lCH5 = 12;
+      globalThis.rCH1 = 3;
+      globalThis.rCH3 = 5;
+      globalThis.rCH5 = 13;
+    });
+
+    it('should generate program_c events for binaural reflection channels at beat shift', () => {
+      stage.setBinaural();
+      const secondaryProg = getMidiValue('program', globalThis.secondaryInstrument);
+      const binauralPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflectionBinaural.includes(e.vals[0]));
+      expect(binauralPrograms.length).toBeGreaterThan(0);
+      expect(binauralPrograms.some(e => e.vals[1] === secondaryProg)).toBe(true);
+    });
+
+    it('should update reflection instruments when beat shift occurs', () => {
+      const initialBeatCount = globalThis.beatCount;
+      stage.setBinaural();
+      expect(globalThis.beatCount).toBe(0); // Should reset
+      const reflectionPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflectionBinaural.includes(e.vals[0]));
+      expect(reflectionPrograms.length).toBeGreaterThan(0);
+    });
+  });
 });
+
