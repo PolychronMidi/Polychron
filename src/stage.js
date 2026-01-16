@@ -131,7 +131,8 @@ class Stage {
     this.fx.stutterPan(channels, numStutters, duration);
   }
 
-  /**\n   * Applies rapid FX parameter stutter effect to selected channels (delegates to FxManager)
+  /**
+   * Applies rapid FX parameter stutter effect to selected channels (delegates to FxManager)
    * @param {Array<number>} channels - Array of channel numbers to potentially stutter
    * @param {number} [numStutters] - Number of stutter events
    * @param {number} [duration] - Duration of stutter effect in ticks
@@ -436,4 +437,4 @@ globalThis.stage = new Stage();
 if (typeof globalThis !== 'undefined') {
   globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
   globalThis.__POLYCHRON_TEST__.stage = globalThis.stage;
-}
+}"" 

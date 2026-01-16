@@ -293,12 +293,12 @@ const allChords = (function () {
     t.ChordType.all().forEach((chordType) => {
         allNotes.forEach(root => {
             const chord = getChordNotes(chordType.name, root);
-            if (chord) {
+            if (chord && chord.symbol) {
                 allChordsSet.add(chord.symbol);
             }
         });
     });
-    return Array.from(allChordsSet);
+    return Array.from(allChordsSet).filter(chord => chord !== undefined && chord !== null && typeof chord === 'string');
 })();
 exports.allChords = allChords;
 /**
@@ -335,4 +335,4 @@ if (typeof globalThis !== 'undefined') {
         allModes,
     });
 }
-//# sourceMappingURL=venue.js.map
+//# sourceMappingURL=venue.js.map"" 

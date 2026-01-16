@@ -1,13 +1,8 @@
 // code-quality.test.js - Static analysis guards to catch malformed code artifacts.
 // minimalist comments, details at: code-quality.md
 
-import { test, expect } from 'vitest';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Scan source files for forbidden patterns that would indicate malformed code.

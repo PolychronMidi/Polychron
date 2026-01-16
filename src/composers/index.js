@@ -167,7 +167,26 @@ class RandomChordComposer extends ChordComposer {
     const len = ri(2, 5);
     const progression = [];
     for (let i = 0; i < len; i++) {
-      progression.push(allChords[ri(allChords.length - 1)]);
+      let chord;
+      let attempts = 0;
+      do {
+        const index = ri(allChords.length - 1);
+        chord = allChords[index];
+        attempts++;
+        // Give up after 10 attempts and use a fallback
+        if (attempts > 10) {
+          chord = 'Cmaj';
+          break;
+        }
+      } while (!chord || typeof chord !== 'string' || chord.trim() === '');
+
+      if (chord && typeof chord === 'string' && chord.trim() !== '') {
+        progression.push(chord);
+      }
+    }
+    // Ensure we have at least one chord
+    if (progression.length === 0) {
+      progression.push('Cmaj');
     }
     super(progression);
   }
@@ -176,7 +195,26 @@ class RandomChordComposer extends ChordComposer {
     const len = ri(2, 5);
     const progression = [];
     for (let i = 0; i < len; i++) {
-      progression.push(allChords[ri(allChords.length - 1)]);
+      let chord;
+      let attempts = 0;
+      do {
+        const index = ri(allChords.length - 1);
+        chord = allChords[index];
+        attempts++;
+        // Give up after 10 attempts and use a fallback
+        if (attempts > 10) {
+          chord = 'Cmaj';
+          break;
+        }
+      } while (!chord || typeof chord !== 'string' || chord.trim() === '');
+
+      if (chord && typeof chord === 'string' && chord.trim() !== '') {
+        progression.push(chord);
+      }
+    }
+    // Ensure we have at least one chord
+    if (progression.length === 0) {
+      progression.push('Cmaj');
     }
     this.setChordProgression(progression, 'R');
   }
@@ -391,10 +429,9 @@ class ModalInterchangeComposer extends ScaleComposer {
     if (rf() < this.borrowProbability && this.borrowModes.length > 0) {
       const borrowMode = this.borrowModes[ri(this.borrowModes.length - 1)];
       const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
-      // Return chord notes array
+      // Return chord name as string
       const chordRoot = borrowScale.notes[ri(borrowScale.notes.length - 1)];
-      const chordData = t.Chord.get(`${chordRoot}major`);
-      return chordData ? chordData.notes : null;
+      return `${chordRoot}major`;
     }
     return null;
   }

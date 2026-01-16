@@ -1,12 +1,10 @@
 // test/voiceLeading.test.js
 require('../src/sheet');       // Defines constants and configuration objects
-require('../src/venue');       // Defines tonal (t), allScales, allNotes, allChords, allModes
+require('../src/venue');       // Defines tonal (t), allScales, allNotes, allModes, allChords
 require('../src/writer');      // Defines writer functions (CSVBuffer, p, etc.)
 require('../src/backstage');   // Defines helper functions like rf, ri, clamp, etc.
 require('../src/composers');   // Defines composer classes and composers array
 require('../src/voiceLeading'); // Defines VoiceLeadingScore class
-
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 /**
  * Voice Leading Tests

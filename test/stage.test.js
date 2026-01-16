@@ -39,6 +39,7 @@ require('../src/stage');  // Load stage module and all dependencies
       globalThis.divsOff = 1;
       globalThis.subdivsOn = 20;
       globalThis.subdivsOff = 5;
+      globalThis.midiBPM = 120; // Add missing midiBPM
 
       // Seed deterministic randomness for these tests
       globalThis._origRf = globalThis.rf;
