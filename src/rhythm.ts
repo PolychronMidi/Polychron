@@ -1,8 +1,8 @@
 // rhythm.ts - Rhythmic pattern generation with drum mapping and stutter effects.
 // minimalist comments, details at: rhythm.md
 
-// VoiceLeadingScore is imported via globalThis or voiceLeading module
-// No type imports needed - all types are from global declarations
+// Import rhythm pattern utilities
+import * as RhythmPattern from '@tonaljs/rhythm-pattern';
 
 // Global function declarations (these exist on globalThis from backstage.ts)
 declare const m: typeof Math;
@@ -274,7 +274,7 @@ export const rhythms: { [key: string]: RhythmConfig } = {
 };
 
 // @tonaljs/rhythm-pattern exports
-const { binary: _binary, hex: _hex, onsets: _onsets, random: _random, probability: _probability, euclid: _euclid, rotate: _rotate } = require('@tonaljs/rhythm-pattern');
+const { binary: _binary, hex: _hex, onsets: _onsets, random: _random, probability: _probability, euclid: _euclid, rotate: _rotate } = RhythmPattern as any;
 
 /**
  * Generate binary rhythm pattern.

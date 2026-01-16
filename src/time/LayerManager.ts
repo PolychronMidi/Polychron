@@ -1,7 +1,7 @@
 // LayerManager.ts - Manage per-layer timing contexts and buffer switching.
 // minimalist comments, details at: time.md
 
-import { TimingContext } from './TimingContext';
+import { TimingContext } from './TimingContext.js';
 
 // Declare CSVBuffer type from writer.js
 declare const CSVBuffer: any;

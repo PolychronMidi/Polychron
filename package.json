@@ -30,8 +30,8 @@
     "deps:audit": "npm audit && depcheck",
     "pretest": "npm run lint",
     "all": "npm run lint && npm run build && npm test",
-    "start": "node src/play && py c2m.py",
-    "play": "node src/play && py c2m.py",
+    "start": "npm run build && node dist/play.js && py c2m.py",
+    "play": "npm run build && node dist/play.js && py c2m.py",
     "docs:refresh": "node scripts/refresh-doc-examples.mjs",
     "docs:check-links": "node scripts/check-links.mjs",
     "docs:enforce-links": "node scripts/enforce-doc-links.mjs"

@@ -131,7 +131,7 @@ test('critical timing functions should have JSDoc', () => {
     // Look for JSDoc (/** ... */) before function declaration
     // Regex allows for newlines and various content between doc comment and function name
     const pattern = new RegExp(`/\\*\\*[\\s\\S]{0,500}?${funcName}\\s*=`, 'g');
-    
+
     const hasJSDoc = pattern.test(content);
 
     if (!hasJSDoc) {

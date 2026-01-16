@@ -1,9 +1,9 @@
 // time.ts - Timing engine with meter spoofing and dual-layer polyrhythm support.
 // minimalist comments, details at: time.md
 
-import { TimingCalculator } from './time/TimingCalculator';
-import { TimingContext } from './time/TimingContext';
-import { LayerManager } from './time/LayerManager';
+import { TimingCalculator } from './time/TimingCalculator.js';
+import { TimingContext } from './time/TimingContext.js';
+import { LayerManager } from './time/LayerManager.js';
 
 // Re-export classes for backward compatibility
 export { TimingCalculator, TimingContext, LayerManager };

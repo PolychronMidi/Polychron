@@ -2,15 +2,15 @@
 // TypeScript version with full type annotations
 // minimalist comments, details at: stage.md
 
-import './sheet';
-import './writer';
-import './venue';
-import './backstage';
-import './rhythm';
-import './time';
-import './composers';
-import './motifs';
-import './fxManager';
+import './sheet.js';
+import './writer.js';
+import './venue.js';
+import './backstage.js';
+import './rhythm.js';
+import './time.js';
+import './composers.js';
+import './motifs.js';
+import './fxManager.js';
 
 // Initialize global temporary variable for FX object spreading
 declare const globalThis: any;

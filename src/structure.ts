@@ -1,8 +1,8 @@
 // structure.ts - Section type helpers for per-section shaping.
 // minimalist comments, details at: sheet.md / play.md
 
-import './backstage';
-import './sheet';
+import './backstage.js';
+import './sheet.js';
 
 /**
  * Normalized section type

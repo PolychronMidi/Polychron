@@ -2,7 +2,7 @@
 // This stub allows downstream modules like play.ts and stage.ts to import from .ts
 
 // Import the TypeScript module from composers directory
-import './composers/index';
+import './composers/index.js';
 
 // Re-export all composers classes and functions from global scope
 export const MeasureComposer = (globalThis as any).MeasureComposer;

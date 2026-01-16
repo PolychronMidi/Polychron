@@ -2,17 +2,17 @@
 // minimalist comments, details at: play.md
 
 // Import all dependencies in correct order
-import './sheet';       // Constants and configuration
-import './venue';       // Music theory (scales, chords)
-import './backstage';   // Utilities and global state
-import './writer';      // Output functions
-import './time';        // Timing functions
-import './composers';   // Composer classes
-import './motifs';      // Motif generation
-import './rhythm';      // Rhythm generation
-import './fxManager';   // FX processing
-import './stage';       // Audio processing
-import './structure';   // Section structure
+import './sheet.js';       // Constants and configuration
+import './venue.js';       // Music theory (scales, chords)
+import './backstage.js';   // Utilities and global state
+import './writer.js';      // Output functions
+import './time.js';        // Timing functions
+import './composers.js';   // Composer classes
+import './motifs.js';      // Motif generation
+import './rhythm.js';      // Rhythm generation
+import './fxManager.js';   // FX processing
+import './stage.js';       // Audio processing
+import './structure.js';   // Section structure
 
 // Declare global dependencies
 declare const BPM: number;
