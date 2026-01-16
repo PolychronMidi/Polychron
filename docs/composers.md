@@ -10,10 +10,11 @@
 
 **Core Responsibilities:**
 - **Meter generation** - Creates complex time signatures with musical smoothing
-- **Note selection** - Generates pitches from scales, chords, or modes
+- **Note selection** - Generates pitches from scales, chords, modes, and progressions
 - **Subdivision control** - Determines rhythmic granularity (divisions/subdivisions)
 - **Voice management** - Controls polyphonic density and octave ranges
-- **Music theory validation** - Ensures generated content is musically coherent
+- **Music theory validation** - Ensures generated content is musically coherent with enharmonic normalization
+- **Harmonic progression** - Advanced chord progressions with tension/release curves and modal interchange
 
 ## Architecture Role
 
@@ -183,7 +184,9 @@ getNotes(octaveRange=null) {
 
 ## Composer Subclasses
 
-### `ScaleComposer`
+### Phase 1: Basic Composers
+
+#### `ScaleComposer`
 Generates notes from a specific scale (major, minor, harmonic minor, etc.):
 
 ```javascript
@@ -200,24 +203,8 @@ noteSet(scaleName, root) {
 x = () => this.getNotes();
 ```
 
-### `RandomScaleComposer`
-Continuously generates from random scales and roots for maximum harmonic variety:
-
-```javascript
-noteSet() {
-  const randomScale = allScales[ri(allScales.length - 1)];
-  const randomRoot = allNotes[ri(allNotes.length - 1)];
-  super.noteSet(randomScale, randomRoot);
-}
-
-x = () => {
-  this.noteSet();
-  return super.x();
-}
-```
-
-### `ChordComposer`
-Generates notes from a chord progression with direction control:
+#### `ChordComposer`
+Generates notes from a chord progression with direction control and enharmonic normalization:
 
 ```javascript
 constructor(progression) {
@@ -226,15 +213,16 @@ constructor(progression) {
 }
 
 noteSet(progression, direction='R') {
-  const validatedProgression = progression.filter(chordSymbol => {
-    if (!allChords.includes(chordSymbol)) {
-      console.warn(`Invalid chord: ${chordSymbol}`);
+  // Normalizes enharmonic symbols (B#m7 → Cm7, Gb#m7 → Gm7)
+  const validatedProgression = progression.map(normalizeChordSymbol).filter(chordSymbol => {
+    const chord = t.Chord.get(chordSymbol);
+    if (chord.empty) {
+      console.warn(`Invalid chord symbol: ${chordSymbol}`);
       return false;
     }
     return true;
   });
-  // Navigate through progression based on direction
-  this.progression = validatedProgression;
+  this.progression = validatedProgression.map(t.Chord.get);
   this.currentChordIndex = 0;
 }
 ```
@@ -245,36 +233,356 @@ noteSet(progression, direction='R') {
 - **'E'** - Either (50/50 random)
 - **'?'** - Random jump (-2 to +2 positions)
 
-### `RandomChordComposer`
-Generates new chord progressions on-the-fly:
+**Enharmonic Normalization:**
+Chords are automatically normalized to simplest enharmonic spelling:
+- `B#` → `C`, `E#` → `F`, `Cb` → `B`, `Fb` → `E`
+- `Bb#` → `B`, `Eb#` → `E`, `Gb#` → `G` (double accidentals)
+- `C#` → `Db`, `F#` → `Gb`, `G#` → `Ab`, `A#` → `Bb`
+
+#### `ModeComposer`
+Generates notes from modal systems (church modes, jazz modes, etc.):
 
 ```javascript
-noteSet() {
-  const progressionLength = ri(2, 5);
-  const randomProgression = [];
-  for (let i = 0; i < progressionLength; i++) {
-    randomProgression.push(allChords[ri(allChords.length - 1)]);
-  }
-  super.noteSet(randomProgression, '?');
+constructor(modeName, root) {
+  super();
+  this.noteSet(modeName, root);
+}
+
+noteSet(modeName, root) {
+  this.mode = t.Mode.get(`${root} ${modeName}`);
+  this.notes = this.mode.notes;
 }
 ```
 
-### `ModeComposer` and `RandomModeComposer`
-Similar pattern using modal harmonic systems (church modes, jazz modes, etc.).
+### Phase 2: Advanced Composers
+
+#### `PentatonicComposer`
+Generates notes from pentatonic scales with open voicing preferences:
+
+```javascript
+constructor(root = 'C', type = 'major') {
+  super();
+  this.root = root;
+  this.type = type;  // 'major' or 'minor'
+  this.noteSet(root, type);
+}
+
+noteSet(root, type) {
+  const scaleName = type === 'minor' ? 'minor pentatonic' : 'major pentatonic';
+  const scale = t.Scale.get(`${root} ${scaleName}`);
+  
+  if (scale.empty) {
+    console.warn(`Pentatonic scale not found for ${root} ${type}, using random root`);
+    this.root = allNotes[ri(allNotes.length - 1)];
+    const fallbackScaleName = this.type === 'minor' ? 'minor pentatonic' : 'major pentatonic';
+    const fallbackScale = t.Scale.get(`${this.root} ${fallbackScaleName}`);
+    this.notes = fallbackScale.notes;
+  } else {
+    this.notes = scale.notes;
+  }
+}
+
+getNotes(octaveRange) {
+  // Emphasizes 4ths and 5ths for open voicing
+  // Prefers wider intervals (>2 semitones) between voices
+  return super.getNotes(octaveRange);
+}
+```
+
+**Musical Characteristics:**
+- Avoids semitone intervals for consonant harmonies
+- Emphasizes perfect 4ths and 5ths in voicing
+- Ideal for ambient, world music, and modal jazz styles
+
+#### `ProgressionGenerator`
+Utility class for generating common harmonic progressions using Tonal's Key helpers:
+
+```javascript
+constructor(key = 'C', quality = 'major') {
+  this.key = key;
+  this.quality = quality;
+  this.scale = quality === 'major' 
+    ? t.Key.majorKey(key) 
+    : t.Key.minorKey(key);
+}
+
+generate(type) {
+  switch(type) {
+    case 'I-IV-V': return this.romanToChord(['I', 'IV', 'V']);
+    case 'ii-V-I': return this.romanToChord(['ii', 'V', 'I']);
+    case 'I-vi-IV-V': return this.romanToChord(['I', 'vi', 'IV', 'V']);
+    case 'circle': return this.circleOfFifths();
+    default:
+      console.warn(`Unknown progression type: ${type}, using I-IV-V`);
+      return this.romanToChord(['I', 'IV', 'V']);
+  }
+}
+
+romanToChord(romanNumerals) {
+  // Derives chord qualities from Tonal's diatonic data
+  return romanNumerals.map(roman => {
+    const degree = this.parseDegree(roman);
+    const diatonicChord = this.scale.chords[degree];
+    const quality = this.deriveQuality(roman, diatonicChord);
+    return `${this.scale.notes[degree]}${quality}`;
+  });
+}
+```
+
+**Supported Progressions:**
+- **I-IV-V** - Classic cadence (rock, pop, blues)
+- **ii-V-I** - Jazz standard turnaround
+- **I-vi-IV-V** - "Doo-wop" progression (50s/60s pop)
+- **circle** - Circle of fifths (all 12 keys)
+
+#### `TensionReleaseComposer`
+Generates progressions following a harmonic tension curve:
+
+```javascript
+constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
+  const generator = new ProgressionGenerator(key, quality);
+  const progressionChords = generator.random();
+  super(progressionChords);
+  
+  this.generator = generator;
+  this.tensionCurve = clamp(tensionCurve, 0, 1);
+  this.key = key;
+  this.quality = quality;
+  this.measureInSection = 0;
+}
+
+calculateTension(chordSymbol) {
+  const chord = t.Chord.get(chordSymbol);
+  const root = chord.tonic;
+  const scaleIndex = this.generator.scale.notes.indexOf(root);
+  
+  // Tonic function (I, vi) = low tension
+  if ([0, 5].includes(scaleIndex)) return 0.2;
+  // Subdominant (ii, IV) = medium tension
+  if ([1, 3].includes(scaleIndex)) return 0.5;
+  // Dominant (V, vii) = high tension
+  if ([4, 6].includes(scaleIndex)) return 0.9;
+  
+  return 0.5;
+}
+
+selectChordByTension(position) {
+  const targetTension = this.tensionCurve * Math.sin(position * Math.PI);
+  
+  // At end of phrase, resolve to tonic
+  if (position > 0.85) {
+    return this.generator.generate('I-IV-V').slice(-1);
+  }
+  
+  // Select chord matching target tension from pool
+  const allProgressions = [
+    ...this.generator.generate('I-IV-V'),
+    ...this.generator.generate('ii-V-I'),
+    ...this.generator.generate('I-vi-IV-V')
+  ];
+  
+  // Find chord with tension closest to target
+  let bestChord = allProgressions[0];
+  let bestDiff = Infinity;
+  
+  for (const chord of allProgressions) {
+    const tension = this.calculateTension(chord);
+    const diff = Math.abs(tension - targetTension);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestChord = chord;
+    }
+  }
+  
+  return [bestChord];
+}
+```
+
+**Musical Characteristics:**
+- **tensionCurve = 0**: Mostly tonic/stable chords
+- **tensionCurve = 0.5**: Balanced tension/release
+- **tensionCurve = 1**: Maximum harmonic tension with resolutions
+- **16-measure cycle**: Tension arc follows sine wave over 16 measures
+
+#### `ModalInterchangeComposer`
+Borrows chords from parallel modes for harmonic color:
+
+```javascript
+constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
+  const generator = new ProgressionGenerator(key, primaryMode);
+  const progressionChords = generator.random();
+  super(progressionChords);
+  
+  this.generator = generator;
+  this.key = key;
+  this.primaryMode = primaryMode;
+  this.borrowProbability = clamp(borrowProbability, 0, 1);
+  
+  // Parallel mode for borrowing
+  this.parallelMode = primaryMode === 'major' ? 'minor' : 'major';
+  this.parallelGenerator = new ProgressionGenerator(key, this.parallelMode);
+}
+
+borrowChord() {
+  if (rf() < this.borrowProbability) {
+    // Borrow from parallel mode
+    const borrowedProgression = this.parallelGenerator.random();
+    return borrowedProgression[ri(borrowedProgression.length - 1)];
+  }
+  // Use primary mode chord
+  const primaryProgression = this.generator.random();
+  return primaryProgression[ri(primaryProgression.length - 1)];
+}
+
+noteSet(progression, direction = 'modal') {
+  if (direction === 'modal') {
+    const chord = this.borrowChord();
+    super.noteSet([chord], 'R');
+  } else {
+    super.noteSet(progression, direction);
+  }
+}
+```
+
+**Musical Examples:**
+- **C major borrowing from C minor**: Cm, Fm, Ab, Bb chords in C major context
+- **A minor borrowing from A major**: A, D, E major chords in A minor context
+- **borrowProbability = 0.25**: 25% borrowed chords, 75% diatonic
+
+**Use Cases:**
+- Film scores (emotional ambiguity)
+- Progressive rock/metal (tonal color shifts)
+- Jazz harmony (chromatic voice leading)
+
+---
+
+## ComposerFactory and Configuration
+
+### Unified Configuration System
+
+All composers use a **unified parametric configuration** where `'random'` can be passed as parameter values. This eliminates the need for separate `randomScale`, `randomChords`, etc. composer types.
+
+### Factory Pattern
+
+```javascript
+class ComposerFactory {
+  static constructors = {
+    measure: () => new MeasureComposer(),
+    
+    scale: ({ name = 'major', root = 'C' } = {}) => {
+      const n = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+      const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+      return new ScaleComposer(n, r);
+    },
+    
+    chords: ({ progression = ['C'] } = {}) => {
+      let p = progression;
+      if (progression === 'random') {
+        const len = ri(2, 5);
+        p = [];
+        for (let i = 0; i < len; i++) {
+          p.push(allChords[ri(allChords.length - 1)]);
+        }
+      }
+      return new ChordComposer(p);
+    },
+    
+    mode: ({ name = 'ionian', root = 'C' } = {}) => {
+      const n = name === 'random' ? allModes[ri(allModes.length - 1)] : name;
+      const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+      return new ModeComposer(n, r);
+    },
+    
+    pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
+      const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+      const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
+      return new PentatonicComposer(r, t);
+    },
+    
+    tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => 
+      new TensionReleaseComposer(key, quality, tensionCurve),
+    
+    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => 
+      new ModalInterchangeComposer(key, primaryMode, borrowProbability),
+  };
+  
+  static create(config = {}) {
+    const type = config.type || 'scale';
+    const factory = this.constructors[type];
+    if (!factory) {
+      console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
+      return this.constructors.scale({ name: 'random', root: 'random' });
+    }
+    return factory(config);
+  }
+}
+```
+
+### Configuration Examples
+
+**sheet.js COMPOSERS array:**
+
+```javascript
+COMPOSERS = [
+  // Specific composers
+  { type: 'scale', name: 'major', root: 'C' },
+  { type: 'chords', progression: ['Cmaj7', 'Dm', 'G', 'Cmaj7'] },
+  { type: 'mode', name: 'ionian', root: 'C' },
+  
+  // Random variations
+  { type: 'scale', name: 'random', root: 'C' },           // Random scale, fixed root
+  { type: 'scale', name: 'major', root: 'random' },       // Fixed scale, random root
+  { type: 'chords', progression: 'random' },              // Random progression
+  { type: 'mode', name: 'ionian', root: 'random' },       // Fixed mode, random root
+  { type: 'mode', name: 'random', root: 'random' },       // Fully random mode
+  
+  // Pentatonic
+  { type: 'pentatonic', root: 'C', scaleType: 'major' },  // Specific pentatonic
+  { type: 'pentatonic', root: 'random', scaleType: 'random' },  // Random pentatonic
+  
+  // Advanced composers
+  { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
+  { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }
+];
+```
+
+**Usage patterns:**
+
+```javascript
+// Instantiate all composers from config
+const composers = COMPOSERS.map(config => ComposerFactory.create(config));
+
+// Create specific composer
+const composer = ComposerFactory.create({ 
+  type: 'tensionRelease', 
+  key: 'Eb', 
+  quality: 'minor', 
+  tensionCurve: 0.8 
+});
+```
 
 ---
 
 ## Integration with Other Modules
 
-**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) creates a composer instance:
+**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) creates composer instances from COMPOSERS config:
 ```javascript
-const composer = new RandomScaleComposer();  // or ScaleComposer, ChordComposer, etc.
+// Load from sheet.js config
+const composers = COMPOSERS.map(config => ComposerFactory.create(config));
+const composer = composers[ri(composers.length - 1)];
+
+// Or create directly
+const composer = ComposerFactory.create({ 
+  type: 'scale', 
+  name: 'random', 
+  root: 'random' 
+});
 ```
 
 **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) calls at each subdivision:
 ```javascript
 setUnitTiming('subdivision');
-const notes = composer.getNotes();  // Get 1-4 notes
+const notes = composer.getNotes();  // Get 1-7 notes based on VOICES config
 playNotes();  // Send MIDI note-ons
 ```
 
