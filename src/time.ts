@@ -108,6 +108,7 @@ const getMidiTiming = (): [number, number] => {
 /**
  * Writes MIDI timing events to active buffer (c).
  * Context-aware: writes to c1 or c2 depending on current meter.
+ * @param {number} [tick=(globalThis.measureStart)] - Starting tick position, defaults to current measure start.
  */
 const setMidiTiming = (tick: number = (globalThis as any).measureStart): void => {
   const g = globalThis as any;
@@ -123,6 +124,7 @@ const setMidiTiming = (tick: number = (globalThis as any).measureStart): void =>
 /**
  * Compute phrase alignment between primary and poly meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
+ * Recalculates meter ratios when sync alignment cannot be achieved.
  */
 const getPolyrhythm = (): void => {
   const g = globalThis as any;
@@ -186,7 +188,8 @@ const getPolyrhythm = (): void => {
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
- * cascading parent position + index × duration pattern. See time.md for details.
+ * cascading parent position plus index times duration pattern. See time.md for details.
+ * @param {string} unitType - One of: 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'.
  */
 const setUnitTiming = (unitType: string): void => {
   const g = globalThis as any;

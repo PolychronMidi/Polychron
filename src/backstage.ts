@@ -349,14 +349,30 @@ const FX = [1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95];
  * Send All Notes Off CC (123) to prevent sustain across transitions.
  */
 const allNotesOff = (tick: number = measureStart): any[] => {
-  return allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
+  const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
+  if ((globalThis as any).c) {
+    if (Array.isArray((globalThis as any).c)) {
+      (globalThis as any).c.push(...events);
+    } else if ((globalThis as any).c.push) {
+      (globalThis as any).c.push(...events);
+    }
+  }
+  return events;
 };
 
 /**
  * Send Mute All CC (120) to silence all channels.
  */
 const muteAll = (tick: number = measureStart): any[] => {
-  return allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
+  const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
+  if ((globalThis as any).c) {
+    if (Array.isArray((globalThis as any).c)) {
+      (globalThis as any).c.push(...events);
+    } else if ((globalThis as any).c.push) {
+      (globalThis as any).c.push(...events);
+    }
+  }
+  return events;
 };
 /**
  * Helper to create randomized FX control change messages
@@ -366,8 +382,9 @@ const rlFX = (ch: number, cc: number, min: number, max: number, condition?: (c: 
   const useCondition = condition && condition(ch);
   const actualMin = useCondition && condMin !== undefined ? condMin : min;
   const actualMax = useCondition && condMax !== undefined ? condMax : max;
-  return { tick: beatStart - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
-};
+  const beatStartValue = (globalThis as any).beatStart !== undefined ? (globalThis as any).beatStart : beatStart;
+  return { tick: beatStartValue - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
+};;
 // Export for global use
 export {
   clamp, modClamp, lowModClamp, highModClamp, scaleClamp, scaleBoundClamp, softClamp, stepClamp, logClamp, expClamp,

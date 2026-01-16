@@ -1,6 +1,8 @@
 // test/stage.test.js
 import "../dist/stage.js";
 
+// Destructure globals for convenient access
+const { allNotesOff } = globalThis;
 
   describe('playNotes and playNotes2 channel coverage', () => {
     beforeEach(() => {

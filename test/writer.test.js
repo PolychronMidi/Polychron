@@ -3,6 +3,9 @@ import "../dist/sheet.js";
 import "../dist/backstage.js";
 import "../dist/writer.js";
 
+// Destructure globals for convenient access
+const { CSVBuffer, logUnit, p, grandFinale } = globalThis;
+
 // Setup function
 function setupGlobalState() {
   globalThis.c = [];

@@ -4,6 +4,9 @@ import "../dist/writer.js";
 import "../dist/backstage.js";
 import "../dist/time.js";
 
+// Destructure globals for convenient access
+const { allNotesOff, p } = globalThis;
+
 // Setup function
 function setupGlobalState() {
   globalThis.c = [];

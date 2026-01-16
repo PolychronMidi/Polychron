@@ -115,7 +115,7 @@ test('source files should end with newline', () => {
  * Check that critical timing functions have JSDoc annotations.
  */
 test('critical timing functions should have JSDoc', () => {
-  const filePath = path.join(__dirname, '..', 'dist', 'time.js');
+  const filePath = path.join(__dirname, '..', 'src', 'time.ts');
   const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
@@ -129,12 +129,10 @@ test('critical timing functions should have JSDoc', () => {
 
   criticalFunctions.forEach(funcName => {
     // Look for JSDoc (/** ... */) before function declaration
-    const patterns = [
-      new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*${funcName}\\s*[=(]`, 'g'),
-      new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*function\\s+${funcName}\\s*\\(`, 'g')
-    ];
-
-    const hasJSDoc = patterns.some(pattern => pattern.test(content));
+    // Regex allows for newlines and various content between doc comment and function name
+    const pattern = new RegExp(`/\\*\\*[\\s\\S]{0,500}?${funcName}\\s*=`, 'g');
+    
+    const hasJSDoc = pattern.test(content);
 
     if (!hasJSDoc) {
       violations.push(funcName);

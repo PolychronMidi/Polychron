@@ -226,7 +226,7 @@ export const logUnit = (type: string): void => {
     endTime = startTime + spSubsubdiv;
   }
 
-  c.push({
+  ((globalThis as any).c || c).push({
     tick: startTick,
     type: 'marker_t',
     vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
@@ -245,6 +245,7 @@ export const logUnit = (type: string): void => {
  */
 export const grandFinale = (): void => {
   const g = globalThis as any;
+  const fsModule = g.fs || fs;
 
   // Collect all layer data
   const layerData = Object.entries(g.LM.layers).map(([name, layer]: [string, any]) => {
@@ -298,14 +299,14 @@ export const grandFinale = (): void => {
 
     // Ensure output directory exists
     const outputDir = path.dirname(outputFilename);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    if (!fsModule.existsSync(outputDir)) {
+      fsModule.mkdirSync(outputDir, { recursive: true });
     }
 
-    fs.writeFileSync(outputFilename, composition);
+    fsModule.writeFileSync(outputFilename, composition);
     console.log(`${outputFilename} created (${name} layer).`);
   });
-};
+};;
 
 // Export to global scope for backward compatibility
 (globalThis as any).CSVBuffer = CSVBuffer;

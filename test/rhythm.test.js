@@ -13,41 +13,41 @@ let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
 
 // Setup global state
 function setupGlobalState() {
-  global.c = [];
-  global.drumCH = 9;
-  global.beatStart = 0;
-  global.tpBeat = 480;
-  global.beatIndex = 0;
-  global.numerator = 4;
-  global.beatRhythm = [1, 0, 1, 0];
-  global.beatsOff = 0;
-  global.bpmRatio3 = 1;
-  global.measuresPerPhrase = 4;
-  global.divsPerBeat = 2;
-  global.subdivsPerDiv = 2;
-  global.divRhythm = [1, 0];
-  global.subdivRhythm = [1, 0];
-  global.m = Math;
-  global.drumMap = {
+  globalThis.c = [];
+  globalThis.drumCH = 9;
+  globalThis.beatStart = 0;
+  globalThis.tpBeat = 480;
+  globalThis.beatIndex = 0;
+  globalThis.numerator = 4;
+  globalThis.beatRhythm = [1, 0, 1, 0];
+  globalThis.beatsOff = 0;
+  globalThis.bpmRatio3 = 1;
+  globalThis.measuresPerPhrase = 4;
+  globalThis.divsPerBeat = 2;
+  globalThis.subdivsPerDiv = 2;
+  globalThis.divRhythm = [1, 0];
+  globalThis.subdivRhythm = [1, 0];
+  globalThis.m = Math;
+  globalThis.drumMap = {
     'snare1': { note: 31, velocityRange: [99, 111] },
     'kick1': { note: 12, velocityRange: [111, 127] },
     'cymbal1': { note: 59, velocityRange: [66, 77] },
     'conga1': { note: 60, velocityRange: [66, 77] }
   };
   // Also assign to local for convenience
-  c = global.c;
-  drumCH = global.drumCH;
-  beatStart = global.beatStart;
-  tpBeat = global.tpBeat;
-  beatIndex = global.beatIndex;
-  numerator = global.numerator;
-  beatRhythm = global.beatRhythm;
-  beatsOff = global.beatsOff;
-  bpmRatio3 = global.bpmRatio3;
-  measuresPerPhrase = global.measuresPerPhrase;
-  divsPerBeat = global.divsPerBeat;
-  subdivsPerDiv = global.subdivsPerDiv;
-  divRhythm = global.divRhythm;
+  c = globalThis.c;
+  drumCH = globalThis.drumCH;
+  beatStart = globalThis.beatStart;
+  tpBeat = globalThis.tpBeat;
+  beatIndex = globalThis.beatIndex;
+  numerator = globalThis.numerator;
+  beatRhythm = globalThis.beatRhythm;
+  beatsOff = globalThis.beatsOff;
+  bpmRatio3 = globalThis.bpmRatio3;
+  measuresPerPhrase = globalThis.measuresPerPhrase;
+  divsPerBeat = globalThis.divsPerBeat;
+  subdivsPerDiv = globalThis.subdivsPerDiv;
+  divRhythm = globalThis.divRhythm;
   subdivRhythm = global.subdivRhythm;
   m = global.m;
 }
@@ -138,7 +138,7 @@ describe('drummer', () => {
   it('should apply stutter effect occasionally', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.1); // Force stutter
     setupGlobalState();
-    drummer(['snare1'], [0], rf(.1), 1.0);
+    globalThis.drummer(['snare1'], [0], globalThis.rf(.1), 1.0);
     expect(c.length).toBeGreaterThan(1);
     vi.restoreAllMocks();
   });
