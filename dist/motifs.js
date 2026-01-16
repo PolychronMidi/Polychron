@@ -1,22 +1,20 @@
 "use strict";
-// motifs.ts - Motif utilities for interval-based transformations and development.
+// motifs.js - Motif utilities for interval-based transformations and development.
 // minimalist comments, details at: motifs.md
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Motif = void 0;
 const MATH = Math;
 /**
  * Clamp helper to keep MIDI notes in range.
- * @param val - Value to clamp
- * @param min - Minimum value (default: 0)
- * @param max - Maximum value (default: 127)
- * @returns Clamped value
+ * @param {number} val
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
  */
 const clampNote = (val, min = 0, max = 127) => MATH.min(max, MATH.max(min, val));
 /**
  * Normalize a motif event into { note, duration } shape.
- * @param evt - Event as number or object
- * @param defaultDuration - Default duration if not specified
- * @returns Normalized { note, duration } object
+ * @param {number|{note:number,duration?:number}} evt
+ * @param {number} defaultDuration
+ * @returns {{note:number,duration:number}}
  */
 const normalizeEvent = (evt, defaultDuration = 1) => {
     if (evt === null || evt === undefined) {
@@ -29,33 +27,30 @@ const normalizeEvent = (evt, defaultDuration = 1) => {
     const duration = typeof evt.duration === 'number' && evt.duration > 0 ? evt.duration : defaultDuration;
     return { note, duration };
 };
-/**
- * Motif class for melodic transformations and development
- */
 class Motif {
     /**
-     * Create a new Motif
-     * @param sequence - Array of notes or note events
-     * @param options - Configuration options
+     * @param {Array<number|{note:number,duration?:number}>} sequence
+     * @param {{defaultDuration?:number}} [options]
      */
     constructor(sequence = [], options = {}) {
         const { defaultDuration = 1 } = options;
         this.sequence = Array.isArray(sequence)
             ? sequence.map((evt) => normalizeEvent(evt, defaultDuration))
             : [];
+        /** @type {number} */
         this.defaultDuration = defaultDuration;
     }
     /**
      * Returns a deep-copied sequence.
-     * @returns Array of note events
+     * @returns {{note:number,duration:number}[]}
      */
     get events() {
         return this.sequence.map(({ note, duration }) => ({ note, duration }));
     }
     /**
      * Transpose motif by semitones.
-     * @param semitones - Number of semitones to transpose
-     * @returns New transposed Motif
+     * @param {number} semitones
+     * @returns {Motif}
      */
     transpose(semitones = 0) {
         return new Motif(this.sequence.map(({ note, duration }) => ({
@@ -65,8 +60,8 @@ class Motif {
     }
     /**
      * Invert motif around a pivot (default: first note).
-     * @param pivot - Pivot note for inversion (null = use first note)
-     * @returns New inverted Motif
+     * @param {number|null} [pivot]
+     * @returns {Motif}
      */
     invert(pivot = null) {
         const pivotNote = pivot === null
@@ -79,8 +74,8 @@ class Motif {
     }
     /**
      * Augment durations by factor.
-     * @param factor - Multiplication factor
-     * @returns New augmented Motif
+     * @param {number} factor
+     * @returns {Motif}
      */
     augment(factor = 2) {
         const safeFactor = factor <= 0 ? 1 : factor;
@@ -91,8 +86,8 @@ class Motif {
     }
     /**
      * Diminish durations by factor.
-     * @param factor - Division factor
-     * @returns New diminished Motif
+     * @param {number} factor
+     * @returns {Motif}
      */
     diminish(factor = 2) {
         const safeFactor = factor <= 0 ? 1 : factor;
@@ -103,15 +98,15 @@ class Motif {
     }
     /**
      * Reverse motif order.
-     * @returns New reversed Motif
+     * @returns {Motif}
      */
     reverse() {
         return new Motif([...this.sequence].reverse(), { defaultDuration: this.defaultDuration });
     }
     /**
      * Apply a small development chain: transpose, optional inversion, optional reverse, optional scaling.
-     * @param options - Development options
-     * @returns New developed Motif
+     * @param {{transposeBy?:number,invertPivot?:number|false,reverse?:boolean,scale?:number}} [options]
+     * @returns {Motif}
      */
     develop(options = {}) {
         const { transposeBy = 12, invertPivot = null, reverse = false, scale = 1 } = options;
@@ -120,8 +115,7 @@ class Motif {
             next = next.transpose(transposeBy);
         }
         if (invertPivot !== false) {
-            const pivot = invertPivot;
-            next = next.invert(pivot);
+            next = next.invert(invertPivot);
         }
         if (reverse) {
             next = next.reverse();
@@ -134,13 +128,13 @@ class Motif {
     /**
      * Apply motif offsets to an array of note objects (non-mutating).
      * Calculates interval offset from motif's first note and applies to each input note.
-     * @param notes - Array of note objects
-     * @param options - Clamping options
-     * @returns New array of adjusted notes
+     * @param {{note:number}[]} notes
+     * @param {{clampMin?:number,clampMax?:number}} [options]
+     * @returns {{note:number}[]}
      */
     applyToNotes(notes = [], options = {}) {
         if (!Array.isArray(notes) || notes.length === 0 || this.sequence.length === 0) {
-            return Array.isArray(notes) ? notes : [];
+            return Array.isArray(notes) ? [...notes] : [];
         }
         const { clampMin = 0, clampMax = 127 } = options;
         const baseNote = this.sequence[0].note;
@@ -152,7 +146,6 @@ class Motif {
         });
     }
 }
-exports.Motif = Motif;
 // Expose motif utilities globally for stage/play integration and testing.
 globalThis.Motif = Motif;
 globalThis.clampMotifNote = clampNote;
@@ -166,8 +159,9 @@ if (typeof globalThis !== 'undefined') {
     globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
     Object.assign(globalThis.__POLYCHRON_TEST__, {
         Motif,
-        clampMotifNote: clampNote,
-        applyMotifToNotes: globalThis.applyMotifToNotes,
+        clampMotifNote,
+        applyMotifToNotes,
     });
 }
+module.exports = { Motif };
 //# sourceMappingURL=motifs.js.map

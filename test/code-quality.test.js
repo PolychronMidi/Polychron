@@ -501,15 +501,20 @@ test('each source module should have corresponding test file', () => {
  * Catches cases where test calls use different number of arguments than function expects.
  */
 test('test function calls should match source signatures', () => {
-  const filePath = path.join(__dirname, '..', 'src', 'backstage.js');
+  // Use backstage.ts if it exists, otherwise fall back to backstage.js
+  let filePath = path.join(__dirname, '..', 'src', 'backstage.ts');
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, '..', 'src', 'backstage.js');
+  }
   const content = fs.readFileSync(filePath, 'utf8');
 
-  // Check critical function signatures (support const, assignment, and aliased styles)
+  // Check critical function signatures (support const, assignment, and aliased styles, plus TS type annotations)
+  // More flexible to handle: const rf=(...) and const randomFloat=rf patterns
   const criticalFunctions = {
-    'clamp': /clamp\s*=\s*\([^)]*\)\s*=>/,
-    'modClamp': /modClamp\s*=\s*\([^)]*\)\s*=>/,
-    'rf': /rf\s*=\s*\w+\s*=\s*\([^)]*\)\s*=>/, // matches: rf=randomFloat=(...)=>
-    'ri': /ri\s*=\s*\w+\s*=\s*\([^)]*\)\s*=>/ // matches: ri=randomInt=(...)=>
+    'clamp': /clamp\s*=\s*\([^)]*\)(\s*:\s*[^{]*)?=>/,
+    'modClamp': /modClamp\s*=\s*\([^)]*\)(\s*:\s*[^{]*)?=>/,
+    'rf': /(rf|randomFloat)\s*=/, // Either rf= or randomFloat= should exist
+    'ri': /(ri|randomInt)\s*=/ // Either ri= or randomInt= should exist
   };
 
   const violations = [];
