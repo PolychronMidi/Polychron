@@ -358,7 +358,16 @@ const allNotesOff = (tick: number = measureStart): any[] => {
 const muteAll = (tick: number = measureStart): any[] => {
   return allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
 };
-
+/**
+ * Helper to create randomized FX control change messages
+ * Signature: (channel, ccNum, minVal, maxVal, [condition], [condMinVal], [condMaxVal])
+ */
+const rlFX = (ch: number, cc: number, min: number, max: number, condition?: (c: number) => boolean, condMin?: number, condMax?: number): any => {
+  const useCondition = condition && condition(ch);
+  const actualMin = useCondition && condMin !== undefined ? condMin : min;
+  const actualMax = useCondition && condMax !== undefined ? condMax : max;
+  return { tick: beatStart - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
+};
 // Export for global use
 export {
   clamp, modClamp, lowModClamp, highModClamp, scaleClamp, scaleBoundClamp, softClamp, stepClamp, logClamp, expClamp,
@@ -505,6 +514,42 @@ declare global {
 (globalThis as any).numerator = numerator;
 (globalThis as any).beatCount = beatCount;
 (globalThis as any).beatsUntilBinauralShift = beatsUntilBinauralShift;
+(globalThis as any).flipBin = flipBin;
+(globalThis as any).binauralFreqOffset = binauralFreqOffset;
+(globalThis as any).binauralPlus = binauralPlus;
+(globalThis as any).binauralMinus = binauralMinus;
+(globalThis as any).cCH1 = cCH1;
+(globalThis as any).cCH2 = cCH2;
+(globalThis as any).cCH3 = cCH3;
+(globalThis as any).lCH1 = lCH1;
+(globalThis as any).lCH2 = lCH2;
+(globalThis as any).lCH3 = lCH3;
+(globalThis as any).lCH4 = lCH4;
+(globalThis as any).lCH5 = lCH5;
+(globalThis as any).lCH6 = lCH6;
+(globalThis as any).rCH1 = rCH1;
+(globalThis as any).rCH2 = rCH2;
+(globalThis as any).rCH3 = rCH3;
+(globalThis as any).rCH4 = rCH4;
+(globalThis as any).rCH5 = rCH5;
+(globalThis as any).rCH6 = rCH6;
+(globalThis as any).drumCH = drumCH;
+(globalThis as any).allNotesOff = allNotesOff;
+(globalThis as any).muteAll = muteAll;
+(globalThis as any).rlFX = rlFX;
+(globalThis as any).tpSec = tpSec;
+(globalThis as any).tpSubsubdiv = tpSubsubdiv;
+(globalThis as any).measureStart = measureStart;
+(globalThis as any).beatStart = beatStart;
+(globalThis as any).divStart = divStart;
+(globalThis as any).subdivStart = subdivStart;
+(globalThis as any).subsubdivStart = subsubdivStart;
+(globalThis as any).subdivsPerDiv = subdivsPerDiv;
+(globalThis as any).subdivsPerBeat = subdivsPerBeat;
+(globalThis as any).subsubsPerSub = subsubsPerSub;
+(globalThis as any).divsPerBeat = divsPerBeat;
+(globalThis as any).tuningPitchBend = tuningPitchBend;
+(globalThis as any).velocity = velocity;
 (globalThis as any).beatRhythm = beatRhythm;
 (globalThis as any).divRhythm = divRhythm;
 (globalThis as any).subdivRhythm = subdivRhythm;
@@ -515,3 +560,5 @@ declare global {
 (globalThis as any).divsOff = divsOff;
 (globalThis as any).subdivsOn = subdivsOn;
 (globalThis as any).subdivsOff = subdivsOff;
+(globalThis as any).binauralL = binauralL;
+(globalThis as any).binauralR = binauralR;

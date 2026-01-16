@@ -420,6 +420,16 @@ const muteAll = (tick = measureStart) => {
     return allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
 };
 exports.muteAll = muteAll;
+/**
+ * Helper to create randomized FX control change messages
+ * Signature: (channel, ccNum, minVal, maxVal, [condition], [condMinVal], [condMaxVal])
+ */
+const rlFX = (ch, cc, min, max, condition, condMin, condMax) => {
+    const useCondition = condition && condition(ch);
+    const actualMin = useCondition && condMin !== undefined ? condMin : min;
+    const actualMax = useCondition && condMax !== undefined ? condMax : max;
+    return { tick: beatStart - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
+};
 globalThis.m = m;
 globalThis.clamp = clamp;
 globalThis.modClamp = modClamp;
@@ -493,6 +503,42 @@ globalThis.measureCount = measureCount;
 globalThis.numerator = numerator;
 globalThis.beatCount = beatCount;
 globalThis.beatsUntilBinauralShift = beatsUntilBinauralShift;
+globalThis.flipBin = flipBin;
+globalThis.binauralFreqOffset = binauralFreqOffset;
+globalThis.binauralPlus = binauralPlus;
+globalThis.binauralMinus = binauralMinus;
+globalThis.cCH1 = cCH1;
+globalThis.cCH2 = cCH2;
+globalThis.cCH3 = cCH3;
+globalThis.lCH1 = lCH1;
+globalThis.lCH2 = lCH2;
+globalThis.lCH3 = lCH3;
+globalThis.lCH4 = lCH4;
+globalThis.lCH5 = lCH5;
+globalThis.lCH6 = lCH6;
+globalThis.rCH1 = rCH1;
+globalThis.rCH2 = rCH2;
+globalThis.rCH3 = rCH3;
+globalThis.rCH4 = rCH4;
+globalThis.rCH5 = rCH5;
+globalThis.rCH6 = rCH6;
+globalThis.drumCH = drumCH;
+globalThis.allNotesOff = allNotesOff;
+globalThis.muteAll = muteAll;
+globalThis.rlFX = rlFX;
+globalThis.tpSec = tpSec;
+globalThis.tpSubsubdiv = tpSubsubdiv;
+globalThis.measureStart = measureStart;
+globalThis.beatStart = beatStart;
+globalThis.divStart = divStart;
+globalThis.subdivStart = subdivStart;
+globalThis.subsubdivStart = subsubdivStart;
+globalThis.subdivsPerDiv = subdivsPerDiv;
+globalThis.subdivsPerBeat = subdivsPerBeat;
+globalThis.subsubsPerSub = subsubsPerSub;
+globalThis.divsPerBeat = divsPerBeat;
+globalThis.tuningPitchBend = tuningPitchBend;
+globalThis.velocity = velocity;
 globalThis.beatRhythm = beatRhythm;
 globalThis.divRhythm = divRhythm;
 globalThis.subdivRhythm = subdivRhythm;
@@ -503,4 +549,6 @@ globalThis.divsOn = divsOn;
 globalThis.divsOff = divsOff;
 globalThis.subdivsOn = subdivsOn;
 globalThis.subdivsOff = subdivsOff;
+globalThis.binauralL = binauralL;
+globalThis.binauralR = binauralR;
 //# sourceMappingURL=backstage.js.map
