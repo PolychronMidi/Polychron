@@ -2,6 +2,7 @@
 import "../dist/sheet.js";
 import "../dist/writer.js";
 import "../dist/backstage.js";
+import "../dist/rhythm.js";
 import "../dist/time.js";
 
 // Mock dependencies

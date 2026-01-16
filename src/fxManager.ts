@@ -173,6 +173,7 @@ class FxManager {
   }
 }
 
+
 // Create and export instance to global scope
 const fxManager = new FxManager();
 (globalThis as any).FxManager = FxManager;

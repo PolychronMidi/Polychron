@@ -62,14 +62,14 @@ const { allNotesOff } = globalThis;
 
     it('should include reflection channel code in playNotes', () => {
       // Verify that playNotes code includes reflection channel generation
-      const playNotesCode = stage.playNotes.toString();
+      const playNotesCode = stage.playNotesHandler.playNotes.toString();
       expect(playNotesCode).toContain('reflection');
       expect(playNotesCode).toContain('reflectionCH');
     });
 
     it('should include bass channel code in playNotes', () => {
       // Verify that playNotes code includes bass channel generation
-      const playNotesCode = stage.playNotes.toString();
+      const playNotesCode = stage.playNotesHandler.playNotes.toString();
       expect(playNotesCode).toContain('bass');
       expect(playNotesCode).toContain('bassCH');
       expect(playNotesCode).toContain('bassNote');
@@ -77,10 +77,10 @@ const { allNotesOff } = globalThis;
 
     it('should emit source, reflection, and bass events from playNotes', () => {
       // Force the cross-modulation gate to fire by making rf minimal
-      const originalCrossModulate = stage.crossModulateRhythms;
-      stage.crossModulateRhythms = () => { stage.crossModulation = 10; stage.lastCrossMod = 0; };
+      const originalCrossModulate = stage.playNotesHandler.crossModulateRhythms;
+      stage.playNotesHandler.crossModulateRhythms = () => { stage.playNotesHandler.crossModulation = 10; stage.playNotesHandler.lastCrossMod = 0; };
       stage.playNotes();
-      stage.crossModulateRhythms = originalCrossModulate;
+      stage.playNotesHandler.crossModulateRhythms = originalCrossModulate;
 
       const noteOns = c.filter((e) => e.type === 'on');
       expect(noteOns.length).toBeGreaterThan(0);
@@ -146,13 +146,13 @@ const { allNotesOff } = globalThis;
     });
 
     it('should calculate crossModulation value based on rhythm state', () => {
-      stage.crossModulation = 0;
-      stage.lastCrossMod = 0;
+      stage.playNotesHandler.crossModulation = 0;
+      stage.playNotesHandler.lastCrossMod = 0;
       stage.crossModulateRhythms();
 
-      expect(typeof stage.crossModulation).toBe('number');
-      expect(stage.crossModulation).toBeGreaterThan(0);
-      expect(stage.lastCrossMod).toBe(0); // Should have saved previous value
+      expect(typeof stage.playNotesHandler.crossModulation).toBe('number');
+      expect(stage.playNotesHandler.crossModulation).toBeGreaterThan(0);
+      expect(stage.playNotesHandler.lastCrossMod).toBe(0); // Should have saved previous value
     });
 
     it('should increase crossModulation when rhythm slots are active', () => {
@@ -161,18 +161,18 @@ const { allNotesOff } = globalThis;
       globalThis.divIndex = 0; // divRhythm[0] = 1
       globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
 
-      stage.crossModulation = 0;
+      stage.playNotesHandler.crossModulation = 0;
       stage.crossModulateRhythms();
-      const activeValue = stage.crossModulation;
+      const activeValue = stage.playNotesHandler.crossModulation;
 
       // Reset and test with inactive slots
       globalThis.beatIndex = 1; // beatRhythm[1] = 0
       globalThis.divIndex = 2; // divRhythm[2] = 0
       globalThis.subdivIndex = 1; // subdivRhythm[1] = 0
 
-      stage.crossModulation = 0;
+      stage.playNotesHandler.crossModulation = 0;
       stage.crossModulateRhythms();
-      const inactiveValue = stage.crossModulation;
+      const inactiveValue = stage.playNotesHandler.crossModulation;
 
       // Active rhythms should contribute more (active contributes rf(1.5,3), inactive uses max())
       expect(activeValue).toBeGreaterThan(inactiveValue);
@@ -186,18 +186,18 @@ const { allNotesOff } = globalThis;
       globalThis.divIndex = 0; // divRhythm[0] = 1
       globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
 
-      stage.crossModulation = 0;
+      stage.playNotesHandler.crossModulation = 0;
       stage.crossModulateRhythms();
-      const activeValue = stage.crossModulation;
+      const activeValue = stage.playNotesHandler.crossModulation;
 
       // Inactive: All slots are OFF (value = 0)
       globalThis.beatIndex = 1; // beatRhythm[1] = 0
       globalThis.divIndex = 2; // divRhythm[2] = 0
       globalThis.subdivIndex = 1; // subdivRhythm[1] = 0
 
-      stage.crossModulation = 0;
+      stage.playNotesHandler.crossModulation = 0;
       stage.crossModulateRhythms();
-      const inactiveValue = stage.crossModulation;
+      const inactiveValue = stage.playNotesHandler.crossModulation;
 
       // Active slots contribute rf(1.5,3) which is larger than inactive max() expressions
       expect(activeValue).toBeGreaterThan(inactiveValue);
@@ -209,24 +209,24 @@ const { allNotesOff } = globalThis;
       globalThis.divIndex = 0;
       globalThis.subdivIndex = 0;
 
-      stage.crossModulation = 0;
+      stage.playNotesHandler.crossModulation = 0;
       stage.crossModulateRhythms();
 
       // With stubs, should accumulate from multiple terms: rf(1.5,3)=1.5 as minimum
-      expect(stage.crossModulation).toBeGreaterThanOrEqual(1.5);
+      expect(stage.playNotesHandler.crossModulation).toBeGreaterThanOrEqual(1.5);
     });
 
 
 
     it('should store previous crossModulation in lastCrossMod', () => {
-      stage.crossModulation = 5.5;
-      stage.lastCrossMod = 2.2;
+      stage.playNotesHandler.crossModulation = 5.5;
+      stage.playNotesHandler.lastCrossMod = 2.2;
 
       stage.crossModulateRhythms();
 
       // Should have saved the previous value (5.5) before calculating new one
-      expect(stage.lastCrossMod).toBe(5.5);
-      expect(typeof stage.crossModulation).toBe('number');
+      expect(stage.playNotesHandler.lastCrossMod).toBe(5.5);
+      expect(typeof stage.playNotesHandler.crossModulation).toBe('number');
     });
   });
 
