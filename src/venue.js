@@ -229,6 +229,7 @@ const getMidiValue = (category, name) => {
     return item.number;
 };
 exports.getMidiValue = getMidiValue;
+
 // Lazy initialization of instrument numbers (after globalThis is populated)
 let primaryInstrumentNum = 0;
 let secondaryInstrumentNum = 0;

@@ -1,10 +1,8 @@
-// voiceLeading.ts - Stub that re-exports from voiceLeading.js
-// Full TypeScript migration of voiceLeading.js is deferred
-// This stub allows downstream modules to import from .ts
+// voiceLeading.ts - Voice leading optimization and scoring
 
-// Import the JavaScript module
-import './voiceLeading.js';
+// Import the VoiceLeadingScore implementation
+import './voiceLeading/VoiceLeadingScore.js';
 
-// Re-export VoiceLeadingScore class and utilities from global scope
+// Re-export VoiceLeadingScore class from global scope
 export const VoiceLeadingScore = (globalThis as any).VoiceLeadingScore;
 export default VoiceLeadingScore;
