@@ -335,4 +335,4 @@ if (typeof globalThis !== 'undefined') {
         allModes,
     });
 }
-//# sourceMappingURL=venue.js.map"" 
+//# sourceMappingURL=venue.js.map""

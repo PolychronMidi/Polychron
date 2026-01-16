@@ -437,4 +437,4 @@ globalThis.stage = new Stage();
 if (typeof globalThis !== 'undefined') {
   globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
   globalThis.__POLYCHRON_TEST__.stage = globalThis.stage;
-}"" 
+}""

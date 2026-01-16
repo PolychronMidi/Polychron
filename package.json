@@ -6,6 +6,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
     "@vitest/coverage-v8": "^4.0.16",
     "depcheck": "^1.4.7",
     "esbuild": "^0.27.2",
@@ -20,7 +22,7 @@
     "build:watch": "esbuild src/**/*.ts --outdir=dist --platform=node --watch",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
-    "lint": "echo 'TypeScript source files - linting skipped for now'",
+    "lint": "eslint src/**/*.{js,ts}",
     "type-check": "tsc --noEmit",
     "clean": "Remove-Item src/**/*.map -ErrorAction SilentlyContinue; Remove-Item src/*.map -ErrorAction SilentlyContinue",
     "audit": "npm audit",

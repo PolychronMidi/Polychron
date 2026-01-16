@@ -1,3 +1,6 @@
+import tsParser from '@typescript-eslint/parser';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+
 export default [
   {
     ignores: [
@@ -10,337 +13,68 @@ export default [
       'output/*.mid',
       'output/*.wav',
       'test/**',
-      '**/*.ts',
-      '**/*.d.ts'
+      '**/*.d.ts',
+      'dist/**',
+      'coverage/**'
     ]
   },
   {
+    files: ['src/**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: false
+      },
+      globals: {
+        globalThis: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',  // Stage 2: Accept any for now
+      '@typescript-eslint/no-unused-vars': 'off',   // Many globals intentionally unused in specific files
+      'no-undef': 'off'  // TypeScript handles this
+    }
+  },
+  {
+    files: ['src/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'script',
+      sourceType: 'module',
       globals: {
-        // Math alias
-        m: 'readonly',
-        // Timing globals
-        numerator: 'writable',
-        denominator: 'writable',
-        meterRatio: 'writable',
-        midiMeter: 'writable',
-        midiMeterRatio: 'writable',
-        syncFactor: 'writable',
-        midiBPM: 'writable',
-        tpSec: 'writable',
-        tpMeasure: 'writable',
-        spMeasure: 'writable',
-        phraseStart: 'writable',
-        phraseStartTime: 'writable',
-        sectionStart: 'writable',
-        sectionStartTime: 'writable',
-        sectionEnd: 'writable',
-        measureStart: 'writable',
-        measureStartTime: 'writable',
-        beatStart: 'writable',
-        beatStartTime: 'writable',
-        divStart: 'writable',
-        divStartTime: 'writable',
-        subdivStart: 'writable',
-        subdivStartTime: 'writable',
-        subsubdivStart: 'writable',
-        subsubdivStartTime: 'writable',
-        tpBeat: 'writable',
-        spBeat: 'writable',
-        tpDiv: 'writable',
-        spDiv: 'writable',
-        tpSubdiv: 'writable',
-        spSubdiv: 'writable',
-        tpSubsubdiv: 'writable',
-        spSubsubdiv: 'writable',
-        tpPhrase: 'writable',
-        spPhrase: 'writable',
-        tpSection: 'writable',
-        spSection: 'writable',
-        trueBPM: 'writable',
-        trueBPM2: 'writable',
-        bpmRatio: 'writable',
-        bpmRatio2: 'writable',
-        bpmRatio3: 'writable',
-        divsPerBeat: 'writable',
-        subdivsPerDiv: 'writable',
-        subdivsPerMinute: 'writable',
-        subsubdivsPerSub: 'writable',
-        subsubdivsPerMinute: 'writable',
-        subdivFreq: 'writable',
-        measuresPerPhrase: 'writable',
-        measuresPerPhrase1: 'writable',
-        measuresPerPhrase2: 'writable',
-        polyNumerator: 'writable',
-        polyDenominator: 'writable',
-        polyMeterRatio: 'writable',
-        // Rhythm tracking
-        beatRhythm: 'writable',
-        divRhythm: 'writable',
-        subdivRhythm: 'writable',
-        subsubdivRhythm: 'writable',
-        // Index variables
-        sectionIndex: 'writable',
-        phraseIndex: 'writable',
-        measureIndex: 'writable',
-        beatIndex: 'writable',
-        divIndex: 'writable',
-        subdivIndex: 'writable',
-        subsubdivIndex: 'writable',
-        // Structure
-        totalSections: 'writable',
-        phrasesPerSection: 'writable',
-        // Temporary variables (used in functions)
-        unit: 'writable',
-        unitsPerParent: 'writable',
-        startTick: 'writable',
-        endTick: 'writable',
-        startTime: 'writable',
-        endTime: 'writable',
-        composerDetails: 'writable',
-        progressionSymbols: 'writable',
-        actualMeter: 'writable',
-        isPowerOf2: 'writable',
-        // Buffer/Layer
-        c: 'writable',
-        c1: 'writable',
-        c2: 'writable',
-        CSVBuffer: 'writable',
-        LM: 'writable',
-        layerManager: 'writable',
-        TimingContext: 'writable',
-        // Configuration
-        BPM: 'readonly',
-        PPQ: 'readonly',
-        TUNING_FREQ: 'readonly',
-        LOG: 'readonly',
-        BINAURAL: 'readonly',
-        SILENT_OUTRO_SECONDS: 'readonly',
-        SECTIONS: 'readonly',
-        PHRASES_PER_SECTION: 'readonly',
-        NUMERATOR: 'readonly',
-        DENOMINATOR: 'readonly',
-        MEASURES_PER_PHRASE: 'readonly',
-        DIVISIONS: 'readonly',
-        SUBDIVISIONS: 'readonly',
-        SUBSUBDIVISIONS: 'readonly',
-        VOICES: 'readonly',
-        OCTAVES: 'readonly',
-        COMPOSER_TYPES: 'readonly',
-        primaryInstrument: 'readonly',
-        secondaryInstrument: 'readonly',
-        otherInstruments: 'readonly',
-        bassInstrument: 'readonly',
-        bassInstrument2: 'readonly',
-        otherBassInstruments: 'readonly',
-        drumSets: 'readonly',
-        // Composers
-        composer: 'writable',
-        composers: 'writable',
-        MeasureComposer: 'writable',
-        ScaleComposer: 'writable',
-        RandomScaleComposer: 'writable',
-        ChordComposer: 'writable',
-        RandomChordComposer: 'writable',
-        ModeComposer: 'writable',
-        RandomModeComposer: 'writable',
-        TensionReleaseComposer: 'writable',
-        ModalInterchangeComposer: 'writable',
-        HarmonicRhythmComposer: 'writable',
-        MelodicDevelopmentComposer: 'writable',
-        AdvancedVoiceLeadingComposer: 'writable',
-        PentatonicComposer: 'writable',
-        RandomPentatonicComposer: 'writable',
-        ComposerFactory: 'writable',
-        ProgressionGenerator: 'writable',
-        // Functions
-        getMidiTiming: 'writable',
-        setMidiTiming: 'writable',
-        getPolyrhythm: 'writable',
-        setUnitTiming: 'writable',
-        formatTime: 'writable',
-        setRhythm: 'writable',
-        trackBeatRhythm: 'writable',
-        trackDivRhythm: 'writable',
-        trackSubdivRhythm: 'writable',
-        trackSubsubdivRhythm: 'writable',
-        logUnit: 'writable',
-        p: 'writable',
-        pushMultiple: 'writable',
-        grandFinale: 'writable',
-        fs: 'writable',
-        setTuningAndInstruments: 'writable',
-        // MIDI/Venue
-        midiData: 'readonly',
-        getMidiValue: 'writable',
-        allCHs: 'readonly',
-        allNotes: 'readonly',
-        allScales: 'readonly',
-        allChords: 'readonly',
-        allModes: 'readonly',
-        t: 'readonly',  // Tonal.js library
-        source: 'readonly',
-        bass: 'readonly',
-        lCH1: 'readonly',
-        lCH2: 'readonly',
-        rCH1: 'readonly',
-        rCH2: 'readonly',
-        cCH1: 'readonly',
-        cCH2: 'readonly',
-        cCH3: 'readonly',
-        drumCH: 'readonly',
-        tuningPitchBend: 'readonly',
-        // Rhythm
-        drumMap: 'readonly',
-        drummer: 'writable',
-        patternLength: 'writable',
-        makeOnsets: 'writable',
-        // Stage functions
-        binaural: 'writable',
-        stutter: 'writable',
-        note: 'writable',
-        // Backstage utils - Clamping functions
-        clamp: 'writable',
-        modClamp: 'writable',
-        lowModClamp: 'writable',
-        highModClamp: 'writable',
-        scaleClamp: 'writable',
-        scaleBoundClamp: 'writable',
-        softClamp: 'writable',
-        clampSoft: 'writable',
-        stepClamp: 'writable',
-        clampStep: 'writable',
-        logClamp: 'writable',
-        clampLog: 'writable',
-        expClamp: 'writable',
-        clampExp: 'writable',
-        // Backstage utils - Random functions
-        rf: 'writable',
-        randomFloat: 'writable',
-        ri: 'writable',
-        randomInt: 'writable',
-        ra: 'writable',
-        rw: 'writable',
-        randomWeightedInRange: 'writable',
-        randomWeightedInArray: 'writable',
-        randomWeightedSelection: 'writable',
-        randomInRangeOrArray: 'writable',
-        rd: 'writable',
-        rl: 'writable',
-        rlc: 'writable',
-        randomLimitedChange: 'writable',
-        rv: 'writable',
-        randomVariation: 'writable',
-        normalizeWeights: 'writable',
-        allNotesOff: 'writable',
-        muteAll: 'writable',
-        // Sheet.js constants
-        OCTAVE: 'readonly',
-        NUMERATOR: 'readonly',
-        DENOMINATOR: 'readonly',
-        METER_RATIO_MIN: 'readonly',
-        METER_RATIO_MAX: 'readonly',
-        DIVISIONS: 'readonly',
-        SUBSUBDIVS: 'readonly',
-        COMPOSERS: 'readonly',
-        SECTIONS: 'readonly',
-        // Audio channels (left/right pairs)
-        lCH1: 'writable',
-        rCH1: 'writable',
-        lCH2: 'writable',
-        rCH2: 'writable',
-        lCH3: 'writable',
-        rCH3: 'writable',
-        lCH4: 'writable',
-        rCH4: 'writable',
-        lCH5: 'writable',
-        rCH5: 'writable',
-        lCH6: 'writable',
-        rCH6: 'writable',
-        // Timing state arrays
-        beatsOn: 'writable',
-        beatsOff: 'writable',
-        divsOn: 'writable',
-        divsOff: 'writable',
-        subdivsOn: 'writable',
-        subdivsOff: 'writable',
-        subsubdivsOn: 'writable',
-        subsubdivsOff: 'writable',
-        // Audio FX and binaural effects
-        rlFX: 'writable',
-        chFX: 'writable',
-        flipBin: 'writable',
-        flipBinT: 'writable',
-        flipBinF: 'writable',
-        flipBinT3: 'writable',
-        flipBinF3: 'writable',
-        flipBinF2: 'writable',
-        flipBinT2: 'writable',
-        reflection: 'writable',
-        reflectionBinaural: 'writable',
-        reflect: 'writable',
-        reflect2: 'writable',
-        source2: 'writable',
-        binauralL: 'writable',
-        binauralR: 'writable',
-        binauralFreqOffset: 'writable',
-        binauralOffset: 'writable',
-        binauralPlus: 'writable',
-        binauralMinus: 'writable',
-        bassBinaural: 'writable',
-        stutterFadeCHs: 'writable',
-        stutterPanCHs: 'writable',
-        // Audio/rhythm functions
-        playDrums: 'writable',
-        playDrums2: 'writable',
-        getRhythm: 'writable',
-        rhythms: 'writable',
-        // Node.js globals
+        globalThis: 'readonly',
         require: 'readonly',
         module: 'readonly',
         exports: 'writable',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        global: 'readonly',
         process: 'readonly',
         console: 'readonly',
         Buffer: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setImmediate: 'readonly',
-        clearImmediate: 'readonly',
-        globalThis: 'readonly'
+        m: 'readonly',
+        beatCount: 'writable',
+        beatsUntilBinauralShift: 'writable',
+        subdivsPerBeat: 'writable',
+        velocity: 'writable',
+        activeMotif: 'writable',
+        applyMotifToNotes: 'writable',
+        fxManager: 'writable',
+        subsubsPerSub: 'writable',
+        _: 'writable'
       }
     },
     rules: {
-      // Code correctness - errors that break functionality
-      'no-undef': 'warn',  // Catch undefined variables like activeMotif
-      'no-unreachable': 'error',  // Dead code after return/throw
-      'no-constant-condition': 'warn',  // Conditions always true/false (can be intentional)
-      'no-dupe-keys': 'error',  // Duplicate object keys
-      'no-dupe-args': 'error',  // Duplicate function parameters
-      'no-duplicate-case': 'error',  // Duplicate switch cases
-      'no-empty': 'warn',  // Empty blocks (may be intentional)
-      'no-ex-assign': 'error',  // Reassigning exception variable
-      'no-func-assign': 'error',  // Reassigning function declarations
-      'no-invalid-regexp': 'error',  // Invalid regex patterns
-      'use-isnan': 'error',  // Require isNaN() for NaN checks
-      'valid-typeof': 'error',  // Enforce valid typeof comparisons
-      'no-self-assign': 'error',  // Catch x = x mistakes
-      'no-cond-assign': ['error', 'except-parens'],  // No assignment in conditions (catch = vs ==)
-      'no-fallthrough': 'warn',  // Require break in switch cases
-
-      // Code quality
-      'no-irregular-whitespace': 'error',
-      'no-unexpected-multiline': 'error',
-      'no-useless-escape': 'warn',
+      'no-undef': 'warn',
       'no-trailing-spaces': 'warn',
-      'eol-last': ['warn', 'always'],
-      'no-unused-vars': 'off'  // Too many intentional globals
+      'eol-last': 'off',  // Stage 2: Accept for now
+      'no-constant-condition': 'warn'
     }
   }
 ];

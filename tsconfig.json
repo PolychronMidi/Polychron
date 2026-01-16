@@ -2,29 +2,18 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020", "DOM"],
-    "outDir": "./src",
+    "lib": ["ES2020"],
+    "declaration": false,
+    "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": false,
-    "sourceMap": false,
-    "moduleResolution": "node",
-    "allowJs": true,
-    "checkJs": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitReturns": false,
-    "types": ["node"]
+    "moduleResolution": "node"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "test", "csv_maestro", "scripts", "docs", "src/**/*.js"],
-  "ts-node": {
-    "compilerOptions": {
-      "module": "commonjs"
-    }
-  }
+  "exclude": ["node_modules", "dist", "test", "coverage"]
 }

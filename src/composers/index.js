@@ -216,6 +216,8 @@ class RandomChordComposer extends ChordComposer {
     if (progression.length === 0) {
       progression.push('Cmaj');
     }
+    // Reset chord index to 0 before setting new progression to avoid out-of-bounds access
+    this.currentChordIndex = 0;
     this.setChordProgression(progression, 'R');
   }
 
