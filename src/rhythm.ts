@@ -584,58 +584,23 @@ export const getRhythm = (level: string, length: number, pattern: number[], meth
 };
 
 /**
- * Track beat rhythm state (on/off).
+ * Track rhythm state (on/off) for a given unit level.
+ * @param {string} unit - Rhythm unit ('beat', 'div', 'subdiv', 'subsubdiv').
  * @returns {void}
  */
-export const trackBeatRhythm = (): void => {
-  if (beatRhythm[beatIndex] > 0) {
-    beatsOn++;
-    beatsOff = 0;
-  } else {
-    beatsOn = 0;
-    beatsOff++;
-  }
-};
+export const trackRhythm = (unit: string): void => {
+  const g = globalThis as any;
+  const rhythmArray = g[`${unit}Rhythm`];
+  const index = g[`${unit}Index`];
+  const onKey = `${unit}sOn`;
+  const offKey = `${unit}sOff`;
 
-/**
- * Track division rhythm state (on/off).
- * @returns {void}
- */
-export const trackDivRhythm = (): void => {
-  if (divRhythm[divIndex] > 0) {
-    divsOn++;
-    divsOff = 0;
+  if (rhythmArray[index] > 0) {
+    g[onKey]++;
+    g[offKey] = 0;
   } else {
-    divsOn = 0;
-    divsOff++;
-  }
-};
-
-/**
- * Track subdivision rhythm state (on/off).
- * @returns {void}
- */
-export const trackSubdivRhythm = (): void => {
-  if (subdivRhythm[subdivIndex] > 0) {
-    subdivsOn++;
-    subdivsOff = 0;
-  } else {
-    subdivsOn = 0;
-    subdivsOff++;
-  }
-};
-
-/**
- * Track sub-subdivision rhythm state (on/off).
- * @returns {void}
- */
-export const trackSubsubdivRhythm = (): void => {
-  if (subsubdivRhythm[subsubdivIndex] > 0) {
-    subsubdivsOn++;
-    subsubdivsOff = 0;
-  } else {
-    subsubdivsOn = 0;
-    subsubdivsOff++;
+    g[onKey] = 0;
+    g[offKey]++;
   }
 };
 
@@ -657,15 +622,12 @@ export const trackSubsubdivRhythm = (): void => {
 (globalThis as any).patternLength = patternLength;
 (globalThis as any).closestDivisor = closestDivisor;
 (globalThis as any).getRhythm = getRhythm;
-(globalThis as any).trackBeatRhythm = trackBeatRhythm;
-(globalThis as any).trackDivRhythm = trackDivRhythm;
-(globalThis as any).trackSubdivRhythm = trackSubdivRhythm;
-(globalThis as any).trackSubsubdivRhythm = trackSubsubdivRhythm;
+(globalThis as any).trackRhythm = trackRhythm;
 
 // Export to globalThis test namespace for clean test access
 if (typeof globalThis !== 'undefined') {
   globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
   Object.assign(globalThis.__POLYCHRON_TEST__, {
-    drummer, patternLength, makeOnsets, closestDivisor, drumMap
+    drummer, patternLength, makeOnsets, closestDivisor, drumMap, trackRhythm
   });
 }

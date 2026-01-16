@@ -218,7 +218,7 @@ const setUnitTiming = (unitType: string): void => {
       break;
 
     case 'beat':
-      g.trackBeatRhythm();
+      g.trackRhythm('beat');
       g.tpBeat = g.tpMeasure / g.numerator;
       g.spBeat = g.tpBeat / g.tpSec;
       g.trueBPM = 60 / g.spBeat;
@@ -233,7 +233,7 @@ const setUnitTiming = (unitType: string): void => {
       break;
 
     case 'division':
-      g.trackDivRhythm();
+      g.trackRhythm('div');
       g.tpDiv = g.tpBeat / Math.max(1, g.divsPerBeat);
       g.spDiv = g.tpDiv / g.tpSec;
       g.divStart = g.beatStart + g.divIndex * g.tpDiv;
@@ -244,7 +244,7 @@ const setUnitTiming = (unitType: string): void => {
       break;
 
     case 'subdivision':
-      g.trackSubdivRhythm();
+      g.trackRhythm('subdiv');
       g.tpSubdiv = g.tpDiv / Math.max(1, g.subdivsPerDiv);
       g.spSubdiv = g.tpSubdiv / g.tpSec;
       g.subdivsPerMinute = 60 / g.spSubdiv;
@@ -255,7 +255,7 @@ const setUnitTiming = (unitType: string): void => {
       break;
 
     case 'subsubdivision':
-      g.trackSubsubdivRhythm();
+      g.trackRhythm('subsubdiv');
       g.tpSubsubdiv = g.tpSubdiv / Math.max(1, g.subsubdivsPerSub);
       g.spSubsubdiv = g.tpSubsubdiv / g.tpSec;
       g.subsubdivsPerMinute = 60 / g.spSubsubdiv;

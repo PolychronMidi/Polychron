@@ -60,7 +60,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'beat':
-      trackBeatRhythm();
+      trackRhythm('beat');
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -75,7 +75,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'division':
-      trackDivRhythm();
+      trackRhythm('div');
       tpDiv = tpBeat / m.max(1, divsPerBeat);
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -86,7 +86,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdivision':
-      trackSubdivRhythm();
+      trackRhythm('subdiv');
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
@@ -97,7 +97,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdivision':
-      trackSubsubdivRhythm();
+      trackRhythm('subsubdiv');
       tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivsPerMinute = 60 / spSubsubdiv;
@@ -685,7 +685,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'beat':
-      trackBeatRhythm();
+      trackRhythm('beat');
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -700,7 +700,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'division':
-      trackDivRhythm();
+      trackRhythm('div');
       tpDiv = tpBeat / m.max(1, divsPerBeat);
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -711,7 +711,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdivision':
-      trackSubdivRhythm();
+      trackRhythm('subdiv');
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
@@ -722,7 +722,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdivision':
-      trackSubsubdivRhythm();
+      trackRhythm('subsubdiv');
       tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivsPerMinute = 60 / spSubsubdiv;
@@ -895,7 +895,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'beat':
-      trackBeatRhythm();
+      trackRhythm('beat');
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat;
@@ -905,7 +905,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'division':
-      trackDivRhythm();
+      trackRhythm('div');
       tpDiv = tpBeat / m.max(1, divsPerBeat);
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -915,7 +915,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdivision':
-      trackSubdivRhythm();
+      trackRhythm('subdiv');
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
       subdivStart = divStart + subdivIndex * tpSubdiv;
@@ -925,7 +925,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdivision':
-      trackSubsubdivRhythm();
+      trackRhythm('subsubdiv');
       tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
