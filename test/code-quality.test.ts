@@ -473,20 +473,21 @@ test('each source module should have corresponding test file', () => {
   ];
 
   const testFiles = fs.readdirSync(path.join(__dirname), { withFileTypes: true })
-    .filter(f => f.isFile() && f.name.endsWith('.test.js'))
+    .filter(f => f.isFile() && (f.name.endsWith('.test.js') || f.name.endsWith('.test.ts')))
     .map(f => f.name);
 
   const missingTests = sourceFiles.filter(srcFile => {
-    const testFile = srcFile.replace('.js', '.test.js');
-    return !testFiles.includes(testFile);
+    const testFileJs = srcFile.replace('.js', '.test.js');
+    const testFileTs = srcFile.replace('.js', '.test.ts');
+    return !testFiles.includes(testFileJs) && !testFiles.includes(testFileTs);
   });
 
   if (missingTests.length > 0) {
     console.warn(`⚠️  Missing test files: ${missingTests.join(', ')}`);
   }
 
-  // play.js should have a test
-  expect(testFiles).toContain('play.test.js');
+  // play.js should have a test (.ts or .js)
+  expect(testFiles.some(f => f === 'play.test.js' || f === 'play.test.ts')).toBe(true);
 });
 
 /**

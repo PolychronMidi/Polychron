@@ -1,538 +1,350 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+/**
+ * DIContainer Tests
+ * Verify registration, retrieval, lifecycle management, and isolation
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   DIContainer,
-  Lifecycle,
-  ServiceFactory,
-  registerServices,
-  getDependencies,
-} from '../src/DIContainer';
-import { PolychronError, ErrorCode } from '../src/PolychronError';
+  getGlobalContainer,
+  setGlobalContainer,
+  resetGlobalContainer,
+} from '../src/DIContainer.js';
 
-// Mock services for testing
-interface Logger {
-  log(msg: string): void;
-}
-
-interface Database {
-  connect(): void;
-}
-
-interface UserService {
-  getUser(id: number): string;
-}
-
-class MockLogger implements Logger {
-  logs: string[] = [];
-  log(msg: string): void {
-    this.logs.push(msg);
-  }
-}
-
-class MockDatabase implements Database {
-  connected = false;
-  connect(): void {
-    this.connected = true;
-  }
-}
-
-class MockUserService implements UserService {
-  constructor(private db: Database) {}
-  getUser(id: number): string {
-    return `User ${id}`;
-  }
-}
-
-describe('DIContainer - Dependency Injection', () => {
-  let container: DIContainer;
+describe('DIContainer', () => {
+  let container;
 
   beforeEach(() => {
-    container = DIContainer.getInstance();
-    container.clear();
+    container = new DIContainer();
+    resetGlobalContainer();
   });
 
   afterEach(() => {
     container.clear();
+    resetGlobalContainer();
   });
 
-  describe('DIContainer singleton', () => {
-    it('should return same instance', () => {
-      const instance1 = DIContainer.getInstance();
-      const instance2 = DIContainer.getInstance();
+  describe('register()', () => {
+    it('should register a service with singleton lifecycle by default', () => {
+      const factory = () => ({ value: 42 });
+      container.register('config', factory);
+
+      expect(container.has('config')).toBe(true);
+      expect(container.getServiceCount()).toBe(1);
+    });
+
+    it('should register a service with explicit lifecycle', () => {
+      const factory = () => ({ value: 42 });
+      container.register('transientService', factory, 'transient');
+
+      expect(container.has('transientService')).toBe(true);
+    });
+
+    it('should throw when registering duplicate service key', () => {
+      const factory = () => ({ value: 42 });
+      container.register('config', factory);
+
+      expect(() => {
+        container.register('config', factory);
+      }).toThrow(`Service 'config' is already registered`);
+    });
+
+    it('should accept any factory function', () => {
+      class MyService {
+        getValue() {
+          return 42;
+        }
+      }
+      container.register('service', () => new MyService());
+
+      const service = container.get('service');
+      expect(service.getValue()).toBe(42);
+    });
+  });
+
+  describe('get()', () => {
+    it('should retrieve registered singleton service', () => {
+      const config = { bpm: 120 };
+      container.register('config', () => config);
+
+      const retrieved = container.get('config');
+      expect(retrieved).toBe(config);
+    });
+
+    it('should return same instance for singleton services', () => {
+      const counter = { count: 0 };
+      const factory = () => {
+        counter.count++;
+        return { id: counter.count };
+      };
+      container.register('singleton', factory, 'singleton');
+
+      const instance1 = container.get('singleton');
+      const instance2 = container.get('singleton');
+
       expect(instance1).toBe(instance2);
+      expect(instance1.id).toBe(1);
+      expect(counter.count).toBe(1);
     });
 
-    it('should start empty', () => {
-      expect(container.getServiceCount()).toBe(0);
-    });
-  });
+    it('should return new instance each time for transient services', () => {
+      const counter = { count: 0 };
+      const factory = () => {
+        counter.count++;
+        return { id: counter.count };
+      };
+      container.register('transient', factory, 'transient');
 
-  describe('Service registration', () => {
-    it('should register a singleton service', () => {
-      const factory: ServiceFactory<Logger> = () => new MockLogger();
-      container.register('Logger', factory, Lifecycle.SINGLETON);
+      const instance1 = container.get('transient');
+      const instance2 = container.get('transient');
 
-      expect(container.has('Logger')).toBe(true);
-      expect(container.isSingleton('Logger')).toBe(true);
-    });
-
-    it('should register a transient service', () => {
-      const factory: ServiceFactory<Logger> = () => new MockLogger();
-      container.register('Logger', factory, Lifecycle.TRANSIENT);
-
-      expect(container.has('Logger')).toBe(true);
-      expect(container.isTransient('Logger')).toBe(true);
+      expect(instance1).not.toBe(instance2);
+      expect(instance1.id).toBe(1);
+      expect(instance2.id).toBe(2);
+      expect(counter.count).toBe(2);
     });
 
-    it('should register singleton via helper', () => {
-      const factory: ServiceFactory<Logger> = () => new MockLogger();
-      container.registerSingleton('Logger', factory);
-
-      expect(container.isSingleton('Logger')).toBe(true);
-    });
-
-    it('should register transient via helper', () => {
-      const factory: ServiceFactory<Logger> = () => new MockLogger();
-      container.registerTransient('Logger', factory);
-
-      expect(container.isTransient('Logger')).toBe(true);
-    });
-
-    it('should register instance directly', () => {
-      const logger = new MockLogger();
-      container.registerInstance('Logger', logger);
-
-      expect(container.has('Logger')).toBe(true);
-      expect(container.resolve('Logger')).toBe(logger);
-    });
-
-    it('should throw on duplicate registration', () => {
-      const factory: ServiceFactory<Logger> = () => new MockLogger();
-      container.register('Logger', factory);
-
+    it('should throw when getting unregistered service', () => {
       expect(() => {
-        container.register('Logger', factory);
-      }).toThrow(PolychronError);
-    });
-
-    it('should support multiple services', () => {
-      container.register('Logger', () => new MockLogger());
-      container.register('Database', () => new MockDatabase());
-      container.register('UserService', () => new MockUserService(new MockDatabase()));
-
-      expect(container.getServiceCount()).toBe(3);
+        container.get('nonexistent');
+      }).toThrow(`Service 'nonexistent' not found in container`);
     });
   });
 
-  describe('Service resolution', () => {
-    it('should resolve registered service', () => {
-      const factory: ServiceFactory<Logger> = () => new MockLogger();
-      container.register('Logger', factory);
-
-      const logger = container.resolve<Logger>('Logger');
-      expect(logger).toBeInstanceOf(MockLogger);
+  describe('has()', () => {
+    it('should return true for registered service', () => {
+      container.register('config', () => ({}));
+      expect(container.has('config')).toBe(true);
     });
 
-    it('should throw if service not found', () => {
-      expect(() => {
-        container.resolve('NonExistent');
-      }).toThrow(PolychronError);
-    });
-
-    it('should throw with service key in error', () => {
-      try {
-        container.resolve('NonExistent');
-        expect.fail('Should have thrown');
-      } catch (error) {
-        if (error instanceof PolychronError) {
-          expect(error.context.service).toBe('NonExistent');
-        }
-      }
-    });
-
-    it('should resolve singleton only once', () => {
-      const factory = vi.fn(() => new MockLogger());
-      container.registerSingleton('Logger', factory);
-
-      const logger1 = container.resolve<Logger>('Logger');
-      const logger2 = container.resolve<Logger>('Logger');
-
-      expect(logger1).toBe(logger2);
-      expect(factory).toHaveBeenCalledTimes(1);
-    });
-
-    it('should resolve transient each time', () => {
-      const factory = vi.fn(() => new MockLogger());
-      container.registerTransient('Logger', factory);
-
-      const logger1 = container.resolve<Logger>('Logger');
-      const logger2 = container.resolve<Logger>('Logger');
-
-      expect(logger1).not.toBe(logger2);
-      expect(factory).toHaveBeenCalledTimes(2);
-    });
-
-    it('should support constructor injection', () => {
-      container.registerSingleton('Database', () => new MockDatabase());
-      container.registerSingleton('UserService', (c) => {
-        const db = c.resolve<Database>('Database');
-        return new MockUserService(db);
-      });
-
-      const userService = container.resolve<UserService>('UserService');
-      expect(userService).toBeInstanceOf(MockUserService);
-    });
-
-    it('should support chained dependencies', () => {
-      container.registerSingleton('Database', () => {
-        const db = new MockDatabase();
-        db.connect();
-        return db;
-      });
-
-      container.registerSingleton('UserService', (c) => {
-        const db = c.resolve<Database>('Database');
-        return new MockUserService(db);
-      });
-
-      const userService = container.resolve<UserService>('UserService');
-      const db = container.resolve<Database>('Database');
-
-      expect(userService).toBeInstanceOf(MockUserService);
-      expect(db.connected).toBe(true);
+    it('should return false for unregistered service', () => {
+      expect(container.has('nonexistent')).toBe(false);
     });
   });
 
-  describe('Circular dependency detection', () => {
-    it('should detect circular dependency', () => {
-      // Service A depends on Service B
-      container.registerSingleton('ServiceA', (c) => ({
-        b: c.resolve('ServiceB'),
-      }));
+  describe('clear()', () => {
+    it('should remove all services and singletons', () => {
+      container.register('service1', () => ({}));
+      container.register('service2', () => ({}));
 
-      // Service B depends on Service A (circular)
-      container.registerSingleton('ServiceB', (c) => ({
-        a: c.resolve('ServiceA'),
-      }));
-
-      expect(() => {
-        container.resolve('ServiceA');
-      }).toThrow(PolychronError);
-
-      try {
-        container.resolve('ServiceA');
-        expect.fail('Should have thrown');
-      } catch (error) {
-        if (error instanceof PolychronError) {
-          expect(error.code).toBe(ErrorCode.INITIALIZATION_ERROR);
-          expect(error.message).toContain('Circular dependency');
-        }
-      }
-    });
-
-    it('should detect self-circular dependency', () => {
-      container.registerSingleton('ServiceA', (c) => ({
-        self: c.resolve('ServiceA'),
-      }));
-
-      expect(() => {
-        container.resolve('ServiceA');
-      }).toThrow(PolychronError);
-    });
-  });
-
-  describe('Service querying', () => {
-    beforeEach(() => {
-      container.register('Logger', () => new MockLogger());
-      container.register('Database', () => new MockDatabase());
-    });
-
-    it('should check if service exists', () => {
-      expect(container.has('Logger')).toBe(true);
-      expect(container.has('NonExistent')).toBe(false);
-    });
-
-    it('should get all service keys', () => {
-      const keys = container.getKeys();
-      expect(keys).toContain('Logger');
-      expect(keys).toContain('Database');
-      expect(keys.length).toBe(2);
-    });
-
-    it('should get service registration', () => {
-      const registration = container.getRegistration('Logger');
-      expect(registration).toBeDefined();
-      expect(registration?.key).toBe('Logger');
-    });
-
-    it('should get all registrations', () => {
-      const registrations = container.getAllRegistrations();
-      expect(registrations.length).toBe(2);
-    });
-
-    it('should get lifecycle type', () => {
-      container.registerSingleton('S1', () => ({}));
-      container.registerTransient('T1', () => ({}));
-
-      expect(container.getLifecycle('S1')).toBe(Lifecycle.SINGLETON);
-      expect(container.getLifecycle('T1')).toBe(Lifecycle.TRANSIENT);
-      expect(container.getLifecycle('NonExistent')).toBeUndefined();
-    });
-
-    it('should check singleton/transient status', () => {
-      container.registerSingleton('S1', () => ({}));
-      container.registerTransient('T1', () => ({}));
-
-      expect(container.isSingleton('S1')).toBe(true);
-      expect(container.isTransient('T1')).toBe(true);
-      expect(container.isSingleton('T1')).toBe(false);
-      expect(container.isTransient('S1')).toBe(false);
-    });
-
-    it('should get service count', () => {
-      expect(container.getServiceCount()).toBe(2);
-    });
-  });
-
-  describe('Instance caching', () => {
-    it('should cache singleton instances', () => {
-      const instance = new MockLogger();
-      container.registerInstance('Logger', instance);
-
-      const cached = container.getCachedInstance<Logger>('Logger');
-      expect(cached).toBe(instance);
-    });
-
-    it('should not cache transient instances', () => {
-      container.registerTransient('Logger', () => new MockLogger());
-
-      const resolved = container.resolve<Logger>('Logger');
-      const cached = container.getCachedInstance<Logger>('Logger');
-
-      expect(cached).toBeUndefined();
-      expect(resolved).toBeInstanceOf(MockLogger);
-    });
-
-    it('should count cached instances', () => {
-      container.registerSingleton('Logger', () => new MockLogger());
-      container.registerTransient('Database', () => new MockDatabase());
-
-      // Resolve singleton to cache it
-      container.resolve('Logger');
-
-      expect(container.getCachedInstanceCount()).toBe(1);
-    });
-
-    it('should clear instances but keep registrations', () => {
-      container.registerSingleton('Logger', () => new MockLogger());
-      const logger1 = container.resolve<Logger>('Logger');
-
-      container.clearInstances();
-
-      const logger2 = container.resolve<Logger>('Logger');
-
-      expect(logger1).not.toBe(logger2);
-      expect(container.has('Logger')).toBe(true);
-    });
-  });
-
-  describe('Container state management', () => {
-    it('should unregister service', () => {
-      container.register('Logger', () => new MockLogger());
-      expect(container.has('Logger')).toBe(true);
-
-      const removed = container.unregister('Logger');
-      expect(removed).toBe(true);
-      expect(container.has('Logger')).toBe(false);
-    });
-
-    it('should return false when unregistering non-existent service', () => {
-      const removed = container.unregister('NonExistent');
-      expect(removed).toBe(false);
-    });
-
-    it('should clear all services', () => {
-      container.register('Logger', () => new MockLogger());
-      container.register('Database', () => new MockDatabase());
+      container.get('service1');
+      container.get('service2');
 
       expect(container.getServiceCount()).toBe(2);
 
       container.clear();
 
       expect(container.getServiceCount()).toBe(0);
-      expect(container.has('Logger')).toBe(false);
-      expect(container.has('Database')).toBe(false);
+      expect(container.has('service1')).toBe(false);
+      expect(container.has('service2')).toBe(false);
+    });
+
+    it('should allow re-registering after clear', () => {
+      const factory = () => ({});
+      container.register('service', factory);
+      container.clear();
+
+      container.register('service', factory);
+      expect(container.has('service')).toBe(true);
     });
   });
 
-  describe('Batch registration', () => {
-    it('should register multiple services', () => {
-      const configs = [
-        {
-          key: 'Logger',
-          factory: () => new MockLogger(),
-          lifecycle: Lifecycle.SINGLETON,
-        },
-        {
-          key: 'Database',
-          factory: () => new MockDatabase(),
-          lifecycle: Lifecycle.SINGLETON,
-        },
-      ];
+  describe('getServiceKeys()', () => {
+    it('should return array of all registered service keys', () => {
+      container.register('config', () => ({}));
+      container.register('logger', () => ({}));
+      container.register('db', () => ({}));
 
-      registerServices(container, configs);
+      const keys = container.getServiceKeys();
+      expect(keys).toContain('config');
+      expect(keys).toContain('logger');
+      expect(keys).toContain('db');
+      expect(keys.length).toBe(3);
+    });
 
+    it('should return empty array when no services registered', () => {
+      const keys = container.getServiceKeys();
+      expect(keys).toEqual([]);
+    });
+  });
+
+  describe('getServiceCount()', () => {
+    it('should return count of registered services', () => {
+      expect(container.getServiceCount()).toBe(0);
+
+      container.register('service1', () => ({}));
+      expect(container.getServiceCount()).toBe(1);
+
+      container.register('service2', () => ({}));
       expect(container.getServiceCount()).toBe(2);
-      expect(container.has('Logger')).toBe(true);
-      expect(container.has('Database')).toBe(true);
-    });
-
-    it('should use default lifecycle in batch registration', () => {
-      const configs = [
-        {
-          key: 'Logger',
-          factory: () => new MockLogger(),
-          // No lifecycle specified, should default to SINGLETON
-        },
-      ];
-
-      registerServices(container, configs);
-
-      expect(container.isSingleton('Logger')).toBe(true);
     });
   });
 
-  describe('Dependency graph debugging', () => {
-    it('should get dependencies for service', () => {
-      container.registerSingleton('Database', () => new MockDatabase());
+  describe('Lifecycle Management', () => {
+    it('should isolate singleton instances between containers', () => {
+      const container1 = new DIContainer();
+      const container2 = new DIContainer();
 
-      container.registerSingleton('UserService', (c) => {
-        const db = c.resolve('Database');
-        return new MockUserService(db);
-      });
+      const value1 = { id: 1 };
+      const value2 = { id: 2 };
 
-      // Note: This is a best-effort heuristic, not guaranteed to be perfect
-      // Just verify it doesn't crash
-      const deps = getDependencies(container, 'UserService');
-      expect(Array.isArray(deps)).toBe(true);
+      container1.register('service', () => value1);
+      container2.register('service', () => value2);
+
+      const retrieved1 = container1.get('service');
+      const retrieved2 = container2.get('service');
+
+      expect(retrieved1).toBe(value1);
+      expect(retrieved2).toBe(value2);
+      expect(retrieved1).not.toBe(retrieved2);
     });
 
-    it('should handle services with no dependencies', () => {
-      container.registerSingleton('Logger', () => new MockLogger());
+    it('should cache only singletons, not transients', () => {
+      const callLog = [];
 
-      const deps = getDependencies(container, 'Logger');
-      expect(Array.isArray(deps)).toBe(true);
-    });
-  });
+      container.register('singleton', () => {
+        callLog.push('singleton');
+        return {};
+      }, 'singleton');
 
-  describe('Module initialization pattern', () => {
-    it('should support staged initialization', () => {
-      const order: string[] = [];
+      container.register('transient', () => {
+        callLog.push('transient');
+        return {};
+      }, 'transient');
 
-      // Stage 1: Configuration
-      container.registerSingleton('Config', () => {
-        order.push('Config');
-        return { bpm: 120 };
-      });
+      container.get('singleton');
+      container.get('singleton');
+      container.get('transient');
+      container.get('transient');
 
-      // Stage 2: Core services (depend on config)
-      container.registerSingleton('Logger', (c) => {
-        order.push('Logger');
-        const config = c.resolve('Config');
-        return new MockLogger();
-      });
-
-      // Stage 3: Services (depend on logger)
-      container.registerSingleton('Database', (c) => {
-        order.push('Database');
-        const logger = c.resolve<Logger>('Logger');
-        return new MockDatabase();
-      });
-
-      // Resolve in arbitrary order - dependencies should resolve first
-      container.resolve('Database');
-
-      expect(order).toEqual(['Config', 'Logger', 'Database']);
-    });
-
-    it('should isolate services in tests via clearInstances', () => {
-      const logger1 = new MockLogger();
-      logger1.log('test1');
-
-      container.registerInstance('Logger', logger1);
-      expect(container.resolve<Logger>('Logger')).toBe(logger1);
-
-      // Reset for new test
-      container.clearInstances();
-
-      const logger2 = new MockLogger();
-      logger2.log('test2');
-      container.registerInstance('Logger', logger2);
-
-      expect(container.resolve<Logger>('Logger')).toBe(logger2);
-      expect(container.resolve<Logger>('Logger')).not.toBe(logger1);
+      expect(callLog).toEqual(['singleton', 'transient', 'transient']);
     });
   });
 
-  describe('Error handling', () => {
-    it('should include service key in registration error', () => {
-      container.register('Service', () => ({}));
+  describe('Global Container', () => {
+    it('should return same global instance on repeated calls', () => {
+      const container1 = getGlobalContainer();
+      const container2 = getGlobalContainer();
 
-      try {
-        container.register('Service', () => ({}));
-        expect.fail('Should have thrown');
-      } catch (error) {
-        if (error instanceof PolychronError) {
-          expect(error.context.service).toBe('Service');
+      expect(container1).toBe(container2);
+    });
+
+    it('should register and retrieve from global container', () => {
+      const globalContainer = getGlobalContainer();
+      globalContainer.register('config', () => ({ bpm: 120 }));
+
+      const retrieved = globalContainer.get('config');
+      expect(retrieved.bpm).toBe(120);
+    });
+
+    it('should allow setting custom global container', () => {
+      const customContainer = new DIContainer();
+      customContainer.register('custom', () => ({ value: 'custom' }));
+
+      setGlobalContainer(customContainer);
+
+      const globalContainer = getGlobalContainer();
+      expect(globalContainer).toBe(customContainer);
+      expect(globalContainer.has('custom')).toBe(true);
+    });
+
+    it('should reset global container to null', () => {
+      const container1 = getGlobalContainer();
+      container1.register('service', () => ({}));
+
+      resetGlobalContainer();
+
+      const container2 = getGlobalContainer();
+      expect(container1).not.toBe(container2);
+      expect(container2.has('service')).toBe(false);
+    });
+
+    it('should isolate global container after reset', () => {
+      const container1 = getGlobalContainer();
+      container1.register('service1', () => ({}));
+
+      resetGlobalContainer();
+
+      const container2 = getGlobalContainer();
+      container2.register('service2', () => ({}));
+
+      expect(container2.has('service1')).toBe(false);
+      expect(container2.has('service2')).toBe(true);
+    });
+  });
+
+  describe('Integration Scenarios', () => {
+    it('should handle mixed singleton and transient services', () => {
+      class Logger {
+        id: number;
+        constructor() {
+          this.id = Math.random();
         }
       }
-    });
 
-    it('should include circular dependency info in error', () => {
-      container.registerSingleton('A', (c) => ({
-        b: c.resolve('B'),
-      }));
-      container.registerSingleton('B', (c) => ({
-        a: c.resolve('A'),
-      }));
-
-      try {
-        container.resolve('A');
-        expect.fail('Should have thrown');
-      } catch (error) {
-        if (error instanceof PolychronError) {
-          expect(error.context.resolving).toBeDefined();
+      class Database {
+        logger: Logger;
+        constructor(logger: Logger) {
+          this.logger = logger;
         }
       }
-    });
-  });
 
-  describe('Performance characteristics', () => {
-    it('should resolve singletons efficiently (cached)', () => {
-      const factory = vi.fn(() => new MockLogger());
-      container.registerSingleton('Logger', factory);
+      container.register('logger', () => new Logger(), 'transient');
+      container.register('db', () => new Database(container.get('logger')), 'transient');
 
-      // Resolve 100 times
-      for (let i = 0; i < 100; i++) {
-        container.resolve('Logger');
-      }
+      const db1 = container.get('db');
+      const db2 = container.get('db');
 
-      // Factory should only be called once
-      expect(factory).toHaveBeenCalledTimes(1);
+      expect(db1).not.toBe(db2); // Both transient, so different instances
+      expect(db1.logger).not.toBe(db2.logger); // Each database gets its own transient logger
     });
 
-    it('should handle many services', () => {
-      // Register 100 services
-      for (let i = 0; i < 100; i++) {
-        container.registerSingleton(`Service${i}`, () => ({ id: i }));
-      }
+    it('should support service factory with dependencies', () => {
+      const config = { bpm: 120 };
+      container.register('config', () => config);
+      container.register('composer', () => ({
+        config: container.get('config'),
+        compose: () => 'music',
+      }));
 
-      expect(container.getServiceCount()).toBe(100);
+      const composer = container.get('composer');
+      expect(composer.config).toBe(config);
+      expect(composer.compose()).toBe('music');
+    });
 
-      // Resolve all
-      for (let i = 0; i < 100; i++) {
-        const service = container.resolve(`Service${i}`);
-        expect(service).toEqual({ id: i });
-      }
+    it('should handle complex service hierarchies', () => {
+      // Simulate a hierarchy: App -> Stage -> FxManager -> Config
+      const config = { scale: 'C Major' };
+
+      container.register('config', () => config);
+      container.register('fxManager', () => ({
+        config: container.get('config'),
+      }));
+      container.register('stage', () => ({
+        fx: container.get('fxManager'),
+      }));
+      container.register('app', () => ({
+        stage: container.get('stage'),
+      }));
+
+      const app = container.get('app');
+      expect(app.stage.fx.config.scale).toBe('C Major');
+    });
+
+    it('should maintain isolation for testing', () => {
+      const container1 = new DIContainer();
+      const container2 = new DIContainer();
+
+      container1.register('state', () => ({ calls: 0 }), 'singleton');
+      container2.register('state', () => ({ calls: 0 }), 'singleton');
+
+      const state1a = container1.get('state');
+      const state1b = container1.get('state');
+      const state2a = container2.get('state');
+
+      state1a.calls++;
+      expect(state1b.calls).toBe(1);
+      expect(state2a.calls).toBe(0);
     });
   });
 });
