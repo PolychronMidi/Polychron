@@ -243,16 +243,30 @@ const getMidiValue = (category: string, name: string): number => {
   return item.number;
 };
 
-// Resolve instrument names to MIDI program numbers
-declare const primaryInstrument: string;
-declare const secondaryInstrument: string;
-declare const bassInstrument: string;
-declare const bassInstrument2: string;
+// Lazy initialization of instrument numbers (after globalThis is populated)
+let primaryInstrumentNum: number = 0;
+let secondaryInstrumentNum: number = 0;
+let bassInstrumentNum: number = 0;
+let bassInstrument2Num: number = 0;
 
-let primaryInstrumentNum: number = getMidiValue('program', primaryInstrument);
-let secondaryInstrumentNum: number = getMidiValue('program', secondaryInstrument);
-let bassInstrumentNum: number = getMidiValue('program', bassInstrument);
-let bassInstrument2Num: number = getMidiValue('program', bassInstrument2);
+/**
+ * Initialize instrument MIDI numbers from global instrument names
+ * Must be called after sheet.ts has set globalThis instrument values
+ */
+const initInstrumentNumbers = () => {
+  const primaryInst = (globalThis as any).primaryInstrument;
+  const secondaryInst = (globalThis as any).secondaryInstrument;
+  const bassInst = (globalThis as any).bassInstrument;
+  const bassInst2 = (globalThis as any).bassInstrument2;
+  
+  if (primaryInst) primaryInstrumentNum = getMidiValue('program', primaryInst);
+  if (secondaryInst) secondaryInstrumentNum = getMidiValue('program', secondaryInst);
+  if (bassInst) bassInstrumentNum = getMidiValue('program', bassInst);
+  if (bassInst2) bassInstrument2Num = getMidiValue('program', bassInst2);
+};
+
+// Call initialization immediately
+initInstrumentNumbers();
 
 /** Tonal.js library for music theory operations */
 const t: any = require('tonal');
