@@ -1,23 +1,21 @@
 // venue.ts - MIDI data definitions with program changes, controls, and music theory.
-// minimalist comments, details at: venue.md
+// TypeScript version with full type annotations
 
-/**
- * MIDI item structure for programs and controls
- */
-interface MidiItem {
+import * as t from 'tonal';
+
+// MIDI data interfaces
+export interface MidiInstrument {
   number: number;
   name: string;
 }
 
-/**
- * MIDI data categories
- */
-interface MidiData {
-  program: MidiItem[];
-  control: MidiItem[];
+export interface MidiData {
+  program: MidiInstrument[];
+  control: MidiInstrument[];
 }
 
-const midiData: MidiData = {
+// MIDI data definitions
+export const midiData: MidiData = {
   program: [
     { number: 0, name: 'Acoustic Grand Piano' },
     { number: 1, name: 'Bright Acoustic Piano' },
@@ -148,7 +146,7 @@ const midiData: MidiData = {
     { number: 126, name: 'Applause' },
     { number: 127, name: 'Gunshot' }
   ],
-  control: [ // http://midi.teragonaudio.com/tech/midispec.htm
+  control: [
     { number: 0, name: 'Bank Select (coarse)' },
     { number: 1, name: 'Modulation Wheel (coarse)' },
     { number: 2, name: 'Breath controller (coarse)' },
@@ -224,69 +222,39 @@ const midiData: MidiData = {
  * @param category - Category name ('program' or 'control')
  * @param name - The instrument or control name to look up
  * @returns The MIDI number, or 0 if not found (fallback)
- * @example
- * getMidiValue('program', 'Acoustic Grand Piano'); // returns 0
- * getMidiValue('control', 'Volume (coarse)'); // returns 7
  */
-const getMidiValue = (category: string, name: string): number => {
+export function getMidiValue(category: string, name: string): number {
   category = category.toLowerCase();
   name = name.toLowerCase();
+
   if (!midiData[category as keyof MidiData]) {
     console.warn(`Invalid MIDI category: ${category}`);
-    return 0; // Fallback to 0 instead of null
+    return 0;
   }
-  const item = midiData[category as keyof MidiData].find(item => item.name.toLowerCase() === name);
+
+  const items = midiData[category as keyof MidiData] as MidiInstrument[];
+  const item = items.find(item => item.name.toLowerCase() === name);
+
   if (!item) {
     console.warn(`MIDI ${category} '${name}' not found, using fallback value 0`);
     return 0;
   }
+
   return item.number;
-};
+}
 
-// Lazy initialization of instrument numbers (after globalThis is populated)
-let primaryInstrumentNum: number = 0;
-let secondaryInstrumentNum: number = 0;
-let bassInstrumentNum: number = 0;
-let bassInstrument2Num: number = 0;
-
-/**
- * Initialize instrument MIDI numbers from global instrument names
- * Must be called after sheet.ts has set globalThis instrument values
- */
-const initInstrumentNumbers = () => {
-  const primaryInst = (globalThis as any).primaryInstrument;
-  const secondaryInst = (globalThis as any).secondaryInstrument;
-  const bassInst = (globalThis as any).bassInstrument;
-  const bassInst2 = (globalThis as any).bassInstrument2;
-
-  if (primaryInst) primaryInstrumentNum = getMidiValue('program', primaryInst);
-  if (secondaryInst) secondaryInstrumentNum = getMidiValue('program', secondaryInst);
-  if (bassInst) bassInstrumentNum = getMidiValue('program', bassInst);
-  if (bassInst2) bassInstrument2Num = getMidiValue('program', bassInst2);
-};
-
-// Call initialization immediately
-initInstrumentNumbers();
-
-/** Tonal.js library for music theory operations */
-const t: any = require('tonal');
-(globalThis as any).t = t;
-
+// Music theory data
 /**
  * All chromatic notes in standardized enharmonic form.
- * @example
- * allNotes[0]; // 'C'
  */
-const allNotes: string[] = t.Scale.get('C chromatic').notes.map((note: string) =>
-  t.Note.enharmonic(t.Note.get(note))
+export const allNotes: string[] = t.Scale.get('C chromatic').notes.map((note: string) =>
+  t.Note.enharmonic(note)
 );
 
 /**
  * All available scale names that have valid note configurations.
- * @example
- * allScales[0]; // 'major'
  */
-const allScales: string[] = t.Scale.names().filter((scaleName: string) => {
+export const allScales: string[] = t.Scale.names().filter((scaleName: string) => {
   return allNotes.some(root => {
     const scale = t.Scale.get(`${root} ${scaleName}`);
     return scale.notes.length > 0;
@@ -295,34 +263,34 @@ const allScales: string[] = t.Scale.names().filter((scaleName: string) => {
 
 /**
  * All available chord symbols that exist in the tonal library.
- * @example
- * allChords[0]; // 'CM'
  */
-const allChords: string[] = (function() {
-  function getChordNotes(chordType: string, root: string): { symbol: string; notes: string[] } | undefined {
+export const allChords: string[] = (function () {
+  function getChordNotes(chordType: string, root: string) {
     const chord = t.Chord.get(`${root} ${chordType}`);
     if (!chord.empty && chord.symbol) {
       return { symbol: chord.symbol, notes: chord.notes };
     }
   }
+
   const allChordsSet = new Set<string>();
   t.ChordType.all().forEach((chordType: any) => {
     allNotes.forEach(root => {
       const chord = getChordNotes(chordType.name, root);
-      if (chord) {
+      if (chord && chord.symbol) {
         allChordsSet.add(chord.symbol);
       }
     });
   });
-  return Array.from(allChordsSet);
+
+  return Array.from(allChordsSet).filter(chord =>
+    chord !== undefined && chord !== null && typeof chord === 'string'
+  );
 })();
 
 /**
  * All available mode names for each root note.
- * @example
- * allModes[0]; // 'C ionian'
  */
-const allModes: string[] = (() => {
+export const allModes: string[] = (() => {
   const allModesSet = new Set<string>();
   t.Mode.all().forEach((mode: any) => {
     allNotes.forEach(root => {
@@ -333,24 +301,15 @@ const allModes: string[] = (() => {
   return Array.from(allModesSet);
 })();
 
-// Export to global scope for testing and compatibility
-(globalThis as any).midiData = midiData;
-(globalThis as any).getMidiValue = getMidiValue;
-(globalThis as any).allNotes = allNotes;
-(globalThis as any).allScales = allScales;
-(globalThis as any).allChords = allChords;
-(globalThis as any).allModes = allModes;
+// Export to global scope for backward compatibility
+declare const globalThis: any;
 
 if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  Object.assign((globalThis as any).__POLYCHRON_TEST__, {
-    midiData,
-    getMidiValue,
-    allNotes,
-    allScales,
-    allChords,
-    allModes,
-  });
+  globalThis.t = t;
+  globalThis.midiData = midiData;
+  globalThis.getMidiValue = getMidiValue;
+  globalThis.allNotes = allNotes;
+  globalThis.allScales = allScales;
+  globalThis.allChords = allChords;
+  globalThis.allModes = allModes;
 }
-
-export { midiData, getMidiValue, allNotes, allScales, allChords, allModes, MidiData, MidiItem };

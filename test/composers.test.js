@@ -1088,7 +1088,7 @@ describe('ModalInterchangeComposer', () => {
     const composer = new ModalInterchangeComposer('C', 'major', 1.0); // Always borrow
     const borrowedChord = composer.borrowChord();
     expect(borrowedChord).toBeDefined();
-    expect(typeof borrowedChord).toBe('string');
+    expect(Array.isArray(borrowedChord)).toBe(true);
   });
 
   it('should generate notes with modal interchange', () => {
