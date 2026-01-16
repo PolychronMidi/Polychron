@@ -22,6 +22,7 @@
     "build:watch": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm --watch",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
+    "test:loop": "node scripts/tests-loop.js",
     "lint": "eslint src/**/*.{js,ts}",
     "type-check": "tsc --noEmit",
     "clean": "Remove-Item src/**/*.map -ErrorAction SilentlyContinue; Remove-Item src/*.map -ErrorAction SilentlyContinue",
