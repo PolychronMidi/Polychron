@@ -9,7 +9,9 @@ export default [
       'output/*.csv',
       'output/*.mid',
       'output/*.wav',
-      'test/**'
+      'test/**',
+      '**/*.ts',
+      '**/*.d.ts'
     ]
   },
   {
