@@ -410,7 +410,9 @@ exports.FX = FX;
  * Send All Notes Off CC (123) to prevent sustain across transitions.
  */
 const allNotesOff = (tick = measureStart) => {
-    return allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
+    const allNotesOffEvents = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
+    globalThis.c.push(...allNotesOffEvents);
+    return allNotesOffEvents;
 };
 exports.allNotesOff = allNotesOff;
 /**
@@ -428,6 +430,7 @@ const rlFX = (ch, cc, min, max, condition, condMin, condMax) => {
     const useCondition = condition && condition(ch);
     const actualMin = useCondition && condMin !== undefined ? condMin : min;
     const actualMax = useCondition && condMax !== undefined ? condMax : max;
+    const beatStart = globalThis.beatStart !== undefined ? globalThis.beatStart : 0;
     return { tick: beatStart - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
 };
 globalThis.m = m;
@@ -551,4 +554,18 @@ globalThis.subdivsOn = subdivsOn;
 globalThis.subdivsOff = subdivsOff;
 globalThis.binauralL = binauralL;
 globalThis.binauralR = binauralR;
+// Export to globalThis test namespace for clean test access
+if (typeof globalThis !== 'undefined') {
+    globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+    Object.assign(globalThis.__POLYCHRON_TEST__, {
+        rf: exports.rf,
+        ri: exports.ri,
+        rl: exports.rl,
+        rv: exports.rv,
+        ra: exports.ra,
+        clamp: exports.clamp,
+        p: undefined, // Will be added by writer.js
+        m: exports.m
+    });
+}
 //# sourceMappingURL=backstage.js.map

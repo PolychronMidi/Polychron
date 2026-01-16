@@ -12,9 +12,11 @@ Object.defineProperty(exports, "LayerManager", { enumerable: true, get: function
 let timingCalculator = null;
 /**
  * Compute MIDI-compatible meter and tempo sync factor.
+/**
+ * Gets MIDI timing configuration from sheet settings.
  * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
  */
-const getMidiTiming = () => {
+function getMidiTiming() {
     timingCalculator = new TimingCalculator_1.TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
     const g = globalThis;
     g.midiMeter = timingCalculator.midiMeter;
@@ -26,25 +28,25 @@ const getMidiTiming = () => {
     g.tpMeasure = timingCalculator.tpMeasure;
     g.spMeasure = timingCalculator.spMeasure;
     return timingCalculator.midiMeter;
-};
+}
 exports.getMidiTiming = getMidiTiming;
 /**
  * Writes MIDI timing events to active buffer (c).
  * Context-aware: writes to c1 or c2 depending on current meter.
  */
-const setMidiTiming = (tick = globalThis.measureStart) => {
+function setMidiTiming(tick = globalThis.measureStart) {
     const g = globalThis;
     if (!Number.isFinite(g.tpSec) || g.tpSec <= 0) {
         throw new Error(`Invalid tpSec: ${g.tpSec}`);
     }
     g.p(g.c, { tick: tick, type: 'bpm', vals: [g.midiBPM] }, { tick: tick, type: 'meter', vals: [g.midiMeter[0], g.midiMeter[1]] });
-};
+}
 exports.setMidiTiming = setMidiTiming;
 /**
  * Compute phrase alignment between primary and poly meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
  */
-const getPolyrhythm = () => {
+function getPolyrhythm() {
     const g = globalThis;
     if (!g.composer)
         return;
@@ -97,13 +99,13 @@ const getPolyrhythm = () => {
     getMidiTiming();
     g.measuresPerPhrase1 = 1;
     g.measuresPerPhrase2 = 1;
-};
+}
 exports.getPolyrhythm = getPolyrhythm;
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
  * cascading parent position + index × duration pattern. See time.md for details.
  */
-const setUnitTiming = (unitType) => {
+function setUnitTiming(unitType) {
     const g = globalThis;
     if (!Number.isFinite(g.tpSec) || g.tpSec <= 0) {
         throw new Error(`Invalid tpSec in setUnitTiming: ${g.tpSec}`);
@@ -172,7 +174,7 @@ const setUnitTiming = (unitType) => {
     }
     // Log the unit after calculating timing
     g.logUnit(unitType);
-};
+}
 exports.setUnitTiming = setUnitTiming;
 /**
  * Format seconds as MM:SS.ssss time string.

@@ -80,6 +80,7 @@ let c = c1; // Active buffer reference
  * Writes to active buffer (c = c1 or c2) for proper file separation.
  */
 const logUnit = (type) => {
+    const LOG = globalThis.LOG || 'none';
     let shouldLog = false;
     type = type.toLowerCase();
     if (LOG === 'none') {
@@ -101,6 +102,51 @@ const logUnit = (type) => {
     let startTime = 0;
     let endTime = 0;
     let meterInfo = '';
+    const sectionIndex = globalThis.sectionIndex || 0;
+    const totalSections = globalThis.totalSections || 1;
+    const sectionStart = globalThis.sectionStart || 0;
+    const sectionStartTime = globalThis.sectionStartTime || 0;
+    const tpSection = globalThis.tpSection || 0;
+    const tpSec = globalThis.tpSec || 1;
+    const phraseIndex = globalThis.phraseIndex || 0;
+    const phrasesPerSection = globalThis.phrasesPerSection || 1;
+    const phraseStart = globalThis.phraseStart || 0;
+    const phraseStartTime = globalThis.phraseStartTime || 0;
+    const tpPhrase = globalThis.tpPhrase || 0;
+    const numerator = globalThis.numerator || 4;
+    const denominator = globalThis.denominator || 4;
+    const midiMeter = globalThis.midiMeter || [4, 4];
+    const composer = globalThis.composer || null;
+    const measureIndex = globalThis.measureIndex || 0;
+    const measuresPerPhrase = globalThis.measuresPerPhrase || 1;
+    const measureStart = globalThis.measureStart || 0;
+    const measureStartTime = globalThis.measureStartTime || 0;
+    const tpMeasure = globalThis.tpMeasure || 0;
+    const spMeasure = globalThis.spMeasure || 0;
+    const beatIndex = globalThis.beatIndex || 0;
+    const beatStart = globalThis.beatStart || 0;
+    const beatStartTime = globalThis.beatStartTime || 0;
+    const tpBeat = globalThis.tpBeat || 0;
+    const spBeat = globalThis.spBeat || 0;
+    const divIndex = globalThis.divIndex || 0;
+    const divsPerBeat = globalThis.divsPerBeat || 4;
+    const divStart = globalThis.divStart || 0;
+    const divStartTime = globalThis.divStartTime || 0;
+    const tpDiv = globalThis.tpDiv || 0;
+    const spDiv = globalThis.spDiv || 0;
+    const subdivIndex = globalThis.subdivIndex || 0;
+    const subdivsPerDiv = globalThis.subdivsPerDiv || 4;
+    const subdivStart = globalThis.subdivStart || 0;
+    const subdivStartTime = globalThis.subdivStartTime || 0;
+    const tpSubdiv = globalThis.tpSubdiv || 0;
+    const spSubdiv = globalThis.spSubdiv || 0;
+    const subsubdivIndex = globalThis.subsubdivIndex || 0;
+    const subsubsPerSub = globalThis.subsubsPerSub || 4;
+    const subsubdivStart = globalThis.subsubdivStart || 0;
+    const subsubdivStartTime = globalThis.subsubdivStartTime || 0;
+    const tpSubsubdiv = globalThis.tpSubsubdiv || 0;
+    const spSubsubdiv = globalThis.spSubsubdiv || 0;
+    const formatTime = globalThis.formatTime || ((t) => t.toFixed(3));
     if (type === 'section') {
         unit = sectionIndex + 1;
         unitsPerParent = totalSections;
@@ -193,12 +239,15 @@ const logUnit = (type) => {
         startTime = subsubdivStartTime;
         endTime = startTime + spSubsubdiv;
     }
-    c.push({
-        tick: startTick,
-        type: 'marker_t',
-        vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
-    });
-};
+    // Use the active buffer (c) which should be set to the layer-specific buffer
+    if (typeof globalThis.c !== 'undefined' && globalThis.c !== null) {
+        globalThis.c.push({
+            tick: startTick,
+            type: 'marker_t',
+            vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+        });
+    }
+};;
 exports.logUnit = logUnit;
 /**
  * Outputs separate MIDI files for each layer with automatic synchronization.
@@ -212,6 +261,8 @@ exports.logUnit = logUnit;
  */
 const grandFinale = () => {
     const g = globalThis;
+    // Use globalThis.fs if available (for testing), otherwise use the real fs module
+    const fileSystem = typeof g.fs !== 'undefined' ? g.fs : fs;
     // Collect all layer data
     const layerData = Object.entries(g.LM.layers).map(([name, layer]) => {
         return {
@@ -222,6 +273,7 @@ const grandFinale = () => {
     });
     // Process each layer's output
     layerData.forEach(({ name, layer: layerState, buffer: bufferData }) => {
+        // Set the global c variable to the layer-specific buffer
         g.c = bufferData;
         // Cleanup
         g.allNotesOff((layerState.sectionEnd || layerState.sectionStart) + g.PPQ);
@@ -231,7 +283,7 @@ const grandFinale = () => {
             .filter((i) => i !== null)
             .map((i) => ({
             ...i,
-            tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * g.rf(.1, .3) : i.tick
+            tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * (g.rf ? g.rf(.1, .3) : 0.2) : i.tick
         }))
             .sort((a, b) => a.tick - b.tick);
         // Generate CSV
@@ -258,10 +310,10 @@ const grandFinale = () => {
         }
         // Ensure output directory exists
         const outputDir = path.dirname(outputFilename);
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
+        if (!fileSystem.existsSync(outputDir)) {
+            fileSystem.mkdirSync(outputDir, { recursive: true });
         }
-        fs.writeFileSync(outputFilename, composition);
+        fileSystem.writeFileSync(outputFilename, composition);
         console.log(`${outputFilename} created (${name} layer).`);
     });
 };

@@ -146,6 +146,7 @@ class Stage {
    * @returns {void}
    */
   setBalanceAndFX() {
+  const beatStart = globalThis.beatStart !== undefined ? globalThis.beatStart : 0;
   if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop<1 ) { this.firstLoop=1;
     this.balOffset=rl(this.balOffset,-4,4,0,45);
     this.sideBias=rl(this.sideBias,-2,2,-20,20);
