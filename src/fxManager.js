@@ -1,165 +1,154 @@
-// fxManager.js - Audio effects manager for stutter, pan, and FX parameter automation.
+"use strict";
+// fxManager.ts - Audio effects manager for stutter, pan, and FX parameter automation.
 // Encapsulates fade, pan, and FX stutter effects with channel state tracking.
-
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FxManager = void 0;
 /**
  * FxManager class - Manages stutter effects (fade, pan, FX parameter changes) and channel state.
  * Tracks recently-used channels to avoid repetition; applies rapid automation to MIDI events.
  */
 class FxManager {
-  constructor() {
-    // Channel tracking state for fade/pan/FX stutters
-    this.lastUsedCHs = new Set();      // for stutterFade
-    this.lastUsedCHs2 = new Set();     // for stutterPan and stutterFX
-  }
-
-  /**
-   * Applies rapid volume stutter/fade effect to selected channels
-   * @param {Array} channels - Array of channel numbers to potentially stutter
-   * @param {number} [numStutters] - Number of stutter events (default: random 10-70)
-   * @param {number} [duration] - Duration of stutter effect in ticks (default: tpSec * 0.2-1.5)
-   * @returns {void}
-   */
-  stutterFade(channels, numStutters, duration) {
-    const CHsToStutter = ri(1, 5);
-    const channelsToStutter = new Set();
-    const availableCHs = channels.filter(ch => !this.lastUsedCHs.has(ch));
-
-    while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-      const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
-      channelsToStutter.add(ch);
-      availableCHs.splice(availableCHs.indexOf(ch), 1);
+    constructor() {
+        // Channel tracking state for fade/pan/FX stutters
+        this.lastUsedCHs = new Set(); // for stutterFade
+        this.lastUsedCHs2 = new Set(); // for stutterPan and stutterFX
     }
-
-    if (channelsToStutter.size < CHsToStutter) {
-      this.lastUsedCHs.clear();
-    } else {
-      this.lastUsedCHs = new Set(channelsToStutter);
-    }
-
-    const channelsArray = Array.from(channelsToStutter);
-    channelsArray.forEach(channelToStutter => {
-      const maxVol = ri(90, 120);
-      const isFadeIn = rf() < 0.5;
-      let tick, volume;
-
-      for (let i = m.floor(numStutters * (rf(1/3, 2/3))); i < numStutters; i++) {
-        tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
-        if (isFadeIn) {
-          volume = modClamp(m.floor(maxVol * (i / (numStutters - 1))), 25, maxVol);
-        } else {
-          volume = modClamp(m.floor(100 * (1 - (i / (numStutters - 1)))), 25, 100);
+    /**
+     * Applies rapid volume stutter/fade effect to selected channels
+     */
+    stutterFade(channels, numStutters, duration) {
+        const g = globalThis;
+        numStutters = numStutters || g.ri(10, 70);
+        duration = duration || g.tpSec * g.rf(0.2, 1.5);
+        const CHsToStutter = g.ri(1, 5);
+        const channelsToStutter = new Set();
+        const availableCHs = channels.filter(ch => !this.lastUsedCHs.has(ch));
+        while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
+            const ch = availableCHs[Math.floor(Math.random() * availableCHs.length)];
+            channelsToStutter.add(ch);
+            availableCHs.splice(availableCHs.indexOf(ch), 1);
         }
-        p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
-        p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
-      }
-      p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
-    });
-  }
-
-  /**
-   * Applies rapid pan stutter effect to selected channels
-   * @param {Array} channels - Array of channel numbers to potentially stutter
-   * @param {number} [numStutters] - Number of stutter events (default: random 30-90)
-   * @param {number} [duration] - Duration of stutter effect in ticks (default: tpSec * 0.1-1.2)
-   * @returns {void}
-   */
-  stutterPan(channels, numStutters, duration) {
-    const CHsToStutter = ri(1, 2);
-    const channelsToStutter = new Set();
-    const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
-
-    while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-      const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
-      channelsToStutter.add(ch);
-      availableCHs.splice(availableCHs.indexOf(ch), 1);
+        if (channelsToStutter.size < CHsToStutter) {
+            this.lastUsedCHs.clear();
+        }
+        else {
+            this.lastUsedCHs = new Set(channelsToStutter);
+        }
+        const channelsArray = Array.from(channelsToStutter);
+        channelsArray.forEach((channelToStutter) => {
+            const maxVol = g.ri(90, 120);
+            const isFadeIn = g.rf() < 0.5;
+            let tick, volume;
+            for (let i = Math.floor(numStutters * g.rf(1 / 3, 2 / 3)); i < numStutters; i++) {
+                tick = g.beatStart + (i * (duration / numStutters) * g.rf(0.9, 1.1));
+                if (isFadeIn) {
+                    volume = g.modClamp(Math.floor(maxVol * (i / (numStutters - 1))), 25, maxVol);
+                }
+                else {
+                    volume = g.modClamp(Math.floor(100 * (1 - i / (numStutters - 1))), 25, 100);
+                }
+                g.p(g.c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, Math.round(volume / g.rf(1.5, 5))] });
+                g.p(g.c, { tick: tick + duration * g.rf(0.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
+            }
+            g.p(g.c, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
+        });
     }
-
-    if (channelsToStutter.size < CHsToStutter) {
-      this.lastUsedCHs2.clear();
-    } else {
-      this.lastUsedCHs2 = new Set(channelsToStutter);
+    /**
+     * Applies rapid pan stutter effect to selected channels
+     */
+    stutterPan(channels, numStutters, duration) {
+        const g = globalThis;
+        numStutters = numStutters || g.ri(30, 90);
+        duration = duration || g.tpSec * g.rf(0.1, 1.2);
+        const CHsToStutter = g.ri(1, 2);
+        const channelsToStutter = new Set();
+        const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
+        while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
+            const ch = availableCHs[Math.floor(Math.random() * availableCHs.length)];
+            channelsToStutter.add(ch);
+            availableCHs.splice(availableCHs.indexOf(ch), 1);
+        }
+        if (channelsToStutter.size < CHsToStutter) {
+            this.lastUsedCHs2.clear();
+        }
+        else {
+            this.lastUsedCHs2 = new Set(channelsToStutter);
+        }
+        const channelsArray = Array.from(channelsToStutter);
+        channelsArray.forEach((channelToStutter) => {
+            const edgeMargin = g.ri(7, 25);
+            const fullRange = 127 - edgeMargin;
+            const centerZone = fullRange / 3;
+            const leftBoundary = edgeMargin + centerZone;
+            const rightBoundary = edgeMargin + 2 * centerZone;
+            let currentPan = edgeMargin;
+            let direction = 1;
+            let tick;
+            for (let i = Math.floor(numStutters * g.rf(1 / 3, 2 / 3)); i < numStutters; i++) {
+                tick = g.beatStart + (i * (duration / numStutters) * g.rf(0.9, 1.1));
+                if (currentPan >= rightBoundary) {
+                    direction = -1;
+                }
+                else if (currentPan <= leftBoundary) {
+                    direction = 1;
+                }
+                currentPan += direction * (fullRange / numStutters) * g.rf(0.5, 1.5);
+                currentPan = g.modClamp(Math.floor(currentPan), edgeMargin, 127 - edgeMargin);
+                g.p(g.c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
+            }
+            g.p(g.c, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
+        });
     }
-
-    const channelsArray = Array.from(channelsToStutter);
-    channelsArray.forEach(channelToStutter => {
-      const edgeMargin = ri(7, 25);
-      const fullRange = 127 - edgeMargin;
-      const centerZone = fullRange / 3;
-      const leftBoundary = edgeMargin + centerZone;
-      const rightBoundary = edgeMargin + 2 * centerZone;
-      let currentPan = edgeMargin;
-      let direction = 1;
-      let tick;
-
-      for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
-        tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
-        if (currentPan >= rightBoundary) direction = -1;
-        else if (currentPan <= leftBoundary) direction = 1;
-        currentPan += direction * (fullRange / numStutters) * rf(.5, 1.5);
-        currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
-        p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
-      }
-      p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
-    });
-  }
-
-  /**
-   * Applies rapid FX parameter stutter effect to selected channels
-   * @param {Array} channels - Array of channel numbers to potentially stutter
-   * @param {number} [numStutters] - Number of stutter events (default: random 30-100)
-   * @param {number} [duration] - Duration of stutter effect in ticks (default: tpSec * 0.1-2)
-   * @returns {void}
-   */
-  stutterFX(channels, numStutters, duration) {
-    const CHsToStutter = ri(1, 2);
-    const channelsToStutter = new Set();
-    const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
-
-    while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-      const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
-      channelsToStutter.add(ch);
-      availableCHs.splice(availableCHs.indexOf(ch), 1);
+    /**
+     * Applies rapid FX parameter stutter effect to selected channels
+     */
+    stutterFX(channels, numStutters, duration) {
+        const g = globalThis;
+        numStutters = numStutters || g.ri(30, 100);
+        duration = duration || g.tpSec * g.rf(0.1, 2);
+        const CHsToStutter = g.ri(1, 2);
+        const channelsToStutter = new Set();
+        const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
+        while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
+            const ch = availableCHs[Math.floor(Math.random() * availableCHs.length)];
+            channelsToStutter.add(ch);
+            availableCHs.splice(availableCHs.indexOf(ch), 1);
+        }
+        if (channelsToStutter.size < CHsToStutter) {
+            this.lastUsedCHs2.clear();
+        }
+        else {
+            this.lastUsedCHs2 = new Set(channelsToStutter);
+        }
+        const channelsArray = Array.from(channelsToStutter);
+        channelsArray.forEach((channelToStutter) => {
+            const startValue = g.ri(0, 127);
+            const endValue = g.ri(0, 127);
+            const ccParam = g.ra([91, 92, 93, 71, 74]);
+            let tick;
+            for (let i = Math.floor(numStutters * g.rf(1 / 3, 2 / 3)); i < numStutters; i++) {
+                tick = g.beatStart + (i * (duration / numStutters) * g.rf(0.9, 1.1));
+                const progress = i / (numStutters - 1);
+                const currentValue = Math.floor(startValue + (endValue - startValue) * progress);
+                g.p(g.c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
+            }
+            g.p(g.c, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
+        });
     }
-
-    if (channelsToStutter.size < CHsToStutter) {
-      this.lastUsedCHs2.clear();
-    } else {
-      this.lastUsedCHs2 = new Set(channelsToStutter);
+    /**
+     * Resets channel state tracking (clears lastUsedCHs and lastUsedCHs2)
+     */
+    resetChannelTracking() {
+        this.lastUsedCHs.clear();
+        this.lastUsedCHs2.clear();
     }
-
-    const channelsArray = Array.from(channelsToStutter);
-    channelsArray.forEach(channelToStutter => {
-      const startValue = ri(0, 127);
-      const endValue = ri(0, 127);
-      const ccParam = ra([91, 92, 93, 71, 74]);
-      let tick;
-
-      for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
-        tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
-        const progress = i / (numStutters - 1);
-        const currentValue = m.floor(startValue + (endValue - startValue) * progress);
-        p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
-      }
-      p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
-    });
-  }
-
-  /**
-   * Resets channel state tracking (clears lastUsedCHs and lastUsedCHs2)
-   * @returns {void}
-   */
-  resetChannelTracking() {
-    this.lastUsedCHs.clear();
-    this.lastUsedCHs2.clear();
-  }
 }
-
-// Export FxManager instance and class to global namespace
-globalThis.fxManager = new FxManager();
+exports.FxManager = FxManager;
+// Export to global scope for backward compatibility
+globalThis.FxManager = FxManager;
+// Export for tests
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, { fxManager: globalThis.fxManager, FxManager });
+    globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+    globalThis.__POLYCHRON_TEST__.FxManager = FxManager;
 }
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = FxManager;
-}
+//# sourceMappingURL=fxManager.js.map

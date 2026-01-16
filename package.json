@@ -5,6 +5,7 @@
     "tonal": "^6.4.2"
   },
   "devDependencies": {
+    "@types/node": "^25.0.9",
     "@vitest/coverage-v8": "^4.0.16",
     "depcheck": "^1.4.7",
     "eslint": "^9.0.0",

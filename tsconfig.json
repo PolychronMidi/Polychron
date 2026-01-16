@@ -18,7 +18,8 @@
     "checkJs": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noImplicitReturns": false
+    "noImplicitReturns": false,
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "test", "csv_maestro", "scripts", "docs", "src/**/*.js"],

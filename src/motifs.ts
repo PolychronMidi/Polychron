@@ -10,7 +10,7 @@ const MATH = Math;
  * @param max - Maximum value (default: 127)
  * @returns Clamped value
  */
-const clampNote = (val: number, min: number = 0, max: number = 127): number => 
+const clampNote = (val: number, min: number = 0, max: number = 127): number =>
   MATH.min(max, MATH.max(min, val));
 
 /**
