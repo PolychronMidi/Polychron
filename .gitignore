@@ -8,3 +8,5 @@ package-lock.json
 /.mcp
 .clinerules
 deepwiki.config.json
+/coverage
+.depcheckrc

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["esnext"]
+  },
+  "include": ["src/**/*", "types.js"],
+  "exclude": ["node_modules", "csv_maestro", "test", "scripts"]
+}
