@@ -6,6 +6,11 @@ require('./structure');
 
 const BASE_BPM=BPM;
 
+// Initialize composers from configuration if not already done
+if (!composers || composers.length === 0) {
+  composers = COMPOSERS.map((config) => ComposerFactory.create(config));
+}
+
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => stage.setTuningAndInstruments());
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => stage.setTuningAndInstruments());
 

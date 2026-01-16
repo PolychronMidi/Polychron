@@ -78,6 +78,18 @@ COMPOSERS=[
   { type: 'pentatonic', root: 'C', scaleType: 'major' },
   { type: 'pentatonic', root: 'random', scaleType: 'random' },
   { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
-  { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }
+  { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 },
+  // Melodic Development Composers (Phase 2.3)
+  { type: 'melodicDevelopment', name: 'major', root: 'C', developmentIntensity: 0.6 },
+  { type: 'melodicDevelopment', name: 'major', root: 'C', developmentIntensity: 0.4 },
+  { type: 'melodicDevelopment', name: 'random', root: 'random', developmentIntensity: 0.5 },
+  { type: 'melodicDevelopment', name: 'random', root: 'random', developmentIntensity: 0.7 },
+  // Advanced Voice Leading Composers (Phase 2.4)
+  { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 },
+  { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.5 },
+  { type: 'advancedVoiceLeading', name: 'random', root: 'random', commonToneWeight: 0.6 },
+  { type: 'advancedVoiceLeading', name: 'random', root: 'random', commonToneWeight: 0.8 },
+  // Harmonic Rhythm (limited to avoid too many drums)
+  { type: 'harmonicRhythm', progression: ['I','IV','V','I'], key: 'random', measuresPerChord: 2, quality: 'major' }
 ];
 SILENT_OUTRO_SECONDS=5;

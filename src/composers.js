@@ -603,8 +603,23 @@ class TensionReleaseComposer extends ChordComposer {
    */
   noteSet(progression, direction = 'tension') {
     // If called with a progression array (from constructor), just pass through
-    if (progression && Array.isArray(progression)) {
-      return super.noteSet(progression, direction === 'tension' ? 'R' : direction);
+    // Check if it's either string symbols OR Chord objects
+    if (progression && Array.isArray(progression) && progression.length > 0) {
+      const firstItem = progression[0];
+      // Skip null values
+      if (firstItem === null) return;
+
+      const isStringArray = typeof firstItem === 'string';
+      const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
+
+      if (isStringArray || isChordArray) {
+        return super.noteSet(progression, direction === 'tension' ? 'R' : direction);
+      }
+    }
+
+    // Guard against being called before progression is initialized
+    if (!this.progression || this.progression.length === 0) {
+      return;
     }
 
     // Otherwise, we're being called after construction
@@ -705,10 +720,23 @@ class ModalInterchangeComposer extends ChordComposer {
    * @param {string} [direction='R'] - Progression direction
    */
   noteSet(progression, direction = 'R') {
-    // During construction, progression will be passed
-    if (progression && Array.isArray(progression) && typeof progression[0] === 'string') {
-      // Being called from parent constructor with chord symbols array
-      return super.noteSet(progression, direction);
+    // During construction, progression will be passed - either strings or Chord objects
+    if (progression && Array.isArray(progression) && progression.length > 0) {
+      const firstItem = progression[0];
+      // Skip null values
+      if (firstItem === null) return;
+
+      const isStringArray = typeof firstItem === 'string';
+      const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
+
+      if (isStringArray || isChordArray) {
+        return super.noteSet(progression, direction);
+      }
+    }
+
+    // Guard against being called before progression is initialized
+    if (!this.progression || this.progression.length === 0) {
+      return;
     }
 
     // Decide whether to borrow a chord this time
@@ -733,6 +761,350 @@ class ModalInterchangeComposer extends ChordComposer {
   }
 }
 
+
+/**
+ * Harmonic rhythm control - changes chords at specified measure intervals.
+ * Implements Phase 2.2: Dynamic Harmonic Progressions
+ * @extends ChordComposer
+ */
+class HarmonicRhythmComposer extends ChordComposer {
+  /**
+   * @param {string} [progression=['I','IV','V','I']] - Progression as roman numerals or chord symbols
+   * @param {string} [key='C'] - Root key for roman numeral conversion
+   * @param {number} [measuresPerChord=2] - How many measures each chord lasts (1-8)
+   * @param {string} [quality='major'] - 'major' or 'minor' for key context
+   */
+  constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {
+    // Convert roman numerals to chord symbols if needed
+    let chordSymbols = progression;
+    if (progression && progression[0] && progression[0].match(/^[ivIV]/)) {
+      const generator = new ProgressionGenerator(key, quality);
+      chordSymbols = progression.map(roman => generator.romanToChord(roman)).filter(c => c !== null);
+    }
+
+    super(chordSymbols);
+
+    this.key = key;
+    this.quality = quality;
+    this.measuresPerChord = clamp(measuresPerChord, 1, 8);
+    this.measureCount = 0;
+    this.generator = new ProgressionGenerator(key, quality);
+  }
+
+  /**
+   * Calculate which chord should play at current measure.
+   * @returns {string} Current chord symbol
+   */
+  getCurrentChord() {
+    const chordIndex = m.floor(this.measureCount / this.measuresPerChord) % this.progression.length;
+    return this.progression[chordIndex].symbol || this.progression[chordIndex];
+  }
+
+  /**
+   * Overrides parent to return current chord based on harmonic rhythm.
+   * @param {string[]} [progression] - Optional override
+   * @param {string} [direction='R'] - Direction (unused, harmonic rhythm controls)
+   */
+  /**
+   * Overrides parent to return current chord based on harmonic rhythm.
+   * @param {string[]} [progression] - Optional override
+   * @param {string} [direction='R'] - Direction (unused, harmonic rhythm controls)
+   */
+  noteSet(progression, direction = 'R') {
+    // If called from parent constructor - progression will be either string symbols or Chord objects
+    if (progression && Array.isArray(progression) && progression.length > 0) {
+      const firstItem = progression[0];
+      // Skip null values
+      if (firstItem === null) return;
+
+      const isStringArray = typeof firstItem === 'string';
+      const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
+
+      if (isStringArray || isChordArray) {
+        return super.noteSet(progression, direction);
+      }
+    }
+
+    // Guard against being called before progression is initialized
+    if (!this.progression || this.progression.length === 0) {
+      return;
+    }
+
+    // Get current chord based on harmonic rhythm
+    const currentChord = this.getCurrentChord();
+    super.noteSet([currentChord], 'R');
+    this.measureCount++;
+  }
+
+  /**
+   * Set harmonic rhythm (measures per chord).
+   * @param {number} measures - Measures each chord lasts
+   */
+  setHarmonicRhythm(measures) {
+    this.measuresPerChord = clamp(measures, 1, 8);
+    this.measureCount = 0;
+  }
+
+  /**
+   * Change to a new progression at next chord boundary.
+   * @param {string[]} newProgression - New chord progression
+   */
+  changeProgression(newProgression) {
+    // Reset to next chord boundary
+    this.measureCount = m.ceil(this.measureCount / this.measuresPerChord) * this.measuresPerChord;
+    super.noteSet(newProgression, 'R');
+  }
+
+  /** @returns {{note: number}[]} Harmonic rhythm notes */
+  getNotes(octaveRange) {
+    // Ensure noteSet is called to initialize state
+    if (!this.progression || this.progression.length === 0) {
+      // Fallback: return a basic note if progression is empty
+      return [{ note: 60 }];
+    }
+    this.noteSet();
+    return super.getNotes(octaveRange);
+  }
+
+  x() {
+    this.noteSet();
+    return super.x();
+  }
+}
+
+/**
+ * Phase 2.3: Melodic Development
+ * Develops melodies through motif transformations and call-and-response patterns.
+ * Extends ScaleComposer to apply motif-based development to scale-derived melodies.
+ * @extends ScaleComposer
+ */
+class MelodicDevelopmentComposer extends ScaleComposer {
+  /**
+   * @param {string} [name='major'] - Scale name (major, minor, pentatonic, etc.)
+   * @param {string} [root='C'] - Root note
+   * @param {number} [developmentIntensity=0.5] - How aggressively to transform (0-1)
+   */
+  constructor(name = 'major', root = 'C', developmentIntensity = 0.5) {
+    // Handle random root
+    const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+    const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+    super(resolvedName, resolvedRoot);
+    this.developmentIntensity = clamp(developmentIntensity, 0, 1);
+    this.motifPhase = 0;  // Current stage of motif development
+    this.measureCount = 0;
+    this.responseMode = false;  // Alternate between call and response
+    this.transpositionOffset = 0;  // Track transposition for melodic variation
+  }
+
+  /**
+   * Overrides parent to apply motif-based transformations to generated notes.
+   * Cycles through original, transposed, inverted, and retrograde variations.
+   */
+  getNotes(octaveRange) {
+    const baseNotes = super.getNotes(octaveRange);
+
+    if (baseNotes.length === 0) {
+      return baseNotes;
+    }
+
+    this.measureCount++;
+    const phase = m.floor((this.measureCount - 1) / 2) % 4;  // 4 phases: original, transpose, invert, retrograde
+
+    // Decide development transformation based on phase
+    let developedNotes = [...baseNotes];
+    const intensity = this.developmentIntensity;
+
+    switch (phase) {
+      case 0:
+        // Original motif (slight transposition for variety)
+        this.transpositionOffset = intensity > 0.5 ? ri(-2, 2) : 0;
+        developedNotes = baseNotes.map((n, i) => ({
+          ...n,
+          note: clamp(n.note + this.transpositionOffset, 0, 127)
+        }));
+        break;
+
+      case 1:
+        // Transposed variation - shift by interval based on intensity
+        this.transpositionOffset = m.round(intensity * 7);  // Up to a fifth
+        developedNotes = baseNotes.map(n => ({
+          ...n,
+          note: clamp(n.note + this.transpositionOffset, 0, 127)
+        }));
+        break;
+
+      case 2:
+        // Inverted variation
+        if (intensity > 0.3) {
+          const pivot = baseNotes[0]?.note || 60;
+          developedNotes = baseNotes.map((n, i) => ({
+            ...n,
+            note: clamp(2 * pivot - n.note, 0, 127)
+          }));
+        }
+        break;
+
+      case 3:
+        // Retrograde (reversed) variation
+        if (intensity > 0.5) {
+          developedNotes = [...baseNotes].reverse();
+        }
+        break;
+    }
+
+    // Apply call-and-response pattern if enabled
+    if (rf() < 0.3) {
+      this.responseMode = !this.responseMode;
+      if (this.responseMode) {
+        // Response: echo with different rhythm/dynamics
+        developedNotes = developedNotes.map((n, i) => ({
+          ...n,
+          duration: (n.duration || 480) * (intensity + 0.5)
+        }));
+      }
+    }
+
+    return developedNotes;
+  }
+
+  /**
+   * Set development intensity (0=minimal transformation, 1=maximum variation).
+   * @param {number} intensity - Development intensity level
+   */
+  setDevelopmentIntensity(intensity) {
+    this.developmentIntensity = clamp(intensity, 0, 1);
+  }
+
+  /**
+   * Reset motif phase to beginning for new section.
+   */
+  resetMotifPhase() {
+    this.motifPhase = 0;
+    this.measureCount = 0;
+    this.responseMode = false;
+    this.transpositionOffset = 0;
+  }
+}
+
+/**
+ * Phase 2.4: Advanced Voice Leading
+ * Extends voice leading with figured bass analysis and common-tone retention.
+ * Creates more sophisticated chord voicings with smooth voice motion.
+ * @extends ScaleComposer
+ */
+class AdvancedVoiceLeadingComposer extends ScaleComposer {
+  /**
+   * @param {string} [name='major'] - Scale name
+   * @param {string} [root='C'] - Root note
+   * @param {number} [commonToneWeight=0.7] - Priority for common-tone retention (0-1)
+   */
+  constructor(name = 'major', root = 'C', commonToneWeight = 0.7) {
+    // Handle random root and scale
+    const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+    const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+    super(resolvedName, resolvedRoot);
+    this.commonToneWeight = clamp(commonToneWeight, 0, 1);
+    this.previousNotes = [];  // Track previous voicing for smooth motion
+    this.voiceBalanceThreshold = 3;  // Semitones - max range variation allowed
+    this.contraryMotionPreference = 0.4;  // Probability of contrary motion
+  }
+
+  /**
+   * Analyzes and selects notes with voice leading awareness.
+   * Prioritizes common tones and smooth voice motion.
+   */
+  getNotes(octaveRange) {
+    const baseNotes = super.getNotes(octaveRange);
+
+    if (!baseNotes || baseNotes.length === 0) {
+      return baseNotes;
+    }
+
+    if (this.previousNotes.length === 0) {
+      this.previousNotes = baseNotes;
+      return baseNotes;
+    }
+
+    // Apply voice leading optimization
+    const optimizedNotes = this.optimizeVoiceLeading(baseNotes);
+    this.previousNotes = optimizedNotes;
+
+    return optimizedNotes;
+  }
+
+  /**
+   * Optimizes voicing by retaining common tones and avoiding large leaps.
+   * @private
+   */
+  optimizeVoiceLeading(newNotes) {
+    const result = [];
+    const prevByVoice = [...this.previousNotes];
+
+    for (let voiceIdx = 0; voiceIdx < newNotes.length && voiceIdx < prevByVoice.length; voiceIdx++) {
+      const newNote = newNotes[voiceIdx];
+      const prevNote = prevByVoice[voiceIdx];
+
+      if (!newNote || !prevNote) {
+        result.push(newNote || prevNote);
+        continue;
+      }
+
+      // Check if common tone exists (same pitch class)
+      const newPC = newNote.note % 12;
+      const prevPC = prevNote.note % 12;
+
+      if (newPC === prevPC && rf() < this.commonToneWeight) {
+        // Retain common tone - stay in same octave or nearby
+        result.push({
+          ...newNote,
+          note: prevNote.note  // Keep same octave as previous note
+        });
+      } else {
+        // Find closest note in new voicing that moves smoothly
+        const step = rf() < this.contraryMotionPreference ? ri(-4, -1) : ri(1, 4);
+        result.push({
+          ...newNote,
+          note: clamp(prevNote.note + step, 0, 127)
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Set priority for common-tone retention.
+   * @param {number} weight - 0-1 where 1 = always retain common tones
+   */
+  setCommonToneWeight(weight) {
+    this.commonToneWeight = clamp(weight, 0, 1);
+  }
+
+  /**
+   * Set preference for contrary motion (opposite direction movement between voices).
+   * @param {number} probability - 0-1 probability of using contrary motion
+   */
+  setContraryMotionPreference(probability) {
+    this.contraryMotionPreference = clamp(probability, 0, 1);
+  }
+
+  /**
+   * Analyze figured bass for current voicing (simplified version).
+   * Returns bass note and interval stack above it.
+   * @private
+   */
+  analyzeFiguredBass(notes) {
+    if (!notes || notes.length === 0) return null;
+
+    const bass = m.min(...notes.map(n => n.note));
+    const intervals = notes
+      .map(n => n.note - bass)
+      .filter((v, i, arr) => arr.indexOf(v) === i)  // unique
+      .sort((a, b) => a - b);
+
+    return { bass, intervals };
+  }
+}
 class PentatonicComposer extends MeasureComposer {
   /**
    * @param {string} [root='C'] - Root note
@@ -872,6 +1244,9 @@ class ComposerFactory {
     },
     tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
     modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
+    harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => new HarmonicRhythmComposer(progression, key, measuresPerChord, quality),
+    melodicDevelopment: ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, developmentIntensity),
+    advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new AdvancedVoiceLeadingComposer(name, root, commonToneWeight),
   };
 
   /**
@@ -894,7 +1269,7 @@ class ComposerFactory {
  * Instantiates all composers from COMPOSERS config.
  * @type {MeasureComposer[]}
  */
-composers = COMPOSERS.map((config) => ComposerFactory.create(config));
+composers = [];  // Lazy-loaded in play.js when all systems are ready
 
 // Export classes and factory globally for testing
 globalThis.MeasureComposer = MeasureComposer;
@@ -909,6 +1284,9 @@ globalThis.RandomPentatonicComposer = RandomPentatonicComposer;
 globalThis.ProgressionGenerator = ProgressionGenerator;
 globalThis.TensionReleaseComposer = TensionReleaseComposer;
 globalThis.ModalInterchangeComposer = ModalInterchangeComposer;
+globalThis.HarmonicRhythmComposer = HarmonicRhythmComposer;
+globalThis.MelodicDevelopmentComposer = MelodicDevelopmentComposer;
+globalThis.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
 globalThis.ComposerFactory = ComposerFactory;
 
 // Mirror into __POLYCHRON_TEST__ to keep test globals namespaced
@@ -927,6 +1305,9 @@ if (typeof globalThis !== 'undefined') {
     ProgressionGenerator,
     TensionReleaseComposer,
     ModalInterchangeComposer,
+    HarmonicRhythmComposer,
+    MelodicDevelopmentComposer,
+    AdvancedVoiceLeadingComposer,
     ComposerFactory,
   });
 }
