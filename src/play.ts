@@ -68,9 +68,10 @@ const initializePlayEngine = () => {
 
   const BASE_BPM = g.BPM;
 
-  // Initialize composers from configuration if not already done
+  // Initialize composers from configuration using new ComposerRegistry
   if (!g.composers || g.composers.length === 0) {
-    g.composers = g.COMPOSERS.map((config: any) => g.ComposerFactory.create(config));
+    const registry = g.ComposerRegistry.getInstance();
+    g.composers = g.COMPOSERS.map((config: any) => registry.create(config));
   }
 
   const { state: primary, buffer: c1 } = g.LM.register('primary', 'c1', {}, () => g.stage.setTuningAndInstruments());

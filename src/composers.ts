@@ -4,11 +4,17 @@
 // Import the TypeScript module from composers directory
 import './composers/index.js';
 
+// Import the new ComposerRegistry
+import './ComposerRegistry.js';
+
 // Re-export all composers classes and functions from global scope
 export const MeasureComposer = (globalThis as any).MeasureComposer;
 export const ScaleComposer = (globalThis as any).ScaleComposer;
 export const ChordComposer = (globalThis as any).ChordComposer;
 export const ModeComposer = (globalThis as any).ModeComposer;
 export const PentatonicComposer = (globalThis as any).PentatonicComposer;
-export const ComposerFactory = (globalThis as any).ComposerFactory;
+export const ComposerFactory = (globalThis as any).ComposerFactory; // Legacy support
 export const Composer = (globalThis as any).Composer;
+
+// Re-export new typed registry
+export const ComposerRegistry = (globalThis as any).ComposerRegistry;
