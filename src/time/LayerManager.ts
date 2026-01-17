@@ -4,6 +4,7 @@
 import { TimingContext } from './TimingContext.js';
 import { CSVBuffer } from '../writer.js';
 
+const g = globalThis as any;
 
 /**
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
@@ -38,9 +39,9 @@ export const LayerManager = {
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
     // the active buffer continue to work.
-    const prevC = typeof (globalThis as any).c !== 'undefined' ? (globalThis as any).c : undefined;
+    const prevC = typeof g.c !== 'undefined' ? g.c : undefined;
     try {
-      (globalThis as any).c = buf;
+      g.c = buf;
       if (typeof setupFn === 'function') setupFn(state, buf);
     } catch (e) {
       // Ignore setup errors
@@ -48,9 +49,9 @@ export const LayerManager = {
 
     // Restore previous `c`
     if (prevC === undefined) {
-      (globalThis as any).c = undefined;
+      g.c = undefined;
     } else {
-      (globalThis as any).c = prevC;
+      g.c = prevC;
     }
 
     // Return both the state and direct buffer reference so callers can
@@ -62,11 +63,10 @@ export const LayerManager = {
    * Activate a layer; restores timing globals and sets meter.
    */
   activate: (name: string, isPoly: boolean = false) => {
-    const layer = LayerManager.layers[name];
-    (globalThis as any).c = layer.buffer;
-    LayerManager.activeLayer = name;
-
     const g = globalThis as any;
+    const layer = LayerManager.layers[name];
+    g.c = layer.buffer;
+    LayerManager.activeLayer = name;
 
     // Store meter into layer state (set externally before activation)
     layer.state.numerator = g.numerator;
@@ -105,11 +105,10 @@ export const LayerManager = {
    * Advance a layer's timing state.
    */
   advance: (name: string, advancementType: 'phrase' | 'section' = 'phrase') => {
+    const g = globalThis as any;
     const layer = LayerManager.layers[name];
     if (!layer) return;
-    (globalThis as any).c = layer.buffer;
-
-    const g = globalThis as any;
+    g.c = layer.buffer;
     g.beatRhythm = g.divRhythm = g.subdivRhythm = g.subsubdivRhythm = 0;
 
     // Advance using layer's own state values

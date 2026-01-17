@@ -4,6 +4,8 @@
 
 import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
 
+const g = globalThis as any;
+
 /**
  * Composes notes from a specific mode.
  * @extends GenericComposer<Mode>
@@ -16,11 +18,11 @@ class ModeComposer extends GenericComposer<any> {
 
   itemSet(modeName: string, root: string): void {
     this.root = root;
-    this.item = (globalThis as any).t.Mode.get(`${root} ${modeName}`);
+    this.item = g.t.Mode.get(`${root} ${modeName}`);
     this.notes = this.item.notes || this.item.intervals || [];
     // If item.notes is still empty, fall back to scale
     if (!this.notes || this.notes.length === 0) {
-      const scale = (globalThis as any).t.Scale.get(`${root} ${modeName}`);
+      const scale = g.t.Scale.get(`${root} ${modeName}`);
       this.notes = scale.notes || [];
     }
   }
@@ -37,18 +39,20 @@ class RandomModeComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    const randomMode = (globalThis as any).allModes[(globalThis as any).ri((globalThis as any).allModes.length - 1)];
-    const randomRoot = (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)];
+    const g = globalThis as any;
+    const randomMode = g.allModes[g.ri(g.allModes.length - 1)];
+    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
     this.itemSet(randomMode, randomRoot);
   }
 
   itemSet(modeName: string, root: string): void {
+    const g = globalThis as any;
     this.root = root;
-    this.item = (globalThis as any).t.Mode.get(`${root} ${modeName}`);
+    this.item = g.t.Mode.get(`${root} ${modeName}`);
     this.notes = this.item.notes || this.item.intervals || [];
     // If item.notes is still empty, fall back to scale
     if (!this.notes || this.notes.length === 0) {
-      const scale = (globalThis as any).t.Scale.get(`${root} ${modeName}`);
+      const scale = g.t.Scale.get(`${root} ${modeName}`);
       this.notes = scale.notes || [];
     }
   }

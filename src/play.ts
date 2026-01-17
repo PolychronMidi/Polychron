@@ -149,7 +149,7 @@ const registerCoreServices = (container: DIContainer) => {
   container.register('PentatonicComposer', () => g.PentatonicComposer, 'singleton');
   container.register('RandomPentatonicComposer', () => g.RandomPentatonicComposer, 'singleton');
   container.register('ProgressionGenerator', () => g.ProgressionGenerator, 'singleton');
-  container.register('VoiceLeadingScore', () => g.VoiceLeadingScore, 'singleton');
+  // VoiceLeadingScore imported directly in MeasureComposer - no global registration needed
 
   // Register music theory utilities from venue.js
   container.register('t', () => g.t, 'singleton');

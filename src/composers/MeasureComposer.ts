@@ -2,6 +2,8 @@
 // MeasureComposer - Base class for all composers
 // Handles meter composition, note generation, and optional voice leading
 
+import { VoiceLeadingScore } from '../voiceLeading.js';
+
 /**
  * Composes meter-related values with randomization.
  * @class

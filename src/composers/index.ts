@@ -5,6 +5,8 @@
 import '../backstage.js';  // Load global utilities (m, rf, ri, ra, etc.)
 import '../venue.js';      // Load music theory (allScales, allNotes, allModes, allChords)
 
+const g = globalThis as any;
+
 // Load composer modules (only the ones that exist)
 import MeasureComposer from './MeasureComposer.js';
 import ScaleComposer, { RandomScaleComposer } from './ScaleComposer.js';
@@ -46,7 +48,7 @@ class TensionReleaseComposer extends ScaleComposer {
     super(quality, key);
     this.key = key;
     this.quality = quality;
-    this.tensionCurve = (globalThis as any).clamp(tensionCurve, 0, 1);
+    this.tensionCurve = g.clamp(tensionCurve, 0, 1);
     this.measureCount = 0;
   }
 
@@ -56,10 +58,10 @@ class TensionReleaseComposer extends ScaleComposer {
 
     // If it's a chord name, try to determine its function
     if (chordOrFunction && typeof chordOrFunction === 'string') {
-      const chordData = (globalThis as any).t.Chord.get(chordOrFunction);
+      const chordData = g.t.Chord.get(chordOrFunction);
       if (chordData && chordData.tonic) {
         const root = chordData.tonic;
-        const keyScale = (globalThis as any).t.Scale.get(`${this.key} ${this.quality}`);
+        const keyScale = g.t.Scale.get(`${this.key} ${this.quality}`);
         const degree = keyScale.notes.indexOf(root);
 
         // Map scale degree to function
@@ -135,7 +137,7 @@ class ModalInterchangeComposer extends ScaleComposer {
     super(primaryMode, key);
     this.key = key;
     this.primaryMode = primaryMode;
-    this.borrowProbability = (globalThis as any).clamp(borrowProbability, 0, 1);
+    this.borrowProbability = g.clamp(borrowProbability, 0, 1);
     this.borrowModes = this.getBorrowModes(primaryMode);
   }
 
@@ -148,12 +150,12 @@ class ModalInterchangeComposer extends ScaleComposer {
   }
 
   borrowChord(): any[] | null {
-    if ((globalThis as any).rf() < this.borrowProbability && this.borrowModes.length > 0) {
-      const borrowMode = this.borrowModes[(globalThis as any).ri(this.borrowModes.length - 1)];
-      const borrowScale = (globalThis as any).t.Scale.get(`${this.key} ${borrowMode}`);
+    if (g.rf() < this.borrowProbability && this.borrowModes.length > 0) {
+      const borrowMode = this.borrowModes[g.ri(this.borrowModes.length - 1)];
+      const borrowScale = g.t.Scale.get(`${this.key} ${borrowMode}`);
       // Return chord notes as array
-      const chordRoot = borrowScale.notes[(globalThis as any).ri(borrowScale.notes.length - 1)];
-      const chordData = (globalThis as any).t.Chord.get(`${chordRoot}major`);
+      const chordRoot = borrowScale.notes[g.ri(borrowScale.notes.length - 1)];
+      const chordData = g.t.Chord.get(`${chordRoot}major`);
       return chordData ? chordData.notes : null;
     }
     return null;
@@ -194,10 +196,10 @@ class MelodicDevelopmentComposer extends ScaleComposer {
   responseMode: boolean = false;
 
   constructor(name: string = 'major', root: string = 'C', developmentIntensity: number = 0.5) {
-    const scaleName = name === 'random' ? (globalThis as any).allScales[(globalThis as any).ri((globalThis as any).allScales.length - 1)] : name;
-    const rootNote = root === 'random' ? (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)] : root;
+    const scaleName = name === 'random' ? g.allScales[g.ri(g.allScales.length - 1)] : name;
+    const rootNote = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
     super(scaleName, rootNote);
-    this.developmentIntensity = (globalThis as any).clamp(developmentIntensity, 0, 1);
+    this.developmentIntensity = g.clamp(developmentIntensity, 0, 1);
     this.measureCount = 0;
     this.developmentPhase = 'exposition';
     this.responseMode = false;
@@ -231,10 +233,10 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
   contraryMotionPreference: number = 0.4;
 
   constructor(name: string = 'major', root: string = 'C', commonToneWeight: number = 0.7) {
-    const scaleName = name === 'random' ? (globalThis as any).allScales[(globalThis as any).ri((globalThis as any).allScales.length - 1)] : name;
-    const rootNote = root === 'random' ? (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)] : root;
+    const scaleName = name === 'random' ? g.allScales[g.ri(g.allScales.length - 1)] : name;
+    const rootNote = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
     super(scaleName, rootNote);
-    this.commonToneWeight = (globalThis as any).clamp(commonToneWeight, 0, 1);
+    this.commonToneWeight = g.clamp(commonToneWeight, 0, 1);
     this.previousNotes = [];
     this.voiceBalanceThreshold = 3;
     this.contraryMotionPreference = 0.4;
@@ -258,7 +260,7 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
 
     // Apply voice leading optimization
     const optimizedNotes = baseNotes.map((noteObj: any, idx: number) => {
-      if (idx < this.previousNotes.length && (globalThis as any).rf() < this.commonToneWeight) {
+      if (idx < this.previousNotes.length && g.rf() < this.commonToneWeight) {
         // Try to maintain common tones
         const prevNote = this.previousNotes[idx].note;
         const chromaPrev = prevNote % 12;
@@ -281,21 +283,21 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
 }
 
 // Export composers to global scope
-(globalThis as any).MeasureComposer = MeasureComposer;
-(globalThis as any).ScaleComposer = ScaleComposer;
-(globalThis as any).RandomScaleComposer = RandomScaleComposer;
-(globalThis as any).ChordComposer = ChordComposer;
-(globalThis as any).RandomChordComposer = RandomChordComposer;
-(globalThis as any).ModeComposer = ModeComposer;
-(globalThis as any).RandomModeComposer = RandomModeComposer;
-(globalThis as any).PentatonicComposer = PentatonicComposer;
-(globalThis as any).RandomPentatonicComposer = RandomPentatonicComposer;
-(globalThis as any).ProgressionGenerator = ProgressionGenerator;
-(globalThis as any).TensionReleaseComposer = TensionReleaseComposer;
-(globalThis as any).ModalInterchangeComposer = ModalInterchangeComposer;
-(globalThis as any).HarmonicRhythmComposer = HarmonicRhythmComposer;
-(globalThis as any).MelodicDevelopmentComposer = MelodicDevelopmentComposer;
-(globalThis as any).AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
+g.MeasureComposer = MeasureComposer;
+g.ScaleComposer = ScaleComposer;
+g.RandomScaleComposer = RandomScaleComposer;
+g.ChordComposer = ChordComposer;
+g.RandomChordComposer = RandomChordComposer;
+g.ModeComposer = ModeComposer;
+g.RandomModeComposer = RandomModeComposer;
+g.PentatonicComposer = PentatonicComposer;
+g.RandomPentatonicComposer = RandomPentatonicComposer;
+g.ProgressionGenerator = ProgressionGenerator;
+g.TensionReleaseComposer = TensionReleaseComposer;
+g.ModalInterchangeComposer = ModalInterchangeComposer;
+g.HarmonicRhythmComposer = HarmonicRhythmComposer;
+g.MelodicDevelopmentComposer = MelodicDevelopmentComposer;
+g.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
 
 // ComposerFactory creates instances
 
@@ -304,35 +306,35 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
  */
 class ComposerFactory {
   static constructors: Record<string, Function> = {
-    measure: () => new (globalThis as any).MeasureComposer(),
+    measure: () => new g.MeasureComposer(),
     scale: ({ name = 'major', root = 'C' } = {}) => {
-      const n = name === 'random' ? (globalThis as any).allScales[(globalThis as any).ri((globalThis as any).allScales.length - 1)] : name;
-      const r = root === 'random' ? (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)] : root;
+      const n = name === 'random' ? g.allScales[g.ri(g.allScales.length - 1)] : name;
+      const r = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
       return new ScaleComposer(n, r);
     },
     chords: ({ progression = ['C'] } = {}) => {
       let p = Array.isArray(progression) ? progression : ['C'];
       if (typeof progression === 'string' && progression === 'random') {
-        const len = (globalThis as any).ri(2, 5);
+        const len = g.ri(2, 5);
         p = [];
         for (let i = 0; i < len; i++) {
-          p.push((globalThis as any).allChords[(globalThis as any).ri((globalThis as any).allChords.length - 1)]);
+          p.push(g.allChords[g.ri(g.allChords.length - 1)]);
         }
       }
       return new ChordComposer(p);
     },
     mode: ({ name = 'ionian', root = 'C' } = {}) => {
-      const n = name === 'random' ? (globalThis as any).allModes[(globalThis as any).ri((globalThis as any).allModes.length - 1)] : name;
-      const r = root === 'random' ? (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)] : root;
+      const n = name === 'random' ? g.allModes[g.ri(g.allModes.length - 1)] : name;
+      const r = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
       return new ModeComposer(n, r);
     },
     pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
-      const r = root === 'random' ? (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)] : root;
-      const t = scaleType === 'random' ? (['major', 'minor'])[(globalThis as any).ri(2)] : scaleType;
+      const r = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
+      const t = scaleType === 'random' ? (['major', 'minor'])[g.ri(2)] : scaleType;
       return new PentatonicComposer(r, t);
     },
-    tensionRelease: ({ key = (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
-    modalInterchange: ({ key = (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
+    tensionRelease: ({ key = g.allNotes[g.ri(g.allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
+    modalInterchange: ({ key = g.allNotes[g.ri(g.allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
     harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => new HarmonicRhythmComposer(progression, key, measuresPerChord, quality),
     melodicDevelopment: ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, developmentIntensity),
     advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new AdvancedVoiceLeadingComposer(name, root, commonToneWeight),
@@ -358,12 +360,12 @@ class ComposerFactory {
 let composers: any[] = [];  // Lazy-loaded in play.ts when all systems are ready
 
 // Export to global scope for backward compatibility
-(globalThis as any).TensionReleaseComposer = TensionReleaseComposer;
-(globalThis as any).ModalInterchangeComposer = ModalInterchangeComposer;
-(globalThis as any).HarmonicRhythmComposer = HarmonicRhythmComposer;
-(globalThis as any).MelodicDevelopmentComposer = MelodicDevelopmentComposer;
-(globalThis as any).AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
-(globalThis as any).ComposerFactory = ComposerFactory;
-(globalThis as any).composers = composers;
+g.TensionReleaseComposer = TensionReleaseComposer;
+g.ModalInterchangeComposer = ModalInterchangeComposer;
+g.HarmonicRhythmComposer = HarmonicRhythmComposer;
+g.MelodicDevelopmentComposer = MelodicDevelopmentComposer;
+g.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
+g.ComposerFactory = ComposerFactory;
+g.composers = composers;
 
 

@@ -3,6 +3,8 @@
 /**
  * Configuration object passed to composer constructors
  */
+const g = globalThis as any;
+
 export interface ComposerConfig {
   type: string;
   [key: string]: any;
@@ -111,23 +113,23 @@ export class ComposerRegistry {
    */
   private registerDefaults(): void {
     // Import composer classes from global scope (backward compatibility)
-    const ScaleComposer = (globalThis as any).ScaleComposer;
-    const ChordComposer = (globalThis as any).ChordComposer;
-    const ModeComposer = (globalThis as any).ModeComposer;
-    const PentatonicComposer = (globalThis as any).PentatonicComposer;
-    const MeasureComposer = (globalThis as any).MeasureComposer;
-    const TensionReleaseComposer = (globalThis as any).TensionReleaseComposer;
-    const ModalInterchangeComposer = (globalThis as any).ModalInterchangeComposer;
-    const HarmonicRhythmComposer = (globalThis as any).HarmonicRhythmComposer;
-    const MelodicDevelopmentComposer = (globalThis as any).MelodicDevelopmentComposer;
-    const AdvancedVoiceLeadingComposer = (globalThis as any).AdvancedVoiceLeadingComposer;
+    const ScaleComposer = g.ScaleComposer;
+    const ChordComposer = g.ChordComposer;
+    const ModeComposer = g.ModeComposer;
+    const PentatonicComposer = g.PentatonicComposer;
+    const MeasureComposer = g.MeasureComposer;
+    const TensionReleaseComposer = g.TensionReleaseComposer;
+    const ModalInterchangeComposer = g.ModalInterchangeComposer;
+    const HarmonicRhythmComposer = g.HarmonicRhythmComposer;
+    const MelodicDevelopmentComposer = g.MelodicDevelopmentComposer;
+    const AdvancedVoiceLeadingComposer = g.AdvancedVoiceLeadingComposer;
 
     // Utilities from global scope
-    const ri = (globalThis as any).ri;
-    const allScales = (globalThis as any).allScales;
-    const allNotes = (globalThis as any).allNotes;
-    const allChords = (globalThis as any).allChords;
-    const allModes = (globalThis as any).allModes;
+    const ri = g.ri;
+    const allScales = g.allScales;
+    const allNotes = g.allNotes;
+    const allChords = g.allChords;
+    const allModes = g.allModes;
 
     // Register measure composer
     this.register('measure', () => new MeasureComposer());
@@ -201,7 +203,7 @@ export class ComposerRegistry {
 
 
 // Export to global scope for backward compatibility
-(globalThis as any).ComposerRegistry = ComposerRegistry;
+g.ComposerRegistry = ComposerRegistry;
 
 export default ComposerRegistry;
 

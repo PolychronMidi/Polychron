@@ -8,13 +8,14 @@ import './composers/index.js';
 import './ComposerRegistry.js';
 
 // Re-export all composers classes and functions from global scope
-export const MeasureComposer = (globalThis as any).MeasureComposer;
-export const ScaleComposer = (globalThis as any).ScaleComposer;
-export const ChordComposer = (globalThis as any).ChordComposer;
-export const ModeComposer = (globalThis as any).ModeComposer;
-export const PentatonicComposer = (globalThis as any).PentatonicComposer;
-export const ComposerFactory = (globalThis as any).ComposerFactory; // Legacy support
-export const Composer = (globalThis as any).Composer;
+const g = globalThis as any;
+export const MeasureComposer = g.MeasureComposer;
+export const ScaleComposer = g.ScaleComposer;
+export const ChordComposer = g.ChordComposer;
+export const ModeComposer = g.ModeComposer;
+export const PentatonicComposer = g.PentatonicComposer;
+export const ComposerFactory = g.ComposerFactory; // Legacy support
+export const Composer = g.Composer;
 
 // Re-export new typed registry
-export const ComposerRegistry = (globalThis as any).ComposerRegistry;
+export const ComposerRegistry = g.ComposerRegistry;

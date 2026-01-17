@@ -56,7 +56,7 @@ export function initializePolychronContext(): IPolychronContext {
     ModalInterchangeComposer: g.ModalInterchangeComposer,
     MelodicDevelopmentComposer: g.MelodicDevelopmentComposer,
     AdvancedVoiceLeadingComposer: g.AdvancedVoiceLeadingComposer,
-    VoiceLeadingScore: g.VoiceLeadingScore,
+    // VoiceLeadingScore removed - imported directly in MeasureComposer.ts
   };
 
   // ============================================================

@@ -4,6 +4,8 @@
 
 import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
 
+const g = globalThis as any;
+
 /**
  * Composes notes from a specific scale.
  * @extends GenericComposer<Scale>
@@ -16,7 +18,7 @@ class ScaleComposer extends GenericComposer<any> {
 
   itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
+    this.item = g.t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 }
@@ -32,14 +34,14 @@ class RandomScaleComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    const randomScale = (globalThis as any).allScales[(globalThis as any).ri((globalThis as any).allScales.length - 1)];
-    const randomRoot = (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)];
+    const randomScale = g.allScales[g.ri(g.allScales.length - 1)];
+    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
     this.itemSet(randomScale, randomRoot);
   }
 
   itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
+    this.item = g.t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 }
