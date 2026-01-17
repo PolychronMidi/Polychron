@@ -147,6 +147,4 @@ export const LayerManager = {
   },
 };
 
-// Export layer manager to global scope for access from other modules
-(globalThis as any).LM = LayerManager;
-(globalThis as any).layerManager = LayerManager;
+

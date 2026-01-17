@@ -148,9 +148,6 @@ export const PolychronContext: IPolychronContext = {
   }
 };
 
-// Expose to globals for backward compatibility during transition
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).PolychronContext = PolychronContext;
-}
+
 
 export default PolychronContext;

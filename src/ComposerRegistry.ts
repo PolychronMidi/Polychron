@@ -200,5 +200,7 @@ export class ComposerRegistry {
   }
 }
 
-// Export singleton instance to global scope for backward compatibility
+// Export to global scope for backward compatibility
 (globalThis as any).ComposerRegistry = ComposerRegistry;
+export default ComposerRegistry;
+

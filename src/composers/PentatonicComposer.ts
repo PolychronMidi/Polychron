@@ -2,13 +2,13 @@
 // PentatonicComposer - Composes notes from pentatonic scales
 // Using GenericComposer<Pentatonic> base class to reduce duplication
 
-import './GenericComposer.js';
+import GenericComposer from './GenericComposer.js';
 
 /**
  * Composes notes from pentatonic scales.
  * @extends GenericComposer<Pentatonic>
  */
-class PentatonicComposer extends (globalThis as any).GenericComposer {
+class PentatonicComposer extends GenericComposer {
   type: string; // 'major' or 'minor'
 
   constructor(root: string = 'C', scaleType: string = 'major') {
@@ -57,7 +57,6 @@ class RandomPentatonicComposer extends PentatonicComposer {
   }
 }
 
-// Export to global scope
-(globalThis as any).PentatonicComposer = PentatonicComposer;
-(globalThis as any).RandomPentatonicComposer = RandomPentatonicComposer;
+
+export default PentatonicComposer;
 export { PentatonicComposer, RandomPentatonicComposer };

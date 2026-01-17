@@ -115,5 +115,4 @@ export class TimingContext {
   }
 }
 
-// Export to global namespace for backward compatibility
-(globalThis as any).TimingContext = TimingContext;
+

@@ -66,9 +66,4 @@ export class TimingCalculator {
   }
 }
 
-// Export to global namespace for tests and backward compatibility
-(globalThis as any).TimingCalculator = TimingCalculator;
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  (globalThis as any).__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
-}
+

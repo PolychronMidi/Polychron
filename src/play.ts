@@ -347,9 +347,6 @@ const initializePlayEngine = async (
 // Export initialization function
 export { initializePlayEngine };
 
-// Also expose to global for backward compatibility
-(globalThis as any).initializePlayEngine = initializePlayEngine;
-
 // Execute immediately when module is loaded (with no callbacks for backward compat)
 initializePlayEngine().catch((err) => {
   console.error('Composition engine failed:', err);

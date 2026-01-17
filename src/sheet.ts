@@ -35,7 +35,7 @@ export const SUBSUBDIVS = DEFAULT_CONFIG.subsubdivs;
 export const COMPOSERS = DEFAULT_CONFIG.composers;
 export const SILENT_OUTRO_SECONDS = DEFAULT_CONFIG.silentOutroSeconds;
 
-// Export all to global scope for backward compatibility
+// Attach all configuration to globalThis for backward compatibility
 (globalThis as any).primaryInstrument = primaryInstrument;
 (globalThis as any).secondaryInstrument = secondaryInstrument;
 (globalThis as any).otherInstruments = otherInstruments;
@@ -61,33 +61,3 @@ export const SILENT_OUTRO_SECONDS = DEFAULT_CONFIG.silentOutroSeconds;
 (globalThis as any).COMPOSERS = COMPOSERS;
 (globalThis as any).SILENT_OUTRO_SECONDS = SILENT_OUTRO_SECONDS;
 
-// Export for tests
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  Object.assign((globalThis as any).__POLYCHRON_TEST__, {
-    primaryInstrument,
-    secondaryInstrument,
-    otherInstruments,
-    bassInstrument,
-    bassInstrument2,
-    otherBassInstruments,
-    drumSets,
-    LOG,
-    TUNING_FREQ,
-    BINAURAL,
-    PPQ,
-    BPM,
-    NUMERATOR,
-    DENOMINATOR,
-    OCTAVE,
-    VOICES,
-    SECTION_TYPES,
-    PHRASES_PER_SECTION,
-    SECTIONS,
-    DIVISIONS,
-    SUBDIVISIONS,
-    SUBSUBDIVS,
-    COMPOSERS,
-    SILENT_OUTRO_SECONDS
-  });
-}

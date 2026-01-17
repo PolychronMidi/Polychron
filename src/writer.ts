@@ -306,26 +306,16 @@ export const grandFinale = (): void => {
     fsModule.writeFileSync(outputFilename, composition);
     console.log(`${outputFilename} created (${name} layer).`);
   });
-};;
+};
 
-// Export to global scope for backward compatibility
+// Attach to globalThis for backward compatibility
 (globalThis as any).CSVBuffer = CSVBuffer;
-(globalThis as any).p = p;
 (globalThis as any).pushMultiple = pushMultiple;
+(globalThis as any).p = p;
 (globalThis as any).c1 = c1;
 (globalThis as any).c2 = c2;
 (globalThis as any).c = c;
 (globalThis as any).logUnit = logUnit;
 (globalThis as any).grandFinale = grandFinale;
 
-// Export for tests
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  Object.assign((globalThis as any).__POLYCHRON_TEST__, {
-    CSVBuffer,
-    p,
-    pushMultiple,
-    logUnit,
-    grandFinale
-  });
-}
+

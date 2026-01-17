@@ -435,8 +435,7 @@ class VoiceLeadingScore {
   }
 }
 
-// Export to global scope
-globalThis.VoiceLeadingScore = VoiceLeadingScore;
+
 
 export { VoiceLeadingScore };
 export default VoiceLeadingScore;

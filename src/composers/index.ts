@@ -6,12 +6,12 @@ import '../backstage.js';  // Load global utilities (m, rf, ri, ra, etc.)
 import '../venue.js';      // Load music theory (allScales, allNotes, allModes, allChords)
 
 // Load composer modules (only the ones that exist)
-import './MeasureComposer.js';
-import './ScaleComposer.js';
-import './ModeComposer.js';
-import './ChordComposer.js';
-import './PentatonicComposer.js';
-import './ProgressionGenerator.js';
+import MeasureComposer from './MeasureComposer.js';
+import ScaleComposer, { RandomScaleComposer } from './ScaleComposer.js';
+import ModeComposer, { RandomModeComposer } from './ModeComposer.js';
+import ChordComposer, { RandomChordComposer } from './ChordComposer.js';
+import PentatonicComposer, { RandomPentatonicComposer } from './PentatonicComposer.js';
+import ProgressionGenerator from './ProgressionGenerator.js';
 
 // Base class
 // MeasureComposer is at: ./MeasureComposer.ts
@@ -281,12 +281,16 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
 }
 
 // Export composers to global scope
+(globalThis as any).MeasureComposer = MeasureComposer;
+(globalThis as any).ScaleComposer = ScaleComposer;
+(globalThis as any).RandomScaleComposer = RandomScaleComposer;
 (globalThis as any).ChordComposer = ChordComposer;
 (globalThis as any).RandomChordComposer = RandomChordComposer;
 (globalThis as any).ModeComposer = ModeComposer;
 (globalThis as any).RandomModeComposer = RandomModeComposer;
 (globalThis as any).PentatonicComposer = PentatonicComposer;
 (globalThis as any).RandomPentatonicComposer = RandomPentatonicComposer;
+(globalThis as any).ProgressionGenerator = ProgressionGenerator;
 (globalThis as any).TensionReleaseComposer = TensionReleaseComposer;
 (globalThis as any).ModalInterchangeComposer = ModalInterchangeComposer;
 (globalThis as any).HarmonicRhythmComposer = HarmonicRhythmComposer;

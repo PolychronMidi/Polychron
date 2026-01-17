@@ -604,30 +604,4 @@ export const trackRhythm = (unit: string): void => {
   }
 };
 
-// Export all functions to globalThis for backward compatibility
-(globalThis as any).drumMap = drumMap;
-(globalThis as any).drummer = drummer;
-(globalThis as any).playDrums = playDrums;
-(globalThis as any).playDrums2 = playDrums2;
-(globalThis as any).binary = binary;
-(globalThis as any).hex = hex;
-(globalThis as any).onsets = onsets;
-(globalThis as any).random = random;
-(globalThis as any).prob = prob;
-(globalThis as any).euclid = euclid;
-(globalThis as any).rotate = rotate;
-(globalThis as any).morph = morph;
-(globalThis as any).setRhythm = setRhythm;
-(globalThis as any).makeOnsets = makeOnsets;
-(globalThis as any).patternLength = patternLength;
-(globalThis as any).closestDivisor = closestDivisor;
-(globalThis as any).getRhythm = getRhythm;
-(globalThis as any).trackRhythm = trackRhythm;
 
-// Export to globalThis test namespace for clean test access
-if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
-    drummer, patternLength, makeOnsets, closestDivisor, drumMap, trackRhythm
-  });
-}

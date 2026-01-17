@@ -316,13 +316,16 @@ describe('ComposerRegistry', () => {
       expect(typeof module.ComposerRegistry.getInstance).toBe('function');
     });
 
-    it('should assign ComposerRegistry class to globalThis on import', async () => {
-      // The module assigns the class to globalThis, not an instance
-      await import('../src/ComposerRegistry.js');
+    it('should allow getInstance() to be called from module export', async () => {
+      // ComposerRegistry is imported as an ES6 module export
+      const module = await import('../src/ComposerRegistry.js');
 
-      // globalThis.ComposerRegistry should be the class itself
-      expect(typeof globalThis.ComposerRegistry).toBe('function');
-      expect(typeof globalThis.ComposerRegistry.getInstance).toBe('function');
+      // ComposerRegistry class should have getInstance method
+      expect(typeof module.ComposerRegistry.getInstance).toBe('function');
+      
+      // Should be able to get instance
+      const instance = module.ComposerRegistry.getInstance();
+      expect(instance).toBeDefined();
     });
   });
 });

@@ -8,6 +8,9 @@ import { LayerManager } from './time/LayerManager.js';
 // Re-export classes for backward compatibility
 export { TimingCalculator, TimingContext, LayerManager };
 
+// Attach LayerManager to globalThis for backward compatibility
+(globalThis as any).LM = LayerManager;
+
 // Declare global timing variables
 declare const BPM: number;
 declare const PPQ: number;
@@ -281,30 +284,13 @@ const formatTime = (seconds: number): string => {
   return `${minutes}:${secs}`;
 };
 
-// Export to global scope for backward compatibility
+
+
+export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime };
+
+// Attach to globalThis for backward compatibility
 (globalThis as any).getMidiTiming = getMidiTiming;
 (globalThis as any).setMidiTiming = setMidiTiming;
 (globalThis as any).getPolyrhythm = getPolyrhythm;
 (globalThis as any).setUnitTiming = setUnitTiming;
 (globalThis as any).formatTime = formatTime;
-(globalThis as any).TimingCalculator = TimingCalculator;
-(globalThis as any).TimingContext = TimingContext;
-(globalThis as any).LM = LayerManager;
-(globalThis as any).layerManager = LayerManager;
-
-// Export for tests
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  Object.assign((globalThis as any).__POLYCHRON_TEST__, {
-    TimingCalculator,
-    TimingContext,
-    LayerManager,
-    getMidiTiming,
-    setMidiTiming,
-    getPolyrhythm,
-    setUnitTiming,
-    formatTime
-  });
-}
-
-export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime };

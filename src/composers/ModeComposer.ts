@@ -2,13 +2,13 @@
 // ModeComposer - Composes notes from specific modes
 // Using GenericComposer<Mode> base class to reduce duplication
 
-import './GenericComposer.js';
+import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
 
 /**
  * Composes notes from a specific mode.
  * @extends GenericComposer<Mode>
  */
-class ModeComposer extends (globalThis as any).GenericComposer {
+class ModeComposer extends GenericComposer {
   mode: any; // Backward compatibility alias
 
   constructor(modeName: string = 'ionian', root: string = 'C') {
@@ -39,7 +39,7 @@ class ModeComposer extends (globalThis as any).GenericComposer {
  * Random mode selection from all available modes.
  * @extends GenericComposer<Mode>
  */
-class RandomModeComposer extends (globalThis as any).RandomGenericComposer {
+class RandomModeComposer extends RandomGenericComposer {
   mode: any; // Backward compatibility alias
 
   constructor() {
@@ -72,7 +72,6 @@ class RandomModeComposer extends (globalThis as any).RandomGenericComposer {
   }
 }
 
-// Export to global scope
-(globalThis as any).ModeComposer = ModeComposer;
-(globalThis as any).RandomModeComposer = RandomModeComposer;
+
+export default ModeComposer;
 export { ModeComposer, RandomModeComposer };

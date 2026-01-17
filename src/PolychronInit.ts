@@ -92,8 +92,7 @@ export function initializePolychronContext(): IPolychronContext {
   // ============================================================
   PolychronContext.initialized = true;
 
-  // Expose to globalThis for debugging
-  (globalThis as any).PolychronContext = PolychronContext;
+
 
   return PolychronContext;
 }

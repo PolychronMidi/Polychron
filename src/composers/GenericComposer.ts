@@ -2,7 +2,7 @@
 // GenericComposer.ts - Generic base class for scale-like composers (Scale, Mode, Chord, Pentatonic)
 // Reduces code duplication across composers by ~200-300 lines
 
-import './MeasureComposer.js';
+import MeasureComposer from './MeasureComposer.js';
 
 /**
  * Generic composer base class parameterized by item type T.
@@ -14,7 +14,7 @@ import './MeasureComposer.js';
  * - Chord: Chord notation (e.g., "Cmaj7")
  * - Pentatonic: Pentatonic scale notation (e.g., "C major pentatonic")
  */
-abstract class GenericComposer<T> extends (globalThis as any).MeasureComposer {
+abstract class GenericComposer<T> extends MeasureComposer {
   root: string;
   itemType: string; // "scale", "mode", "chord", "pentatonic"
   item: T | null;
@@ -74,8 +74,7 @@ abstract class RandomGenericComposer<T> extends GenericComposer<T> {
   }
 }
 
-// Export to global scope for use in index.ts
-(globalThis as any).GenericComposer = GenericComposer;
-(globalThis as any).RandomGenericComposer = RandomGenericComposer;
 
+
+export default GenericComposer;
 export { GenericComposer, RandomGenericComposer };

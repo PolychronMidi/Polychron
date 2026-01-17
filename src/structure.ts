@@ -89,17 +89,8 @@ export const resolveSectionProfile = (sectionType: any = null): SectionProfile =
   };
 };
 
-// Export to global scope for backward compatibility
+// Attach to globalThis for backward compatibility
 (globalThis as any).normalizeSectionType = normalizeSectionType;
 (globalThis as any).selectSectionType = selectSectionType;
 (globalThis as any).resolveSectionProfile = resolveSectionProfile;
 
-// Export for tests
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  Object.assign((globalThis as any).__POLYCHRON_TEST__, {
-    normalizeSectionType,
-    selectSectionType,
-    resolveSectionProfile
-  });
-}

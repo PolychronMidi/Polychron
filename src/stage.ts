@@ -277,11 +277,5 @@ export class Stage {
   }
 }
 
-// Export Stage instance to global namespace for tests
-// Note: Stage is created without dependencies on first import, but will be
-// re-instantiated via DIContainer in play.ts with proper dependency injection
-globalThis.stage = new Stage();
-if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  globalThis.__POLYCHRON_TEST__.stage = globalThis.stage;
-}
+// Export Stage instance for tests (created by DIContainer in play.ts)
+export const stage = new Stage();

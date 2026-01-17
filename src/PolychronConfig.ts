@@ -297,11 +297,6 @@ export function resetConfig(): void {
   globalConfig = { ...DEFAULT_CONFIG };
 }
 
-// Export to global scope for backward compatibility with sheet.ts usage
-(globalThis as any).DEFAULT_CONFIG = DEFAULT_CONFIG;
-(globalThis as any).getConfig = getConfig;
-(globalThis as any).setConfig = setConfig;
-(globalThis as any).resetConfig = resetConfig;
-(globalThis as any).validateConfig = validateConfig;
+
 
 export default DEFAULT_CONFIG;

@@ -2,13 +2,13 @@
 // ScaleComposer - Composes notes from specific scales
 // Now using GenericComposer<Scale> base class to reduce duplication
 
-import './GenericComposer.js';
+import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
 
 /**
  * Composes notes from a specific scale.
  * @extends GenericComposer<Scale>
  */
-class ScaleComposer extends (globalThis as any).GenericComposer {
+class ScaleComposer extends GenericComposer {
   constructor(scaleName: string, root: string) {
     super('scale', root);
     this.itemSet(scaleName, root);
@@ -31,7 +31,7 @@ class ScaleComposer extends (globalThis as any).GenericComposer {
  * Random scale selection from all available scales.
  * @extends GenericComposer<Scale>
  */
-class RandomScaleComposer extends (globalThis as any).RandomGenericComposer {
+class RandomScaleComposer extends RandomGenericComposer {
   constructor() {
     super('scale', 'C');
     this.randomizeItem();
@@ -56,7 +56,6 @@ class RandomScaleComposer extends (globalThis as any).RandomGenericComposer {
   }
 }
 
-// Export to global scope
-(globalThis as any).ScaleComposer = ScaleComposer;
-(globalThis as any).RandomScaleComposer = RandomScaleComposer;
+
+export default ScaleComposer;
 export { ScaleComposer, RandomScaleComposer };

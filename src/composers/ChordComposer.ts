@@ -2,14 +2,14 @@
 // ChordComposer - Composes notes from chord progressions
 // Using GenericComposer<Chord> base class with progression tracking
 
-import './GenericComposer.js';
+import GenericComposer from './GenericComposer.js';
 
 /**
  * Composes notes from chord progressions.
  * Extends GenericComposer with progression tracking and direction support.
  * @extends GenericComposer<Chord>
  */
-class ChordComposer extends (globalThis as any).GenericComposer {
+class ChordComposer extends GenericComposer {
   progression: string[] | undefined;
   currentChordIndex: number;
   direction: string;
@@ -210,4 +210,5 @@ class RandomChordComposer extends ChordComposer {
 // Export to global scope
 (globalThis as any).ChordComposer = ChordComposer;
 (globalThis as any).RandomChordComposer = RandomChordComposer;
+export default ChordComposer;
 export { ChordComposer, RandomChordComposer };

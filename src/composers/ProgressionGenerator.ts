@@ -110,4 +110,5 @@ class ProgressionGenerator {
 
 // Export to global scope
 globalThis.ProgressionGenerator = ProgressionGenerator;
+export default ProgressionGenerator;
 export { ProgressionGenerator };

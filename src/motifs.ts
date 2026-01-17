@@ -187,23 +187,14 @@ class Motif {
   }
 }
 
-// Expose motif utilities globally for stage/play integration and testing.
+
+
+// Export for backward compatibility
+const clampMotifNote = clampNote;
+
+export { Motif, clampNote, clampMotifNote };
+
+// Attach to globalThis for backward compatibility
 (globalThis as any).Motif = Motif;
-(globalThis as any).clampMotifNote = clampNote;
-(globalThis as any).activeMotif = (globalThis as any).activeMotif || null;
-
-(globalThis as any).applyMotifToNotes = (notes: any, motif: any = (globalThis as any).activeMotif, options: any = {}) => {
-  if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
-  return motif.applyToNotes(notes, options);
-};
-
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__POLYCHRON_TEST__ = (globalThis as any).__POLYCHRON_TEST__ || {};
-  Object.assign((globalThis as any).__POLYCHRON_TEST__, {
-    Motif,
-    clampMotifNote: clampNote,
-    applyMotifToNotes: (globalThis as any).applyMotifToNotes,
-  });
-}
-
-export { Motif };
+(globalThis as any).clampNote = clampNote;
+(globalThis as any).clampMotifNote = clampMotifNote;
