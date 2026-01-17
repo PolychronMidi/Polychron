@@ -4,6 +4,7 @@
 import '../src/sheet.js'; // Load config constants to globalThis
 import '../src/venue.js'; // Load Tonal library (t) to globalThis
 import '../src/backstage.js'; // Load random helpers (rf, ri, etc.) to globalThis
+import '../src/play.js'; // Load play.js to set up globalThis.initializePlayEngine and run auto-init
 import { initializePlayEngine } from '../src/play.js';
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming } from '../src/time.js';
 import { ScaleComposer } from '../src/composers.js';

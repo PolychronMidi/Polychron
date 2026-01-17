@@ -171,13 +171,14 @@ describe('Async Play Engine Integration', () => {
   it('should generate valid output when using async mode', async () => {
     const { initializePlayEngine } = await import('../dist/play.js');
     const g = globalThis as any;
-    g.c = [];
 
     await initializePlayEngine();
 
-    expect(g.c.length).toBeGreaterThan(0);
+    // g.c is a CSVBuffer object, check its rows property
+    expect(g.c.rows).toBeDefined();
+    expect(g.c.rows.length).toBeGreaterThan(0);
     // Check that most events have tick property (some might be null/special entries)
-    const eventsWithTicks = g.c.filter((event: any) => event && event.tick !== undefined);
+    const eventsWithTicks = g.c.rows.filter((event: any) => event && event.tick !== undefined);
     expect(eventsWithTicks.length).toBeGreaterThan(0);
   });
 

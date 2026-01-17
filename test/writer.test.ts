@@ -84,6 +84,7 @@ describe('logUnit', () => {
     setupGlobalState();
     globalThis.LOG = 'all';
     globalThis.c = new CSVBuffer('test');
+    c = globalThis.c;
     globalThis.sectionIndex = 0;
     globalThis.totalSections = 1;
     globalThis.sectionStart = 0;

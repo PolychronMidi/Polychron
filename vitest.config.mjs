@@ -2,8 +2,8 @@ export default {
   test: {
     globals: true,
     testTimeout: 30000,
-    // Reporter: minimal output - only show failures and summary
-    reporters: 'default',
+    // Reporter: default shows concise summary + failures
+    reporters: process.env.CI ? 'default' : 'default',
     // Only report failures, not passing tests
     hideSkipped: false,
     coverage: {
