@@ -8,7 +8,7 @@ import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
  * Composes notes from a specific mode.
  * @extends GenericComposer<Mode>
  */
-class ModeComposer extends GenericComposer {
+class ModeComposer extends GenericComposer<any> {
   constructor(modeName: string = 'ionian', root: string = 'C') {
     super('mode', root);
     this.itemSet(modeName, root);
@@ -30,7 +30,7 @@ class ModeComposer extends GenericComposer {
  * Random mode selection from all available modes.
  * @extends GenericComposer<Mode>
  */
-class RandomModeComposer extends RandomGenericComposer {
+class RandomModeComposer extends RandomGenericComposer<any> {
   constructor() {
     super('mode', 'C');
     this.randomizeItem();

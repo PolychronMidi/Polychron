@@ -103,7 +103,6 @@ export interface CompositionState {
   activeMotif: any;
 
   // Binaural/stutter state
-  beatCount: number;
   beatsUntilBinauralShift: number;
   flipBin: boolean;
   binauralFreqOffset: number;

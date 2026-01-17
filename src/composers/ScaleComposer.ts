@@ -8,7 +8,7 @@ import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
  * Composes notes from a specific scale.
  * @extends GenericComposer<Scale>
  */
-class ScaleComposer extends GenericComposer {
+class ScaleComposer extends GenericComposer<any> {
   constructor(scaleName: string, root: string) {
     super('scale', root);
     this.itemSet(scaleName, root);
@@ -25,7 +25,7 @@ class ScaleComposer extends GenericComposer {
  * Random scale selection from all available scales.
  * @extends GenericComposer<Scale>
  */
-class RandomScaleComposer extends RandomGenericComposer {
+class RandomScaleComposer extends RandomGenericComposer<any> {
   constructor() {
     super('scale', 'C');
     this.randomizeItem();

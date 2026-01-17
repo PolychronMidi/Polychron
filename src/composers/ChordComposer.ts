@@ -9,7 +9,7 @@ import GenericComposer from './GenericComposer.js';
  * Extends GenericComposer with progression tracking and direction support.
  * @extends GenericComposer<Chord>
  */
-class ChordComposer extends GenericComposer {
+class ChordComposer extends GenericComposer<any> {
   progression: string[] | undefined;
   currentChordIndex: number;
   direction: string;

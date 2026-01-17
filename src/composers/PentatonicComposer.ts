@@ -8,7 +8,7 @@ import GenericComposer from './GenericComposer.js';
  * Composes notes from pentatonic scales.
  * @extends GenericComposer<Pentatonic>
  */
-class PentatonicComposer extends GenericComposer {
+class PentatonicComposer extends GenericComposer<any> {
   type: string; // 'major' or 'minor'
 
   constructor(root: string = 'C', scaleType: string = 'major') {

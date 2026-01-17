@@ -12,3 +12,4 @@ deepwiki.config.json
 /coverage
 .depcheckrc
 /dist
+/log
