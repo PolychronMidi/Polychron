@@ -21,6 +21,8 @@
     "build": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm",
     "build:watch": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm --watch",
     "test": "vitest",
+    "test:run": "vitest --run --reporter=verbose 2>&1 | grep -E '^\\s*(✓|×|FAIL|PASS|Test Files|Tests|Duration)' || vitest --run",
+    "test:quick": "vitest --run 2>&1 | tail -30",
     "test:coverage": "vitest --coverage",
     "test:loop": "node scripts/tests-loop.js",
     "lint": "eslint src/**/*.{js,ts}",

@@ -1,59 +1,62 @@
 // @ts-check
 // ScaleComposer - Composes notes from specific scales
+// Now using GenericComposer<Scale> base class to reduce duplication
 
-import './MeasureComposer.js';
+import './GenericComposer.js';
 
 /**
  * Composes notes from a specific scale.
- * @extends MeasureComposer
+ * @extends GenericComposer<Scale>
  */
-class ScaleComposer extends (globalThis as any).MeasureComposer {
-  root: string;
-  scale: any;
-  notes: any[];
-
+class ScaleComposer extends (globalThis as any).GenericComposer {
   constructor(scaleName: string, root: string) {
-    super();
+    super('scale', root);
+    this.itemSet(scaleName, root);
+  }
+
+  itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.notes = [];
-    this.noteSet(scaleName, root);
+    this.item = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
+    this.scale = this.item; // Backward compatibility alias
+    this.notes = this.item.notes;
   }
 
+  // Backward compatibility alias for index.ts classes that still use noteSet()
   noteSet(scaleName: string, root: string): void {
-    this.scale = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
-    this.notes = this.scale.notes;
-  }
-
-  getNotes(): any[] {
-    return (globalThis as any).MeasureComposer.prototype.getNotes.call(this);
-  }
-
-  x(): any[] {
-    return this.getNotes();
+    this.itemSet(scaleName, root);
   }
 }
 
 /**
  * Random scale selection from all available scales.
- * @extends ScaleComposer
+ * @extends GenericComposer<Scale>
  */
-class RandomScaleComposer extends ScaleComposer {
+class RandomScaleComposer extends (globalThis as any).RandomGenericComposer {
   constructor() {
-    super('','');
-    this.noteSet();
+    super('scale', 'C');
+    this.randomizeItem();
   }
-  /** Randomly selects scale and root from venue.js data */
-  noteSet() {
-    const randomScale=allScales[ri(allScales.length - 1)];
-    const randomRoot=allNotes[ri(allNotes.length - 1)];
-    super.noteSet(randomScale,randomRoot);
+
+  randomizeItem() {
+    const randomScale = (globalThis as any).allScales[(globalThis as any).ri((globalThis as any).allScales.length - 1)];
+    const randomRoot = (globalThis as any).allNotes[(globalThis as any).ri((globalThis as any).allNotes.length - 1)];
+    this.itemSet(randomScale, randomRoot);
   }
-  /** @returns {{note: number}[]} Random scale notes */
-  x() { this.noteSet(); return super.x(); }
+
+  itemSet(scaleName: string, root: string): void {
+    this.root = root;
+    this.item = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
+    this.scale = this.item; // Backward compatibility alias
+    this.notes = this.item.notes;
+  }
+
+  // Backward compatibility alias for index.ts classes that still use noteSet()
+  noteSet(scaleName: string, root: string): void {
+    this.itemSet(scaleName, root);
+  }
 }
 
-
 // Export to global scope
-globalThis.ScaleComposer = ScaleComposer;
-globalThis.RandomScaleComposer = RandomScaleComposer;
+(globalThis as any).ScaleComposer = ScaleComposer;
+(globalThis as any).RandomScaleComposer = RandomScaleComposer;
 export { ScaleComposer, RandomScaleComposer };

@@ -125,7 +125,7 @@ class MeasureComposer {
 
     // DESIGN NOTE: octaveRange is a SOFT constraint, not hard. This is intentional for random music generation.
     // When seeking unique notes within the range, if we exhaust available octaves within bounds,
-    // we accept the duplicate rather than escaping to global bounds. Occasionally notes may fall 
+    // we accept the duplicate rather than escaping to global bounds. Occasionally notes may fall
     // slightly outside the range due to voice leading optimization - this is by design and prevents
     // excessive constraint-solving overhead. Tests verify MIDI validity, not strict octave bounds.
     const rootNote = this.notes[ri(this.notes.length - 1)];
