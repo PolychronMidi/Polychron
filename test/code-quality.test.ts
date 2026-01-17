@@ -495,18 +495,27 @@ test('each source module should have corresponding test file', () => {
  * Catches cases where test calls use different number of arguments than function expects.
  */
 test('test function calls should match source signatures', () => {
-  // Use backstage.ts if it exists, otherwise fall back to backstage.js
-  let filePath = path.join(__dirname, '..', 'src', 'backstage.ts');
-  if (!fs.existsSync(filePath)) {
-    filePath = path.join(__dirname, '..', 'src', 'backstage.js');
+  // Check utils.ts for utility functions (moved there for ES6 exports)
+  let filePath = path.join(__dirname, '..', 'src', 'utils.ts');
+  let content = '';
+  
+  if (fs.existsSync(filePath)) {
+    content = fs.readFileSync(filePath, 'utf8');
+  } else {
+    // Fall back to backstage.ts or backstage.js
+    filePath = path.join(__dirname, '..', 'src', 'backstage.ts');
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(__dirname, '..', 'src', 'backstage.js');
+    }
+    content = fs.readFileSync(filePath, 'utf8');
   }
-  const content = fs.readFileSync(filePath, 'utf8');
 
-  // Check critical function signatures (support const, assignment, and aliased styles, plus TS type annotations)
+    // Check critical function signatures (support const, assignment, and aliased styles, plus TS type annotations)
   // More flexible to handle: const rf=(...) and const randomFloat=rf patterns
+  // Also accepts exports from utils.ts since utilities moved there
   const criticalFunctions = {
-    'clamp': /clamp\s*=\s*\([^)]*\)(\s*:\s*[^{]*)?=>/,
-    'modClamp': /modClamp\s*=\s*\([^)]*\)(\s*:\s*[^{]*)?=>/,
+    'clamp': /(clamp\s*=\s*\([^)]*\)(\s*:\s*[^{]*)?\s*=>|export.*clamp)/, // Definition or export
+    'modClamp': /(modClamp\s*=\s*\([^)]*\)(\s*:\s*[^{]*)?\s*=>|export.*modClamp)/, // Definition or export
     'rf': /(rf|randomFloat)\s*=/, // Either rf= or randomFloat= should exist
     'ri': /(ri|randomInt)\s*=/ // Either ri= or randomInt= should exist
   };

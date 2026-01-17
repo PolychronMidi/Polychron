@@ -5,6 +5,7 @@ import { TimingCalculator } from './time/TimingCalculator.js';
 import { TimingContext } from './time/TimingContext.js';
 import { LayerManager } from './time/LayerManager.js';
 import { setRhythm, trackRhythm } from './rhythm.js';
+import { ri, rf, rw, clamp, default as m } from './utils.js';
 
 export { TimingCalculator, TimingContext, LayerManager };
 

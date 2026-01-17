@@ -26,6 +26,9 @@ import { CompositionStateService } from './CompositionState.js';
 import { CancellationToken, CancellationTokenImpl, CompositionEventBusImpl, CompositionPhase } from './CompositionProgress.js';
 import { ProgressCallback, CompositionProgress } from './CompositionProgress.js';
 
+// Import utilities
+import { rf, ri, ra, clamp } from './utils.js';
+
 // Declare global dependencies
 declare const BPM: number;
 declare const SECTIONS: { min: number; max: number };
@@ -33,9 +36,6 @@ declare const COMPOSERS: any[];
 declare const Motif: any;
 declare const m: any;
 declare const p: any;
-declare const rf: (min?: number, max?: number) => number;
-declare const ra: <T>(arr: T[]) => T;
-declare const ri: (min: number, max: number) => number;
 declare const LM: any;
 declare const clampMotifNote: (note: number) => number;
 
