@@ -21,6 +21,8 @@ import { initializePolychronContext } from './PolychronInit.js';
 import { DIContainer } from './DIContainer.js';
 import { Stage } from './stage.js';
 import { CompositionStateService } from './CompositionState.js';
+import { CancellationToken } from './CancellationToken.js';
+import { ProgressCallback, CompositionProgress } from './CompositionProgress.js';
 
 // Declare global dependencies
 declare const BPM: number;
@@ -158,8 +160,21 @@ const registerCoreServices = (container: DIContainer) => {
 };
 
 // Initialize the composition engine
-const initializePlayEngine = () => {
+const initializePlayEngine = async (
+  progressCallback?: ProgressCallback,
+  cancellationToken?: CancellationToken
+): Promise<void> => {
   const g = globalThis as any;
+
+  // Report initialization phase
+  progressCallback?.({
+    phase: 'initializing',
+    progress: 0,
+    message: 'Initializing composition engine'
+  });
+
+  // Check for cancellation
+  cancellationToken?.throwIfRequested();
 
   // Initialize PolychronContext singleton (lazy, on first engine startup)
   initializePolychronContext();
@@ -190,7 +205,29 @@ const initializePlayEngine = () => {
 
   g.totalSections = g.ri(g.SECTIONS.min, g.SECTIONS.max);
 
+  // Report composing phase started
+  progressCallback?.({
+    phase: 'composing',
+    progress: 5,
+    totalSections: g.totalSections,
+    message: `Starting composition: ${g.totalSections} sections`
+  });
+
+  cancellationToken?.throwIfRequested();
+
   for (g.sectionIndex = 0; g.sectionIndex < g.totalSections; g.sectionIndex++) {
+    // Report progress for each section
+    const sectionProgress = 5 + (g.sectionIndex / g.totalSections) * 85;
+    progressCallback?.({
+      phase: 'composing',
+      progress: sectionProgress,
+      sectionIndex: g.sectionIndex,
+      totalSections: g.totalSections,
+      message: `Composing section ${g.sectionIndex + 1}/${g.totalSections}`
+    });
+
+    cancellationToken?.throwIfRequested();
+
     const sectionProfile = g.resolveSectionProfile();
     g.phrasesPerSection = sectionProfile.phrasesPerSection;
     g.currentSectionType = sectionProfile.type;
@@ -201,6 +238,8 @@ const initializePlayEngine = () => {
       : null;
 
     for (g.phraseIndex = 0; g.phraseIndex < g.phrasesPerSection; g.phraseIndex++) {
+      cancellationToken?.throwIfRequested();
+
       g.composer = g.ra(g.composers);
       [g.numerator, g.denominator] = g.composer.getMeter();
       g.getMidiTiming();
@@ -286,7 +325,23 @@ const initializePlayEngine = () => {
     g.activeMotif = null;
   }
 
+  // Report rendering phase
+  progressCallback?.({
+    phase: 'rendering',
+    progress: 90,
+    message: 'Finalizing composition'
+  });
+
+  cancellationToken?.throwIfRequested();
+
   g.grandFinale();
+
+  // Report complete
+  progressCallback?.({
+    phase: 'complete',
+    progress: 100,
+    message: 'Composition complete'
+  });
 };
 
 // Export initialization function
@@ -295,5 +350,7 @@ export { initializePlayEngine };
 // Also expose to global for backward compatibility
 (globalThis as any).initializePlayEngine = initializePlayEngine;
 
-// Execute immediately when module is loaded
-initializePlayEngine();
+// Execute immediately when module is loaded (with no callbacks for backward compat)
+initializePlayEngine().catch((err) => {
+  console.error('Composition engine failed:', err);
+});
