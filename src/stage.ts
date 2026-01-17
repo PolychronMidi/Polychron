@@ -11,7 +11,7 @@ import './time.js';
 import './composers.js';
 import './motifs.js';
 import './fxManager.js';
-import { PlayNotes } from './playNotes';
+import { PlayNotes } from './playNotes.js';
 
 // Initialize global temporary variable for FX object spreading
 declare const globalThis: any;
@@ -40,9 +40,9 @@ export class Stage {
   private refVar: number;
   private bassVar: number;
 
-  constructor() {
-    // FX Manager for stutter effects
-    this.fx = globalThis.fxManager;
+  constructor(fxManager: any = (globalThis as any).fxManager) {
+    // FX Manager for stutter effects (dependency injected or fallback to global)
+    this.fx = fxManager;
 
     // PlayNotes handler for note generation
     this.playNotesHandler = new PlayNotes();
@@ -278,6 +278,8 @@ export class Stage {
 }
 
 // Export Stage instance to global namespace for tests
+// Note: Stage is created without dependencies on first import, but will be
+// re-instantiated via DIContainer in play.ts with proper dependency injection
 globalThis.stage = new Stage();
 if (typeof globalThis !== 'undefined') {
   globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};

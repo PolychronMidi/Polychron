@@ -17,6 +17,11 @@ import './structure.js';   // Section structure
 // Initialize PolychronContext (architecture migration)
 import { initializePolychronContext } from './PolychronInit.js';
 
+// Dependency Injection Container
+import { DIContainer } from './DIContainer.js';
+import { Stage } from './stage.js';
+import { CompositionStateService } from './CompositionState.js';
+
 // Declare global dependencies
 declare const BPM: number;
 declare const SECTIONS: { min: number; max: number };
@@ -59,12 +64,115 @@ declare let stutterPanCHs: number[];
 declare let activeMotif: any;
 declare let composer: any;
 
+// ============================================================
+// Service Registration for Dependency Injection
+// ============================================================
+const registerCoreServices = (container: DIContainer) => {
+  const g = globalThis as any;
+
+  // Register configuration service (singleton)
+  container.register(
+    'config',
+    () => ({
+      BPM: g.BPM,
+      SECTIONS: g.SECTIONS,
+      COMPOSERS: g.COMPOSERS,
+    }),
+    'singleton'
+  );
+
+  // Register EventBus service (singleton)
+  container.register(
+    'eventBus',
+    () => g.eventBus || { emit: () => {}, on: () => {}, off: () => {} },
+    'singleton'
+  );
+
+  // Register ComposerRegistry (singleton)
+  container.register(
+    'registry',
+    () => g.ComposerRegistry.getInstance(),
+    'singleton'
+  );
+
+  // Register FX Manager (singleton)
+  container.register(
+    'fxManager',
+    () => g.fxManager,
+    'singleton'
+  );
+
+  // Register Stage (singleton, depends on fxManager)
+  container.register(
+    'stage',
+    () => new Stage(container.get('fxManager')),
+    'singleton'
+  );
+
+  // Register LayerManager (singleton)
+  container.register(
+    'layerManager',
+    () => g.LM,
+    'singleton'
+  );
+
+  // Register CSV Writers (singleton)
+  container.register(
+    'writers',
+    () => ({
+      addToCSV: g.addToCSV,
+      emitMIDI: g.emitMIDI,
+    }),
+    'singleton'
+  );
+
+  // Register CompositionState (singleton)
+  container.register(
+    'compositionState',
+    () => new CompositionStateService(),
+    'singleton'
+  );
+
+  // Register class factories (composers, utils) from globals
+  // These are set by module imports and will be available on globalThis
+  container.register('MeasureComposer', () => g.MeasureComposer, 'singleton');
+  container.register('ScaleComposer', () => g.ScaleComposer, 'singleton');
+  container.register('RandomScaleComposer', () => g.RandomScaleComposer, 'singleton');
+  container.register('ChordComposer', () => g.ChordComposer, 'singleton');
+  container.register('RandomChordComposer', () => g.RandomChordComposer, 'singleton');
+  container.register('ModeComposer', () => g.ModeComposer, 'singleton');
+  container.register('RandomModeComposer', () => g.RandomModeComposer, 'singleton');
+  container.register('PentatonicComposer', () => g.PentatonicComposer, 'singleton');
+  container.register('RandomPentatonicComposer', () => g.RandomPentatonicComposer, 'singleton');
+  container.register('ProgressionGenerator', () => g.ProgressionGenerator, 'singleton');
+  container.register('VoiceLeadingScore', () => g.VoiceLeadingScore, 'singleton');
+
+  // Register music theory utilities from venue.js
+  container.register('t', () => g.t, 'singleton');
+  container.register('midiData', () => g.midiData, 'singleton');
+  container.register('getMidiValue', () => g.getMidiValue, 'singleton');
+  container.register('allNotes', () => g.allNotes, 'singleton');
+  container.register('allScales', () => g.allScales, 'singleton');
+  container.register('allChords', () => g.allChords, 'singleton');
+  container.register('allModes', () => g.allModes, 'singleton');
+};
+
 // Initialize the composition engine
 const initializePlayEngine = () => {
   const g = globalThis as any;
 
   // Initialize PolychronContext singleton (lazy, on first engine startup)
   initializePolychronContext();
+
+  // Initialize DI Container and register core services
+  const container = new DIContainer();
+  registerCoreServices(container);
+  g.DIContainer = container;  // Make available globally for testing/debugging
+
+  // Get CompositionState and sync it with globalThis for backward compatibility
+  const compositionState = container.get('compositionState');
+  compositionState.BASE_BPM = g.BPM;
+  compositionState.syncToGlobal();  // Ensure all composition state is accessible via globalThis
 
   const BASE_BPM = g.BPM;
 
@@ -73,6 +181,9 @@ const initializePlayEngine = () => {
     const registry = g.ComposerRegistry.getInstance();
     g.composers = g.COMPOSERS.map((config: any) => registry.create(config));
   }
+
+  // Resolve stage from container and assign to globals
+  g.stage = container.get('stage');
 
   const { state: primary, buffer: c1 } = g.LM.register('primary', 'c1', {}, () => g.stage.setTuningAndInstruments());
   const { state: poly, buffer: c2 } = g.LM.register('poly', 'c2', {}, () => g.stage.setTuningAndInstruments());
