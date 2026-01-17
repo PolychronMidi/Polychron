@@ -1,6 +1,7 @@
 // test/venue.test.js
-import "../dist/sheet.js";
-import "../dist/venue.js";describe('midiData', () => {
+import { midiData } from '../src/venue.js';
+
+describe('midiData', () => {
   describe('program array', () => {
     it('should have 128 program numbers (0-127)', () => {
       expect(midiData.program.length).toBe(128);

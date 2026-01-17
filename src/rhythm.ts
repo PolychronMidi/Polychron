@@ -616,4 +616,14 @@ export const trackRhythm = (unit: string): void => {
   }
 };
 
+// Initialize test framework object
+if (!(globalThis as any).__POLYCHRON_TEST__) {
+  (globalThis as any).__POLYCHRON_TEST__ = { enableLogging: false };
+}
 
+// Expose to globalThis for backward compatibility
+(globalThis as any).drummer = drummer;
+(globalThis as any).patternLength = patternLength;
+(globalThis as any).drumMap = drumMap;
+(globalThis as any).playDrums = playDrums;
+(globalThis as any).trackRhythm = trackRhythm;

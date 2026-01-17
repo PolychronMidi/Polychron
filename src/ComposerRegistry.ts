@@ -1,5 +1,4 @@
 // ComposerRegistry.ts - Centralized typed registry for composer creation
-// Follows PolychronContext singleton pattern for lazy initialization and backward compatibility
 
 /**
  * Configuration object passed to composer constructors
@@ -200,7 +199,9 @@ export class ComposerRegistry {
   }
 }
 
+
 // Export to global scope for backward compatibility
 (globalThis as any).ComposerRegistry = ComposerRegistry;
+
 export default ComposerRegistry;
 

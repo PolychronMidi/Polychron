@@ -1,5 +1,7 @@
-// test/motifs.test.js
-import "../dist/motifs.js";const baseMotif = new Motif([60, 62, { note: 64, duration: 2 }]);
+// test/motifs.test.ts - Testing motif transformations
+import { Motif } from '../src/motifs.js';
+
+const baseMotif = new Motif([60, 62, { note: 64, duration: 2 }]);
 
 describe('Motif transformations', () => {
   it('should transpose without mutating original', () => {

@@ -108,10 +108,7 @@ class ChordComposer extends GenericComposer {
     this.setChordProgression(progression, direction);
   }
 
-  // Backward compatibility alias for tests that call noteSet()
-  noteSet(progression: string[] | string, direction: string = 'R'): void {
-    this.itemSet(progression, direction);
-  }
+
 
   x(): any[] {
     if (!this.progression || this.progression.length === 0) {

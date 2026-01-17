@@ -19,14 +19,12 @@ abstract class GenericComposer<T> extends MeasureComposer {
   itemType: string; // "scale", "mode", "chord", "pentatonic"
   item: T | null;
   notes: any[];
-  scale: T | null; // Backward compatibility alias for item (scale/mode/chord/pentatonic)
 
   constructor(itemType: string, root: string = 'C') {
     super();
     this.itemType = itemType;
     this.root = root;
     this.item = null;
-    this.scale = null; // Backward compatibility
     this.notes = [];
   }
 

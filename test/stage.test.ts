@@ -1,8 +1,9 @@
 // test/stage.test.js
-import "../dist/stage.js";
+import { stage } from '../src/stage.js';
+import { setupGlobalState } from './helpers.js';
 
-// Destructure globals for convenient access
-const { allNotesOff } = globalThis;
+// Access allNotesOff from stage instance
+const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
   describe('playNotes and playNotes2 channel coverage', () => {
     beforeEach(() => {

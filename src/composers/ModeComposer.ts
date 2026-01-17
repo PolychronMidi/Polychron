@@ -9,8 +9,6 @@ import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
  * @extends GenericComposer<Mode>
  */
 class ModeComposer extends GenericComposer {
-  mode: any; // Backward compatibility alias
-
   constructor(modeName: string = 'ionian', root: string = 'C') {
     super('mode', root);
     this.itemSet(modeName, root);
@@ -18,20 +16,13 @@ class ModeComposer extends GenericComposer {
 
   itemSet(modeName: string, root: string): void {
     this.root = root;
-    this.mode = (globalThis as any).t.Mode.get(`${root} ${modeName}`);
-    this.item = this.mode; // Backward compatibility
-    this.scale = this.mode; // Backward compatibility
-    this.notes = this.mode.notes || this.mode.intervals || [];
-    // If mode.notes is still empty, fall back to scale
+    this.item = (globalThis as any).t.Mode.get(`${root} ${modeName}`);
+    this.notes = this.item.notes || this.item.intervals || [];
+    // If item.notes is still empty, fall back to scale
     if (!this.notes || this.notes.length === 0) {
       const scale = (globalThis as any).t.Scale.get(`${root} ${modeName}`);
       this.notes = scale.notes || [];
     }
-  }
-
-  // Backward compatibility alias for index.ts classes that still use noteSet()
-  noteSet(modeName: string, root: string): void {
-    this.itemSet(modeName, root);
   }
 }
 
@@ -40,8 +31,6 @@ class ModeComposer extends GenericComposer {
  * @extends GenericComposer<Mode>
  */
 class RandomModeComposer extends RandomGenericComposer {
-  mode: any; // Backward compatibility alias
-
   constructor() {
     super('mode', 'C');
     this.randomizeItem();
@@ -55,20 +44,13 @@ class RandomModeComposer extends RandomGenericComposer {
 
   itemSet(modeName: string, root: string): void {
     this.root = root;
-    this.mode = (globalThis as any).t.Mode.get(`${root} ${modeName}`);
-    this.item = this.mode; // Backward compatibility
-    this.scale = this.mode; // Backward compatibility
-    this.notes = this.mode.notes || this.mode.intervals || [];
-    // If mode.notes is still empty, fall back to scale
+    this.item = (globalThis as any).t.Mode.get(`${root} ${modeName}`);
+    this.notes = this.item.notes || this.item.intervals || [];
+    // If item.notes is still empty, fall back to scale
     if (!this.notes || this.notes.length === 0) {
       const scale = (globalThis as any).t.Scale.get(`${root} ${modeName}`);
       this.notes = scale.notes || [];
     }
-  }
-
-  // Backward compatibility alias for index.ts classes that still use noteSet()
-  noteSet(modeName: string, root: string): void {
-    this.itemSet(modeName, root);
   }
 }
 

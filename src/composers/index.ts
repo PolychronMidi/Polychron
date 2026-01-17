@@ -365,3 +365,5 @@ let composers: any[] = [];  // Lazy-loaded in play.ts when all systems are ready
 (globalThis as any).AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
 (globalThis as any).ComposerFactory = ComposerFactory;
 (globalThis as any).composers = composers;
+
+

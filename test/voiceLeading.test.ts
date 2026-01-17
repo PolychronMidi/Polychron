@@ -1,10 +1,7 @@
 // test/voiceLeading.test.js
-import "../dist/sheet.js";
-import "../dist/venue.js";
-import "../dist/writer.js";
-import "../dist/backstage.js";
-import "../dist/composers.js";
-import "../dist/voiceLeading.js";
+import { VoiceLeadingScore } from '../src/voiceLeading.js';
+import { MeasureComposer } from '../src/composers.js';
+import { setupGlobalState } from './helpers.js';
 
 /**
  * Voice Leading Tests

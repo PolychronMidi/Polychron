@@ -6,11 +6,13 @@ import { TimingContext } from './time/TimingContext.js';
 import { LayerManager } from './time/LayerManager.js';
 import { setRhythm, trackRhythm } from './rhythm.js';
 
-// Re-export classes for backward compatibility
 export { TimingCalculator, TimingContext, LayerManager };
 
-// Attach LayerManager to globalThis for backward compatibility
-(globalThis as any).LM = LayerManager;
+// Attach to globalThis for backward compatibility
+(globalThis as any).LayerManager = LayerManager;
+(globalThis as any).LM = LayerManager; // Alias for convenience
+(globalThis as any).TimingContext = TimingContext;
+(globalThis as any).TimingCalculator = TimingCalculator;
 
 // Declare global timing variables
 declare const BPM: number;
@@ -290,3 +292,5 @@ export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime 
 (globalThis as any).getPolyrhythm = getPolyrhythm;
 (globalThis as any).setUnitTiming = setUnitTiming;
 (globalThis as any).formatTime = formatTime;
+(globalThis as any).setRhythm = setRhythm;
+(globalThis as any).trackRhythm = trackRhythm;

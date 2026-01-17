@@ -1,18 +1,16 @@
 // test/play.test.js
 // Tests play.js - the orchestrator module that coordinates all other modules
 // Uses REAL implementations from all loaded modules
-import "../dist/sheet.js";
-import "../dist/venue.js";
-import "../dist/backstage.js";
-import "../dist/writer.js";
-import "../dist/time.js";
-import "../dist/composers.js";
-import "../dist/rhythm.js";
-import "../dist/stage.js";
-import "../dist/play.js";
+import '../src/sheet.js'; // Load config constants to globalThis
+import '../src/venue.js'; // Load Tonal library (t) to globalThis
+import '../src/backstage.js'; // Load random helpers (rf, ri, etc.) to globalThis
+import { initializePlayEngine } from '../src/play.js';
+import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming } from '../src/time.js';
+import { ScaleComposer } from '../src/composers.js';
+import { setupGlobalState } from './helpers.js';
 
 // Setup function to initialize state
-function setupGlobalState() {
+function setupLocalState() {
   // Clear buffers
   globalThis.c = [];
   globalThis.csvRows = [];
@@ -91,7 +89,7 @@ function setupGlobalState() {
 
 describe('play.js - Orchestrator Module', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState(); // Use local setup that initializes play-specific state
   });
 
   describe('Module Integration', () => {

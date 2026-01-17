@@ -1,15 +1,14 @@
-// test/writer.test.js
-import "../dist/sheet.js";
-import "../dist/backstage.js";
-import "../dist/writer.js";
+// test/writer.test.ts - Testing CSV buffer and writer functions
+import { CSVBuffer, pushMultiple as p, grandFinale, logUnit } from '../src/writer.js';
+import { setupGlobalState } from './helpers.js';
 
-// Destructure globals for convenient access
-const { CSVBuffer, logUnit, p, grandFinale } = globalThis;
+// Legacy global access for tests still using globalThis.c
+let c: any;
 
 // Setup function
-function setupGlobalState() {
-  globalThis.c = [];
-  globalThis.csvRows = [];
+function setupLocalState() {
+  setupGlobalState();
+  c = globalThis.c;
 }
 
 describe('CSVBuffer class', () => {
@@ -48,7 +47,7 @@ describe('CSVBuffer class', () => {
 
 describe('pushMultiple (p)', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should push single item', () => {

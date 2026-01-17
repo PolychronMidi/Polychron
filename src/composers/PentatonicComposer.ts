@@ -21,13 +21,7 @@ class PentatonicComposer extends GenericComposer {
   itemSet(scaleName: string, root: string): void {
     this.root = root;
     this.item = (globalThis as any).t.Scale.get(`${root} ${scaleName}`);
-    this.scale = this.item; // Backward compatibility
     this.notes = this.item.notes;
-  }
-
-  // Backward compatibility alias for RandomPentatonicComposer
-  noteSet(scaleName: string, root: string): void {
-    this.itemSet(scaleName, root);
   }
 }
 

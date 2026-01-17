@@ -2,9 +2,8 @@
 // minimalist comments, details at: time.md
 
 import { TimingContext } from './TimingContext.js';
+import { CSVBuffer } from '../writer.js';
 
-// Declare CSVBuffer type from writer.js
-declare const CSVBuffer: any;
 
 /**
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
@@ -146,5 +145,3 @@ export const LayerManager = {
     layer.state.restoreTo(globalThis);
   },
 };
-
-

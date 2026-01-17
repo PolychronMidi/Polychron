@@ -186,10 +186,9 @@ const initializePlayEngine = async (
   registerCoreServices(container);
   g.DIContainer = container;  // Make available globally for testing/debugging
 
-  // Get CompositionState and sync it with globalThis for backward compatibility
   const compositionState = container.get('compositionState');
   compositionState.BASE_BPM = g.BPM;
-  compositionState.syncToGlobal();  // Ensure all composition state is accessible via globalThis
+  compositionState.syncToGlobal();
 
   const BASE_BPM = g.BPM;
 
@@ -230,6 +229,11 @@ const initializePlayEngine = async (
 
     cancellationToken?.throwIfRequested();
 
+    // Debug: check if resolveSectionProfile is available
+    if (!g.resolveSectionProfile) {
+      console.error('resolveSectionProfile not found on globalThis!', Object.keys(g).filter(k => k.includes('Section')));
+      throw new Error('resolveSectionProfile is not defined');
+    }
     const sectionProfile = g.resolveSectionProfile();
     g.phrasesPerSection = sectionProfile.phrasesPerSection;
     g.currentSectionType = sectionProfile.type;
@@ -349,7 +353,9 @@ const initializePlayEngine = async (
 // Export initialization function
 export { initializePlayEngine };
 
-// Execute immediately when module is loaded (with no callbacks for backward compat)
+// Expose to globalThis for backward compatibility
+(globalThis as any).initializePlayEngine = initializePlayEngine;
+
 initializePlayEngine().catch((err) => {
   console.error('Composition engine failed:', err);
 });

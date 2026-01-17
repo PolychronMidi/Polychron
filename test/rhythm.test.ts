@@ -1,18 +1,18 @@
 // test/rhythm.test.js
-import "../dist/sheet.js";
-import "../dist/writer.js";
-import "../dist/backstage.js";
-import "../dist/rhythm.js";
+import { drummer, playDrums, playDrums2, drumMap, rhythms, binary, hex, onsets, random, prob, euclid, rotate, morph, setRhythm, makeOnsets, patternLength, closestDivisor, getRhythm, trackRhythm } from '../src/rhythm.js';
+import { rf, ri, rv, ra, m } from '../src/backstage.js';
+import { pushMultiple } from '../src/writer.js';
+import { setupGlobalState, setupTestLogging } from './helpers.js';
 
 // Enable test logging
-globalThis.__POLYCHRON_TEST__.enableLogging = true;
+setupTestLogging();
 
 let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
 let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
 
 // Setup global state
-function setupGlobalState() {
+function setupLocalState() {
   globalThis.c = [];
   globalThis.drumCH = 9;
   globalThis.beatStart = 0;
@@ -27,7 +27,12 @@ function setupGlobalState() {
   globalThis.subdivsPerDiv = 2;
   globalThis.divRhythm = [1, 0];
   globalThis.subdivRhythm = [1, 0];
-  globalThis.m = Math;
+  globalThis.m = m;
+  globalThis.rf = rf;
+  globalThis.ri = ri;
+  globalThis.rv = rv;
+  globalThis.ra = ra;
+  globalThis.p = pushMultiple;
   globalThis.drumMap = {
     'snare1': { note: 31, velocityRange: [99, 111] },
     'kick1': { note: 12, velocityRange: [111, 127] },
@@ -51,9 +56,6 @@ function setupGlobalState() {
   subdivRhythm = global.subdivRhythm;
   m = global.m;
 }
-
-// Import from test namespace
-const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor, drumMap } = globalThis.__POLYCHRON_TEST__;
 
 describe('drumMap', () => {
   it('should define drum mappings with notes and velocity ranges', () => {
@@ -79,7 +81,7 @@ describe('drumMap', () => {
 
 describe('drummer', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should play single drum at offset 0', () => {
@@ -127,7 +129,7 @@ describe('drummer', () => {
 
   it('should generate velocities within range', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
-    setupGlobalState();
+    setupLocalState();
     drummer(['snare1'], [0]);
     const velocity = c[c.length - 1].vals[2];
     expect(velocity).toBeGreaterThanOrEqual(0);
@@ -137,7 +139,7 @@ describe('drummer', () => {
 
   it('should apply stutter effect occasionally', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.1); // Force stutter
-    setupGlobalState();
+    setupLocalState();
     globalThis.drummer(['snare1'], [0], globalThis.rf(.1), 1.0);
     expect(c.length).toBeGreaterThan(1);
     vi.restoreAllMocks();
@@ -280,7 +282,7 @@ describe('makeOnsets', () => {
 
 describe('Integration tests', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should generate complete drum sequence', () => {
@@ -316,7 +318,7 @@ describe('Integration tests', () => {
 
 describe('Edge cases', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should handle zero beat offsets', () => {
@@ -358,7 +360,7 @@ describe('Edge cases', () => {
 
 describe('Probabilistic behavior', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should vary drum order occasionally', () => {
@@ -367,7 +369,7 @@ describe('Probabilistic behavior', () => {
       .mockReturnValueOnce(0.6) // Fisher-Yates shuffle
       .mockReturnValue(0.5);
 
-    setupGlobalState();
+    setupLocalState();
     drummer(['snare1', 'kick1'], [0, 0]);
     expect(c.length).toBeGreaterThan(0);
     vi.restoreAllMocks();
@@ -378,7 +380,7 @@ describe('Probabilistic behavior', () => {
       .mockReturnValueOnce(0.5) // Apply jitter
       .mockReturnValue(0.5);
 
-    setupGlobalState();
+    setupLocalState();
     beatStart = 0;
     tpBeat = 480;
     drummer(['snare1'], [0.5]);
@@ -395,7 +397,7 @@ describe('Probabilistic behavior', () => {
 
 describe('MIDI compliance', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should generate valid MIDI channel numbers', () => {
@@ -416,7 +418,7 @@ describe('MIDI compliance', () => {
 
   it('should generate valid MIDI velocities', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
-    setupGlobalState();
+    setupLocalState();
     drummer(['snare1'], [0]);
     c.forEach(cmd => {
       expect(cmd.vals[2]).toBeGreaterThanOrEqual(0);
@@ -433,7 +435,7 @@ describe('MIDI compliance', () => {
 
 describe('Rhythm pattern generators', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should generate drum patterns with correct drum map', () => {
@@ -481,7 +483,7 @@ describe('Rhythm pattern generators', () => {
   });
 
   it('drummer function should handle multiple beat offsets', () => {
-    setupGlobalState();  // Need to setup global state including c
+    setupLocalState();  // Need to setup global state including c
     drummer(['kick1'], [0, 0.5]);
     // With 2 beat offsets, should generate multiple events
     expect(c.length).toBeGreaterThan(0);
@@ -490,7 +492,7 @@ describe('Rhythm pattern generators', () => {
 
 describe('Rhythm state tracking functions', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
     globalThis.beatIndex = 0;
     globalThis.divIndex = 0;
     globalThis.subdivIndex = 0;
@@ -553,7 +555,7 @@ describe('Rhythm state tracking functions', () => {
 
 describe('Rhythm pattern composition integration', () => {
   beforeEach(() => {
-    setupGlobalState();
+    setupLocalState();
   });
 
   it('should handle changing rhythm patterns between levels', () => {

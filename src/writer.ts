@@ -49,8 +49,7 @@ export const pushMultiple = (buffer: CSVBuffer | any[], ...items: MIDIEvent[]): 
   }
 };
 
-// Alias for backward compatibility
-const p = pushMultiple;
+
 
 // Initialize buffers (c1/c2 created here, layers register them in play.js)
 const c1 = new CSVBuffer('primary');
@@ -247,22 +246,30 @@ export const grandFinale = (): void => {
   const g = globalThis as any;
   const fsModule = g.fs || fs;
 
-  // Collect all layer data
-  const layerData = Object.entries(g.LM.layers).map(([name, layer]: [string, any]) => {
-    return {
-      name,
-      layer: layer.state,
-      buffer: layer.buffer instanceof CSVBuffer ? layer.buffer.rows : layer.buffer
-    };
-  });
+  // Collect layers from LM; fall back to current buffer when LM is unavailable
+  const layers = (g.LM && g.LM.layers && Object.keys(g.LM.layers).length)
+    ? g.LM.layers
+    : { primary: { buffer: g.c || [], state: { sectionStart: g.sectionStart, sectionEnd: g.sectionEnd, tpSec: g.tpSec } } };
 
-  // Process each layer's output
-  layerData.forEach(({ name, layer: layerState, buffer: bufferData }: any) => {
+  const layerData = Object.entries(layers).map(([name, entry]: any) => ({
+    name,
+    buffer: entry.buffer || entry,
+    state: entry.state || {}
+  }));
+
+  layerData.forEach(({ name, buffer, state }) => {
+    const layerState: any = state || {};
+    const bufferData: any = buffer;
+
+    // Point legacy globals at the layer buffer
     g.c = bufferData;
 
+    const sectionEnd = layerState.sectionEnd ?? layerState.sectionStart ?? 0;
+    const tpSec = layerState.tpSec ?? g.tpSec ?? 1;
+
     // Cleanup
-    g.allNotesOff((layerState.sectionEnd || layerState.sectionStart) + g.PPQ);
-    g.muteAll((layerState.sectionEnd || layerState.sectionStart) + g.PPQ * 2);
+    g.allNotesOff(sectionEnd + g.PPQ);
+    g.muteAll(sectionEnd + g.PPQ * 2);
 
     // Finalize buffer
     let finalBuffer = (Array.isArray(bufferData) ? bufferData : bufferData.rows)
@@ -275,17 +282,17 @@ export const grandFinale = (): void => {
 
     // Generate CSV
     let composition = `0,0,header,1,1,${g.PPQ}\n1,0,start_track\n`;
-    let finalTick = -Infinity;
+    let finalTick = 0;
 
     finalBuffer.forEach((evt: any) => {
       if (!isNaN(evt.tick)) {
         const type = evt.type === 'on' ? 'note_on_c' : (evt.type || 'note_off_c');
         composition += `1,${evt.tick || 0},${type},${evt.vals.join(',')}\n`;
-        finalTick = Math.max(finalTick, evt.tick);
+        finalTick = Math.max(finalTick, evt.tick || 0);
       }
     });
 
-    composition += `1,${finalTick + (g.SILENT_OUTRO_SECONDS * layerState.tpSec)},end_track`;
+    composition += `1,${finalTick + (g.SILENT_OUTRO_SECONDS * tpSec)},end_track`;
 
     // Determine output filename based on layer name
     let outputFilename: string;
@@ -308,14 +315,9 @@ export const grandFinale = (): void => {
   });
 };
 
-// Attach to globalThis for backward compatibility
+// Attach to globalThis for backward compatibility at module load
 (globalThis as any).CSVBuffer = CSVBuffer;
 (globalThis as any).pushMultiple = pushMultiple;
-(globalThis as any).p = p;
-(globalThis as any).c1 = c1;
-(globalThis as any).c2 = c2;
-(globalThis as any).c = c;
-(globalThis as any).logUnit = logUnit;
 (globalThis as any).grandFinale = grandFinale;
-
-
+(globalThis as any).logUnit = logUnit;
+(globalThis as any).p = pushMultiple; // Alias

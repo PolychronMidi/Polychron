@@ -13,6 +13,9 @@ const MATH = Math;
 const clampNote = (val: number, min: number = 0, max: number = 127): number =>
   MATH.min(max, MATH.max(min, val));
 
+// Exported helper to clamp motif notes to valid MIDI range
+export const clampMotifNote = (val: number): number => clampNote(val);
+
 /**
  * Note event structure
  */
@@ -187,14 +190,10 @@ class Motif {
   }
 }
 
-
-
-// Export for backward compatibility
-const clampMotifNote = clampNote;
-
-export { Motif, clampNote, clampMotifNote };
-
 // Attach to globalThis for backward compatibility
-(globalThis as any).Motif = Motif;
-(globalThis as any).clampNote = clampNote;
 (globalThis as any).clampMotifNote = clampMotifNote;
+(globalThis as any).Motif = Motif;
+
+
+
+export { Motif, clampNote };

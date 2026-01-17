@@ -1,22 +1,20 @@
 // test/composers.test.js
-import "../dist/sheet.js";
-import "../dist/venue.js";
-import "../dist/writer.js";
-import "../dist/backstage.js";
-import "../dist/composers.js";
-
-// Setup function
-function setupGlobalState() {
-  globalThis.bpmRatio = 1;
-  globalThis.measureCount = 0;
-  globalThis.subdivStart = 0;
-}
+import '../src/sheet.js'; // Load config constants to globalThis
+import '../src/venue.js'; // Load Tonal library (t) to globalThis
+import { MeasureComposer, ScaleComposer, ChordComposer, ModeComposer, PentatonicComposer, ComposerFactory, Composer, ComposerRegistry } from '../src/composers.js';
+import { NUMERATOR, DENOMINATOR, DIVISIONS, SUBDIVISIONS, SUBSUBDIVS, VOICES, OCTAVE } from '../src/sheet.js';
+import { setupGlobalState } from './helpers.js';
 
 // Use real composer classes from Composes.js
 
 describe('Empty Notes Handling - CRITICAL', () => {
   beforeEach(() => {
     setupGlobalState();
+    // Debug: Check if Tonal library is available
+    if (!(globalThis as any).t) {
+      console.error('ERROR: Tonal library (t) not available on globalThis');
+      console.error('Available globals:', Object.keys(globalThis).filter(k => !k.startsWith('_')));
+    }
   });
 
   it('should handle empty array from forEach without crashing', () => {

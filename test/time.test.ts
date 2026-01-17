@@ -1,9 +1,7 @@
 // test/time.test.js
-import "../dist/sheet.js";
-import "../dist/writer.js";
-import "../dist/backstage.js";
-import "../dist/rhythm.js";
-import "../dist/time.js";
+import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime } from '../src/time.js';
+import { m } from '../src/backstage.js';
+import { setupGlobalState } from './helpers.js';
 
 // Mock dependencies
 const mockComposer = {

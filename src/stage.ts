@@ -279,3 +279,6 @@ export class Stage {
 
 // Export Stage instance for tests (created by DIContainer in play.ts)
 export const stage = new Stage();
+
+// Expose to globalThis for backward compatibility
+(globalThis as any).stage = stage;

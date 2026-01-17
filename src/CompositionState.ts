@@ -235,7 +235,7 @@ export class CompositionStateService implements CompositionState {
   LOG = 'none';
 
   /**
-   * Sync state with globalThis for backward compatibility during migration
+   * Sync state with globalThis
    */
   syncToGlobal() {
     const g = globalThis as any;
