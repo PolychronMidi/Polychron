@@ -29,6 +29,12 @@ import { ProgressCallback, CompositionProgress } from './CompositionProgress.js'
 // Import utilities
 import { rf, ri, ra, clamp } from './utils.js';
 
+// Import composition context
+import { 
+  createCompositionContext,
+  ICompositionContext 
+} from './CompositionContext.js';
+
 // Declare global dependencies
 declare const BPM: number;
 declare const SECTIONS: { min: number; max: number };
@@ -71,6 +77,56 @@ declare let composer: any;
 // ============================================================
 // Service Registration for Dependency Injection
 // ============================================================
+
+// Module-level composition context (Step 12: Context threading)
+// Made available during composition for gradual migration from globals
+let currentCompositionContext: ICompositionContext | null = null;
+
+/**
+ * Set the current composition context for use by module functions
+ * This enables gradual migration from global state to context-based architecture
+ */
+const setCurrentCompositionContext = (ctx: ICompositionContext | null): void => {
+  currentCompositionContext = ctx;
+};
+
+/**
+ * Get the current composition context
+ * Returns null if no composition is in progress
+ */
+const getCurrentCompositionContext = (): ICompositionContext | null => {
+  return currentCompositionContext;
+};
+
+/**
+ * Helper to get a value from context state, with fallback to global
+ * Part of Step 13: Remove global fallbacks (gradual migration)
+ * 
+ * Usage: 
+ *   const bpm = getContextValue((ctx) => ctx.state.BPM, 'BPM');
+ *   const beatIndex = getContextValue((ctx) => ctx.state.beatIndex);
+ */
+const getContextValue = <T>(
+  contextGetter: (ctx: ICompositionContext) => T,
+  globalKey?: string
+): T => {
+  const ctx = currentCompositionContext;
+  if (ctx) {
+    try {
+      return contextGetter(ctx);
+    } catch (e) {
+      // Fallback to global if context property doesn't exist
+    }
+  }
+  
+  // Fallback to global value
+  if (globalKey) {
+    return (globalThis as any)[globalKey];
+  }
+  
+  return undefined as any;
+};
+
 const registerCoreServices = (container: DIContainer) => {
   const g = globalThis as any;
 
@@ -190,6 +246,26 @@ const initializePlayEngine = async (
   compositionState.BASE_BPM = g.BPM;
   compositionState.syncToGlobal();
 
+  // Create composition context (Step 12: Context threading)
+  // This encapsulates all state and services needed during composition
+  const ctx = createCompositionContext(
+    container,
+    g.eventBus || { emit: () => {}, on: () => {}, off: () => {} },
+    {
+      BPM: g.BPM,
+      PPQ: g.PPQ || 480,
+      SECTIONS: g.SECTIONS,
+      COMPOSERS: g.COMPOSERS
+    },
+    progressCallback,
+    cancellationToken,
+    g.c || { rows: [] },
+    g.LOG || 'none'
+  );
+
+  // Make context available to module functions
+  setCurrentCompositionContext(ctx);
+
   const BASE_BPM = g.BPM;
 
   // Initialize composers from configuration using new ComposerRegistry
@@ -248,36 +324,36 @@ const initializePlayEngine = async (
 
       g.composer = g.ra(g.composers);
       [g.numerator, g.denominator] = g.composer.getMeter();
-      g.getMidiTiming();
-      g.getPolyrhythm();
+      g.getMidiTiming(ctx);
+      g.getPolyrhythm(ctx);
 
       g.LM.activate('primary', false);
-      g.setUnitTiming('phrase');
+      g.setUnitTiming('phrase', ctx);
       for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
         g.measureCount++;
-        g.setUnitTiming('measure');
+        g.setUnitTiming('measure', ctx);
 
         for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
           g.beatCount++;
-          g.setUnitTiming('beat');
-          g.stage.setOtherInstruments();
-          g.stage.setBinaural();
-          g.stage.setBalanceAndFX();
-          playDrums();
-          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3);
-          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3);
-          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3) : g.stage.stutterPan(g.stutterPanCHs);
+          g.setUnitTiming('beat', ctx);
+          g.stage.setOtherInstruments(ctx);
+          g.stage.setBinaural(ctx);
+          g.stage.setBalanceAndFX(ctx);
+          playDrums(ctx);
+          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
+          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
+          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx) : g.stage.stutterPan(g.stutterPanCHs, ctx);
 
           for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
-            g.setUnitTiming('division');
+            g.setUnitTiming('division', ctx);
 
             for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
-              g.setUnitTiming('subdivision');
+              g.setUnitTiming('subdivision', ctx);
               g.stage.playNotes();
             }
 
             for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
-              g.setUnitTiming('subsubdivision');
+              g.setUnitTiming('subsubdivision', ctx);
               g.stage.playNotes2();
             }
           }
@@ -287,31 +363,31 @@ const initializePlayEngine = async (
       g.LM.advance('primary', 'phrase');
 
       g.LM.activate('poly', true);
-      g.getMidiTiming();
-      g.setUnitTiming('phrase');
+      g.getMidiTiming(ctx);
+      g.setUnitTiming('phrase', ctx);
       for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
-        g.setUnitTiming('measure');
+        g.setUnitTiming('measure', ctx);
 
         for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
-          g.setUnitTiming('beat');
-          g.stage.setOtherInstruments();
-          g.stage.setBinaural();
-          g.stage.setBalanceAndFX();
-          playDrums2();
-          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3);
-          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3);
-          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3) : g.stage.stutterPan(g.stutterPanCHs);
+          g.setUnitTiming('beat', ctx);
+          g.stage.setOtherInstruments(ctx);
+          g.stage.setBinaural(ctx);
+          g.stage.setBalanceAndFX(ctx);
+          playDrums2(ctx);
+          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
+          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
+          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx) : g.stage.stutterPan(g.stutterPanCHs, ctx);
 
           for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
-            g.setUnitTiming('division');
+            g.setUnitTiming('division', ctx);
 
             for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
-              g.setUnitTiming('subdivision');
+              g.setUnitTiming('subdivision', ctx);
               g.stage.playNotes();
             }
 
             for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
-              g.setUnitTiming('subsubdivision');
+              g.setUnitTiming('subsubdivision', ctx);
               g.stage.playNotes2();
             }
           }
@@ -348,10 +424,19 @@ const initializePlayEngine = async (
     progress: 100,
     message: 'Composition complete'
   });
-};
 
-// Export initialization function
-export { initializePlayEngine };
+  // Clean up context (Step 12: Context threading)
+  setCurrentCompositionContext(null);
+};;
+
+// Export initialization function and context accessors (Step 12: Context threading)
+// Export helper for Step 13: Remove global fallbacks (gradual migration)
+export { 
+  initializePlayEngine,
+  getCurrentCompositionContext,
+  setCurrentCompositionContext,
+  getContextValue
+};
 
 // Expose to globalThis for backward compatibility
 (globalThis as any).initializePlayEngine = initializePlayEngine;

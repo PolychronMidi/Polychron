@@ -5,7 +5,8 @@ import { TimingCalculator } from './time/TimingCalculator.js';
 import { TimingContext } from './time/TimingContext.js';
 import { LayerManager } from './time/LayerManager.js';
 import { setRhythm, trackRhythm } from './rhythm.js';
-import { ri, rf, rw, clamp, default as m } from './utils.js';
+import { ri, rf, rw, clamp } from './utils.js';
+import { ICompositionContext } from './CompositionContext.js';
 
 export { TimingCalculator, TimingContext, LayerManager };
 
@@ -93,33 +94,48 @@ let timingCalculator: TimingCalculator | null = null;
  * Compute MIDI-compatible meter and tempo sync factor.
  * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
  */
-const getMidiTiming = (): [number, number] => {
-  timingCalculator = new TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
-  const g = globalThis as any;
-  g.midiMeter = timingCalculator.midiMeter;
-  g.midiMeterRatio = timingCalculator.midiMeterRatio;
-  g.meterRatio = timingCalculator.meterRatio;
-  g.syncFactor = timingCalculator.syncFactor;
-  g.midiBPM = timingCalculator.midiBPM;
-  g.tpSec = timingCalculator.tpSec;
-  g.tpMeasure = timingCalculator.tpMeasure;
-  g.spMeasure = timingCalculator.spMeasure;
+const getMidiTiming = (ctx: ICompositionContext): [number, number] => {
+  const state = ctx.state as any;
+
+  const bpm = ctx.BPM;
+  const ppq = ctx.PPQ;
+  const currentNumerator = state.numerator;
+  const currentDenominator = state.denominator;
+
+  timingCalculator = new TimingCalculator({ bpm, ppq, meter: [currentNumerator, currentDenominator] });
+
+  const assignVal = (key: string, value: any) => {
+    state[key] = value;
+  };
+
+  assignVal('midiMeter', timingCalculator.midiMeter);
+  assignVal('midiMeterRatio', timingCalculator.midiMeterRatio);
+  assignVal('meterRatio', timingCalculator.meterRatio);
+  assignVal('syncFactor', timingCalculator.syncFactor);
+  assignVal('midiBPM', timingCalculator.midiBPM);
+  assignVal('tpSec', timingCalculator.tpSec);
+  assignVal('tpMeasure', timingCalculator.tpMeasure);
+  assignVal('spMeasure', timingCalculator.spMeasure);
+
   return timingCalculator.midiMeter;
 };
 
 /**
  * Writes MIDI timing events to active buffer (c).
  * Context-aware: writes to c1 or c2 depending on current meter.
- * @param {number} [tick=(globalThis.measureStart)] - Starting tick position, defaults to current measure start.
+ * @param {ICompositionContext} ctx - Composition context
+ * @param {number} [tick] - Starting tick position, defaults to current measure start.
  */
-const setMidiTiming = (tick: number = (globalThis as any).measureStart): void => {
+const setMidiTiming = (ctx: ICompositionContext, tick?: number): void => {
   const g = globalThis as any;
-  if (!Number.isFinite(g.tpSec) || g.tpSec <= 0) {
-    throw new Error(`Invalid tpSec: ${g.tpSec}`);
+  const state = ctx.state as any;
+  const tickValue = tick ?? state.measureStart;
+  if (!Number.isFinite(state.tpSec) || state.tpSec <= 0) {
+    throw new Error(`Invalid tpSec: ${state.tpSec}`);
   }
   g.p(g.c,
-    { tick: tick, type: 'bpm', vals: [g.midiBPM] },
-    { tick: tick, type: 'meter', vals: [g.midiMeter[0], g.midiMeter[1]] },
+    { tick: tickValue, type: 'bpm', vals: [state.midiBPM] },
+    { tick: tickValue, type: 'meter', vals: [state.midiMeter[0], state.midiMeter[1]] },
   );
 };
 
@@ -128,38 +144,48 @@ const setMidiTiming = (tick: number = (globalThis as any).measureStart): void =>
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
  * Recalculates meter ratios when sync alignment cannot be achieved.
  */
-const getPolyrhythm = (): void => {
+const getPolyrhythm = (ctx: ICompositionContext): void => {
   const g = globalThis as any;
-  if (!g.composer) return;
+  const state = ctx.state as any;
+  const getVal = (key: string) => state[key];
+  const setVal = (key: string, value: any) => {
+    state[key] = value;
+  };
+
+  const composer = getVal('composer');
+  if (!composer) return;
 
   const MAX_ATTEMPTS = 100;
   let attempts = 0;
 
   while (attempts++ < MAX_ATTEMPTS) {
-    [g.polyNumerator, g.polyDenominator] = g.composer.getMeter(true, true);
-    if (!Number.isFinite(g.polyNumerator) || !Number.isFinite(g.polyDenominator) || g.polyDenominator <= 0) {
+    const [polyNum, polyDen] = composer.getMeter(true, true);
+    setVal('polyNumerator', polyNum);
+    setVal('polyDenominator', polyDen);
+
+    if (!Number.isFinite(polyNum) || !Number.isFinite(polyDen) || polyDen <= 0) {
       continue;
     }
 
-    g.polyMeterRatio = g.polyNumerator / g.polyDenominator;
+    setVal('polyMeterRatio', polyNum / polyDen);
     let allMatches: any[] = [];
     let bestMatch = {
       primaryMeasures: Infinity,
       polyMeasures: Infinity,
       totalMeasures: Infinity,
-      polyNumerator: g.polyNumerator,
-      polyDenominator: g.polyDenominator
+      polyNumerator: getVal('polyNumerator'),
+      polyDenominator: getVal('polyDenominator')
     };
 
     for (let primaryMeasures = 1; primaryMeasures < 7; primaryMeasures++) {
       for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-        if (Math.abs(primaryMeasures * g.meterRatio - polyMeasures * g.polyMeterRatio) < 0.00000001) {
+        if (Math.abs(primaryMeasures * getVal('meterRatio') - polyMeasures * getVal('polyMeterRatio')) < 0.00000001) {
           let currentMatch = {
             primaryMeasures: primaryMeasures,
             polyMeasures: polyMeasures,
             totalMeasures: primaryMeasures + polyMeasures,
-            polyNumerator: g.polyNumerator,
-            polyDenominator: g.polyDenominator
+            polyNumerator: getVal('polyNumerator'),
+            polyDenominator: getVal('polyDenominator')
           };
           allMatches.push(currentMatch);
           if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
@@ -172,20 +198,22 @@ const getPolyrhythm = (): void => {
     if (bestMatch.totalMeasures !== Infinity &&
         (bestMatch.totalMeasures > 2 &&
          (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1)) &&
-        !(g.numerator === g.polyNumerator && g.denominator === g.polyDenominator)) {
-      g.measuresPerPhrase1 = bestMatch.primaryMeasures;
-      g.measuresPerPhrase2 = bestMatch.polyMeasures;
+        !(getVal('numerator') === getVal('polyNumerator') && getVal('denominator') === getVal('polyDenominator'))) {
+      setVal('measuresPerPhrase1', bestMatch.primaryMeasures);
+      setVal('measuresPerPhrase2', bestMatch.polyMeasures);
       return;
     }
   }
 
   // Max attempts reached: try new meter on primary layer with relaxed constraints
   console.warn(`getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new primary meter...`);
-  [g.numerator, g.denominator] = g.composer.getMeter(true, false);
+  const [newNumerator, newDenominator] = composer.getMeter(true, false);
+  setVal('numerator', newNumerator);
+  setVal('denominator', newDenominator);
   // CRITICAL: Recalculate all timing after meter change to prevent sync desync
-  getMidiTiming();
-  g.measuresPerPhrase1 = 1;
-  g.measuresPerPhrase2 = 1;
+  getMidiTiming(ctx);
+  setVal('measuresPerPhrase1', 1);
+  setVal('measuresPerPhrase2', 1);
 };
 
 /**
@@ -193,11 +221,17 @@ const getPolyrhythm = (): void => {
  * cascading parent position plus index times duration pattern. See time.md for details.
  * @param {string} unitType - One of: 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'.
  */
-const setUnitTiming = (unitType: string): void => {
+const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const g = globalThis as any;
+  const state = ctx.state as any;
+  const getVal = (key: string) => state[key];
+  const setVal = (key: string, value: any) => {
+    state[key] = value;
+  };
 
-  if (!Number.isFinite(g.tpSec) || g.tpSec <= 0) {
-    throw new Error(`Invalid tpSec in setUnitTiming: ${g.tpSec}`);
+  const tpSec = getVal('tpSec');
+  if (!Number.isFinite(tpSec) || tpSec <= 0) {
+    throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
   }
 
   // Use globals (not layer.state) because LM.activate() already restored layer state to globals.
@@ -205,64 +239,64 @@ const setUnitTiming = (unitType: string): void => {
 
   switch (unitType) {
     case 'phrase':
-      if (!Number.isFinite(g.measuresPerPhrase) || g.measuresPerPhrase < 1) {
-        g.measuresPerPhrase = 1;
+      if (!Number.isFinite(getVal('measuresPerPhrase')) || getVal('measuresPerPhrase') < 1) {
+        setVal('measuresPerPhrase', 1);
       }
-      g.tpPhrase = g.tpMeasure * g.measuresPerPhrase;
-      g.spPhrase = g.tpPhrase / g.tpSec;
+      setVal('tpPhrase', getVal('tpMeasure') * getVal('measuresPerPhrase'));
+      setVal('spPhrase', getVal('tpPhrase') / tpSec);
       break;
 
     case 'measure':
-      g.measureStart = g.phraseStart + g.measureIndex * g.tpMeasure;
-      g.measureStartTime = g.phraseStartTime + g.measureIndex * g.spMeasure;
-      setMidiTiming();
-      g.beatRhythm = setRhythm('beat');
+      setVal('measureStart', getVal('phraseStart') + getVal('measureIndex') * getVal('tpMeasure'));
+      setVal('measureStartTime', getVal('phraseStartTime') + getVal('measureIndex') * getVal('spMeasure'));
+      setMidiTiming(ctx);
+      setVal('beatRhythm', setRhythm('beat'));
       break;
 
     case 'beat':
       trackRhythm('beat');
-      g.tpBeat = g.tpMeasure / g.numerator;
-      g.spBeat = g.tpBeat / g.tpSec;
-      g.trueBPM = 60 / g.spBeat;
-      g.bpmRatio = g.BPM / g.trueBPM;
-      g.bpmRatio2 = g.trueBPM / g.BPM;
-      g.trueBPM2 = g.numerator * (g.numerator / g.denominator) / 4;
-      g.bpmRatio3 = 1 / g.trueBPM2;
-      g.beatStart = g.phraseStart + g.measureIndex * g.tpMeasure + g.beatIndex * g.tpBeat;
-      g.beatStartTime = g.measureStartTime + g.beatIndex * g.spBeat;
-      g.divsPerBeat = g.composer ? g.composer.getDivisions() : 1;
-      g.divRhythm = setRhythm('div');
+      setVal('tpBeat', getVal('tpMeasure') / getVal('numerator'));
+      setVal('spBeat', getVal('tpBeat') / tpSec);
+      setVal('trueBPM', 60 / getVal('spBeat'));
+      setVal('bpmRatio', getVal('BPM') / getVal('trueBPM'));
+      setVal('bpmRatio2', getVal('trueBPM') / getVal('BPM'));
+      setVal('trueBPM2', getVal('numerator') * (getVal('numerator') / getVal('denominator')) / 4);
+      setVal('bpmRatio3', 1 / getVal('trueBPM2'));
+      setVal('beatStart', getVal('phraseStart') + getVal('measureIndex') * getVal('tpMeasure') + getVal('beatIndex') * getVal('tpBeat'));
+      setVal('beatStartTime', getVal('measureStartTime') + getVal('beatIndex') * getVal('spBeat'));
+      setVal('divsPerBeat', getVal('composer') ? getVal('composer').getDivisions() : 1);
+      setVal('divRhythm', setRhythm('div'));
       break;
 
     case 'division':
       trackRhythm('div');
-      g.tpDiv = g.tpBeat / Math.max(1, g.divsPerBeat);
-      g.spDiv = g.tpDiv / g.tpSec;
-      g.divStart = g.beatStart + g.divIndex * g.tpDiv;
-      g.divStartTime = g.beatStartTime + g.divIndex * g.spDiv;
-      g.subdivsPerDiv = Math.max(1, g.composer ? g.composer.getSubdivisions() : 1);
-      g.subdivFreq = g.subdivsPerDiv * g.divsPerBeat * g.numerator * g.meterRatio;
-      g.subdivRhythm = setRhythm('subdiv');
+      setVal('tpDiv', getVal('tpBeat') / Math.max(1, getVal('divsPerBeat')));
+      setVal('spDiv', getVal('tpDiv') / tpSec);
+      setVal('divStart', getVal('beatStart') + getVal('divIndex') * getVal('tpDiv'));
+      setVal('divStartTime', getVal('beatStartTime') + getVal('divIndex') * getVal('spDiv'));
+      setVal('subdivsPerDiv', Math.max(1, getVal('composer') ? getVal('composer').getSubdivisions() : 1));
+      setVal('subdivFreq', getVal('subdivsPerDiv') * getVal('divsPerBeat') * getVal('numerator') * getVal('meterRatio'));
+      setVal('subdivRhythm', setRhythm('subdiv'));
       break;
 
     case 'subdivision':
       trackRhythm('subdiv');
-      g.tpSubdiv = g.tpDiv / Math.max(1, g.subdivsPerDiv);
-      g.spSubdiv = g.tpSubdiv / g.tpSec;
-      g.subdivsPerMinute = 60 / g.spSubdiv;
-      g.subdivStart = g.divStart + g.subdivIndex * g.tpSubdiv;
-      g.subdivStartTime = g.divStartTime + g.subdivIndex * g.spSubdiv;
-      g.subsubdivsPerSub = g.composer ? g.composer.getSubsubdivs() : 1;
-      g.subsubdivRhythm = setRhythm('subsubdiv');
+      setVal('tpSubdiv', getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv')));
+      setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
+      setVal('subdivsPerMinute', 60 / getVal('spSubdiv'));
+      setVal('subdivStart', getVal('divStart') + getVal('subdivIndex') * getVal('tpSubdiv'));
+      setVal('subdivStartTime', getVal('divStartTime') + getVal('subdivIndex') * getVal('spSubdiv'));
+      setVal('subsubdivsPerSub', getVal('composer') ? getVal('composer').getSubsubdivs() : 1);
+      setVal('subsubdivRhythm', setRhythm('subsubdiv'));
       break;
 
     case 'subsubdivision':
       trackRhythm('subsubdiv');
-      g.tpSubsubdiv = g.tpSubdiv / Math.max(1, g.subsubdivsPerSub);
-      g.spSubsubdiv = g.tpSubsubdiv / g.tpSec;
-      g.subsubdivsPerMinute = 60 / g.spSubsubdiv;
-      g.subsubdivStart = g.subdivStart + g.subsubdivIndex * g.tpSubsubdiv;
-      g.subsubdivStartTime = g.subdivStartTime + g.subsubdivIndex * g.spSubsubdiv;
+      setVal('tpSubsubdiv', getVal('tpSubdiv') / Math.max(1, getVal('subsubdivsPerSub')));
+      setVal('spSubsubdiv', getVal('tpSubsubdiv') / tpSec);
+      setVal('subsubdivsPerMinute', 60 / getVal('spSubsubdiv'));
+      setVal('subsubdivStart', getVal('subdivStart') + getVal('subsubdivIndex') * getVal('tpSubsubdiv'));
+      setVal('subsubdivStartTime', getVal('subdivStartTime') + getVal('subsubdivIndex') * getVal('spSubsubdiv'));
       break;
 
     default:

@@ -12,6 +12,7 @@ import './composers.js';
 import './motifs.js';
 import './fxManager.js';
 import { PlayNotes } from './playNotes.js';
+import { ICompositionContext } from './CompositionContext.js';
 
 // Initialize global temporary variable for FX object spreading
 declare const globalThis: any;
@@ -83,46 +84,77 @@ export class Stage {
    * Randomly updates binaural beat instruments and FX on beat shifts
    * @returns {void}
    */
-  setOtherInstruments(): void {
-    if (globalThis.rf() < .3 || globalThis.beatCount % globalThis.beatsUntilBinauralShift < 1 || this.firstLoop<1 ) {
-  globalThis.p(globalThis.c,...['control_c'].flatMap(()=>{ const tmp={ tick:globalThis.beatStart,type:'program_c' };
-    return [
-      ...globalThis.reflectionBinaural.map((ch: number) => ({...tmp,vals:[ch,globalThis.ra(globalThis.otherInstruments)]})),
-      ...globalThis.bassBinaural.map((ch: number) => ({...tmp,vals:[ch,globalThis.ra(globalThis.otherBassInstruments)]})),
-      { ...tmp,vals:[globalThis.drumCH,globalThis.ra(globalThis.drumSets)] }
-    ];  })  );  }
+  setOtherInstruments(ctx: ICompositionContext): void {
+    const g = globalThis as any;
+    const beatCount = ctx.state.beatCount;
+    const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
+    const beatStart = ctx.state.beatStart;
+
+    if (g.rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
+      g.p(g.c, ...['control_c'].flatMap(() => {
+        const tmp = { tick: beatStart, type: 'program_c' };
+        return [
+          ...g.reflectionBinaural.map((ch: number) => ({ ...tmp, vals: [ch, g.ra(g.otherInstruments)] })),
+          ...g.bassBinaural.map((ch: number) => ({ ...tmp, vals: [ch, g.ra(g.otherBassInstruments)] })),
+          { ...tmp, vals: [g.drumCH, g.ra(g.drumSets)] }
+        ];
+      }));
+    }
   }
 
   /**
    * Manages binaural beat pitch shifts and volume crossfades at beat boundaries
    * @returns {void}
    */
-  setBinaural(): void {
-    if (globalThis.beatCount===globalThis.beatsUntilBinauralShift || this.firstLoop<1 ) {
-    globalThis.beatCount=0; globalThis.flipBin=!globalThis.flipBin; globalThis.allNotesOff(globalThis.beatStart);
-    globalThis.beatsUntilBinauralShift=globalThis.ri(globalThis.numerator,globalThis.numerator*2*globalThis.bpmRatio3);
-    globalThis.binauralFreqOffset=globalThis.rl(globalThis.binauralFreqOffset,-1,1,globalThis.BINAURAL.min,globalThis.BINAURAL.max);
-    globalThis.p(globalThis.c,...globalThis.binauralL.map((ch: number) => ({tick:globalThis.beatStart,type:'pitch_bend_c',vals:[ch,ch===globalThis.lCH1 || ch===globalThis.lCH3 || ch===globalThis.lCH5 ? (globalThis.flipBin ? globalThis.binauralMinus : globalThis.binauralPlus) : (globalThis.flipBin ? globalThis.binauralPlus : globalThis.binauralMinus)]})),
-    ...globalThis.binauralR.map((ch: number) => ({tick:globalThis.beatStart,type:'pitch_bend_c',vals:[ch,ch===globalThis.rCH1 || ch===globalThis.rCH3 || ch===globalThis.rCH5 ? (globalThis.flipBin ? globalThis.binauralPlus : globalThis.binauralMinus) : (globalThis.flipBin ? globalThis.binauralMinus : globalThis.binauralPlus)]})),
-    );
-    // flipBin (flip binaural) volume transition
-    const startTick = globalThis.beatStart - globalThis.tpSec/4;
-    const endTick = globalThis.beatStart + globalThis.tpSec/4;
-    const steps = 10;
-    const tickIncrement = (endTick - startTick) / steps;
-    for (let i = steps/2-1; i <= steps; i++) {
-      const tick = startTick + (tickIncrement * i);
-      const currentVolumeF2 = globalThis.flipBin ? globalThis.m.floor(100 * (1 - (i / steps))) : globalThis.m.floor(100 * (i / steps));
-      const currentVolumeT2 = globalThis.flipBin ? globalThis.m.floor(100 * (i / steps)) : globalThis.m.floor(100 * (1 - (i / steps)));
-      const maxVol = globalThis.rf(.9,1.2);
-      globalThis.flipBinF2.forEach((ch: number) => {
-        globalThis.p(globalThis.c,{tick:tick,type:'control_c',vals:[ch,7,globalThis.m.round(currentVolumeF2*maxVol)]});
-      });
-      globalThis.flipBinT2.forEach((ch: number) => {
-        globalThis.p(globalThis.c,{tick:tick,type:'control_c',vals:[ch,7,globalThis.m.round(currentVolumeT2*maxVol)]});
-      });
+  setBinaural(ctx: ICompositionContext): void {
+    const g = globalThis as any;
+    const state = ctx.state;
+    const beatCount = state.beatCount;
+    const beatsUntilBinauralShift = state.beatsUntilBinauralShift;
+    const beatStart = state.beatStart;
+    const numerator = state.numerator;
+    const bpmRatio3 = state.bpmRatio3;
+    const tpSec = state.tpSec;
+    let flipBin = state.flipBin;
+    let binauralFreqOffset = state.binauralFreqOffset;
+
+    if (beatCount === beatsUntilBinauralShift || this.firstLoop < 1) {
+      const nextBeatCount = 0;
+      const nextFlipBin = !flipBin;
+      const nextBeatsUntil = g.ri(numerator, numerator * 2 * bpmRatio3);
+      const nextBinauralFreqOffset = g.rl(binauralFreqOffset, -1, 1, g.BINAURAL.min, g.BINAURAL.max);
+
+      state.beatCount = nextBeatCount;
+      state.flipBin = nextFlipBin;
+      state.beatsUntilBinauralShift = nextBeatsUntil;
+      state.binauralFreqOffset = nextBinauralFreqOffset;
+
+      flipBin = nextFlipBin;
+      binauralFreqOffset = nextBinauralFreqOffset;
+
+      g.allNotesOff(beatStart);
+      g.p(g.c,
+        ...g.binauralL.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.lCH1 || ch === g.lCH3 || ch === g.lCH5 ? (flipBin ? g.binauralMinus : g.binauralPlus) : (flipBin ? g.binauralPlus : g.binauralMinus)] })),
+        ...g.binauralR.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.rCH1 || ch === g.rCH3 || ch === g.rCH5 ? (flipBin ? g.binauralPlus : g.binauralMinus) : (flipBin ? g.binauralMinus : g.binauralPlus)] })),
+      );
+      // flipBin (flip binaural) volume transition
+      const startTick = beatStart - tpSec / 4;
+      const endTick = beatStart + tpSec / 4;
+      const steps = 10;
+      const tickIncrement = (endTick - startTick) / steps;
+      for (let i = steps / 2 - 1; i <= steps; i++) {
+        const tick = startTick + tickIncrement * i;
+        const currentVolumeF2 = flipBin ? g.m.floor(100 * (1 - (i / steps))) : g.m.floor(100 * (i / steps));
+        const currentVolumeT2 = flipBin ? g.m.floor(100 * (i / steps)) : g.m.floor(100 * (1 - (i / steps)));
+        const maxVol = g.rf(.9, 1.2);
+        g.flipBinF2.forEach((ch: number) => {
+          g.p(g.c, { tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeF2 * maxVol)] });
+        });
+        g.flipBinT2.forEach((ch: number) => {
+          g.p(g.c, { tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeT2 * maxVol)] });
+        });
+      }
     }
-  }
   }
 
   /**
@@ -132,8 +164,12 @@ export class Stage {
    * @param duration - Duration of stutter effect in ticks
    * @returns {void}
    */
-  stutterFade(channels: number[], numStutters = globalThis.ri(10, 70), duration = globalThis.tpSec * globalThis.rf(.2, 1.5)): void {
-    this.fx.stutterFade(channels, numStutters, duration);
+  stutterFade(channels: number[], ctx: ICompositionContext, numStutters?: number, duration?: number): void {
+    const g = globalThis as any;
+    const resolvedNumStutters = numStutters ?? g.ri(10, 70);
+    const tpSec = ctx.state.tpSec;
+    const resolvedDuration = duration ?? tpSec * g.rf(.2, 1.5);
+    this.fx.stutterFade(channels, resolvedNumStutters, resolvedDuration);
   }
 
   /**
@@ -143,8 +179,12 @@ export class Stage {
    * @param duration - Duration of stutter effect in ticks
    * @returns {void}
    */
-  stutterPan(channels: number[], numStutters = globalThis.ri(30, 90), duration = globalThis.tpSec * globalThis.rf(.1, 1.2)): void {
-    this.fx.stutterPan(channels, numStutters, duration);
+  stutterPan(channels: number[], ctx: ICompositionContext, numStutters?: number, duration?: number): void {
+    const g = globalThis as any;
+    const resolvedNumStutters = numStutters ?? g.ri(30, 90);
+    const tpSec = ctx.state.tpSec;
+    const resolvedDuration = duration ?? tpSec * g.rf(.1, 1.2);
+    this.fx.stutterPan(channels, resolvedNumStutters, resolvedDuration);
   }
 
   /**
@@ -154,81 +194,97 @@ export class Stage {
    * @param duration - Duration of stutter effect in ticks
    * @returns {void}
    */
-  stutterFX(channels: number[], numStutters = globalThis.ri(30, 100), duration = globalThis.tpSec * globalThis.rf(.1, 2)): void {
-    this.fx.stutterFX(channels, numStutters, duration);
+  stutterFX(channels: number[], ctx: ICompositionContext, numStutters?: number, duration?: number): void {
+    const g = globalThis as any;
+    const resolvedNumStutters = numStutters ?? g.ri(30, 100);
+    const tpSec = ctx.state.tpSec;
+    const resolvedDuration = duration ?? tpSec * g.rf(.1, 2);
+    this.fx.stutterFX(channels, resolvedNumStutters, resolvedDuration);
   }
 
   /**
    * Sets pan positions, balance offsets, and detailed FX parameters for all channels
    * @returns {void}
    */
-  setBalanceAndFX(): void {
-  const beatStart = globalThis.beatStart !== undefined ? globalThis.beatStart : 0;
-  if (globalThis.rf() < .5*globalThis.bpmRatio3 || globalThis.beatCount % globalThis.beatsUntilBinauralShift < 1 || this.firstLoop<1 ) { this.firstLoop=1;
-    this.balOffset=globalThis.rl(this.balOffset,-4,4,0,45);
-    this.sideBias=globalThis.rl(this.sideBias,-2,2,-20,20);
-    this.lBal=globalThis.m.max(0,globalThis.m.min(54,this.balOffset + globalThis.ri(3) + this.sideBias));
-    this.rBal=globalThis.m.min(127,globalThis.m.max(74,127 - this.balOffset - globalThis.ri(3) + this.sideBias));
-    this.cBal=globalThis.m.min(96,(globalThis.m.max(32,64 + globalThis.m.round(globalThis.rv(this.balOffset / globalThis.ri(2,3))) * (globalThis.rf() < .5 ? -1 : 1) + this.sideBias)));
-    this.refVar=globalThis.ri(1,10); this.cBal2=globalThis.rf()<.5?this.cBal+globalThis.m.round(this.refVar*.5) : this.cBal+globalThis.m.round(this.refVar*-.5);
-    this.bassVar=this.refVar*globalThis.rf(-2,2); this.cBal3=globalThis.rf()<.5?this.cBal2+globalThis.m.round(this.bassVar*.5) : this.cBal2+globalThis.m.round(this.bassVar*-.5);
-    globalThis.p(globalThis.c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart-1,type:'control_c' }; _=tmp;
-  return [
-      ...globalThis.source2.map((ch: number) => ({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (globalThis.flipBin ? this.lBal : this.rBal) : ch.toString().startsWith('rCH') ? (globalThis.flipBin ? this.rBal : this.lBal) : ch===globalThis.drumCH ? this.cBal3+globalThis.m.round((globalThis.rf(-.5,.5)*this.bassVar)) : this.cBal]})),
-      ...globalThis.reflection.map((ch: number) => ({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (globalThis.flipBin ? (globalThis.rf()<.1 ? this.lBal+this.refVar*2 : this.lBal+this.refVar) : (globalThis.rf()<.1 ? this.rBal-this.refVar*2 : this.rBal-this.refVar)) : ch.toString().startsWith('rCH') ? (globalThis.flipBin ? (globalThis.rf()<.1 ? this.rBal-this.refVar*2 : this.rBal-this.refVar) : (globalThis.rf()<.1 ? this.lBal+this.refVar*2 : this.lBal+this.refVar)) : this.cBal2+globalThis.m.round((globalThis.rf(-.5,.5)*this.refVar)) ]})),
-      ...globalThis.bass.map((ch: number) => ({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (globalThis.flipBin ? this.lBal+this.bassVar : this.rBal-this.bassVar) : ch.toString().startsWith('rCH') ? (globalThis.flipBin ? this.rBal-this.bassVar : this.lBal+this.bassVar) : this.cBal3+globalThis.m.round((globalThis.rf(-.5,.5)*this.bassVar)) ]})),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,1,0,60,(c: number) => c===globalThis.cCH1,0,10)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,5,125,127,(c: number) => c===globalThis.cCH1,126,127)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,11,64,127,(c: number) => c===globalThis.cCH1||c===globalThis.drumCH,115,127)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,65,45,64,(c: number) => c===globalThis.cCH1,35,64)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,67,63,64)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,68,63,64)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,69,63,64)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,70,0,127)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,71,0,127)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,72,64,127)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,73,0,64)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,74,80,127)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,91,0,33)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,92,0,33)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,93,0,33)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,94,0,5,(c: number) => c===globalThis.drumCH,0,64)),
-      ...globalThis.source2.map((ch: number) => globalThis.rlFX(ch,95,0,33)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,1,0,90,(c: number) => c===globalThis.cCH2,0,15)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,5,125,127,(c: number) => c===globalThis.cCH2,126,127)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,11,77,111,(c: number) => c===globalThis.cCH2,66,99)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,65,45,64,(c: number) => c===globalThis.cCH2,35,64)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,67,63,64)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,68,63,64)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,69,63,64)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,70,0,127)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,71,0,127)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,72,64,127)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,73,0,64)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,74,80,127)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,91,0,77,(c: number) => c===globalThis.cCH2,0,32)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,92,0,77,(c: number) => c===globalThis.cCH2,0,32)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,93,0,77,(c: number) => c===globalThis.cCH2,0,32)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,94,0,64,(c: number) => c===globalThis.cCH2,0,11)),
-      ...globalThis.reflection.map((ch: number) => globalThis.rlFX(ch,95,0,77,(c: number) => c===globalThis.cCH2,0,32)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,1,0,60,(c: number) => c===globalThis.cCH3,0,10)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,5,125,127,(c: number) => c===globalThis.cCH3,126,127)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,11,88,127,(c: number) => c===globalThis.cCH3,115,127)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,65,45,64,(c: number) => c===globalThis.cCH3,35,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,67,63,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,68,63,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,69,63,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,70,0,127)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,71,0,127)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,72,64,127)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,73,0,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,74,80,127)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,91,0,99,(c: number) => c===globalThis.cCH3,0,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,92,0,99,(c: number) => c===globalThis.cCH3,0,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,93,0,99,(c: number) => c===globalThis.cCH3,0,64)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,94,0,64,(c: number) => c===globalThis.cCH3,0,11)),
-      ...globalThis.bass.map((ch: number) => globalThis.rlFX(ch,95,0,99,(c: number) => c===globalThis.cCH3,0,64)),
-    ];  })  );  }
+  setBalanceAndFX(ctx: ICompositionContext): void {
+    const g = globalThis as any;
+    const beatStart = ctx.state.beatStart;
+    const beatCount = ctx.state.beatCount;
+    const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
+    const bpmRatio3 = ctx.state.bpmRatio3;
+    const flipBin = ctx.state.flipBin;
+
+    if (g.rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
+      this.firstLoop = 1;
+      this.balOffset = g.rl(this.balOffset, -4, 4, 0, 45);
+      this.sideBias = g.rl(this.sideBias, -2, 2, -20, 20);
+      this.lBal = g.m.max(0, g.m.min(54, this.balOffset + g.ri(3) + this.sideBias));
+      this.rBal = g.m.min(127, g.m.max(74, 127 - this.balOffset - g.ri(3) + this.sideBias));
+      this.cBal = g.m.min(96, (g.m.max(32, 64 + g.m.round(g.rv(this.balOffset / g.ri(2, 3))) * (g.rf() < .5 ? -1 : 1) + this.sideBias)));
+      this.refVar = g.ri(1, 10);
+      this.cBal2 = g.rf() < .5 ? this.cBal + g.m.round(this.refVar * .5) : this.cBal + g.m.round(this.refVar * -.5);
+      this.bassVar = this.refVar * g.rf(-2, 2);
+      this.cBal3 = g.rf() < .5 ? this.cBal2 + g.m.round(this.bassVar * .5) : this.cBal2 + g.m.round(this.bassVar * -.5);
+      g.p(g.c, ...['control_c'].flatMap(() => {
+        const tmp = { tick: beatStart - 1, type: 'control_c' }; _ = tmp;
+        return [
+          ...g.source2.map((ch: number) => ({ ...tmp, vals: [ch, 10, ch.toString().startsWith('lCH') ? (flipBin ? this.lBal : this.rBal) : ch.toString().startsWith('rCH') ? (flipBin ? this.rBal : this.lBal) : ch === g.drumCH ? this.cBal3 + g.m.round((g.rf(-.5, .5) * this.bassVar)) : this.cBal] })),
+          ...g.reflection.map((ch: number) => ({ ...tmp, vals: [ch, 10, ch.toString().startsWith('lCH') ? (flipBin ? (g.rf() < .1 ? this.lBal + this.refVar * 2 : this.lBal + this.refVar) : (g.rf() < .1 ? this.rBal - this.refVar * 2 : this.rBal - this.refVar)) : ch.toString().startsWith('rCH') ? (flipBin ? (g.rf() < .1 ? this.rBal - this.refVar * 2 : this.rBal - this.refVar) : (g.rf() < .1 ? this.lBal + this.refVar * 2 : this.lBal + this.refVar)) : this.cBal2 + g.m.round((g.rf(-.5, .5) * this.refVar)) ] })),
+          ...g.bass.map((ch: number) => ({ ...tmp, vals: [ch, 10, ch.toString().startsWith('lCH') ? (flipBin ? this.lBal + this.bassVar : this.rBal - this.bassVar) : ch.toString().startsWith('rCH') ? (flipBin ? this.rBal - this.bassVar : this.lBal + this.bassVar) : this.cBal3 + g.m.round((g.rf(-.5, .5) * this.bassVar)) ] })),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 1, 0, 60, (c: number) => c === g.cCH1, 0, 10)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 5, 125, 127, (c: number) => c === g.cCH1, 126, 127)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 11, 64, 127, (c: number) => c === g.cCH1 || c === g.drumCH, 115, 127)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 65, 45, 64, (c: number) => c === g.cCH1, 35, 64)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 67, 63, 64)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 68, 63, 64)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 69, 63, 64)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 70, 0, 127)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 71, 0, 127)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 72, 64, 127)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 73, 0, 64)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 74, 80, 127)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 91, 0, 33)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 92, 0, 33)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 93, 0, 33)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 94, 0, 5, (c: number) => c === g.drumCH, 0, 64)),
+          ...g.source2.map((ch: number) => g.rlFX(ch, 95, 0, 33)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 1, 0, 90, (c: number) => c === g.cCH2, 0, 15)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 5, 125, 127, (c: number) => c === g.cCH2, 126, 127)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 11, 77, 111, (c: number) => c === g.cCH2, 66, 99)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 65, 45, 64, (c: number) => c === g.cCH2, 35, 64)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 67, 63, 64)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 68, 63, 64)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 69, 63, 64)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 70, 0, 127)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 71, 0, 127)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 72, 64, 127)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 73, 0, 64)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 74, 80, 127)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 91, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 92, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 93, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 94, 0, 64, (c: number) => c === g.cCH2, 0, 11)),
+          ...g.reflection.map((ch: number) => g.rlFX(ch, 95, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 1, 0, 60, (c: number) => c === g.cCH3, 0, 10)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 5, 125, 127, (c: number) => c === g.cCH3, 126, 127)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 11, 88, 127, (c: number) => c === g.cCH3, 115, 127)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 65, 45, 64, (c: number) => c === g.cCH3, 35, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 67, 63, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 68, 63, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 69, 63, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 70, 0, 127)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 71, 0, 127)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 72, 64, 127)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 73, 0, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 74, 80, 127)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 91, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 92, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 93, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 94, 0, 64, (c: number) => c === g.cCH3, 0, 11)),
+          ...g.bass.map((ch: number) => g.rlFX(ch, 95, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
+        ];
+      }));
+    }
   }
 
   /**

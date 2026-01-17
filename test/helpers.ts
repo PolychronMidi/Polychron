@@ -12,14 +12,17 @@ import '../src/backstage.js'; // Load random helpers
 import '../src/venue.js'; // Load Tonal library
 import '../src/sheet.js'; // Load configuration
 
-import { CompositionState } from '../src/CompositionState.js';
+import { CompositionState, CompositionStateService } from '../src/CompositionState.js';
+import { ICompositionContext } from '../src/CompositionContext.js';
+import { DIContainer } from '../src/DIContainer.js';
+import { CompositionEventBusImpl, CancellationTokenImpl } from '../src/CompositionProgress.js';
 
 /**
  * Creates a fresh CompositionState for testing
  * Exposes state to __POLYCHRON_TEST__ namespace for test instrumentation
  */
 export function createTestState(): CompositionState {
-  const state = new CompositionState();
+  const state = new CompositionStateService();
 
   // Expose to test namespace for instrumentation
   if (!globalThis.__POLYCHRON_TEST__) {
@@ -28,6 +31,40 @@ export function createTestState(): CompositionState {
   globalThis.__POLYCHRON_TEST__.state = state;
 
   return state;
+}
+
+/**
+ * Creates a minimal test composition context for testing context-aware functions
+ * Provides a properly initialized ICompositionContext with sensible defaults
+ */
+export function createTestContext(overrides?: Partial<ICompositionContext>): ICompositionContext {
+  const state = createTestState();
+  const services = new DIContainer();
+  const eventBus = new CompositionEventBusImpl();
+  const cancelToken = new CancellationTokenImpl();
+
+  // Set default timing values on state
+  state.numerator = 4;
+  state.denominator = 4;
+  state.BPM = 120;
+  state.PPQ = 480;
+  state.beatCount = 0;
+  state.beatStart = 0;
+  state.measureStart = 0;
+  state.phraseStart = 0;
+  state.sectionStart = 0;
+
+  const ctx: ICompositionContext = {
+    state,
+    services,
+    eventBus,
+    cancelToken,
+    BPM: 120,
+    PPQ: 480,
+    ...overrides
+  };
+
+  return ctx;
 }
 
 /**

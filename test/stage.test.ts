@@ -1,12 +1,15 @@
 // test/stage.test.js
 import { stage } from '../src/stage.js';
-import { setupGlobalState } from './helpers.js';
+import { setupGlobalState, createTestContext } from './helpers.js';
+import type { ICompositionContext } from '../src/CompositionContext.js';
 
 // Access allNotesOff from stage instance
 const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
   describe('playNotes and playNotes2 channel coverage', () => {
+    let ctx: ICompositionContext;
     beforeEach(() => {
+      ctx = createTestContext();
       // Use fresh setup but keep the real channel definitions
       globalThis.c = [];
       globalThis.composer = {
@@ -585,7 +588,13 @@ describe('Stage Module', () => {
   });
 
   describe('setBalanceAndFX function', () => {
+    let ctx: ICompositionContext;
     beforeEach(() => {
+      ctx = createTestContext();
+      ctx.state.beatStart = 0;
+      ctx.state.beatCount = 0;
+      ctx.state.beatsUntilBinauralShift = 4;
+      // Also set globals for any functions that might read them
       globalThis.c = [];
       globalThis.beatStart = 0;
       globalThis.beatCount = 0;
@@ -605,7 +614,7 @@ describe('Stage Module', () => {
     });
 
     it('should update pan values on condition', () => {
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       // Should have added pan control change events
       const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
       // Pan control is CC 10, should have events for different channels
@@ -613,7 +622,7 @@ describe('Stage Module', () => {
     });
 
     it('should keep pan values within valid MIDI range (0-127)', () => {
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
       panEvents.forEach(evt => {
         expect(evt.vals[2]).toBeGreaterThanOrEqual(0);
@@ -622,22 +631,23 @@ describe('Stage Module', () => {
     });
 
     it('should apply different pan values for left vs right channels', () => {
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
       // When pan events are applied, left channels should differ from right
       expect(panEvents.length).toBeGreaterThan(1);
     });
 
     it('should apply FX control events (CC 1, 5, 11, etc)', () => {
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       // Should generate control change events for various FX
       const fxEvents = c.filter(evt => evt.type === 'control_c');
       expect(fxEvents.length).toBeGreaterThan(10);
     });
 
     it('should set tick to beatStart-1 for control events', () => {
+      ctx.state.beatStart = 100;
       globalThis.beatStart = 100;
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       const controlEvents = c.filter(evt => evt.type === 'control_c');
       controlEvents.forEach(evt => {
         expect(evt.tick).toBe(99); // beatStart - 1
@@ -646,13 +656,13 @@ describe('Stage Module', () => {
 
     it('should update balance offset with limited change', () => {
       const initialBal = globalThis.balOffset;
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       // balOffset should change but within reasonable limits
       expect(Math.abs(globalThis.balOffset - initialBal)).toBeLessThanOrEqual(4);
     });
 
     it('should apply side bias variation', () => {
-      stage.setBalanceAndFX();
+      stage.setBalanceAndFX(ctx);
       // sideBias should affect the left/right pan values
       expect(typeof globalThis.sideBias).toBe('number');
       expect(globalThis.sideBias).toBeGreaterThanOrEqual(-20);
@@ -661,7 +671,7 @@ describe('Stage Module', () => {
 
     it('should clamp balance values correctly', () => {
       for (let i = 0; i < 5; i++) {
-        stage.setBalanceAndFX();
+        stage.setBalanceAndFX(ctx);
         expect(globalThis.lBal).toBeGreaterThanOrEqual(0);
         expect(globalThis.lBal).toBeLessThanOrEqual(54);
         expect(globalThis.rBal).toBeGreaterThanOrEqual(74);
@@ -671,7 +681,13 @@ describe('Stage Module', () => {
   });
 
   describe('setOtherInstruments function', () => {
+    let ctx: ICompositionContext;
     beforeEach(() => {
+      ctx = createTestContext();
+      ctx.state.beatStart = 480;
+      ctx.state.beatCount = 0;
+      ctx.state.beatsUntilBinauralShift = 4;
+      // Also set globals for any functions that might read them
       globalThis.c = [];
       globalThis.beatStart = 480;
       globalThis.beatCount = 0;
@@ -688,7 +704,7 @@ describe('Stage Module', () => {
       for (let i = 0; i < 10; i++) {
         globalThis.c = [];
         globalThis.beatCount = i;
-        stage.setOtherInstruments();
+        stage.setOtherInstruments(ctx);
         if (c.length > 0) {
           instrumentChanges++;
         }
@@ -699,15 +715,16 @@ describe('Stage Module', () => {
 
     it('should generate program change events for binaural instruments', () => {
       globalThis.firstLoop = 0; // Force execution on first loop
-      stage.setOtherInstruments();
+      stage.setOtherInstruments(ctx);
       const progChanges = c.filter(evt => evt.type === 'program_c');
       expect(progChanges.length).toBeGreaterThan(0);
     });
 
     it('should set tick to beatStart for instrument changes', () => {
       globalThis.firstLoop = 0;
+      ctx.state.beatStart = 960;
       globalThis.beatStart = 960;
-      stage.setOtherInstruments();
+      stage.setOtherInstruments(ctx);
       c.forEach(evt => {
         expect(evt.tick).toBe(960);
       });
@@ -716,7 +733,7 @@ describe('Stage Module', () => {
     it('should select from otherInstruments array', () => {
       globalThis.firstLoop = 0;
       globalThis.otherInstruments = [50, 51, 52];
-      stage.setOtherInstruments();
+      stage.setOtherInstruments(ctx);
       const progChanges = c.filter(evt => evt.type === 'program_c' && evt.vals);
       progChanges.forEach(evt => {
         // Program value should be from otherInstruments or otherBassInstruments or drumSets
@@ -728,7 +745,7 @@ describe('Stage Module', () => {
       globalThis.firstLoop = 1; // Not first loop
       globalThis.beatCount = 10;
       globalThis.beatsUntilBinauralShift = 5; // beatCount % beatsUntilBinauralShift = 0, but not < 1
-      stage.setOtherInstruments();
+      stage.setOtherInstruments(ctx);
       // Might or might not execute depending on random chance (rf() < .3)
       expect(Array.isArray(c)).toBe(true);
     });

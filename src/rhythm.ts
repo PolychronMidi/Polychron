@@ -3,6 +3,7 @@
 
 // Import rhythm pattern utilities
 import * as RhythmPattern from '@tonaljs/rhythm-pattern';
+import { ICompositionContext } from './CompositionContext.js';
 
 // Global function declarations (these exist on globalThis from backstage.ts)
 declare const m: typeof Math;
@@ -207,17 +208,27 @@ export const drummer = (
  * Play drums for primary meter (beat index 0-3 pattern).
  * @returns {void}
  */
-export const playDrums = (): void => {
-  if (beatIndex % 2 === 0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1, beatsOff * rf(2, 3.5)) * bpmRatio3) {
+export const playDrums = (ctx: ICompositionContext): void => {
+  const state = ctx.state as any;
+  const getVal = (key: string) => state[key];
+
+  const localBeatIndex = getVal('beatIndex');
+  const localBeatRhythm = getVal('beatRhythm');
+  const localBeatsOff = getVal('beatsOff');
+  const localBpmRatio3 = getVal('bpmRatio3');
+  const localMeasuresPerPhrase = getVal('measuresPerPhrase');
+  const localNumerator = getVal('numerator');
+
+  if (localBeatIndex % 2 === 0 && localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
     drummer(['kick1', 'kick3'], [0, .5]);
-    if (numerator % 2 === 1 && beatIndex === numerator - 1 && rf() < (1 / measuresPerPhrase) * bpmRatio3) {
+    if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
       drummer(['kick2', 'kick5'], [0, .5]);
     }
-  } else if (beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1, beatsOff * rf(2, 3.5)) * bpmRatio3) {
+  } else if (localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
     drummer(['snare1', 'kick4', 'kick7', 'snare4'], [0, .5, .75, .25]);
-  } else if (beatIndex % 2 === 0) {
+  } else if (localBeatIndex % 2 === 0) {
     drummer('random');
-    if (numerator % 2 === 1 && beatIndex === numerator - 1 && rf() < (1 / measuresPerPhrase) * bpmRatio3) {
+    if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
       drummer(['snare5'], [0]);
     }
   } else {
@@ -229,17 +240,27 @@ export const playDrums = (): void => {
  * Play drums for poly meter (different pattern from primary).
  * @returns {void}
  */
-export const playDrums2 = (): void => {
-  if (beatIndex % 2 === 0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1, beatsOff * rf(2, 3.5)) * bpmRatio3) {
+export const playDrums2 = (ctx: ICompositionContext): void => {
+  const state = ctx.state as any;
+  const getVal = (key: string) => state[key];
+
+  const localBeatIndex = getVal('beatIndex');
+  const localBeatRhythm = getVal('beatRhythm');
+  const localBeatsOff = getVal('beatsOff');
+  const localBpmRatio3 = getVal('bpmRatio3');
+  const localMeasuresPerPhrase = getVal('measuresPerPhrase');
+  const localNumerator = getVal('numerator');
+
+  if (localBeatIndex % 2 === 0 && localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
     drummer(['kick2', 'kick5', 'kick7'], [0, .5, .25]);
-    if (numerator % 2 === 1 && beatIndex === numerator - 1 && rf() < (1 / measuresPerPhrase) * bpmRatio3) {
+    if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
       drummer(['kick1', 'kick3', 'kick7'], [0, .5, .25]);
     }
-  } else if (beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1, beatsOff * rf(2, 3.5)) * bpmRatio3) {
+  } else if (localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
     drummer(['snare2', 'kick6', 'snare3'], [0, .5, .75]);
-  } else if (beatIndex % 2 === 0) {
+  } else if (localBeatIndex % 2 === 0) {
     drummer(['snare7'], [0]);
-    if (numerator % 2 === 1 && beatIndex === numerator - 1 && rf() < (1 / measuresPerPhrase) * bpmRatio3) {
+    if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
       drummer(['snare7'], [0]);
     }
   } else {

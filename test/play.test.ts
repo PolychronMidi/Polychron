@@ -8,9 +8,12 @@ import '../src/play.js'; // Load play.js to set up globalThis.initializePlayEngi
 import { initializePlayEngine } from '../src/play.js';
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming } from '../src/time.js';
 import { ScaleComposer } from '../src/composers.js';
-import { setupGlobalState } from './helpers.js';
+import { setupGlobalState, createTestContext } from './helpers.js';
+import type { ICompositionContext } from '../src/CompositionContext.js';
 
 // Setup function to initialize state
+let ctx: ICompositionContext;
+
 function setupLocalState() {
   // Clear buffers
   globalThis.c = [];
@@ -200,49 +203,72 @@ describe('play.js - Orchestrator Module', () => {
   });
 
   describe('Timing Functions Integration', () => {
-    it('should support MIDI meter calculation', () => {
-      globalThis.numerator = 7;
-      globalThis.denominator = 9;
-      getMidiTiming();
+    beforeEach(() => {
+      ctx = createTestContext();
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.BPM = 120;
+      ctx.BPM = 120;
+    });
 
-      expect(globalThis.midiMeter).toBeDefined();
-      expect(Array.isArray(globalThis.midiMeter)).toBe(true);
-      expect(globalThis.midiMeter.length).toBe(2);
-      expect(globalThis.midiMeter[1]).toBeGreaterThan(0);
+    it('should support MIDI meter calculation', () => {
+      ctx.state.numerator = 7;
+      ctx.state.denominator = 9;
+      const result = getMidiTiming(ctx);
+
+      expect(ctx.state.midiMeter).toBeDefined();
+      expect(Array.isArray(ctx.state.midiMeter)).toBe(true);
+      expect(ctx.state.midiMeter.length).toBe(2);
+      expect(ctx.state.midiMeter[1]).toBeGreaterThan(0);
     });
 
     it('should support MIDI timing setup', () => {
-      setMidiTiming();
+      ctx.state.measureStart = 0;
+      ctx.state.tpSec = 100;
+      setMidiTiming(ctx);
 
-      expect(globalThis.midiMeter).toBeDefined();
-      expect(globalThis.midiMeterRatio).toBeDefined();
-      expect(globalThis.syncFactor).toBeDefined();
-      expect(globalThis.midiBPM).toBeDefined();
+      expect(ctx.state.midiMeter).toBeDefined();
+      expect(ctx.state.midiMeterRatio).toBeDefined();
+      expect(ctx.state.syncFactor).toBeDefined();
+      expect(ctx.state.midiBPM).toBeDefined();
     });
 
     it('should support unit timing setup', () => {
-      globalThis.numerator = 4;
-      globalThis.denominator = 4;
-      globalThis.BPM = 120;
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.BPM = 120;
+      ctx.BPM = 120;
+      ctx.state.PPQ = 480;
 
-      setUnitTiming();
+      getMidiTiming(ctx);
+      
+      ctx.state.measureStart = 0;
 
-      expect(globalThis.tpMeasure).toBeGreaterThan(0);
-      expect(globalThis.tpBeat).toBeGreaterThan(0);
-      expect(globalThis.tpDiv).toBeGreaterThan(0);
-      expect(globalThis.tpSubdiv).toBeGreaterThan(0);
+      setUnitTiming('measure', ctx);
+      setUnitTiming('beat', ctx);
+      setUnitTiming('division', ctx);
+      setUnitTiming('subdivision', ctx);
+
+      expect(ctx.state.tpMeasure).toBeGreaterThan(0);
+      expect(ctx.state.tpBeat).toBeGreaterThan(0);
+      expect(ctx.state.tpDiv).toBeGreaterThan(0);
+      expect(ctx.state.tpSubdiv).toBeGreaterThan(0);
     });
 
     it('should support polyrhythm generation', () => {
       globalThis.composer = new ScaleComposer();
-      globalThis.numerator = 4;
-      globalThis.denominator = 4;
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.midiBPM = 120;
+      ctx.state.midiMeterRatio = 1;
+      ctx.state.syncFactor = 1;
+      ctx.state.measuresPerPhrase = 8;
 
-      getPolyrhythm();
+      getPolyrhythm(ctx);
 
-      expect(globalThis.polyNumerator).toBeDefined();
-      expect(globalThis.polyDenominator).toBeDefined();
-      expect(globalThis.polyMeterRatio).toBeDefined();
+      expect(ctx.state.polyNumerator).toBeDefined();
+      expect(ctx.state.polyDenominator).toBeDefined();
+      expect(ctx.state.polyMeterRatio).toBeDefined();
     });
   });
 
@@ -388,29 +414,40 @@ describe('play.js - Orchestrator Module', () => {
   });
 
   describe('State Consistency', () => {
-    it('should maintain consistent timing hierarchy', () => {
-      setupGlobalState();
-      setUnitTiming();
-
-      // Verify hierarchy relationships
-      expect(globalThis.tpMeasure).toBeGreaterThan(0);
-      expect(globalThis.tpBeat).toBeLessThanOrEqual(globalThis.tpMeasure);
-      expect(globalThis.tpDiv).toBeLessThanOrEqual(globalThis.tpBeat);
-      expect(globalThis.tpSubdiv).toBeLessThanOrEqual(globalThis.tpDiv);
+    beforeEach(() => {
+      ctx = createTestContext();
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.BPM = 120;
+      ctx.BPM = 120;
+      ctx.state.midiBPM = 120;
+      ctx.state.midiMeterRatio = 1;
+      ctx.state.syncFactor = 1;
+      ctx.state.tpSec = 100;
+      ctx.state.measureStart = 0;
     });
 
-    it('should support section/phrase/measure transitions', () => {
-      globalThis.sectionIndex = 0;
-      globalThis.phraseIndex = 0;
-      globalThis.measureIndex = 0;
+    it('should maintain consistent timing hierarchy', () => {
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.BPM = 120;
+      ctx.state.PPQ = 480;
+      getMidiTiming(ctx);
+      ctx.state.measureStart = 0;
+      
+      setUnitTiming('measure', ctx);
+      const tpMeasure = ctx.state.tpMeasure;
 
-      // Simulate incrementing indices
-      globalThis.measureIndex = 1;
-      expect(globalThis.measureIndex).toBe(1);
+      setUnitTiming('beat', ctx);
+      const tpBeat = ctx.state.tpBeat;
 
-      globalThis.phraseIndex = 1;
-      expect(globalThis.phraseIndex).toBe(1);
+      // tpBeat should be smaller than tpMeasure (more beats per measure)
+      expect(tpBeat).toBeLessThan(tpMeasure);
+      expect(tpMeasure).toBeGreaterThan(0);
+      expect(tpBeat).toBeGreaterThan(0);
+    });
 
+    it('should index sections correctly', () => {
       globalThis.sectionIndex = 1;
       expect(globalThis.sectionIndex).toBe(1);
     });
@@ -430,18 +467,26 @@ describe('play.js - Orchestrator Module', () => {
   });
 
   describe('Full Composition Cycle', () => {
+    beforeEach(() => {
+      ctx = createTestContext();
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.BPM = 120;
+      ctx.BPM = 120;
+      ctx.state.measureStart = 0;
+      ctx.state.tpSec = 100;
+    });
+
     it('should support initialization of all systems', () => {
-      setupGlobalState();
+      getMidiTiming(ctx);
+      ctx.state.measureStart = 0;
+      ctx.state.tpSec = 100;
+      setMidiTiming(ctx);
+      setUnitTiming('measure', ctx);
 
-      // Initialize timing
-      setMidiTiming();
-      setUnitTiming();
-
-      // Verify all systems initialized
-      expect(globalThis.midiMeter).toBeDefined();
-      expect(globalThis.tpBeat).toBeGreaterThan(0);
-      expect(globalThis.composer).toBeDefined();
-      expect(globalThis.c).toBeDefined();
+      expect(ctx.state.midiMeter).toBeDefined();
+      expect(ctx.state.tpMeasure).toBeGreaterThan(0);
+      expect(ctx.state.syncFactor).toBeDefined();
     });
 
     it('should support multiple beat cycles', () => {

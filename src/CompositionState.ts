@@ -88,8 +88,10 @@ export interface CompositionState {
   BASE_BPM: number;
   BPM: number;
   midiBPM: number;
+  PPQ: number;
   bpmRatio3: number;
   meterRatio: number;
+  midiMeter: [number, number];
   midiMeterRatio: number;
   syncFactor: number;
 
@@ -203,8 +205,10 @@ export class CompositionStateService implements CompositionState {
   BASE_BPM = 120;
   BPM = 120;
   midiBPM = 120;
+  PPQ = 480;
   bpmRatio3 = 1;
   meterRatio = 1;
+  midiMeter: [number, number] = [4, 4];
   midiMeterRatio = 1;
   syncFactor = 1;
 
