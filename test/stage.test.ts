@@ -516,47 +516,47 @@ describe('Stage Module', () => {
 
   describe('Functions Exist', () => {
     it('should have setTuningAndInstruments function', () => {
-      expect(typeof globalThis.stage.setTuningAndInstruments).toBe('function');
+      expect(typeof stage.setTuningAndInstruments).toBe('function');
     });
 
     it('should have setOtherInstruments function', () => {
-      expect(typeof globalThis.stage.setOtherInstruments).toBe('function');
+      expect(typeof stage.setOtherInstruments).toBe('function');
     });
 
     it('should have setBinaural function', () => {
-      expect(typeof globalThis.stage.setBinaural).toBe('function');
+      expect(typeof stage.setBinaural).toBe('function');
     });
 
     it('should have stutterFade function', () => {
-      expect(typeof globalThis.stage.stutterFade).toBe('function');
+      expect(typeof stage.stutterFade).toBe('function');
     });
 
     it('should have stutterPan function', () => {
-      expect(typeof globalThis.stage.stutterPan).toBe('function');
+      expect(typeof stage.stutterPan).toBe('function');
     });
 
     it('should have stutterFX function', () => {
-      expect(typeof globalThis.stage.stutterFX).toBe('function');
+      expect(typeof stage.stutterFX).toBe('function');
     });
 
     it('should have setBalanceAndFX function', () => {
-      expect(typeof globalThis.stage.setBalanceAndFX).toBe('function');
+      expect(typeof stage.setBalanceAndFX).toBe('function');
     });
 
     it('should have crossModulateRhythms function', () => {
-      expect(typeof globalThis.stage.crossModulateRhythms).toBe('function');
+      expect(typeof stage.crossModulateRhythms).toBe('function');
     });
 
     it('should have setNoteParams function', () => {
-      expect(typeof globalThis.stage.setNoteParams).toBe('function');
+      expect(typeof stage.setNoteParams).toBe('function');
     });
 
     it('should have playNotes function', () => {
-      expect(typeof globalThis.stage.playNotes).toBe('function');
+      expect(typeof stage.playNotes).toBe('function');
     });
 
     it('should have playNotes2 function', () => {
-      expect(typeof globalThis.stage.playNotes2).toBe('function');
+      expect(typeof stage.playNotes2).toBe('function');
     });
   });
 

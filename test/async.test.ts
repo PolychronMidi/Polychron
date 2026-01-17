@@ -1,7 +1,13 @@
 // test/async.test.ts - Tests for async/promise patterns in composition engine
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CancellationTokenSource } from '../src/CancellationToken.js';
-import { CompositionProgress } from '../src/CompositionProgress.js';
+import {
+  CompositionProgress,
+  CompositionPhase,
+  CancellationTokenImpl,
+  CompositionEventBusImpl,
+  type ProgressCallback,
+} from '../src/CompositionProgress.js';
 
 describe('CancellationToken', () => {
   it('should create a token that is not cancelled initially', () => {
@@ -250,5 +256,302 @@ describe('Async Play Engine Integration', () => {
 
     const lastCall = progressCallback.mock.calls[progressCallback.mock.calls.length - 1][0];
     expect(lastCall.progress).toBeLessThan(100);
+  });
+});
+
+// Merged from step9-async.test.ts
+describe('Step 9: Async/Promise Patterns', () => {
+  describe('CancellationToken', () => {
+    let token: CancellationTokenImpl;
+
+    beforeEach(() => {
+      token = new CancellationTokenImpl();
+    });
+
+    it('should initialize as not cancelled', () => {
+      expect(token.isCancelled).toBe(false);
+    });
+
+    it('should set cancelled flag on cancel()', () => {
+      token.cancel();
+      expect(token.isCancelled).toBe(true);
+    });
+
+    it('should throw on throwIfRequested when cancelled', () => {
+      token.cancel();
+      expect(() => token.throwIfRequested()).toThrow('Composition cancelled by user');
+    });
+
+    it('should not throw on throwIfRequested when not cancelled', () => {
+      expect(() => token.throwIfRequested()).not.toThrow();
+    });
+
+    it('should remain not cancelled after throwIfRequested if not cancelled', () => {
+      token.throwIfRequested();
+      expect(token.isCancelled).toBe(false);
+    });
+  });
+
+  describe('CompositionEventBus', () => {
+    let bus: CompositionEventBusImpl;
+
+    beforeEach(() => {
+      bus = new CompositionEventBusImpl();
+    });
+
+    it('should emit and receive progress events', () => {
+      return new Promise<void>((resolve) => {
+        const progress: CompositionProgress = {
+          phase: CompositionPhase.COMPOSING,
+          progress: 50,
+          message: 'Composing section 2/4',
+          sectionIndex: 1,
+          totalSections: 4,
+        };
+
+        bus.on('progress', (data) => {
+          expect(data).toEqual(progress);
+          resolve();
+        });
+
+        bus.emit('progress', progress);
+      });
+    });
+
+    it('should emit and receive error events', () => {
+      return new Promise<void>((resolve) => {
+        const error = new Error('Test error');
+
+        bus.on('error', (err) => {
+          expect(err).toEqual(error);
+          resolve();
+        });
+
+        bus.emit('error', error);
+      });
+    });
+
+    it('should emit and receive complete events', () => {
+      return new Promise<void>((resolve) => {
+        bus.on('complete', () => {
+          expect(true).toBe(true);
+          resolve();
+        });
+
+        bus.emit('complete');
+      });
+    });
+
+    it('should emit and receive cancelled events', () => {
+      return new Promise<void>((resolve) => {
+        bus.on('cancelled', () => {
+          expect(true).toBe(true);
+          resolve();
+        });
+
+        bus.emit('cancelled');
+      });
+    });
+
+    it('should handle multiple listeners for same event', () => {
+      let count = 0;
+
+      bus.on('progress', () => {
+        count++;
+      });
+
+      bus.on('progress', () => {
+        count++;
+      });
+
+      bus.on('progress', () => {
+        count++;
+      });
+
+      bus.emit('progress', { phase: 'test', progress: 0, message: 'test' });
+
+      expect(count).toBe(3);
+    });
+
+    it('should remove listener with off()', () => {
+      return new Promise<void>((resolve) => {
+        let count = 0;
+
+        const handler = () => {
+          count++;
+        };
+
+        bus.on('progress', handler);
+        bus.off('progress', handler);
+
+        bus.emit('progress', { phase: 'test', progress: 0, message: 'test' });
+
+        setTimeout(() => {
+          expect(count).toBe(0);
+          resolve();
+        }, 10);
+      });
+    });
+
+    it('should handle errors in handlers gracefully', () => {
+      const errorHandler = () => {
+        throw new Error('Handler error');
+      };
+
+      const successHandler = () => {
+        expect(true).toBe(true);
+      };
+
+      bus.on('progress', errorHandler);
+      bus.on('progress', successHandler);
+
+      // Should not throw, despite error in first handler
+      expect(() => {
+        bus.emit('progress', { phase: 'test', progress: 0, message: 'test' });
+      }).not.toThrow();
+    });
+
+    it('should clear all listeners', () => {
+      return new Promise<void>((resolve) => {
+        let count = 0;
+
+        bus.on('progress', () => count++);
+        bus.on('complete', () => count++);
+        bus.on('error', () => count++);
+
+        bus.clear();
+
+        bus.emit('progress', { phase: 'test', progress: 0, message: 'test' });
+        bus.emit('complete');
+        bus.emit('error', new Error('test'));
+
+        setTimeout(() => {
+          expect(count).toBe(0);
+          resolve();
+        }, 50);
+      });
+    });
+  });
+
+  describe('CompositionProgress Type', () => {
+    it('should support progress-only format', () => {
+      const progress: CompositionProgress = {
+        phase: CompositionPhase.INITIALIZING,
+        progress: 0,
+        message: 'Initializing composition engine',
+      };
+      expect(progress).toBeDefined();
+    });
+
+    it('should support detailed section format', () => {
+      const progress: CompositionProgress = {
+        phase: CompositionPhase.COMPOSING,
+        progress: 45,
+        message: 'Composing section 3/6',
+        sectionIndex: 2,
+        totalSections: 6,
+        phraseIndex: 0,
+        measuresPerPhrase: 4,
+      };
+      expect(progress.sectionIndex).toBe(2);
+      expect(progress.totalSections).toBe(6);
+    });
+
+    it('should support error format', () => {
+      const error = new Error('Composition failed');
+      const progress: CompositionProgress = {
+        phase: CompositionPhase.ERROR,
+        progress: 0,
+        message: 'Composition failed',
+        error,
+        errorCode: 'COMPOSITION_ERROR',
+      };
+      expect(progress.error).toEqual(error);
+    });
+
+    it('should support timing information', () => {
+      const progress: CompositionProgress = {
+        phase: CompositionPhase.RENDERING,
+        progress: 90,
+        message: 'Rendering MIDI output',
+        elapsedMs: 5000,
+        estimatedTotalMs: 6000,
+      };
+      expect(progress.elapsedMs).toBe(5000);
+      expect(progress.estimatedTotalMs).toBe(6000);
+    });
+  });
+
+  describe('Integration: Cancellation Token + Event Bus', () => {
+    let token: CancellationTokenImpl;
+    let bus: CompositionEventBusImpl;
+
+    beforeEach(() => {
+      token = new CancellationTokenImpl();
+      bus = new CompositionEventBusImpl();
+    });
+
+    it('should support cancellation workflow', () => {
+      return new Promise<void>((resolve) => {
+        let progressCount = 0;
+        let cancelledEmitted = false;
+
+        bus.on('progress', () => {
+          progressCount++;
+        });
+
+        bus.on('cancelled', () => {
+          cancelledEmitted = true;
+        });
+
+        // Simulate composition loop
+        for (let i = 0; i < 5; i++) {
+          if (token.isCancelled) break;
+          bus.emit('progress', {
+            phase: CompositionPhase.COMPOSING,
+            progress: (i / 5) * 100,
+            message: `Section ${i}`,
+          });
+        }
+
+        // Request cancellation
+        token.cancel();
+        bus.emit('cancelled');
+
+        setTimeout(() => {
+          expect(progressCount).toBe(5);
+          expect(cancelledEmitted).toBe(true);
+          expect(token.isCancelled).toBe(true);
+          resolve();
+        }, 10);
+      });
+    });
+
+    it('should support early exit on cancellation', () => {
+      let sectionsComposed = 0;
+
+      for (let section = 0; section < 100; section++) {
+        if (token.isCancelled) break;
+        sectionsComposed++;
+
+        if (section === 5) {
+          token.cancel();
+        }
+      }
+
+      expect(sectionsComposed).toBe(6); // 0-5, then exit
+      expect(token.isCancelled).toBe(true);
+    });
+  });
+
+  describe('CompositionPhase Enum', () => {
+    it('should have all required phases', () => {
+      expect(CompositionPhase.INITIALIZING).toBe('initializing');
+      expect(CompositionPhase.COMPOSING).toBe('composing');
+      expect(CompositionPhase.RENDERING).toBe('rendering');
+      expect(CompositionPhase.COMPLETE).toBe('complete');
+      expect(CompositionPhase.CANCELLED).toBe('cancelled');
+      expect(CompositionPhase.ERROR).toBe('error');
+    });
   });
 });

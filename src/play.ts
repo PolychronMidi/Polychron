@@ -23,7 +23,7 @@ import { initializePolychronContext } from './PolychronInit.js';
 import { DIContainer } from './DIContainer.js';
 import { Stage } from './stage.js';
 import { CompositionStateService } from './CompositionState.js';
-import { CancellationToken } from './CancellationToken.js';
+import { CancellationToken, CancellationTokenImpl, CompositionEventBusImpl, CompositionPhase } from './CompositionProgress.js';
 import { ProgressCallback, CompositionProgress } from './CompositionProgress.js';
 
 // Declare global dependencies

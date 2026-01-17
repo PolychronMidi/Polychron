@@ -21,8 +21,8 @@ describe('VoiceLeadingScore', () => {
   });
 
   describe('Core Cost Calculation', () => {
-    it('should exist as a global class', () => {
-      expect(globalThis.VoiceLeadingScore).toBeDefined();
+    it('should exist as a class', () => {
+      expect(VoiceLeadingScore).toBeDefined();
       expect(typeof VoiceLeadingScore).toBe('function');
     });
 
