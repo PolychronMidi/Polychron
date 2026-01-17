@@ -395,28 +395,28 @@ export const setRhythm = (level: string): number[] => {
     case 'beat': {
       const br = beatRhythm as number[] | number;
       const shouldRandom = typeof br === 'number' ? br < 1 : br.length < 1;
-      const newRhythm = shouldRandom ? _random(numerator) : getRhythm('beat', numerator, br as number[]);
+      const newRhythm = shouldRandom ? _random(numerator) : (getRhythm('beat', numerator, br as number[]) || _random(numerator));
       beatRhythm = newRhythm as number[];
       return beatRhythm;
     }
     case 'div': {
       const dr = divRhythm as number[] | number;
       const shouldRandom = typeof dr === 'number' ? dr < 1 : dr.length < 1;
-      const newRhythm = shouldRandom ? _random(divsPerBeat, .4) : getRhythm('div', divsPerBeat, dr as number[]);
+      const newRhythm = shouldRandom ? _random(divsPerBeat, .4) : (getRhythm('div', divsPerBeat, dr as number[]) || _random(divsPerBeat, .4));
       divRhythm = newRhythm as number[];
       return divRhythm;
     }
     case 'subdiv': {
       const sr = subdivRhythm as number[] | number;
       const shouldRandom = typeof sr === 'number' ? sr < 1 : sr.length < 1;
-      const newRhythm = shouldRandom ? _random(subdivsPerDiv, .3) : getRhythm('subdiv', subdivsPerDiv, sr as number[]);
+      const newRhythm = shouldRandom ? _random(subdivsPerDiv, .3) : (getRhythm('subdiv', subdivsPerDiv, sr as number[]) || _random(subdivsPerDiv, .3));
       subdivRhythm = newRhythm as number[];
       return subdivRhythm;
     }
     case 'subsubdiv': {
       const ssr = subsubdivRhythm as number[] | number;
       const shouldRandom = typeof ssr === 'number' ? ssr < 1 : ssr.length < 1;
-      const newRhythm = shouldRandom ? _random(subsubsPerSub, .3) : getRhythm('subsubdiv', subsubsPerSub, ssr as number[]);
+      const newRhythm = shouldRandom ? _random(subsubsPerSub, .3) : (getRhythm('subsubdiv', subsubsPerSub, ssr as number[]) || _random(subsubsPerSub, .3));
       subsubdivRhythm = newRhythm as number[];
       return subsubdivRhythm;
     }
@@ -545,6 +545,18 @@ export const closestDivisor = (x: number, target: number = 2): number => {
   return x % target === 0 ? target : closest;
 };
 
+// Rhythm methods lookup for getRhythm
+const rhythmMethods: { [key: string]: Function } = {
+  binary,
+  hex,
+  onsets,
+  random,
+  prob,
+  euclid,
+  rotate,
+  morph
+};
+
 /**
  * Get rhythm using weighted selection or specific method.
  * @param {string} level - Rhythm level ('beat', 'div', 'subdiv').
@@ -558,11 +570,11 @@ export const getRhythm = (level: string, length: number, pattern: number[], meth
   const levelIndex = ['beat', 'div', 'subdiv'].indexOf(level);
 
   const checkMethod = (m: string): any => {
-    if (!(global as any)[m] || typeof (global as any)[m] !== 'function') {
+    if (!rhythmMethods[m] || typeof rhythmMethods[m] !== 'function') {
       console.warn(`Unknown rhythm method: ${m}`);
       return null;
     }
-    return (global as any)[m];
+    return rhythmMethods[m];
   };
 
   if (method) {

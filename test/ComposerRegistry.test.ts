@@ -322,7 +322,7 @@ describe('ComposerRegistry', () => {
 
       // ComposerRegistry class should have getInstance method
       expect(typeof module.ComposerRegistry.getInstance).toBe('function');
-      
+
       // Should be able to get instance
       const instance = module.ComposerRegistry.getInstance();
       expect(instance).toBeDefined();

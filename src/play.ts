@@ -10,7 +10,9 @@ import './time.js';        // Timing functions
 import './composers.js';   // Composer classes
 import './motifs.js';      // Motif generation
 import './rhythm.js';      // Rhythm generation
+import { playDrums, playDrums2 } from './rhythm.js';
 import './fxManager.js';   // FX processing
+import { fxManager } from './fxManager.js';
 import './stage.js';       // Audio processing
 import './structure.js';   // Section structure
 
@@ -100,7 +102,7 @@ const registerCoreServices = (container: DIContainer) => {
   // Register FX Manager (singleton)
   container.register(
     'fxManager',
-    () => g.fxManager,
+    () => fxManager,
     'singleton'
   );
 
@@ -257,7 +259,7 @@ const initializePlayEngine = async (
           g.stage.setOtherInstruments();
           g.stage.setBinaural();
           g.stage.setBalanceAndFX();
-          g.playDrums();
+          playDrums();
           g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3);
           g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3);
           g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3) : g.stage.stutterPan(g.stutterPanCHs);
@@ -291,7 +293,7 @@ const initializePlayEngine = async (
           g.stage.setOtherInstruments();
           g.stage.setBinaural();
           g.stage.setBalanceAndFX();
-          g.playDrums2();
+          playDrums2();
           g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3);
           g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3);
           g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3) : g.stage.stutterPan(g.stutterPanCHs);

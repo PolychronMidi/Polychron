@@ -61,7 +61,7 @@ export class PlayNotes {
     this.setNoteParams();
     this.crossModulateRhythms();
     const noteObjects = globalThis.composer ? globalThis.composer.getNotes() : [];
-    const motifNotes = globalThis.activeMotif ? globalThis.applyMotifToNotes(noteObjects, globalThis.activeMotif) : noteObjects;
+    const motifNotes = globalThis.activeMotif ? globalThis.activeMotif.applyToNotes(noteObjects) : noteObjects;
     if ((this.crossModulation + this.lastCrossMod) / globalThis.rf(1.4, 2.6) > globalThis.rv(globalThis.rf(1.8, 2.8), [-.2, -.3], .05)) {
       motifNotes.forEach(({ note }: { note: number }) => {
         // Play source channels
@@ -124,7 +124,7 @@ export class PlayNotes {
     let bassCH: number;
     let bassNote: number;
     const noteObjects = globalThis.composer ? globalThis.composer.getNotes() : [];
-    const motifNotes = globalThis.activeMotif ? globalThis.applyMotifToNotes(noteObjects, globalThis.activeMotif) : noteObjects;
+    const motifNotes = globalThis.activeMotif ? globalThis.activeMotif.applyToNotes(noteObjects) : noteObjects;
     if (true) {
       motifNotes.forEach(({ note }: { note: number }) => {
         globalThis.source.filter((sourceCH: number) =>

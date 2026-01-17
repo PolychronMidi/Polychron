@@ -4,6 +4,7 @@
 import { TimingCalculator } from './time/TimingCalculator.js';
 import { TimingContext } from './time/TimingContext.js';
 import { LayerManager } from './time/LayerManager.js';
+import { setRhythm, trackRhythm } from './rhythm.js';
 
 // Re-export classes for backward compatibility
 export { TimingCalculator, TimingContext, LayerManager };
@@ -81,11 +82,6 @@ declare const composer: any;
 declare const c: any;
 declare const p: any;
 declare const m: typeof Math;
-declare const setRhythm: any;
-declare const trackBeatRhythm: any;
-declare const trackDivRhythm: any;
-declare const trackSubdivRhythm: any;
-declare const trackSubsubdivRhythm: any;
 declare const logUnit: any;
 
 let timingCalculator: TimingCalculator | null = null;
@@ -217,11 +213,11 @@ const setUnitTiming = (unitType: string): void => {
       g.measureStart = g.phraseStart + g.measureIndex * g.tpMeasure;
       g.measureStartTime = g.phraseStartTime + g.measureIndex * g.spMeasure;
       setMidiTiming();
-      g.beatRhythm = g.setRhythm('beat');
+      g.beatRhythm = setRhythm('beat');
       break;
 
     case 'beat':
-      g.trackRhythm('beat');
+      trackRhythm('beat');
       g.tpBeat = g.tpMeasure / g.numerator;
       g.spBeat = g.tpBeat / g.tpSec;
       g.trueBPM = 60 / g.spBeat;
@@ -232,33 +228,33 @@ const setUnitTiming = (unitType: string): void => {
       g.beatStart = g.phraseStart + g.measureIndex * g.tpMeasure + g.beatIndex * g.tpBeat;
       g.beatStartTime = g.measureStartTime + g.beatIndex * g.spBeat;
       g.divsPerBeat = g.composer ? g.composer.getDivisions() : 1;
-      g.divRhythm = g.setRhythm('div');
+      g.divRhythm = setRhythm('div');
       break;
 
     case 'division':
-      g.trackRhythm('div');
+      trackRhythm('div');
       g.tpDiv = g.tpBeat / Math.max(1, g.divsPerBeat);
       g.spDiv = g.tpDiv / g.tpSec;
       g.divStart = g.beatStart + g.divIndex * g.tpDiv;
       g.divStartTime = g.beatStartTime + g.divIndex * g.spDiv;
       g.subdivsPerDiv = Math.max(1, g.composer ? g.composer.getSubdivisions() : 1);
       g.subdivFreq = g.subdivsPerDiv * g.divsPerBeat * g.numerator * g.meterRatio;
-      g.subdivRhythm = g.setRhythm('subdiv');
+      g.subdivRhythm = setRhythm('subdiv');
       break;
 
     case 'subdivision':
-      g.trackRhythm('subdiv');
+      trackRhythm('subdiv');
       g.tpSubdiv = g.tpDiv / Math.max(1, g.subdivsPerDiv);
       g.spSubdiv = g.tpSubdiv / g.tpSec;
       g.subdivsPerMinute = 60 / g.spSubdiv;
       g.subdivStart = g.divStart + g.subdivIndex * g.tpSubdiv;
       g.subdivStartTime = g.divStartTime + g.subdivIndex * g.spSubdiv;
       g.subsubdivsPerSub = g.composer ? g.composer.getSubsubdivs() : 1;
-      g.subsubdivRhythm = g.setRhythm('subsubdiv');
+      g.subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
     case 'subsubdivision':
-      g.trackRhythm('subsubdiv');
+      trackRhythm('subsubdiv');
       g.tpSubsubdiv = g.tpSubdiv / Math.max(1, g.subsubdivsPerSub);
       g.spSubsubdiv = g.tpSubsubdiv / g.tpSec;
       g.subsubdivsPerMinute = 60 / g.spSubsubdiv;
