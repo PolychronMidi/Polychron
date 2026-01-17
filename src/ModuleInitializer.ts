@@ -3,7 +3,7 @@
  * Ensures modules initialize in correct dependency order with proper error handling and rollback
  */
 
-import { PolychronContext } from './PolychronContext.js';
+import { PolychronContext, type IPolychronContext } from './PolychronContext.js';
 import { PolychronError, ErrorCode } from './PolychronError.js';
 
 /**
@@ -21,14 +21,14 @@ export interface IModuleInitializer {
    * Validate configuration before initialization
    * @returns true if config is valid, false or throw if invalid
    */
-  validateConfig(context: PolychronContext): boolean;
+  validateConfig(context: IPolychronContext): boolean;
 
   /**
    * Initialize the module with the given context
    * Called after all lower-priority modules initialized
    * @throws PolychronError on initialization failure
    */
-  init(context: PolychronContext): void;
+  init(context: IPolychronContext): void;
 
   /**
    * Clean up/destroy the module
@@ -100,7 +100,7 @@ export class ModuleRegistry {
    * Validates ALL modules first, then initializes them
    * @throws PolychronError on initialization or validation failure (all initialized modules are destroyed)
    */
-  initAll(context: PolychronContext): void {
+  initAll(context: IPolychronContext): void {
     if (this.isInitialized) {
       throw new PolychronError(
         ErrorCode.INITIALIZATION_ERROR,

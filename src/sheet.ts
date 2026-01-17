@@ -36,49 +36,29 @@ export const COMPOSERS = DEFAULT_CONFIG.composers;
 export const SILENT_OUTRO_SECONDS = DEFAULT_CONFIG.silentOutroSeconds;
 
 // Export to globalThis for backward compatibility
-declare global {
-  var NUMERATOR: typeof NUMERATOR;
-  var DENOMINATOR: typeof DENOMINATOR;
-  var DIVISIONS: typeof DIVISIONS;
-  var SUBDIVISIONS: typeof SUBDIVISIONS;
-  var SUBSUBDIVS: typeof SUBSUBDIVS;
-  var VOICES: typeof VOICES;
-  var OCTAVE: typeof OCTAVE;
-  var SECTIONS: typeof SECTIONS;
-  var PHRASES_PER_SECTION: typeof PHRASES_PER_SECTION;
-  var SECTION_TYPES: typeof SECTION_TYPES;
-  var BPM: number;
-  var PPQ: number;
-  var LOG: string;
-  var BINAURAL: typeof BINAURAL;
-  var TUNING_FREQ: number;
-  var SILENT_OUTRO_SECONDS: number;
-  var COMPOSERS: typeof COMPOSERS;
-}
-
-globalThis.NUMERATOR = NUMERATOR;
-globalThis.DENOMINATOR = DENOMINATOR;
-globalThis.DIVISIONS = DIVISIONS;
-globalThis.SUBDIVISIONS = SUBDIVISIONS;
-globalThis.SUBSUBDIVS = SUBSUBDIVS;
-globalThis.VOICES = VOICES;
-globalThis.OCTAVE = OCTAVE;
-globalThis.SECTIONS = SECTIONS;
-globalThis.PHRASES_PER_SECTION = PHRASES_PER_SECTION;
-globalThis.SECTION_TYPES = SECTION_TYPES;
-globalThis.BPM = BPM;
-globalThis.PPQ = PPQ;
-globalThis.LOG = LOG;
-globalThis.BINAURAL = BINAURAL;
-globalThis.TUNING_FREQ = TUNING_FREQ;
-globalThis.SILENT_OUTRO_SECONDS = SILENT_OUTRO_SECONDS;
-globalThis.COMPOSERS = COMPOSERS;
+(globalThis as any).NUMERATOR = NUMERATOR;
+(globalThis as any).DENOMINATOR = DENOMINATOR;
+(globalThis as any).DIVISIONS = DIVISIONS;
+(globalThis as any).SUBDIVISIONS = SUBDIVISIONS;
+(globalThis as any).SUBSUBDIVS = SUBSUBDIVS;
+(globalThis as any).VOICES = VOICES;
+(globalThis as any).OCTAVE = OCTAVE;
+(globalThis as any).SECTIONS = SECTIONS;
+(globalThis as any).PHRASES_PER_SECTION = PHRASES_PER_SECTION;
+(globalThis as any).SECTION_TYPES = SECTION_TYPES;
+(globalThis as any).BPM = BPM;
+(globalThis as any).PPQ = PPQ;
+(globalThis as any).LOG = LOG;
+(globalThis as any).BINAURAL = BINAURAL;
+(globalThis as any).TUNING_FREQ = TUNING_FREQ;
+(globalThis as any).SILENT_OUTRO_SECONDS = SILENT_OUTRO_SECONDS;
+(globalThis as any).COMPOSERS = COMPOSERS;
 
 // Instrument variables from config
-globalThis.primaryInstrument = primaryInstrument;
-globalThis.secondaryInstrument = secondaryInstrument;
-globalThis.otherInstruments = otherInstruments;
-globalThis.bassInstrument = bassInstrument;
-globalThis.bassInstrument2 = bassInstrument2;
-globalThis.otherBassInstruments = otherBassInstruments;
-globalThis.drumSets = drumSets;
+(globalThis as any).primaryInstrument = primaryInstrument;
+(globalThis as any).secondaryInstrument = secondaryInstrument;
+(globalThis as any).otherInstruments = otherInstruments;
+(globalThis as any).bassInstrument = bassInstrument;
+(globalThis as any).bassInstrument2 = bassInstrument2;
+(globalThis as any).otherBassInstruments = otherBassInstruments;
+(globalThis as any).drumSets = drumSets;
