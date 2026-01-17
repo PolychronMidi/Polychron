@@ -350,11 +350,11 @@ const FX = [1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95];
  */
 const allNotesOff = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
-  if ((globalThis as any).c) {
-    if (Array.isArray((globalThis as any).c)) {
-      (globalThis as any).c.push(...events);
-    } else if ((globalThis as any).c.push) {
-      (globalThis as any).c.push(...events);
+  if (g.c) {
+    if (Array.isArray(g.c)) {
+      g.c.push(...events);
+    } else if (g.c.push) {
+      g.c.push(...events);
     }
   }
   return events;
@@ -365,11 +365,11 @@ const allNotesOff = (tick: number = measureStart): any[] => {
  */
 const muteAll = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
-  if ((globalThis as any).c) {
-    if (Array.isArray((globalThis as any).c)) {
-      (globalThis as any).c.push(...events);
-    } else if ((globalThis as any).c.push) {
-      (globalThis as any).c.push(...events);
+  if (g.c) {
+    if (Array.isArray(g.c)) {
+      g.c.push(...events);
+    } else if (g.c.push) {
+      g.c.push(...events);
     }
   }
   return events;
@@ -382,7 +382,7 @@ const rlFX = (ch: number, cc: number, min: number, max: number, condition?: (c: 
   const useCondition = condition && condition(ch);
   const actualMin = useCondition && condMin !== undefined ? condMin : min;
   const actualMax = useCondition && condMax !== undefined ? condMax : max;
-  const beatStartValue = (globalThis as any).beatStart !== undefined ? (globalThis as any).beatStart : beatStart;
+  const beatStartValue = g.beatStart !== undefined ? g.beatStart : beatStart;
   return { tick: beatStartValue - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
 };;
 // Export for global use
@@ -457,125 +457,122 @@ declare global {
   var binauralR: number[];
 }
 
-(globalThis as any).m = m;
-(globalThis as any).clamp = clamp;
-(globalThis as any).modClamp = modClamp;
-(globalThis as any).lowModClamp = lowModClamp;
-(globalThis as any).highModClamp = highModClamp;
-(globalThis as any).scaleClamp = scaleClamp;
-(globalThis as any).scaleBoundClamp = scaleBoundClamp;
-(globalThis as any).softClamp = softClamp;
-(globalThis as any).stepClamp = stepClamp;
-(globalThis as any).logClamp = logClamp;
-(globalThis as any).expClamp = expClamp;
-(globalThis as any).rf = rf;
-(globalThis as any).randomFloat = randomFloat;
-(globalThis as any).ri = ri;
-(globalThis as any).randomInt = randomInt;
-(globalThis as any).rl = rl;
-(globalThis as any).randomLimitedChange = randomLimitedChange;
-(globalThis as any).rv = rv;
-(globalThis as any).randomVariation = randomVariation;
-(globalThis as any).rw = rw;
-(globalThis as any).randomWeightedInRange = randomWeightedInRange;
-(globalThis as any).ra = ra;
-(globalThis as any).randomInRangeOrArray = randomInRangeOrArray;
-(globalThis as any).normalizeWeights = normalizeWeights;
-(globalThis as any).randomWeightedInArray = randomWeightedInArray;
-(globalThis as any).randomWeightedSelection = randomWeightedSelection;
-(globalThis as any).cCH1 = cCH1;
-(globalThis as any).cCH2 = cCH2;
-(globalThis as any).cCH3 = cCH3;
-(globalThis as any).lCH1 = lCH1;
-(globalThis as any).rCH1 = rCH1;
-(globalThis as any).lCH2 = lCH2;
-(globalThis as any).rCH2 = rCH2;
-(globalThis as any).lCH3 = lCH3;
-(globalThis as any).rCH3 = rCH3;
-(globalThis as any).lCH4 = lCH4;
-(globalThis as any).rCH4 = rCH4;
-(globalThis as any).lCH5 = lCH5;
-(globalThis as any).rCH5 = rCH5;
-(globalThis as any).lCH6 = lCH6;
-(globalThis as any).rCH6 = rCH6;
-(globalThis as any).drumCH = drumCH;
-(globalThis as any).bass = bass;
-(globalThis as any).source = source;
-(globalThis as any).allCHs = allCHs;
-(globalThis as any).binauralL = binauralL;
-(globalThis as any).binauralR = binauralR;
-(globalThis as any).reflectionBinaural = reflectionBinaural;
-(globalThis as any).bass = bass;
-(globalThis as any).bassBinaural = bassBinaural;
-(globalThis as any).source = source;
-(globalThis as any).source2 = source2;
-(globalThis as any).reflection = reflection;
-(globalThis as any).reflect = reflect;
-(globalThis as any).reflect2 = reflect2;
-(globalThis as any).flipBinF = flipBinF;
-(globalThis as any).flipBinT = flipBinT;
-(globalThis as any).flipBinF2 = flipBinF2;
-(globalThis as any).flipBinT2 = flipBinT2;
-(globalThis as any).flipBinF3 = flipBinF3;
-(globalThis as any).flipBinT3 = flipBinT3;
-(globalThis as any).stutterFadeCHs = stutterFadeCHs;
-(globalThis as any).allCHs = allCHs;
-(globalThis as any).stutterPanCHs = stutterPanCHs;
-(globalThis as any).FX = FX;
+// Shorthand alias for global registrations
+const g = globalThis as any;
+
+g.m = m;
+g.clamp = clamp;
+g.modClamp = modClamp;
+g.lowModClamp = lowModClamp;
+g.highModClamp = highModClamp;
+g.scaleClamp = scaleClamp;
+g.scaleBoundClamp = scaleBoundClamp;
+g.softClamp = softClamp;
+g.stepClamp = stepClamp;
+g.logClamp = logClamp;
+g.expClamp = expClamp;
+g.rf = rf;
+g.randomFloat = randomFloat;
+g.ri = ri;
+g.randomInt = randomInt;
+g.rl = rl;
+g.randomLimitedChange = randomLimitedChange;
+g.rv = rv;
+g.randomVariation = randomVariation;
+g.rw = rw;
+g.randomWeightedInRange = randomWeightedInRange;
+g.ra = ra;
+g.randomInRangeOrArray = randomInRangeOrArray;
+g.normalizeWeights = normalizeWeights;
+g.randomWeightedInArray = randomWeightedInArray;
+g.randomWeightedSelection = randomWeightedSelection;
+g.cCH1 = cCH1;
+g.cCH2 = cCH2;
+g.cCH3 = cCH3;
+g.lCH1 = lCH1;
+g.rCH1 = rCH1;
+g.lCH2 = lCH2;
+g.rCH2 = rCH2;
+g.lCH3 = lCH3;
+g.rCH3 = rCH3;
+g.lCH4 = lCH4;
+g.rCH4 = rCH4;
+g.lCH5 = lCH5;
+g.rCH5 = rCH5;
+g.lCH6 = lCH6;
+g.rCH6 = rCH6;
+g.drumCH = drumCH;
+g.bass = bass;
+g.source = source;
+g.allCHs = allCHs;
+g.binauralL = binauralL;
+g.binauralR = binauralR;
+g.reflectionBinaural = reflectionBinaural;
+g.bassBinaural = bassBinaural;
+g.source2 = source2;
+g.reflection = reflection;
+g.reflect = reflect;
+g.reflect2 = reflect2;
+g.flipBinF = flipBinF;
+g.flipBinT = flipBinT;
+g.flipBinF2 = flipBinF2;
+g.flipBinT2 = flipBinT2;
+g.flipBinF3 = flipBinF3;
+g.flipBinT3 = flipBinT3;
+g.stutterFadeCHs = stutterFadeCHs;
+g.stutterPanCHs = stutterPanCHs;
+g.FX = FX;
 
 // Export critical timing variables needed by composers
-(globalThis as any).bpmRatio = bpmRatio;
-(globalThis as any).bpmRatio2 = bpmRatio2;
-(globalThis as any).bpmRatio3 = bpmRatio3;
-(globalThis as any).measureCount = measureCount;
-(globalThis as any).numerator = numerator;
-(globalThis as any).beatCount = beatCount;
-(globalThis as any).beatsUntilBinauralShift = beatsUntilBinauralShift;
-(globalThis as any).flipBin = flipBin;
-(globalThis as any).binauralFreqOffset = binauralFreqOffset;
-(globalThis as any).binauralPlus = binauralPlus;
-(globalThis as any).binauralMinus = binauralMinus;
-(globalThis as any).cCH1 = cCH1;
-(globalThis as any).cCH2 = cCH2;
-(globalThis as any).cCH3 = cCH3;
-(globalThis as any).lCH1 = lCH1;
-(globalThis as any).lCH2 = lCH2;
-(globalThis as any).lCH3 = lCH3;
-(globalThis as any).lCH4 = lCH4;
-(globalThis as any).lCH5 = lCH5;
-(globalThis as any).lCH6 = lCH6;
-(globalThis as any).rCH1 = rCH1;
-(globalThis as any).rCH2 = rCH2;
-(globalThis as any).rCH3 = rCH3;
-(globalThis as any).rCH4 = rCH4;
-(globalThis as any).rCH5 = rCH5;
-(globalThis as any).rCH6 = rCH6;
-(globalThis as any).drumCH = drumCH;
-(globalThis as any).allNotesOff = allNotesOff;
-(globalThis as any).muteAll = muteAll;
-(globalThis as any).rlFX = rlFX;
-(globalThis as any).tpSec = tpSec;
-(globalThis as any).tpSubsubdiv = tpSubsubdiv;
-(globalThis as any).measureStart = measureStart;
-(globalThis as any).beatStart = beatStart;
-(globalThis as any).divStart = divStart;
-(globalThis as any).subdivStart = subdivStart;
-(globalThis as any).subsubdivStart = subsubdivStart;
-(globalThis as any).subdivsPerDiv = subdivsPerDiv;
-(globalThis as any).subdivsPerBeat = subdivsPerBeat;
-(globalThis as any).subsubsPerSub = subsubsPerSub;
-(globalThis as any).divsPerBeat = divsPerBeat;
-(globalThis as any).tuningPitchBend = tuningPitchBend;
-(globalThis as any).velocity = velocity;
-(globalThis as any).beatRhythm = beatRhythm;
-(globalThis as any).divRhythm = divRhythm;
-(globalThis as any).subdivRhythm = subdivRhythm;
-(globalThis as any).subsubdivRhythm = subsubdivRhythm;
-(globalThis as any).beatsOn = beatsOn;
-(globalThis as any).beatsOff = beatsOff;
-(globalThis as any).divsOn = divsOn;
-(globalThis as any).divsOff = divsOff;
-(globalThis as any).subdivsOn = subdivsOn;
-(globalThis as any).subdivsOff = subdivsOff;
-(globalThis as any).binauralL = binauralL;
-(globalThis as any).binauralR = binauralR;
+g.bpmRatio = bpmRatio;
+g.bpmRatio2 = bpmRatio2;
+g.bpmRatio3 = bpmRatio3;
+g.measureCount = measureCount;
+g.numerator = numerator;
+g.beatCount = beatCount;
+g.beatsUntilBinauralShift = beatsUntilBinauralShift;
+g.flipBin = flipBin;
+g.binauralFreqOffset = binauralFreqOffset;
+g.binauralPlus = binauralPlus;
+g.binauralMinus = binauralMinus;
+g.cCH1 = cCH1;
+g.cCH2 = cCH2;
+g.cCH3 = cCH3;
+g.lCH1 = lCH1;
+g.lCH2 = lCH2;
+g.lCH3 = lCH3;
+g.lCH4 = lCH4;
+g.lCH5 = lCH5;
+g.lCH6 = lCH6;
+g.rCH1 = rCH1;
+g.rCH2 = rCH2;
+g.rCH3 = rCH3;
+g.rCH4 = rCH4;
+g.rCH5 = rCH5;
+g.rCH6 = rCH6;
+g.allNotesOff = allNotesOff;
+g.muteAll = muteAll;
+g.rlFX = rlFX;
+g.tpSec = tpSec;
+g.tpSubsubdiv = tpSubsubdiv;
+g.measureStart = measureStart;
+g.beatStart = beatStart;
+g.divStart = divStart;
+g.subdivStart = subdivStart;
+g.subsubdivStart = subsubdivStart;
+g.subdivsPerDiv = subdivsPerDiv;
+g.subdivsPerBeat = subdivsPerBeat;
+g.subsubsPerSub = subsubsPerSub;
+g.divsPerBeat = divsPerBeat;
+g.tuningPitchBend = tuningPitchBend;
+g.velocity = velocity;
+g.beatRhythm = beatRhythm;
+g.divRhythm = divRhythm;
+g.subdivRhythm = subdivRhythm;
+g.subsubdivRhythm = subsubdivRhythm;
+g.beatsOn = beatsOn;
+g.beatsOff = beatsOff;
+g.divsOn = divsOn;
+g.divsOff = divsOff;
+g.subdivsOn = subdivsOn;
+g.subdivsOff = subdivsOff;
