@@ -241,7 +241,7 @@ describe('play.js - Orchestrator Module', () => {
       ctx.state.PPQ = 480;
 
       getMidiTiming(ctx);
-      
+
       ctx.state.measureStart = 0;
 
       setUnitTiming('measure', ctx);
@@ -434,7 +434,7 @@ describe('play.js - Orchestrator Module', () => {
       ctx.state.PPQ = 480;
       getMidiTiming(ctx);
       ctx.state.measureStart = 0;
-      
+
       setUnitTiming('measure', ctx);
       const tpMeasure = ctx.state.tpMeasure;
 

@@ -30,9 +30,9 @@ import { ProgressCallback, CompositionProgress } from './CompositionProgress.js'
 import { rf, ri, ra, clamp } from './utils.js';
 
 // Import composition context
-import { 
+import {
   createCompositionContext,
-  ICompositionContext 
+  ICompositionContext
 } from './CompositionContext.js';
 
 // Declare global dependencies
@@ -101,8 +101,8 @@ const getCurrentCompositionContext = (): ICompositionContext | null => {
 /**
  * Helper to get a value from context state, with fallback to global
  * Part of Step 13: Remove global fallbacks (gradual migration)
- * 
- * Usage: 
+ *
+ * Usage:
  *   const bpm = getContextValue((ctx) => ctx.state.BPM, 'BPM');
  *   const beatIndex = getContextValue((ctx) => ctx.state.beatIndex);
  */
@@ -118,12 +118,12 @@ const getContextValue = <T>(
       // Fallback to global if context property doesn't exist
     }
   }
-  
+
   // Fallback to global value
   if (globalKey) {
     return (globalThis as any)[globalKey];
   }
-  
+
   return undefined as any;
 };
 
@@ -431,7 +431,7 @@ const initializePlayEngine = async (
 
 // Export initialization function and context accessors (Step 12: Context threading)
 // Export helper for Step 13: Remove global fallbacks (gradual migration)
-export { 
+export {
   initializePlayEngine,
   getCurrentCompositionContext,
   setCurrentCompositionContext,

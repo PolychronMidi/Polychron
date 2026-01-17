@@ -1099,8 +1099,8 @@ describe('getPolyrhythm Edge Cases', () => {
     const originalSpMeasure = ctx.state.spMeasure;
 
     // Simulate fallback: change primary meter and recalculate
-    ctx.state.numerator = 7; 
-    ctx.state.denominator = 9; 
+    ctx.state.numerator = 7;
+    ctx.state.denominator = 9;
     getMidiTiming(ctx); // CRITICAL: this must be called after meter change
     setUnitTiming('measure', ctx); // Recompute spMeasure
 
