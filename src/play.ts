@@ -326,6 +326,7 @@ const initializePlayEngine = async (
       [g.numerator, g.denominator] = g.composer.getMeter();
       g.getMidiTiming(ctx);
       g.getPolyrhythm(ctx);
+      g.syncStateToGlobals(ctx);  // Sync timing values from ctx.state to globals for runtime
 
       g.LM.activate('primary', false);
       g.setUnitTiming('phrase', ctx);
@@ -364,6 +365,7 @@ const initializePlayEngine = async (
 
       g.LM.activate('poly', true);
       g.getMidiTiming(ctx);
+      g.syncStateToGlobals(ctx);  // Sync timing values from ctx.state to globals for runtime
       g.setUnitTiming('phrase', ctx);
       for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
         g.setUnitTiming('measure', ctx);

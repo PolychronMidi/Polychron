@@ -1469,3 +1469,120 @@ describe('Multi-layer timing consistency', () => {
     expect(ctx.state.measuresPerPhrase1).not.toBe(ctx.state.measuresPerPhrase2);
   });
 });
+
+describe('Section absolute time consistency', () => {
+  beforeEach(() => {
+    setupGlobalState();
+    ctx = createTestContext();
+    globalThis.composer = globalThis.composer || mockComposer;
+  });
+
+  it('should maintain equal absolute time for sections across primary and poly layers', () => {
+    const g = globalThis as any;
+    
+    // Setup primary meter (4/4 at 120 BPM)
+    ctx.state.numerator = 4;
+    ctx.state.denominator = 4;
+    ctx.state.BPM = 120;
+    getMidiTiming(ctx);
+    
+    // Create a mock composer that returns different meters
+    const mockPolyComposer = {
+      ...mockComposer,
+      getMeter: (isPoly?: boolean) => isPoly ? [3, 4] : [4, 4]
+    };
+    g.composer = mockPolyComposer;
+    ctx.state.composer = mockPolyComposer;
+    
+    // Compute polyrhythm alignment
+    getPolyrhythm(ctx);
+    
+    // Verify we have measuresPerPhrase1 and measuresPerPhrase2
+    expect(ctx.state.measuresPerPhrase1).toBeDefined();
+    expect(ctx.state.measuresPerPhrase2).toBeDefined();
+    expect(ctx.state.measuresPerPhrase1).toBeGreaterThan(0);
+    expect(ctx.state.measuresPerPhrase2).toBeGreaterThan(0);
+    
+    // Calculate primary layer phrase time (in ticks)
+    g.LM.activate('primary', false);
+    g.setUnitTiming('phrase', ctx);
+    const primaryTpPhrase = ctx.state.tpPhrase || g.tpPhrase;
+    const primarySpPhrase = ctx.state.spPhrase || g.spPhrase;
+    
+    // For poly layer, need to recompute timing with poly meter
+    ctx.state.numerator = 3;
+    ctx.state.denominator = 4;
+    getMidiTiming(ctx);
+    
+    // Calculate poly layer phrase time (in ticks)
+    g.LM.activate('poly', true);
+    g.setUnitTiming('phrase', ctx);
+    const polyTpPhrase = ctx.state.tpPhrase || g.tpPhrase;
+    const polySpPhrase = ctx.state.spPhrase || g.spPhrase;
+    
+    // The key constraint: both layers must have the same absolute time duration
+    // This means: primaryMeasures * tpMeasure_primary == polyMeasures * tpMeasure_poly
+    // In absolute time (seconds): primarySpPhrase should equal polySpPhrase
+    // (or very close, within floating point precision)
+    expect(Math.abs(primarySpPhrase - polySpPhrase)).toBeLessThan(0.0001);
+  });
+
+  it('should use correct measuresPerPhrase for each layer', () => {
+    const g = globalThis as any;
+    
+    ctx.state.numerator = 4;
+    ctx.state.denominator = 4;
+    ctx.state.BPM = 120;
+    getMidiTiming(ctx);
+    
+    const mockPolyComposer = {
+      ...mockComposer,
+      getMeter: (isPoly?: boolean) => isPoly ? [3, 4] : [4, 4]
+    };
+    g.composer = mockPolyComposer;
+    ctx.state.composer = mockPolyComposer;
+    
+    getPolyrhythm(ctx);
+    
+    // Primary layer should use measuresPerPhrase1
+    g.LM.activate('primary', false);
+    g.setUnitTiming('phrase', ctx);
+    const primaryMeasures = g.measuresPerPhrase || ctx.state.measuresPerPhrase;
+    expect(primaryMeasures).toBe(ctx.state.measuresPerPhrase1);
+    
+    // Poly layer should use measuresPerPhrase2
+    ctx.state.numerator = 3;
+    ctx.state.denominator = 4;
+    getMidiTiming(ctx);
+    g.LM.activate('poly', true);
+    g.setUnitTiming('phrase', ctx);
+    const polyMeasures = g.measuresPerPhrase || ctx.state.measuresPerPhrase;
+    expect(polyMeasures).toBe(ctx.state.measuresPerPhrase2);
+  });
+
+  it('should reject polyrhythms where total duration would be unequal', () => {
+    ctx.state.numerator = 4;
+    ctx.state.denominator = 4;
+    ctx.state.BPM = 120;
+    getMidiTiming(ctx);
+    
+    const mockPolyComposer = {
+      ...mockComposer,
+      getMeter: (isPoly?: boolean) => isPoly ? [7, 8] : [4, 4]
+    };
+    (globalThis as any).composer = mockPolyComposer;
+    ctx.state.composer = mockPolyComposer;
+    
+    // This should find a valid alignment or reject
+    getPolyrhythm(ctx);
+    
+    // If a valid alignment was found, verify it produces equal time
+    if (ctx.state.measuresPerPhrase1 && ctx.state.measuresPerPhrase2) {
+      const primaryTime = ctx.state.measuresPerPhrase1 * ctx.state.meterRatio;
+      const polyTime = ctx.state.measuresPerPhrase2 * ctx.state.polyMeterRatio;
+      
+      // Times should be equal (within floating point precision)
+      expect(Math.abs(primaryTime - polyTime)).toBeLessThan(0.0001);
+    }
+  });
+});
