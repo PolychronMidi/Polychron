@@ -24,7 +24,7 @@ describe('CompositionProgress', () => {
   it('should emit progress events', () => {
     let called = false;
     const callback: ProgressCallback = () => { called = true; };
-    
+
     eventBus.on('progress', callback);
     eventBus.emit('progress', {
       phase: 'initialization',
@@ -38,7 +38,7 @@ describe('CompositionProgress', () => {
   it('should pass correct data to listeners', () => {
     let receivedData: any = null;
     const callback: ProgressCallback = (data) => { receivedData = data; };
-    
+
     eventBus.on('progress', callback);
     eventBus.emit('progress', {
       phase: 'composing',
@@ -55,7 +55,7 @@ describe('CompositionProgress', () => {
     let count = 0;
     const callback1: ProgressCallback = () => { count++; };
     const callback2: ProgressCallback = () => { count++; };
-    
+
     eventBus.on('progress', callback1);
     eventBus.on('progress', callback2);
     eventBus.emit('progress', {

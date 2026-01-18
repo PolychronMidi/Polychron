@@ -8,17 +8,10 @@ const path = require('path');
  * Scan source files for forbidden patterns that would indicate malformed code.
  */
 test('source files should not contain literal escape sequences in comments', () => {
-  const sourceFiles = [
-    'backstage.js',
-    'composers.js',
-    'play.js',
-    'rhythm.js',
-    'sheet.js',
-    'stage.js',
-    'time.js',
-    'venue.js',
-    'writer.js'
-  ];
+  const srcDir = path.join(__dirname, '..', 'src');
+  const sourceFiles = fs.readdirSync(srcDir, { withFileTypes: true })
+    .filter(f => f.isFile() && (f.name.endsWith('.js') || f.name.endsWith('.ts')) && !f.name.endsWith('.d.ts'))
+    .map(f => f.name);
 
   const forbiddenPatterns = [
     { pattern: /\\n(?!["'])/g, name: 'literal \\n outside strings' },
@@ -80,17 +73,10 @@ test('source files should not contain literal escape sequences in comments', () 
  * Ensure all source files end with a newline.
  */
 test('source files should end with newline', () => {
-  const sourceFiles = [
-    'backstage.js',
-    'composers.js',
-    'play.js',
-    'rhythm.js',
-    'sheet.js',
-    'stage.js',
-    'time.js',
-    'venue.js',
-    'writer.js'
-  ];
+  const srcDir = path.join(__dirname, '..', 'src');
+  const sourceFiles = fs.readdirSync(srcDir, { withFileTypes: true })
+    .filter(f => f.isFile() && (f.name.endsWith('.js') || f.name.endsWith('.ts')) && !f.name.endsWith('.d.ts'))
+    .map(f => f.name);
 
   const violations = [];
 
@@ -150,17 +136,10 @@ test('critical timing functions should have JSDoc', () => {
  * Check for common typos in the codebase.
  */
 test('source files should not contain common typos', () => {
-  const sourceFiles = [
-    'backstage.js',
-    'composers.js',
-    'play.js',
-    'rhythm.js',
-    'sheet.js',
-    'stage.js',
-    'time.js',
-    'venue.js',
-    'writer.js'
-  ];
+  const srcDir = path.join(__dirname, '..', 'src');
+  const sourceFiles = fs.readdirSync(srcDir, { withFileTypes: true })
+    .filter(f => f.isFile() && (f.name.endsWith('.js') || f.name.endsWith('.ts')) && !f.name.endsWith('.d.ts'))
+    .map(f => f.name);
 
   const typoPatterns = [
     { pattern: /\brhtyhm\b/gi, correct: 'rhythm' },
@@ -213,17 +192,10 @@ test('source files should not contain common typos', () => {
  * Verify naming conventions: camelCase for functions/variables.
  */
 test('function names should follow camelCase convention', () => {
-  const sourceFiles = [
-    'backstage.js',
-    'composers.js',
-    'play.js',
-    'rhythm.js',
-    'sheet.js',
-    'stage.js',
-    'time.js',
-    'venue.js',
-    'writer.js'
-  ];
+  const srcDir = path.join(__dirname, '..', 'src');
+  const sourceFiles = fs.readdirSync(srcDir, { withFileTypes: true })
+    .filter(f => f.isFile() && (f.name.endsWith('.js') || f.name.endsWith('.ts')) && !f.name.endsWith('.d.ts'))
+    .map(f => f.name);
 
   const violations = [];
 
@@ -284,22 +256,15 @@ test('globals declared in source should be in eslint config', () => {
   const eslintContent = fs.readFileSync(eslintPath, 'utf8');
 
   // Extract globals from eslint config (simplified - looks for 'name: ...')
-  const globalMatches = eslintContent.match(/(['"])([a-zA-Z_][a-zA-Z0-9_]*)\1\s*:\s*['"](?:readonly|writable)['"]/g) || [];
+  const globalMatches = eslintContent.match(/(['\"])([a-zA-Z_][a-zA-Z0-9_]*)\\1\\s*:\\s*['\"](?:readonly|writable)['\"]/g) || [];
   const declaredGlobals = new Set(
-    globalMatches.map(m => m.split(/['":]/)[1])
+    globalMatches.map(m => m.split(/['\":]/)[1])
   );
 
-  const sourceFiles = [
-    'backstage.js',
-    'composers.js',
-    'play.js',
-    'rhythm.js',
-    'sheet.js',
-    'stage.js',
-    'time.js',
-    'venue.js',
-    'writer.js'
-  ];
+  const srcDir = path.join(__dirname, '..', 'src');
+  const sourceFiles = fs.readdirSync(srcDir, { withFileTypes: true })
+    .filter(f => f.isFile() && (f.name.endsWith('.js') || f.name.endsWith('.ts')) && !f.name.endsWith('.d.ts'))
+    .map(f => f.name);
 
   const violations = [];
   const assignmentPattern = /^([a-z_][a-zA-Z0-9_]*)\s*=/gm;
@@ -358,15 +323,10 @@ test('globals declared in source should be in eslint config', () => {
  * Velocity must be 0-127, notes must be 0-127, channels 0-15.
  */
 test('MIDI events in test files should use valid value ranges', () => {
-  const testFiles = [
-    'backstage.test.js',
-    'composers.test.js',
-    'rhythm.test.js',
-    'stage.test.js',
-    'time.test.js',
-    'venue.test.js',
-    'writer.test.js'
-  ];
+  const testDir = path.join(__dirname);
+  const testFiles = fs.readdirSync(testDir, { withFileTypes: true })
+    .filter(f => f.isFile() && (f.name.endsWith('.test.js') || f.name.endsWith('.test.ts')))
+    .map(f => f.name);
 
   const violations = [];
 

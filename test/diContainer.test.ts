@@ -26,10 +26,10 @@ describe('DIContainer', () => {
   it('should isolate container instances', () => {
     const container1 = new DIContainer();
     const container2 = new DIContainer();
-    
+
     container1.register('service', () => ({ id: 1 }));
     container2.register('service', () => ({ id: 2 }));
-    
+
     expect((container1.get('service') as any).id).toBe(1);
     expect((container2.get('service') as any).id).toBe(2);
   });
