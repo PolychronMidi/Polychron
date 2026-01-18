@@ -478,7 +478,7 @@ test('each source module should have corresponding test file', () => {
   });
 
   if (missingTests.length > 0) {
-    console.warn(`⚠️  Missing test files (${missingTests.length}): ${missingTests.join(', ')}`);
+    expect.fail(`Missing test files for ${missingTests.length} source module(s): ${missingTests.join(', ')}`);
   }
 
   // Critical modules should have tests
@@ -501,7 +501,7 @@ test('test function calls should match source signatures', () => {
   // Check utils.ts for utility functions (moved there for ES6 exports)
   let filePath = path.join(__dirname, '..', 'src', 'utils.ts');
   let content = '';
-  
+
   if (fs.existsSync(filePath)) {
     content = fs.readFileSync(filePath, 'utf8');
   } else {
