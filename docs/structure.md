@@ -1,8 +1,18 @@
+<!-- 
+### TODO - log of items planned / in progress
+
+- [mm-dd-hh:mm] Example (newest) TODO Title - One sentence summary.
+[mm-dd-hh:mm] Timestamped note of latest development or roadblock for this TODO
+[mm-dd-hh:mm] Older timestamped notes for this TODO
+
+- mm-dd-hh:mm Example Todo #2 (older) , etc...
+-->
+
 # structure.ts - Section Profile & Composition Structure Helpers
 
-> **Source**: `src/structure.ts`  
 > **Status**: Composition Architecture  
 > **Dependencies**: Backstage globals (SECTION_TYPES, PHRASES_PER_SECTION, random helpers)
+
 
 ## Overview
 

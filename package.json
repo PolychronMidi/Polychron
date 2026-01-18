@@ -52,6 +52,7 @@
     "docs:fix": "node scripts/docs.mjs fix",
     "docs:watch": "node scripts/docs.mjs watch",
     "docs:check": "node scripts/docs.mjs check",
+    "clear-todos": "node scripts/clear-todos.mjs",
     "prepare": "husky install"
   }
 }

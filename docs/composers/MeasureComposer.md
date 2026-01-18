@@ -1,8 +1,18 @@
+<!-- 
+### TODO - log of items planned / in progress
+
+- [mm-dd-hh:mm] Example (newest) TODO Title - One sentence summary.
+[mm-dd-hh:mm] Timestamped note of latest development or roadblock for this TODO
+[mm-dd-hh:mm] Older timestamped notes for this TODO
+
+- mm-dd-hh:mm Example Todo #2 (older) , etc...
+-->
+
 # MeasureComposer.ts - Rhythmic/Voice-Leading Engine
 
-> **Source**: `src/composers/MeasureComposer.ts`  
 > **Status**: Core Composer Engine  
 > **Dependencies**: voiceLeading.ts utilities (VoiceLeadingScore)
+
 
 ## Overview
 

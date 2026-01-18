@@ -1,8 +1,18 @@
+<!-- 
+### TODO - log of items planned / in progress
+
+- [mm-dd-hh:mm] Example (newest) TODO Title - One sentence summary.
+[mm-dd-hh:mm] Timestamped note of latest development or roadblock for this TODO
+[mm-dd-hh:mm] Older timestamped notes for this TODO
+
+- mm-dd-hh:mm Example Todo #2 (older) , etc...
+-->
+
 # ProgressionGenerator.ts - Roman Numeral Progression Builder
 
-> **Source**: `src/composers/ProgressionGenerator.ts`  
 > **Status**: Utility Composer Helper  
 > **Dependencies**: Tonal Key/Scale/Note
+
 
 ## Overview
 
