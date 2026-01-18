@@ -2,7 +2,12 @@
   "type": "module",
   "dependencies": {
     "@tonaljs/rhythm-pattern": "^1.0.0",
-    "tonal": "^6.4.2"
+    "chokidar": "^5.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "tonal": "^6.4.2",
+    "ts-morph": "^27.0.2",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
@@ -44,6 +49,9 @@
     "docs:refresh": "node scripts/refresh-doc-examples.mjs",
     "docs:check-links": "node scripts/check-links.mjs",
     "docs:enforce-links": "node scripts/enforce-doc-links.mjs",
+    "docs:fix": "node scripts/docs.mjs fix",
+    "docs:watch": "node scripts/docs.mjs watch",
+    "docs:check": "node scripts/docs.mjs check",
     "prepare": "husky install"
   }
 }

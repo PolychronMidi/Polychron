@@ -1,0 +1,267 @@
+# Module Documentation
+
+Documentation for Polychron TypeScript modules.
+
+---
+
+## 📚 Documentation System Guide
+
+### Overview
+
+This documentation system uses **one unified helper script** to keep docs accurate and linked:
+
+- **`scripts/docs.mjs`** – Auto-links module references and injects real code snippets from source. Exposed via npm scripts: `npm run docs:fix` (one-shot), `npm run docs:watch` (watch mode), and `npm run docs:check` (validation only).
+
+### Why This Matters
+
+- **Auto-linking stays current** – Plain module names are linked to both source code and documentation automatically
+- **Code snippets stay in sync** – Real source code is extracted and injected, preventing documentation drift
+- **Minimal manual maintenance** – Write module names plainly (e.g., stage.ts) and add snippet markers; the script does the rest
+
+---
+
+## 🔧 How It Works
+
+### Auto-Linking + Snippet Injection (single pipeline)
+
+The `docs.mjs` script scans all `.md` files in `docs/` and:
+
+- **Auto-links** any module filename references to both source and docs using the format `module.ts ([code](../src/module.ts)) ([doc](module.md))`
+- **Injects snippets** for any `<!-- BEGIN: snippet:Name --> ... <!-- END: snippet:Name -->` markers by pulling real code from `src/`
+
+**Example prose before:**
+```markdown
+stage.ts coordinates with play.ts to process notes
+```
+
+**After running `npm run docs:fix`:**
+```markdown
+stage.ts ([code](../src/stage.ts)) ([doc](stage.md)) coordinates with play.ts ([code](../src/play.ts)) ([doc](play.md)) to process notes
+```
+
+**Example snippet marker setup:**
+```markdown
+#### `setTuningAndInstruments()`
+
+<!-- BEGIN: snippet:Stage_setTuningAndInstruments -->
+
+<!-- END: snippet:Stage_setTuningAndInstruments -->
+```
+
+**When to run:**
+```bash
+npm run docs:fix   # one-shot link + snippet injection
+npm run docs:watch # watch mode while editing docs/source
+npm run docs:check # validation only (no writes)
+```
+
+Run after:
+- Updating source code that's documented with snippets
+- Adding new snippet markers to docs
+- Mentioning module names in prose or creating new doc files
+
+---
+
+## ✍️ Creating New Documentation
+
+### Step 1: Create the Doc File
+
+Create `docs/YourModule.md` with this structure:
+
+```markdown
+# YourModule.ts - Brief Description
+
+> **Source**: `src/YourModule.ts`  
+> **Status**: Core Module / Utility / etc.  
+> **Dependencies**: module1.ts, module2.ts
+
+## Overview
+
+High-level explanation of what this module does...
+
+## Key Exports
+
+- `MainClass` - Description
+- `helperFunction` - Description
+
+## Core Methods
+
+### `methodName(param1, param2)`
+
+Description...
+
+**Parameters:**
+- `param1: Type` - Description
+- `param2: Type` - Description
+
+**Returns:** `ReturnType`
+
+<!-- BEGIN: snippet:ClassName_methodName -->
+
+<!-- END: snippet:ClassName_methodName -->
+
+## Usage Example
+
+\`\`\`typescript
+import { MainClass } from './src/YourModule';
+const instance = new MainClass();
+\`\`\`
+
+## Related Modules
+
+- module1.ts - How they relate
+- module2.ts - How they relate
+```
+
+### Step 2: Add Snippet Markers
+
+Place markers where live code should appear. `docs.mjs` locates symbols by snippet name; prefer `File_symbolName` patterns (e.g., `Stage_setTuningAndInstruments`).
+
+### Step 3: Run the Pipeline
+
+```bash
+npm run docs:fix
+```
+
+Use `npm run docs:watch` while iterating on docs or source. Use `npm run docs:check` in CI or for validation-only runs.
+
+### Step 4: Add to Index
+
+Update this file (`docs/README.md`) to include your new module in the appropriate section.
+
+---
+
+## 🔄 Maintenance Workflow
+
+### When You Update Source Code
+
+1. **Edit the TypeScript source** as needed
+2. **Run docs pipeline**: `npm run docs:fix` (or `docs:watch` while iterating)
+3. **Review the updated docs** to ensure code examples are still clear
+4. **Update prose** if the API changed significantly
+
+### When You Add Cross-References
+
+1. **Write your documentation** mentioning module names naturally
+2. **Run docs pipeline**: `npm run docs:fix`
+3. **Verify links** are correct by clicking through them
+
+### When Adding New Modules
+
+1. **Follow "Creating New Documentation" steps** above
+2. **Add snippet markers as needed**
+3. **Run `npm run docs:fix`** to verify everything works
+4. **Update this index** with the new module
+
+---
+
+## 🚨 Common Pitfalls
+
+### ❌ Manually Creating Links
+
+**Don't do this:**
+```markdown
+See [stage.ts](../src/stage.ts) for details
+```
+
+**Do this instead:**
+```markdown
+See stage.ts for details
+```
+
+Then run `npm run docs:fix` to auto-generate the full link format.
+The script links every plain occurrence of a module name across a file (not just the first). If you need a name to remain unlinked (e.g., in literal examples), keep it inside backticks or a code block.
+
+### ❌ Copying Code Snippets Manually
+
+**Don't do this:**
+```markdown
+\`\`\`typescript
+// Manually pasted code that will drift
+function something() { ... }
+\`\`\`
+```
+
+**Do this instead:**
+```markdown
+<!-- BEGIN: snippet:Module_something -->
+
+<!-- END: snippet:Module_something -->
+```
+
+Then run `npm run docs:fix` to inject the real code.
+
+### Authoring Rules (Quick Checklist)
+
+- Write module references as plain names (e.g., stage.ts) in prose; avoid manual links
+- Keep module names outside code fences if you want them auto-linked
+- Use snippet markers for any code examples; do not paste code manually
+- After edits: run `npm run docs:fix` (or `docs:watch` while iterating)
+- Verify all occurrences are linked consistently (Architecture, Related Modules, etc.)
+
+### ❌ Forgetting to Update Scripts
+
+When adding a new module:
+- ✅ Add snippet markers for any code you want injected
+- ✅ Run `npm run docs:fix`
+- ✅ Update this README index
+
+---
+
+## 📋 Quick Reference
+
+| Task | Command |
+|------|---------|
+| Fix links + snippets (one-shot) | `npm run docs:fix` |
+| Watch mode while editing | `npm run docs:watch` |
+| Validate only (no writes) | `npm run docs:check` |
+
+---
+
+## Core Modules
+
+- [backstage.ts](backstage.md)
+- [CancellationToken.ts](CancellationToken.md)
+- [ComposerRegistry.ts](ComposerRegistry.md)
+- [CompositionContext.ts](CompositionContext.md)
+- [CompositionProgress.ts](CompositionProgress.md)
+- [CompositionState.ts](CompositionState.md)
+- [DIContainer.ts](DIContainer.md)
+- [EventBus.ts](EventBus.md)
+- [fxManager.ts](fxManager.md)
+- [ModuleInitializer.ts](ModuleInitializer.md)
+- [motifs.ts](motifs.md)
+- [play.ts](play.md)
+- [playNotes.ts](playNotes.md)
+- [PolychronConfig.ts](PolychronConfig.md)
+- [PolychronContext.ts](PolychronContext.md)
+- [PolychronError.ts](PolychronError.md)
+- [PolychronInit.ts](PolychronInit.md)
+- [rhythm.ts](rhythm.md)
+- [sheet.ts](sheet.md)
+- [stage.ts](stage.md)
+- [structure.ts](structure.md)
+- [time.ts](time.md)
+- [TimingTree.ts](TimingTree.md)
+- [utils.ts](utils.md)
+- [venue.ts](venue.md)
+- [voiceLeading.ts](voiceLeading.md)
+- [writer.ts](writer.md)
+
+## Composers
+
+- [composers/index.ts](composers.md)
+- [ChordComposer.ts](composers/ChordComposer.md)
+- [GenericComposer.ts](composers/GenericComposer.md)
+- [MeasureComposer.ts](composers/MeasureComposer.md)
+- [ModeComposer.ts](composers/ModeComposer.md)
+- [PentatonicComposer.ts](composers/PentatonicComposer.md)
+- [ProgressionGenerator.ts](composers/ProgressionGenerator.md)
+- [ScaleComposer.ts](composers/ScaleComposer.md)
+
+## Submodules
+
+- [voiceLeading/index.ts](voiceLeading/index.md)
+- [VoiceLeadingScore.ts](voiceLeading/VoiceLeadingScore.md)
+- [time/index.ts](time/index.md)
+- [validators/index.ts](validators.md)

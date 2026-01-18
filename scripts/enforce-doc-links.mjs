@@ -13,18 +13,34 @@ if (fs.existsSync(docsDir)) {
 
 // Module mapping: src file -> docs file name
 const modules = [
-  { name: 'backstage.js', doc: 'backstage.md' },
-  { name: 'composers.js', doc: 'composers.md' },
-  { name: 'fxManager.js', doc: 'fxManager.md' },
-  { name: 'motifs.js', doc: 'motifs.md' },
-  { name: 'play.js', doc: 'play.md' },
-  { name: 'rhythm.js', doc: 'rhythm.md' },
-  { name: 'sheet.js', doc: 'sheet.md' },
-  { name: 'stage.js', doc: 'stage.md' },
-  { name: 'time.js', doc: 'time.md' },
-  { name: 'venue.js', doc: 'venue.md' },
-  { name: 'voiceLeading.js', doc: 'voiceLeading.md' },
-  { name: 'writer.js', doc: 'writer.md' },
+  { name: 'backstage.ts', doc: 'backstage.md' },
+  { name: 'CancellationToken.ts', doc: 'CancellationToken.md' },
+  { name: 'ComposerRegistry.ts', doc: 'ComposerRegistry.md' },
+  { name: 'composers.ts', doc: 'composers.md' },
+  { name: 'CompositionContext.ts', doc: 'CompositionContext.md' },
+  { name: 'CompositionProgress.ts', doc: 'CompositionProgress.md' },
+  { name: 'CompositionState.ts', doc: 'CompositionState.md' },
+  { name: 'DIContainer.ts', doc: 'DIContainer.md' },
+  { name: 'EventBus.ts', doc: 'EventBus.md' },
+  { name: 'fxManager.ts', doc: 'fxManager.md' },
+  { name: 'ModuleInitializer.ts', doc: 'ModuleInitializer.md' },
+  { name: 'motifs.ts', doc: 'motifs.md' },
+  { name: 'play.ts', doc: 'play.md' },
+  { name: 'playNotes.ts', doc: 'playNotes.md' },
+  { name: 'PolychronConfig.ts', doc: 'PolychronConfig.md' },
+  { name: 'PolychronContext.ts', doc: 'PolychronContext.md' },
+  { name: 'PolychronError.ts', doc: 'PolychronError.md' },
+  { name: 'PolychronInit.ts', doc: 'PolychronInit.md' },
+  { name: 'rhythm.ts', doc: 'rhythm.md' },
+  { name: 'sheet.ts', doc: 'sheet.md' },
+  { name: 'stage.ts', doc: 'stage.md' },
+  { name: 'structure.ts', doc: 'structure.md' },
+  { name: 'time.ts', doc: 'time.md' },
+  { name: 'TimingTree.ts', doc: 'TimingTree.md' },
+  { name: 'utils.ts', doc: 'utils.md' },
+  { name: 'venue.ts', doc: 'venue.md' },
+  { name: 'voiceLeading.ts', doc: 'voiceLeading.md' },
+  { name: 'writer.ts', doc: 'writer.md' },
 ];
 
 function splitByCodeFences(content) {
@@ -64,9 +80,6 @@ function enforceLinksInText(text, { codePrefix, docPrefix }) {
 
     // Skip if already has both code and doc links
     const nameEsc = m.name.replace('.', '\\.');
-    const alreadyLinkedRegex = new RegExp(`${nameEsc}\\s*${codeLink.replace(/[()[\]]/g, '\\$&')}`, 'g');
-    if (alreadyLinkedRegex.test(out)) continue;
-
     // Replace plain filename references with links (avoid inside code, backticks, or existing links)
     const plainRegex = new RegExp(`(?<!\\[)\\b${nameEsc}\\b(?!\\])`, 'g');
     out = out.replace(plainRegex, (match, offset, s) => {
@@ -80,18 +93,7 @@ function enforceLinksInText(text, { codePrefix, docPrefix }) {
       if ((inParentheses && (nearUrl || nearLinkSyntax)) || hasBackticks) return match;
       return `${match} ${links}`;
     });
-  }
-  return out;
-}
+    // Replace plain filename references with links (avoid inside code, backticks, or existing links)
 
-for (const file of targetFiles) {
-  const content = fs.readFileSync(file, 'utf-8');
-  const parts = splitByCodeFences(content);
-  const isReadme = path.basename(file) === 'README.md';
-  const opts = { codePrefix: isReadme ? 'src' : '../src', docPrefix: isReadme ? 'docs/' : '' };
-  const processed = parts.map(p => p.type === 'text' ? enforceLinksInText(p.text, opts) : p.text).join('\n');
-  if (processed !== content) {
-    fs.writeFileSync(file, processed);
-    console.log(`Updated links in ${path.relative(projectRoot, file)}`);
   }
 }

@@ -11,6 +11,7 @@ function extractSymbol({ filePath, symbol }) {
   const src = fs.readFileSync(filePath, 'utf-8');
   const lines = src.split(/\r?\n/);
   const symbolPatterns = [
+    new RegExp(`^\\s*export\\s+class\\s+${symbol}\\s*\\{`),
     new RegExp(`^\\s*class\\s+${symbol}\\s*\\{`),
     new RegExp(`^\\s*${symbol}\\s*=\\s*class\\s+${symbol}\\s*\\{`),
   ];
@@ -86,6 +87,7 @@ function extractMethod({ filePath, className, methodName }) {
 
   // Find class start
   const classPatterns = [
+    new RegExp(`^\\s*export\\s+class\\s+${className}\\s*\\{`),
     new RegExp(`^\\s*class\\s+${className}\\s*\\{`),
     new RegExp(`^\\s*${className}\\s*=\\s*class\\s+${className}\\s*\\{`),
   ];
@@ -107,7 +109,7 @@ function extractMethod({ filePath, className, methodName }) {
   const classLines = lines.slice(classStart, classEnd + 1);
 
   // Search for method
-  const methodRegex = new RegExp(`^\\s*${methodName}\\s*\\(`);
+  const methodRegex = new RegExp(`^\\s*(?:get\\s+|set\\s+)?${methodName}\\s*\\(`);
   let methodStart = -1;
   for (let i = 0; i < classLines.length; i++) {
     if (methodRegex.test(classLines[i])) { methodStart = i; break; }
@@ -277,7 +279,7 @@ function extractObjectMethod({ filePath, objectName, methodName }) {
   return codeLines.join('\n');
 }
 
-function replaceSnippetInDoc(docPath, snippetName, code) {
+function extractInterface({ filePath, interfaceName }) {\n  const src = fs.readFileSync(filePath, 'utf-8');\n  const lines = src.split(/\\r?\\n/);\n  const patterns = [\n    new RegExp(`^\\\\s*export\\\\s+interface\\\\s+${interfaceName}\\\\s*\\\\{`),\n    new RegExp(`^\\\\s*interface\\\\s+${interfaceName}\\\\s*\\\\{`),\n  ];\n  let start = -1;\n  for (let i = 0; i < lines.length; i++) {\n    if (patterns[0].test(lines[i]) || patterns[1].test(lines[i])) { start = i; break; }\n  }\n  if (start < 0) throw new Error(`Interface ${interfaceName} not found in ${filePath}`);\n\n  let jsdocStart = -1, jsdocEnd = -1;\n  for (let i = start - 1; i >= 0; i--) {\n    const line = lines[i];\n    if (line.match(/^\\\\s*\\/\\*\\*/) ) { jsdocStart = i; break; }\n    if (line.trim() === '') continue;\n    if (!line.match(/^\\\\s*\\*/) && !line.match(/^\\\\s*\\/\\/.*$/) && !line.match(/^\\\\s*\\/*/)) {\n      break;\n    }\n  }\n  if (jsdocStart >= 0) {\n    for (let i = jsdocStart; i < start; i++) {\n      if (lines[i].match(/^\\\\s*\\*\\/\\s*$/)) { jsdocEnd = i; break; }\n    }\n  }\n\n  let braceCount = 0, end = start; let started = false;\n  for (let i = start; i < lines.length; i++) {\n    const line = lines[i];\n    for (const ch of line) {\n      if (ch === '{') { braceCount++; started = true; }\n      else if (ch === '}') { braceCount--; }\n    }\n    end = i; if (started && braceCount === 0) break;\n  }\n\n  const codeLines = [];\n  if (jsdocStart >= 0 && jsdocEnd >= 0) codeLines.push(...lines.slice(jsdocStart, jsdocEnd + 1));\n  codeLines.push(...lines.slice(start, end + 1));\n  return codeLines.join('\\n');\n}\n\nfunction replaceSnippetInDoc(docPath, snippetName, code) {
   const doc = fs.readFileSync(docPath, 'utf-8');
   const beginTag = `<!-- BEGIN: snippet:${snippetName} -->`;
   const endTag = `<!-- END: snippet:${snippetName} -->`;
@@ -296,22 +298,15 @@ function replaceSnippetInDoc(docPath, snippetName, code) {
 function main() {
   const projectRoot = process.cwd();
   const targets = [
-    { symbol: 'CSVBuffer', file: path.join(projectRoot, 'src', 'writer.js'), doc: path.join(projectRoot, 'docs', 'writer.md') },
-    { symbol: 'TimingCalculator', file: path.join(projectRoot, 'src', 'time.js'), doc: path.join(projectRoot, 'docs', 'time.md') },
-    // Stage method snippet (we inject just a placeholder for now); future: parse method body
-    { symbol: 'Stage', file: path.join(projectRoot, 'src', 'stage.js'), doc: path.join(projectRoot, 'docs', 'stage.md'), method: 'setTuningAndInstruments', snippetName: 'Stage_setTuningAndInstruments' },
-    { symbol: 'FxManager', file: path.join(projectRoot, 'src', 'fxManager.js'), doc: path.join(projectRoot, 'docs', 'fxManager.md'), method: 'stutterFade', snippetName: 'FxManager_stutterFade' },
-    { symbol: 'FxManager', file: path.join(projectRoot, 'src', 'fxManager.js'), doc: path.join(projectRoot, 'docs', 'fxManager.md'), method: 'stutterPan', snippetName: 'FxManager_stutterPan' },
-    { symbol: 'FxManager', file: path.join(projectRoot, 'src', 'fxManager.js'), doc: path.join(projectRoot, 'docs', 'fxManager.md'), method: 'stutterFX', snippetName: 'FxManager_stutterFX' },
-    { symbol: 'VoiceLeadingScore', file: path.join(projectRoot, 'src', 'voiceLeading.js'), doc: path.join(projectRoot, 'docs', 'voiceLeading.md'), method: 'selectNextNote', snippetName: 'VoiceLeading_selectNextNote' },
-    { symbol: 'VoiceLeadingScore', file: path.join(projectRoot, 'src', 'voiceLeading.js'), doc: path.join(projectRoot, 'docs', 'voiceLeading.md'), method: 'analyzeQuality', snippetName: 'VoiceLeading_analyzeQuality' },
-    { symbol: 'Stage', file: path.join(projectRoot, 'src', 'stage.js'), doc: path.join(projectRoot, 'docs', 'stage.md'), method: 'playNotes', snippetName: 'Stage_playNotes' },
-    // Writer/grandFinale function and LM object methods
-    { functionName: 'grandFinale', file: path.join(projectRoot, 'src', 'writer.js'), doc: path.join(projectRoot, 'docs', 'writer.md'), snippetName: 'Writer_grandFinale' },
-    { objectName: 'LM', file: path.join(projectRoot, 'src', 'time.js'), doc: path.join(projectRoot, 'docs', 'time.md'), method: 'register', snippetName: 'LM_register' },
-    { objectName: 'LM', file: path.join(projectRoot, 'src', 'time.js'), doc: path.join(projectRoot, 'docs', 'time.md'), method: 'activate', snippetName: 'LM_activate' },
-    { objectName: 'LM', file: path.join(projectRoot, 'src', 'time.js'), doc: path.join(projectRoot, 'docs', 'time.md'), method: 'advance', snippetName: 'LM_advance' },
-    { functionName: 'setUnitTiming', file: path.join(projectRoot, 'src', 'time.js'), doc: path.join(projectRoot, 'docs', 'time.md'), snippetName: 'Time_setUnitTiming' },
+    { symbol: 'Stage', file: path.join(projectRoot, 'src', 'stage.ts'), doc: path.join(projectRoot, 'docs', 'stage.md'), method: 'setTuningAndInstruments', snippetName: 'Stage_setTuningAndInstruments' },
+    { symbol: 'Stage', file: path.join(projectRoot, 'src', 'stage.ts'), doc: path.join(projectRoot, 'docs', 'stage.md'), method: 'playNotes', snippetName: 'Stage_playNotes' },
+    { symbol: 'Stage', file: path.join(projectRoot, 'src', 'stage.ts'), doc: path.join(projectRoot, 'docs', 'stage.md'), method: 'setBinaural', snippetName: 'Stage_setBinaural' },
+    { symbol: 'Stage', file: path.join(projectRoot, 'src', 'stage.ts'), doc: path.join(projectRoot, 'docs', 'stage.md'), method: 'setBalanceAndFX', snippetName: 'Stage_setBalanceAndFX' },
+    { symbol: 'CancellationTokenSource', file: path.join(projectRoot, 'src', 'CancellationToken.ts'), doc: path.join(projectRoot, 'docs', 'CancellationToken.md') },
+    { interfaceName: 'CancellationToken', file: path.join(projectRoot, 'src', 'CancellationToken.ts'), doc: path.join(projectRoot, 'docs', 'CancellationToken.md'), snippetName: 'CancellationToken' },
+    { symbol: 'CancellationTokenSource', file: path.join(projectRoot, 'src', 'CancellationToken.ts'), doc: path.join(projectRoot, 'docs', 'CancellationToken.md'), method: 'cancel', snippetName: 'CancellationTokenSource_cancel' },
+    { symbol: 'CancellationTokenSource', file: path.join(projectRoot, 'src', 'CancellationToken.ts'), doc: path.join(projectRoot, 'docs', 'CancellationToken.md'), method: 'reset', snippetName: 'CancellationTokenSource_reset' },
+    { symbol: 'CancellationTokenSource', file: path.join(projectRoot, 'src', 'CancellationToken.ts'), doc: path.join(projectRoot, 'docs', 'CancellationToken.md'), method: 'token', snippetName: 'CancellationTokenSource_token' },
   ];
 
   for (const t of targets) {
@@ -321,6 +316,10 @@ function main() {
       console.log(`Updated ${path.basename(t.doc)} snippet: ${t.symbol}`);
     } else if (t.symbol && t.method) {
       const code = extractMethod({ filePath: t.file, className: t.symbol, methodName: t.method });
+      replaceSnippetInDoc(t.doc, t.snippetName, code);
+      console.log(`Updated ${path.basename(t.doc)} snippet: ${t.snippetName}`);
+    } else if (t.interfaceName) {
+      const code = extractInterface({ filePath: t.file, interfaceName: t.interfaceName });
       replaceSnippetInDoc(t.doc, t.snippetName, code);
       console.log(`Updated ${path.basename(t.doc)} snippet: ${t.snippetName}`);
     } else if (t.functionName) {

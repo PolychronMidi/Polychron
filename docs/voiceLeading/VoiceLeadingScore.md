@@ -1,0 +1,809 @@
+# VoiceLeadingScore.ts - Chord Transition & Voice Leading Optimization
+
+> **Source**: `src/voiceLeading/VoiceLeadingScore.ts`  
+> **Status**: Polyphonic Composition Utility  
+> **Dependencies**: None (pure voice leading logic)
+
+## Overview
+
+`VoiceLeadingScore` implements classical voice leading rules with cost-based optimization. It evaluates chord transitions for smoothness (minimizing voice jumps), checks voice range constraints, enforces leap recovery rules, detects voice crossing, and avoids parallel fifths/octaves.
+
+**Core Responsibilities:**
+- Score voice motion for smoothness (stepwise better than leaps)
+- Check notes against voice range constraints (soprano, alto, tenor, bass)
+- Evaluate leap recovery (leaps should be followed by steps in opposite direction)
+- Detect voice crossing violations
+- Identify and penalize parallel fifths and octaves
+- Find optimal voicing permutations between chord changes
+- Select best next note from candidates based on voice leading constraints
+
+---
+
+## API
+
+### `class VoiceLeadingScore`
+
+Voice leading analysis and optimization engine.
+
+<!-- BEGIN: snippet:VoiceLeadingScore -->
+
+```typescript
+class VoiceLeadingScore {
+  weights: Record<string, number>;
+  registers: Record<string, number[]>;
+  prevNotes: any[];
+  prevIntervals: any[];
+  history: any[];
+  maxHistoryDepth: number;
+
+  /**
+   * @param {{\n   *   smoothMotionWeight?: number,\n   *   voiceRangeWeight?: number,\n   *   leapRecoveryWeight?: number,\n   *   voiceCrossingWeight?: number,\n   *   parallelMotionWeight?: number,\n   *   maxHistoryDepth?: number\n   * }} options\n   */
+  constructor(options: any = {}) {
+    // Configurable weights for different voice leading aspects
+    this.weights = {
+      smoothMotion: options.smoothMotionWeight ?? 1.0,
+      voiceRange: options.voiceRangeWeight ?? 0.8,
+      leapRecovery: options.leapRecoveryWeight ?? 0.6,
+      voiceCrossing: options.voiceCrossingWeight ?? 2.0,
+      parallelMotion: options.parallelMotionWeight ?? 1.5,
+    };
+
+    // Standard voice registers (MIDI note numbers)
+    /** @type {Record<string, number[]>} */
+    this.registers = {
+      soprano: [60, 84],  // C4 to C6
+      alto: [48, 72],     // C3 to C5
+      tenor: [36, 60],    // C2 to C4
+      bass: [24, 48],     // C1 to C3
+    };
+
+    // Track previous notes for leap recovery analysis
+    /** @type {any[]} */
+    this.prevNotes = [];
+    /** @type {any[]} */
+    this.prevIntervals = [];
+
+    // Selection history tracking
+    /** @type {any[]} */
+    this.history = [];
+    this.maxHistoryDepth = options.maxHistoryDepth || 8;
+  }
+
+  /**
+   * Reset scorer state between compositions
+   */
+  reset(): void {
+    this.prevNotes = [];
+    this.prevIntervals = [];
+    this.history = [];
+  }
+
+  /**
+   * Score voice motion based on interval size
+   * @private
+   * @param {number} interval
+   * @param {number} fromNote
+   * @param {number} toNote
+   */
+  _scoreVoiceMotion(interval: number, fromNote: number, toNote: number): number {
+    const absInterval = Math.abs(interval);
+
+    // Unison = perfect (0 cost)
+    if (absInterval === 0) return 0;
+
+    // Stepwise motion (1-2 semitones) = good (1 cost)
+    if (absInterval <= 2) return 1;
+
+    // Small leaps (3-5 semitones) = acceptable (3 cost)
+    if (absInterval <= 5) return 3;
+
+    // Tritone/sixth (6-7 semitones) = more costly (5 cost)
+    if (absInterval <= 7) return 5;
+
+    // Large leaps (>7 semitones) = avoid (10 cost)
+    return 10;
+  }
+
+  /**
+   * Score notes based on voice range
+   * @private
+   * @param {number} note
+   * @param {number[]} range
+   */
+  _scoreVoiceRange(note: number, range: number[]): number {
+    const [min, max] = range;
+    const rangeSize = max - min;
+    const idealMin = min + rangeSize * 0.25;
+    const idealMax = max - rangeSize * 0.25;
+
+    // In ideal zone (middle 50%)
+    if (note >= idealMin && note <= idealMax) return 0;
+
+    // In range but not ideal
+    if (note >= min && note <= max) return 2;
+
+    // Out of range - penalty increases with distance
+    if (note < min) {
+      const distance = min - note;
+      return 5 + distance * 0.5;
+    }
+
+    // Above range
+    const distance = note - max;
+    return 5 + distance * 0.5;
+  }
+
+  /**
+   * Score leap recovery (leaps should be followed by step in opposite direction)
+   * @private
+   * @param {number} currentInterval
+   * @param {number} previousInterval
+   * @param {any[]} noteHistory
+   */
+  _scoreLeapRecovery(currentInterval: number, previousInterval: number, noteHistory: any[]): number {
+    const absCurrent = Math.abs(currentInterval);
+    const absPrevious = Math.abs(previousInterval);
+
+    // No penalty if previous motion was stepwise
+    if (absPrevious <= 2) return 0;
+
+    // Previous was a leap
+    if (absPrevious > 4) {
+      // Current is stepwise recovery
+      if (absCurrent <= 2) {
+        // Check if opposite direction
+        if (noteHistory.length >= 3) {
+          const direction1 = Math.sign(noteHistory[noteHistory.length - 1] - noteHistory[noteHistory.length - 2]);
+          const direction2 = Math.sign(noteHistory[noteHistory.length - 2] - noteHistory[noteHistory.length - 3]);
+
+          // Opposite direction = perfect recovery
+          if (direction1 !== direction2) return 0;
+        }
+        return 1; // Step recovery but same direction
+      }
+
+      // Another leap after a leap = bad
+      return 5;
+    }
+
+    return 0;
+  }
+
+  /**
+   * Detect and penalize voice crossing
+   * @private
+   * @param {number} sopranoNote
+   * @param {any[]} otherVoices
+   */
+  _scoreVoiceCrossing(sopranoNote: number, otherVoices: any[]): number {
+    // Soprano should be at or above all other voices
+    for (const voice of otherVoices) {
+      if (voice > sopranoNote) {
+        return 10; // Heavy penalty for voice crossing
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Detect parallel fifths and octaves, and penalize same-direction motion
+   * @private
+   * @param {number} interval1
+   * @param {number} interval2
+   */
+  _scoreParallelMotion(interval1: number, interval2: number): number {
+    // Parallel octaves or fifths (intervals of 12, 7, or 0) - heavy penalty
+    const forbidden = [0, 7, 12];
+    if (forbidden.includes(Math.abs(interval1 % 12)) &&
+        forbidden.includes(Math.abs(interval2 % 12)) &&
+        interval1 === interval2) {
+      return 15; // Very heavy penalty
+    }
+
+    // Light penalty for same-direction motion (not forbidden intervals)
+    if (Math.sign(interval1) === Math.sign(interval2) && interval1 !== 0 && interval2 !== 0) {
+      return 1;
+    }
+
+    return 0;
+  }
+
+  /**
+   * Calculate total voice leading cost for a set of notes
+   * @param {any[]} currentNotes
+   * @param {any[]|null} previousNotes
+   * @param {string} register
+   */
+  calculateCost(currentNotes: any[], previousNotes: any[] | null = null, register: string = 'soprano'): number {
+    let totalCost = 0;
+    /** @type {number[]} */
+    const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
+
+    // Score each voice
+    for (let i = 0; i < currentNotes.length; i++) {
+      const current = currentNotes[i];
+
+      // Voice range cost
+      totalCost += this._scoreVoiceRange(current, range) * this.weights.voiceRange;
+
+      if (previousNotes && previousNotes[i] !== undefined) {
+        const previous = previousNotes[i];
+        const interval = current - previous;
+
+        // Voice motion cost
+        totalCost += this._scoreVoiceMotion(interval, previous, current) * this.weights.smoothMotion;
+
+        // Leap recovery cost
+        if (this.prevIntervals[i] !== undefined) {
+          totalCost += this._scoreLeapRecovery(
+            interval,
+            this.prevIntervals[i],
+            [this.prevNotes[i], previous, current]
+          ) * this.weights.leapRecovery;
+        }
+
+        // Track for next iteration
+        this.prevIntervals[i] = interval;
+      }
+
+      this.prevNotes[i] = current;
+    }
+
+    // Voice crossing cost (compare first note with others)
+    if (currentNotes.length > 1) {
+      totalCost += this._scoreVoiceCrossing(currentNotes[0], currentNotes.slice(1)) * this.weights.voiceCrossing;
+    }
+
+    // Parallel motion cost (between consecutive voice pairs)
+    if (previousNotes && currentNotes.length > 1 && previousNotes.length > 1) {
+      for (let i = 0; i < currentNotes.length - 1; i++) {
+        const interval1 = previousNotes[i] - previousNotes[i + 1];
+        const interval2 = currentNotes[i] - currentNotes[i + 1];
+        totalCost += this._scoreParallelMotion(interval1, interval2) * this.weights.parallelMotion;
+      }
+    }
+
+    return totalCost;
+  }
+
+  /**
+   * Find the best voice leading between two sets of notes
+   * @param {any[]} targetNotes
+   * @param {any[]} previousNotes
+   * @param {string} register
+   */
+  findBestVoicing(targetNotes: any[], previousNotes: any[], register: string = 'soprano'): any[] {
+    if (!previousNotes || previousNotes.length === 0) {
+      return targetNotes; // No optimization needed
+    }
+
+    // Generate permutations and find lowest cost
+    const permutations = this._generatePermutations(targetNotes);
+    let bestVoicing = targetNotes;
+    let bestCost = Infinity;
+
+    for (const voicing of permutations) {
+      const cost = this.calculateCost(voicing, previousNotes, register);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestVoicing = voicing;
+      }
+    }
+
+    return bestVoicing;
+  }
+
+  /**
+   * Generate all permutations of notes
+   * @private
+   * @param {any[]} array
+   * @returns {any[][]}
+   */
+  _generatePermutations(array: any[]): any[][] {
+    if (array.length <= 1) return [array];
+
+    const permutations: any[][] = [];
+    for (let i = 0; i < array.length; i++) {
+      const current = array[i];
+      const remaining = array.slice(0, i).concat(array.slice(i + 1));
+      /** @type {any[][]} */
+      const subPermutations = this._generatePermutations(remaining);
+
+      for (const sub of subPermutations) {
+        permutations.push([current, ...sub]);
+      }
+    }
+
+    return permutations;
+  }
+
+  /**
+   * Select the best next note from candidates based on voice leading
+   * @param {any[]} previousNotes - Previous notes in the voice
+   * @param {any[]} candidates - Candidate notes to choose from
+   * @param {{ register?: string, constraints?: any[] }} options - Selection options (register, constraints)
+   * @returns {number} Selected note
+   */
+  selectNextNote(previousNotes: any[], candidates: any[], options: any = {}): number {
+    // Fallback if no candidates
+    if (!candidates || candidates.length === 0) {
+      return previousNotes && previousNotes.length > 0 ? previousNotes[previousNotes.length - 1] : 60;
+    }
+
+    // If no previous notes, just pick from candidates (prefer middle)
+    if (!previousNotes || previousNotes.length === 0) {
+      /** @type {string} */
+      const register = /** @type {string} */ ((options && options.register) || 'soprano');
+      /** @type {number[]} */
+      const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
+
+      // Filter by register
+      let validCandidates = candidates.filter((note: any) => note >= range[0] && note <= range[1]);
+      if (validCandidates.length === 0) {
+        validCandidates = candidates; // Use all candidates if none in range
+      }
+
+      // Pick a candidate (prefer first for consistency)
+      const selected = validCandidates[0];
+
+      // Track in history
+      this.history.push(selected);
+      if (this.history.length > this.maxHistoryDepth) {
+        this.history.shift();
+      }
+
+      return selected;
+    }
+
+    /** @type {string} */
+    const register = /** @type {string} */ ((options && options.register) || 'soprano');
+    /** @type {any[]} */
+    const constraints = /** @type {any[]} */ ((options && options.constraints) || []);
+    /** @type {number[]} */
+    const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
+
+    // Filter candidates by register if specified
+    let validCandidates = candidates.filter((note: any) => note >= range[0] && note <= range[1]);
+
+    // If no candidates in range, use all candidates
+    if (validCandidates.length === 0) {
+      validCandidates = candidates;
+    }
+
+    const prevNote = previousNotes[previousNotes.length - 1];
+
+    // Apply hard constraints
+    if (constraints.includes('avoidsStrident')) {
+      // Avoid large leaps (> 7 semitones)
+      const filtered = validCandidates.filter((note: any) => Math.abs(note - prevNote) <= 7);
+      if (filtered.length > 0) validCandidates = filtered;
+    }
+
+    if (constraints.includes('stepsOnly')) {
+      // Only allow stepwise motion (≤ 2 semitones)
+      const filtered = validCandidates.filter((note: any) => Math.abs(note - prevNote) <= 2);
+      if (filtered.length > 0) validCandidates = filtered;
+    }
+
+    // If no valid candidates after constraints, fall back to previous note
+    if (validCandidates.length === 0) {
+      return prevNote;
+    }
+
+    // Score each candidate and select the best
+    let bestNote = validCandidates[0];
+    let bestCost = Infinity;
+
+    for (const candidate of validCandidates) {
+      const cost = this.calculateCost([candidate], [prevNote], register);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestNote = candidate;
+      }
+    }
+
+    // Track in history
+    this.history.push(bestNote);
+    if (this.history.length > this.maxHistoryDepth) {
+      this.history.shift();
+    }
+
+    return bestNote;
+  }
+
+  /**
+   * Analyze the quality of a note sequence
+   * @param {any[]} sequence - Array of notes to analyze
+   * @returns {Object} Quality metrics (smoothness, leapRecoveries, avgRange)
+   */
+  analyzeQuality(sequence: any[]): any {
+    if (!sequence || sequence.length < 2) {
+      return { smoothness: 0, leapRecoveries: 0, avgRange: sequence[0] || 60 };
+    }
+
+    let totalCost = 0;
+    let leapRecoveries = 0;
+    let previousInterval = 0;
+
+    for (let i = 1; i < sequence.length; i++) {
+      const interval = sequence[i] - sequence[i - 1];
+      const absInterval = Math.abs(interval);
+
+      // Add motion cost
+      totalCost += this._scoreVoiceMotion(interval, sequence[i - 1], sequence[i]);
+
+      // Check for leap recovery
+      if (i >= 2 && Math.abs(previousInterval) > 4 && absInterval <= 2) {
+        // Check if recovery is in opposite direction
+        if (Math.sign(interval) !== Math.sign(previousInterval)) {
+          leapRecoveries++;
+        }
+      }
+
+      previousInterval = interval;
+    }
+
+    // Calculate average smoothness per note
+    const smoothness = totalCost / (sequence.length - 1);
+
+    // Calculate average range
+    const sum = sequence.reduce((a: any, b: any) => a + b, 0);
+    const avgRange = sum / sequence.length;
+
+    return {
+      smoothness,
+      leapRecoveries,
+      avgRange
+    };
+  }
+}
+```
+
+<!-- END: snippet:VoiceLeadingScore -->
+
+#### Constructor
+
+```typescript
+constructor(options?: {
+  smoothMotionWeight?: number;      // Stepwise motion weight (default: 1.0)
+  voiceRangeWeight?: number;        // Range constraint weight (default: 0.8)
+  leapRecoveryWeight?: number;      // Leap recovery weight (default: 0.6)
+  voiceCrossingWeight?: number;     // Voice crossing weight (default: 2.0)
+  parallelMotionWeight?: number;    // Parallel motion weight (default: 1.5)
+  maxHistoryDepth?: number;         // History tracking depth (default: 8)
+})
+```
+
+#### Key Methods
+
+##### `calculateCost(currentNotes, previousNotes?, register?)`
+
+Calculate voice leading cost for a set of notes.
+
+<!-- BEGIN: snippet:VoiceLeadingScore_calculateCost -->
+
+```typescript
+calculateCost(currentNotes: any[], previousNotes: any[] | null = null, register: string = 'soprano'): number {
+    let totalCost = 0;
+    /** @type {number[]} */
+    const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
+
+    // Score each voice
+    for (let i = 0; i < currentNotes.length; i++) {
+      const current = currentNotes[i];
+
+      // Voice range cost
+      totalCost += this._scoreVoiceRange(current, range) * this.weights.voiceRange;
+
+      if (previousNotes && previousNotes[i] !== undefined) {
+        const previous = previousNotes[i];
+        const interval = current - previous;
+
+        // Voice motion cost
+        totalCost += this._scoreVoiceMotion(interval, previous, current) * this.weights.smoothMotion;
+
+        // Leap recovery cost
+        if (this.prevIntervals[i] !== undefined) {
+          totalCost += this._scoreLeapRecovery(
+            interval,
+            this.prevIntervals[i],
+            [this.prevNotes[i], previous, current]
+          ) * this.weights.leapRecovery;
+        }
+
+        // Track for next iteration
+        this.prevIntervals[i] = interval;
+      }
+
+      this.prevNotes[i] = current;
+    }
+
+    // Voice crossing cost (compare first note with others)
+    if (currentNotes.length > 1) {
+      totalCost += this._scoreVoiceCrossing(currentNotes[0], currentNotes.slice(1)) * this.weights.voiceCrossing;
+    }
+
+    // Parallel motion cost (between consecutive voice pairs)
+    if (previousNotes && currentNotes.length > 1 && previousNotes.length > 1) {
+      for (let i = 0; i < currentNotes.length - 1; i++) {
+        const interval1 = previousNotes[i] - previousNotes[i + 1];
+        const interval2 = currentNotes[i] - currentNotes[i + 1];
+        totalCost += this._scoreParallelMotion(interval1, interval2) * this.weights.parallelMotion;
+      }
+    }
+
+    return totalCost;
+  }
+```
+
+<!-- END: snippet:VoiceLeadingScore_calculateCost -->
+
+**Returns:** Total cost (lower is better).
+
+##### `findBestVoicing(targetNotes, previousNotes, register?)`
+
+Find optimal voicing permutation between two chords.
+
+<!-- BEGIN: snippet:VoiceLeadingScore_findBestVoicing -->
+
+```typescript
+findBestVoicing(targetNotes: any[], previousNotes: any[], register: string = 'soprano'): any[] {
+    if (!previousNotes || previousNotes.length === 0) {
+      return targetNotes; // No optimization needed
+    }
+
+    // Generate permutations and find lowest cost
+    const permutations = this._generatePermutations(targetNotes);
+    let bestVoicing = targetNotes;
+    let bestCost = Infinity;
+
+    for (const voicing of permutations) {
+      const cost = this.calculateCost(voicing, previousNotes, register);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestVoicing = voicing;
+      }
+    }
+
+    return bestVoicing;
+  }
+```
+
+<!-- END: snippet:VoiceLeadingScore_findBestVoicing -->
+
+**Returns:** Reordered note array with best voice leading.
+
+##### `selectNextNote(previousNotes, candidates, options?)`
+
+Select best next note from candidates based on voice leading.
+
+<!-- BEGIN: snippet:VoiceLeadingScore_selectNextNote -->
+
+```typescript
+selectNextNote(previousNotes: any[], candidates: any[], options: any = {}): number {
+    // Fallback if no candidates
+    if (!candidates || candidates.length === 0) {
+      return previousNotes && previousNotes.length > 0 ? previousNotes[previousNotes.length - 1] : 60;
+    }
+
+    // If no previous notes, just pick from candidates (prefer middle)
+    if (!previousNotes || previousNotes.length === 0) {
+      /** @type {string} */
+      const register = /** @type {string} */ ((options && options.register) || 'soprano');
+      /** @type {number[]} */
+      const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
+
+      // Filter by register
+      let validCandidates = candidates.filter((note: any) => note >= range[0] && note <= range[1]);
+      if (validCandidates.length === 0) {
+        validCandidates = candidates; // Use all candidates if none in range
+      }
+
+      // Pick a candidate (prefer first for consistency)
+      const selected = validCandidates[0];
+
+      // Track in history
+      this.history.push(selected);
+      if (this.history.length > this.maxHistoryDepth) {
+        this.history.shift();
+      }
+
+      return selected;
+    }
+
+    /** @type {string} */
+    const register = /** @type {string} */ ((options && options.register) || 'soprano');
+    /** @type {any[]} */
+    const constraints = /** @type {any[]} */ ((options && options.constraints) || []);
+    /** @type {number[]} */
+    const range = /** @type {number[]} */ (this.registers[register] || this.registers.soprano);
+
+    // Filter candidates by register if specified
+    let validCandidates = candidates.filter((note: any) => note >= range[0] && note <= range[1]);
+
+    // If no candidates in range, use all candidates
+    if (validCandidates.length === 0) {
+      validCandidates = candidates;
+    }
+
+    const prevNote = previousNotes[previousNotes.length - 1];
+
+    // Apply hard constraints
+    if (constraints.includes('avoidsStrident')) {
+      // Avoid large leaps (> 7 semitones)
+      const filtered = validCandidates.filter((note: any) => Math.abs(note - prevNote) <= 7);
+      if (filtered.length > 0) validCandidates = filtered;
+    }
+
+    if (constraints.includes('stepsOnly')) {
+      // Only allow stepwise motion (≤ 2 semitones)
+      const filtered = validCandidates.filter((note: any) => Math.abs(note - prevNote) <= 2);
+      if (filtered.length > 0) validCandidates = filtered;
+    }
+
+    // If no valid candidates after constraints, fall back to previous note
+    if (validCandidates.length === 0) {
+      return prevNote;
+    }
+
+    // Score each candidate and select the best
+    let bestNote = validCandidates[0];
+    let bestCost = Infinity;
+
+    for (const candidate of validCandidates) {
+      const cost = this.calculateCost([candidate], [prevNote], register);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestNote = candidate;
+      }
+    }
+
+    // Track in history
+    this.history.push(bestNote);
+    if (this.history.length > this.maxHistoryDepth) {
+      this.history.shift();
+    }
+
+    return bestNote;
+  }
+```
+
+<!-- END: snippet:VoiceLeadingScore_selectNextNote -->
+
+**Options:**
+- `register` – "soprano", "alto", "tenor", "bass" (default: "soprano")
+- `constraints` – Array of constraint strings (e.g., "avoidsStrident", "stepsOnly")
+
+**Returns:** Best candidate note number.
+
+##### `analyzeQuality(sequence)`
+
+Analyze quality metrics of a note sequence.
+
+<!-- BEGIN: snippet:VoiceLeadingScore_analyzeQuality -->
+
+```typescript
+analyzeQuality(sequence: any[]): any {
+    if (!sequence || sequence.length < 2) {
+      return { smoothness: 0, leapRecoveries: 0, avgRange: sequence[0] || 60 };
+    }
+
+    let totalCost = 0;
+    let leapRecoveries = 0;
+    let previousInterval = 0;
+
+    for (let i = 1; i < sequence.length; i++) {
+      const interval = sequence[i] - sequence[i - 1];
+      const absInterval = Math.abs(interval);
+
+      // Add motion cost
+      totalCost += this._scoreVoiceMotion(interval, sequence[i - 1], sequence[i]);
+
+      // Check for leap recovery
+      if (i >= 2 && Math.abs(previousInterval) > 4 && absInterval <= 2) {
+        // Check if recovery is in opposite direction
+        if (Math.sign(interval) !== Math.sign(previousInterval)) {
+          leapRecoveries++;
+        }
+      }
+
+      previousInterval = interval;
+    }
+
+    // Calculate average smoothness per note
+    const smoothness = totalCost / (sequence.length - 1);
+
+    // Calculate average range
+    const sum = sequence.reduce((a: any, b: any) => a + b, 0);
+    const avgRange = sum / sequence.length;
+
+    return {
+      smoothness,
+      leapRecoveries,
+      avgRange
+    };
+  }
+```
+
+<!-- END: snippet:VoiceLeadingScore_analyzeQuality -->
+
+**Returns:** Object with `smoothness`, `leapRecoveries`, `avgRange`.
+
+##### `reset()`
+
+Clear voice leading history and state between compositions.
+
+<!-- BEGIN: snippet:VoiceLeadingScore_reset -->
+
+```typescript
+reset(): void {
+    this.prevNotes = [];
+    this.prevIntervals = [];
+    this.history = [];
+  }
+```
+
+<!-- END: snippet:VoiceLeadingScore_reset -->
+
+### Voice Registers
+
+Predefined ranges (MIDI note numbers):
+
+- **Soprano**: 60–84 (C4–C6) – Melody, upper voice
+- **Alto**: 48–72 (C3–C5) – Upper-middle voice
+- **Tenor**: 36–60 (C2–C4) – Lower-middle voice
+- **Bass**: 24–48 (C1–C3) – Bass, lowest voice
+
+---
+
+## Voice Leading Costs
+
+Motion types and their costs:
+
+- **Unison (0 semitones)**: 0 – Perfect
+- **Stepwise (1–2 semitones)**: 1 – Good
+- **Small leap (3–5 semitones)**: 3 – Acceptable
+- **Tritone/Sixth (6–7 semitones)**: 5 – Avoid
+- **Large leap (>7 semitones)**: 10 – Strongly avoid
+- **Parallel fifths/octaves**: 15 – Forbidden
+- **Voice crossing**: 10 – Forbidden (soprano above others)
+
+---
+
+## Usage Example
+
+```typescript
+import { VoiceLeadingScore } from '../src/voiceLeading/VoiceLeadingScore';
+
+const scorer = new VoiceLeadingScore({
+  smoothMotionWeight: 1.0,
+  voiceCrossingWeight: 2.0
+});
+
+// Analyze chord transition
+const cmaj = [60, 64, 67];     // C major (C-E-G)
+const dmin = [62, 65, 69];     // D minor (D-F-A)
+
+const cost = scorer.calculateCost(dmin, cmaj);
+console.log(`Transition cost: ${cost}`);
+
+// Find best voicing
+const bestVoicing = scorer.findBestVoicing(dmin, cmaj);
+console.log(`Best voicing: ${bestVoicing}`);
+
+// Select next note
+const candidates = [62, 65, 69];
+const nextNote = scorer.selectNextNote([67], candidates, { 
+  register: 'soprano',
+  constraints: ['avoidsStrident']
+});
+console.log(`Next note: ${nextNote}`);
+```
+
+---
+
+## Related Modules
+
+- voiceLeading/ ([code](../src/voiceLeading/)) ([doc](index.md)) - Voice leading module index
+- composers/MeasureComposer.ts ([code](../src/composers/MeasureComposer.ts)) ([doc](../composers/MeasureComposer.md)) - Primary voice leading consumer
+- venue.ts ([code](../src/venue.ts)) ([doc](../venue.md)) - Chord/scale templates
