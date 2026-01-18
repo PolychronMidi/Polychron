@@ -7,6 +7,8 @@ const [, , logFile, ...command] = process.argv;
 if (!logFile || command.length === 0) {
   console.error('Usage: node run-with-log.mjs <logFile> <command> [args...]');
   process.exit(1);
+} else {
+  console.log(`Logging output to log/${logFile}`);
 }
 
 await mkdir('log', { recursive: true });
