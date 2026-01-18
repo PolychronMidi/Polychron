@@ -224,79 +224,78 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
 const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const g = globalThis as any;
   const state = ctx.state as any;
-  const getVal = (key: string) => state[key];
-  const setVal = (key: string, value: any) => {
+
+  if (!Number.isFinite(g.tpSec) || g.tpSec <= 0) {
+    throw new Error(`Invalid tpSec in setUnitTiming: ${g.tpSec}`);
+  }
+
+  // Read from globals (LM.activate() restores layer state to globals)
+  // Write to BOTH globals and ctx.state for DI compatibility and test support
+  const syncValue = (key: string, value: any) => {
+    g[key] = value;
     state[key] = value;
   };
 
-  const tpSec = getVal('tpSec');
-  if (!Number.isFinite(tpSec) || tpSec <= 0) {
-    throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
-  }
-
-  // Use globals (not layer.state) because LM.activate() already restored layer state to globals.
-  // This ensures consistent timing across all unit calculations in cascading hierarchy.
-
   switch (unitType) {
     case 'phrase':
-      if (!Number.isFinite(getVal('measuresPerPhrase')) || getVal('measuresPerPhrase') < 1) {
-        setVal('measuresPerPhrase', 1);
+      if (!Number.isFinite(g.measuresPerPhrase) || g.measuresPerPhrase < 1) {
+        syncValue('measuresPerPhrase', 1);
       }
-      setVal('tpPhrase', getVal('tpMeasure') * getVal('measuresPerPhrase'));
-      setVal('spPhrase', getVal('tpPhrase') / tpSec);
+      syncValue('tpPhrase', g.tpMeasure * g.measuresPerPhrase);
+      syncValue('spPhrase', g.tpPhrase / g.tpSec);
       break;
 
     case 'measure':
-      setVal('measureStart', getVal('phraseStart') + getVal('measureIndex') * getVal('tpMeasure'));
-      setVal('measureStartTime', getVal('phraseStartTime') + getVal('measureIndex') * getVal('spMeasure'));
+      syncValue('measureStart', g.phraseStart + g.measureIndex * g.tpMeasure);
+      syncValue('measureStartTime', g.phraseStartTime + g.measureIndex * g.spMeasure);
       setMidiTiming(ctx);
-      setVal('beatRhythm', setRhythm('beat'));
+      syncValue('beatRhythm', setRhythm('beat'));
       break;
 
     case 'beat':
       trackRhythm('beat');
-      setVal('tpBeat', getVal('tpMeasure') / getVal('numerator'));
-      setVal('spBeat', getVal('tpBeat') / tpSec);
-      setVal('trueBPM', 60 / getVal('spBeat'));
-      setVal('bpmRatio', getVal('BPM') / getVal('trueBPM'));
-      setVal('bpmRatio2', getVal('trueBPM') / getVal('BPM'));
-      setVal('trueBPM2', getVal('numerator') * (getVal('numerator') / getVal('denominator')) / 4);
-      setVal('bpmRatio3', 1 / getVal('trueBPM2'));
-      setVal('beatStart', getVal('phraseStart') + getVal('measureIndex') * getVal('tpMeasure') + getVal('beatIndex') * getVal('tpBeat'));
-      setVal('beatStartTime', getVal('measureStartTime') + getVal('beatIndex') * getVal('spBeat'));
-      setVal('divsPerBeat', getVal('composer') ? getVal('composer').getDivisions() : 1);
-      setVal('divRhythm', setRhythm('div'));
+      syncValue('tpBeat', g.tpMeasure / g.numerator);
+      syncValue('spBeat', g.tpBeat / g.tpSec);
+      syncValue('trueBPM', 60 / g.spBeat);
+      syncValue('bpmRatio', g.BPM / g.trueBPM);
+      syncValue('bpmRatio2', g.trueBPM / g.BPM);
+      syncValue('trueBPM2', g.numerator * (g.numerator / g.denominator) / 4);
+      syncValue('bpmRatio3', 1 / g.trueBPM2);
+      syncValue('beatStart', g.phraseStart + g.measureIndex * g.tpMeasure + g.beatIndex * g.tpBeat);
+      syncValue('beatStartTime', g.measureStartTime + g.beatIndex * g.spBeat);
+      syncValue('divsPerBeat', g.composer ? g.composer.getDivisions() : 1);
+      syncValue('divRhythm', setRhythm('div'));
       break;
 
     case 'division':
       trackRhythm('div');
-      setVal('tpDiv', getVal('tpBeat') / Math.max(1, getVal('divsPerBeat')));
-      setVal('spDiv', getVal('tpDiv') / tpSec);
-      setVal('divStart', getVal('beatStart') + getVal('divIndex') * getVal('tpDiv'));
-      setVal('divStartTime', getVal('beatStartTime') + getVal('divIndex') * getVal('spDiv'));
-      setVal('subdivsPerDiv', Math.max(1, getVal('composer') ? getVal('composer').getSubdivisions() : 1));
-      setVal('subdivFreq', getVal('subdivsPerDiv') * getVal('divsPerBeat') * getVal('numerator') * getVal('meterRatio'));
-      setVal('subdivRhythm', setRhythm('subdiv'));
+      syncValue('tpDiv', g.tpBeat / Math.max(1, g.divsPerBeat));
+      syncValue('spDiv', g.tpDiv / g.tpSec);
+      syncValue('divStart', g.beatStart + g.divIndex * g.tpDiv);
+      syncValue('divStartTime', g.beatStartTime + g.divIndex * g.spDiv);
+      syncValue('subdivsPerDiv', Math.max(1, g.composer ? g.composer.getSubdivisions() : 1));
+      syncValue('subdivFreq', g.subdivsPerDiv * g.divsPerBeat * g.numerator * g.meterRatio);
+      syncValue('subdivRhythm', setRhythm('subdiv'));
       break;
 
     case 'subdivision':
       trackRhythm('subdiv');
-      setVal('tpSubdiv', getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv')));
-      setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
-      setVal('subdivsPerMinute', 60 / getVal('spSubdiv'));
-      setVal('subdivStart', getVal('divStart') + getVal('subdivIndex') * getVal('tpSubdiv'));
-      setVal('subdivStartTime', getVal('divStartTime') + getVal('subdivIndex') * getVal('spSubdiv'));
-      setVal('subsubdivsPerSub', getVal('composer') ? getVal('composer').getSubsubdivs() : 1);
-      setVal('subsubdivRhythm', setRhythm('subsubdiv'));
+      syncValue('tpSubdiv', g.tpDiv / Math.max(1, g.subdivsPerDiv));
+      syncValue('spSubdiv', g.tpSubdiv / g.tpSec);
+      syncValue('subdivsPerMinute', 60 / g.spSubdiv);
+      syncValue('subdivStart', g.divStart + g.subdivIndex * g.tpSubdiv);
+      syncValue('subdivStartTime', g.divStartTime + g.subdivIndex * g.spSubdiv);
+      syncValue('subsubdivsPerSub', g.composer ? g.composer.getSubsubdivs() : 1);
+      syncValue('subsubdivRhythm', setRhythm('subsubdiv'));
       break;
 
     case 'subsubdivision':
       trackRhythm('subsubdiv');
-      setVal('tpSubsubdiv', getVal('tpSubdiv') / Math.max(1, getVal('subsubdivsPerSub')));
-      setVal('spSubsubdiv', getVal('tpSubsubdiv') / tpSec);
-      setVal('subsubdivsPerMinute', 60 / getVal('spSubsubdiv'));
-      setVal('subsubdivStart', getVal('subdivStart') + getVal('subsubdivIndex') * getVal('tpSubsubdiv'));
-      setVal('subsubdivStartTime', getVal('subdivStartTime') + getVal('subsubdivIndex') * getVal('spSubsubdiv'));
+      syncValue('tpSubsubdiv', g.tpSubdiv / Math.max(1, g.subsubdivsPerSub));
+      syncValue('spSubsubdiv', g.tpSubsubdiv / g.tpSec);
+      syncValue('subsubdivsPerMinute', 60 / g.spSubsubdiv);
+      syncValue('subsubdivStart', g.subdivStart + g.subsubdivIndex * g.tpSubsubdiv);
+      syncValue('subsubdivStartTime', g.subdivStartTime + g.subsubdivIndex * g.spSubsubdiv);
       break;
 
     default:
