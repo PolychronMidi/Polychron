@@ -14,116 +14,97 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 - **Dynamic Composition**: Weighted random selection, algorithmic rhythm generation, and adaptive musical intelligence
 - **Voice Leading & Counterpoint**: Cost function optimization for smooth melodic motion and voice management
 
-## Comprehensive File Review
+## Complete Module Documentation
 
-### Core System Architecture
+All Polychron source files are comprehensively documented in the [/docs](docs/) directory. Here's an organized guide to navigate the documentation:
 
-Polychron consists of 11 specialized JavaScript modules following a clean minimal code philosophy:
+### 📚 Quick Navigation
 
-#### 1. **play.js** ([code](src/play.js)) ([doc](docs/play.md))** - Main Composition Engine
-- Orchestrates the entire composition process
-- Implements dual-context architecture for primary and poly meters
-- Manages phrase-level timing synchronization
-- Coordinates all modules to generate complete MIDI compositions
-- Handles section/phrase/measure hierarchy with perfect timing alignment
+- **[All Docs Index](docs/)** - Full documentation directory
+- **[Testing Guide](docs/test.md)** - Comprehensive test documentation
+- **[Run Validation](docs/play.md)** - Execution pipeline documentation
 
-#### 2. **composers.js** ([code](src/composers.js)) ([doc](docs/composers.md))** - Musical Intelligence System
-- **MeasureComposer**: Base class for meter and division generation
-- **ScaleComposer**: Generates notes from specific scales with octave ranges
-- **RandomScaleComposer**: Random scale selection from all available scales
-- **ChordComposer**: Chord progression-based composition with validation
-- **RandomChordComposer**: Generates random chord progressions (2-5 chords)
-- **ModeComposer**: Mode-based composition with root note support
-- **RandomModeComposer**: Random mode selection from all available modes
-- Advanced music theory integration with Tonal.js
-- Logarithmic ratio validation for smooth meter transitions
-- Weighted random selection for all musical parameters
-- Optional voice leading integration for smoother compositions
+### Core Orchestration & Rendering
 
-#### 3. **rhythm.js** ([code](src/rhythm.js)) ([doc](docs/rhythm.md))** - Rhythmic Pattern Generation
-- **Drum Mapping**: 25+ drum instruments with velocity ranges
-- **Drummer Function**: Advanced drum pattern generation with stutter effects
-- **Rhythm Patterns**: Binary, hex, onsets, random, Euclidean, rotate, morph
-- **Algorithmic Generation**: Weighted selection from rhythm library
-- **Context-Aware Programming**: Different patterns for primary vs poly meters
-- **Tonal.js Integration**: Uses @tonaljs/rhythm-pattern for core algorithms
-- **Dynamic Adaptation**: Rhythm complexity adjusts based on meter and tempo
+1. **[play.ts](docs/play.md)** - Main composition engine orchestrating the entire generation pipeline
+2. **[playNotes.ts](docs/playNotes.md)** - Note rendering and transformation for output
+3. **[stage.ts](docs/stage.md)** - Audio processing (binaural beats, stutter effects, MIDI events)
+4. **[writer.ts](docs/writer.md)** - MIDI output and CSVBuffer management
 
-#### 4. **time.js** ([code](src/time.js)) ([doc](docs/time.md))** - Timing Engine & Meter Spoofing
-- **Core Innovation**: "Meter spoofing" technology for any meter support
-- **Dual-Context Architecture**: Independent timing for primary and poly meters
-- **Polyrhythm Calculation**: Finds optimal measure alignments between meters
-- **Absolute Timing**: Phrase boundaries align perfectly in seconds
-- **Hierarchical Timing**: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
-- **MIDI Compatibility**: Converts any denominator to nearest power-of-2
-- **Tempo Synchronization**: Adjusts BPM to preserve actual meter durations
-- **Comprehensive Logging**: Timing markers with context awareness
+### Timing & Rhythm System
 
-#### 5. **stage.js** ([code](src/stage.js)) ([doc](docs/stage.md))** - Audio Processing Engine
-- **Binaural Beat Generation**: Alpha range (8-12Hz) with pitch bend effects
-- **Stutter Effects**: Three types (fade, pan, FX) with adaptive parameters
-- **Spatial Audio**: Left/right balance variation and channel mapping
-- **Instrument Management**: Program changes, pitch bend, volume control
-- **MIDI Event Creation**: Comprehensive note on/off and control change events
-- **Channel Tracking**: Avoids repetition with last-used channel tracking
-- **Dynamic FX Processing**: Randomized effect parameters with constraints
+1. **[time.ts](docs/time.md)** - Timing engine wrapper with meter spoofing technology
+2. **[TimingTree.ts](docs/TimingTree.md)** - Hierarchical timing state management
+3. **[time/LayerManager.ts](docs/time/LayerManager.md)** - Multi-layer coordination
+4. **[time/TimingCalculator.ts](docs/time/TimingCalculator.md)** - Meter conversion and MIDI timing math
+5. **[time/TimingContext.ts](docs/time/TimingContext.md)** - Per-layer timing state container
+6. **[rhythm.ts](docs/rhythm.md)** - Rhythmic pattern generation and drum mapping
 
-#### 6. **voiceLeading.js** ([code](src/voiceLeading.js)) ([doc](docs/voiceLeading.md))** - Voice Leading & Counterpoint
-- **Cost Function Optimizer**: Weighted penalty system for voice leading rules
-- **Smooth Motion**: Prefers stepwise motion (1-2 semitones) over large leaps
-- **Voice Range**: Enforces soprano/alto/tenor/bass register boundaries
-- **Leap Recovery**: Enforces leap-then-step recovery in opposite direction
-- **Voice Crossing**: Prevents soprano from crossing below alto in multi-voice contexts
-- **Parallel Motion**: Soft constraint avoiding repeated directional motion
-- **Composer Integration**: Optional enablement on any MeasureComposer subclass
-- **Quality Analysis**: Post-hoc validation of note sequences
-- **Customizable Weights**: Tunable preferences for different compositional styles
+### Musical Intelligence & Composition
 
-#### 7. **motifs.js** ([code](src/motifs.js)) ([doc](docs/motifs.md))** - Motif Transformation
-- **Interval Motifs**: Ordered `{ note, duration }` sequences
-- **Transformations**: transpose, invert, augment/diminish, reverse, develop chain
-- **Application**: `applyToNotes()` imprints motif offsets onto generated notes (used by stage)
-- **Integration**: Section types can seed `activeMotif` per section via **play.js** ([code](../src/play.js)) ([doc](play.md))
+1. **[composers.ts](docs/composers.md)** - Composer registry and base classes
+2. **[GenericComposer.ts](docs/composers/GenericComposer.md)** - Foundation for custom composers
+3. **[MeasureComposer.ts](docs/composers/MeasureComposer.md)** - Meter and division generation
+4. **[ScaleComposer.ts](docs/composers/ScaleComposer.md)** - Scale-based note generation
+5. **[ModeComposer.ts](docs/composers/ModeComposer.md)** - Mode-based composition with roots
+6. **[ChordComposer.ts](docs/composers/ChordComposer.md)** - Chord progression composition
+7. **[PentatonicComposer.ts](docs/composers/PentatonicComposer.md)** - Pentatonic scale composer
+8. **[ProgressionGenerator.ts](docs/composers/ProgressionGenerator.md)** - Advanced progression generation
 
-#### 8. **backstage.js** ([code](src/backstage.js)) ([doc](docs/backstage.md))** - Core Utilities & State
-- **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
-- **Randomization Systems**: Weighted, dual-range, limited-change random functions
-- **Global State Management**: Timing contexts for primary and poly meters
-- **MIDI Infrastructure**: Channel definitions, instrument mappings, constants
-- **Data Structures**: CSV row management, array utilities
-- **MIDI Helper Functions**: `allNotesOff()` and `muteAll()` for channel cleanup
-- **Performance Optimization**: Efficient state tracking and memory management
+### Music Theory & Voice Leading
 
-#### 9. **writer.js** ([code](src/writer.js)) ([doc](docs/writer.md))** - MIDI Output & File Generation
-- **CSVBuffer Class**: Encapsulates MIDI event arrays with layer metadata (rows, name properties)
-- **pushMultiple (p)**: Efficient batch MIDI event insertion with validation
-- **Timing Markers**: Context-aware logUnit() for debugging and analysis
-- **File Generation**: grandFinale() converts CSVBuffer to MIDI .mid files
-- **Filesystem Operations**: Wrapped fs module with error handling and logging
-- **Integration Utilities**: Seamless connection between composition and output
-- **Performance Optimization**: Efficient CSV-to-MIDI conversion via csv_maestro
+1. **[venue.ts](docs/venue.md)** - MIDI data, music theory data, and validation
+2. **[voiceLeading.ts](docs/voiceLeading.md)** - Voice leading wrapper and optimization
+3. **[voiceLeading/VoiceLeadingScore.ts](docs/voiceLeading/VoiceLeadingScore.md)** - Cost function optimization
+4. **[motifs.ts](docs/motifs.md)** - Motif transformation and application
 
-#### 10. **venue.js** ([code](src/venue.js)) ([doc](docs/venue.md))** - MIDI Data & Music Theory
-- **Complete MIDI Reference**: All 128 program change instruments
-- **MIDI Control Changes**: Full CC mapping with descriptions
-- **Tonal.js Integration**: Music theory databases (scales, chords, modes)
-- **Enharmonic Normalization**: Standardized note naming
-- **Lookup Functions**: MIDI value retrieval by name
-- **Global Exports**: Music theory data exposed for testing
-- **Validation Systems**: Chord and scale validation
+### Configuration & Infrastructure
 
-#### 11. **sheet.js** ([code](src/sheet.js)) ([doc](docs/sheet.md))** - Configuration System
-- **Musical Parameters**: BPM, PPQ, tuning frequency (432Hz)
-- **Weighted Distributions**: Numerators, denominators, octaves, voices
-- **Structural Parameters**: Sections, phrases per section, divisions (plus weighted SECTION_TYPES profiles)
-- **Instrument Settings**: Primary, secondary, bass instruments
-- **Binaural Configuration**: Frequency ranges and effects
-- **Logging Controls**: Timing marker granularity
-- **Composer Configuration**: Available composer types and weights
+1. **[sheet.ts](docs/sheet.md)** - Configuration system and musical parameters
+2. **[structure.ts](docs/structure.md)** - Section profiles and hierarchy
+3. **[backstage.ts](docs/backstage.md)** - Global utilities and state management
+4. **[PolychronError.ts](docs/PolychronError.md)** - Error handling and reporting
+
+### Dependency Injection & Effects
+
+1. **[DIContainer.ts](docs/DIContainer.md)** - Dependency injection container
+2. **[fxManager.ts](docs/fxManager.md)** - Effect management system
+
+### Context & State Management
+
+1. **[CompositionContext.ts](docs/CompositionContext.md)** - Composition state container
+2. **[CompositionState.ts](docs/CompositionState.md)** - Musical state tracking
+3. **[CompositionProgress.ts](docs/CompositionProgress.md)** - Progress tracking
+4. **[ComposerRegistry.ts](docs/ComposerRegistry.md)** - Composer type registration
+
+### Initialization & Lifecycle
+
+1. **[PolychronInit.ts](docs/PolychronInit.md)** - Initialization pipeline
+2. **[ModuleInitializer.ts](docs/ModuleInitializer.md)** - Module setup and configuration
+3. **[PolychronConfig.ts](docs/PolychronConfig.md)** - Configuration interface
+4. **[PolychronContext.ts](docs/PolychronContext.ts)** - Context configuration
+5. **[CancellationToken.ts](docs/CancellationToken.md)** - Cancellation support
+
+### Event System
+
+1. **[EventBus.ts](docs/EventBus.md)** - Event publishing and subscription
+
+### Utilities
+
+1. **[utils.ts](docs/utils.md)** - General utility functions
+
+### Module Index
+
+- **[time/index.md](docs/time/index.md)** - Timing subsystem overview
+- **[voiceLeading/index.md](docs/voiceLeading/index.md)** - Voice leading subsystem overview
+- **[validators.md](docs/validators.md)** - Validation utilities and schemas
+
+---
+
 
 ### Testing Philosophy
 
-**[See [docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This approach creates a safe sandbox for experimental music composition, enabling rapid iteration with confidence. All 628 tests validate actual function behavior across 12 test files, supporting the project's mission to explore novel algorithmic composition techniques.
+**[See [docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This approach creates a safe sandbox for experimental music composition, enabling rapid iteration with confidence. All 1200+ tests validate actual function behavior across 50+ test files, supporting the project's mission to explore novel algorithmic composition techniques.
 
 ## Technical Innovations
 
