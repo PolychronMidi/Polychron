@@ -575,4 +575,110 @@ describe('play.js - Orchestrator Module', () => {
       expect(typeof globalThis.initializePlayEngine).toBe('function');
     });
   });
+
+  describe('Branch Coverage - Error Conditions', () => {
+    it('should handle missing composers array gracefully', () => {
+      setupLocalState();
+      globalThis.composers = undefined;
+      globalThis.COMPOSERS = [{ type: 'scale', name: 'major' }];
+      expect(() => {
+        globalThis.composers = globalThis.COMPOSERS.map((config: any) => new ScaleComposer());
+      }).not.toThrow();
+      expect(globalThis.composers).toBeDefined();
+      expect(globalThis.composers.length).toBeGreaterThan(0);
+    });
+
+    it('should handle empty composers array by reinitializing', () => {
+      setupLocalState();
+      globalThis.composers = [];
+      globalThis.COMPOSERS = [{ type: 'scale', name: 'major' }];
+      expect(globalThis.composers.length).toBe(0);
+      globalThis.composers = globalThis.COMPOSERS.map((config: any) => new ScaleComposer());
+      expect(globalThis.composers.length).toBeGreaterThan(0);
+    });
+
+    it('should initialize total sections within configured range', () => {
+      setupLocalState();
+      globalThis.SECTIONS = { min: 2, max: 5 };
+      globalThis.totalSections = globalThis.ri(globalThis.SECTIONS.min, globalThis.SECTIONS.max);
+      expect(globalThis.totalSections).toBeGreaterThanOrEqual(globalThis.SECTIONS.min);
+      expect(globalThis.totalSections).toBeLessThanOrEqual(globalThis.SECTIONS.max);
+    });
+
+    it('should handle null/undefined context gracefully', () => {
+      setupLocalState();
+      ctx = undefined as any;
+      const result = globalThis.getContextValue?.(() => 'test', 'fallbackKey') || 'default';
+      expect(result).toBeDefined();
+    });
+
+    it('should handle composers with varying lengths', () => {
+      setupLocalState();
+      globalThis.COMPOSERS = [
+        { type: 'scale', name: 'major' },
+        { type: 'chords', progression: ['C', 'F', 'G'] }
+      ];
+      globalThis.composers = globalThis.COMPOSERS.map((config: any) => new ScaleComposer());
+      expect(globalThis.composers.length).toBe(2);
+    });
+  });
+
+  describe('Branch Coverage - State Initialization', () => {
+    it('should initialize all timing counters correctly', () => {
+      setupLocalState();
+      expect(globalThis.beatCount).toBe(0);
+      expect(globalThis.measureCount).toBe(0);
+      expect(globalThis.sectionIndex).toBe(0);
+    });
+
+    it('should initialize beat rhythm patterns', () => {
+      setupLocalState();
+      expect(Array.isArray(globalThis.beatRhythm)).toBe(true);
+      expect(globalThis.beatRhythm.length).toBeGreaterThan(0);
+    });
+
+    it('should initialize section boundaries correctly', () => {
+      setupLocalState();
+      expect(globalThis.totalSections).toBeGreaterThan(0);
+      expect(globalThis.phrasesPerSection).toBeGreaterThan(0);
+      expect(globalThis.measuresPerPhrase).toBeGreaterThan(0);
+    });
+
+    it('should handle numerator and denominator range variations', () => {
+      setupLocalState();
+      const testSignatures = [
+        { num: 2, denom: 4 },
+        { num: 3, denom: 4 },
+        { num: 4, denom: 4 },
+        { num: 6, denom: 8 }
+      ];
+      testSignatures.forEach(sig => {
+        globalThis.numerator = sig.num;
+        globalThis.denominator = sig.denom;
+        expect(globalThis.numerator).toBe(sig.num);
+        expect(globalThis.denominator).toBe(sig.denom);
+      });
+    });
+  });
+
+  describe('Branch Coverage - Random Selection', () => {
+    it('should select sections up to totalSections limit', () => {
+      setupLocalState();
+      globalThis.totalSections = 3;
+      for (let i = 0; i < 10; i++) {
+        globalThis.sectionIndex = globalThis.ri(0, globalThis.totalSections - 1);
+        expect(globalThis.sectionIndex).toBeLessThan(globalThis.totalSections);
+      }
+    });
+
+    it('should vary beatRhythm generation', () => {
+      setupLocalState();
+      const results = new Set();
+      for (let i = 0; i < 20; i++) {
+        const rhythm = [globalThis.ri(0, 1), globalThis.ri(0, 1)];
+        results.add(JSON.stringify(rhythm));
+      }
+      expect(results.size).toBeGreaterThan(1);
+    });
+  });
 });

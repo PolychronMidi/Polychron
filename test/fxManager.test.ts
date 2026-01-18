@@ -278,6 +278,35 @@ describe('FxManager', () => {
       expect(fxManager.lastUsedCHs2.size).toBe(0);
     });
 
+  describe('Deterministic selection', () => {
+    it('stutterFade should record one channel when ri returns min', () => {
+      const g = globalThis as any;
+      const originalRi = g.ri;
+      const originalRf = g.rf;
+      g.ri = vi.fn((min: number, _max: number) => min); // force CHsToStutter=1 and other mins
+      g.rf = vi.fn(() => 0.5);
+      fxManager.resetChannelTracking();
+      fxManager.stutterFade([1, 2, 3], 2, 1000);
+      expect(fxManager.lastUsedCHs.size).toBe(1);
+      // restore
+      g.ri = originalRi;
+      g.rf = originalRf;
+    });
+
+    it('stutterPan should record one channel when ri returns min', () => {
+      const g = globalThis as any;
+      const originalRi = g.ri;
+      const originalRf = g.rf;
+      g.ri = vi.fn((min: number, _max: number) => min); // force CHsToStutter=1
+      g.rf = vi.fn(() => 0.5);
+      fxManager.resetChannelTracking();
+      fxManager.stutterPan([4, 5], 2, 1000);
+      expect(fxManager.lastUsedCHs2.size).toBe(1);
+      // restore
+      g.ri = originalRi;
+      g.rf = originalRf;
+    });
+  });
     it('should maintain separate sets for fade and pan tracking', () => {
       fxManager.lastUsedCHs.add(1);
       fxManager.lastUsedCHs2.add(2);

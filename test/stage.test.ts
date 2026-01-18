@@ -851,5 +851,30 @@ describe('Stage Module', () => {
       // Should cover source, reflection, bass, and drum channels
       expect(channelsWithPrograms.size).toBeGreaterThan(10);
     });
+
+    it('should support stage methods for note and rhythm manipulation', () => {
+      expect(typeof stage.setNoteParams).toBe('function');
+      expect(typeof stage.setNoteParams2).toBe('function');
+      expect(typeof stage.crossModulateRhythms).toBe('function');
+    });
+
+    it('should have accessible stutter methods', () => {
+      expect(typeof stage.stutterFade).toBe('function');
+      expect(typeof stage.stutterPan).toBe('function');
+      expect(typeof stage.stutterFX).toBe('function');
+    });
+
+    it('should initialize balance parameters', () => {
+      expect(typeof stage.balOffset).toBe('number');
+      expect(typeof stage.cBal).toBe('number');
+      expect(typeof stage.lBal).toBe('number');
+      expect(typeof stage.rBal).toBe('number');
+    });
+
+    it('should have bass and reflection variance parameters', () => {
+      expect(typeof stage.bassVar).toBe('number');
+      expect(typeof stage.refVar).toBe('number');
+      expect(stage.firstLoop).toBeDefined();
+    });
   });
 });
