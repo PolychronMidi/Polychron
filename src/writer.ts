@@ -319,5 +319,4 @@ export const grandFinale = (): void => {
 (globalThis as any).CSVBuffer = CSVBuffer;
 (globalThis as any).pushMultiple = pushMultiple;
 (globalThis as any).grandFinale = grandFinale;
-(globalThis as any).logUnit = logUnit;
 (globalThis as any).p = pushMultiple; // Alias

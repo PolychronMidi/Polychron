@@ -8,6 +8,7 @@ import { setRhythm, trackRhythm } from './rhythm.js';
 import { ri, rf, rw, clamp } from './utils.js';
 import { ICompositionContext } from './CompositionContext.js';
 import { initTimingTree, buildPath, setTimingValues } from './TimingTree.js';
+import { logUnit } from './writer.js';
 
 export { TimingCalculator, TimingContext, LayerManager };
 
@@ -87,7 +88,6 @@ declare const composer: any;
 declare const c: any;
 declare const p: any;
 declare const m: typeof Math;
-declare const logUnit: any;
 
 let timingCalculator: TimingCalculator | null = null;
 
@@ -166,14 +166,14 @@ const setMidiTiming = (ctx: ICompositionContext, tick?: number): void => {
 const syncStateToGlobals = (ctx: ICompositionContext): void => {
   const g = globalThis as any;
   const state = ctx.state as any;
-  
+
   const keysToSync = [
     'midiMeter', 'midiMeterRatio', 'meterRatio', 'polyMeterRatio',
     'syncFactor', 'midiBPM', 'tpSec', 'tpMeasure', 'spMeasure',
     'measuresPerPhrase1', 'measuresPerPhrase2', 'tpPhrase', 'spPhrase',
     'numerator', 'denominator', 'polyNumerator', 'polyDenominator'
   ];
-  
+
   for (const key of keysToSync) {
     if (state[key] !== undefined) {
       g[key] = state[key];
@@ -189,8 +189,8 @@ const syncStateToGlobals = (ctx: ICompositionContext): void => {
 const getPolyrhythm = (ctx: ICompositionContext): void => {
   const g = globalThis as any;
   const state = ctx.state as any;
-  // Read from globals first (where LayerManager.activate() put it)
-  const getVal = (key: string) => g[key] ?? state[key];
+  // Read from state first (getPolyrhythm is called before syncStateToGlobals)
+  const getVal = (key: string) => state[key] !== undefined ? state[key] : g[key];
   // Initialize polyrhythm values only to state
   // getPolyrhythm is called once at phrase start, not during tight composition loops
   const setVal = (key: string, value: any) => {
@@ -240,12 +240,26 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
       }
     }
 
-    if (bestMatch.totalMeasures !== Infinity &&
+    // Check if we have a valid polyrhythm alignment
+    const hasPolyrhythm = !(getVal('numerator') === getVal('polyNumerator') && getVal('denominator') === getVal('polyDenominator'));
+    const hasValidMatch = bestMatch.totalMeasures !== Infinity &&
         (bestMatch.totalMeasures > 2 &&
-         (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1)) &&
-        !(getVal('numerator') === getVal('polyNumerator') && getVal('denominator') === getVal('polyDenominator'))) {
+         (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1));
+    
+    if (hasValidMatch && hasPolyrhythm) {
+      // Found a polyrhythmic alignment
       setVal('measuresPerPhrase1', bestMatch.primaryMeasures);
       setVal('measuresPerPhrase2', bestMatch.polyMeasures);
+      return;
+    } else if (!hasPolyrhythm) {
+      // Meters are identical - no polyrhythm needed, both use 1 measure per phrase
+      setVal('measuresPerPhrase1', 1);
+      setVal('measuresPerPhrase2', 1);
+      return;
+    } else if (hasValidMatch && !hasPolyrhythm) {
+      // This shouldn't happen, but just in case: valid match but same meters
+      setVal('measuresPerPhrase1', 1);
+      setVal('measuresPerPhrase2', 1);
       return;
     }
   }
@@ -286,7 +300,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
   // Read timing values from ctx.state (initialized by getMidiTiming)
   const tpSec = state.tpSec || g.tpSec;
-  
+
   if (!Number.isFinite(tpSec) || tpSec <= 0) {
     throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
   }
@@ -303,13 +317,13 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       // Determine which layer is active and use the corresponding measures
       const activeLayer = g.LM?.activeLayer || 'primary';
       let measuresPerPhrase = 1;
-      
+
       if (activeLayer === 'poly') {
         measuresPerPhrase = getVal('measuresPerPhrase2') || getVal('measuresPerPhrase') || 1;
       } else {
         measuresPerPhrase = getVal('measuresPerPhrase1') || getVal('measuresPerPhrase') || 1;
       }
-      
+
       if (!Number.isFinite(measuresPerPhrase) || measuresPerPhrase < 1) {
         measuresPerPhrase = 1;
       }
@@ -382,9 +396,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const layer = g.LM?.activeLayer || 'primary';
   const sectionIndex = g.sectionIndex ?? 0;
   const phraseIndex = g.phraseIndex ?? 0;
-  
+
   let path = buildPath(layer, sectionIndex, phraseIndex);
-  
+
   // Add measure/beat/division/etc to path if applicable
   if (unitType === 'measure' || unitType === 'beat' || unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') {
     const measureIndex = g.measureIndex ?? 0;
@@ -392,8 +406,8 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     const divIndex = g.divIndex ?? 0;
     const subdivIndex = g.subdivIndex ?? 0;
     const subsubdivIndex = g.subsubdivIndex ?? 0;
-    
-    path = buildPath(layer, sectionIndex, phraseIndex, 
+
+    path = buildPath(layer, sectionIndex, phraseIndex,
       unitType !== 'measure' ? measureIndex : undefined,
       (unitType === 'beat' || unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') ? beatIndex : undefined,
       (unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') ? divIndex : undefined,
@@ -401,7 +415,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       unitType === 'subsubdivision' ? subsubdivIndex : undefined
     );
   }
-  
+
   // Capture all calculated timing values
   const timingSnapshot: any = {};
   const timingKeys = [
@@ -413,13 +427,13 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     'tpSubdiv', 'spSubdiv', 'subdivStart', 'subdivStartTime',
     'tpSubsubdiv', 'spSubsubdiv', 'subsubdivStart', 'subsubdivStartTime'
   ];
-  
+
   for (const key of timingKeys) {
     if (key in g && unitType !== 'phrase') {
       timingSnapshot[key] = g[key];
     }
   }
-  
+
   if (Object.keys(timingSnapshot).length > 0) {
     setTimingValues(tree, path, timingSnapshot);
   }
@@ -439,35 +453,6 @@ const formatTime = (seconds: number): string => {
 
 
 
-/**
- * Sync timing values from ctx.state to globals for runtime use.
- * Called after getMidiTiming/getPolyrhythm to make values available to LayerManager and playNotes.
- */
-const syncStateToGlobals = (ctx: ICompositionContext): void => {
-  const g = globalThis as any;
-  const state = ctx.state as any;
-  
-  // Sync all timing values from state to globals
-  const timingKeys = [
-    'BPM', 'PPQ', 'numerator', 'denominator', 'polyNumerator', 'polyDenominator',
-    'midiMeter', 'midiMeterRatio', 'meterRatio', 'polyMeterRatio', 'syncFactor', 'midiBPM',
-    'tpSec', 'tpMeasure', 'spMeasure',
-    'measuresPerPhrase1', 'measuresPerPhrase2', 'measuresPerPhrase', 'tpPhrase', 'spPhrase',
-    'measureStart', 'measureStartTime', 'measureIndex', 'phraseStart', 'phraseStartTime',
-    'beatStart', 'beatStartTime', 'beatIndex', 'tpBeat', 'spBeat', 'trueBPM', 'bpmRatio', 'bpmRatio2', 'bpmRatio3', 'divsPerBeat',
-    'divStart', 'divStartTime', 'divIndex', 'tpDiv', 'spDiv', 'subdivsPerDiv',
-    'subdivStart', 'subdivStartTime', 'subdivIndex', 'tpSubdiv', 'spSubdiv', 'subdivsPerMinute',
-    'subsubdivStart', 'subsubdivStartTime', 'subsubdivIndex', 'tpSubsubdiv', 'spSubsubdiv', 'subsubdivsPerMinute',
-    'sectionStart', 'sectionStartTime', 'sectionEnd', 'tpSection', 'spSection', 'sectionIndex'
-  ];
-  
-  for (const key of timingKeys) {
-    if (state[key] !== undefined) {
-      g[key] = state[key];
-    }
-  }
-};
-
 export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateToGlobals, formatTime };
 
 // Attach to globalThis for backward compatibility
@@ -479,3 +464,4 @@ export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateTo
 (globalThis as any).formatTime = formatTime;
 (globalThis as any).setRhythm = setRhythm;
 (globalThis as any).trackRhythm = trackRhythm;
+(globalThis as any).logUnit = logUnit;

@@ -9,6 +9,8 @@
 import { CompositionStateService } from './CompositionState.js';
 import { DIContainer } from './DIContainer.js';
 import { CompositionEventBus, ProgressCallback, CancellationToken } from './CompositionProgress.js';
+import { setUnitTiming as setUnitTimingFn } from './time.js';
+import { logUnit as logUnitFn } from './writer.js';
 
 /**
  * Composition context - contains all state and services needed for composition
@@ -37,6 +39,10 @@ export interface ICompositionContext {
   
   // Logging
   LOG: string;
+  
+  // Timing functions
+  logUnit: (unitType: string) => void;
+  setUnitTiming: (unitType: string) => void;
 }
 
 /**
@@ -51,7 +57,7 @@ export function createCompositionContext(
   csvBuffer?: any,
   LOG: string = 'none'
 ): ICompositionContext {
-  return {
+  const ctx: ICompositionContext = {
     state: new CompositionStateService(),
     BPM: config.BPM,
     PPQ: config.PPQ,
@@ -62,8 +68,11 @@ export function createCompositionContext(
     progressCallback,
     cancellationToken,
     csvBuffer,
-    LOG
+    LOG,
+    logUnit: (unitType: string) => logUnitFn(unitType),
+    setUnitTiming: (unitType: string) => setUnitTimingFn(unitType, ctx)
   };
+  return ctx;
 }
 
 /**

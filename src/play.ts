@@ -329,14 +329,14 @@ const initializePlayEngine = async (
       g.syncStateToGlobals(ctx);  // Sync timing values from ctx.state to globals for runtime
 
       g.LM.activate('primary', false);
-      g.setUnitTiming('phrase', ctx);
+      ctx.setUnitTiming('phrase');
       for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
         g.measureCount++;
-        g.setUnitTiming('measure', ctx);
+        ctx.setUnitTiming('measure');
 
         for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
           g.beatCount++;
-          g.setUnitTiming('beat', ctx);
+          ctx.setUnitTiming('beat');
           g.stage.setOtherInstruments(ctx);
           g.stage.setBinaural(ctx);
           g.stage.setBalanceAndFX(ctx);
@@ -346,15 +346,15 @@ const initializePlayEngine = async (
           g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx) : g.stage.stutterPan(g.stutterPanCHs, ctx);
 
           for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
-            g.setUnitTiming('division', ctx);
+            ctx.setUnitTiming('division');
 
             for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
-              g.setUnitTiming('subdivision', ctx);
+              ctx.setUnitTiming('subdivision');
               g.stage.playNotes();
             }
 
             for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
-              g.setUnitTiming('subsubdivision', ctx);
+                ctx.setUnitTiming('subsubdivision');
               g.stage.playNotes2();
             }
           }
@@ -366,12 +366,12 @@ const initializePlayEngine = async (
       g.LM.activate('poly', true);
       g.getMidiTiming(ctx);
       g.syncStateToGlobals(ctx);  // Sync timing values from ctx.state to globals for runtime
-      g.setUnitTiming('phrase', ctx);
+      ctx.setUnitTiming('phrase');
       for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
-        g.setUnitTiming('measure', ctx);
+        ctx.setUnitTiming('measure');
 
         for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
-          g.setUnitTiming('beat', ctx);
+          ctx.setUnitTiming('beat');
           g.stage.setOtherInstruments(ctx);
           g.stage.setBinaural(ctx);
           g.stage.setBalanceAndFX(ctx);
@@ -381,15 +381,15 @@ const initializePlayEngine = async (
           g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx) : g.stage.stutterPan(g.stutterPanCHs, ctx);
 
           for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
-            g.setUnitTiming('division', ctx);
+            ctx.setUnitTiming('division');
 
             for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
-              g.setUnitTiming('subdivision', ctx);
+              ctx.setUnitTiming('subdivision');
               g.stage.playNotes();
             }
 
             for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
-              g.setUnitTiming('subsubdivision', ctx);
+              ctx.setUnitTiming('subsubdivision');
               g.stage.playNotes2();
             }
           }
@@ -400,10 +400,10 @@ const initializePlayEngine = async (
     }
 
     g.LM.advance('primary', 'section');
-    g.logUnit('section');
+    ctx.logUnit('section');
 
     g.LM.advance('poly', 'section');
-    g.logUnit('section');
+    ctx.logUnit('section');
 
     g.BPM = BASE_BPM;
     g.activeMotif = null;
