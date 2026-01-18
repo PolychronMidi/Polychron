@@ -462,32 +462,35 @@ test('CSVBuffer operations maintain state consistency', () => {
  * Check test coverage: each source file should have at least one test.
  */
 test('each source module should have corresponding test file', () => {
-  const sourceFiles = [
-    'backstage.js',
-    'composers.js',
-    'rhythm.js',
-    'stage.js',
-    'time.js',
-    'venue.js',
-    'writer.js'
-  ];
+  const srcDir = path.join(__dirname, '..', 'src');
+  const sourceFiles = fs.readdirSync(srcDir, { withFileTypes: true })
+    .filter(f => f.isFile() && f.name.endsWith('.ts') && !f.name.endsWith('.d.ts'))
+    .map(f => f.name);
 
   const testFiles = fs.readdirSync(path.join(__dirname), { withFileTypes: true })
     .filter(f => f.isFile() && (f.name.endsWith('.test.js') || f.name.endsWith('.test.ts')))
     .map(f => f.name);
 
   const missingTests = sourceFiles.filter(srcFile => {
-    const testFileJs = srcFile.replace('.js', '.test.js');
-    const testFileTs = srcFile.replace('.js', '.test.ts');
+    const testFileJs = srcFile.replace('.ts', '.test.js');
+    const testFileTs = srcFile.replace('.ts', '.test.ts');
     return !testFiles.includes(testFileJs) && !testFiles.includes(testFileTs);
   });
 
   if (missingTests.length > 0) {
-    console.warn(`⚠️  Missing test files: ${missingTests.join(', ')}`);
+    console.warn(`⚠️  Missing test files (${missingTests.length}): ${missingTests.join(', ')}`);
   }
 
-  // play.js should have a test (.ts or .js)
-  expect(testFiles.some(f => f === 'play.test.js' || f === 'play.test.ts')).toBe(true);
+  // Critical modules should have tests
+  const criticalFiles = ['play.ts', 'backstage.ts', 'composers.ts', 'rhythm.ts'];
+  criticalFiles.forEach(criticalFile => {
+    const testFileJs = criticalFile.replace('.ts', '.test.js');
+    const testFileTs = criticalFile.replace('.ts', '.test.ts');
+    expect(
+      testFiles.includes(testFileJs) || testFiles.includes(testFileTs),
+      `Critical file ${criticalFile} must have a test file`
+    ).toBe(true);
+  });
 });
 
 /**
