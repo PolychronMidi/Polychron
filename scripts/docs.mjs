@@ -97,31 +97,48 @@ function enforceLinksInText(text, isReadme=false) {
   return out;
 }
 
-function autoLinkDoc(docPath) {
+function autoLinkDoc(docPath, verbose=false) {
   const content = fs.readFileSync(docPath, 'utf-8');
   const isReadme = path.basename(docPath) === 'README.md';
   const parts = splitByCodeFences(content);
   const processed = parts.map(p => p.type === 'text' ? enforceLinksInText(p.text, isReadme) : p.text).join('\n');
   if (processed !== content) {
     fs.writeFileSync(docPath, processed);
-    console.log(`Linked: ${path.relative(projectRoot, docPath)}`);
+    if (verbose) console.log(`Linked: ${path.relative(projectRoot, docPath)}`);
+    return true;
   }
+  return false;
+}
+
+function normalizeCodeForComparison(code) {
+  // Collapse multiple spaces/tabs into single space, trim lines
+  return code.split('\n').map(l => l.replace(/\s+/g, ' ').trim()).join('\n').trim();
 }
 
 function injectSnippet(docPath, snippetName, code) {
-  const doc = fs.readFileSync(docPath, 'utf-8');
+  const docBefore = fs.readFileSync(docPath, 'utf-8');
   const beginTag = `<!-- BEGIN: snippet:${snippetName} -->`;
   const endTag = `<!-- END: snippet:${snippetName} -->`;
-  const beginIdx = doc.indexOf(beginTag);
-  const endIdx = doc.indexOf(endTag);
+  const beginIdx = docBefore.indexOf(beginTag);
+  const endIdx = docBefore.indexOf(endTag);
   if (beginIdx === -1 || endIdx === -1) return false;
-  const before = doc.slice(0, beginIdx + beginTag.length);
-  const after = doc.slice(endIdx);
+  
+  // Extract existing code between markers to check if it's the same (ignoring formatting)
+  const existingBetween = docBefore.slice(beginIdx + beginTag.length, endIdx);
+  const existingCode = existingBetween.match(/```typescript\n([\s\S]*?)\n```/)?.[1] || '';
+  
+  const existingNorm = normalizeCodeForComparison(existingCode);
+  const proposedNorm = normalizeCodeForComparison(code);
+  
+  if (existingNorm === proposedNorm) return false; // Already correct (ignoring formatting)
+  
+  const before = docBefore.slice(0, beginIdx + beginTag.length);
+  const after = docBefore.slice(endIdx);
   const injected = `\n\n\`\`\`typescript\n${code}\n\`\`\`\n\n`;
-  const out = before + injected + after;
-  fs.writeFileSync(docPath, out);
-  console.log(`Snippet: ${path.relative(projectRoot, docPath)} -> ${snippetName}`);
-  return true;
+  const docAfter = before + injected + after;
+  
+  fs.writeFileSync(docPath, docAfter);
+  return true; // Changed and written
 }
 
 function extractFromSource(project, srcPath, snippetName) {
@@ -147,30 +164,36 @@ function extractFromSource(project, srcPath, snippetName) {
   }
 }
 
-function processDoc(project, docPath) {
+function processDoc(project, docPath, verbose=false) {
   // Auto-link first
-  autoLinkDoc(docPath);
+  autoLinkDoc(docPath, verbose);
   // Snippets
   const srcPath = srcByDoc.get(docPath);
   if (!srcPath || !fs.existsSync(srcPath)) return;
-  const content = fs.readFileSync(docPath, 'utf-8');
+  const initialContent = fs.readFileSync(docPath, 'utf-8');
   const re = /<!--\s*BEGIN:\s*snippet:([^\s>]+)\s*-->/g;
   const names = [];
   let m;
-  while ((m = re.exec(content)) !== null) {
+  while ((m = re.exec(initialContent)) !== null) {
     names.push(m[1]);
   }
+  let docChanged = false;
   for (const name of names) {
     const code = extractFromSource(project, srcPath, name);
-    if (code) injectSnippet(docPath, name, code);
+    if (code && injectSnippet(docPath, name, code)) {
+      docChanged = true;
+    }
+  }
+  if (docChanged) {
+    console.log(`Updated: ${path.relative(projectRoot, docPath)}`);
   }
 }
 
-function fixAll() {
+function fixAll(verbose=false) {
   const project = new Project({ tsConfigFilePath: path.join(projectRoot, 'tsconfig.json') });
   for (const { doc } of modules) {
     const docPath = path.join(docsDir, doc);
-    if (fs.existsSync(docPath)) processDoc(project, docPath);
+    if (fs.existsSync(docPath)) processDoc(project, docPath, verbose);
   }
 }
 
@@ -180,7 +203,7 @@ function watchAll() {
   watcher.on('change', (changed) => {
     const docPath = docBySrc.get(changed);
     if (docPath && fs.existsSync(docPath)) {
-      processDoc(project, docPath);
+      processDoc(project, docPath, true); // verbose in watch mode
     }
   });
   console.log('Watching src/*.ts for docs refresh...');
@@ -209,10 +232,11 @@ function checkAll() {
 }
 
 const cmd = process.argv[2] || 'fix';
-if (cmd === 'fix') fixAll();
+const verbose = process.argv[3] === '--verbose';
+if (cmd === 'fix') fixAll(verbose);
 else if (cmd === 'watch') watchAll();
 else if (cmd === 'check') checkAll();
 else {
-  console.error('Usage: node scripts/docs.mjs [fix|watch|check]');
+  console.error('Usage: node scripts/docs.mjs [fix|watch|check] [--verbose]');
   process.exit(1);
 }
