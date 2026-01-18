@@ -12,6 +12,7 @@
     "depcheck": "^1.4.7",
     "esbuild": "^0.27.2",
     "eslint": "^9.0.0",
+    "husky": "^8.0.0",
     "markdown-link-check": "^3.14.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"
@@ -42,6 +43,7 @@
     "play:raw": "node dist/play.js && py c2m.py",
     "docs:refresh": "node scripts/refresh-doc-examples.mjs",
     "docs:check-links": "node scripts/check-links.mjs",
-    "docs:enforce-links": "node scripts/enforce-doc-links.mjs"
+    "docs:enforce-links": "node scripts/enforce-doc-links.mjs",
+    "prepare": "husky install"
   }
 }

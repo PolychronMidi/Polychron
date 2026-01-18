@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Polychron Pre-commit Guard
+# Prevents commits with file integrity issues
+node scripts/pre-commit.js

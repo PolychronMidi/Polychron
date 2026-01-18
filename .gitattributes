@@ -1,0 +1,21 @@
+* text=auto eol=lf
+
+# Enforce LF for all text files
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+*.mjs text eol=lf
+
+# Ensure these get final newlines
+*.ts working-tree-encoding=UTF-8
+*.js working-tree-encoding=UTF-8
+*.json working-tree-encoding=UTF-8
+*.md working-tree-encoding=UTF-8
+
+# Binary files
+*.mid binary
+*.csv binary
