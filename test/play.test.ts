@@ -249,10 +249,12 @@ describe('play.js - Orchestrator Module', () => {
       setUnitTiming('division', ctx);
       setUnitTiming('subdivision', ctx);
 
-      expect(ctx.state.tpMeasure).toBeGreaterThan(0);
-      expect(ctx.state.tpBeat).toBeGreaterThan(0);
-      expect(ctx.state.tpDiv).toBeGreaterThan(0);
-      expect(ctx.state.tpSubdiv).toBeGreaterThan(0);
+      // setUnitTiming writes only to globals for layer isolation
+      const g = globalThis as any;
+      expect(ctx.state.tpMeasure).toBeGreaterThan(0); // From getMidiTiming
+      expect(g.tpBeat).toBeGreaterThan(0);
+      expect(g.tpDiv).toBeGreaterThan(0);
+      expect(g.tpSubdiv).toBeGreaterThan(0);
     });
 
     it('should support polyrhythm generation', () => {
@@ -436,10 +438,11 @@ describe('play.js - Orchestrator Module', () => {
       ctx.state.measureStart = 0;
 
       setUnitTiming('measure', ctx);
-      const tpMeasure = ctx.state.tpMeasure;
+      const tpMeasure = ctx.state.tpMeasure; // From getMidiTiming
 
       setUnitTiming('beat', ctx);
-      const tpBeat = ctx.state.tpBeat;
+      const g = globalThis as any;
+      const tpBeat = g.tpBeat; // From setUnitTiming (writes only to globals)
 
       // tpBeat should be smaller than tpMeasure (more beats per measure)
       expect(tpBeat).toBeLessThan(tpMeasure);
