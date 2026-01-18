@@ -312,6 +312,14 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     g[key] = value;  // Still write to globals for runtime (playNotes.ts reads from globals)
   };
 
+  // Ensure critical timing values are synced to globals if not already set
+  if (g.tpMeasure === undefined && state.tpMeasure !== undefined) {
+    g.tpMeasure = state.tpMeasure;
+  }
+  if (g.spMeasure === undefined && state.spMeasure !== undefined) {
+    g.spMeasure = state.spMeasure;
+  }
+
   switch (unitType) {
     case 'phrase':
       // Determine which layer is active and use the corresponding measures
@@ -333,8 +341,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       break;
 
     case 'measure':
-      setVal('measureStart', getVal('phraseStart') + getVal('measureIndex') * getVal('tpMeasure'));
-      setVal('measureStartTime', getVal('phraseStartTime') + getVal('measureIndex') * getVal('spMeasure'));
+      // Use g directly for runtime indices, not getVal (which prefers state)
+      setVal('measureStart', getVal('phraseStart') + g.measureIndex * getVal('tpMeasure'));
+      setVal('measureStartTime', getVal('phraseStartTime') + g.measureIndex * getVal('spMeasure'));
       setMidiTiming(ctx);
       setVal('beatRhythm', setRhythm('beat'));
       break;
@@ -348,8 +357,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       setVal('bpmRatio2', getVal('trueBPM') / getVal('BPM'));
       setVal('trueBPM2', getVal('numerator') * (getVal('numerator') / getVal('denominator')) / 4);
       setVal('bpmRatio3', 1 / getVal('trueBPM2'));
-      setVal('beatStart', getVal('phraseStart') + getVal('measureIndex') * getVal('tpMeasure') + getVal('beatIndex') * getVal('tpBeat'));
-      setVal('beatStartTime', getVal('measureStartTime') + getVal('beatIndex') * getVal('spBeat'));
+      // Use g directly for runtime indices
+      setVal('beatStart', getVal('phraseStart') + g.measureIndex * getVal('tpMeasure') + g.beatIndex * getVal('tpBeat'));
+      setVal('beatStartTime', getVal('measureStartTime') + g.beatIndex * getVal('spBeat'));
       setVal('divsPerBeat', g.composer ? g.composer.getDivisions() : 1);
       setVal('divRhythm', setRhythm('div'));
       break;
@@ -358,8 +368,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       trackRhythm('div');
       setVal('tpDiv', getVal('tpBeat') / Math.max(1, getVal('divsPerBeat')));
       setVal('spDiv', getVal('tpDiv') / tpSec);
-      setVal('divStart', getVal('beatStart') + getVal('divIndex') * getVal('tpDiv'));
-      setVal('divStartTime', getVal('beatStartTime') + getVal('divIndex') * getVal('spDiv'));
+      // Use g directly for runtime indices
+      setVal('divStart', getVal('beatStart') + g.divIndex * getVal('tpDiv'));
+      setVal('divStartTime', getVal('beatStartTime') + g.divIndex * getVal('spDiv'));
       setVal('subdivsPerDiv', Math.max(1, g.composer ? g.composer.getSubdivisions() : 1));
       setVal('subdivFreq', getVal('subdivsPerDiv') * getVal('divsPerBeat') * getVal('numerator') * getVal('meterRatio'));
       setVal('subdivRhythm', setRhythm('subdiv'));
@@ -370,8 +381,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       setVal('tpSubdiv', getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv')));
       setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
       setVal('subdivsPerMinute', 60 / getVal('spSubdiv'));
-      setVal('subdivStart', getVal('divStart') + getVal('subdivIndex') * getVal('tpSubdiv'));
-      setVal('subdivStartTime', getVal('divStartTime') + getVal('subdivIndex') * getVal('spSubdiv'));
+      // Use g directly for runtime indices
+      setVal('subdivStart', getVal('divStart') + g.subdivIndex * getVal('tpSubdiv'));
+      setVal('subdivStartTime', getVal('divStartTime') + g.subdivIndex * getVal('spSubdiv'));
       setVal('subsubdivsPerSub', g.composer ? g.composer.getSubsubdivs() : 1);
       setVal('subsubdivRhythm', setRhythm('subsubdiv'));
       break;
@@ -381,8 +393,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       setVal('tpSubsubdiv', getVal('tpSubdiv') / Math.max(1, getVal('subsubdivsPerSub')));
       setVal('spSubsubdiv', getVal('tpSubsubdiv') / tpSec);
       setVal('subsubdivsPerMinute', 60 / getVal('spSubsubdiv'));
-      setVal('subsubdivStart', getVal('subdivStart') + getVal('subsubdivIndex') * getVal('tpSubsubdiv'));
-      setVal('subsubdivStartTime', getVal('subdivStartTime') + getVal('subsubdivIndex') * getVal('spSubsubdiv'));
+      // Use g directly for runtime indices
+      setVal('subsubdivStart', getVal('subdivStart') + g.subsubdivIndex * getVal('tpSubsubdiv'));
+      setVal('subsubdivStartTime', getVal('subdivStartTime') + g.subsubdivIndex * getVal('spSubsubdiv'));
       break;
 
     default:
@@ -440,7 +453,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
   // Log the unit after calculating timing
   g.logUnit(unitType);
-};
+};;
 
 /**
  * Format seconds as MM:SS.ssss time string.
