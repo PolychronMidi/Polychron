@@ -3,4 +3,16 @@
 
 # Polychron Pre-commit Guard
 # Prevents commits with file integrity issues
-node scripts/pre-commit.js
+node scripts/pre-commit.js || exit 1
+
+echo "Running docs:fix..."
+npm run docs:fix || exit 1
+
+echo "Running docs:check..."
+npm run docs:check || exit 1
+
+echo "Running lint..."
+npm run lint -- --max-warnings=0 || exit 1
+
+echo "Running type-check..."
+npm run type-check || exit 1

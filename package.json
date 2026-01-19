@@ -46,12 +46,11 @@
     "start": "npm run build && node dist/play.js && py c2m.py",
     "play": "node scripts/run-with-log.mjs play.log npm run play:raw",
     "play:raw": "node dist/play.js && py c2m.py",
-    "docs:refresh": "node scripts/refresh-doc-examples.mjs",
-    "docs:check-links": "node scripts/check-links.mjs",
-    "docs:enforce-links": "node scripts/enforce-doc-links.mjs",
     "docs:fix": "node scripts/docs.mjs fix",
     "docs:watch": "node scripts/docs.mjs watch",
     "docs:check": "node scripts/docs.mjs check",
+    "docs:index": "node scripts/docs.mjs index",
+    "docs:status": "node scripts/docs.mjs status",
     "clear-todos": "node scripts/clear-todos.mjs",
     "prepare": "husky install"
   }

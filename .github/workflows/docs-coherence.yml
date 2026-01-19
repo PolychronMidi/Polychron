@@ -22,12 +22,18 @@ jobs:
       - name: Install deps
         run: npm ci || npm install
 
-      - name: Refresh docs snippets
-        run: npm run docs:refresh
+      - name: Run docs:fix (snippets + index + status)
+        run: npm run docs:fix
 
-      - name: Check for drift
+      - name: Check for uncommitted doc changes
         run: |
-          git diff --name-only --exit-code || (echo 'Docs drift detected. Run npm run docs:refresh and commit updates.' && exit 1)
+          git diff --name-only --exit-code || (echo '❌ Docs drift detected. Run "npm run docs:fix" locally and commit the updates.' && exit 1)
 
-      - name: Check for broken links
-        run: npm run docs:check-links
+      - name: Validate doc links
+        run: npm run docs:check
+
+      - name: Lint check
+        run: npm run lint -- --max-warnings=0
+
+      - name: Type check
+        run: npm run type-check

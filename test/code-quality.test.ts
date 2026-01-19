@@ -454,6 +454,52 @@ test('each source module should have corresponding test file', () => {
 });
 
 /**
+ * Check documentation coverage: each source file (except .d.ts) should have a corresponding doc file.
+ */
+test('each source module should have corresponding doc file', () => {
+  function scanDir(dir, baseRelative = '', filterExt = null) {
+    const files = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      const relative = baseRelative ? path.join(baseRelative, entry.name) : entry.name;
+
+      if (entry.isDirectory()) {
+        files.push(...scanDir(fullPath, relative, filterExt));
+      } else if (!filterExt || entry.name.endsWith(filterExt)) {
+        if (filterExt !== '.d.ts') { // special case: exclude .d.ts for source files
+          files.push(relative);
+        } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
+          files.push(relative);
+        }
+      }
+    }
+
+    return files;
+  }
+
+  const srcDir = path.join(__dirname, '..', 'src');
+  const docsDir = path.join(__dirname, '..', 'docs');
+
+  const sourceFiles = scanDir(srcDir, '', '.ts')
+    .filter(f => !f.endsWith('.d.ts'))
+    .map(f => f.replace(/\\/g, '/'));
+  const docFiles = scanDir(docsDir, '', '.md').map(f => f.replace(/\\/g, '/'));
+
+  const missingDocs = sourceFiles.filter(srcFile => {
+    const docFile = srcFile.replace(/\.ts$/, '.md');
+    return !docFiles.includes(docFile);
+  });
+
+  if (missingDocs.length > 0) {
+    expect.fail(`Missing doc files for ${missingDocs.length} source module(s): ${missingDocs.join(', ')}`);
+  }
+
+  expect(missingDocs).toEqual([]);
+});
+
+/**
  * Verify function signature consistency across calls in tests vs source.
  * Catches cases where test calls use different number of arguments than function expects.
  */

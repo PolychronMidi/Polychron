@@ -1,267 +1,113 @@
-# Module Documentation
+# Documentation Index
 
-Documentation for Polychron TypeScript modules.
-
----
-
-## 📚 Documentation System Guide
-
-### Overview
-
-This documentation system uses **one unified helper script** to keep docs accurate and linked:
-
-- **`scripts/docs.mjs`** – Auto-links module references and injects real code snippets from source. Exposed via npm scripts: `npm run docs:fix` (one-shot), `npm run docs:watch` (watch mode), and `npm run docs:check` (validation only).
-
-### Why This Matters
-
-- **Auto-linking stays current** – Plain module names are linked to both source code and documentation automatically
-- **Code snippets stay in sync** – Real source code is extracted and injected, preventing documentation drift
-- **Minimal manual maintenance** – Write module names plainly (e.g., stage.ts) and add snippet markers; the script does the rest
+Complete reference documentation for all Polychron modules.
 
 ---
 
-## 🔧 How It Works
+## Core & Orchestration
 
-### Auto-Linking + Snippet Injection (single pipeline)
+- **[play](play.md)** — `play.ts` is the main composition engine that orchestrates the section→phrase→measure→beat hierarchy. It manages the global mutable state for composition nesting levels, initializes the DI container with core services, and drives the composition loop across all temporal divisions.
 
-The `docs.mjs` script scans all `.md` files in `docs/` and:
+- **[playNotes](playNotes.md)** — `playNotes.ts` contains the `PlayNotes` class that handles MIDI note generation with advanced stutter/shift/octave-modulation effects. It calculates timing and velocity parameters based on hierarchical polyrhythm state and outputs notes to both subdivision and sub-subdivision timescales.
 
-- **Auto-links** any module filename references to both source and docs using the format `module.ts ([code](../src/module.ts)) ([doc](module.md))`
-- **Injects snippets** for any `<!-- BEGIN: snippet:Name --> ... <!-- END: snippet:Name -->` markers by pulling real code from `src/`
+- **[stage](stage.md)** — `stage.ts` contains the `Stage` class, the main audio processing engine that manages MIDI event generation, binaural beat shifting, stutter effects, balance/pan randomization, and FX parameter automation. It delegates note generation to `PlayNotes` while managing all stage-level effects and instrument routing.
 
-**Example prose before:**
-```markdown
-stage.ts coordinates with play.ts to process notes
-```
+- **[writer](writer.md)** — `writer.ts` encapsulates MIDI output and CSV export functionality. It provides the main `p()` function for writing MIDI events to the global buffer, CSV serialization helpers, and output finalization (grandFinale). It acts as the final stage where composed note/CC events are persisted to files.
 
-**After running `npm run docs:fix`:**
-```markdown
-stage.ts ([code](../src/stage.ts)) ([doc](stage.md)) coordinates with play.ts ([code](../src/play.ts)) ([doc](play.md)) to process notes
-```
+## Timing & Rhythm
 
-**Example snippet marker setup:**
-```markdown
-#### `setTuningAndInstruments()`
+- **[index](time/index.md)** — Documentation for this module.
 
-<!-- BEGIN: snippet:Stage_setTuningAndInstruments -->
+- **[LayerManager](time/LayerManager.md)** — `LayerManager` (LM) coordinates multiple independent timing layers for simultaneous composition streams. It manages layer registration, activation, buffer switching, and timing state advancement. This enables rendering separate melodic/harmonic layers that progress independently but output to different MIDI buffers.
 
-<!-- END: snippet:Stage_setTuningAndInstruments -->
-```
+- **[rhythm](rhythm.md)** — `rhythm.ts` builds drum/rhythm patterns, converts between durations and time, and drives MIDI CC accents. It provides binary/hex rhythm parsing, probabilistic and Euclidean generators, drummer playback utilities, and FX stutter helpers.
 
-**When to run:**
-```bash
-npm run docs:fix   # one-shot link + snippet injection
-npm run docs:watch # watch mode while editing docs/source
-npm run docs:check # validation only (no writes)
-```
+- **[time](time.md)** — `time.ts` re-exports and wraps timing calculation functions from the `time/` subdirectory and backstage globals. It provides a unified API for calculating beat/division/subdivision timings, managing temporal distributions, and interfacing with the LayerManager for multi-layer timing coordination.
 
-Run after:
-- Updating source code that's documented with snippets
-- Adding new snippet markers to docs
-- Mentioning module names in prose or creating new doc files
+- **[TimingCalculator](time/TimingCalculator.md)** — `TimingCalculator` handles the conversion between arbitrary time signatures (including non-power-of-2 denominators) and MIDI-compatible meters. It calculates all timing constants (ticks per measure, ticks per second, sync factors) needed for accurate MIDI rendering.
 
----
+- **[TimingContext](time/TimingContext.md)** — `TimingContext` encapsulates all timing-related state for a single composition layer (phrase/measure/beat timing, polyrhythm ratios, on/off counts, tempo). Each layer maintains its own TimingContext instance, allowing independent timing progression while writing to separate MIDI buffers.
 
-## ✍️ Creating New Documentation
+- **[TimingTree](TimingTree.md)** — `TimingTree.ts` provides a hierarchical tree structure for managing timing state across the composition hierarchy (sections, phrases, measures, beats, divisions, subdivisions). It enables rapid lookup of timing values, sync between global state and tree, and per-layer isolation for multi-layer rendering.
 
-### Step 1: Create the Doc File
+## Composition
 
-Create `docs/YourModule.md` with this structure:
+- **[ChordComposer](composers/ChordComposer.md)** — `ChordComposer.ts` generates chord tones from a progression, supporting normalization, validation, and directional traversal. A random variant regenerates a new progression on each tick.
 
-```markdown
-# YourModule.ts - Brief Description
+- **[ComposerRegistry](ComposerRegistry.md)** — `ComposerRegistry.ts` is the singleton registry that wires composer **type keys** (e.g., `scale`, `chords`, `mode`) to factory functions that construct composers. It centralizes registration, lookup, and default wiring for built-in composers while allowing custom composer injection.
 
-> **Source**: `src/YourModule.ts`  
-> **Status**: Core Module / Utility / etc.  
-> **Dependencies**: module1.ts, module2.ts
+- **[composers](composers.md)** — `composers.ts` is a stub module that re-exports composer classes and the registry from the global scope. It allows downstream modules to import composers via a single stable entry point rather than from the internal `composers/` subdirectory.
 
-## Overview
+- **[GenericComposer](composers/GenericComposer.md)** — `GenericComposer.ts` provides the shared machinery for scale-like composers (scale, mode, chord, pentatonic). It handles item bookkeeping, delegates note generation to the MeasureComposer engine, and offers a randomized variant base. Subclasses only implement `itemSet()` to fetch a Tonal entity and populate `notes`.
 
-High-level explanation of what this module does...
+- **[index](composers/index.md)** — `composers/index.ts` serves as the central export point for all composer classes and types from the composers subdirectory. It re-exports the individual composer implementations to provide a unified interface for importing composition strategies.
 
-## Key Exports
+- **[MeasureComposer](composers/MeasureComposer.md)** — `MeasureComposer.ts` is the rhythmic and voice-leading backbone for all composers. It generates meters, subdivisions, and note selections with randomization, voice-leading scoring, and guardrails against invalid meters. Higher-level composers supply pitch collections while MeasureComposer shapes timing and registers.
 
-- `MainClass` - Description
-- `helperFunction` - Description
+- **[ModeComposer](composers/ModeComposer.md)** — `ModeComposer.ts` generates melodies from Tonal modes with scale fallback. It shares the GenericComposer rhythm/voice-leading engine and includes a random variant for exploring all modes.
 
-## Core Methods
+- **[PentatonicComposer](composers/PentatonicComposer.md)** — `PentatonicComposer.ts` builds melodies from major or minor pentatonic collections, inheriting rhythm/voice-leading from GenericComposer. A random variant swaps root and pentatonic type on each tick.
 
-### `methodName(param1, param2)`
+- **[ProgressionGenerator](composers/ProgressionGenerator.md)** — `ProgressionGenerator.ts` converts Roman numeral patterns into concrete chord symbols for a given key/mode. It normalizes qualities (major/minor), handles accidentals, and ships with common patterns plus a random picker.
 
-Description...
+- **[ScaleComposer](composers/ScaleComposer.md)** — `ScaleComposer.ts` builds melodic material from a chosen scale and root, leveraging GenericComposer for rhythm/voice leading. A random variant picks both scale and root from global pools.
 
-**Parameters:**
-- `param1: Type` - Description
-- `param2: Type` - Description
+## Music Theory
 
-**Returns:** `ReturnType`
+- **[index](voiceLeading/index.md)** — Documentation for this module.
 
-<!-- BEGIN: snippet:ClassName_methodName -->
+- **[motifs](motifs.md)** — `motifs.ts` defines the `Motif` class and helpers to create, transform, and apply melodic motifs to note streams. It offers inversion, transposition, augmentation/diminution, reversal, probabilistic development, and safe note clamping to keep pitches in range.
 
-<!-- END: snippet:ClassName_methodName -->
+- **[venue](venue.md)** — `venue.ts` provides music theory constants, MIDI data tables, and lookup functions for scales, chords, modes, and pitch mappings. It centralizes all music theory knowledge to avoid duplication and ensure consistency across composers.
 
-## Usage Example
+- **[voiceLeading](voiceLeading.md)** — `voiceLeading.ts` provides utilities for maintaining smooth voice leading across chord changes and harmonic progressions. It coordinates smooth pitch transitions, handles voice doubling, avoids parallel fifths/octaves, and ensures smooth voice independence across staves/channels.
 
-\`\`\`typescript
-import { MainClass } from './src/YourModule';
-const instance = new MainClass();
-\`\`\`
+- **[VoiceLeadingScore](voiceLeading/VoiceLeadingScore.md)** — `VoiceLeadingScore` implements classical voice leading rules with cost-based optimization. It evaluates chord transitions for smoothness (minimizing voice jumps), checks voice range constraints, enforces leap recovery rules, detects voice crossing, and avoids parallel fifths/octaves.
 
-## Related Modules
+## Configuration
 
-- module1.ts - How they relate
-- module2.ts - How they relate
-```
+- **[PolychronConfig](PolychronConfig.md)** — Configuration schema and defaults for composition.
 
-### Step 2: Add Snippet Markers
+- **[PolychronContext](PolychronContext.md)** — Rich runtime context combining DI, event bus, cancellation, and state.
 
-Place markers where live code should appear. `docs.mjs` locates symbols by snippet name; prefer `File_symbolName` patterns (e.g., `Stage_setTuningAndInstruments`).
+- **[PolychronInit](PolychronInit.md)** — Initialization and entry point utilities.
 
-### Step 3: Run the Pipeline
+- **[structure](structure.md)** — `structure.ts` defines section types, profiles, and helpers that shape the overall composition structure at the section level. It provides section type normalization, random selection, and profile resolution to determine section characteristics (type, phrase count, BPM scale, dynamics, motifs).
 
-```bash
-npm run docs:fix
-```
+## Infrastructure
 
-Use `npm run docs:watch` while iterating on docs or source. Use `npm run docs:check` in CI or for validation-only runs.
+- **[.dev-guide](.dev-guide.md)** — New .md files in /docs should be based on the template at /docs/.TEMPLATE.md
 
-### Step 4: Add to Index
+- **[.TEMPLATE](.TEMPLATE.md)** — [1-2 paragraph explanation of what this module does and why it exists]
 
-Update this file (`docs/README.md`) to include your new module in the appropriate section.
+- **[backstage](backstage.md)** — `backstage.ts` provides the **foundational infrastructure** for the entire Polychron system. It exports re-usable utilities, defines global timing state, manages MIDI channel constants, and provides channel grouping logic for binaural beats and effects routing.
+
+- **[CancellationToken](CancellationToken.md)** — `CancellationToken.ts` provides a lightweight, cooperative cancellation mechanism for long-running or asynchronous operations. It enables callers to request cancellation and callee code to check and respond without forcing abrupt termination.
+
+- **[CompositionContext](CompositionContext.md)** — `CompositionContext.ts` constructs and threads a single context object containing state, services, timing/logging hooks, and progress/cancellation wiring. It also provides helpers to sync this context to legacy globals during migration.
+
+- **[CompositionProgress](CompositionProgress.md)** — `CompositionProgress.ts` defines the progress phases, payloads, cancellation token, and a lightweight event bus for UI/controllers to observe composition state. It separates progress reporting from the main event bus and provides a simple cancellation hook.
+
+- **[CompositionState](CompositionState.md)** — `CompositionState.ts` defines the full mutable state for a composition run, covering sections, phrases, measures, beats, subdivisions, timing, rhythms, polyrhythms, active composer/motif, and binaural/stutter parameters. The `CompositionStateService` implements the interface and provides sync/reset helpers.
+
+- **[DIContainer](DIContainer.md)** — `DIContainer.ts` provides a minimal dependency injection container supporting singleton and transient lifecycles. It is used to register factories, resolve services, and manage a global container for convenience in tests and legacy code.
+
+- **[EventBus](EventBus.md)** — `EventBus.ts` provides a typed, singleton event bus for composition lifecycle events. It supports sync/async emission, one-time listeners, bounded history, and helper emitters for common lifecycle signals.
+
+- **[fxManager](fxManager.md)** — `fxManager.ts` encapsulates rapid stutter effects for volume, pan, and FX parameters, keeping recent channel usage to avoid repetition. It emits MIDI CC events to drive fades, pans, and FX automation and exposes a singleton instance.
+
+- **[index](validators/index.md)** — `validators/index.ts` provides type guards, assertion functions, and comprehensive validation for Polychron's core types. It uses TypeScript's `is` and `asserts` keywords for proper type narrowing and runtime type checking.
+
+- **[ModuleInitializer](ModuleInitializer.md)** — System startup and module registration.
+
+- **[PolychronError](PolychronError.md)** — `PolychronError.ts` provides a centralized error handling system with categorized error codes, context metadata, and factory functions. It replaces ad-hoc console warnings with properly typed exceptions that can be caught, logged, and reported.
+
+- **[sheet](sheet.md)** — `sheet.ts` provides lightweight helpers to map composition structures into staff-like representations and feed them into note rendering utilities. It exports type aliases and wrapper functions to keep sheet rendering in sync with structure definitions.
+
+- **[utils](utils.md)** — `utils.ts` exports common utility functions used throughout Polychron: random number generation (`rf`, `ri`, `ra`, `rv`, `rl`), clamping, modulo arithmetic, and probability helpers. These functions simplify common operations across the codebase and reduce redundancy.
+
+- **[validators](validators.md)** — Documentation for this module.
 
 ---
 
-## 🔄 Maintenance Workflow
-
-### When You Update Source Code
-
-1. **Edit the TypeScript source** as needed
-2. **Run docs pipeline**: `npm run docs:fix` (or `docs:watch` while iterating)
-3. **Review the updated docs** to ensure code examples are still clear
-4. **Update prose** if the API changed significantly
-
-### When You Add Cross-References
-
-1. **Write your documentation** mentioning module names naturally
-2. **Run docs pipeline**: `npm run docs:fix`
-3. **Verify links** are correct by clicking through them
-
-### When Adding New Modules
-
-1. **Follow "Creating New Documentation" steps** above
-2. **Add snippet markers as needed**
-3. **Run `npm run docs:fix`** to verify everything works
-4. **Update this index** with the new module
-
----
-
-## 🚨 Common Pitfalls
-
-### ❌ Manually Creating Links
-
-**Don't do this:**
-```markdown
-See [stage.ts](../src/stage.ts) for details
-```
-
-**Do this instead:**
-```markdown
-See stage.ts for details
-```
-
-Then run `npm run docs:fix` to auto-generate the full link format.
-The script links every plain occurrence of a module name across a file (not just the first). If you need a name to remain unlinked (e.g., in literal examples), keep it inside backticks or a code block.
-
-### ❌ Copying Code Snippets Manually
-
-**Don't do this:**
-```markdown
-\`\`\`typescript
-// Manually pasted code that will drift
-function something() { ... }
-\`\`\`
-```
-
-**Do this instead:**
-```markdown
-<!-- BEGIN: snippet:Module_something -->
-
-<!-- END: snippet:Module_something -->
-```
-
-Then run `npm run docs:fix` to inject the real code.
-
-### Authoring Rules (Quick Checklist)
-
-- Write module references as plain names (e.g., stage.ts) in prose; avoid manual links
-- Keep module names outside code fences if you want them auto-linked
-- Use snippet markers for any code examples; do not paste code manually
-- After edits: run `npm run docs:fix` (or `docs:watch` while iterating)
-- Verify all occurrences are linked consistently (Architecture, Related Modules, etc.)
-
-### ❌ Forgetting to Update Scripts
-
-When adding a new module:
-- ✅ Add snippet markers for any code you want injected
-- ✅ Run `npm run docs:fix`
-- ✅ Update this README index
-
----
-
-## 📋 Quick Reference
-
-| Task | Command |
-|------|---------|
-| Fix links + snippets (one-shot) | `npm run docs:fix` |
-| Watch mode while editing | `npm run docs:watch` |
-| Validate only (no writes) | `npm run docs:check` |
-
----
-
-## Core Modules
-
-- [backstage.ts](backstage.md)
-- [CancellationToken.ts](CancellationToken.md)
-- [ComposerRegistry.ts](ComposerRegistry.md)
-- [CompositionContext.ts](CompositionContext.md)
-- [CompositionProgress.ts](CompositionProgress.md)
-- [CompositionState.ts](CompositionState.md)
-- [DIContainer.ts](DIContainer.md)
-- [EventBus.ts](EventBus.md)
-- [fxManager.ts](fxManager.md)
-- [ModuleInitializer.ts](ModuleInitializer.md)
-- [motifs.ts](motifs.md)
-- [play.ts](play.md)
-- [playNotes.ts](playNotes.md)
-- [PolychronConfig.ts](PolychronConfig.md)
-- [PolychronContext.ts](PolychronContext.md)
-- [PolychronError.ts](PolychronError.md)
-- [PolychronInit.ts](PolychronInit.md)
-- [rhythm.ts](rhythm.md)
-- [sheet.ts](sheet.md)
-- [stage.ts](stage.md)
-- [structure.ts](structure.md)
-- [time.ts](time.md)
-- [TimingTree.ts](TimingTree.md)
-- [utils.ts](utils.md)
-- [venue.ts](venue.md)
-- [voiceLeading.ts](voiceLeading.md)
-- [writer.ts](writer.md)
-
-## Composers
-
-- [composers/index.ts](composers.md)
-- [ChordComposer.ts](composers/ChordComposer.md)
-- [GenericComposer.ts](composers/GenericComposer.md)
-- [MeasureComposer.ts](composers/MeasureComposer.md)
-- [ModeComposer.ts](composers/ModeComposer.md)
-- [PentatonicComposer.ts](composers/PentatonicComposer.md)
-- [ProgressionGenerator.ts](composers/ProgressionGenerator.md)
-- [ScaleComposer.ts](composers/ScaleComposer.md)
-
-## Submodules
-
-- [voiceLeading/index.ts](voiceLeading/index.md)
-- [VoiceLeadingScore.ts](voiceLeading/VoiceLeadingScore.md)
-- [time/index.ts](time/index.md)
-- [validators/index.ts](validators.md)
+**Note**: All source modules in `/src` have corresponding documentation in `/docs`. Documentation is automatically validated to ensure 1:1 coverage via the code-quality test suite.
