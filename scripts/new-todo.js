@@ -2,18 +2,29 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import formatDate from './utils/formatDate.js';
 
+const dateStr = formatDate();
 const projectRoot = process.cwd();
-const todoPath = path.join(projectRoot, 'TODO.md');
+
+/**
+ * Sanitize a user-provided name into a safe filename segment.
+ * - spaces -> dashes
+ * - remove unsafe characters
+ * @param {string} raw
+ * @returns {string}
+ */
+function sanitizeName(raw) {
+  return raw.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9._-]/g, '-');
+}
 
 const HEADER = `### TODO TEMPLATE (Leave this template at top of file as format reminder)
 
-*** [MM/DD HH:MM] Example (newest) TODO Title - One sentence summary.
-- [MM/DD HH:MM] Timestamped note of latest development or roadblock for this TODO
-- [MM/DD HH:MM] Older timestamped notes for this TODO
-
-*** [MM/DD HH:MM] Example Todo #2 (older) , start actual TODO list below like in formart shown here.
-- [MM/DD HH:MM] Remember to revisit the TODO often, always adding/updating timestamps at line starts.
+*** [${dateStr}] Example (newest) TODO Title - One sentence summary.
+- [${dateStr}] Timestamped note of latest development or roadblock for this TODO
+- [${dateStr}] Older timestamped notes for this TODO
+*** [${dateStr}] Example Todo #2 (older) , start actual TODO list below like in formart shown here.
+- [${dateStr}] Remember to revisit the TODO often, always adding/updating timestamps at line starts.
 ---
 
 `;
@@ -54,8 +65,8 @@ function getInitialStatusBlock() {
  * Print usage for this CLI.
  */
 function usage() {
-  console.log('Usage: node scripts/new-todo.js');
-  console.log('Creates TODO.md at repo root with the canonical TODO template at the top.');
+  console.log('Usage: node scripts/new-todo.js [name]');
+  console.log('Creates TODO.md (default) or TODO-<name>.md at repo root when [name] provided (e.g., `npm run todo things` creates TODO-things.md).');
 }
 
 /**
@@ -64,24 +75,27 @@ function usage() {
 function main() {
   const args = process.argv.slice(2);
 
-  if (fs.existsSync(todoPath)) {
-    console.error(`Error: TODO.md already exists at ${todoPath}. Update the existing TODO.md instead of creating a new one.`);
-    process.exit(1);
+  // Determine filename: default TODO.md, or TODO-<name>.md when a simple name is provided.
+  let filename = 'TODO.md';
+  if (args.length > 0 && args[0].trim()) {
+    const raw = args[0].trim();
+    if (raw.includes('/') || raw.includes('\\')) {
+      // treat as relative path (allow explicit paths)
+      filename = raw.endsWith('.md') ? raw : `${raw}.md`;
+    } else {
+      const clean = sanitizeName(raw);
+      if (/^TODO[._-]/i.test(clean) || clean.toLowerCase().endsWith('.md')) {
+        filename = clean.endsWith('.md') ? clean : `${clean}.md`;
+      } else {
+        filename = `TODO-${clean}.md`;
+      }
+    }
   }
 
-  const statusBlock = getInitialStatusBlock();
-  // Keep the canonical template at the top of the file as a format reminder; insert the status block *after* the template separator
-  const content = HEADER + '\n' + statusBlock + '\n\n';
-  fs.writeFileSync(todoPath, content, 'utf8');
-  console.log((fs.existsSync(todoPath) ? 'Created' : 'Wrote') + `: ${path.relative(projectRoot, todoPath)}`);
-}
-
-main();
-function main() {
-  const args = process.argv.slice(2);
+  const todoPath = path.join(projectRoot, filename);
 
   if (fs.existsSync(todoPath)) {
-    console.error(`Error: TODO.md already exists at ${todoPath}. Update the existing TODO.md instead of creating a new one.`);
+    console.error(`Error: ${path.relative(projectRoot, todoPath)} already exists at ${todoPath}. Update the existing file instead of creating a new one.`);
     process.exit(1);
   }
 

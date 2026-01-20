@@ -6,7 +6,7 @@ import chokidar from 'chokidar';
 import { parseCoverageStats } from './coverage-utils.js';
 import stripAnsi from './utils/stripAnsi.js';
 import readLogSafe from './utils/readLogSafe.js';
-import formatDateMMDDYY from './utils/formatDateMMDDYY.js';
+import formatDate from './utils/formatDate.js';
 import splitByCodeFences from './utils/splitByCodeFences.js';
 import normalizeCodeForComparison from './utils/normalizeCodeForComparison.js';
 
@@ -145,7 +145,7 @@ function parseTypeCheckStats() {
  * @returns {string} Multi-line status block ready for README insertion.
  */
 function buildStatusBlock() {
-  const dateStr = formatDateMMDDYY();
+  const dateStr = formatDate();
   const tests = parseTestStats();
   const lint = parseLintStats();
   const type = parseTypeCheckStats();
