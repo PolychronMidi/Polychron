@@ -36,7 +36,7 @@ Complete reference documentation for all Polychron modules.
 
 - **[ChordComposer](composers/ChordComposer.md)** — `ChordComposer.ts` generates chord tones from a progression, supporting normalization, validation, and directional traversal. A random variant regenerates a new progression on each tick.
 
-- **[ComposerRegistry](ComposerRegistry.md)** — `ComposerRegistry.ts` is the singleton registry that wires composer **type keys** (e.g., `scale`, `chords`, `mode`) to factory functions that construct composers. It centralizes registration, lookup, and default wiring for built-in composers while allowing custom composer injection.
+- **[ComposerRegistry](ComposerRegistry.md)** — `ComposerRegistry` provides a typed registry and factory methods to create composer instances by `type`.
 
 - **[composers](composers.md)** — `composers.ts` is a stub module that re-exports composer classes and the registry from the global scope. It allows downstream modules to import composers via a single stable entry point rather than from the internal `composers/` subdirectory.
 
@@ -97,7 +97,6 @@ Complete reference documentation for all Polychron modules.
 - **[fxManager](fxManager.md)** — `fxManager.ts` encapsulates rapid stutter effects for volume, pan, and FX parameters, keeping recent channel usage to avoid repetition. It emits MIDI CC events to drive fades, pans, and FX automation and exposes a singleton instance.
 
 - **[index](validators/index.md)** — `validators/index.ts` provides type guards, assertion functions, and comprehensive validation for Polychron's core types. It uses TypeScript's `is` and `asserts` keywords for proper type narrowing and runtime type checking.
-
 
 - **[ModuleInitializer](ModuleInitializer.md)** — System startup and module registration.
 
