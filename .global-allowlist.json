@@ -1,0 +1,26 @@
+{
+  "allowed": [
+    "CSVBuffer",
+    "p",
+    "LayerManager",
+    "LM",
+    "TimingContext",
+    "TimingCalculator",
+    "t",
+    "midiData",
+    "getMidiValue",
+    "allNotes",
+    "allScales",
+    "allChords",
+    "allModes",
+    "CSVBuffer",
+    "pushMultiple",
+    "grandFinale",
+
+    "MeasureComposer",
+    "ProgressionGenerator",
+    "subdivsOff",
+    "subdivsOn",
+    "_"
+  ]
+}

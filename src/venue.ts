@@ -304,7 +304,7 @@ export const allModes: string[] = (() => {
 // Export to global scope for backward compatibility
 declare const globalThis: any;
 
-if (typeof globalThis !== 'undefined') {
+function attachToGlobalVenue() {
   globalThis.t = t;
   globalThis.midiData = midiData;
   globalThis.getMidiValue = getMidiValue;
@@ -313,3 +313,17 @@ if (typeof globalThis !== 'undefined') {
   globalThis.allChords = allChords;
   globalThis.allModes = allModes;
 }
+
+function detachFromGlobalVenue() {
+  delete globalThis.t;
+  delete globalThis.midiData;
+  delete globalThis.getMidiValue;
+  delete globalThis.allNotes;
+  delete globalThis.allScales;
+  delete globalThis.allChords;
+  delete globalThis.allModes;
+}
+
+attachToGlobalVenue();
+
+export { attachToGlobalVenue, detachFromGlobalVenue };

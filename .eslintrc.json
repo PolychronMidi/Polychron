@@ -23,6 +23,14 @@
     "no-unexpected-multiline": "error",
     "no-useless-escape": "warn",
     "no-trailing-spaces": "warn",
-    "eol-last": ["warn", "always"]
+    "eol-last": ["warn", "always"],
+
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "AssignmentExpression[left.object.name='globalThis']",
+        "message": "Avoid assigning to globalThis (use DI/exports). If necessary, add an entry to .global-allowlist.json and justify in migration TODO."
+      }
+    ]
   }
 }

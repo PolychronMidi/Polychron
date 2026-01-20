@@ -316,7 +316,21 @@ export const grandFinale = (): void => {
 };
 
 // Attach to globalThis for backward compatibility at module load
-(globalThis as any).CSVBuffer = CSVBuffer;
-(globalThis as any).pushMultiple = pushMultiple;
-(globalThis as any).grandFinale = grandFinale;
-(globalThis as any).p = pushMultiple; // Alias
+function attachToGlobal() {
+  (globalThis as any).CSVBuffer = CSVBuffer;
+  (globalThis as any).pushMultiple = pushMultiple;
+  (globalThis as any).grandFinale = grandFinale;
+  (globalThis as any).p = pushMultiple; // Alias
+}
+
+function detachFromGlobal() {
+  delete (globalThis as any).CSVBuffer;
+  delete (globalThis as any).pushMultiple;
+  delete (globalThis as any).grandFinale;
+  delete (globalThis as any).p;
+}
+
+// Perform the default attachment for backward compatibility at module load
+attachToGlobal();
+
+export { attachToGlobal, detachFromGlobal };

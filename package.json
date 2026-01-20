@@ -28,7 +28,7 @@
     "build:raw": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm",
     "build:watch": "esbuild src/**/*.ts --outdir=dist --platform=node --format=esm --watch",
     "test": "node scripts/run-with-log.js test.log npm run test:raw",
-    "test:raw": "vitest --run --reporter=default",
+    "test:raw": "vitest --run --reporter=default && npm run docs:status",
     "test:watch": "vitest",
     "test:verbose": "vitest --run --reporter=verbose",
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",

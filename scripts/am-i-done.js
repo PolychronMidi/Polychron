@@ -155,11 +155,12 @@ function main() {
     }
 
     const cmp = compareMetrics(initial, latest);
+    const safeName = String(name).replace(/\r|\n/g, '').replace(/[^\x20-\x7E]/g, '');
     if (cmp.ok) {
-      console.log(`${name}: If all your TODOs in ${name} are marked complete and all protocols in RULES.md followed throughout, this task is complete!`);
+      console.log(`${safeName}: If all your TODOs in ${safeName} are marked complete and all protocols in RULES.md followed throughout, this task is complete!`);
     } else {
       anyViolation = true;
-      console.log(`${name}: You have violated protocol (review RULES.md) - restore Latest Status to at least as good as Initial Status, then move on with TODO tasks.`);
+      console.log(`${safeName}: You have violated protocol (review RULES.md) - restore Latest Status to at least as good as Initial Status, then move on with TODO tasks.`);
       console.log('  Reasons:');
       for (const r of cmp.reasons) console.log('   - ' + r);
     }

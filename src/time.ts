@@ -13,10 +13,23 @@ import { logUnit } from './writer.js';
 export { TimingCalculator, TimingContext, LayerManager };
 
 // Attach to globalThis for backward compatibility
-(globalThis as any).LayerManager = LayerManager;
-(globalThis as any).LM = LayerManager; // Alias for convenience
-(globalThis as any).TimingContext = TimingContext;
-(globalThis as any).TimingCalculator = TimingCalculator;
+function attachToGlobalTime() {
+  (globalThis as any).LayerManager = LayerManager;
+  (globalThis as any).LM = LayerManager; // Alias for convenience
+  (globalThis as any).TimingContext = TimingContext;
+  (globalThis as any).TimingCalculator = TimingCalculator;
+}
+
+function detachFromGlobalTime() {
+  delete (globalThis as any).LayerManager;
+  delete (globalThis as any).LM;
+  delete (globalThis as any).TimingContext;
+  delete (globalThis as any).TimingCalculator;
+}
+
+attachToGlobalTime();
+
+export { attachToGlobalTime, detachFromGlobalTime };
 
 // Declare global timing variables
 declare const BPM: number;
@@ -245,7 +258,7 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
     const hasValidMatch = bestMatch.totalMeasures !== Infinity &&
         (bestMatch.totalMeasures > 2 &&
          (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1));
-    
+
     if (hasValidMatch && hasPolyrhythm) {
       // Found a polyrhythmic alignment
       setVal('measuresPerPhrase1', bestMatch.primaryMeasures);

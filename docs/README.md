@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED: DO NOT EDIT. To regenerate run: 'node scripts/docs.js index' or 'npm run docs:fix' -->
+
 # Documentation Index
 
 Complete reference documentation for all Polychron modules.
@@ -96,11 +98,14 @@ Complete reference documentation for all Polychron modules.
 
 - **[index](validators/index.md)** — `validators/index.ts` provides type guards, assertion functions, and comprehensive validation for Polychron's core types. It uses TypeScript's `is` and `asserts` keywords for proper type narrowing and runtime type checking.
 
+
 - **[ModuleInitializer](ModuleInitializer.md)** — System startup and module registration.
 
 - **[PolychronError](PolychronError.md)** — `PolychronError.ts` provides a centralized error handling system with categorized error codes, context metadata, and factory functions. It replaces ad-hoc console warnings with properly typed exceptions that can be caught, logged, and reported.
 
 - **[sheet](sheet.md)** — `sheet.ts` provides lightweight helpers to map composition structures into staff-like representations and feed them into note rendering utilities. It exports type aliases and wrapper functions to keep sheet rendering in sync with structure definitions.
+
+- **[test](test.md)** — Documentation for this module.
 
 - **[utils](utils.md)** — `utils.ts` exports common utility functions used throughout Polychron: random number generation (`rf`, `ri`, `ra`, `rv`, `rl`), clamping, modulo arithmetic, and probability helpers. These functions simplify common operations across the codebase and reduce redundancy.
 
