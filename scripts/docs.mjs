@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { Project } from 'ts-morph';
 import chokidar from 'chokidar';
+import { parseCoverageStats } from './coverage-utils.mjs';
 
 const projectRoot = process.cwd();
 const srcDir = path.join(projectRoot, 'src');
@@ -92,6 +93,13 @@ function parseTestStats() {
     return { summary: 'Tests data unavailable', total: null, passed: null, percentage: null };
   }
 
+  if (passed !== null && total !== null && passed > total) {
+    console.warn(`parseTestStats: parsed passed (${passed}) > total (${total}) - swapping to correct order`);
+    const tmp = passed;
+    passed = total;
+    total = tmp;
+  }
+
   if (failed === null && total !== null && passed !== null) {
     failed = Math.max(total - passed, 0);
   }
@@ -129,14 +137,18 @@ function parseTypeCheckStats() {
   };
 }
 
+/* parseCoverageStats moved to ./coverage-utils.mjs */
+
+
 function buildStatusBlock() {
   const dateStr = formatDateMMDDYY();
   const tests = parseTestStats();
   const lint = parseLintStats();
   const type = parseTypeCheckStats();
+  const coverage = parseCoverageStats();
 
   const testsLine = tests.total !== null && tests.passed !== null && tests.percentage !== null
-    ? `- Tests ${tests.total}/${tests.passed} - ${tests.percentage}%`
+    ? `- Tests ${tests.passed}/${tests.total} - ${tests.percentage}%`
     : `- Tests ${tests.summary}`;
 
   const lintLine = lint.errors !== null && lint.warnings !== null
@@ -147,8 +159,16 @@ function buildStatusBlock() {
     ? `- Type-check ${type.errors} errors / ${type.warnings} warnings`
     : `- Type-check ${type.summary}`;
 
-  return `${dateStr} - Latest Status\n${testsLine}\n${lintLine}\n${typeLine}`;
+  const coverageLine = coverage.lines !== null
+    ? `- Coverage ${coverage.lines}% (Statements: ${coverage.statements}% Lines: ${coverage.lines}% Branches: ${coverage.branches}% Functions: ${coverage.functions}%)`
+    : `- Coverage ${coverage.summary}`;
+
+  // Multi-line: each tool on its own line, coverage stays as one informative line
+  return `${dateStr} - Latest Status\n${testsLine}\n${lintLine}\n${typeLine}\n${coverageLine}`;
 }
+
+// Export for external use so other scripts (e.g., onboarding) can reuse the same formatting
+export { buildStatusBlock };
 
 function updateRootReadmeStatus() {
   const readmePath = path.join(projectRoot, 'README.md');
@@ -267,21 +287,36 @@ function extractFromSource(project, srcPath, snippetName) {
   if (!sf) return null;
   const parts = snippetName.split('_');
   if (parts.length === 1) {
-    // Could be class or interface
-    const intf = sf.getInterface(parts[0]);
+    const name = parts[0];
+    // Interface
+    const intf = sf.getInterface(name);
     if (intf) return intf.getText();
-    const cls = sf.getClass(parts[0]);
+    // Class
+    const cls = sf.getClass(name);
     if (cls) return cls.getText();
+    // Top-level function
+    const func = sf.getFunction(name);
+    if (func) return func.getText();
+    // Variable declaration (exported const arrow function)
+    const varDecl = sf.getVariableDeclaration(name);
+    if (varDecl) return varDecl.getText();
     return null;
   } else {
     const [className, memberName] = parts;
     const cls = sf.getClass(className);
-    if (!cls) return null;
-    // method
-    const m = cls.getMethod(memberName)
-      || cls.getGetAccessor(memberName)
-      || cls.getSetAccessor(memberName);
-    return m ? m.getText() : null;
+    if (cls) {
+      // method or accessor
+      const m = cls.getMethod(memberName)
+        || cls.getGetAccessor(memberName)
+        || cls.getSetAccessor(memberName);
+      return m ? m.getText() : null;
+    }
+    // Fallback: maybe the snippet name used Class_member but class is missing; try top-level function named memberName
+    const func = sf.getFunction(memberName);
+    if (func) return func.getText();
+    const varDecl = sf.getVariableDeclaration(memberName);
+    if (varDecl) return varDecl.getText();
+    return null;
   }
 }
 

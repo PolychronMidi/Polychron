@@ -8,13 +8,16 @@ const projectRoot = path.join(__dirname, '..');
 const docsDir = path.join(projectRoot, 'docs');
 
 const TODO_TEMPLATE = `<!--
-### TODO - log of items planned / in progress
+### TODO TEMPLATE (Leave this template at top of file as format reminder)
 
-- [mm-dd-hh:mm] Example (newest) TODO Title - One sentence summary.
-[mm-dd-hh:mm] Timestamped note of latest development or roadblock for this TODO
-[mm-dd-hh:mm] Older timestamped notes for this TODO
+*** [MM/DD HH:MM] Example (newest) TODO Title - One sentence summary.
+- [MM/DD HH:MM] Timestamped note of latest development or roadblock for this TODO
+- [MM/DD HH:MM] Older timestamped notes for this TODO
 
-- mm-dd-hh:mm Example Todo #2 (older) , etc...
+*** [MM/DD HH:MM] Example Todo #2 (older) , start actual TODO list below like in formart shown here.
+- [MM/DD HH:MM] Remember to revisit the TODO often, always adding/updating timestamps at line starts.
+---
+
 -->
 
 `;

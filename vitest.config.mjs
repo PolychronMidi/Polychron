@@ -6,6 +6,8 @@ export default {
     reporters: process.env.CI ? 'default' : 'default',
     // Only report failures, not passing tests
     hideSkipped: false,
+    // Exclude runtime-generated temporary test folders and node_modules tests
+    exclude: ['tmp/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

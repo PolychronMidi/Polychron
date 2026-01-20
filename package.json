@@ -31,7 +31,8 @@
     "test:raw": "vitest --run --reporter=default",
     "test:watch": "vitest",
     "test:verbose": "vitest --run --reporter=verbose",
-    "test:coverage": "vitest --coverage --run",
+    "test:coverage": "node scripts/run-with-log.mjs coverage.log npm run test:coverage:raw",
+    "test:coverage:raw": "vitest --coverage --run",
     "test:loop": "node scripts/tests-loop.js",
     "test:full": "node scripts/run-with-log.mjs test-full.log npm run all",
     "lint": "node scripts/run-with-log.mjs lint.log npm run lint:raw",
@@ -52,6 +53,8 @@
     "docs:index": "node scripts/docs.mjs index",
     "docs:status": "node scripts/docs.mjs status",
     "clear-todos": "node scripts/clear-todos.mjs",
+    "onboardE": "node scripts/onboard.mjs",
+    "todo": "node scripts/new-todo.mjs",
     "prepare": "husky install"
   }
 }
