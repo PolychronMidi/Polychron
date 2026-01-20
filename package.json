@@ -55,6 +55,7 @@
     "clear-todos": "node scripts/clear-todos.js",
     "onboardE": "node scripts/onboard.js",
     "todo": "node scripts/new-todo.js",
+    "am-i-done": "node scripts/am-i-done.js",
     "prepare": "husky install"
   }
 }

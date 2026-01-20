@@ -8,20 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
 const docsDir = path.join(projectRoot, 'docs');
 
-const TODO_TEMPLATE = `<!--
-### TODO TEMPLATE (Leave this template at top of file as format reminder)
+import { placeholderTemplate } from './utils/TODO-template.js';
 
-*** [MM/DD HH:MM] Example (newest) TODO Title - One sentence summary.
-- [MM/DD HH:MM] Timestamped note of latest development or roadblock for this TODO
-- [MM/DD HH:MM] Older timestamped notes for this TODO
-
-*** [MM/DD HH:MM] Example Todo #2 (older) , start actual TODO list below like in formart shown here.
-- [MM/DD HH:MM] Remember to revisit the TODO often, always adding/updating timestamps at line starts.
----
-
--->
-
-`;
+const TODO_TEMPLATE = placeholderTemplate();
 
 /**
  * Clear TODO sections in a markdown file and prepend canonical TODO template.
@@ -46,7 +35,7 @@ function clearTodosInFile(filepath) {
   }
 
   // Prepend TODO template at the beginning
-  const updated = TODO_TEMPLATE + content;
+  const updated = content;
 
   fs.writeFileSync(filepath, updated, 'utf-8');
   return hadTodo || true; // Always return true since we prepended

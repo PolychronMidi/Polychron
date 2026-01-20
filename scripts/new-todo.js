@@ -18,16 +18,9 @@ function sanitizeName(raw) {
   return raw.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9._-]/g, '-');
 }
 
-const HEADER = `### TODO TEMPLATE (Leave this template at top of file as format reminder)
+import makeTemplate from './utils/TODO-template.js';
 
-*** [${dateStr}] Example (newest) TODO Title - One sentence summary.
-- [${dateStr}] Timestamped note of latest development or roadblock for this TODO
-- [${dateStr}] Older timestamped notes for this TODO
-*** [${dateStr}] Example Todo #2 (older) , start actual TODO list below like in formart shown here.
-- [${dateStr}] Remember to revisit the TODO often, always adding/updating timestamps at line starts.
----
-
-`;
+const HEADER = makeTemplate(dateStr);
 
 /**
  * Generate an initial status block from README test-status block (or minimal fallback).
