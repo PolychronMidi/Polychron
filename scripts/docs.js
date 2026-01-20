@@ -3,24 +3,17 @@ import fs from 'fs';
 import path from 'path';
 import { Project } from 'ts-morph';
 import chokidar from 'chokidar';
-import { parseCoverageStats } from './coverage-utils.mjs';
+import { parseCoverageStats } from './coverage-utils.js';
+import stripAnsi from './utils/stripAnsi.js';
+import readLogSafe from './utils/readLogSafe.js';
+import formatDateMMDDYY from './utils/formatDateMMDDYY.js';
+import splitByCodeFences from './utils/splitByCodeFences.js';
+import normalizeCodeForComparison from './utils/normalizeCodeForComparison.js';
 
 const projectRoot = process.cwd();
 const srcDir = path.join(projectRoot, 'src');
 const docsDir = path.join(projectRoot, 'docs');
 const logDir = path.join(projectRoot, 'log');
-
-function stripAnsi(input) {
-  return input.replace(/\u001B\[[0-9;]*[A-Za-z]/g, '');
-}
-
-function formatDateMMDDYY() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const yy = String(now.getFullYear()).slice(-2);
-  return `${mm}/${dd}/${yy}`;
-}
 
 // Generate mapping dynamically: scan /src for .ts files and create docs mapping
 function generateModuleMapping() {
@@ -53,14 +46,13 @@ const modules = generateModuleMapping();
 const docBySrc = new Map(modules.map(m => [path.join(srcDir, m.name), path.join(docsDir, m.doc)]));
 const srcByDoc = new Map(modules.map(m => [path.join(docsDir, m.doc), path.join(srcDir, m.name)]));
 
-function readLogSafe(fileName) {
-  const logPath = path.join(logDir, fileName);
-  if (!fs.existsSync(logPath)) return '';
-  return fs.readFileSync(logPath, 'utf-8');
-}
 
+/**
+ * Parse test run statistics from the test log.
+ * @returns {{summary:string|null,total:number|null,passed:number|null,failed:number|null,percentage:number|null}}
+ */
 function parseTestStats() {
-  const raw = readLogSafe('test.log');
+  const raw = readLogSafe(projectRoot, 'test.log');
   if (!raw.trim()) return { summary: 'No recent test run (log/test.log not found)', total: null, passed: null, percentage: null };
   const clean = stripAnsi(raw);
   const passedMatch = [...clean.matchAll(/Tests\s+(\d+)\s+passed\s*\((\d+)\)/gi)].pop();
@@ -108,8 +100,12 @@ function parseTestStats() {
   return { summary: null, total, passed, failed, percentage };
 }
 
+/**
+ * Parse lint stats from lint log.
+ * @returns {{summary:string|null,errors:number,warnings:number}}
+ */
 function parseLintStats() {
-  const raw = readLogSafe('lint.log');
+  const raw = readLogSafe(projectRoot, 'lint.log');
   if (!raw.trim()) return { summary: 'No recent lint run (log/lint.log not found)', errors: 0, warnings: 0 };
   const clean = stripAnsi(raw);
   const summaryMatch = clean.match(/(\d+)\s+problems? \((\d+)\s+errors?,\s+(\d+)\s+warnings?\)/i);
@@ -123,8 +119,12 @@ function parseLintStats() {
   return { summary: 'Lint output did not include a summary', errors: 0, warnings: 0 };
 }
 
+/**
+ * Parse TypeScript type-check output for error/warning counts.
+ * @returns {{summary:string|null,errors:number,warnings:number}}
+ */
 function parseTypeCheckStats() {
-  const raw = readLogSafe('type-check.log');
+  const raw = readLogSafe(projectRoot, 'type-check.log');
   if (!raw.trim()) return { summary: 'No recent type-check run (log/type-check.log not found)', errors: 0, warnings: 0 };
   const clean = stripAnsi(raw);
   const errorMatches = clean.match(/error\s+TS\d+/gi) || [];
@@ -137,9 +137,13 @@ function parseTypeCheckStats() {
   };
 }
 
-/* parseCoverageStats moved to ./coverage-utils.mjs */
+/* parseCoverageStats moved to ./coverage-utils.js */
 
 
+/**
+ * Build a multi-line status block summarizing recent test/lint/type/coverage runs.
+ * @returns {string} Multi-line status block ready for README insertion.
+ */
 function buildStatusBlock() {
   const dateStr = formatDateMMDDYY();
   const tests = parseTestStats();
@@ -194,32 +198,6 @@ function updateRootReadmeStatus() {
   }
 }
 
-function splitByCodeFences(content) {
-  const parts = [];
-  const lines = content.split(/\r?\n/);
-  let inFence = false;
-  let buffer = [];
-  for (const line of lines) {
-    if (line.trim().startsWith('```')) {
-      buffer.push(line);
-      if (inFence) {
-        parts.push({ type: 'code', text: buffer.join('\n') });
-        buffer = [];
-        inFence = false;
-      } else {
-        parts.push({ type: 'text', text: buffer.slice(0, -1).join('\n') });
-        buffer = [line];
-        inFence = true;
-      }
-    } else {
-      buffer.push(line);
-    }
-  }
-  if (buffer.length) {
-    parts.push({ type: inFence ? 'code' : 'text', text: buffer.join('\n') });
-  }
-  return parts;
-}
 
 function enforceLinksInText(text, isReadme=false) {
   let out = text;
@@ -238,6 +216,12 @@ function enforceLinksInText(text, isReadme=false) {
   return out;
 }
 
+/**
+ * Auto-link references to source and docs inside a doc file's text sections.
+ * @param {string} docPath - Full path to the doc file to update.
+ * @param {boolean} [verbose=false] - Verbose flag to log changes.
+ * @returns {boolean} True when the document was updated.
+ */
 function autoLinkDoc(docPath, verbose=false) {
   const content = fs.readFileSync(docPath, 'utf-8');
   const isReadme = path.basename(docPath) === 'README.md';
@@ -251,10 +235,6 @@ function autoLinkDoc(docPath, verbose=false) {
   return false;
 }
 
-function normalizeCodeForComparison(code) {
-  // Collapse multiple spaces/tabs into single space, trim lines
-  return code.split('\n').map(l => l.replace(/\s+/g, ' ').trim()).join('\n').trim();
-}
 
 function injectSnippet(docPath, snippetName, code) {
   const docBefore = fs.readFileSync(docPath, 'utf-8');
@@ -345,6 +325,10 @@ function processDoc(project, docPath, verbose=false) {
   }
 }
 
+/**
+ * Fix all documentation files by auto-linking and injecting snippets.
+ * @param {boolean} [verbose=false] - If true, log file updates.
+ */
 function fixAll(verbose=false) {
   const project = new Project({ tsConfigFilePath: path.join(projectRoot, 'tsconfig.json') });
   for (const { doc } of modules) {
@@ -389,6 +373,10 @@ function checkAll() {
   }
 }
 
+/**
+ * Generate an index README for the docs directory by extracting overview sections.
+ * @returns {void}
+ */
 function generateIndex() {
   // Scan all .md files and extract overview sections
   function scanDocs(dir, baseRelative = '') {
@@ -451,13 +439,7 @@ function generateIndex() {
   }
 
   // Generate README content
-  let readme = `# Documentation Index
-
-Complete reference documentation for all Polychron modules.
-
----
-
-`;
+  let readme = `# Documentation Index\n\nComplete reference documentation for all Polychron modules.\n\n---\n\n`;
 
   for (const [category, docs] of Object.entries(docsByCategory)) {
     if (docs.length === 0) continue;
@@ -482,6 +464,6 @@ else if (cmd === 'check') checkAll();
 else if (cmd === 'index') generateIndex();
 else if (cmd === 'status') updateRootReadmeStatus();
 else {
-  console.error('Usage: node scripts/docs.mjs [fix|watch|check|index|status] [--verbose]');
+  console.error('Usage: node scripts/docs.js [fix|watch|check|index|status] [--verbose]');
   process.exit(1);
 }

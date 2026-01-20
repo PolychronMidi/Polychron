@@ -76,8 +76,6 @@ Complete reference documentation for all Polychron modules.
 
 ## Infrastructure
 
-- **[.dev-guide](.dev-guide.md)** — New .md files in /docs should be based on the template at /docs/.TEMPLATE.md
-
 - **[.TEMPLATE](.TEMPLATE.md)** — [1-2 paragraph explanation of what this module does and why it exists]
 
 - **[backstage](backstage.md)** — `backstage.ts` provides the **foundational infrastructure** for the entire Polychron system. It exports re-usable utilities, defines global timing state, manages MIDI channel constants, and provides channel grouping logic for binaural beats and effects routing.

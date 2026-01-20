@@ -4,7 +4,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 
 const projectRoot = process.cwd();
-const todoPath = process.env.ONBOARD_TEST_TODO ? path.resolve(process.cwd(), process.env.ONBOARD_TEST_TODO) : path.join(projectRoot, 'TODO.md');
+const todoPath = path.join(projectRoot, 'TODO.md');
 
 const HEADER = `### TODO TEMPLATE (Leave this template at top of file as format reminder)
 
@@ -18,14 +18,10 @@ const HEADER = `### TODO TEMPLATE (Leave this template at top of file as format 
 
 `;
 
-function formatDateMMDDYY() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const yy = String(now.getFullYear()).slice(-2);
-  return `${mm}/${dd}/${yy}`;
-}
-
+/**
+ * Generate an initial status block from README test-status block (or minimal fallback).
+ * @returns {string} Initial status summary to insert into TODO.md
+ */
 function getInitialStatusBlock() {
   const readmePath = path.join(projectRoot, 'README.md');
   const start = '<!-- BEGIN: test-status -->';
@@ -37,7 +33,7 @@ function getInitialStatusBlock() {
   // If README doesn't have the test-status block, run the docs status updater to generate it
   if (!readme.includes(start)) {
     try {
-      execSync('node scripts/docs.mjs status', { stdio: 'ignore' });
+      execSync('node scripts/docs.js status', { stdio: 'ignore' });
       if (fs.existsSync(readmePath)) readme = fs.readFileSync(readmePath, 'utf8');
     } catch (e) {
       // ignore; we'll fallback to a minimal line
@@ -50,16 +46,37 @@ function getInitialStatusBlock() {
     return block;
   }
 
-  // Fallback minimal block
-  const dateStr = formatDateMMDDYY();
-  return `${dateStr} - Initial status (this TODO is NOT DONE until Latest Status shows all scores equal or better than initial.)\n- Tests data unavailable\n- Lint data unavailable\n- Type-check data unavailable\n- Coverage data unavailable`;
+  console.error('Warning: README.md does not contain a test-status block. Initial status will be minimal.');
+  return 'Initial status: No detailed status available.';
 }
 
+/**
+ * Print usage for this CLI.
+ */
 function usage() {
-  console.log('Usage: node scripts/new-todo.mjs');
+  console.log('Usage: node scripts/new-todo.js');
   console.log('Creates TODO.md at repo root with the canonical TODO template at the top.');
 }
 
+/**
+ * CLI entrypoint: create TODO.md with header and initial status block.
+ */
+function main() {
+  const args = process.argv.slice(2);
+
+  if (fs.existsSync(todoPath)) {
+    console.error(`Error: TODO.md already exists at ${todoPath}. Update the existing TODO.md instead of creating a new one.`);
+    process.exit(1);
+  }
+
+  const statusBlock = getInitialStatusBlock();
+  // Keep the canonical template at the top of the file as a format reminder; insert the status block *after* the template separator
+  const content = HEADER + '\n' + statusBlock + '\n\n';
+  fs.writeFileSync(todoPath, content, 'utf8');
+  console.log((fs.existsSync(todoPath) ? 'Created' : 'Wrote') + `: ${path.relative(projectRoot, todoPath)}`);
+}
+
+main();
 function main() {
   const args = process.argv.slice(2);
 

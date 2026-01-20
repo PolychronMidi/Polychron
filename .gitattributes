@@ -8,7 +8,6 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 *.py text eol=lf
-*.mjs text eol=lf
 
 # Ensure these get final newlines
 *.ts working-tree-encoding=UTF-8

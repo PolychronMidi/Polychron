@@ -252,7 +252,7 @@ test('function names should follow camelCase convention', () => {
  * Helps prevent undefined globals from slipping in.
  */
 test('globals declared in source should be in eslint config', () => {
-  const eslintPath = path.join(__dirname, '..', 'eslint.config.mjs');
+  const eslintPath = path.join(__dirname, '..', 'eslint.config.js');
   const eslintContent = fs.readFileSync(eslintPath, 'utf8');
 
   // Extract globals from eslint config (simplified - looks for 'name: ...')
@@ -299,7 +299,7 @@ test('globals declared in source should be in eslint config', () => {
           file,
           line: lineNumber,
           variable: varName,
-          message: `Global "${varName}" may not be declared in eslint.config.mjs`
+          message: `Global "${varName}" may not be declared in eslint.config.js`
         });
       }
     }

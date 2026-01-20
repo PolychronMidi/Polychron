@@ -4,7 +4,6 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 export default [
   {
     ignores: [
-      '**/*.mjs',
       'node_modules/**',
       'csv_maestro/**',
       'output/**',

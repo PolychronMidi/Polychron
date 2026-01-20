@@ -2,23 +2,28 @@
 
 /**
  * Pre-commit hook: Polychron File Integrity Guard
- * 
+ * Ensures file integrity and prevents whitespace-only commits.
+ * @module scripts/pre-commit
+ *
  * Prevents commits with:
  * - Files missing final newlines
  * - Non-UTF-8 encoding
  * - Commits that are ONLY whitespace changes
- * 
+ *
  * Run via: husky -> .husky/pre-commit
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
 
-const EXTENSIONS = ['.ts', '.js', '.json', '.md', '.mjs', '.py'];
+const EXTENSIONS = ['.ts', '.js', '.json', '.md', '.py'];
 const ENCODING = 'utf8';
 
-// Get files staged for commit
+/**
+ * Retrieve list of staged files for commit.
+ * @returns {string[]} - Array of staged file paths that exist.
+ */
 let stagedFiles = [];
 try {
   stagedFiles = execSync('git diff --cached --name-only', { encoding: ENCODING })

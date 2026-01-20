@@ -1,38 +1,15 @@
 import fs from 'fs';
 import path from 'path';
+import stripAnsi from './utils/stripAnsi.js';
+import readLogSafe from './utils/readLogSafe.js';
+import findFileByName from './utils/findFileByName.js';
 
-function stripAnsi(input) {
-  return String(input || '').replace(/\u001B\[[0-9;]*[A-Za-z]/g, '');
-}
 
-function readLogSafe(projectRoot, fileName) {
-  const logPath = path.join(projectRoot, 'log', fileName);
-  if (!fs.existsSync(logPath)) return '';
-  return fs.readFileSync(logPath, 'utf-8');
-}
-
-// Search for a file with the given name under `root` with limited recursion depth.
-function findFileByName(root, name, maxDepth = 3) {
-  const seen = new Set();
-  function search(dir, depth) {
-    if (depth > maxDepth) return null;
-    let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return null; }
-    for (const ent of entries) {
-      const full = path.join(dir, ent.name);
-      if (ent.name === name) return full;
-    }
-    for (const ent of entries) {
-      if (ent.isDirectory()) {
-        const full = path.join(dir, ent.name);
-        if (!seen.has(full)) { seen.add(full); const res = search(full, depth + 1); if (res) return res; }
-      }
-    }
-    return null;
-  }
-  return search(root, 0);
-}
-
+/**
+ * Parse coverage statistics using various fallbacks (log parse, summary json, final json)
+ * @param {string} [projectRoot=process.cwd()] - Project root path to search for logs and coverage files.
+ * @returns {{summary:string|null,statements:number|null,branches:number|null,functions:number|null,lines:number|null}}
+ */
 export function parseCoverageStats(projectRoot = process.cwd()) {
   // 1) Try log parsing
   const raw = readLogSafe(projectRoot, 'coverage.log');
