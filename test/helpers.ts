@@ -16,6 +16,9 @@ import { CompositionState, CompositionStateService } from '../src/CompositionSta
 import { ICompositionContext } from '../src/CompositionContext.js';
 import { DIContainer } from '../src/DIContainer.js';
 import { CompositionEventBusImpl, CancellationTokenImpl } from '../src/CompositionProgress.js';
+import { registerWriterServices } from '../src/writer.js';
+import * as tonal from 'tonal';
+import { allNotes, allScales, allChords, allModes, getMidiValue, registerVenueServices } from '../src/venue.js';
 
 /**
  * Creates a fresh CompositionState for testing
@@ -109,6 +112,23 @@ export function setupGlobalState(): void {
 
   // Reset CSV buffer
   globalThis.csvRows = [];
+
+  // Ensure DI container and writer services are available for tests
+  const container = new DIContainer();
+  registerWriterServices(container);
+  // For backward compatibility in tests, expose pushMultiple as global p
+  globalThis.p = container.get('pushMultiple');
+
+  // Ensure venue/theory globals are available for legacy tests
+  // Register venue services in DI container (useful for DI-based tests)
+  registerVenueServices(container);
+  // Expose Tonal API and derived helpers to global scope for legacy code
+  globalThis.t = tonal;
+  globalThis.getMidiValue = getMidiValue;
+  globalThis.allNotes = allNotes;
+  globalThis.allScales = allScales;
+  globalThis.allChords = allChords;
+  globalThis.allModes = allModes;
 
   // Reset timing state
   globalThis.numerator = 4;

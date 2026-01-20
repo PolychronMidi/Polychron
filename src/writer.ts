@@ -329,22 +329,18 @@ export function registerWriterServices(container: DIContainer): void {
   }
 }
 
-// Attach to globalThis for backward compatibility at module load
-function attachToGlobal() {
-  (globalThis as any).CSVBuffer = CSVBuffer;
-  (globalThis as any).pushMultiple = pushMultiple;
-  (globalThis as any).grandFinale = grandFinale;
-  (globalThis as any).p = pushMultiple; // Alias
-}
+// NOTE: Legacy global shims were removed.
+// Use `registerWriterServices(container: DIContainer)` to register writer
+// services into a DI container and make DI mandatory for consumers.
+// For test compatibility, tests should call `registerWriterServices(container)`
+// in their setup code to provide `pushMultiple` and `grandFinale` where needed.
 
-function detachFromGlobal() {
-  delete (globalThis as any).CSVBuffer;
-  delete (globalThis as any).pushMultiple;
-  delete (globalThis as any).grandFinale;
-  delete (globalThis as any).p;
-}
+// Backward-compatibility: expose critical writer APIs to `globalThis` when not present
+// This provides a temporary migration path for tests and consumers that rely on
+// legacy globals. These will be removed once the codebase is fully DI-migrated.
+const _g = globalThis as any;
+if (typeof _g.CSVBuffer === 'undefined') _g.CSVBuffer = CSVBuffer;
+if (typeof _g.pushMultiple === 'undefined') _g.pushMultiple = pushMultiple;
+if (typeof _g.p === 'undefined') _g.p = pushMultiple;
+if (typeof _g.grandFinale === 'undefined') _g.grandFinale = grandFinale;
 
-// Perform the default attachment for backward compatibility at module load
-attachToGlobal();
-
-export { attachToGlobal, detachFromGlobal };

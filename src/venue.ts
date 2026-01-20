@@ -324,26 +324,17 @@ export function registerVenueServices(container: DIContainer): void {
   }
 }
 
-function attachToGlobalVenue() {
-  globalThis.t = t;
-  globalThis.midiData = midiData;
-  globalThis.getMidiValue = getMidiValue;
-  globalThis.allNotes = allNotes;
-  globalThis.allScales = allScales;
-  globalThis.allChords = allChords;
-  globalThis.allModes = allModes;
-}
+// NOTE: Venue global shims removed. Use `registerVenueServices(container: DIContainer)`
+// to register `getMidiValue`, `allNotes`, `allScales`, `allChords`, and `allModes` in the DI container.
+// Consumers should obtain these via DI rather than globalThis.
 
-function detachFromGlobalVenue() {
-  delete globalThis.t;
-  delete globalThis.midiData;
-  delete globalThis.getMidiValue;
-  delete globalThis.allNotes;
-  delete globalThis.allScales;
-  delete globalThis.allChords;
-  delete globalThis.allModes;
-}
-
-attachToGlobalVenue();
-
-export { attachToGlobalVenue, detachFromGlobalVenue };
+// Backward-compatibility: expose music theory utilities to globalThis when not present
+// This offers a temporary compatibility layer during migration to DI.
+const _g = globalThis as any;
+if (typeof _g.getMidiValue === 'undefined') _g.getMidiValue = getMidiValue;
+if (typeof _g.allNotes === 'undefined') _g.allNotes = allNotes;
+if (typeof _g.allScales === 'undefined') _g.allScales = allScales;
+if (typeof _g.allChords === 'undefined') _g.allChords = allChords;
+if (typeof _g.allModes === 'undefined') _g.allModes = allModes;
+if (typeof _g.midiData === 'undefined') _g.midiData = midiData;
+if (typeof _g.t === 'undefined') _g.t = t;

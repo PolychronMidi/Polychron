@@ -27,24 +27,10 @@ export function registerTimeServices(container: DIContainer): void {
   }
 }
 
-// Attach to globalThis for backward compatibility
-function attachToGlobalTime() {
-  (globalThis as any).LayerManager = LayerManager;
-  (globalThis as any).LM = LayerManager; // Alias for convenience
-  (globalThis as any).TimingContext = TimingContext;
-  (globalThis as any).TimingCalculator = TimingCalculator;
-}
+// NOTE: Global timing shims were removed in favor of explicit DI.
+// Use `registerTimeServices(container: DIContainer)` to register Timing services
+// with a DI container. Consumers should obtain timing constructs via DI.
 
-function detachFromGlobalTime() {
-  delete (globalThis as any).LayerManager;
-  delete (globalThis as any).LM;
-  delete (globalThis as any).TimingContext;
-  delete (globalThis as any).TimingCalculator;
-}
-
-attachToGlobalTime();
-
-export { attachToGlobalTime, detachFromGlobalTime };
 
 // Declare global timing variables
 declare const BPM: number;
@@ -506,3 +492,7 @@ export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateTo
 (globalThis as any).setRhythm = setRhythm;
 (globalThis as any).trackRhythm = trackRhythm;
 (globalThis as any).logUnit = logUnit;
+
+// Backward-compatibility: expose LayerManager as `LM` on globalThis if not present
+const _g = globalThis as any;
+if (typeof _g.LM === 'undefined') _g.LM = LayerManager;
