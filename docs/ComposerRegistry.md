@@ -1,157 +1,30 @@
-# ComposerRegistry.ts - Composer Registration and Factory Hub
+# ComposerRegistry.ts - Central registry for composer factories
 
-> **Status**: Core Registry  \
-> **Dependencies**: composers.ts (types), global composer classes
-
+> **Status**: Core Module
+> **Dependencies**: composers.ts
 
 ## Overview
 
-`ComposerRegistry.ts` is the singleton registry that wires composer **type keys** (e.g., `scale`, `chords`, `mode`) to factory functions that construct composers. It centralizes registration, lookup, and default wiring for built-in composers while allowing custom composer injection.
+`ComposerRegistry` provides a typed registry and factory methods to create composer instances by `type`.
 
-**Core Responsibilities:**
-- Maintain a map of composer type → factory
-- Provide `create()` to instantiate composers from config objects
-- Auto-register built-in composers via `registerDefaults()` on first use
-- Expose test-friendly utilities (`clear()`, `getTypes()`, `has()`) for validation
+### register / create
 
-## Architecture Role
-
-- Used by play.ts ([code](../src/play.ts)) ([doc](play.md)) during orchestration to obtain composer instances per section/phrase
-- Bridges configuration (type strings) to concrete composer implementations defined in composers.ts and its submodules
-- Supports test isolation by allowing registry reset between runs
-
----
-
-## API
-
-### `interface ComposerConfig`
-
-Configuration object accepted by `create()`. Must contain a `type` key plus type-specific options.
-
-<!-- BEGIN: snippet:ComposerConfig -->
+<!-- BEGIN: snippet:ComposerRegistry_register -->
 
 ```typescript
-export interface ComposerConfig {
-  type: string;
-  [key: string]: any;
-}
-```
-
-<!-- END: snippet:ComposerConfig -->
-
-### `interface ComposerClass`
-
-Constructor signature for composer classes.
-
-<!-- BEGIN: snippet:ComposerClass -->
-
-```typescript
-export interface ComposerClass {
-  new(...args: any[]): any;
-}
-```
-
-<!-- END: snippet:ComposerClass -->
-
-### `type ComposerFactory`
-
-Factory function signature for creating composers.
-
-<!-- BEGIN: snippet:ComposerFactory -->
-
-```typescript
-export type ComposerFactory = (config: any) => any;
-```
-
-<!-- END: snippet:ComposerFactory -->
-
-### `class ComposerRegistry`
-
-Singleton registry that stores composer factories and creates instances from configs.
-
-<!-- BEGIN: snippet:ComposerRegistry -->
-
-```typescript
-export class ComposerRegistry {
-  private static instance: ComposerRegistry;
-  private composers = new Map<string, ComposerFactory>();
-
-  /**
-   * Private constructor prevents direct instantiation
-   */
-  private constructor() {
-    // Private to enforce singleton pattern
-  }
-
-  /**
-   * Get the singleton instance, initializing with defaults if needed
-   */
-  static getInstance(): ComposerRegistry {
-    if (!this.instance) {
-      this.instance = new ComposerRegistry();
-      this.instance.registerDefaults();
-    }
-    return this.instance;
-  }
-
-  /**
-   * Register a composer factory function by type string
-   * @param type - The composer type identifier (e.g., 'scale', 'chord')
-   * @param factory - Factory function that creates a composer instance
-   */
-  register(type: string, factory: ComposerFactory): void {
+register(type: string, factory: ComposerFactory): void {
     this.composers.set(type, factory);
   }
+```
 
-  /**
-   * Create a composer instance from a config object
-   * @param config - Config with 'type' property and type-specific options
-   * @returns Composer instance
-   * @throws Error if composer type is not registered
-   */
-  create(config: ComposerConfig): any {
-    const type = config.type || 'scale';
-    const factory = this.composers.get(type);
+<!-- END: snippet:ComposerRegistry_register -->
 
-    if (!factory) {
-      console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
-      const scaleFactory = this.composers.get('scale');
-      if (scaleFactory) {
-        return scaleFactory({ name: 'random', root: 'random' });
-      }
-      throw new Error(`ComposerRegistry: No factory registered for type '${type}' and no fallback available`);
-    }
+### registerDefaults (default factories)
 
-    return factory(config);
-  }
+<!-- BEGIN: snippet:ComposerRegistry_registerDefaults -->
 
-  /**
-   * Check if a composer type is registered
-   */
-  has(type: string): boolean {
-    return this.composers.has(type);
-  }
-
-  /**
-   * Get all registered composer types
-   */
-  getTypes(): string[] {
-    return Array.from(this.composers.keys());
-  }
-
-  /**
-   * Clear all registered composers (useful for testing)
-   */
-  clear(): void {
-    this.composers.clear();
-  }
-
-  /**
-   * Register default composers from the composers module.
-   * This method is called automatically on first getInstance().
-   * It registers factory functions for all built-in composer types.
-   */
-  private registerDefaults(): void {
+```typescript
+private registerDefaults(): void {
     // Import composer classes from global scope (backward compatibility)
     const ScaleComposer = g.ScaleComposer;
     const ChordComposer = g.ChordComposer;
@@ -239,135 +112,6 @@ export class ComposerRegistry {
       );
     }
   }
-}
 ```
 
-<!-- END: snippet:ComposerRegistry -->
-
-#### `getInstance()`
-
-Get the singleton instance and auto-register defaults.
-
-<!-- BEGIN: snippet:ComposerRegistry_getInstance -->
-
-```typescript
-static getInstance(): ComposerRegistry {
-    if (!this.instance) {
-      this.instance = new ComposerRegistry();
-      this.instance.registerDefaults();
-    }
-    return this.instance;
-  }
-```
-
-<!-- END: snippet:ComposerRegistry_getInstance -->
-
-#### `register(type, factory)`
-
-Register a factory for a type string.
-
-<!-- BEGIN: snippet:ComposerRegistry_register -->
-
-```typescript
-register(type: string, factory: ComposerFactory): void {
-    this.composers.set(type, factory);
-  }
-```
-
-<!-- END: snippet:ComposerRegistry_register -->
-
-#### `create(config)`
-
-Instantiate a composer from a config object; falls back to random scale if unknown type and scale is available.
-
-<!-- BEGIN: snippet:ComposerRegistry_create -->
-
-```typescript
-create(config: ComposerConfig): any {
-    const type = config.type || 'scale';
-    const factory = this.composers.get(type);
-
-    if (!factory) {
-      console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
-      const scaleFactory = this.composers.get('scale');
-      if (scaleFactory) {
-        return scaleFactory({ name: 'random', root: 'random' });
-      }
-      throw new Error(`ComposerRegistry: No factory registered for type '${type}' and no fallback available`);
-    }
-
-    return factory(config);
-  }
-```
-
-<!-- END: snippet:ComposerRegistry_create -->
-
-#### `has(type)`
-
-Check if a type is registered.
-
-<!-- BEGIN: snippet:ComposerRegistry_has -->
-
-```typescript
-has(type: string): boolean {
-    return this.composers.has(type);
-  }
-```
-
-<!-- END: snippet:ComposerRegistry_has -->
-
-#### `getTypes()`
-
-List all registered composer types.
-
-<!-- BEGIN: snippet:ComposerRegistry_getTypes -->
-
-```typescript
-getTypes(): string[] {
-    return Array.from(this.composers.keys());
-  }
-```
-
-<!-- END: snippet:ComposerRegistry_getTypes -->
-
-#### `clear()`
-
-Remove all registered composers (useful for tests).
-
-<!-- BEGIN: snippet:ComposerRegistry_clear -->
-
-```typescript
-clear(): void {
-    this.composers.clear();
-  }
-```
-
-<!-- END: snippet:ComposerRegistry_clear -->
-
----
-
-## Usage Example
-
-```typescript
-import ComposerRegistry from '../src/ComposerRegistry';
-
-const registry = ComposerRegistry.getInstance();
-
-registry.register('custom', (cfg) => ({ kind: 'custom', cfg }));
-
-const c1 = registry.create({ type: 'custom', foo: 1 });
-const c2 = registry.create({ type: 'scale', name: 'minor', root: 'A' });
-
-console.log(registry.has('custom')); // true
-console.log(registry.getTypes()); // ['measure','scale','chords','mode','pentatonic', ...]
-```
-
----
-
-## Related Modules
-
-- composers.ts ([code](../src/composers.ts)) ([doc](composers.md)) - Exposes composer interfaces and utilities
-- play.ts ([code](../src/play.ts)) ([doc](play.md)) - Orchestration layer that requests composers
-- EventBus.ts ([code](../src/EventBus.ts)) ([doc](EventBus.md)) - Emits progress and control events alongside composer operations
-- PolychronConfig.ts ([code](../src/PolychronConfig.ts)) ([doc](PolychronConfig.md)) - Configuration that selects composer types
-
+<!-- END: snippet:ComposerRegistry_registerDefaults -->

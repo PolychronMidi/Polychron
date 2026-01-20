@@ -12,6 +12,21 @@ import { logUnit } from './writer.js';
 
 export { TimingCalculator, TimingContext, LayerManager };
 
+// Optional: Register timing services into a DIContainer for explicit DI usage
+import { DIContainer } from './DIContainer.js';
+
+export function registerTimeServices(container: DIContainer): void {
+  if (!container.has('TimingCalculator')) {
+    container.register('TimingCalculator', () => TimingCalculator, 'singleton');
+  }
+  if (!container.has('TimingContext')) {
+    container.register('TimingContext', () => TimingContext, 'singleton');
+  }
+  if (!container.has('LayerManager')) {
+    container.register('LayerManager', () => LayerManager, 'singleton');
+  }
+}
+
 // Attach to globalThis for backward compatibility
 function attachToGlobalTime() {
   (globalThis as any).LayerManager = LayerManager;

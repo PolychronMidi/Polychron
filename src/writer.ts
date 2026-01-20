@@ -3,6 +3,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { DIContainer } from './DIContainer.js';
 
 /**
  * MIDI event object structure
@@ -314,6 +315,19 @@ export const grandFinale = (): void => {
     console.log(`${outputFilename} created (${name} layer).`);
   });
 };
+
+// Optional: Register writer services into a DIContainer for explicit DI usage
+export function registerWriterServices(container: DIContainer): void {
+  if (!container.has('pushMultiple')) {
+    container.register('pushMultiple', () => pushMultiple, 'singleton');
+  }
+  if (!container.has('grandFinale')) {
+    container.register('grandFinale', () => grandFinale, 'singleton');
+  }
+  if (!container.has('p')) {
+    container.register('p', () => pushMultiple, 'singleton');
+  }
+}
 
 // Attach to globalThis for backward compatibility at module load
 function attachToGlobal() {

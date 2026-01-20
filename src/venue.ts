@@ -301,8 +301,28 @@ export const allModes: string[] = (() => {
   return Array.from(allModesSet);
 })();
 
+import { DIContainer } from './DIContainer.js';
+
 // Export to global scope for backward compatibility
 declare const globalThis: any;
+
+export function registerVenueServices(container: DIContainer): void {
+  if (!container.has('getMidiValue')) {
+    container.register('getMidiValue', () => getMidiValue, 'singleton');
+  }
+  if (!container.has('allNotes')) {
+    container.register('allNotes', () => allNotes, 'singleton');
+  }
+  if (!container.has('allScales')) {
+    container.register('allScales', () => allScales, 'singleton');
+  }
+  if (!container.has('allChords')) {
+    container.register('allChords', () => allChords, 'singleton');
+  }
+  if (!container.has('allModes')) {
+    container.register('allModes', () => allModes, 'singleton');
+  }
+}
 
 function attachToGlobalVenue() {
   globalThis.t = t;

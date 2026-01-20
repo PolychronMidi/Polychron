@@ -154,8 +154,19 @@ function main() {
       continue;
     }
 
-    const cmp = compareMetrics(initial, latest);
+      const cmp = compareMetrics(initial, latest);
     const safeName = String(name).replace(/\r|\n/g, '').replace(/[^\x20-\x7E]/g, '');
+
+    // New: Check for unchecked TODO boxes in the file (strict adherence)
+    const unchecked = (content.match(/^\s*- \[ \] .*$/gm) || []).map(l => l.trim());
+    if (unchecked.length > 0) {
+      anyViolation = true;
+      console.log(`${safeName}: TODO Protocol violation: Found unchecked todo items:`);
+      unchecked.forEach(u => console.log('   - ' + u));
+      console.log('   -> Please complete these checklist items before running `npm run am-i-done`.');
+      continue;
+    }
+
     if (cmp.ok) {
       console.log(`${safeName}: If all your TODOs in ${safeName} are marked complete and all protocols in RULES.md followed throughout, this task is complete!`);
     } else {
@@ -164,6 +175,36 @@ function main() {
       console.log('  Reasons:');
       for (const r of cmp.reasons) console.log('   - ' + r);
     }
+  }
+
+  // Additional project-wide checks (migration tests, docs, and PR template)
+  // Check presence of migration/no-global tests for writer/time/venue
+  const requiredMigrationTests = [
+    path.join(projectRoot, 'test', 'writer.no_global.test.ts'),
+    path.join(projectRoot, 'test', 'time.no_global.test.ts'),
+    path.join(projectRoot, 'test', 'venue.no_global.test.ts')
+  ];
+
+  const missingMigrationTests = requiredMigrationTests.filter(p => !fs.existsSync(p));
+  if (missingMigrationTests.length > 0) {
+    anyViolation = true;
+    console.log('Migration Tests Missing:');
+    missingMigrationTests.forEach(p => console.log('  - ' + path.relative(projectRoot, p)));
+    console.log('  -> Add migration/no-global tests for modules that used attachToGlobal* shims.');
+  }
+
+  // Check docs thesis presence
+  const thesisPath = path.join(projectRoot, 'docs', 'TODO_Protocol_Thesis.md');
+  if (!fs.existsSync(thesisPath)) {
+    anyViolation = true;
+    console.log('Docs Missing: docs/TODO_Protocol_Thesis.md not found.');
+  }
+
+  // Check PR template presence
+  const prTemplate = path.join(projectRoot, '.github', 'PULL_REQUEST_TEMPLATE.md');
+  if (!fs.existsSync(prTemplate)) {
+    anyViolation = true;
+    console.log('PR Template Missing: .github/PULL_REQUEST_TEMPLATE.md not found.');
   }
 
   process.exit(anyViolation ? 1 : 0);
