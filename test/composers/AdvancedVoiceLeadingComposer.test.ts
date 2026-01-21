@@ -1,15 +1,8 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { ScaleComposer, ComposerFactory } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { AdvancedVoiceLeadingComposer } = globalThis as any;
+import { ScaleComposer } from '../../src/composers/ScaleComposer.js';
+import { ComposerFactory, AdvancedVoiceLeadingComposer } from '../../src/composers/index.js';
 
 describe('AdvancedVoiceLeadingComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should initialize with scale, root, and common tone weight', () => {
     const composer = new AdvancedVoiceLeadingComposer('major', 'C', 0.7);

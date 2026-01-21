@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initializePlayEngine } from '../src/play.js';
-import { setupGlobalState, createTestContext } from './helpers.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 import { registerWriterServices } from '../src/writer.js';
 
 beforeEach(() => {

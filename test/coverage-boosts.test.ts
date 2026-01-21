@@ -1,7 +1,7 @@
 // coverage-boosts.test.ts - Targeted tests to improve coverage toward 75% threshold
 import { initializePolychronContext, getPolychronContext } from '../src/PolychronInit.js';
 import { Motif } from '../src/motifs.js';
-import { setupGlobalState, createTestContext } from './helpers.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
 describe('Coverage Boosts: Phase 3 Branch Coverage', () => {

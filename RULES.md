@@ -66,6 +66,8 @@ DON'T DO: Hardcoded lists: Module arrays go stale → Use `generateModuleMapping
 - If all your TODOs are not marked done, or Initial Status for tests and errors does not match Latest Status, return to working on the task until fully complete.
 - Never start a new TODO file when there is one in progress, and never commit to git.
 
+These rules protect contributors from disruptive, low-value update noise: only publish outcomes that are verifiable through the canonical TODO workflow. By requiring completion checks (`npm run am-i-done`) before reporting, the protocol reduces unnecessary context switches and enforces focused remediation rather than repetitive status pings. Treat progress reports as high‑signal artifacts, not as an ongoing conversation—use the TODO ledger to carry status until work reaches a verifiable checkpoint.
+
 ### Anti-Harassment Policy
 - Never report partial progress or ask for confirmation until all TODO items are complete.
 

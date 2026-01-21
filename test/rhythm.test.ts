@@ -1,64 +1,55 @@
 // test/rhythm.test.js
 import { drummer, playDrums, playDrums2, drumMap, rhythms, binary, hex, onsets, random, prob, euclid, rotate, morph, setRhythm, makeOnsets, patternLength, closestDivisor, getRhythm, trackRhythm } from '../src/rhythm.js';
 import { rf, ri, rv, ra, m } from '../src/backstage.js';
-import { setupGlobalState, setupTestLogging, createTestContext, getWriterServices } from './helpers.js';
+import { setupGlobalState, setupTestLogging, createTestContext, getWriterServices } from './helpers.module.js';
 import { registerWriterServices } from '../src/writer.js';
 
 // Enable test logging
 setupTestLogging();
 
-let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
 let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
 
-// Setup global state
+// Setup DI-based local state
 let ctx: any;
 function setupLocalState() {
-  // Create a DI-enabled test context and register writer services
+  // Create a DI-enabled test context
   ctx = createTestContext();
+  // Ensure writer services are available on the DI container
   registerWriterServices(ctx.services);
-  ctx.csvBuffer = [];
-  globalThis.c = ctx.csvBuffer;
-  globalThis.drumCH = 9;
-  globalThis.beatStart = 0;
-  globalThis.tpBeat = 480;
-  globalThis.beatIndex = 0;
-  globalThis.numerator = 4;
-  globalThis.beatRhythm = [1, 0, 1, 0];
-  globalThis.beatsOff = 0;
-  globalThis.bpmRatio3 = 1;
-  globalThis.measuresPerPhrase = 4;
-  globalThis.divsPerBeat = 2;
-  globalThis.subdivsPerDiv = 2;
-  globalThis.divRhythm = [1, 0];
-  globalThis.subdivRhythm = [1, 0];
-  globalThis.m = m;
-  globalThis.rf = rf;
-  globalThis.ri = ri;
-  globalThis.rv = rv;
-  globalThis.ra = ra;
-  globalThis.drumMap = {
-    'snare1': { note: 31, velocityRange: [99, 111] },
-    'kick1': { note: 12, velocityRange: [111, 127] },
-    'cymbal1': { note: 59, velocityRange: [66, 77] },
-    'conga1': { note: 60, velocityRange: [66, 77] }
-  };
-  // Also assign to local for convenience
-  c = ctx.csvBuffer;
-  drumCH = globalThis.drumCH;
-  beatStart = globalThis.beatStart;
-  tpBeat = globalThis.tpBeat;
-  beatIndex = globalThis.beatIndex;
-  numerator = globalThis.numerator;
-  beatRhythm = globalThis.beatRhythm;
-  beatsOff = globalThis.beatsOff;
-  bpmRatio3 = globalThis.bpmRatio3;
-  measuresPerPhrase = globalThis.measuresPerPhrase;
-  divsPerBeat = globalThis.divsPerBeat;
-  subdivsPerDiv = globalThis.subdivsPerDiv;
-  divRhythm = globalThis.divRhythm;
-  subdivRhythm = global.subdivRhythm;
-  m = global.m;
+
+  // Use the underlying rows array for simpler assertions when CSVBuffer is used
+  c = ctx.csvBuffer && (ctx.csvBuffer as any).rows ? (ctx.csvBuffer as any).rows : ctx.csvBuffer;
+
+  // Populate ctx.state with values used by rhythm functions
+  ctx.state.drumCH = 9;
+  ctx.state.beatStart = 0;
+  ctx.state.tpBeat = 480;
+  ctx.state.beatIndex = 0;
+  ctx.state.numerator = 4;
+  ctx.state.beatRhythm = [1, 0, 1, 0];
+  ctx.state.beatsOff = 0;
+  ctx.state.bpmRatio3 = 1;
+  ctx.state.measuresPerPhrase = 4;
+  ctx.state.divsPerBeat = 2;
+  ctx.state.subdivsPerDiv = 2;
+  ctx.state.divRhythm = [1, 0];
+  ctx.state.subdivRhythm = [1, 0];
+
+  // Local convenience bindings
+  drumCH = ctx.state.drumCH;
+  beatStart = ctx.state.beatStart;
+  tpBeat = ctx.state.tpBeat;
+  beatIndex = ctx.state.beatIndex;
+  numerator = ctx.state.numerator;
+  beatRhythm = ctx.state.beatRhythm;
+  beatsOff = ctx.state.beatsOff;
+  bpmRatio3 = ctx.state.bpmRatio3;
+  measuresPerPhrase = ctx.state.measuresPerPhrase;
+  divsPerBeat = ctx.state.divsPerBeat;
+  subdivsPerDiv = ctx.state.subdivsPerDiv;
+  divRhythm = ctx.state.divRhythm;
+  subdivRhythm = ctx.state.subdivRhythm;
 }
 
 describe('drumMap', () => {
@@ -144,7 +135,7 @@ describe('drummer', () => {
   it('should apply stutter effect occasionally', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.1); // Force stutter
     setupLocalState();
-    drummer(['snare1'], [0], globalThis.rf(.1), 1.0, undefined, undefined, ctx);
+    drummer(['snare1'], [0], rf(.1), 1.0, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(1);
     vi.restoreAllMocks();
   });
@@ -495,87 +486,87 @@ describe('Rhythm pattern generators', () => {
 });
 
 describe('Rhythm state tracking functions', () => {
-  beforeEach(() => {
+    beforeEach(() => {
     setupLocalState();
-    globalThis.beatIndex = 0;
-    globalThis.divIndex = 0;
-    globalThis.subdivIndex = 0;
-    globalThis.beatRhythm = [1, 0, 1, 0];
-    globalThis.divRhythm = [1, 1, 0];
-    globalThis.subdivRhythm = [1, 0, 1];
-    globalThis.beatsOn = 0;
-    globalThis.beatsOff = 0;
-    globalThis.divsOn = 0;
-    globalThis.divsOff = 0;
-    globalThis.subdivsOn = 0;
-    globalThis.subdivsOff = 0;
+    ctx.state.beatIndex = 0;
+    ctx.state.divIndex = 0;
+    ctx.state.subdivIndex = 0;
+    ctx.state.beatRhythm = [1, 0, 1, 0];
+    ctx.state.divRhythm = [1, 1, 0];
+    ctx.state.subdivRhythm = [1, 0, 1];
+    ctx.state.beatsOn = 0;
+    ctx.state.beatsOff = 0;
+    ctx.state.divsOn = 0;
+    ctx.state.divsOff = 0;
+    ctx.state.subdivsOn = 0;
+    ctx.state.subdivsOff = 0;
   });
 
   it('beat rhythm tracking should count consecutive on beats', () => {
     // Simulate tracking beat rhythm [1, 0, 1, 0]
     // First beat is 1 (on)
-    globalThis.beatIndex = 0;
+    ctx.state.beatIndex = 0;
     // If function exists and works, it should increment beatsOn
-    expect(typeof globalThis.beatsOn).toBe('number');
+    expect(typeof ctx.state.beatsOn).toBe('number');
   });
 
   it('division rhythm tracking should handle different length patterns', () => {
     // divRhythm = [1, 1, 0] has length 3, different from beat
-    globalThis.divIndex = 0;
+    ctx.state.divIndex = 0;
     // Division pattern tracking should work independently
-    expect(globalThis.divRhythm.length).toBe(3);
-    expect(globalThis.beatRhythm.length).toBe(4);
+    expect(ctx.state.divRhythm.length).toBe(3);
+    expect(ctx.state.beatRhythm.length).toBe(4);
   });
 
   it('subdivision tracking with nested rhythm structure', () => {
     // Subdivisions are nested under divisions
-    globalThis.subdivIndex = 0;
-    globalThis.subdivsPerDiv = 2;
+    ctx.state.subdivIndex = 0;
+    ctx.state.subdivsPerDiv = 2;
     // Multiple subdivisions per division should track independently
-    expect(globalThis.subdivRhythm.length).toBeGreaterThan(0);
+    expect(ctx.state.subdivRhythm.length).toBeGreaterThan(0);
   });
 
   it('beat on/off counters should be independent from other levels', () => {
-    globalThis.beatIndex = 0;
-    globalThis.beatsOn = 0;
-    globalThis.beatsOff = 0;
-    globalThis.divsOn = 0;
-    globalThis.divsOff = 0;
+    ctx.state.beatIndex = 0;
+    ctx.state.beatsOn = 0;
+    ctx.state.beatsOff = 0;
+    ctx.state.divsOn = 0;
+    ctx.state.divsOff = 0;
     // Changing one level shouldn't affect others
-    const beatOnSnapshot = globalThis.beatsOn;
-    const divOnSnapshot = globalThis.divsOn;
+    const beatOnSnapshot = ctx.state.beatsOn;
+    const divOnSnapshot = ctx.state.divsOn;
     expect(beatOnSnapshot).toBe(0);
     expect(divOnSnapshot).toBe(0);
   });
 
   it('rhythm array index should wrap correctly for pattern length', () => {
-    globalThis.beatIndex = 4;
-    globalThis.beatRhythm = [1, 0, 1, 0];
+    ctx.state.beatIndex = 4;
+    ctx.state.beatRhythm = [1, 0, 1, 0];
     // Index 4 should wrap to 0 for length-4 array
-    const wrappedIndex = globalThis.beatIndex % globalThis.beatRhythm.length;
+    const wrappedIndex = ctx.state.beatIndex % ctx.state.beatRhythm.length;
     expect(wrappedIndex).toBe(0);
   });
 });
 
 describe('Rhythm pattern composition integration', () => {
-  beforeEach(() => {
+    beforeEach(() => {
     setupLocalState();
   });
 
   it('should handle changing rhythm patterns between levels', () => {
-    globalThis.beatRhythm = [1, 1, 0, 0, 1];
-    globalThis.divRhythm = [1, 0, 1];
-    globalThis.subdivRhythm = [1, 1];
+    ctx.state.beatRhythm = [1, 1, 0, 0, 1];
+    ctx.state.divRhythm = [1, 0, 1];
+    ctx.state.subdivRhythm = [1, 1];
     // Each level can have different length patterns
-    expect(globalThis.beatRhythm.length).not.toBe(globalThis.divRhythm.length);
-    expect(globalThis.divRhythm.length).not.toBe(globalThis.subdivRhythm.length);
+    expect(ctx.state.beatRhythm.length).not.toBe(ctx.state.divRhythm.length);
+    expect(ctx.state.divRhythm.length).not.toBe(ctx.state.subdivRhythm.length);
   });
 
   it('polyrhythmic patterns with coprime lengths', () => {
     // 3-against-4: beat=4, division=3 gives 12-beat cycle
-    globalThis.beatRhythm = [1, 1, 1, 1];
-    globalThis.divRhythm = [1, 1, 1];
-    globalThis.divsPerBeat = 3; // 3 divisions per beat = polyrhythm
+    ctx.state.beatRhythm = [1, 1, 1, 1];
+    ctx.state.divRhythm = [1, 1, 1];
+    ctx.state.divsPerBeat = 3; // 3 divisions per beat = polyrhythm
 
     // Calculate LCM to find cycle length
     const lcm = 12; // LCM(4, 3) = 12
@@ -584,28 +575,28 @@ describe('Rhythm pattern composition integration', () => {
 
     // After 12 steps, both rhythms should realign
     for (let i = 0; i < 12; i++) {
-      if (i % globalThis.beatRhythm.length === 0) beatCycleCount++;
-      if (i % globalThis.divRhythm.length === 0) divCycleCount++;
+      if (i % ctx.state.beatRhythm.length === 0) beatCycleCount++;
+      if (i % ctx.state.divRhythm.length === 0) divCycleCount++;
     }
     expect(beatCycleCount).toBe(3); // 12 / 4
     expect(divCycleCount).toBe(4); // 12 / 3
   });
 
   it('rhythm with all zeros (silence)', () => {
-    globalThis.beatRhythm = [0, 0, 0, 0];
-    globalThis.divRhythm = [0, 0];
+    ctx.state.beatRhythm = [0, 0, 0, 0];
+    ctx.state.divRhythm = [0, 0];
     // Silent patterns should be valid
-    const beatOnCount = globalThis.beatRhythm.reduce((a, b) => a + b, 0);
-    const divOnCount = globalThis.divRhythm.reduce((a, b) => a + b, 0);
+    const beatOnCount = ctx.state.beatRhythm.reduce((a, b) => a + b, 0);
+    const divOnCount = ctx.state.divRhythm.reduce((a, b) => a + b, 0);
     expect(beatOnCount).toBe(0);
     expect(divOnCount).toBe(0);
   });
 
   it('rhythm with all ones (continuous)', () => {
-    globalThis.beatRhythm = [1, 1, 1, 1];
-    globalThis.divRhythm = [1, 1, 1, 1];
+    ctx.state.beatRhythm = [1, 1, 1, 1];
+    ctx.state.divRhythm = [1, 1, 1, 1];
     // Continuous patterns should be valid
-    const beatOnCount = globalThis.beatRhythm.reduce((a, b) => a + b, 0);
-    expect(beatOnCount).toBe(globalThis.beatRhythm.length);
+    const beatOnCount = ctx.state.beatRhythm.reduce((a, b) => a + b, 0);
+    expect(beatOnCount).toBe(ctx.state.beatRhythm.length);
   });
 });

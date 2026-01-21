@@ -1,14 +1,7 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { TensionReleaseComposer } = globalThis as any;
+import { TensionReleaseComposer } from '../../src/composers/index.js';
 
 describe('TensionReleaseComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup required; imports are DI-friendly.
 
   it('should create with default parameters', () => {
     const composer = new TensionReleaseComposer();

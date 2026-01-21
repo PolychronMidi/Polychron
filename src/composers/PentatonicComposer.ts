@@ -5,8 +5,7 @@
 import GenericComposer from './GenericComposer.js';
 import * as t from 'tonal';
 import { allNotes } from '../venue.js';
-
-const g = globalThis as any;
+import { ri } from '../utils.js';
 
 /**
  * Composes notes from pentatonic scales.
@@ -35,14 +34,14 @@ class PentatonicComposer extends GenericComposer<any> {
  */
 class RandomPentatonicComposer extends PentatonicComposer {
   constructor() {
-    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
-    const randomType = ['major', 'minor'][g.ri(1)];
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
+    const randomType = ['major', 'minor'][ri(1)];
     super(randomRoot, randomType);
   }
 
   noteSet(): void {
-    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
-    const randomType = ['major', 'minor'][g.ri(1)];
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
+    const randomType = ['major', 'minor'][ri(1)];
     this.root = randomRoot;
     this.type = randomType;
     const scaleName = randomType === 'major' ? 'major pentatonic' : 'minor pentatonic';

@@ -5,8 +5,7 @@
 import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
 import * as t from 'tonal';
 import { allScales, allNotes } from '../venue.js';
-
-const g = globalThis as any;
+import { ri } from '../utils.js';
 
 /**
  * Composes notes from a specific scale.
@@ -36,8 +35,8 @@ class RandomScaleComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    const randomScale = allScales[g.ri(allScales.length - 1)];
-    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
+    const randomScale = allScales[ri(allScales.length - 1)];
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
     this.itemSet(randomScale, randomRoot);
   }
 

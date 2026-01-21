@@ -1,6 +1,6 @@
 // test/stage.test.js
 import { stage } from '../src/stage.js';
-import { setupGlobalState, createTestContext } from './helpers.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 

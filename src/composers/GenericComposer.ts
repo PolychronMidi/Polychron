@@ -4,8 +4,6 @@
 
 import MeasureComposer from './MeasureComposer.js';
 
-const g = globalThis as any;
-
 /**
  * Generic composer base class parameterized by item type T.
  * Common pattern: itemSet(name, root) -> items array -> getNotes() calls parent
@@ -42,7 +40,7 @@ abstract class GenericComposer<T> extends MeasureComposer {
    * Subclasses inherit this unless they need special logic
    */
   getNotes(octaveRange?: number[] | null): any[] {
-    return g.MeasureComposer.prototype.getNotes.call(this, octaveRange);
+    return MeasureComposer.prototype.getNotes.call(this, octaveRange);
   }
 
   /**

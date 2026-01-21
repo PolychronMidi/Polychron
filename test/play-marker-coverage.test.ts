@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { initializePlayEngine } from '../src/play.js';
-import { setupTestDefaults } from './helpers.js';
+import { setupGlobalState } from './helpers.module.js';
 
 // Integration test: verify marker_t entries exist for all timing units
 describe('Play Engine Marker Coverage', () => {
   it('emits marker_t for each timing unit when LOG=all', async () => {
-    // Use central defaults to keep integration run small and deterministic
-    setupTestDefaults({ smallComposition: true, log: 'all' });
+    // Use DI-only test defaults
+    const ctx = setupGlobalState();
+    ctx.LOG = 'all';
+    ctx.state.SECTIONS = { min: 1, max: 1 };
 
     // Run a short composition
     await initializePlayEngine();

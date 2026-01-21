@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext } from './helpers';
+import { createTestContext } from './helpers.module.js';
 import { registerVenueServices } from '../src/venue';
 
 describe('venue migration (DI-first)', () => {

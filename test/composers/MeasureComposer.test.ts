@@ -1,15 +1,8 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { MeasureComposer } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const g = globalThis as any;
+import { NUMERATOR, DENOMINATOR, DIVISIONS, SUBDIVISIONS, SUBSUBDIVS, VOICES, OCTAVE } from '../../src/sheet.js';
+import { MeasureComposer } from '../../src/composers/index.js';
 
 describe('MeasureComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup; tests use named imports from `src/sheet.ts` and DI-friendly composers.
 
   describe('constructor', () => {
     it('should initialize with null lastMeter', () => {
@@ -22,8 +15,8 @@ describe('MeasureComposer', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
       const result = composer.getNumerator();
-      expect(result).toBeGreaterThanOrEqual(g.NUMERATOR.min);
-      expect(result).toBeLessThanOrEqual(g.NUMERATOR.max);
+      expect(result).toBeGreaterThanOrEqual(NUMERATOR.min);
+      expect(result).toBeLessThanOrEqual(NUMERATOR.max);
     });
 
     it('should return an integer', () => {
@@ -37,8 +30,8 @@ describe('MeasureComposer', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
       const result = composer.getDenominator();
-      expect(result).toBeGreaterThanOrEqual(g.DENOMINATOR.min);
-      expect(result).toBeLessThanOrEqual(g.DENOMINATOR.max);
+      expect(result).toBeGreaterThanOrEqual(DENOMINATOR.min);
+      expect(result).toBeLessThanOrEqual(DENOMINATOR.max);
     });
   });
 
@@ -46,8 +39,8 @@ describe('MeasureComposer', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
       const result = composer.getDivisions();
-      expect(result).toBeGreaterThanOrEqual(g.DIVISIONS.min);
-      expect(result).toBeLessThanOrEqual(g.DIVISIONS.max);
+      expect(result).toBeGreaterThanOrEqual(DIVISIONS.min);
+      expect(result).toBeLessThanOrEqual(DIVISIONS.max);
     });
   });
 
@@ -55,8 +48,8 @@ describe('MeasureComposer', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
       const result = composer.getSubdivisions();
-      expect(result).toBeGreaterThanOrEqual(g.SUBDIVISIONS.min);
-      expect(result).toBeLessThanOrEqual(g.SUBDIVISIONS.max);
+      expect(result).toBeGreaterThanOrEqual(SUBDIVISIONS.min);
+      expect(result).toBeLessThanOrEqual(SUBDIVISIONS.max);
     });
   });
 
@@ -64,8 +57,8 @@ describe('MeasureComposer', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
       const result = composer.getSubsubdivs();
-      expect(result).toBeGreaterThanOrEqual(g.SUBSUBDIVS.min);
-      expect(result).toBeLessThanOrEqual(g.SUBSUBDIVS.max);
+      expect(result).toBeGreaterThanOrEqual(SUBSUBDIVS.min);
+      expect(result).toBeLessThanOrEqual(SUBSUBDIVS.max);
     });
   });
 
@@ -73,8 +66,8 @@ describe('MeasureComposer', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
       const result = composer.getVoices();
-      expect(result).toBeGreaterThanOrEqual(g.VOICES.min);
-      expect(result).toBeLessThanOrEqual(g.VOICES.max);
+      expect(result).toBeGreaterThanOrEqual(VOICES.min);
+      expect(result).toBeLessThanOrEqual(VOICES.max);
     });
   });
 
@@ -89,10 +82,10 @@ describe('MeasureComposer', () => {
     it('should return octaves within configured range', () => {
       const composer = new MeasureComposer();
       const [o1, o2] = composer.getOctaveRange();
-      expect(o1).toBeGreaterThanOrEqual(g.OCTAVE.min);
-      expect(o1).toBeLessThanOrEqual(g.OCTAVE.max);
-      expect(o2).toBeGreaterThanOrEqual(g.OCTAVE.min);
-      expect(o2).toBeLessThanOrEqual(g.OCTAVE.max);
+      expect(o1).toBeGreaterThanOrEqual(OCTAVE.min);
+      expect(o1).toBeLessThanOrEqual(OCTAVE.max);
+      expect(o2).toBeGreaterThanOrEqual(OCTAVE.min);
+      expect(o2).toBeLessThanOrEqual(OCTAVE.max);
     });
 
     it('should ensure octaves are at least 2-3 apart', () => {
@@ -146,7 +139,6 @@ describe('MeasureComposer.getMeter() - Enhanced Tests', () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    setupGlobalState();
     composer = new MeasureComposer();
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
@@ -344,19 +336,19 @@ describe('MeasureComposer.getMeter() - Enhanced Tests', () => {
 });
 
 describe('MeasureComposer edge cases', () => {
-  beforeEach(() => {
-    setupGlobalState();
+  afterEach(() => {
+    delete (globalThis as any).bpmRatio;
   });
 
   it('should handle extreme bpmRatio', () => {
-    g.bpmRatio = 10;
+    (globalThis as any).bpmRatio = 10;
     const composer = new MeasureComposer();
     const result = composer.getNumerator();
     expect(result).toBeGreaterThan(0);
   });
 
   it('should handle zero bpmRatio', () => {
-    g.bpmRatio = 0;
+    (globalThis as any).bpmRatio = 0;
     const composer = new MeasureComposer();
     const result = composer.getNumerator();
     expect(result).toBeGreaterThanOrEqual(0);
@@ -364,9 +356,7 @@ describe('MeasureComposer edge cases', () => {
 });
 
 describe('MIDI compliance - MeasureComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup required; constants are imported from `src/sheet.ts`.
 
   it('should use reasonable octave ranges', () => {
     const composer = new MeasureComposer();

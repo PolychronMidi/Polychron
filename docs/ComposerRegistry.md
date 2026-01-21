@@ -164,20 +164,20 @@ export class ComposerRegistry {
     const MelodicDevelopmentComposer = g.MelodicDevelopmentComposer;
     const AdvancedVoiceLeadingComposer = g.AdvancedVoiceLeadingComposer;
 
-    // Utilities from global scope
-    const ri = g.ri;
-    const allScales = g.allScales;
-    const allNotes = g.allNotes;
-    const allChords = g.allChords;
-    const allModes = g.allModes;
+    // Utilities from global scope - use safe fallbacks when globals are not present
+    const ri = g.ri || ((...args: any[]) => 0);
+    const allScales = Array.isArray((g as any).allScales) ? (g as any).allScales : [];
+    const allNotes = Array.isArray((g as any).allNotes) ? (g as any).allNotes : [];
+    const allChords = Array.isArray((g as any).allChords) ? (g as any).allChords : [];
+    const allModes = Array.isArray((g as any).allModes) ? (g as any).allModes : [];
 
     // Register measure composer
     this.register('measure', () => new MeasureComposer());
 
     // Register scale composer with random support
     this.register('scale', ({ name = 'major', root = 'C' } = {}) => {
-      const n = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
-      const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+      const n = name === 'random' ? (allScales.length ? allScales[Math.max(0, ri(allScales.length - 1))] : 'major') : name;
+      const r = root === 'random' ? (allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
       return new ScaleComposer(n, r);
     });
 
@@ -185,10 +185,10 @@ export class ComposerRegistry {
     this.register('chords', ({ progression = ['C'] } = {}) => {
       let p = Array.isArray(progression) ? progression : ['C'];
       if (typeof progression === 'string' && progression === 'random') {
-        const len = ri(2, 5);
+        const len = typeof ri === 'function' ? ri(2, 5) : 3;
         p = [];
         for (let i = 0; i < len; i++) {
-          p.push(allChords[ri(allChords.length - 1)]);
+          p.push(allChords.length ? allChords[Math.max(0, ri(allChords.length - 1))] : 'C');
         }
       }
       return new ChordComposer(p);
@@ -196,8 +196,8 @@ export class ComposerRegistry {
 
     // Register mode composer with random support
     this.register('mode', ({ name = 'ionian', root = 'C' } = {}) => {
-      const n = name === 'random' ? allModes[ri(allModes.length - 1)] : name;
-      const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+      const n = name === 'random' ? (allModes.length ? allModes[Math.max(0, ri(allModes.length - 1))] : 'ionian') : name;
+      const r = root === 'random' ? (allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
       return new ModeComposer(n, r);
     });
 

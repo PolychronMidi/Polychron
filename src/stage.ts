@@ -2,10 +2,10 @@
 // TypeScript version with full type annotations
 // minimalist comments, details at: stage.md
 
-import './sheet.js';
+import { otherInstruments, otherBassInstruments, drumSets, BINAURAL } from './sheet.js';
 import './writer.js';
 import './venue.js';
-import './backstage.js';
+import { source, reflection, bass, binauralL, binauralR, reflectionBinaural, bassBinaural, cCH1, cCH2, cCH3, lCH1, lCH3, lCH5, rCH1, rCH3, rCH5, drumCH, tuningPitchBend, allNotesOff, stutterPanCHs, rf, ri, ra, rl, m, binauralPlus, binauralMinus, flipBinF2, flipBinT2 } from './backstage.js';
 import './rhythm.js';
 import './time.js';
 import './composers.js';
@@ -43,8 +43,8 @@ export class Stage {
   private refVar: number;
   private bassVar: number;
 
-  constructor(fxManager: any = (globalThis as any).fxManager) {
-    // FX Manager for stutter effects (dependency injected or fallback to global)
+  constructor(fxManager?: any) {
+    // FX Manager for stutter effects (dependency injected)
     this.fx = fxManager;
 
     // PlayNotes handler for note generation
@@ -68,24 +68,31 @@ export class Stage {
    * @returns {void}
    */
   setTuningAndInstruments(ctx: ICompositionContext): void {
-    const getMidiValueFn = (ctx && ctx.container && ctx.container.has('getMidiValue')) ? ctx.container.get('getMidiValue') : (globalThis as any).getMidiValue;
-    const primaryProg = getMidiValueFn('program', (globalThis as any).primaryInstrument);
-    const secondaryProg = getMidiValueFn('program', (globalThis as any).secondaryInstrument);
-    const bassProg = getMidiValueFn('program', (globalThis as any).bassInstrument);
-    const bass2Prog = getMidiValueFn('program', (globalThis as any).bassInstrument2);
+    // Prefer DI-provided midi lookup, fall back to registered config values from DI container
+    const container = ctx?.container as any;
+    const getMidiValueFn = container && container.has('getMidiValue') ? container.get('getMidiValue') : undefined;
+    const primaryInst = container && container.has('primaryInstrument') ? container.get('primaryInstrument') : undefined;
+    const secondaryInst = container && container.has('secondaryInstrument') ? container.get('secondaryInstrument') : undefined;
+    const bassInst = container && container.has('bassInstrument') ? container.get('bassInstrument') : undefined;
+    const bassInst2 = container && container.has('bassInstrument2') ? container.get('bassInstrument2') : undefined;
 
-    const items1 = ['control_c','program_c'].flatMap((type: string) => [ ...(globalThis as any).source.map((ch: number) => ({
-      type,vals:[ch,...((globalThis as any).binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})), ...(globalThis as any).reflection.map((ch: number) => ({
-      type,vals:[ch,...((globalThis as any).binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[(globalThis as any).cCH1,...(type==='control_c' ? [(globalThis as any).tuningPitchBend] : [primaryProg])]}, { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[(globalThis as any).cCH2,...(type==='control_c' ? [(globalThis as any).tuningPitchBend] : [secondaryProg])]}]);
+    const primaryProg = getMidiValueFn ? getMidiValueFn('program', primaryInst) : getMidiValueFn?.('program', primaryInst);
+    const secondaryProg = getMidiValueFn ? getMidiValueFn('program', secondaryInst) : getMidiValueFn?.('program', secondaryInst);
+    const bassProg = getMidiValueFn ? getMidiValueFn('program', bassInst) : getMidiValueFn?.('program', bassInst);
+    const bass2Prog = getMidiValueFn ? getMidiValueFn('program', bassInst2) : getMidiValueFn?.('program', bassInst2);
+
+    const items1 = ['control_c','program_c'].flatMap((type: string) => [ ...source.map((ch: number) => ({
+      type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})), ...reflection.map((ch: number) => ({
+      type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryProg])]}, { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryProg])]}]);
     const pFn1 = requirePush(ctx);
     pFn1(ctx.csvBuffer, ...items1);
 
-    const items2 = ['control_c','program_c'].flatMap((type: string) => [ ...(globalThis as any).bass.map((ch: number) => ({
-      type,vals:[ch,...((globalThis as any).binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[(globalThis as any).cCH3,...(type==='control_c' ? [(globalThis as any).tuningPitchBend] : [bassProg])]}]);
+    const items2 = ['control_c','program_c'].flatMap((type: string) => [ ...bass.map((ch: number) => ({
+      type,vals:[ch,...(binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassProg])]}]);
     const pFn2 = requirePush(ctx);
     pFn2(ctx.csvBuffer, ...items2);
     const pFn3 = requirePush(ctx);
-    pFn3(ctx.csvBuffer, { type: 'control_c', vals: [(globalThis as any).drumCH, 7, 127] });
+    pFn3(ctx.csvBuffer, { type: 'control_c', vals: [drumCH, 7, 127] });
   }
 
   /**
@@ -93,18 +100,17 @@ export class Stage {
    * @returns {void}
    */
   setOtherInstruments(ctx: ICompositionContext): void {
-    const g = globalThis as any;
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
     const beatStart = ctx.state.beatStart;
 
-    if (g.rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
+    if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
       const items = ['control_c'].flatMap(() => {
         const tmp = { tick: beatStart, type: 'program_c' };
         return [
-          ...g.reflectionBinaural.map((ch: number) => ({ ...tmp, vals: [ch, g.ra(g.otherInstruments)] })),
-          ...g.bassBinaural.map((ch: number) => ({ ...tmp, vals: [ch, g.ra(g.otherBassInstruments)] })),
-          { ...tmp, vals: [g.drumCH, g.ra(g.drumSets)] }
+          ...reflectionBinaural.map((ch: number) => ({ ...tmp, vals: [ch, ra(otherInstruments)] })),
+          ...bassBinaural.map((ch: number) => ({ ...tmp, vals: [ch, ra(otherBassInstruments)] })),
+          { ...tmp, vals: [drumCH, ra(drumSets)] }
         ];
       });
       const pFn = requirePush(ctx);
@@ -117,7 +123,6 @@ export class Stage {
    * @returns {void}
    */
   setBinaural(ctx: ICompositionContext): void {
-    const g = globalThis as any;
     const state = ctx.state;
     const beatCount = state.beatCount;
     const beatsUntilBinauralShift = state.beatsUntilBinauralShift;
@@ -131,8 +136,9 @@ export class Stage {
     if (beatCount === beatsUntilBinauralShift || this.firstLoop < 1) {
       const nextBeatCount = 0;
       const nextFlipBin = !flipBin;
-      const nextBeatsUntil = g.ri(numerator, numerator * 2 * bpmRatio3);
-      const nextBinauralFreqOffset = g.rl(binauralFreqOffset, -1, 1, g.BINAURAL.min, g.BINAURAL.max);
+      const nextBeatsUntil = ri(numerator, numerator * 2 * bpmRatio3);
+        // Use config from sheet where possible (BINAURAL is exported from sheet)
+      const nextBinauralFreqOffset = rl(binauralFreqOffset, -1, 1, BINAURAL.min, BINAURAL.max);
 
       state.beatCount = nextBeatCount;
       state.flipBin = nextFlipBin;
@@ -142,10 +148,10 @@ export class Stage {
       flipBin = nextFlipBin;
       binauralFreqOffset = nextBinauralFreqOffset;
 
-      g.allNotesOff(beatStart);
+      allNotesOff(beatStart);
       const itemsBend = [
-        ...g.binauralL.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.lCH1 || ch === g.lCH3 || ch === g.lCH5 ? (flipBin ? g.binauralMinus : g.binauralPlus) : (flipBin ? g.binauralPlus : g.binauralMinus)] })),
-        ...g.binauralR.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.rCH1 || ch === g.rCH3 || ch === g.rCH5 ? (flipBin ? g.binauralPlus : g.binauralMinus) : (flipBin ? g.binauralMinus : g.binauralPlus)] })),
+        ...binauralL.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),
+        ...binauralR.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] })),
       ];
       const pBend = requirePush(ctx);
       pBend(ctx.csvBuffer, ...itemsBend);
@@ -156,11 +162,11 @@ export class Stage {
       const tickIncrement = (endTick - startTick) / steps;
       for (let i = steps / 2 - 1; i <= steps; i++) {
         const tick = startTick + tickIncrement * i;
-        const currentVolumeF2 = flipBin ? g.m.floor(100 * (1 - (i / steps))) : g.m.floor(100 * (i / steps));
-        const currentVolumeT2 = flipBin ? g.m.floor(100 * (i / steps)) : g.m.floor(100 * (1 - (i / steps)));
-        const maxVol = g.rf(.9, 1.2);
-        const itemsF = g.flipBinF2.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeF2 * maxVol)] }));
-        const itemsT = g.flipBinT2.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeT2 * maxVol)] }));
+        const currentVolumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
+        const currentVolumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
+        const maxVol = rf(.9, 1.2);
+        const itemsF = flipBinF2.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeF2 * maxVol)] }));
+        const itemsT = flipBinT2.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeT2 * maxVol)] }));
         const pFade = requirePush(ctx);
         if (itemsF.length) pFade(ctx.csvBuffer, ...itemsF);
         if (itemsT.length) pFade(ctx.csvBuffer, ...itemsT);
@@ -176,10 +182,9 @@ export class Stage {
    * @returns {void}
    */
   stutterFade(channels: number[], ctx: ICompositionContext, numStutters?: number, duration?: number): void {
-    const g = globalThis as any;
-    const resolvedNumStutters = numStutters ?? g.ri(10, 70);
+    const resolvedNumStutters = numStutters ?? ri(10, 70);
     const tpSec = ctx.state.tpSec;
-    const resolvedDuration = duration ?? tpSec * g.rf(.2, 1.5);
+    const resolvedDuration = duration ?? tpSec * rf(.2, 1.5);
     this.fx.stutterFade(channels, ctx, resolvedNumStutters, resolvedDuration);
   }
 
@@ -191,10 +196,9 @@ export class Stage {
    * @returns {void}
    */
   stutterPan(channels: number[], ctx: ICompositionContext, numStutters?: number, duration?: number): void {
-    const g = globalThis as any;
-    const resolvedNumStutters = numStutters ?? g.ri(30, 90);
+    const resolvedNumStutters = numStutters ?? ri(30, 90);
     const tpSec = ctx.state.tpSec;
-    const resolvedDuration = duration ?? tpSec * g.rf(.1, 1.2);
+    const resolvedDuration = duration ?? tpSec * rf(.1, 1.2);
     this.fx.stutterPan(channels, ctx, resolvedNumStutters, resolvedDuration);
   }
 
@@ -206,10 +210,9 @@ export class Stage {
    * @returns {void}
    */
   stutterFX(channels: number[], ctx: ICompositionContext, numStutters?: number, duration?: number): void {
-    const g = globalThis as any;
-    const resolvedNumStutters = numStutters ?? g.ri(30, 100);
+    const resolvedNumStutters = numStutters ?? ri(30, 100);
     const tpSec = ctx.state.tpSec;
-    const resolvedDuration = duration ?? tpSec * g.rf(.1, 2);
+    const resolvedDuration = duration ?? tpSec * rf(.1, 2);
     this.fx.stutterFX(channels, ctx, resolvedNumStutters, resolvedDuration);
   }
 
@@ -225,40 +228,40 @@ export class Stage {
     const bpmRatio3 = ctx.state.bpmRatio3;
     const flipBin = ctx.state.flipBin;
 
-    if (g.rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
+    if (rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
       this.firstLoop = 1;
-      this.balOffset = g.rl(this.balOffset, -4, 4, 0, 45);
-      this.sideBias = g.rl(this.sideBias, -2, 2, -20, 20);
-      this.lBal = g.m.max(0, g.m.min(54, this.balOffset + g.ri(3) + this.sideBias));
-      this.rBal = g.m.min(127, g.m.max(74, 127 - this.balOffset - g.ri(3) + this.sideBias));
-      this.cBal = g.m.min(96, (g.m.max(32, 64 + g.m.round(g.rv(this.balOffset / g.ri(2, 3))) * (g.rf() < .5 ? -1 : 1) + this.sideBias)));
-      this.refVar = g.ri(1, 10);
-      this.cBal2 = g.rf() < .5 ? this.cBal + g.m.round(this.refVar * .5) : this.cBal + g.m.round(this.refVar * -.5);
-      this.bassVar = this.refVar * g.rf(-2, 2);
-      this.cBal3 = g.rf() < .5 ? this.cBal2 + g.m.round(this.bassVar * .5) : this.cBal2 + g.m.round(this.bassVar * -.5);
+      this.balOffset = rl(this.balOffset, -4, 4, 0, 45);
+      this.sideBias = rl(this.sideBias, -2, 2, -20, 20);
+      this.lBal = m.max(0, m.min(54, this.balOffset + ri(3) + this.sideBias));
+      this.rBal = m.min(127, m.max(74, 127 - this.balOffset - ri(3) + this.sideBias));
+      this.cBal = m.min(96, (m.max(32, 64 + m.round(ra(this.balOffset / ri(2, 3))) * (rf() < .5 ? -1 : 1) + this.sideBias)));
+      this.refVar = ri(1, 10);
+      this.cBal2 = rf() < .5 ? this.cBal + m.round(this.refVar * .5) : this.cBal + m.round(this.refVar * -.5);
+      this.bassVar = this.refVar * rf(-2, 2);
+      this.cBal3 = rf() < .5 ? this.cBal2 + m.round(this.bassVar * .5) : this.cBal2 + m.round(this.bassVar * -.5);
 
       // Build FX control events (pan CC=10 and additional FX CCs) for channels
       const tick = beatStart - 1;
       const itemsFX: any[] = [];
 
       // Pan (CC 10) events for groups
-      if (Array.isArray(g.source)) itemsFX.push(...g.source.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.lBal] })));
-      if (Array.isArray(g.reflection)) itemsFX.push(...g.reflection.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.rBal] })));
-      if (Array.isArray(g.bass)) itemsFX.push(...g.bass.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.cBal3] })));
+      if (Array.isArray(source)) itemsFX.push(...source.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.lBal] })));
+      if (Array.isArray(reflection)) itemsFX.push(...reflection.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.rBal] })));
+      if (Array.isArray(bass)) itemsFX.push(...bass.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.cBal3] })));
 
       // Additional FX controls (CC 1,5,11,7) applied to source/reflection channels
       const fxCCs = [1, 5, 11, 7];
-      if (Array.isArray(g.source)) {
-        for (const ch of g.source) {
+      if (Array.isArray(source)) {
+        for (const ch of source) {
           for (const cc of fxCCs) {
-            itemsFX.push({ tick, type: 'control_c', vals: [ch, cc, g.m.round(this.cBal2 * g.rf(.7, 1.3))] });
+            itemsFX.push({ tick, type: 'control_c', vals: [ch, cc, m.round(this.cBal2 * rf(.7, 1.3))] });
           }
         }
       }
-      if (Array.isArray(g.reflection)) {
-        for (const ch of g.reflection) {
+      if (Array.isArray(reflection)) {
+        for (const ch of reflection) {
           for (const cc of fxCCs) {
-            itemsFX.push({ tick, type: 'control_c', vals: [ch, cc, g.m.round(this.cBal * g.rf(.7, 1.3))] });
+            itemsFX.push({ tick, type: 'control_c', vals: [ch, cc, m.round(this.cBal * rf(.7, 1.3))] });
           }
         }
       }

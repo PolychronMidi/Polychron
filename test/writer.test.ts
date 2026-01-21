@@ -1,6 +1,6 @@
 // test/writer.test.ts - Testing CSV buffer and writer functions
 import { CSVBuffer, grandFinale, logUnit, registerWriterServices } from '../src/writer.js';
-import { createTestContext, setupGlobalState } from './helpers.js';
+import { createTestContext } from './helpers.module.js';
 
 // Test global access for tests still using globalThis.c
 let c: any;
@@ -199,7 +199,9 @@ describe('logUnit', () => {
 describe('grandFinale', () => {
   let env: any;
   beforeEach(() => {
-    setupGlobalState();
+    // Use DI test context instead of legacy global setup
+    const ctx = createTestContext();
+    registerWriterServices(ctx.services);
     // Mock fs methods - necessary for file I/O tests
     const fsMock: any = {
       writeFileSync: vi.fn(),
@@ -218,7 +220,9 @@ describe('grandFinale', () => {
       tpSec: 960,
       allNotesOff: vi.fn(() => []),
       muteAll: vi.fn(() => []),
-      rf: (min: number, max: number) => (min + max) / 2
+      rf: (min: number, max: number) => (min + max) / 2,
+      services: ctx.services,
+      container: ctx.container
     };
   });
 

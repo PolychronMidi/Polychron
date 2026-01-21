@@ -2,7 +2,7 @@
 import { clamp, clampWrap, pickArbitrary, pickWeighted, gaus, trigMTX, logUnit } from '../src/backstage.js';
 import { pushMultiple as p, CSVBuffer } from '../src/writer.js';
 import { LayerManager, TimingContext } from '../src/time.js';
-import { setupGlobalState } from './helpers.js';
+import { setupGlobalState } from './helpers.module.js';
 
 // Access allNotesOff from globalThis (not exported from backstage)
 const allNotesOff = (channel: number) => globalThis.allNotesOff?.(channel);

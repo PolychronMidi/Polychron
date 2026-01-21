@@ -1,13 +1,8 @@
 import '../../src/sheet.js';
 import '../../src/venue.js';
-import '../../src/composers.js';
-import { ComposerFactory, PentatonicComposer } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
+import { ComposerFactory, PentatonicComposer } from '../../src/composers/index.js';
 
 describe('ComposerFactory - Phase 2 Extensions', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
 
   it('should create PentatonicComposer from config', () => {
     const config = { type: 'pentatonic', root: 'E', pentatonicType: 'minor' };

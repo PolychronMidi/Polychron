@@ -1,16 +1,8 @@
 // test/composers/ScaleComposer.test.ts
-import '../../src/sheet.js'; // Load config constants to globalThis
-import '../../src/venue.js'; // Load Tonal library (t) to globalThis
-import '../../src/composers.js'; // Side effects register globals
-import { ScaleComposer } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { RandomScaleComposer } = globalThis as any;
+import { ScaleComposer, RandomScaleComposer } from '../../src/composers/ScaleComposer.js';
 
 describe('ScaleComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should initialize with scale and root', () => {
     const composer = new ScaleComposer('major', 'C');
@@ -40,9 +32,7 @@ describe('ScaleComposer', () => {
 });
 
 describe('RandomScaleComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should initialize with random scale', () => {
     const composer = new RandomScaleComposer();
@@ -60,9 +50,7 @@ describe('RandomScaleComposer', () => {
 });
 
 describe('ScaleComposer getNotes integration', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should return array of note objects', () => {
     const composer = new ScaleComposer('major', 'C');
@@ -103,9 +91,7 @@ describe('ScaleComposer getNotes integration', () => {
 });
 
 describe('MIDI compliance - ScaleComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should generate valid MIDI note numbers', () => {
     const composer = new ScaleComposer('major', 'C');

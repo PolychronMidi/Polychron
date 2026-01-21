@@ -2,7 +2,7 @@ import '../src/backstage.js';
 import '../src/sheet.js';
 
 import { describe, it, expect } from 'vitest';
-import { createTestContext } from './helpers';
+import { createTestContext } from './helpers.module.js';
 import { LayerManager, TimingContext, TimingCalculator } from '../src/time.js';
 
 describe('time.ts - branch and edge tests', () => {

@@ -60,11 +60,16 @@ const semitone = neutralPitchBend / 2;
 
 // NOTE: These will be defined when venue.js is loaded
 let centsToTuningFreq = 0;
-let tuningPitchBend = 0;
+export let tuningPitchBend = 0;
 let binauralFreqOffset = 0;
 let binauralOffset: (plusOrMinus: number) => number = () => 0;
-let binauralPlus = 0;
-let binauralMinus = 0;
+export let binauralPlus = 0;
+export let binauralMinus = 0;
+
+// Test helper: returns whether test logging is enabled (uses legacy test namespace)
+export function isTestLoggingEnabled(): boolean {
+  return (globalThis as any).__POLYCHRON_TEST__?.enableLogging ?? false;
+}
 
 // MIDI channel constants
 const cCH1 = 0, cCH2 = 1, lCH1 = 2, rCH1 = 3, lCH3 = 4, rCH3 = 5, lCH2 = 6, rCH2 = 7, lCH4 = 8, drumCH = 9, rCH4 = 10, cCH3 = 11, lCH5 = 12, rCH5 = 13, lCH6 = 14, rCH6 = 15;
@@ -103,13 +108,15 @@ const FX = [1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95];
 /**
  * Send All Notes Off CC (123) to prevent sustain across section changes.
  */
-const allNotesOff = (tick: number = measureStart): any[] => {
+export const allNotesOff = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
-  if (g.c) {
-    if (Array.isArray(g.c)) {
-      g.c.push(...events);
-    } else if (g.c.push) {
-      g.c.push(...events);
+  // For legacy tests that still use the writer CSV buffer helper in globalThis, push to g.c if present
+  const maybeC = (globalThis as any).c;
+  if (maybeC) {
+    if (Array.isArray(maybeC)) {
+      maybeC.push(...events);
+    } else if ((maybeC as any).push) {
+      (maybeC as any).push(...events);
     }
   }
   return events;
@@ -118,13 +125,14 @@ const allNotesOff = (tick: number = measureStart): any[] => {
 /**
  * Send Mute All CC (120) to silence all channels.
  */
-const muteAll = (tick: number = measureStart): any[] => {
+export const muteAll = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
-  if (g.c) {
-    if (Array.isArray(g.c)) {
-      g.c.push(...events);
-    } else if (g.c.push) {
-      g.c.push(...events);
+  const maybeC = (globalThis as any).c;
+  if (maybeC) {
+    if (Array.isArray(maybeC)) {
+      maybeC.push(...events);
+    } else if ((maybeC as any).push) {
+      (maybeC as any).push(...events);
     }
   }
   return events;
@@ -133,11 +141,11 @@ const muteAll = (tick: number = measureStart): any[] => {
  * Helper to create randomized FX control change messages
  * Signature: (channel, ccNum, minVal, maxVal, [condition], [condMinVal], [condMaxVal])
  */
-const rlFX = (ch: number, cc: number, min: number, max: number, condition?: (c: number) => boolean, condMin?: number, condMax?: number): any => {
+export const rlFX = (ch: number, cc: number, min: number, max: number, condition?: (c: number) => boolean, condMin?: number, condMax?: number): any => {
   const useCondition = condition && condition(ch);
   const actualMin = useCondition && condMin !== undefined ? condMin : min;
   const actualMax = useCondition && condMax !== undefined ? condMax : max;
-  const beatStartValue = g.beatStart !== undefined ? g.beatStart : beatStart;
+  const beatStartValue = ((globalThis as any).beatStart !== undefined) ? (globalThis as any).beatStart : beatStart;
   return { tick: beatStartValue - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
 };
 
@@ -197,122 +205,88 @@ declare global {
   var binauralR: number[];
 }
 
-// Shorthand alias for global registrations
-const g = globalThis as any;
+// Export channel constants and helpers as named exports for DI and imports
+export {
+  cCH1, cCH2, cCH3, lCH1, rCH1, lCH2, rCH2, lCH3, rCH3, lCH4, rCH4, lCH5, rCH5, lCH6, rCH6, drumCH,
+  bass, bassBinaural, source, source2, reflection, reflectionBinaural, reflect, reflect2,
+  binauralL, binauralR, flipBinF, flipBinT, flipBinF2, flipBinT2, flipBinF3, stutterFadeCHs, allCHs, stutterPanCHs, FX
+};
 
-g.m = m;
-g.clamp = clamp;
-g.modClamp = modClamp;
-g.lowModClamp = lowModClamp;
-g.highModClamp = highModClamp;
-g.scaleClamp = scaleClamp;
-g.scaleBoundClamp = scaleBoundClamp;
-g.softClamp = softClamp;
-g.stepClamp = stepClamp;
-g.logClamp = logClamp;
-g.expClamp = expClamp;
-g.rf = rf;
-g.randomFloat = randomFloat;
-g.ri = ri;
-g.randomInt = randomInt;
-g.rl = rl;
-g.randomLimitedChange = randomLimitedChange;
-g.rv = rv;
-g.randomVariation = randomVariation;
-g.rw = rw;
-g.randomWeightedInRange = randomWeightedInRange;
-g.ra = ra;
-g.randomInRangeOrArray = randomInRangeOrArray;
-g.normalizeWeights = normalizeWeights;
-g.randomWeightedInArray = randomWeightedInArray;
-g.randomWeightedSelection = randomWeightedSelection;
-g.cCH1 = cCH1;
-g.cCH2 = cCH2;
-g.cCH3 = cCH3;
-g.lCH1 = lCH1;
-g.rCH1 = rCH1;
-g.lCH2 = lCH2;
-g.rCH2 = rCH2;
-g.lCH3 = lCH3;
-g.rCH3 = rCH3;
-g.lCH4 = lCH4;
-g.rCH4 = rCH4;
-g.lCH5 = lCH5;
-g.rCH5 = rCH5;
-g.lCH6 = lCH6;
-g.rCH6 = rCH6;
-g.drumCH = drumCH;
-g.bass = bass;
-g.source = source;
-g.allCHs = allCHs;
-g.binauralL = binauralL;
-g.binauralR = binauralR;
-g.reflectionBinaural = reflectionBinaural;
-g.bassBinaural = bassBinaural;
-g.source2 = source2;
-g.reflection = reflection;
-g.reflect = reflect;
-g.reflect2 = reflect2;
-g.flipBinF = flipBinF;
-g.flipBinT = flipBinT;
-g.flipBinF2 = flipBinF2;
-g.flipBinT2 = flipBinT2;
-g.flipBinF3 = flipBinF3;
-g.flipBinT3 = flipBinT3;
-g.stutterFadeCHs = stutterFadeCHs;
-g.stutterPanCHs = stutterPanCHs;
-g.FX = FX;
+// No legacy features should be used anywhere: use DI only
+// export function attachLegacyGlobals(target?: any): void {
+//   const g = target ?? (globalThis as any);
 
-// Export critical timing variables needed by composers
-g.bpmRatio = bpmRatio;
-g.bpmRatio2 = bpmRatio2;
-g.bpmRatio3 = bpmRatio3;
-g.measureCount = measureCount;
-g.numerator = numerator;
-g.beatCount = beatCount;
-g.beatsUntilBinauralShift = beatsUntilBinauralShift;
-g.flipBin = flipBin;
-g.binauralFreqOffset = binauralFreqOffset;
-g.binauralPlus = binauralPlus;
-g.binauralMinus = binauralMinus;
-g.cCH1 = cCH1;
-g.cCH2 = cCH2;
-g.cCH3 = cCH3;
-g.lCH1 = lCH1;
-g.lCH2 = lCH2;
-g.lCH3 = lCH3;
-g.lCH4 = lCH4;
-g.lCH5 = lCH5;
-g.lCH6 = lCH6;
-g.rCH1 = rCH1;
-g.rCH2 = rCH2;
-g.rCH3 = rCH3;
-g.rCH4 = rCH4;
-g.rCH5 = rCH5;
-g.rCH6 = rCH6;
-g.allNotesOff = allNotesOff;
-g.muteAll = muteAll;
-g.rlFX = rlFX;
-g.tpSec = tpSec;
-g.tpSubsubdiv = tpSubsubdiv;
-g.measureStart = measureStart;
-g.beatStart = beatStart;
-g.divStart = divStart;
-g.subdivStart = subdivStart;
-g.subsubdivStart = subsubdivStart;
-g.subdivsPerDiv = subdivsPerDiv;
-g.subdivsPerBeat = subdivsPerBeat;
-g.subsubdivsPerSub = subsubdivsPerSub;
-g.divsPerBeat = divsPerBeat;
-g.tuningPitchBend = tuningPitchBend;
-g.velocity = velocity;
-g.beatRhythm = beatRhythm;
-g.divRhythm = divRhythm;
-g.subdivRhythm = subdivRhythm;
-g.subsubdivRhythm = subsubdivRhythm;
-g.beatsOn = beatsOn;
-g.beatsOff = beatsOff;
-g.divsOn = divsOn;
-g.divsOff = divsOff;
-g.subdivsOn = subdivsOn;
-g.subdivsOff = subdivsOff;
+//   g.flipBinT3 = flipBinT3;
+//   g.stutterFadeCHs = stutterFadeCHs;
+//   g.stutterPanCHs = stutterPanCHs;
+//   g.FX = FX;
+
+//   // Export critical timing variables needed by composers
+//   g.bpmRatio = bpmRatio;
+//   g.bpmRatio2 = bpmRatio2;
+//   g.bpmRatio3 = bpmRatio3;
+//   g.measureCount = measureCount;
+//   g.numerator = numerator;
+//   g.beatCount = beatCount;
+//   g.beatsUntilBinauralShift = beatsUntilBinauralShift;
+//   g.flipBin = flipBin;
+//   g.binauralFreqOffset = binauralFreqOffset;
+//   g.binauralPlus = binauralPlus;
+//   g.binauralMinus = binauralMinus;
+//   g.cCH1 = cCH1;
+//   g.cCH2 = cCH2;
+//   g.cCH3 = cCH3;
+//   g.lCH1 = lCH1;
+//   g.lCH2 = lCH2;
+//   g.lCH3 = lCH3;
+//   g.lCH4 = lCH4;
+//   g.lCH5 = lCH5;
+//   g.lCH6 = lCH6;
+//   g.rCH1 = rCH1;
+//   g.rCH2 = rCH2;
+//   g.rCH3 = rCH3;
+//   g.rCH4 = rCH4;
+//   g.rCH5 = rCH5;
+//   g.rCH6 = rCH6;
+//   g.allNotesOff = allNotesOff;
+//   g.muteAll = muteAll;
+//   g.rlFX = rlFX;
+//   g.tpSec = tpSec;
+//   g.tpSubsubdiv = tpSubsubdiv;
+//   g.measureStart = measureStart;
+//   g.beatStart = beatStart;
+//   g.divStart = divStart;
+//   g.subdivStart = subdivStart;
+//   g.subsubdivStart = subsubdivStart;
+//   g.subdivsPerDiv = subdivsPerDiv;
+
+//   // Additional rhythm/timing globals
+//   g.subdivsPerBeat = subdivsPerBeat;
+//   g.subsubdivsPerSub = subsubdivsPerSub;
+//   g.divsPerBeat = divsPerBeat;
+//   g.tuningPitchBend = tuningPitchBend;
+//   g.velocity = velocity;
+//   g.beatRhythm = beatRhythm;
+//   g.divRhythm = divRhythm;
+//   g.subdivRhythm = subdivRhythm;
+//   g.subsubdivRhythm = subsubdivRhythm;
+//   g.beatsOn = beatsOn;
+//   g.beatsOff = beatsOff;
+//   g.divsOn = divsOn;
+//   g.divsOff = divsOff;
+//   g.subdivsOn = subdivsOn;
+//   g.subdivsOff = subdivsOff;
+
+//   // Core helpers commonly referenced by legacy code
+//   g.m = m;
+//   g.clamp = clamp;
+//   g.modClamp = modClamp;
+//   g.rf = rf;
+//   g.ri = ri;
+//   g.rv = rv;
+//   g.rw = rw;
+//   g.ra = ra;
+//   g.randomWeightedSelection = randomWeightedSelection;
+// }
+// legacy g.* assignments moved into attachLegacyGlobals() above
+// to avoid top-level side-effects during module initialization.

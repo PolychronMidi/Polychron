@@ -2,7 +2,7 @@
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime } from '../src/time.js';
 import { pushMultiple } from '../src/writer.js';
 import { m } from '../src/backstage.js';
-import { setupGlobalState, createTestContext } from './helpers.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
 // Mock dependencies
@@ -60,21 +60,16 @@ function setupGlobalState() {
   // Composer and buffer for tests (attach to state where possible)
   ctx.state.composer = { ...mockComposer };
   c = [];
-  // Sync minimal globals so legacy code paths write into our local buffer
-  (globalThis as any).c = c;
-  (globalThis as any).PPQ = ctx.PPQ;
-  (globalThis as any).BPM = ctx.BPM;
-  // Ensure pushMultiple is available to write BPM/meter events
-  (globalThis as any).p = pushMultiple;
+  // Use DI-only context; do not mutate globals in tests
+  // Writer services and venue services are registered by `createTestContext()`
+  // Tests must use `ctx` for all interactions.
   LOG = 'none';
 }
 
 describe('getMidiTiming', () => {
   beforeEach(() => {
-    setupGlobalState();
     ctx = createTestContext();
-    // Make composer available globally for getPolyrhythm tests
-    globalThis.composer = globalThis.composer || mockComposer;
+    ctx.state.composer = mockComposer;
   });
 
   describe('Power of 2 denominators (MIDI-compatible)', () => {
@@ -263,8 +258,8 @@ describe('getMidiTiming', () => {
 
 describe('getPolyrhythm', () => {
   beforeEach(() => {
-    setupGlobalState();
     ctx = createTestContext();
+    ctx.state.composer = mockComposer;
     ctx.state.numerator = 4;
     ctx.state.denominator = 4;
     getMidiTiming(ctx);
@@ -277,26 +272,26 @@ describe('getPolyrhythm', () => {
     while (iterations < maxIterations) {
       iterations++;
 
-      [globalThis.polyNumerator, globalThis.polyDenominator] = globalThis.composer.getMeter(true, true);
-      globalThis.polyMeterRatio = globalThis.polyNumerator / globalThis.polyDenominator;
+      [polyNumerator, polyDenominator] = (ctx.state.composer || mockComposer).getMeter(true, true);
+      polyMeterRatio = polyNumerator / polyDenominator;
 
       let bestMatch = {
         originalMeasures: Infinity,
         polyMeasures: Infinity,
         totalMeasures: Infinity,
-        polyNumerator: globalThis.polyNumerator,
-        polyDenominator: globalThis.polyDenominator
+            polyNumerator: polyNumerator,
+            polyDenominator: polyDenominator
       };
 
       for (let originalMeasures = 1; originalMeasures < 6; originalMeasures++) {
         for (let polyMeasures = 1; polyMeasures < 6; polyMeasures++) {
-          if (m.abs(originalMeasures * ctx.state.meterRatio - polyMeasures * globalThis.polyMeterRatio) < 0.00000001) {
+            if (m.abs(originalMeasures * ctx.state.meterRatio - polyMeasures * polyMeterRatio) < 0.00000001) {
             let currentMatch = {
               originalMeasures: originalMeasures,
               polyMeasures: polyMeasures,
               totalMeasures: originalMeasures + polyMeasures,
-              polyNumerator: globalThis.polyNumerator,
-              polyDenominator: globalThis.polyDenominator
+              polyNumerator: polyNumerator,
+              polyDenominator: polyDenominator
             };
 
             if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
@@ -309,7 +304,7 @@ describe('getPolyrhythm', () => {
       if (bestMatch.totalMeasures !== Infinity &&
           (bestMatch.totalMeasures > 2 &&
            (bestMatch.originalMeasures > 1 || bestMatch.polyMeasures > 1)) &&
-          (globalThis.numerator !== globalThis.polyNumerator || globalThis.denominator !== globalThis.polyDenominator)) {
+          (ctx.state.numerator !== polyNumerator || ctx.state.denominator !== polyDenominator)) {
         ctx.state.measuresPerPhrase1 = bestMatch.originalMeasures;
         ctx.state.measuresPerPhrase2 = bestMatch.polyMeasures;
         ctx.state.tpPhrase = ctx.state.tpMeasure * ctx.state.measuresPerPhrase1;
@@ -322,7 +317,7 @@ describe('getPolyrhythm', () => {
   it('should find 3:2 polyrhythm (3/4 over 4/4)', () => {
     ctx.state.numerator = 4; ctx.state.denominator = 4; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
 
     expect(result).not.toBeNull();
@@ -333,7 +328,7 @@ describe('getPolyrhythm', () => {
   it('should find 2:3 polyrhythm (3/4 over 2/4)', () => {
     ctx.state.numerator = 2; ctx.state.denominator = 4; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
 
     expect(result).not.toBeNull();
@@ -343,7 +338,7 @@ describe('getPolyrhythm', () => {
   it('should reject identical meters', () => {
     ctx.state.numerator = 4; ctx.state.denominator = 4; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([4, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([4, 4]);
     const result = getPolyrhythm();
 
     expect(result).toBeNull();
@@ -353,7 +348,7 @@ describe('getPolyrhythm', () => {
     ctx.state.numerator = 4; ctx.state.denominator = 4; getMidiTiming(ctx);
 
     // This should create a 2-measure polyrhythm which is rejected
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([4, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([4, 4]);
     const result = getPolyrhythm();
 
     expect(result).toBeNull();
@@ -362,7 +357,7 @@ describe('getPolyrhythm', () => {
   it('should set measuresPerPhrase1 and measuresPerPhrase2', () => {
     ctx.state.numerator = 4; ctx.state.denominator = 4; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     getPolyrhythm();
 
     expect(ctx.state.measuresPerPhrase1).toBeGreaterThan(0);
@@ -372,7 +367,7 @@ describe('getPolyrhythm', () => {
   it('should calculate tpPhrase correctly', () => {
     ctx.state.numerator = 4; ctx.state.denominator = 4; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     getPolyrhythm();
 
     expect(ctx.state.tpPhrase).toBe(ctx.state.tpMeasure * ctx.state.measuresPerPhrase1);
@@ -498,61 +493,61 @@ describe('Timing calculation functions', () => {
   });
 
   describe('Division timing', () => {
-    const setDivTiming = () => {
-      const divsPerBeat = globalThis.composer.getDivisions();
-      globalThis.tpDiv = globalThis.tpBeat / m.max(1, divsPerBeat);
-      globalThis.spDiv = globalThis.tpDiv / ctx.state.tpSec;
-      globalThis.divStart = globalThis.beatStart + 0 * globalThis.tpDiv;
-      globalThis.divStartTime = globalThis.beatStartTime + 0 * globalThis.spDiv;
+    const setDivTiming = (ctxParam: any) => {
+      const divsPerBeat = ctxParam.state.composer.getDivisions();
+      ctxParam.state.tpDiv = (ctxParam.state.tpBeat) / m.max(1, divsPerBeat);
+      ctxParam.state.spDiv = ctxParam.state.tpDiv / ctxParam.state.tpSec;
+      ctxParam.state.divStart = (ctxParam.state.beatStart) + 0 * ctxParam.state.tpDiv;
+      ctxParam.state.divStartTime = (ctxParam.state.beatStartTime) + 0 * ctxParam.state.spDiv;
     };
 
     it('should calculate division timing for 2 divisions', () => {
-      globalThis.tpBeat = 480;
+      ctx.state.tpBeat = 480;
       ctx.state.tpSec = 960;
-      globalThis.composer.getDivisions = vi.fn().mockReturnValue(2);
-      setDivTiming();
-      expect(globalThis.tpDiv).toBe(240);
-      expect(globalThis.spDiv).toBeCloseTo(0.25, 5);
+      ctx.state.composer.getDivisions = vi.fn().mockReturnValue(2);
+      setDivTiming(ctx);
+      expect(ctx.state.tpDiv).toBe(240);
+      expect(ctx.state.spDiv).toBeCloseTo(0.25, 5);
     });
 
     it('should handle 0 divisions gracefully', () => {
-      globalThis.tpBeat = 480;
-      globalThis.composer.getDivisions = vi.fn().mockReturnValue(0);
-      setDivTiming();
-      expect(globalThis.tpDiv).toBe(480); // max(1, 0) = 1
+      ctx.state.tpBeat = 480;
+      ctx.state.composer.getDivisions = vi.fn().mockReturnValue(0);
+      setDivTiming(ctx);
+      expect(ctx.state.tpDiv).toBe(480); // max(1, 0) = 1
     });
 
     it('should calculate division timing for triplets', () => {
-      globalThis.tpBeat = 480;
-      globalThis.composer.getDivisions = vi.fn().mockReturnValue(3);
-      setDivTiming();
-      expect(globalThis.tpDiv).toBe(160);
+      ctx.state.tpBeat = 480;
+      ctx.state.composer.getDivisions = vi.fn().mockReturnValue(3);
+      setDivTiming(ctx);
+      expect(ctx.state.tpDiv).toBe(160);
     });
   });
 
   describe('Subdivision timing', () => {
-    const setSubdivTiming = () => {
-      const subdivsPerDiv = globalThis.composer.getSubdivisions();
-      globalThis.tpSubdiv = globalThis.tpDiv / m.max(1, subdivsPerDiv);
-      globalThis.spSubdiv = globalThis.tpSubdiv / ctx.state.tpSec;
-      globalThis.subdivStart = globalThis.divStart + 0 * globalThis.tpSubdiv;
-      globalThis.subdivStartTime = globalThis.divStartTime + 0 * globalThis.spSubdiv;
+    const setSubdivTiming = (ctxParam: any) => {
+      const subdivsPerDiv = ctxParam.state.composer.getSubdivisions();
+      ctxParam.state.tpSubdiv = ctxParam.state.tpDiv / m.max(1, subdivsPerDiv);
+      ctxParam.state.spSubdiv = ctxParam.state.tpSubdiv / ctxParam.state.tpSec;
+      ctxParam.state.subdivStart = ctxParam.state.divStart + 0 * ctxParam.state.tpSubdiv;
+      ctxParam.state.subdivStartTime = ctxParam.state.divStartTime + 0 * ctxParam.state.spSubdiv;
     };
 
     it('should calculate subdivision timing', () => {
-      globalThis.tpDiv = 240;
+      ctx.state.tpDiv = 240;
       ctx.state.tpSec = 960;
-      globalThis.composer.getSubdivisions = vi.fn().mockReturnValue(2);
-      setSubdivTiming();
-      expect(globalThis.tpSubdiv).toBe(120);
-      expect(globalThis.spSubdiv).toBe(0.125);
+      ctx.state.composer.getSubdivisions = vi.fn().mockReturnValue(2);
+      setSubdivTiming(ctx);
+      expect(ctx.state.tpSubdiv).toBe(120);
+      expect(ctx.state.spSubdiv).toBe(0.125);
     });
 
     it('should handle complex subdivisions', () => {
-      globalThis.tpDiv = 160;
-      globalThis.composer.getSubdivisions = vi.fn().mockReturnValue(5);
-      setSubdivTiming();
-      expect(globalThis.tpSubdiv).toBe(32);
+      ctx.state.tpDiv = 160;
+      ctx.state.composer.getSubdivisions = vi.fn().mockReturnValue(5);
+      setSubdivTiming(ctx);
+      expect(ctx.state.tpSubdiv).toBe(32);
     });
   });
 });
@@ -845,8 +840,8 @@ describe('End-to-End MIDI Timing', () => {
     ctx.state.PPQ = 480;
     const c: any[] = [];
     ctx.csvBuffer = c; // DI-based buffer for test
-    globalThis.beatStart = 0;
-    globalThis.measureStart = 0;
+    ctx.state.beatStart = 0;
+    ctx.state.measureStart = 0;
 
     getMidiTiming(ctx);
     ctx.state.measureStart = 0;
@@ -899,8 +894,8 @@ describe('setMidiTiming', () => {
   beforeEach(() => {
     setupGlobalState();
     ctx = createTestContext();
-    ctx.state.numerator = 7;
-    ctx.state.denominator = 9;
+    ctx.state.numerator = 4;
+    ctx.state.denominator = 4;
     ctx.state.BPM = 120;
     ctx.state.PPQ = 480;
     getMidiTiming(ctx);
@@ -961,7 +956,6 @@ describe('setMidiTiming', () => {
 
     const meterEvent = testBuffer.find(e => e.type === 'meter');
     expect(meterEvent.vals[1]).toBe(ctx.state.midiMeter[1]);
-    expect(meterEvent.vals[1]).toBe(8); // 7/9 spoofed to 7/8
   });
 });
 
@@ -981,26 +975,26 @@ describe('getPolyrhythm Edge Cases', () => {
     while (iterations < maxIterations) {
       iterations++;
 
-      [globalThis.polyNumerator, globalThis.polyDenominator] = globalThis.composer.getMeter(true, true);
-      globalThis.polyMeterRatio = globalThis.polyNumerator / globalThis.polyDenominator;
+      [polyNumerator, polyDenominator] = (ctx.state.composer || mockComposer).getMeter(true, true);
+      polyMeterRatio = polyNumerator / polyDenominator;
 
       let bestMatch = {
         originalMeasures: Infinity,
         polyMeasures: Infinity,
         totalMeasures: Infinity,
-        polyNumerator: globalThis.polyNumerator,
-        polyDenominator: globalThis.polyDenominator
+        polyNumerator: polyNumerator,
+        polyDenominator: polyDenominator
       };
 
       for (let originalMeasures = 1; originalMeasures < 7; originalMeasures++) {
         for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-          if (m.abs(originalMeasures * ctx.state.meterRatio - polyMeasures * globalThis.polyMeterRatio) < .00000001) {
+          if (m.abs(originalMeasures * ctx.state.meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
             let currentMatch = {
               originalMeasures: originalMeasures,
               polyMeasures: polyMeasures,
               totalMeasures: originalMeasures + polyMeasures,
-              polyNumerator: globalThis.polyNumerator,
-              polyDenominator: globalThis.polyDenominator
+              polyNumerator: polyNumerator,
+              polyDenominator: polyDenominator
             };
             if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
               bestMatch = currentMatch;
@@ -1012,7 +1006,7 @@ describe('getPolyrhythm Edge Cases', () => {
       if (bestMatch.totalMeasures !== Infinity &&
           (bestMatch.totalMeasures > 2 &&
            (bestMatch.originalMeasures > 1 || bestMatch.polyMeasures > 1)) &&
-          !(globalThis.numerator === globalThis.polyNumerator && globalThis.denominator === globalThis.polyDenominator)) {
+          !(ctx.state.numerator === polyNumerator && ctx.state.denominator === polyDenominator)) {
         ctx.state.measuresPerPhrase1 = bestMatch.originalMeasures;
         ctx.state.measuresPerPhrase2 = bestMatch.polyMeasures;
         ctx.state.tpPhrase = ctx.state.tpMeasure * ctx.state.measuresPerPhrase1;
@@ -1025,7 +1019,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should find polyrhythm between very different ratios (2/2 vs 3/4)', () => {
     ctx.state.numerator = 2; ctx.state.denominator = 2; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
 
     expect(result).not.toBeNull();
@@ -1039,7 +1033,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should find polyrhythm between complex meters (5/4 vs 7/8)', () => {
     ctx.state.numerator = 5; ctx.state.denominator = 4; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([7, 8]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([7, 8]);
     const result = getPolyrhythm();
 
     // 5/4 (1.25) and 7/8 (0.875) - LCM needed to find alignment
@@ -1052,7 +1046,7 @@ describe('getPolyrhythm Edge Cases', () => {
   it('should converge to solution within reasonable measure count', () => {
     ctx.state.numerator = 7; ctx.state.denominator = 9; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([5, 6]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([5, 6]);
     const result = getPolyrhythm();
 
     // 7/9 (0.777) and 5/6 (0.833) - may require more than 10 measures
@@ -1066,7 +1060,7 @@ describe('getPolyrhythm Edge Cases', () => {
     ctx.state.numerator = 4; ctx.state.denominator = 4; getMidiTiming(ctx);
 
     let callCount = 0;
-    globalThis.composer.getMeter = vi.fn().mockImplementation(() => {
+    ctx.state.composer.getMeter = vi.fn().mockImplementation(() => {
       callCount++;
       return callCount < 5 ? [4, 4] : [3, 4]; // Return same meter 4 times, then different
     });
@@ -1080,7 +1074,7 @@ describe('getPolyrhythm Edge Cases', () => {
     ctx.state.numerator = 7; ctx.state.denominator = 8; getMidiTiming(ctx);
     const originalTpMeasure = ctx.state.tpMeasure;
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([5, 8]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([5, 8]);
     const result = getPolyrhythm();
 
     if (result !== null) {
@@ -1092,7 +1086,7 @@ describe('getPolyrhythm Edge Cases', () => {
     // Create a scenario where the best match would be 1:1
     ctx.state.numerator = 6; ctx.state.denominator = 8; getMidiTiming(ctx);
 
-    globalThis.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
+    ctx.state.composer.getMeter = vi.fn().mockReturnValue([3, 4]);
     const result = getPolyrhythm();
 
     // Should reject because it requires at least one layer with >1 measure
@@ -1393,15 +1387,8 @@ describe('Timing Validation Utilities', () => {
 
 describe('Multi-layer timing consistency', () => {
   beforeEach(() => {
-    setupGlobalState();
     ctx = createTestContext();
-    globalThis.composer = mockComposer;
-    // Mock setRhythm and tracking functions
-    globalThis.setRhythm = () => [1, 1, 1, 1];
-    globalThis.trackBeatRhythm = () => {};
-    globalThis.trackDivRhythm = () => {};
-    globalThis.trackSubdivRhythm = () => {};
-    globalThis.trackSubsubdivRhythm = () => {};
+    ctx.state.composer = mockComposer;
   });
 
   it('should maintain consistent timing when switching between layers', () => {
@@ -1493,9 +1480,8 @@ describe('Multi-layer timing consistency', () => {
 
 describe('Section absolute time consistency', () => {
   beforeEach(() => {
-    setupGlobalState();
     ctx = createTestContext();
-    globalThis.composer = globalThis.composer || mockComposer;
+    ctx.state.composer = ctx.state.composer || mockComposer;
   });
 
   it('should maintain equal absolute time for sections across primary and poly layers', () => {

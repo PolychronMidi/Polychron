@@ -37,7 +37,7 @@ class ScaleComposer extends GenericComposer<any> {
 
   itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Scale.get(`${root} ${scaleName}`);
+    this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 }
@@ -54,7 +54,7 @@ Loads Tonal scale and stores note list.
 ```typescript
 itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Scale.get(`${root} ${scaleName}`);
+    this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 ```
@@ -75,14 +75,14 @@ class RandomScaleComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    const randomScale = g.allScales[g.ri(g.allScales.length - 1)];
-    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
+    const randomScale = allScales[g.ri(allScales.length - 1)];
+    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
     this.itemSet(randomScale, randomRoot);
   }
 
   itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Scale.get(`${root} ${scaleName}`);
+    this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 }
@@ -98,8 +98,8 @@ Chooses random scale/root from globals, then sets notes.
 
 ```typescript
 randomizeItem() {
-    const randomScale = g.allScales[g.ri(g.allScales.length - 1)];
-    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
+    const randomScale = allScales[g.ri(allScales.length - 1)];
+    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
     this.itemSet(randomScale, randomRoot);
   }
 ```
@@ -111,7 +111,7 @@ randomizeItem() {
 ```typescript
 itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Scale.get(`${root} ${scaleName}`);
+    this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 ```

@@ -1,15 +1,7 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { ModeComposer } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { RandomModeComposer } = globalThis as any;
+import { ModeComposer, RandomModeComposer } from '../../src/composers/index.js';
 
 describe('ModeComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup required; composers import dependencies via DI-friendly modules.
 
   it('should initialize with mode and root', () => {
     const composer = new ModeComposer('ionian', 'C');
@@ -26,9 +18,7 @@ describe('ModeComposer', () => {
 });
 
 describe('RandomModeComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup required; composers import dependencies via DI-friendly modules.
 
   it('should initialize with random mode', () => {
     const composer = new RandomModeComposer();

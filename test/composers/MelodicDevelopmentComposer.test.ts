@@ -1,15 +1,7 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { ScaleComposer, ComposerFactory } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { MelodicDevelopmentComposer } = globalThis as any;
+import { MelodicDevelopmentComposer, ComposerFactory, ScaleComposer } from '../../src/composers/index.js';
 
 describe('MelodicDevelopmentComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup; composers import their dependencies from `src/venue.ts` and `src/utils.ts`.
 
   it('should initialize with scale, root, and development intensity', () => {
     const composer = new MelodicDevelopmentComposer('major', 'C', 0.6);

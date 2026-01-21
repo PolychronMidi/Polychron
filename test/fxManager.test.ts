@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FxManager } from '../src/fxManager.js';
-import { createTestContext } from './helpers.js';
+import { createTestContext } from './helpers.module.js';
 import { registerWriterServices } from '../src/writer.js';
 import { CSVBuffer } from '../src/writer.js';
 

@@ -1,14 +1,7 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { ModalInterchangeComposer } = globalThis as any;
+import { ModalInterchangeComposer } from '../../src/composers/index.js';
 
 describe('ModalInterchangeComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup; composers import their dependencies from `src/venue.ts` and `src/utils.ts`.
 
   it('should create with default parameters', () => {
     const composer = new ModalInterchangeComposer();

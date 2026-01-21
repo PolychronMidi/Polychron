@@ -12,6 +12,10 @@ import '../src/backstage.js'; // Load random helpers
 import '../src/venue.js'; // Load Tonal library
 import '../src/sheet.js'; // Load configuration
 
+// Import moduleized helpers (DI-only). Tests should import named helpers from
+// `helpers.module.js` or call `setupGlobalState()` which now returns a context.
+import * as HM from './helpers.module.js';
+
 import { CompositionState, CompositionStateService } from '../src/CompositionState.js';
 import { ICompositionContext } from '../src/CompositionContext.js';
 import { DIContainer } from '../src/DIContainer.js';
@@ -183,10 +187,18 @@ export function setupGlobalState(): void {
   if (!globalThis.__POLYCHRON_TEST__) {
     globalThis.__POLYCHRON_TEST__ = {};
   }
-}
+
+  // this should not be used, use DI only.
+//   try {
+//     const { attachLegacyGlobals } = require('../src/backstage.js');
+//     if (attachLegacyGlobals) attachLegacyGlobals(globalThis);
+//   } catch (e) {
+//     // If the attach helper is unavailable for some reason, tests can still use DI.
+//   }
+// }
 
 // Module-scope helpers
-export function setupTestDefaults(options?: { smallComposition?: boolean; log?: string }) {
+function setupTestDefaults(options?: any) {
   const g = globalThis as any;
   options = options || {};
   // Ensure legacy globals are initialized for tests that rely on global exposure
@@ -200,6 +212,8 @@ export function setupTestDefaults(options?: { smallComposition?: boolean; log?: 
     g.LOG = options.log;
   }
 }
+// Expose as global for legacy tests to import-less use
+(globalThis as any).setupTestDefaults = setupTestDefaults;
 
 /**
  * Creates a minimal test composer for testing functions that require a composer

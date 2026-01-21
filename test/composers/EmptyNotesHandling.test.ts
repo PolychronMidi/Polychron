@@ -1,11 +1,7 @@
 import '../../src/sheet.js';
 import '../../src/venue.js';
-import { setupGlobalState } from '../helpers.js';
 
 describe('Empty Notes Handling - CRITICAL', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
 
   it('should handle empty array from forEach without crashing', () => {
     const emptyArray: Array<{ note: number }> = [];

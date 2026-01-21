@@ -1,15 +1,7 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { ChordComposer } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { RandomChordComposer } = globalThis as any;
+import { ChordComposer, RandomChordComposer } from '../../src/composers/ChordComposer.js';
 
 describe('ChordComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should initialize with progression', () => {
     const composer = new ChordComposer(['C', 'F', 'G']);
@@ -44,9 +36,7 @@ describe('ChordComposer', () => {
 });
 
 describe('RandomChordComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should initialize with random progression', () => {
     const composer = new RandomChordComposer();
@@ -65,9 +55,7 @@ describe('RandomChordComposer', () => {
 });
 
 describe('ChordComposer edge cases', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should handle empty chord progression', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -85,9 +73,7 @@ describe('ChordComposer edge cases', () => {
 });
 
 describe('ChordComposer.noteSet integration', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should accept valid chord progression', () => {
     const progression = ['CM', 'Dm', 'Em', 'FM'];
@@ -159,9 +145,7 @@ describe('ChordComposer.noteSet integration', () => {
 });
 
 describe('RandomChordComposer integration', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  beforeEach(() => {});
 
   it('should generate random chord progression on construction', () => {
     const composer = new RandomChordComposer();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext } from './helpers.js';
+import { createTestContext } from './helpers.module.js';
 import { setUnitTiming } from '../src/time.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 

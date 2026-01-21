@@ -49,10 +49,8 @@ declare let meterRatio: number;
 declare let polyMeterRatio: number;
 declare let syncFactor: number;
 declare let midiBPM: number;
-declare let tpSec: number;
 declare let tpMeasure: number;
 declare let spMeasure: number;
-declare let measuresPerPhrase1: number;
 declare let measuresPerPhrase2: number;
 declare let measuresPerPhrase: number;
 declare let tpPhrase: number;
@@ -64,7 +62,6 @@ declare let beatIndex: number;
 declare let divIndex: number;
 declare let subdivIndex: number;
 declare let subsubdivIndex: number;
-declare let phraseStart: number;
 declare let phraseStartTime: number;
 declare let sectionStart: number;
 declare let sectionStartTime: number;
@@ -75,7 +72,6 @@ declare let beatStart: number;
 declare let beatStartTime: number;
 declare let tpBeat: number;
 declare let spBeat: number;
-declare let trueBPM: number;
 declare let bpmRatio: number;
 declare let bpmRatio2: number;
 declare let trueBPM2: number;
@@ -90,7 +86,6 @@ declare let subdivFreq: number;
 declare let subdivStart: number;
 declare let subdivStartTime: number;
 declare let tpSubdiv: number;
-declare let spSubdiv: number;
 declare let subdivsPerMinute: number;
 declare let subsubdivsPerSub: number;
 declare let subsubdivStart: number;
@@ -168,6 +163,7 @@ const setMidiTiming = (ctx: ICompositionContext, tick?: number): void => {
   const state = ctx.state as any;
   const tickValue = tick ?? state.measureStart;
   const tpSec = state.tpSec || 1;
+  // Debug logging removed after fixes
   if (!Number.isFinite(tpSec) || tpSec <= 0) {
     throw new Error(`Invalid tpSec: ${tpSec}`);
   }
@@ -391,11 +387,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       setVal('measureStart', getVal('phraseStart') + (state.measureIndex || 0) * getVal('tpMeasure'));
       setVal('measureStartTime', getVal('phraseStartTime') + (state.measureIndex || 0) * getVal('spMeasure'));
       setMidiTiming(ctx);
-      setVal('beatRhythm', setRhythm('beat'));
+      setVal('beatRhythm', setRhythm('beat', ctx));
       break;
 
     case 'beat':
-      trackRhythm('beat');
+      trackRhythm('beat', ctx);
       setVal('tpBeat', getVal('tpMeasure') / getVal('numerator'));
       setVal('spBeat', getVal('tpBeat') / tpSec);
       setVal('trueBPM', 60 / getVal('spBeat'));
@@ -407,11 +403,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       setVal('beatStart', getVal('phraseStart') + (state.measureIndex || 0) * getVal('tpMeasure') + (state.beatIndex || 0) * getVal('tpBeat'));
       setVal('beatStartTime', getVal('measureStartTime') + (state.beatIndex || 0) * getVal('spBeat'));
       setVal('divsPerBeat', state.composer ? state.composer.getDivisions() : 1);
-      setVal('divRhythm', setRhythm('div'));
+      setVal('divRhythm', setRhythm('div', ctx));
       break;
 
     case 'division':
-      trackRhythm('div');
+      trackRhythm('div', ctx);
       setVal('tpDiv', getVal('tpBeat') / Math.max(1, getVal('divsPerBeat')));
       setVal('spDiv', getVal('tpDiv') / tpSec);
       // Use state indices
@@ -419,11 +415,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       setVal('divStartTime', getVal('beatStartTime') + (state.divIndex || 0) * getVal('spDiv'));
       setVal('subdivsPerDiv', Math.max(1, state.composer ? state.composer.getSubdivisions() : 1));
       setVal('subdivFreq', getVal('subdivsPerDiv') * getVal('divsPerBeat') * getVal('numerator') * getVal('meterRatio'));
-      setVal('subdivRhythm', setRhythm('subdiv'));
+      setVal('subdivRhythm', setRhythm('subdiv', ctx));
       break;
 
     case 'subdivision':
-      trackRhythm('subdiv');
+      trackRhythm('subdiv', ctx);
       setVal('tpSubdiv', getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv')));
       setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
       setVal('subdivsPerMinute', 60 / getVal('spSubdiv'));
@@ -435,11 +431,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
         ? state.composer.getSubsubdivs()
         : (getVal('subsubdivsPerSub') || 1);
       setVal('subsubdivsPerSub', Math.max(1, subsubCount));
-      setVal('subsubdivRhythm', setRhythm('subsubdiv'));
+      setVal('subsubdivRhythm', setRhythm('subsubdiv', ctx));
       break;
 
     case 'subsubdivision':
-      trackRhythm('subsubdiv');
+      trackRhythm('subsubdiv', ctx);
       setVal('tpSubsubdiv', getVal('tpSubdiv') / Math.max(1, getVal('subsubdivsPerSub')));
       setVal('spSubsubdiv', getVal('tpSubsubdiv') / tpSec);
       setVal('subsubdivsPerMinute', 60 / getVal('spSubsubdiv'));

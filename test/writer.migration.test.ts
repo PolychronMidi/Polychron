@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestContext } from './helpers';
+import { createTestContext } from './helpers.module.js';
 
 // DI-first: ensure writer services are registered and legacy globals are not relied upon
 describe('writer migration (DI-first)', () => {

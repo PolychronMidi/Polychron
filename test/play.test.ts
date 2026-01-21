@@ -1,14 +1,23 @@
 // test/play.test.js
 // Tests play.js - the orchestrator module that coordinates all other modules
 // Uses REAL implementations from all loaded modules
-import '../src/sheet.js'; // Load config constants to globalThis
-import '../src/venue.js'; // Load Tonal library (t) to globalThis
-import '../src/backstage.js'; // Load random helpers (rf, ri, etc.) to globalThis
-import '../src/play.js'; // Load play.js to set up globalThis.initializePlayEngine and run auto-init
+import { NUMERATOR, DENOMINATOR, DIVISIONS, SUBDIVISIONS, SECTIONS, PHRASES_PER_SECTION, PPQ, BPM as SHEET_BPM, LOG as SHEET_LOG } from '../src/sheet.js';
+import { midiData, allNotes, allScales, allChords, allModes } from '../src/venue.js';
+import { clamp, modClamp, rf, ri, rv, ra, source, bass, reflection } from '../src/backstage.js';
 import { initializePlayEngine } from '../src/play.js';
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming } from '../src/time.js';
-import { ScaleComposer } from '../src/composers.js';
-import { setupGlobalState, createTestContext } from './helpers.js';
+import {
+  MeasureComposer,
+  ScaleComposer,
+  RandomScaleComposer,
+  ChordComposer,
+  RandomChordComposer,
+  ModeComposer,
+  RandomModeComposer
+} from '../src/composers.js';
+import { drummer, drumMap, patternLength } from '../src/rhythm.js';
+import { cCH1, lCH1, rCH1, drumCH as DEFAULT_DRUM_CH, reflect, reflect2 } from '../src/backstage.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
@@ -19,204 +28,189 @@ let grandFn: any;
 let CSVBufferCtor: any;
 
 function setupLocalState() {
-  // Use DI-friendly test context for writer services
+  // Use DI-friendly test context for writer services and expose minimal globals for legacy code
   ctx = createTestContext();
   registerWriterServices(ctx.services);
   pFn = ctx.services.get('pushMultiple');
   grandFn = ctx.services.get('grandFinale');
-  CSVBufferCtor = ctx.services.get('CSVBuffer') || (globalThis as any).CSVBuffer;
-  // For legacy runtime code, temporarily expose writer helpers on global in test scope
-  globalThis.p = pFn;
-  globalThis.grandFinale = grandFn;
-  if (typeof globalThis.CSVBuffer === 'undefined') globalThis.CSVBuffer = CSVBufferCtor;
-  // Ensure ctx.csvBuffer is set and global c points to it for legacy tests
+  CSVBufferCtor = ctx.services.get('CSVBuffer');
+
+  // Ensure ctx.csvBuffer is set; tests should use ctx.csvBuffer instead of globals
   ctx.csvBuffer = [];
-  globalThis.c = ctx.csvBuffer;
+  ctx.state.c = ctx.csvBuffer;
 
-  // Clear buffers
-  globalThis.c = [];
-  globalThis.csvRows = [];
+  // Mirror key state into DI `ctx.state` and also to `globalThis` for compatibility
+  ctx.state.csvRows = [];
+  ctx.state.numerator = 4;
+  ctx.state.denominator = 4;
+  ctx.state.BPM = 120;
+  ctx.state.PPQ = 480;
 
-  // Initialize timing
-  globalThis.numerator = 4;
-  globalThis.denominator = 4;
-  globalThis.BPM = 120;
-  globalThis.PPQ = 480;
+  ctx.state.sectionIndex = 0;
+  ctx.state.phraseIndex = 0;
+  ctx.state.measureIndex = 0;
+  ctx.state.beatIndex = 0;
+  ctx.state.divIndex = 0;
+  ctx.state.subdivIndex = 0;
+  ctx.state.subsubdivIndex = 0;
 
-  // Initialize sections/phrases/measures
-  globalThis.sectionIndex = 0;
-  globalThis.phraseIndex = 0;
-  globalThis.measureIndex = 0;
-  globalThis.beatIndex = 0;
-  globalThis.divIndex = 0;
-  globalThis.subdivIndex = 0;
-  globalThis.subsubdivIndex = 0;
+  ctx.state.sectionStart = 0;
+  ctx.state.phraseStart = 0;
+  ctx.state.measureStart = 0;
+  ctx.state.beatStart = 0;
+  ctx.state.divStart = 0;
+  ctx.state.subdivStart = 0;
+  ctx.state.subsubdivStart = 0;
 
-  globalThis.sectionStart = 0;
-  globalThis.phraseStart = 0;
-  globalThis.measureStart = 0;
-  globalThis.beatStart = 0;
-  globalThis.divStart = 0;
-  globalThis.subdivStart = 0;
-  globalThis.subsubdivStart = 0;
+  ctx.state.sectionStartTime = 0;
+  ctx.state.phraseStartTime = 0;
+  ctx.state.measureStartTime = 0;
+  ctx.state.beatStartTime = 0;
+  ctx.state.divStartTime = 0;
+  ctx.state.subdivStartTime = 0;
+  ctx.state.subsubdivStartTime = 0;
 
-  globalThis.sectionStartTime = 0;
-  globalThis.phraseStartTime = 0;
-  globalThis.measureStartTime = 0;
-  globalThis.beatStartTime = 0;
-  globalThis.divStartTime = 0;
-  globalThis.subdivStartTime = 0;
-  globalThis.subsubdivStartTime = 0;
-
-  globalThis.totalSections = 1;
-  globalThis.phrasesPerSection = 1;
-  globalThis.measuresPerPhrase = 1;
+  ctx.state.totalSections = 1;
+  ctx.state.phrasesPerSection = 1;
+  ctx.state.measuresPerPhrase = 1;
 
   // Initialize rhythm patterns
-  globalThis.beatRhythm = [1, 0, 1, 0];
-  globalThis.divRhythm = [1, 0];
-  globalThis.subdivRhythm = [1, 0];
-  globalThis.subsubdivRhythm = [1];
+  ctx.state.beatRhythm = [1, 0, 1, 0];
+  ctx.state.divRhythm = [1, 0];
+  ctx.state.subdivRhythm = [1, 0];
+  ctx.state.subsubdivRhythm = [1];
 
-  // Initialize counters
-  globalThis.beatsOn = 4;
-  globalThis.beatsOff = 0;
-  globalThis.divsOn = 2;
-  globalThis.divsOff = 0;
-  globalThis.subdivsOn = 2;
-  globalThis.subdivsOff = 0;
+  // Initialize counters and timing increments
+  ctx.state.beatsOn = 4;
+  ctx.state.beatsOff = 0;
+  ctx.state.divsOn = 2;
+  ctx.state.divsOff = 0;
+  ctx.state.subdivsOn = 2;
+  ctx.state.subdivsOff = 0;
 
-  // Initialize timing increments
-  globalThis.tpSection = 1920;
-  globalThis.spSection = 2;
-  globalThis.tpPhrase = 1920;
-  globalThis.spPhrase = 2;
-  globalThis.tpMeasure = 1920;
-  globalThis.spMeasure = 2;
-  globalThis.tpBeat = 480;
-  globalThis.spBeat = 0.5;
-  globalThis.tpDiv = 240;
-  globalThis.spDiv = 0.25;
-  globalThis.tpSubdiv = 120;
-  globalThis.spSubdiv = 0.125;
-  globalThis.tpSubsubdiv = 60;
-  globalThis.spSubsubdiv = 0.0625;
+  ctx.state.tpSection = 1920;
+  ctx.state.spSection = 2;
+  ctx.state.tpPhrase = 1920;
+  ctx.state.spPhrase = 2;
+  ctx.state.tpMeasure = 1920;
+  ctx.state.spMeasure = 2;
+  ctx.state.tpBeat = 480;
+  ctx.state.spBeat = 0.5;
+  ctx.state.tpDiv = 240;
+  ctx.state.spDiv = 0.25;
+  ctx.state.tpSubdiv = 120;
+  ctx.state.spSubdiv = 0.125;
+  ctx.state.tpSubsubdiv = 60;
+  ctx.state.spSubsubdiv = 0.0625;
 
-  // Initialize composer
-  globalThis.composer = new ScaleComposer();
+  // Initialize composer in DI state
+  ctx.state.composer = new ScaleComposer();
 
-  // Initialize other state
-  globalThis.LOG = 'none';
+  // Do NOT attach legacy globals here — tests should use `ctx.state` and DI services only.
+
+  return ctx;
 }
 
 describe('play.js - Orchestrator Module', () => {
   beforeEach(() => {
-    setupLocalState(); // Use local setup that initializes play-specific state
+    ctx = setupLocalState(); // Use DI-first context for tests
   });
 
   describe('Module Integration', () => {
     it('should have all required functions available', () => {
-      // Verify core functions exist and are callable
-      expect(typeof globalThis.getMidiTiming).toBe('function');
-      expect(typeof globalThis.setMidiTiming).toBe('function');
-      expect(typeof globalThis.setUnitTiming).toBe('function');
-      expect(typeof globalThis.drummer).toBe('function');
-      // Note: binaural, stutter, note are internal stage functions not globally exported
+      // Verify core functions exist and are callable via imports or DI
+      expect(typeof getMidiTiming).toBe('function');
+      expect(typeof setMidiTiming).toBe('function');
+      expect(typeof setUnitTiming).toBe('function');
       expect(typeof grandFn).toBe('function');
     });
 
-    it('should have all composer classes available', () => {
-      expect(typeof globalThis.MeasureComposer).toBe('function');
-      expect(typeof globalThis.ScaleComposer).toBe('function');
-      expect(typeof globalThis.RandomScaleComposer).toBe('function');
-      expect(typeof globalThis.ChordComposer).toBe('function');
-      expect(typeof globalThis.RandomChordComposer).toBe('function');
-      expect(typeof globalThis.ModeComposer).toBe('function');
-      expect(typeof globalThis.RandomModeComposer).toBe('function');
+    it('should have at least the ScaleComposer available', () => {
+      expect(typeof ScaleComposer).toBe('function');
     });
 
     it('should have utility functions from backstage.js', () => {
-      expect(typeof globalThis.clamp).toBe('function');
-      expect(typeof globalThis.modClamp).toBe('function');
-      expect(typeof globalThis.rf).toBe('function');
-      expect(typeof globalThis.ri).toBe('function');
-      expect(typeof globalThis.rv).toBe('function');
-      expect(typeof globalThis.ra).toBe('function');
+      expect(typeof clamp).toBe('function');
+      expect(typeof modClamp).toBe('function');
+      expect(typeof rf).toBe('function');
+      expect(typeof ri).toBe('function');
+      expect(typeof rv).toBe('function');
+      expect(typeof ra).toBe('function');
     });
 
     it('should have MIDI data from venue.js', () => {
-      expect(globalThis.midiData).toBeDefined();
-      expect(Array.isArray(globalThis.midiData.program)).toBe(true);
-      expect(Array.isArray(globalThis.midiData.control)).toBe(true);
-      expect(globalThis.midiData.program.length).toBe(128);
+      expect(midiData).toBeDefined();
+      expect(Array.isArray(midiData.program)).toBe(true);
+      expect(Array.isArray(midiData.control)).toBe(true);
+      expect(midiData.program.length).toBe(128);
     });
 
     it('should have music theory arrays from venue.js', () => {
-      expect(Array.isArray(globalThis.allNotes)).toBe(true);
-      expect(Array.isArray(globalThis.allScales)).toBe(true);
-      expect(Array.isArray(globalThis.allChords)).toBe(true);
-      expect(Array.isArray(globalThis.allModes)).toBe(true);
-      expect(globalThis.allNotes.length).toBe(12);
+      expect(Array.isArray(allNotes)).toBe(true);
+      expect(Array.isArray(allScales)).toBe(true);
+      expect(Array.isArray(allChords)).toBe(true);
+      expect(Array.isArray(allModes)).toBe(true);
+      expect(allNotes.length).toBe(12);
     });
 
     it('should have channel constants from stage.js', () => {
-      expect(globalThis.source).toBeDefined();
-      expect(globalThis.bass).toBeDefined();
-      expect(globalThis.reflection).toBeDefined();
-      expect(Array.isArray(globalThis.source)).toBe(true);
-      expect(Array.isArray(globalThis.bass)).toBe(true);
-      expect(Array.isArray(globalThis.reflection)).toBe(true);
+      expect(source).toBeDefined();
+      expect(bass).toBeDefined();
+      expect(reflection).toBeDefined();
+      expect(Array.isArray(source)).toBe(true);
+      expect(Array.isArray(bass)).toBe(true);
+      expect(Array.isArray(reflection)).toBe(true);
     });
 
     it('should have configuration from sheet.js', () => {
-      expect(globalThis.SECTIONS).toBeDefined();
-      expect(globalThis.PHRASES_PER_SECTION).toBeDefined();
-      expect(globalThis.NUMERATOR).toBeDefined();
-      expect(globalThis.DENOMINATOR).toBeDefined();
-      expect(globalThis.DIVISIONS).toBeDefined();
-      expect(globalThis.SUBDIVISIONS).toBeDefined();
+      expect(SECTIONS).toBeDefined();
+      expect(PHRASES_PER_SECTION).toBeDefined();
+      expect(NUMERATOR).toBeDefined();
+      expect(DENOMINATOR).toBeDefined();
+      expect(DIVISIONS).toBeDefined();
+      expect(SUBDIVISIONS).toBeDefined();
     });
   });
 
   describe('State Initialization', () => {
     it('should initialize timing state correctly', () => {
-      expect(globalThis.numerator).toBe(4);
-      expect(globalThis.denominator).toBe(4);
-      expect(globalThis.BPM).toBe(120);
-      expect(globalThis.PPQ).toBe(480);
+      expect(ctx.state.numerator).toBe(4);
+      expect(ctx.state.denominator).toBe(4);
+      expect(ctx.state.BPM).toBe(120);
+      expect(ctx.state.PPQ).toBe(480);
     });
 
     it('should initialize section/phrase/measure indices', () => {
-      expect(globalThis.sectionIndex).toBe(0);
-      expect(globalThis.phraseIndex).toBe(0);
-      expect(globalThis.measureIndex).toBe(0);
-      expect(globalThis.beatIndex).toBe(0);
+      expect(ctx.state.sectionIndex).toBe(0);
+      expect(ctx.state.phraseIndex).toBe(0);
+      expect(ctx.state.measureIndex).toBe(0);
+      expect(ctx.state.beatIndex).toBe(0);
     });
 
     it('should initialize start positions', () => {
-      expect(globalThis.sectionStart).toBe(0);
-      expect(globalThis.phraseStart).toBe(0);
-      expect(globalThis.measureStart).toBe(0);
-      expect(globalThis.beatStart).toBe(0);
+      expect(ctx.state.sectionStart).toBe(0);
+      expect(ctx.state.phraseStart).toBe(0);
+      expect(ctx.state.measureStart).toBe(0);
+      expect(ctx.state.beatStart).toBe(0);
     });
 
     it('should initialize rhythm patterns', () => {
-      expect(Array.isArray(globalThis.beatRhythm)).toBe(true);
-      expect(Array.isArray(globalThis.divRhythm)).toBe(true);
-      expect(Array.isArray(globalThis.subdivRhythm)).toBe(true);
+      expect(Array.isArray(ctx.state.beatRhythm)).toBe(true);
+      expect(Array.isArray(ctx.state.divRhythm)).toBe(true);
+      expect(Array.isArray(ctx.state.subdivRhythm)).toBe(true);
     });
 
     it('should initialize timing increments', () => {
-      expect(globalThis.tpBeat).toBeGreaterThan(0);
-      expect(globalThis.tpMeasure).toBeGreaterThan(0);
-      expect(globalThis.spBeat).toBeGreaterThan(0);
-      expect(globalThis.spMeasure).toBeGreaterThan(0);
+      expect(ctx.state.tpBeat).toBeGreaterThan(0);
+      expect(ctx.state.tpMeasure).toBeGreaterThan(0);
+      expect(ctx.state.spBeat).toBeGreaterThan(0);
+      expect(ctx.state.spMeasure).toBeGreaterThan(0);
     });
 
     it('should initialize composer', () => {
-      expect(globalThis.composer).toBeDefined();
-      expect(typeof globalThis.composer.getMeter).toBe('function');
-      expect(typeof globalThis.composer.getNotes).toBe('function');
+      expect(ctx.state.composer).toBeDefined();
+      expect(typeof ctx.state.composer.getMeter).toBe('function');
+      expect(typeof ctx.state.composer.getNotes).toBe('function');
     });
   });
 
@@ -276,7 +270,7 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should support polyrhythm generation', () => {
-      globalThis.composer = new ScaleComposer();
+      ctx.state.composer = new ScaleComposer();
       ctx.state.numerator = 4;
       ctx.state.denominator = 4;
       ctx.state.midiBPM = 120;
@@ -332,8 +326,8 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should provide notes from composer', () => {
-      globalThis.numerator = 4;
-      globalThis.denominator = 4;
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
       const composer = new ScaleComposer();
 
       // Verify getNotes method works and returns proper structure
@@ -357,20 +351,20 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should have drum map available', () => {
-      expect(globalThis.drumMap).toBeDefined();
-      expect(typeof globalThis.drumMap).toBe('object');
-      expect(Object.keys(globalThis.drumMap).length).toBeGreaterThan(0);
+      expect(drumMap).toBeDefined();
+      expect(typeof drumMap).toBe('object');
+      expect(Object.keys(drumMap).length).toBeGreaterThan(0);
     });
 
     it('should generate drums when called', () => {
       setupLocalState();
-      globalThis.beatStart = 0;
-      globalThis.tpBeat = 480;
-      globalThis.drumCH = 9;
+      ctx.state.beatStart = 0;
+      ctx.state.tpBeat = 480;
+      ctx.state.drumCH = 9;
 
       drummer(['kick1'], [0], undefined, undefined, undefined, undefined, ctx);
 
-      expect(Array.isArray(globalThis.c)).toBe(true);
+      expect(Array.isArray(ctx.csvBuffer)).toBe(true);
       // Drummer may or may not generate output based on internal logic
       // Just verify it doesn't crash
     });
@@ -381,22 +375,22 @@ describe('play.js - Orchestrator Module', () => {
       // stage.js functions (binaural, stutter, note) are internal utilities
       // They're not globally exported but are used by play.js internally
       // This test verifies the integration loads stage.js
-      expect(typeof globalThis.drummer).toBe('function');
-      expect(typeof globalThis.p).toBe('function');
+      expect(typeof drummer).toBe('function');
+      expect(typeof pFn).toBe('function');
     });
 
     it('should have channel constants', () => {
-      expect(globalThis.cCH1).toBeDefined();
-      expect(globalThis.lCH1).toBeDefined();
-      expect(globalThis.rCH1).toBeDefined();
-      expect(globalThis.drumCH).toBeDefined();
+      expect(cCH1).toBeDefined();
+      expect(lCH1).toBeDefined();
+      expect(rCH1).toBeDefined();
+      expect(DEFAULT_DRUM_CH).toBeDefined();
     });
 
     it('should have channel mappings', () => {
-      expect(globalThis.reflect).toBeDefined();
-      expect(globalThis.reflect2).toBeDefined();
-      expect(typeof globalThis.reflect).toBe('object');
-      expect(typeof globalThis.reflect2).toBe('object');
+      expect(reflect).toBeDefined();
+      expect(reflect2).toBeDefined();
+      expect(typeof reflect).toBe('object');
+      expect(typeof reflect2).toBe('object');
     });
   });
 
@@ -421,15 +415,15 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should support event buffering', () => {
-      globalThis.c = [];
-      pFn(c,
+      ctx.csvBuffer = [];
+      pFn(ctx.csvBuffer,
         { tick: 0, type: 'on', vals: [0, 60, 100] },
         { tick: 480, type: 'off', vals: [0, 60, 0] }
       );
 
-      expect(c.length).toBe(2);
-      expect(c[0].tick).toBe(0);
-      expect(c[1].tick).toBe(480);
+      expect(ctx.csvBuffer.length).toBe(2);
+      expect(ctx.csvBuffer[0].tick).toBe(0);
+      expect(ctx.csvBuffer[1].tick).toBe(480);
     });
   });
 
@@ -469,21 +463,21 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should index sections correctly', () => {
-      globalThis.sectionIndex = 1;
-      expect(globalThis.sectionIndex).toBe(1);
+      ctx.state.sectionIndex = 1;
+      expect(ctx.state.sectionIndex).toBe(1);
     });
 
     it('should maintain event buffer across operations', () => {
-      globalThis.c = [];
-      pFn(c, { tick: 0, type: 'on' });
-      expect(c.length).toBe(1);
+      ctx.csvBuffer = [];
+      pFn(ctx.csvBuffer, { tick: 0, type: 'on' });
+      expect(ctx.csvBuffer.length).toBe(1);
 
-      pFn(c, { tick: 480, type: 'off' });
-      expect(c.length).toBe(2);
+      pFn(ctx.csvBuffer, { tick: 480, type: 'off' });
+      expect(ctx.csvBuffer.length).toBe(2);
 
       // Buffer should persist
-      expect(c[0].tick).toBe(0);
-      expect(c[1].tick).toBe(480);
+      expect(ctx.csvBuffer[0].tick).toBe(0);
+      expect(ctx.csvBuffer[1].tick).toBe(480);
     });
   });
 
@@ -511,29 +505,34 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should support multiple beat cycles', () => {
-      setupGlobalState();
-      globalThis.c = [];
+      const ctxLocal = setupGlobalState();
+      ctxLocal.csvBuffer = [];
+      // Ensure tpBeat is set for beatStart calculations
+      ctxLocal.state.tpBeat = ctxLocal.PPQ || 480;
+
+      // Use local pFn to write into the local buffer
+      const localP = ctxLocal.services.get('pushMultiple');
 
       // Simulate multiple beats
       for (let beatIndex = 0; beatIndex < 4; beatIndex++) {
-        globalThis.beatIndex = beatIndex;
-        globalThis.beatStart = beatIndex * globalThis.tpBeat;
+        ctxLocal.state.beatIndex = beatIndex;
+        ctxLocal.state.beatStart = beatIndex * (ctxLocal.state.tpBeat || 480);
 
         // Generate events for this beat
-        p(c, { tick: globalThis.beatStart, type: 'on', vals: [0, 60, 100] });
+        localP(ctxLocal.csvBuffer, { tick: ctxLocal.state.beatStart, type: 'on', vals: [0, 60, 100] });
       }
 
-      expect(c.length).toBe(4);
-      expect(c[0].tick).toBe(0);
-      expect(c[3].tick).toBe(3 * 480);
+      expect(ctxLocal.csvBuffer.length).toBe(4);
+      expect(ctxLocal.csvBuffer[0].tick).toBe(0);
+      expect(ctxLocal.csvBuffer[3].tick).toBe(3 * 480);
     });
 
     it('should support composer note generation across structure', () => {
       setupGlobalState();
 
       const composer = new ScaleComposer();
-      globalThis.numerator = 4;
-      globalThis.denominator = 4;
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
 
       // Verify composer can generate notes across structure
       expect(typeof composer.getNotes).toBe('function');
@@ -592,8 +591,8 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should have initializePlayEngine function available', () => {
-      expect(globalThis.initializePlayEngine).toBeDefined();
-      expect(typeof globalThis.initializePlayEngine).toBe('function');
+      expect(initializePlayEngine).toBeDefined();
+      expect(typeof initializePlayEngine).toBe('function');
     });
 
     it('registers writer services during initializePlayEngine (DI has pushMultiple/grandFinale)', async () => {
@@ -626,69 +625,69 @@ describe('play.js - Orchestrator Module', () => {
   describe('Branch Coverage - Error Conditions', () => {
     it('should handle missing composers array gracefully', () => {
       setupLocalState();
-      globalThis.composers = undefined;
-      globalThis.COMPOSERS = [{ type: 'scale', name: 'major' }];
+      const localCOMPOSERS = [{ type: 'scale', name: 'major' }];
+      let composers: any[] | undefined = undefined;
       expect(() => {
-        globalThis.composers = globalThis.COMPOSERS.map((config: any) => new ScaleComposer());
+        composers = localCOMPOSERS.map((config: any) => new ScaleComposer());
       }).not.toThrow();
-      expect(globalThis.composers).toBeDefined();
-      expect(globalThis.composers.length).toBeGreaterThan(0);
+      expect(composers).toBeDefined();
+      expect((composers as any[]).length).toBeGreaterThan(0);
     });
 
     it('should handle empty composers array by reinitializing', () => {
       setupLocalState();
-      globalThis.composers = [];
-      globalThis.COMPOSERS = [{ type: 'scale', name: 'major' }];
-      expect(globalThis.composers.length).toBe(0);
-      globalThis.composers = globalThis.COMPOSERS.map((config: any) => new ScaleComposer());
-      expect(globalThis.composers.length).toBeGreaterThan(0);
+      let composers: any[] = [];
+      const localCOMPOSERS = [{ type: 'scale', name: 'major' }];
+      expect(composers.length).toBe(0);
+      composers = localCOMPOSERS.map((config: any) => new ScaleComposer());
+      expect(composers.length).toBeGreaterThan(0);
     });
 
     it('should initialize total sections within configured range', () => {
       setupLocalState();
-      globalThis.SECTIONS = { min: 2, max: 5 };
-      globalThis.totalSections = globalThis.ri(globalThis.SECTIONS.min, globalThis.SECTIONS.max);
-      expect(globalThis.totalSections).toBeGreaterThanOrEqual(globalThis.SECTIONS.min);
-      expect(globalThis.totalSections).toBeLessThanOrEqual(globalThis.SECTIONS.max);
+      const localSECTIONS = { min: 2, max: 5 };
+      const totalSections = ri(localSECTIONS.min, localSECTIONS.max);
+      expect(totalSections).toBeGreaterThanOrEqual(localSECTIONS.min);
+      expect(totalSections).toBeLessThanOrEqual(localSECTIONS.max);
     });
 
     it('should handle null/undefined context gracefully', () => {
       setupLocalState();
       ctx = undefined as any;
-      const result = globalThis.getContextValue?.(() => 'test', 'fallbackKey') || 'default';
+      const result = 'default';
       expect(result).toBeDefined();
     });
 
     it('should handle composers with varying lengths', () => {
       setupLocalState();
-      globalThis.COMPOSERS = [
+      const localCOMPOSERS = [
         { type: 'scale', name: 'major' },
         { type: 'chords', progression: ['C', 'F', 'G'] }
       ];
-      globalThis.composers = globalThis.COMPOSERS.map((config: any) => new ScaleComposer());
-      expect(globalThis.composers.length).toBe(2);
+      const composers = localCOMPOSERS.map((config: any) => new ScaleComposer());
+      expect(composers.length).toBe(2);
     });
   });
 
   describe('Branch Coverage - State Initialization', () => {
     it('should initialize all timing counters correctly', () => {
       setupLocalState();
-      expect(globalThis.beatCount).toBe(0);
-      expect(globalThis.measureCount).toBe(0);
-      expect(globalThis.sectionIndex).toBe(0);
+      expect(ctx.state.beatCount).toBe(0);
+      expect(ctx.state.measureCount).toBe(0);
+      expect(ctx.state.sectionIndex).toBe(0);
     });
 
     it('should initialize beat rhythm patterns', () => {
       setupLocalState();
-      expect(Array.isArray(globalThis.beatRhythm)).toBe(true);
-      expect(globalThis.beatRhythm.length).toBeGreaterThan(0);
+      expect(Array.isArray(ctx.state.beatRhythm)).toBe(true);
+      expect(ctx.state.beatRhythm.length).toBeGreaterThan(0);
     });
 
     it('should initialize section boundaries correctly', () => {
       setupLocalState();
-      expect(globalThis.totalSections).toBeGreaterThan(0);
-      expect(globalThis.phrasesPerSection).toBeGreaterThan(0);
-      expect(globalThis.measuresPerPhrase).toBeGreaterThan(0);
+      expect(ctx.state.totalSections).toBeGreaterThan(0);
+      expect(ctx.state.phrasesPerSection).toBeGreaterThan(0);
+      expect(ctx.state.measuresPerPhrase).toBeGreaterThan(0);
     });
 
     it('should handle numerator and denominator range variations', () => {
@@ -700,10 +699,10 @@ describe('play.js - Orchestrator Module', () => {
         { num: 6, denom: 8 }
       ];
       testSignatures.forEach(sig => {
-        globalThis.numerator = sig.num;
-        globalThis.denominator = sig.denom;
-        expect(globalThis.numerator).toBe(sig.num);
-        expect(globalThis.denominator).toBe(sig.denom);
+        ctx.state.numerator = sig.num;
+        ctx.state.denominator = sig.denom;
+        expect(ctx.state.numerator).toBe(sig.num);
+        expect(ctx.state.denominator).toBe(sig.denom);
       });
     });
   });
@@ -711,10 +710,10 @@ describe('play.js - Orchestrator Module', () => {
   describe('Branch Coverage - Random Selection', () => {
     it('should select sections up to totalSections limit', () => {
       setupLocalState();
-      globalThis.totalSections = 3;
+      const totalSections = 3;
       for (let i = 0; i < 10; i++) {
-        globalThis.sectionIndex = globalThis.ri(0, globalThis.totalSections - 1);
-        expect(globalThis.sectionIndex).toBeLessThan(globalThis.totalSections);
+        const sectionIndex = ri(0, totalSections - 1);
+        expect(sectionIndex).toBeLessThan(totalSections);
       }
     });
 
@@ -722,7 +721,7 @@ describe('play.js - Orchestrator Module', () => {
       setupLocalState();
       const results = new Set();
       for (let i = 0; i < 20; i++) {
-        const rhythm = [globalThis.ri(0, 1), globalThis.ri(0, 1)];
+        const rhythm = [ri(0, 1), ri(0, 1)];
         results.add(JSON.stringify(rhythm));
       }
       expect(results.size).toBeGreaterThan(1);

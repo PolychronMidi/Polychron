@@ -1,15 +1,7 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { PentatonicComposer } from '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
-
-const { RandomPentatonicComposer } = globalThis as any;
+import { PentatonicComposer, RandomPentatonicComposer } from '../../src/composers/index.js';
 
 describe('PentatonicComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup; composers import dependencies via DI-friendly modules.
 
   it('should create with major pentatonic by default', () => {
     const composer = new PentatonicComposer('C', 'major');
@@ -51,9 +43,7 @@ describe('PentatonicComposer', () => {
 });
 
 describe('RandomPentatonicComposer', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup; composers import dependencies via DI-friendly modules.
 
   it('should randomly select root and type', () => {
     const composer = new RandomPentatonicComposer();

@@ -314,10 +314,17 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     // Finalize buffer
     let finalBuffer = (Array.isArray(bufferData) ? bufferData : bufferData.rows)
       .filter((i: any) => i !== null)
-      .map((i: any) => ({
-        ...i,
-        tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * (env.rf ? env.rf(.1, .3) : rf(.1, .3)) : i.tick
-      }))
+      .map((i: any) => {
+        // Normalize tick values defensively to avoid NaN/infinite values in output
+        const rawTick = i.tick;
+        let tickVal = Number.isFinite(rawTick) ? rawTick : Math.abs(rawTick || 0) * (env.rf ? env.rf(.1, .3) : rf(.1, .3));
+        if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
+        return {
+          ...i,
+          tick: tickVal,
+          vals: Array.isArray(i.vals) ? i.vals.map((v: any) => Number.isFinite(v) ? v : (typeof v === 'number' ? 0 : v)) : i.vals
+        };
+      })
       .sort((a: any, b: any) => a.tick - b.tick);
 
     // Generate CSV
@@ -325,9 +332,10 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     let finalTick = 0;
 
     finalBuffer.forEach((evt: any) => {
-      if (!isNaN(evt.tick)) {
+      if (Number.isFinite(evt.tick)) {
         const type = evt.type === 'on' ? 'note_on_c' : (evt.type || 'note_off_c');
-        composition += `1,${evt.tick || 0},${type},${evt.vals.join(',')}\n`;
+        const vals = Array.isArray(evt.vals) ? evt.vals.join(',') : evt.vals;
+        composition += `1,${evt.tick || 0},${type},${vals}\n`;
         finalTick = Math.max(finalTick, evt.tick || 0);
       }
     });

@@ -1,6 +1,9 @@
 // @ts-check
 // ProgressionGenerator - Generates common harmonic progressions using Roman numeral analysis
 
+import * as tonal from 'tonal';
+import { ri } from '../utils.js';
+
 /**
  * Generates common harmonic progressions using Roman numeral analysis.
  * @class
@@ -19,8 +22,8 @@ class ProgressionGenerator {
     this.key = key;
     this.quality = quality.toLowerCase();
 
-    const tLocal = (deps && deps.t) || (globalThis as any).t;
-    const riLocal = (deps && deps.ri) || (globalThis as any).ri;
+    const tLocal = (deps && deps.t) || tonal;
+    const riLocal = (deps && deps.ri) || ri;
 
     this._t = tLocal;
     this._ri = riLocal;
@@ -51,7 +54,7 @@ class ProgressionGenerator {
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(
       r => romanNumeral.toUpperCase() === r
     );
-    const tLocal = this._t || (globalThis as any).t;
+    const tLocal = this._t || tonal;
     if (degreeIndex === -1) return null;
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];
@@ -70,7 +73,7 @@ class ProgressionGenerator {
     let rootNote = baseRoot;
 
     if (isFlat || isSharp) {
-      const tLocal = this._t || (globalThis as any).t;
+      const tLocal = this._t || tonal;
       const chromaticNote = tLocal.Note.chroma(rootNote);
       const alteredChroma = isFlat ? chromaticNote - 1 : chromaticNote + 1;
       const pc = tLocal.Note.fromMidi(alteredChroma);
@@ -114,7 +117,7 @@ class ProgressionGenerator {
     const types = (this.romanQuality || this.quality) === 'major'
       ? ['I-IV-V', 'I-V-vi-IV', 'ii-V-I', 'I-vi-IV-V']
       : ['i-iv-v', 'i-VI-VII', 'i-iv-VII', 'ii-V-i'];
-    const riLocal = this._ri || (globalThis as any).ri;
+    const riLocal = this._ri || ri;
     const randomType = types[riLocal(types.length - 1)];
     return this.generate(randomType);
   }

@@ -41,7 +41,7 @@ class PentatonicComposer extends GenericComposer<any> {
 
   itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Scale.get(`${root} ${scaleName}`);
+    this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 }
@@ -58,7 +58,7 @@ Loads pentatonic scale notes by root.
 ```typescript
 itemSet(scaleName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Scale.get(`${root} ${scaleName}`);
+    this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }
 ```
@@ -74,7 +74,7 @@ Random root/type selection each tick.
 ```typescript
 class RandomPentatonicComposer extends PentatonicComposer {
   constructor() {
-    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
+    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
     const randomType = ['major', 'minor'][g.ri(1)];
     super(randomRoot, randomType);
   }

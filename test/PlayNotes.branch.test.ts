@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PlayNotes } from '../src/playNotes';
-import { createTestContext } from './helpers.js';
+import { createTestContext } from './helpers.module.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 
 describe('PlayNotes - branch tests', () => {

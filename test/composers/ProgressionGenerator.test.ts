@@ -1,23 +1,17 @@
-import '../../src/sheet.js';
-import '../../src/venue.js';
-import '../../src/composers.js';
-import { setupGlobalState } from '../helpers.js';
 
 import { ProgressionGenerator } from '../../src/composers/ProgressionGenerator';
 
 describe('ProgressionGenerator', () => {
-  beforeEach(() => {
-    setupGlobalState();
-  });
+  // No global setup required; ProgressionGenerator uses internal deps by default.
 
   it('should create with key and quality', () => {
-    const gen = new ProgressionGenerator('C', 'major', { t: globalThis.t, ri: (n: number) => 0 });
+    const gen = new ProgressionGenerator('C', 'major', { ri: (n: number) => 0 });
     expect(gen.key).toBe('C');
     expect(gen.quality).toBe('major');
   });
 
   it('should generate I-IV-V progression in major', () => {
-    const gen = new ProgressionGenerator('C', 'major', { t: globalThis.t, ri: (n: number) => 0 });
+    const gen = new ProgressionGenerator('C', 'major', { ri: (n: number) => 0 });
     const prog = gen.generate('I-IV-V');
     expect(prog).toBeDefined();
     expect(prog.length).toBeGreaterThan(0);
@@ -25,7 +19,7 @@ describe('ProgressionGenerator', () => {
   });
 
   it('should generate ii-V-I jazz turnaround', () => {
-    const gen = new ProgressionGenerator('C', 'major', { t: globalThis.t, ri: (n: number) => 0 });
+    const gen = new ProgressionGenerator('C', 'major', { ri: (n: number) => 0 });
     const prog = gen.generate('ii-V-I');
     expect(prog).toBeDefined();
     expect(prog.length).toBe(3);
@@ -53,7 +47,7 @@ describe('ProgressionGenerator', () => {
   });
 
   it('should generate circle of fifths', () => {
-    const gen = new ProgressionGenerator('C', 'major', { t: globalThis.t, ri: (n: number) => 0 });
+    const gen = new ProgressionGenerator('C', 'major', { ri: (n: number) => 0 });
     const prog = gen.generate('circle');
     expect(prog).toBeDefined();
     expect(prog.length).toBeGreaterThan(4);
