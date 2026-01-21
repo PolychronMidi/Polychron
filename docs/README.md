@@ -36,7 +36,7 @@ Complete reference documentation for all Polychron modules.
 
 - **[ChordComposer](composers/ChordComposer.md)** — `ChordComposer.ts` generates chord tones from a progression, supporting normalization, validation, and directional traversal. A random variant regenerates a new progression on each tick.
 
-- **[ComposerRegistry](ComposerRegistry.md)** — `ComposerRegistry` provides a typed registry and factory methods to create composer instances by `type`.
+- **[ComposerRegistry](ComposerRegistry.md)** — `ComposerRegistry.ts` is the singleton registry that wires composer **type keys** (e.g., `scale`, `chords`, `mode`) to factory functions that construct composers. It centralizes registration, lookup, and default wiring for built-in composers while allowing custom composer injection.
 
 - **[composers](composers.md)** — `composers.ts` is a stub module that re-exports composer classes and the registry from the global scope. It allows downstream modules to import composers via a single stable entry point rather than from the internal `composers/` subdirectory.
 
@@ -62,9 +62,9 @@ Complete reference documentation for all Polychron modules.
 
 - **[venue](venue.md)** — `venue.ts` provides music theory constants, MIDI data tables, and lookup functions for scales, chords, modes, and pitch mappings. It centralizes all music theory knowledge to avoid duplication and ensure consistency across composers.
 
-- **[voiceLeading](voiceLeading.md)** — `voiceLeading.ts` provides utilities for maintaining smooth voice leading across chord changes and harmonic progressions. It coordinates smooth pitch transitions, handles voice doubling, avoids parallel fifths/octaves, and ensures smooth voice independence across staves/channels.
+- **[voiceLeading](voiceLeading.md)** — `voiceLeading.ts` provides utilities for maintaining smooth voice leading across chord changes and harmonic progressions. It coordinates smooth pitch changes, handles voice doubling, avoids parallel fifths/octaves, and ensures smooth voice independence across staves/channels.
 
-- **[VoiceLeadingScore](voiceLeading/VoiceLeadingScore.md)** — `VoiceLeadingScore` implements classical voice leading rules with cost-based optimization. It evaluates chord transitions for smoothness (minimizing voice jumps), checks voice range constraints, enforces leap recovery rules, detects voice crossing, and avoids parallel fifths/octaves.
+- **[VoiceLeadingScore](voiceLeading/VoiceLeadingScore.md)** — `VoiceLeadingScore` implements classical voice leading rules with cost-based optimization. It evaluates chord changes for smoothness (minimizing voice jumps), checks voice range constraints, enforces leap recovery rules, detects voice crossing, and avoids parallel fifths/octaves.
 
 ## Configuration
 
@@ -84,13 +84,13 @@ Complete reference documentation for all Polychron modules.
 
 - **[CancellationToken](CancellationToken.md)** — `CancellationToken.ts` provides a lightweight, cooperative cancellation mechanism for long-running or asynchronous operations. It enables callers to request cancellation and callee code to check and respond without forcing abrupt termination.
 
-- **[CompositionContext](CompositionContext.md)** — `CompositionContext.ts` constructs and threads a single context object containing state, services, timing/logging hooks, and progress/cancellation wiring. It also provides helpers to sync this context to legacy globals during migration.
+- **[CompositionContext](CompositionContext.md)** — `CompositionContext.ts` constructs and threads a single context object containing state, services, timing/logging hooks, and progress/cancellation wiring. It also provides helpers to sync this context to globals for certain initialization flows.
 
 - **[CompositionProgress](CompositionProgress.md)** — `CompositionProgress.ts` defines the progress phases, payloads, cancellation token, and a lightweight event bus for UI/controllers to observe composition state. It separates progress reporting from the main event bus and provides a simple cancellation hook.
 
 - **[CompositionState](CompositionState.md)** — `CompositionState.ts` defines the full mutable state for a composition run, covering sections, phrases, measures, beats, subdivisions, timing, rhythms, polyrhythms, active composer/motif, and binaural/stutter parameters. The `CompositionStateService` implements the interface and provides sync/reset helpers.
 
-- **[DIContainer](DIContainer.md)** — `DIContainer.ts` provides a minimal dependency injection container supporting singleton and transient lifecycles. It is used to register factories, resolve services, and manage a global container for convenience in tests and legacy code.
+- **[DIContainer](DIContainer.md)** — `DIContainer.ts` provides a minimal dependency injection container supporting singleton and transient lifecycles. It is used to register factories, resolve services, and manage a global container for convenience in tests and optional global access.
 
 - **[EventBus](EventBus.md)** — `EventBus.ts` provides a typed, singleton event bus for composition lifecycle events. It supports sync/async emission, one-time listeners, bounded history, and helper emitters for common lifecycle signals.
 

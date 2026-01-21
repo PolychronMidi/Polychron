@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const root = process.cwd();
-const allowlist = JSON.parse(fs.readFileSync(path.join(root, '.global-allowlist.json'), 'utf8')).allowed;
+// Enforce zero globalThis assignments: any `globalThis.X = ...` in `src/` is now considered a violation.
 
 function scanDir(dir: string): string[] {
   const res: string[] = [];
@@ -20,7 +20,7 @@ function scanDir(dir: string): string[] {
 }
 
 describe('No new globalThis assignments', () => {
-  it('should not assign new properties to globalThis outside allowlist', () => {
+  it('should not assign to globalThis anywhere in `src`', () => {
     const files = scanDir(path.join(root, 'src'));
     const violations: string[] = [];
     const re = /globalThis\.([a-zA-Z0-9_$]+)\s*=\s*/g;
@@ -29,9 +29,7 @@ describe('No new globalThis assignments', () => {
       let m;
       while ((m = re.exec(txt)) !== null) {
         const name = m[1];
-        if (!allowlist.includes(name)) {
-          violations.push(`${f}: globalThis.${name}`);
-        }
+        violations.push(`${f}: globalThis.${name}`);
       }
     }
     expect(violations.length, String(violations.slice(0, 10).join(', '))).toBe(0);

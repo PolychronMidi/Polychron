@@ -1,6 +1,6 @@
 // backstage.ts - Core utilities, randomization, and MIDI infrastructure.
 // minimalist comments, details at: backstage.md
-// Utilities re-exported from utils.ts for backward compatibility
+// Utilities re-exported from utils.ts
 export {
   clamp, modClamp, lowModClamp, highModClamp, scaleClamp, scaleBoundClamp, softClamp, stepClamp, logClamp, expClamp,
   rf, randomFloat, ri, randomInt, rl, randomLimitedChange, rv, randomVariation, rw, randomWeightedInRange, ra, randomInRangeOrArray,
@@ -101,7 +101,7 @@ const stutterPanCHs = [cCH1, cCH2, cCH3, drumCH];
 const FX = [1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95];
 
 /**
- * Send All Notes Off CC (123) to prevent sustain across transitions.
+ * Send All Notes Off CC (123) to prevent sustain across section changes.
  */
 const allNotesOff = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));

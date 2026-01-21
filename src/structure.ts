@@ -89,7 +89,7 @@ export const resolveSectionProfile = (sectionType: any = null): SectionProfile =
   };
 };
 
-// Attach to globalThis for backward compatibility
+// Expose to globalThis
 (globalThis as any).normalizeSectionType = normalizeSectionType;
 (globalThis as any).selectSectionType = selectSectionType;
 (globalThis as any).resolveSectionProfile = resolveSectionProfile;

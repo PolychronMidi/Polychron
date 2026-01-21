@@ -1,22 +1,22 @@
 # CompositionContext.ts - Shared Composition Runtime
 
-> **Status**: Core Context  
+> **Status**: Core Context
 > **Dependencies**: CompositionStateService, DIContainer, CompositionProgress, time.ts, writer.ts
 
 
 ## Overview
 
-`CompositionContext.ts` constructs and threads a single context object containing state, services, timing/logging hooks, and progress/cancellation wiring. It also provides helpers to sync this context to legacy globals during migration.
+`CompositionContext.ts` constructs and threads a single context object containing state, services, timing/logging hooks, and progress/cancellation wiring. It also provides helpers to sync this context to globals for certain initialization flows.
 
 **Core Responsibilities:**
 - Build a typed context (`ICompositionContext`) with state, DI container, event bus, composers/config, progress/cancellation, and logging hooks
-- Sync context to/from globals for backward compatibility
+- Sync context to/from globals for tests or initialization flows
 - Expose CompositionStateService for consumers
 
 ## Architecture Role
 
 - Used by initialization to carry shared services through composition calls instead of globalThis
-- Supports progressive migration by syncing state/config to legacy globals when needed
+- Supports staged replacement by syncing state/config to globals when needed
 
 ---
 
@@ -32,27 +32,27 @@ Shape of the composition context passed through the system.
 export interface ICompositionContext {
   // State management
   state: CompositionStateService;
-  
+
   // Configuration and environment
   BPM: number;
   PPQ: number;
   SECTIONS: { min: number; max: number };
   COMPOSERS: any[];
-  
+
   // Services (DI container)
   container: DIContainer;
   eventBus: CompositionEventBus;
-  
+
   // Progress tracking
   progressCallback?: ProgressCallback;
   cancellationToken?: CancellationToken;
-  
+
   // CSV output buffer
   csvBuffer: any;
-  
+
   // Logging
   LOG: string;
-  
+
   // Timing functions
   logUnit: (unitType: string) => void;
   setUnitTiming: (unitType: string) => void;
@@ -67,11 +67,11 @@ Build a fresh context with state, services, config, progress hooks, and logging 
 
 ### `syncContextToGlobals(ctx)`
 
-Copy context state/config/services to `globalThis` for legacy consumers.
+Copy context state/config/services to `globalThis` for certain consumers.
 
 ### `loadContextFromGlobals(container, eventBus)`
 
-Create a context using legacy globals, then sync state into the new service.
+Create a context using globals, then sync state into the new service.
 
 ### `CompositionStateService`
 

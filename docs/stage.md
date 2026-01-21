@@ -155,7 +155,7 @@ export class Stage {
         ...g.binauralL.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.lCH1 || ch === g.lCH3 || ch === g.lCH5 ? (flipBin ? g.binauralMinus : g.binauralPlus) : (flipBin ? g.binauralPlus : g.binauralMinus)] })),
         ...g.binauralR.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.rCH1 || ch === g.rCH3 || ch === g.rCH5 ? (flipBin ? g.binauralPlus : g.binauralMinus) : (flipBin ? g.binauralMinus : g.binauralPlus)] })),
       );
-      // flipBin (flip binaural) volume transition
+      // flipBin (flip binaural) volume change
       const startTick = beatStart - tpSec / 4;
       const endTick = beatStart + tpSec / 4;
       const steps = 10;
@@ -453,7 +453,7 @@ setBinaural(ctx: ICompositionContext): void {
         ...g.binauralL.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.lCH1 || ch === g.lCH3 || ch === g.lCH5 ? (flipBin ? g.binauralMinus : g.binauralPlus) : (flipBin ? g.binauralPlus : g.binauralMinus)] })),
         ...g.binauralR.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.rCH1 || ch === g.rCH3 || ch === g.rCH5 ? (flipBin ? g.binauralPlus : g.binauralMinus) : (flipBin ? g.binauralMinus : g.binauralPlus)] })),
       );
-      // flipBin (flip binaural) volume transition
+      // flipBin (flip binaural) volume change
       const startTick = beatStart - tpSec / 4;
       const endTick = beatStart + tpSec / 4;
       const steps = 10;

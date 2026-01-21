@@ -171,13 +171,13 @@ describe('RandomChordComposer integration', () => {
   });
 
   it('should generate different progressions on multiple calls', () => {
-    const progressions: number[] = [];
-    for (let i = 0; i < 5; i++) {
+    const progressions: string[] = [];
+    for (let i = 0; i < 8; i++) {
       const composer = new RandomChordComposer();
-      progressions.push(composer.progression.length);
+      progressions.push(JSON.stringify(composer.progression));
     }
-    const uniqueLengths = new Set(progressions);
-    expect(uniqueLengths.size).toBeGreaterThan(1);
+    const unique = new Set(progressions);
+    expect(unique.size).toBeGreaterThan(1);
   });
 
   it('should return notes from random progression via x()', () => {

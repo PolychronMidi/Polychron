@@ -17,7 +17,7 @@ This document summarizes Polychron's **Test Protocol** and practical guidance fo
 
 - **Test real implementations, not mocks.** Tests must catch actual integration bugs and avoid divergence between mocks and real code.
 - **Side-effect imports first.** Use top-level side-effect imports for global initialization (e.g., `import '../../src/sheet.js'`) then import specific symbols.
-- **Use `setupGlobalState()` only for legacy tests; prefer `createTestState()` and dependency injection.** When migrating, keep tests passing while replacing global state usage incrementally.
+- **Use `setupGlobalState()` only for existing tests that rely on globals; prefer `createTestState()` and dependency injection.** When updating tests, keep tests passing while replacing global state usage incrementally.
 - **Instrumentation via `__POLYCHRON_TEST__`.** Use `globalThis.__POLYCHRON_TEST__` to toggle logging, inject instrumentation, and observe internal state.
 - **Vitest integration.** Tests use Vitest as the framework and prefer `--run` for CI runs. Use `npm run test` locally to run the full suite.
 
@@ -104,7 +104,7 @@ export function setupGlobalState(): void {
   globalThis.denominator = 4;
   globalThis.BPM = 120;
   globalThis.PPQ = 480;
-  // ...other legacy global resets
+  // ...other existing global resets
 }
 ```
 <!-- END: snippet:TestHelpers_setupGlobalState -->
@@ -147,9 +147,9 @@ npm run docs:check  # CI-safe docs validation
 
 ---
 
-## Migration Tips
+## Update Tips
 
-- When migrating tests away from globals, prefer `createTestState()` + passing explicit context.
+- When updating tests away from globals, prefer `createTestState()` + passing explicit context.
 - Add integration tests that exercise multiple modules together rather than unit tests that mock core modules.
 
 ---

@@ -1,21 +1,33 @@
-// composers.ts - Stub that re-exports from composers/index.ts
-// This stub allows downstream modules like play.ts and stage.ts to import from .ts
+// composers.ts - Re-export composers as named exports from the composers module
+// Import composers module (which now provides named exports)
+import {
+  MeasureComposer,
+  ScaleComposer,
+  RandomScaleComposer,
+  ChordComposer,
+  RandomChordComposer,
+  ModeComposer,
+  RandomModeComposer,
+  PentatonicComposer,
+  RandomPentatonicComposer,
+  ProgressionGenerator,
+  ComposerFactory
+} from './composers/index.js';
 
-// Import the TypeScript module from composers directory
-import './composers/index.js';
-
-// Import the new ComposerRegistry
+// Import ComposerRegistry for side effects
 import './ComposerRegistry.js';
 
-// Re-export all composers classes and functions from global scope
-const g = globalThis as any;
-export const MeasureComposer = g.MeasureComposer;
-export const ScaleComposer = g.ScaleComposer;
-export const ChordComposer = g.ChordComposer;
-export const ModeComposer = g.ModeComposer;
-export const PentatonicComposer = g.PentatonicComposer;
-export const ComposerFactory = g.ComposerFactory; // Legacy support
-export const Composer = g.Composer;
-
-// Re-export new typed registry
-export const ComposerRegistry = g.ComposerRegistry;
+// Re-export named composers for consumers
+export {
+  MeasureComposer,
+  ScaleComposer,
+  RandomScaleComposer,
+  ChordComposer,
+  RandomChordComposer,
+  ModeComposer,
+  RandomModeComposer,
+  PentatonicComposer,
+  RandomPentatonicComposer,
+  ProgressionGenerator,
+  ComposerFactory
+};

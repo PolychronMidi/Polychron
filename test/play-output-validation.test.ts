@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initializePlayEngine } from '../src/play.js';
+import { setupGlobalState, createTestContext } from './helpers.js';
+import { registerWriterServices } from '../src/writer.js';
+
+beforeEach(() => {
+  setupGlobalState();
+  const ctx = createTestContext();
+  registerWriterServices(ctx.services);
+});
 
 describe('Play Engine Note Generation', () => {
   it('should generate note events when running composition', async () => {

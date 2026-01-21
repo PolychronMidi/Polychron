@@ -1,5 +1,5 @@
 // composers/index.ts - Modular composer system
-// This file organizes composer classes into logical modules while maintaining backward compatibility
+// This file organizes composer classes into logical modules and preserves module exports
 
 // Load dependencies
 import '../backstage.js';  // Load global utilities (m, rf, ri, ra, etc.)
@@ -359,13 +359,23 @@ class ComposerFactory {
  */
 let composers: any[] = [];  // Lazy-loaded in play.ts when all systems are ready
 
-// Export to global scope for backward compatibility
-g.TensionReleaseComposer = TensionReleaseComposer;
-g.ModalInterchangeComposer = ModalInterchangeComposer;
-g.HarmonicRhythmComposer = HarmonicRhythmComposer;
-g.MelodicDevelopmentComposer = MelodicDevelopmentComposer;
-g.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
-g.ComposerFactory = ComposerFactory;
-g.composers = composers;
-
-
+// Named exports for composers (DI-friendly; avoid attaching to globalThis)
+export {
+  MeasureComposer,
+  ScaleComposer,
+  RandomScaleComposer,
+  ChordComposer,
+  RandomChordComposer,
+  ModeComposer,
+  RandomModeComposer,
+  PentatonicComposer,
+  RandomPentatonicComposer,
+  ProgressionGenerator,
+  TensionReleaseComposer,
+  ModalInterchangeComposer,
+  HarmonicRhythmComposer,
+  MelodicDevelopmentComposer,
+  AdvancedVoiceLeadingComposer,
+  ComposerFactory,
+  composers
+};

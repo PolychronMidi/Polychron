@@ -14,8 +14,8 @@
 <!-- END: docs-autogen-note -->
 
 <!-- BEGIN: test-status -->
-1/20 16:27:21 - Latest Status
-- Tests 1320/1320 - 100%
+1/20 22:54:31 - Latest Status
+- Tests 1313/1313 - 100%
 - Lint 0 errors / 0 warnings
 - Type-check 0 errors / 0 warnings
 - Coverage 76.5% (Statements: 76% Lines: 76.5% Branches: 58.2% Functions: 74.5%)
@@ -26,9 +26,9 @@
 - **Docs index auto-generated**: `docs/README.md` now includes an **AUTO-GENERATED** header and can be regenerated with `node scripts/docs.js index` or `npm run docs:fix`.
 - **Testing & onboarding**: Added `docs/test.md` (Testing Guide), `scripts/onboard.js` (onboarding helper), and the `am-i-done` TODO validator (`scripts/am-i-done.js`).
 - **CI & coverage helpers**: Added `scripts/annotate-failure.js`, `scripts/check-coverage-threshold.js`, and `.coverage-baseline.json` to support CI checks and clearer failure reporting.
-- **Migration support**: Migration shims (`attachToGlobal()` / `detachFromGlobal()`) were added for `writer`, `time`, and `venue` along with `docs/migration-global-to-export.md` to guide phasing out `globalThis`.
+- **Global test helpers**: Global test helpers were added for `writer`, `time`, and `venue` to support test setups.
 
-Polychron is an advanced MIDI composition system that breaks free from traditional MIDI limitations, particularly in the realm of time signatures (meters). The core innovation lies in its ability to work with any musical meter through a process called "meter spoofing" while maintaining compatibility with standard MIDI playback systems.
+Polychron is an advanced MIDI composition system that breaks free from traditional MIDI limitations, particularly in the realm of time signatures (meters). The core innovation lies in its ability to work with any musical meter through a process called "meter spoofing" while supporting standard MIDI playback systems.
 
 ## Key Features
 
@@ -179,7 +179,7 @@ All Polychron source files are comprehensively documented in the [/docs](docs/) 
 ### Advanced Randomization
 - **Weighted Selection**: Probability distributions for all parameters
 - **Dual-Range Support**: Simultaneous selection from multiple ranges
-- **Limited Change**: Constrained variation for smooth transitions
+- **Limited Change**: Constrained variation for smooth changes
 - **Context-Aware**: Adapts based on current musical context
 - **Variation Systems**: Random variation with frequency control
 
@@ -187,7 +187,7 @@ All Polychron source files are comprehensively documented in the [/docs](docs/) 
 - **Alpha Range**: 8-12Hz frequency offsets
 - **Pitch Bend Calculation**: Converts frequency to MIDI pitch bend values
 - **Channel Mapping**: Left/right channel assignments for spatial effects
-- **Volume Crossfades**: Smooth transitions between binaural states
+- **Volume Crossfades**: Smooth changes between binaural states
 - **Instrument Variation**: Random program changes for diversity
 
 ### Stutter Effects Engine

@@ -15,6 +15,8 @@ declare let c: any;
  * FxManager class - Manages stutter effects (fade, pan, FX parameter changes) and channel state.
  * Tracks recently-used channels to avoid repetition; applies rapid automation to MIDI events.
  */
+import { requirePush } from './writer.js';
+
 class FxManager {
   private lastUsedCHs: Set<number>;
   private lastUsedCHs2: Set<number>;
@@ -28,10 +30,12 @@ class FxManager {
   /**
    * Applies rapid volume stutter/fade effect to selected channels
    */
-  stutterFade(channels: number[], numStutters?: number, duration?: number): void {
+  stutterFade(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
     const g = globalThis as any;
     numStutters = numStutters || g.ri(10, 70);
     duration = duration || g.tpSec * g.rf(0.2, 1.5);
+
+    const pFn = requirePush(ctx);
 
     const CHsToStutter = g.ri(1, 5);
     const channelsToStutter = new Set<number>();
@@ -64,20 +68,22 @@ class FxManager {
         } else {
           volume = g.modClamp(Math.floor(100 * (1 - i / (effectiveNumStutters - 1))), 25, 100);
         }
-        g.p(g.c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, Math.round(volume / g.rf(1.5, 5))] });
-        g.p(g.c, { tick: tick + duration * g.rf(0.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
+        pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, Math.round(volume / g.rf(1.5, 5))] });
+        pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
       }
-      g.p(g.c, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
+      pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
     });
   }
 
   /**
    * Applies rapid pan stutter effect to selected channels
    */
-  stutterPan(channels: number[], numStutters?: number, duration?: number): void {
+  stutterPan(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
     const g = globalThis as any;
     numStutters = numStutters || g.ri(30, 90);
     duration = duration || g.tpSec * g.rf(0.1, 1.2);
+
+    const pFn = requirePush(ctx);
 
     const CHsToStutter = g.ri(1, 2);
     const channelsToStutter = new Set<number>();
@@ -116,19 +122,21 @@ class FxManager {
         }
         currentPan += direction * (fullRange / effectiveNumStutters) * g.rf(0.5, 1.5);
         currentPan = g.modClamp(Math.floor(currentPan), edgeMargin, 127 - edgeMargin);
-        g.p(g.c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
+        pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
       }
-      g.p(g.c, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
+      pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
     });
   }
 
   /**
    * Applies rapid FX parameter stutter effect to selected channels
    */
-  stutterFX(channels: number[], numStutters?: number, duration?: number): void {
+  stutterFX(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
     const g = globalThis as any;
     numStutters = numStutters || g.ri(30, 100);
     duration = duration || g.tpSec * g.rf(0.1, 2);
+
+    const pFn = requirePush(ctx);
 
     const CHsToStutter = g.ri(1, 2);
     const channelsToStutter = new Set<number>();
@@ -158,9 +166,9 @@ class FxManager {
         tick = g.beatStart + (i * (duration / effectiveNumStutters) * g.rf(0.9, 1.1));
         const progress = i / (effectiveNumStutters - 1);
         const currentValue = Math.floor(startValue + (endValue - startValue) * progress);
-        g.p(g.c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
+        pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
       }
-      g.p(g.c, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
+      pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
     });
   }
 

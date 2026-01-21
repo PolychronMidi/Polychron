@@ -1,6 +1,6 @@
 # CompositionState.ts - Central Composition State Service
 
-> **Status**: Core State  
+> **Status**: Core State
 > **Dependencies**: None (data-only)
 
 
@@ -11,7 +11,7 @@
 **Core Responsibilities:**
 - Hold all counters and timing values for composition traversal
 - Track rhythm patterns/counters and active composer/motif references
-- Sync to/from legacy globals for backward compatibility
+- Sync to/from globals for tests or certain initialization flows
 - Reset state between runs/tests
 
 ## Architecture Role
@@ -308,7 +308,7 @@ export class CompositionStateService implements CompositionState {
   }
 
   /**
-   * Sync state from globalThis (for test setup compatibility)
+   * Sync state from globalThis (for test setup)
    */
   syncFromGlobal() {
     const g = globalThis as any;
@@ -354,7 +354,7 @@ export class CompositionStateService implements CompositionState {
 
 #### `syncToGlobal()` / `syncFromGlobal()`
 
-Mirror state to/from `globalThis` for legacy compatibility.
+Mirror state to/from `globalThis` for certain initialization flows.
 
 <!-- BEGIN: snippet:CompositionStateService_syncToGlobal -->
 

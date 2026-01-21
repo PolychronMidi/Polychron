@@ -1,6 +1,6 @@
 // test/backstage.test.js
 import { clamp, clampWrap, pickArbitrary, pickWeighted, gaus, trigMTX, logUnit } from '../src/backstage.js';
-import { pushMultiple as p } from '../src/writer.js';
+import { pushMultiple as p, CSVBuffer } from '../src/writer.js';
 import { LayerManager, TimingContext } from '../src/time.js';
 import { setupGlobalState } from './helpers.js';
 

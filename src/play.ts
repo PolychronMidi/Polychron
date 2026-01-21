@@ -5,8 +5,8 @@
 import './sheet.js';       // Constants and configuration
 import './venue.js';       // Music theory (scales, chords)
 import './backstage.js';   // Utilities and global state
-import './writer.js';      // Output functions
-import './time.js';        // Timing functions
+import { registerWriterServices } from './writer.js';      // Output functions (DI registration)
+import { registerTimeServices } from './time.js';        // Timing functions (DI registration)
 import './composers.js';   // Composer classes
 import './motifs.js';      // Motif generation
 import './rhythm.js';      // Rhythm generation
@@ -16,7 +16,7 @@ import { fxManager } from './fxManager.js';
 import './stage.js';       // Audio processing
 import './structure.js';   // Section structure
 
-// Initialize PolychronContext (architecture migration)
+// Initialize PolychronContext
 import { initializePolychronContext } from './PolychronInit.js';
 
 // Dependency Injection Container
@@ -79,12 +79,12 @@ declare let composer: any;
 // ============================================================
 
 // Module-level composition context (Step 12: Context threading)
-// Made available during composition for gradual migration from globals
+// Made available during composition to replace globals
 let currentCompositionContext: ICompositionContext | null = null;
 
 /**
  * Set the current composition context for use by module functions
- * This enables gradual migration from global state to context-based architecture
+ * This replaces global state with context-based architecture
  */
 const setCurrentCompositionContext = (ctx: ICompositionContext | null): void => {
   currentCompositionContext = ctx;
@@ -100,7 +100,7 @@ const getCurrentCompositionContext = (): ICompositionContext | null => {
 
 /**
  * Helper to get a value from context state, with fallback to global
- * Part of Step 13: Remove global fallbacks (gradual migration)
+// Part of Step 13: Remove global fallbacks
  *
  * Usage:
  *   const bpm = getContextValue((ctx) => ctx.state.BPM, 'BPM');
@@ -176,12 +176,32 @@ const registerCoreServices = (container: DIContainer) => {
     'singleton'
   );
 
-  // Register CSV Writers (singleton)
+  // Register writer services via DI (preferred)
+  // This ensures writer implementations (pushMultiple, grandFinale, CSVBuffer) are
+  // provided by the `writer` module via `registerWriterServices(container)`.
+  try {
+    // Register writer services (no-op if already registered)
+    // Use static import to avoid top-level await in this module
+    registerWriterServices(container);
+    // DEBUG: Confirm registration
+    // console.log('registerWriterServices called; keys:', container.getServiceKeys());
+  } catch (e) {
+    console.warn('registerWriterServices not available; falling back to legacy writer globals');
+  }
+
+  try {
+    // Register timing services for DI consumers
+    registerTimeServices(container);
+  } catch (e) {
+    console.warn('registerTimeServices not available');
+  }
+
+  // Expose a composite `writers` helper that maps to DI-backed functions when available
   container.register(
     'writers',
     () => ({
-      addToCSV: g.addToCSV,
-      emitMIDI: g.emitMIDI,
+      addToCSV: container.has('pushMultiple') ? container.get('pushMultiple') : g.addToCSV,
+      emitMIDI: container.has('grandFinale') ? container.get('grandFinale') : g.grandFinale
     }),
     'singleton'
   );
@@ -242,6 +262,8 @@ const initializePlayEngine = async (
   registerCoreServices(container);
   g.DIContainer = container;  // Make available globally for testing/debugging
 
+  // registerCoreServices called; writer services should be available on the container
+
   const compositionState = container.get('compositionState');
   compositionState.BASE_BPM = g.BPM;
   compositionState.syncToGlobal();
@@ -262,6 +284,13 @@ const initializePlayEngine = async (
     g.c || { rows: [] },
     g.LOG || 'none'
   );
+
+  // Ensure the composition context also has writer services available (defensive)
+  try {
+    registerWriterServices((ctx as any).services || (ctx as any).container);
+  } catch (e) {
+    // If registration fails, continue and let requirePush throw meaningful error downstream
+  }
 
   // Make context available to module functions
   setCurrentCompositionContext(ctx);
@@ -350,12 +379,12 @@ const initializePlayEngine = async (
 
             for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
               ctx.setUnitTiming('subdivision');
-              g.stage.playNotes();
+              g.stage.playNotes(ctx);
             }
 
             for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
                 ctx.setUnitTiming('subsubdivision');
-              g.stage.playNotes2();
+              g.stage.playNotes2(ctx);
             }
           }
         }
@@ -385,12 +414,12 @@ const initializePlayEngine = async (
 
             for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
               ctx.setUnitTiming('subdivision');
-              g.stage.playNotes();
+              g.stage.playNotes(ctx);
             }
 
             for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
               ctx.setUnitTiming('subsubdivision');
-              g.stage.playNotes2();
+              g.stage.playNotes2(ctx);
             }
           }
         }
@@ -418,7 +447,18 @@ const initializePlayEngine = async (
 
   cancellationToken?.throwIfRequested();
 
-  g.grandFinale();
+  // Prefer DI-registered writer for finalization rather than relying on a global
+  try {
+    const grandFinaleFn = container.get('grandFinale');
+    if (typeof grandFinaleFn === 'function') grandFinaleFn();
+  } catch (e) {
+    // If DI is missing, fall back to any global (keeps legacy behavior for now)
+    if (typeof g.grandFinale === 'function') {
+      g.grandFinale();
+    } else {
+      throw e;
+    }
+  }
 
   // Report complete
   progressCallback?.({
@@ -432,7 +472,7 @@ const initializePlayEngine = async (
 };;
 
 // Export initialization function and context accessors (Step 12: Context threading)
-// Export helper for Step 13: Remove global fallbacks (gradual migration)
+// Export helper for Step 13: Remove global fallbacks
 export {
   initializePlayEngine,
   getCurrentCompositionContext,
@@ -440,9 +480,11 @@ export {
   getContextValue
 };
 
-// Expose to globalThis for backward compatibility
+// Expose to globalThis
 (globalThis as any).initializePlayEngine = initializePlayEngine;
 
-initializePlayEngine().catch((err) => {
-  console.error('Composition engine failed:', err);
-});
+if (process.env.NODE_ENV !== 'test') {
+  initializePlayEngine().catch((err) => {
+    console.error('Composition engine failed:', err);
+  });
+}

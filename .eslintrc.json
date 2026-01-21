@@ -29,7 +29,7 @@
       "warn",
       {
         "selector": "AssignmentExpression[left.object.name='globalThis']",
-        "message": "Avoid assigning to globalThis (use DI/exports). If necessary, add an entry to .global-allowlist.json and justify in migration TODO."
+        "message": "Avoid assigning to globalThis (use DI/exports). If an exception is truly required, justify it in a code comment and open an issue for review."
       }
     ]
   }

@@ -116,8 +116,9 @@ export function setupGlobalState(): void {
   // Ensure DI container and writer services are available for tests
   const container = new DIContainer();
   registerWriterServices(container);
-  // For backward compatibility in tests, expose pushMultiple as global p
-  globalThis.p = container.get('pushMultiple');
+  // Writer services are available in DI (registered above). Tests should use DI
+  // directly via `createTestContext()` and `ctx.services.get('pushMultiple')`.
+  // Legacy global exposure has been removed; prefer DI-based access for all tests.
 
   // Ensure venue/theory globals are available for legacy tests
   // Register venue services in DI container (useful for DI-based tests)
@@ -194,4 +195,17 @@ export function setTestValue(key: string, value: any): void {
     globalThis.__POLYCHRON_TEST__ = {};
   }
   (globalThis.__POLYCHRON_TEST__ as any)[key] = value;
+}
+
+// Legacy helper removed: explicit exposure of writer globals is no longer supported.
+// Use `registerWriterServices(ctx.services)` and access writers via the DI container
+// (e.g., `ctx.services.get('pushMultiple')` or the helper `getWriterServices(ctx)`).
+
+// Convenience to obtain writer services from a context without touching globals
+export function getWriterServices(ctx: ICompositionContext) {
+  return {
+    pushMultiple: ctx.services.get('pushMultiple'),
+    grandFinale: ctx.services.get('grandFinale'),
+    CSVBuffer: ctx.services.get('CSVBuffer')
+  } as const;
 }

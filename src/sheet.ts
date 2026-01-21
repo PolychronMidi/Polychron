@@ -9,7 +9,7 @@ import {
   DEFAULT_CONFIG
 } from './PolychronConfig.js';
 
-// Re-export all config values from PolychronConfig for backward compatibility
+// Re-export all config values from PolychronConfig
 export const primaryInstrument = DEFAULT_CONFIG.primaryInstrument;
 export const secondaryInstrument = DEFAULT_CONFIG.secondaryInstrument;
 export const otherInstruments = DEFAULT_CONFIG.otherInstruments;
@@ -35,7 +35,7 @@ export const SUBSUBDIVS = DEFAULT_CONFIG.subsubdivs;
 export const COMPOSERS = DEFAULT_CONFIG.composers;
 export const SILENT_OUTRO_SECONDS = DEFAULT_CONFIG.silentOutroSeconds;
 
-// Export to globalThis for backward compatibility
+// Export to globalThis
 const g = globalThis as any;
 g.NUMERATOR = NUMERATOR;
 g.DENOMINATOR = DENOMINATOR;

@@ -9,12 +9,30 @@ import { initializePlayEngine } from '../src/play.js';
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming } from '../src/time.js';
 import { ScaleComposer } from '../src/composers.js';
 import { setupGlobalState, createTestContext } from './helpers.js';
+import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
 // Setup function to initialize state
 let ctx: ICompositionContext;
+let pFn: any;
+let grandFn: any;
+let CSVBufferCtor: any;
 
 function setupLocalState() {
+  // Use DI-friendly test context for writer services
+  ctx = createTestContext();
+  registerWriterServices(ctx.services);
+  pFn = ctx.services.get('pushMultiple');
+  grandFn = ctx.services.get('grandFinale');
+  CSVBufferCtor = ctx.services.get('CSVBuffer') || (globalThis as any).CSVBuffer;
+  // For legacy runtime code, temporarily expose writer helpers on global in test scope
+  globalThis.p = pFn;
+  globalThis.grandFinale = grandFn;
+  if (typeof globalThis.CSVBuffer === 'undefined') globalThis.CSVBuffer = CSVBufferCtor;
+  // Ensure ctx.csvBuffer is set and global c points to it for legacy tests
+  ctx.csvBuffer = [];
+  globalThis.c = ctx.csvBuffer;
+
   // Clear buffers
   globalThis.c = [];
   globalThis.csvRows = [];
@@ -104,7 +122,7 @@ describe('play.js - Orchestrator Module', () => {
       expect(typeof globalThis.setUnitTiming).toBe('function');
       expect(typeof globalThis.drummer).toBe('function');
       // Note: binaural, stutter, note are internal stage functions not globally exported
-      expect(typeof globalThis.grandFinale).toBe('function');
+      expect(typeof grandFn).toBe('function');
     });
 
     it('should have all composer classes available', () => {
@@ -345,12 +363,12 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should generate drums when called', () => {
-      globalThis.c = [];
+      setupLocalState();
       globalThis.beatStart = 0;
       globalThis.tpBeat = 480;
       globalThis.drumCH = 9;
 
-      drummer(['kick1'], [0]);
+      drummer(['kick1'], [0], undefined, undefined, undefined, undefined, ctx);
 
       expect(Array.isArray(globalThis.c)).toBe(true);
       // Drummer may or may not generate output based on internal logic
@@ -384,27 +402,27 @@ describe('play.js - Orchestrator Module', () => {
 
   describe('Output Functions Integration', () => {
     it('should have CSVBuffer class available', () => {
-      expect(typeof globalThis.CSVBuffer).toBe('function');
-      const buffer = new CSVBuffer('test');
+      expect(typeof CSVBufferCtor).toBe('function');
+      const buffer = new CSVBufferCtor('test');
       expect(buffer.name).toBe('test');
       expect(Array.isArray(buffer.rows)).toBe(true);
     });
 
     it('should have push function (p) available', () => {
-      expect(typeof globalThis.p).toBe('function');
+      expect(typeof pFn).toBe('function');
       const arr = [];
-      p(arr, { test: 1 });
+      pFn(arr, { test: 1 });
       expect(arr.length).toBe(1);
       expect(arr[0].test).toBe(1);
     });
 
     it('should have grandFinale function available', () => {
-      expect(typeof globalThis.grandFinale).toBe('function');
+      expect(typeof grandFn).toBe('function');
     });
 
     it('should support event buffering', () => {
       globalThis.c = [];
-      p(c,
+      pFn(c,
         { tick: 0, type: 'on', vals: [0, 60, 100] },
         { tick: 480, type: 'off', vals: [0, 60, 0] }
       );
@@ -457,10 +475,10 @@ describe('play.js - Orchestrator Module', () => {
 
     it('should maintain event buffer across operations', () => {
       globalThis.c = [];
-      p(c, { tick: 0, type: 'on' });
+      pFn(c, { tick: 0, type: 'on' });
       expect(c.length).toBe(1);
 
-      p(c, { tick: 480, type: 'off' });
+      pFn(c, { tick: 480, type: 'off' });
       expect(c.length).toBe(2);
 
       // Buffer should persist

@@ -1,6 +1,6 @@
 # play.ts - Main Composition Engine & Orchestrator
 
-> **Status**: Core Orchestrator  
+> **Status**: Core Orchestrator
 > **Dependencies**: All composer/timing/output/utility modules
 
 
@@ -16,7 +16,7 @@
 - Drive note rendering across all timing levels via `stage` methods
 - Report composition progress through callback interface (phases, section counts)
 - Support cancellation tokens for stopping long compositions
-- Gradually migrate from global state to context-based architecture (ICompositionContext)
+- Replace global state with context-based architecture (ICompositionContext)
 
 ---
 
@@ -74,9 +74,9 @@ The DI container registers:
 - All composer classes (MeasureComposer, ScaleComposer, ChordComposer, ModeComposer, PentatonicComposer)
 - Music theory utilities (scales, chords, modes, MIDI conversions)
 
-### Context Management (Gradual Migration)
+### Context Management
 
-Three helper functions support gradual migration from global state to context-based architecture:
+Three helper functions support replacing global state with context-based architecture:
 
 - `setCurrentCompositionContext(ctx)` – Make context available to module functions
 - `getCurrentCompositionContext()` – Get current context or null if no composition in progress

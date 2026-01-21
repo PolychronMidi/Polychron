@@ -1,8 +1,8 @@
 // test/rhythm.test.js
 import { drummer, playDrums, playDrums2, drumMap, rhythms, binary, hex, onsets, random, prob, euclid, rotate, morph, setRhythm, makeOnsets, patternLength, closestDivisor, getRhythm, trackRhythm } from '../src/rhythm.js';
 import { rf, ri, rv, ra, m } from '../src/backstage.js';
-import { pushMultiple } from '../src/writer.js';
-import { setupGlobalState, setupTestLogging } from './helpers.js';
+import { setupGlobalState, setupTestLogging, createTestContext, getWriterServices } from './helpers.js';
+import { registerWriterServices } from '../src/writer.js';
 
 // Enable test logging
 setupTestLogging();
@@ -12,8 +12,13 @@ let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bp
 let divsPerBeat, subdivsPerDiv, divRhythm, subdivRhythm;
 
 // Setup global state
+let ctx: any;
 function setupLocalState() {
-  globalThis.c = [];
+  // Create a DI-enabled test context and register writer services
+  ctx = createTestContext();
+  registerWriterServices(ctx.services);
+  ctx.csvBuffer = [];
+  globalThis.c = ctx.csvBuffer;
   globalThis.drumCH = 9;
   globalThis.beatStart = 0;
   globalThis.tpBeat = 480;
@@ -32,7 +37,6 @@ function setupLocalState() {
   globalThis.ri = ri;
   globalThis.rv = rv;
   globalThis.ra = ra;
-  globalThis.p = pushMultiple;
   globalThis.drumMap = {
     'snare1': { note: 31, velocityRange: [99, 111] },
     'kick1': { note: 12, velocityRange: [111, 127] },
@@ -40,7 +44,7 @@ function setupLocalState() {
     'conga1': { note: 60, velocityRange: [66, 77] }
   };
   // Also assign to local for convenience
-  c = globalThis.c;
+  c = ctx.csvBuffer;
   drumCH = globalThis.drumCH;
   beatStart = globalThis.beatStart;
   tpBeat = globalThis.tpBeat;
@@ -85,24 +89,24 @@ describe('drummer', () => {
   });
 
   it('should play single drum at offset 0', () => {
-    drummer(['snare1'], [0]);
+    drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
     expect(c[0].vals[0]).toBe(drumCH);
     expect(c[0].vals[1]).toBe(31); // snare1 note
   });
 
   it('should play multiple drums', () => {
-    drummer(['snare1', 'kick1'], [0, 0.5]);
+    drummer(['snare1', 'kick1'], [0, 0.5], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
   });
 
   it('should handle string input with commas', () => {
-    drummer('snare1,kick1', [0, 0.5]);
+    drummer('snare1,kick1', [0, 0.5], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
   });
 
   it('should handle random drum selection', () => {
-    drummer('random', [0]);
+    drummer('random', [0], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
     const playedNote = c[0].vals[1];
     const allNotes = Object.values(drumMap).map(d => d.note);
@@ -112,25 +116,25 @@ describe('drummer', () => {
   it('should apply offsets correctly', () => {
     beatStart = 0;
     tpBeat = 480;
-    drummer(['snare1'], [0.5]);
+    drummer(['snare1'], [0.5], undefined, undefined, undefined, undefined, ctx);
     const firstTick = c[0].tick;
     expect(firstTick).toBeGreaterThanOrEqual(240); // 0.5 * 480
   });
 
   it('should fill missing offsets with zeros', () => {
-    drummer(['snare1', 'kick1', 'cymbal1'], [0]);
+    drummer(['snare1', 'kick1', 'cymbal1'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
   });
 
   it('should truncate extra offsets', () => {
-    drummer(['snare1'], [0, 0.5, 1, 1.5]);
+    drummer(['snare1'], [0, 0.5, 1, 1.5], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
   });
 
   it('should generate velocities within range', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     setupLocalState();
-    drummer(['snare1'], [0]);
+    drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     const velocity = c[c.length - 1].vals[2];
     expect(velocity).toBeGreaterThanOrEqual(0);
     expect(velocity).toBeLessThanOrEqual(127);
@@ -140,13 +144,13 @@ describe('drummer', () => {
   it('should apply stutter effect occasionally', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.1); // Force stutter
     setupLocalState();
-    globalThis.drummer(['snare1'], [0], globalThis.rf(.1), 1.0);
+    drummer(['snare1'], [0], globalThis.rf(.1), 1.0, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(1);
     vi.restoreAllMocks();
   });
 
   it('should handle non-existent drum gracefully', () => {
-    drummer(['nonexistent'], [0]);
+    drummer(['nonexistent'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBe(0);
   });
 });
@@ -288,7 +292,7 @@ describe('Integration tests', () => {
   it('should generate complete drum sequence', () => {
     beatStart = 0;
     tpBeat = 480;
-    drummer(['kick1', 'snare1', 'cymbal1'], [0, 0.5, 0.75]);
+    drummer(['kick1', 'snare1', 'cymbal1'], [0, 0.5, 0.75], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
     expect(c.every(cmd => cmd.type === 'on')).toBe(true);
     expect(c.every(cmd => cmd.vals[0] === drumCH)).toBe(true);
@@ -322,22 +326,22 @@ describe('Edge cases', () => {
   });
 
   it('should handle zero beat offsets', () => {
-    drummer(['snare1'], [0]);
+    drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c[0].tick).toBe(beatStart);
   });
 
   it('should handle large beat offsets', () => {
-    drummer(['snare1'], [10]);
+    drummer(['snare1'], [10], undefined, undefined, undefined, undefined, ctx);
     expect(c[0].tick).toBeGreaterThan(beatStart);
   });
 
   it('should handle negative offsets gracefully', () => {
-    drummer(['snare1'], [-0.5]);
+    drummer(['snare1'], [-0.5], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
   });
 
   it('should handle empty drum arrays', () => {
-    drummer([], []);
+    drummer([], [], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBe(0);
   });
 
@@ -370,7 +374,7 @@ describe('Probabilistic behavior', () => {
       .mockReturnValue(0.5);
 
     setupLocalState();
-    drummer(['snare1', 'kick1'], [0, 0]);
+    drummer(['snare1', 'kick1'], [0, 0], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
     vi.restoreAllMocks();
   });
@@ -383,7 +387,7 @@ describe('Probabilistic behavior', () => {
     setupLocalState();
     beatStart = 0;
     tpBeat = 480;
-    drummer(['snare1'], [0.5]);
+    drummer(['snare1'], [0.5], undefined, undefined, undefined, undefined, ctx);
     expect(c[0].tick).toBeGreaterThanOrEqual(0);
     vi.restoreAllMocks();
   });
@@ -401,7 +405,7 @@ describe('MIDI compliance', () => {
   });
 
   it('should generate valid MIDI channel numbers', () => {
-    drummer(['snare1', 'kick1'], [0, 0.5]);
+    drummer(['snare1', 'kick1'], [0, 0.5], undefined, undefined, undefined, undefined, ctx);
     c.forEach(cmd => {
       expect(cmd.vals[0]).toBeGreaterThanOrEqual(0);
       expect(cmd.vals[0]).toBeLessThanOrEqual(15);
@@ -409,7 +413,7 @@ describe('MIDI compliance', () => {
   });
 
   it('should generate valid MIDI note numbers', () => {
-    drummer(['snare1', 'kick1'], [0, 0.5]);
+    drummer(['snare1', 'kick1'], [0, 0.5], undefined, undefined, undefined, undefined, ctx);
     c.forEach(cmd => {
       expect(cmd.vals[1]).toBeGreaterThanOrEqual(0);
       expect(cmd.vals[1]).toBeLessThanOrEqual(127);
@@ -419,7 +423,7 @@ describe('MIDI compliance', () => {
   it('should generate valid MIDI velocities', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     setupLocalState();
-    drummer(['snare1'], [0]);
+    drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     c.forEach(cmd => {
       expect(cmd.vals[2]).toBeGreaterThanOrEqual(0);
       expect(cmd.vals[2]).toBeLessThanOrEqual(127);
@@ -428,7 +432,7 @@ describe('MIDI compliance', () => {
   });
 
   it('should use drum channel (9)', () => {
-    drummer(['snare1'], [0]);
+    drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c.every(cmd => cmd.vals[0] === 9)).toBe(true);
   });
 });
@@ -476,7 +480,7 @@ describe('Rhythm pattern generators', () => {
 
   it('drummer function should accept single drum name', () => {
     // drummer(['snare1'], [0.5]) should generate a drum hit
-    drummer(['snare1'], [0.5]);
+    drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c.length).toBeGreaterThan(0);
     // Should use MIDI channel 9 (drums)
     expect(c[0].vals[0]).toBe(9);
@@ -484,7 +488,7 @@ describe('Rhythm pattern generators', () => {
 
   it('drummer function should handle multiple beat offsets', () => {
     setupLocalState();  // Need to setup global state including c
-    drummer(['kick1'], [0, 0.5]);
+    drummer(['kick1'], [0, 0.5], undefined, undefined, undefined, undefined, ctx);
     // With 2 beat offsets, should generate multiple events
     expect(c.length).toBeGreaterThan(0);
   });

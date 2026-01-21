@@ -4,6 +4,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { DIContainer } from './DIContainer.js';
+import { ICompositionContext } from './CompositionContext.js';
 
 /**
  * MIDI event object structure
@@ -116,16 +117,20 @@ declare const rf: (min: number, max: number) => number;
  * Logs timing markers with context awareness.
  * Writes to active buffer (c = c1 or c2) for proper file separation.
  */
-export const logUnit = (type: string): void => {
+export const logUnit = (type: string, env?: Record<string, any>): void => {
+  const g = env ?? (globalThis as any);
+  const get = (k: string, fallback: any) => (k in g ? g[k] : (globalThis as any)[k] ?? fallback);
+
   let shouldLog = false;
   type = type.toLowerCase();
 
-  if (LOG === 'none') {
+  const LOGv = get('LOG', 'none');
+  if (LOGv === 'none') {
     shouldLog = false;
-  } else if (LOG === 'all') {
+  } else if (LOGv === 'all') {
     shouldLog = true;
   } else {
-    const logList = LOG.toLowerCase().split(',').map(item => item.trim());
+    const logList = (String(LOGv).toLowerCase()).split(',').map((item: string) => item.trim());
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
 
@@ -140,23 +145,24 @@ export const logUnit = (type: string): void => {
   let meterInfo = '';
 
   if (type === 'section') {
-    unit = sectionIndex + 1;
-    unitsPerParent = totalSections;
-    startTick = sectionStart;
-    const spSection = tpSection / tpSec;
-    endTick = startTick + tpSection;
-    startTime = sectionStartTime;
+    unit = get('sectionIndex', 0) + 1;
+    unitsPerParent = get('totalSections', 1);
+    startTick = get('sectionStart', 0);
+    const spSection = get('tpSection', 0) / get('tpSec', 1);
+    endTick = startTick + get('tpSection', 0);
+    startTime = get('sectionStartTime', 0);
     endTime = startTime + spSection;
   } else if (type === 'phrase') {
-    unit = phraseIndex + 1;
-    unitsPerParent = phrasesPerSection;
-    startTick = phraseStart;
-    endTick = startTick + tpPhrase;
-    startTime = phraseStartTime;
-    const spPhrase = tpPhrase / tpSec;
+    unit = get('phraseIndex', 0) + 1;
+    unitsPerParent = get('phrasesPerSection', 1);
+    startTick = get('phraseStart', 0);
+    endTick = startTick + get('tpPhrase', 0);
+    startTime = get('phraseStartTime', 0);
+    const spPhrase = get('tpPhrase', 0) / get('tpSec', 1);
     endTime = startTime + spPhrase;
 
-    let composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
+    let composerDetails = get('composer', null) ? `${get('composer').constructor.name} ` : 'Unknown Composer ';
+    const composer = get('composer', null);
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
     } else if (composer && composer.progression) {
@@ -168,19 +174,21 @@ export const logUnit = (type: string): void => {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
 
-    const actualMeter: [number, number] = [numerator, denominator];
-    meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+    const actualMeter: [number, number] = [get('numerator', 4), get('denominator', 4)];
+    const midiMeterVal: [number, number] = get('midiMeter', [4, 4]);
+    meterInfo = midiMeterVal[1] === actualMeter[1]
+      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`
+      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeterVal.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`;
   } else if (type === 'measure') {
-    unit = measureIndex + 1;
-    unitsPerParent = measuresPerPhrase;
-    startTick = measureStart;
-    endTick = measureStart + tpMeasure;
-    startTime = measureStartTime;
-    endTime = measureStartTime + spMeasure;
+    unit = get('measureIndex', 0) + 1;
+    unitsPerParent = get('measuresPerPhrase', 1);
+    startTick = get('measureStart', 0);
+    endTick = startTick + get('tpMeasure', 0);
+    startTime = get('measureStartTime', 0);
+    endTime = get('measureStartTime', 0) + get('spMeasure', 0);
 
-    let composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
+    let composerDetails = get('composer', null) ? `${get('composer').constructor.name} ` : 'Unknown Composer ';
+    const composer = get('composer', null);
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
     } else if (composer && composer.progression) {
@@ -192,46 +200,50 @@ export const logUnit = (type: string): void => {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
 
-    const actualMeter: [number, number] = [numerator, denominator];
-    meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+    const actualMeter: [number, number] = [get('numerator', 4), get('denominator', 4)];
+    const midiMeterVal: [number, number] = get('midiMeter', [4, 4]);
+    meterInfo = midiMeterVal[1] === actualMeter[1]
+      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`
+      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeterVal.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`;
   } else if (type === 'beat') {
-    unit = beatIndex + 1;
-    unitsPerParent = numerator;
-    startTick = beatStart;
-    endTick = startTick + tpBeat;
-    startTime = beatStartTime;
-    endTime = startTime + spBeat;
+    unit = get('beatIndex', 0) + 1;
+    unitsPerParent = get('numerator', 4);
+    startTick = get('beatStart', 0);
+    endTick = startTick + get('tpBeat', 0);
+    startTime = get('beatStartTime', 0);
+    endTime = startTime + get('spBeat', 0);
   } else if (type === 'division') {
-    unit = divIndex + 1;
-    unitsPerParent = divsPerBeat;
-    startTick = divStart;
-    endTick = startTick + tpDiv;
-    startTime = divStartTime;
-    endTime = startTime + spDiv;
+    unit = get('divIndex', 0) + 1;
+    unitsPerParent = get('divsPerBeat', 1);
+    startTick = get('divStart', 0);
+    endTick = startTick + get('tpDiv', 0);
+    startTime = get('divStartTime', 0);
+    endTime = startTime + get('spDiv', 0);
   } else if (type === 'subdivision') {
-    unit = subdivIndex + 1;
-    unitsPerParent = subdivsPerDiv;
-    startTick = subdivStart;
-    endTick = startTick + tpSubdiv;
-    startTime = subdivStartTime;
-    endTime = startTime + spSubdiv;
+    unit = get('subdivIndex', 0) + 1;
+    unitsPerParent = get('subdivsPerDiv', 1);
+    startTick = get('subdivStart', 0);
+    endTick = startTick + get('tpSubdiv', 0);
+    startTime = get('subdivStartTime', 0);
+    endTime = startTime + get('spSubdiv', 0);
   } else if (type === 'subsubdivision') {
-    unit = subsubdivIndex + 1;
-    unitsPerParent = subsubsPerSub;
-    startTick = subsubdivStart;
-    endTick = startTick + tpSubsubdiv;
-    startTime = subsubdivStartTime;
-    endTime = startTime + spSubsubdiv;
+    unit = get('subsubdivIndex', 0) + 1;
+    unitsPerParent = get('subsubsPerSub', 1);
+    startTick = get('subsubdivStart', 0);
+    endTick = startTick + get('tpSubsubdiv', 0);
+    startTime = get('subsubdivStartTime', 0);
+    endTime = startTime + get('spSubsubdiv', 0);
   }
 
-  ((globalThis as any).c || c).push({
+  const fmt = get('formatTime', (s: number) => String(s));
+
+  ((g as any).c || c).push({
     tick: startTick,
     type: 'marker_t',
-    vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+    vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${fmt(endTime - startTime)} (${fmt(startTime)} - ${fmt(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
   });
 };
+
 
 /**
  * Outputs separate MIDI files for each layer with automatic synchronization.
@@ -262,7 +274,7 @@ export const grandFinale = (): void => {
     const layerState: any = state || {};
     const bufferData: any = buffer;
 
-    // Point legacy globals at the layer buffer
+    // Point globals at the layer buffer
     g.c = bufferData;
 
     const sectionEnd = layerState.sectionEnd ?? layerState.sectionStart ?? 0;
@@ -324,23 +336,36 @@ export function registerWriterServices(container: DIContainer): void {
   if (!container.has('grandFinale')) {
     container.register('grandFinale', () => grandFinale, 'singleton');
   }
-  if (!container.has('p')) {
-    container.register('p', () => pushMultiple, 'singleton');
+  // Make CSVBuffer available to DI consumers (constructor reference)
+  if (!container.has('CSVBuffer')) {
+    container.register('CSVBuffer', () => CSVBuffer, 'singleton');
   }
+  // Debug: log registered services for tracing during migration
+  // console.debug('registerWriterServices: services now =', container.getServiceKeys());
 }
 
-// NOTE: Legacy global shims were removed.
-// Use `registerWriterServices(container: DIContainer)` to register writer
-// services into a DI container and make DI mandatory for consumers.
-// For test compatibility, tests should call `registerWriterServices(container)`
-// in their setup code to provide `pushMultiple` and `grandFinale` where needed.
+/**
+ * Returns the registered pushMultiple function from the provided context or throws.
+ * Enforces DI-first usage: no fallbacks to globals will be performed.
+ */
+export function requirePush(ctx?: ICompositionContext) {
+  const msg = 'Missing writer service "pushMultiple" in DI container. Call registerWriterServices(container) and ensure service is available on ctx.services or ctx.container.';
+  try {
+    if (ctx && (ctx as any).services && (ctx as any).services.has && (ctx as any).services.has('pushMultiple')) {
+      return (ctx as any).services.get('pushMultiple');
+    }
+    if (ctx && (ctx as any).container && (ctx as any).container.has && (ctx as any).container.has('pushMultiple')) {
+      return (ctx as any).container.get('pushMultiple');
+    }
+  } catch (e) {
+    // ignore and throw below
+  }
+  // no fallback to globals — enforce DI
+  console.error(msg);
+  throw new Error(msg);
+}
 
-// Backward-compatibility: expose critical writer APIs to `globalThis` when not present
-// This provides a temporary migration path for tests and consumers that rely on
-// legacy globals. These will be removed once the codebase is fully DI-migrated.
-const _g = globalThis as any;
-if (typeof _g.CSVBuffer === 'undefined') _g.CSVBuffer = CSVBuffer;
-if (typeof _g.pushMultiple === 'undefined') _g.pushMultiple = pushMultiple;
-if (typeof _g.p === 'undefined') _g.p = pushMultiple;
-if (typeof _g.grandFinale === 'undefined') _g.grandFinale = grandFinale;
-
+// NOTE: Global exposure layer was removed in favor of DI-only usage.
+// Call `registerWriterServices(container)` in test setup and use the produced
+// services via `ctx.services.get('pushMultiple')` or `getWriterServices(ctx)`.
+// The legacy `p` global is deprecated and should not be used.

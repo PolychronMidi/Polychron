@@ -192,7 +192,7 @@ class Motif {
   }
 }
 
-// Attach to globalThis for backward compatibility
+// Expose to globalThis
 g.clampMotifNote = clampMotifNote;
 g.Motif = Motif;
 

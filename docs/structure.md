@@ -1,6 +1,6 @@
 # structure.ts - Section Profile & Composition Structure Helpers
 
-> **Status**: Composition Architecture  
+> **Status**: Composition Architecture
 > **Dependencies**: Backstage globals (SECTION_TYPES, PHRASES_PER_SECTION, random helpers)
 
 
@@ -78,7 +78,7 @@ Resolve a section profile from a section type, randomizing phrase count within r
 
 ## Global Integration
 
-Functions are attached to `globalThis` for backward compatibility:
+Functions are exposed on `globalThis`:
 
 ```typescript
 globalThis.normalizeSectionType = normalizeSectionType;

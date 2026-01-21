@@ -1,18 +1,18 @@
 # DIContainer.ts - Lightweight Dependency Injection
 
-> **Status**: Core Utility  
+> **Status**: Core Utility
 > **Dependencies**: None (standalone)
 
 
 ## Overview
 
-`DIContainer.ts` provides a minimal dependency injection container supporting singleton and transient lifecycles. It is used to register factories, resolve services, and manage a global container for convenience in tests and legacy code.
+`DIContainer.ts` provides a minimal dependency injection container supporting singleton and transient lifecycles. It is used to register factories, resolve services, and manage a global container for convenience in tests and optional global access.
 
 **Core Responsibilities:**
 - Register services with lifecycle control (singleton vs transient)
 - Resolve services with caching for singletons
 - Inspect and clear registered services for testing isolation
-- Provide a global container getter/setter/reset for legacy access
+- Provide a global container getter/setter/reset for optional global access
 
 ## Architecture Role
 
@@ -211,7 +211,7 @@ getServiceCount(): number {
 
 #### `getGlobalContainer()` / `setGlobalContainer(container)` / `resetGlobalContainer()`
 
-Convenience accessors for a shared container, primarily for testing and legacy compatibility.
+Convenience accessors for a shared container, primarily for testing and optional global access.
 
 ---
 

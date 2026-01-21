@@ -11,11 +11,10 @@ export default {
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      include: ['test/**/*.ts'],
       exclude: [
         'node_modules/',
         'csv_maestro/',
-        'test/',
-        '**/*.test.js',
         'scripts/',
       ],
       statements: 50,

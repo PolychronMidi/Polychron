@@ -1,6 +1,7 @@
 // test/stage.test.js
 import { stage } from '../src/stage.js';
 import { setupGlobalState, createTestContext } from './helpers.js';
+import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
 // Access allNotesOff from stage instance
@@ -10,8 +11,13 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
     let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
+      // Register writer services into test DI container and expose pushMultiple/p
+      registerWriterServices(ctx.services);
+      ctx.csvBuffer = [];
+      globalThis.p = ctx.services.get('pushMultiple');
+      if (typeof globalThis.CSVBuffer === 'undefined') globalThis.CSVBuffer = CSVBuffer;
       // Use fresh setup but keep the real channel definitions
-      globalThis.c = [];
+      globalThis.c = ctx.csvBuffer;
       globalThis.composer = {
         getNotes: () => [
           { note: 60 },
@@ -83,7 +89,7 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
       // Force the cross-modulation gate to fire by making rf minimal
       const originalCrossModulate = stage.playNotesHandler.crossModulateRhythms;
       stage.playNotesHandler.crossModulateRhythms = () => { stage.playNotesHandler.crossModulation = 10; stage.playNotesHandler.lastCrossMod = 0; };
-      stage.playNotes();
+      stage.playNotes(ctx);
       stage.playNotesHandler.crossModulateRhythms = originalCrossModulate;
 
       const noteOns = c.filter((e) => e.type === 'on');
@@ -97,7 +103,7 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
     it('should emit reflection and probabilistic bass in playNotes2', () => {
       // rf returns 0.1 so bass probability condition passes
-      stage.playNotes2();
+      stage.playNotes2(ctx);
 
       const noteOns = c.filter((e) => e.type === 'on');
       expect(noteOns.length).toBeGreaterThan(0);
@@ -165,6 +171,9 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
       globalThis.divIndex = 0; // divRhythm[0] = 1
       globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
 
+      // Reset counters to isolate rhythm slot contributions
+      globalThis.beatsOn = 0; globalThis.divsOn = 0; globalThis.subdivsOn = 0;
+      globalThis.beatsOff = 0; globalThis.divsOff = 0; globalThis.subdivsOff = 0;
       stage.playNotesHandler.crossModulation = 0;
       stage.crossModulateRhythms();
       const activeValue = stage.playNotesHandler.crossModulation;
@@ -591,11 +600,15 @@ describe('Stage Module', () => {
     let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
+      // Register writer services and prepare CSV buffer for DI-based pushes
+      registerWriterServices(ctx.services);
+      ctx.csvBuffer = [];
+      globalThis.c = ctx.csvBuffer;
+
       ctx.state.beatStart = 0;
       ctx.state.beatCount = 0;
       ctx.state.beatsUntilBinauralShift = 4;
       // Also set globals for any functions that might read them
-      globalThis.c = [];
       globalThis.beatStart = 0;
       globalThis.beatCount = 0;
       globalThis.beatsUntilBinauralShift = 4;
@@ -684,11 +697,15 @@ describe('Stage Module', () => {
     let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
+      // Register writer services and prepare CSV buffer for DI-based pushes
+      registerWriterServices(ctx.services);
+      ctx.csvBuffer = [];
+      globalThis.c = ctx.csvBuffer;
+
       ctx.state.beatStart = 480;
       ctx.state.beatCount = 0;
       ctx.state.beatsUntilBinauralShift = 4;
       // Also set globals for any functions that might read them
-      globalThis.c = [];
       globalThis.beatStart = 480;
       globalThis.beatCount = 0;
       globalThis.beatsUntilBinauralShift = 4;
@@ -701,9 +718,12 @@ describe('Stage Module', () => {
     it('should occasionally add instrument change events', () => {
       // Run multiple times since it uses random chance
       let instrumentChanges = 0;
+      // Reset stage firstLoop to allow initial execution
+      stage.firstLoop = 0;
       for (let i = 0; i < 10; i++) {
-        globalThis.c = [];
-        globalThis.beatCount = i;
+        ctx.csvBuffer = [];
+        c = ctx.csvBuffer;
+        ctx.state.beatCount = i;
         stage.setOtherInstruments(ctx);
         if (c.length > 0) {
           instrumentChanges++;
@@ -752,8 +772,13 @@ describe('Stage Module', () => {
   });
 
   describe('Instrument Setup: setTuningAndInstruments', () => {
+    let ctx: any;
     beforeEach(() => {
-      globalThis.c = [];
+      // Create DI-enabled context and register writer services
+      ctx = createTestContext();
+      registerWriterServices(ctx.services);
+      ctx.csvBuffer = [];
+      globalThis.c = ctx.csvBuffer;
       globalThis.beatStart = 0;
       globalThis.cCH1 = 0;
       globalThis.cCH2 = 1;
@@ -766,14 +791,14 @@ describe('Stage Module', () => {
     });
 
     it('should generate program_c events for all source channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const programEvents = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
       // Each source channel gets one program_c event
       expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.source.length);
     });
 
     it('should generate center channel (cCH1, cCH2) program events', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const cCH1Events = c.filter(e => e.vals[0] === globalThis.cCH1 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
       const cCH2Events = c.filter(e => e.vals[0] === globalThis.cCH2 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
       expect(cCH1Events.length).toBeGreaterThan(0);
@@ -781,61 +806,61 @@ describe('Stage Module', () => {
     });
 
     it('should generate program_c events for all reflection channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const programEvents = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
       // Each reflection channel gets one program_c event
       expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.reflection.length);
     });
 
     it('should generate program_c events for all bass channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const programEvents = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
       // Each bass channel gets one program_c event
       expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.bass.length);
     });
 
     it('should generate center bass channel (cCH3) program event', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const cCH3Events = c.filter(e => e.vals[0] === globalThis.cCH3 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
       expect(cCH3Events.length).toBeGreaterThan(0);
     });
 
     it('should set primary instrument on source channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const primaryProg = globalThis.getMidiValue('program', globalThis.primaryInstrument);
       const sourcePrograms = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
       expect(sourcePrograms.some(e => e.vals[1] === primaryProg)).toBe(true);
     });
 
     it('should set secondary instrument on reflection channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const secondaryProg = globalThis.getMidiValue('program', globalThis.secondaryInstrument);
       const reflectionPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
       expect(reflectionPrograms.some(e => e.vals[1] === secondaryProg)).toBe(true);
     });
 
     it('should set bass instrument on bass channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const bassProg = getMidiValue('program', globalThis.bassInstrument);
       const bassPrograms = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
       expect(bassPrograms.some(e => e.vals[1] === bassProg)).toBe(true);
     });
 
     it('should emit control_c events for pan/volume on source channels', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const controlEvents = c.filter(e => e.type === 'control_c' && globalThis.source.includes(e.vals[0]));
       expect(controlEvents.length).toBeGreaterThan(0);
     });
 
     it('should use pitch_bend_c for center channels (cCH1, cCH2, cCH3)', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const centerChannels = [globalThis.cCH1, globalThis.cCH2, globalThis.cCH3];
       const pitchBendEvents = c.filter(e => e.type === 'pitch_bend_c' && centerChannels.includes(e.vals[0]));
       expect(pitchBendEvents.length).toBeGreaterThanOrEqual(3);
     });
 
     it('should convert instrument names to MIDI program numbers', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const allPrograms = c.filter(e => e.type === 'program_c');
       allPrograms.forEach(e => {
         expect(typeof e.vals[1]).toBe('number');
@@ -845,7 +870,7 @@ describe('Stage Module', () => {
     });
 
     it('should set all 16 MIDI channels with instruments', () => {
-      stage.setTuningAndInstruments();
+      stage.setTuningAndInstruments(ctx);
       const programEvents = c.filter(e => e.type === 'program_c');
       const channelsWithPrograms = new Set(programEvents.map(e => e.vals[0]));
       // Should cover source, reflection, bass, and drum channels

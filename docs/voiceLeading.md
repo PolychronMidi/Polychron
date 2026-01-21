@@ -1,12 +1,12 @@
 # voiceLeading.ts - Voice Leading Utilities
 
-> **Status**: Polyphonic Composition Utility  
+> **Status**: Polyphonic Composition Utility
 > **Dependencies**: Music theory helpers, MIDI utilities
 
 
 ## Overview
 
-`voiceLeading.ts` provides utilities for maintaining smooth voice leading across chord changes and harmonic progressions. It coordinates smooth pitch transitions, handles voice doubling, avoids parallel fifths/octaves, and ensures smooth voice independence across staves/channels.
+`voiceLeading.ts` provides utilities for maintaining smooth voice leading across chord changes and harmonic progressions. It coordinates smooth pitch changes, handles voice doubling, avoids parallel fifths/octaves, and ensures smooth voice independence across staves/channels.
 
 **Core Responsibilities:**
 - Implement smoothness metrics between chords
@@ -21,7 +21,7 @@
 
 This module exports voice leading analysis and optimization functions used primarily by MeasureComposer:
 
-- `VoiceLeadingScore` class – Analyzes chord transitions for smoothness
+- `VoiceLeadingScore` class – Analyzes chord changes for smoothness
 - Metrics for parallel motion, voice crossing, doubling
 - Assignment algorithms for optimal voice paths
 
@@ -32,7 +32,7 @@ This module exports voice leading analysis and optimization functions used prima
 ```typescript
 import { VoiceLeadingScore } from '../src/voiceLeading';
 
-// Analyze transition between two chords
+// Analyze change between two chords
 const score = new VoiceLeadingScore(
   [60, 64, 67],  // C major
   [62, 65, 69]   // D minor
@@ -47,7 +47,7 @@ console.log(score.totalSmoothness());
 ## Subdirectory
 
 - voiceLeading/ ([code](../src/voiceLeading/)) ([doc](voiceLeading/index.md)) - Individual voice leading implementations
-  - VoiceLeadingScore.ts ([code](../src/voiceLeading/VoiceLeadingScore.ts)) ([doc](voiceLeading/VoiceLeadingScore.md)) - Chord transition scoring
+  - VoiceLeadingScore.ts ([code](../src/voiceLeading/VoiceLeadingScore.ts)) ([doc](voiceLeading/VoiceLeadingScore.md)) - Chord change scoring
 
 ---
 

@@ -1,33 +1,33 @@
 /**
  * Hierarchical Timing Tree
- * 
+ *
  * Replaces global variables with a nested structure indexed by:
  * layer → section → phrase → measure → beat → division → subdivision → subsubdivision
- * 
+ *
  * Provides complete timing history and per-layer isolation without globals.
  */
 
 export interface TimingLeaf {
   // Position indices
   index?: number;
-  
+
   // Tick-based timing
   start?: number;
   end?: number;
   duration?: number;
-  
+
   // Time-based timing (seconds)
   startTime?: number;
   endTime?: number;
   durationTime?: number;
-  
+
   // Duration values (ticks per unit)
   tp?: number;  // ticks per
   sp?: number;  // seconds per
-  
+
   // Rhythm
   rhythm?: number[];
-  
+
   // Unit-specific metadata
   unitsPerParent?: number;
   composer?: any;
@@ -46,7 +46,7 @@ export interface TimingLeaf {
   divsPerBeat?: number;
   subdivsPerDiv?: number;
   subsubdivsPerSub?: number;
-  
+
   // Rhythm tracking
   beatsOn?: number;
   beatsOff?: number;
@@ -54,16 +54,16 @@ export interface TimingLeaf {
   divsOff?: number;
   subdivsOn?: number;
   subdivsOff?: number;
-  
+
   // BPM/timing ratios
   trueBPM?: number;
   bpmRatio?: number;
   bpmRatio2?: number;
   bpmRatio3?: number;
-  
+
   // Child nodes
   children?: Record<string, TimingLeaf>;
-  
+
   [key: string]: any;
 }
 
@@ -84,13 +84,13 @@ export const initTimingTree = (ctx: any): TimingTree => {
 
 /**
  * Get or create a path in the tree for a specific layer/section/phrase/etc
- * 
+ *
  * Path format: "layer/section/0/phrase/0/measure/0/beat/0"
  */
 export const getOrCreatePath = (tree: TimingTree, path: string): TimingLeaf => {
   const parts = path.split('/');
   let current: any = tree;
-  
+
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (!current.children) {
@@ -101,7 +101,7 @@ export const getOrCreatePath = (tree: TimingTree, path: string): TimingLeaf => {
     }
     current = current.children[part];
   }
-  
+
   return current;
 };
 
@@ -134,14 +134,14 @@ export const setTimingValue = (tree: TimingTree, path: string, key: string, valu
 export const getTimingValue = (tree: TimingTree, path: string, key: string, defaultValue?: any): any => {
   const parts = path.split('/');
   let current: any = tree;
-  
+
   for (const part of parts) {
     if (!current.children || !current.children[part]) {
       return defaultValue;
     }
     current = current.children[part];
   }
-  
+
   return current[key] ?? defaultValue;
 };
 
@@ -159,14 +159,14 @@ export const setTimingValues = (tree: TimingTree, path: string, values: Record<s
 export const getTimingValues = (tree: TimingTree, path: string): TimingLeaf | undefined => {
   const parts = path.split('/');
   let current: any = tree;
-  
+
   for (const part of parts) {
     if (!current.children || !current.children[part]) {
       return undefined;
     }
     current = current.children[part];
   }
-  
+
   return current;
 };
 
@@ -180,7 +180,7 @@ export const initLayer = (tree: TimingTree, layer: string): void => {
 };
 
 /**
- * Copy timing values from globals to tree (for backward compat during migration)
+ * Copy timing values from globals to tree (for test support)
  */
 export const syncGlobalsToTree = (tree: TimingTree, path: string, globals: any): void => {
   const timingKeys = [
@@ -206,7 +206,7 @@ export const syncGlobalsToTree = (tree: TimingTree, path: string, globals: any):
     'beatRhythm', 'divRhythm', 'subdivRhythm', 'subsubdivRhythm',
     'composer', 'trueBPM', 'bpmRatio', 'bpmRatio2', 'bpmRatio3'
   ];
-  
+
   const node = getOrCreatePath(tree, path);
   for (const key of timingKeys) {
     if (key in globals) {
@@ -216,7 +216,7 @@ export const syncGlobalsToTree = (tree: TimingTree, path: string, globals: any):
 };
 
 /**
- * Copy timing values from tree to globals (for backward compat during migration)
+ * Copy timing values from tree to globals (for test support)
  */
 export const syncTreeToGlobals = (tree: TimingTree, path: string, globals: any): void => {
   const values = getTimingValues(tree, path);

@@ -1,5 +1,6 @@
 // test/time.test.js
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime } from '../src/time.js';
+import { pushMultiple } from '../src/writer.js';
 import { m } from '../src/backstage.js';
 import { setupGlobalState, createTestContext } from './helpers.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
@@ -29,30 +30,43 @@ let ctx: ICompositionContext;
 
 // Setup function to reset state
 function setupGlobalState() {
-  globalThis.numerator = 4;
-  globalThis.denominator = 4;
-  globalThis.BPM = 120;
-  globalThis.PPQ = 480;
-  globalThis.sectionStart = 0;
-  globalThis.phraseStart = 0;
-  globalThis.measureStart = 0;
-  globalThis.beatStart = 0;
-  globalThis.divStart = 0;
-  globalThis.subdivStart = 0;
-  globalThis.subsubdivStart = 0;
-  globalThis.sectionStartTime = 0;
-  globalThis.phraseStartTime = 0;
-  globalThis.measureStartTime = 0;
-  globalThis.beatStartTime = 0;
-  globalThis.divStartTime = 0;
-  globalThis.subdivStartTime = 0;
-  globalThis.subsubdivStartTime = 0;
-  globalThis.tpSection = 0;
-  globalThis.spSection = 0;
-  globalThis.spMeasure = 0;
-  globalThis.composer = { ...mockComposer };
-  globalThis.c = [];
-  globalThis.LOG = 'none';
+  // Use DI-friendly test context instead of mutating globals
+  ctx = createTestContext();
+  // Set top-level ctx values used by time functions
+  ctx.BPM = 120;
+  ctx.PPQ = 480;
+
+  // Initialize state timing values
+  ctx.state.numerator = 4;
+  ctx.state.denominator = 4;
+  ctx.state.sectionStart = 0;
+  ctx.state.phraseStart = 0;
+  ctx.state.measureStart = 0;
+  ctx.state.beatStart = 0;
+  ctx.state.divStart = 0;
+  ctx.state.subdivStart = 0;
+  ctx.state.subsubdivStart = 0;
+  ctx.state.sectionStartTime = 0;
+  ctx.state.phraseStartTime = 0;
+  ctx.state.measureStartTime = 0;
+  ctx.state.beatStartTime = 0;
+  ctx.state.divStartTime = 0;
+  ctx.state.subdivStartTime = 0;
+  ctx.state.subsubdivStartTime = 0;
+  ctx.state.tpSection = 0;
+  ctx.state.spSection = 0;
+  ctx.state.spMeasure = 0;
+
+  // Composer and buffer for tests (attach to state where possible)
+  ctx.state.composer = { ...mockComposer };
+  c = [];
+  // Sync minimal globals so legacy code paths write into our local buffer
+  (globalThis as any).c = c;
+  (globalThis as any).PPQ = ctx.PPQ;
+  (globalThis as any).BPM = ctx.BPM;
+  // Ensure pushMultiple is available to write BPM/meter events
+  (globalThis as any).p = pushMultiple;
+  LOG = 'none';
 }
 
 describe('getMidiTiming', () => {
@@ -829,7 +843,7 @@ describe('End-to-End MIDI Timing', () => {
     ctx.state.denominator = 9;
     ctx.state.BPM = 120;
     ctx.state.PPQ = 480;
-    globalThis.c = [];
+    c = globalThis.c = [];
     globalThis.beatStart = 0;
     globalThis.measureStart = 0;
 
@@ -838,15 +852,15 @@ describe('End-to-End MIDI Timing', () => {
     setMidiTiming(ctx, 0);
 
     // Check that BPM and meter events exist
-    const bpmEvent = globalThis.c.find(e => e.type === 'bpm');
-    const meterEvent = globalThis.c.find(e => e.type === 'meter');
+    const bpmEvent = c.find(e => e.type === 'bpm');
+    const meterEvent = c.find(e => e.type === 'meter');
 
     expect(bpmEvent).toBeDefined();
     expect(meterEvent).toBeDefined();
     expect(meterEvent.vals).toEqual([7, 8]); // MIDI-compatible
 
     // Verify tpMeasure uses midiMeterRatio (7/8), not actual ratio (7/9)
-    const expectedTpMeasure = globalThis.PPQ * 4 * (7/8);
+    const expectedTpMeasure = ctx.state.PPQ * 4 * (7/8);
     expect(ctx.state.tpMeasure).toBeCloseTo(expectedTpMeasure, 5);
 
     // BPM should be adjusted for the spoofed meter (midiBPM = BPM * syncFactor)
@@ -1320,7 +1334,7 @@ describe('Polyrhythm Duration Alignment', () => {
       expect([2, 4, 8, 16, 32, 64, 128, 256]).toContain(ctx.state.midiMeter[1]);
 
       // Verify midiMeterRatio is used for tpMeasure
-      const expectedTpMeasure = globalThis.PPQ * 4 * (ctx.state.midiMeter[0] / ctx.state.midiMeter[1]);
+      const expectedTpMeasure = ctx.state.PPQ * 4 * (ctx.state.midiMeter[0] / ctx.state.midiMeter[1]);
       expect(ctx.state.tpMeasure).toBeCloseTo(expectedTpMeasure, 5);
     });
   });
@@ -1372,7 +1386,7 @@ describe('Timing Validation Utilities', () => {
     getMidiTiming(ctx);
 
     // midiBPM should equal BPM * syncFactor
-    expect(ctx.state.midiBPM).toBeCloseTo(globalThis.BPM * ctx.state.syncFactor, 5);
+    expect(ctx.state.midiBPM).toBeCloseTo(ctx.state.BPM * ctx.state.syncFactor, 5);
   });
 });
 
@@ -1488,7 +1502,7 @@ describe('Section absolute time consistency', () => {
     ctx.state.BPM = 120;
     ctx.state.PPQ = 480;
     getMidiTiming(ctx);
-    
+
     // Calculate primary layer measure duration (in seconds)
     const primary_tpMeasure = ctx.state.tpMeasure;
     const primary_tpSec = ctx.state.tpSec;
@@ -1498,7 +1512,7 @@ describe('Section absolute time consistency', () => {
     ctx.state.numerator = 3;
     ctx.state.denominator = 4;
     getMidiTiming(ctx);
-    
+
     // Calculate poly layer measure duration (in seconds)
     const poly_tpMeasure = ctx.state.tpMeasure;
     const poly_tpSec = ctx.state.tpSec;
@@ -1507,7 +1521,7 @@ describe('Section absolute time consistency', () => {
     // Both should have timing values > 0
     expect(primary_duration_1measure).toBeGreaterThan(0);
     expect(poly_duration_1measure).toBeGreaterThan(0);
-    
+
     // Verify values are finite and reasonable
     expect(Number.isFinite(primary_duration_1measure)).toBe(true);
     expect(Number.isFinite(poly_duration_1measure)).toBe(true);
@@ -1523,7 +1537,7 @@ describe('Section absolute time consistency', () => {
     // Set measuresPerPhrase1 to 4
     ctx.state.measuresPerPhrase1 = 4;
     ctx.state.measuresPerPhrase2 = 3;
-    
+
     // Verify the values persist
     expect(ctx.state.measuresPerPhrase1).toBe(4);
     expect(ctx.state.measuresPerPhrase2).toBe(3);
@@ -1536,12 +1550,12 @@ describe('Section absolute time consistency', () => {
     ctx.state.BPM = 120;
     ctx.state.PPQ = 480;
     getMidiTiming(ctx);
-    
+
     // Verify timing is consistent
     const tpMeasure = ctx.state.tpMeasure;
     const tpSec = ctx.state.tpSec;
     const duration = tpMeasure / tpSec;
-    
+
     expect(tpMeasure).toBeGreaterThan(0);
     expect(tpSec).toBeGreaterThan(0);
     expect(duration).toBeGreaterThan(0);

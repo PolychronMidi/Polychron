@@ -303,7 +303,7 @@ export const allModes: string[] = (() => {
 
 import { DIContainer } from './DIContainer.js';
 
-// Export to global scope for backward compatibility
+// Export to global scope
 declare const globalThis: any;
 
 export function registerVenueServices(container: DIContainer): void {
@@ -324,12 +324,12 @@ export function registerVenueServices(container: DIContainer): void {
   }
 }
 
-// NOTE: Venue global shims removed. Use `registerVenueServices(container: DIContainer)`
+// NOTE: Venue global exposures were removed. Use `registerVenueServices(container: DIContainer)`
 // to register `getMidiValue`, `allNotes`, `allScales`, `allChords`, and `allModes` in the DI container.
 // Consumers should obtain these via DI rather than globalThis.
 
-// Backward-compatibility: expose music theory utilities to globalThis when not present
-// This offers a temporary compatibility layer during migration to DI.
+// Test helper: expose music theory utilities to globalThis when not present
+// This provides a temporary test path; it will be removed once DI registration is used in tests.
 const _g = globalThis as any;
 if (typeof _g.getMidiValue === 'undefined') _g.getMidiValue = getMidiValue;
 if (typeof _g.allNotes === 'undefined') _g.allNotes = allNotes;

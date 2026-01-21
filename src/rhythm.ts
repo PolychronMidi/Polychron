@@ -103,15 +103,20 @@ export const drumMap: DrumMap = {
  * @param {number} [stutterDecayFactor=rf(.9,1.1)] - Velocity decay per stutter.
  * @returns {void}
  */
+import { requirePush } from './writer.js';
+
 export const drummer = (
   drumNames: string | string[],
   beatOffsets?: number | number[],
   offsetJitter?: number,
   stutterChance?: number,
   stutterRange?: number[],
-  stutterDecayFactor?: number
+  stutterDecayFactor?: number,
+  ctx?: ICompositionContext
 ): void => {
   const g = globalThis as any;
+
+  const pFn = requirePush(ctx);
 
   let actualBeatOffsets = beatOffsets ?? 0;
   const actualOffsetJitter = offsetJitter ?? g.rf(.1);
@@ -191,11 +196,11 @@ export const drummer = (
             currentVelocity = g.clamp(g.m.max(0, g.ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
           }
 
-          g.p(g.c, {tick: tick, type: 'on', vals: [g.drumCH, drumInfo.note, g.m.floor(currentVelocity)]});
+          pFn(ctx.csvBuffer, {tick: tick, type: 'on', vals: [g.drumCH, drumInfo.note, g.m.floor(currentVelocity)]});
         }
       } else {
         if (g.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] no stutter');
-        g.p(g.c, {tick: g.beatStart + offset * g.tpBeat, type: 'on', vals: [g.drumCH, drumInfo.note, g.ri(...drumInfo.velocityRange)]});
+        pFn(ctx.csvBuffer, {tick: g.beatStart + offset * g.tpBeat, type: 'on', vals: [g.drumCH, drumInfo.note, g.ri(...drumInfo.velocityRange)]});
       }
     }
 
@@ -221,19 +226,19 @@ export const playDrums = (ctx: ICompositionContext): void => {
   const localNumerator = getVal('numerator');
 
   if (localBeatIndex % 2 === 0 && localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
-    drummer(['kick1', 'kick3'], [0, .5]);
+    drummer(['kick1', 'kick3'], [0, .5], undefined, undefined, undefined, undefined, ctx);
     if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
-      drummer(['kick2', 'kick5'], [0, .5]);
+      drummer(['kick2', 'kick5'], [0, .5], undefined, undefined, undefined, undefined, ctx);
     }
   } else if (localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
-    drummer(['snare1', 'kick4', 'kick7', 'snare4'], [0, .5, .75, .25]);
+    drummer(['snare1', 'kick4', 'kick7', 'snare4'], [0, .5, .75, .25], undefined, undefined, undefined, undefined, ctx);
   } else if (localBeatIndex % 2 === 0) {
-    drummer('random');
+    drummer('random', undefined, undefined, undefined, undefined, undefined, ctx);
     if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
-      drummer(['snare5'], [0]);
+      drummer(['snare5'], [0], undefined, undefined, undefined, undefined, ctx);
     }
   } else {
-    drummer(['snare6'], [0]);
+    drummer(['snare6'], [0], undefined, undefined, undefined, undefined, ctx);
   }
 };
 
@@ -253,19 +258,19 @@ export const playDrums2 = (ctx: ICompositionContext): void => {
   const localNumerator = getVal('numerator');
 
   if (localBeatIndex % 2 === 0 && localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
-    drummer(['kick2', 'kick5', 'kick7'], [0, .5, .25]);
+    drummer(['kick2', 'kick5', 'kick7'], [0, .5, .25], undefined, undefined, undefined, undefined, ctx);
     if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
-      drummer(['kick1', 'kick3', 'kick7'], [0, .5, .25]);
+      drummer(['kick1', 'kick3', 'kick7'], [0, .5, .25], undefined, undefined, undefined, undefined, ctx);
     }
   } else if (localBeatRhythm[localBeatIndex] > 0 && rf() < .3 * m.max(1, localBeatsOff * rf(2, 3.5)) * localBpmRatio3) {
-    drummer(['snare2', 'kick6', 'snare3'], [0, .5, .75]);
+    drummer(['snare2', 'kick6', 'snare3'], [0, .5, .75], undefined, undefined, undefined, undefined, ctx);
   } else if (localBeatIndex % 2 === 0) {
-    drummer(['snare7'], [0]);
+    drummer(['snare7'], [0], undefined, undefined, undefined, undefined, ctx);
     if (localNumerator % 2 === 1 && localBeatIndex === localNumerator - 1 && rf() < (1 / localMeasuresPerPhrase) * localBpmRatio3) {
-      drummer(['snare7'], [0]);
+      drummer(['snare7'], [0], undefined, undefined, undefined, undefined, ctx);
     }
   } else {
-    drummer('random');
+    drummer('random', undefined, undefined, undefined, undefined, undefined, ctx);
   }
 };
 
@@ -649,7 +654,7 @@ if (!(globalThis as any).__POLYCHRON_TEST__) {
   (globalThis as any).__POLYCHRON_TEST__ = { enableLogging: false };
 }
 
-// Expose to globalThis for backward compatibility
+// Expose to globalThis
 (globalThis as any).drummer = drummer;
 (globalThis as any).patternLength = patternLength;
 (globalThis as any).drumMap = drumMap;

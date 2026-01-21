@@ -152,7 +152,7 @@ export class ComposerRegistry {
    * It registers factory functions for all built-in composer types.
    */
   private registerDefaults(): void {
-    // Import composer classes from global scope (backward compatibility)
+    // Import composer classes from global scope (preserve exports)
     const ScaleComposer = g.ScaleComposer;
     const ChordComposer = g.ChordComposer;
     const ModeComposer = g.ModeComposer;

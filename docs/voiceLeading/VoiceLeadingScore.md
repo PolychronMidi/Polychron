@@ -1,12 +1,12 @@
-# VoiceLeadingScore.ts - Chord Transition & Voice Leading Optimization
+# VoiceLeadingScore.ts - Chord Change & Voice Leading Optimization
 
-> **Status**: Polyphonic Composition Utility  
+> **Status**: Polyphonic Composition Utility
 > **Dependencies**: None (pure voice leading logic)
 
 
 ## Overview
 
-`VoiceLeadingScore` implements classical voice leading rules with cost-based optimization. It evaluates chord transitions for smoothness (minimizing voice jumps), checks voice range constraints, enforces leap recovery rules, detects voice crossing, and avoids parallel fifths/octaves.
+`VoiceLeadingScore` implements classical voice leading rules with cost-based optimization. It evaluates chord changes for smoothness (minimizing voice jumps), checks voice range constraints, enforces leap recovery rules, detects voice crossing, and avoids parallel fifths/octaves.
 
 **Core Responsibilities:**
 - Score voice motion for smoothness (stepwise better than leaps)
@@ -780,12 +780,12 @@ const scorer = new VoiceLeadingScore({
   voiceCrossingWeight: 2.0
 });
 
-// Analyze chord transition
+// Analyze chord change
 const cmaj = [60, 64, 67];     // C major (C-E-G)
 const dmin = [62, 65, 69];     // D minor (D-F-A)
 
 const cost = scorer.calculateCost(dmin, cmaj);
-console.log(`Transition cost: ${cost}`);
+console.log(`Change cost: ${cost}`);
 
 // Find best voicing
 const bestVoicing = scorer.findBestVoicing(dmin, cmaj);
@@ -793,7 +793,7 @@ console.log(`Best voicing: ${bestVoicing}`);
 
 // Select next note
 const candidates = [62, 65, 69];
-const nextNote = scorer.selectNextNote([67], candidates, { 
+const nextNote = scorer.selectNextNote([67], candidates, {
   register: 'soprano',
   constraints: ['avoidsStrident']
 });

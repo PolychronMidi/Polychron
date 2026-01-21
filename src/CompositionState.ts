@@ -272,7 +272,7 @@ export class CompositionStateService implements CompositionState {
   }
 
   /**
-   * Sync state from globalThis (for test setup compatibility)
+   * Sync state from globalThis (for test setup)
    */
   syncFromGlobal() {
     const g = globalThis as any;

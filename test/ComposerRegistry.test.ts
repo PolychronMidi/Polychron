@@ -308,7 +308,7 @@ describe('ComposerRegistry', () => {
     });
   });
 
-  describe('Backward Compatibility', () => {
+  describe('Module exports', () => {
     it('should make ComposerRegistry available in module exports', async () => {
       const module = await import('../src/ComposerRegistry.js');
 

@@ -14,9 +14,11 @@ import './fxManager.js';
 import { PlayNotes } from './playNotes.js';
 import { ICompositionContext } from './CompositionContext.js';
 
-// Initialize global temporary variable for FX object spreading
+// Module-scoped temporary variable for FX object spreading
+import { requirePush } from './writer.js';
+
 declare const globalThis: any;
-globalThis._ = null;
+let _: any = null;
 
 /**
  * Stage class - Encapsulates all audio processing, effects, and MIDI event generation.
@@ -65,19 +67,24 @@ export class Stage {
    * Sets program, pitch bend, and volume for all instrument channels
    * @returns {void}
    */
-  setTuningAndInstruments(): void {
+  setTuningAndInstruments(ctx?: ICompositionContext): void {
     const primaryProg = globalThis.getMidiValue('program', globalThis.primaryInstrument);
     const secondaryProg = globalThis.getMidiValue('program', globalThis.secondaryInstrument);
     const bassProg = globalThis.getMidiValue('program', globalThis.bassInstrument);
     const bass2Prog = globalThis.getMidiValue('program', globalThis.bassInstrument2);
 
-    globalThis.p(globalThis.c,...['control_c','program_c'].flatMap((type: string) => [ ...globalThis.source.map((ch: number) => ({
-    type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})), ...globalThis.reflection.map((ch: number) => ({
-    type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH1,...(type==='control_c' ? [globalThis.tuningPitchBend] : [primaryProg])]}, { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH2,...(type==='control_c' ? [globalThis.tuningPitchBend] : [secondaryProg])]}]));
+    const items1 = ['control_c','program_c'].flatMap((type: string) => [ ...globalThis.source.map((ch: number) => ({
+      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})), ...globalThis.reflection.map((ch: number) => ({
+      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH1,...(type==='control_c' ? [globalThis.tuningPitchBend] : [primaryProg])]}, { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH2,...(type==='control_c' ? [globalThis.tuningPitchBend] : [secondaryProg])]}]);
+    const pFn1 = requirePush(ctx);
+    pFn1(ctx.csvBuffer, ...items1);
 
-    globalThis.p(globalThis.c,...['control_c','program_c'].flatMap((type: string) => [ ...globalThis.bass.map((ch: number) => ({
-      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH3,...(type==='control_c' ? [globalThis.tuningPitchBend] : [bassProg])]}]));
-    globalThis.p(globalThis.c,{type:'control_c', vals:[globalThis.drumCH, 7, 127]});
+    const items2 = ['control_c','program_c'].flatMap((type: string) => [ ...globalThis.bass.map((ch: number) => ({
+      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH3,...(type==='control_c' ? [globalThis.tuningPitchBend] : [bassProg])]}]);
+    const pFn2 = requirePush(ctx);
+    pFn2(ctx.csvBuffer, ...items2);
+    const pFn3 = requirePush(ctx);
+    pFn3(ctx.csvBuffer, { type: 'control_c', vals: [globalThis.drumCH, 7, 127] });
   }
 
   /**
@@ -91,14 +98,16 @@ export class Stage {
     const beatStart = ctx.state.beatStart;
 
     if (g.rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
-      g.p(g.c, ...['control_c'].flatMap(() => {
+      const items = ['control_c'].flatMap(() => {
         const tmp = { tick: beatStart, type: 'program_c' };
         return [
           ...g.reflectionBinaural.map((ch: number) => ({ ...tmp, vals: [ch, g.ra(g.otherInstruments)] })),
           ...g.bassBinaural.map((ch: number) => ({ ...tmp, vals: [ch, g.ra(g.otherBassInstruments)] })),
           { ...tmp, vals: [g.drumCH, g.ra(g.drumSets)] }
         ];
-      }));
+      });
+      const pFn = requirePush(ctx);
+      pFn(ctx.csvBuffer, ...items);
     }
   }
 
@@ -133,11 +142,13 @@ export class Stage {
       binauralFreqOffset = nextBinauralFreqOffset;
 
       g.allNotesOff(beatStart);
-      g.p(g.c,
+      const itemsBend = [
         ...g.binauralL.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.lCH1 || ch === g.lCH3 || ch === g.lCH5 ? (flipBin ? g.binauralMinus : g.binauralPlus) : (flipBin ? g.binauralPlus : g.binauralMinus)] })),
         ...g.binauralR.map((ch: number) => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === g.rCH1 || ch === g.rCH3 || ch === g.rCH5 ? (flipBin ? g.binauralPlus : g.binauralMinus) : (flipBin ? g.binauralMinus : g.binauralPlus)] })),
-      );
-      // flipBin (flip binaural) volume transition
+      ];
+      const pBend = requirePush(ctx);
+      pBend(ctx.csvBuffer, ...itemsBend);
+      // flipBin (flip binaural) volume change
       const startTick = beatStart - tpSec / 4;
       const endTick = beatStart + tpSec / 4;
       const steps = 10;
@@ -147,12 +158,11 @@ export class Stage {
         const currentVolumeF2 = flipBin ? g.m.floor(100 * (1 - (i / steps))) : g.m.floor(100 * (i / steps));
         const currentVolumeT2 = flipBin ? g.m.floor(100 * (i / steps)) : g.m.floor(100 * (1 - (i / steps)));
         const maxVol = g.rf(.9, 1.2);
-        g.flipBinF2.forEach((ch: number) => {
-          g.p(g.c, { tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeF2 * maxVol)] });
-        });
-        g.flipBinT2.forEach((ch: number) => {
-          g.p(g.c, { tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeT2 * maxVol)] });
-        });
+        const itemsF = g.flipBinF2.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeF2 * maxVol)] }));
+        const itemsT = g.flipBinT2.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 7, g.m.round(currentVolumeT2 * maxVol)] }));
+        const pFade = requirePush(ctx);
+        if (itemsF.length) pFade(ctx.csvBuffer, ...itemsF);
+        if (itemsT.length) pFade(ctx.csvBuffer, ...itemsT);
       }
     }
   }
@@ -169,7 +179,7 @@ export class Stage {
     const resolvedNumStutters = numStutters ?? g.ri(10, 70);
     const tpSec = ctx.state.tpSec;
     const resolvedDuration = duration ?? tpSec * g.rf(.2, 1.5);
-    this.fx.stutterFade(channels, resolvedNumStutters, resolvedDuration);
+    this.fx.stutterFade(channels, ctx, resolvedNumStutters, resolvedDuration);
   }
 
   /**
@@ -184,7 +194,7 @@ export class Stage {
     const resolvedNumStutters = numStutters ?? g.ri(30, 90);
     const tpSec = ctx.state.tpSec;
     const resolvedDuration = duration ?? tpSec * g.rf(.1, 1.2);
-    this.fx.stutterPan(channels, resolvedNumStutters, resolvedDuration);
+    this.fx.stutterPan(channels, ctx, resolvedNumStutters, resolvedDuration);
   }
 
   /**
@@ -199,7 +209,7 @@ export class Stage {
     const resolvedNumStutters = numStutters ?? g.ri(30, 100);
     const tpSec = ctx.state.tpSec;
     const resolvedDuration = duration ?? tpSec * g.rf(.1, 2);
-    this.fx.stutterFX(channels, resolvedNumStutters, resolvedDuration);
+    this.fx.stutterFX(channels, ctx, resolvedNumStutters, resolvedDuration);
   }
 
   /**
@@ -225,65 +235,35 @@ export class Stage {
       this.cBal2 = g.rf() < .5 ? this.cBal + g.m.round(this.refVar * .5) : this.cBal + g.m.round(this.refVar * -.5);
       this.bassVar = this.refVar * g.rf(-2, 2);
       this.cBal3 = g.rf() < .5 ? this.cBal2 + g.m.round(this.bassVar * .5) : this.cBal2 + g.m.round(this.bassVar * -.5);
-      g.p(g.c, ...['control_c'].flatMap(() => {
-        const tmp = { tick: beatStart - 1, type: 'control_c' }; _ = tmp;
-        return [
-          ...g.source2.map((ch: number) => ({ ...tmp, vals: [ch, 10, ch.toString().startsWith('lCH') ? (flipBin ? this.lBal : this.rBal) : ch.toString().startsWith('rCH') ? (flipBin ? this.rBal : this.lBal) : ch === g.drumCH ? this.cBal3 + g.m.round((g.rf(-.5, .5) * this.bassVar)) : this.cBal] })),
-          ...g.reflection.map((ch: number) => ({ ...tmp, vals: [ch, 10, ch.toString().startsWith('lCH') ? (flipBin ? (g.rf() < .1 ? this.lBal + this.refVar * 2 : this.lBal + this.refVar) : (g.rf() < .1 ? this.rBal - this.refVar * 2 : this.rBal - this.refVar)) : ch.toString().startsWith('rCH') ? (flipBin ? (g.rf() < .1 ? this.rBal - this.refVar * 2 : this.rBal - this.refVar) : (g.rf() < .1 ? this.lBal + this.refVar * 2 : this.lBal + this.refVar)) : this.cBal2 + g.m.round((g.rf(-.5, .5) * this.refVar)) ] })),
-          ...g.bass.map((ch: number) => ({ ...tmp, vals: [ch, 10, ch.toString().startsWith('lCH') ? (flipBin ? this.lBal + this.bassVar : this.rBal - this.bassVar) : ch.toString().startsWith('rCH') ? (flipBin ? this.rBal - this.bassVar : this.lBal + this.bassVar) : this.cBal3 + g.m.round((g.rf(-.5, .5) * this.bassVar)) ] })),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 1, 0, 60, (c: number) => c === g.cCH1, 0, 10)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 5, 125, 127, (c: number) => c === g.cCH1, 126, 127)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 11, 64, 127, (c: number) => c === g.cCH1 || c === g.drumCH, 115, 127)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 65, 45, 64, (c: number) => c === g.cCH1, 35, 64)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 67, 63, 64)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 68, 63, 64)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 69, 63, 64)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 70, 0, 127)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 71, 0, 127)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 72, 64, 127)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 73, 0, 64)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 74, 80, 127)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 91, 0, 33)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 92, 0, 33)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 93, 0, 33)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 94, 0, 5, (c: number) => c === g.drumCH, 0, 64)),
-          ...g.source2.map((ch: number) => g.rlFX(ch, 95, 0, 33)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 1, 0, 90, (c: number) => c === g.cCH2, 0, 15)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 5, 125, 127, (c: number) => c === g.cCH2, 126, 127)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 11, 77, 111, (c: number) => c === g.cCH2, 66, 99)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 65, 45, 64, (c: number) => c === g.cCH2, 35, 64)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 67, 63, 64)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 68, 63, 64)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 69, 63, 64)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 70, 0, 127)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 71, 0, 127)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 72, 64, 127)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 73, 0, 64)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 74, 80, 127)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 91, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 92, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 93, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 94, 0, 64, (c: number) => c === g.cCH2, 0, 11)),
-          ...g.reflection.map((ch: number) => g.rlFX(ch, 95, 0, 77, (c: number) => c === g.cCH2, 0, 32)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 1, 0, 60, (c: number) => c === g.cCH3, 0, 10)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 5, 125, 127, (c: number) => c === g.cCH3, 126, 127)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 11, 88, 127, (c: number) => c === g.cCH3, 115, 127)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 65, 45, 64, (c: number) => c === g.cCH3, 35, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 67, 63, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 68, 63, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 69, 63, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 70, 0, 127)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 71, 0, 127)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 72, 64, 127)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 73, 0, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 74, 80, 127)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 91, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 92, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 93, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 94, 0, 64, (c: number) => c === g.cCH3, 0, 11)),
-          ...g.bass.map((ch: number) => g.rlFX(ch, 95, 0, 99, (c: number) => c === g.cCH3, 0, 64)),
-        ];
-      }));
+
+      // Build FX control events (pan CC=10 and additional FX CCs) for channels
+      const tick = beatStart - 1;
+      const itemsFX: any[] = [];
+
+      // Pan (CC 10) events for groups
+      if (Array.isArray(g.source)) itemsFX.push(...g.source.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.lBal] })));
+      if (Array.isArray(g.reflection)) itemsFX.push(...g.reflection.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.rBal] })));
+      if (Array.isArray(g.bass)) itemsFX.push(...g.bass.map((ch: number) => ({ tick, type: 'control_c', vals: [ch, 10, this.cBal3] })));
+
+      // Additional FX controls (CC 1,5,11,7) applied to source/reflection channels
+      const fxCCs = [1, 5, 11, 7];
+      if (Array.isArray(g.source)) {
+        for (const ch of g.source) {
+          for (const cc of fxCCs) {
+            itemsFX.push({ tick, type: 'control_c', vals: [ch, cc, g.m.round(this.cBal2 * g.rf(.7, 1.3))] });
+          }
+        }
+      }
+      if (Array.isArray(g.reflection)) {
+        for (const ch of g.reflection) {
+          for (const cc of fxCCs) {
+            itemsFX.push({ tick, type: 'control_c', vals: [ch, cc, g.m.round(this.cBal * g.rf(.7, 1.3))] });
+          }
+        }
+      }
+
+      const pFX = requirePush(ctx);
+      if (itemsFX.length) pFX(ctx.csvBuffer, ...itemsFX);
     }
   }
 
@@ -310,8 +290,8 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  playNotes(): void {
-    this.playNotesHandler.playNotes();
+  playNotes(ctx: ICompositionContext): void {
+    this.playNotesHandler.playNotes(ctx);
   }
 
   /**
@@ -328,8 +308,8 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  playNotes2(): void {
-    this.playNotesHandler.playNotes2();
+  playNotes2(ctx: ICompositionContext): void {
+    this.playNotesHandler.playNotes2(ctx);
   }
 }
 

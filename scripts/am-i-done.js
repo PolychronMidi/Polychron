@@ -177,20 +177,20 @@ function main() {
     }
   }
 
-  // Additional project-wide checks (migration tests, docs, and PR template)
-  // Check presence of migration/no-global tests for writer/time/venue
-  const requiredMigrationTests = [
+  // Additional project-wide checks (no-global tests, docs, and PR template)
+  // Check presence of no-global tests for writer/time/venue
+  const requiredNoGlobalTests = [
     path.join(projectRoot, 'test', 'writer.no_global.test.ts'),
     path.join(projectRoot, 'test', 'time.no_global.test.ts'),
     path.join(projectRoot, 'test', 'venue.no_global.test.ts')
   ];
 
-  const missingMigrationTests = requiredMigrationTests.filter(p => !fs.existsSync(p));
-  if (missingMigrationTests.length > 0) {
+  const missingNoGlobalTests = requiredNoGlobalTests.filter(p => !fs.existsSync(p));
+  if (missingNoGlobalTests.length > 0) {
     anyViolation = true;
-    console.log('Migration Tests Missing:');
-    missingMigrationTests.forEach(p => console.log('  - ' + path.relative(projectRoot, p)));
-    console.log('  -> Add migration/no-global tests for modules that used attachToGlobal* shims.');
+    console.log('No-global Tests Missing:');
+    missingNoGlobalTests.forEach(p => console.log('  - ' + path.relative(projectRoot, p)));
+    console.log('  -> Add no-global tests for modules that used global helpers.');
   }
 
   // Check docs thesis presence

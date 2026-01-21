@@ -1,14 +1,17 @@
 // test/writer.test.ts - Testing CSV buffer and writer functions
-import { CSVBuffer, pushMultiple as p, grandFinale, logUnit } from '../src/writer.js';
-import { setupGlobalState } from './helpers.js';
+import { CSVBuffer, grandFinale, logUnit, registerWriterServices } from '../src/writer.js';
+import { createTestContext, setupGlobalState } from './helpers.js';
 
-// Legacy global access for tests still using globalThis.c
+// Test global access for tests still using globalThis.c
 let c: any;
+let pFn: any;
 
 // Setup function
 function setupLocalState() {
-  setupGlobalState();
-  c = globalThis.c;
+  const ctx = createTestContext();
+  registerWriterServices(ctx.services);
+  pFn = ctx.services.get('pushMultiple');
+  c = [];
 }
 
 describe('CSVBuffer class', () => {
@@ -51,137 +54,141 @@ describe('pushMultiple (p)', () => {
   });
 
   it('should push single item', () => {
-    p(c, { a: 1 });
+    pFn(c, { a: 1 });
     expect(c).toEqual([{ a: 1 }]);
   });
 
   it('should push multiple items', () => {
-    p(c, { a: 1 }, { b: 2 }, { c: 3 });
+    pFn(c, { a: 1 }, { b: 2 }, { c: 3 });
     expect(c).toEqual([{ a: 1 }, { b: 2 }, { c: 3 }]);
   });
 
   it('should handle empty push', () => {
-    p(c);
+    pFn(c);
     expect(c).toEqual([]);
   });
 
   it('should work with existing array items', () => {
     c = [{ x: 0 }];
-    p(c, { a: 1 }, { b: 2 });
+    pFn(c, { a: 1 }, { b: 2 });
     expect(c).toEqual([{ x: 0 }, { a: 1 }, { b: 2 }]);
   });
 
   it('should work with CSVBuffer', () => {
     const buffer = new CSVBuffer('test');
-    p(buffer, { a: 1 }, { b: 2 });
+    pFn(buffer, { a: 1 }, { b: 2 });
     expect(buffer.rows).toEqual([{ a: 1 }, { b: 2 }]);
     expect(buffer.length).toBe(2);
   });
 });
 
 describe('logUnit', () => {
+  let env: Record<string, any>;
   beforeEach(() => {
-    setupGlobalState();
-    globalThis.LOG = 'all';
-    globalThis.c = new CSVBuffer('test');
-    c = globalThis.c;
-    globalThis.sectionIndex = 0;
-    globalThis.totalSections = 1;
-    globalThis.sectionStart = 0;
-    globalThis.sectionStartTime = 0;
-    globalThis.tpSection = 1920;
-    globalThis.tpSec = 960;
-    globalThis.phraseIndex = 0;
-    globalThis.phrasesPerSection = 1;
-    globalThis.phraseStart = 0;
-    globalThis.phraseStartTime = 0;
-    globalThis.tpPhrase = 1920;
-    globalThis.numerator = 4;
-    globalThis.denominator = 4;
-    globalThis.midiMeter = [4, 4];
-    globalThis.composer = null;
-    globalThis.measureIndex = 0;
-    globalThis.measuresPerPhrase = 1;
-    globalThis.measureStart = 0;
-    globalThis.measureStartTime = 0;
-    globalThis.tpMeasure = 1920;
-    globalThis.spMeasure = 2;
-    globalThis.beatIndex = 0;
-    globalThis.beatStart = 0;
-    globalThis.beatStartTime = 0;
-    globalThis.tpBeat = 480;
-    globalThis.spBeat = 0.5;
-    globalThis.divIndex = 0;
-    globalThis.divsPerBeat = 4;
-    globalThis.divStart = 0;
-    globalThis.divStartTime = 0;
-    globalThis.tpDiv = 120;
-    globalThis.spDiv = 0.125;
-    globalThis.subdivIndex = 0;
-    globalThis.subdivsPerDiv = 4;
-    globalThis.subdivStart = 0;
-    globalThis.subdivStartTime = 0;
-    globalThis.tpSubdiv = 30;
-    globalThis.spSubdiv = 0.03125;
-    globalThis.subsubdivIndex = 0;
-    globalThis.subsubsPerSub = 4;
-    globalThis.subsubdivStart = 0;
-    globalThis.subsubdivStartTime = 0;
-    globalThis.tpSubsubdiv = 7.5;
-    globalThis.spSubsubdiv = 0.0078125;
-    globalThis.formatTime = (t) => t.toFixed(3);
+    // Use test context and pass an env object to `logUnit` to avoid global mutations
+    const ctx = createTestContext();
+    registerWriterServices(ctx.services);
+    env = {
+      LOG: 'all',
+      c: new CSVBuffer('test'),
+      sectionIndex: 0,
+      totalSections: 1,
+      sectionStart: 0,
+      sectionStartTime: 0,
+      tpSection: 1920,
+      tpSec: 960,
+      phraseIndex: 0,
+      phrasesPerSection: 1,
+      phraseStart: 0,
+      phraseStartTime: 0,
+      tpPhrase: 1920,
+      numerator: 4,
+      denominator: 4,
+      midiMeter: [4, 4],
+      composer: null,
+      measureIndex: 0,
+      measuresPerPhrase: 1,
+      measureStart: 0,
+      measureStartTime: 0,
+      tpMeasure: 1920,
+      spMeasure: 2,
+      beatIndex: 0,
+      beatStart: 0,
+      beatStartTime: 0,
+      tpBeat: 480,
+      spBeat: 0.5,
+      divIndex: 0,
+      divsPerBeat: 4,
+      divStart: 0,
+      divStartTime: 0,
+      tpDiv: 120,
+      spDiv: 0.125,
+      subdivIndex: 0,
+      subdivsPerDiv: 4,
+      subdivStart: 0,
+      subdivStartTime: 0,
+      tpSubdiv: 30,
+      spSubdiv: 0.03125,
+      subsubdivIndex: 0,
+      subsubsPerSub: 4,
+      subsubdivStart: 0,
+      subsubdivStartTime: 0,
+      tpSubsubdiv: 7.5,
+      spSubsubdiv: 0.0078125,
+      formatTime: (t: number) => t.toFixed(3)
+    };
   });
 
   it('should log section marker when LOG includes section', () => {
-    globalThis.LOG = 'section';
-    logUnit('section');
-    expect(c.rows.length).toBe(1);
-    expect(c.rows[0].type).toBe('marker_t');
-    expect(c.rows[0].vals[0]).toContain('Section');
+    env.LOG = 'section';
+    logUnit('section', env);
+    expect(env.c.rows.length).toBe(1);
+    expect(env.c.rows[0].type).toBe('marker_t');
+    expect(env.c.rows[0].vals[0]).toContain('Section');
   });
 
   it('should log phrase marker when LOG includes phrase', () => {
-    globalThis.LOG = 'phrase';
-    logUnit('phrase');
-    expect(c.rows.length).toBe(1);
-    expect(c.rows[0].type).toBe('marker_t');
-    expect(c.rows[0].vals[0]).toContain('Phrase');
+    env.LOG = 'phrase';
+    logUnit('phrase', env);
+    expect(env.c.rows.length).toBe(1);
+    expect(env.c.rows[0].type).toBe('marker_t');
+    expect(env.c.rows[0].vals[0]).toContain('Phrase');
   });
 
   it('should log measure marker when LOG includes measure', () => {
-    globalThis.LOG = 'measure';
-    logUnit('measure');
-    expect(c.rows.length).toBe(1);
-    expect(c.rows[0].type).toBe('marker_t');
-    expect(c.rows[0].vals[0]).toContain('Measure');
+    env.LOG = 'measure';
+    logUnit('measure', env);
+    expect(env.c.rows.length).toBe(1);
+    expect(env.c.rows[0].type).toBe('marker_t');
+    expect(env.c.rows[0].vals[0]).toContain('Measure');
   });
 
   it('should not log when LOG is none', () => {
-    globalThis.LOG = 'none';
-    logUnit('section');
-    expect(c.rows.length).toBe(0);
+    env.LOG = 'none';
+    logUnit('section', env);
+    expect(env.c.rows.length).toBe(0);
   });
 
   it('should log all types when LOG is all', () => {
-    globalThis.LOG = 'all';
-    logUnit('section');
-    logUnit('phrase');
-    logUnit('measure');
-    expect(c.rows.length).toBe(3);
+    env.LOG = 'all';
+    logUnit('section', env);
+    logUnit('phrase', env);
+    logUnit('measure', env);
+    expect(env.c.rows.length).toBe(3);
   });
 
   it('should handle comma-separated LOG values', () => {
-    globalThis.LOG = 'section,phrase';
-    logUnit('section');
-    logUnit('phrase');
-    logUnit('measure');
-    expect(c.rows.length).toBe(2);
+    env.LOG = 'section,phrase';
+    logUnit('section', env);
+    logUnit('phrase', env);
+    logUnit('measure', env);
+    expect(env.c.rows.length).toBe(2);
   });
 
   it('should be case insensitive', () => {
-    globalThis.LOG = 'SECTION';
-    logUnit('section');
-    expect(c.rows.length).toBe(1);
+    env.LOG = 'SECTION';
+    logUnit('section', env);
+    expect(env.c.rows.length).toBe(1);
   });
 });
 

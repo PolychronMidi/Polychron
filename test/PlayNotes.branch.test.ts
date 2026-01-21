@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PlayNotes } from '../src/playNotes';
+import { createTestContext } from './helpers.js';
+import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 
 describe('PlayNotes - branch tests', () => {
+  let ctx: any;
   beforeEach(() => {
     // Minimal deterministic globals
     (globalThis as any).beatRhythm = [1];
@@ -24,8 +27,11 @@ describe('PlayNotes - branch tests', () => {
     (globalThis as any).m = { max: Math.max, min: Math.min, round: Math.round };
     (globalThis as any).composer = { getNotes: () => [{ note: 60 }] };
     (globalThis as any).activeMotif = null;
-    (globalThis as any).p = (c: any, r: any) => { c.rows = c.rows || []; c.rows.push(r); };
-    (globalThis as any).c = { rows: [] };
+    // Create a DI-enabled test context and register writer services
+    ctx = createTestContext();
+    registerWriterServices(ctx.services);
+    ctx.csvBuffer = new CSVBuffer('test');
+    (globalThis as any).c = ctx.csvBuffer;
     (globalThis as any).source = [1];
     (globalThis as any).reflect = [2];
     (globalThis as any).flipBin = false;
@@ -48,8 +54,8 @@ describe('PlayNotes - branch tests', () => {
     p.crossModulation = 10;
     p.lastCrossMod = 10;
     // use playNotes2 which always iterates the motif notes branch and writes to buffer
-    p.playNotes2();
-    expect((globalThis as any).c.rows.length).toBeGreaterThan(0);
+    p.playNotes2(ctx);
+    expect(ctx.csvBuffer.rows.length).toBeGreaterThan(0);
   });
 
   it('crossModulateRhythms produces a numeric crossModulation', () => {

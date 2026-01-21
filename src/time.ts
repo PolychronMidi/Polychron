@@ -27,7 +27,7 @@ export function registerTimeServices(container: DIContainer): void {
   }
 }
 
-// NOTE: Global timing shims were removed in favor of explicit DI.
+// NOTE: Global timing exposure was removed in favor of explicit DI.
 // Use `registerTimeServices(container: DIContainer)` to register Timing services
 // with a DI container. Consumers should obtain timing constructs via DI.
 
@@ -167,10 +167,36 @@ const setMidiTiming = (ctx: ICompositionContext, tick?: number): void => {
   if (!Number.isFinite(state.tpSec) || state.tpSec <= 0) {
     throw new Error(`Invalid tpSec: ${state.tpSec}`);
   }
-  g.p(g.c,
-    { tick: tickValue, type: 'bpm', vals: [state.midiBPM] },
-    { tick: tickValue, type: 'meter', vals: [state.midiMeter[0], state.midiMeter[1]] },
-  );
+  // Prefer DI-registered pushMultiple when available; fall back to direct buffer push
+  let pFn: any = undefined;
+  try {
+    if (ctx.container && ctx.container.has && ctx.container.has('pushMultiple')) {
+      pFn = ctx.container.get('pushMultiple');
+    }
+  } catch (e) {
+    pFn = undefined;
+  }
+  const buffer = ctx.csvBuffer ?? g.c;
+
+  if (typeof pFn === 'function') {
+    pFn(buffer,
+      { tick: tickValue, type: 'bpm', vals: [state.midiBPM] },
+      { tick: tickValue, type: 'meter', vals: [state.midiMeter[0], state.midiMeter[1]] },
+    );
+  } else {
+    // Fallback: push directly into buffer if available
+    if (Array.isArray(buffer)) {
+      buffer.push(
+        { tick: tickValue, type: 'bpm', vals: [state.midiBPM] },
+        { tick: tickValue, type: 'meter', vals: [state.midiMeter[0], state.midiMeter[1]] }
+      );
+    } else if (buffer && typeof buffer.push === 'function') {
+      buffer.push(
+        { tick: tickValue, type: 'bpm', vals: [state.midiBPM] },
+        { tick: tickValue, type: 'meter', vals: [state.midiMeter[0], state.midiMeter[1]] }
+      );
+    }
+  }
 };
 
 /**
@@ -465,6 +491,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     setTimingValues(tree, path, timingSnapshot);
   }
 
+  // Ensure context's CSV buffer points to the currently active global buffer
+  if (ctx && (ctx as any).csvBuffer !== g.c) {
+    (ctx as any).csvBuffer = g.c;
+  }
+
   // Log the unit after calculating timing
   g.logUnit(unitType);
 };;
@@ -482,7 +513,7 @@ const formatTime = (seconds: number): string => {
 
 export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateToGlobals, formatTime };
 
-// Attach to globalThis for backward compatibility
+// Expose to globalThis
 (globalThis as any).getMidiTiming = getMidiTiming;
 (globalThis as any).syncStateToGlobals = syncStateToGlobals;
 (globalThis as any).setMidiTiming = setMidiTiming;
@@ -493,6 +524,6 @@ export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateTo
 (globalThis as any).trackRhythm = trackRhythm;
 (globalThis as any).logUnit = logUnit;
 
-// Backward-compatibility: expose LayerManager as `LM` on globalThis if not present
+// Test helper: expose LayerManager as `LM` on globalThis if not present (temporary)
 const _g = globalThis as any;
 if (typeof _g.LM === 'undefined') _g.LM = LayerManager;

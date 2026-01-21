@@ -247,7 +247,5 @@ class MeasureComposer {
 }
 
 
-// Export to global scope
-globalThis.MeasureComposer = MeasureComposer;
 export default MeasureComposer;
 export { MeasureComposer };

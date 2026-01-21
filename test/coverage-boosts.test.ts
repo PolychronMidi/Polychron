@@ -21,7 +21,7 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
       // Reset for this test by getting fresh context
       const ctx = getPolychronContext();
       expect(ctx.initialized).toBe(true);
-      
+
       // Second call should verify already initialized
       const ctx2 = getPolychronContext();
       expect(ctx2.initialized).toBe(true);
@@ -88,7 +88,7 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
       // Missing note property defaults to 0, then offset applied
       // baseNote = 60, offset[0] = 0 => 0 + 0 = 0
       // offset[1] = 2 => 0 + 2 = 2
-      expect(result[0].note).toBe(0); 
+      expect(result[0].note).toBe(0);
       expect(result[1].note).toBe(2);
     });
 
@@ -423,7 +423,7 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
       expect(typeof eventBus.emit).toBe('function');
     });
 
-    it('should track composition state transitions', () => {
+    it('should track composition state changes', () => {
       const ctx = createTestContext();
       expect(ctx.state.numerator).toBeGreaterThanOrEqual(1);
       expect(ctx.state.denominator).toBeGreaterThanOrEqual(1);

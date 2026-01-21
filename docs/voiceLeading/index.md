@@ -1,13 +1,13 @@
 # voiceLeading/ – Voice Leading Module Index
 
-> **Subdirectory**: `src/voiceLeading/`  
-> **Status**: Polyphonic Composition Utilities  
+> **Subdirectory**: `src/voiceLeading/`
+> **Status**: Polyphonic Composition Utilities
 > **Dependencies**: Music theory, chord/voice data
 
 
 ## Overview
 
-The `voiceLeading/` subdirectory provides voice leading analysis and optimization for smooth harmonic progressions. It implements classical voice leading rules to ensure smooth chord transitions, maintain voice independence, and avoid parallel fifths/octaves.
+The `voiceLeading/` subdirectory provides voice leading analysis and optimization for smooth harmonic progressions. It implements classical voice leading rules to ensure smooth chord changes, maintain voice independence, and avoid parallel fifths/octaves.
 
 ---
 
@@ -15,11 +15,11 @@ The `voiceLeading/` subdirectory provides voice leading analysis and optimizatio
 
 ### VoiceLeadingScore.ts
 
-Chord transition scoring and voice optimization.
+Chord change scoring and voice optimization.
 
 - **File**: [VoiceLeadingScore.ts](../src/voiceLeading/VoiceLeadingScore.ts)
 - **Doc**: [VoiceLeadingScore.md](VoiceLeadingScore.md)
-- **Purpose**: Evaluate and optimize chord transitions
+- **Purpose**: Evaluate and optimize chord changes
 - **Key API**: `calculateCost()`, `findBestVoicing()`, `selectNextNote()`, `analyzeQuality()`
 
 ---
@@ -49,7 +49,7 @@ const scorer = new VoiceLeadingScore();
 const previousChord = [60, 64, 67];      // C major
 const targetChord = [62, 65, 69];        // D minor
 
-// Find smoothest transition
+// Find smoothest change
 const bestVoicing = scorer.findBestVoicing(targetChord, previousChord);
 
 // Select individual notes

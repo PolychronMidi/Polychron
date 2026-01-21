@@ -1,6 +1,6 @@
 # composers.ts - Composer Module Stub
 
-> **Status**: Root Export Stub  
+> **Status**: Root Export Stub
 > **Purpose**: Re-export all composers and registry from global scope for downstream imports
 
 
@@ -12,7 +12,7 @@
 - Import `composers/index.js` to populate global scope with all composer classes
 - Import `ComposerRegistry.js` to make the registry available globally
 - Re-export all composers (MeasureComposer, ScaleComposer, ChordComposer, ModeComposer, PentatonicComposer) and registry
-- Provide backward compatibility via legacy `ComposerFactory` export
+- Preserve existing `ComposerFactory` export
 
 ---
 
@@ -32,9 +32,9 @@ All composers are re-exported from `composers/`:
 
 - `ComposerRegistry` ([code](../src/ComposerRegistry.ts)) ([doc](ComposerRegistry.md)) – Typed registry for instantiating composers by name
 
-### Legacy Support
+### Export preservation
 
-- `ComposerFactory` – Legacy factory function (re-exported for backward compatibility)
+- `ComposerFactory` – Factory function preserved for existing imports
 - `Composer` – Base composer interface (re-exported from global scope)
 
 ---
