@@ -3,7 +3,8 @@
 
 // Load dependencies
 import '../backstage.js';  // Load global utilities (m, rf, ri, ra, etc.)
-import '../venue.js';      // Load music theory (allScales, allNotes, allModes, allChords)
+import * as t from 'tonal';
+import { allNotes, allScales } from '../venue.js';
 
 const g = globalThis as any;
 
@@ -58,10 +59,10 @@ class TensionReleaseComposer extends ScaleComposer {
 
     // If it's a chord name, try to determine its function
     if (chordOrFunction && typeof chordOrFunction === 'string') {
-      const chordData = g.t.Chord.get(chordOrFunction);
+      const chordData = t.Chord.get(chordOrFunction);
       if (chordData && chordData.tonic) {
         const root = chordData.tonic;
-        const keyScale = g.t.Scale.get(`${this.key} ${this.quality}`);
+        const keyScale = t.Scale.get(`${this.key} ${this.quality}`);
         const degree = keyScale.notes.indexOf(root);
 
         // Map scale degree to function
@@ -152,10 +153,10 @@ class ModalInterchangeComposer extends ScaleComposer {
   borrowChord(): any[] | null {
     if (g.rf() < this.borrowProbability && this.borrowModes.length > 0) {
       const borrowMode = this.borrowModes[g.ri(this.borrowModes.length - 1)];
-      const borrowScale = g.t.Scale.get(`${this.key} ${borrowMode}`);
+      const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
       // Return chord notes as array
       const chordRoot = borrowScale.notes[g.ri(borrowScale.notes.length - 1)];
-      const chordData = g.t.Chord.get(`${chordRoot}major`);
+      const chordData = t.Chord.get(`${chordRoot}major`);
       return chordData ? chordData.notes : null;
     }
     return null;
@@ -196,8 +197,8 @@ class MelodicDevelopmentComposer extends ScaleComposer {
   responseMode: boolean = false;
 
   constructor(name: string = 'major', root: string = 'C', developmentIntensity: number = 0.5) {
-    const scaleName = name === 'random' ? g.allScales[g.ri(g.allScales.length - 1)] : name;
-    const rootNote = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
+    const scaleName = name === 'random' ? allScales[g.ri(allScales.length - 1)] : name;
+    const rootNote = root === 'random' ? allNotes[g.ri(allNotes.length - 1)] : root;
     super(scaleName, rootNote);
     this.developmentIntensity = g.clamp(developmentIntensity, 0, 1);
     this.measureCount = 0;
@@ -233,8 +234,8 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
   contraryMotionPreference: number = 0.4;
 
   constructor(name: string = 'major', root: string = 'C', commonToneWeight: number = 0.7) {
-    const scaleName = name === 'random' ? g.allScales[g.ri(g.allScales.length - 1)] : name;
-    const rootNote = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
+    const scaleName = name === 'random' ? allScales[g.ri(allScales.length - 1)] : name;
+    const rootNote = root === 'random' ? allNotes[g.ri(allNotes.length - 1)] : root;
     super(scaleName, rootNote);
     this.commonToneWeight = g.clamp(commonToneWeight, 0, 1);
     this.previousNotes = [];
@@ -308,33 +309,34 @@ class ComposerFactory {
   static constructors: Record<string, Function> = {
     measure: () => new g.MeasureComposer(),
     scale: ({ name = 'major', root = 'C' } = {}) => {
-      const n = name === 'random' ? g.allScales[g.ri(g.allScales.length - 1)] : name;
-      const r = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
+      const n = name === 'random' ? allScales[g.ri(allScales.length - 1)] : name;
+      const r = root === 'random' ? allNotes[g.ri(allNotes.length - 1)] : root;
       return new ScaleComposer(n, r);
     },
+
     chords: ({ progression = ['C'] } = {}) => {
       let p = Array.isArray(progression) ? progression : ['C'];
       if (typeof progression === 'string' && progression === 'random') {
         const len = g.ri(2, 5);
         p = [];
         for (let i = 0; i < len; i++) {
-          p.push(g.allChords[g.ri(g.allChords.length - 1)]);
+          p.push(allChords[g.ri(allChords.length - 1)]);
         }
       }
       return new ChordComposer(p);
     },
     mode: ({ name = 'ionian', root = 'C' } = {}) => {
-      const n = name === 'random' ? g.allModes[g.ri(g.allModes.length - 1)] : name;
-      const r = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
+      const n = name === 'random' ? allModes[g.ri(allModes.length - 1)] : name;
+      const r = root === 'random' ? allNotes[g.ri(allNotes.length - 1)] : root;
       return new ModeComposer(n, r);
     },
     pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
-      const r = root === 'random' ? g.allNotes[g.ri(g.allNotes.length - 1)] : root;
+      const r = root === 'random' ? allNotes[g.ri(allNotes.length - 1)] : root;
       const t = scaleType === 'random' ? (['major', 'minor'])[g.ri(2)] : scaleType;
       return new PentatonicComposer(r, t);
     },
-    tensionRelease: ({ key = g.allNotes[g.ri(g.allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
-    modalInterchange: ({ key = g.allNotes[g.ri(g.allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
+    tensionRelease: ({ key = allNotes[g.ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
+    modalInterchange: ({ key = allNotes[g.ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
     harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => new HarmonicRhythmComposer(progression, key, measuresPerChord, quality),
     melodicDevelopment: ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, developmentIntensity),
     advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new AdvancedVoiceLeadingComposer(name, root, commonToneWeight),

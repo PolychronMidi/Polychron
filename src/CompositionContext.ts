@@ -30,6 +30,11 @@ export interface ICompositionContext {
   container: DIContainer;
   eventBus: CompositionEventBus;
 
+  // Convenience aliases (some tests expect `services`, and some code references `LM` and `stage`)
+  services?: any;
+  LM?: any;
+  stage?: any;
+
   // Progress tracking
   progressCallback?: ProgressCallback;
   cancellationToken?: CancellationToken;
@@ -71,7 +76,8 @@ export function createCompositionContext(
     cancellationToken,
     csvBuffer,
     LOG,
-    logUnit: (unitType: string) => logUnitFn(unitType),
+    // Ensure logUnit honors the current active buffer and respects ctx.LOG
+    logUnit: (unitType: string) => logUnitFn(unitType, ctx),
     setUnitTiming: (unitType: string) => setUnitTimingFn(unitType, ctx)
   };
   return ctx;

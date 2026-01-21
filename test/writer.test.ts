@@ -88,9 +88,11 @@ describe('logUnit', () => {
     // Use test context and pass an env object to `logUnit` to avoid global mutations
     const ctx = createTestContext();
     registerWriterServices(ctx.services);
+    const buffer = new CSVBuffer('test');
     env = {
       LOG: 'all',
-      c: new CSVBuffer('test'),
+      c: buffer,
+      csvBuffer: buffer,
       sectionIndex: 0,
       totalSections: 1,
       sectionStart: 0,
@@ -135,7 +137,9 @@ describe('logUnit', () => {
       subsubdivStartTime: 0,
       tpSubsubdiv: 7.5,
       spSubsubdiv: 0.0078125,
-      formatTime: (t: number) => t.toFixed(3)
+      formatTime: (t: number) => t.toFixed(3),
+      services: ctx.services,
+      container: ctx.container
     };
   });
 
@@ -193,25 +197,29 @@ describe('logUnit', () => {
 });
 
 describe('grandFinale', () => {
+  let env: any;
   beforeEach(() => {
     setupGlobalState();
     // Mock fs methods - necessary for file I/O tests
-    globalThis.fs = {
+    const fsMock: any = {
       writeFileSync: vi.fn(),
       existsSync: vi.fn(() => true),
       mkdirSync: vi.fn()
     };
+
     // Reset LM
-    globalThis.LM = {
-      layers: {}
+    const LMobj: any = { layers: {} };
+
+    env = {
+      fs: fsMock,
+      LM: LMobj,
+      PPQ: 480,
+      SILENT_OUTRO_SECONDS: 1,
+      tpSec: 960,
+      allNotesOff: vi.fn(() => []),
+      muteAll: vi.fn(() => []),
+      rf: (min: number, max: number) => (min + max) / 2
     };
-    globalThis.PPQ = 480;
-    globalThis.SILENT_OUTRO_SECONDS = 1;
-    globalThis.tpSec = 960;
-    // Mock these functions - they have external dependencies (allCHs array, etc.)
-    globalThis.allNotesOff = vi.fn(() => []);
-    globalThis.muteAll = vi.fn(() => []);
-    globalThis.rf = (min, max) => (min + max) / 2;
   });
 
   it('should write output files for each layer', () => {
@@ -220,7 +228,7 @@ describe('grandFinale', () => {
     const polyBuffer = new CSVBuffer('poly');
     polyBuffer.push({ tick: 0, type: 'on', vals: [1, 64, 100] });
 
-    LM.layers = {
+    env.LM.layers = {
       primary: {
         state: { sectionStart: 0, sectionEnd: 1920 },
         buffer: primaryBuffer
@@ -231,27 +239,27 @@ describe('grandFinale', () => {
       }
     };
 
-    grandFinale();
+    grandFinale(env);
 
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
-    expect(fs.writeFileSync).toHaveBeenCalledWith('output/output1.csv', expect.any(String));
-    expect(fs.writeFileSync).toHaveBeenCalledWith('output/output2.csv', expect.any(String));
+    expect(env.fs.writeFileSync).toHaveBeenCalledTimes(2);
+    expect(env.fs.writeFileSync).toHaveBeenCalledWith('output/output1.csv', expect.any(String));
+    expect(env.fs.writeFileSync).toHaveBeenCalledWith('output/output2.csv', expect.any(String));
   });
 
   it('should include header and track markers in CSV', () => {
     const buffer = new CSVBuffer('primary');
     buffer.push({ tick: 0, type: 'on', vals: [0, 60, 100] });
 
-    LM.layers = {
+    env.LM.layers = {
       primary: {
         state: { sectionStart: 0, sectionEnd: 1920 },
         buffer
       }
     };
 
-    grandFinale();
+    grandFinale(env);
 
-    const csvContent = fs.writeFileSync.mock.calls[0][1];
+    const csvContent = env.fs.writeFileSync.mock.calls[0][1];
     expect(csvContent).toContain('header,1,1,480');
     expect(csvContent).toContain('start_track');
     expect(csvContent).toContain('end_track');
@@ -263,16 +271,16 @@ describe('grandFinale', () => {
     buffer.push(null);
     buffer.push({ tick: 100, type: 'on', vals: [0, 64, 100] });
 
-    LM.layers = {
+    env.LM.layers = {
       primary: {
         state: { sectionStart: 0, sectionEnd: 1920 },
         buffer
       }
     };
 
-    grandFinale();
+    grandFinale(env);
 
-    const csvContent = fs.writeFileSync.mock.calls[0][1];
+    const csvContent = env.fs.writeFileSync.mock.calls[0][1];
     const lines = csvContent.split('\n').filter(line => line.includes('note_on_c'));
     expect(lines.length).toBe(2); // Only 2 note events, null filtered
   });
@@ -283,16 +291,16 @@ describe('grandFinale', () => {
     buffer.push({ tick: 0, type: 'on', vals: [0, 60, 100] });
     buffer.push({ tick: 50, type: 'on', vals: [0, 62, 100] });
 
-    LM.layers = {
+    env.LM.layers = {
       primary: {
         state: { sectionStart: 0, sectionEnd: 1920 },
         buffer
       }
     };
 
-    grandFinale();
+    grandFinale(env);
 
-    const csvContent = fs.writeFileSync.mock.calls[0][1];
+    const csvContent = env.fs.writeFileSync.mock.calls[0][1];
     const lines = csvContent.split('\n').filter(line => line.includes('note_on_c'));
     expect(lines[0]).toContain(',0,');
     expect(lines[1]).toContain(',50,');
@@ -303,21 +311,24 @@ describe('grandFinale', () => {
     const buffer = new CSVBuffer('custom');
     buffer.push({ tick: 0, type: 'on', vals: [0, 60, 100] });
 
-    LM.layers = {
+    env.LM.layers = {
       custom: {
         state: { sectionStart: 0, sectionEnd: 1920 },
         buffer
       }
     };
 
-    grandFinale();
+    grandFinale(env);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith('output/outputCustom.csv', expect.any(String));
+    expect(env.fs.writeFileSync).toHaveBeenCalledWith('output/outputCustom.csv', expect.any(String));
   });
 });
 
 describe('fs error handling', () => {
-  it('should wrap fs.writeFileSync for error logging', () => {
-    expect(typeof fs.writeFileSync).toBe('function');
+  it('should provide fs service via DI for error logging', () => {
+    const ctx = createTestContext();
+    registerWriterServices(ctx.services);
+    const fsSvc: any = ctx.services.get('fs');
+    expect(typeof fsSvc.writeFileSync).toBe('function');
   });
 });

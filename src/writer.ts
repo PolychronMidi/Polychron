@@ -98,7 +98,7 @@ declare let subdivStartTime: number;
 declare let tpSubdiv: number;
 declare let spSubdiv: number;
 declare let subsubdivIndex: number;
-declare let subsubsPerSub: number;
+declare let subsubdivsPerSub: number;
 declare let subsubdivStart: number;
 declare let subsubdivStartTime: number;
 declare let tpSubsubdiv: number;
@@ -117,9 +117,15 @@ declare const rf: (min: number, max: number) => number;
  * Logs timing markers with context awareness.
  * Writes to active buffer (c = c1 or c2) for proper file separation.
  */
-export const logUnit = (type: string, env?: Record<string, any>): void => {
-  const g = env ?? (globalThis as any);
-  const get = (k: string, fallback: any) => (k in g ? g[k] : (globalThis as any)[k] ?? fallback);
+export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<string, any>): void => {
+  if (!ctxOrEnv) throw new Error('logUnit requires a context or env; global fallback removed');
+  const source: any = ctxOrEnv as any;
+
+  const get = (k: string, fallback: any) => {
+    if (source && k in source) return source[k];
+    if (source && source.state && k in source.state) return (source.state as any)[k];
+    return fallback;
+  };
 
   let shouldLog = false;
   type = type.toLowerCase();
@@ -134,6 +140,8 @@ export const logUnit = (type: string, env?: Record<string, any>): void => {
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
 
+  // Debug: trace logUnit invocations during test runs
+  console.log(`[logUnit] type=${type} LOG=${LOGv} shouldLog=${shouldLog} buffer=${(source && source.c && source.c.name) || (source && source.csvBuffer && source.csvBuffer.name) || 'unknown'}`);
   if (!shouldLog) return;
 
   let unit = 0;
@@ -161,7 +169,7 @@ export const logUnit = (type: string, env?: Record<string, any>): void => {
     const spPhrase = get('tpPhrase', 0) / get('tpSec', 1);
     endTime = startTime + spPhrase;
 
-    let composerDetails = get('composer', null) ? `${get('composer').constructor.name} ` : 'Unknown Composer ';
+    let composerDetails = get('composer', null) ? `${get('composer', null).constructor.name} ` : 'Unknown Composer ';
     const composer = get('composer', null);
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
@@ -187,7 +195,7 @@ export const logUnit = (type: string, env?: Record<string, any>): void => {
     startTime = get('measureStartTime', 0);
     endTime = get('measureStartTime', 0) + get('spMeasure', 0);
 
-    let composerDetails = get('composer', null) ? `${get('composer').constructor.name} ` : 'Unknown Composer ';
+    let composerDetails = get('composer', null) ? `${get('composer', null).constructor.name} ` : 'Unknown Composer ';
     const composer = get('composer', null);
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;
@@ -228,7 +236,7 @@ export const logUnit = (type: string, env?: Record<string, any>): void => {
     endTime = startTime + get('spSubdiv', 0);
   } else if (type === 'subsubdivision') {
     unit = get('subsubdivIndex', 0) + 1;
-    unitsPerParent = get('subsubsPerSub', 1);
+    unitsPerParent = get('subsubdivsPerSub', 1);
     startTick = get('subsubdivStart', 0);
     endTick = startTick + get('tpSubsubdiv', 0);
     startTime = get('subsubdivStartTime', 0);
@@ -237,11 +245,26 @@ export const logUnit = (type: string, env?: Record<string, any>): void => {
 
   const fmt = get('formatTime', (s: number) => String(s));
 
-  ((g as any).c || c).push({
+  const markerObj = {
     tick: startTick,
     type: 'marker_t',
     vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${fmt(endTime - startTime)} (${fmt(startTime)} - ${fmt(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
-  });
+  };
+  // Determine the buffer to write into. Require explicit ctx.csvBuffer to enforce DI-only usage
+  const bufferTarget = (source && source.csvBuffer);
+
+  if (!bufferTarget) {
+    throw new Error('logUnit: missing ctx.csvBuffer; logUnit is DI-only and requires ctx.csvBuffer to be set');
+  }
+
+  // Use DI-provided pushMultiple; require it to exist
+  const pFn = requirePush((source as any) || undefined);
+  if (typeof pFn !== 'function') {
+    throw new Error('logUnit: pushMultiple service is required in DI container (registerWriterServices)');
+  }
+
+  // Call the DI push function with the single marker
+  pFn(bufferTarget, markerObj);
 };
 
 
@@ -255,14 +278,21 @@ export const logUnit = (type: string, env?: Record<string, any>): void => {
  * - Tick counts differ due to different tempo adjustments
  * - Automatically handles any number of layers
  */
-export const grandFinale = (): void => {
-  const g = globalThis as any;
-  const fsModule = g.fs || fs;
+export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>): void => {
+  if (!ctxOrEnv) throw new Error('grandFinale requires a context or env; global fallback removed');
+  const env: any = ctxOrEnv as any;
 
-  // Collect layers from LM; fall back to current buffer when LM is unavailable
-  const layers = (g.LM && g.LM.layers && Object.keys(g.LM.layers).length)
-    ? g.LM.layers
-    : { primary: { buffer: g.c || [], state: { sectionStart: g.sectionStart, sectionEnd: g.sectionEnd, tpSec: g.tpSec } } };
+  // fs module must be passed via env.fs or via container services
+  const fsModule = env.fs || (env.container && env.container.get && env.container.get('fs')) || fs;
+
+  // Collect layers from provided LM instance
+  const layers = (env && env.LM && env.LM.layers && Object.keys(env.LM.layers).length)
+    ? env.LM.layers
+    : (env.layers || {});
+
+  if (!layers || Object.keys(layers).length === 0) {
+    throw new Error('grandFinale: No layer data provided in context/env');
+  }
 
   const layerData = Object.entries(layers).map(([name, entry]: any) => ({
     name,
@@ -274,27 +304,24 @@ export const grandFinale = (): void => {
     const layerState: any = state || {};
     const bufferData: any = buffer;
 
-    // Point globals at the layer buffer
-    g.c = bufferData;
-
     const sectionEnd = layerState.sectionEnd ?? layerState.sectionStart ?? 0;
-    const tpSec = layerState.tpSec ?? g.tpSec ?? 1;
+    const tpSec = layerState.tpSec ?? env.tpSec ?? 1;
 
-    // Cleanup
-    g.allNotesOff(sectionEnd + g.PPQ);
-    g.muteAll(sectionEnd + g.PPQ * 2);
+    // Cleanup hooks (must be provided via env)
+    if (typeof env.allNotesOff === 'function') env.allNotesOff(sectionEnd + (env.PPQ || 480));
+    if (typeof env.muteAll === 'function') env.muteAll(sectionEnd + (env.PPQ || 480) * 2);
 
     // Finalize buffer
     let finalBuffer = (Array.isArray(bufferData) ? bufferData : bufferData.rows)
       .filter((i: any) => i !== null)
       .map((i: any) => ({
         ...i,
-        tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * g.rf(.1, .3) : i.tick
+        tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * (env.rf ? env.rf(.1, .3) : rf(.1, .3)) : i.tick
       }))
       .sort((a: any, b: any) => a.tick - b.tick);
 
     // Generate CSV
-    let composition = `0,0,header,1,1,${g.PPQ}\n1,0,start_track\n`;
+    let composition = `0,0,header,1,1,${env.PPQ || 480}\n1,0,start_track\n`;
     let finalTick = 0;
 
     finalBuffer.forEach((evt: any) => {
@@ -305,7 +332,7 @@ export const grandFinale = (): void => {
       }
     });
 
-    composition += `1,${finalTick + (g.SILENT_OUTRO_SECONDS * tpSec)},end_track`;
+    composition += `1,${finalTick + ((env.SILENT_OUTRO_SECONDS ?? 1) * tpSec)},end_track`;
 
     // Determine output filename based on layer name
     let outputFilename: string;
@@ -336,6 +363,12 @@ export function registerWriterServices(container: DIContainer): void {
   if (!container.has('grandFinale')) {
     container.register('grandFinale', () => grandFinale, 'singleton');
   }
+  // Provide fs to services so grandFinale can use DI instead of globals
+  if (!container.has('fs')) {
+    // Register Node's fs module via DI. Do NOT read from globalThis; enforce DI usage in tests.
+    container.register('fs', () => fs, 'singleton');
+  }
+
   // Make CSVBuffer available to DI consumers (constructor reference)
   if (!container.has('CSVBuffer')) {
     container.register('CSVBuffer', () => CSVBuffer, 'singleton');
@@ -349,11 +382,8 @@ export function registerWriterServices(container: DIContainer): void {
  * Enforces DI-first usage: no fallbacks to globals will be performed.
  */
 export function requirePush(ctx?: ICompositionContext) {
-  const msg = 'Missing writer service "pushMultiple" in DI container. Call registerWriterServices(container) and ensure service is available on ctx.services or ctx.container.';
+  const msg = 'Missing writer service "pushMultiple" in DI container. Call registerWriterServices(container) and ensure service is available on ctx.container.';
   try {
-    if (ctx && (ctx as any).services && (ctx as any).services.has && (ctx as any).services.has('pushMultiple')) {
-      return (ctx as any).services.get('pushMultiple');
-    }
     if (ctx && (ctx as any).container && (ctx as any).container.has && (ctx as any).container.has('pushMultiple')) {
       return (ctx as any).container.get('pushMultiple');
     }

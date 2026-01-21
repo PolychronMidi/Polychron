@@ -67,24 +67,25 @@ export class Stage {
    * Sets program, pitch bend, and volume for all instrument channels
    * @returns {void}
    */
-  setTuningAndInstruments(ctx?: ICompositionContext): void {
-    const primaryProg = globalThis.getMidiValue('program', globalThis.primaryInstrument);
-    const secondaryProg = globalThis.getMidiValue('program', globalThis.secondaryInstrument);
-    const bassProg = globalThis.getMidiValue('program', globalThis.bassInstrument);
-    const bass2Prog = globalThis.getMidiValue('program', globalThis.bassInstrument2);
+  setTuningAndInstruments(ctx: ICompositionContext): void {
+    const getMidiValueFn = (ctx && ctx.container && ctx.container.has('getMidiValue')) ? ctx.container.get('getMidiValue') : (globalThis as any).getMidiValue;
+    const primaryProg = getMidiValueFn('program', (globalThis as any).primaryInstrument);
+    const secondaryProg = getMidiValueFn('program', (globalThis as any).secondaryInstrument);
+    const bassProg = getMidiValueFn('program', (globalThis as any).bassInstrument);
+    const bass2Prog = getMidiValueFn('program', (globalThis as any).bassInstrument2);
 
-    const items1 = ['control_c','program_c'].flatMap((type: string) => [ ...globalThis.source.map((ch: number) => ({
-      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})), ...globalThis.reflection.map((ch: number) => ({
-      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH1,...(type==='control_c' ? [globalThis.tuningPitchBend] : [primaryProg])]}, { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH2,...(type==='control_c' ? [globalThis.tuningPitchBend] : [secondaryProg])]}]);
+    const items1 = ['control_c','program_c'].flatMap((type: string) => [ ...(globalThis as any).source.map((ch: number) => ({
+      type,vals:[ch,...((globalThis as any).binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [primaryProg]) : (type==='control_c' ? [10,127] : [primaryProg]))]})), ...(globalThis as any).reflection.map((ch: number) => ({
+      type,vals:[ch,...((globalThis as any).binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [secondaryProg]) : (type==='control_c' ? [10,127] : [secondaryProg]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[(globalThis as any).cCH1,...(type==='control_c' ? [(globalThis as any).tuningPitchBend] : [primaryProg])]}, { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[(globalThis as any).cCH2,...(type==='control_c' ? [(globalThis as any).tuningPitchBend] : [secondaryProg])]}]);
     const pFn1 = requirePush(ctx);
     pFn1(ctx.csvBuffer, ...items1);
 
-    const items2 = ['control_c','program_c'].flatMap((type: string) => [ ...globalThis.bass.map((ch: number) => ({
-      type,vals:[ch,...(globalThis.binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[globalThis.cCH3,...(type==='control_c' ? [globalThis.tuningPitchBend] : [bassProg])]}]);
+    const items2 = ['control_c','program_c'].flatMap((type: string) => [ ...(globalThis as any).bass.map((ch: number) => ({
+      type,vals:[ch,...((globalThis as any).binauralL.includes(ch) ? (type==='control_c' ? [10,0] : [bassProg]) : (type==='control_c' ? [10,127] : [bass2Prog]))]})), { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[(globalThis as any).cCH3,...(type==='control_c' ? [(globalThis as any).tuningPitchBend] : [bassProg])]}]);
     const pFn2 = requirePush(ctx);
     pFn2(ctx.csvBuffer, ...items2);
     const pFn3 = requirePush(ctx);
-    pFn3(ctx.csvBuffer, { type: 'control_c', vals: [globalThis.drumCH, 7, 127] });
+    pFn3(ctx.csvBuffer, { type: 'control_c', vals: [(globalThis as any).drumCH, 7, 127] });
   }
 
   /**

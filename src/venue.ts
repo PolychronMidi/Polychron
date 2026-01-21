@@ -328,13 +328,32 @@ export function registerVenueServices(container: DIContainer): void {
 // to register `getMidiValue`, `allNotes`, `allScales`, `allChords`, and `allModes` in the DI container.
 // Consumers should obtain these via DI rather than globalThis.
 
-// Test helper: expose music theory utilities to globalThis when not present
-// This provides a temporary test path; it will be removed once DI registration is used in tests.
-const _g = globalThis as any;
-if (typeof _g.getMidiValue === 'undefined') _g.getMidiValue = getMidiValue;
-if (typeof _g.allNotes === 'undefined') _g.allNotes = allNotes;
-if (typeof _g.allScales === 'undefined') _g.allScales = allScales;
-if (typeof _g.allChords === 'undefined') _g.allChords = allChords;
-if (typeof _g.allModes === 'undefined') _g.allModes = allModes;
-if (typeof _g.midiData === 'undefined') _g.midiData = midiData;
-if (typeof _g.t === 'undefined') _g.t = t;
+/**
+ * Migration helpers: attach/detach legacy venue API to globalThis for
+ * transition tests. These mirror the legacy behavior and should be removed
+ * once all callers use DI container services.
+ * NOTE: Legacy attach functions are removed by default to enforce DI-only policy.
+ */
+export function attachToGlobalVenue(): void {
+  const g: any = globalThis;
+  g.t = t;
+  g.midiData = midiData;
+  g.getMidiValue = getMidiValue;
+  g.allNotes = allNotes;
+  g.allScales = allScales;
+  g.allChords = allChords;
+  g.allModes = allModes;
+}
+
+export function detachFromGlobalVenue(): void {
+  const g: any = globalThis;
+  delete g.t;
+  delete g.midiData;
+  delete g.getMidiValue;
+  delete g.allNotes;
+  delete g.allScales;
+  delete g.allChords;
+  delete g.allModes;
+}
+
+// NOTE: We DO NOT attach venue globals by default. Tests should register venue services via DI (registerVenueServices(container)).

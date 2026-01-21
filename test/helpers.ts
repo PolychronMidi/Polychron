@@ -16,7 +16,7 @@ import { CompositionState, CompositionStateService } from '../src/CompositionSta
 import { ICompositionContext } from '../src/CompositionContext.js';
 import { DIContainer } from '../src/DIContainer.js';
 import { CompositionEventBusImpl, CancellationTokenImpl } from '../src/CompositionProgress.js';
-import { registerWriterServices } from '../src/writer.js';
+import { registerWriterServices, CSVBuffer, logUnit } from '../src/writer.js';
 import * as tonal from 'tonal';
 import { allNotes, allScales, allChords, allModes, getMidiValue, registerVenueServices } from '../src/venue.js';
 
@@ -57,13 +57,36 @@ export function createTestContext(overrides?: Partial<ICompositionContext>): ICo
   state.phraseStart = 0;
   state.sectionStart = 0;
 
+  // Ensure writer services are available in the test context
+  registerWriterServices(services);
+
+  // Ensure venue/theory services are available in the test DI container for tests
+  // that still rely on tonal-derived helpers (preferred DI over globals)
+  registerVenueServices(services);
+
+  const csvBuffer = new CSVBuffer('test');
+
   const ctx: ICompositionContext = {
     state,
+    // Provide both `services` and `container` aliases for compatibility
     services,
+    container: services,
     eventBus,
-    cancelToken,
+    cancellationToken: cancelToken,
     BPM: 120,
     PPQ: 480,
+    csvBuffer,
+    LOG: 'none',
+    // Provide a context-bound logger for tests
+    logUnit: (unitType: string) => {
+      // @ts-ignore - use imported writer.logUnit
+      logUnit(unitType, ctx);
+    },
+    setUnitTiming: (unitType: string) => {
+      const setUnitTimingFn = require('../src/time.js').setUnitTiming;
+      // @ts-ignore - forward to actual function
+      setUnitTimingFn(unitType, ctx);
+    },
     ...overrides
   };
 
@@ -150,9 +173,31 @@ export function setupGlobalState(): void {
   // Reset channel assignments
   globalThis.drumCH = 9;
 
+  /**
+   * NOTE: setupTestDefaults is defined at module scope (see below).
+   * This placeholder kept here while we keep setupGlobalState compact.
+   */
+  // [setupTestDefaults defined after setupGlobalState]
+
   // Initialize test namespace
   if (!globalThis.__POLYCHRON_TEST__) {
     globalThis.__POLYCHRON_TEST__ = {};
+  }
+}
+
+// Module-scope helpers
+export function setupTestDefaults(options?: { smallComposition?: boolean; log?: string }) {
+  const g = globalThis as any;
+  options = options || {};
+  // Ensure legacy globals are initialized for tests that rely on global exposure
+  setupGlobalState();
+
+  if (options.smallComposition) {
+    g.SECTIONS = { min: 1, max: 1 };
+    g.PHRASES_PER_SECTION = { min: 1, max: 1 };
+  }
+  if (typeof options.log === 'string') {
+    g.LOG = options.log;
   }
 }
 

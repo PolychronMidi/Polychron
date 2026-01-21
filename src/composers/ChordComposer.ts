@@ -3,6 +3,8 @@
 // Using GenericComposer<Chord> base class with progression tracking
 
 import GenericComposer from './GenericComposer.js';
+import * as tonal from 'tonal';
+import { allChords } from '../venue.js';
 
 const g = globalThis as any;
 
@@ -17,16 +19,16 @@ class ChordComposer extends GenericComposer<any> {
   direction: string;
   _t: any;
   _ri: any;
-  _allChords: string[];
+  _allChords: string[] = [];
   _m: any;
 
   // deps is an optional injection point for tests (t, ri, allChords, m)
   constructor(progression: string[] = ['C'], deps?: { t?: any; ri?: any; allChords?: string[]; m?: any }) {
     super('chord', 'C');
 
-    const t = (deps && deps.t) || g.t;
+    const t = (deps && deps.t) || tonal;
     const ri = (deps && deps.ri) || g.ri;
-    const allChords = (deps && deps.allChords) || g.allChords;
+    const allChordsLocal = (deps && deps.allChords) || allChords;
     const m = (deps && deps.m) || g.m;
 
     // Normalize chord names (C -> Cmajor)
@@ -73,7 +75,7 @@ class ChordComposer extends GenericComposer<any> {
     this.direction = 'R';
     this._t = t;
     this._ri = ri;
-    this._allChords = allChords;
+    this._allChords = allChordsLocal;
     this._m = m;
 
     // Set initial notes from first chord
@@ -194,7 +196,7 @@ class RandomChordComposer extends ChordComposer {
 
   regenerateProgression(): void {
     const ri = this._ri || g.ri;
-    const allChords = this._allChords || g.allChords;
+    const allChords = this._allChords || allChords;
     const len = ri(2, 5);
     const progression: string[] = [];
     for (let i = 0; i < len; i++) {

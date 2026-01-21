@@ -33,7 +33,7 @@ declare let divRhythm: number[];
 declare let subdivsPerDiv: number;
 declare let subdivIndex: number;
 declare let subdivRhythm: number[];
-declare let subsubsPerSub: number;
+declare let subsubdivsPerSub: number;
 declare let subsubdivIndex: number;
 declare let subsubdivRhythm: number[];
 declare let beatsOn: number;
@@ -196,11 +196,11 @@ export const drummer = (
             currentVelocity = g.clamp(g.m.max(0, g.ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
           }
 
-          pFn(ctx.csvBuffer, {tick: tick, type: 'on', vals: [g.drumCH, drumInfo.note, g.m.floor(currentVelocity)]});
+          pFn(ctx!.csvBuffer, {tick: tick, type: 'on', vals: [g.drumCH, drumInfo.note, g.m.floor(currentVelocity)]});
         }
       } else {
         if (g.__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] no stutter');
-        pFn(ctx.csvBuffer, {tick: g.beatStart + offset * g.tpBeat, type: 'on', vals: [g.drumCH, drumInfo.note, g.ri(...drumInfo.velocityRange)]});
+        pFn(ctx!.csvBuffer, {tick: g.beatStart + offset * g.tpBeat, type: 'on', vals: [g.drumCH, drumInfo.note, g.ri(...drumInfo.velocityRange)]});
       }
     }
 
@@ -443,7 +443,7 @@ export const setRhythm = (level: string): number[] => {
     case 'subsubdiv': {
       const ssr = subsubdivRhythm as number[] | number;
       const shouldRandom = typeof ssr === 'number' ? ssr < 1 : ssr.length < 1;
-      const newRhythm = shouldRandom ? _random(subsubsPerSub, .3) : (getRhythm('subsubdiv', subsubsPerSub, ssr as number[]) || _random(subsubsPerSub, .3));
+      const newRhythm = shouldRandom ? _random(subsubdivsPerSub, .3) : (getRhythm('subsubdiv', subsubdivsPerSub, ssr as number[]) || _random(subsubdivsPerSub, .3));
       subsubdivRhythm = newRhythm as number[];
       return subsubdivRhythm;
     }
@@ -600,7 +600,9 @@ const rhythmMethods: { [key: string]: Function } = {
  * @returns {number[]} Rhythm pattern.
  */
 export const getRhythm = (level: string, length: number, pattern: number[], method?: string, ...args: any[]): number[] | null => {
-  const levelIndex = ['beat', 'div', 'subdiv'].indexOf(level);
+  // Support 'subsubdiv' by mapping it to subdiv's weight index
+  let levelIndex = ['beat', 'div', 'subdiv'].indexOf(level);
+  if (level === 'subsubdiv') levelIndex = 2;
 
   const checkMethod = (m: string): any => {
     if (!rhythmMethods[m] || typeof rhythmMethods[m] !== 'function') {

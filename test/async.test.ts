@@ -62,7 +62,11 @@ describe('CancellationToken', () => {
 
 describe('Async Play Engine Integration', () => {
   beforeEach(async () => {
-    // Import dependencies - must happen after globals are set up
+    // Ensure legacy globals are initialized for modules that read them at import-time
+    const { setupGlobalState } = await import('./helpers');
+    setupGlobalState();
+
+    // Import dependencies after globals are set up
     await import('../dist/sheet.js');
     await import('../dist/venue.js');
     await import('../dist/backstage.js');
@@ -72,7 +76,7 @@ describe('Async Play Engine Integration', () => {
     await import('../dist/rhythm.js');
     await import('../dist/stage.js');
 
-    // Setup minimal global state
+    // Setup minimal global state (override defaults if needed)
     const g = globalThis as any;
     g.BPM = 120;
     g.PPQ = 480;

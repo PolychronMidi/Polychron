@@ -595,6 +595,32 @@ describe('play.js - Orchestrator Module', () => {
       expect(globalThis.initializePlayEngine).toBeDefined();
       expect(typeof globalThis.initializePlayEngine).toBe('function');
     });
+
+    it('registers writer services during initializePlayEngine (DI has pushMultiple/grandFinale)', async () => {
+      const writer = await import('../src/writer.js');
+      const spy = vi.spyOn(writer, 'registerWriterServices');
+      // Ensure no existing DI container to observe registration
+      delete (globalThis as any).DIContainer;
+      const { CancellationTokenImpl } = await import('../src/CompositionProgress.js');
+      const token = new CancellationTokenImpl();
+      const progressCallback = (p: any) => {
+        // Wait until 'composing' begins so core services (writer/time) have been registered
+        if (p.phase === 'composing') token.cancel();
+      };
+      try {
+        await initializePlayEngine(progressCallback, token);
+      } catch (e) {
+        // Cancellation is expected in this test flow
+      }
+
+      expect(spy).toHaveBeenCalled();
+      const container = (globalThis as any).DIContainer;
+      expect(container).toBeDefined();
+      expect(container.has('pushMultiple')).toBe(true);
+      expect(container.has('grandFinale')).toBe(true);
+
+      spy.mockRestore();
+    });
   });
 
   describe('Branch Coverage - Error Conditions', () => {

@@ -47,6 +47,14 @@ export default [
         {
           selector: "Program > ExpressionStatement > AssignmentExpression[left.type='MemberExpression'][left.object.type='Identifier'][left.object.name='globalThis']",
           message: 'Do not attach new properties to globalThis at module scope; use DI instead.'
+        },
+        {
+          selector: "MemberExpression[object.type='Identifier'][object.name='g']",
+          message: 'Avoid using global alias `g`; use DI/context instead.'
+        },
+        {
+          selector: "MemberExpression[object.type='Identifier'][object.name='globalThis']",
+          message: 'Avoid direct use of globalThis members; use DI/context instead.'
         }
       ]
     }

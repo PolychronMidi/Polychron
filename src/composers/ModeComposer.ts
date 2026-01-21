@@ -3,6 +3,8 @@
 // Using GenericComposer<Mode> base class to reduce duplication
 
 import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
+import * as t from 'tonal';
+import { allModes, allNotes } from '../venue.js';
 
 const g = globalThis as any;
 
@@ -18,11 +20,11 @@ class ModeComposer extends GenericComposer<any> {
 
   itemSet(modeName: string, root: string): void {
     this.root = root;
-    this.item = g.t.Mode.get(`${root} ${modeName}`);
+    this.item = t.Mode.get(`${root} ${modeName}`);
     this.notes = this.item.notes || this.item.intervals || [];
     // If item.notes is still empty, fall back to scale
     if (!this.notes || this.notes.length === 0) {
-      const scale = g.t.Scale.get(`${root} ${modeName}`);
+      const scale = t.Scale.get(`${root} ${modeName}`);
       this.notes = scale.notes || [];
     }
   }
@@ -39,20 +41,23 @@ class RandomModeComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    const g = globalThis as any;
-    const randomMode = g.allModes[g.ri(g.allModes.length - 1)];
-    const randomRoot = g.allNotes[g.ri(g.allNotes.length - 1)];
+    // Prefer DI/imported arrays, but fall back to legacy globals for tests
+    const modes = (Array.isArray(allModes) && allModes.length) ? allModes : (g.allModes || []);
+    const notes = (Array.isArray(allNotes) && allNotes.length) ? allNotes : (g.allNotes || []);
+    const modeIdx = Math.max(0, (g.ri && typeof g.ri === 'function') ? g.ri(modes.length - 1) : 0);
+    const rootIdx = Math.max(0, (g.ri && typeof g.ri === 'function') ? g.ri(notes.length - 1) : 0);
+    const randomMode = modes[modeIdx] || 'ionian';
+    const randomRoot = notes[rootIdx] || 'C';
     this.itemSet(randomMode, randomRoot);
   }
 
   itemSet(modeName: string, root: string): void {
-    const g = globalThis as any;
     this.root = root;
-    this.item = g.t.Mode.get(`${root} ${modeName}`);
+    this.item = t.Mode.get(`${root} ${modeName}`);
     this.notes = this.item.notes || this.item.intervals || [];
     // If item.notes is still empty, fall back to scale
     if (!this.notes || this.notes.length === 0) {
-      const scale = g.t.Scale.get(`${root} ${modeName}`);
+      const scale = t.Scale.get(`${root} ${modeName}`);
       this.notes = scale.notes || [];
     }
   }

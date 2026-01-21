@@ -64,7 +64,7 @@ declare let divIndex: number;
 declare let subdivIndex: number;
 declare let subdivsPerDiv: number;
 declare let subsubdivIndex: number;
-declare let subsubsPerSub: number;
+declare let subsubdivsPerSub: number;
 declare let beatCount: number;
 declare let measureCount: number;
 declare let flipBin: boolean;
@@ -266,6 +266,8 @@ const initializePlayEngine = async (
 
   const compositionState = container.get('compositionState');
   compositionState.BASE_BPM = g.BPM;
+  // Preserve any pre-existing global LOG value (e.g., tests) when syncing
+  compositionState.LOG = g.LOG !== undefined ? g.LOG : compositionState.LOG;
   compositionState.syncToGlobal();
 
   // Create composition context (Step 12: Context threading)
@@ -295,6 +297,21 @@ const initializePlayEngine = async (
   // Make context available to module functions
   setCurrentCompositionContext(ctx);
 
+  // Ensure LOG from ctx propagates to global state so timing logging honors test settings
+  (ctx as any).state.LOG = ctx.LOG;
+  (ctx as any).state.syncToGlobal();
+
+  // Populate ctx with legacy helpers needed by writer.grandFinale and other services
+  // This is a transitional bridge during DI migration. Prefer passing explicit env in the future.
+  (ctx as any).LM = g.LM;
+  (ctx as any).fs = (globalThis as any).fs || require('fs');
+  (ctx as any).PPQ = g.PPQ;
+  (ctx as any).SILENT_OUTRO_SECONDS = g.SILENT_OUTRO_SECONDS;
+  (ctx as any).tpSec = g.tpSec;
+  (ctx as any).allNotesOff = g.allNotesOff;
+  (ctx as any).muteAll = g.muteAll;
+  (ctx as any).rf = g.rf;
+
   const BASE_BPM = g.BPM;
 
   // Initialize composers from configuration using new ComposerRegistry
@@ -303,135 +320,148 @@ const initializePlayEngine = async (
     g.composers = g.COMPOSERS.map((config: any) => registry.create(config));
   }
 
-  // Resolve stage from container and assign to globals
+  // Resolve stage from container and assign to context and globals
   g.stage = container.get('stage');
+  (ctx as any).stage = g.stage;
 
   const { state: primary, buffer: c1 } = g.LM.register('primary', 'c1', {}, () => g.stage.setTuningAndInstruments());
   const { state: poly, buffer: c2 } = g.LM.register('poly', 'c2', {}, () => g.stage.setTuningAndInstruments());
 
-  g.totalSections = g.ri(g.SECTIONS.min, g.SECTIONS.max);
+  ctx.state.totalSections = g.ri(g.SECTIONS.min, g.SECTIONS.max);
 
   // Report composing phase started
   progressCallback?.({
     phase: 'composing',
     progress: 5,
-    totalSections: g.totalSections,
-    message: `Starting composition: ${g.totalSections} sections`
+    totalSections: ctx.state.totalSections,
+    message: `Starting composition: ${ctx.state.totalSections} sections`
   });
 
   cancellationToken?.throwIfRequested();
 
-  for (g.sectionIndex = 0; g.sectionIndex < g.totalSections; g.sectionIndex++) {
-    // Report progress for each section
-    const sectionProgress = 5 + (g.sectionIndex / g.totalSections) * 85;
+  for (ctx.state.sectionIndex = 0; ctx.state.sectionIndex < ctx.state.totalSections; ctx.state.sectionIndex++) {
+    // Sync minimal state to globals for legacy consumers and report progress
+    ctx.state.syncToGlobal();
+
+    const sectionProgress = 5 + (ctx.state.sectionIndex / ctx.state.totalSections) * 85;
     progressCallback?.({
       phase: 'composing',
       progress: sectionProgress,
-      sectionIndex: g.sectionIndex,
-      totalSections: g.totalSections,
-      message: `Composing section ${g.sectionIndex + 1}/${g.totalSections}`
+      sectionIndex: ctx.state.sectionIndex,
+      totalSections: ctx.state.totalSections,
+      message: `Composing section ${ctx.state.sectionIndex + 1}/${ctx.state.totalSections}`
     });
 
     cancellationToken?.throwIfRequested();
 
-    // Debug: check if resolveSectionProfile is available
-    if (!g.resolveSectionProfile) {
-      console.error('resolveSectionProfile not found on globalThis!', Object.keys(g).filter(k => k.includes('Section')));
+    // Debug: check if resolveSectionProfile is available on legacy global
+    if (!(globalThis as any).resolveSectionProfile) {
+      console.error('resolveSectionProfile not found on globalThis!', Object.keys(globalThis).filter(k => k.includes('Section')));
       throw new Error('resolveSectionProfile is not defined');
     }
-    const sectionProfile = g.resolveSectionProfile();
-    g.phrasesPerSection = sectionProfile.phrasesPerSection;
-    g.currentSectionType = sectionProfile.type;
-    g.currentSectionDynamics = sectionProfile.dynamics;
-    g.BPM = g.m.max(1, g.m.round(BASE_BPM * sectionProfile.bpmScale));
-    g.activeMotif = sectionProfile.motif
-      ? new g.Motif(sectionProfile.motif.map((offset: any) => ({ note: g.clampMotifNote(60 + offset) })))
+    const sectionProfile = (globalThis as any).resolveSectionProfile();
+    ctx.state.phrasesPerSection = sectionProfile.phrasesPerSection;
+    ctx.state.currentSectionType = sectionProfile.type;
+    ctx.state.currentSectionDynamics = sectionProfile.dynamics;
+    const baseBpm = (typeof BASE_BPM === 'number' && !isNaN(BASE_BPM)) ? BASE_BPM : (ctx.BPM || 120);
+    ctx.state.BPM = Math.max(1, Math.round(baseBpm * sectionProfile.bpmScale));
+    ctx.state.activeMotif = sectionProfile.motif
+      ? new (globalThis as any).Motif(sectionProfile.motif.map((offset: any) => ({ note: (globalThis as any).clampMotifNote(60 + offset) })))
       : null;
 
-    for (g.phraseIndex = 0; g.phraseIndex < g.phrasesPerSection; g.phraseIndex++) {
+    for (ctx.state.phraseIndex = 0; ctx.state.phraseIndex < ctx.state.phrasesPerSection; ctx.state.phraseIndex++) {
       cancellationToken?.throwIfRequested();
 
-      g.composer = g.ra(g.composers);
-      [g.numerator, g.denominator] = g.composer.getMeter();
-      g.getMidiTiming(ctx);
-      g.getPolyrhythm(ctx);
-      g.syncStateToGlobals(ctx);  // Sync timing values from ctx.state to globals for runtime
+      // Select composer for this phrase and initialize timing
+      ctx.state.composer = (globalThis as any).ra((globalThis as any).composers);
+      const [num, den] = ctx.state.composer.getMeter();
+      ctx.state.numerator = num;
+      ctx.state.denominator = den;
 
-      g.LM.activate('primary', false);
+      // Initialize timing using context-aware functions
+      (await import('./time.js')).getMidiTiming(ctx);
+      (await import('./time.js')).getPolyrhythm(ctx);
+      // Keep legacy globals in sync for compatibility
+      ctx.state.syncToGlobal();
+
+      ctx.LM.activate('primary', false);
       ctx.setUnitTiming('phrase');
-      for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
-        g.measureCount++;
+      for (ctx.state.measureIndex = 0; ctx.state.measureIndex < ctx.state.measuresPerPhrase; ctx.state.measureIndex++) {
+        ctx.state.measureCount++;
         ctx.setUnitTiming('measure');
 
-        for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
-          g.beatCount++;
+        for (ctx.state.beatIndex = 0; ctx.state.beatIndex < ctx.state.numerator; ctx.state.beatIndex++) {
+          ctx.state.beatCount++;
           ctx.setUnitTiming('beat');
-          g.stage.setOtherInstruments(ctx);
-          g.stage.setBinaural(ctx);
-          g.stage.setBalanceAndFX(ctx);
+          ctx.stage.setOtherInstruments(ctx);
+          ctx.stage.setBinaural(ctx);
+          ctx.stage.setBalanceAndFX(ctx);
           playDrums(ctx);
-          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
-          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
-          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx) : g.stage.stutterPan(g.stutterPanCHs, ctx);
+          ctx.stage.stutterFX(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
+          ctx.stage.stutterFade(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
+          (globalThis as any).rf() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
 
-          for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
+          for (ctx.state.divIndex = 0; ctx.state.divIndex < ctx.state.divsPerBeat; ctx.state.divIndex++) {
             ctx.setUnitTiming('division');
 
-            for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
+            for (ctx.state.subdivIndex = 0; ctx.state.subdivIndex < ctx.state.subdivsPerDiv; ctx.state.subdivIndex++) {
               ctx.setUnitTiming('subdivision');
-              g.stage.playNotes(ctx);
+              ctx.stage.playNotes(ctx);
             }
 
-            for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
+            for (ctx.state.subsubdivIndex = 0; ctx.state.subsubdivIndex < ctx.state.subsubdivsPerSub; ctx.state.subsubdivIndex++) {
                 ctx.setUnitTiming('subsubdivision');
-              g.stage.playNotes2(ctx);
+              ctx.stage.playNotes2(ctx);
             }
           }
         }
       }
 
-      g.LM.advance('primary', 'phrase');
+      ctx.LM.advance('primary', 'phrase');
 
-      g.LM.activate('poly', true);
-      g.getMidiTiming(ctx);
-      g.syncStateToGlobals(ctx);  // Sync timing values from ctx.state to globals for runtime
+      ctx.LM.activate('poly', true);
+      (await import('./time.js')).getMidiTiming(ctx);
+      ctx.state.syncToGlobal();  // Sync timing values from ctx.state to globals for runtime
       ctx.setUnitTiming('phrase');
-      for (g.measureIndex = 0; g.measureIndex < g.measuresPerPhrase; g.measureIndex++) {
+      for (ctx.state.measureIndex = 0; ctx.state.measureIndex < ctx.state.measuresPerPhrase; ctx.state.measureIndex++) {
         ctx.setUnitTiming('measure');
 
-        for (g.beatIndex = 0; g.beatIndex < g.numerator; g.beatIndex++) {
+        for (ctx.state.beatIndex = 0; ctx.state.beatIndex < ctx.state.numerator; ctx.state.beatIndex++) {
           ctx.setUnitTiming('beat');
-          g.stage.setOtherInstruments(ctx);
-          g.stage.setBinaural(ctx);
-          g.stage.setBalanceAndFX(ctx);
+          ctx.stage.setOtherInstruments(ctx);
+          ctx.stage.setBinaural(ctx);
+          ctx.stage.setBalanceAndFX(ctx);
           playDrums2(ctx);
-          g.stage.stutterFX(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
-          g.stage.stutterFade(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx);
-          g.rf() < 0.05 ? g.stage.stutterPan(g.flipBin ? g.flipBinT3 : g.flipBinF3, ctx) : g.stage.stutterPan(g.stutterPanCHs, ctx);
+          ctx.stage.stutterFX(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
+          ctx.stage.stutterFade(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
+          (globalThis as any).rf() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
 
-          for (g.divIndex = 0; g.divIndex < g.divsPerBeat; g.divIndex++) {
+          for (ctx.state.divIndex = 0; ctx.state.divIndex < ctx.state.divsPerBeat; ctx.state.divIndex++) {
             ctx.setUnitTiming('division');
 
-            for (g.subdivIndex = 0; g.subdivIndex < g.subdivsPerDiv; g.subdivIndex++) {
+            for (ctx.state.subdivIndex = 0; ctx.state.subdivIndex < ctx.state.subdivsPerDiv; ctx.state.subdivIndex++) {
               ctx.setUnitTiming('subdivision');
-              g.stage.playNotes(ctx);
+              ctx.stage.playNotes(ctx);
             }
 
-            for (g.subsubdivIndex = 0; g.subsubdivIndex < g.subsubsPerSub; g.subsubdivIndex++) {
+            for (ctx.state.subsubdivIndex = 0; ctx.state.subsubdivIndex < ctx.state.subsubdivsPerSub; ctx.state.subsubdivIndex++) {
               ctx.setUnitTiming('subsubdivision');
-              g.stage.playNotes2(ctx);
+              ctx.stage.playNotes2(ctx);
             }
           }
         }
       }
 
-      g.LM.advance('poly', 'phrase');
+      ctx.LM.advance('poly', 'phrase');
     }
 
     g.LM.advance('primary', 'section');
+    // Ensure the context's buffer points to the active buffer before logging section markers
+    (ctx as any).csvBuffer = (globalThis as any).c;
     ctx.logUnit('section');
 
     g.LM.advance('poly', 'section');
+    (ctx as any).csvBuffer = (globalThis as any).c;
     ctx.logUnit('section');
 
     g.BPM = BASE_BPM;
@@ -450,14 +480,10 @@ const initializePlayEngine = async (
   // Prefer DI-registered writer for finalization rather than relying on a global
   try {
     const grandFinaleFn = container.get('grandFinale');
-    if (typeof grandFinaleFn === 'function') grandFinaleFn();
+    if (typeof grandFinaleFn === 'function') grandFinaleFn(ctx);
   } catch (e) {
-    // If DI is missing, fall back to any global (keeps legacy behavior for now)
-    if (typeof g.grandFinale === 'function') {
-      g.grandFinale();
-    } else {
-      throw e;
-    }
+    // If DI is missing, propagate the error (no global fallback allowed)
+    throw e;
   }
 
   // Report complete

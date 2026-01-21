@@ -337,6 +337,65 @@ describe('FxManager', () => {
       expect(fxManager).toBeDefined();
     });
 
+    describe('Scheduling correctness', () => {
+      it('stutterFade schedules events relative to beatStart', () => {
+        const g = globalThis as any;
+        // Make behavior deterministic
+        g.ri = vi.fn(() => 2);
+        g.rf = vi.fn(() => 0.5);
+
+        // Clear buffer and run with beatStart = 0
+        ctx.csvBuffer.clear();
+        g.beatStart = 0;
+        fxManager.stutterFade([1], ctx, 3, 480);
+        const ticksA = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        // Clear and run with beatStart = 480 (one beat later)
+        ctx.csvBuffer.clear();
+        g.beatStart = 480;
+        fxManager.stutterFade([1], ctx, 3, 480);
+        const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        expect(Math.min(...ticksB)).toBeGreaterThanOrEqual(Math.min(...ticksA) + 400);
+      });
+
+      it('stutterPan schedules events relative to beatStart', () => {
+        const g = globalThis as any;
+        g.ri = vi.fn(() => 2);
+        g.rf = vi.fn(() => 0.5);
+
+        ctx.csvBuffer.clear();
+        g.beatStart = 0;
+        fxManager.stutterPan([2], ctx, 3, 480);
+        const ticksA = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        ctx.csvBuffer.clear();
+        g.beatStart = 480;
+        fxManager.stutterPan([2], ctx, 3, 480);
+        const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        expect(Math.min(...ticksB)).toBeGreaterThanOrEqual(Math.min(...ticksA) + 400);
+      });
+
+      it('stutterFX schedules events relative to beatStart', () => {
+        const g = globalThis as any;
+        g.ri = vi.fn(() => 2);
+        g.rf = vi.fn(() => 0.5);
+
+        ctx.csvBuffer.clear();
+        g.beatStart = 0;
+        fxManager.stutterFX([3], ctx, 3, 480);
+        const ticksA = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        ctx.csvBuffer.clear();
+        g.beatStart = 480;
+        fxManager.stutterFX([3], ctx, 3, 480);
+        const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        expect(Math.min(...ticksB)).toBeGreaterThanOrEqual(Math.min(...ticksA) + 400);
+      });
+    });
+
     it('should apply all three stutter types to same channel', () => {
       const ch = [1];
       fxManager.stutterFade(ch, ctx, 2, 500);

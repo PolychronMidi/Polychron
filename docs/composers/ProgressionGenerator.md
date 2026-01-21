@@ -36,11 +36,20 @@ class ProgressionGenerator {
   romanQuality: string;
   scaleNotes: string[];
   diatonicChords: string[];
+  _t: any;
+  _ri: any;
 
-  constructor(key: string, quality: string = 'major') {
+  constructor(key: string, quality: string = 'major', deps?: { t?: any; ri?: any }) {
     this.key = key;
     this.quality = quality.toLowerCase();
-    this.scale = t.Scale.get(`${key} ${quality}`);
+
+    const tLocal = (deps && deps.t) || (globalThis as any).t;
+    const riLocal = (deps && deps.ri) || (globalThis as any).ri;
+
+    this._t = tLocal;
+    this._ri = riLocal;
+
+    this.scale = tLocal.Scale.get(`${key} ${quality}`);
 
     const modeToQuality: Record<string, string> = {
       'ionian': 'major', 'dorian': 'minor', 'phrygian': 'minor',
@@ -49,7 +58,7 @@ class ProgressionGenerator {
     };
     this.romanQuality = modeToQuality[this.quality] || 'major';
 
-    const keyApi = this.romanQuality === 'minor' ? t.Key.minorKey : t.Key.majorKey;
+    const keyApi = this.romanQuality === 'minor' ? tLocal.Key.minorKey : tLocal.Key.majorKey;
     const keyData = keyApi(key) as any;
     this.scaleNotes = this.romanQuality === 'minor' ? (keyData as any).natural?.scale : keyData.scale;
     this.diatonicChords = this.romanQuality === 'minor' ? (keyData as any).natural?.chords : keyData.chords;
@@ -66,6 +75,7 @@ class ProgressionGenerator {
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(
       r => romanNumeral.toUpperCase() === r
     );
+    const tLocal = this._t || (globalThis as any).t;
     if (degreeIndex === -1) return null;
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];
@@ -84,10 +94,11 @@ class ProgressionGenerator {
     let rootNote = baseRoot;
 
     if (isFlat || isSharp) {
-      const chromaticNote = t.Note.chroma(rootNote);
+      const tLocal = this._t || (globalThis as any).t;
+      const chromaticNote = tLocal.Note.chroma(rootNote);
       const alteredChroma = isFlat ? chromaticNote - 1 : chromaticNote + 1;
-      const pc = t.Note.fromMidi(alteredChroma);
-      rootNote = t.Note.pitchClass(pc);
+      const pc = tLocal.Note.fromMidi(alteredChroma);
+      rootNote = tLocal.Note.pitchClass(pc);
     }
 
     const extensions = roman.replace(/^[b#]?[IiVv]+/, '');
@@ -127,7 +138,8 @@ class ProgressionGenerator {
     const types = (this.romanQuality || this.quality) === 'major'
       ? ['I-IV-V', 'I-V-vi-IV', 'ii-V-I', 'I-vi-IV-V']
       : ['i-iv-v', 'i-VI-VII', 'i-iv-VII', 'ii-V-i'];
-    const randomType = types[ri(types.length - 1)];
+    const riLocal = this._ri || (globalThis as any).ri;
+    const randomType = types[riLocal(types.length - 1)];
     return this.generate(randomType);
   }
 }
@@ -153,6 +165,7 @@ romanToChord(roman: string): string | null {
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(
       r => romanNumeral.toUpperCase() === r
     );
+    const tLocal = this._t || (globalThis as any).t;
     if (degreeIndex === -1) return null;
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];
@@ -171,10 +184,11 @@ romanToChord(roman: string): string | null {
     let rootNote = baseRoot;
 
     if (isFlat || isSharp) {
-      const chromaticNote = t.Note.chroma(rootNote);
+      const tLocal = this._t || (globalThis as any).t;
+      const chromaticNote = tLocal.Note.chroma(rootNote);
       const alteredChroma = isFlat ? chromaticNote - 1 : chromaticNote + 1;
-      const pc = t.Note.fromMidi(alteredChroma);
-      rootNote = t.Note.pitchClass(pc);
+      const pc = tLocal.Note.fromMidi(alteredChroma);
+      rootNote = tLocal.Note.pitchClass(pc);
     }
 
     const extensions = roman.replace(/^[b#]?[IiVv]+/, '');
@@ -234,7 +248,8 @@ random(): string[] {
     const types = (this.romanQuality || this.quality) === 'major'
       ? ['I-IV-V', 'I-V-vi-IV', 'ii-V-I', 'I-vi-IV-V']
       : ['i-iv-v', 'i-VI-VII', 'i-iv-VII', 'ii-V-i'];
-    const randomType = types[ri(types.length - 1)];
+    const riLocal = this._ri || (globalThis as any).ri;
+    const randomType = types[riLocal(types.length - 1)];
     return this.generate(randomType);
   }
 ```

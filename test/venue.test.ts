@@ -1,5 +1,9 @@
 // test/venue.test.js
 import { midiData } from '../src/venue.js';
+import { setupGlobalState } from './helpers.js';
+
+// Ensure legacy venue globals are available for tests
+setupGlobalState();
 
 describe('midiData', () => {
   describe('program array', () => {

@@ -49,7 +49,7 @@ export interface CompositionState {
   subdivStart: number;
   subdivStartTime: number;
   subsubdivIndex: number;
-  subsubsPerSub: number;
+  subsubdivsPerSub: number;
   subsubdivStart: number;
   subsubdivStartTime: number;
 
@@ -113,8 +113,8 @@ export interface CompositionState {
   crossModulation: number;
   lastCrossMod: number;
   velocity: number;
-  flipBinT3: number;
-  flipBinF3: number;
+  flipBinT3: number[];
+  flipBinF3: number[];
   stutterPanCHs: number[];
 
   // Logging
@@ -166,7 +166,7 @@ export class CompositionStateService implements CompositionState {
   subdivStart = 0;
   subdivStartTime = 0;
   subsubdivIndex = 0;
-  subsubsPerSub = 0;
+  subsubdivsPerSub = 0;
   subsubdivStart = 0;
   subsubdivStartTime = 0;
 
@@ -230,8 +230,8 @@ export class CompositionStateService implements CompositionState {
   crossModulation = 2.5;
   lastCrossMod = 0;
   velocity = 99;
-  flipBinT3 = 0;
-  flipBinF3 = 0;
+  flipBinT3: number[] = [];
+  flipBinF3: number[] = [];
   stutterPanCHs: number[] = [];
 
   // Logging
@@ -290,6 +290,8 @@ export class CompositionStateService implements CompositionState {
     if (g.composer !== undefined) this.composer = g.composer;
     if (g.activeMotif !== undefined) this.activeMotif = g.activeMotif;
     if (g.BPM !== undefined) this.BPM = g.BPM;
+    if (g.flipBinT3 !== undefined) this.flipBinT3 = g.flipBinT3;
+    if (g.flipBinF3 !== undefined) this.flipBinF3 = g.flipBinF3;
     if (g.LOG !== undefined) this.LOG = g.LOG;
   }
 

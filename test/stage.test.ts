@@ -827,21 +827,24 @@ describe('Stage Module', () => {
 
     it('should set primary instrument on source channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const primaryProg = globalThis.getMidiValue('program', globalThis.primaryInstrument);
+      const midi = ctx.services.get('getMidiValue');
+      const primaryProg = midi('program', globalThis.primaryInstrument);
       const sourcePrograms = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
       expect(sourcePrograms.some(e => e.vals[1] === primaryProg)).toBe(true);
     });
 
     it('should set secondary instrument on reflection channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const secondaryProg = globalThis.getMidiValue('program', globalThis.secondaryInstrument);
+      const midi = ctx.services.get('getMidiValue');
+      const secondaryProg = midi('program', globalThis.secondaryInstrument);
       const reflectionPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
       expect(reflectionPrograms.some(e => e.vals[1] === secondaryProg)).toBe(true);
     });
 
     it('should set bass instrument on bass channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const bassProg = getMidiValue('program', globalThis.bassInstrument);
+      const midi = ctx.services.get('getMidiValue');
+      const bassProg = midi('program', globalThis.bassInstrument);
       const bassPrograms = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
       expect(bassPrograms.some(e => e.vals[1] === bassProg)).toBe(true);
     });

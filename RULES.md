@@ -62,10 +62,12 @@ DON'T DO: Hardcoded lists: Module arrays go stale → Use `generateModuleMapping
 
 ## TODO Protocol
 - Every task must begin with the command `npm run todo` which creates `TODO.md`
-- Before reporting progress or asking for confirmation, always run `npm run am-i-done` to verify completion status.
+- Before reporting progress or asking for confirmation, always make sure all TODO items are complete first, then run `npm run am-i-done` to verify completion status.
 - If all your TODOs are not marked done, or Initial Status for tests and errors does not match Latest Status, return to working on the task until fully complete.
 - Never start a new TODO file when there is one in progress, and never commit to git.
 
+### Anti-Harassment Policy
+- Never report partial progress or ask for confirmation until all TODO items are complete.
 
 ## Efficiency Protocol
 Use Serena MCP commands, subagents, and batching as much as possible for efficiency.

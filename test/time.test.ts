@@ -843,7 +843,8 @@ describe('End-to-End MIDI Timing', () => {
     ctx.state.denominator = 9;
     ctx.state.BPM = 120;
     ctx.state.PPQ = 480;
-    c = globalThis.c = [];
+    const c: any[] = [];
+    ctx.csvBuffer = c; // DI-based buffer for test
     globalThis.beatStart = 0;
     globalThis.measureStart = 0;
 
@@ -906,8 +907,8 @@ describe('setMidiTiming', () => {
   });
 
   it('should write BPM event to buffer', () => {
-    const testBuffer = [];
-    globalThis.c = testBuffer;
+    const testBuffer: any[] = [];
+    ctx.csvBuffer = testBuffer;
     setMidiTiming(ctx, 0);
 
     const bpmEvent = testBuffer.find(e => e.type === 'bpm');
@@ -916,8 +917,8 @@ describe('setMidiTiming', () => {
   });
 
   it('should write meter event to buffer', () => {
-    const testBuffer = [];
-    globalThis.c = testBuffer;
+    const testBuffer: any[] = [];
+    ctx.csvBuffer = testBuffer;
     setMidiTiming(ctx, 0);
 
     const meterEvent = testBuffer.find(e => e.type === 'meter');
@@ -926,8 +927,8 @@ describe('setMidiTiming', () => {
   });
 
   it('should place events at correct tick position', () => {
-    const testBuffer = [];
-    globalThis.c = testBuffer;
+    const testBuffer: any[] = [];
+    ctx.csvBuffer = testBuffer;
     setMidiTiming(ctx, 1000);
 
     expect(testBuffer[0].tick).toBe(1000);
@@ -935,8 +936,8 @@ describe('setMidiTiming', () => {
   });
 
   it('should use default tick of measureStart when not provided', () => {
-    const testBuffer = [];
-    globalThis.c = testBuffer;
+    const testBuffer: any[] = [];
+    ctx.csvBuffer = testBuffer;
     ctx.state.measureStart = 500;
     setMidiTiming(ctx);
 
@@ -945,8 +946,8 @@ describe('setMidiTiming', () => {
   });
 
   it('should write correct adjusted BPM for spoofed meters', () => {
-    const testBuffer = [];
-    globalThis.c = testBuffer;
+    const testBuffer: any[] = [];
+    ctx.csvBuffer = testBuffer;
     setMidiTiming(ctx, 0);
 
     const bpmEvent = testBuffer.find(e => e.type === 'bpm');
@@ -954,8 +955,8 @@ describe('setMidiTiming', () => {
   });
 
   it('should write MIDI-compatible meter not actual meter', () => {
-    const testBuffer = [];
-    globalThis.c = testBuffer;
+    const testBuffer: any[] = [];
+    ctx.csvBuffer = testBuffer;
     setMidiTiming(ctx, 0);
 
     const meterEvent = testBuffer.find(e => e.type === 'meter');
@@ -1401,7 +1402,6 @@ describe('Multi-layer timing consistency', () => {
     globalThis.trackDivRhythm = () => {};
     globalThis.trackSubdivRhythm = () => {};
     globalThis.trackSubsubdivRhythm = () => {};
-    globalThis.logUnit = () => {};
   });
 
   it('should maintain consistent timing when switching between layers', () => {
@@ -1413,11 +1413,13 @@ describe('Multi-layer timing consistency', () => {
 
     // Set initial values
     const g = globalThis as any;
-    g.phraseStart = 0;
-    g.phraseStartTime = 0;
-    g.measureIndex = 0;
+    // Prefer setting indices on state; setUnitTiming reads from ctx.state
+    ctx.state.phraseStart = 0;
+    ctx.state.phraseStartTime = 0;
+    ctx.state.measureIndex = 0;
+    // Keep spMeasure/tpMeasure synced for legacy checks
     g.spMeasure = ctx.state.tpMeasure / ctx.state.tpSec;
-    // Sync timing to globals so setUnitTiming can read them
+    // Sync timing to globals so setUnitTiming can read them when necessary
     g.tpMeasure = ctx.state.tpMeasure;
     g.spMeasure = ctx.state.spMeasure;
 
@@ -1427,7 +1429,7 @@ describe('Multi-layer timing consistency', () => {
     expect(firstMeasureStart).toBe(0);
 
     // Simulate advancing to next measure
-    g.measureIndex = 1;
+    ctx.state.measureIndex = 1;
     setUnitTiming('measure', ctx);
     const secondMeasureStart = g.measureStart;
     expect(secondMeasureStart).toBe(ctx.state.tpMeasure);
@@ -1443,29 +1445,30 @@ describe('Multi-layer timing consistency', () => {
     getMidiTiming(ctx);
 
     const g = globalThis as any;
-    g.phraseStart = 0;
-    g.phraseStartTime = 0;
-    g.measureIndex = 0;
-    g.beatIndex = 0;
-    g.divIndex = 0;
-    // Sync timing to globals
+    // Prefer using ctx.state indices so setUnitTiming reads the intended values
+    ctx.state.phraseStart = 0;
+    ctx.state.phraseStartTime = 0;
+    ctx.state.measureIndex = 0;
+    ctx.state.beatIndex = 0;
+    ctx.state.divIndex = 0;
+    // Sync timing to globals for backward compatibility
     g.tpMeasure = ctx.state.tpMeasure;
     g.spMeasure = ctx.state.spMeasure;
 
-    // Set measure timing
-    g.measureIndex = 1;
+    // Set measure timing via state
+    ctx.state.measureIndex = 1;
     setUnitTiming('measure', ctx);
     const measureTick = g.measureStart;
     expect(measureTick).toBe(ctx.state.tpMeasure); // phraseStart(0) + 1 * tpMeasure
 
     // Set beat timing (should cascade from measureStart)
-    g.beatIndex = 2;
+    ctx.state.beatIndex = 2;
     setUnitTiming('beat', ctx);
     const expectedBeatStart = measureTick + 2 * g.tpBeat;
     expect(g.beatStart).toBe(expectedBeatStart);
 
     // Set division timing (should cascade from beatStart)
-    g.divIndex = 1;
+    ctx.state.divIndex = 1;
     setUnitTiming('division', ctx);
     const expectedDivStart = g.beatStart + 1 * g.tpDiv;
     expect(g.divStart).toBe(expectedDivStart);
