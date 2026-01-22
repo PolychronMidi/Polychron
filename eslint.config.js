@@ -39,11 +39,10 @@ export default [
       '@typescript-eslint': tsPlugin
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',  // Stage 2: Accept any for now
-      '@typescript-eslint/no-unused-vars': 'off',   // Many globals intentionally unused in specific files
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
       'no-undef': 'off',  // TypeScript handles this
-      // Temporarily disable the global usage restriction while we iterate on tests.
-      // This is temporary — add a TODO to re-enable and clean remaining global usages.
+      'no-global-assign': 'error',
       'no-restricted-syntax': 'off'
     }
   },

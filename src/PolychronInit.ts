@@ -86,8 +86,9 @@ export function initializePolychronContext(): IPolychronContext {
 
   // ============================================================
   // POPULATE TEST NAMESPACE (test-only state)
+  // Use DI-friendly setter to avoid globalThis reliance
   // ============================================================
-  PolychronContext.test = (globalThis as any).__POLYCHRON_TEST__ || {};
+  PolychronContext.test = {};
 
   // ============================================================
   // MARK AS INITIALIZED
@@ -107,6 +108,10 @@ export function getPolychronContext(): IPolychronContext {
     return initializePolychronContext();
   }
   return PolychronContext;
+}
+
+export function setPolychronTestNamespace(ns: any): void {
+  PolychronContext.test = ns || {};
 }
 
 export default PolychronContext;

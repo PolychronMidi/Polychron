@@ -4,12 +4,14 @@ import { initializePlayEngine, getCurrentCompositionContext } from '../src/play.
 // Integration test: verify generated events span beyond the first measure
 describe('Play Engine Timing Progression', () => {
   it('produces events across multiple measures (not all stacked in measure 0)', async () => {
-    // Run a short composition
-    await initializePlayEngine();
+    // Configure a small composition via globals to keep test fast
+    (globalThis as any).SECTIONS = { min: 1, max: 1 };
 
-    const g = globalThis as any;
-    // Access primary layer buffer
-    const primaryLayer = g.LM && g.LM.layers && g.LM.layers['primary'];
+    // Run a short composition and get the composition context
+    const ctx = await initializePlayEngine();
+    expect(ctx, 'composition context should be available').toBeDefined();
+
+    const primaryLayer = ctx?.LM?.layers && ctx.LM.layers['primary'];
     expect(primaryLayer, 'primary layer should be registered').toBeDefined();
 
     const buf = primaryLayer.buffer && primaryLayer.buffer.rows ? primaryLayer.buffer.rows : primaryLayer.buffer;
@@ -21,7 +23,7 @@ describe('Play Engine Timing Progression', () => {
 
     // Compute max tick without spreading (avoids call stack issues when buffer is very large)
     const maxTick = ticks.reduce((m: number, t: number) => Math.max(m, t), Number.NEGATIVE_INFINITY);
-    const tpMeasure = primaryLayer.state && primaryLayer.state.tpMeasure ? primaryLayer.state.tpMeasure : (g.tpMeasure || 0);
+    const tpMeasure = primaryLayer.state && primaryLayer.state.tpMeasure ? primaryLayer.state.tpMeasure : 0;
 
     // Expect at least one event to occur after the first measure boundary
     expect(maxTick, `max tick ${maxTick} should be greater than tpMeasure ${tpMeasure}`).toBeGreaterThan(tpMeasure);

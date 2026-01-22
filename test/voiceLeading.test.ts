@@ -1,7 +1,6 @@
 // test/voiceLeading.test.js
 import { VoiceLeadingScore } from '../src/voiceLeading.js';
 import { MeasureComposer, ScaleComposer, ChordComposer } from '../src/composers.js';
-import { setupGlobalState } from './helpers.module.js';
 
 /**
  * Voice Leading Tests

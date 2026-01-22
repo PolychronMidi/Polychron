@@ -43,8 +43,8 @@ export class PlayNotes {
    */
   crossModulateRhythms(ctx?: ICompositionContext): void {
     // Prefer DI-based state when provided
-    const state = ctx?.state ?? (globalThis as any).state ?? { beatRhythm: [1], divRhythm: [1], subdivRhythm: [1], beatIndex: 0, divIndex: 0, subdivIndex: 0 };
-    const utils = (globalThis as any).PolychronContext?.utils ?? { rf: Math.random, ri: () => 0, m: Math } as any;
+    const state = ctx?.state ?? getPolychronContext().state ?? { beatRhythm: [1], divRhythm: [1], subdivRhythm: [1], beatIndex: 0, divIndex: 0, subdivIndex: 0 };
+    const utils = getPolychronContext().utils ?? { rf: Math.random, ri: () => 0, m: Math } as any;
 
     this.lastCrossMod = this.crossModulation;
     this.crossModulation = (

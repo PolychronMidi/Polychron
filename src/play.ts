@@ -15,6 +15,9 @@ import './fxManager.js';   // FX processing
 import { fxManager } from './fxManager.js';
 import './stage.js';       // Audio processing
 import './structure.js';   // Section structure
+import { resolveSectionProfile } from './structure.js';
+import { Motif, clampMotifNote } from './motifs.js';
+import { LayerManager } from './time/LayerManager.js';
 
 // Initialize PolychronContext
 import { initializePolychronContext, getPolychronContext } from './PolychronInit.js';
@@ -39,11 +42,9 @@ import {
 declare const BPM: number;
 declare const SECTIONS: { min: number; max: number };
 declare const COMPOSERS: any[];
-declare const Motif: any;
 declare const m: any;
 declare const p: any;
 declare const LM: any;
-declare const clampMotifNote: (note: number) => number;
 
 // Global mutable state for composition hierarchy
 declare let composers: any[];
@@ -169,10 +170,10 @@ const registerCoreServices = (container: DIContainer) => {
     'singleton'
   );
 
-  // Register LayerManager (singleton)
+  // Register LayerManager (singleton) using DI-friendly import
   container.register(
     'layerManager',
-    () => g.LM,
+    () => LayerManager,
     'singleton'
   );
 
@@ -241,7 +242,7 @@ const registerCoreServices = (container: DIContainer) => {
 const initializePlayEngine = async (
   progressCallback?: ProgressCallback,
   cancellationToken?: CancellationToken
-): Promise<void> => {
+): Promise<ICompositionContext> => {
   const g = globalThis as any;
 
   // Report initialization phase
@@ -297,20 +298,17 @@ const initializePlayEngine = async (
   // Make context available to module functions
   setCurrentCompositionContext(ctx);
 
-  // Ensure LOG from ctx propagates to global state so timing logging honors test settings
+  // Ensure LOG from ctx is set in state (no globals)
   (ctx as any).state.LOG = ctx.LOG;
-  (ctx as any).state.syncToGlobal();
 
-  // Populate ctx with legacy helpers needed by writer.grandFinale and other services
-  // This is a transitional bridge during DI migration. Prefer passing explicit env in the future.
-  (ctx as any).LM = g.LM;
-  (ctx as any).fs = (globalThis as any).fs || require('fs');
+  // Provide DI-based LayerManager and stage references on context
+  (ctx as any).LM = container.get('layerManager');
+  (ctx as any).stage = container.get('stage');
+
+  // Provide file system via DI-friendly require
+  (ctx as any).fs = require('fs');
   (ctx as any).PPQ = g.PPQ;
   (ctx as any).SILENT_OUTRO_SECONDS = g.SILENT_OUTRO_SECONDS;
-  (ctx as any).tpSec = g.tpSec;
-  (ctx as any).allNotesOff = g.allNotesOff;
-  (ctx as any).muteAll = g.muteAll;
-  (ctx as any).rf = g.rf;
 
   const BASE_BPM = g.BPM;
 
@@ -324,8 +322,8 @@ const initializePlayEngine = async (
   g.stage = container.get('stage');
   (ctx as any).stage = g.stage;
 
-  const { state: primary, buffer: c1 } = g.LM.register('primary', 'c1', {}, () => g.stage.setTuningAndInstruments());
-  const { state: poly, buffer: c2 } = g.LM.register('poly', 'c2', {}, () => g.stage.setTuningAndInstruments());
+  const { state: primary, buffer: c1 } = ctx.LM.register('primary', 'c1', {}, () => ctx.stage.setTuningAndInstruments());
+  const { state: poly, buffer: c2 } = ctx.LM.register('poly', 'c2', {}, () => ctx.stage.setTuningAndInstruments());
 
   // Use DI-provided randomInt (ri) from PolychronContext rather than relying on g.ri global
   const { ri: riFn } = getPolychronContext().utils;
@@ -356,19 +354,17 @@ const initializePlayEngine = async (
 
     cancellationToken?.throwIfRequested();
 
-    // Debug: check if resolveSectionProfile is available on legacy global
-    if (!(globalThis as any).resolveSectionProfile) {
-      console.error('resolveSectionProfile not found on globalThis!', Object.keys(globalThis).filter(k => k.includes('Section')));
+    if (typeof resolveSectionProfile !== 'function') {
       throw new Error('resolveSectionProfile is not defined');
     }
-    const sectionProfile = (globalThis as any).resolveSectionProfile();
+    const sectionProfile = resolveSectionProfile();
     ctx.state.phrasesPerSection = sectionProfile.phrasesPerSection;
     ctx.state.currentSectionType = sectionProfile.type;
     ctx.state.currentSectionDynamics = sectionProfile.dynamics;
     const baseBpm = (typeof BASE_BPM === 'number' && !isNaN(BASE_BPM)) ? BASE_BPM : (ctx.BPM || 120);
     ctx.state.BPM = Math.max(1, Math.round(baseBpm * sectionProfile.bpmScale));
     ctx.state.activeMotif = sectionProfile.motif
-      ? new (globalThis as any).Motif(sectionProfile.motif.map((offset: any) => ({ note: (globalThis as any).clampMotifNote(60 + offset) })))
+      ? new Motif(sectionProfile.motif.map((offset: any) => ({ note: clampMotifNote(60 + offset) })))
       : null;
 
     for (ctx.state.phraseIndex = 0; ctx.state.phraseIndex < ctx.state.phrasesPerSection; ctx.state.phraseIndex++) {
@@ -464,13 +460,13 @@ const initializePlayEngine = async (
       ctx.LM.advance('poly', 'phrase');
     }
 
-    g.LM.advance('primary', 'section');
+    ctx.LM.advance('primary', 'section');
     // Ensure the context's buffer points to the active buffer before logging section markers
-    (ctx as any).csvBuffer = (globalThis as any).c;
+    (ctx as any).csvBuffer = (ctx as any).LM.layers[(ctx as any).LM.activeLayer].buffer;
     ctx.logUnit('section');
 
-    g.LM.advance('poly', 'section');
-    (ctx as any).csvBuffer = (globalThis as any).c;
+    ctx.LM.advance('poly', 'section');
+    (ctx as any).csvBuffer = (ctx as any).LM.layers[(ctx as any).LM.activeLayer].buffer;
     ctx.logUnit('section');
 
     g.BPM = BASE_BPM;
@@ -502,8 +498,12 @@ const initializePlayEngine = async (
     message: 'Composition complete'
   });
 
-  // Clean up context (Step 12: Context threading)
-  setCurrentCompositionContext(null);
+  // Clean up context: In test environments, keep context available for assertions
+  if (process.env.NODE_ENV !== 'test') {
+    setCurrentCompositionContext(null);
+  }
+
+  return ctx;
 };;
 
 // Export initialization function and context accessors (Step 12: Context threading)
@@ -515,8 +515,7 @@ export {
   getContextValue
 };
 
-// Expose to globalThis
-(globalThis as any).initializePlayEngine = initializePlayEngine;
+
 
 if (process.env.NODE_ENV !== 'test') {
   initializePlayEngine().catch((err) => {

@@ -17,7 +17,7 @@ import {
 } from '../src/composers.js';
 import { drummer, drumMap, patternLength } from '../src/rhythm.js';
 import { cCH1, lCH1, rCH1, drumCH as DEFAULT_DRUM_CH, reflect, reflect2 } from '../src/backstage.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { createTestContext } from './helpers.module.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
@@ -261,12 +261,11 @@ describe('play.js - Orchestrator Module', () => {
       setUnitTiming('division', ctx);
       setUnitTiming('subdivision', ctx);
 
-      // setUnitTiming writes only to globals for layer isolation
-      const g = globalThis as any;
+      // setUnitTiming now writes timing values to ctx.state
       expect(ctx.state.tpMeasure).toBeGreaterThan(0); // From getMidiTiming
-      expect(g.tpBeat).toBeGreaterThan(0);
-      expect(g.tpDiv).toBeGreaterThan(0);
-      expect(g.tpSubdiv).toBeGreaterThan(0);
+      expect(ctx.state.tpBeat).toBeGreaterThan(0);
+      expect(ctx.state.tpDiv).toBeGreaterThan(0);
+      expect(ctx.state.tpSubdiv).toBeGreaterThan(0);
     });
 
     it('should support polyrhythm generation', () => {
@@ -453,8 +452,7 @@ describe('play.js - Orchestrator Module', () => {
       const tpMeasure = ctx.state.tpMeasure; // From getMidiTiming
 
       setUnitTiming('beat', ctx);
-      const g = globalThis as any;
-      const tpBeat = g.tpBeat; // From setUnitTiming (writes only to globals)
+      const tpBeat = ctx.state.tpBeat; // From setUnitTiming (now written to ctx.state)
 
       // tpBeat should be smaller than tpMeasure (more beats per measure)
       expect(tpBeat).toBeLessThan(tpMeasure);
@@ -528,7 +526,6 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should support composer note generation across structure', () => {
-      // setupGlobalState();  this functionis deprecated, use DI only
 
       const composer = new ScaleComposer();
       ctx.state.numerator = 4;

@@ -286,31 +286,25 @@ describe('FxManager', () => {
 
   describe('Deterministic selection', () => {
     it('stutterFade should record one channel when ri returns min', () => {
-      const g = globalThis as any;
-      const originalRi = g.ri;
-      const originalRf = g.rf;
-      g.ri = vi.fn((min: number, _max: number) => min); // force CHsToStutter=1 and other mins
-      g.rf = vi.fn(() => 0.5);
+      const originalRi = ctx.utils?.ri;
+      const originalRf = ctx.utils?.rf;
+      ctx.utils = { ...(ctx.utils || {}), ri: vi.fn((min: number, _max: number) => min), rf: vi.fn(() => 0.5) } as any;
       fxManager.resetChannelTracking();
       fxManager.stutterFade([1, 2, 3], ctx, 2, 1000);
       expect(fxManager.lastUsedCHs.size).toBe(1);
       // restore
-      g.ri = originalRi;
-      g.rf = originalRf;
+      ctx.utils = { ...(ctx.utils || {}), ri: originalRi, rf: originalRf } as any;
     });
 
     it('stutterPan should record one channel when ri returns min', () => {
-      const g = globalThis as any;
-      const originalRi = g.ri;
-      const originalRf = g.rf;
-      g.ri = vi.fn((min: number, _max: number) => min); // force CHsToStutter=1
-      g.rf = vi.fn(() => 0.5);
+      const originalRi = ctx.utils?.ri;
+      const originalRf = ctx.utils?.rf;
+      ctx.utils = { ...(ctx.utils || {}), ri: vi.fn((min: number, _max: number) => min), rf: vi.fn(() => 0.5) } as any;
       fxManager.resetChannelTracking();
       fxManager.stutterPan([4, 5], ctx, 2, 1000);
       expect(fxManager.lastUsedCHs2.size).toBe(1);
       // restore
-      g.ri = originalRi;
-      g.rf = originalRf;
+      ctx.utils = { ...(ctx.utils || {}), ri: originalRi, rf: originalRf } as any;
     });
   });
     it('should maintain separate sets for fade and pan tracking', () => {
@@ -339,64 +333,69 @@ describe('FxManager', () => {
 
     describe('Scheduling correctness', () => {
       it('stutterFade schedules events relative to beatStart', () => {
-        const g = globalThis as any;
-        // Make behavior deterministic
-        g.ri = vi.fn(() => 2);
-        g.rf = vi.fn(() => 0.5);
+        // Make behavior deterministic via DI utils
+        const originalRi = ctx.utils?.ri;
+        const originalRf = ctx.utils?.rf;
+        ctx.utils = { ...(ctx.utils || {}), ri: vi.fn(() => 2), rf: vi.fn(() => 0.5) } as any;
 
         // Clear buffer and run with beatStart = 0
         ctx.csvBuffer.clear();
-        g.beatStart = 0;
+        ctx.state.beatStart = 0;
         fxManager.stutterFade([1], ctx, 3, 480);
         const ticksA = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
 
         // Clear and run with beatStart = 480 (one beat later)
         ctx.csvBuffer.clear();
-        g.beatStart = 480;
-        // Ensure ctx.state does not override global beatStart during test
-        ctx.state.beatStart = undefined;
+        ctx.state.beatStart = 480;
         fxManager.stutterFade([1], ctx, 3, 480);
         const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        // restore
+        ctx.utils = { ...(ctx.utils || {}), ri: originalRi, rf: originalRf } as any;
 
         expect(Math.min(...ticksB)).toBeGreaterThanOrEqual(Math.min(...ticksA) + 400);
       });
 
       it('stutterPan schedules events relative to beatStart', () => {
-        const g = globalThis as any;
-        g.ri = vi.fn(() => 2);
-        g.rf = vi.fn(() => 0.5);
+        // Make behavior deterministic via DI utils
+        const originalRi = ctx.utils?.ri;
+        const originalRf = ctx.utils?.rf;
+        ctx.utils = { ...(ctx.utils || {}), ri: vi.fn(() => 2), rf: vi.fn(() => 0.5) } as any;
 
         ctx.csvBuffer.clear();
-        g.beatStart = 0;
+        ctx.state.beatStart = 0;
         fxManager.stutterPan([2], ctx, 3, 480);
         const ticksA = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
 
         ctx.csvBuffer.clear();
-        g.beatStart = 480;
-        // Ensure ctx.state does not override global beatStart during test
-        ctx.state.beatStart = undefined;
+        ctx.state.beatStart = 480;
         fxManager.stutterPan([2], ctx, 3, 480);
         const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        // restore
+        ctx.utils = { ...(ctx.utils || {}), ri: originalRi, rf: originalRf } as any;
 
         expect(Math.min(...ticksB)).toBeGreaterThanOrEqual(Math.min(...ticksA) + 400);
       });
 
       it('stutterFX schedules events relative to beatStart', () => {
-        const g = globalThis as any;
-        g.ri = vi.fn(() => 2);
-        g.rf = vi.fn(() => 0.5);
+        // Use DI utils for determinism and prefer ctx.state beatStart
+        const originalRi = ctx.utils?.ri;
+        const originalRf = ctx.utils?.rf;
+        ctx.utils = { ...(ctx.utils || {}), ri: vi.fn(() => 2), rf: vi.fn(() => 0.5) } as any;
 
         ctx.csvBuffer.clear();
-        g.beatStart = 0;
+        ctx.state.beatStart = 0;
         fxManager.stutterFX([3], ctx, 3, 480);
         const ticksA = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
 
         ctx.csvBuffer.clear();
-        g.beatStart = 480;
-        // Ensure ctx.state does not override global beatStart during test
-        ctx.state.beatStart = undefined;
+        ctx.state.beatStart = 480;
         fxManager.stutterFX([3], ctx, 3, 480);
         const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
+
+        // restore
+        ctx.utils = { ...(ctx.utils || {}), ri: originalRi, rf: originalRf } as any;
 
         expect(Math.min(...ticksB)).toBeGreaterThanOrEqual(Math.min(...ticksA) + 400);
       });

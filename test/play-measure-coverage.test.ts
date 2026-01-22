@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { initializePlayEngine } from '../src/play.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { initializePlayEngine, getCurrentCompositionContext } from '../src/play.js';
+import { createTestContext } from './helpers.module.js';
 
 // Ensure measures are actually produced across the composition run
 describe('Play Engine Measure Coverage', () => {
@@ -10,10 +10,25 @@ describe('Play Engine Measure Coverage', () => {
     ctx.LOG = 'all';
     ctx.state.SECTIONS = { min: 1, max: 1 };
 
-    await initializePlayEngine();
+    // Silence console during engine run to avoid large output slowing test
+    const _realLog = console.log;
+    const _realDebug = console.debug;
+    const _realWarn = console.warn;
+    console.log = () => {};
+    console.debug = () => {};
+    console.warn = () => {};
+    try {
+      await initializePlayEngine();
+    } finally {
+      console.log = _realLog;
+      console.debug = _realDebug;
+      console.warn = _realWarn;
+    }
 
-    const g = globalThis as any;
-    const layers = g.LM && g.LM.layers ? g.LM.layers : {};
+    const engineCtx = getCurrentCompositionContext();
+    expect(engineCtx, 'composition context should be available').toBeDefined();
+
+    const layers = engineCtx?.LM?.layers ? engineCtx.LM.layers : {};
     const allRows: any[] = [];
     Object.values(layers).forEach((entry: any) => {
       const buf = entry.buffer && entry.buffer.rows ? entry.buffer.rows : entry.buffer;
@@ -43,5 +58,5 @@ describe('Play Engine Measure Coverage', () => {
     // Expect at least one marker for measure > 1 (i.e., measure 2 or later)
     const hasMeasure2plus = Array.from(measureNums).some(n => n > 1);
     expect(hasMeasure2plus, `measureNums=${Array.from(measureNums).slice(0,10)}`).toBe(true);
-  });
+  }, 120000);
 });

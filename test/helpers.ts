@@ -12,8 +12,6 @@ import '../src/backstage.js'; // Load random helpers
 import '../src/venue.js'; // Load Tonal library
 import '../src/sheet.js'; // Load configuration
 
-// Import moduleized helpers (DI-only). Tests should import named helpers from
-// `helpers.module.js` or call `setupGlobalState()` which now returns a context.
 import * as HM from './helpers.module.js';
 
 import { CompositionState, CompositionStateService } from '../src/CompositionState.js';
@@ -127,82 +125,11 @@ export function cleanupTestState(): void {
   }
 }
 
-/**
- * Sets up basic global state for legacy tests
- * Use this temporarily during migration, then replace with createTestState()
- *
- * @deprecated Use createTestState() and explicit state passing instead
- */
-export function setupGlobalState(): void {
-  // Reset global event buffer
-  globalThis.c = [];
-
-  // Reset CSV buffer
-  globalThis.csvRows = [];
-
-  // Ensure DI container and writer services are available for tests
-  const container = new DIContainer();
-  registerWriterServices(container);
-  // Writer services are available in DI (registered above). Tests should use DI
-  // directly via `createTestContext()` and `ctx.services.get('pushMultiple')`.
-  // Legacy global exposure has been removed; prefer DI-based access for all tests.
-
-  // Ensure venue/theory globals are available for legacy tests
-  // Register venue services in DI container (useful for DI-based tests)
-  registerVenueServices(container);
-  // Expose Tonal API and derived helpers to global scope for legacy code
-  globalThis.t = tonal;
-  globalThis.getMidiValue = getMidiValue;
-  globalThis.allNotes = allNotes;
-  globalThis.allScales = allScales;
-  globalThis.allChords = allChords;
-  globalThis.allModes = allModes;
-
-  // Reset timing state
-  globalThis.numerator = 4;
-  globalThis.denominator = 4;
-  globalThis.BPM = 120;
-  globalThis.PPQ = 480;
-
-  // Reset counters
-  globalThis.beatCount = 0;
-  globalThis.loopIdx = 0;
-  globalThis.measureCount = 0;
-  globalThis.phraseCount = 0;
-
-  // Reset rhythm state
-  globalThis.subdivIndex = 0;
-  globalThis.beatStart = 0;
-
-  // Reset channel assignments
-  globalThis.drumCH = 9;
-
-  /**
-   * NOTE: setupTestDefaults is defined at module scope (see below).
-   * This placeholder kept here while we keep setupGlobalState compact.
-   */
-  // [setupTestDefaults defined after setupGlobalState]
-
-  // Initialize test namespace
-  if (!globalThis.__POLYCHRON_TEST__) {
-    globalThis.__POLYCHRON_TEST__ = {};
-  }
-
-  // this should not be used, use DI only.
-//   try {
-//     const { attachLegacyGlobals } = require('../src/backstage.js');
-//     if (attachLegacyGlobals) attachLegacyGlobals(globalThis);
-//   } catch (e) {
-//     // If the attach helper is unavailable for some reason, tests can still use DI.
-//   }
-// }
 
 // Module-scope helpers
 function setupTestDefaults(options?: any) {
   const g = globalThis as any;
   options = options || {};
-  // Ensure legacy globals are initialized for tests that rely on global exposure
-  // setupGlobalState();  this functionis deprecated, use DI only
 
   if (options.smallComposition) {
     g.SECTIONS = { min: 1, max: 1 };

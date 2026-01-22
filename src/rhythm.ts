@@ -651,9 +651,4 @@ export const trackRhythm = (unit: string, ctx?: ICompositionContext): void => {
 
 
 
-// Expose to globalThis
-(globalThis as any).drummer = drummer;
-(globalThis as any).patternLength = patternLength;
-(globalThis as any).drumMap = drumMap;
-(globalThis as any).playDrums = playDrums;
-(globalThis as any).trackRhythm = trackRhythm;
+// No global exposure: consumers should import `drummer`, `patternLength`, `drumMap`, `playDrums`, and `trackRhythm` directly via module imports.

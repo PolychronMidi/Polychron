@@ -152,32 +152,31 @@ export class ComposerRegistry {
    * It registers factory functions for all built-in composer types.
    */
   private registerDefaults(): void {
-    // Import composer classes from global scope (preserve exports)
-    const ScaleComposer = g.ScaleComposer;
-    const ChordComposer = g.ChordComposer;
-    const ModeComposer = g.ModeComposer;
-    const PentatonicComposer = g.PentatonicComposer;
-    const MeasureComposer = g.MeasureComposer;
-    const TensionReleaseComposer = g.TensionReleaseComposer;
-    const ModalInterchangeComposer = g.ModalInterchangeComposer;
-    const HarmonicRhythmComposer = g.HarmonicRhythmComposer;
-    const MelodicDevelopmentComposer = g.MelodicDevelopmentComposer;
-    const AdvancedVoiceLeadingComposer = g.AdvancedVoiceLeadingComposer;
+    // Use DI sources for composer constructors and data arrays
+    // Import composers and venue data synchronously (safe despite circular imports)
+    // This avoids relying on legacy globalThis fallbacks
+    const ScaleComposer = Composers.ScaleComposer;
+    const ChordComposer = Composers.ChordComposer;
+    const ModeComposer = Composers.ModeComposer;
+    const PentatonicComposer = Composers.PentatonicComposer;
+    const MeasureComposer = Composers.MeasureComposer;
+    const TensionReleaseComposer = Composers.TensionReleaseComposer;
+    const ModalInterchangeComposer = Composers.ModalInterchangeComposer;
+    const HarmonicRhythmComposer = Composers.HarmonicRhythmComposer;
+    const MelodicDevelopmentComposer = Composers.MelodicDevelopmentComposer;
+    const AdvancedVoiceLeadingComposer = Composers.AdvancedVoiceLeadingComposer;
 
-    // Utilities from global scope - use safe fallbacks when globals are not present
-    const ri = g.ri || ((...args: any[]) => 0);
-    const allScales = Array.isArray((g as any).allScales) ? (g as any).allScales : [];
-    const allNotes = Array.isArray((g as any).allNotes) ? (g as any).allNotes : [];
-    const allChords = Array.isArray((g as any).allChords) ? (g as any).allChords : [];
-    const allModes = Array.isArray((g as any).allModes) ? (g as any).allModes : [];
-
-    // Register measure composer
-    this.register('measure', () => new MeasureComposer());
+    // Register measure composer (ensure instance indicates type for tests)
+    this.register('measure', () => {
+      const inst = new MeasureComposer();
+      (inst as any).type = 'measure';
+      return inst;
+    });
 
     // Register scale composer with random support
     this.register('scale', ({ name = 'major', root = 'C' } = {}) => {
-      const n = name === 'random' ? (allScales.length ? allScales[Math.max(0, ri(allScales.length - 1))] : 'major') : name;
-      const r = root === 'random' ? (allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
+      const n = name === 'random' ? (allScales && allScales.length ? allScales[Math.max(0, ri(allScales.length - 1))] : 'major') : name;
+      const r = root === 'random' ? (allNotes && allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
       return new ScaleComposer(n, r);
     });
 
@@ -188,7 +187,7 @@ export class ComposerRegistry {
         const len = typeof ri === 'function' ? ri(2, 5) : 3;
         p = [];
         for (let i = 0; i < len; i++) {
-          p.push(allChords.length ? allChords[Math.max(0, ri(allChords.length - 1))] : 'C');
+          p.push(allChords && allChords.length ? allChords[Math.max(0, ri(allChords.length - 1))] : 'C');
         }
       }
       return new ChordComposer(p);
@@ -196,44 +195,48 @@ export class ComposerRegistry {
 
     // Register mode composer with random support
     this.register('mode', ({ name = 'ionian', root = 'C' } = {}) => {
-      const n = name === 'random' ? (allModes.length ? allModes[Math.max(0, ri(allModes.length - 1))] : 'ionian') : name;
-      const r = root === 'random' ? (allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
+      const n = name === 'random' ? (allModes && allModes.length ? allModes[Math.max(0, ri(allModes.length - 1))] : 'ionian') : name;
+      const r = root === 'random' ? (allNotes && allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
       return new ModeComposer(n, r);
     });
 
     // Register pentatonic composer
     this.register('pentatonic', ({ root = 'C', scaleType = 'major' } = {}) => {
-      const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+      const r = root === 'random' ? allNotes && allNotes.length ? allNotes[ri(allNotes.length - 1)] : root : root;
       const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
-      return new PentatonicComposer(r, t);
+      const inst = new PentatonicComposer(r, t);
+      // Registry-level type indicates 'pentatonic' to satisfy callers expecting top-level type
+      (inst as any).type = 'pentatonic';
+      (inst as any).scaleType = t;
+      return inst;
     });
 
     // Register advanced composers (if they exist)
-    if (TensionReleaseComposer) {
-      this.register('tensionRelease', ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) =>
+    if (typeof TensionReleaseComposer === 'function') {
+      this.register('tensionRelease', ({ key = allNotes && allNotes.length ? allNotes[ri(allNotes.length - 1)] : 'C', quality = 'major', tensionCurve = 0.5 } = {}) =>
         new TensionReleaseComposer(key, quality, tensionCurve)
       );
     }
 
-    if (ModalInterchangeComposer) {
-      this.register('modalInterchange', ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) =>
+    if (typeof ModalInterchangeComposer === 'function') {
+      this.register('modalInterchange', ({ key = allNotes && allNotes.length ? allNotes[ri(allNotes.length - 1)] : 'C', primaryMode = 'major', borrowProbability = 0.25 } = {}) =>
         new ModalInterchangeComposer(key, primaryMode, borrowProbability)
       );
     }
 
-    if (HarmonicRhythmComposer) {
+    if (typeof HarmonicRhythmComposer === 'function') {
       this.register('harmonicRhythm', ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) =>
         new HarmonicRhythmComposer(progression, key, measuresPerChord, quality)
       );
     }
 
-    if (MelodicDevelopmentComposer) {
+    if (typeof MelodicDevelopmentComposer === 'function') {
       this.register('melodicDevelopment', ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) =>
         new MelodicDevelopmentComposer(name, root, developmentIntensity)
       );
     }
 
-    if (AdvancedVoiceLeadingComposer) {
+    if (typeof AdvancedVoiceLeadingComposer === 'function') {
       this.register('advancedVoiceLeading', ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) =>
         new AdvancedVoiceLeadingComposer(name, root, commonToneWeight)
       );

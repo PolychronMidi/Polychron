@@ -1,7 +1,7 @@
 // coverage-boosts.test.ts - Targeted tests to improve coverage toward 75% threshold
 import { initializePolychronContext, getPolychronContext } from '../src/PolychronInit.js';
 import { Motif } from '../src/motifs.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { createTestContext } from './helpers.module.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
 describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
@@ -149,7 +149,6 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
     let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
-      // setupGlobalState();  this functionis deprecated, use DI only
     });
 
     it('should handle context with minimal state', () => {
@@ -176,7 +175,6 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
 
   describe('Edge case coverage for utils', () => {
     beforeEach(() => {
-      // setupGlobalState();  this functionis deprecated, use DI only
       initializePolychronContext();
     });
 
@@ -228,7 +226,6 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
 
   describe('Conditional branch coverage', () => {
     beforeEach(() => {
-      // setupGlobalState();  this functionis deprecated, use DI only
       initializePolychronContext();
     });
 
@@ -294,7 +291,6 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
 
   describe('Additional critical branch coverage', () => {
     beforeEach(() => {
-      // setupGlobalState();  this functionis deprecated, use DI only
     });
 
     it('should execute PolychronContext initialization path', () => {

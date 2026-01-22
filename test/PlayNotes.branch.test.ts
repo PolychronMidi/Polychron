@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PlayNotes } from '../src/playNotes';
 import { createTestContext } from './helpers.module.js';
+import { getPolychronContext } from '../src/PolychronInit.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 
 describe('PlayNotes - branch tests', () => {
@@ -31,21 +32,22 @@ describe('PlayNotes - branch tests', () => {
     ctx = createTestContext();
     registerWriterServices(ctx.services);
     ctx.csvBuffer = new CSVBuffer('test');
-    (globalThis as any).c = ctx.csvBuffer;
-    (globalThis as any).source = [1];
-    (globalThis as any).reflect = [2];
-    (globalThis as any).flipBin = false;
-    (globalThis as any).flipBinF = [1];
-    (globalThis as any).flipBinT = [1];
-    (globalThis as any).reflection = [2];
-    (globalThis as any).bass = [3];
-    (globalThis as any).ref = [2];
-    (globalThis as any).reflect2 = [4];
-    (globalThis as any).cCH1 = 1; (globalThis as any).cCH2 = 2; (globalThis as any).cCH3 = 3;
-    // utilities used by playNotes2
-    (globalThis as any).clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-    (globalThis as any).modClamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-    (globalThis as any).OCTAVE = { min: 1, max: 6 };
+    // Populate ctx.state instead of globalThis to be DI-only
+    ctx.state.source = [1];
+    ctx.state.reflect = [2];
+    ctx.state.flipBin = false;
+    ctx.state.flipBinF = [1];
+    ctx.state.flipBinT = [1];
+    ctx.state.reflection = [2];
+    ctx.state.bass = [3];
+    ctx.state.ref = [2];
+    ctx.state.reflect2 = [4];
+    ctx.state.cCH1 = 1; ctx.state.cCH2 = 2; ctx.state.cCH3 = 3;
+    // utilities used by playNotes2 (DI-friendly access via getPolychronContext utils)
+    const polyUtils = getPolychronContext().utils;
+    polyUtils.clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    polyUtils.modClamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    ctx.state.OCTAVE = { min: 1, max: 6 };
   });
 
   it('setNoteParams and playNotes push events to buffer', () => {
@@ -60,7 +62,8 @@ describe('PlayNotes - branch tests', () => {
 
   it('crossModulateRhythms produces a numeric crossModulation', () => {
     const p = new PlayNotes();
-    p.crossModulateRhythms();
+    // Ensure DI-based state is passed in
+    p.crossModulateRhythms(ctx as any);
     expect(typeof p.crossModulation).toBe('number');
   });
 });

@@ -336,7 +336,6 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
  * @param {string} unitType - One of: 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'.
  */
 const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
-  const g = globalThis as any;
   const state = ctx.state as any;
 
   // Read timing values from ctx.state (initialized by getMidiTiming)
@@ -355,30 +354,19 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     // Do not throw here; instead, log a warning and continue with a safe fallback to avoid NaN propagation downstream
     console.warn(`setUnitTiming: Invalid tpSec detected (${tpSecCandidate}); using fallback tpSec=${tpSec}`);
   }
-  // Ensure the chosen tpSec is persisted back to state and globals for consistent downstream reads
+  // Ensure the chosen tpSec is persisted back to state for consistent downstream reads
   state.tpSec = tpSec;
-  (globalThis as any).tpSec = tpSec;
 
-  // For composition-time reads, prefer ctx.state, fallback to globals
-  const getVal = (key: string) => state[key] !== undefined ? state[key] : (globalThis as any)[key];
-  const setVal = (key: string, value: any) => {
-    state[key] = value;
-    // Keep global sync for compatibility with legacy consumers
-    (globalThis as any)[key] = value;
-  };
+  // For composition-time reads/writes, use ctx.state exclusively (DI-only)
+  const getVal = (key: string) => state[key];
+  const setVal = (key: string, value: any) => { state[key] = value; };
 
-  // Ensure critical timing values are synced to globals if not already set
-  if ((globalThis as any).tpMeasure === undefined && state.tpMeasure !== undefined) {
-    (globalThis as any).tpMeasure = state.tpMeasure;
-  }
-  if ((globalThis as any).spMeasure === undefined && state.spMeasure !== undefined) {
-    (globalThis as any).spMeasure = state.spMeasure;
-  }
+  // No global sync: timing is sourced from ctx.state under DI model
 
   switch (unitType) {
     case 'phrase':
       // Determine which layer is active and use the corresponding measures
-      const activeLayer = g.LM?.activeLayer || 'primary';
+      const activeLayer = ctx.LM?.activeLayer || 'primary';
       let measuresPerPhrase = 1;
 
       if (activeLayer === 'poly') {
@@ -470,19 +458,19 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   // Write unit timing to tree (hybrid observability)
   // Build path based on current unit type and indices
   const tree = initTimingTree(ctx);
-  const layer = g.LM?.activeLayer || 'primary';
-  const sectionIndex = g.sectionIndex ?? 0;
-  const phraseIndex = g.phraseIndex ?? 0;
+  const layer = ctx.LM?.activeLayer || 'primary';
+  const sectionIndex = ctx.state.sectionIndex ?? 0;
+  const phraseIndex = ctx.state.phraseIndex ?? 0;
 
   let path = buildPath(layer, sectionIndex, phraseIndex);
 
   // Add measure/beat/division/etc to path if applicable
   if (unitType === 'measure' || unitType === 'beat' || unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') {
-    const measureIndex = g.measureIndex ?? 0;
-    const beatIndex = g.beatIndex ?? 0;
-    const divIndex = g.divIndex ?? 0;
-    const subdivIndex = g.subdivIndex ?? 0;
-    const subsubdivIndex = g.subsubdivIndex ?? 0;
+    const measureIndex = ctx.state.measureIndex ?? 0;
+    const beatIndex = ctx.state.beatIndex ?? 0;
+    const divIndex = ctx.state.divIndex ?? 0;
+    const subdivIndex = ctx.state.subdivIndex ?? 0;
+    const subsubdivIndex = ctx.state.subsubdivIndex ?? 0;
 
     path = buildPath(layer, sectionIndex, phraseIndex,
       unitType !== 'measure' ? measureIndex : undefined,
@@ -506,8 +494,8 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   ];
 
   for (const key of timingKeys) {
-    if (key in g && unitType !== 'phrase') {
-      timingSnapshot[key] = g[key];
+    if (unitType !== 'phrase' && ctx && (ctx as any).state && (ctx as any).state[key] !== undefined) {
+      timingSnapshot[key] = (ctx as any).state[key];
     }
   }
 
@@ -515,9 +503,10 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     setTimingValues(tree, path, timingSnapshot);
   }
 
-  // Ensure context's CSV buffer points to the currently active global buffer
-  if (ctx && (ctx as any).csvBuffer !== g.c) {
-    (ctx as any).csvBuffer = g.c;
+  // Ensure context's CSV buffer points to the currently active buffer from LM (DI-only)
+  const activeBuf = ctx?.LM?.layers?.[ctx?.LM?.activeLayer]?.buffer;
+  if (ctx && activeBuf && (ctx as any).csvBuffer !== activeBuf) {
+    (ctx as any).csvBuffer = activeBuf;
   }
 
   // Log the unit after calculating timing using the context-bound logger when available
@@ -553,17 +542,5 @@ const formatTime = (seconds: number): string => {
 
 export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateToGlobals, formatTime };
 
-// Expose to globalThis
-(globalThis as any).getMidiTiming = getMidiTiming;
-(globalThis as any).syncStateToGlobals = syncStateToGlobals;
-(globalThis as any).setMidiTiming = setMidiTiming;
-(globalThis as any).getPolyrhythm = getPolyrhythm;
-(globalThis as any).setUnitTiming = setUnitTiming;
-(globalThis as any).formatTime = formatTime;
-(globalThis as any).setRhythm = setRhythm;
-(globalThis as any).trackRhythm = trackRhythm;
-// Legacy global exposure removed. Use ctx.logUnit or writer services via DI.
-
-// Test helper: expose LayerManager as `LM` on globalThis if not present (temporary)
-const _g = globalThis as any;
-if (typeof _g.LM === 'undefined') _g.LM = LayerManager;
+// No global exposures: prefer DI and direct imports for testing and runtime.
+// Test helper: LayerManager should be obtained via DI (container.get('layerManager')) rather than globalThis.

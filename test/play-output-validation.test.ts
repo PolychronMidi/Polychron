@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initializePlayEngine } from '../src/play.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { createTestContext } from './helpers.module.js';
 import { registerWriterServices } from '../src/writer.js';
 
 beforeEach(() => {
-  // setupGlobalState();  this functionis deprecated, use DI only
   const ctx = createTestContext();
   registerWriterServices(ctx.services);
 });

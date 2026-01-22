@@ -192,9 +192,7 @@ class Motif {
   }
 }
 
-// Expose to globalThis
-g.clampMotifNote = clampMotifNote;
-g.Motif = Motif;
+
 
 
 

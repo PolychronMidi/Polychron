@@ -1,74 +1,8 @@
 // ComposerRegistry.test.js - Unit tests for the ComposerRegistry singleton
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Setup global namespace for testing
-const setupGlobalState = () => {
-  // Mock composer classes
-  class MockScaleComposer {
-    constructor(scale, root) {
-      this.scale = scale;
-      this.root = root;
-      this.type = 'scale';
-    }
-  }
-
-  class MockChordComposer {
-    constructor(progression) {
-      this.progression = progression;
-      this.type = 'chord';
-    }
-  }
-
-  class MockModeComposer {
-    constructor(mode, root) {
-      this.mode = mode;
-      this.root = root;
-      this.type = 'mode';
-    }
-  }
-
-  class MockPentatonicComposer {
-    constructor(root, scaleType) {
-      this.root = root;
-      this.scaleType = scaleType;
-      this.type = 'pentatonic';
-    }
-  }
-
-  class MockMeasureComposer {
-    constructor() {
-      this.type = 'measure';
-    }
-  }
-
-  // Mock utility functions
-  const ri = (min, max) => {
-    if (max === undefined) return Math.floor(Math.random() * (min + 1));
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  // Mock data arrays
-  const allScales = ['major', 'minor', 'dorian', 'phrygian'];
-  const allNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-  const allChords = ['Cmaj', 'Dmin', 'Emin', 'Fmaj', 'Gmaj', 'Amin'];
-  const allModes = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian'];
-
-  // Assign to global
-  globalThis.ScaleComposer = MockScaleComposer;
-  globalThis.ChordComposer = MockChordComposer;
-  globalThis.ModeComposer = MockModeComposer;
-  globalThis.PentatonicComposer = MockPentatonicComposer;
-  globalThis.MeasureComposer = MockMeasureComposer;
-  globalThis.ri = ri;
-  globalThis.allScales = allScales;
-  globalThis.allNotes = allNotes;
-  globalThis.allChords = allChords;
-  globalThis.allModes = allModes;
-};
-
 describe('ComposerRegistry', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     // Clear singleton instance before each test
     if (globalThis.ComposerRegistry) {
       const instance = globalThis.ComposerRegistry.getInstance();

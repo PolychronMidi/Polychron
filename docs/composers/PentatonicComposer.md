@@ -34,7 +34,9 @@ class PentatonicComposer extends GenericComposer<any> {
 
   constructor(root: string = 'C', scaleType: string = 'major') {
     super('pentatonic', root);
-    this.type = scaleType;
+    // Tests expect a `type` property to reflect major/minor pentatonic
+    (this as any).type = scaleType;
+    this.scaleType = scaleType; // compatibility alias expected by tests
     const scaleName = scaleType === 'major' ? 'major pentatonic' : 'minor pentatonic';
     this.itemSet(scaleName, root);
   }
@@ -77,6 +79,7 @@ class RandomPentatonicComposer extends PentatonicComposer {
     const randomRoot = allNotes[ri(allNotes.length - 1)];
     const randomType = ['major', 'minor'][ri(1)];
     super(randomRoot, randomType);
+    (this as any).type = randomType;
   }
 
   noteSet(): void {

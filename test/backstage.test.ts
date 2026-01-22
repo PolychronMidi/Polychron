@@ -4,7 +4,7 @@ import { rf, randomFloat, ri, randomInt, rl, randomLimitedChange, rv, randomVari
 import m from '../src/utils.js';
 import { pushMultiple as p, CSVBuffer } from '../src/writer.js';
 import { LayerManager, TimingContext } from '../src/time.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { createTestContext } from './helpers.module.js';
 import { allNotesOff, muteAll } from '../src/backstage.js';
 
 describe('Clamp functions', () => {
@@ -512,9 +512,6 @@ describe('MIDI helper functions', () => {
 });
 
 describe('Integration tests', () => {
-  beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
-  });
 
   it('should chain clamp functions correctly', () => {
     let value = 15;
@@ -650,7 +647,6 @@ describe('Edge cases and boundary conditions', () => {
 
 describe('Performance characteristics', () => {
   it('should handle large arrays efficiently', () => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     const start = performance.now();
     const c: any[] = [];
     for (let i = 0; i < 10000; i++) {
@@ -718,7 +714,6 @@ describe('Type safety', () => {
   });
 
   it('should handle mixed types in arrays', () => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     const c: any[] = [];
     p(c, { a: 1 }, { b: 'string' }, { c: null });
     expect(c.length).toBe(3);
@@ -743,7 +738,6 @@ describe('State management', () => {
   });
 
   it('should handle global state resets', () => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     const c: any[] = [];
     p(c, { a: 1 });
     expect(c.length).toBe(1);
@@ -755,7 +749,6 @@ describe('State management', () => {
 
 describe('LayerManager (LM)', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     // Reset LM state
     LayerManager.layers = {};
     LayerManager.activeLayer = null;
@@ -991,9 +984,6 @@ describe('LayerManager (LM)', () => {
 });
 
 describe('TimingContext class', () => {
-  beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
-  });
 
   describe('constructor', () => {
     it('should initialize with default values', () => {

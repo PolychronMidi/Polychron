@@ -2,7 +2,7 @@
 import { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime } from '../src/time.js';
 import { pushMultiple } from '../src/writer.js';
 import { m } from '../src/backstage.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { createTestContext } from './helpers.module.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
 // Mock dependencies
@@ -27,44 +27,6 @@ let sectionStartTime, phraseStartTime, measureStartTime, beatStartTime, divStart
 let subdivStartTime, subsubdivStartTime;
 let composer, c, LOG;
 let ctx: ICompositionContext;
-
-// Setup function to reset state
-function setupGlobalState() {
-  // Use DI-friendly test context instead of mutating globals
-  ctx = createTestContext();
-  // Set top-level ctx values used by time functions
-  ctx.BPM = 120;
-  ctx.PPQ = 480;
-
-  // Initialize state timing values
-  ctx.state.numerator = 4;
-  ctx.state.denominator = 4;
-  ctx.state.sectionStart = 0;
-  ctx.state.phraseStart = 0;
-  ctx.state.measureStart = 0;
-  ctx.state.beatStart = 0;
-  ctx.state.divStart = 0;
-  ctx.state.subdivStart = 0;
-  ctx.state.subsubdivStart = 0;
-  ctx.state.sectionStartTime = 0;
-  ctx.state.phraseStartTime = 0;
-  ctx.state.measureStartTime = 0;
-  ctx.state.beatStartTime = 0;
-  ctx.state.divStartTime = 0;
-  ctx.state.subdivStartTime = 0;
-  ctx.state.subsubdivStartTime = 0;
-  ctx.state.tpSection = 0;
-  ctx.state.spSection = 0;
-  ctx.state.spMeasure = 0;
-
-  // Composer and buffer for tests (attach to state where possible)
-  ctx.state.composer = { ...mockComposer };
-  c = [];
-  // Use DI-only context; do not mutate globals in tests
-  // Writer services and venue services are registered by `createTestContext()`
-  // Tests must use `ctx` for all interactions.
-  LOG = 'none';
-}
 
 describe('getMidiTiming', () => {
   beforeEach(() => {
@@ -409,7 +371,6 @@ describe('formatTime', () => {
 
 describe('Timing calculation functions', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     numerator = 4;
     denominator = 4;
@@ -554,7 +515,6 @@ describe('Timing calculation functions', () => {
 
 describe('Integration tests', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
   });
 
@@ -610,7 +570,6 @@ describe('Integration tests', () => {
 
 describe('logUnit', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     numerator = 4;
     denominator = 4;
@@ -892,7 +851,6 @@ describe('End-to-End MIDI Timing', () => {
 
 describe('setMidiTiming', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     ctx.state.numerator = 4;
     ctx.state.denominator = 4;
@@ -961,7 +919,6 @@ describe('setMidiTiming', () => {
 
 describe('getPolyrhythm Edge Cases', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     ctx.state.numerator = 4;
     ctx.state.denominator = 4;
@@ -1160,7 +1117,6 @@ describe('getPolyrhythm Edge Cases', () => {
 
 describe('Full Timing Hierarchy', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
   });
 
@@ -1242,7 +1198,6 @@ describe('Full Timing Hierarchy', () => {
 
 describe('Polyrhythm Duration Alignment', () => {
   beforeEach(() => {
-    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
   });
 
@@ -1398,27 +1353,20 @@ describe('Multi-layer timing consistency', () => {
     ctx.state.BPM = 120;
     getMidiTiming(ctx);
 
-    // Set initial values
-    const g = globalThis as any;
-    // Prefer setting indices on state; setUnitTiming reads from ctx.state
+    // Set initial values on state
     ctx.state.phraseStart = 0;
     ctx.state.phraseStartTime = 0;
     ctx.state.measureIndex = 0;
-    // Keep spMeasure/tpMeasure synced for legacy checks
-    g.spMeasure = ctx.state.tpMeasure / ctx.state.tpSec;
-    // Sync timing to globals so setUnitTiming can read them when necessary
-    g.tpMeasure = ctx.state.tpMeasure;
-    g.spMeasure = ctx.state.spMeasure;
 
     // Call setUnitTiming for measure
     setUnitTiming('measure', ctx);
-    const firstMeasureStart = g.measureStart;
+    const firstMeasureStart = ctx.state.measureStart;
     expect(firstMeasureStart).toBe(0);
 
     // Simulate advancing to next measure
     ctx.state.measureIndex = 1;
     setUnitTiming('measure', ctx);
-    const secondMeasureStart = g.measureStart;
+    const secondMeasureStart = ctx.state.measureStart;
     expect(secondMeasureStart).toBe(ctx.state.tpMeasure);
 
     // Verify timing advances correctly
@@ -1431,34 +1379,30 @@ describe('Multi-layer timing consistency', () => {
     ctx.state.BPM = 120;
     getMidiTiming(ctx);
 
-    const g = globalThis as any;
     // Prefer using ctx.state indices so setUnitTiming reads the intended values
     ctx.state.phraseStart = 0;
     ctx.state.phraseStartTime = 0;
     ctx.state.measureIndex = 0;
     ctx.state.beatIndex = 0;
     ctx.state.divIndex = 0;
-    // Sync timing to globals for backward compatibility
-    g.tpMeasure = ctx.state.tpMeasure;
-    g.spMeasure = ctx.state.spMeasure;
 
     // Set measure timing via state
     ctx.state.measureIndex = 1;
     setUnitTiming('measure', ctx);
-    const measureTick = g.measureStart;
+    const measureTick = ctx.state.measureStart;
     expect(measureTick).toBe(ctx.state.tpMeasure); // phraseStart(0) + 1 * tpMeasure
 
     // Set beat timing (should cascade from measureStart)
     ctx.state.beatIndex = 2;
     setUnitTiming('beat', ctx);
-    const expectedBeatStart = measureTick + 2 * g.tpBeat;
-    expect(g.beatStart).toBe(expectedBeatStart);
+    const expectedBeatStart = measureTick + 2 * ctx.state.tpBeat;
+    expect(ctx.state.beatStart).toBe(expectedBeatStart);
 
     // Set division timing (should cascade from beatStart)
     ctx.state.divIndex = 1;
     setUnitTiming('division', ctx);
-    const expectedDivStart = g.beatStart + 1 * g.tpDiv;
-    expect(g.divStart).toBe(expectedDivStart);
+    const expectedDivStart = ctx.state.beatStart + 1 * ctx.state.tpDiv;
+    expect(ctx.state.divStart).toBe(expectedDivStart);
   });
 
   it('should maintain polyrhythm measures correctly', () => {

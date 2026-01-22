@@ -92,7 +92,4 @@ export const resolveSectionProfile = (sectionType: any = null): SectionProfile =
   };
 };
 
-// Expose to globalThis
-(globalThis as any).normalizeSectionType = normalizeSectionType;
-(globalThis as any).selectSectionType = selectSectionType;
-(globalThis as any).resolveSectionProfile = resolveSectionProfile;
+

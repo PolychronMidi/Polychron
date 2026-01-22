@@ -1,6 +1,6 @@
 // test/stage.test.js
 import { stage } from '../src/stage.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { createTestContext } from './helpers.module.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 import { source, reflection, bass, reflect, reflect2, cCH1, cCH2, cCH3, lCH1, rCH1, drumCH, flipBinF, flipBinT, binauralL, binauralR, FX, stutterFadeCHs } from '../src/backstage.js';

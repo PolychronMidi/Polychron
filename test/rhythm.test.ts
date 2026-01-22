@@ -1,7 +1,7 @@
 // test/rhythm.test.js
 import { drummer, playDrums, playDrums2, drumMap, rhythms, binary, hex, onsets, random, prob, euclid, rotate, morph, setRhythm, makeOnsets, patternLength, closestDivisor, getRhythm, trackRhythm } from '../src/rhythm.js';
 import { rf, ri, rv, ra, m } from '../src/backstage.js';
-import { setupGlobalState, setupTestLogging, createTestContext, getWriterServices } from './helpers.module.js';
+import { setupTestLogging, createTestContext, getWriterServices } from './helpers.module.js';
 import { registerWriterServices } from '../src/writer.js';
 
 // Enable test logging

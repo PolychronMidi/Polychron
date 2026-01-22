@@ -23,14 +23,14 @@ import {
   ModeComposer,
   RandomModeComposer
 } from '../src/composers.js';
+import { initializePolychronContext, setPolychronTestNamespace } from '../src/PolychronInit.js';
 
 export function createTestState(): CompositionState {
   const state = new CompositionStateService();
 
-  if (!globalThis.__POLYCHRON_TEST__) {
-    globalThis.__POLYCHRON_TEST__ = {};
-  }
-  (globalThis as any).__POLYCHRON_TEST__.state = state;
+  // Use DI-compatible test namespace instead of relying on globalThis
+  initializePolychronContext();
+  setPolychronTestNamespace({ state });
 
   return state;
 }
@@ -123,31 +123,9 @@ export function cleanupTestState(): void {
   }
 }
 
-export function setupGlobalState(): ICompositionContext {
-  // Returns a DI-based test context (no globals attached). Tests must use
-  // the returned context and pass it to functions that accept ctx.
-  const ctx = createTestContext();
-  // Provide some sensible defaults on the test context
-  ctx.state.numerator = ctx.state.numerator ?? 4;
-  ctx.state.denominator = ctx.state.denominator ?? 4;
-
-  // Ensure timing and section defaults are present on ctx.state
-  ctx.state.tpMeasure = ctx.state.tpMeasure ?? (ctx.PPQ || 480) * (ctx.state.numerator || 4);
-  ctx.state.tpBeat = ctx.state.tpBeat ?? (ctx.state.tpMeasure / (ctx.state.numerator || 4));
-  ctx.state.spMeasure = ctx.state.spMeasure ?? 2;
-  ctx.state.spBeat = ctx.state.spBeat ?? 0.5;
-
-  ctx.state.totalSections = ctx.state.totalSections ?? 1;
-  ctx.state.phrasesPerSection = ctx.state.phrasesPerSection ?? 1;
-  ctx.state.measuresPerPhrase = ctx.state.measuresPerPhrase ?? 1;
-
-  return ctx;
-}
-
 export function setupTestDefaults(options?: any) {
   const g = globalThis as any;
   options = options || {};
-  // setupGlobalState();  this functionis deprecated, use DI only
 
   if (options.smallComposition) {
     g.SECTIONS = { min: 1, max: 1 };

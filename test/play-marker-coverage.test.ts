@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { initializePlayEngine } from '../src/play.js';
-import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { initializePlayEngine, getCurrentCompositionContext } from '../src/play.js';
+import { createTestContext } from './helpers.module.js';
 
 // Integration test: verify marker_t entries exist for all timing units
 describe('Play Engine Marker Coverage', () => {
@@ -26,14 +26,15 @@ describe('Play Engine Marker Coverage', () => {
       console.warn = _realWarn;
     }
 
-    const g = globalThis as any;
-    // Collect buffers from all layers to avoid false negatives when markers are split across layers
-    const layers = g.LM && g.LM.layers ? g.LM.layers : {};
+    // Obtain DI composition context and collect buffers from all layers
+    const engineCtx = getCurrentCompositionContext();
+    expect(engineCtx, 'composition context should be available').toBeDefined();
+
+    const layers = engineCtx?.LM?.layers ? engineCtx.LM.layers : {};
     const allRows: any[] = [];
     Object.values(layers).forEach((entry: any) => {
       const buf = entry.buffer && entry.buffer.rows ? entry.buffer.rows : entry.buffer;
       if (Array.isArray(buf)) {
-        console.log('DEBUG: layer buffer length=', buf.length, 'first=', buf[0] && buf[0].type);
         for (let i = 0; i < buf.length; i++) {
           try {
             allRows.push(buf[i]);
