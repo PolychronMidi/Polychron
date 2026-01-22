@@ -2,6 +2,12 @@ import { initializePlayEngine } from '../src/play.js';
 
 console.log('debug-unit-coverage: starting');
 
+// Only run this heavy diagnostic when explicitly enabled via env var to avoid accidental slow test runs
+if (!process.env.DEBUG_UNIT_COVERAGE) {
+  console.log('debug-unit-coverage: disabled. Set DEBUG_UNIT_COVERAGE=1 to enable (or use "npm run test:debug").');
+  process.exit(0);
+}
+
 function walkTree(node, path = [], results = []) {
   if (!node) return results;
   const keys = Object.keys(node.children || {});

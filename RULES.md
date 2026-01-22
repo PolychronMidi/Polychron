@@ -28,7 +28,7 @@ Every task must be tracked in `TODO.md` using the prescribed workflow to ensure 
 Code should be clean, minimalist, dynamic, and coherent in a self-documenting way that only requires minimal comments, with full descriptions reserved for that files's relevant .md file in /docs.
 
 
-## RULE 3: Test - /test
+## RULE 3: Test - /test SEE ALSO: /docs/test.md
 
 Core principle: Test real implementations, not mocks. Tests align with Polychron's core goal to maximize dynamism and evolution.
 

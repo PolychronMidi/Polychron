@@ -138,6 +138,23 @@ npm run test
 npm run test:watch
 ```
 
+- Debug runs (optional, heavy, and opt-in):
+
+The repository includes diagnostic scripts that are intentionally kept separate from the default test flow to avoid slowing down everyday runs and to reduce noisy output. To enable debug-only diagnostics that may perform heavy instrumentation (for example, `scripts/debug-unit-coverage.js`), set the `DEBUG_UNIT_COVERAGE` environment variable or use the cross-platform helper script:
+
+```bash
+# Linux / macOS (env directly)
+DEBUG_UNIT_COVERAGE=1 npm run test
+
+# Cross-platform helper (works on Windows too):
+npm run test:debug
+```
+
+Notes:
+- The debug script `scripts/debug-unit-coverage.js` now guards itself and will no-op unless `DEBUG_UNIT_COVERAGE` is set. This prevents accidental long runs when invoked directly.
+- Prefer `npm run test:debug` for a portable way to execute the full test pipeline with diagnostics enabled.
+- Consider running debug diagnostics on demand or in nightly CI jobs rather than on every PR to keep CI fast and deterministic.
+
 - Docs maintenance:
 
 ```bash

@@ -36,6 +36,7 @@
     "test:loop": "node scripts/tests-loop.js",
     "test:quick": "node scripts/run-with-log.js test.log npm run test:raw && npm run docs:status",
     "test:composer-contract": "vitest --run test/composer.integration.test.ts test/composer.registry.strict.test.ts --reporter=dot",
+    "test:debug": "node scripts/test-debug.js",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
     "lint:raw": "eslint src/**/*.{js,ts}",
     "type-check": "node scripts/run-with-log.js type-check.log npm run type-check:raw",

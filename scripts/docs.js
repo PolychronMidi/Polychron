@@ -9,6 +9,7 @@ import readLogSafe from './utils/readLogSafe.js';
 import formatDate from './utils/formatDate.js';
 import splitByCodeFences from './utils/splitByCodeFences.js';
 import normalizeCodeForComparison from './utils/normalizeCodeForComparison.js';
+import { getFailuresFromLog } from './utils/getFailuresFromLog.js';
 
 const projectRoot = process.cwd();
 const srcDir = path.join(projectRoot, 'src');
@@ -210,6 +211,83 @@ function updateRootReadmeStatus() {
   if (next !== current) {
     fs.writeFileSync(readmePath, next);
     console.log('Updated: README.md test status');
+  }
+}
+
+
+export { getFailuresFromLog };
+
+/*
+ * Scan root-level TODO*.md files and synchronize the "Test Failures" section with current log
+ * - Marks entries as fixed (checked) when the failure no longer appears in the log
+ * - Ensures ongoing failures remain unchecked
+ * - Appends any new failures that are not already present
+ */
+function updateTodosStatus() {
+  const failures = getFailuresFromLog();
+  const todoFiles = fs.readdirSync(projectRoot).filter(f => /^TODO(?:[-_].+)?\.md$/i.test(f));
+  if (todoFiles.length === 0) return;
+
+  for (const todo of todoFiles) {
+    const p = path.join(projectRoot, todo);
+    let content = fs.readFileSync(p, 'utf8');
+    const reSection = /(##\s*Test Failures[\s\S]*?)(?=\n##\s|$)/i;
+    const m = content.match(reSection);
+    if (!m) continue;
+
+    const section = m[1];
+    const lines = section.split(/\r?\n/);
+    const updated = [...lines];
+    let changed = false;
+
+    // Update existing items
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!/^- \[[ x]?\]/.test(line)) continue;
+      const body = line.replace(/^\s*- \[[ x]?\]\s*/, '');
+      const parts = body.split('—').map(s => s.trim());
+      const locPart = parts[0] || '';
+      const descPart = parts[1] || '';
+
+      const matched = failures.find(f => (f.file && locPart.includes(f.file)) || (descPart && f.desc && descPart.includes(f.desc)));
+      if (matched) {
+        if (/^- \[x\]/i.test(line)) {
+          updated[i] = line.replace(/^- \[x\]/i, '- [ ]'); changed = true;
+        }
+        if (matched.msg && !line.includes(matched.msg)) { updated[i] = updated[i] + ` — ${matched.msg}`; changed = true; }
+      } else {
+        if (!/^- \[x\]/i.test(line)) {
+          const date = formatDate();
+          updated[i] = line.replace(/^- \[\s\]/i, '- [x]') + ` (fixed ${date})`; changed = true;
+        }
+      }
+    }
+
+    // Append any new failures
+    const existingKeys = new Set(lines.filter(l => /^- \[/.test(l)).map(l => l.replace(/\s*\(fixed.*?\)\s*$/, '').trim()));
+    const toAppend = [];
+    for (const f of failures) {
+      const candidate = `- [ ] ${f.loc || f.file} — ${f.desc}${f.msg ? ` — ${f.msg}` : ''}`;
+      if (!Array.from(existingKeys).some(k => k.includes(f.desc) || k.includes(f.file))) {
+        toAppend.push(candidate);
+      }
+    }
+
+    if (toAppend.length) {
+      const insertPos = m.index + section.length;
+      const before = content.slice(0, insertPos);
+      const after = content.slice(insertPos);
+      content = before + '\n' + toAppend.join('\n') + '\n' + after;
+      changed = true;
+    }
+
+    if (changed) {
+      // replace the old section text with the new updated block
+      const newSection = updated.join('\n');
+      content = content.replace(m[1], newSection);
+      fs.writeFileSync(p, content, 'utf8');
+      console.log(`Updated: ${todo} (synchronized with test.log)`);
+    }
   }
 }
 
@@ -478,7 +556,14 @@ if (cmd === 'fix') fixAll(verbose);
 else if (cmd === 'watch') watchAll();
 else if (cmd === 'check') checkAll();
 else if (cmd === 'index') generateIndex();
-else if (cmd === 'status') updateRootReadmeStatus();
+else if (cmd === 'status') {
+  updateRootReadmeStatus();
+  try {
+    updateTodosStatus();
+  } catch (e) {
+    console.error('Error updating TODO status:', e && e.message ? e.message : e);
+  }
+}
 else {
   console.error('Usage: node scripts/docs.js [fix|watch|check|index|status] [--verbose]');
   process.exit(1);
