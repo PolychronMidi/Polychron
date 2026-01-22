@@ -1,18 +1,34 @@
 # RULES
 Review this file proactively any time the slightest doubt arises.
 
-All rules can be summarized in the 5 protocols:
+All rules can be summarized in the 5 rules:
 
-Changes in `/src`, `/test`, or `/docs` require coherent correspondence across all 3 which follows each one's unique protocol.
+Changes in `/src`, `/test`, or `/docs` require coherent correspondence across all 3 which follows each one's unique rule.
 
-These 3 protocols (Source, Test, Docs) are tied together with the TODO protocol (`npm run am-i-done`) and the Efficiency Protocol (Serena, subagents, batching, reading logs.)
+These 3 rules (Source, Test, Docs) are tied together with the TODO rule (`npm run am-i-done`) and the Efficiency rule (Serena, subagents, batching, reading logs.)
 
-## Source Protocol
+
+## RULE 1: TODO - Tracking Accountability At Each Step
+Every task must be tracked in `TODO.md` using the prescribed workflow to ensure accountability and clarity
+- Every task must begin with the command `npm run todo` which creates `TODO.md`
+- Before reporting progress or asking for confirmation, always make sure all TODO items are complete first, then run `npm run am-i-done` to verify completion status.
+- If all items in TODO.md are not marked done, or Initial Status for tests and errors does not match Latest Status, return to working on the task until fully complete.
+- Never start a new TODO file when there is one in progress, and never commit to git.
+- Only when `npm run am-i-done` reports all items complete and statuses match, report completion and request confirmation to proceed.
+
+### RULE 1A: Anti-Harassment - Respect Diversity
+- Never report partial progress or ask for confirmation until all items in TODO.md are complete.
+- This team consists of neurodiverse members: respect their need for ONLY minimal, emergency-only pings outside of the main team communication channel TODO.md.
+- Requests for clarification and confirmation to continue should be reserved only for emergecies or high-danger situations.
+- Where ambiguity or uncertainty as to which option to proceed with exists, note the ambiguity in the relevant TODO.md line, and why the chosen direction was taken.
+- Assume all progress is being reviewed live in TODO.md and that work will be manually cancelled if deemed unacceptable.
+
+## RULE 2: Source - /src
 
 Code should be clean, minimalist, dynamic, and coherent in a self-documenting way that only requires minimal comments, with full descriptions reserved for that files's relevant .md file in /docs.
 
 
-## Test Protocol
+## RULE 3: Test - /test
 
 Core principle: Test real implementations, not mocks. Tests align with Polychron's core goal to maximize dynamism and evolution.
 
@@ -31,7 +47,8 @@ Core principle: Test real implementations, not mocks. Tests align with Polychron
 - Test namespace: Use `g.__POLYCHRON_TEST__?.enableLogging` for debug output
 
 
-## Docs Protocol
+## RULE 4: Docs - /docs
+Documentation must be clear, accurate, and automatically synchronized with source code to ensure reliability and ease of maintenance.
 
 ### Commands
 - `npm run docs:fix` – Auto-link modules + inject code snippets + update README status
@@ -40,7 +57,7 @@ Core principle: Test real implementations, not mocks. Tests align with Polychron
 - `npm run docs:status` – Update root README.md test status block
 - `npm run docs:index` – Regenerate docs/README.md index
 
-### How It Works
+### How Docs Works
 Auto-linking: Plain module names → `module.ts ([code](../src/module.ts)) ([doc](module.md))`
 Snippet injection: Markers like `<!-- BEGIN: snippet:ClassName_method -->` pull real source code
 
@@ -54,24 +71,13 @@ Snippet injection: Markers like `<!-- BEGIN: snippet:ClassName_method -->` pull 
 4. Run `npm run docs:fix`
 5. Update `docs/README.md` index
 
-### Common Mistakes
+### Common Docs Mistakes
 DON'T DO: Manual links: `[stage.ts](../src/stage.ts)` → Write "stage.ts" plainly, let script link it
 DON'T DO: Pasted code: Copy-paste drifts → Use snippet markers for real-time injection
-DON'T DO: Hardcoded lists: Module arrays go stale → Use `generateModuleMapping()` in scripts
+DON'T DO: Hardcoded lists: Module arrays go stale → Use `generateModuleMapping()` in scripts\
 
 
-## TODO Protocol
-- Every task must begin with the command `npm run todo` which creates `TODO.md`
-- Before reporting progress or asking for confirmation, always make sure all TODO items are complete first, then run `npm run am-i-done` to verify completion status.
-- If all your TODOs are not marked done, or Initial Status for tests and errors does not match Latest Status, return to working on the task until fully complete.
-- Never start a new TODO file when there is one in progress, and never commit to git.
-
-These rules protect contributors from disruptive, low-value update noise: only publish outcomes that are verifiable through the canonical TODO workflow. By requiring completion checks (`npm run am-i-done`) before reporting, the protocol reduces unnecessary context switches and enforces focused remediation rather than repetitive status pings. Treat progress reports as high‑signal artifacts, not as an ongoing conversation—use the TODO ledger to carry status until work reaches a verifiable checkpoint.
-
-### Anti-Harassment Policy
-- Never report partial progress or ask for confirmation until all TODO items are complete.
-
-## Efficiency Protocol
+## RULE 5: Efficiency
 Use Serena MCP commands, subagents, and batching as much as possible for efficiency.
 
 ### File Edits

@@ -64,7 +64,9 @@ export class TimingContext {
     this.spPhrase = initialState.spPhrase || 0;
     this.measureStart = initialState.measureStart || 0;
     this.measureStartTime = initialState.measureStartTime || 0;
-    this.tpMeasure = initialState.tpMeasure || (typeof g.PPQ !== 'undefined' ? g.PPQ * 4 : 480 * 4);
+    const poly = getPolychronContext();
+    const defaultPPQ = (poly && poly.state && typeof poly.state.PPQ === 'number') ? poly.state.PPQ : 480;
+    this.tpMeasure = initialState.tpMeasure || (defaultPPQ * 4);
     this.spMeasure = initialState.spMeasure || 0;
     this.meterRatio = initialState.meterRatio || (this.numerator / this.denominator);
     this.bufferName = initialState.bufferName || '';

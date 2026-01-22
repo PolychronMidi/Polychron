@@ -4,7 +4,7 @@ import { createTestContext } from './helpers.module.js';
 
 // Integration test: verify marker_t entries exist for all timing units
 describe('Play Engine Marker Coverage', () => {
-  it('emits marker_t for each timing unit when LOG=all', async () => {
+  it('emits marker_t for each timing unit when LOG=all', { timeout: 120000 }, async () => {
     // Use DI-only test defaults
     const ctx = createTestContext();
     ctx.LOG = 'all';

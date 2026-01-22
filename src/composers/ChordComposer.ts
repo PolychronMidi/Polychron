@@ -49,7 +49,7 @@ class ChordComposer extends GenericComposer<any> {
           return false;
         }
         return true;
-      } catch (e) {
+      } catch (_e) {
         console.warn(`Invalid chord: ${chord}`);
         return false;
       }

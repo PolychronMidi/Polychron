@@ -36,6 +36,9 @@ export interface ICompositionContext {
   LM?: any;
   stage?: any;
 
+  // Utilities (DI-provided)
+  utils?: import('./PolychronContext.js').PolychronUtils;
+
   // Progress tracking
   progressCallback?: ProgressCallback;
   cancellationToken?: CancellationToken;
@@ -81,6 +84,16 @@ export function createCompositionContext(
     logUnit: (unitType: string) => logUnitFn(unitType, ctx),
     setUnitTiming: (unitType: string) => setUnitTimingFn(unitType, ctx)
   };
+
+  // DI-only: wire optional `utils` from container if a registration exists
+  try {
+    if (container && container.has && container.has('utils')) {
+      (ctx as any).utils = container.get('utils');
+    }
+  } catch (_e) {
+    // Intentionally do not fall back to global contexts
+  }
+
   return ctx;
 }
 

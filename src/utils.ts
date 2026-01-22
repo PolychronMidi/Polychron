@@ -1,7 +1,7 @@
 /**
  * Utilities.ts - ES6 default exports for core utility functions
  * Reduces dependency on globals and enables tree-shaking
- * 
+ *
  * Primary consumers: rf, ri, m (Math), clamp variants, random variants
  * These can now be imported directly: import { rf, ri } from './utils.js'
  */
@@ -48,8 +48,6 @@ export const highModClamp = (value: number, min: number, max: number): number =>
  * Scale-based clamp with dynamic bounds.
  */
 export const scaleClamp = (value: number, min: number, max: number, factor: number, maxFactor: number = factor, base: number = value): number => {
-  const scaledMin = m.max(min * factor, min);
-  const scaledMax = m.min(max * maxFactor, max);
   const lowerBound = m.max(min, m.floor(base * factor));
   const upperBound = m.min(max, m.ceil(base * maxFactor));
   return clamp(value, lowerBound, upperBound);

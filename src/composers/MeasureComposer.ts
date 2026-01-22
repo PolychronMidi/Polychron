@@ -5,7 +5,7 @@
 import { VoiceLeadingScore } from '../voiceLeading.js';
 import * as t from 'tonal';
 import { NUMERATOR, DENOMINATOR, OCTAVE, VOICES, DIVISIONS, SUBDIVISIONS, SUBSUBDIVS } from '../sheet.js';
-import m, { rf, ri, rw, rv, ra, clamp, modClamp } from '../utils.js';
+import m, { rf, ri, rw, clamp, modClamp } from '../utils.js';
 import PolychronContext from '../PolychronContext.js';
 
 
@@ -168,7 +168,7 @@ class MeasureComposer {
       intervals = intervals.map((interval: number) => {
         const validatedInterval = clamp(interval, 0, this.notes.length - 1);
         const rootIndex = this.notes.indexOf(rootNote);
-        const noteIndex = (rootIndex + validatedInterval) % this.notes.length;
+        const _noteIndex = (rootIndex + validatedInterval) % this.notes.length;
         return validatedInterval;
       });
 
@@ -211,8 +211,8 @@ class MeasureComposer {
       return notes.filter((noteObj, index, self) =>
         index === self.findIndex(n => n.note === noteObj.note)
       );
-    } catch (e) {
-      const error = e as any;
+    } catch (_e) {
+      const error = _e as any;
       if (!fallback) {
         this.recursionDepth--;
         return this.getNotes(octaveRange);

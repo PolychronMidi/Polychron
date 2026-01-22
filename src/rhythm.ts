@@ -4,7 +4,7 @@
 // Import rhythm pattern utilities
 import * as RhythmPattern from '@tonaljs/rhythm-pattern';
 import { ICompositionContext } from './CompositionContext.js';
-import { m, rf, ra, ri, rv, rw, randomWeightedSelection, clamp, isTestLoggingEnabled, drumCH } from './backstage.js';
+import { m, rf, ra, ri, rv, randomWeightedSelection, clamp, isTestLoggingEnabled, drumCH } from './backstage.js';
 
 // Global/runtime variables that should be accessed via ctx.state when possible
 // Fallback defaults used when ctx.state doesn't provide values
@@ -109,7 +109,16 @@ export const drummer = (
     offsets.length = drums.length;
   }
 
-  const combined: Array<{ drum: string; offset: number }> = drums.map((drum, index) => ({ drum, offset: offsets[index] }));
+  const adjustedOffsets = offsets.map((offset) => {
+    if (rf() < .3) {
+      return offset;
+    } else {
+      let adjusted = offset + (Math.random() < 0.5 ? -actualOffsetJitter * rf(.5, 1) : actualOffsetJitter * rf(.5, 1));
+      return adjusted - Math.floor(adjusted);
+    }
+  });
+
+  const combined: Array<{ drum: string; offset: number }> = drums.map((drum, index) => ({ drum, offset: adjustedOffsets[index] }));
 
   const state = ctx ? (ctx.state as any) : undefined;
   const beatStartLocal = state?.beatStart ?? DEFAULT_BEAT_START;
@@ -131,15 +140,7 @@ export const drummer = (
 
   if (isTestLoggingEnabled()) console.log('[drummer] randomization done');
 
-  const adjustedOffsets = combined.map(({ offset }) => {
-    if (rf() < .3) {
-      return offset;
-    } else {
-      let adjusted = offset + (Math.random() < 0.5 ? -actualOffsetJitter * rf(.5, 1) : actualOffsetJitter * rf(.5, 1));
-      return adjusted - Math.floor(adjusted);
-    }
-  });
-
+  // offsets already adjusted and stored in `combined` above
   if (isTestLoggingEnabled()) console.log('[drummer] offsets adjusted');
 
   combined.forEach(({ drum, offset }, idx) => {
@@ -152,7 +153,7 @@ export const drummer = (
 
         const numStutters = ri(...actualStutterRange);
         const stutterDuration = .25 * ri(1, 8) / numStutters;
-        const [minVelocity, maxVelocity] = drumInfo.velocityRange;
+        const [_minVelocity, maxVelocity] = drumInfo.velocityRange;
         const isFadeIn = rf() < 0.7;
 
         for (let i = 0; i < numStutters; i++) {
@@ -375,7 +376,7 @@ export const morph = (
   }
   if (length === undefined) length = pattern.length;
   probHigh = probHigh === undefined ? probLow : probHigh;
-  let morpheus = pattern.map((v, index) => {
+  let morpheus = pattern.map((v: number, _index: number) => {
     let morph = probHigh === probLow ? rf(probLow) : rf(probLow, probHigh!);
     let _ = ['up', 'down', 'both'];
     let d = direction === '?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();

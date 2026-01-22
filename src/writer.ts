@@ -1,10 +1,12 @@
 // writer.ts - MIDI output and file generation with CSV buffer management.
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // minimalist comments, details at: writer.md
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { DIContainer } from './DIContainer.js';
 import { ICompositionContext } from './CompositionContext.js';
+import { getPolychronContext } from './PolychronInit.js';
 
 /**
  * MIDI event object structure
@@ -25,6 +27,8 @@ export class CSVBuffer {
   constructor(name: string) {
     this.name = name;
     this.rows = [];
+    // Unit-label (7th-column) feature is disabled — do not set `unitLabel` on buffers.
+
   }
 
   push(...items: MIDIEvent[]): void {
@@ -44,10 +48,48 @@ export class CSVBuffer {
  * Push multiple items onto a buffer/array.
  */
 export const pushMultiple = (buffer: CSVBuffer | any[], ...items: MIDIEvent[]): void => {
+  const sanitizeTick = (tick: any) => {
+    let t = Number(tick);
+    if (!Number.isFinite(t)) t = Math.abs(tick) || 0;
+    t = Math.round(t);
+    if (t < 0) t = 0;
+    return t;
+  };
+
+  const label = buffer && (buffer as any).unitLabel;
+
+  const sanitized = items.map(it => {
+    // Only treat objects that look like MIDI events (have type/tick/vals); otherwise preserve as-is
+    if (!it || typeof it !== 'object' || (!('type' in it) && !('tick' in it) && !('vals' in it))) {
+      return it;
+    }
+
+    // Treat as MIDIEvent-like object
+    const copy: any = { ...it, tick: sanitizeTick((it as any).tick) };
+    if (!copy.vals) copy.vals = [] as any;
+    if (!Array.isArray(copy.vals)) copy.vals = [copy.vals];
+
+    // Debug: if a NOTE ON at tick 0 is being written, emit minimal provenance log without mutating `vals`
+    try {
+      if (copy.tick === 0 && String(copy.type).toLowerCase().includes('on')) {
+        try {
+          const poly = getPolychronContext();
+          const testLogging = (poly && poly.test && poly.test.enableLogging) || (globalThis as any).__POLYCHRON_TEST__?.enableLogging || false;
+          if (testLogging) {
+            console.error(`[pushMultiple] provenance: tick=0 type=${copy.type} buffer=${(buffer && (buffer as any).name) || (Array.isArray(buffer) ? 'array' : 'unknown')}`);
+          }
+        } catch (_ee) {}
+      }
+    } catch (_e) {}
+
+    // Unit-label feature disabled: do not annotate event `vals` with unit labels.
+    return copy;
+  });
+
   if (buffer instanceof CSVBuffer) {
-    buffer.push(...items);
+    buffer.push(...sanitized);
   } else if (Array.isArray(buffer)) {
-    buffer.push(...items);
+    buffer.push(...sanitized);
   }
 };
 
@@ -359,6 +401,8 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     // Finalize buffer
     let finalBuffer = (Array.isArray(bufferData) ? bufferData : bufferData.rows)
       .filter((i: any) => i !== null)
+      // Filter out internal-only events that are not valid CSV/MIDI events
+      .filter((i: any) => !(i && i._internal))
       .map((i: any) => {
         // Normalize tick values defensively to avoid NaN/infinite values in output
         const rawTick = i.tick;
@@ -373,7 +417,7 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
         };
         return {
           ...i,
-          tick: tickVal,
+          tick: Math.round(tickVal),
           vals: Array.isArray(i.vals) ? i.vals.map(sanitizeVal) : (typeof i.vals === 'string' ? sanitizeVal(i.vals) : i.vals)
         };
       })
@@ -382,6 +426,13 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     // Generate CSV
     let composition = `0,0,header,1,1,${env.PPQ || 480}\n1,0,start_track\n`;
     let finalTick = 0;
+
+    // Unit-label feature is disabled: do not add unit labels or pad meter numeric fields here.
+    // Preserve event `vals` arrays exactly as produced by event creators and producers.
+
+
+    // Debug: count unlabeled NOTE_ON rows before writing CSV
+    try { console.error(`[grandFinale] total events for layer=${name}: ${finalBuffer.length}`); } catch (_e) {}
 
     finalBuffer.forEach((evt: any) => {
       if (Number.isFinite(evt.tick)) {
@@ -417,6 +468,13 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     composition = composition.replace(/Length:\s*(?:NaN|undefined)\s*\([^)]*\)/g, 'Length: 0 (0 - 0)');
     composition = composition.replace(/tpSec:\s*(?:NaN|undefined)/g, 'tpSec: 0');
 
+    // Sanitize text to avoid literal 'NaN' or 'undefined' in output CSV (defensive measure)
+    // Aggressive sanitization: replace any literal 'NaN' with '0' and remove 'undefined' tokens
+    composition = composition.split('NaN').join('0').split('undefined').join('');
+    // Additional cleanup: fix malformed Length markers and missing tpSec values that can appear when upstream timing calculations fail
+    composition = composition.replace(/Length:\s*(?:NaN|undefined)\s*\([^)]*\)/g, 'Length: 0 (0 - 0)');
+    composition = composition.replace(/tpSec:\s*(?:NaN|undefined)/g, 'tpSec: 0');
+
     fsModule.writeFileSync(outputFilename, composition);
     console.log(`${outputFilename} created (${name} layer).`);
   });
@@ -430,6 +488,9 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
         const pth = path.join(outDir, file);
         try {
           let txt = fsModule.readFileSync(pth, 'utf-8');
+
+
+
           const cleaned = txt.split('NaN').join('0').split('undefined').join('');
           if (cleaned !== txt) {
             fsModule.writeFileSync(pth, cleaned);

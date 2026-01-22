@@ -1,6 +1,7 @@
 // backstage.ts - Core utilities, randomization, and MIDI infrastructure.
 // minimalist comments, details at: backstage.md
 // Utilities re-exported from utils.ts
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export {
   clamp, modClamp, lowModClamp, highModClamp, scaleClamp, scaleBoundClamp, softClamp, stepClamp, logClamp, expClamp,
   rf, randomFloat, ri, randomInt, rl, randomLimitedChange, rv, randomVariation, rw, randomWeightedInRange, ra, randomInRangeOrArray,

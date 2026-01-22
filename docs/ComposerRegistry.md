@@ -154,7 +154,7 @@ export class ComposerRegistry {
   private registerDefaults(): void {
     // Use DI sources for composer constructors and data arrays
     // Import composers and venue data synchronously (safe despite circular imports)
-    // This avoids relying on legacy globalThis fallbacks
+    // This avoids relying on legacy runtime global fallbacks
     const ScaleComposer = Composers.ScaleComposer;
     const ChordComposer = Composers.ChordComposer;
     const ModeComposer = Composers.ModeComposer;

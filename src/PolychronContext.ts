@@ -19,14 +19,27 @@ export interface PolychronUtils {
   rw: (min: number, max: number, weights: number[]) => number;
   rl: (currentValue: number, minChange: number, maxChange: number, minValue: number, maxValue: number, type?: string) => number;
   rv: (value: number, boostRange?: number[], frequency?: number, deboostRange?: number[]) => number;
+  ra: (arrayOrRange: any) => any; // select random from array or range
   m: Math;
   clamp: (value: number, min: number, max: number) => number;
   modClamp: (value: number, min: number, max: number) => number;
+  lowModClamp?: (value: number, min: number, max: number) => number;
+  highModClamp?: (value: number, min: number, max: number) => number;
+  scaleClamp?: (value: number, min: number, max: number, factor: number, maxFactor?: number, base?: number) => number;
+  scaleBoundClamp?: (value: number, base: number, lowerScale: number, upperScale: number, minBound?: number, maxBound?: number) => number;
+  softClamp?: (value: number, min: number, max: number, softness?: number) => number;
+  stepClamp?: (value: number, min: number, max: number, step: number) => number;
+  logClamp?: (value: number, min: number, max: number, base?: number) => number;
+  expClamp?: (value: number, min: number, max: number, base?: number) => number;
   normalizeWeights: (weights: number[], min: number, max: number, variationLow?: number, variationHigh?: number) => number[];
   randomFloat: (min?: number, max?: number) => number;
   randomInt: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
   randomLimitedChange: (currentValue: number, minChange: number, maxChange: number, minValue: number, maxValue: number, type?: string) => number;
   randomVariation: (value: number, boostRange?: number[], frequency?: number, deboostRange?: number[]) => number;
+  randomInRangeOrArray?: (v: any) => any;
+  randomWeightedInRange?: (min: number, max: number, weights: number[]) => number;
+  randomWeightedInArray?: (items: any[], weights?: number[]) => any;
+  randomWeightedSelection?: (weights: number[], items: any[]) => any;
 }
 
 // ============================================================
@@ -48,6 +61,7 @@ export interface PolychronComposers {
   ModalInterchangeComposer?: any;
   MelodicDevelopmentComposer?: any;
   AdvancedVoiceLeadingComposer?: any;
+  HarmonicRhythmComposer?: any;
   VoiceLeadingScore?: any;
 }
 

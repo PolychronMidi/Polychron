@@ -77,22 +77,5 @@ export default [
       'eol-last': 'warn',
       'no-constant-condition': 'warn'
     }
-  },
-  // LEGACY FILES OVERRIDE: temporarily relax unused-var checking for a
-  // small set of legacy modules that are still being migrated to DI-first
-  // patterns. Keep this list focused and remove files as they are refactored.
-  {
-    files: [
-      'src/backstage.ts',
-      'src/play.ts',
-      'src/composers/**',
-      'src/structure.ts',
-      'src/sheet.ts'
-    ],
-    rules: {
-      // Turn off unused-var checks for these legacy modules only. Remove
-      // this override as files are migrated and cleaned up.
-      '@typescript-eslint/no-unused-vars': 'off'
-    }
   }
 ];

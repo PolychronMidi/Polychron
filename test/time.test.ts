@@ -216,6 +216,27 @@ describe('getMidiTiming', () => {
       expect(midiMeasureDuration).toBeCloseTo(originalMeasureDuration, 5);
     });
   });
+
+  describe('Fallbacks when composer timing APIs are incomplete', () => {
+    it('should not throw when composer lacks getSubdivisions', () => {
+      ctx = createTestContext();
+      // Composer with minimal timing API
+      ctx.state.composer = { getMeter: () => [4,4], getDivisions: () => 2 } as any;
+      ctx.state.numerator = 4;
+      ctx.state.denominator = 4;
+      ctx.state.measureIndex = 0;
+      ctx.state.beatIndex = 0;
+      ctx.state.divIndex = 0;
+
+      // Should not throw even if getSubdivisions is missing
+      expect(() => {
+        setUnitTiming('division', ctx as any);
+      }).not.toThrow();
+
+      // Expect default fallback of at least 1 subdivision
+      expect(ctx.state.subdivsPerDiv).toBeGreaterThanOrEqual(1);
+    });
+  });
 });
 
 describe('getPolyrhythm', () => {

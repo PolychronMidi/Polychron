@@ -39,10 +39,10 @@ export class PlayNotes {
    * Calculates cross-modulation value based on rhythm state across all levels
    * @returns {void}
    */
-  crossModulateRhythms(ctx?: ICompositionContext): void {
-    // Prefer DI-based state when provided
-    const state = ctx?.state ?? getPolychronContext().state ?? { beatRhythm: [1], divRhythm: [1], subdivRhythm: [1], beatIndex: 0, divIndex: 0, subdivIndex: 0 };
-    const utils = getPolychronContext().utils ?? { rf: Math.random, ri: () => 0, m: Math } as any;
+  crossModulateRhythms(ctx: ICompositionContext): void {
+    if (!ctx) throw new Error('PlayNotes.crossModulateRhythms requires an ICompositionContext (DI-only)');
+    const state = ctx.state as any;
+    const utils = (ctx as any).utils ?? (getPolychronContext().utils as any);
 
     this.lastCrossMod = this.crossModulation;
     this.crossModulation = (
@@ -64,8 +64,9 @@ export class PlayNotes {
    * @returns {void}
    */
   setNoteParams(ctx: any): void {
-    const state = ctx?.state ?? {} as any;
-    const utils = getPolychronContext().utils;
+    if (!ctx) throw new Error('PlayNotes.setNoteParams requires an ICompositionContext (DI-only)');
+    const state = ctx.state as any;
+    const utils = (ctx as any).utils ?? getPolychronContext().utils;
     const subdivsPerMinute = state.subdivsPerBeat * state.midiBPM;
     this.on = state.subdivStart + (state.tpSubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
     this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / state.subdivsPerDiv), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
@@ -85,7 +86,7 @@ export class PlayNotes {
     const activeMotif = ctx.state.activeMotif ?? null;
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? activeMotif.applyToNotes(noteObjects) : noteObjects;
-    const utils = getPolychronContext().utils;
+    const utils = (ctx as any).utils ?? getPolychronContext().utils;
     if ((this.crossModulation + this.lastCrossMod) / utils.rf(1.4, 2.6) > utils.rv(utils.rf(1.8, 2.8), [-.2, -.3], .05)) {
       motifNotes.forEach(({ note }: { note: number }) => {
         // Play source channels
@@ -105,14 +106,18 @@ export class PlayNotes {
         });
 
         // Play bass channels (with probability based on BPM)
-        if (utils.rf() < Utils.clamp(.35 * ctx.state.bpmRatio3, .2, .7)) {
-          bass.filter((bassCH: number) =>
-            ctx.state.flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
-          ).map((bassCH: number) => {
-            const bassNote = Utils.modClamp(note, 12, 35);
-            pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? ctx.state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
-            pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
-          });
+        {
+          const br3 = Number.isFinite(ctx.state.bpmRatio3) ? ctx.state.bpmRatio3 : 1;
+          const threshold = Utils.clamp(.35 * br3, .2, .7);
+          if (utils.rf() < threshold) {
+            bass.filter((bassCH: number) =>
+              ctx.state.flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
+            ).map((bassCH: number) => {
+              const bassNote = Utils.modClamp(note, 12, 35);
+              pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? ctx.state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
+              pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
+            });
+          }
         }
       });
       this.subdivsOff = 0;

@@ -241,6 +241,24 @@ export class CompositionStateService implements CompositionState {
   flipBinF3: number[] = [];
   stutterPanCHs: number[] = [];  // Backwards-compatible divisions alias
   divisions = 4;
+
+  // Migration helpers and DI-provided instruments/state
+  unitLabel?: string;
+  _skipHandoffEnforcement = false;
+  _enforceHandoffs = false;
+  primaryInstrument: any = undefined;
+  secondaryInstrument: any = undefined;
+  bassInstrument: any = undefined;
+  bassInstrument2: any = undefined;
+  balOffset: number = 0;
+  sideBias: number = 0;
+  lBal: number = 0;
+  rBal: number = 0;
+  cBal: number = 64;
+  cBal2: number = 64;
+  bassVar: number = 0;
+  subdivsPerMinute: number = 0;
+
   // Sections config for testing (allows tests to seed section ranges into state)
   SECTIONS = { min: 1, max: 1 };
 

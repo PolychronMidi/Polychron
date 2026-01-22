@@ -332,6 +332,8 @@ export function registerVenueServices(container: DIContainer): void {
   }
 }
 
+import { getPolychronContext } from './PolychronInit.js';
+
 // NOTE: Venue global exposures were removed. Use `registerVenueServices(container: DIContainer)`
 // to register `getMidiValue`, `allNotes`, `allScales`, `allChords`, and `allModes` in the DI container.
 // Consumers should obtain these via DI rather than runtime globals.

@@ -28,10 +28,9 @@ describe('ComposerRegistry - branch tests', () => {
     expect(mode).toBeInstanceOf(StubMode);
   });
 
-  it('create falls back to scale for unknown types', () => {
+  it('create throws for unknown types (DI-only)', () => {
     const registry = ComposerRegistry.getInstance();
-    const c = registry.create({ type: 'unknown' });
-    expect(c).toBeInstanceOf(StubScale);
+    expect(() => registry.create({ type: 'unknown' })).toThrow('No factory registered');
   });
 
   it('clear removes registrations', () => {

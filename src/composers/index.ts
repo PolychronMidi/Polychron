@@ -37,25 +37,24 @@ import ProgressionGenerator from './ProgressionGenerator.js';
 // MelodicDevelopmentComposer
 // AdvancedVoiceLeadingComposer
 
-class TensionReleaseComposer extends ScaleComposer {
+class TensionReleaseComposer {
   key: string;
   quality: string;
   tensionCurve: number;
   measureCount: number = 0;
+  private base: ScaleComposer;
 
   constructor(key: string = 'C', quality: string = 'major', tensionCurve: number = 0.5) {
-    super(quality, key);
     this.key = key;
     this.quality = quality;
     this.tensionCurve = clamp(tensionCurve, 0, 1);
     this.measureCount = 0;
+    this.base = new ScaleComposer(quality, key);
   }
 
   calculateTension(chordOrFunction: string): number {
-    // Map chord names to functions based on scale degree
     let chordFunction = chordOrFunction;
 
-    // If it's a chord name, try to determine its function
     if (chordOrFunction && typeof chordOrFunction === 'string') {
       const chordData = t.Chord.get(chordOrFunction);
       if (chordData && chordData.tonic) {
@@ -63,96 +62,78 @@ class TensionReleaseComposer extends ScaleComposer {
         const keyScale = t.Scale.get(`${this.key} ${this.quality}`);
         const degree = keyScale.notes.indexOf(root);
 
-        // Map scale degree to function
         const degreeToFunction: Record<number, string> = {
-          0: 'tonic',       // I
-          1: 'supertonic',  // ii
-          2: 'mediant',     // iii
-          3: 'subdominant', // IV
-          4: 'dominant',    // V
-          5: 'submediant',  // vi
-          6: 'leadingTone'  // vii
+          0: 'tonic', 1: 'supertonic', 2: 'mediant', 3: 'subdominant', 4: 'dominant', 5: 'submediant', 6: 'leadingTone'
         };
         chordFunction = degreeToFunction[degree] || chordOrFunction;
       }
     }
 
     const tensionMap: Record<string, number> = {
-      'tonic': 0,
-      'subdominant': 0.5,
-      'dominant': 0.8,
-      'supertonic': 0.6,
-      'mediant': 0.3,
-      'submediant': 0.4,
-      'leadingTone': 0.9
+      'tonic': 0, 'subdominant': 0.5, 'dominant': 0.8, 'supertonic': 0.6, 'mediant': 0.3, 'submediant': 0.4, 'leadingTone': 0.9
     };
     return tensionMap[chordFunction] || 0.5;
   }
 
   selectChordByTension(targetTension: number): any[] {
-    // Simplified chord selection based on tension - returns chord notes array
     const chordFunctions = ['tonic', 'subdominant', 'dominant'];
     const tensions = chordFunctions.map(f => this.calculateTension(f));
     let bestIdx = 0;
     let minDiff = Math.abs(tensions[0] - targetTension);
     for (let i = 1; i < tensions.length; i++) {
       const diff = Math.abs(tensions[i] - targetTension);
-      if (diff < minDiff) {
-        minDiff = diff;
-        bestIdx = i;
-      }
+      if (diff < minDiff) { minDiff = diff; bestIdx = i; }
     }
-    // Return the notes for the selected chord function
     const selectedFunction = chordFunctions[bestIdx];
-    // Get scale degrees for the function
-    const functionDegrees: Record<string, number[]> = {
-      'tonic': [0, 2, 4],      // I chord (1-3-5)
-      'subdominant': [3, 5, 0], // IV chord (4-6-1)
-      'dominant': [4, 6, 1]     // V chord (5-7-2)
-    };
+    const functionDegrees: Record<string, number[]> = { 'tonic': [0,2,4], 'subdominant': [3,5,0], 'dominant': [4,6,1] };
     const degrees = functionDegrees[selectedFunction];
-    return degrees.map((d: number) => this.notes[d % this.notes.length]);
+    const notes = this.base.notes || [];
+    return degrees.map((d: number) => notes[d % notes.length]);
   }
 
   getNotes(octaveRange: number[] | null = null): any[] {
-    const targetTension = this.tensionCurve;
-    const chordFunction = this.selectChordByTension(targetTension);
     this.measureCount++;
-    return super.getNotes(octaveRange);
+    return this.base.getNotes(octaveRange);
   }
 
-  x(): any[] {
-    return this.getNotes();
-  }
+  x(): any[] { return this.getNotes(); }
+
+  // Delegate common properties and APIs to the underlying ScaleComposer
+  get root() { return (this.base as any).root; }
+  get item() { return (this.base as any).item; }
+  get notes() { return (this.base as any).notes; }
+  get scale() { return (this.base as any).scale; }
+  getMeter(...args: any[]) { return (this.base as any).getMeter?.(...args); }
+  getDivisions(...args: any[]) { return (this.base as any).getDivisions?.(...args); }
+  getSubdivisions(...args: any[]) { return (this.base as any).getSubdivisions?.(...args); }
+  getSubsubdivs(...args: any[]) { return (this.base as any).getSubsubdivs?.(...args); }
+  getVoices(...args: any[]) { return (this.base as any).getVoices?.(...args); }
 }
 
-class ModalInterchangeComposer extends ScaleComposer {
+class ModalInterchangeComposer {
   key: string;
   primaryMode: string;
   borrowProbability: number;
   borrowModes: string[];
+  private base: ScaleComposer;
 
   constructor(key: string = 'C', primaryMode: string = 'major', borrowProbability: number = 0.25) {
-    super(primaryMode, key);
     this.key = key;
     this.primaryMode = primaryMode;
     this.borrowProbability = clamp(borrowProbability, 0, 1);
     this.borrowModes = this.getBorrowModes(primaryMode);
+    this.base = new ScaleComposer(primaryMode, key);
   }
 
   getBorrowModes(primaryMode: string): string[] {
-    if (primaryMode === 'major') {
-      return ['minor', 'dorian', 'phrygian', 'mixolydian'];
-    } else {
-      return ['major', 'dorian', 'lydian', 'mixolydian'];
-    }
+    if (primaryMode === 'major') return ['minor', 'dorian', 'phrygian', 'mixolydian'];
+    return ['major', 'dorian', 'lydian', 'mixolydian'];
   }
 
   borrowChord(): any[] | null {
     if (rf() < this.borrowProbability && this.borrowModes.length > 0) {
       const borrowMode = this.borrowModes[ri(this.borrowModes.length - 1)];
       const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
-      // Return chord notes as array
       const chordRoot = borrowScale.notes[ri(borrowScale.notes.length - 1)];
       const chordData = t.Chord.get(`${chordRoot}major`);
       return chordData ? chordData.notes : null;
@@ -163,41 +144,68 @@ class ModalInterchangeComposer extends ScaleComposer {
   getNotes(octaveRange: number[] | null = null): any[] {
     const borrowedNotes = this.borrowChord();
     if (borrowedNotes) {
-      const originalNotes = this.notes;
-      this.notes = borrowedNotes;
-      const result = super.getNotes(octaveRange);
-      this.notes = originalNotes;
+      const originalNotes = this.base.notes;
+      (this.base as any).notes = borrowedNotes;
+      const result = this.base.getNotes(octaveRange);
+      (this.base as any).notes = originalNotes;
       return result;
     }
-    return super.getNotes(octaveRange);
+    return this.base.getNotes(octaveRange);
   }
 
-  x(): any[] {
-    return this.getNotes();
-  }
+  x(): any[] { return this.getNotes(); }
+
+  // Delegate commonly used composer APIs to the base ScaleComposer
+  getMeter(...args: any[]) { return (this.base as any).getMeter?.(...args); }
+  getDivisions(...args: any[]) { return (this.base as any).getDivisions?.(...args); }
+  getSubdivisions(...args: any[]) { return (this.base as any).getSubdivisions?.(...args); }
+  getSubsubdivs(...args: any[]) { return (this.base as any).getSubsubdivs?.(...args); }
+  getVoices(...args: any[]) { return (this.base as any).getVoices?.(...args); }
+
+  // Delegate common properties
+  get root() { return (this.base as any).root; }
+  get item() { return (this.base as any).item; }
+  get notes() { return (this.base as any).notes; }
+  get scale() { return (this.base as any).scale; }
 }
 
-class HarmonicRhythmComposer extends ScaleComposer {
+class HarmonicRhythmComposer {
   progression: string[];
   measuresPerChord: number;
+  private base: ScaleComposer;
 
   constructor(progression: string[] = ['I','IV','V','I'], key: string = 'C', measuresPerChord: number = 2, quality: string = 'major') {
-    super(quality, key);
+    this.base = new ScaleComposer(quality, key);
     this.progression = progression;
     this.measuresPerChord = measuresPerChord;
   }
+
+  // Delegate common methods
+  getNotes(...args: any[]) { return (this.base as any).getNotes?.(...args); }
+  x() { return this.getNotes(); }
+  getMeter(...args: any[]) { return (this.base as any).getMeter?.(...args); }
+  getDivisions(...args: any[]) { return (this.base as any).getDivisions?.(...args); }
+  getSubdivisions(...args: any[]) { return (this.base as any).getSubdivisions?.(...args); }
+  getVoices(...args: any[]) { return (this.base as any).getVoices?.(...args); }
+
+  // Delegate common properties
+  get root() { return (this.base as any).root; }
+  get item() { return (this.base as any).item; }
+  get notes() { return (this.base as any).notes; }
+  get scale() { return (this.base as any).scale; }
 }
 
-class MelodicDevelopmentComposer extends ScaleComposer {
+class MelodicDevelopmentComposer {
   developmentIntensity: number;
   measureCount: number = 0;
   developmentPhase: string = 'exposition';
   responseMode: boolean = false;
+  private base: ScaleComposer;
 
   constructor(name: string = 'major', root: string = 'C', developmentIntensity: number = 0.5) {
     const scaleName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     const rootNote = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
-    super(scaleName, rootNote);
+    this.base = new ScaleComposer(scaleName, rootNote);
     this.developmentIntensity = clamp(developmentIntensity, 0, 1);
     this.measureCount = 0;
     this.developmentPhase = 'exposition';
@@ -205,36 +213,40 @@ class MelodicDevelopmentComposer extends ScaleComposer {
   }
 
   getNotes(octaveRange: number[] | null = null): any[] {
-    const baseNotes = super.getNotes(octaveRange);
-    if (baseNotes.length === 0) {
-      return [];
-    }
-
+    const baseNotes = this.base.getNotes(octaveRange);
+    if (!baseNotes || baseNotes.length === 0) return [];
     this.measureCount++;
-
-    // Cycle through development phases
     const phaseCount = Math.floor(this.measureCount / 4);
     const phases = ['exposition', 'development', 'recapitulation'];
     this.developmentPhase = phases[phaseCount % phases.length];
-
     return baseNotes;
   }
 
-  x(): any[] {
-    return this.getNotes();
-  }
+  x(): any[] { return this.getNotes(); }
+
+  // Delegate common properties and APIs
+  get root() { return (this.base as any).root; }
+  get item() { return (this.base as any).item; }
+  get notes() { return (this.base as any).notes; }
+  get scale() { return (this.base as any).scale; }
+  getMeter(...args: any[]) { return (this.base as any).getMeter?.(...args); }
+  getDivisions(...args: any[]) { return (this.base as any).getDivisions?.(...args); }
+  getSubdivisions(...args: any[]) { return (this.base as any).getSubdivisions?.(...args); }
+  getSubsubdivs(...args: any[]) { return (this.base as any).getSubsubdivs?.(...args); }
+  getVoices(...args: any[]) { return (this.base as any).getVoices?.(...args); }
 }
 
-class AdvancedVoiceLeadingComposer extends ScaleComposer {
+class AdvancedVoiceLeadingComposer {
   commonToneWeight: number;
   previousNotes: any[] = [];
   voiceBalanceThreshold: number = 3;
   contraryMotionPreference: number = 0.4;
+  private base: ScaleComposer;
 
   constructor(name: string = 'major', root: string = 'C', commonToneWeight: number = 0.7) {
     const scaleName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     const rootNote = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
-    super(scaleName, rootNote);
+    this.base = new ScaleComposer(scaleName, rootNote);
     this.commonToneWeight = clamp(commonToneWeight, 0, 1);
     this.previousNotes = [];
     this.voiceBalanceThreshold = 3;
@@ -242,7 +254,7 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
   }
 
   getNotes(octaveRange: number[] | null = null): any[] {
-    const baseNotes = super.getNotes(octaveRange);
+    const baseNotes = this.base.getNotes(octaveRange);
 
     if (!baseNotes || baseNotes === null) {
       return baseNotes;
@@ -260,11 +272,9 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
     // Apply voice leading optimization
     const optimizedNotes = baseNotes.map((noteObj: any, idx: number) => {
       if (idx < this.previousNotes.length && rf() < this.commonToneWeight) {
-        // Try to maintain common tones
         const prevNote = this.previousNotes[idx].note;
         const chromaPrev = prevNote % 12;
         const chromaCurrent = noteObj.note % 12;
-
         if (chromaPrev === chromaCurrent) {
           return { note: prevNote };
         }
@@ -276,9 +286,18 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
     return optimizedNotes;
   }
 
-  x(): any[] {
-    return this.getNotes();
-  }
+  x(): any[] { return this.getNotes(); }
+
+  // Delegate common properties and APIs
+  get root() { return (this.base as any).root; }
+  get item() { return (this.base as any).item; }
+  get notes() { return (this.base as any).notes; }
+  get scale() { return (this.base as any).scale; }
+  getMeter(...args: any[]) { return (this.base as any).getMeter?.(...args); }
+  getDivisions(...args: any[]) { return (this.base as any).getDivisions?.(...args); }
+  getSubdivisions(...args: any[]) { return (this.base as any).getSubdivisions?.(...args); }
+  getSubsubdivs(...args: any[]) { return (this.base as any).getSubsubdivs?.(...args); }
+  getVoices(...args: any[]) { return (this.base as any).getVoices?.(...args); }
 }
 
 // Note: Do NOT attach composers to runtime globals. Export named symbols for DI usage.

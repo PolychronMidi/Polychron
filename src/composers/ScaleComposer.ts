@@ -12,6 +12,7 @@ import { ri } from '../utils.js';
  * @extends GenericComposer<Scale>
  */
 class ScaleComposer extends GenericComposer<any> {
+  scale: string;
   constructor(scaleName: string, root: string) {
     super('scale', root);
     this.scale = scaleName; // backward-compatible property expected by tests

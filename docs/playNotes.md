@@ -56,7 +56,7 @@ export class PlayNotes {
   public sustain: number = 0;
   public binVel: number = 0;
   public useShort: boolean = false;
-  // Counters previously stored on globalThis; now instance-local
+  // Counters previously stored on legacy globals; now instance-local
   public subdivsOn: number = 0;
   public subdivsOff: number = 0;
 

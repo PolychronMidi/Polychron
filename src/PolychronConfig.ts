@@ -253,7 +253,7 @@ export function validateConfig(config: PolychronConfig): string[] {
 /**
  * Load config from file or use defaults
  */
-export function loadConfig(filePath?: string): PolychronConfig {
+export function loadConfig(_filePath?: string): PolychronConfig {
   // For now, always return default config
   // In future, this could load from JSON file if filePath provided
   const config = { ...DEFAULT_CONFIG };

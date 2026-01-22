@@ -29,18 +29,13 @@ interface SectionProfile {
   motif: number[] | null;
 }
 
-// Declare global dependencies
-declare const PHRASES_PER_SECTION: any;
-declare const SECTION_TYPES: any[];
-declare const rf: (min: number, max: number) => number;
-declare const ri: (min: number, max: number) => number;
+
 
 /**
  * Normalizes section type entry to consistent format
  */
 export const normalizeSectionType = (entry: any = {}): NormalizedSectionType => {
-  const poly = getPolychronContext();
-  const g = poly.test || {} as any;
+  const g = getPolychronContext().test || {} as any;
   const phrases = entry.phrases || entry.phrasesPerSection || g.PHRASES_PER_SECTION || { min: 1, max: 1 };
   const min = typeof phrases.min === 'number' ? phrases.min : Array.isArray(phrases) ? phrases[0] : g.PHRASES_PER_SECTION?.min || 1;
   const max = typeof phrases.max === 'number' ? phrases.max : Array.isArray(phrases) ? phrases[1] ?? phrases[0] : g.PHRASES_PER_SECTION?.max || 1;
@@ -60,8 +55,7 @@ export const normalizeSectionType = (entry: any = {}): NormalizedSectionType => 
  * Selects a random section type based on weights
  */
 export const selectSectionType = (): NormalizedSectionType => {
-  const poly = getPolychronContext();
-  const g = poly.test || {} as any;
+  const g = getPolychronContext().test || {} as any;
   const types = Array.isArray(g.SECTION_TYPES) && g.SECTION_TYPES.length ? g.SECTION_TYPES : [{ type: 'default' }];
   const normalized = types.map(normalizeSectionType);
   const totalWeight = normalized.reduce((sum: number, t: NormalizedSectionType) => sum + (t.weight || 0), 0) || 1;
@@ -80,7 +74,6 @@ export const selectSectionType = (): NormalizedSectionType => {
  * Resolves a section profile from a section type
  */
 export const resolveSectionProfile = (sectionType: any = null): SectionProfile => {
-  const poly = getPolychronContext();
   const type = sectionType ? normalizeSectionType(sectionType) : normalizeSectionType(selectSectionType());
   const utils = getPolychronContext().utils;
   const phrasesPerSection = utils.ri(type.phrasesMin, type.phrasesMax);

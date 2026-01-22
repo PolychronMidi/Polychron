@@ -1,13 +1,7 @@
 // sheet.ts - Configuration system - imports from PolychronConfig
 // minimalist comments, details at: sheet.md
 
-import {
-  type ComposerConfig,
-  type RangeConfig,
-  type SectionType,
-  type BinauralConfig,
-  DEFAULT_CONFIG
-} from './PolychronConfig.js';
+import { DEFAULT_CONFIG } from './PolychronConfig.js';
 
 // Re-export all config values from PolychronConfig
 export const primaryInstrument = DEFAULT_CONFIG.primaryInstrument;

@@ -1,8 +1,8 @@
 // composers.ts - Re-export composers as named exports from the composers module
 // Import composers module (which now provides named exports)
+import ScaleComposer from './composers/ScaleComposer.js';
 import {
   MeasureComposer,
-  ScaleComposer,
   RandomScaleComposer,
   ChordComposer,
   RandomChordComposer,
@@ -11,8 +11,17 @@ import {
   PentatonicComposer,
   RandomPentatonicComposer,
   ProgressionGenerator,
+  TensionReleaseComposer,
+  ModalInterchangeComposer,
+  HarmonicRhythmComposer,
+  MelodicDevelopmentComposer,
+  AdvancedVoiceLeadingComposer,
   ComposerFactory
 } from './composers/index.js';
+
+
+
+// Re-export named composers for consumers
 
 
 
@@ -28,5 +37,10 @@ export {
   PentatonicComposer,
   RandomPentatonicComposer,
   ProgressionGenerator,
+  TensionReleaseComposer,
+  ModalInterchangeComposer,
+  HarmonicRhythmComposer,
+  MelodicDevelopmentComposer,
+  AdvancedVoiceLeadingComposer,
   ComposerFactory
 };

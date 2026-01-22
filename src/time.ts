@@ -1,5 +1,6 @@
 // time.ts - Timing engine with meter spoofing and dual-layer polyrhythm support.
 // minimalist comments, details at: time.md
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { TimingCalculator } from './time/TimingCalculator.js';
 import { TimingContext } from './time/TimingContext.js';
@@ -7,13 +8,14 @@ import { LayerManager } from './time/LayerManager.js';
 import { setRhythm, trackRhythm } from './rhythm.js';
 import { ri, rf, rw, clamp } from './utils.js';
 import { ICompositionContext } from './CompositionContext.js';
-import { initTimingTree, buildPath, setTimingValues } from './TimingTree.js';
-import { logUnit } from './writer.js';
+import { initTimingTree, buildPath, setTimingValues, getTimingValues } from './TimingTree.js';
+import { logUnit, requirePush } from './writer.js';
 
 export { TimingCalculator, TimingContext, LayerManager };
 
 // Optional: Register timing services into a DIContainer for explicit DI usage
 import { DIContainer } from './DIContainer.js';
+import { getPolychronContext } from './PolychronInit.js';
 
 export function registerTimeServices(container: DIContainer): void {
   if (!container.has('TimingCalculator')) {
@@ -322,9 +324,9 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
 
   // Write polyrhythm to timing tree (hybrid observability)
   const tree = initTimingTree(ctx);
-  const layer = g.LM?.activeLayer || 'primary';
-  const sectionIndex = g.sectionIndex ?? 0;
-  const phraseIndex = g.phraseIndex ?? 0;
+  const layer = ctx.LM?.activeLayer || 'primary';
+  const sectionIndex = ctx.state.sectionIndex ?? 0;
+  const phraseIndex = ctx.state.phraseIndex ?? 0;
   const path = buildPath(layer, sectionIndex, phraseIndex);
   setTimingValues(tree, path, {
     polyNumerator: getVal('polyNumerator'),
@@ -345,7 +347,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
   // Read timing values from ctx.state (initialized by getMidiTiming)
   // Prefer state value; fall back to globals; if still invalid, use safe fallback of 1 and proceed (do not throw during composition)
-  const tpSecCandidate = (state.tpSec !== undefined) ? state.tpSec : (g.tpSec !== undefined ? g.tpSec : undefined);
+  const tpSecCandidate = (state.tpSec !== undefined) ? state.tpSec : (getPolychronContext().state?.tpSec !== undefined ? getPolychronContext().state.tpSec : undefined);
   // Compute a safe fallback for tpSec using available PPQ and BPM information if needed
   const computedFallbackTpSec = (() => {
     const ppq = state.PPQ ?? (ctx as any).PPQ ?? 480;
@@ -367,6 +369,51 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const setVal = (key: string, value: any) => { state[key] = value; };
 
   // No global sync: timing is sourced from ctx.state under DI model
+
+  // Determine context-level layer/index info early
+  const tree = initTimingTree(ctx);
+  const layer = ctx.LM?.activeLayer || 'primary';
+  const sectionIndex = ctx.state.sectionIndex ?? 0;
+  const phraseIndex = ctx.state.phraseIndex ?? 0;
+
+  // Before calculating this unit, enforce that the previous sibling unit (if any)
+  // has emitted a handoff. This ensures strict, ordered progression across units.
+  const enforcePreviousHandoff = (prevPath: string | null) => {
+    try {
+      // Do not enforce during initial instrumentation phase
+      if (ctx && (ctx as any).state && (ctx as any).state._skipHandoffEnforcement) return;
+      // Only enforce when an explicit enforcement flag is enabled (tests or runtime may opt in)
+      if (!(ctx && (ctx as any).state && (ctx as any).state._enforceHandoffs)) return;
+      if (!prevPath) return;
+      const prevNode = getTimingValues(tree, prevPath);
+      if (!prevNode || !prevNode.unitHash) return; // nothing to enforce
+
+      // compute last tick of prev unit (rounded)
+      const prevEnd = Number(prevNode.end ?? prevNode.measureStart ?? 0);
+      const prevStart = Number(prevNode.start ?? prevNode.measureStart ?? 0);
+      const lastTick = Math.max(Math.round(prevStart), Math.round(prevEnd) - 1);
+
+      const buf = ctx.LM?.layers?.[layer]?.buffer;
+      const rows = (buf && (buf.rows || buf)) || [];
+
+      // Debug: log enforcement decision context
+      try {
+        console.error('enforcePreviousHandoff: prevPath=', prevPath, 'prevNode.unitHash=', prevNode.unitHash, 'lastTick=', lastTick, 'rowsCount=', (rows || []).length);
+      } catch (_e) {}
+
+      // If lastTick is 0, skip enforcement during initialization edge cases where markers
+      // may be emitted after traversal. This avoids false positives while ensuring
+      // runtime enforcement still works for normal cases.
+      if (lastTick === 0) return;
+      const found = (rows || []).some((r: any) => r && r.type === 'unit_handoff' && Number.isFinite(r.tick) && Math.round(r.tick) === lastTick && Array.isArray(r.vals) && String(r.vals[0]) === String(prevNode.unitHash));
+      if (!found) {
+        throw new Error(`Missing handoff marker for previous unit at path=${prevPath} expectedHash=${prevNode.unitHash} lastTick=${lastTick}`);
+      }
+    } catch (e) {
+      // rethrow to surface during composition/testing
+      throw e;
+    }
+  };
 
   switch (unitType) {
     case 'phrase':
@@ -392,14 +439,29 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       break;
 
     case 'measure':
+      // Enforce handoff from previous measure if exists
+      if (state.measureIndex !== undefined && state.measureIndex > 0) {
+        const prevMeasure = state.measureIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, phraseIndex, prevMeasure);
+        enforcePreviousHandoff(prevPath);
+      }
+
       // Use state indices for runtime
       setVal('measureStart', getVal('phraseStart') + (state.measureIndex || 0) * getVal('tpMeasure'));
       setVal('measureStartTime', getVal('phraseStartTime') + (state.measureIndex || 0) * getVal('spMeasure'));
       setMidiTiming(ctx);
       setVal('beatRhythm', setRhythm('beat', ctx));
+
       break;
 
     case 'beat':
+      // Enforce handoff from previous beat if exists
+      if (state.beatIndex !== undefined && state.beatIndex > 0) {
+        const prevBeat = state.beatIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, phraseIndex, state.measureIndex ?? 0, prevBeat);
+        enforcePreviousHandoff(prevPath);
+      }
+
       trackRhythm('beat', ctx);
       setVal('tpBeat', getVal('tpMeasure') / getVal('numerator'));
       setVal('spBeat', getVal('tpBeat') / tpSec);
@@ -411,23 +473,37 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       // Use state indices
       setVal('beatStart', getVal('phraseStart') + (state.measureIndex || 0) * getVal('tpMeasure') + (state.beatIndex || 0) * getVal('tpBeat'));
       setVal('beatStartTime', getVal('measureStartTime') + (state.beatIndex || 0) * getVal('spBeat'));
-      setVal('divsPerBeat', state.composer ? state.composer.getDivisions() : 1);
+      setVal('divsPerBeat', (state.composer && typeof state.composer.getDivisions === 'function') ? state.composer.getDivisions() : 1);
       setVal('divRhythm', setRhythm('div', ctx));
       break;
 
     case 'division':
+      // Enforce handoff from previous division if exists
+      if (state.divIndex !== undefined && state.divIndex > 0) {
+        const prevDiv = state.divIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, phraseIndex, state.measureIndex ?? 0, state.beatIndex ?? 0, prevDiv);
+        enforcePreviousHandoff(prevPath);
+      }
+
       trackRhythm('div', ctx);
       setVal('tpDiv', getVal('tpBeat') / Math.max(1, getVal('divsPerBeat')));
       setVal('spDiv', getVal('tpDiv') / tpSec);
       // Use state indices
       setVal('divStart', getVal('beatStart') + (state.divIndex || 0) * getVal('tpDiv'));
       setVal('divStartTime', getVal('beatStartTime') + (state.divIndex || 0) * getVal('spDiv'));
-      setVal('subdivsPerDiv', Math.max(1, state.composer ? state.composer.getSubdivisions() : 1));
+      setVal('subdivsPerDiv', Math.max(1, (state.composer && typeof state.composer.getSubdivisions === 'function') ? state.composer.getSubdivisions() : 1));
       setVal('subdivFreq', getVal('subdivsPerDiv') * getVal('divsPerBeat') * getVal('numerator') * getVal('meterRatio'));
       setVal('subdivRhythm', setRhythm('subdiv', ctx));
       break;
 
     case 'subdivision':
+      // Enforce handoff from previous subdivision if exists
+      if (state.subdivIndex !== undefined && state.subdivIndex > 0) {
+        const prevSub = state.subdivIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, phraseIndex, state.measureIndex ?? 0, state.beatIndex ?? 0, state.divIndex ?? 0, prevSub);
+        enforcePreviousHandoff(prevPath);
+      }
+
       trackRhythm('subdiv', ctx);
       setVal('tpSubdiv', getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv')));
       setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
@@ -444,6 +520,13 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       break;
 
     case 'subsubdivision':
+      // Enforce handoff from previous subsubdivision if exists
+      if (state.subsubdivIndex !== undefined && state.subsubdivIndex > 0) {
+        const prevSubSub = state.subsubdivIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, phraseIndex, state.measureIndex ?? 0, state.beatIndex ?? 0, state.divIndex ?? 0, state.subdivIndex ?? 0, prevSubSub);
+        enforcePreviousHandoff(prevPath);
+      }
+
       trackRhythm('subsubdiv', ctx);
       setVal('tpSubsubdiv', getVal('tpSubdiv') / Math.max(1, getVal('subsubdivsPerSub')));
       setVal('spSubsubdiv', getVal('tpSubsubdiv') / tpSec);
@@ -462,10 +545,6 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
   // Write unit timing to tree (hybrid observability)
   // Build path based on current unit type and indices
-  const tree = initTimingTree(ctx);
-  const layer = ctx.LM?.activeLayer || 'primary';
-  const sectionIndex = ctx.state.sectionIndex ?? 0;
-  const phraseIndex = ctx.state.phraseIndex ?? 0;
 
   let path = buildPath(layer, sectionIndex, phraseIndex);
 
@@ -477,8 +556,10 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     const subdivIndex = ctx.state.subdivIndex ?? 0;
     const subsubdivIndex = ctx.state.subsubdivIndex ?? 0;
 
+    // Include the measure index for measure and all deeper unit types so that
+    // measure-level nodes are created correctly in the timing tree.
     path = buildPath(layer, sectionIndex, phraseIndex,
-      unitType !== 'measure' ? measureIndex : undefined,
+      (unitType === 'measure' || unitType === 'beat' || unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') ? measureIndex : undefined,
       (unitType === 'beat' || unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') ? beatIndex : undefined,
       (unitType === 'division' || unitType === 'subdivision' || unitType === 'subsubdivision') ? divIndex : undefined,
       (unitType === 'subdivision' || unitType === 'subsubdivision') ? subdivIndex : undefined,
@@ -498,9 +579,20 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     'tpSubsubdiv', 'spSubsubdiv', 'subsubdivStart', 'subsubdivStartTime'
   ];
 
-  for (const key of timingKeys) {
-    if (unitType !== 'phrase' && ctx && (ctx as any).state && (ctx as any).state[key] !== undefined) {
-      timingSnapshot[key] = (ctx as any).state[key];
+  if (unitType === 'phrase') {
+    // For phrase-level updates, capture phrase-specific values explicitly so they are
+    // visible in the timing tree (tpPhrase, spPhrase, measuresPerPhrase, etc.).
+    const phraseKeys = ['tpPhrase', 'spPhrase', 'measuresPerPhrase'];
+    for (const key of phraseKeys) {
+      if (ctx && (ctx as any).state && (ctx as any).state[key] !== undefined) {
+        timingSnapshot[key] = (ctx as any).state[key];
+      }
+    }
+  } else {
+    for (const key of timingKeys) {
+      if (ctx && (ctx as any).state && (ctx as any).state[key] !== undefined) {
+        timingSnapshot[key] = (ctx as any).state[key];
+      }
     }
   }
 
@@ -508,10 +600,144 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     setTimingValues(tree, path, timingSnapshot);
   }
 
+
   // Ensure context's CSV buffer points to the currently active buffer from LM (DI-only)
   const activeBuf = ctx?.LM?.layers?.[ctx?.LM?.activeLayer]?.buffer;
-  if (ctx && activeBuf && (ctx as any).csvBuffer !== activeBuf) {
-    (ctx as any).csvBuffer = activeBuf;
+
+  // Compute and attach a human-friendly unit label for diagnostics and CSV annotation
+  // Example: "primarysection1phrase1measure1 start: 0.0000 end: 1.0000"
+  try {
+    const layerLabel = layer;
+    const secIdx = sectionIndex ?? 0;
+    const phrIdx = phraseIndex ?? 0;
+
+    const measureIdx = ctx.state.measureIndex ?? 0;
+    let unitIndex: number | undefined;
+    let startTick = 0;
+    let endTick = 0;
+
+    // Use ticks consistently for labeling so CSV column checks are unambiguous
+    if (unitType === 'phrase') {
+      unitIndex = phrIdx;
+      startTick = ctx.state.phraseStart ?? 0;
+      endTick = startTick + (ctx.state.tpPhrase ?? 0);
+    } else if (unitType === 'measure') {
+      unitIndex = measureIdx;
+      startTick = ctx.state.measureStart ?? 0;
+      endTick = startTick + (ctx.state.tpMeasure ?? 0);
+    } else if (unitType === 'beat') {
+      unitIndex = ctx.state.beatIndex ?? 0;
+      startTick = ctx.state.beatStart ?? 0;
+      endTick = startTick + (ctx.state.tpBeat ?? 0);
+    } else if (unitType === 'division') {
+      unitIndex = ctx.state.divIndex ?? 0;
+      startTick = ctx.state.divStart ?? 0;
+      endTick = startTick + (ctx.state.tpDiv ?? 0);
+    } else if (unitType === 'subdivision') {
+      unitIndex = ctx.state.subdivIndex ?? 0;
+      startTick = ctx.state.subdivStart ?? 0;
+      endTick = startTick + (ctx.state.tpSubdiv ?? 0);
+    } else if (unitType === 'subsubdivision') {
+      unitIndex = ctx.state.subsubdivIndex ?? 0;
+      startTick = ctx.state.subsubdivStart ?? 0;
+      endTick = startTick + (ctx.state.tpSubsubdiv ?? 0);
+    } else {
+      // Default to measure span
+      unitIndex = measureIdx;
+      startTick = ctx.state.measureStart ?? 0;
+      endTick = startTick + (ctx.state.tpMeasure ?? 0);
+    }
+
+    const label = `${layerLabel}section${secIdx + 1}phrase${phrIdx + 1}${unitType}${(unitIndex !== undefined) ? (unitIndex + 1) : ''} start: ${Number.isFinite(startTick) ? startTick.toFixed(4) : '0.0000'} end: ${Number.isFinite(endTick) ? endTick.toFixed(4) : '0.0000'}`;
+
+    if (activeBuf) {
+      try {
+        (activeBuf as any).unitLabel = label;
+      } catch (_e) {}
+    }
+    // Always record on state for tests and fallback reading
+    (ctx as any).state.unitLabel = label;
+
+    // Persist start/end into the timing tree so enforcement logic can compute lastTick reliably
+    try {
+      setTimingValues(tree, path, { start: startTick, end: endTick });
+    } catch (_e) {}
+
+    if (ctx && activeBuf && (ctx as any).csvBuffer !== activeBuf) {
+      (ctx as any).csvBuffer = activeBuf;
+    } else if (!activeBuf && ctx && (ctx as any).csvBuffer) {
+      try { ((ctx as any).csvBuffer as any).unitLabel = label; } catch (_e) {}
+    }
+
+    // Emit a deterministic unit marker into the active buffer for strict traceroutes/tests
+    try {
+      const pFn = requirePush(ctx);
+      const marker = {
+        tick: Number.isFinite(startTick) ? startTick : 0,
+        type: 'marker_t',
+        vals: ["UnitMarker", layer, unitType, (unitIndex !== undefined) ? unitIndex : -1, Number(startTick.toFixed(4)), Number(endTick.toFixed(4))]
+      } as any;
+
+      if (typeof pFn === 'function' && (ctx as any).csvBuffer) {
+        pFn((ctx as any).csvBuffer, marker);
+      } else if ((ctx as any).csvBuffer && Array.isArray((ctx as any).csvBuffer)) {
+        try { ((ctx as any).csvBuffer as any[]).push(marker); } catch (_e) {}
+      }
+
+      // Attach unit timing snapshot to the active buffer for downstream scheduling guards
+      try {
+        if ((ctx as any).csvBuffer) {
+          ((ctx as any).csvBuffer as any).unitTiming = {
+            unitType,
+            unitIndex: unitIndex ?? -1,
+            startTick,
+            endTick,
+            tpMeasure: ctx.state.tpMeasure,
+            tpBeat: ctx.state.tpBeat,
+            tpDiv: ctx.state.tpDiv,
+            tpSubdiv: ctx.state.tpSubdiv,
+            tpSubsubdiv: ctx.state.tpSubsubdiv
+          };
+        }
+      } catch (_e) {}
+
+      // Compute a deterministic unit hash to be used as a handoff key between units
+      try {
+        const seed = (ctx && (ctx as any).state && (ctx as any).state.tracerouteSeed) || 0;
+        const hashSource = `${layer}:${path}:${unitType}:${unitIndex ?? ''}:${startTick ?? ''}:${endTick ?? ''}`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < hashSource.length; i++) {
+          h = Math.imul(h ^ hashSource.charCodeAt(i), 16777619) >>> 0;
+        }
+        h = (h ^ (seed >>> 0)) >>> 0;
+        const unitHash = h.toString(36);
+
+        setTimingValues(tree, path, { unitHash });
+
+        // Emit handoff marker at last tick (endTick - 1) so it is readable only at previous unit's last tick
+        try {
+          const prevEnd = Number.isFinite(endTick) ? endTick : Number(timingSnapshot.measureStart || 0) + Number(timingSnapshot.tpMeasure || 0);
+          const lastTick = Math.max(Math.round(startTick), Math.round(prevEnd) - 1);
+          const pFn = requirePush(ctx);
+          const handoffEvent: any = { tick: lastTick, type: 'unit_handoff', vals: [unitHash], _internal: true };
+          const targetBuf = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
+          if (typeof pFn === 'function' && targetBuf) {
+            pFn(targetBuf, handoffEvent);
+          } else if (targetBuf && Array.isArray(targetBuf)) {
+            try { (targetBuf as any[]).push(handoffEvent); } catch (_e) {}
+          }
+        } catch (_e) {
+          // non-fatal
+        }
+      } catch (_e) {
+        // ignore hashing errors
+      }
+
+    } catch (_e) {
+      // non-fatal: instrumentation only
+    }
+  } catch (_e) {
+    // ignore label generation errors
   }
 
   // Log the unit after calculating timing using the context-bound logger when available
@@ -527,10 +753,15 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     }
   } catch (_e) {}
 
-  if (ctx && (ctx as any).logUnit && typeof (ctx as any).logUnit === 'function') {
-    (ctx as any).logUnit(unitType);
-  } else {
-    g.logUnit(unitType);
+  try {
+    if (ctx && (ctx as any).logUnit && typeof (ctx as any).logUnit === 'function') {
+      (ctx as any).logUnit(unitType);
+    } else {
+      // Use DI-aware logger; if DI services are not available, log and continue without throwing
+      logUnit(unitType, ctx);
+    }
+  } catch (e) {
+    console.warn('setUnitTiming: logUnit failed:', e && (e as Error).message ? (e as Error).message : e);
   }
 };;
 

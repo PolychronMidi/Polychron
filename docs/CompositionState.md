@@ -282,7 +282,7 @@ export class CompositionStateService implements CompositionState {
   LOG = 'none';
 
   /**
-   * Sync state with globalThis
+   * Sync state with DI namespaces (poly.state & poly.test)
    */
   syncToGlobal() {
     // Sync to PolychronContext.state and PolychronContext.test for legacy compatibility without globals
@@ -324,12 +324,12 @@ export class CompositionStateService implements CompositionState {
     // Test namespace for logging/legacy read
     poly.test.LOG = this.LOG;
 
-    // Do NOT write to globalThis; only keep DI-friendly namespaces in sync
+    // Do NOT write to the real global object; only keep DI-friendly namespaces in sync
     poly.state = poly.state || {} as any; // ensure state exists
   }
 
   /**
-   * Sync state from globalThis (for test setup)
+   * Sync state from DI namespaces (for test setup)
    */
   syncFromGlobal() {
     const poly = getPolychronContext();
@@ -358,7 +358,7 @@ export class CompositionStateService implements CompositionState {
     if (gState.flipBinF3 !== undefined) this.flipBinF3 = gState.flipBinF3;
     if (gTest.LOG !== undefined) this.LOG = gTest.LOG;
 
-    // Do not read from globalThis; DI namespaces are authoritative (poly.state & poly.test)
+    // Do not read from the real global object; DI namespaces are authoritative (poly.state & poly.test)
     // (no-op - already read from poly.state and poly.test above)
   }
 
@@ -432,7 +432,7 @@ syncToGlobal() {
     // Test namespace for logging/legacy read
     poly.test.LOG = this.LOG;
 
-    // Do NOT write to globalThis; only keep DI-friendly namespaces in sync
+    // Do NOT write to the real global object; only keep DI-friendly namespaces in sync
     poly.state = poly.state || {} as any; // ensure state exists
   }
 ```
@@ -469,7 +469,7 @@ syncFromGlobal() {
     if (gState.flipBinF3 !== undefined) this.flipBinF3 = gState.flipBinF3;
     if (gTest.LOG !== undefined) this.LOG = gTest.LOG;
 
-    // Do not read from globalThis; DI namespaces are authoritative (poly.state & poly.test)
+    // Do not read from the real global object; DI namespaces are authoritative (poly.state & poly.test)
     // (no-op - already read from poly.state and poly.test above)
   }
 ```

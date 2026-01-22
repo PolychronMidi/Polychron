@@ -47,6 +47,7 @@ export function initializePolychronContext(): IPolychronContext {
   // ============================================================
   // POPULATE COMPOSERS (class references)
   // ============================================================
+  // Populate composer class references with only provided exports. Advanced composers are optional and must be registered via DI if used.
   PolychronContext.composers = {
     MeasureComposer: Composers.MeasureComposer,
     ScaleComposer: Composers.ScaleComposer,
@@ -58,8 +59,11 @@ export function initializePolychronContext(): IPolychronContext {
     PentatonicComposer: Composers.PentatonicComposer,
     RandomPentatonicComposer: Composers.RandomPentatonicComposer,
     ProgressionGenerator: Composers.ProgressionGenerator,
+
+    // Advanced composers included when available for DI usage
     TensionReleaseComposer: Composers.TensionReleaseComposer,
     ModalInterchangeComposer: Composers.ModalInterchangeComposer,
+    HarmonicRhythmComposer: Composers.HarmonicRhythmComposer,
     MelodicDevelopmentComposer: Composers.MelodicDevelopmentComposer,
     AdvancedVoiceLeadingComposer: Composers.AdvancedVoiceLeadingComposer,
   };

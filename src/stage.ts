@@ -5,14 +5,14 @@
 import { otherInstruments, otherBassInstruments, drumSets, BINAURAL } from './sheet.js';
 import './writer.js';
 import './venue.js';
-import { source, reflection, bass, binauralL, binauralR, reflectionBinaural, bassBinaural, cCH1, cCH2, cCH3, lCH1, lCH3, lCH5, rCH1, rCH3, rCH5, drumCH, tuningPitchBend, allNotesOff, stutterPanCHs, rf, ri, ra, rl, m, binauralPlus, binauralMinus, flipBinF2, flipBinT2 } from './backstage.js';
+import { source, reflection, bass, binauralL, binauralR, reflectionBinaural, bassBinaural, cCH1, cCH2, cCH3, lCH1, lCH3, lCH5, rCH1, rCH3, rCH5, drumCH, tuningPitchBend, allNotesOff, rf, ri, ra, rl, m, binauralPlus, binauralMinus, flipBinF2, flipBinT2 } from './backstage.js';
 import './rhythm.js';
 import './time.js';
 import './composers.js';
 import './motifs.js';
 import './fxManager.js';
 import { PlayNotes } from './playNotes.js';
-import { getPolychronContext } from './PolychronInit.js';
+
 import { ICompositionContext } from './CompositionContext.js';
 
 // Module-scoped temporary variable for FX object spreading
@@ -225,7 +225,7 @@ export class Stage {
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
     const bpmRatio3 = ctx.state.bpmRatio3;
-    const flipBin = ctx.state.flipBin;
+    const _flipBin = ctx.state.flipBin;
 
     if (rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
       this.firstLoop = 1;
@@ -295,7 +295,7 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  crossModulateRhythms(ctx?: ICompositionContext): void {
+  crossModulateRhythms(ctx: ICompositionContext): void {
     this.playNotesHandler.crossModulateRhythms(ctx);
   }
 
@@ -304,8 +304,8 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  setNoteParams(): void {
-    this.playNotesHandler.setNoteParams();
+  setNoteParams(ctx: ICompositionContext): void {
+    this.playNotesHandler.setNoteParams(ctx);
   }
 
   /**
@@ -322,8 +322,8 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  setNoteParams2(): void {
-    this.playNotesHandler.setNoteParams2();
+  setNoteParams2(ctx: ICompositionContext): void {
+    this.playNotesHandler.setNoteParams2(ctx);
   }
 
   /**

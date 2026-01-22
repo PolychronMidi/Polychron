@@ -3,7 +3,7 @@
  * Ensures modules initialize in correct dependency order with proper error handling and rollback
  */
 
-import { PolychronContext, type IPolychronContext } from './PolychronContext.js';
+import type { IPolychronContext } from './PolychronContext.js';
 import { PolychronError, ErrorCode } from './PolychronError.js';
 
 /**

@@ -141,30 +141,20 @@ describe('ComposerRegistry', () => {
       expect(composer.type).toBe('measure');
     });
 
-    it('should default to scale type if no type specified', async () => {
+    it('should throw when no type is specified (DI-only)', async () => {
       const { ComposerRegistry } = await import('../src/ComposerRegistry.js');
       const registry = ComposerRegistry.getInstance();
 
-      const composer = registry.create({});
-
-      expect(composer.type).toBe('scale');
+      expect(() => registry.create({})).toThrow('No factory registered');
     });
   });
 
   describe('Error Handling', () => {
-    it('should warn and fallback to random scale for unknown type', async () => {
+    it('should throw for unknown types (DI-only)', async () => {
       const { ComposerRegistry } = await import('../src/ComposerRegistry.js');
       const registry = ComposerRegistry.getInstance();
 
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const composer = registry.create({ type: 'nonexistent' });
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown composer type: nonexistent'));
-      expect(composer).toBeDefined();
-      expect(composer.type).toBe('scale');
-
-      consoleWarnSpy.mockRestore();
+      expect(() => registry.create({ type: 'nonexistent' })).toThrow('No factory registered');
     });
 
     it('should throw error if no fallback available for unknown type', async () => {

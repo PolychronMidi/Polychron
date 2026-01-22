@@ -105,11 +105,14 @@ describe('drummer', () => {
   });
 
   it('should apply offsets correctly', () => {
+    // Make randomness deterministic so jitter doesn't cause flakiness
+    vi.spyOn(Math, 'random').mockReturnValue(0); // ensures rf() < .3 branch keeps offset unchanged
     beatStart = 0;
     tpBeat = 480;
     drummer(['snare1'], [0.5], undefined, undefined, undefined, undefined, ctx);
     const firstTick = c[0].tick;
     expect(firstTick).toBeGreaterThanOrEqual(240); // 0.5 * 480
+    vi.restoreAllMocks();
   });
 
   it('should fill missing offsets with zeros', () => {
@@ -317,8 +320,11 @@ describe('Edge cases', () => {
   });
 
   it('should handle zero beat offsets', () => {
+    // Make randomness deterministic to avoid jitter causing non-zero offsets
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     drummer(['snare1'], [0], undefined, undefined, undefined, undefined, ctx);
     expect(c[0].tick).toBe(beatStart);
+    vi.restoreAllMocks();
   });
 
   it('should handle large beat offsets', () => {

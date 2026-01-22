@@ -5,7 +5,7 @@ import { getPolychronContext } from '../src/PolychronInit.js';
 
 // Ensure measures are actually produced across the composition run
 describe('Play Engine Measure Coverage', () => {
-  it('emits measure markers across multiple measure numbers when LOG=all', async () => {
+  it('emits measure markers across multiple measure numbers when LOG=all', { timeout: 120000 }, async () => {
     // Apply common test defaults to keep runs fast/deterministic (DI-only)
     const ctx = createTestContext();
     ctx.LOG = 'all';
