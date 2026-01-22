@@ -177,8 +177,8 @@ export class CompositionEventBusImpl implements CompositionEventBus {
       handlers.forEach(handler => {
         try {
           handler(...args);
-        } catch (e) {
-          console.error(`Error in ${event} handler:`, e);
+        } catch (_e) {
+          console.error(`Error in ${event} handler:`, _e);
         }
       });
     }
@@ -219,8 +219,8 @@ emit(event: string, ...args: any[]): void {
       handlers.forEach(handler => {
         try {
           handler(...args);
-        } catch (e) {
-          console.error(`Error in ${event} handler:`, e);
+        } catch (_e) {
+          console.error(`Error in ${event} handler:`, _e);
         }
       });
     }

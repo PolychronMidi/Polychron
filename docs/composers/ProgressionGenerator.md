@@ -43,13 +43,13 @@ class ProgressionGenerator {
     this.key = key;
     this.quality = quality.toLowerCase();
 
-    const tLocal = (deps && deps.t) || tonal;
+    const _tLocal = (deps && deps.t) || tonal;
     const riLocal = (deps && deps.ri) || ri;
 
-    this._t = tLocal;
+    this._t = _tLocal;
     this._ri = riLocal;
 
-    this.scale = tLocal.Scale.get(`${key} ${quality}`);
+    this.scale = _tLocal.Scale.get(`${key} ${quality}`);
 
     const modeToQuality: Record<string, string> = {
       'ionian': 'major', 'dorian': 'minor', 'phrygian': 'minor',
@@ -58,7 +58,7 @@ class ProgressionGenerator {
     };
     this.romanQuality = modeToQuality[this.quality] || 'major';
 
-    const keyApi = this.romanQuality === 'minor' ? tLocal.Key.minorKey : tLocal.Key.majorKey;
+    const keyApi = this.romanQuality === 'minor' ? _tLocal.Key.minorKey : _tLocal.Key.majorKey;
     const keyData = keyApi(key) as any;
     this.scaleNotes = this.romanQuality === 'minor' ? (keyData as any).natural?.scale : keyData.scale;
     this.diatonicChords = this.romanQuality === 'minor' ? (keyData as any).natural?.chords : keyData.chords;
@@ -75,7 +75,6 @@ class ProgressionGenerator {
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(
       r => romanNumeral.toUpperCase() === r
     );
-    const tLocal = this._t || tonal;
     if (degreeIndex === -1) return null;
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];
@@ -165,7 +164,6 @@ romanToChord(roman: string): string | null {
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(
       r => romanNumeral.toUpperCase() === r
     );
-    const tLocal = this._t || tonal;
     if (degreeIndex === -1) return null;
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];

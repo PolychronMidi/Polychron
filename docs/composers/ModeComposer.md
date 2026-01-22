@@ -30,6 +30,7 @@ Mode-based composer with scale fallback.
 
 ```typescript
 class ModeComposer extends GenericComposer<any> {
+  mode: string;
   constructor(modeName: string = 'ionian', root: string = 'C') {
     super('mode', root);
     this.mode = modeName; // backward-compatible property expected by tests
@@ -88,9 +89,11 @@ class RandomModeComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    // Prefer DI/imported arrays, but fall back to PolychronContext.test for legacy test data
-    const modes = (Array.isArray(allModes) && allModes.length) ? allModes : (getPolychronContext().test?.allModes || []);
-    const notes = (Array.isArray(allNotes) && allNotes.length) ? allNotes : (getPolychronContext().test?.allNotes || []);
+    // DI-only: require upstream to provide `allModes` and `allNotes` arrays via module imports or DI.
+    if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('ModeComposer requires DI-provided `allModes` array');
+    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ModeComposer requires DI-provided `allNotes` array');
+    const modes = allModes;
+    const notes = allNotes;
     const modeIdx = Math.max(0, ri(modes.length - 1));
     const rootIdx = Math.max(0, ri(notes.length - 1));
     let randomMode = modes[modeIdx] || 'ionian';
@@ -127,9 +130,11 @@ Chooses random mode/root then sets notes with mode-or-scale fallback.
 
 ```typescript
 randomizeItem() {
-    // Prefer DI/imported arrays, but fall back to PolychronContext.test for legacy test data
-    const modes = (Array.isArray(allModes) && allModes.length) ? allModes : (getPolychronContext().test?.allModes || []);
-    const notes = (Array.isArray(allNotes) && allNotes.length) ? allNotes : (getPolychronContext().test?.allNotes || []);
+    // DI-only: require upstream to provide `allModes` and `allNotes` arrays via module imports or DI.
+    if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('ModeComposer requires DI-provided `allModes` array');
+    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ModeComposer requires DI-provided `allNotes` array');
+    const modes = allModes;
+    const notes = allNotes;
     const modeIdx = Math.max(0, ri(modes.length - 1));
     const rootIdx = Math.max(0, ri(notes.length - 1));
     let randomMode = modes[modeIdx] || 'ionian';

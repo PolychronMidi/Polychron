@@ -48,6 +48,9 @@ export interface ICompositionContext {
   LM?: any;
   stage?: any;
 
+  // Utilities (DI-provided)
+  utils?: import('./PolychronContext.js').PolychronUtils;
+
   // Progress tracking
   progressCallback?: ProgressCallback;
   cancellationToken?: CancellationToken;

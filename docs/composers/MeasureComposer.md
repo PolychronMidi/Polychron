@@ -186,7 +186,7 @@ class MeasureComposer {
       intervals = intervals.map((interval: number) => {
         const validatedInterval = clamp(interval, 0, this.notes.length - 1);
         const rootIndex = this.notes.indexOf(rootNote);
-        const noteIndex = (rootIndex + validatedInterval) % this.notes.length;
+        const _noteIndex = (rootIndex + validatedInterval) % this.notes.length;
         return validatedInterval;
       });
 
@@ -229,8 +229,8 @@ class MeasureComposer {
       return notes.filter((noteObj, index, self) =>
         index === self.findIndex(n => n.note === noteObj.note)
       );
-    } catch (e) {
-      const error = e as any;
+    } catch (_e) {
+      const error = _e as any;
       if (!fallback) {
         this.recursionDepth--;
         return this.getNotes(octaveRange);
@@ -422,7 +422,7 @@ getNotes(octaveRange: number[] | null = null): { note: number }[] {
       intervals = intervals.map((interval: number) => {
         const validatedInterval = clamp(interval, 0, this.notes.length - 1);
         const rootIndex = this.notes.indexOf(rootNote);
-        const noteIndex = (rootIndex + validatedInterval) % this.notes.length;
+        const _noteIndex = (rootIndex + validatedInterval) % this.notes.length;
         return validatedInterval;
       });
 
@@ -465,8 +465,8 @@ getNotes(octaveRange: number[] | null = null): { note: number }[] {
       return notes.filter((noteObj, index, self) =>
         index === self.findIndex(n => n.note === noteObj.note)
       );
-    } catch (e) {
-      const error = e as any;
+    } catch (_e) {
+      const error = _e as any;
       if (!fallback) {
         this.recursionDepth--;
         return this.getNotes(octaveRange);

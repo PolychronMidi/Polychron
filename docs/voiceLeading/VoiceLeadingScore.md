@@ -85,7 +85,7 @@ class VoiceLeadingScore {
    * @param {number} fromNote
    * @param {number} toNote
    */
-  _scoreVoiceMotion(interval: number, fromNote: number, toNote: number): number {
+  _scoreVoiceMotion(interval: number, _fromNote: number, _toNote: number): number {
     const absInterval = Math.abs(interval);
 
     // Unison = perfect (0 cost)

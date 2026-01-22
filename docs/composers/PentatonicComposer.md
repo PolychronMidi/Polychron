@@ -31,11 +31,12 @@ Composer for major/minor pentatonic scales.
 ```typescript
 class PentatonicComposer extends GenericComposer<any> {
   type: string; // 'major' or 'minor'
+  scaleType: string;
 
   constructor(root: string = 'C', scaleType: string = 'major') {
     super('pentatonic', root);
     // Tests expect a `type` property to reflect major/minor pentatonic
-    (this as any).type = scaleType;
+    this.type = scaleType;
     this.scaleType = scaleType; // compatibility alias expected by tests
     const scaleName = scaleType === 'major' ? 'major pentatonic' : 'minor pentatonic';
     this.itemSet(scaleName, root);

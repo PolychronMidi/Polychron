@@ -242,7 +242,7 @@ export class Stage {
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
     const bpmRatio3 = ctx.state.bpmRatio3;
-    const flipBin = ctx.state.flipBin;
+    const _flipBin = ctx.state.flipBin;
 
     if (rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
       this.firstLoop = 1;
@@ -312,7 +312,7 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  crossModulateRhythms(ctx?: ICompositionContext): void {
+  crossModulateRhythms(ctx: ICompositionContext): void {
     this.playNotesHandler.crossModulateRhythms(ctx);
   }
 
@@ -321,8 +321,8 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  setNoteParams(): void {
-    this.playNotesHandler.setNoteParams();
+  setNoteParams(ctx: ICompositionContext): void {
+    this.playNotesHandler.setNoteParams(ctx);
   }
 
   /**
@@ -339,8 +339,8 @@ export class Stage {
    * Delegates to PlayNotes handler
    * @returns {void}
    */
-  setNoteParams2(): void {
-    this.playNotesHandler.setNoteParams2();
+  setNoteParams2(ctx: ICompositionContext): void {
+    this.playNotesHandler.setNoteParams2(ctx);
   }
 
   /**
@@ -514,7 +514,7 @@ setBalanceAndFX(ctx: ICompositionContext): void {
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
     const bpmRatio3 = ctx.state.bpmRatio3;
-    const flipBin = ctx.state.flipBin;
+    const _flipBin = ctx.state.flipBin;
 
     if (rf() < .5 * bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || this.firstLoop < 1) {
       this.firstLoop = 1;

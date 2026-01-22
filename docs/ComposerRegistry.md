@@ -110,19 +110,32 @@ export class ComposerRegistry {
    * @throws Error if composer type is not registered
    */
   create(config: ComposerConfig): any {
-    const type = config.type || 'scale';
+    const type = config.type;
     const factory = this.composers.get(type);
 
     if (!factory) {
-      console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
-      const scaleFactory = this.composers.get('scale');
-      if (scaleFactory) {
-        return scaleFactory({ name: 'random', root: 'random' });
-      }
-      throw new Error(`ComposerRegistry: No factory registered for type '${type}' and no fallback available`);
+      throw new Error(`ComposerRegistry: No factory registered for type '${type}'`);
     }
 
-    return factory(config);
+    // Create instance using registered factory
+    const inst = factory(config);
+
+    // STRICT MODE (targeted): For a small set of timing-focused composer types, fail fast when required timing APIs are missing.
+    const timingTypes = new Set([ 'measure', 'harmonicRhythm', 'tensionRelease', 'modalInterchange', 'melodicDevelopment', 'advancedVoiceLeading' ]);
+    if (timingTypes.has(type)) {
+      const missing: string[] = [];
+      if (!inst || typeof inst !== 'object') missing.push('instance');
+      if (inst && typeof inst.getMeter !== 'function') missing.push('getMeter');
+      if (inst && typeof inst.getDivisions !== 'function') missing.push('getDivisions');
+      if (inst && typeof inst.getSubdivisions !== 'function') missing.push('getSubdivisions');
+      if (inst && typeof inst.getVoices !== 'function') missing.push('getVoices');
+
+      if (missing.length > 0) {
+        throw new Error(`ComposerRegistry: Composer of type '${type}' is missing required API methods: ${missing.join(', ')}`);
+      }
+    }
+
+    return inst;
   }
 
   /**
@@ -152,94 +165,93 @@ export class ComposerRegistry {
    * It registers factory functions for all built-in composer types.
    */
   private registerDefaults(): void {
-    // Use DI sources for composer constructors and data arrays
-    // Import composers and venue data synchronously (safe despite circular imports)
-    // This avoids relying on legacy runtime global fallbacks
-    const ScaleComposer = Composers.ScaleComposer;
-    const ChordComposer = Composers.ChordComposer;
-    const ModeComposer = Composers.ModeComposer;
-    const PentatonicComposer = Composers.PentatonicComposer;
-    const MeasureComposer = Composers.MeasureComposer;
-    const TensionReleaseComposer = Composers.TensionReleaseComposer;
-    const ModalInterchangeComposer = Composers.ModalInterchangeComposer;
-    const HarmonicRhythmComposer = Composers.HarmonicRhythmComposer;
-    const MelodicDevelopmentComposer = Composers.MelodicDevelopmentComposer;
-    const AdvancedVoiceLeadingComposer = Composers.AdvancedVoiceLeadingComposer;
+    // Register only composers provided via DI (PolychronContext.composers). Do NOT perform runtime fallbacks.
+    const composersMap = poly.composers || {} as any;
 
-    // Register measure composer (ensure instance indicates type for tests)
-    this.register('measure', () => {
-      const inst = new MeasureComposer();
-      (inst as any).type = 'measure';
-      return inst;
-    });
+    if (composersMap.MeasureComposer) {
+      this.register('measure', () => {
+        const inst = new (composersMap.MeasureComposer as any)();
+        (inst as any).type = 'measure';
+        return inst;
+      });
+    }
 
-    // Register scale composer with random support
-    this.register('scale', ({ name = 'major', root = 'C' } = {}) => {
-      const n = name === 'random' ? (allScales && allScales.length ? allScales[Math.max(0, ri(allScales.length - 1))] : 'major') : name;
-      const r = root === 'random' ? (allNotes && allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
-      return new ScaleComposer(n, r);
-    });
+    if (composersMap.ScaleComposer) {
+      this.register('scale', ({ name = 'major', root = 'C' } = {}) => {
+        return new (composersMap.ScaleComposer as any)(name, root);
+      });
+    }
 
-    // Register chord composer with progression support
-    this.register('chords', ({ progression = ['C'] } = {}) => {
-      let p = Array.isArray(progression) ? progression : ['C'];
-      if (typeof progression === 'string' && progression === 'random') {
-        const len = typeof ri === 'function' ? ri(2, 5) : 3;
-        p = [];
-        for (let i = 0; i < len; i++) {
-          p.push(allChords && allChords.length ? allChords[Math.max(0, ri(allChords.length - 1))] : 'C');
+    if (composersMap.ChordComposer) {
+      this.register('chords', ({ progression = ['C'] } = {}) => {
+        // Support special string 'random' for progressions: prefer DI-provided RandomChordComposer if available
+        if (typeof progression === 'string' && progression === 'random') {
+          if (composersMap.RandomChordComposer) {
+            return new (composersMap.RandomChordComposer as any)();
+          }
+          // Fallback: generate a safe random progression using venue chord list (best-effort)
+          try {
+            // Lazy import to avoid module cycles
+            const { allChords } = require('./venue.js');
+            const len = Math.floor(Math.random() * 4) + 2; // 2..5
+            const p: string[] = [];
+            for (let i = 0; i < len; i++) { p.push(allChords[Math.floor(Math.random() * allChords.length)]); }
+            return new (composersMap.ChordComposer as any)(p);
+          } catch (_e) {
+            // Last resort: use a safe default progression
+            return new (composersMap.ChordComposer as any)(['Cmaj']);
+          }
         }
-      }
-      return new ChordComposer(p);
-    });
 
-    // Register mode composer with random support
-    this.register('mode', ({ name = 'ionian', root = 'C' } = {}) => {
-      const n = name === 'random' ? (allModes && allModes.length ? allModes[Math.max(0, ri(allModes.length - 1))] : 'ionian') : name;
-      const r = root === 'random' ? (allNotes && allNotes.length ? allNotes[Math.max(0, ri(allNotes.length - 1))] : 'C') : root;
-      return new ModeComposer(n, r);
-    });
-
-    // Register pentatonic composer
-    this.register('pentatonic', ({ root = 'C', scaleType = 'major' } = {}) => {
-      const r = root === 'random' ? allNotes && allNotes.length ? allNotes[ri(allNotes.length - 1)] : root : root;
-      const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
-      const inst = new PentatonicComposer(r, t);
-      // Registry-level type indicates 'pentatonic' to satisfy callers expecting top-level type
-      (inst as any).type = 'pentatonic';
-      (inst as any).scaleType = t;
-      return inst;
-    });
-
-    // Register advanced composers (if they exist)
-    if (typeof TensionReleaseComposer === 'function') {
-      this.register('tensionRelease', ({ key = allNotes && allNotes.length ? allNotes[ri(allNotes.length - 1)] : 'C', quality = 'major', tensionCurve = 0.5 } = {}) =>
-        new TensionReleaseComposer(key, quality, tensionCurve)
-      );
+        const p = Array.isArray(progression) ? progression : [String(progression || 'C')];
+        return new (composersMap.ChordComposer as any)(p);
+      });
     }
 
-    if (typeof ModalInterchangeComposer === 'function') {
-      this.register('modalInterchange', ({ key = allNotes && allNotes.length ? allNotes[ri(allNotes.length - 1)] : 'C', primaryMode = 'major', borrowProbability = 0.25 } = {}) =>
-        new ModalInterchangeComposer(key, primaryMode, borrowProbability)
-      );
+    if (composersMap.ModeComposer) {
+      this.register('mode', ({ name = 'ionian', root = 'C' } = {}) => {
+        return new (composersMap.ModeComposer as any)(name, root);
+      });
     }
 
-    if (typeof HarmonicRhythmComposer === 'function') {
-      this.register('harmonicRhythm', ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) =>
-        new HarmonicRhythmComposer(progression, key, measuresPerChord, quality)
-      );
+    if (composersMap.PentatonicComposer) {
+      this.register('pentatonic', ({ root = 'C', scaleType = 'major' } = {}) => {
+        const inst = new (composersMap.PentatonicComposer as any)(root, scaleType);
+        (inst as any).type = 'pentatonic';
+        (inst as any).scaleType = scaleType;
+        return inst;
+      });
     }
 
-    if (typeof MelodicDevelopmentComposer === 'function') {
-      this.register('melodicDevelopment', ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) =>
-        new MelodicDevelopmentComposer(name, root, developmentIntensity)
-      );
+    // Advanced composers are optional and only registered when DI provides them
+    if (composersMap.TensionReleaseComposer) {
+      this.register('tensionRelease', ({ key = 'C', quality = 'major', tensionCurve = 0.5 } = {}) => {
+        return new (composersMap.TensionReleaseComposer as any)(key, quality, tensionCurve);
+      });
     }
 
-    if (typeof AdvancedVoiceLeadingComposer === 'function') {
-      this.register('advancedVoiceLeading', ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) =>
-        new AdvancedVoiceLeadingComposer(name, root, commonToneWeight)
-      );
+    if (composersMap.ModalInterchangeComposer) {
+      this.register('modalInterchange', ({ key = 'C', primaryMode = 'major', borrowProbability = 0.25 } = {}) => {
+        return new (composersMap.ModalInterchangeComposer as any)(key, primaryMode, borrowProbability);
+      });
+    }
+
+    if (composersMap.HarmonicRhythmComposer) {
+      this.register('harmonicRhythm', ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => {
+        return new (composersMap.HarmonicRhythmComposer as any)(progression, key, measuresPerChord, quality);
+      });
+    }
+
+    if (composersMap.MelodicDevelopmentComposer) {
+      this.register('melodicDevelopment', ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) => {
+        return new (composersMap.MelodicDevelopmentComposer as any)(name, root, developmentIntensity);
+      });
+    }
+
+    if (composersMap.AdvancedVoiceLeadingComposer) {
+      this.register('advancedVoiceLeading', ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => {
+        return new (composersMap.AdvancedVoiceLeadingComposer as any)(name, root, commonToneWeight);
+      });
     }
   }
 }
@@ -287,19 +299,32 @@ Instantiate a composer from a config object; falls back to random scale if unkno
 
 ```typescript
 create(config: ComposerConfig): any {
-    const type = config.type || 'scale';
+    const type = config.type;
     const factory = this.composers.get(type);
 
     if (!factory) {
-      console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
-      const scaleFactory = this.composers.get('scale');
-      if (scaleFactory) {
-        return scaleFactory({ name: 'random', root: 'random' });
-      }
-      throw new Error(`ComposerRegistry: No factory registered for type '${type}' and no fallback available`);
+      throw new Error(`ComposerRegistry: No factory registered for type '${type}'`);
     }
 
-    return factory(config);
+    // Create instance using registered factory
+    const inst = factory(config);
+
+    // STRICT MODE (targeted): For a small set of timing-focused composer types, fail fast when required timing APIs are missing.
+    const timingTypes = new Set([ 'measure', 'harmonicRhythm', 'tensionRelease', 'modalInterchange', 'melodicDevelopment', 'advancedVoiceLeading' ]);
+    if (timingTypes.has(type)) {
+      const missing: string[] = [];
+      if (!inst || typeof inst !== 'object') missing.push('instance');
+      if (inst && typeof inst.getMeter !== 'function') missing.push('getMeter');
+      if (inst && typeof inst.getDivisions !== 'function') missing.push('getDivisions');
+      if (inst && typeof inst.getSubdivisions !== 'function') missing.push('getSubdivisions');
+      if (inst && typeof inst.getVoices !== 'function') missing.push('getVoices');
+
+      if (missing.length > 0) {
+        throw new Error(`ComposerRegistry: Composer of type '${type}' is missing required API methods: ${missing.join(', ')}`);
+      }
+    }
+
+    return inst;
   }
 ```
 
