@@ -12,6 +12,7 @@ import './composers.js';
 import './motifs.js';
 import './fxManager.js';
 import { PlayNotes } from './playNotes.js';
+import { getPolychronContext } from './PolychronInit.js';
 import { ICompositionContext } from './CompositionContext.js';
 
 // Module-scoped temporary variable for FX object spreading
@@ -222,7 +223,7 @@ export class Stage {
    * @returns {void}
    */
   setBalanceAndFX(ctx: ICompositionContext): void {
-    const g = globalThis as any;
+    const g = getPolychronContext().test || {} as any;
     const beatStart = ctx.state.beatStart;
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;

@@ -4,8 +4,9 @@
 
 import { VoiceLeadingScore } from '../voiceLeading.js';
 import * as t from 'tonal';
-import { NUMERATOR, OCTAVE, VOICES, DIVISIONS, SUBDIVISIONS, SUBSUBDIVS } from '../sheet.js';
+import { NUMERATOR, DENOMINATOR, OCTAVE, VOICES, DIVISIONS, SUBDIVISIONS, SUBSUBDIVS } from '../sheet.js';
 import m, { rf, ri, rw, rv, ra, clamp, modClamp } from '../utils.js';
+
 
 /**
  * Composes meter-related values with randomization.
@@ -59,7 +60,18 @@ class MeasureComposer {
   }
 
   getBpmRatio(): number {
-    return (globalThis as any).bpmRatio ?? 1;
+    try {
+      // Avoid importing getPolychronContext at module initialization to prevent circular imports.
+      // Prefer a runtime lookup if available on globalThis (set by PolychronInit during initialization).
+      const maybeGet = (globalThis as any).getPolychronContext;
+      if (typeof maybeGet === 'function') {
+        return maybeGet().state?.bpmRatio ?? 1;
+      }
+      const poly = (globalThis as any).PolychronContext || {};
+      return poly.state?.bpmRatio ?? 1;
+    } catch (e) {
+      return 1;
+    }
   }
 
   getOctaveRange(): number[] {

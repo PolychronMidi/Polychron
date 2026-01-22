@@ -18,6 +18,7 @@ import {
 import { drummer, drumMap, patternLength } from '../src/rhythm.js';
 import { cCH1, lCH1, rCH1, drumCH as DEFAULT_DRUM_CH, reflect, reflect2 } from '../src/backstage.js';
 import { createTestContext } from './helpers.module.js';
+import { getPolychronContext } from '../src/PolychronInit';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
 
@@ -613,7 +614,7 @@ describe('play.js - Orchestrator Module', () => {
       }
 
       expect(spy).toHaveBeenCalled();
-      const container = (globalThis as any).DIContainer;
+      const container = getPolychronContext().test.DIContainer;
       expect(container).toBeDefined();
       expect(container.has('pushMultiple')).toBe(true);
       expect(container.has('grandFinale')).toBe(true);

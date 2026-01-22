@@ -10,29 +10,23 @@ beforeEach(() => {
 
 describe('Play Engine Note Generation', () => {
   it('should generate note events when running composition', async () => {
-    const g = globalThis as any;
-
-    // Clear the buffer
-    if (g.c && g.c.rows) {
-      g.c.rows = [];
-    } else if (Array.isArray(g.c)) {
-      g.c.length = 0;
-    }
-
-    // Run a minimal composition
+      // Run a minimal composition
     await initializePlayEngine();
 
-    // Check if any note_on events were generated
-    let noteOnCount = 0;
-    let allEvents = [];
+    // Collect events from engine's layers (DI-based)
+    const { getCurrentCompositionContext } = await import('../src/play.js');
+    const engineCtx = getCurrentCompositionContext();
+    expect(engineCtx).toBeDefined();
+    const layers = engineCtx?.LM?.layers ? engineCtx.LM.layers : {};
+    const allEvents: any[] = [];
+    Object.values(layers).forEach((entry: any) => {
+      const buf = entry.buffer && entry.buffer.rows ? entry.buffer.rows : entry.buffer;
+      if (Array.isArray(buf)) {
+        allEvents.push(...buf);
+      }
+    });
 
-    if (g.c && g.c.rows) {
-      allEvents = g.c.rows;
-      noteOnCount = g.c.rows.filter((e: any) => e.type === 'on').length;
-    } else if (Array.isArray(g.c)) {
-      allEvents = g.c;
-      noteOnCount = g.c.filter((e: any) => e.type === 'on').length;
-    }
+    const noteOnCount = allEvents.filter((e: any) => e.type === 'on').length;
 
     // Debug output
     console.log(`Total events: ${allEvents.length}`);

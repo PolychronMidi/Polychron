@@ -8,6 +8,7 @@ import PolychronContext from './PolychronContext.js';
 import type { IPolychronContext } from './PolychronContext.js';
 import * as Utils from './utils.js';
 import * as Composers from './composers.js';
+import { registerSheetConfig } from './sheet.js';
 
 export function initializePolychronContext(): IPolychronContext {
   if (PolychronContext.initialized) {
@@ -95,7 +96,17 @@ export function initializePolychronContext(): IPolychronContext {
   // ============================================================
   PolychronContext.initialized = true;
 
-
+  // Register sheet-level configuration for legacy test compatibility
+  // without writing to globalThis
+  try {
+    registerSheetConfig(PolychronContext);
+  } catch (e) {
+    // Non-fatal: registration is best-effort for tests; do not block initialization
+    // but report in debug traces if enabled
+    if (PolychronContext.test?.enableLogging) {
+      console.debug('[PolychronInit] registerSheetConfig failed', e);
+    }
+  }
 
   return PolychronContext;
 }

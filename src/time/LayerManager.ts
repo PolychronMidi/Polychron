@@ -4,7 +4,9 @@
 import { TimingContext } from './TimingContext.js';
 import { CSVBuffer } from '../writer.js';
 
-const g = globalThis as any;
+// Use PolychronContext test namespace for DI-only compatibility
+import { getPolychronContext } from '../PolychronInit.js';
+const poly = getPolychronContext();
 
 /**
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
@@ -39,20 +41,18 @@ export const LayerManager = {
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
     // the active buffer continue to work.
-    const prevC = typeof g.c !== 'undefined' ? g.c : undefined;
+    const prevTestC = typeof poly.test?.c !== 'undefined' ? poly.test.c : undefined;
     try {
-      g.c = buf;
+      // Keep DI-friendly test namespace in sync (no globalThis writes)
+      poly.test = poly.test || {} as any;
+      poly.test.c = buf;
       if (typeof setupFn === 'function') setupFn(state, buf);
     } catch (e) {
       // Ignore setup errors
     }
 
-    // Restore previous `c`
-    if (prevC === undefined) {
-      g.c = undefined;
-    } else {
-      g.c = prevC;
-    }
+    // Restore previous `c` in the DI test namespace
+    poly.test.c = prevTestC;
 
     // Return both the state and direct buffer reference so callers can
     // destructure in one line and avoid separate buffer assignment lines
@@ -63,30 +63,46 @@ export const LayerManager = {
    * Activate a layer; restores timing globals and sets meter.
    */
   activate: (name: string, isPoly: boolean = false) => {
-    const g = globalThis as any;
     const layer = LayerManager.layers[name];
-    g.c = layer.buffer;
+    // Set active buffer in DI test namespace (no globals)
+    poly.test = poly.test || {} as any;
+    poly.test.c = layer.buffer;
     LayerManager.activeLayer = name;
 
     // Store meter into layer state (set externally before activation)
-    layer.state.numerator = g.numerator;
-    layer.state.denominator = g.denominator;
-    layer.state.meterRatio = g.numerator / g.denominator;
-    layer.state.tpSec = g.tpSec;
-    layer.state.tpMeasure = g.tpMeasure;
+    layer.state.numerator = poly.test.numerator;
+    layer.state.denominator = poly.test.denominator;
+    layer.state.meterRatio = (poly.test.numerator && poly.test.denominator) ? (poly.test.numerator / poly.test.denominator) : layer.state.meterRatio;
+    layer.state.tpSec = poly.test.tpSec ?? layer.state.tpSec;
+    layer.state.tpMeasure = poly.test.tpMeasure ?? layer.state.tpMeasure;
 
-    // Restore layer timing state to globals
-    layer.state.restoreTo(globalThis);
+    // Restore layer timing state into the DI test namespace
+    layer.state.restoreTo(poly.test);
+
+    // Mirror restored values into the DI test namespace (authoritative)
+    poly.test.phraseStart = layer.state.phraseStart;
+    poly.test.phraseStartTime = layer.state.phraseStartTime;
+    poly.test.sectionStart = layer.state.sectionStart;
+    poly.test.sectionStartTime = layer.state.sectionStartTime;
+    poly.test.sectionEnd = layer.state.sectionEnd;
+    poly.test.tpSec = layer.state.tpSec;
+    poly.test.tpSection = layer.state.tpSection;
+    poly.test.spSection = layer.state.spSection;
+    poly.test.numerator = layer.state.numerator;
+    poly.test.denominator = layer.state.denominator;
+    poly.test.measuresPerPhrase = layer.state.measuresPerPhrase;
+    poly.test.tpMeasure = layer.state.tpMeasure;
+    poly.test.spMeasure = layer.state.spMeasure;
 
     if (isPoly) {
-      g.numerator = g.polyNumerator;
-      g.denominator = g.polyDenominator;
-      g.measuresPerPhrase = g.measuresPerPhrase2;
+      poly.test.numerator = poly.test.polyNumerator;
+      poly.test.denominator = poly.test.polyDenominator;
+      poly.test.measuresPerPhrase = poly.test.measuresPerPhrase2;
     } else {
-      g.measuresPerPhrase = g.measuresPerPhrase1;
+      poly.test.measuresPerPhrase = poly.test.measuresPerPhrase1;
     }
-    g.spPhrase = g.spMeasure * g.measuresPerPhrase;
-    g.tpPhrase = g.tpMeasure * g.measuresPerPhrase;
+    poly.test.spPhrase = (poly.test.spMeasure ?? layer.state.spMeasure) * (poly.test.measuresPerPhrase ?? 1);
+    poly.test.tpPhrase = (poly.test.tpMeasure ?? layer.state.tpMeasure) * (poly.test.measuresPerPhrase ?? 1);
 
     return {
       phraseStart: layer.state.phraseStart,
@@ -105,42 +121,41 @@ export const LayerManager = {
    * Advance a layer's timing state.
    */
   advance: (name: string, advancementType: 'phrase' | 'section' = 'phrase') => {
-    const g = globalThis as any;
+    const gAny = poly.test || {} as any;
     const layer = LayerManager.layers[name];
     if (!layer) return;
-    g.c = layer.buffer;
-    g.beatRhythm = g.divRhythm = g.subdivRhythm = g.subsubdivRhythm = 0;
+    gAny.c = layer.buffer;
+    gAny.beatRhythm = gAny.divRhythm = gAny.subdivRhythm = gAny.subsubdivRhythm = 0;
 
     // Advance using layer's own state values
     if (advancementType === 'phrase') {
-      // Save current globals for phrase timing (layer was just active)
+      // Save current test-namespace values for phrase timing (layer was just active)
       layer.state.saveFrom({
-        numerator: g.numerator,
-        denominator: g.denominator,
-        measuresPerPhrase: g.measuresPerPhrase,
-        tpPhrase: g.tpPhrase,
-        spPhrase: g.spPhrase,
-        measureStart: g.measureStart,
-        measureStartTime: g.measureStartTime,
-        tpMeasure: g.tpMeasure,
-        spMeasure: g.spMeasure,
-        phraseStart: g.phraseStart,
-        phraseStartTime: g.phraseStartTime,
-        sectionStart: g.sectionStart,
-        sectionStartTime: g.sectionStartTime,
-        sectionEnd: g.sectionEnd,
-        tpSec: g.tpSec,
-        tpSection: g.tpSection,
-        spSection: g.spSection
+        numerator: gAny.numerator,
+        denominator: gAny.denominator,
+        measuresPerPhrase: gAny.measuresPerPhrase,
+        tpPhrase: gAny.tpPhrase,
+        spPhrase: gAny.spPhrase,
+        measureStart: gAny.measureStart,
+        measureStartTime: gAny.measureStartTime,
+        tpMeasure: gAny.tpMeasure,
+        spMeasure: gAny.spMeasure,
+        phraseStart: gAny.phraseStart,
+        phraseStartTime: gAny.phraseStartTime,
+        sectionStart: gAny.sectionStart,
+        sectionStartTime: gAny.sectionStartTime,
+        sectionEnd: gAny.sectionEnd,
+        tpSec: gAny.tpSec,
+        tpSection: gAny.tpSection,
+        spSection: gAny.spSection
       });
       layer.state.advancePhrase(layer.state.tpPhrase, layer.state.spPhrase);
     } else if (advancementType === 'section') {
       // For section advancement, use layer's own accumulated tpSection/spSection
-      // Don't pull from globals - they may be from a different layer!
       layer.state.advanceSection();
     }
 
-    // Restore advanced state back to globals so they stay in sync
-    layer.state.restoreTo(globalThis);
+    // Restore advanced state back into the test namespace so they stay in sync (no globalThis)
+    layer.state.restoreTo(gAny);
   },
 };

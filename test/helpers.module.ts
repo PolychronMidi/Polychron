@@ -23,7 +23,7 @@ import {
   ModeComposer,
   RandomModeComposer
 } from '../src/composers.js';
-import { initializePolychronContext, setPolychronTestNamespace } from '../src/PolychronInit.js';
+import { initializePolychronContext, setPolychronTestNamespace, getPolychronContext } from '../src/PolychronInit.js';
 
 export function createTestState(): CompositionState {
   const state = new CompositionStateService();
@@ -81,10 +81,10 @@ export function createTestContext(overrides?: Partial<ICompositionContext>): ICo
     configurable: true,
     enumerable: true,
     get() { return _LOG; },
-    set(v: any) { _LOG = v; (globalThis as any).LOG = v; }
+    set(v: any) { _LOG = v; const poly = getPolychronContext(); poly.test = poly.test || {}; poly.test.LOG = v; }
   });
-  // Ensure initial global LOG reflects ctx default
-  (globalThis as any).LOG = (ctx as any).LOG;
+  // Ensure initial test namespace LOG reflects ctx default
+  getPolychronContext().test = getPolychronContext().test || {} as any; getPolychronContext().test.LOG = (ctx as any).LOG;
 
   // Initialize balance/Fx defaults so tests can assert deltas
   ctx.state.balOffset = ctx.state.balOffset ?? 0;
@@ -100,6 +100,14 @@ export function createTestContext(overrides?: Partial<ICompositionContext>): ICo
   // NOTE: enabled by default during debugging sessions to aid tracing of NaN/undefined
   ctx.state.DEBUG_LOGUNIT = true;
   ctx.state.DEBUG_TIME = true;
+
+  // Populate Polychron test namespace with a minimal composers array and state so DI-based
+  // initialization can pick up composers and BPM without relying on globals
+  const poly = getPolychronContext();
+  poly.test = poly.test || {} as any;
+  poly.test.COMPOSERS = [createMinimalTestComposer()];
+  // Also mirror the provided state into the authoritative poly.state namespace
+  poly.state = state as any;
 
   return ctx;
 }

@@ -35,31 +35,69 @@ export const SUBSUBDIVS = DEFAULT_CONFIG.subsubdivs;
 export const COMPOSERS = DEFAULT_CONFIG.composers;
 export const SILENT_OUTRO_SECONDS = DEFAULT_CONFIG.silentOutroSeconds;
 
-// Export to globalThis
-const g = globalThis as any;
-g.NUMERATOR = NUMERATOR;
-g.DENOMINATOR = DENOMINATOR;
-g.DIVISIONS = DIVISIONS;
-g.SUBDIVISIONS = SUBDIVISIONS;
-g.SUBSUBDIVS = SUBSUBDIVS;
-g.VOICES = VOICES;
-g.OCTAVE = OCTAVE;
-g.SECTIONS = SECTIONS;
-g.PHRASES_PER_SECTION = PHRASES_PER_SECTION;
-g.SECTION_TYPES = SECTION_TYPES;
-g.BPM = BPM;
-g.PPQ = PPQ;
-g.LOG = LOG;
-g.BINAURAL = BINAURAL;
-g.TUNING_FREQ = TUNING_FREQ;
-g.SILENT_OUTRO_SECONDS = SILENT_OUTRO_SECONDS;
-g.COMPOSERS = COMPOSERS;
+/**
+ * Register sheet-level config values into the DI-friendly PolychronContext.test namespace
+ * for legacy tests that still read configuration from a shared namespace. This avoids
+ * writing to globalThis while preserving backwards compatibility for tests.
+ *
+ * This function requires a PolychronContext instance to be passed in to avoid
+ * introducing circular imports. Example:
+ *   import PolychronContext from './PolychronContext.js';
+ *   registerSheetConfig(PolychronContext);
+ *
+ * If `assignToState` is true the same values will also be copied into
+ * `PolychronContext.state` (useful for test setup when immediate runtime
+ * state alignment is needed).
+ */
+export function registerSheetConfig(poly: any, assignToState = false): void {
+  if (!poly) throw new Error('registerSheetConfig requires a PolychronContext instance');
+  poly.test = poly.test || {};
+  const target: any = assignToState ? (poly.state = poly.state || {}) : poly.test;
 
-// Instrument variables from config
-g.primaryInstrument = primaryInstrument;
-g.secondaryInstrument = secondaryInstrument;
-g.otherInstruments = otherInstruments;
-g.bassInstrument = bassInstrument;
-g.bassInstrument2 = bassInstrument2;
-g.otherBassInstruments = otherBassInstruments;
-g.drumSets = drumSets;
+  // Lowercase canonical names used across the codebase
+  target.numerator = NUMERATOR;
+  target.denominator = DENOMINATOR;
+  target.divisions = DIVISIONS;
+  target.subdivisions = SUBDIVISIONS;
+  target.subsubdivs = SUBSUBDIVS;
+  target.voices = VOICES;
+  target.octave = OCTAVE;
+  target.sections = SECTIONS;
+  target.phrasesPerSection = PHRASES_PER_SECTION;
+  target.sectionTypes = SECTION_TYPES;
+  target.bpm = BPM;
+  target.ppq = PPQ;
+  target.log = LOG;
+  target.binaural = BINAURAL;
+  target.tuningFreq = TUNING_FREQ;
+  target.silentOutroSeconds = SILENT_OUTRO_SECONDS;
+  target.composers = COMPOSERS;
+
+  // Legacy uppercase names for any remaining code expecting them
+  target.NUMERATOR = NUMERATOR;
+  target.DENOMINATOR = DENOMINATOR;
+  target.DIVISIONS = DIVISIONS;
+  target.SUBDIVISIONS = SUBDIVISIONS;
+  target.SUBSUBDIVS = SUBSUBDIVS;
+  target.VOICES = VOICES;
+  target.OCTAVE = OCTAVE;
+  target.SECTIONS = SECTIONS;
+  target.PHRASES_PER_SECTION = PHRASES_PER_SECTION;
+  target.SECTION_TYPES = SECTION_TYPES;
+  target.BPM = BPM;
+  target.PPQ = PPQ;
+  target.LOG = LOG;
+  target.BINAURAL = BINAURAL;
+  target.TUNING_FREQ = TUNING_FREQ;
+  target.SILENT_OUTRO_SECONDS = SILENT_OUTRO_SECONDS;
+  target.COMPOSERS = COMPOSERS;
+
+  // Instruments
+  target.primaryInstrument = primaryInstrument;
+  target.secondaryInstrument = secondaryInstrument;
+  target.otherInstruments = otherInstruments;
+  target.bassInstrument = bassInstrument;
+  target.bassInstrument2 = bassInstrument2;
+  target.otherBassInstruments = otherBassInstruments;
+  target.drumSets = drumSets;
+}

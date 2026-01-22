@@ -1,28 +1,39 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CompositionStateService } from '../src/CompositionState';
+import { getPolychronContext } from '../src/PolychronInit';
 
 describe('CompositionState - branch tests', () => {
   let s: CompositionStateService;
+  const poly = getPolychronContext();
+
   beforeEach(() => {
     s = new CompositionStateService();
     s.reset();
-    // ensure globals are clean
-    delete (globalThis as any).sectionIndex;
-    delete (globalThis as any).BPM;
+    // ensure DI namespaces are clean
+    if (poly.state) {
+      delete poly.state.sectionIndex;
+      delete poly.state.BPM;
+    }
+    if (poly.test) {
+      delete poly.test.sectionIndex;
+      delete poly.test.BPM;
+    }
   });
 
   it('syncToGlobal writes expected properties', () => {
     s.sectionIndex = 2;
     s.BPM = 99;
     s.syncToGlobal();
-    // global values should reflect service
-    expect((globalThis as any).sectionIndex).toBe(2);
-    expect((globalThis as any).BPM).toBe(99);
+
+    // DI-friendly state should reflect service
+    expect(poly.state.sectionIndex).toBe(2);
+    expect(poly.state.BPM).toBe(99);
   });
 
   it('syncFromGlobal reads properties when set', () => {
-    (globalThis as any).sectionIndex = 5;
-    (globalThis as any).BPM = 111;
+    poly.state = poly.state || {} as any;
+    poly.state.sectionIndex = 5;
+    poly.state.BPM = 111;
     s.syncFromGlobal();
     expect(s.sectionIndex).toBe(5);
     expect(s.BPM).toBe(111);

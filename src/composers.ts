@@ -14,8 +14,7 @@ import {
   ComposerFactory
 } from './composers/index.js';
 
-// Import ComposerRegistry for side effects
-import './ComposerRegistry.js';
+
 
 // Re-export named composers for consumers
 export {

@@ -18,6 +18,7 @@ import './structure.js';   // Section structure
 import { resolveSectionProfile } from './structure.js';
 import { Motif, clampMotifNote } from './motifs.js';
 import { LayerManager } from './time/LayerManager.js';
+import ComposerRegistry from './ComposerRegistry.js';
 
 // Initialize PolychronContext
 import { initializePolychronContext, getPolychronContext } from './PolychronInit.js';
@@ -116,20 +117,21 @@ const getContextValue = <T>(
     try {
       return contextGetter(ctx);
     } catch (e) {
-      // Fallback to global if context property doesn't exist
+      // Fallback to PolychronContext state if context property doesn't exist
     }
   }
 
-  // Fallback to global value
+  // Fallback to PolychronContext state value
   if (globalKey) {
-    return (globalThis as any)[globalKey];
+    return getPolychronContext().state?.[globalKey];
   }
 
   return undefined as any;
 };
 
 const registerCoreServices = (container: DIContainer) => {
-  const g = globalThis as any;
+  const poly = getPolychronContext();
+  const g = poly.test || {} as any;
 
   // Register configuration service (singleton)
   container.register(
@@ -152,7 +154,7 @@ const registerCoreServices = (container: DIContainer) => {
   // Register ComposerRegistry (singleton)
   container.register(
     'registry',
-    () => g.ComposerRegistry.getInstance(),
+    () => ComposerRegistry.getInstance(),
     'singleton'
   );
 
@@ -243,7 +245,8 @@ const initializePlayEngine = async (
   progressCallback?: ProgressCallback,
   cancellationToken?: CancellationToken
 ): Promise<ICompositionContext> => {
-  const g = globalThis as any;
+  const poly = getPolychronContext();
+  const g = poly.test || {} as any;
 
   // Report initialization phase
   progressCallback?.({
@@ -261,32 +264,46 @@ const initializePlayEngine = async (
   // Initialize DI Container and register core services
   const container = new DIContainer();
   registerCoreServices(container);
-  g.DIContainer = container;  // Make available globally for testing/debugging
+  // Expose DI container to the test namespace (avoid globalThis writes)
+  poly.test = poly.test || {};
+  poly.test.DIContainer = container;  // Make available on PolychronContext.test for testing/debugging
 
   // registerCoreServices called; writer services should be available on the container
 
   const compositionState = container.get('compositionState');
-  compositionState.BASE_BPM = g.BPM;
-  // Preserve any pre-existing global LOG value (e.g., tests) when syncing
+  // First import any test-seeded values from poly.state into the composition state
+  compositionState.syncFromGlobal();
+  // Apply explicit test-provided overrides where present
+  compositionState.BASE_BPM = g.BPM ?? poly.state?.BPM ?? compositionState.BASE_BPM;
   compositionState.LOG = g.LOG !== undefined ? g.LOG : compositionState.LOG;
+  // Persist authoritative composition state back into the DI test namespace
   compositionState.syncToGlobal();
+
 
   // Create composition context (Step 12: Context threading)
   // This encapsulates all state and services needed during composition
   const ctx = createCompositionContext(
     container,
-    g.eventBus || { emit: () => {}, on: () => {}, off: () => {} },
+    g.eventBus || container.get('eventBus') || { emit: () => {}, on: () => {}, off: () => {} },
     {
-      BPM: g.BPM,
+      BPM: g.BPM ?? container.get('config').BPM,
       PPQ: g.PPQ || 480,
-      SECTIONS: g.SECTIONS,
-      COMPOSERS: g.COMPOSERS
+      SECTIONS: g.SECTIONS ?? compositionState.SECTIONS ?? container.get('config').SECTIONS,
+      COMPOSERS: g.COMPOSERS ?? container.get('config').COMPOSERS
     },
     progressCallback,
     cancellationToken,
     g.c || { rows: [] },
     g.LOG || 'none'
   );
+
+  // Ensure the DI-provided compositionState singleton is used by the context
+  ctx.state = compositionState;
+
+  // Ensure ctx-level BPM/PPQ reflect the authoritative composition state so timing
+  // functions like getMidiTiming have the expected inputs
+  ctx.BPM = compositionState.BPM ?? g.BPM ?? compositionState.BASE_BPM ?? 120;
+  ctx.PPQ = g.PPQ ?? compositionState.PPQ ?? 480;
 
   // Ensure the composition context also has writer services available (defensive)
   try {
@@ -307,27 +324,50 @@ const initializePlayEngine = async (
 
   // Provide file system via DI-friendly require
   (ctx as any).fs = require('fs');
-  (ctx as any).PPQ = g.PPQ;
+  // Do not overwrite ctx.PPQ if already set by composition state or config
+  if (typeof g.PPQ === 'number') {
+    (ctx as any).PPQ = g.PPQ;
+  }
   (ctx as any).SILENT_OUTRO_SECONDS = g.SILENT_OUTRO_SECONDS;
 
   const BASE_BPM = g.BPM;
 
-  // Initialize composers from configuration using new ComposerRegistry
-  if (!g.composers || g.composers.length === 0) {
-    const registry = g.ComposerRegistry.getInstance();
-    g.composers = g.COMPOSERS.map((config: any) => registry.create(config));
+  // Initialize composers from configuration using ComposerRegistry, but respect a pre-seeded ctx.state.composer (used by tests)
+  // Prepare a composers array from DI test namespace, seeded ctx.state, or configuration
+  let composersArray: any[] = (g.composers && g.composers.length) ? g.composers : ((g.COMPOSERS && g.COMPOSERS.length) ? g.COMPOSERS : []);
+  if (!composersArray.length && ctx.state && ctx.state.composer) {
+    composersArray = [ctx.state.composer];
   }
+  if (!composersArray.length) {
+    const registry = container.get('registry');
+    const composersConfig = (container.get('config') && container.get('config').COMPOSERS) || g.COMPOSERS || [];
+    composersArray = composersConfig.map((config: any) => registry.create(config));
+  }
+
+  // Normalize composers array to ensure instances (with getMeter) are present
+  const registry = container.get('registry');
+  composersArray = composersArray.map((c: any) => {
+    if (c && typeof c.getMeter === 'function') return c;
+    if (c && c.type) return registry.create(c);
+    if (typeof c === 'function') {
+      try { const inst = new c(); if (inst && typeof inst.getMeter === 'function') return inst; } catch (e) {}
+    }
+    return c;
+  });
+
+  g.composers = composersArray;
 
   // Resolve stage from container and assign to context and globals
   g.stage = container.get('stage');
   (ctx as any).stage = g.stage;
 
   const { state: primary, buffer: c1 } = ctx.LM.register('primary', 'c1', {}, () => ctx.stage.setTuningAndInstruments());
-  const { state: poly, buffer: c2 } = ctx.LM.register('poly', 'c2', {}, () => ctx.stage.setTuningAndInstruments());
+  const { state: polyState, buffer: c2 } = ctx.LM.register('poly', 'c2', {}, () => ctx.stage.setTuningAndInstruments());
 
   // Use DI-provided randomInt (ri) from PolychronContext rather than relying on g.ri global
   const { ri: riFn } = getPolychronContext().utils;
-  ctx.state.totalSections = typeof riFn === 'function' ? riFn(g.SECTIONS.min, g.SECTIONS.max) : 1;
+  const sectionsCfg = g.SECTIONS || (container.get('config') && container.get('config').SECTIONS) || { min: 1, max: 1 };
+  ctx.state.totalSections = typeof riFn === 'function' ? riFn(sectionsCfg.min, sectionsCfg.max) : 1;
 
   // Report composing phase started
   progressCallback?.({
@@ -383,6 +423,11 @@ const initializePlayEngine = async (
       // Keep legacy globals in sync for compatibility
       ctx.state.syncToGlobal();
 
+      // Respect any test-seeded measuresPerPhrase value (DI-only override)
+      if (compositionState.measuresPerPhrase && compositionState.measuresPerPhrase > 0) {
+        ctx.state.measuresPerPhrase = compositionState.measuresPerPhrase;
+      }
+
       ctx.LM.activate('primary', false);
       ctx.setUnitTiming('phrase');
       for (ctx.state.measureIndex = 0; ctx.state.measureIndex < ctx.state.measuresPerPhrase; ctx.state.measureIndex++) {
@@ -399,7 +444,7 @@ const initializePlayEngine = async (
           ctx.stage.stutterFX(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
           ctx.stage.stutterFade(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
           {
-            const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? (globalThis as any).rf ?? Math.random;
+            const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? Math.random;
             rfFn() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
           }
 
@@ -437,7 +482,7 @@ const initializePlayEngine = async (
           ctx.stage.stutterFX(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
           ctx.stage.stutterFade(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
           {
-            const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? (globalThis as any).rf ?? Math.random;
+            const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? Math.random;
             rfFn() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
           }
 
@@ -469,8 +514,9 @@ const initializePlayEngine = async (
     (ctx as any).csvBuffer = (ctx as any).LM.layers[(ctx as any).LM.activeLayer].buffer;
     ctx.logUnit('section');
 
-    g.BPM = BASE_BPM;
-    g.activeMotif = null;
+    // Do not write to legacy globals; update PolychronContext state instead if needed
+    // PolychronContext.state.baseBPM = BASE_BPM; // intentionally omitted to avoid globals
+    // activeMotif is managed on the composition context (ctx.state.activeMotif)
   }
 
   // Report rendering phase

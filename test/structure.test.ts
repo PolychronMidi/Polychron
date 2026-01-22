@@ -1,10 +1,10 @@
 // test/structure.test.ts - Testing section type selection
-import '../src/sheet.js'; // Load config constants to globalThis
 import { selectSectionType, resolveSectionProfile } from '../src/structure.js';
+import { getPolychronContext } from '../src/PolychronInit.js';
 
-// SECTION_TYPES is accessed via globalThis in structure.ts
-const SECTION_TYPES = () => (globalThis as any).SECTION_TYPES;
-const PHRASES_PER_SECTION = () => (globalThis as any).PHRASES_PER_SECTION;
+// SECTION_TYPES is stored on PolychronContext.test during DI migration
+const SECTION_TYPES = () => getPolychronContext().test.SECTION_TYPES;
+const PHRASES_PER_SECTION = () => getPolychronContext().test.PHRASES_PER_SECTION;
 
 describe('Section type selection', () => {
   const originalTypes = SECTION_TYPES() ? JSON.parse(JSON.stringify(SECTION_TYPES())) : null;

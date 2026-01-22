@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createCompositionContext, syncContextToGlobals, loadContextFromGlobals } from '../src/CompositionContext';
 import { DIContainer } from '../src/DIContainer';
 import { CompositionEventBusImpl } from '../src/CompositionProgress';
+import { getPolychronContext } from '../src/PolychronInit';
 
 describe('CompositionContext - branch tests', () => {
   let container: DIContainer;
@@ -10,11 +11,12 @@ describe('CompositionContext - branch tests', () => {
   beforeEach(() => {
     container = new DIContainer();
     eventBus = new CompositionEventBusImpl();
-    // clean globals
-    delete (globalThis as any).BPM;
-    delete (globalThis as any).PPQ;
-    delete (globalThis as any).SECTIONS;
-    delete (globalThis as any).COMPOSERS;
+    // clean DI namespaces
+    const poly = getPolychronContext();
+    delete poly.test?.BPM;
+    delete poly.test?.PPQ;
+    delete poly.test?.SECTIONS;
+    delete poly.test?.COMPOSERS;
   });
 
   it('createCompositionContext returns a usable context', () => {
@@ -31,12 +33,13 @@ describe('CompositionContext - branch tests', () => {
     ctx.LOG = 'test';
 
     syncContextToGlobals(ctx);
-    expect((globalThis as any).BPM).toBe(77);
-    expect((globalThis as any).PPQ).toBe(300);
-    expect((globalThis as any).SECTIONS.min).toBe(2);
-    expect((globalThis as any).COMPOSERS[0]).toBe('a');
+    const poly = getPolychronContext();
+    expect(poly.test.BPM).toBe(77);
+    expect(poly.test.PPQ).toBe(300);
+    expect(poly.test.SECTIONS.min).toBe(2);
+    expect(poly.test.COMPOSERS[0]).toBe('a');
 
-    // load from globals
+    // load from DI namespaces
     const loaded = loadContextFromGlobals(container, eventBus);
     expect(loaded.BPM).toBe(77);
     expect(loaded.PPQ).toBe(300);

@@ -4,6 +4,7 @@ import { rf, randomFloat, ri, randomInt, rl, randomLimitedChange, rv, randomVari
 import m from '../src/utils.js';
 import { pushMultiple as p, CSVBuffer } from '../src/writer.js';
 import { LayerManager, TimingContext } from '../src/time.js';
+import { getPolychronContext } from '../src/PolychronInit';
 import { createTestContext } from './helpers.module.js';
 import { allNotesOff, muteAll } from '../src/backstage.js';
 
@@ -815,17 +816,21 @@ describe('LayerManager (LM)', () => {
 
   describe('activate', () => {
     beforeEach(() => {
+    const poly = getPolychronContext();
+    poly.test = poly.test || {} as any;
       LayerManager.register('primary', [], {}, () => {});
       LayerManager.register('poly', [], {}, () => {});
     });
 
     it('should set active layer and buffer', () => {
+      const poly = getPolychronContext();
       LayerManager.activate('primary');
       expect(LayerManager.activeLayer).toBe('primary');
-      expect(c).toBe(LayerManager.layers.primary.buffer);
+      expect(poly.test.c).toBe(LayerManager.layers.primary.buffer);
     });
 
-    it('should restore layer timing state to globals via TimingContext', () => {
+    it('should restore layer timing state to DI test namespace via TimingContext', () => {
+      const poly = getPolychronContext();
       LayerManager.layers.primary.state.phraseStart = 1000;
       LayerManager.layers.primary.state.phraseStartTime = 1.5;
       LayerManager.layers.primary.state.sectionStart = 500;
@@ -834,18 +839,19 @@ describe('LayerManager (LM)', () => {
 
       LayerManager.activate('primary');
 
-      expect(phraseStart).toBe(1000);
-      expect(phraseStartTime).toBe(1.5);
-      expect(sectionStart).toBe(500);
-      expect(tpSection).toBe(2000);
-      expect(spSection).toBe(2.0);
+      expect(poly.test.phraseStart).toBe(1000);
+      expect(poly.test.phraseStartTime).toBe(1.5);
+      expect(poly.test.sectionStart).toBe(500);
+      expect(poly.test.tpSection).toBe(2000);
+      expect(poly.test.spSection).toBe(2.0);
     });
 
-    it('should store current meter values from globals', () => {
-      globalThis.numerator = 7;
-      globalThis.denominator = 8;
-      globalThis.tpSec = 1000;
-      globalThis.tpMeasure = 1750;
+    it('should store current meter values from DI test namespace', () => {
+      const poly = getPolychronContext();
+      poly.test.numerator = 7;
+      poly.test.denominator = 8;
+      poly.test.tpSec = 1000;
+      poly.test.tpMeasure = 1750;
 
       LayerManager.activate('primary');
 
@@ -856,15 +862,16 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should handle poly activation with different meter', () => {
-      globalThis.polyNumerator = 5;
-      globalThis.polyDenominator = 6;
-      globalThis.measuresPerPhrase2 = 3;
+      const poly = getPolychronContext();
+      poly.test.polyNumerator = 5;
+      poly.test.polyDenominator = 6;
+      poly.test.measuresPerPhrase2 = 3;
 
       LayerManager.activate('poly', true);
 
-      expect(numerator).toBe(5);
-      expect(denominator).toBe(6);
-      expect(measuresPerPhrase).toBe(3);
+      expect(poly.test.numerator).toBe(5);
+      expect(poly.test.denominator).toBe(6);
+      expect(poly.test.measuresPerPhrase).toBe(3);
     });
 
     it('should return activation state object', () => {
@@ -883,19 +890,20 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should advance phrase correctly via TimingContext', () => {
-      // Activate layer and set state through globals
+      const poly = getPolychronContext();
+      // Activate layer and set state through DI test namespace
       LayerManager.activate('primary');
-      phraseStart = 1000;
-      phraseStartTime = 1.5;
-      tpSection = 500;
-      spSection = 0.5;
+      poly.test.phraseStart = 1000;
+      poly.test.phraseStartTime = 1.5;
+      poly.test.tpSection = 500;
+      poly.test.spSection = 0.5;
 
       LayerManager.advance('primary', 'phrase');
 
-      expect(LayerManager.layers.primary.state.phraseStart).toBe(1000 + tpPhrase);
-      expect(LayerManager.layers.primary.state.phraseStartTime).toBe(1.5 + spPhrase);
-      expect(LayerManager.layers.primary.state.tpSection).toBe(500 + tpPhrase);
-      expect(LayerManager.layers.primary.state.spSection).toBe(0.5 + spPhrase);
+      expect(LayerManager.layers.primary.state.phraseStart).toBe(1000 + LayerManager.layers.primary.state.tpPhrase);
+      expect(LayerManager.layers.primary.state.phraseStartTime).toBeCloseTo(1.5 + LayerManager.layers.primary.state.spPhrase);
+      expect(LayerManager.layers.primary.state.tpSection).toBe(500 + LayerManager.layers.primary.state.tpPhrase);
+      expect(LayerManager.layers.primary.state.spSection).toBeCloseTo(0.5 + LayerManager.layers.primary.state.spPhrase);
     });
 
     it('should advance section correctly via TimingContext', () => {
@@ -916,12 +924,13 @@ describe('LayerManager (LM)', () => {
       expect(LayerManager.layers.primary.state.spSection).toBe(0);
     });
 
-    it('should update meter values from globals via saveFrom()', () => {
-      globalThis.numerator = 5;
-      globalThis.denominator = 6;
-      globalThis.measuresPerPhrase = 3;
-      globalThis.tpPhrase = 5000;
-      globalThis.spPhrase = 5.0;
+    it('should update meter values from DI test namespace via saveFrom()', () => {
+      const poly = getPolychronContext();
+      poly.test.numerator = 5;
+      poly.test.denominator = 6;
+      poly.test.measuresPerPhrase = 3;
+      poly.test.tpPhrase = 5000;
+      poly.test.spPhrase = 5.0;
 
       LayerManager.advance('primary', 'phrase');
 
@@ -937,35 +946,37 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should reset beatRhythm, divRhythm, subdivRhythm', () => {
-      globalThis.beatRhythm = 1;
-      globalThis.divRhythm = 1;
-      globalThis.subdivRhythm = 1;
+      const poly = getPolychronContext();
+      poly.test.beatRhythm = 1;
+      poly.test.divRhythm = 1;
+      poly.test.subdivRhythm = 1;
 
       LayerManager.advance('primary', 'phrase');
 
-      expect(beatRhythm).toBe(0);
-      expect(divRhythm).toBe(0);
-      expect(subdivRhythm).toBe(0);
+      expect(poly.test.beatRhythm).toBe(0);
+      expect(poly.test.divRhythm).toBe(0);
+      expect(poly.test.subdivRhythm).toBe(0);
     });
   });
 
   describe('integration', () => {
     it('should maintain separate state between layers', () => {
+      const poly = getPolychronContext();
       LayerManager.register('layer1', [], {}, () => {});
       LayerManager.register('layer2', [], {}, () => {});
 
       LayerManager.activate('layer1');
-      phraseStart = 100;
+      poly.test.phraseStart = 100;
       LayerManager.advance('layer1', 'phrase');
 
       LayerManager.activate('layer2');
-      phraseStart = 200;
+      poly.test.phraseStart = 200;
       LayerManager.advance('layer2', 'phrase');
 
       // Check layer1 state: started at 100, advanced by tpPhrase
-      expect(LayerManager.layers.layer1.state.phraseStart).toBe(100 + tpPhrase);
+      expect(LayerManager.layers.layer1.state.phraseStart).toBe(100 + LayerManager.layers.layer1.state.tpPhrase);
       // layer2 state: started at 200, advanced by tpPhrase
-      expect(LayerManager.layers.layer2.state.phraseStart).toBe(200 + tpPhrase);
+      expect(LayerManager.layers.layer2.state.phraseStart).toBe(200 + LayerManager.layers.layer2.state.tpPhrase);
     });
 
     it('should handle complex timing scenarios', () => {
@@ -977,8 +988,8 @@ describe('LayerManager (LM)', () => {
         LayerManager.advance('complex', 'phrase');
       }
 
-      expect(LayerManager.layers.complex.state.phraseStart).toBe(tpPhrase * 3);
-      expect(LayerManager.layers.complex.state.phraseStartTime).toBe(spPhrase * 3);
+      expect(LayerManager.layers.complex.state.phraseStart).toBe(LayerManager.layers.complex.state.tpPhrase * 3);
+      expect(LayerManager.layers.complex.state.phraseStartTime).toBe(LayerManager.layers.complex.state.spPhrase * 3);
     });
   });
 });

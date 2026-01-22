@@ -9,6 +9,7 @@ export {
 } from './utils.js';
 
 import * as Utils from './utils.js';
+import { getPolychronContext } from './PolychronInit.js';
 import {
   clamp, modClamp, lowModClamp, highModClamp, scaleClamp, scaleBoundClamp, softClamp, stepClamp, logClamp, expClamp,
   rf, randomFloat, ri, randomInt, rl, randomLimitedChange, rv, randomVariation, rw, randomWeightedInRange, ra, randomInRangeOrArray,
@@ -80,9 +81,9 @@ let binauralOffset: (plusOrMinus: number) => number = () => 0;
 export let binauralPlus = 0;
 export let binauralMinus = 0;
 
-// Test helper: returns whether test logging is enabled (uses legacy test namespace)
+// Test helper: returns whether test logging is enabled (uses DI-friendly PolychronContext.test namespace)
 export function isTestLoggingEnabled(): boolean {
-  return (globalThis as any).__POLYCHRON_TEST__?.enableLogging ?? false;
+  return getPolychronContext().test?.enableLogging ?? false;
 }
 
 // MIDI channel constants
@@ -124,8 +125,8 @@ const FX = [1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95];
  */
 export const allNotesOff = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 123, 0] }));
-  // For legacy tests that still use the writer CSV buffer helper in globalThis, push to g.c if present
-  const maybeC = (globalThis as any).c;
+  // For legacy tests that still use a shared test CSV buffer, push to PolychronContext.test.c if present
+  const maybeC = getPolychronContext().test?.c;
   if (maybeC) {
     if (Array.isArray(maybeC)) {
       maybeC.push(...events);
@@ -159,11 +160,12 @@ export const rlFX = (ch: number, cc: number, min: number, max: number, condition
   const useCondition = condition && condition(ch);
   const actualMin = useCondition && condMin !== undefined ? condMin : min;
   const actualMax = useCondition && condMax !== undefined ? condMax : max;
-  const beatStartValue = ((globalThis as any).beatStart !== undefined) ? (globalThis as any).beatStart : beatStart;
+  const beatStartValue = getPolychronContext().state?.beatStart ?? beatStart;
   return { tick: beatStartValue - 1, type: 'control_c', vals: [ch, cc, ri(actualMin, actualMax)] };
 };
 
 // Make globally available (matches original behavior)
+// NOTE: Legacy global declarations remain for authors migrating to DI. New code should avoid using globals.
 declare global {
   var m: any;
   var clamp: any;
@@ -195,7 +197,7 @@ declare global {
   var beatCount: number;
   var divStart: number;
   var subdivStart: number;
-  // MIDI channel globals
+  // MIDI channel globals (legacy)
   var cCH1: number;
   var cCH2: number;
   var cCH3: number;
@@ -228,7 +230,8 @@ export {
 
 // No legacy features should be used anywhere: use DI only
 export function attachLegacyGlobals(target?: any): void {
-  const g = target ?? (globalThis as any);
+  // Prefer an explicit target or a test-provided legacy target; do NOT default to globalThis for DI compliance
+  const g = target ?? getPolychronContext().test?.legacyTarget ?? {};
 
   g.flipBinT3 = flipBinT3;
   g.stutterFadeCHs = stutterFadeCHs;

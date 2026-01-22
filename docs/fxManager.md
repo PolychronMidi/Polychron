@@ -44,11 +44,11 @@ class FxManager {
    * Applies rapid volume stutter/fade effect to selected channels
    */
   stutterFade(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
-    const state = ctx?.state ?? {} as any;
-    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
-    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
-    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
-    const modClampFn = ctx?.utils?.modClamp ?? (globalThis as any).modClamp ?? modClamp;
+    const state = ctx?.state ?? getPolychronContext().state ?? {} as any;
+    const riFn = ctx?.utils?.ri ?? getPolychronContext().utils.ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? getPolychronContext().utils.ra ?? ra;
+    const modClampFn = ctx?.utils?.modClamp ?? getPolychronContext().utils.modClamp ?? modClamp;
 
     numStutters = numStutters || riFn(10, 70);
     const tpSec = state.tpSec ?? 1;
@@ -77,7 +77,7 @@ class FxManager {
       const maxVol = riFn(90, 120);
       const isFadeIn = rfFn() < 0.5;
       const effectiveNumStutters = numStutters ?? 4; // Default value
-      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      const beatStartVal = state.beatStart ?? getPolychronContext().state?.beatStart ?? 0;
       let tick: number = beatStartVal; // Initialize with default
       let volume: number;
 
@@ -137,7 +137,7 @@ class FxManager {
       const rightBoundary = edgeMargin + 2 * centerZone;
       let currentPan = edgeMargin;
       let direction = 1;
-      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      const beatStartVal = state.beatStart ?? getPolychronContext().state?.beatStart ?? 0;
       let tick: number = beatStartVal; // Initialize with default
 
       for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
@@ -192,7 +192,7 @@ class FxManager {
       const startValue = riFn(0, 127);
       const endValue = riFn(0, 127);
       const ccParam = raFn([91, 92, 93, 71, 74]);
-      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      const beatStartVal = state.beatStart ?? getPolychronContext().state?.beatStart ?? 0;
       let tick: number = beatStartVal; // Initialize with default
 
       for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
@@ -225,11 +225,11 @@ Volume stutter/fade over selected channels with random ramps.
 
 ```typescript
 stutterFade(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
-    const state = ctx?.state ?? {} as any;
-    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
-    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
-    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
-    const modClampFn = ctx?.utils?.modClamp ?? (globalThis as any).modClamp ?? modClamp;
+    const state = ctx?.state ?? getPolychronContext().state ?? {} as any;
+    const riFn = ctx?.utils?.ri ?? getPolychronContext().utils.ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? getPolychronContext().utils.ra ?? ra;
+    const modClampFn = ctx?.utils?.modClamp ?? getPolychronContext().utils.modClamp ?? modClamp;
 
     numStutters = numStutters || riFn(10, 70);
     const tpSec = state.tpSec ?? 1;
@@ -258,7 +258,7 @@ stutterFade(channels: number[], ctx: any, numStutters?: number, duration?: numbe
       const maxVol = riFn(90, 120);
       const isFadeIn = rfFn() < 0.5;
       const effectiveNumStutters = numStutters ?? 4; // Default value
-      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      const beatStartVal = state.beatStart ?? getPolychronContext().state?.beatStart ?? 0;
       let tick: number = beatStartVal; // Initialize with default
       let volume: number;
 
@@ -325,7 +325,7 @@ stutterPan(channels: number[], ctx: any, numStutters?: number, duration?: number
       const rightBoundary = edgeMargin + 2 * centerZone;
       let currentPan = edgeMargin;
       let direction = 1;
-      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      const beatStartVal = state.beatStart ?? getPolychronContext().state?.beatStart ?? 0;
       let tick: number = beatStartVal; // Initialize with default
 
       for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
@@ -387,7 +387,7 @@ stutterFX(channels: number[], ctx: any, numStutters?: number, duration?: number)
       const startValue = riFn(0, 127);
       const endValue = riFn(0, 127);
       const ccParam = raFn([91, 92, 93, 71, 74]);
-      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      const beatStartVal = state.beatStart ?? getPolychronContext().state?.beatStart ?? 0;
       let tick: number = beatStartVal; // Initialize with default
 
       for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {

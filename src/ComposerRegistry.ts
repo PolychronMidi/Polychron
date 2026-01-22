@@ -3,11 +3,13 @@
 import * as Composers from './composers.js';
 import { allScales, allNotes, allChords, allModes } from './venue.js';
 import { ri } from './utils.js';
+import { getPolychronContext } from './PolychronInit.js';
 
 /**
  * Configuration object passed to composer constructors
  */
-const g = globalThis as any;
+const poly = getPolychronContext();
+const g = poly.test || {} as any;
 
 export interface ComposerConfig {
   type: string;
@@ -209,7 +211,8 @@ export class ComposerRegistry {
 }
 
 
-// Export to global scope
-g.ComposerRegistry = ComposerRegistry;
+// Expose on PolychronContext.test for legacy compatibility (do NOT write to globalThis)
+poly.test = poly.test || {};
+poly.test.ComposerRegistry = ComposerRegistry;
 
 export default ComposerRegistry;

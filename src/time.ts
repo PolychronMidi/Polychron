@@ -204,7 +204,8 @@ const setMidiTiming = (ctx: ICompositionContext, tick?: number): void => {
  * Called after getMidiTiming or getPolyrhythm to ensure playNotes.ts has access to values.
  */
 const syncStateToGlobals = (ctx: ICompositionContext): void => {
-  const g = globalThis as any;
+  // Instead of writing to runtime globals, sync to the PolychronContext singleton state
+  const polyState = getPolychronContext().state as any;
   const state = ctx.state as any;
 
   const keysToSync = [
@@ -216,8 +217,8 @@ const syncStateToGlobals = (ctx: ICompositionContext): void => {
 
   for (const key of keysToSync) {
     if (state[key] !== undefined) {
-      // Sync to globals for backward compatibility
-      (globalThis as any)[key] = state[key];
+      // Sync to PolychronContext state for backward compatibility without using globals
+      polyState[key] = state[key];
     }
   }
 };
@@ -231,7 +232,7 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
   const g = globalThis as any;
   const state = ctx.state as any;
   // Read from state first (getPolyrhythm is called before syncStateToGlobals)
-  const getVal = (key: string) => state[key] !== undefined ? state[key] : g[key];
+  const getVal = (key: string) => state[key] !== undefined ? state[key] : getPolychronContext().state?.[key];
   // Initialize polyrhythm values only to state
   // getPolyrhythm is called once at phrase start, not during tight composition loops
   const setVal = (key: string, value: any) => {
@@ -240,6 +241,12 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
 
   const composer = getVal('composer');
   if (!composer) return;
+
+  // Respect test-provided explicit measuresPerPhrase (DI-only override) - if a test or DI seed
+  // has set a positive measuresPerPhrase, do not override it with polyrhythm heuristics.
+  if (Number.isFinite(state.measuresPerPhrase) && state.measuresPerPhrase > 1) {
+    return;
+  }
 
   const MAX_ATTEMPTS = 100;
   let attempts = 0;

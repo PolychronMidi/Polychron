@@ -82,10 +82,10 @@ class FxManager {
    */
   stutterPan(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
     const state = ctx?.state ?? {} as any;
-    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
-    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
-    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
-    const modClampFn = ctx?.utils?.modClamp ?? (globalThis as any).modClamp ?? modClamp;
+    const riFn = ctx?.utils?.ri ?? getPolychronContext().utils.ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? getPolychronContext().utils.ra ?? ra;
+    const modClampFn = ctx?.utils?.modClamp ?? getPolychronContext().utils.modClamp ?? modClamp;
 
     numStutters = numStutters || riFn(30, 90);
     const tpSec = state.tpSec ?? 1;
@@ -142,9 +142,9 @@ class FxManager {
    */
   stutterFX(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
     const state = ctx?.state ?? {} as any;
-    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
-    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
-    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
+    const riFn = ctx?.utils?.ri ?? getPolychronContext().utils.ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? getPolychronContext().utils.ra ?? ra;
 
     numStutters = numStutters || riFn(30, 100);
     const tpSec = state.tpSec ?? 1;

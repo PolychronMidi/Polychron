@@ -6,8 +6,7 @@ import GenericComposer, { RandomGenericComposer } from './GenericComposer.js';
 import * as t from 'tonal';
 import { allModes, allNotes } from '../venue.js';
 import { ri } from '../utils.js';
-
-const g = globalThis as any;
+import { getPolychronContext } from '../PolychronInit.js';
 
 /**
  * Composes notes from a specific mode.
@@ -44,9 +43,9 @@ class RandomModeComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    // Prefer DI/imported arrays, but fall back to legacy globals for tests
-    const modes = (Array.isArray(allModes) && allModes.length) ? allModes : (g.allModes || []);
-    const notes = (Array.isArray(allNotes) && allNotes.length) ? allNotes : (g.allNotes || []);
+    // Prefer DI/imported arrays, but fall back to PolychronContext.test for legacy test data
+    const modes = (Array.isArray(allModes) && allModes.length) ? allModes : (getPolychronContext().test?.allModes || []);
+    const notes = (Array.isArray(allNotes) && allNotes.length) ? allNotes : (getPolychronContext().test?.allNotes || []);
     const modeIdx = Math.max(0, ri(modes.length - 1));
     const rootIdx = Math.max(0, ri(notes.length - 1));
     let randomMode = modes[modeIdx] || 'ionian';

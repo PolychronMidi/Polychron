@@ -11,6 +11,7 @@ import { DIContainer } from './DIContainer.js';
 import { CompositionEventBus, ProgressCallback, CancellationToken } from './CompositionProgress.js';
 import { setUnitTiming as setUnitTimingFn } from './time.js';
 import { logUnit as logUnitFn } from './writer.js';
+import { getPolychronContext } from './PolychronInit.js';
 
 /**
  * Composition context - contains all state and services needed for composition
@@ -88,27 +89,29 @@ export function createCompositionContext(
  * Used to support initialization flows that rely on globals
  */
 export function syncContextToGlobals(ctx: ICompositionContext): void {
-  const g = globalThis as any;
+  // Avoid writing to globalThis; sync into PolychronContext.test and PolychronContext.state namespaces
+  const poly = getPolychronContext();
 
   // State
   ctx.state.syncToGlobal();
 
-  // Config
-  g.BPM = ctx.BPM;
-  g.PPQ = ctx.PPQ;
-  g.SECTIONS = ctx.SECTIONS;
-  g.COMPOSERS = ctx.COMPOSERS;
+  // Config (store in test namespace for legacy read paths)
+  poly.test = poly.test || {};
+  poly.test.BPM = ctx.BPM;
+  poly.test.PPQ = ctx.PPQ;
+  poly.test.SECTIONS = ctx.SECTIONS;
+  poly.test.COMPOSERS = ctx.COMPOSERS;
 
   // Services
-  g.DIContainer = ctx.container;
-  g.eventBus = ctx.eventBus;
+  poly.test.DIContainer = ctx.container;
+  poly.test.eventBus = ctx.eventBus;
 
   // Logging
-  g.LOG = ctx.LOG;
+  poly.test.LOG = ctx.LOG;
 
   // CSV buffer
   if (ctx.csvBuffer) {
-    g.c = ctx.csvBuffer;
+    poly.test.c = ctx.csvBuffer;
   }
 }
 
@@ -117,7 +120,8 @@ export function syncContextToGlobals(ctx: ICompositionContext): void {
  * Used to support initialization flows that rely on globals
  */
 export function loadContextFromGlobals(container: DIContainer, eventBus: CompositionEventBus): ICompositionContext {
-  const g = globalThis as any;
+  const poly = getPolychronContext();
+  const g = poly.test || {};
 
   const ctx = createCompositionContext(
     container,
@@ -134,7 +138,7 @@ export function loadContextFromGlobals(container: DIContainer, eventBus: Composi
     g.LOG || 'none'
   );
 
-  // Load state from globals if available
+  // Load state from test namespace if available
   ctx.state.syncFromGlobal();
 
   return ctx;

@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { initializePlayEngine, getCurrentCompositionContext } from '../src/play.js';
+import { getPolychronContext } from '../src/PolychronInit';
 
 // Integration test: verify generated events span beyond the first measure
 describe('Play Engine Timing Progression', () => {
   it('produces events across multiple measures (not all stacked in measure 0)', async () => {
-    // Configure a small composition via globals to keep test fast
-    (globalThis as any).SECTIONS = { min: 1, max: 1 };
+    // Configure a small composition via DI test namespace to keep test fast
+    const poly = getPolychronContext();
+    poly.test = poly.test || {} as any;
+    poly.test.SECTIONS = { min: 1, max: 1 };
 
     // Run a short composition and get the composition context
     const ctx = await initializePlayEngine();
