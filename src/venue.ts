@@ -224,8 +224,13 @@ export const midiData: MidiData = {
  * @returns The MIDI number, or 0 if not found (fallback)
  */
 export function getMidiValue(category: string, name: string): number {
-  category = category.toLowerCase();
-  name = name.toLowerCase();
+  category = (category || '').toLowerCase();
+  name = (name || '').toLowerCase();
+
+  if (!name) {
+    console.warn(`MIDI ${category} lookup called with empty name, using fallback value 0`);
+    return 0;
+  }
 
   if (!midiData[category as keyof MidiData]) {
     console.warn(`Invalid MIDI category: ${category}`);

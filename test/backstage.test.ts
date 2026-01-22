@@ -1,11 +1,11 @@
-// test/backstage.test.js
-import { clamp, clampWrap, pickArbitrary, pickWeighted, gaus, trigMTX, logUnit } from '../src/backstage.js';
+// test/backstage.test.ts
+import { clamp, modClamp, lowModClamp, highModClamp, scaleClamp, scaleBoundClamp, softClamp, stepClamp, logClamp, expClamp } from '../src/utils.js';
+import { rf, randomFloat, ri, randomInt, rl, randomLimitedChange, rv, randomVariation, rw, randomWeightedInRange, ra, randomInRangeOrArray, normalizeWeights, randomWeightedInArray, randomWeightedSelection } from '../src/utils.js';
+import m from '../src/utils.js';
 import { pushMultiple as p, CSVBuffer } from '../src/writer.js';
 import { LayerManager, TimingContext } from '../src/time.js';
-import { setupGlobalState } from './helpers.module.js';
-
-// Access allNotesOff from globalThis (not exported from backstage)
-const allNotesOff = (channel: number) => globalThis.allNotesOff?.(channel);
+import { setupGlobalState, createTestContext } from './helpers.module.js';
+import { allNotesOff, muteAll } from '../src/backstage.js';
 
 describe('Clamp functions', () => {
   describe('clamp', () => {
@@ -464,54 +464,56 @@ describe('Weight and selection functions', () => {
 });
 
 describe('MIDI helper functions', () => {
+  let ctx: any;
+
   beforeEach(() => {
-    setupGlobalState();
+    ctx = createTestContext();
   });
 
   describe('allNotesOff', () => {
     it('should generate note off for all channels', () => {
-      allNotesOff(100);
-      expect(c.length).toBe(16);
+      const res = allNotesOff(100);
+      expect(res.length).toBe(16);
     });
 
     it('should use control change 123', () => {
-      allNotesOff(100);
-      expect(c.every(cmd => cmd.vals[1] === 123)).toBe(true);
+      const res = allNotesOff(100);
+      expect(res.every(cmd => cmd.vals[1] === 123)).toBe(true);
     });
 
     it('should set tick to tick-1', () => {
-      allNotesOff(100);
-      expect(c.every(cmd => cmd.tick === 99)).toBe(true);
+      const res = allNotesOff(100);
+      expect(res.every(cmd => cmd.tick === 99)).toBe(true);
     });
 
     it('should handle tick=0 without going negative', () => {
-      allNotesOff(0);
-      expect(c.every(cmd => cmd.tick === 0)).toBe(true);
+      const res = allNotesOff(0);
+      expect(res.every(cmd => cmd.tick === 0)).toBe(true);
     });
 
     it('should generate control_c type', () => {
-      allNotesOff(100);
-      expect(c.every(cmd => cmd.type === 'control_c')).toBe(true);
+      const res = allNotesOff(100);
+      expect(res.every(cmd => cmd.type === 'control_c')).toBe(true);
     });
 
     it('should include all 16 MIDI channels', () => {
-      allNotesOff(100);
-      const channels = c.map(cmd => cmd.vals[0]);
+      const res = allNotesOff(100);
+      const channels = res.map(cmd => cmd.vals[0]);
       for (let i = 0; i < 16; i++) {
         expect(channels).toContain(i);
       }
     });
 
     it('should use default tick if not provided', () => {
-      allNotesOff();
-      expect(c.length).toBe(16);
+      const res = allNotesOff();
+      expect(res.length).toBe(16);
     });
   });
 });
 
 describe('Integration tests', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
   });
 
   it('should chain clamp functions correctly', () => {
@@ -540,9 +542,11 @@ describe('Integration tests', () => {
   });
 
   it('should handle MIDI data flow', () => {
+    const c: any[] = [];
     p(c, { tick: 0, type: 'note_on_c', vals: [0, 60, 100] });
     p(c, { tick: 100, type: 'note_off_c', vals: [0, 60, 0] });
-    allNotesOff(200);
+    const evts = allNotesOff(200);
+    c.push(...evts);
     expect(c.length).toBe(18); // 2 notes + 16 allNotesOff
   });
 });
@@ -646,8 +650,9 @@ describe('Edge cases and boundary conditions', () => {
 
 describe('Performance characteristics', () => {
   it('should handle large arrays efficiently', () => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     const start = performance.now();
+    const c: any[] = [];
     for (let i = 0; i < 10000; i++) {
       p(c, { tick: i, type: 'note_on_c', vals: [0, 60, 100] });
     }
@@ -713,7 +718,8 @@ describe('Type safety', () => {
   });
 
   it('should handle mixed types in arrays', () => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
+    const c: any[] = [];
     p(c, { a: 1 }, { b: 'string' }, { c: null });
     expect(c.length).toBe(3);
     expect(c[1].b).toBe('string');
@@ -737,17 +743,19 @@ describe('State management', () => {
   });
 
   it('should handle global state resets', () => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
+    const c: any[] = [];
     p(c, { a: 1 });
     expect(c.length).toBe(1);
-    setupGlobalState();
+    // Simulate DI-based state reset by clearing the buffer
+    c.length = 0;
     expect(c.length).toBe(0);
   });
 });
 
 describe('LayerManager (LM)', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     // Reset LM state
     LayerManager.layers = {};
     LayerManager.activeLayer = null;
@@ -794,7 +802,7 @@ describe('LayerManager (LM)', () => {
       expect(state.numerator).toBe(4);
       expect(state.denominator).toBe(4);
       expect(state.measuresPerPhrase).toBe(1);
-      expect(state.tpMeasure).toBe(PPQ * 4);
+      expect(state.tpMeasure).toBe(480 * 4); // PPQ default
     });
 
     it('should merge initial state with TimingContext defaults', () => {
@@ -984,7 +992,7 @@ describe('LayerManager (LM)', () => {
 
 describe('TimingContext class', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
   });
 
   describe('constructor', () => {

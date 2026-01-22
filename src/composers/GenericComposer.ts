@@ -23,6 +23,8 @@ abstract class GenericComposer<T> extends MeasureComposer {
   constructor(itemType: string, root: string = 'C') {
     super();
     this.itemType = itemType;
+    // Backward-compatible 'type' property expected by tests and legacy code
+    (this as any).type = itemType;
     this.root = root;
     this.item = null;
     this.notes = [];

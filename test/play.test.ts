@@ -505,7 +505,7 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should support multiple beat cycles', () => {
-      const ctxLocal = setupGlobalState();
+      const ctxLocal = createTestContext();
       ctxLocal.csvBuffer = [];
       // Ensure tpBeat is set for beatStart calculations
       ctxLocal.state.tpBeat = ctxLocal.PPQ || 480;
@@ -528,7 +528,7 @@ describe('play.js - Orchestrator Module', () => {
     });
 
     it('should support composer note generation across structure', () => {
-      setupGlobalState();
+      // setupGlobalState();  this functionis deprecated, use DI only
 
       const composer = new ScaleComposer();
       ctx.state.numerator = 4;
@@ -560,9 +560,12 @@ describe('play.js - Orchestrator Module', () => {
       expect(hasOutput).toBe(true);
     });
 
-    it('should generate valid CSV output without NaN values', () => {
+    it('should generate valid CSV output without NaN values', async () => {
       const fs = require('fs');
       const path = require('path');
+
+      // Ensure play engine has produced fresh outputs
+      await initializePlayEngine();
 
       const csvPath = path.resolve(process.cwd(), 'output/output1.csv');
 
@@ -588,7 +591,7 @@ describe('play.js - Orchestrator Module', () => {
           }
         }
       }
-    });
+    }, 300000);
 
     it('should have initializePlayEngine function available', () => {
       expect(initializePlayEngine).toBeDefined();

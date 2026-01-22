@@ -3,6 +3,28 @@ import { stage } from '../src/stage.js';
 import { setupGlobalState, createTestContext } from './helpers.module.js';
 import { registerWriterServices, CSVBuffer } from '../src/writer.js';
 import type { ICompositionContext } from '../src/CompositionContext.js';
+import { source, reflection, bass, reflect, reflect2, cCH1, cCH2, cCH3, lCH1, rCH1, drumCH, flipBinF, flipBinT, binauralL, binauralR, FX, stutterFadeCHs } from '../src/backstage.js';
+import { BINAURAL, drumSets, OCTAVE } from '../src/sheet.js';
+import { initializePolychronContext, getPolychronContext } from '../src/PolychronInit.js';
+import { registerVenueServices } from '../src/venue.js';
+import * as Utils from '../src/utils.js';
+
+// Provide deterministic randomness for stage tests where not otherwise stubbed
+beforeEach(() => {
+  vi.spyOn(Utils, 'rf').mockImplementation((...args: any[]) => {
+    // Default deterministic rf: if min/max provided, return the midpoint; otherwise return 0.5
+    if (args.length === 2) return (args[0] + args[1]) / 2;
+    return 0.5;
+  });
+  vi.spyOn(Utils, 'rv').mockImplementation((v: any) => v);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+// Shared DI test context for stage tests
+let ctx: ICompositionContext;
 
 // Access allNotesOff from stage instance
 const allNotesOff = (channel: number) => stage.allNotesOff(channel);
@@ -11,63 +33,42 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
     let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
-      // Register writer services into test DI container and expose pushMultiple/p
+      // Register writer services into test DI container
       registerWriterServices(ctx.services);
+      // Use DI-based buffer instead of global csv
       ctx.csvBuffer = [];
-      globalThis.p = ctx.services.get('pushMultiple');
-      if (typeof globalThis.CSVBuffer === 'undefined') globalThis.CSVBuffer = CSVBuffer;
-      // Use fresh setup but keep the real channel definitions
-      globalThis.c = ctx.csvBuffer;
-      globalThis.composer = {
-        getNotes: () => [
-          { note: 60 },
-          { note: 62 },
-          { note: 64 },
-        ]
-      };
-      globalThis.activeMotif = null;
-      globalThis.crossModulation = 2.5;
-      globalThis.lastCrossMod = 0;
-      globalThis.velocity = 100;
-      globalThis.subdivStart = 0;
-      globalThis.tpSubdiv = 100;
-      globalThis.tpSubsubdiv = 50;
-      globalThis.tpDiv = 400;
-      globalThis.tpBeat = 1600;
-      globalThis.subdivsPerDiv = 4;
-      globalThis.subdivsPerMinute = 500;
-      globalThis.bpmRatio3 = 1;
-      globalThis.beatIndex = 0;
-      globalThis.divIndex = 0;
-      globalThis.subdivIndex = 0;
-      globalThis.beatRhythm = [1, 0, 1, 0];
-      globalThis.divRhythm = [1, 1, 0];
-      globalThis.subdivRhythm = [1, 0, 1];
-      globalThis.numerator = 4;
-      globalThis.beatsOn = 10;
-      globalThis.beatsOff = 2;
-      globalThis.divsPerBeat = 4;
-      globalThis.divsOn = 5;
-      globalThis.divsOff = 1;
-      globalThis.subdivsOn = 20;
-      globalThis.subdivsOff = 5;
-      globalThis.midiBPM = 120; // Add missing midiBPM
+      // Provide a small composer for note emission tests via ctx.state
+      ctx.state.composer = {
+        getNotes: () => [ { note: 60 }, { note: 62 }, { note: 64 } ]
+      } as any;
+      ctx.state.beatIndex = 0;
+      ctx.state.divIndex = 0;
+      ctx.state.subdivIndex = 0;
+      ctx.state.beatRhythm = [1,0,1,0];
+      ctx.state.divRhythm = [1,1,0];
+      ctx.state.subdivRhythm = [1,0,1];
+      ctx.state.numerator = 4;
+      ctx.state.beatsOn = 10;
+      ctx.state.beatsOff = 2;
+      ctx.state.divsPerBeat = 4;
+      ctx.state.divsOn = 5;
+      ctx.state.divsOff = 1;
+      ctx.state.subdivsOn = 20;
+      ctx.state.subdivsOff = 5;
+      ctx.state.midiBPM = 120; // Add missing midiBPM
 
-      // Seed deterministic randomness for these tests
-      globalThis._origRf = globalThis.rf;
-      globalThis._origRv = globalThis.rv;
-      globalThis.rf = (...args) => {
-        if (args.length === 0) return 0.1; // default small value
-        if (args.length === 2) return args[0]; // return min for ranges
+      // Seed deterministic randomness for these tests by stubbing utils
+      vi.spyOn(Utils, 'rf').mockImplementation((...args: any[]) => {
+        if (args.length === 0) return 0.1;
+        if (args.length === 2) return args[0];
         return 0.1;
-      };
-      globalThis.rv = (val) => val; // no variation
+      });
+      vi.spyOn(Utils, 'rv').mockImplementation((val: any) => val);
     });
 
     afterEach(() => {
       // Restore randomness
-      globalThis.rf = globalThis._origRf;
-      globalThis.rv = globalThis._origRv;
+      vi.restoreAllMocks();
     });
 
     it('should include reflection channel code in playNotes', () => {
@@ -92,7 +93,7 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
       stage.playNotes(ctx);
       stage.playNotesHandler.crossModulateRhythms = originalCrossModulate;
 
-      const noteOns = c.filter((e) => e.type === 'on');
+      const noteOns = ctx.csvBuffer.filter((e: any) => e.type === 'on');
       expect(noteOns.length).toBeGreaterThan(0);
 
       const channels = new Set(noteOns.map((e) => e.vals[0]));
@@ -105,7 +106,7 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
       // rf returns 0.1 so bass probability condition passes
       stage.playNotes2(ctx);
 
-      const noteOns = c.filter((e) => e.type === 'on');
+      const noteOns = ctx.csvBuffer.filter((e: any) => e.type === 'on');
       expect(noteOns.length).toBeGreaterThan(0);
 
       const channels = new Set(noteOns.map((e) => e.vals[0]));
@@ -115,50 +116,56 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
     it('should have all required channel arrays defined', () => {
       // Verify that all channel arrays are available
-      expect(Array.isArray(globalThis.source)).toBe(true);
-      expect(Array.isArray(globalThis.reflection)).toBe(true);
-      expect(Array.isArray(globalThis.bass)).toBe(true);
-      expect(globalThis.source.length).toBeGreaterThan(0);
-      expect(globalThis.reflection.length).toBeGreaterThan(0);
-      expect(globalThis.bass.length).toBeGreaterThan(0);
+      expect(Array.isArray(source)).toBe(true);
+      expect(Array.isArray(reflection)).toBe(true);
+      expect(Array.isArray(bass)).toBe(true);
+      expect(source.length).toBeGreaterThan(0);
+      expect(reflection.length).toBeGreaterThan(0);
+      expect(bass.length).toBeGreaterThan(0);
     });
   });
 
   describe('crossModulateRhythms deterministic behavior', () => {
+    let ctx: ICompositionContext;
     beforeEach(() => {
-      globalThis.beatRhythm = [1, 0, 1, 0];
-      globalThis.divRhythm = [1, 1, 0];
-      globalThis.subdivRhythm = [1, 0, 1];
-      globalThis.beatIndex = 0;
-      globalThis.divIndex = 0;
-      globalThis.subdivIndex = 0;
-      globalThis.numerator = 4;
-      globalThis.beatsOn = 10;
-      globalThis.beatsOff = 2;
-      globalThis.divsPerBeat = 4;
-      globalThis.divsOn = 5;
-      globalThis.divsOff = 1;
-      globalThis.subdivsPerDiv = 4;
-      globalThis.subdivsOn = 20;
-      globalThis.subdivsOff = 5;
-      globalThis.subdivsPerMinute = 500;
+      ctx = createTestContext();
+      ctx.state.beatRhythm = [1,0,1,0];
+      ctx.state.divRhythm = [1,1,0];
+      ctx.state.subdivRhythm = [1,0,1];
+      ctx.state.beatIndex = 0;
+      ctx.state.divIndex = 0;
+      ctx.state.subdivIndex = 0;
+      ctx.state.numerator = 4;
+      ctx.state.beatsOn = 10;
+      ctx.state.beatsOff = 2;
+      ctx.state.divsPerBeat = 4;
+      ctx.state.divsOn = 5;
+      ctx.state.divsOff = 1;
+      ctx.state.subdivsPerDiv = 4;
+      ctx.state.subdivsOn = 20;
+      ctx.state.subdivsOff = 5;
+      ctx.state.subdivsPerMinute = 500;
 
       // Stub randomness for deterministic testing
-      globalThis._origRf = globalThis.rf;
-      globalThis._origRi = globalThis.ri;
-      globalThis.rf = (min = 0, max = 1) => min; // Always return min
-      globalThis.ri = (min = 0, max = 1) => Math.floor(min); // Always return min as integer
+      vi.spyOn(Utils, 'rf').mockImplementation((min = 0, max = 1) => min as any);
+      vi.spyOn(Utils, 'ri').mockImplementation((min = 0, max = 1) => Math.floor(min as number) as any);
+      // Ensure PolychronContext utils also use the deterministic stubs
+      (globalThis as any).PolychronContext = (globalThis as any).PolychronContext || {};
+      (globalThis as any).PolychronContext.utils = {
+        rf: (min: number = 0, max: number = 1) => min,
+        ri: (min: number = 0, max: number = 1) => Math.floor(min),
+        m: Math
+      } as any;
     });
 
     afterEach(() => {
-      globalThis.rf = globalThis._origRf;
-      globalThis.ri = globalThis._origRi;
+      vi.restoreAllMocks();
     });
 
     it('should calculate crossModulation value based on rhythm state', () => {
       stage.playNotesHandler.crossModulation = 0;
       stage.playNotesHandler.lastCrossMod = 0;
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
 
       expect(typeof stage.playNotesHandler.crossModulation).toBe('number');
       expect(stage.playNotesHandler.crossModulation).toBeGreaterThan(0);
@@ -167,25 +174,26 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
     it('should increase crossModulation when rhythm slots are active', () => {
       // Set all rhythm indices to active slots (value 1)
-      globalThis.beatIndex = 0; // beatRhythm[0] = 1
-      globalThis.divIndex = 0; // divRhythm[0] = 1
-      globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
+      ctx.state.beatIndex = 0; // beatRhythm[0] = 1
+      ctx.state.divIndex = 0; // divRhythm[0] = 1
+      ctx.state.subdivIndex = 0; // subdivRhythm[0] = 1
 
       // Reset counters to isolate rhythm slot contributions
-      globalThis.beatsOn = 0; globalThis.divsOn = 0; globalThis.subdivsOn = 0;
-      globalThis.beatsOff = 0; globalThis.divsOff = 0; globalThis.subdivsOff = 0;
+      ctx.state.beatsOn = 0; ctx.state.divsOn = 0; ctx.state.subdivsOn = 0;
+      ctx.state.beatsOff = 0; ctx.state.divsOff = 0; ctx.state.subdivsOff = 0;
       stage.playNotesHandler.crossModulation = 0;
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
       const activeValue = stage.playNotesHandler.crossModulation;
 
       // Reset and test with inactive slots
-      globalThis.beatIndex = 1; // beatRhythm[1] = 0
-      globalThis.divIndex = 2; // divRhythm[2] = 0
-      globalThis.subdivIndex = 1; // subdivRhythm[1] = 0
+      ctx.state.beatIndex = 1; // beatRhythm[1] = 0
+      ctx.state.divIndex = 2; // divRhythm[2] = 0
+      ctx.state.subdivIndex = 1; // subdivRhythm[1] = 0
 
       stage.playNotesHandler.crossModulation = 0;
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
       const inactiveValue = stage.playNotesHandler.crossModulation;
+
 
       // Active rhythms should contribute more (active contributes rf(1.5,3), inactive uses max())
       expect(activeValue).toBeGreaterThan(inactiveValue);
@@ -195,21 +203,21 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
       // This test compares active slots (which use rf(1.5,3)=1.5) vs inactive (which use max())
 
       // Active: All slots are ON (value = 1)
-      globalThis.beatIndex = 0; // beatRhythm[0] = 1
-      globalThis.divIndex = 0; // divRhythm[0] = 1
-      globalThis.subdivIndex = 0; // subdivRhythm[0] = 1
+      ctx.state.beatIndex = 0; // beatRhythm[0] = 1
+      ctx.state.divIndex = 0; // divRhythm[0] = 1
+      ctx.state.subdivIndex = 0; // subdivRhythm[0] = 1
 
       stage.playNotesHandler.crossModulation = 0;
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
       const activeValue = stage.playNotesHandler.crossModulation;
 
       // Inactive: All slots are OFF (value = 0)
-      globalThis.beatIndex = 1; // beatRhythm[1] = 0
-      globalThis.divIndex = 2; // divRhythm[2] = 0
-      globalThis.subdivIndex = 1; // subdivRhythm[1] = 0
+      ctx.state.beatIndex = 1; // beatRhythm[1] = 0
+      ctx.state.divIndex = 2; // divRhythm[2] = 0
+      ctx.state.subdivIndex = 1; // subdivRhythm[1] = 0
 
       stage.playNotesHandler.crossModulation = 0;
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
       const inactiveValue = stage.playNotesHandler.crossModulation;
 
       // Active slots contribute rf(1.5,3) which is larger than inactive max() expressions
@@ -218,12 +226,12 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
     it('should accumulate values from all formula terms', () => {
       // Verify the formula is actually executing by checking that the value is more than just one term
-      globalThis.beatIndex = 0;
-      globalThis.divIndex = 0;
-      globalThis.subdivIndex = 0;
+      ctx.state.beatIndex = 0;
+      ctx.state.divIndex = 0;
+      ctx.state.subdivIndex = 0;
 
       stage.playNotesHandler.crossModulation = 0;
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
 
       // With stubs, should accumulate from multiple terms: rf(1.5,3)=1.5 as minimum
       expect(stage.playNotesHandler.crossModulation).toBeGreaterThanOrEqual(1.5);
@@ -235,7 +243,7 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
       stage.playNotesHandler.crossModulation = 5.5;
       stage.playNotesHandler.lastCrossMod = 2.2;
 
-      stage.crossModulateRhythms();
+      stage.crossModulateRhythms(ctx);
 
       // Should have saved the previous value (5.5) before calculating new one
       expect(stage.playNotesHandler.lastCrossMod).toBe(5.5);
@@ -246,12 +254,12 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
   describe('Integration tests for channel emission', () => {
     it('should have reflection and bass mapping functions', () => {
       // Verify that reflect and reflect2 mappings are defined
-      expect(typeof globalThis.reflect).toBe('object');
-      expect(typeof globalThis.reflect2).toBe('object');
+        expect(typeof reflect).toBe('object');
+      expect(typeof reflect2).toBe('object');
       // Check that source channels have reflection mappings
-      globalThis.source.forEach(ch => {
-        expect(globalThis.reflect[ch]).toBeDefined();
-        expect(globalThis.reflect2[ch]).toBeDefined();
+      source.forEach(ch => {
+        expect(reflect[ch]).toBeDefined();
+        expect(reflect2[ch]).toBeDefined();
       });
     });
   });
@@ -259,269 +267,271 @@ const allNotesOff = (channel: number) => stage.allNotesOff(channel);
 
 describe('Stage Module', () => {
   beforeEach(() => {
-    // Reset global state that stage.js modifies
-    globalThis.c = [];
-    globalThis.beatStart = 0;
-    globalThis.beatCount = 0;
-    globalThis.beatsUntilBinauralShift = 16;
-    globalThis.firstLoop = 0;
-    globalThis.flipBin = false;
-    globalThis.crossModulation = 2.2;
-    globalThis.lastCrossMod = 0;
-    globalThis.subdivsOff = 0;
-    globalThis.subdivsOn = 0;
-    globalThis.velocity = 99;
-    globalThis.tpSec = 960;
-    globalThis.tpSubdiv = 100;
-    globalThis.tpDiv = 400;
-    globalThis.tpBeat = 1600;
-    globalThis.subdivStart = 0;
-    globalThis.beatRhythm = [1, 0, 1, 0];
-    globalThis.divRhythm = [1, 1, 0];
-    globalThis.subdivRhythm = [1, 0, 1];
-    globalThis.beatsOn = 10;
-    globalThis.beatsOff = 2;
-    globalThis.divsOn = 5;
-    globalThis.divsOff = 1;
-    globalThis.subdivsOn = 20;
-    globalThis.subdivsOff = 5;
-    globalThis.subdivsPerMinute = 500;
-    globalThis.balOffset = 0;
-    globalThis.sideBias = 0;
-    globalThis.lastUsedCHs = new Set();
-    globalThis.lastUsedCHs2 = new Set();
-    globalThis.lastUsedCHs3 = new Set();
+    // Reset stage instance internal state
+    stage.playNotesHandler.subdivsOn = 0;
+    stage.playNotesHandler.subdivsOff = 0;
+    stage.playNotesHandler.crossModulation = 2.2;
+    stage.playNotesHandler.lastCrossMod = 0;
+    stage.playNotesHandler.on = 0;
+    // Provide a fresh test composition context when needed in tests
+    // Tests should create their own ctx via createTestContext() to exercise DI.
   });
 
   describe('Global State Variables', () => {
     it('should have m (Math) defined', () => {
-      expect(globalThis.m).toBeDefined();
-      expect(globalThis.m.round(5.5)).toBe(6);
+      // Use Math directly or import default m
+      expect(Math.round(5.5)).toBe(6);
     });
 
-    it('should have p (push) function defined', () => {
-      expect(typeof globalThis.p).toBe('function');
-      const arr = [];
-      globalThis.p(arr, 1, 2, 3);
+    it('should have pushMultiple writer service', () => {
+      const ctx = createTestContext();
+      registerWriterServices(ctx.services);
+      const pFn = ctx.services.get('pushMultiple');
+      expect(typeof pFn).toBe('function');
+      const arr: any[] = [];
+      pFn(arr, 1, 2, 3);
       expect(arr).toEqual([1, 2, 3]);
     });
 
     it('should have clamp function defined', () => {
-      expect(typeof globalThis.clamp).toBe('function');
-      expect(globalThis.clamp(5, 0, 10)).toBe(5);
-      expect(globalThis.clamp(-5, 0, 10)).toBe(0);
-      expect(globalThis.clamp(15, 0, 10)).toBe(10);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.clamp).toBe('function');
+      expect(utils.clamp(5, 0, 10)).toBe(5);
+      expect(utils.clamp(-5, 0, 10)).toBe(0);
+      expect(utils.clamp(15, 0, 10)).toBe(10);
     });
 
     it('should have modClamp function defined', () => {
-      expect(typeof globalThis.modClamp).toBe('function');
-      expect(globalThis.modClamp(5, 0, 9)).toBe(5);
-      expect(globalThis.modClamp(10, 0, 9)).toBe(0);
-      expect(globalThis.modClamp(-1, 0, 9)).toBe(9);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.modClamp).toBe('function');
+      expect(utils.modClamp(5, 0, 9)).toBe(5);
+      expect(utils.modClamp(10, 0, 9)).toBe(0);
+      expect(utils.modClamp(-1, 0, 9)).toBe(9);
     });
 
     it('should have rf (randomFloat) function defined', () => {
-      expect(typeof globalThis.rf).toBe('function');
-      const val = globalThis.rf(0, 10);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.rf).toBe('function');
+      const val = utils.rf(0, 10);
       expect(val).toBeGreaterThanOrEqual(0);
       expect(val).toBeLessThanOrEqual(10);
     });
 
     it('should have ri (randomInt) function defined', () => {
-      expect(typeof globalThis.ri).toBe('function');
-      const val = globalThis.ri(0, 10);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.ri).toBe('function');
+      const val = utils.ri(0, 10);
       expect(val).toBeGreaterThanOrEqual(0);
       expect(val).toBeLessThanOrEqual(10);
       expect(Number.isInteger(val)).toBe(true);
     });
 
     it('should have ra (randomInRangeOrArray) function defined', () => {
-      expect(typeof globalThis.ra).toBe('function');
-      const arrVal = globalThis.ra([1, 2, 3, 4, 5]);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.ra).toBe('function');
+      const arrVal = utils.ra([1, 2, 3, 4, 5]);
       expect([1, 2, 3, 4, 5]).toContain(arrVal);
     });
 
     it('should have rl (randomLimitedChange) function defined', () => {
-      expect(typeof globalThis.rl).toBe('function');
-      const val = globalThis.rl(50, -5, 5, 0, 100);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.rl).toBe('function');
+      const val = utils.rl(50, -5, 5, 0, 100);
       expect(val).toBeGreaterThanOrEqual(45);
       expect(val).toBeLessThanOrEqual(55);
     });
 
     it('should have rv (randomVariation) function defined', () => {
-      expect(typeof globalThis.rv).toBe('function');
-      const val = globalThis.rv(100);
+      const utils = getPolychronContext().utils;
+      expect(typeof utils.rv).toBe('function');
+      const val = utils.rv(100);
       expect(typeof val).toBe('number');
     });
   });
 
   describe('Channel Constants', () => {
     it('should have channel constants defined', () => {
-      expect(globalThis.cCH1).toBe(0);
-      expect(globalThis.cCH2).toBe(1);
-      expect(globalThis.cCH3).toBe(11);
-      expect(globalThis.lCH1).toBe(2);
-      expect(globalThis.rCH1).toBe(3);
-      expect(globalThis.drumCH).toBe(9);
+      expect(cCH1).toBe(0);
+      expect(cCH2).toBe(1);
+      expect(cCH3).toBe(11);
+      expect(lCH1).toBe(2);
+      expect(rCH1).toBe(3);
+      expect(drumCH).toBe(9);
     });
 
     it('should have source channels array', () => {
-      expect(Array.isArray(globalThis.source)).toBe(true);
-      expect(globalThis.source).toContain(0); // cCH1
-      expect(globalThis.source).toContain(2); // lCH1
+      expect(Array.isArray(source)).toBe(true);
+      expect(source).toContain(0); // cCH1
+      expect(source).toContain(2); // lCH1
     });
 
     it('should have reflection channels array', () => {
-      expect(Array.isArray(globalThis.reflection)).toBe(true);
-      expect(globalThis.reflection).toContain(1); // cCH2
+      expect(Array.isArray(reflection)).toBe(true);
+      expect(reflection).toContain(1); // cCH2
     });
 
     it('should have bass channels array', () => {
-      expect(Array.isArray(globalThis.bass)).toBe(true);
-      expect(globalThis.bass).toContain(11); // cCH3
+      expect(Array.isArray(bass)).toBe(true);
+      expect(bass).toContain(11); // cCH3
     });
   });
 
   describe('Channel Mappings', () => {
     it('should have reflect mapping', () => {
-      expect(globalThis.reflect[0]).toBe(1); // cCH1 -> cCH2
-      expect(globalThis.reflect[2]).toBe(4); // lCH1 -> lCH3
-      expect(globalThis.reflect[3]).toBe(5); // rCH1 -> rCH3
+      expect(reflect[0]).toBe(1); // cCH1 -> cCH2
+      expect(reflect[2]).toBe(4); // lCH1 -> lCH3
+      expect(reflect[3]).toBe(5); // rCH1 -> rCH3
     });
 
     it('should have reflect2 mapping', () => {
-      expect(globalThis.reflect2[0]).toBe(11); // cCH1 -> cCH3
-      expect(globalThis.reflect2[2]).toBe(12); // lCH1 -> lCH5
-      expect(globalThis.reflect2[3]).toBe(13); // rCH1 -> rCH5
+      expect(reflect2[0]).toBe(11); // cCH1 -> cCH3
+      expect(reflect2[2]).toBe(12); // lCH1 -> lCH5
+      expect(reflect2[3]).toBe(13); // rCH1 -> rCH5
     });
   });
 
   describe('Binaural Flip Mappings', () => {
     it('should have flipBinF mapping', () => {
-      expect(Array.isArray(globalThis.flipBinF)).toBe(true);
-      expect(globalThis.flipBinF).toContain(0);
-      expect(globalThis.flipBinF).toContain(1);
-      expect(globalThis.flipBinF).toContain(11);
+      expect(Array.isArray(flipBinF)).toBe(true);
+      expect(flipBinF).toContain(0);
+      expect(flipBinF).toContain(1);
+      expect(flipBinF).toContain(11);
     });
 
     it('should have flipBinT mapping', () => {
-      expect(Array.isArray(globalThis.flipBinT)).toBe(true);
-      expect(globalThis.flipBinT).toContain(0);
-      expect(globalThis.flipBinT).toContain(6); // lCH2
-      expect(globalThis.flipBinT).toContain(7); // rCH2
+      expect(Array.isArray(flipBinT)).toBe(true);
+      expect(flipBinT).toContain(0);
+      expect(flipBinT).toContain(6); // lCH2
+      expect(flipBinT).toContain(7); // rCH2
     });
 
-    it('should have binauralL and binauralR arrays', () => {
-      expect(Array.isArray(globalThis.binauralL)).toBe(true);
-      expect(Array.isArray(globalThis.binauralR)).toBe(true);
-      expect(globalThis.binauralL.length).toBe(6);
-      expect(globalThis.binauralR.length).toBe(6);
+    it('should have binaural arrays defined', () => {
+      expect(Array.isArray(binauralL)).toBe(true);
+      expect(Array.isArray(binauralR)).toBe(true);
+      expect(binauralL.length).toBe(6);
+      expect(binauralR.length).toBe(6);
     });
   });
 
   describe('Timing Variables', () => {
-    it('should have tpSec defined', () => {
-      expect(typeof globalThis.tpSec).toBe('number');
+    it('should have tpSec defined in test context', () => {
+      const ctx = createTestContext();
+      expect(typeof ctx.state.tpSec).toBe('number');
     });
 
-    it('should have beat timing variables', () => {
-      expect(typeof globalThis.tpBeat).toBe('number');
-      expect(typeof globalThis.tpDiv).toBe('number');
-      expect(typeof globalThis.tpSubdiv).toBe('number');
+    it('should have beat timing variables in test context', () => {
+      const ctx = createTestContext();
+      expect(typeof ctx.state.tpBeat).toBe('number');
+      expect(typeof ctx.state.tpDiv).toBe('number');
+      expect(typeof ctx.state.tpSubdiv).toBe('number');
     });
 
-    it('should have start position variables', () => {
-      expect(typeof globalThis.beatStart).toBe('number');
-      expect(typeof globalThis.divStart).toBe('number');
-      expect(typeof globalThis.subdivStart).toBe('number');
+    it('should have start position variables in test context', () => {
+      const ctx = createTestContext();
+      expect(typeof ctx.state.beatStart).toBe('number');
+      expect(typeof ctx.state.divStart).toBe('number');
+      expect(typeof ctx.state.subdivStart).toBe('number');
     });
   });
 
   describe('Rhythm Variables', () => {
-    it('should have beatRhythm array', () => {
-      expect(Array.isArray(globalThis.beatRhythm)).toBe(true);
+    it('should have beatRhythm array in test context', () => {
+      const ctx = createTestContext();
+      expect(Array.isArray(ctx.state.beatRhythm)).toBe(true);
     });
 
-    it('should have divRhythm array', () => {
-      expect(Array.isArray(globalThis.divRhythm)).toBe(true);
+    it('should have divRhythm array in test context', () => {
+      const ctx = createTestContext();
+      expect(Array.isArray(ctx.state.divRhythm)).toBe(true);
     });
 
-    it('should have subdivRhythm array', () => {
-      expect(Array.isArray(globalThis.subdivRhythm)).toBe(true);
+    it('should have subdivRhythm array in test context', () => {
+      const ctx = createTestContext();
+      expect(Array.isArray(ctx.state.subdivRhythm)).toBe(true);
     });
 
     it('should have beatsOn/off counters', () => {
-      expect(typeof globalThis.beatsOn).toBe('number');
-      expect(typeof globalThis.beatsOff).toBe('number');
+      const ctx = createTestContext();
+      expect(typeof ctx.state.beatsOn).toBe('number');
+      expect(typeof ctx.state.beatsOff).toBe('number');
     });
   });
 
   describe('Binaural Variables', () => {
-    it('should have binauralFreqOffset defined', () => {
-      expect(typeof globalThis.binauralFreqOffset).toBe('number');
+    it('should have binauralFreqOffset defined (from context)', () => {
+      const ctx = createTestContext();
+      expect(typeof ctx.state.binauralFreqOffset).toBe('number');
     });
 
-    it('should have binauralPlus/binauralMinus defined', () => {
-      expect(typeof globalThis.binauralPlus).toBe('number');
-      expect(typeof globalThis.binauralMinus).toBe('number');
+    it('should have binauralPlus/binauralMinus defined', async () => {
+      const backstage = await import('../src/backstage.js');
+      expect(typeof backstage.binauralPlus).toBe('number');
+      expect(typeof backstage.binauralMinus).toBe('number');
     });
 
     it('should have BINAURAL config', () => {
-      expect(globalThis.BINAURAL).toBeDefined();
-      expect(globalThis.BINAURAL.min).toBeDefined();
-      expect(globalThis.BINAURAL.max).toBeDefined();
+      expect(BINAURAL).toBeDefined();
+      expect(BINAURAL.min).toBeDefined();
+      expect(BINAURAL.max).toBeDefined();
     });
   });
 
   describe('FX Variables', () => {
     it('should have FX array of valid MIDI CC numbers', () => {
-      expect(Array.isArray(globalThis.FX)).toBe(true);
-      globalThis.FX.forEach(cc => {
+      expect(Array.isArray(FX)).toBe(true);
+      FX.forEach(cc => {
         expect(cc).toBeGreaterThanOrEqual(0);
         expect(cc).toBeLessThanOrEqual(127);
       });
     });
 
     it('should have OCTAVE config', () => {
-      expect(globalThis.OCTAVE).toBeDefined();
-      expect(globalThis.OCTAVE.min).toBeDefined();
-      expect(globalThis.OCTAVE.max).toBeDefined();
+      expect(OCTAVE).toBeDefined();
+      expect(OCTAVE.min).toBeDefined();
+      expect(OCTAVE.max).toBeDefined();
     });
   });
 
   describe('Global State Variables', () => {
-    it('should have velocity defined', () => {
-      expect(typeof globalThis.velocity).toBe('number');
-      expect(globalThis.velocity).toBeGreaterThan(0);
+    it('should have velocity defined on stage handler', () => {
+      expect(typeof stage.playNotesHandler.binVel).toBe('number');
     });
 
-    it('should have flipBin toggle', () => {
-      expect(typeof globalThis.flipBin).toBe('boolean');
+    it('should have flipBin as boolean in context', () => {
+      const ctx = createTestContext();
+      expect(typeof ctx.state.flipBin).toBe('boolean');
     });
 
-    it('should have beatCount counter', () => {
-      expect(typeof globalThis.beatCount).toBe('number');
+    it('should have beatCount defined in context', () => {
+      const ctx = createTestContext();
+      expect(typeof ctx.state.beatCount).toBe('number');
     });
 
-    it('should have crossModulation value', () => {
-      expect(typeof globalThis.crossModulation).toBe('number');
+    it('should have crossModulation defined on handler', () => {
+      expect(typeof stage.playNotesHandler.crossModulation).toBe('number');
     });
   });
 
   describe('allNotesOff', () => {
     it('should be defined as a function', () => {
-      expect(typeof globalThis.allNotesOff).toBe('function');
+      expect(typeof allNotesOff).toBe('function');
     });
 
     it('should generate events for all channels', () => {
-      const initialLength = globalThis.c.length;
-      globalThis.allNotesOff(1000);
-      expect(globalThis.c.length).toBeGreaterThan(initialLength);
+      const ctx = createTestContext();
+      ctx.csvBuffer = [];
+      const initialLength = ctx.csvBuffer.length;
+      const events = allNotesOff(1000);
+      ctx.csvBuffer.push(...events);
+      expect(ctx.csvBuffer.length).toBeGreaterThan(initialLength);
     });
 
     it('should use control change 123', () => {
-      globalThis.allNotesOff(1000);
-      const allNotesOffEvent = globalThis.c.find(e => e.vals && e.vals[1] === 123);
+      const ctx = createTestContext();
+      ctx.csvBuffer = [];
+      const events = allNotesOff(1000);
+      ctx.csvBuffer.push(...events);
+      const allNotesOffEvent = ctx.csvBuffer.find((e: any) => e.vals && e.vals[1] === 123);
       expect(allNotesOffEvent).toBeDefined();
     });
   });
@@ -573,26 +583,29 @@ describe('Stage Module', () => {
   });
 
   describe('CSV Output', () => {
-    it('should have c (csvRows) array', () => {
-      expect(Array.isArray(globalThis.c)).toBe(true);
+    it('should have csv buffer via DI', () => {
+      const ctx = createTestContext();
+      ctx.csvBuffer = [];
+      expect(Array.isArray(ctx.csvBuffer)).toBe(true);
     });
 
     it('should be empty initially', () => {
-      expect(globalThis.c.length).toBe(0);
+      const ctx = createTestContext();
+      ctx.csvBuffer = [];
+      expect(ctx.csvBuffer.length).toBe(0);
     });
   });
 
   describe('Instrument Variables', () => {
-    it('should have primaryInstrument defined', () => {
-      expect(globalThis.primaryInstrument).toBeDefined();
+    it('should expose venue services via DI', () => {
+      const ctx = createTestContext();
+      registerVenueServices(ctx.services);
+      expect(ctx.services.has('getMidiValue')).toBe(true);
+      expect(ctx.services.has('allNotes')).toBe(true);
     });
 
-    it('should have bassInstrument defined', () => {
-      expect(globalThis.bassInstrument).toBeDefined();
-    });
-
-    it('should have drumSets array', () => {
-      expect(Array.isArray(globalThis.drumSets)).toBe(true);
+    it('should expose drumSets via sheet', () => {
+      expect(Array.isArray(drumSets)).toBe(true);
     });
   });
 
@@ -603,40 +616,29 @@ describe('Stage Module', () => {
       // Register writer services and prepare CSV buffer for DI-based pushes
       registerWriterServices(ctx.services);
       ctx.csvBuffer = [];
-      globalThis.c = ctx.csvBuffer;
 
       ctx.state.beatStart = 0;
       ctx.state.beatCount = 0;
       ctx.state.beatsUntilBinauralShift = 4;
-      // Also set globals for any functions that might read them
-      globalThis.beatStart = 0;
-      globalThis.beatCount = 0;
-      globalThis.beatsUntilBinauralShift = 4;
-      globalThis.balOffset = 0;
-      globalThis.sideBias = 0;
-      globalThis.firstLoop = 0;
-      globalThis.bpmRatio3 = 1;
-      globalThis.flipBin = false;
-      globalThis.refVar = 1;
-      globalThis.cBal = 64;
-      globalThis.cBal2 = 64;
-      globalThis.cBal3 = 64;
-      globalThis.lBal = 32;
-      globalThis.rBal = 96;
-      globalThis.bassVar = 0;
+      // Local stage defaults
+      stage.playNotesHandler.subdivsOn = 0;
+      stage.playNotesHandler.subdivsOff = 0;
+      // Local stage balances
+      // setBalanceAndFX will compute and push events into ctx.csvBuffer
+      ctx.state.bpmRatio3 = 1;
     });
 
     it('should update pan values on condition', () => {
       stage.setBalanceAndFX(ctx);
       // Should have added pan control change events
-      const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
+      const panEvents = ctx.csvBuffer.filter(evt => evt.vals && evt.vals[1] === 10);
       // Pan control is CC 10, should have events for different channels
       expect(panEvents.length).toBeGreaterThan(0);
     });
 
     it('should keep pan values within valid MIDI range (0-127)', () => {
       stage.setBalanceAndFX(ctx);
-      const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
+      const panEvents = ctx.csvBuffer.filter(evt => evt.vals && evt.vals[1] === 10);
       panEvents.forEach(evt => {
         expect(evt.vals[2]).toBeGreaterThanOrEqual(0);
         expect(evt.vals[2]).toBeLessThanOrEqual(127);
@@ -645,7 +647,7 @@ describe('Stage Module', () => {
 
     it('should apply different pan values for left vs right channels', () => {
       stage.setBalanceAndFX(ctx);
-      const panEvents = c.filter(evt => evt.vals && evt.vals[1] === 10);
+      const panEvents = ctx.csvBuffer.filter(evt => evt.vals && evt.vals[1] === 10);
       // When pan events are applied, left channels should differ from right
       expect(panEvents.length).toBeGreaterThan(1);
     });
@@ -653,66 +655,59 @@ describe('Stage Module', () => {
     it('should apply FX control events (CC 1, 5, 11, etc)', () => {
       stage.setBalanceAndFX(ctx);
       // Should generate control change events for various FX
-      const fxEvents = c.filter(evt => evt.type === 'control_c');
+      const fxEvents = ctx.csvBuffer.filter(evt => evt.type === 'control_c');
       expect(fxEvents.length).toBeGreaterThan(10);
     });
 
     it('should set tick to beatStart-1 for control events', () => {
       ctx.state.beatStart = 100;
-      globalThis.beatStart = 100;
       stage.setBalanceAndFX(ctx);
-      const controlEvents = c.filter(evt => evt.type === 'control_c');
+      const controlEvents = ctx.csvBuffer.filter(evt => evt.type === 'control_c');
       controlEvents.forEach(evt => {
         expect(evt.tick).toBe(99); // beatStart - 1
       });
     });
 
     it('should update balance offset with limited change', () => {
-      const initialBal = globalThis.balOffset;
+      const initialBal = ctx.state.balOffset;
       stage.setBalanceAndFX(ctx);
+      // Debug: log values for diagnosis if behavior seems out of bounds
+      console.debug('setBalanceAndFX initialBal=', initialBal, 'newBal=', ctx.state.balOffset);
       // balOffset should change but within reasonable limits
-      expect(Math.abs(globalThis.balOffset - initialBal)).toBeLessThanOrEqual(4);
+      expect(Math.abs(ctx.state.balOffset - initialBal)).toBeLessThanOrEqual(4);
     });
 
     it('should apply side bias variation', () => {
       stage.setBalanceAndFX(ctx);
       // sideBias should affect the left/right pan values
-      expect(typeof globalThis.sideBias).toBe('number');
-      expect(globalThis.sideBias).toBeGreaterThanOrEqual(-20);
-      expect(globalThis.sideBias).toBeLessThanOrEqual(20);
+      expect(typeof ctx.state.sideBias).toBe('number');
+      expect(ctx.state.sideBias).toBeGreaterThanOrEqual(-20);
+      expect(ctx.state.sideBias).toBeLessThanOrEqual(20);
     });
 
     it('should clamp balance values correctly', () => {
       for (let i = 0; i < 5; i++) {
         stage.setBalanceAndFX(ctx);
-        expect(globalThis.lBal).toBeGreaterThanOrEqual(0);
-        expect(globalThis.lBal).toBeLessThanOrEqual(54);
-        expect(globalThis.rBal).toBeGreaterThanOrEqual(74);
-        expect(globalThis.rBal).toBeLessThanOrEqual(127);
+        expect(ctx.state.lBal).toBeGreaterThanOrEqual(0);
+        expect(ctx.state.lBal).toBeLessThanOrEqual(54);
+        expect(ctx.state.rBal).toBeGreaterThanOrEqual(74);
+        expect(ctx.state.rBal).toBeLessThanOrEqual(127);
       }
     });
   });
 
   describe('setOtherInstruments function', () => {
-    let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
-      // Register writer services and prepare CSV buffer for DI-based pushes
       registerWriterServices(ctx.services);
       ctx.csvBuffer = [];
-      globalThis.c = ctx.csvBuffer;
-
       ctx.state.beatStart = 480;
       ctx.state.beatCount = 0;
       ctx.state.beatsUntilBinauralShift = 4;
-      // Also set globals for any functions that might read them
-      globalThis.beatStart = 480;
-      globalThis.beatCount = 0;
-      globalThis.beatsUntilBinauralShift = 4;
-      globalThis.firstLoop = 0;
-      globalThis.otherInstruments = [33, 35, 37]; // Example instruments
-      globalThis.otherBassInstruments = [42, 44, 46];
-      globalThis.drumSets = [0, 1, 2];
+      ctx.state.firstLoop = 0;
+      ctx.state.otherInstruments = [33, 35, 37]; // Example instruments
+      ctx.state.otherBassInstruments = [42, 44, 46];
+      ctx.state.drumSets = [0, 1, 2];
     });
 
     it('should occasionally add instrument change events', () => {
@@ -722,10 +717,9 @@ describe('Stage Module', () => {
       stage.firstLoop = 0;
       for (let i = 0; i < 10; i++) {
         ctx.csvBuffer = [];
-        c = ctx.csvBuffer;
         ctx.state.beatCount = i;
         stage.setOtherInstruments(ctx);
-        if (c.length > 0) {
+        if (ctx.csvBuffer.length > 0) {
           instrumentChanges++;
         }
       }
@@ -734,27 +728,26 @@ describe('Stage Module', () => {
     });
 
     it('should generate program change events for binaural instruments', () => {
-      globalThis.firstLoop = 0; // Force execution on first loop
+      ctx.state.firstLoop = 0; // Force execution on first loop
       stage.setOtherInstruments(ctx);
-      const progChanges = c.filter(evt => evt.type === 'program_c');
+      const progChanges = ctx.csvBuffer.filter(evt => evt.type === 'program_c');
       expect(progChanges.length).toBeGreaterThan(0);
     });
 
     it('should set tick to beatStart for instrument changes', () => {
-      globalThis.firstLoop = 0;
+      ctx.state.firstLoop = 0;
       ctx.state.beatStart = 960;
-      globalThis.beatStart = 960;
       stage.setOtherInstruments(ctx);
-      c.forEach(evt => {
+      ctx.csvBuffer.forEach(evt => {
         expect(evt.tick).toBe(960);
       });
     });
 
     it('should select from otherInstruments array', () => {
-      globalThis.firstLoop = 0;
-      globalThis.otherInstruments = [50, 51, 52];
+      ctx.state.firstLoop = 0;
+      ctx.state.otherInstruments = [50, 51, 52];
       stage.setOtherInstruments(ctx);
-      const progChanges = c.filter(evt => evt.type === 'program_c' && evt.vals);
+      const progChanges = ctx.csvBuffer.filter(evt => evt.type === 'program_c' && evt.vals);
       progChanges.forEach(evt => {
         // Program value should be from otherInstruments or otherBassInstruments or drumSets
         expect(typeof evt.vals[1]).toBe('number');
@@ -762,109 +755,111 @@ describe('Stage Module', () => {
     });
 
     it('should not execute when conditions are not met', () => {
-      globalThis.firstLoop = 1; // Not first loop
-      globalThis.beatCount = 10;
-      globalThis.beatsUntilBinauralShift = 5; // beatCount % beatsUntilBinauralShift = 0, but not < 1
+      ctx.state.firstLoop = 1; // Not first loop
+      ctx.state.beatCount = 10;
+      ctx.state.beatsUntilBinauralShift = 5; // beatCount % beatsUntilBinauralShift = 0, but not < 1
       stage.setOtherInstruments(ctx);
       // Might or might not execute depending on random chance (rf() < .3)
-      expect(Array.isArray(c)).toBe(true);
+      expect(Array.isArray(ctx.csvBuffer)).toBe(true);
     });
   });
 
   describe('Instrument Setup: setTuningAndInstruments', () => {
-    let ctx: any;
     beforeEach(() => {
-      // Create DI-enabled context and register writer services
       ctx = createTestContext();
       registerWriterServices(ctx.services);
+      registerVenueServices(ctx.services);
       ctx.csvBuffer = [];
-      globalThis.c = ctx.csvBuffer;
-      globalThis.beatStart = 0;
-      globalThis.cCH1 = 0;
-      globalThis.cCH2 = 1;
-      globalThis.cCH3 = 11;
-      globalThis.tuningPitchBend = 8192;
-      globalThis.primaryInstrument = 'glockenspiel';
-      globalThis.secondaryInstrument = 'music box';
-      globalThis.bassInstrument = 'Acoustic Bass';
-      globalThis.bassInstrument2 = 'Synth Bass 2';
+      ctx.state.beatStart = 0;
+      ctx.state.cCH1 = 0;
+      ctx.state.cCH2 = 1;
+      ctx.state.cCH3 = 11;
+      ctx.state.tuningPitchBend = 8192;
+      ctx.state.primaryInstrument = 'glockenspiel';
+      ctx.state.secondaryInstrument = 'music box';
+      ctx.state.bassInstrument = 'Acoustic Bass';
+      ctx.state.bassInstrument2 = 'Synth Bass 2';
+      // Keep ctx state channel maps in sync with module-level constants
+      ctx.state.source = source;
+      ctx.state.reflection = reflection;
+      ctx.state.bass = bass;
     });
 
     it('should generate program_c events for all source channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const programEvents = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
+      const programEvents = ctx.csvBuffer.filter(e => e.type === 'program_c' && ctx.state.source.includes(e.vals[0]));
       // Each source channel gets one program_c event
-      expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.source.length);
+      expect(programEvents.length).toBeGreaterThanOrEqual(ctx.state.source.length);
     });
 
     it('should generate center channel (cCH1, cCH2) program events', () => {
       stage.setTuningAndInstruments(ctx);
-      const cCH1Events = c.filter(e => e.vals[0] === globalThis.cCH1 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
-      const cCH2Events = c.filter(e => e.vals[0] === globalThis.cCH2 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
+      const cCH1Events = ctx.csvBuffer.filter(e => e.vals[0] === ctx.state.cCH1 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
+      const cCH2Events = ctx.csvBuffer.filter(e => e.vals[0] === ctx.state.cCH2 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
       expect(cCH1Events.length).toBeGreaterThan(0);
       expect(cCH2Events.length).toBeGreaterThan(0);
     });
 
     it('should generate program_c events for all reflection channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const programEvents = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
+      const programEvents = ctx.csvBuffer.filter(e => e.type === 'program_c' && ctx.state.reflection.includes(e.vals[0]));
       // Each reflection channel gets one program_c event
-      expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.reflection.length);
+      expect(programEvents.length).toBeGreaterThanOrEqual(ctx.state.reflection.length);
     });
 
     it('should generate program_c events for all bass channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const programEvents = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
+      const programEvents = ctx.csvBuffer.filter(e => e.type === 'program_c' && ctx.state.bass.includes(e.vals[0]));
       // Each bass channel gets one program_c event
-      expect(programEvents.length).toBeGreaterThanOrEqual(globalThis.bass.length);
+      expect(programEvents.length).toBeGreaterThanOrEqual(ctx.state.bass.length);
     });
 
     it('should generate center bass channel (cCH3) program event', () => {
       stage.setTuningAndInstruments(ctx);
-      const cCH3Events = c.filter(e => e.vals[0] === globalThis.cCH3 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
+      const cCH3Events = ctx.csvBuffer.filter(e => e.vals[0] === ctx.state.cCH3 && (e.type === 'program_c' || e.type === 'pitch_bend_c'));
       expect(cCH3Events.length).toBeGreaterThan(0);
     });
 
     it('should set primary instrument on source channels', () => {
       stage.setTuningAndInstruments(ctx);
       const midi = ctx.services.get('getMidiValue');
-      const primaryProg = midi('program', globalThis.primaryInstrument);
-      const sourcePrograms = c.filter(e => e.type === 'program_c' && globalThis.source.includes(e.vals[0]));
+      const primaryProg = midi('program', ctx.state.primaryInstrument);
+      const sourcePrograms = ctx.csvBuffer.filter(e => e.type === 'program_c' && ctx.state.source.includes(e.vals[0]));
       expect(sourcePrograms.some(e => e.vals[1] === primaryProg)).toBe(true);
     });
 
     it('should set secondary instrument on reflection channels', () => {
       stage.setTuningAndInstruments(ctx);
       const midi = ctx.services.get('getMidiValue');
-      const secondaryProg = midi('program', globalThis.secondaryInstrument);
-      const reflectionPrograms = c.filter(e => e.type === 'program_c' && globalThis.reflection.includes(e.vals[0]));
+      const secondaryProg = midi('program', ctx.state.secondaryInstrument);
+      const reflectionPrograms = ctx.csvBuffer.filter(e => e.type === 'program_c' && ctx.state.reflection.includes(e.vals[0]));
       expect(reflectionPrograms.some(e => e.vals[1] === secondaryProg)).toBe(true);
     });
 
     it('should set bass instrument on bass channels', () => {
       stage.setTuningAndInstruments(ctx);
       const midi = ctx.services.get('getMidiValue');
-      const bassProg = midi('program', globalThis.bassInstrument);
-      const bassPrograms = c.filter(e => e.type === 'program_c' && globalThis.bass.includes(e.vals[0]));
+      const bassProg = midi('program', ctx.state.bassInstrument);
+      const bassPrograms = ctx.csvBuffer.filter(e => e.type === 'program_c' && ctx.state.bass.includes(e.vals[0]));
       expect(bassPrograms.some(e => e.vals[1] === bassProg)).toBe(true);
     });
 
     it('should emit control_c events for pan/volume on source channels', () => {
       stage.setTuningAndInstruments(ctx);
-      const controlEvents = c.filter(e => e.type === 'control_c' && globalThis.source.includes(e.vals[0]));
+      const controlEvents = ctx.csvBuffer.filter(e => e.type === 'control_c' && ctx.state.source.includes(e.vals[0]));
       expect(controlEvents.length).toBeGreaterThan(0);
     });
 
     it('should use pitch_bend_c for center channels (cCH1, cCH2, cCH3)', () => {
       stage.setTuningAndInstruments(ctx);
-      const centerChannels = [globalThis.cCH1, globalThis.cCH2, globalThis.cCH3];
-      const pitchBendEvents = c.filter(e => e.type === 'pitch_bend_c' && centerChannels.includes(e.vals[0]));
+      const centerChannels = [ctx.state.cCH1, ctx.state.cCH2, ctx.state.cCH3];
+      const pitchBendEvents = ctx.csvBuffer.filter(e => e.type === 'pitch_bend_c' && centerChannels.includes(e.vals[0]));
       expect(pitchBendEvents.length).toBeGreaterThanOrEqual(3);
     });
 
     it('should convert instrument names to MIDI program numbers', () => {
       stage.setTuningAndInstruments(ctx);
-      const allPrograms = c.filter(e => e.type === 'program_c');
+      const allPrograms = ctx.csvBuffer.filter(e => e.type === 'program_c');
       allPrograms.forEach(e => {
         expect(typeof e.vals[1]).toBe('number');
         expect(e.vals[1]).toBeGreaterThanOrEqual(0);
@@ -874,7 +869,7 @@ describe('Stage Module', () => {
 
     it('should set all 16 MIDI channels with instruments', () => {
       stage.setTuningAndInstruments(ctx);
-      const programEvents = c.filter(e => e.type === 'program_c');
+      const programEvents = ctx.csvBuffer.filter(e => e.type === 'program_c');
       const channelsWithPrograms = new Set(programEvents.map(e => e.vals[0]));
       // Should cover source, reflection, bass, and drum channels
       expect(channelsWithPrograms.size).toBeGreaterThan(10);

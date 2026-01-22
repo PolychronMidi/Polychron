@@ -17,7 +17,7 @@ import './stage.js';       // Audio processing
 import './structure.js';   // Section structure
 
 // Initialize PolychronContext
-import { initializePolychronContext } from './PolychronInit.js';
+import { initializePolychronContext, getPolychronContext } from './PolychronInit.js';
 
 // Dependency Injection Container
 import { DIContainer } from './DIContainer.js';
@@ -327,7 +327,9 @@ const initializePlayEngine = async (
   const { state: primary, buffer: c1 } = g.LM.register('primary', 'c1', {}, () => g.stage.setTuningAndInstruments());
   const { state: poly, buffer: c2 } = g.LM.register('poly', 'c2', {}, () => g.stage.setTuningAndInstruments());
 
-  ctx.state.totalSections = g.ri(g.SECTIONS.min, g.SECTIONS.max);
+  // Use DI-provided randomInt (ri) from PolychronContext rather than relying on g.ri global
+  const { ri: riFn } = getPolychronContext().utils;
+  ctx.state.totalSections = typeof riFn === 'function' ? riFn(g.SECTIONS.min, g.SECTIONS.max) : 1;
 
   // Report composing phase started
   progressCallback?.({
@@ -372,8 +374,9 @@ const initializePlayEngine = async (
     for (ctx.state.phraseIndex = 0; ctx.state.phraseIndex < ctx.state.phrasesPerSection; ctx.state.phraseIndex++) {
       cancellationToken?.throwIfRequested();
 
-      // Select composer for this phrase and initialize timing
-      ctx.state.composer = (globalThis as any).ra((globalThis as any).composers);
+      // Select composer for this phrase and initialize timing (use DI utils)
+      const utils = getPolychronContext().utils;
+      ctx.state.composer = utils.ra(g.composers);
       const [num, den] = ctx.state.composer.getMeter();
       ctx.state.numerator = num;
       ctx.state.denominator = den;
@@ -399,7 +402,10 @@ const initializePlayEngine = async (
           playDrums(ctx);
           ctx.stage.stutterFX(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
           ctx.stage.stutterFade(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
-          (globalThis as any).rf() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
+          {
+            const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? (globalThis as any).rf ?? Math.random;
+            rfFn() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
+          }
 
           for (ctx.state.divIndex = 0; ctx.state.divIndex < ctx.state.divsPerBeat; ctx.state.divIndex++) {
             ctx.setUnitTiming('division');
@@ -434,7 +440,10 @@ const initializePlayEngine = async (
           playDrums2(ctx);
           ctx.stage.stutterFX(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
           ctx.stage.stutterFade(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx);
-          (globalThis as any).rf() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
+          {
+            const rfFn = ctx?.utils?.rf ?? getPolychronContext().utils.rf ?? (globalThis as any).rf ?? Math.random;
+            rfFn() < 0.05 ? ctx.stage.stutterPan(ctx.state.flipBin ? ctx.state.flipBinT3 : ctx.state.flipBinF3, ctx) : ctx.stage.stutterPan(ctx.state.stutterPanCHs, ctx);
+          }
 
           for (ctx.state.divIndex = 0; ctx.state.divIndex < ctx.state.divsPerBeat; ctx.state.divIndex++) {
             ctx.setUnitTiming('division');

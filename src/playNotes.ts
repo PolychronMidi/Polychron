@@ -6,6 +6,9 @@
 import { ICompositionContext } from './CompositionContext.js';
 
 import { requirePush } from './writer.js';
+import { getPolychronContext } from './PolychronInit.js';
+import * as Utils from './utils.js';
+import { source, reflection, bass, cCH1, cCH2, cCH3, flipBinF, flipBinT, reflect, reflect2 } from './backstage.js';
 
 declare const globalThis: any;
 
@@ -38,71 +41,79 @@ export class PlayNotes {
    * Calculates cross-modulation value based on rhythm state across all levels
    * @returns {void}
    */
-  crossModulateRhythms(): void {
+  crossModulateRhythms(ctx?: ICompositionContext): void {
+    // Prefer DI-based state when provided
+    const state = ctx?.state ?? (globalThis as any).state ?? { beatRhythm: [1], divRhythm: [1], subdivRhythm: [1], beatIndex: 0, divIndex: 0, subdivIndex: 0 };
+    const utils = (globalThis as any).PolychronContext?.utils ?? { rf: Math.random, ri: () => 0, m: Math } as any;
+
     this.lastCrossMod = this.crossModulation;
     this.crossModulation = (
-      (globalThis.beatRhythm[globalThis.beatIndex] > 0 ? globalThis.rf(1.5, 3) : globalThis.m.max(globalThis.rf(.625, 1.25), (globalThis.beatsOff) / (globalThis.numerator * globalThis.numerator))) +
-      (globalThis.divRhythm[globalThis.divIndex] > 0 ? globalThis.rf(1, 2) : globalThis.m.max(globalThis.rf(.5, 1), (globalThis.divsOff) / (globalThis.divsPerBeat * globalThis.divsPerBeat))) +
-      (globalThis.subdivRhythm[globalThis.subdivIndex] > 0 ? globalThis.rf(.5, 1) : globalThis.m.max(globalThis.rf(.25, .5), (globalThis.subdivsOff) / (globalThis.subdivsPerDiv * globalThis.subdivsPerDiv)))
+      (state.beatRhythm[state.beatIndex] > 0 ? utils.rf(1.6, 3.2) * 1.25 : utils.m.max(utils.rf(.5, .95), (state.beatsOff) / (state.numerator * state.numerator))) +
+      (state.divRhythm[state.divIndex] > 0 ? utils.rf(1.1, 2.1) * 1.15 : utils.m.max(utils.rf(.4, .9), (state.divsOff) / (state.divsPerBeat * state.divsPerBeat))) +
+      (state.subdivRhythm[state.subdivIndex] > 0 ? utils.rf(.6, 1.2) * 1.15 : utils.m.max(utils.rf(.2, .4), (state.subdivsOff) / (state.subdivsPerDiv * state.subdivsPerDiv)))
     ) +
-      (this.subdivsOn < globalThis.ri(7, 15) ? globalThis.rf(.1, .3) : globalThis.rf(-.1)) + (this.subdivsOff > globalThis.ri() ? globalThis.rf(.1, .3) : globalThis.rf(-.1)) +
-      (globalThis.divsOn < globalThis.ri(9, 15) ? globalThis.rf(.1, .3) : globalThis.rf(-.1)) + (globalThis.divsOff > globalThis.ri(3, 7) ? globalThis.rf(.1, .3) : globalThis.rf(-.1)) +
-      (globalThis.beatsOn < globalThis.ri(3) ? globalThis.rf(.1, .3) : globalThis.rf(-.1)) + (globalThis.beatsOff > globalThis.ri(3) ? globalThis.rf(.1, .3) : globalThis.rf(-.1)) +
-      (this.subdivsOn > globalThis.ri(7, 15) ? globalThis.rf(-.3, -.5) : globalThis.rf(.1)) + (this.subdivsOff < globalThis.ri() ? globalThis.rf(-.3, -.5) : globalThis.rf(.1)) +
-      (globalThis.divsOn > globalThis.ri(9, 15) ? globalThis.rf(-.2, -.4) : globalThis.rf(.1)) + (globalThis.divsOff < globalThis.ri(3, 7) ? globalThis.rf(-.2, -.4) : globalThis.rf(.1)) +
-      (globalThis.beatsOn > globalThis.ri(3) ? globalThis.rf(-.2, -.3) : globalThis.rf(.1)) + (globalThis.beatsOff < globalThis.ri(3) ? globalThis.rf(-.1, -.3) : globalThis.rf(.1)) +
-      (globalThis.subdivsPerMinute > globalThis.ri(400, 600) ? globalThis.rf(-.4, -.6) : globalThis.rf(.1)) + (this.subdivsOn * globalThis.rf(-.005, -.015)) + (globalThis.beatRhythm[globalThis.beatIndex] < 1 ? globalThis.rf(.4, .5) : 0) + (globalThis.divRhythm[globalThis.divIndex] < 1 ? globalThis.rf(.3, .4) : 0) + (globalThis.subdivRhythm[globalThis.subdivIndex] < 1 ? globalThis.rf(.2, .3) : 0);
+      (this.subdivsOn < utils.ri(7, 15) ? utils.rf(.1, .3) : utils.rf(-.1)) + (this.subdivsOff > utils.ri() ? utils.rf(.1, .3) : utils.rf(-.1)) +
+      (state.divsOn < utils.ri(9, 15) ? utils.rf(.1, .3) : utils.rf(-.1)) + (state.divsOff > utils.ri(3, 7) ? utils.rf(.1, .3) : utils.rf(-.1)) +
+      (state.beatsOn < utils.ri(3) ? utils.rf(.1, .3) : utils.rf(-.1)) + (state.beatsOff > utils.ri(3) ? utils.rf(.1, .3) : utils.rf(-.1)) +
+      (this.subdivsOn > utils.ri(7, 15) ? utils.rf(-.3, -.5) : utils.rf(.1)) + (this.subdivsOff < utils.ri() ? utils.rf(-.3, -.5) : utils.rf(.1)) +
+      (state.divsOn > utils.ri(9, 15) ? utils.rf(-.2, -.4) : utils.rf(.1)) + (state.divsOff < utils.ri(3, 7) ? utils.rf(-.2, -.4) : utils.rf(.1)) +
+      (state.beatsOn > utils.ri(3) ? utils.rf(-.2, -.3) : utils.rf(.1)) + (state.beatsOff < utils.ri(3) ? utils.rf(-.1, -.3) : utils.rf(.1)) +
+      (state.subdivsPerMinute > utils.ri(400, 600) ? utils.rf(-.4, -.6) : utils.rf(.1)) + (this.subdivsOn * utils.rf(-.005, -.015)) + (state.beatRhythm[state.beatIndex] < 1 ? utils.rf(.4, .5) : 0) + (state.divRhythm[state.divIndex] < 1 ? utils.rf(.3, .4) : 0) + (state.subdivRhythm[state.subdivIndex] < 1 ? utils.rf(.2, .3) : 0);
   }
 
   /**
    * Calculates note timing and sustain parameters for subdivision-based notes
    * @returns {void}
    */
-  setNoteParams(): void {
-    const subdivsPerMinute = globalThis.subdivsPerBeat * globalThis.midiBPM;
-    this.on = globalThis.subdivStart + (globalThis.tpSubdiv * globalThis.rv(globalThis.rf(.2), [-.1, .07], .3));
-    this.shortSustain = globalThis.rv(globalThis.rf(globalThis.m.max(globalThis.tpDiv * .5, globalThis.tpDiv / globalThis.subdivsPerDiv), (globalThis.tpBeat * (.3 + globalThis.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
-    this.longSustain = globalThis.rv(globalThis.rf(globalThis.tpDiv * .8, (globalThis.tpBeat * (.3 + globalThis.rf() * .7))), [.1, .3], .1, [-.05, -.1]);
-    this.useShort = subdivsPerMinute > globalThis.ri(400, 650);
-    this.sustain = (this.useShort ? this.shortSustain : this.longSustain) * globalThis.rv(globalThis.rf(.8, 1.3));
-    this.binVel = globalThis.rv(globalThis.velocity * globalThis.rf(.42, .57));
+  setNoteParams(ctx: any): void {
+    const state = ctx?.state ?? {} as any;
+    const utils = getPolychronContext().utils;
+    const subdivsPerMinute = state.subdivsPerBeat * state.midiBPM;
+    this.on = state.subdivStart + (state.tpSubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
+    this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / state.subdivsPerDiv), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+    this.longSustain = utils.rv(utils.rf(state.tpDiv * .8, (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .3], .1, [-.05, -.1]);
+    this.useShort = subdivsPerMinute > utils.ri(400, 650);
+    this.sustain = (this.useShort ? this.shortSustain : this.longSustain) * utils.rv(utils.rf(.8, 1.3));
+    this.binVel = utils.rv(state.velocity * utils.rf(.42, .57));
   }
-
   /**
    * Generates MIDI note events for source channels (subdivision-based timing)
    * @returns {void}
    */
   playNotes(ctx: ICompositionContext): void {
-    this.setNoteParams();
-    this.crossModulateRhythms();
-    const noteObjects = globalThis.composer ? globalThis.composer.getNotes() : [];
-    const motifNotes = globalThis.activeMotif ? globalThis.activeMotif.applyToNotes(noteObjects) : noteObjects;
-    if ((this.crossModulation + this.lastCrossMod) / globalThis.rf(1.4, 2.6) > globalThis.rv(globalThis.rf(1.8, 2.8), [-.2, -.3], .05)) {
+    this.setNoteParams(ctx);
+    this.crossModulateRhythms(ctx);
+    const composer = ctx.state.composer;
+    const activeMotif = ctx.state.activeMotif ?? null;
+    const noteObjects = composer ? composer.getNotes() : [];
+    const motifNotes = activeMotif ? activeMotif.applyToNotes(noteObjects) : noteObjects;
+    const utils = getPolychronContext().utils;
+    if ((this.crossModulation + this.lastCrossMod) / utils.rf(1.4, 2.6) > utils.rv(utils.rf(1.8, 2.8), [-.2, -.3], .05)) {
       motifNotes.forEach(({ note }: { note: number }) => {
         // Play source channels
-        globalThis.source.filter((sourceCH: number) =>
-          globalThis.flipBin ? globalThis.flipBinT.includes(sourceCH) : globalThis.flipBinF.includes(sourceCH)
+        source.filter((sourceCH: number) =>
+          ctx.state.flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
         ).map((sourceCH: number) => {
-          pushEvent(ctx, { tick: sourceCH === globalThis.cCH1 ? this.on + globalThis.rv(globalThis.tpSubdiv * globalThis.rf(1 / 9), [-.1, .1], .3) : this.on + globalThis.rv(globalThis.tpSubdiv * globalThis.rf(1 / 3), [-.1, .1], .3), type: 'on', vals: [sourceCH, note, sourceCH === globalThis.cCH1 ? globalThis.velocity * globalThis.rf(.95, 1.15) : this.binVel * globalThis.rf(.95, 1.03)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === globalThis.cCH1 ? 1 : globalThis.rv(globalThis.rf(.92, 1.03))), vals: [sourceCH, note] });
+          pushEvent(ctx, { tick: sourceCH === cCH1 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 9), [-.1, .1], .3) : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.1, .1], .3), type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? ctx.state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
+          pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03))), vals: [sourceCH, note] });
         });
 
         // Play reflection channels
-        globalThis.reflection.filter((reflectionCH: number) =>
-          globalThis.flipBin ? globalThis.flipBinT.includes(reflectionCH) : globalThis.flipBinF.includes(reflectionCH)
+        reflection.filter((reflectionCH: number) =>
+          ctx.state.flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
         ).map((reflectionCH: number) => {
-          pushEvent(ctx, { tick: reflectionCH === globalThis.cCH2 ? this.on + globalThis.rv(globalThis.tpSubsubdiv * globalThis.rf(.2), [-.01, .1], .5) : this.on + globalThis.rv(globalThis.tpSubsubdiv * globalThis.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [reflectionCH, note, reflectionCH === globalThis.cCH2 ? globalThis.velocity * globalThis.rf(.5, .8) : this.binVel * globalThis.rf(.55, .9)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === globalThis.cCH2 ? globalThis.rf(.7, 1.2) : globalThis.rv(globalThis.rf(.65, 1.3))), vals: [reflectionCH, note] });
+          pushEvent(ctx, { tick: reflectionCH === cCH2 ? this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(.2), [-.01, .1], .5) : this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [reflectionCH, note, reflectionCH === cCH2 ? ctx.state.velocity * utils.rf(.5, .8) : this.binVel * utils.rf(.55, .9)] });
+          pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3))), vals: [reflectionCH, note] });
         });
 
         // Play bass channels (with probability based on BPM)
-        if (globalThis.rf() < globalThis.clamp(.35 * globalThis.bpmRatio3, .2, .7)) {
-          globalThis.bass.filter((bassCH: number) =>
-            globalThis.flipBin ? globalThis.flipBinT.includes(bassCH) : globalThis.flipBinF.includes(bassCH)
+        if (utils.rf() < Utils.clamp(.35 * ctx.state.bpmRatio3, .2, .7)) {
+          bass.filter((bassCH: number) =>
+            ctx.state.flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
           ).map((bassCH: number) => {
-            const bassNote = globalThis.modClamp(note, 12, 35);
-            pushEvent(ctx, { tick: bassCH === globalThis.cCH3 ? this.on + globalThis.rv(globalThis.tpSubdiv * globalThis.rf(.1), [-.01, .1], .5) : this.on + globalThis.rv(globalThis.tpSubdiv * globalThis.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === globalThis.cCH3 ? globalThis.velocity * globalThis.rf(1.15, 1.35) : this.binVel * globalThis.rf(1.85, 2.45)] });
-            pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === globalThis.cCH3 ? globalThis.rf(1.1, 3) : globalThis.rv(globalThis.rf(.8, 3.5))), vals: [bassCH, bassNote] });
+            const bassNote = Utils.modClamp(note, 12, 35);
+            pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? ctx.state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
+            pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
           });
         }
       });
@@ -118,14 +129,16 @@ export class PlayNotes {
    * Calculates note timing and sustain parameters for subsubdivision-based notes
    * @returns {void}
    */
-  setNoteParams2(): void {
-    const subdivsPerMinute = globalThis.subdivsPerBeat * globalThis.midiBPM;
-    this.on = globalThis.subsubdivStart + (globalThis.tpSubsubdiv * globalThis.rv(globalThis.rf(.2), [-.1, .07], .3));
-    this.shortSustain = globalThis.rv(globalThis.rf(globalThis.m.max(globalThis.tpDiv * .5, globalThis.tpDiv / globalThis.subdivsPerDiv), (globalThis.tpBeat * (.3 + globalThis.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
-    this.longSustain = globalThis.rv(globalThis.rf(globalThis.tpDiv * .8, (globalThis.tpBeat * (.3 + globalThis.rf() * .7))), [.1, .3], .1, [-.05, -.1]);
-    this.useShort = subdivsPerMinute > globalThis.ri(400, 650);
-    this.sustain = (this.useShort ? this.shortSustain : this.longSustain) * globalThis.rv(globalThis.rf(.8, 1.3));
-    this.binVel = globalThis.rv(globalThis.velocity * globalThis.rf(.42, .57));
+  setNoteParams2(ctx: any): void {
+    const state = ctx?.state ?? {} as any;
+    const utils = getPolychronContext().utils;
+    const subdivsPerMinute = state.subdivsPerBeat * state.midiBPM;
+    this.on = state.subsubdivStart + (state.tpSubsubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
+    this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / state.subdivsPerDiv), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+    this.longSustain = utils.rv(utils.rf(state.tpDiv * .8, (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .3], .1, [-.05, -.1]);
+    this.useShort = subdivsPerMinute > utils.ri(400, 650);
+    this.sustain = (this.useShort ? this.shortSustain : this.longSustain) * utils.rv(utils.rf(.8, 1.3));
+    this.binVel = utils.rv(state.velocity * utils.rf(.42, .57));
   }
 
   /**
@@ -133,132 +146,84 @@ export class PlayNotes {
    * @returns {void}
    */
   playNotes2(ctx: ICompositionContext): void {
-    this.setNoteParams2();
-    this.crossModulateRhythms();
-    let reflectionCH: number;
-    let bassCH: number;
-    let bassNote: number;
-    const noteObjects = globalThis.composer ? globalThis.composer.getNotes() : [];
-    const motifNotes = globalThis.activeMotif ? globalThis.activeMotif.applyToNotes(noteObjects) : noteObjects;
-    if (true) {
-      motifNotes.forEach(({ note }: { note: number }) => {
-        globalThis.source.filter((sourceCH: number) =>
-          globalThis.flipBin ? globalThis.flipBinT.includes(sourceCH) : globalThis.flipBinF.includes(sourceCH)
-        ).map((sourceCH: number) => {
-          pushEvent(ctx, { tick: sourceCH === globalThis.cCH1 ? this.on + globalThis.rv(globalThis.tpSubsubdiv * globalThis.rf(1 / 9), [-.1, .1], .3) : this.on + globalThis.rv(globalThis.tpSubsubdiv * globalThis.rf(1 / 3), [-.1, .1], .3), type: 'on', vals: [sourceCH, note, sourceCH === globalThis.cCH1 ? globalThis.velocity * globalThis.rf(.95, 1.15) : this.binVel * globalThis.rf(.95, 1.03)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === globalThis.cCH1 ? 1 : globalThis.rv(globalThis.rf(.92, 1.03))), vals: [sourceCH, note] });
+    // Subsubdivision note generation should use DI-provided context/state and utilities
+    this.setNoteParams2(ctx);
+    this.crossModulateRhythms(ctx);
 
-          // Stutter-Shift: Random note stutter and octave shift.
-          const stutters = new Map<number, number>();
-          const shifts = new Map<number, number>();
-          let stutterApplied = false;
-          let globalStutterData: any = null;
-          if (!stutterApplied && globalThis.rf() < globalThis.rv(.2, [.5, 1], .3)) {
-            // Calculate stutter once for all Source channels
-            const numStutters = globalThis.m.round(globalThis.rv(globalThis.rv(globalThis.ri(3, 9), [2, 5], .33), [2, 5], .1));
-            globalStutterData = {
-              numStutters: numStutters,
-              duration: .25 * globalThis.ri(1, 6) * this.sustain / numStutters,
-              minVelocity: 11,
-              maxVelocity: 111,
-              isFadeIn: globalThis.rf() < 0.5,
-              decay: globalThis.rf(.75, 1.25)
-            };
-            stutterApplied = true;
-          }
-          if (globalStutterData) {
-            const { numStutters, duration, minVelocity, maxVelocity, isFadeIn, decay } = globalStutterData;
-            for (let i = 0; i < numStutters; i++) {
-              const tick = this.on + duration * i;
-              let stutterNote = note;
-              if (globalThis.rf() < .25) {
-                if (!shifts.has(sourceCH)) shifts.set(sourceCH, globalThis.ri(-3, 3) * 12);
-                const octaveShift = shifts.get(sourceCH)!;
-                stutterNote = globalThis.modClamp(note + octaveShift, globalThis.m.max(0, globalThis.OCTAVE.min * 12 - 1), globalThis.OCTAVE.max * 12 - 1);
-              }
-              let currentVelocity: number;
-              if (isFadeIn) {
-                const fadeInMultiplier = decay * (i / (numStutters * globalThis.rf(0.4, 2.2) - 1));
-                currentVelocity = globalThis.clamp(globalThis.m.min(maxVelocity, globalThis.ri(33) + maxVelocity * fadeInMultiplier), 0, 100);
-              } else {
-                const fadeOutMultiplier = 1 - (decay * (i / (numStutters * globalThis.rf(0.4, 2.2) - 1)));
-                currentVelocity = globalThis.clamp(globalThis.m.max(0, globalThis.ri(33) + maxVelocity * fadeOutMultiplier), 0, 100);
-              }
-              pushEvent(ctx, { tick: tick - duration * globalThis.rf(.15), vals: [sourceCH, stutterNote] });
-              pushEvent(ctx, { tick: tick + duration * globalThis.rf(.15, .6), type: 'on', vals: [sourceCH, stutterNote, sourceCH === globalThis.cCH1 ? currentVelocity * globalThis.rf(.3, .7) : currentVelocity * globalThis.rf(.45, .8)] });
-            }
-            pushEvent(ctx, { tick: this.on + this.sustain * globalThis.rf(.5, 1.5), vals: [sourceCH, note] });
-          }
-          if (globalThis.rf() < globalThis.rv(.07, [.5, 1], .2)) { // Source Channels Stutter-Shift #2: Unique per channel.
-            if (!stutters.has(sourceCH)) stutters.set(sourceCH, globalThis.m.round(globalThis.rv(globalThis.rv(globalThis.ri(2, 7), [2, 5], .33), [2, 5], .1)));
-            const numStutters = stutters.get(sourceCH)!;
-            const duration = .25 * globalThis.ri(1, 5) * this.sustain / numStutters;
-            for (let i = 0; i < numStutters; i++) {
-              const tick = this.on + duration * i;
-              let stutterNote = note;
-              if (globalThis.rf() < .15) {
-                if (!shifts.has(sourceCH)) shifts.set(sourceCH, globalThis.ri(-3, 3) * 12);
-                const octaveShift = shifts.get(sourceCH)!;
-                stutterNote = globalThis.modClamp(note + octaveShift, globalThis.m.max(0, globalThis.OCTAVE.min * 12 - 1), globalThis.OCTAVE.max * 12 - 1);
-              }
-              if (globalThis.rf() < .6) {
-                pushEvent(ctx, { tick: tick - duration * globalThis.rf(.15), vals: [sourceCH, stutterNote] });
-                pushEvent(ctx, { tick: tick + duration * globalThis.rf(.15, .6), type: 'on', vals: [sourceCH, stutterNote, sourceCH === globalThis.cCH1 ? globalThis.velocity * globalThis.rf(.3, .7) : this.binVel * globalThis.rf(.45, .8)] });
-              }
-            }
-            pushEvent(ctx, { tick: this.on + this.sustain * globalThis.rf(.5, 1.5), vals: [sourceCH, note] });
-          }
+    const state = ctx.state as any;
+    const utils = getPolychronContext().utils;
+    const composer = state.composer;
+    const activeMotif = state.activeMotif ?? null;
+    const noteObjects = composer ? composer.getNotes() : [];
+    const motifNotes = activeMotif ? activeMotif.applyToNotes(noteObjects) : noteObjects;
 
-          reflectionCH = globalThis.reflect[sourceCH];
-          pushEvent(ctx, { tick: reflectionCH === globalThis.cCH2 ? this.on + globalThis.rv(globalThis.tpSubdiv * globalThis.rf(.2), [-.01, .1], .5) : this.on + globalThis.rv(globalThis.tpSubdiv * globalThis.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [reflectionCH, note, reflectionCH === globalThis.cCH2 ? globalThis.velocity * globalThis.rf(.5, .8) : this.binVel * globalThis.rf(.55, .9)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === globalThis.cCH2 ? globalThis.rf(.7, 1.2) : globalThis.rv(globalThis.rf(.65, 1.3))), vals: [reflectionCH, note] });
-          if (globalThis.rf() < .2) { // Reflection Channels Stutter-Shift
-            if (!stutters.has(reflectionCH)) stutters.set(reflectionCH, globalThis.m.round(globalThis.rv(globalThis.rv(globalThis.ri(2, 7), [2, 5], .33), [2, 5], .1)));
-            const numStutters = stutters.get(reflectionCH)!;
-            const duration = .25 * globalThis.ri(1, 8) * this.sustain / numStutters;
-            for (let i = 0; i < numStutters; i++) {
-              const tick = this.on + duration * i;
-              let stutterNote = note;
-              if (globalThis.rf() < .7) {
-                if (!shifts.has(reflectionCH)) shifts.set(reflectionCH, globalThis.ri(-3, 3) * 12);
-                const octaveShift = shifts.get(reflectionCH)!;
-                stutterNote = globalThis.modClamp(note + octaveShift, globalThis.m.max(0, globalThis.OCTAVE.min * 12 - 1), globalThis.OCTAVE.max * 12 - 1);
-              }
-              if (globalThis.rf() < .5) {
-                pushEvent(ctx, { tick: tick - duration * globalThis.rf(.3), vals: [reflectionCH, stutterNote] });
-                pushEvent(ctx, { tick: tick + duration * globalThis.rf(.25, .7), type: 'on', vals: [reflectionCH, stutterNote, reflectionCH === globalThis.cCH2 ? globalThis.velocity * globalThis.rf(.25, .65) : this.binVel * globalThis.rf(.4, .75)] });
-              }
-            }
-            pushEvent(ctx, { tick: this.on + this.sustain * globalThis.rf(.75, 2), vals: [reflectionCH, note] });
-          }
+    motifNotes.forEach(({ note }: { note: number }) => {
+      source.filter((sourceCH: number) =>
+        state.flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
+      ).forEach((sourceCH: number) => {
+        pushEvent(ctx, { tick: sourceCH === cCH1 ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 9), [-.1, .1], .3) : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.1, .1], .3), type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
+        pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03))), vals: [sourceCH, note] });
 
-          if (globalThis.rf() < globalThis.clamp(.35 * globalThis.bpmRatio3, .2, .7)) {
-            bassCH = globalThis.reflect2[sourceCH];
-            bassNote = globalThis.modClamp(note, 12, 35);
-            pushEvent(ctx, { tick: bassCH === globalThis.cCH3 ? this.on + globalThis.rv(globalThis.tpSubsubdiv * globalThis.rf(.1), [-.01, .1], .5) : this.on + globalThis.rv(globalThis.tpSubsubdiv * globalThis.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === globalThis.cCH3 ? globalThis.velocity * globalThis.rf(1.15, 1.35) : this.binVel * globalThis.rf(1.85, 2.45)] });
-            pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === globalThis.cCH3 ? globalThis.rf(1.1, 3) : globalThis.rv(globalThis.rf(.8, 3.5))), vals: [bassCH, bassNote] });
-            if (globalThis.rf() < .7) { // Bass Channels Stutter-Shift
-              if (!stutters.has(bassCH)) stutters.set(bassCH, globalThis.m.round(globalThis.rv(globalThis.rv(globalThis.ri(2, 5), [2, 3], .33), [2, 10], .1)));
-              const numStutters = stutters.get(bassCH)!;
-              const duration = .25 * globalThis.ri(1, 8) * this.sustain / numStutters;
-              for (let i = 0; i < numStutters; i++) {
-                const tick = this.on + duration * i;
-                let stutterNote = bassNote;
-                if (globalThis.rf() < .5) {
-                  if (!shifts.has(bassCH)) shifts.set(bassCH, globalThis.ri(-2, 2) * 12);
-                  const octaveShift = shifts.get(bassCH)!;
-                  stutterNote = globalThis.modClamp(bassNote + octaveShift, 0, 59);
-                }
-                if (globalThis.rf() < .3) {
-                  pushEvent(ctx, { tick: tick - duration * globalThis.rf(.3), vals: [bassCH, stutterNote] });
-                  pushEvent(ctx, { tick: tick + duration * globalThis.rf(.25, .7), type: 'on', vals: [bassCH, stutterNote, bassCH === globalThis.cCH3 ? globalThis.velocity * globalThis.rf(.55, .85) : this.binVel * globalThis.rf(.75, 1.05)] });
-                }
-              }
-              pushEvent(ctx, { tick: this.on + this.sustain * globalThis.rf(.15, .35), vals: [bassCH, note] });
+        // Stutter calculations (shared across channels)
+        const numStutters = utils.m.round(utils.rv(utils.rv(utils.ri(3, 9), [2, 5], .33), [2, 5], .1));
+        if (utils.rf() < utils.rv(.2, [.5, 1], .3)) {
+          const duration = .25 * utils.ri(1, 6) * this.sustain / Math.max(1, numStutters);
+          const isFadeIn = utils.rf() < 0.5;
+          const decay = utils.rf(.75, 1.25);
+
+          for (let i = 0; i < numStutters; i++) {
+            const tick = this.on + duration * i;
+            let stutterNote = note;
+            if (utils.rf() < .25) {
+              const octaveShift = utils.ri(-3, 3) * 12;
+              stutterNote = Utils.modClamp(note + octaveShift, utils.m.max(0, (ctx.state as any).OCTAVE?.min * 12 - 1 || 0), (ctx.state as any).OCTAVE?.max * 12 - 1 || 127);
+            }
+            let currentVelocity = 64;
+            if (isFadeIn) {
+              const fadeInMultiplier = decay * (i / (numStutters * utils.rf(0.4, 2.2) - 1));
+              currentVelocity = utils.clamp(utils.m.min(127, utils.ri(33) + 127 * fadeInMultiplier), 0, 127);
+            } else {
+              const fadeOutMultiplier = 1 - (decay * (i / (numStutters * utils.rf(0.4, 2.2) - 1)));
+              currentVelocity = utils.clamp(utils.m.max(0, utils.ri(33) + 127 * fadeOutMultiplier), 0, 127);
+            }
+            pushEvent(ctx, { tick: tick - duration * utils.rf(.15), vals: [sourceCH, stutterNote] });
+            pushEvent(ctx, { tick: tick + duration * utils.rf(.15, .6), type: 'on', vals: [sourceCH, stutterNote, sourceCH === cCH1 ? currentVelocity * utils.rf(.3, .7) : currentVelocity * utils.rf(.45, .8)] });
+          }
+          pushEvent(ctx, { tick: this.on + this.sustain * utils.rf(.5, 1.5), vals: [sourceCH, note] });
+        }
+
+        // Per-channel second stutter
+        if (utils.rf() < utils.rv(.07, [.5, 1], .2)) {
+          const numStutters2 = utils.m.round(utils.rv(utils.rv(utils.ri(2, 7), [2, 5], .33), [2, 5], .1));
+          const duration2 = .25 * utils.ri(1, 5) * this.sustain / Math.max(1, numStutters2);
+          for (let i = 0; i < numStutters2; i++) {
+            const tick = this.on + duration2 * i;
+            let stutterNote = note;
+            if (utils.rf() < .15) {
+              const octaveShift = utils.ri(-3, 3) * 12;
+              stutterNote = Utils.modClamp(note + octaveShift, utils.m.max(0, (ctx.state as any).OCTAVE?.min * 12 - 1 || 0), (ctx.state as any).OCTAVE?.max * 12 - 1 || 127);
+            }
+            if (utils.rf() < .6) {
+              pushEvent(ctx, { tick: tick - duration2 * utils.rf(.15), vals: [sourceCH, stutterNote] });
+              pushEvent(ctx, { tick: tick + duration2 * utils.rf(.15, .6), type: 'on', vals: [sourceCH, stutterNote, sourceCH === cCH1 ? state.velocity * utils.rf(.3, .7) : this.binVel * utils.rf(.45, .8)] });
             }
           }
-        });
+          pushEvent(ctx, { tick: this.on + this.sustain * utils.rf(.5, 1.5), vals: [sourceCH, note] });
+        }
+
+        // Reflection
+        const reflectionCH = reflect[sourceCH];
+        pushEvent(ctx, { tick: reflectionCH === cCH2 ? this.on + utils.rv(state.tpSubdiv * utils.rf(.2), [-.01, .1], .5) : this.on + utils.rv(state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [reflectionCH, note, reflectionCH === cCH2 ? state.velocity * utils.rf(.5, .8) : this.binVel * utils.rf(.55, .9)] });
+        pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3))), vals: [reflectionCH, note] });
+
+        // Bass
+        if (utils.rf() < utils.clamp(.35 * state.bpmRatio3, .2, .7)) {
+          const bassCH = reflect2[sourceCH];
+          const bassNote = Utils.modClamp(note, 12, 35);
+          pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
+          pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
+        }
       });
-    }
+    });
   }
 }

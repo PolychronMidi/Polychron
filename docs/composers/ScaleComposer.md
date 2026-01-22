@@ -75,8 +75,8 @@ class RandomScaleComposer extends RandomGenericComposer<any> {
   }
 
   randomizeItem() {
-    const randomScale = allScales[g.ri(allScales.length - 1)];
-    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
+    const randomScale = allScales[ri(allScales.length - 1)];
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
     this.itemSet(randomScale, randomRoot);
   }
 
@@ -98,8 +98,8 @@ Chooses random scale/root from globals, then sets notes.
 
 ```typescript
 randomizeItem() {
-    const randomScale = allScales[g.ri(allScales.length - 1)];
-    const randomRoot = allNotes[g.ri(allNotes.length - 1)];
+    const randomScale = allScales[ri(allScales.length - 1)];
+    const randomRoot = allNotes[ri(allNotes.length - 1)];
     this.itemSet(randomScale, randomRoot);
   }
 ```

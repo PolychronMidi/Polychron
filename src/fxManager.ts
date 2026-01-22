@@ -1,15 +1,9 @@
 // fxManager.ts - Audio effects manager for stutter, pan, and FX parameter automation.
 // Encapsulates fade, pan, and FX stutter effects with channel state tracking.
 
-// Declare global dependencies
-declare const m: typeof Math;
-declare const ri: (min: number, max: number) => number;
-declare const rf: (min?: number, max?: number) => number;
-declare const modClamp: (value: number, min: number, max: number) => number;
-declare const ra: (array: any[]) => any;
-declare const p: (buffer: any, ...events: any[]) => void;
-declare let beatStart: number;
-declare let c: any;
+import { ri, rf, modClamp, ra } from './utils.js';
+
+// Note: fxManager methods use ctx.state and DI-provided utils when possible
 
 /**
  * FxManager class - Manages stutter effects (fade, pan, FX parameter changes) and channel state.
@@ -31,13 +25,19 @@ class FxManager {
    * Applies rapid volume stutter/fade effect to selected channels
    */
   stutterFade(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
-    const g = globalThis as any;
-    numStutters = numStutters || g.ri(10, 70);
-    duration = duration || g.tpSec * g.rf(0.2, 1.5);
+    const state = ctx?.state ?? {} as any;
+    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
+    const modClampFn = ctx?.utils?.modClamp ?? (globalThis as any).modClamp ?? modClamp;
+
+    numStutters = numStutters || riFn(10, 70);
+    const tpSec = state.tpSec ?? 1;
+    duration = duration || tpSec * rfFn(0.2, 1.5);
 
     const pFn = requirePush(ctx);
 
-    const CHsToStutter = g.ri(1, 5);
+    const CHsToStutter = riFn(1, 5);
     const channelsToStutter = new Set<number>();
     const availableCHs = channels.filter(ch => !this.lastUsedCHs.has(ch));
 
@@ -55,23 +55,24 @@ class FxManager {
 
     const channelsArray = Array.from(channelsToStutter);
     channelsArray.forEach((channelToStutter: number) => {
-      const maxVol = g.ri(90, 120);
-      const isFadeIn = g.rf() < 0.5;
+      const maxVol = riFn(90, 120);
+      const isFadeIn = rfFn() < 0.5;
       const effectiveNumStutters = numStutters ?? 4; // Default value
-      let tick: number = g.beatStart; // Initialize with default
+      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      let tick: number = beatStartVal; // Initialize with default
       let volume: number;
 
-      for (let i = Math.floor(effectiveNumStutters * g.rf(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
-        tick = g.beatStart + (i * (duration / effectiveNumStutters) * g.rf(0.9, 1.1));
+      for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
+        tick = beatStartVal + (i * (duration / effectiveNumStutters) * rfFn(0.9, 1.1));
         if (isFadeIn) {
-          volume = g.modClamp(Math.floor(maxVol * (i / (effectiveNumStutters - 1))), 25, maxVol);
+          volume = modClampFn(Math.floor(maxVol * (i / (effectiveNumStutters - 1))), 25, maxVol);
         } else {
-          volume = g.modClamp(Math.floor(100 * (1 - i / (effectiveNumStutters - 1))), 25, 100);
+          volume = modClampFn(Math.floor(100 * (1 - i / (effectiveNumStutters - 1))), 25, 100);
         }
-        pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, Math.round(volume / g.rf(1.5, 5))] });
-        pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
+        pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, Math.round(volume / rfFn(1.5, 5))] });
+        pFn(ctx.csvBuffer, { tick: tick + duration * rfFn(0.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
       }
-      pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
+      pFn(ctx.csvBuffer, { tick: tick + duration * rfFn(0.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
     });
   }
 
@@ -79,13 +80,19 @@ class FxManager {
    * Applies rapid pan stutter effect to selected channels
    */
   stutterPan(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
-    const g = globalThis as any;
-    numStutters = numStutters || g.ri(30, 90);
-    duration = duration || g.tpSec * g.rf(0.1, 1.2);
+    const state = ctx?.state ?? {} as any;
+    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
+    const modClampFn = ctx?.utils?.modClamp ?? (globalThis as any).modClamp ?? modClamp;
+
+    numStutters = numStutters || riFn(30, 90);
+    const tpSec = state.tpSec ?? 1;
+    duration = duration || tpSec * rfFn(0.1, 1.2);
 
     const pFn = requirePush(ctx);
 
-    const CHsToStutter = g.ri(1, 2);
+    const CHsToStutter = riFn(1, 2);
     const channelsToStutter = new Set<number>();
     const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
 
@@ -103,7 +110,7 @@ class FxManager {
 
     const channelsArray = Array.from(channelsToStutter);
     channelsArray.forEach((channelToStutter: number) => {
-      const edgeMargin = g.ri(7, 25);
+      const edgeMargin = riFn(7, 25);
       const effectiveNumStutters = numStutters ?? 4; // Default value
       const fullRange = 127 - edgeMargin;
       const centerZone = fullRange / 3;
@@ -111,20 +118,21 @@ class FxManager {
       const rightBoundary = edgeMargin + 2 * centerZone;
       let currentPan = edgeMargin;
       let direction = 1;
-      let tick: number = g.beatStart; // Initialize with default
+      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      let tick: number = beatStartVal; // Initialize with default
 
-      for (let i = Math.floor(effectiveNumStutters * g.rf(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
-        tick = g.beatStart + (i * (duration / effectiveNumStutters) * g.rf(0.9, 1.1));
+      for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
+        tick = beatStartVal + (i * (duration / effectiveNumStutters) * rfFn(0.9, 1.1));
         if (currentPan >= rightBoundary) {
           direction = -1;
         } else if (currentPan <= leftBoundary) {
           direction = 1;
         }
-        currentPan += direction * (fullRange / effectiveNumStutters) * g.rf(0.5, 1.5);
-        currentPan = g.modClamp(Math.floor(currentPan), edgeMargin, 127 - edgeMargin);
+        currentPan += direction * (fullRange / effectiveNumStutters) * rfFn(0.5, 1.5);
+        currentPan = modClampFn(Math.floor(currentPan), edgeMargin, 127 - edgeMargin);
         pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
       }
-      pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
+      pFn(ctx.csvBuffer, { tick: tick + duration * rfFn(0.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
     });
   }
 
@@ -132,13 +140,18 @@ class FxManager {
    * Applies rapid FX parameter stutter effect to selected channels
    */
   stutterFX(channels: number[], ctx: any, numStutters?: number, duration?: number): void {
-    const g = globalThis as any;
-    numStutters = numStutters || g.ri(30, 100);
-    duration = duration || g.tpSec * g.rf(0.1, 2);
+    const state = ctx?.state ?? {} as any;
+    const riFn = ctx?.utils?.ri ?? (globalThis as any).ri ?? ri;
+    const rfFn = ctx?.utils?.rf ?? (globalThis as any).rf ?? rf;
+    const raFn = ctx?.utils?.ra ?? (globalThis as any).ra ?? ra;
+
+    numStutters = numStutters || riFn(30, 100);
+    const tpSec = state.tpSec ?? 1;
+    duration = duration || tpSec * rfFn(0.1, 2);
 
     const pFn = requirePush(ctx);
 
-    const CHsToStutter = g.ri(1, 2);
+    const CHsToStutter = riFn(1, 2);
     const channelsToStutter = new Set<number>();
     const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
 
@@ -157,18 +170,19 @@ class FxManager {
     const channelsArray = Array.from(channelsToStutter);
     channelsArray.forEach((channelToStutter: number) => {
       const effectiveNumStutters = numStutters ?? 4; // Default value
-      const startValue = g.ri(0, 127);
-      const endValue = g.ri(0, 127);
-      const ccParam = g.ra([91, 92, 93, 71, 74]);
-      let tick: number = g.beatStart; // Initialize with default
+      const startValue = riFn(0, 127);
+      const endValue = riFn(0, 127);
+      const ccParam = raFn([91, 92, 93, 71, 74]);
+      const beatStartVal = state.beatStart ?? (globalThis as any).beatStart ?? 0;
+      let tick: number = beatStartVal; // Initialize with default
 
-      for (let i = Math.floor(effectiveNumStutters * g.rf(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
-        tick = g.beatStart + (i * (duration / effectiveNumStutters) * g.rf(0.9, 1.1));
+      for (let i = Math.floor(effectiveNumStutters * rfFn(1 / 3, 2 / 3)); i < effectiveNumStutters; i++) {
+        tick = beatStartVal + (i * (duration / effectiveNumStutters) * rfFn(0.9, 1.1));
         const progress = i / (effectiveNumStutters - 1);
         const currentValue = Math.floor(startValue + (endValue - startValue) * progress);
         pFn(ctx.csvBuffer, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
       }
-      pFn(ctx.csvBuffer, { tick: tick + duration * g.rf(0.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
+      pFn(ctx.csvBuffer, { tick: tick + duration * rfFn(0.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
     });
   }
 

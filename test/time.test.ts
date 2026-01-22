@@ -409,7 +409,7 @@ describe('formatTime', () => {
 
 describe('Timing calculation functions', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     numerator = 4;
     denominator = 4;
@@ -554,7 +554,7 @@ describe('Timing calculation functions', () => {
 
 describe('Integration tests', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
   });
 
@@ -610,7 +610,7 @@ describe('Integration tests', () => {
 
 describe('logUnit', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     numerator = 4;
     denominator = 4;
@@ -892,7 +892,7 @@ describe('End-to-End MIDI Timing', () => {
 
 describe('setMidiTiming', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     ctx.state.numerator = 4;
     ctx.state.denominator = 4;
@@ -961,7 +961,7 @@ describe('setMidiTiming', () => {
 
 describe('getPolyrhythm Edge Cases', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
     ctx.state.numerator = 4;
     ctx.state.denominator = 4;
@@ -1160,7 +1160,7 @@ describe('getPolyrhythm Edge Cases', () => {
 
 describe('Full Timing Hierarchy', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
   });
 
@@ -1242,7 +1242,7 @@ describe('Full Timing Hierarchy', () => {
 
 describe('Polyrhythm Duration Alignment', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     ctx = createTestContext();
   });
 

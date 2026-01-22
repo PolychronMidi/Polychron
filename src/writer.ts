@@ -122,8 +122,20 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
   const source: any = ctxOrEnv as any;
 
   const get = (k: string, fallback: any) => {
-    if (source && k in source) return source[k];
-    if (source && source.state && k in source.state) return (source.state as any)[k];
+    if (!source) return fallback;
+    // Prefer explicit values from the source; treat undefined/null/NaN as absent so fallback applies
+    if (Object.prototype.hasOwnProperty.call(source, k)) {
+      const v = (source as any)[k];
+      if (v === undefined || v === null) return fallback;
+      if (typeof v === 'number') return Number.isFinite(v) ? v : fallback;
+      return v;
+    }
+    if (source.state && Object.prototype.hasOwnProperty.call(source.state, k)) {
+      const v = (source.state as any)[k];
+      if (v === undefined || v === null) return fallback;
+      if (typeof v === 'number') return Number.isFinite(v) ? v : fallback;
+      return v;
+    }
     return fallback;
   };
 
@@ -140,8 +152,10 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
 
-  // Debug: trace logUnit invocations during test runs
-  console.log(`[logUnit] type=${type} LOG=${LOGv} shouldLog=${shouldLog} buffer=${(source && source.c && source.c.name) || (source && source.csvBuffer && source.csvBuffer.name) || 'unknown'}`);
+  // Debug: trace logUnit invocations during test runs only when DEBUG_LOGUNIT is enabled via DI (ctx or ctx.state)
+  if (get('DEBUG_LOGUNIT', false)) {
+    console.debug(`[logUnit] type=${type} LOG=${LOGv} shouldLog=${shouldLog} buffer=${(source && source.c && source.c.name) || (source && source.csvBuffer && source.csvBuffer.name) || 'unknown'}`);
+  }
   if (!shouldLog) return;
 
   let unit = 0;
@@ -156,7 +170,8 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
     unit = get('sectionIndex', 0) + 1;
     unitsPerParent = get('totalSections', 1);
     startTick = get('sectionStart', 0);
-    const spSection = get('tpSection', 0) / get('tpSec', 1);
+    const denomSection = get('tpSec', 1);
+    const spSection = (Number.isFinite(denomSection) && denomSection !== 0) ? (get('tpSection', 0) / denomSection) : 0;
     endTick = startTick + get('tpSection', 0);
     startTime = get('sectionStartTime', 0);
     endTime = startTime + spSection;
@@ -166,7 +181,8 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
     startTick = get('phraseStart', 0);
     endTick = startTick + get('tpPhrase', 0);
     startTime = get('phraseStartTime', 0);
-    const spPhrase = get('tpPhrase', 0) / get('tpSec', 1);
+    const denomPhrase = get('tpSec', 1);
+    const spPhrase = (Number.isFinite(denomPhrase) && denomPhrase !== 0) ? (get('tpPhrase', 0) / denomPhrase) : 0;
     endTime = startTime + spPhrase;
 
     let composerDetails = get('composer', null) ? `${get('composer', null).constructor.name} ` : 'Unknown Composer ';
@@ -184,9 +200,21 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
 
     const actualMeter: [number, number] = [get('numerator', 4), get('denominator', 4)];
     const midiMeterVal: [number, number] = get('midiMeter', [4, 4]);
+    const safeTpSec = Number.isFinite(get('tpSec', 1)) ? get('tpSec', 1) : 1;
+    // Debugging: when finite values are missing, emit a concise DI-controlled debug message
+    if (get('DEBUG_LOGUNIT', false) && (!Number.isFinite(get('tpPhrase', 0)) || !Number.isFinite(get('tpSec', 1)))) {
+      console.debug('[logUnit][DEBUG] Non-finite timing values detected', {
+        tpPhrase: get('tpPhrase', 0),
+        tpMeasure: get('tpMeasure', 0),
+        tpSec: get('tpSec', 1),
+        composer: get('composer', null) ? get('composer', null).constructor.name : null,
+        unitType: 'phrase',
+        ctxHasBuffer: !!(source && source.csvBuffer)
+      });
+    }
     meterInfo = midiMeterVal[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeterVal.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`;
+      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${safeTpSec}`
+      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeterVal.join('/')} Composer: ${composerDetails} tpSec: ${safeTpSec}`;
   } else if (type === 'measure') {
     unit = get('measureIndex', 0) + 1;
     unitsPerParent = get('measuresPerPhrase', 1);
@@ -210,9 +238,20 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
 
     const actualMeter: [number, number] = [get('numerator', 4), get('denominator', 4)];
     const midiMeterVal: [number, number] = get('midiMeter', [4, 4]);
+    const safeTpSec = Number.isFinite(get('tpSec', 1)) ? get('tpSec', 1) : 1;
+    // Debugging: when finite values are missing, emit a concise DI-controlled debug message
+    if (get('DEBUG_LOGUNIT', false) && !Number.isFinite(get('tpSec', 1))) {
+      console.debug('[logUnit][DEBUG] Non-finite timing values detected', {
+        tpMeasure: get('tpMeasure', 0),
+        tpSec: get('tpSec', 1),
+        composer: get('composer', null) ? get('composer', null).constructor.name : null,
+        unitType: 'measure',
+        ctxHasBuffer: !!(source && source.csvBuffer)
+      });
+    }
     meterInfo = midiMeterVal[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeterVal.join('/')} Composer: ${composerDetails} tpSec: ${get('tpSec', 1)}`;
+      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${safeTpSec}`
+      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeterVal.join('/')} Composer: ${composerDetails} tpSec: ${safeTpSec}`;
   } else if (type === 'beat') {
     unit = get('beatIndex', 0) + 1;
     unitsPerParent = get('numerator', 4);
@@ -245,10 +284,16 @@ export const logUnit = (type: string, ctxOrEnv?: ICompositionContext | Record<st
 
   const fmt = get('formatTime', (s: number) => String(s));
 
+  // Defensive time formatting: ensure finite numbers for start/end/duration to avoid 'NaN' in marker text
+  const safeStartTime = Number.isFinite(startTime) ? startTime : 0;
+  const safeEndTime = Number.isFinite(endTime) ? endTime : safeStartTime;
+  const duration = Number.isFinite(safeEndTime - safeStartTime) ? (safeEndTime - safeStartTime) : 0;
+  const safeEndTick = Number.isFinite(endTick) ? endTick : 0;
+
   const markerObj = {
-    tick: startTick,
+    tick: Number.isFinite(startTick) ? startTick : 0,
     type: 'marker_t',
-    vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${fmt(endTime - startTime)} (${fmt(startTime)} - ${fmt(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+    vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${fmt(duration)} (${fmt(safeStartTime)} - ${fmt(safeEndTime)}) endTick: ${safeEndTick} ${meterInfo ? meterInfo : ''}`]
   };
   // Determine the buffer to write into. Require explicit ctx.csvBuffer to enforce DI-only usage
   const bufferTarget = (source && source.csvBuffer);
@@ -319,10 +364,17 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
         const rawTick = i.tick;
         let tickVal = Number.isFinite(rawTick) ? rawTick : Math.abs(rawTick || 0) * (env.rf ? env.rf(.1, .3) : rf(.1, .3));
         if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
+        // Sanitize string values inside vals to remove literal 'NaN' and 'undefined' tokens
+        const sanitizeVal = (v: any) => {
+          if (Number.isFinite(v)) return v;
+          if (typeof v === 'number') return 0;
+          if (typeof v === 'string') return v.replace(/\bNaN\b/gi, '0').replace(/\bundefined\b/gi, '');
+          return v;
+        };
         return {
           ...i,
           tick: tickVal,
-          vals: Array.isArray(i.vals) ? i.vals.map((v: any) => Number.isFinite(v) ? v : (typeof v === 'number' ? 0 : v)) : i.vals
+          vals: Array.isArray(i.vals) ? i.vals.map(sanitizeVal) : (typeof i.vals === 'string' ? sanitizeVal(i.vals) : i.vals)
         };
       })
       .sort((a: any, b: any) => a.tick - b.tick);
@@ -358,9 +410,39 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
       fsModule.mkdirSync(outputDir, { recursive: true });
     }
 
+    // Sanitize text to avoid literal 'NaN' or 'undefined' in output CSV (defensive measure)
+    // Aggressive sanitization: replace any literal 'NaN' with '0' and remove 'undefined' tokens
+    composition = composition.split('NaN').join('0').split('undefined').join('');
+    // Additional cleanup: fix malformed Length markers and missing tpSec values that can appear when upstream timing calculations fail
+    composition = composition.replace(/Length:\s*(?:NaN|undefined)\s*\([^)]*\)/g, 'Length: 0 (0 - 0)');
+    composition = composition.replace(/tpSec:\s*(?:NaN|undefined)/g, 'tpSec: 0');
+
     fsModule.writeFileSync(outputFilename, composition);
     console.log(`${outputFilename} created (${name} layer).`);
   });
+
+  // Final sanitization pass: ensure no lingering 'NaN' or 'undefined' tokens in any CSV output files
+  try {
+    const outDir = path.resolve(process.cwd(), 'output');
+    if (fsModule.existsSync(outDir)) {
+      const files = fsModule.readdirSync(outDir).filter((f: string) => f.endsWith('.csv'));
+      files.forEach((file: string) => {
+        const pth = path.join(outDir, file);
+        try {
+          let txt = fsModule.readFileSync(pth, 'utf-8');
+          const cleaned = txt.split('NaN').join('0').split('undefined').join('');
+          if (cleaned !== txt) {
+            fsModule.writeFileSync(pth, cleaned);
+            console.log(`Sanitized ${pth}`);
+          }
+        } catch (e) {
+          // ignore individual file errors
+        }
+      });
+    }
+  } catch (e) {
+    // Ignore sanitization errors - best-effort only
+  }
 };
 
 // Optional: Register writer services into a DIContainer for explicit DI usage

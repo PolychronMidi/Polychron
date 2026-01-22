@@ -74,6 +74,33 @@ export function createTestContext(overrides?: Partial<ICompositionContext>): ICo
   // Ensure services alias exists
   ctx.services = services as any;
 
+  // Expose `LOG` on ctx so tests can set logging mode in a DI-friendly way.
+  // Setting `ctx.LOG` will propagate to global LOG so `initializePlayEngine` picks it up.
+  let _LOG = 'none';
+  Object.defineProperty(ctx, 'LOG', {
+    configurable: true,
+    enumerable: true,
+    get() { return _LOG; },
+    set(v: any) { _LOG = v; (globalThis as any).LOG = v; }
+  });
+  // Ensure initial global LOG reflects ctx default
+  (globalThis as any).LOG = (ctx as any).LOG;
+
+  // Initialize balance/Fx defaults so tests can assert deltas
+  ctx.state.balOffset = ctx.state.balOffset ?? 0;
+  ctx.state.sideBias = ctx.state.sideBias ?? 0;
+  ctx.state.lBal = ctx.state.lBal ?? 0;
+  ctx.state.rBal = ctx.state.rBal ?? 127;
+  ctx.state.cBal = ctx.state.cBal ?? 64;
+  ctx.state.cBal2 = ctx.state.cBal2 ?? 64;
+  ctx.state.cBal3 = ctx.state.cBal3 ?? 64;
+  ctx.state.bassVar = ctx.state.bassVar ?? 0;
+
+  // Allow tests to enable verbose timing/logUnit debugging via shared test namespace
+  // NOTE: enabled by default during debugging sessions to aid tracing of NaN/undefined
+  ctx.state.DEBUG_LOGUNIT = true;
+  ctx.state.DEBUG_TIME = true;
+
   return ctx;
 }
 
@@ -120,7 +147,7 @@ export function setupGlobalState(): ICompositionContext {
 export function setupTestDefaults(options?: any) {
   const g = globalThis as any;
   options = options || {};
-  setupGlobalState();
+  // setupGlobalState();  this functionis deprecated, use DI only
 
   if (options.smallComposition) {
     g.SECTIONS = { min: 1, max: 1 };

@@ -56,7 +56,7 @@ abstract class GenericComposer<T> extends MeasureComposer {
    * Subclasses inherit this unless they need special logic
    */
   getNotes(octaveRange?: number[] | null): any[] {
-    return g.MeasureComposer.prototype.getNotes.call(this, octaveRange);
+    return MeasureComposer.prototype.getNotes.call(this, octaveRange);
   }
 
   /**
@@ -91,7 +91,7 @@ Returns notes via MeasureComposer logic (voice leading, meter-aware spreads).
 
 ```typescript
 getNotes(octaveRange?: number[] | null): any[] {
-    return g.MeasureComposer.prototype.getNotes.call(this, octaveRange);
+    return MeasureComposer.prototype.getNotes.call(this, octaveRange);
   }
 ```
 

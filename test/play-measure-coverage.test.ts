@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { initializePlayEngine } from '../src/play.js';
-import { setupGlobalState } from './helpers.module.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 
 // Ensure measures are actually produced across the composition run
 describe('Play Engine Measure Coverage', () => {
   it('emits measure markers across multiple measure numbers when LOG=all', async () => {
     // Apply common test defaults to keep runs fast/deterministic (DI-only)
-    const ctx = setupGlobalState();
+    const ctx = createTestContext();
     ctx.LOG = 'all';
     ctx.state.SECTIONS = { min: 1, max: 1 };
 

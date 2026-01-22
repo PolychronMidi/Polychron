@@ -14,11 +14,13 @@ import { ri } from '../utils.js';
 class ScaleComposer extends GenericComposer<any> {
   constructor(scaleName: string, root: string) {
     super('scale', root);
+    this.scale = scaleName; // backward-compatible property expected by tests
     this.itemSet(scaleName, root);
   }
 
   itemSet(scaleName: string, root: string): void {
     this.root = root;
+    this.scale = scaleName;
     this.item = t.Scale.get(`${root} ${scaleName}`);
     this.notes = this.item.notes;
   }

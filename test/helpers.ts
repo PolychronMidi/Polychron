@@ -202,7 +202,7 @@ function setupTestDefaults(options?: any) {
   const g = globalThis as any;
   options = options || {};
   // Ensure legacy globals are initialized for tests that rely on global exposure
-  setupGlobalState();
+  // setupGlobalState();  this functionis deprecated, use DI only
 
   if (options.smallComposition) {
     g.SECTIONS = { min: 1, max: 1 };

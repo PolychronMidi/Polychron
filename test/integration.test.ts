@@ -1,7 +1,7 @@
 // test/integration.test.js - Full pipeline integration tests
 // Tests the complete play.js → stage.js → writer.js → CSV/MIDI flow
 
-import "../dist/sheet.js";import "../dist/backstage.js";import "../dist/venue.js";import "../dist/composers.js";import "../dist/rhythm.js";import "../dist/time.js";import "../dist/stage.js";import "../dist/writer.js";import { setupGlobalState } from './helpers.module.js';const fs = require('fs');
+import "../dist/sheet.js";import "../dist/backstage.js";import "../dist/venue.js";import "../dist/composers.js";import "../dist/rhythm.js";import "../dist/time.js";import "../dist/stage.js";import "../dist/writer.js";import { setupGlobalState, createTestContext } from './helpers.module.js';const fs = require('fs');
 const path = require('path');
 
 describe('Integration: Full Composition Pipeline', () => {
@@ -12,7 +12,7 @@ describe('Integration: Full Composition Pipeline', () => {
 
   beforeEach(() => {
     // Create DI-based test context and reset state
-    ctx = setupGlobalState();
+    ctx = createTestContext();
     ctx.state.c = [];
     ctx.state.c1 = [];
     ctx.state.c2 = [];

@@ -3,6 +3,7 @@
 
 import './backstage.js';
 import './sheet.js';
+import { getPolychronContext } from './PolychronInit.js';
 
 /**
  * Normalized section type
@@ -62,7 +63,8 @@ export const selectSectionType = (): NormalizedSectionType => {
   const types = Array.isArray(g.SECTION_TYPES) && g.SECTION_TYPES.length ? g.SECTION_TYPES : [{ type: 'default' }];
   const normalized = types.map(normalizeSectionType);
   const totalWeight = normalized.reduce((sum: number, t: NormalizedSectionType) => sum + (t.weight || 0), 0) || 1;
-  let pick = g.rf(0, totalWeight);
+  const utils = getPolychronContext().utils;
+  let pick = utils.rf(0, totalWeight);
 
   for (const type of normalized) {
     pick -= (type.weight || 0);
@@ -78,7 +80,8 @@ export const selectSectionType = (): NormalizedSectionType => {
 export const resolveSectionProfile = (sectionType: any = null): SectionProfile => {
   const g = globalThis as any;
   const type = sectionType ? normalizeSectionType(sectionType) : normalizeSectionType(selectSectionType());
-  const phrasesPerSection = g.ri(type.phrasesMin, type.phrasesMax);
+  const utils = getPolychronContext().utils;
+  const phrasesPerSection = utils.ri(type.phrasesMin, type.phrasesMax);
 
   return {
     type: type.type,

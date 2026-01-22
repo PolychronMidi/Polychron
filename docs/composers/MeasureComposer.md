@@ -50,37 +50,41 @@ class MeasureComposer {
 
   getNumerator(): number {
     const { min, max, weights } = NUMERATOR;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
   }
 
   getDenominator(): number {
     const { min, max, weights } = DENOMINATOR;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
   }
 
   getDivisions(): number {
     const { min, max, weights } = DIVISIONS;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
   }
 
   getSubdivisions(): number {
     const { min, max, weights } = SUBDIVISIONS;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
   }
 
   getSubsubdivs(): number {
     const { min, max, weights } = SUBSUBDIVS;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
   }
 
   getVoices(): number {
     const { min, max, weights } = VOICES;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
+  }
+
+  getBpmRatio(): number {
+    return (globalThis as any).bpmRatio ?? 1;
   }
 
   getOctaveRange(): number[] {
     const { min, max, weights } = OCTAVE;
-    let [o1, o2] = [rw(min, max, weights), rw(min, max, weights)];
+    let [o1, o2] = [rw(min, max, weights ?? [1]), rw(min, max, weights ?? [1])];
     while (m.abs(o1 - o2) < ri(2, 3)) {
       o2 = modClamp(o2 + ri(-3, 3), min, max);
     }
@@ -281,7 +285,7 @@ Randomized rhythmic parameters with weighted ranges.
 ```typescript
 getNumerator(): number {
     const { min, max, weights } = NUMERATOR;
-    return m.floor(rw(min, max, weights) * (rf() > 0.5 ? bpmRatio : 1));
+    return m.floor(rw(min, max, weights ?? [1]) * (rf() > 0.5 ? this.getBpmRatio() : 1));
   }
 ```
 
@@ -296,7 +300,7 @@ Picks a spread of octaves with minimum separation.
 ```typescript
 getOctaveRange(): number[] {
     const { min, max, weights } = OCTAVE;
-    let [o1, o2] = [rw(min, max, weights), rw(min, max, weights)];
+    let [o1, o2] = [rw(min, max, weights ?? [1]), rw(min, max, weights ?? [1])];
     while (m.abs(o1 - o2) < ri(2, 3)) {
       o2 = modClamp(o2 + ri(-3, 3), min, max);
     }

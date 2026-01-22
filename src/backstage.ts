@@ -15,6 +15,20 @@ import {
   normalizeWeights, randomWeightedInArray, randomWeightedSelection,
 } from './utils.js';
 
+// Import composers for global assignment
+import {
+  MeasureComposer,
+  ScaleComposer,
+  RandomScaleComposer,
+  ChordComposer,
+  RandomChordComposer,
+  ModeComposer,
+  RandomModeComposer,
+  PentatonicComposer,
+  RandomPentatonicComposer,
+  ProgressionGenerator
+} from './composers/index.js';
+
 const m = Utils.default;
 
 
@@ -213,80 +227,110 @@ export {
 };
 
 // No legacy features should be used anywhere: use DI only
-// export function attachLegacyGlobals(target?: any): void {
-//   const g = target ?? (globalThis as any);
+export function attachLegacyGlobals(target?: any): void {
+  const g = target ?? (globalThis as any);
 
-//   g.flipBinT3 = flipBinT3;
-//   g.stutterFadeCHs = stutterFadeCHs;
-//   g.stutterPanCHs = stutterPanCHs;
-//   g.FX = FX;
+  g.flipBinT3 = flipBinT3;
+  g.stutterFadeCHs = stutterFadeCHs;
+  g.stutterPanCHs = stutterPanCHs;
+  g.FX = FX;
 
-//   // Export critical timing variables needed by composers
-//   g.bpmRatio = bpmRatio;
-//   g.bpmRatio2 = bpmRatio2;
-//   g.bpmRatio3 = bpmRatio3;
-//   g.measureCount = measureCount;
-//   g.numerator = numerator;
-//   g.beatCount = beatCount;
-//   g.beatsUntilBinauralShift = beatsUntilBinauralShift;
-//   g.flipBin = flipBin;
-//   g.binauralFreqOffset = binauralFreqOffset;
-//   g.binauralPlus = binauralPlus;
-//   g.binauralMinus = binauralMinus;
-//   g.cCH1 = cCH1;
-//   g.cCH2 = cCH2;
-//   g.cCH3 = cCH3;
-//   g.lCH1 = lCH1;
-//   g.lCH2 = lCH2;
-//   g.lCH3 = lCH3;
-//   g.lCH4 = lCH4;
-//   g.lCH5 = lCH5;
-//   g.lCH6 = lCH6;
-//   g.rCH1 = rCH1;
-//   g.rCH2 = rCH2;
-//   g.rCH3 = rCH3;
-//   g.rCH4 = rCH4;
-//   g.rCH5 = rCH5;
-//   g.rCH6 = rCH6;
-//   g.allNotesOff = allNotesOff;
-//   g.muteAll = muteAll;
-//   g.rlFX = rlFX;
-//   g.tpSec = tpSec;
-//   g.tpSubsubdiv = tpSubsubdiv;
-//   g.measureStart = measureStart;
-//   g.beatStart = beatStart;
-//   g.divStart = divStart;
-//   g.subdivStart = subdivStart;
-//   g.subsubdivStart = subsubdivStart;
-//   g.subdivsPerDiv = subdivsPerDiv;
+  // Export critical timing variables needed by composers
+  g.bpmRatio = bpmRatio;
+  g.bpmRatio2 = bpmRatio2;
+  g.bpmRatio3 = bpmRatio3;
+  g.measureCount = measureCount;
+  g.numerator = numerator;
+  g.beatCount = beatCount;
+  g.beatsUntilBinauralShift = beatsUntilBinauralShift;
+  g.flipBin = flipBin;
+  g.binauralFreqOffset = binauralFreqOffset;
+  g.binauralPlus = binauralPlus;
+  g.binauralMinus = binauralMinus;
+  g.cCH1 = cCH1;
+  g.cCH2 = cCH2;
+  g.cCH3 = cCH3;
+  g.lCH1 = lCH1;
+  g.lCH2 = lCH2;
+  g.lCH3 = lCH3;
+  g.lCH4 = lCH4;
+  g.lCH5 = lCH5;
+  g.lCH6 = lCH6;
+  g.rCH1 = rCH1;
+  g.rCH2 = rCH2;
+  g.rCH3 = rCH3;
+  g.rCH4 = rCH4;
+  g.rCH5 = rCH5;
+  g.rCH6 = rCH6;
+  g.allNotesOff = allNotesOff;
+  g.muteAll = muteAll;
+  g.rlFX = rlFX;
+  g.tpSec = tpSec;
+  g.tpSubsubdiv = tpSubsubdiv;
+  g.measureStart = measureStart;
+  g.beatStart = beatStart;
+  g.divStart = divStart;
+  g.subdivStart = subdivStart;
+  g.subsubdivStart = subsubdivStart;
+  g.subdivsPerDiv = subdivsPerDiv;
 
-//   // Additional rhythm/timing globals
-//   g.subdivsPerBeat = subdivsPerBeat;
-//   g.subsubdivsPerSub = subsubdivsPerSub;
-//   g.divsPerBeat = divsPerBeat;
-//   g.tuningPitchBend = tuningPitchBend;
-//   g.velocity = velocity;
-//   g.beatRhythm = beatRhythm;
-//   g.divRhythm = divRhythm;
-//   g.subdivRhythm = subdivRhythm;
-//   g.subsubdivRhythm = subsubdivRhythm;
-//   g.beatsOn = beatsOn;
-//   g.beatsOff = beatsOff;
-//   g.divsOn = divsOn;
-//   g.divsOff = divsOff;
-//   g.subdivsOn = subdivsOn;
-//   g.subdivsOff = subdivsOff;
+  // Additional rhythm/timing globals
+  g.subdivsPerBeat = subdivsPerBeat;
+  g.subsubdivsPerSub = subsubdivsPerSub;
+  g.divsPerBeat = divsPerBeat;
+  g.tuningPitchBend = tuningPitchBend;
+  g.velocity = velocity;
+  g.beatRhythm = beatRhythm;
+  g.divRhythm = divRhythm;
+  g.subdivRhythm = subdivRhythm;
+  g.subsubdivRhythm = subsubdivRhythm;
+  g.beatsOn = beatsOn;
+  g.beatsOff = beatsOff;
+  g.divsOn = divsOn;
+  g.divsOff = divsOff;
+  g.subdivsOn = subdivsOn;
+  g.subdivsOff = subdivsOff;
 
-//   // Core helpers commonly referenced by legacy code
-//   g.m = m;
-//   g.clamp = clamp;
-//   g.modClamp = modClamp;
-//   g.rf = rf;
-//   g.ri = ri;
-//   g.rv = rv;
-//   g.rw = rw;
-//   g.ra = ra;
-//   g.randomWeightedSelection = randomWeightedSelection;
-// }
-// legacy g.* assignments moved into attachLegacyGlobals() above
-// to avoid top-level side-effects during module initialization.
+  // Core helpers commonly referenced by legacy code
+  g.m = m;
+  g.clamp = clamp;
+  g.modClamp = modClamp;
+  g.lowModClamp = lowModClamp;
+  g.highModClamp = highModClamp;
+  g.scaleClamp = scaleClamp;
+  g.scaleBoundClamp = scaleBoundClamp;
+  g.softClamp = softClamp;
+  g.stepClamp = stepClamp;
+  g.logClamp = logClamp;
+  g.expClamp = expClamp;
+  g.rf = rf;
+  g.randomFloat = randomFloat;
+  g.ri = ri;
+  g.randomInt = randomInt;
+  g.rl = rl;
+  g.randomLimitedChange = randomLimitedChange;
+  g.rv = rv;
+  g.randomVariation = randomVariation;
+  g.rw = rw;
+  g.randomWeightedInRange = randomWeightedInRange;
+  g.ra = ra;
+  g.randomInRangeOrArray = randomInRangeOrArray;
+  g.normalizeWeights = normalizeWeights;
+  g.randomWeightedInArray = randomWeightedInArray;
+  g.randomWeightedSelection = randomWeightedSelection;
+
+  // Assign composers to globalThis for legacy compatibility
+  g.MeasureComposer = MeasureComposer;
+  g.ScaleComposer = ScaleComposer;
+  g.RandomScaleComposer = RandomScaleComposer;
+  g.ChordComposer = ChordComposer;
+  g.RandomChordComposer = RandomChordComposer;
+  g.ModeComposer = ModeComposer;
+  g.RandomModeComposer = RandomModeComposer;
+  g.PentatonicComposer = PentatonicComposer;
+  g.RandomPentatonicComposer = RandomPentatonicComposer;
+  g.ProgressionGenerator = ProgressionGenerator;
+}
+
+// Legacy global attachment removed to enforce DI-only usage in the project
+// Tests and consumers should obtain utilities and constants via DI, imports, or PolychronContext.

@@ -4,38 +4,14 @@
 // Import rhythm pattern utilities
 import * as RhythmPattern from '@tonaljs/rhythm-pattern';
 import { ICompositionContext } from './CompositionContext.js';
-import m, { rf, ra, ri, rv, rw, randomWeightedSelection, clamp, isTestLoggingEnabled } from './backstage.js';
+import { m, rf, ra, ri, rv, rw, randomWeightedSelection, clamp, isTestLoggingEnabled, drumCH } from './backstage.js';
 
-declare function isTestLoggingEnabled(): boolean; // test logging helper (attached by tests via attachLegacyGlobals)
+// Global/runtime variables that should be accessed via ctx.state when possible
+// Fallback defaults used when ctx.state doesn't provide values
+const DEFAULT_BEAT_START = 0;
+const DEFAULT_TP_BEAT = 480; // PPQ default
+const DEFAULT_DRUM_CH = drumCH ?? 9; // imported constant as fallback
 
-// Global variables from the composition system
-declare const c: number; // MIDI channel
-declare let beatStart: number;
-declare let tpBeat: number; // ticks per beat
-declare let drumCH: number;
-declare let beatIndex: number;
-declare let beatRhythm: number[];
-declare let numerator: number;
-declare let measuresPerPhrase: number;
-declare let bpmRatio: number;
-declare let bpmRatio3: number;
-declare let divsPerBeat: number;
-declare let divIndex: number;
-declare let divRhythm: number[];
-declare let subdivsPerDiv: number;
-declare let subdivIndex: number;
-declare let subdivRhythm: number[];
-declare let subsubdivsPerSub: number;
-declare let subsubdivIndex: number;
-declare let subsubdivRhythm: number[];
-declare let beatsOn: number;
-declare let beatsOff: number;
-declare let divsOn: number;
-declare let divsOff: number;
-declare let subdivsOn: number;
-declare let subdivsOff: number;
-declare let subsubdivsOn: number;
-declare let subsubdivsOff: number;
 
 /**
  * Type for drum configuration
@@ -136,9 +112,9 @@ export const drummer = (
   const combined: Array<{ drum: string; offset: number }> = drums.map((drum, index) => ({ drum, offset: offsets[index] }));
 
   const state = ctx ? (ctx.state as any) : undefined;
-  const beatStartLocal = state?.beatStart ?? beatStart;
-  const tpBeatLocal = state?.tpBeat ?? tpBeat;
-  const localDrumCH = state?.drumCH ?? drumCH;
+  const beatStartLocal = state?.beatStart ?? DEFAULT_BEAT_START;
+  const tpBeatLocal = state?.tpBeat ?? DEFAULT_TP_BEAT;
+  const localDrumCH = state?.drumCH ?? DEFAULT_DRUM_CH;
 
   if (isTestLoggingEnabled()) console.log('[drummer] combined prepared');
 

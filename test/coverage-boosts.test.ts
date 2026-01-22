@@ -149,7 +149,7 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
     let ctx: ICompositionContext;
     beforeEach(() => {
       ctx = createTestContext();
-      setupGlobalState();
+      // setupGlobalState();  this functionis deprecated, use DI only
     });
 
     it('should handle context with minimal state', () => {
@@ -176,43 +176,51 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
 
   describe('Edge case coverage for utils', () => {
     beforeEach(() => {
-      setupGlobalState();
+      // setupGlobalState();  this functionis deprecated, use DI only
+      initializePolychronContext();
     });
 
     it('should handle clamp with equal min/max', () => {
-      const result = globalThis.clamp(5, 10, 10);
+      const utils = getPolychronContext().utils;
+      const result = utils.clamp(5, 10, 10);
       expect(result).toBe(10);
     });
 
     it('should handle randomInt with same min/max', () => {
-      const result = globalThis.ri(5, 5);
+      const utils = getPolychronContext().utils;
+      const result = utils.ri(5, 5);
       expect(result).toBe(5);
     });
 
     it('should handle randomFloat with same min/max', () => {
-      const result = globalThis.rf(5, 5);
+      const utils = getPolychronContext().utils;
+      const result = utils.rf(5, 5);
       expect(result).toBe(5);
     });
 
     it('should handle randomVariation with 0', () => {
-      const result = globalThis.rv(0);
+      const utils = getPolychronContext().utils;
+      const result = utils.rv(0);
       expect(typeof result).toBe('number');
     });
 
     it('should handle randomLimitedChange with zero range', () => {
-      const result = globalThis.rl(50, 0, 0, 0, 100);
+      const utils = getPolychronContext().utils;
+      const result = utils.rl(50, 0, 0, 0, 100);
       expect(result).toBe(50);
     });
 
 
 
     it('should handle randomInRangeOrArray with single element', () => {
-      const result = globalThis.ra([42]);
+      const utils = getPolychronContext().utils;
+      const result = utils.ra([42]);
       expect(result).toBe(42);
     });
 
     it('should handle randomInRangeOrArray with number range', () => {
-      const result = globalThis.ra([10, 20]);
+      const utils = getPolychronContext().utils;
+      const result = utils.ra([10, 20]);
       // When given array with 2 numbers, could be treated as range or array
       expect(typeof result).toBe('number');
     });
@@ -220,64 +228,73 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
 
   describe('Conditional branch coverage', () => {
     beforeEach(() => {
-      setupGlobalState();
+      // setupGlobalState();  this functionis deprecated, use DI only
+      initializePolychronContext();
     });
 
     it('should handle modClamp with result at boundary', () => {
-      // Test modClamp boundary conditions
-      const result = globalThis.modClamp(10, 0, 10);
+      const utils = getPolychronContext().utils;
+      const result = utils.modClamp(10, 0, 10);
       expect(result).toBeDefined();
       expect(typeof result).toBe('number');
     });
 
     it('should handle highModClamp', () => {
-      const result = globalThis.highModClamp(150, 120, 180);
+      const utils = getPolychronContext().utils;
+      const result = utils.highModClamp(150, 120, 180);
       expect(typeof result).toBe('number');
       expect(result).toBeGreaterThanOrEqual(120);
       expect(result).toBeLessThanOrEqual(180);
     });
 
     it('should handle lowModClamp', () => {
-      const result = globalThis.lowModClamp(50, 20, 80);
+      const utils = getPolychronContext().utils;
+      const result = utils.lowModClamp(50, 20, 80);
       expect(typeof result).toBe('number');
       expect(result).toBeGreaterThanOrEqual(20);
       expect(result).toBeLessThanOrEqual(80);
     });
 
     it('should handle expClamp', () => {
-      const result = globalThis.expClamp(50, 0, 100);
+      const utils = getPolychronContext().utils;
+      const result = utils.expClamp(50, 0, 100);
       expect(typeof result).toBe('number');
     });
 
     it('should handle logClamp', () => {
-      const result = globalThis.logClamp(50, 0, 100);
+      const utils = getPolychronContext().utils;
+      const result = utils.logClamp(50, 0, 100);
       expect(typeof result).toBe('number');
     });
 
     it('should handle scaleClamp', () => {
-      const result = globalThis.scaleClamp(50, 0, 100, 2);
+      const utils = getPolychronContext().utils;
+      const result = utils.scaleClamp(50, 0, 100, 2);
       expect(typeof result).toBe('number');
     });
 
     it('should handle softClamp', () => {
-      const result = globalThis.softClamp(5, 0, 10);
+      const utils = getPolychronContext().utils;
+      const result = utils.softClamp(5, 0, 10);
       expect(typeof result).toBe('number');
     });
 
     it('should handle scaleBoundClamp', () => {
-      const result = globalThis.scaleBoundClamp(50, 0, 100, 1.5);
+      const utils = getPolychronContext().utils;
+      const result = utils.scaleBoundClamp(50, 0, 100, 1.5);
       expect(typeof result).toBe('number');
     });
 
     it('should handle stepClamp', () => {
-      const result = globalThis.stepClamp(55, 0, 100, 10);
+      const utils = getPolychronContext().utils;
+      const result = utils.stepClamp(55, 0, 100, 10);
       expect(typeof result).toBe('number');
     });
   });
 
   describe('Additional critical branch coverage', () => {
     beforeEach(() => {
-      setupGlobalState();
+      // setupGlobalState();  this functionis deprecated, use DI only
     });
 
     it('should execute PolychronContext initialization path', () => {
@@ -385,34 +402,40 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
     });
 
     it('should handle randomInt edge cases', () => {
-      expect(globalThis.ri(0, 0)).toBe(0);
-      expect(globalThis.ri(1, 1)).toBe(1);
-      expect(globalThis.ri(10, 10)).toBe(10);
+      const utils = getPolychronContext().utils;
+      expect(utils.ri(0, 0)).toBe(0);
+      expect(utils.ri(1, 1)).toBe(1);
+      expect(utils.ri(10, 10)).toBe(10);
     });
 
     it('should handle randomFloat edge cases', () => {
-      expect(Math.abs(globalThis.rf(0, 0))).toBeLessThan(0.001);
-      expect(Math.abs(globalThis.rf(5, 5) - 5)).toBeLessThan(0.001);
+      const utils = getPolychronContext().utils;
+      expect(Math.abs(utils.rf(0, 0))).toBeLessThan(0.001);
+      expect(Math.abs(utils.rf(5, 5) - 5)).toBeLessThan(0.001);
     });
 
     it('should handle clamp with inverted bounds', () => {
       // Even with inverted bounds, clamp should work
-      const val1 = globalThis.clamp(5, 10, 0);
+      const utils = getPolychronContext().utils;
+      const val1 = utils.clamp(5, 10, 0);
       expect(typeof val1).toBe('number');
     });
 
     it('should handle modClamp with negative values', () => {
-      const result = globalThis.modClamp(-5, 0, 9);
+      const utils = getPolychronContext().utils;
+      const result = utils.modClamp(-5, 0, 9);
       expect(result).toBeDefined();
     });
 
     it('should handle randomVariation with negative values', () => {
-      const result = globalThis.rv(-50);
+      const utils = getPolychronContext().utils;
+      const result = utils.rv(-50);
       expect(typeof result).toBe('number');
     });
 
     it('should handle randomLimitedChange with negative range', () => {
-      const result = globalThis.rl(50, -10, -5, 0, 100);
+      const utils = getPolychronContext().utils;
+      const result = utils.rl(50, -10, -5, 0, 100);
       expect(result).toBeGreaterThanOrEqual(40);
       expect(result).toBeLessThanOrEqual(45);
     });
@@ -442,22 +465,24 @@ describe('Coverage Boosts: Phase 3 Branch Coverage', () => {
 
     it('should support velocity randomization', () => {
       const baseVelocity = 100;
-      const varied = globalThis.rv(baseVelocity);
+      const varied = getPolychronContext().utils.rv(baseVelocity);
       expect(typeof varied).toBe('number');
       expect(varied).toBeGreaterThan(0);
     });
 
     it('should handle array/range ambiguity in randomInRangeOrArray', () => {
-      const result1 = globalThis.ra([30, 40, 50]);
-      const result2 = globalThis.ra([100, 110]);
+      const utils = getPolychronContext().utils;
+      const result1 = utils.ra([30, 40, 50]);
+      const result2 = utils.ra([100, 110]);
       expect([30, 40, 50]).toContain(result1);
       expect([100, 110]).toContain(result2);
     });
 
     it('should support clamping in all dimensions', () => {
-      expect(globalThis.clamp(50, 0, 100)).toBe(50);
-      expect(globalThis.clamp(-10, 0, 100)).toBe(0);
-      expect(globalThis.clamp(150, 0, 100)).toBe(100);
+      const utils = getPolychronContext().utils;
+      expect(utils.clamp(50, 0, 100)).toBe(50);
+      expect(utils.clamp(-10, 0, 100)).toBe(0);
+      expect(utils.clamp(150, 0, 100)).toBe(100);
     });
   });
 });

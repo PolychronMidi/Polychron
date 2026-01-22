@@ -353,6 +353,8 @@ describe('FxManager', () => {
         // Clear and run with beatStart = 480 (one beat later)
         ctx.csvBuffer.clear();
         g.beatStart = 480;
+        // Ensure ctx.state does not override global beatStart during test
+        ctx.state.beatStart = undefined;
         fxManager.stutterFade([1], ctx, 3, 480);
         const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
 
@@ -371,6 +373,8 @@ describe('FxManager', () => {
 
         ctx.csvBuffer.clear();
         g.beatStart = 480;
+        // Ensure ctx.state does not override global beatStart during test
+        ctx.state.beatStart = undefined;
         fxManager.stutterPan([2], ctx, 3, 480);
         const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
 
@@ -389,6 +393,8 @@ describe('FxManager', () => {
 
         ctx.csvBuffer.clear();
         g.beatStart = 480;
+        // Ensure ctx.state does not override global beatStart during test
+        ctx.state.beatStart = undefined;
         fxManager.stutterFX([3], ctx, 3, 480);
         const ticksB = ctx.csvBuffer.rows.map((r: any) => Math.round(r.tick));
 

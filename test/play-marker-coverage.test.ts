@@ -1,17 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import { initializePlayEngine } from '../src/play.js';
-import { setupGlobalState } from './helpers.module.js';
+import { setupGlobalState, createTestContext } from './helpers.module.js';
 
 // Integration test: verify marker_t entries exist for all timing units
 describe('Play Engine Marker Coverage', () => {
   it('emits marker_t for each timing unit when LOG=all', async () => {
     // Use DI-only test defaults
-    const ctx = setupGlobalState();
+    const ctx = createTestContext();
     ctx.LOG = 'all';
     ctx.state.SECTIONS = { min: 1, max: 1 };
 
     // Run a short composition
-    await initializePlayEngine();
+    // Silence console output during engine run to avoid printing millions of rows (tests should be quiet)
+    const _realLog = console.log;
+    const _realDebug = console.debug;
+    const _realWarn = console.warn;
+    console.log = () => {};
+    console.debug = () => {};
+    console.warn = () => {};
+    try {
+      await initializePlayEngine();
+    } finally {
+      console.log = _realLog;
+      console.debug = _realDebug;
+      console.warn = _realWarn;
+    }
 
     const g = globalThis as any;
     // Collect buffers from all layers to avoid false negatives when markers are split across layers
@@ -63,5 +76,5 @@ describe('Play Engine Marker Coverage', () => {
         expect(lastTick).toBeGreaterThanOrEqual(firstTick);
       }
     });
-  });
+  }, 120000);
 });

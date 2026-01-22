@@ -44,9 +44,9 @@ class ChordComposer extends GenericComposer<any> {
     super('chord', 'C');
 
     const t = (deps && deps.t) || tonal;
-    const ri = (deps && deps.ri) || g.ri;
+    const riLocal = (deps && deps.ri) || ri;
     const allChordsLocal = (deps && deps.allChords) || allChords;
-    const m = (deps && deps.m) || g.m;
+    const mLocal = (deps && deps.m) || m;
 
     // Normalize chord names (C -> Cmajor)
     const normalizedProgression = progression.map(chord => {
@@ -91,9 +91,9 @@ class ChordComposer extends GenericComposer<any> {
     this.currentChordIndex = 0;
     this.direction = 'R';
     this._t = t;
-    this._ri = ri;
+    this._ri = riLocal;
     this._allChords = allChordsLocal;
-    this._m = m;
+    this._m = mLocal;
 
     // Set initial notes from first chord
     this.setChordProgression(validProgression, 'R');
@@ -281,8 +281,8 @@ class RandomChordComposer extends ChordComposer {
   _allChords: string[];
 
   constructor(deps?: { ri?: any; allChords?: string[] }) {
-    const ri = (deps && deps.ri) || g.ri;
-    const allChords = (deps && deps.allChords) || g.allChords;
+    const riLocal = (deps && deps.ri) || ri;
+    const allChordsLocal = (deps && deps.allChords) || allChords;
 
     const len = ri(2, 5);
     const progression: string[] = [];
@@ -290,8 +290,8 @@ class RandomChordComposer extends ChordComposer {
       let chord;
       let attempts = 0;
       do {
-        const index = ri(allChords.length - 1);
-        chord = allChords[index];
+        const index = riLocal(allChordsLocal.length - 1);
+        chord = allChordsLocal[index];
         attempts++;
         // Give up after 10 attempts and use a fallback
         if (attempts > 10) {
@@ -309,21 +309,21 @@ class RandomChordComposer extends ChordComposer {
       progression.push('Cmaj');
     }
     super(progression, deps);
-    this._ri = ri;
-    this._allChords = allChords;
+    this._ri = riLocal;
+    this._allChords = allChordsLocal;
   }
 
   regenerateProgression(): void {
-    const ri = this._ri || g.ri;
-    const allChords = this._allChords || allChords;
-    const len = ri(2, 5);
+    const riLocal = this._ri || ri;
+    const allChordsLocal = this._allChords || allChords;
+    const len = riLocal(2, 5);
     const progression: string[] = [];
     for (let i = 0; i < len; i++) {
       let chord;
       let attempts = 0;
       do {
-        const index = ri(allChords.length - 1);
-        chord = allChords[index];
+        const index = riLocal(allChordsLocal.length - 1);
+        chord = allChordsLocal[index];
         attempts++;
         // Give up after 10 attempts and use a fallback
         if (attempts > 10) {
@@ -362,16 +362,16 @@ Build a new random progression, reset index, compose, and advance.
 
 ```typescript
 regenerateProgression(): void {
-    const ri = this._ri || g.ri;
-    const allChords = this._allChords || allChords;
-    const len = ri(2, 5);
+    const riLocal = this._ri || ri;
+    const allChordsLocal = this._allChords || allChords;
+    const len = riLocal(2, 5);
     const progression: string[] = [];
     for (let i = 0; i < len; i++) {
       let chord;
       let attempts = 0;
       do {
-        const index = ri(allChords.length - 1);
-        chord = allChords[index];
+        const index = riLocal(allChordsLocal.length - 1);
+        chord = allChordsLocal[index];
         attempts++;
         // Give up after 10 attempts and use a fallback
         if (attempts > 10) {

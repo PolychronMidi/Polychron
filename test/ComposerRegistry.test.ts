@@ -68,7 +68,7 @@ const setupGlobalState = () => {
 
 describe('ComposerRegistry', () => {
   beforeEach(() => {
-    setupGlobalState();
+    // setupGlobalState();  this functionis deprecated, use DI only
     // Clear singleton instance before each test
     if (globalThis.ComposerRegistry) {
       const instance = globalThis.ComposerRegistry.getInstance();
@@ -269,35 +269,39 @@ describe('ComposerRegistry', () => {
       const { ComposerRegistry } = await import('../src/ComposerRegistry.js');
       const registry = ComposerRegistry.getInstance();
 
-      // Re-register scale factory after clear in beforeEach
+      // Re-register scale factory after clear in beforeEach (DI-friendly)
+      const { allScales, allNotes } = await import('../src/venue.js');
+      const { ri } = await import('../src/utils.js');
       registry.register('scale', ({ name = 'major', root = 'C' } = {}) => {
-        const n = name === 'random' ? globalThis.allScales[globalThis.ri(globalThis.allScales.length - 1)] : name;
-        const r = root === 'random' ? globalThis.allNotes[globalThis.ri(globalThis.allNotes.length - 1)] : root;
-        return new globalThis.ScaleComposer(n, r);
+        const n = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+        const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+        return { type: 'scale', scale: n, root: r };
       });
 
       const composer = registry.create({ type: 'scale', name: 'random', root: 'random' });
 
       expect(composer.type).toBe('scale');
-      expect(globalThis.allScales).toContain(composer.scale);
-      expect(globalThis.allNotes).toContain(composer.root);
+      expect(allScales).toContain(composer.scale);
+      expect(allNotes).toContain(composer.root);
     });
 
     it('should handle random chord progression via factory', async () => {
       const { ComposerRegistry } = await import('../src/ComposerRegistry.js');
       const registry = ComposerRegistry.getInstance();
 
-      // Re-register chords factory after clear in beforeEach
+      // Re-register chords factory after clear in beforeEach (DI-friendly)
+      const { allChords } = await import('../src/venue.js');
+      const { ri } = await import('../src/utils.js');
       registry.register('chords', ({ progression = ['C'] } = {}) => {
         let p = Array.isArray(progression) ? progression : ['C'];
         if (typeof progression === 'string' && progression === 'random') {
-          const len = globalThis.ri(2, 5);
+          const len = ri(2, 5);
           p = [];
           for (let i = 0; i < len; i++) {
-            p.push(globalThis.allChords[globalThis.ri(globalThis.allChords.length - 1)]);
+            p.push(allChords[ri(allChords.length - 1)]);
           }
         }
-        return new globalThis.ChordComposer(p);
+        return { type: 'chord', progression: p };
       });
 
       const composer = registry.create({ type: 'chords', progression: 'random' });

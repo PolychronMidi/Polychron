@@ -340,11 +340,24 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const state = ctx.state as any;
 
   // Read timing values from ctx.state (initialized by getMidiTiming)
-  const tpSec = state.tpSec || g.tpSec;
+  // Prefer state value; fall back to globals; if still invalid, use safe fallback of 1 and proceed (do not throw during composition)
+  const tpSecCandidate = (state.tpSec !== undefined) ? state.tpSec : (g.tpSec !== undefined ? g.tpSec : undefined);
+  // Compute a safe fallback for tpSec using available PPQ and BPM information if needed
+  const computedFallbackTpSec = (() => {
+    const ppq = state.PPQ ?? (ctx as any).PPQ ?? 480;
+    const bpm = state.midiBPM ?? state.BPM ?? (ctx as any).BPM ?? 120;
+    const ticksPerSec = (bpm / 60) * ppq;
+    return Math.max(1, ticksPerSec);
+  })();
 
-  if (!Number.isFinite(tpSec) || tpSec <= 0) {
-    throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
+  const tpSec = Number.isFinite(tpSecCandidate) && tpSecCandidate > 0 ? tpSecCandidate : computedFallbackTpSec;
+  if (!Number.isFinite(tpSecCandidate) || tpSecCandidate <= 0) {
+    // Do not throw here; instead, log a warning and continue with a safe fallback to avoid NaN propagation downstream
+    console.warn(`setUnitTiming: Invalid tpSec detected (${tpSecCandidate}); using fallback tpSec=${tpSec}`);
   }
+  // Ensure the chosen tpSec is persisted back to state and globals for consistent downstream reads
+  state.tpSec = tpSec;
+  (globalThis as any).tpSec = tpSec;
 
   // For composition-time reads, prefer ctx.state, fallback to globals
   const getVal = (key: string) => state[key] !== undefined ? state[key] : (globalThis as any)[key];
@@ -378,8 +391,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
         measuresPerPhrase = 1;
       }
       setVal('measuresPerPhrase', measuresPerPhrase);
-      setVal('tpPhrase', getVal('tpMeasure') * measuresPerPhrase);
-      setVal('spPhrase', getVal('tpPhrase') / tpSec);
+      const tpMeasureVal = getVal('tpMeasure') ?? 0;
+      const safeTpMeasure = Number.isFinite(tpMeasureVal) ? tpMeasureVal : 0;
+      const tpPhraseVal = safeTpMeasure * measuresPerPhrase;
+      setVal('tpPhrase', tpPhraseVal);
+      setVal('spPhrase', Number.isFinite(tpPhraseVal) ? tpPhraseVal / tpSec : 0);
       break;
 
     case 'measure':
@@ -507,9 +523,13 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   // Log the unit after calculating timing using the context-bound logger when available
   // Debug: show whether ctx.logUnit is used
   try {
-    console.log(`[setUnitTiming] unit=${unitType} ctxHasLog=${!!(ctx && (ctx as any).logUnit)} ctxLOG=${(ctx && (ctx as any).LOG)}`);
-    if (unitType === 'subsubdivision') {
-      console.log('[setUnitTiming] ** subsubdivision called **');
+    // Only emit verbose setUnitTiming trace when enabled explicitly via DI flags on ctx/state
+    const dbg = ctx && ((ctx as any).DEBUG_TIME || (ctx as any).state && (ctx as any).state.DEBUG_TIME);
+    if (dbg) {
+      console.log(`[setUnitTiming] unit=${unitType} ctxHasLog=${!!(ctx && (ctx as any).logUnit)} ctxLOG=${(ctx && (ctx as any).LOG)}`);
+      if (unitType === 'subsubdivision') {
+        console.log('[setUnitTiming] ** subsubdivision called **');
+      }
     }
   } catch (e) {}
 

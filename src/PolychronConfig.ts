@@ -120,7 +120,7 @@ export const DEFAULT_CONFIG: PolychronConfig = {
   },
 
   // Timing and MIDI
-  ppq: 30000,
+  ppq: 480,
   bpm: 72,
 
   // Musical parameters
