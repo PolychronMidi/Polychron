@@ -16,7 +16,7 @@ if (!fs.existsSync(todoPath)) {
 }
 
 console.log('\nQuick onboarding checklist:');
-console.log('- Run `npm run todo` to create a TODO if none exists');
-console.log('- Implement your task and add timestamped notes to TODO.md');
-console.log('- Run `npm run test` and `npm run docs:check` locally');
-console.log('- Run `npm run am-i-done` before reporting completion');
+console.log('- Review and follow RULES.md religiously');
+console.log('- Add all discussed tasks to TODO.md, tracking updates according to RULES.md');
+console.log('- Run `npm run test` after major changes, avoiding repeat test runs instead of parsing /logs');
+console.log('- Only when all tasks are done, run `npm run am-i-done` before reporting progress outside of TODO.md');

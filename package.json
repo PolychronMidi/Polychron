@@ -54,7 +54,7 @@
     "docs:check": "node scripts/docs.js check",
     "docs:index": "node scripts/docs.js index",
     "docs:status": "node scripts/docs.js status",
-    "onboardE": "node scripts/onboard.js",
+    "onboard": "node scripts/onboard.js",
     "todo": "node scripts/new-todo.js",
     "am-i-done": "node scripts/am-i-done.js",
     "prepare": "husky install"
