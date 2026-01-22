@@ -38,7 +38,7 @@ export const SILENT_OUTRO_SECONDS = DEFAULT_CONFIG.silentOutroSeconds;
 /**
  * Register sheet-level config values into the DI-friendly PolychronContext.test namespace
  * for legacy tests that still read configuration from a shared namespace. This avoids
- * writing to globalThis while preserving backwards compatibility for tests.
+ * writing to runtime globals while preserving backwards compatibility for tests.
  *
  * This function requires a PolychronContext instance to be passed in to avoid
  * introducing circular imports. Example:

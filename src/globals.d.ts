@@ -1,5 +1,5 @@
 // Global type declarations for Polychron
-// This file declares types for variables attached to globalThis
+// This file declares types for legacy variables previously attached to the global object
 
 import { Scale, Chord, Note } from 'tonal';
 

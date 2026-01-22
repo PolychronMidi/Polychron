@@ -43,11 +43,11 @@ export const LayerManager = {
     // the active buffer continue to work.
     const prevTestC = typeof poly.test?.c !== 'undefined' ? poly.test.c : undefined;
     try {
-      // Keep DI-friendly test namespace in sync (no globalThis writes)
+      // Keep DI-friendly test namespace in sync (no global object writes)
       poly.test = poly.test || {} as any;
       poly.test.c = buf;
       if (typeof setupFn === 'function') setupFn(state, buf);
-    } catch (e) {
+    } catch (_e) {
       // Ignore setup errors
     }
 
@@ -155,7 +155,7 @@ export const LayerManager = {
       layer.state.advanceSection();
     }
 
-    // Restore advanced state back into the test namespace so they stay in sync (no globalThis)
+    // Restore advanced state back into the test namespace so they stay in sync (no runtime global writes)
     layer.state.restoreTo(gAny);
   },
 };

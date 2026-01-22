@@ -9,7 +9,6 @@ import { getPolychronContext } from './PolychronInit.js';
  * Configuration object passed to composer constructors
  */
 const poly = getPolychronContext();
-const g = poly.test || {} as any;
 
 export interface ComposerConfig {
   type: string;
@@ -120,7 +119,7 @@ export class ComposerRegistry {
   private registerDefaults(): void {
     // Use DI sources for composer constructors and data arrays
     // Import composers and venue data synchronously (safe despite circular imports)
-    // This avoids relying on legacy globalThis fallbacks
+    // This avoids relying on legacy runtime global fallbacks
     const ScaleComposer = Composers.ScaleComposer;
     const ChordComposer = Composers.ChordComposer;
     const ModeComposer = Composers.ModeComposer;
@@ -211,7 +210,7 @@ export class ComposerRegistry {
 }
 
 
-// Expose on PolychronContext.test for legacy compatibility (do NOT write to globalThis)
+// Expose on PolychronContext.test for legacy compatibility (do NOT write to the real global object)
 poly.test = poly.test || {};
 poly.test.ComposerRegistry = ComposerRegistry;
 

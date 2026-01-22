@@ -87,7 +87,7 @@ export function initializePolychronContext(): IPolychronContext {
 
   // ============================================================
   // POPULATE TEST NAMESPACE (test-only state)
-  // Use DI-friendly setter to avoid globalThis reliance
+  // Use DI-friendly setter to avoid runtime global reliance
   // ============================================================
   PolychronContext.test = {};
 
@@ -97,7 +97,7 @@ export function initializePolychronContext(): IPolychronContext {
   PolychronContext.initialized = true;
 
   // Register sheet-level configuration for legacy test compatibility
-  // without writing to globalThis
+  // without writing to the real global object
   try {
     registerSheetConfig(PolychronContext);
   } catch (e) {

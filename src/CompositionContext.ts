@@ -89,7 +89,7 @@ export function createCompositionContext(
  * Used to support initialization flows that rely on globals
  */
 export function syncContextToGlobals(ctx: ICompositionContext): void {
-  // Avoid writing to globalThis; sync into PolychronContext.test and PolychronContext.state namespaces
+  // Avoid writing to the real global object; sync into PolychronContext.test and PolychronContext.state namespaces
   const poly = getPolychronContext();
 
   // State

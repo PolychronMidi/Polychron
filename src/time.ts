@@ -110,7 +110,6 @@ let timingCalculator: TimingCalculator | null = null;
  * Also writes to timing tree for observability.
  */
 const getMidiTiming = (ctx: ICompositionContext): [number, number] => {
-  const g = globalThis as any;
   const state = ctx.state as any;
 
   const bpm = ctx.BPM;
@@ -229,7 +228,6 @@ const syncStateToGlobals = (ctx: ICompositionContext): void => {
  * Recalculates meter ratios when sync alignment cannot be achieved.
  */
 const getPolyrhythm = (ctx: ICompositionContext): void => {
-  const g = globalThis as any;
   const state = ctx.state as any;
   // Read from state first (getPolyrhythm is called before syncStateToGlobals)
   const getVal = (key: string) => state[key] !== undefined ? state[key] : getPolychronContext().state?.[key];
@@ -527,7 +525,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
         console.log('[setUnitTiming] ** subsubdivision called **');
       }
     }
-  } catch (e) {}
+  } catch (_e) {}
 
   if (ctx && (ctx as any).logUnit && typeof (ctx as any).logUnit === 'function') {
     (ctx as any).logUnit(unitType);
@@ -550,4 +548,4 @@ const formatTime = (seconds: number): string => {
 export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateToGlobals, formatTime };
 
 // No global exposures: prefer DI and direct imports for testing and runtime.
-// Test helper: LayerManager should be obtained via DI (container.get('layerManager')) rather than globalThis.
+// Test helper: LayerManager should be obtained via DI (container.get('layerManager')) rather than runtime globals.

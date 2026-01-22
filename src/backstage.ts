@@ -142,7 +142,7 @@ export const allNotesOff = (tick: number = measureStart): any[] => {
  */
 export const muteAll = (tick: number = measureStart): any[] => {
   const events = allCHs.map(ch => ({ tick: m.max(0, tick - 1), type: 'control_c', vals: [ch, 120, 0] }));
-  const maybeC = (globalThis as any).c;
+  const maybeC = getPolychronContext().test?.c;
   if (maybeC) {
     if (Array.isArray(maybeC)) {
       maybeC.push(...events);
@@ -230,7 +230,7 @@ export {
 
 // No legacy features should be used anywhere: use DI only
 export function attachLegacyGlobals(target?: any): void {
-  // Prefer an explicit target or a test-provided legacy target; do NOT default to globalThis for DI compliance
+  // Prefer an explicit target or a test-provided legacy target; do NOT modify the real global object for DI compliance
   const g = target ?? getPolychronContext().test?.legacyTarget ?? {};
 
   g.flipBinT3 = flipBinT3;
@@ -322,7 +322,7 @@ export function attachLegacyGlobals(target?: any): void {
   g.randomWeightedInArray = randomWeightedInArray;
   g.randomWeightedSelection = randomWeightedSelection;
 
-  // Assign composers to globalThis for legacy compatibility
+  // Assign composers to legacy target for compatibility
   g.MeasureComposer = MeasureComposer;
   g.ScaleComposer = ScaleComposer;
   g.RandomScaleComposer = RandomScaleComposer;

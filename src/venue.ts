@@ -307,9 +307,12 @@ export const allModes: string[] = (() => {
 })();
 
 import { DIContainer } from './DIContainer.js';
+// Avoid importing `getPolychronContext` here to prevent circular initialization
+// with composers -> venue -> PolychronInit -> composers. Use runtime lookup in
+// the migration helpers to stay DI-first without forcing imports.
 
-// Export to global scope
-declare const globalThis: any;
+// Legacy global declarations removed — use DI via `registerVenueServices` instead.
+// Do NOT declare or modify the real global object; register services in the DI container.
 
 export function registerVenueServices(container: DIContainer): void {
   if (!container.has('getMidiValue')) {
@@ -331,16 +334,22 @@ export function registerVenueServices(container: DIContainer): void {
 
 // NOTE: Venue global exposures were removed. Use `registerVenueServices(container: DIContainer)`
 // to register `getMidiValue`, `allNotes`, `allScales`, `allChords`, and `allModes` in the DI container.
-// Consumers should obtain these via DI rather than globalThis.
+// Consumers should obtain these via DI rather than runtime globals.
 
 /**
- * Migration helpers: attach/detach legacy venue API to globalThis for
+ * Migration helpers: attach/detach legacy venue API to a legacy test target for
  * transition tests. These mirror the legacy behavior and should be removed
  * once all callers use DI container services.
  * NOTE: Legacy attach functions are removed by default to enforce DI-only policy.
  */
-export function attachToGlobalVenue(): void {
-  const g: any = globalThis;
+export function attachToGlobalVenue(target?: any): void {
+  // Migration helper: attach to an explicit target when provided; otherwise
+  // attach to the DI test namespace. This helper is deprecated — prefer DI.
+  const poly = typeof getPolychronContext === 'function' ? getPolychronContext() : undefined;
+  const g: any = target ?? poly?.test ?? {} as any;
+  if (!target) {
+    console.warn('DEPRECATION: attachToGlobalVenue is a migration helper and will be removed. Prefer registerVenueServices(container) and DI-first access.');
+  }
   g.t = t;
   g.midiData = midiData;
   g.getMidiValue = getMidiValue;
@@ -350,8 +359,12 @@ export function attachToGlobalVenue(): void {
   g.allModes = allModes;
 }
 
-export function detachFromGlobalVenue(): void {
-  const g: any = globalThis;
+export function detachFromGlobalVenue(target?: any): void {
+  const poly = typeof getPolychronContext === 'function' ? getPolychronContext() : undefined;
+  const g: any = target ?? poly?.test ?? {} as any;
+  if (!target) {
+    console.warn('DEPRECATION: detachFromGlobalVenue is a migration helper and will be removed. Prefer DI-only patterns.');
+  }
   delete g.t;
   delete g.midiData;
   delete g.getMidiValue;

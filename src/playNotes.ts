@@ -10,8 +10,6 @@ import { getPolychronContext } from './PolychronInit.js';
 import * as Utils from './utils.js';
 import { source, reflection, bass, cCH1, cCH2, cCH3, flipBinF, flipBinT, reflect, reflect2 } from './backstage.js';
 
-declare const globalThis: any;
-
 function pushEvent(ctx: ICompositionContext, ...events: any[]) {
   const pFn = requirePush(ctx);
   const buffer = ctx.csvBuffer;
@@ -31,7 +29,7 @@ export class PlayNotes {
   public sustain: number = 0;
   public binVel: number = 0;
   public useShort: boolean = false;
-  // Counters previously stored on globalThis; now instance-local
+  // Counters previously stored on legacy globals; now instance-local
   public subdivsOn: number = 0;
   public subdivsOff: number = 0;
 

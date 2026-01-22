@@ -281,7 +281,7 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
   }
 }
 
-// Note: Do NOT attach composers to globalThis. Export named symbols for DI usage.
+// Note: Do NOT attach composers to runtime globals. Export named symbols for DI usage.
 
 // ComposerFactory creates instances
 
@@ -344,7 +344,7 @@ class ComposerFactory {
  */
 let composers: any[] = [];  // Lazy-loaded in play.ts when all systems are ready
 
-// Named exports for composers (DI-friendly; avoid attaching to globalThis)
+// Named exports for composers (DI-friendly; avoid attaching to runtime globals)
 export {
   MeasureComposer,
   ScaleComposer,

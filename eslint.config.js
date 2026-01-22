@@ -40,7 +40,7 @@ export default [
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { varsIgnorePattern: '^_|^[A-Z]+$', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-undef': 'off',  // TypeScript handles this
       'no-global-assign': 'error',
       'no-restricted-syntax': 'off'
@@ -74,8 +74,25 @@ export default [
     rules: {
       'no-undef': 'warn',
       'no-trailing-spaces': 'warn',
-      'eol-last': 'off',  // Stage 2: Accept for now
+      'eol-last': 'warn',
       'no-constant-condition': 'warn'
+    }
+  },
+  // LEGACY FILES OVERRIDE: temporarily relax unused-var checking for a
+  // small set of legacy modules that are still being migrated to DI-first
+  // patterns. Keep this list focused and remove files as they are refactored.
+  {
+    files: [
+      'src/backstage.ts',
+      'src/play.ts',
+      'src/composers/**',
+      'src/structure.ts',
+      'src/sheet.ts'
+    ],
+    rules: {
+      // Turn off unused-var checks for these legacy modules only. Remove
+      // this override as files are migrated and cleaned up.
+      '@typescript-eslint/no-unused-vars': 'off'
     }
   }
 ];

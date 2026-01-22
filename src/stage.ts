@@ -18,8 +18,6 @@ import { ICompositionContext } from './CompositionContext.js';
 // Module-scoped temporary variable for FX object spreading
 import { requirePush } from './writer.js';
 
-declare const globalThis: any;
-let _: any = null;
 
 /**
  * Stage class - Encapsulates all audio processing, effects, and MIDI event generation.
@@ -223,7 +221,6 @@ export class Stage {
    * @returns {void}
    */
   setBalanceAndFX(ctx: ICompositionContext): void {
-    const g = getPolychronContext().test || {} as any;
     const beatStart = ctx.state.beatStart;
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;

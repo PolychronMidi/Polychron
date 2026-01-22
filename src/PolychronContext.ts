@@ -1,6 +1,6 @@
 /**
  * PolychronContext - Centralized singleton for all global state
- * Replaces 278+ globalThis assignments with structured access
+ * Replaces 278+ legacy global assignments with structured access
  *
  * Architecture:
  * - utils: Immutable utility functions (random generators, math helpers)

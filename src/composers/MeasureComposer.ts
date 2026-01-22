@@ -6,6 +6,7 @@ import { VoiceLeadingScore } from '../voiceLeading.js';
 import * as t from 'tonal';
 import { NUMERATOR, DENOMINATOR, OCTAVE, VOICES, DIVISIONS, SUBDIVISIONS, SUBSUBDIVS } from '../sheet.js';
 import m, { rf, ri, rw, rv, ra, clamp, modClamp } from '../utils.js';
+import PolychronContext from '../PolychronContext.js';
 
 
 /**
@@ -61,15 +62,8 @@ class MeasureComposer {
 
   getBpmRatio(): number {
     try {
-      // Avoid importing getPolychronContext at module initialization to prevent circular imports.
-      // Prefer a runtime lookup if available on globalThis (set by PolychronInit during initialization).
-      const maybeGet = (globalThis as any).getPolychronContext;
-      if (typeof maybeGet === 'function') {
-        return maybeGet().state?.bpmRatio ?? 1;
-      }
-      const poly = (globalThis as any).PolychronContext || {};
-      return poly.state?.bpmRatio ?? 1;
-    } catch (e) {
+      return (PolychronContext && PolychronContext.state && typeof PolychronContext.state.bpmRatio === 'number') ? PolychronContext.state.bpmRatio : 1;
+    } catch (_e) {
       return 1;
     }
   }

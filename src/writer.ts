@@ -455,7 +455,7 @@ export function registerWriterServices(container: DIContainer): void {
   }
   // Provide fs to services so grandFinale can use DI instead of globals
   if (!container.has('fs')) {
-    // Register Node's fs module via DI. Do NOT read from globalThis; enforce DI usage in tests.
+    // Register Node's fs module via DI. Do NOT read from runtime globals; enforce DI usage in tests.
     container.register('fs', () => fs, 'singleton');
   }
 

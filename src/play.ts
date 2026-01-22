@@ -7,7 +7,10 @@ import './venue.js';       // Music theory (scales, chords)
 import './backstage.js';   // Utilities and global state
 import { registerWriterServices } from './writer.js';      // Output functions (DI registration)
 import { registerTimeServices } from './time.js';        // Timing functions (DI registration)
-import './composers.js';   // Composer classes
+import * as Composers from './composers.js';
+import { registerVenueServices, midiData } from './venue.js';
+import * as tLib from 'tonal';
+// Composer classes (imported as module for DI registration)
 import './motifs.js';      // Motif generation
 import './rhythm.js';      // Rhythm generation
 import { playDrums, playDrums2 } from './rhythm.js';
@@ -116,7 +119,7 @@ const getContextValue = <T>(
   if (ctx) {
     try {
       return contextGetter(ctx);
-    } catch (e) {
+    } catch (_e) {
       // Fallback to PolychronContext state if context property doesn't exist
     }
   }
@@ -188,23 +191,38 @@ const registerCoreServices = (container: DIContainer) => {
     registerWriterServices(container);
     // DEBUG: Confirm registration
     // console.log('registerWriterServices called; keys:', container.getServiceKeys());
-  } catch (e) {
+  } catch (_e) {
     console.warn('registerWriterServices not available; falling back to legacy writer globals');
   }
 
   try {
     // Register timing services for DI consumers
     registerTimeServices(container);
-  } catch (e) {
+  } catch (_e) {
     console.warn('registerTimeServices not available');
+  }
+
+  try {
+    // Register venue services (music theory utilities) for DI consumers
+    registerVenueServices(container);
+    // Register raw midiData for convenience
+    if (!container.has('midiData')) {
+      container.register('midiData', () => midiData, 'singleton');
+    }
+    // Register tonal library reference
+    if (!container.has('t')) {
+      container.register('t', () => tLib, 'singleton');
+    }
+  } catch (_e) {
+    console.warn('registerVenueServices not available');
   }
 
   // Expose a composite `writers` helper that maps to DI-backed functions when available
   container.register(
     'writers',
     () => ({
-      addToCSV: container.has('pushMultiple') ? container.get('pushMultiple') : g.addToCSV,
-      emitMIDI: container.has('grandFinale') ? container.get('grandFinale') : g.grandFinale
+      addToCSV: container.has('pushMultiple') ? container.get('pushMultiple') : () => {},
+      emitMIDI: container.has('grandFinale') ? container.get('grandFinale') : () => {}
     }),
     'singleton'
   );
@@ -216,28 +234,28 @@ const registerCoreServices = (container: DIContainer) => {
     'singleton'
   );
 
-  // Register class factories (composers, utils) from globals
-  // These are set by module imports and will be available on globalThis
-  container.register('MeasureComposer', () => g.MeasureComposer, 'singleton');
-  container.register('ScaleComposer', () => g.ScaleComposer, 'singleton');
-  container.register('RandomScaleComposer', () => g.RandomScaleComposer, 'singleton');
-  container.register('ChordComposer', () => g.ChordComposer, 'singleton');
-  container.register('RandomChordComposer', () => g.RandomChordComposer, 'singleton');
-  container.register('ModeComposer', () => g.ModeComposer, 'singleton');
-  container.register('RandomModeComposer', () => g.RandomModeComposer, 'singleton');
-  container.register('PentatonicComposer', () => g.PentatonicComposer, 'singleton');
-  container.register('RandomPentatonicComposer', () => g.RandomPentatonicComposer, 'singleton');
-  container.register('ProgressionGenerator', () => g.ProgressionGenerator, 'singleton');
+  // Register class factories (composers, utils) from the `composers` module (DI-first)
+  container.register('MeasureComposer', () => Composers.MeasureComposer, 'singleton');
+  container.register('ScaleComposer', () => Composers.ScaleComposer, 'singleton');
+  container.register('RandomScaleComposer', () => Composers.RandomScaleComposer, 'singleton');
+  container.register('ChordComposer', () => Composers.ChordComposer, 'singleton');
+  container.register('RandomChordComposer', () => Composers.RandomChordComposer, 'singleton');
+  container.register('ModeComposer', () => Composers.ModeComposer, 'singleton');
+  container.register('RandomModeComposer', () => Composers.RandomModeComposer, 'singleton');
+  container.register('PentatonicComposer', () => Composers.PentatonicComposer, 'singleton');
+  container.register('RandomPentatonicComposer', () => Composers.RandomPentatonicComposer, 'singleton');
+  container.register('ProgressionGenerator', () => Composers.ProgressionGenerator, 'singleton');
   // VoiceLeadingScore imported directly in MeasureComposer - no global registration needed
 
-  // Register music theory utilities from venue.js
-  container.register('t', () => g.t, 'singleton');
-  container.register('midiData', () => g.midiData, 'singleton');
-  container.register('getMidiValue', () => g.getMidiValue, 'singleton');
-  container.register('allNotes', () => g.allNotes, 'singleton');
-  container.register('allScales', () => g.allScales, 'singleton');
-  container.register('allChords', () => g.allChords, 'singleton');
-  container.register('allModes', () => g.allModes, 'singleton');
+  // Register music theory utilities via DI (venue services)
+  // `registerVenueServices` registers getMidiValue, allNotes, allScales, allChords, allModes
+  // `midiData` and `t` are registered here as singletons
+  if (!container.has('t')) {
+    container.register('t', () => tLib, 'singleton');
+  }
+  if (!container.has('midiData')) {
+    container.register('midiData', () => midiData, 'singleton');
+  }
 };
 
 // Initialize the composition engine
@@ -264,7 +282,7 @@ const initializePlayEngine = async (
   // Initialize DI Container and register core services
   const container = new DIContainer();
   registerCoreServices(container);
-  // Expose DI container to the test namespace (avoid globalThis writes)
+  // Expose DI container to the test namespace (avoid writing to the real global object)
   poly.test = poly.test || {};
   poly.test.DIContainer = container;  // Make available on PolychronContext.test for testing/debugging
 
@@ -350,7 +368,7 @@ const initializePlayEngine = async (
     if (c && typeof c.getMeter === 'function') return c;
     if (c && c.type) return registry.create(c);
     if (typeof c === 'function') {
-      try { const inst = new c(); if (inst && typeof inst.getMeter === 'function') return inst; } catch (e) {}
+      try { const inst = new c(); if (inst && typeof inst.getMeter === 'function') return inst; } catch (_e) {}
     }
     return c;
   });

@@ -443,7 +443,6 @@ export const setRhythm = (level: string, ctx?: ICompositionContext): number[] =>
  * @param {number|number[]|function} valuesOrRange - Onset values or range.
  * @returns {number[]} Onset pattern.
  */
-  const g = globalThis as any;
 
 export const makeOnsets = (length: number, valuesOrRange: number | number[] | (() => number[])): number[] => {
 

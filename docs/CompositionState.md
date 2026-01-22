@@ -142,6 +142,11 @@ export interface CompositionState {
   flipBinT3: number[];
   flipBinF3: number[];
   stutterPanCHs: number[];
+  // Backwards-compatible divisions alias
+  divisions: number;
+
+  // Sections config for testing
+  SECTIONS?: { min: number; max: number };
 
   // Logging
   LOG: string;
@@ -268,7 +273,10 @@ export class CompositionStateService implements CompositionState {
   velocity = 99;
   flipBinT3: number[] = [];
   flipBinF3: number[] = [];
-  stutterPanCHs: number[] = [];
+  stutterPanCHs: number[] = [];  // Backwards-compatible divisions alias
+  divisions = 4;
+  // Sections config for testing (allows tests to seed section ranges into state)
+  SECTIONS = { min: 1, max: 1 };
 
   // Logging
   LOG = 'none';
@@ -277,58 +285,81 @@ export class CompositionStateService implements CompositionState {
    * Sync state with globalThis
    */
   syncToGlobal() {
-    const g = globalThis as any;
-    g.sectionIndex = this.sectionIndex;
-    g.totalSections = this.totalSections;
-    g.sectionStart = this.sectionStart;
-    g.phraseIndex = this.phraseIndex;
-    g.phrasesPerSection = this.phrasesPerSection;
-    g.phraseStart = this.phraseStart;
-    g.measureIndex = this.measureIndex;
-    g.measureStart = this.measureStart;
-    g.beatIndex = this.beatIndex;
-    g.numerator = this.numerator;
-    g.denominator = this.denominator;
-    g.beatCount = this.beatCount;
-    g.beatStart = this.beatStart;
-    g.divsPerBeat = this.divsPerBeat;
-    g.divIndex = this.divIndex;
-    g.divStart = this.divStart;
-    g.subdivsPerDiv = this.subdivsPerDiv;
-    g.subdivIndex = this.subdivIndex;
-    g.subdivStart = this.subdivStart;
-    g.subsubdivIndex = this.subsubdivIndex;
-    g.composer = this.composer;
-    g.activeMotif = this.activeMotif;
-    g.BPM = this.BPM;
-    g.beatRhythm = this.beatRhythm;
-    g.divRhythm = this.divRhythm;
-    g.subdivRhythm = this.subdivRhythm;
-    g.LOG = this.LOG;
+    // Sync to PolychronContext.state and PolychronContext.test for legacy compatibility without globals
+    const poly = getPolychronContext();
+    poly.state = poly.state || {} as any;
+    poly.test = poly.test || {} as any;
+
+    // State vars
+    poly.state.sectionIndex = this.sectionIndex;
+    poly.state.totalSections = this.totalSections;
+    poly.state.sectionStart = this.sectionStart;
+    poly.state.phraseIndex = this.phraseIndex;
+    poly.state.phrasesPerSection = this.phrasesPerSection;
+    poly.state.phraseStart = this.phraseStart;
+    poly.state.measureIndex = this.measureIndex;
+    poly.state.measureStart = this.measureStart;
+    poly.state.beatIndex = this.beatIndex;
+    poly.state.numerator = this.numerator;
+    poly.state.denominator = this.denominator;
+    poly.state.beatCount = this.beatCount;
+    poly.state.beatStart = this.beatStart;
+    poly.state.divsPerBeat = this.divsPerBeat;
+    poly.state.divisions = this.divisions;
+    poly.state.divIndex = this.divIndex;
+    poly.state.divStart = this.divStart;
+    poly.state.subdivsPerDiv = this.subdivsPerDiv;
+    poly.state.subdivIndex = this.subdivIndex;
+    poly.state.subdivStart = this.subdivStart;
+    poly.state.subsubdivIndex = this.subsubdivIndex;
+    poly.state.composer = this.composer;
+    poly.state.activeMotif = this.activeMotif;
+    poly.state.BPM = this.BPM;
+    poly.state.beatRhythm = this.beatRhythm;
+    poly.state.divRhythm = this.divRhythm;
+    poly.state.subdivRhythm = this.subdivRhythm;
+    poly.state.measuresPerPhrase = this.measuresPerPhrase;
+    poly.state.SECTIONS = this.SECTIONS;
+
+    // Test namespace for logging/legacy read
+    poly.test.LOG = this.LOG;
+
+    // Do NOT write to globalThis; only keep DI-friendly namespaces in sync
+    poly.state = poly.state || {} as any; // ensure state exists
   }
 
   /**
    * Sync state from globalThis (for test setup)
    */
   syncFromGlobal() {
-    const g = globalThis as any;
-    if (g.sectionIndex !== undefined) this.sectionIndex = g.sectionIndex;
-    if (g.totalSections !== undefined) this.totalSections = g.totalSections;
-    if (g.phraseIndex !== undefined) this.phraseIndex = g.phraseIndex;
-    if (g.measureIndex !== undefined) this.measureIndex = g.measureIndex;
-    if (g.beatIndex !== undefined) this.beatIndex = g.beatIndex;
-    if (g.numerator !== undefined) this.numerator = g.numerator;
-    if (g.denominator !== undefined) this.denominator = g.denominator;
-    if (g.beatCount !== undefined) this.beatCount = g.beatCount;
-    if (g.divIndex !== undefined) this.divIndex = g.divIndex;
-    if (g.subdivIndex !== undefined) this.subdivIndex = g.subdivIndex;
-    if (g.subsubdivIndex !== undefined) this.subsubdivIndex = g.subsubdivIndex;
-    if (g.composer !== undefined) this.composer = g.composer;
-    if (g.activeMotif !== undefined) this.activeMotif = g.activeMotif;
-    if (g.BPM !== undefined) this.BPM = g.BPM;
-    if (g.flipBinT3 !== undefined) this.flipBinT3 = g.flipBinT3;
-    if (g.flipBinF3 !== undefined) this.flipBinF3 = g.flipBinF3;
-    if (g.LOG !== undefined) this.LOG = g.LOG;
+    const poly = getPolychronContext();
+    const gState = poly.state || {} as any;
+    const gTest = poly.test || {} as any;
+
+    // First read from the DI-friendly namespaces
+    if (gState.sectionIndex !== undefined) this.sectionIndex = gState.sectionIndex;
+    if (gState.totalSections !== undefined) this.totalSections = gState.totalSections;
+    if (gState.phraseIndex !== undefined) this.phraseIndex = gState.phraseIndex;
+    if (gState.measureIndex !== undefined) this.measureIndex = gState.measureIndex;
+    if (gState.beatIndex !== undefined) this.beatIndex = gState.beatIndex;
+    if (gState.numerator !== undefined) this.numerator = gState.numerator;
+    if (gState.denominator !== undefined) this.denominator = gState.denominator;
+    if (gState.beatCount !== undefined) this.beatCount = gState.beatCount;
+    if (gState.divIndex !== undefined) this.divIndex = gState.divIndex;
+    if (gState.divisions !== undefined) this.divisions = gState.divisions;
+    if (gState.subdivIndex !== undefined) this.subdivIndex = gState.subdivIndex;
+    if (gState.subsubdivIndex !== undefined) this.subsubdivIndex = gState.subsubdivIndex;
+    if (gState.composer !== undefined) this.composer = gState.composer;
+    if (gState.activeMotif !== undefined) this.activeMotif = gState.activeMotif;
+    if (gState.BPM !== undefined) this.BPM = gState.BPM;
+    if (gState.measuresPerPhrase !== undefined) this.measuresPerPhrase = gState.measuresPerPhrase;
+    if (gState.SECTIONS !== undefined) this.SECTIONS = gState.SECTIONS;
+    if (gState.flipBinT3 !== undefined) this.flipBinT3 = gState.flipBinT3;
+    if (gState.flipBinF3 !== undefined) this.flipBinF3 = gState.flipBinF3;
+    if (gTest.LOG !== undefined) this.LOG = gTest.LOG;
+
+    // Do not read from globalThis; DI namespaces are authoritative (poly.state & poly.test)
+    // (no-op - already read from poly.state and poly.test above)
   }
 
   /**
@@ -362,34 +393,47 @@ Mirror state to/from `globalThis` for certain initialization flows.
 
 ```typescript
 syncToGlobal() {
-    const g = globalThis as any;
-    g.sectionIndex = this.sectionIndex;
-    g.totalSections = this.totalSections;
-    g.sectionStart = this.sectionStart;
-    g.phraseIndex = this.phraseIndex;
-    g.phrasesPerSection = this.phrasesPerSection;
-    g.phraseStart = this.phraseStart;
-    g.measureIndex = this.measureIndex;
-    g.measureStart = this.measureStart;
-    g.beatIndex = this.beatIndex;
-    g.numerator = this.numerator;
-    g.denominator = this.denominator;
-    g.beatCount = this.beatCount;
-    g.beatStart = this.beatStart;
-    g.divsPerBeat = this.divsPerBeat;
-    g.divIndex = this.divIndex;
-    g.divStart = this.divStart;
-    g.subdivsPerDiv = this.subdivsPerDiv;
-    g.subdivIndex = this.subdivIndex;
-    g.subdivStart = this.subdivStart;
-    g.subsubdivIndex = this.subsubdivIndex;
-    g.composer = this.composer;
-    g.activeMotif = this.activeMotif;
-    g.BPM = this.BPM;
-    g.beatRhythm = this.beatRhythm;
-    g.divRhythm = this.divRhythm;
-    g.subdivRhythm = this.subdivRhythm;
-    g.LOG = this.LOG;
+    // Sync to PolychronContext.state and PolychronContext.test for legacy compatibility without globals
+    const poly = getPolychronContext();
+    poly.state = poly.state || {} as any;
+    poly.test = poly.test || {} as any;
+
+    // State vars
+    poly.state.sectionIndex = this.sectionIndex;
+    poly.state.totalSections = this.totalSections;
+    poly.state.sectionStart = this.sectionStart;
+    poly.state.phraseIndex = this.phraseIndex;
+    poly.state.phrasesPerSection = this.phrasesPerSection;
+    poly.state.phraseStart = this.phraseStart;
+    poly.state.measureIndex = this.measureIndex;
+    poly.state.measureStart = this.measureStart;
+    poly.state.beatIndex = this.beatIndex;
+    poly.state.numerator = this.numerator;
+    poly.state.denominator = this.denominator;
+    poly.state.beatCount = this.beatCount;
+    poly.state.beatStart = this.beatStart;
+    poly.state.divsPerBeat = this.divsPerBeat;
+    poly.state.divisions = this.divisions;
+    poly.state.divIndex = this.divIndex;
+    poly.state.divStart = this.divStart;
+    poly.state.subdivsPerDiv = this.subdivsPerDiv;
+    poly.state.subdivIndex = this.subdivIndex;
+    poly.state.subdivStart = this.subdivStart;
+    poly.state.subsubdivIndex = this.subsubdivIndex;
+    poly.state.composer = this.composer;
+    poly.state.activeMotif = this.activeMotif;
+    poly.state.BPM = this.BPM;
+    poly.state.beatRhythm = this.beatRhythm;
+    poly.state.divRhythm = this.divRhythm;
+    poly.state.subdivRhythm = this.subdivRhythm;
+    poly.state.measuresPerPhrase = this.measuresPerPhrase;
+    poly.state.SECTIONS = this.SECTIONS;
+
+    // Test namespace for logging/legacy read
+    poly.test.LOG = this.LOG;
+
+    // Do NOT write to globalThis; only keep DI-friendly namespaces in sync
+    poly.state = poly.state || {} as any; // ensure state exists
   }
 ```
 
@@ -399,24 +443,34 @@ syncToGlobal() {
 
 ```typescript
 syncFromGlobal() {
-    const g = globalThis as any;
-    if (g.sectionIndex !== undefined) this.sectionIndex = g.sectionIndex;
-    if (g.totalSections !== undefined) this.totalSections = g.totalSections;
-    if (g.phraseIndex !== undefined) this.phraseIndex = g.phraseIndex;
-    if (g.measureIndex !== undefined) this.measureIndex = g.measureIndex;
-    if (g.beatIndex !== undefined) this.beatIndex = g.beatIndex;
-    if (g.numerator !== undefined) this.numerator = g.numerator;
-    if (g.denominator !== undefined) this.denominator = g.denominator;
-    if (g.beatCount !== undefined) this.beatCount = g.beatCount;
-    if (g.divIndex !== undefined) this.divIndex = g.divIndex;
-    if (g.subdivIndex !== undefined) this.subdivIndex = g.subdivIndex;
-    if (g.subsubdivIndex !== undefined) this.subsubdivIndex = g.subsubdivIndex;
-    if (g.composer !== undefined) this.composer = g.composer;
-    if (g.activeMotif !== undefined) this.activeMotif = g.activeMotif;
-    if (g.BPM !== undefined) this.BPM = g.BPM;
-    if (g.flipBinT3 !== undefined) this.flipBinT3 = g.flipBinT3;
-    if (g.flipBinF3 !== undefined) this.flipBinF3 = g.flipBinF3;
-    if (g.LOG !== undefined) this.LOG = g.LOG;
+    const poly = getPolychronContext();
+    const gState = poly.state || {} as any;
+    const gTest = poly.test || {} as any;
+
+    // First read from the DI-friendly namespaces
+    if (gState.sectionIndex !== undefined) this.sectionIndex = gState.sectionIndex;
+    if (gState.totalSections !== undefined) this.totalSections = gState.totalSections;
+    if (gState.phraseIndex !== undefined) this.phraseIndex = gState.phraseIndex;
+    if (gState.measureIndex !== undefined) this.measureIndex = gState.measureIndex;
+    if (gState.beatIndex !== undefined) this.beatIndex = gState.beatIndex;
+    if (gState.numerator !== undefined) this.numerator = gState.numerator;
+    if (gState.denominator !== undefined) this.denominator = gState.denominator;
+    if (gState.beatCount !== undefined) this.beatCount = gState.beatCount;
+    if (gState.divIndex !== undefined) this.divIndex = gState.divIndex;
+    if (gState.divisions !== undefined) this.divisions = gState.divisions;
+    if (gState.subdivIndex !== undefined) this.subdivIndex = gState.subdivIndex;
+    if (gState.subsubdivIndex !== undefined) this.subsubdivIndex = gState.subsubdivIndex;
+    if (gState.composer !== undefined) this.composer = gState.composer;
+    if (gState.activeMotif !== undefined) this.activeMotif = gState.activeMotif;
+    if (gState.BPM !== undefined) this.BPM = gState.BPM;
+    if (gState.measuresPerPhrase !== undefined) this.measuresPerPhrase = gState.measuresPerPhrase;
+    if (gState.SECTIONS !== undefined) this.SECTIONS = gState.SECTIONS;
+    if (gState.flipBinT3 !== undefined) this.flipBinT3 = gState.flipBinT3;
+    if (gState.flipBinF3 !== undefined) this.flipBinF3 = gState.flipBinF3;
+    if (gTest.LOG !== undefined) this.LOG = gTest.LOG;
+
+    // Do not read from globalThis; DI namespaces are authoritative (poly.state & poly.test)
+    // (no-op - already read from poly.state and poly.test above)
   }
 ```
 

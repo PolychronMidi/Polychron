@@ -238,7 +238,7 @@ export class Stage {
    * @returns {void}
    */
   setBalanceAndFX(ctx: ICompositionContext): void {
-    const g = globalThis as any;
+    const g = getPolychronContext().test || {} as any;
     const beatStart = ctx.state.beatStart;
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
@@ -511,7 +511,7 @@ Set pan/balance offsets and FX parameters (CC1, CC5, CC11, CC65-74, CC91-95) for
 
 ```typescript
 setBalanceAndFX(ctx: ICompositionContext): void {
-    const g = globalThis as any;
+    const g = getPolychronContext().test || {} as any;
     const beatStart = ctx.state.beatStart;
     const beatCount = ctx.state.beatCount;
     const beatsUntilBinauralShift = ctx.state.beatsUntilBinauralShift;
