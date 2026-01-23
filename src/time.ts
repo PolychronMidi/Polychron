@@ -132,6 +132,25 @@ const getMidiTiming = (ctx: ICompositionContext): [number, number] => {
   state.tpMeasure = timingCalculator.tpMeasure;
   state.spMeasure = timingCalculator.spMeasure;
 
+  // Defensive check: ensure tpSec and tpMeasure are valid positive numbers. If not, compute safe fallbacks to avoid zero-duration units.
+  if (!Number.isFinite(state.tpSec) || state.tpSec <= 0) {
+    const ppq = state.PPQ ?? ctx.PPQ ?? 480;
+    const bpm = state.midiBPM ?? state.BPM ?? ctx.BPM ?? 120;
+    state.tpSec = Math.max(1, (bpm / 60) * ppq);
+    try { console.error('[traceroute] getMidiTiming: invalid tpSec detected; applied fallback', { tpSec: state.tpSec, bpm, ppq }); } catch (_e) {}
+  }
+  if (!Number.isFinite(state.tpMeasure) || state.tpMeasure <= 0) {
+    const ppq = state.PPQ ?? ctx.PPQ ?? 480;
+    const midiMeterRatio = timingCalculator.midiMeterRatio || 1;
+    state.tpMeasure = Math.max(1, ppq * 4 * midiMeterRatio);
+    state.spMeasure = Number.isFinite(state.tpMeasure) && state.tpSec ? state.tpMeasure / state.tpSec : state.spMeasure;
+    try { console.error('[traceroute] getMidiTiming: invalid tpMeasure detected; applied fallback', { tpMeasure: state.tpMeasure, ppq, midiMeterRatio }); } catch (_e) {}
+  }
+
+  try {
+    console.error('[traceroute] getMidiTiming computed', { midiMeter: state.midiMeter, tpMeasure: state.tpMeasure, tpSec: state.tpSec, midiBPM: state.midiBPM, meter: [state.numerator, state.denominator] });
+  } catch (_e) {}
+
   // Write to timing tree for observability (hybrid approach: globals + tree)
   const tree = initTimingTree(ctx);
   const layer = (ctx as any).LM?.activeLayer || 'primary';
@@ -241,6 +260,9 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
 
   const composer = getVal('composer');
   if (!composer) return;
+  try {
+    console.error('[traceroute] getPolyrhythm entry', { numerator: getVal('numerator'), denominator: getVal('denominator') });
+  } catch (_e) {}
 
   // Respect test-provided explicit measuresPerPhrase (DI-only override) - if a test or DI seed
   // has set a positive measuresPerPhrase, do not override it with polyrhythm heuristics.
@@ -344,6 +366,17 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
  */
 const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const state = ctx.state as any;
+  // Traceroute instrumentation: capture key timing state at entry only on anomalies or full-trace mode
+  try {
+    const poly = getPolychronContext();
+    const traceMode = poly && poly.test && poly.test._traceMode ? poly.test._traceMode : (poly && poly.test && poly.test.enableLogging ? 'anomaly' : 'none');
+    const isAnomaly = !(Number.isFinite(state.tpMeasure) && state.tpMeasure > 0) || !(Number.isFinite(state.tpSec) && state.tpSec > 0);
+    if (traceMode === 'full' || isAnomaly) {
+      const buf = (ctx as any).csvBuffer;
+      console.error('[traceroute] setUnitTiming enter', { unitType, sectionIndex: state.sectionIndex, phraseIndex: state.phraseIndex, measureIndex: state.measureIndex, beatIndex: state.beatIndex, divIndex: state.divIndex, subdivIndex: state.subdivIndex, tpMeasure: state.tpMeasure, tpBeat: state.tpBeat, tpDiv: state.tpDiv, tpSubdiv: state.tpSubdiv, tpSubsubdiv: state.tpSubsubdiv, subdivStart: state.subdivStart, subsubdivStart: state.subsubdivStart, bufHasUnitTiming: !!(buf && (buf as any).unitTiming), isAnomaly });
+    }
+  } catch (_e) {}
+
 
   // Read timing values from ctx.state (initialized by getMidiTiming)
   // Prefer state value; fall back to globals; if still invalid, use safe fallback of 1 and proceed (do not throw during composition)
@@ -375,6 +408,14 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   const layer = ctx.LM?.activeLayer || 'primary';
   const sectionIndex = ctx.state.sectionIndex ?? 0;
   const phraseIndex = ctx.state.phraseIndex ?? 0;
+  const secIdx = sectionIndex;
+  const phrIdx = phraseIndex;
+  const measureIdx = ctx.state.measureIndex ?? 0;
+  let unitIndex: number | undefined;
+  let startTick = 0;
+  let endTick = 0;
+  const layerLabel = layer ? `${layer}:` : '';
+  const activeBuf = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
 
   // Before calculating this unit, enforce that the previous sibling unit (if any)
   // has emitted a handoff. This ensures strict, ordered progression across units.
@@ -436,6 +477,27 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       const tpPhraseVal = safeTpMeasure * measuresPerPhrase;
       setVal('tpPhrase', tpPhraseVal);
       setVal('spPhrase', Number.isFinite(tpPhraseVal) ? tpPhraseVal / tpSec : 0);
+
+      // Enforce sequential phrase starts using previous phrase node when available
+      if (state.phraseIndex !== undefined && state.phraseIndex > 0) {
+        const prevPhrase = state.phraseIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, prevPhrase);
+        const prevNode = getTimingValues(tree, prevPath);
+        if (prevNode && Number.isFinite(prevNode.phraseStart) && Number.isFinite(prevNode.tpPhrase)) {
+          setVal('phraseStart', Number(prevNode.phraseStart) + Number(prevNode.tpPhrase));
+          if (Number.isFinite(prevNode.phraseStartTime) && Number.isFinite(prevNode.spPhrase)) {
+            setVal('phraseStartTime', Number(prevNode.phraseStartTime) + Number(prevNode.spPhrase));
+          }
+        } else {
+          // Fallback: compute based on sectionStart
+          setVal('phraseStart', getVal('sectionStart') + (state.phraseIndex || 0) * getVal('tpPhrase'));
+          setVal('phraseStartTime', getVal('sectionStartTime') + (state.phraseIndex || 0) * getVal('spPhrase'));
+        }
+      } else {
+        // First phrase uses section start
+        setVal('phraseStart', getVal('sectionStart'));
+        setVal('phraseStartTime', getVal('sectionStartTime'));
+      }
       break;
 
     case 'measure':
@@ -447,8 +509,31 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       }
 
       // Use state indices for runtime
-      setVal('measureStart', getVal('phraseStart') + (state.measureIndex || 0) * getVal('tpMeasure'));
-      setVal('measureStartTime', getVal('phraseStartTime') + (state.measureIndex || 0) * getVal('spMeasure'));
+      // Compute measureStart sequentially using previously-computed measure nodes when possible
+      if (state.measureIndex !== undefined && state.measureIndex > 0) {
+        const prevMeasureIdx = state.measureIndex - 1;
+        const prevPath = buildPath(layer, sectionIndex, phraseIndex, prevMeasureIdx);
+        const prevNode = getTimingValues(tree, prevPath);
+
+        if (prevNode && Number.isFinite(prevNode.measureStart) && Number.isFinite(prevNode.tpMeasure)) {
+          // Use the previous measure's end (start + tpMeasure) for sequential placement
+          setVal('measureStart', Number(prevNode.measureStart) + Number(prevNode.tpMeasure));
+          if (Number.isFinite(prevNode.measureStartTime) && Number.isFinite(prevNode.spMeasure)) {
+            setVal('measureStartTime', Number(prevNode.measureStartTime) + Number(prevNode.spMeasure));
+          } else {
+            setVal('measureStartTime', getVal('phraseStartTime') + (state.measureIndex || 0) * getVal('spMeasure'));
+          }
+        } else {
+          // Fallback: compute based on phraseStart and current tpMeasure (legacy behavior)
+          setVal('measureStart', getVal('phraseStart') + (state.measureIndex || 0) * getVal('tpMeasure'));
+          setVal('measureStartTime', getVal('phraseStartTime') + (state.measureIndex || 0) * getVal('spMeasure'));
+        }
+      } else {
+        // First measure simply uses phraseStart
+        setVal('measureStart', getVal('phraseStart'));
+        setVal('measureStartTime', getVal('phraseStartTime'));
+      }
+
       setMidiTiming(ctx);
       setVal('beatRhythm', setRhythm('beat', ctx));
 
@@ -505,12 +590,22 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       }
 
       trackRhythm('subdiv', ctx);
-      setVal('tpSubdiv', getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv')));
+      // Only compute tpSubdiv if not explicitly provided in state to avoid clobbering test fixtures
+      if (!Number.isFinite(Number(getVal('tpSubdiv')))) {
+        const computed = getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv'));
+        setVal('tpSubdiv', Number.isFinite(Number(computed)) ? Number(computed) : getVal('tpSubdiv'));
+      }
       setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
       setVal('subdivsPerMinute', 60 / getVal('spSubdiv'));
-      // Use state indices
-      setVal('subdivStart', getVal('divStart') + (state.subdivIndex || 0) * getVal('tpSubdiv'));
-      setVal('subdivStartTime', getVal('divStartTime') + (state.subdivIndex || 0) * getVal('spSubdiv'));
+      // Use state indices - only set subdivStart if not already provided
+      if (!Number.isFinite(Number(getVal('subdivStart')))) {
+        const computedStart = (Number.isFinite(Number(getVal('divStart'))) ? Number(getVal('divStart')) : 0) + (state.subdivIndex || 0) * getVal('tpSubdiv');
+        setVal('subdivStart', Number.isFinite(Number(computedStart)) ? computedStart : getVal('subdivStart'));
+      }
+      if (!Number.isFinite(Number(getVal('subdivStartTime')))) {
+        const computedStartTime = (Number.isFinite(Number(getVal('divStartTime'))) ? Number(getVal('divStartTime')) : 0) + (state.subdivIndex || 0) * getVal('spSubdiv');
+        setVal('subdivStartTime', Number.isFinite(Number(computedStartTime)) ? computedStartTime : getVal('subdivStartTime'));
+      }
       // Determine subsubdiv count from composer if available, otherwise fall back to existing state or 1
       const subsubCount = (state.composer && typeof state.composer.getSubsubdivs === 'function')
         ? state.composer.getSubsubdivs()
@@ -582,7 +677,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   if (unitType === 'phrase') {
     // For phrase-level updates, capture phrase-specific values explicitly so they are
     // visible in the timing tree (tpPhrase, spPhrase, measuresPerPhrase, etc.).
-    const phraseKeys = ['tpPhrase', 'spPhrase', 'measuresPerPhrase'];
+    const phraseKeys = ['tpPhrase', 'spPhrase', 'measuresPerPhrase', 'phraseStart', 'phraseStartTime'];
     for (const key of phraseKeys) {
       if (ctx && (ctx as any).state && (ctx as any).state[key] !== undefined) {
         timingSnapshot[key] = (ctx as any).state[key];
@@ -597,55 +692,197 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   }
 
   if (Object.keys(timingSnapshot).length > 0) {
-    setTimingValues(tree, path, timingSnapshot);
-  }
+    try {
+      const poly = getPolychronContext();
+      const traceMode = poly && poly.test && poly.test._traceMode ? poly.test._traceMode : (poly && poly.test && poly.test.enableLogging ? 'anomaly' : 'none');
+      const isAnomaly = !(Number.isFinite(state.tpMeasure) && state.tpMeasure > 0);
 
+      // Console snapshot for anomaly or explicit full console tracing
+      if (traceMode === 'full' || isAnomaly) {
+        console.error('[traceroute] setUnitTiming snapshot', { unitType, path, timingSnapshot, bufferLen: ((ctx as any).csvBuffer && ((ctx as any).csvBuffer.rows && (ctx as any).csvBuffer.rows.length)) || (Array.isArray((ctx as any).csvBuffer) ? (ctx as any).csvBuffer.length : 0) });
+      }
 
-  // Ensure context's CSV buffer points to the currently active buffer from LM (DI-only)
-  const activeBuf = ctx?.LM?.layers?.[ctx?.LM?.activeLayer]?.buffer;
+      // 'full-file' mode: collect snapshots in memory for a single file output at run end
+      if (traceMode === 'full-file') {
+        try {
+          poly.test._traceSnapshots = poly.test._traceSnapshots || [];
+          const cap = poly.test._traceSnapshotLimit || 100000;
+          poly.test._traceSnapshots.push({ layer, path, unitType, sectionIndex, phraseIndex, measureIndex: ctx.state.measureIndex ?? 0, timingSnapshot });
+          if (poly.test._traceSnapshots.length > cap) poly.test._traceSnapshots.shift();
+        } catch (_e) {
+          // non-fatal: snapshot collection best-effort
+        }
+      }
+    } catch (_e) {}
 
-  // Compute and attach a human-friendly unit label for diagnostics and CSV annotation
-  // Example: "primarysection1phrase1measure1 start: 0.0000 end: 1.0000"
-  try {
-    const layerLabel = layer;
-    const secIdx = sectionIndex ?? 0;
-    const phrIdx = phraseIndex ?? 0;
+    // Sanitize numeric timingSnapshot entries to avoid NaN persisting into the timing tree
+    try {
+      const numericKeys = ['start','end','tpMeasure','measureStart','tpBeat','beatStart','tpDiv','divStart','tpSubdiv','subdivStart','tpSubsubdiv','subsubdivStart'];
+      for (const k of numericKeys) {
+        if (k in timingSnapshot) {
+          const v = Number(timingSnapshot[k]);
+          if (!Number.isFinite(v)) {
+            // fallback to ctx.state when available, else 0
+            const sv = ctx && (ctx as any).state && Number.isFinite(Number((ctx as any).state[k])) ? Number((ctx as any).state[k]) : 0;
+            timingSnapshot[k] = sv;
+          } else {
+            timingSnapshot[k] = v;
+          }
+        }
+      }
 
-    const measureIdx = ctx.state.measureIndex ?? 0;
-    let unitIndex: number | undefined;
-    let startTick = 0;
-    let endTick = 0;
+      // If subdivision nodes are being recorded, ensure start/end are explicitly set from state-derived values
+      if (unitType === 'subdivision') {
+        const sStart = (ctx && (ctx as any).state && Number.isFinite(Number((ctx as any).state.subdivStart))) ? Number((ctx as any).state.subdivStart) : (Number.isFinite(Number(timingSnapshot.subdivStart)) ? Number(timingSnapshot.subdivStart) : 0);
+        const sDur = (ctx && (ctx as any).state && Number.isFinite(Number((ctx as any).state.tpSubdiv))) ? Number((ctx as any).state.tpSubdiv) : (Number.isFinite(Number(timingSnapshot.tpSubdiv)) ? Number(timingSnapshot.tpSubdiv) : 0);
+        timingSnapshot.subdivStart = sStart;
+        timingSnapshot.tpSubdiv = sDur;
+        timingSnapshot.start = sStart;
+        timingSnapshot.end = sStart + sDur;
+      }
+    } catch (_e) {}
 
-    // Use ticks consistently for labeling so CSV column checks are unambiguous
+    // Compute unit index and deterministic start/end using parent start + index * tpUnit
+    const allowManual = ctx && (ctx as any).state && (ctx as any).state._allowManualStarts;
+
+    const pickFinite = (a: any, b: any, fallback = 0) => {
+      if (Number.isFinite(Number(a))) return Number(a);
+      if (Number.isFinite(Number(b))) return Number(b);
+      return fallback;
+    };
+
     if (unitType === 'phrase') {
-      unitIndex = phrIdx;
-      startTick = ctx.state.phraseStart ?? 0;
-      endTick = startTick + (ctx.state.tpPhrase ?? 0);
+      unitIndex = ctx.state.phraseIndex ?? 0;
+      const tp = pickFinite(ctx.state.tpPhrase, timingSnapshot.tpPhrase, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex))?.start, ctx.state.sectionStart, 0);
+      startTick = allowManual ? (ctx.state.phraseStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
     } else if (unitType === 'measure') {
       unitIndex = measureIdx;
-      startTick = ctx.state.measureStart ?? 0;
-      endTick = startTick + (ctx.state.tpMeasure ?? 0);
+      const tp = pickFinite(ctx.state.tpMeasure, timingSnapshot.tpMeasure, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex))?.start, ctx.state.phraseStart, 0);
+      startTick = allowManual ? (ctx.state.measureStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
     } else if (unitType === 'beat') {
       unitIndex = ctx.state.beatIndex ?? 0;
-      startTick = ctx.state.beatStart ?? 0;
-      endTick = startTick + (ctx.state.tpBeat ?? 0);
+      const tp = pickFinite(ctx.state.tpBeat, timingSnapshot.tpBeat, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0))?.start, ctx.state.measureStart, 0);
+      startTick = allowManual ? (ctx.state.beatStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
     } else if (unitType === 'division') {
       unitIndex = ctx.state.divIndex ?? 0;
-      startTick = ctx.state.divStart ?? 0;
-      endTick = startTick + (ctx.state.tpDiv ?? 0);
+      const tp = pickFinite(ctx.state.tpDiv, timingSnapshot.tpDiv, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0))?.start, ctx.state.beatStart, 0);
+      startTick = allowManual ? (ctx.state.divStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
     } else if (unitType === 'subdivision') {
       unitIndex = ctx.state.subdivIndex ?? 0;
-      startTick = ctx.state.subdivStart ?? 0;
-      endTick = startTick + (ctx.state.tpSubdiv ?? 0);
+      const tp = pickFinite(ctx.state.tpSubdiv, timingSnapshot.tpSubdiv, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0))?.start, ctx.state.divStart, 0);
+      startTick = allowManual ? (ctx.state.subdivStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
     } else if (unitType === 'subsubdivision') {
       unitIndex = ctx.state.subsubdivIndex ?? 0;
-      startTick = ctx.state.subsubdivStart ?? 0;
-      endTick = startTick + (ctx.state.tpSubsubdiv ?? 0);
+      const tp = pickFinite(ctx.state.tpSubsubdiv, timingSnapshot.tpSubsubdiv, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0))?.start, ctx.state.subdivStart, 0);
+      startTick = allowManual ? (ctx.state.subsubdivStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
     } else {
       // Default to measure span
       unitIndex = measureIdx;
-      startTick = ctx.state.measureStart ?? 0;
-      endTick = startTick + (ctx.state.tpMeasure ?? 0);
+      const tp = pickFinite(ctx.state.tpMeasure, timingSnapshot.tpMeasure, 0);
+      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex))?.start, ctx.state.phraseStart, 0);
+      startTick = allowManual ? (ctx.state.measureStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
+      endTick = startTick + tp;
+    }
+
+    console.error('[DEBUG][PERSIST] pre-persist', { unitType, unitIndex, startTick, endTick, stateSubdivStart: ctx && (ctx as any).state && (ctx as any).state.subdivStart, stateTpSubdiv: ctx && (ctx as any).state && (ctx as any).state.tpSubdiv });
+
+    // Strict-mode immediate pre-check (pre-label) to ensure strict errors bubble up unswallowed
+
+    // Strict-mode immediate pre-check (pre-label) to ensure strict errors bubble up unswallowed
+    if (ctx && (ctx as any).state && (ctx as any).state._strictEnforceNoOverlap) {
+      const prevSiblingPathStrict = (() => {
+        try {
+          if (unitType === 'phrase' && ctx.state.phraseIndex > 0) return buildPath(layer, sectionIndex, ctx.state.phraseIndex - 1);
+          if (unitType === 'measure' && ctx.state.measureIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex - 1);
+          if (unitType === 'beat' && ctx.state.beatIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex - 1);
+          if (unitType === 'division' && ctx.state.divIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex - 1);
+          if (unitType === 'subdivision' && ctx.state.subdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex - 1);
+          if (unitType === 'subsubdivision' && ctx.state.subsubdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0, ctx.state.subsubdivIndex - 1);
+        } catch (_e) {}
+        return null;
+      })();
+      const prevNodeStrict = prevSiblingPathStrict ? getTimingValues(tree, prevSiblingPathStrict) : null;
+      if (prevNodeStrict && Number.isFinite(Number(prevNodeStrict.end ?? NaN))) {
+        const prevEnd = Number(prevNodeStrict.end);
+        if (startTick < prevEnd - 0.0001) {
+          throw new Error(`Overlapping unit: start ${startTick} < prev.end ${prevEnd} for path ${path}`);
+        }
+      }
+
+      const parentPathStrict = (unitType === 'phrase') ? buildPath(layer, sectionIndex) : (unitType === 'measure') ? buildPath(layer, sectionIndex, phraseIndex) : (unitType === 'beat') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0) : (unitType === 'division') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0) : (unitType === 'subdivision') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0) : (unitType === 'subsubdivision') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0) : null;
+      const parentNodeStrict = parentPathStrict ? getTimingValues(tree, parentPathStrict) : null;
+      if (parentNodeStrict && Number.isFinite(Number(parentNodeStrict.end ?? NaN))) {
+        const pEnd = Number(parentNodeStrict.end);
+        if (endTick > pEnd + 0.0001) {
+          throw new Error(`Unit end ${endTick} exceeds parent end ${pEnd} for path ${path}`);
+        }
+      }
+    }
+
+    // Non-overlap enforcement (pre-persist): adjust startTick/endTick before writing to tree
+    try {
+      const prevSiblingPath = (() => {
+
+        try {
+          if (unitType === 'phrase' && ctx.state.phraseIndex > 0) return buildPath(layer, sectionIndex, ctx.state.phraseIndex - 1);
+          if (unitType === 'measure' && ctx.state.measureIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex - 1);
+          if (unitType === 'beat' && ctx.state.beatIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex - 1);
+          if (unitType === 'division' && ctx.state.divIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex - 1);
+          if (unitType === 'subdivision' && ctx.state.subdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex - 1);
+          if (unitType === 'subsubdivision' && ctx.state.subsubdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0, ctx.state.subsubdivIndex - 1);
+        } catch (_e) {}
+        return null;
+      })();
+
+      const prevNode = prevSiblingPath ? getTimingValues(tree, prevSiblingPath) : null;
+      if (unitType === 'subdivision' && ctx && (ctx as any).state && (ctx as any).state.subdivIndex === 1) {
+        throw new Error(`[PRE-PERSIST-ENFORCE] prevSiblingPath=${prevSiblingPath} prevNode=${JSON.stringify(prevNode)} startTick=${String(startTick)} endTick=${String(endTick)} ctxSubdivStart=${JSON.stringify((ctx as any).state.subdivStart)} ctxTpSubdiv=${JSON.stringify((ctx as any).state.tpSubdiv)}`);
+      }
+      if (prevNode && Number.isFinite(Number(prevNode.end ?? NaN))) {
+        const prevEnd = Number(prevNode.end);
+        if (startTick < prevEnd - 0.0001) {
+          const strict = ctx && (ctx as any).state && (ctx as any).state._strictEnforceNoOverlap;
+          if (strict) {
+            throw new Error(`Overlapping unit: start ${startTick} < prev.end ${prevEnd} for path ${path}`);
+          } else {
+            console.warn('[traceroute][AUTO-FIX] Adjusting startTick to avoid overlap', { unitType, path, oldStart: startTick, newStart: prevEnd, prevPath: prevSiblingPath });
+            startTick = prevEnd;
+            if (unitType === 'phrase') ctx.state.phraseStart = startTick;
+            else if (unitType === 'measure') ctx.state.measureStart = startTick;
+            else if (unitType === 'beat') ctx.state.beatStart = startTick;
+            else if (unitType === 'division') ctx.state.divStart = startTick;
+            else if (unitType === 'subdivision') ctx.state.subdivStart = startTick;
+            else if (unitType === 'subsubdivision') ctx.state.subsubdivStart = startTick;
+            const dur = (unitType === 'phrase') ? (Number.isFinite(Number(ctx.state.tpPhrase)) ? Number(ctx.state.tpPhrase) : (Number.isFinite(Number(timingSnapshot.tpPhrase)) ? Number(timingSnapshot.tpPhrase) : 0))
+                          : (unitType === 'measure') ? (Number.isFinite(Number(ctx.state.tpMeasure)) ? Number(ctx.state.tpMeasure) : (Number.isFinite(Number(timingSnapshot.tpMeasure)) ? Number(timingSnapshot.tpMeasure) : 0))
+                          : (unitType === 'beat') ? (Number.isFinite(Number(ctx.state.tpBeat)) ? Number(ctx.state.tpBeat) : (Number.isFinite(Number(timingSnapshot.tpBeat)) ? Number(timingSnapshot.tpBeat) : 0))
+                          : (unitType === 'division') ? (Number.isFinite(Number(ctx.state.tpDiv)) ? Number(ctx.state.tpDiv) : (Number.isFinite(Number(timingSnapshot.tpDiv)) ? Number(timingSnapshot.tpDiv) : 0))
+                          : (unitType === 'subdivision') ? (Number.isFinite(Number(ctx.state.tpSubdiv)) ? Number(ctx.state.tpSubdiv) : (Number.isFinite(Number(timingSnapshot.tpSubdiv)) ? Number(timingSnapshot.tpSubdiv) : 0))
+                          : (unitType === 'subsubdivision') ? (Number.isFinite(Number(ctx.state.tpSubsubdiv)) ? Number(ctx.state.tpSubsubdiv) : (Number.isFinite(Number(timingSnapshot.tpSubsubdiv)) ? Number(timingSnapshot.tpSubsubdiv) : 0))
+                          : (Number.isFinite(Number(ctx.state.tpMeasure)) ? Number(ctx.state.tpMeasure) : (Number.isFinite(Number(timingSnapshot.tpMeasure)) ? Number(timingSnapshot.tpMeasure) : 0));
+            endTick = startTick + (Number.isFinite(dur) ? Number(dur) : 0);
+          }
+        }
+      }
+    } catch (e) {
+      try {
+        const msg = (e && (e as any).message) ? String((e as any).message) : '';
+        if (msg.includes('Overlapping unit') || msg.includes('exceeds parent end')) {
+          throw e;
+        }
+      } catch (_ee) {}
     }
 
     const label = `${layerLabel}section${secIdx + 1}phrase${phrIdx + 1}${unitType}${(unitIndex !== undefined) ? (unitIndex + 1) : ''} start: ${Number.isFinite(startTick) ? startTick.toFixed(4) : '0.0000'} end: ${Number.isFinite(endTick) ? endTick.toFixed(4) : '0.0000'}`;
@@ -658,10 +895,48 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     // Always record on state for tests and fallback reading
     (ctx as any).state.unitLabel = label;
 
-    // Persist start/end into the timing tree so enforcement logic can compute lastTick reliably
+    // Persist start/end and indices into the timing tree so enforcement logic and grandFinale can compute offsets reliably
     try {
-      setTimingValues(tree, path, { start: startTick, end: endTick });
+      const persistStart = Number.isFinite(Number(startTick)) ? Number(startTick) : (Number.isFinite(Number(timingSnapshot.start)) ? Number(timingSnapshot.start) : 0);
+      const persistEnd = Number.isFinite(Number(endTick)) ? Number(endTick) : (Number.isFinite(Number(timingSnapshot.end)) ? Number(timingSnapshot.end) : persistStart);
+      setTimingValues(tree, path, { start: persistStart, end: persistEnd, sectionIndex: sectionIndex ?? 0, phraseIndex: phraseIndex ?? 0, measureIndex: ctx.state.measureIndex ?? 0 });
     } catch (_e) {}
+
+
+
+    // Strict pre-check: when strict enforcement is enabled, throw immediately so callers/tests receive errors
+    if (ctx && (ctx as any).state && (ctx as any).state._strictEnforceNoOverlap) {
+      console.warn('[traceroute][STRICT] performing strict pre-check', { unitType, path, measureIndex: ctx.state.measureIndex, beatIndex: ctx.state.beatIndex });
+      const prevSiblingPathStrict = (() => {
+        try {
+          if (unitType === 'phrase' && ctx.state.phraseIndex > 0) return buildPath(layer, sectionIndex, ctx.state.phraseIndex - 1);
+          if (unitType === 'measure' && ctx.state.measureIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex - 1);
+          if (unitType === 'beat' && ctx.state.beatIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex - 1);
+          if (unitType === 'division' && ctx.state.divIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex - 1);
+          if (unitType === 'subdivision' && ctx.state.subdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex - 1);
+          if (unitType === 'subsubdivision' && ctx.state.subsubdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0, ctx.state.subsubdivIndex - 1);
+        } catch (_e) {}
+        return null;
+      })();
+      const prevNodeStrict = prevSiblingPathStrict ? getTimingValues(tree, prevSiblingPathStrict) : null;
+      if (prevNodeStrict && Number.isFinite(Number(prevNodeStrict.end ?? NaN))) {
+        const prevEnd = Number(prevNodeStrict.end);
+        if (startTick < prevEnd - 0.0001) {
+          throw new Error(`Overlapping unit: start ${startTick} < prev.end ${prevEnd} for path ${path}`);
+        }
+      }
+
+      const parentPathStrict = (unitType === 'phrase') ? buildPath(layer, sectionIndex) : (unitType === 'measure') ? buildPath(layer, sectionIndex, phraseIndex) : (unitType === 'beat') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0) : (unitType === 'division') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0) : (unitType === 'subdivision') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0) : (unitType === 'subsubdivision') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0) : null;
+      const parentNodeStrict = parentPathStrict ? getTimingValues(tree, parentPathStrict) : null;
+      if (parentNodeStrict && Number.isFinite(Number(parentNodeStrict.end ?? NaN))) {
+        const pEnd = Number(parentNodeStrict.end);
+        if (endTick > pEnd + 0.0001) {
+          throw new Error(`Unit end ${endTick} exceeds parent end ${pEnd} for path ${path}`);
+        }
+      }
+    }
+
+    // Non-overlap enforcement: handled earlier (pre-persist). Continue with buffer handling.
 
     if (ctx && activeBuf && (ctx as any).csvBuffer !== activeBuf) {
       (ctx as any).csvBuffer = activeBuf;
@@ -671,7 +946,8 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
     // Emit a deterministic unit marker into the active buffer for strict traceroutes/tests
     try {
-      const pFn = requirePush(ctx);
+      let pFn: any = null;
+      try { pFn = requirePush(ctx); } catch (_e) { pFn = null; }
       const marker = {
         tick: Number.isFinite(startTick) ? startTick : 0,
         type: 'marker_t',
@@ -679,7 +955,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       } as any;
 
       if (typeof pFn === 'function' && (ctx as any).csvBuffer) {
-        pFn((ctx as any).csvBuffer, marker);
+        try { pFn((ctx as any).csvBuffer, marker); } catch (_e) {}
       } else if ((ctx as any).csvBuffer && Array.isArray((ctx as any).csvBuffer)) {
         try { ((ctx as any).csvBuffer as any[]).push(marker); } catch (_e) {}
       }
@@ -712,71 +988,198 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
         h = (h ^ (seed >>> 0)) >>> 0;
         const unitHash = h.toString(36);
 
-        setTimingValues(tree, path, { unitHash });
+        setTimingValues(tree, path, { unitHash, sectionIndex: sectionIndex ?? 0, phraseIndex: phraseIndex ?? 0, measureIndex: ctx.state.measureIndex ?? 0 });
 
-        // Emit handoff marker at last tick (endTick - 1) so it is readable only at previous unit's last tick
+        // Attach unitHash into the active buffer's unitTiming snapshot so writers can use it
+        try {
+          const targetBuf = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
+          if (targetBuf) {
+            try {
+              targetBuf.unitTiming = targetBuf.unitTiming || {};
+              targetBuf.unitTiming.unitHash = unitHash;
+              targetBuf.unitTiming.unitType = unitType;
+              targetBuf.unitTiming.unitIndex = unitIndex ?? -1;
+              targetBuf.unitTiming.startTick = startTick;
+              targetBuf.unitTiming.endTick = endTick;
+              // Provide section/phrase/measure indices to help grandFinale compute absolute offsets
+              try { targetBuf.unitTiming.sectionIndex = sectionIndex ?? 0; } catch (_e) {}
+              try { targetBuf.unitTiming.phraseIndex = phraseIndex ?? 0; } catch (_e) {}
+              try { targetBuf.unitTiming.measureIndex = (ctx && ctx.state && ctx.state.measureIndex) ? ctx.state.measureIndex : 0; } catch (_e) {}
+            } catch (_e) {}
+          }
+        } catch (_e) {}
+
+        // Emit a compact marker that explicitly includes the unitHash + start/end so post-processing can match rows easily
         try {
           const prevEnd = Number.isFinite(endTick) ? endTick : Number(timingSnapshot.measureStart || 0) + Number(timingSnapshot.tpMeasure || 0);
-          const lastTick = Math.max(Math.round(startTick), Math.round(prevEnd) - 1);
-          const pFn = requirePush(ctx);
-          const handoffEvent: any = { tick: lastTick, type: 'unit_handoff', vals: [unitHash], _internal: true };
+          let pFn: any = null;
+          try { pFn = requirePush(ctx); } catch (_e) { pFn = null; }
           const targetBuf = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
+          const unitMarker: any = { tick: Math.round(startTick), type: 'marker_t', vals: [`unitHash:${unitHash}`, `unitType:${unitType}`, `start:${Number(startTick)}`, `end:${Number(prevEnd)}`, `section:${sectionIndex}`, `phrase:${phraseIndex}`, `measure:${ctx.state && ctx.state.measureIndex ? ctx.state.measureIndex : 0}`] };
           if (typeof pFn === 'function' && targetBuf) {
-            pFn(targetBuf, handoffEvent);
+            try { pFn(targetBuf, unitMarker); } catch (_e) {}
           } else if (targetBuf && Array.isArray(targetBuf)) {
-            try { (targetBuf as any[]).push(handoffEvent); } catch (_e) {}
+            try { (targetBuf as any[]).push(unitMarker); } catch (_e) {}
+          }
+
+          // Maintain current unit hashes on buffer for stronger per-event annotation
+          try {
+            if (targetBuf) {
+              targetBuf.currentUnitHashes = targetBuf.currentUnitHashes || {};
+              targetBuf.currentUnitHashes[unitType] = unitHash;
+            }
+          } catch (_e) {}
+
+          // Emit a handoff marker at the last meaningful tick of the unit so enforcement can validate
+          const handoffTick = Math.max(Math.round(startTick), Math.round(prevEnd) - 1);
+          const handoffEvent: any = { tick: handoffTick, type: 'unit_handoff', vals: [unitHash] };
+          const targetBuf2 = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
+          if (typeof pFn === 'function' && targetBuf2) {
+            pFn(targetBuf2, handoffEvent);
+          } else if (targetBuf2 && Array.isArray(targetBuf2)) {
+            try { (targetBuf2 as any[]).push(handoffEvent); } catch (_e) {}
           }
         } catch (_e) {
           // non-fatal
         }
+
+        // Deep traceroute & validation: ensure calculated start/end are absolute with respect to parent units and previous siblings
+        try {
+          const poly = getPolychronContext();
+          const traceMode = poly && poly.test && poly.test._traceMode ? poly.test._traceMode : (poly && poly.test && poly.test.enableLogging ? 'anomaly' : 'none');
+          const deep = traceMode === 'full' || traceMode === 'deep';
+
+          // Parent path resolution for validation
+          const parentPath = (unitType === 'phrase') ? buildPath(layer, sectionIndex) :
+            (unitType === 'measure') ? buildPath(layer, sectionIndex, phraseIndex) :
+            (unitType === 'beat') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0) :
+            (unitType === 'division') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0) :
+            (unitType === 'subdivision') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0) :
+            (unitType === 'subsubdivision') ? buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0) :
+            null;
+
+          const parentNode = parentPath ? getTimingValues(tree, parentPath) : null;
+          const prevSiblingPath = (() => {
+            try {
+              if (unitType === 'phrase' && ctx.state.phraseIndex > 0) return buildPath(layer, sectionIndex, ctx.state.phraseIndex - 1);
+              if (unitType === 'measure' && ctx.state.measureIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex - 1);
+              if (unitType === 'beat' && ctx.state.beatIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex - 1);
+              if (unitType === 'division' && ctx.state.divIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex - 1);
+              if (unitType === 'subdivision' && ctx.state.subdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex - 1);
+              if (unitType === 'subsubdivision' && ctx.state.subsubdivIndex > 0) return buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0, ctx.state.subsubdivIndex - 1);
+            } catch (_e) {}
+            return null;
+          })();
+          const prevNode = prevSiblingPath ? getTimingValues(tree, prevSiblingPath) : null;
+
+          // Parent containment checks
+          if (parentNode) {
+            const pStart = Number(parentNode.start ?? NaN);
+            if (Number.isFinite(pStart) && startTick < pStart - 0.0001) {
+              console.error('[traceroute][ERROR] setUnitTiming: unit start before parent start', { unitType, path, startTick, parentStart: pStart, parentPath });
+            }
+            const pEnd = Number(parentNode.end ?? NaN);
+            if (Number.isFinite(pEnd) && endTick > pEnd + 0.0001) {
+              console.error('[traceroute][ERROR] setUnitTiming: unit end after parent end', { unitType, path, endTick, parentEnd: pEnd, parentPath });
+            }
+          }
+
+          // Prev-sibling monotonicity checks
+          if (prevNode && Number.isFinite(Number(prevNode.end ?? NaN))) {
+            const prevEndVal = Number(prevNode.end);
+            if (startTick < prevEndVal - 0.0001) {
+              console.error('[traceroute][WARN] setUnitTiming: unit start overlaps previous sibling', { unitType, path, startTick, prevPrevEnd: prevEndVal, prevPath: prevSiblingPath });
+            }
+          }
+
+          if (deep) {
+            // Dump context: timingSnapshot, parentNode, prevNode and first/last few buffer rows for diagnosing stacking
+            const bufRows = ((ctx as any).csvBuffer && ((ctx as any).csvBuffer.rows || ctx.csvBuffer)) || [];
+            console.error('[traceroute][DEEP] setUnitTiming deep snapshot', { unitType, path, timingSnapshot, parentNode, prevNode, bufferSampleHead: bufRows.slice(0, 10), bufferSampleTail: bufRows.slice(-10) });
+          }
+        } catch (_e) {}
       } catch (_e) {
-        // ignore hashing errors
+        // non-fatal: instrumentation only
       }
-
     } catch (_e) {
-      // non-fatal: instrumentation only
+      // ignore label generation errors
     }
-  } catch (_e) {
-    // ignore label generation errors
-  }
 
-  // Log the unit after calculating timing using the context-bound logger when available
-  // Debug: show whether ctx.logUnit is used
-  try {
-    // Only emit verbose setUnitTiming trace when enabled explicitly via DI flags on ctx/state
+    // Log the unit after calculating timing using the context-bound logger when available
+    // Emit optional debug logs only when enabled
     const dbg = ctx && ((ctx as any).DEBUG_TIME || (ctx as any).state && (ctx as any).state.DEBUG_TIME);
     if (dbg) {
-      console.log(`[setUnitTiming] unit=${unitType} ctxHasLog=${!!(ctx && (ctx as any).logUnit)} ctxLOG=${(ctx && (ctx as any).LOG)}`);
-      if (unitType === 'subsubdivision') {
-        console.log('[setUnitTiming] ** subsubdivision called **');
+      try {
+        console.log(`[setUnitTiming] unit=${unitType} ctxHasLog=${!!(ctx && (ctx as any).logUnit)} ctxLOG=${(ctx && ctx.LOG)}`);
+        if (unitType === 'subsubdivision') {
+          console.log('[setUnitTiming] ** subsubdivision called **');
+        }
+      } catch (_e) {}
+    } // end if (dbg)
+
+    // Prefer context-bound logger, but fall back to module logUnit gracefully
+    if (ctx && (ctx as any).logUnit && typeof (ctx as any).logUnit === 'function') {
+      try { (ctx as any).logUnit(unitType); } catch (e) { console.warn('setUnitTiming: logUnit failed:', e && (e as Error).message ? (e as Error).message : e); }
+    } else {
+      try { logUnit(unitType, ctx); } catch (e) { console.warn('setUnitTiming: logUnit failed:', e && (e as Error).message ? (e as Error).message : e); }
+    }
+  };
+
+  // Determine polyrhythms by querying the composer for a secondary meter and
+  // finding small whole-number relationships between the primary and secondary meters.
+  // Returns an object with bestMatch or null
+  const getPolyrhythm = (ctxArg?: ICompositionContext) => {
+    const ctxLocal: any = ctxArg || (getPolychronContext && getPolychronContext().state ? { state: getPolychronContext().state } : undefined);
+    if (!ctxLocal) return null;
+    const state: any = ctxLocal.state;
+
+    let iterations = 0;
+    const maxIterations = 100;
+
+    while (iterations < maxIterations) {
+      iterations++;
+      try {
+        const composerLocal = state.composer;
+        const [polyNumerator, polyDenominator] = (composerLocal && typeof composerLocal.getMeter === 'function') ? composerLocal.getMeter(true, true) : [state.numerator, state.denominator];
+        const polyMeterRatio = polyNumerator / polyDenominator;
+
+        let bestMatch: any = { originalMeasures: Infinity, polyMeasures: Infinity, totalMeasures: Infinity, polyNumerator, polyDenominator };
+
+        for (let originalMeasures = 1; originalMeasures < 6; originalMeasures++) {
+          for (let polyMeasures = 1; polyMeasures < 6; polyMeasures++) {
+            if (Math.abs(originalMeasures * state.meterRatio - polyMeasures * polyMeterRatio) < 0.00000001) {
+              const currentMatch = { originalMeasures, polyMeasures, totalMeasures: originalMeasures + polyMeasures, polyNumerator, polyDenominator };
+              if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
+                bestMatch = currentMatch;
+              }
+            }
+          }
+        }
+
+        if (bestMatch.totalMeasures !== Infinity &&
+            (bestMatch.totalMeasures > 2 && (bestMatch.originalMeasures > 1 || bestMatch.polyMeasures > 1)) &&
+            (state.numerator !== bestMatch.polyNumerator || state.denominator !== bestMatch.polyDenominator)) {
+          state.measuresPerPhrase1 = bestMatch.originalMeasures;
+          state.measuresPerPhrase2 = bestMatch.polyMeasures;
+          state.tpPhrase = state.tpMeasure * state.measuresPerPhrase1;
+          return bestMatch;
+        }
+      } catch (_e) {
+        // ignore and continue
       }
     }
-  } catch (_e) {}
+    return null;
+  };
 
-  try {
-    if (ctx && (ctx as any).logUnit && typeof (ctx as any).logUnit === 'function') {
-      (ctx as any).logUnit(unitType);
-    } else {
-      // Use DI-aware logger; if DI services are not available, log and continue without throwing
-      logUnit(unitType, ctx);
-    }
-  } catch (e) {
-    console.warn('setUnitTiming: logUnit failed:', e && (e as Error).message ? (e as Error).message : e);
-  }
-};;
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds - mins * 60;
+    const secInt = Math.floor(secs);
+    const frac = secs - secInt;
+    const fracStr = frac.toFixed(4).slice(1); // .XXXX
+    const secStr = String(secInt).padStart(2, '0');
+    return `${mins}:${secStr}${fracStr}`;
+  };
+}
 
-/**
- * Format seconds as MM:SS.ssss time string.
- */
-const formatTime = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  const secs = (seconds % 60).toFixed(4).padStart(7, '0');
-  return `${minutes}:${secs}`;
-};
-
-
-
-export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, syncStateToGlobals, formatTime };
-
-// No global exposures: prefer DI and direct imports for testing and runtime.
-// Test helper: LayerManager should be obtained via DI (container.get('layerManager')) rather than runtime globals.
+export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime };

@@ -87,6 +87,8 @@ declare let composer: any;
 // Module-level composition context (Step 12: Context threading)
 // Made available during composition to replace globals
 let currentCompositionContext: ICompositionContext | null = null;
+// Engine concurrency guard: prevents concurrent initialization runs from colliding
+let __engineRunning = false;
 
 /**
  * Set the current composition context for use by module functions
@@ -268,6 +270,14 @@ const initializePlayEngine = async (
   const poly = getPolychronContext();
   const g = poly.test || {} as any;
 
+  // Prevent concurrent runs
+  if (__engineRunning) {
+    console.error('[traceroute] initializePlayEngine: concurrent run detected; rejecting second invocation');
+    throw new Error('initializePlayEngine: concurrent run detected');
+  }
+  __engineRunning = true;
+  try { console.error('[traceroute] initializePlayEngine: entry stack', new Error().stack); } catch (_e) {}
+
   // Report initialization phase
   progressCallback?.({
     phase: 'initializing',
@@ -293,11 +303,26 @@ const initializePlayEngine = async (
   const compositionState = container.get('compositionState');
   // First import any test-seeded values from poly.state into the composition state
   compositionState.syncFromGlobal();
+
+  // If fastTrace is enabled (via poly.test.fastTrace or env POLYCHRON_FAST_TRACE=1), reduce composition scope to make runs quick
+  const fastTrace = g.fastTrace || process.env.POLYCHRON_FAST_TRACE === '1';
+  if (fastTrace) {
+    try { console.error('[traceroute] FAST TRACE mode enabled: minimizing composition work for quick runs'); } catch (_e) {}
+    g.SECTIONS = { min: 1, max: 1 };
+    compositionState.SECTIONS = { min: 1, max: 1 } as any;
+    compositionState.measuresPerPhrase = 1;
+    compositionState.phrasesPerSection = 1;
+    compositionState.totalSections = 1;
+    poly.test._fastTrace = true;
+  }
+
   // Apply explicit test-provided overrides where present
   compositionState.BASE_BPM = g.BPM ?? poly.state?.BPM ?? compositionState.BASE_BPM;
   compositionState.LOG = g.LOG !== undefined ? g.LOG : compositionState.LOG;
   // Persist authoritative composition state back into the DI test namespace
+  try { console.error('[traceroute] BEFORE compositionState.syncToGlobal (startup)', { comp_totalSections: compositionState.totalSections }); } catch (_e) {}
   compositionState.syncToGlobal();
+  try { console.error('[traceroute] AFTER compositionState.syncToGlobal (startup)', { comp_totalSections: compositionState.totalSections, poly_totalSections: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.totalSections) || null }); } catch (_e) {}
 
 
   // Create composition context (Step 12: Context threading)
@@ -334,6 +359,25 @@ const initializePlayEngine = async (
 
   // Make context available to module functions
   setCurrentCompositionContext(ctx);
+  try { console.error('[traceroute] initializePlayEngine ctx created', { totalSections: ctx.state.totalSections, BPM: ctx.BPM, PPQ: ctx.PPQ, SECTIONS: ctx.SECTIONS, COMPOSERS: ctx.COMPOSERS || null }); } catch (_e) {}
+
+  // Diagnostic hook: force a short sample of NOTE generation in the real context when requested
+  try {
+    if (process.env.POLYCHRON_FORCE_NOTE_SAMPLE === '1') {
+      try {
+        console.error('[initializePlayEngine] POLYCHRON_FORCE_NOTE_SAMPLE active: forcing a few stage.playNotes/playNotes2 calls');
+        ctx.state.bpmRatio3 = 1;
+        const st = container.get('stage');
+        for (let i = 0; i < 5; i++) {
+          st.playNotes(ctx);
+          st.playNotes2(ctx);
+        }
+        console.error('[initializePlayEngine] forced sample pushed, global note pushes:', (globalThis as any).__PUSH_NOTE_COUNT || 0);
+      } catch (_e) {
+        console.error('[initializePlayEngine] forced sample failed', _e && (_e as Error).message ? (_e as Error).message : _e);
+      }
+    }
+  } catch (_e) {}
 
   // Ensure LOG from ctx is set in state (no globals)
   (ctx as any).state.LOG = ctx.LOG;
@@ -396,13 +440,12 @@ const initializePlayEngine = async (
           return weights.length - 1;
         }
       };
-      // Persist deterministic utils onto both PolychronContext and ctx so consumers use seeded functions
-      const polyCtx = getPolychronContext();
-      if (!polyCtx.utils) throw new Error('initializePlayEngine: PolychronContext.utils must be initialized via DI before seeding');
-      Object.assign(polyCtx.utils, seededUtils);
+      // Persist deterministic utils into ctx only (avoid mutating the global PolychronContext.utils which can unexpectedly affect other modules)
       if (!ctx.utils) throw new Error('initializePlayEngine: ctx.utils must be provided via DI before seeding deterministic RNG');
       Object.assign(ctx.utils, seededUtils);
-      console.log('[initializePlayEngine] deterministic RNG installed (seed=' + options.seed + ')');
+      // For diagnostics, record that ctx-level seeded utils were installed
+      (getPolychronContext().test as any).lastSeed = options.seed;
+      console.log('[initializePlayEngine] deterministic RNG installed on ctx (seed=' + options.seed + ')');
     }
   } catch (_e) {}
 
@@ -442,9 +485,26 @@ const initializePlayEngine = async (
   const { state: polyState, buffer: c2 } = ctx.LM.register('poly', 'c2', {}, () => ctx.stage.setTuningAndInstruments());
 
   // Use DI-provided randomInt (ri) from PolychronContext rather than relying on g.ri global
-  const { ri: riFn } = getPolychronContext().utils;
+  // Prefer ctx.utils (DI-provided) when available, otherwise fallback to global PolychronContext.utils and finally the module's ri helper
+  const polyUtils = (getPolychronContext && getPolychronContext().utils) ? getPolychronContext().utils : {} as any;
+  const riFn = (ctx.utils && ctx.utils.ri) || polyUtils.ri || ri;
   const sectionsCfg = g.SECTIONS || (container.get('config') && container.get('config').SECTIONS) || { min: 1, max: 1 };
-  ctx.state.totalSections = typeof riFn === 'function' ? riFn(sectionsCfg.min, sectionsCfg.max) : 1;
+  // Compute totalSections using DI-provided ri; include identity and test-call logging to detect unexpected behavior
+  let computedSections = 1;
+  try {
+    if (typeof riFn === 'function') {
+      const test1 = riFn(sectionsCfg.min, sectionsCfg.max);
+      const test2 = riFn(sectionsCfg.min, sectionsCfg.max);
+      const funcSrcHead = String(riFn).slice(0,200);
+      try { console.error('[traceroute] riFn test', { isCtxRi: Boolean(ctx.utils && ctx.utils.ri === riFn), isPolyRi: Boolean(polyUtils && polyUtils.ri === riFn), isModuleRi: Boolean(ri === riFn), test1, test2, funcSrcHead, funcLen: String(riFn).length, sectionsCfg }); } catch (_e) {}
+      computedSections = test1;
+    }
+  } catch (e) {
+    try { console.error('[traceroute] riFn threw', e); } catch (_e) {}
+  }
+  ctx.state.totalSections = computedSections;
+  try { console.error('[traceroute] computed totalSections', { hasRiFn: typeof riFn === 'function', sectionsCfg, totalSections: ctx.state.totalSections }); } catch (_e) {}
+  try { console.error('[traceroute] totalSectionsAssignmentStack', new Error().stack); } catch (_e) {}
 
   // Report composing phase started
   progressCallback?.({
@@ -459,7 +519,10 @@ const initializePlayEngine = async (
   // Temporarily skip handoff enforcement during initial composition population so we don't
   // fail while instrumentation and handoff markers are being generated.
   ctx.state._skipHandoffEnforcement = true;
-  for (ctx.state.sectionIndex = 0; ctx.state.sectionIndex < ctx.state.totalSections; ctx.state.sectionIndex++) {
+  try { console.error('[traceroute] before sections loop', { totalSections: ctx.state.totalSections }); } catch (_e) {}
+  const sectionsToRun = ctx.state.totalSections;
+  try { console.error('[traceroute] sectionsToRun snapshot', { sectionsToRun }); } catch (_e) {}
+  for (ctx.state.sectionIndex = 0; ctx.state.sectionIndex < sectionsToRun; ctx.state.sectionIndex++) {
     // Sync minimal state to globals for legacy consumers and report progress
     ctx.state.syncToGlobal();
 
@@ -517,7 +580,9 @@ const initializePlayEngine = async (
       (await import('./time.js')).getMidiTiming(ctx);
       (await import('./time.js')).getPolyrhythm(ctx);
       // Keep legacy globals in sync for compatibility
+      try { console.error('[traceroute] BEFORE ctx.state.syncToGlobal (post timing)', { totalSections: ctx.state.totalSections }); } catch (_e) {}
       ctx.state.syncToGlobal();
+      try { console.error('[traceroute] AFTER ctx.state.syncToGlobal (post timing)', { totalSections: ctx.state.totalSections, poly_totalSections: getPolychronContext().state?.totalSections }); } catch (_e) {}
 
       // Respect any test-seeded measuresPerPhrase value (DI-only override)
       if (compositionState.measuresPerPhrase && compositionState.measuresPerPhrase > 0) {
@@ -528,7 +593,9 @@ const initializePlayEngine = async (
       ctx.setUnitTiming('phrase');
       for (ctx.state.measureIndex = 0; ctx.state.measureIndex < ctx.state.measuresPerPhrase; ctx.state.measureIndex++) {
         ctx.state.measureCount++;
+        try { console.error('[traceroute] composing BEFORE measure', { sectionIndex: ctx.state.sectionIndex, phraseIndex: ctx.state.phraseIndex, measureIndex: ctx.state.measureIndex, currentMeasureStart: ctx.state.measureStart, tpMeasure: ctx.state.tpMeasure }); } catch (_e) {}
         ctx.setUnitTiming('measure');
+        try { console.error('[traceroute] composing AFTER measure', { measureIndex: ctx.state.measureIndex, measureStart: ctx.state.measureStart, measureStartTime: ctx.state.measureStartTime, tpMeasure: ctx.state.tpMeasure, csvBufUnitTiming: (ctx.csvBuffer && (ctx.csvBuffer.unitTiming)) || null }); } catch (_e) {}
 
         for (ctx.state.beatIndex = 0; ctx.state.beatIndex < ctx.state.numerator; ctx.state.beatIndex++) {
           ctx.state.beatCount++;
@@ -599,9 +666,13 @@ const initializePlayEngine = async (
       }
 
       ctx.LM.advance('poly', 'phrase');
+      // Immediately persist timing for the newly-advanced poly phrase
+      ctx.setUnitTiming('phrase');
     }
 
     ctx.LM.advance('primary', 'section');
+    // Persist timing after section advancement so subsequent phrases/measures are absolute
+    ctx.setUnitTiming('phrase');
     // Ensure the context's buffer points to the active buffer before logging section markers
     try {
       const activeName = (ctx as any).LM.activeLayer;
@@ -631,6 +702,8 @@ const initializePlayEngine = async (
     }
 
     ctx.LM.advance('poly', 'section');
+    // Persist timing after poly section advancement
+    ctx.setUnitTiming('phrase');
     // Re-enable handoff enforcement; initial instrumentation and markers should now be present
     ctx.state._skipHandoffEnforcement = false;
     try {
@@ -676,8 +749,13 @@ const initializePlayEngine = async (
 
   // Prefer DI-registered writer for finalization rather than relying on a global
   try {
-    const grandFinaleFn = container.get('grandFinale');
-    if (typeof grandFinaleFn === 'function') grandFinaleFn(ctx);
+    // In fastTrace (debug) mode skip heavy finalization to keep runs short
+    if (!poly.test || !poly.test._fastTrace) {
+      const grandFinaleFn = container.get('grandFinale');
+      if (typeof grandFinaleFn === 'function') grandFinaleFn(ctx);
+    } else {
+      console.error('[traceroute] FAST TRACE mode: skipping grandFinale to keep run fast');
+    }
   } catch (e) {
     // If DI is missing, propagate the error (no global fallback allowed)
     throw e;
@@ -690,10 +768,39 @@ const initializePlayEngine = async (
     message: 'Composition complete'
   });
 
+  // Emit a compact tracing summary if present (non-verbose)
+  try {
+    const poly = getPolychronContext();
+    if (poly && poly.test && typeof poly.test._reportTotalSectionsWrites === 'function') {
+      try { poly.test._reportTotalSectionsWrites(); } catch (_e) {}
+    }
+
+    // If full-file trace mode was requested, write collected snapshots to disk as a single JSON file
+    if (poly && poly.test && poly.test._traceMode === 'full-file' && Array.isArray(poly.test._traceSnapshots) && poly.test._traceSnapshots.length > 0) {
+      try {
+        const snapshots = poly.test._traceSnapshots;
+        const outPath = poly.test._traceFilePath || 'output/trace-full.json';
+        const fsModule = (ctx && (ctx as any).fs) ? (ctx as any).fs : await import('fs');
+        // Ensure directory exists
+        try {
+          const p = (await import('path')).dirname(outPath);
+          try { fsModule.mkdirSync(p, { recursive: true }); } catch (_e) {}
+        } catch (_e) {}
+        try { fsModule.writeFileSync(outPath, JSON.stringify({ meta: { seed: (ctx as any).state && (ctx as any).state.tracerouteSeed, snapshotLimit: poly.test._traceSnapshotLimit }, snapshots }, null, 2)); } catch (e) { console.error('[trace-summary] failed to write trace file', e); }
+        console.error('[trace-summary] wrote full trace file', { outPath, snapshotCount: snapshots.length });
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+  } catch (_e) {}
+
   // Clean up context: In test environments, keep context available for assertions
   if (process.env.NODE_ENV !== 'test') {
     setCurrentCompositionContext(null);
   }
+
+  // Release concurrency guard
+  try { __engineRunning = false; } catch (_e) {}
 
   return ctx;
 };;
@@ -709,7 +816,7 @@ export {
 
 
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !(globalThis as any).__POLYCHRON_PREVENT_AUTO_START) {
   initializePlayEngine().catch((err) => {
     console.error('Composition engine failed:', err);
   });

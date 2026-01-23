@@ -2,6 +2,8 @@ export default {
   test: {
     globals: true,
     testTimeout: 30000,
+    // Setup file to silence noisy console logs during tests
+    setupFiles: ['./src/test-setup.ts'],
     // Reporter: default shows concise summary + failures
     reporters: process.env.CI ? 'default' : 'default',
     // Only report failures, not passing tests

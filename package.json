@@ -57,6 +57,8 @@
     "onboard": "node scripts/onboard.js",
     "todo": "node scripts/new-todo.js",
     "am-i-done": "node scripts/am-i-done.js",
+    "validate:csv": "node scripts/treewalker.js",
+    "validate:csv:ci": "npm run play:raw && npm run validate:csv",
     "prepare": "husky install"
   }
 }

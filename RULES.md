@@ -22,6 +22,9 @@ Every task must be tracked in `TODO.md` using the prescribed workflow to ensure 
 - Requests for clarification and confirmation to continue should be reserved only for emergecies or high-danger situations.
 - Where ambiguity or uncertainty as to which option to proceed with exists, note the ambiguity in the relevant TODO.md line, and why the chosen direction was taken.
 - Assume all progress is being reviewed live in TODO.md and that work will be manually cancelled if deemed unacceptable.
+- Additional guidance: Do not send frequent incremental updates or partial-status pings outside TODO.md; such behavior can be perceived as harassment and undermines trust.
+- Project agents must only report completion or emergency-level alerts; non-critical status updates should be recorded in TODO.md and not pushed directly to the owner.
+- If ambiguity exists about whether an update is critical, err on the side of silence and annotate the TODO with the ambiguity and proposed next step instead of sending a direct ping.
 
 ## RULE 2: Source - /src
 

@@ -65,7 +65,23 @@ export const pushMultiple = (buffer: CSVBuffer | any[], ...items: MIDIEvent[]): 
     }
 
     // Treat as MIDIEvent-like object
-    const copy: any = { ...it, tick: sanitizeTick((it as any).tick) };
+    // Compute sanitized numeric tick
+    const sanitizedTick = sanitizeTick((it as any).tick);
+    // If the buffer has an active unitTiming with a unitHash, append it into the tick field as `tick|unitHash`
+    let tickWithUnit: any = sanitizedTick;
+    try {
+      const unitHash = (buffer && (buffer as any).unitTiming && (buffer as any).unitTiming.unitHash) ? (buffer as any).unitTiming.unitHash : null;
+      // If no immediate unitTiming present, fall back to sustained currentUnitHashes recorded by setUnitTiming
+      const fallback = (buffer && (buffer as any).currentUnitHashes) ? (buffer as any).currentUnitHashes : {};
+      const type = (it && (it as any).type) ? String((it as any).type).toLowerCase() : '';
+      const isMarkerLike = type === 'marker_t' || type === 'unit_handoff' || type.startsWith('marker');
+      const chosen = unitHash || fallback.measure || fallback.beat || fallback.division || fallback.subdivision || fallback.phrase || null;
+      if (chosen && !isMarkerLike) {
+        tickWithUnit = `${sanitizedTick}|${chosen}`;
+      }
+    } catch (_e) {}
+
+    const copy: any = { ...it, tick: tickWithUnit };
     if (!copy.vals) copy.vals = [] as any;
     if (!Array.isArray(copy.vals)) copy.vals = [copy.vals];
 
@@ -387,9 +403,16 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     state: entry.state || {}
   }));
 
-  layerData.forEach(({ name, buffer, state }) => {
+  // Aggregate unit metadata across layers to aid CSV treewalking and validation
+  const allUnits: any[] = [];
+
+  layerData.forEach(({ name, buffer, state }, layerIndex) => {
     const layerState: any = state || {};
     const bufferData: any = buffer;
+
+    // Determine track number and output filename for this layer
+    const trackNum = (layerIndex || 0) + 1;
+    const outputFilename = (name === 'primary') ? 'output/output1.csv' : (name === 'poly') ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
 
     const sectionEnd = layerState.sectionEnd ?? layerState.sectionStart ?? 0;
     const tpSec = layerState.tpSec ?? env.tpSec ?? 1;
@@ -399,15 +422,35 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
     if (typeof env.muteAll === 'function') env.muteAll(sectionEnd + (env.PPQ || 480) * 2);
 
     // Finalize buffer
+    // Collect unit markers for this layer so we can write a structured JSON manifest
+    const unitsForLayer: any[] = [];
     let finalBuffer = (Array.isArray(bufferData) ? bufferData : bufferData.rows)
       .filter((i: any) => i !== null)
       // Filter out internal-only events that are not valid CSV/MIDI events
       .filter((i: any) => !(i && i._internal))
       .map((i: any) => {
-        // Normalize tick values defensively to avoid NaN/infinite values in output
+        // Normalize and parse tick values defensively to support `tick|unitHash` strings
         const rawTick = i.tick;
-        let tickVal = Number.isFinite(rawTick) ? rawTick : Math.abs(rawTick || 0) * (env.rf ? env.rf(.1, .3) : rf(.1, .3));
+        let tickNumPart: number | null = null;
+        let unitHashPart: string | null = null;
+
+        if (typeof rawTick === 'string' && rawTick.includes('|')) {
+          const parts = String(rawTick).split('|');
+          tickNumPart = Number(parts[0]);
+          unitHashPart = parts[1] || null;
+        } else if (Number.isFinite(rawTick)) {
+          tickNumPart = Number(rawTick);
+        } else if (typeof rawTick === 'string') {
+          tickNumPart = Number(rawTick);
+        }
+
+        let tickVal = Number.isFinite(tickNumPart as any) ? (tickNumPart as number) : Math.abs(rawTick || 0) * (env.rf ? env.rf(.1, .3) : rf(.1, .3));
         if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
+        tickVal = Math.round(tickVal);
+
+        // Re-encode tick with unitHash if present so CSV contains `tick|unitHash`
+        const tickOut = unitHashPart ? `${tickVal}|${unitHashPart}` : tickVal;
+
         // Sanitize string values inside vals to remove literal 'NaN' and 'undefined' tokens
         const sanitizeVal = (v: any) => {
           if (Number.isFinite(v)) return v;
@@ -415,70 +458,303 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
           if (typeof v === 'string') return v.replace(/\bNaN\b/gi, '0').replace(/\bundefined\b/gi, '');
           return v;
         };
+
+        // If this is a unit marker emitted by setUnitTiming, parse and capture the unit metadata
+        try {
+          if (i && i.type === 'marker_t' && Array.isArray(i.vals)) {
+            const vh = (i.vals.find((v: any) => String(v).startsWith('unitHash:')) || '') as string;
+            const vt = (i.vals.find((v: any) => String(v).startsWith('unitType:')) || '') as string;
+            const vs = (i.vals.find((v: any) => String(v).startsWith('start:')) || '') as string;
+            const ve = (i.vals.find((v: any) => String(v).startsWith('end:')) || '') as string;
+            const vsec = (i.vals.find((v: any) => String(v).startsWith('section:')) || '') as string;
+            const vphr = (i.vals.find((v: any) => String(v).startsWith('phrase:')) || '') as string;
+            const vmea = (i.vals.find((v: any) => String(v).startsWith('measure:')) || '') as string;
+            const uhash = vh ? String(vh).split(':')[1] : null;
+            const utype = vt ? String(vt).split(':')[1] : null;
+            const ustart = vs ? Number(String(vs).split(':')[1]) : undefined;
+            const uend = ve ? Number(String(ve).split(':')[1]) : undefined;
+            let usec = vsec ? Number(String(vsec).split(':')[1]) : undefined;
+            const uphr = vphr ? Number(String(vphr).split(':')[1]) : undefined;
+            const umea = vmea ? Number(String(vmea).split(':')[1]) : undefined;
+            if (uhash) {
+              // If marker omitted section info, attempt to resolve it from the timing tree
+              if (!Number.isFinite(usec) && env && env.state && env.state.timingTree && env.state.timingTree[name]) {
+                const findNode = (node: any): any => {
+                  if (!node || typeof node !== 'object') return null;
+                  if (node.unitHash === uhash) return node;
+                  if (node.children) {
+                    for (const k of Object.keys(node.children)) {
+                      const r = findNode(node.children[k]);
+                      if (r) return r;
+                    }
+                  }
+                  for (const k of Object.keys(node)) {
+                    if (/^\d+$/.test(k) && typeof node[k] === 'object') {
+                      const r = findNode(node[k]);
+                      if (r) return r;
+                    }
+                  }
+                  return null;
+                };
+                try {
+                  const foundNode = findNode(env.state.timingTree[name]);
+                  if (foundNode && Number.isFinite(Number(foundNode.sectionIndex))) {
+                    usec = Number(foundNode.sectionIndex);
+                  }
+                } catch (_e) {}
+              }
+
+              const unitRec: any = { unitHash: uhash, unitType: utype, layer: name, startTick: ustart, endTick: uend };
+              if (Number.isFinite(usec)) unitRec.sectionIndex = usec;
+              if (Number.isFinite(uphr)) unitRec.phraseIndex = uphr;
+              if (Number.isFinite(umea)) unitRec.measureIndex = umea;
+              unitsForLayer.push(unitRec);
+            }
+          }
+        } catch (_e) {}
+
+        // Backfill unitHash for events that did not receive `tick|unitHash` at push time by finding the unit that contains the event tick
+        try {
+          if (!unitHashPart && typeof tickVal === 'number') {
+            const found = unitsForLayer.find((u: any) => {
+              const s = Number(u.startTick || 0);
+              const e = Number(u.endTick || 0);
+              return Number.isFinite(s) && Number.isFinite(e) && (tickVal >= s && tickVal < e);
+            });
+            if (found) {
+              unitHashPart = found.unitHash;
+            }
+          }
+        } catch (_e) {}
+
         return {
           ...i,
-          tick: Math.round(tickVal),
+          tick: tickOut,
+          _tickSortKey: tickVal,
           vals: Array.isArray(i.vals) ? i.vals.map(sanitizeVal) : (typeof i.vals === 'string' ? sanitizeVal(i.vals) : i.vals)
         };
       })
-      .sort((a: any, b: any) => a.tick - b.tick);
+      .sort((a: any, b: any) => (a._tickSortKey || 0) - (b._tickSortKey || 0));
 
-    // Generate CSV
-    let composition = `0,0,header,1,1,${env.PPQ || 480}\n1,0,start_track\n`;
-    let finalTick = 0;
-
-    // Unit-label feature is disabled: do not add unit labels or pad meter numeric fields here.
-    // Preserve event `vals` arrays exactly as produced by event creators and producers.
-
-
-    // Debug: count unlabeled NOTE_ON rows before writing CSV
-    try { console.error(`[grandFinale] total events for layer=${name}: ${finalBuffer.length}`); } catch (_e) {}
-
-    finalBuffer.forEach((evt: any) => {
-      if (Number.isFinite(evt.tick)) {
-        const type = evt.type === 'on' ? 'note_on_c' : (evt.type || 'note_off_c');
-        const vals = Array.isArray(evt.vals) ? evt.vals.join(',') : evt.vals;
-        composition += `1,${evt.tick || 0},${type},${vals}\n`;
-        finalTick = Math.max(finalTick, evt.tick || 0);
+    // Compute per-section offsets so events emitted with section-local ticks get placed on a
+    // global absolute timeline when multiple sections are composed into the same output.
+    try {
+      // Determine maximum endTick per section from units discovered so far
+      const sectionMaxEnd: Record<number, number> = {};
+      for (const u of unitsForLayer) {
+        const si = (u && u.sectionIndex !== undefined && Number.isFinite(Number(u.sectionIndex))) ? Number(u.sectionIndex) : 0;
+        const e = Number(u.endTick || 0);
+        sectionMaxEnd[si] = Math.max(sectionMaxEnd[si] || 0, Number.isFinite(e) ? e : 0);
       }
-    });
 
-    composition += `1,${finalTick + ((env.SILENT_OUTRO_SECONDS ?? 1) * tpSec)},end_track`;
+      // Build cumulative offsets in section order
+      const sectionIndices = Object.keys(sectionMaxEnd).map(s => Number(s)).sort((a, b) => a - b);
+      const sectionOffsets: Record<number, number> = {};
+      let cumOffset = 0;
+      for (const idx of sectionIndices) {
+        sectionOffsets[idx] = cumOffset;
+        cumOffset += sectionMaxEnd[idx] || 0;
+      }
 
-    // Determine output filename based on layer name
-    let outputFilename: string;
-    if (name === 'primary') {
-      outputFilename = 'output/output1.csv';
-    } else if (name === 'poly') {
-      outputFilename = 'output/output2.csv';
-    } else {
-      outputFilename = `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+      // Apply offsets to discovered units so units manifest records absolute ticks
+      for (const u of unitsForLayer) {
+        if (u && u.sectionIndex !== undefined && Number.isFinite(Number(u.sectionIndex))) {
+          const si = Number(u.sectionIndex);
+          const off = sectionOffsets[si] || 0;
+          u.startTick = Number(u.startTick || 0) + off;
+          u.endTick = Number(u.endTick || 0) + off;
+        }
+      }
+
+      // Build quick lookup by unitHash for fast per-event offset resolution
+      const unitByHash: Record<string, any> = {};
+      for (const u of unitsForLayer) {
+        if (u && u.unitHash) unitByHash[String(u.unitHash)] = u;
+      }
+
+      // Adjust finalBuffer event ticks to global timeline using unitHash or unit containment
+      finalBuffer = finalBuffer.map((evt: any) => {
+        try {
+          const rawTick = evt && evt.tick;
+          let tickVal = Number(evt._tickSortKey || 0) || 0;
+          let unitHashPart: string | null = null;
+
+          // If tick was emitted with unitHash (tick|unitHash), use it to find offset
+          if (typeof rawTick === 'string' && rawTick.includes('|')) {
+            unitHashPart = String(rawTick).split('|')[1] || null;
+          }
+
+          let offset = 0;
+          if (unitHashPart && unitByHash[unitHashPart] && Number.isFinite(Number(unitByHash[unitHashPart].sectionIndex))) {
+            offset = Number(unitByHash[unitHashPart].sectionIndex) >= 0 ? (Number(sectionOffsets[Number(unitByHash[unitHashPart].sectionIndex)] || 0)) : 0;
+          } else {
+            // Fallback: find the unit containing this tick in current discovered units
+            const found = unitsForLayer.find((u: any) => {
+              const s = Number(u.startTick || 0);
+              const e = Number(u.endTick || 0);
+              return Number.isFinite(s) && Number.isFinite(e) && (tickVal >= s && tickVal < e);
+            });
+            if (found) {
+              offset = Number(sectionOffsets[Number(found.sectionIndex)] || 0);
+              unitHashPart = unitHashPart || found.unitHash;
+            }
+          }
+
+          if (offset) {
+            tickVal = Math.round(tickVal + offset);
+            evt._tickSortKey = tickVal;
+            evt.tick = unitHashPart ? `${tickVal}|${unitHashPart}` : `${tickVal}`;
+          }
+        } catch (_e) {
+          // non-fatal
+        }
+        return evt;
+      });
+    } catch (_e) {
+      // best-effort only: do not fail composition on diagnostic re-alignment
     }
 
-    // Ensure output directory exists
-    const outputDir = path.dirname(outputFilename);
-    if (!fsModule.existsSync(outputDir)) {
-      fsModule.mkdirSync(outputDir, { recursive: true });
+    // DI debug: count note-like events so we can detect why CSV appears silent
+    try {
+      const noteLike = finalBuffer.filter((evt: any) => evt && (evt.type === 'on' || String(evt.type).toLowerCase().includes('note_on')));
+      if (typeof console !== 'undefined' && console.error) {
+        console.error(`[grandFinale] DEBUG layer=${name} finalBuffer.total=${finalBuffer.length} noteLike=${noteLike.length}`);
+        if (noteLike.length > 0) {
+          console.error('[grandFinale] DEBUG sample noteLike events:\n', JSON.stringify(noteLike.slice(0, 10), null, 2).slice(0, 2000));
+        }
+      }
+    } catch (_e) {}
+
+    // Diagnostic: compose sample CSV lines as they would be emitted and log them for inspection
+    try {
+      const sampleLimit = 20;
+      const composed = finalBuffer.slice(0, sampleLimit).map((evt: any) => {
+        const t = evt && evt.type ? evt.type : '';
+        const csvType = (t === 'on') ? 'note_on_c' : t;
+        const vals = Array.isArray(evt.vals) ? evt.vals.join(',') : (evt.vals ?? '');
+        return `${trackNum},${evt.tick},${csvType}${vals ? ',' + vals : ''}`;
+      });
+      const noteLikeCount = finalBuffer.filter((evt: any) => evt && (evt.type === 'on' || (evt.type && String(evt.type).toLowerCase().includes('note_on')))).length;
+      console.error(`[grandFinale][DIAG] layer=${name} composed sample lines (first ${composed.length}), noteLike=${noteLikeCount} totalRows=${finalBuffer.length}:\n${composed.join('\n')}`);
+    } catch (_e) {}
+
+    // Ensure CSV files include note events: convert `on` events into `note_on_c` and write per-layer CSV here
+    try {
+      const PPQv = env.PPQ || 480;
+      let comp = `0,0,header,1,1,${PPQv}\n${trackNum},0,start_track\n`;
+      for (const evt of finalBuffer) {
+        const rawType = evt && evt.type ? String(evt.type) : '';
+        let outType = rawType === 'on' ? 'note_on_c' : (rawType || (Array.isArray(evt.vals) && evt.vals.length === 2 ? 'note_off_c' : rawType));
+        const valsArr = Array.isArray(evt.vals) ? evt.vals.map((v: any) => {
+          if (typeof v === 'number') {
+            if (!Number.isFinite(v)) return '0';
+            return String(Math.round(v));
+          }
+          return String(v).replace(/\n/g, ' ');
+        }) : [];
+        // Ensure Time column is numeric for csvmidi: if tick includes unitHash (tick|unitHash), split it out
+        let tickField: any = evt.tick;
+        let unitHashCol = '';
+        try {
+          if (typeof tickField === 'string' && tickField.includes('|')) {
+            const parts = String(tickField).split('|');
+            tickField = Number(parts[0]);
+            const u = parts[1] || '';
+            if (u) unitHashCol = `,${u}`;
+          }
+        } catch (_e) {}
+        // Only append unitHash for event types that are safe (won't be parsed as required numeric fields)
+        const safeTypes = new Set(['note_on_c','note_off_c','note_on','note_off','control_c','program_c','pitch_bend_c','aftertouch_c']);
+        const appendUnitHash = unitHashCol && safeTypes.has(String(outType).toLowerCase());
+        // Map internal-only types to safe CSV-friendly types
+        if (String(outType).toLowerCase() === 'unit_handoff') {
+          const u = unitHashCol ? unitHashCol.slice(1) : '';
+          comp += `${trackNum},${tickField},marker_t,unit_handoff${u ? ',' + u : ''}\n`;
+        } else {
+          comp += `${trackNum},${tickField},${outType}${valsArr.length ? ',' + valsArr.join(',') : ''}${appendUnitHash ? unitHashCol : ''}\n`;
+        }
+      }
+      const lastTick = finalBuffer.length ? (finalBuffer[finalBuffer.length - 1]._tickSortKey || 0) : 0;
+      const finalTick = lastTick + (env.PPQ || 480);
+      comp += `${trackNum},${finalTick},end_track\n`;
+      try { fsModule.mkdirSync(path.dirname(outputFilename), { recursive: true }); } catch (_e) {}
+      fsModule.writeFileSync(outputFilename, comp);
+      console.log(`Wrote CSV for ${name} -> ${outputFilename} (rows=${finalBuffer.length})`);
+    } catch (_e) {
+      console.error('[grandFinale] failed to write CSV for layer', name, _e);
     }
+    try {
+      if ((!unitsForLayer || unitsForLayer.length === 0) && env && env.state && env.state.timingTree && env.state.timingTree[name]) {
+          const walk = (node: any, pathParts: string[] = []) => {
+            const found: any[] = [];
+            if (!node || typeof node !== 'object') return found;
+            // Derive indices from pathParts like ['section','0','phrase','1','measure','2']
+            const idx = (key: string) => {
+              const i = pathParts.indexOf(key);
+              if (i >= 0 && i + 1 < pathParts.length) return Number(pathParts[i + 1]);
+              return undefined;
+            };
+            // Prefer explicit indices stored on the timing node (setUnitTiming writes these)
+            const sectionIndex = (node && Number.isFinite(Number(node.sectionIndex))) ? Number(node.sectionIndex) : idx('section');
+            const phraseIndex = (node && Number.isFinite(Number(node.phraseIndex))) ? Number(node.phraseIndex) : idx('phrase');
+            const measureIndex = (node && Number.isFinite(Number(node.measureIndex))) ? Number(node.measureIndex) : idx('measure');
+            if (node.unitHash) {
+              found.push({ unitHash: node.unitHash, layer: name, startTick: node.start ?? node.measureStart ?? 0, endTick: node.end ?? (Number(node.start ?? 0) + Number(node.tpMeasure ?? 0)), sectionIndex, phraseIndex, measureIndex });
+            }
+            if (node.children) {
+              for (const k of Object.keys(node.children)) {
+                found.push(...walk(node.children[k], pathParts.concat(k)));
+              }
+            }
+            // Also support cases where a node's children are stored directly under numeric keys
+            for (const k of Object.keys(node)) {
+              if (/^\d+$/.test(k) && typeof (node as any)[k] === 'object') {
+                found.push(...walk((node as any)[k], pathParts.concat(k)));
+              }
+            }
+            return found;
+          };
+          const extracted = walk(env.state.timingTree[name]);
+          if (extracted && extracted.length > 0) {
+            // Ensure derived unitType is set when available
+            unitsForLayer.push(...extracted.map(u => ({ ...u, unitType: u.unitType || (u.measureIndex !== undefined ? 'measure' : (u.phraseIndex !== undefined ? 'phrase' : (u.sectionIndex !== undefined ? 'section' : undefined))) })));
+          }
+      }
+    } catch (_e) {}
 
-    // Sanitize text to avoid literal 'NaN' or 'undefined' in output CSV (defensive measure)
-    // Aggressive sanitization: replace any literal 'NaN' with '0' and remove 'undefined' tokens
-    composition = composition.split('NaN').join('0').split('undefined').join('');
-    // Additional cleanup: fix malformed Length markers and missing tpSec values that can appear when upstream timing calculations fail
-    composition = composition.replace(/Length:\s*(?:NaN|undefined)\s*\([^)]*\)/g, 'Length: 0 (0 - 0)');
-    composition = composition.replace(/tpSec:\s*(?:NaN|undefined)/g, 'tpSec: 0');
-
-    // Sanitize text to avoid literal 'NaN' or 'undefined' in output CSV (defensive measure)
-    // Aggressive sanitization: replace any literal 'NaN' with '0' and remove 'undefined' tokens
-    composition = composition.split('NaN').join('0').split('undefined').join('');
-    // Additional cleanup: fix malformed Length markers and missing tpSec values that can appear when upstream timing calculations fail
-    composition = composition.replace(/Length:\s*(?:NaN|undefined)\s*\([^)]*\)/g, 'Length: 0 (0 - 0)');
-    composition = composition.replace(/tpSec:\s*(?:NaN|undefined)/g, 'tpSec: 0');
-
-    fsModule.writeFileSync(outputFilename, composition);
-    console.log(`${outputFilename} created (${name} layer).`);
+    // Append units discovered in this layer to the global units list
+    try {
+      if (unitsForLayer && unitsForLayer.length > 0) {
+        // Compute startTime/endTime for each unit when possible using layerState.tpSec or fallback
+        const tpSec = layerState.tpSec || env.tpSec || 480;
+        const enriched = unitsForLayer.map(u => ({
+          ...u,
+          file: outputFilename,
+          startTime: (u.startTick !== undefined && Number.isFinite(tpSec) && tpSec !== 0) ? Number((u.startTick / tpSec).toFixed(6)) : (u.startTime ?? undefined),
+          endTime: (u.endTick !== undefined && Number.isFinite(tpSec) && tpSec !== 0) ? Number((u.endTick / tpSec).toFixed(6)) : (u.endTime ?? undefined)
+        }));
+        allUnits.push(...enriched);
+      }
+    } catch (_e) {}
   });
 
+  // Write a structured units manifest to help the treewalker quickly resolve unit time ranges
+  try {
+    const unitsManifest = {
+      generatedAt: (new Date()).toISOString(),
+      layers: layerData.map(l => l.name),
+      units: allUnits
+    };
+    const unitsPath = 'output/units.json';
+    fsModule.writeFileSync(unitsPath, JSON.stringify(unitsManifest, null, 2));
+    console.log(`Wrote units manifest to ${unitsPath} (${allUnits.length} units).`);
+  } catch (_e) {}
+
+  // Diagnostic: report number of NOTE pushes observed during run (global counter incremented in PlayNotes.pushEvent)
+  try {
+    const pushed = (globalThis as any).__PUSH_NOTE_COUNT || 0;
+    console.error(`[grandFinale] DEBUG total note pushes observed (global counter) = ${pushed}`);
+  } catch (_e) {}
   // Final sanitization pass: ensure no lingering 'NaN' or 'undefined' tokens in any CSV output files
   try {
     const outDir = path.resolve(process.cwd(), 'output');
@@ -504,6 +780,31 @@ export const grandFinale = (ctxOrEnv?: ICompositionContext | Record<string, any>
   } catch (e) {
     // Ignore sanitization errors - best-effort only
   }
+
+  // DIAGNOSTIC: after sanitization, scan written CSV files and report presence (or absence) of note_on rows
+  try {
+    const outDir = path.resolve(process.cwd(), 'output');
+    if (fsModule.existsSync(outDir)) {
+      const files = fsModule.readdirSync(outDir).filter((f: string) => f.endsWith('.csv'));
+      files.forEach((file: string) => {
+        const pth = path.join(outDir, file);
+        try {
+          const txt = fsModule.readFileSync(pth, 'utf-8');
+          const lines = txt.split('\n').filter((l: string) => l && l.trim().length > 0);
+          const noteLines = lines.filter((l: string) => l.includes(',note_on_c,') || l.includes(',note_on,') || l.includes(',on,'));
+          console.error(`[grandFinale][DIAG] file=${pth} totalLines=${lines.length} note-like lines=${noteLines.length}`);
+          if (noteLines.length > 0) {
+            console.error('[grandFinale][DIAG] sample note lines:\n', noteLines.slice(0, 10).join('\n'));
+          } else {
+            console.error('[grandFinale][DIAG] sample file head:\n', lines.slice(0, 20).join('\n'));
+          }
+        } catch (_e) {
+          // ignore per-file read errors for diagnostics
+        }
+      });
+    }
+  } catch (_e) {}
+
 };
 
 // Optional: Register writer services into a DIContainer for explicit DI usage

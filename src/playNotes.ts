@@ -13,6 +13,20 @@ import { source, reflection, bass, cCH1, cCH2, cCH3, flipBinF, flipBinT, reflect
 function pushEvent(ctx: ICompositionContext, ...events: any[]) {
   const pFn = requirePush(ctx);
   const buffer = ctx.csvBuffer;
+  // Emit a sample log when NOTE ONs are being pushed (guarded by test logging flag)
+  try {
+    let noteCount = 0;
+    for (const ev of events) {
+      if (ev && (ev.type === 'on' || (ev.type && String(ev.type).toLowerCase().includes('note_on')))) {
+        noteCount++;
+      }
+    }
+    if (noteCount > 0) {
+      try {
+        (globalThis as any).__PUSH_NOTE_COUNT = ((globalThis as any).__PUSH_NOTE_COUNT || 0) + noteCount;
+      } catch (_e) {}
+    }
+  } catch (_e) {}
   // required: pFn must be provided via DI
   pFn(buffer, ...events);
 }
@@ -68,8 +82,14 @@ export class PlayNotes {
     const state = ctx.state as any;
     const utils = (ctx as any).utils ?? getPolychronContext().utils;
     const subdivsPerMinute = state.subdivsPerBeat * state.midiBPM;
-    this.on = state.subdivStart + (state.tpSubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
-    this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / state.subdivsPerDiv), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+    // Defensive fallback: ensure tpSubdiv is finite and >0 to avoid generating on==0 when subdivStart==0
+    const rawTpSubdiv = state.tpSubdiv;
+    const tpSubdiv = (Number.isFinite(rawTpSubdiv) && rawTpSubdiv > 0)
+      ? rawTpSubdiv
+      : Math.max(1, (Number.isFinite(state.tpDiv) && state.subdivsPerDiv ? (state.tpDiv / Math.max(1, state.subdivsPerDiv)) : 1));
+    const subdivStart = Number.isFinite(state.subdivStart) ? state.subdivStart : 0;
+    this.on = subdivStart + (tpSubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
+    this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / Math.max(1, state.subdivsPerDiv)), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
     this.longSustain = utils.rv(utils.rf(state.tpDiv * .8, (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .3], .1, [-.05, -.1]);
     this.useShort = subdivsPerMinute > utils.ri(400, 650);
     this.sustain = (this.useShort ? this.shortSustain : this.longSustain) * utils.rv(utils.rf(.8, 1.3));
@@ -93,7 +113,13 @@ export class PlayNotes {
         source.filter((sourceCH: number) =>
           ctx.state.flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
         ).map((sourceCH: number) => {
-          pushEvent(ctx, { tick: sourceCH === cCH1 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 9), [-.1, .1], .3) : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.1, .1], .3), type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? ctx.state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
+          const tickVal = sourceCH === cCH1
+            ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 9), [-.1, .1], .3)
+            : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.1, .1], .3);
+          if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
+            console.error(`[PlayNotes.playNotes] NOTE ON tick=0 detected: on=${this.on} tpSubdiv=${ctx.state.tpSubdiv} subdivStart=${ctx.state.subdivStart} sourceCH=${sourceCH} note=${note}`);
+          }
+          pushEvent(ctx, { tick: tickVal, type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? ctx.state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
           pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03))), vals: [sourceCH, note] });
         });
 
@@ -101,7 +127,13 @@ export class PlayNotes {
         reflection.filter((reflectionCH: number) =>
           ctx.state.flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
         ).map((reflectionCH: number) => {
-          pushEvent(ctx, { tick: reflectionCH === cCH2 ? this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(.2), [-.01, .1], .5) : this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [reflectionCH, note, reflectionCH === cCH2 ? ctx.state.velocity * utils.rf(.5, .8) : this.binVel * utils.rf(.55, .9)] });
+          const tickVal = reflectionCH === cCH2
+            ? this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(.2), [-.01, .1], .5)
+            : this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5);
+          if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
+            console.error(`[PlayNotes.playNotes] REFLECTION NOTE ON tick=0 detected: on=${this.on} tpSubsubdiv=${ctx.state.tpSubsubdiv} subsubdivStart=${ctx.state.subsubdivStart} reflectionCH=${reflectionCH} note=${note}`);
+          }
+          pushEvent(ctx, { tick: tickVal, type: 'on', vals: [reflectionCH, note, reflectionCH === cCH2 ? ctx.state.velocity * utils.rf(.5, .8) : this.binVel * utils.rf(.55, .9)] });
           pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3))), vals: [reflectionCH, note] });
         });
 
@@ -114,7 +146,13 @@ export class PlayNotes {
               ctx.state.flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
             ).map((bassCH: number) => {
               const bassNote = Utils.modClamp(note, 12, 35);
-              pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? ctx.state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
+              const tickVal = bassCH === cCH3
+                ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(.1), [-.01, .1], .5)
+                : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5);
+              if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
+                console.error(`[PlayNotes.playNotes] BASS NOTE ON tick=0 detected: on=${this.on} tpSubdiv=${ctx.state.tpSubdiv} subdivStart=${ctx.state.subdivStart} bassCH=${bassCH} note=${bassNote}`);
+              }
+              pushEvent(ctx, { tick: tickVal, type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? ctx.state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
               pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
             });
           }
@@ -136,8 +174,14 @@ export class PlayNotes {
     const state = ctx?.state ?? {} as any;
     const utils = getPolychronContext().utils;
     const subdivsPerMinute = state.subdivsPerBeat * state.midiBPM;
-    this.on = state.subsubdivStart + (state.tpSubsubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
-    this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / state.subdivsPerDiv), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+    // Defensive fallback for subsubdivision-level timing
+    const rawTpSubsub = state.tpSubsubdiv;
+    const tpSubsubdiv = (Number.isFinite(rawTpSubsub) && rawTpSubsub > 0)
+      ? rawTpSubsub
+      : Math.max(1, (Number.isFinite(state.tpSubdiv) && state.subsubdivsPerSub ? (state.tpSubdiv / Math.max(1, state.subsubdivsPerSub)) : 1));
+    const subsubdivStart = Number.isFinite(state.subsubdivStart) ? state.subsubdivStart : 0;
+    this.on = subsubdivStart + (tpSubsubdiv * utils.rv(utils.rf(.2), [-.1, .07], .3));
+    this.shortSustain = utils.rv(utils.rf(utils.m.max(state.tpDiv * .5, state.tpDiv / Math.max(1, state.subdivsPerDiv)), (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .2], .1, [-.05, -.1]);
     this.longSustain = utils.rv(utils.rf(state.tpDiv * .8, (state.tpBeat * (.3 + utils.rf() * .7))), [.1, .3], .1, [-.05, -.1]);
     this.useShort = subdivsPerMinute > utils.ri(400, 650);
     this.sustain = (this.useShort ? this.shortSustain : this.longSustain) * utils.rv(utils.rf(.8, 1.3));
@@ -164,7 +208,13 @@ export class PlayNotes {
       source.filter((sourceCH: number) =>
         state.flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
       ).forEach((sourceCH: number) => {
-        pushEvent(ctx, { tick: sourceCH === cCH1 ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 9), [-.1, .1], .3) : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.1, .1], .3), type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
+        const tickVal = sourceCH === cCH1
+          ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 9), [-.1, .1], .3)
+          : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.1, .1], .3);
+        if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
+          console.error(`[PlayNotes.playNotes2] NOTE ON tick=0 detected: on=${this.on} tpSubsubdiv=${state.tpSubsubdiv} subsubdivStart=${state.subsubdivStart} sourceCH=${sourceCH} note=${note}`);
+        }
+        pushEvent(ctx, { tick: tickVal, type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
         pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03))), vals: [sourceCH, note] });
 
         // Stutter calculations (shared across channels)
@@ -223,6 +273,8 @@ export class PlayNotes {
         if (utils.rf() < utils.clamp(.35 * state.bpmRatio3, .2, .7)) {
           const bassCH = reflect2[sourceCH];
           const bassNote = Utils.modClamp(note, 12, 35);
+          // Debug: emit log when probabilistic bass is generated (helps test troubleshooting)
+          try { if (getPolychronContext().test?.enableLogging) console.error('[PlayNotes.playNotes2] emitting bass', { sourceCH, bassCH, threshold: utils.clamp(.35 * state.bpmRatio3, .2, .7) }); } catch (_e) {}
           pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
           pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
         }

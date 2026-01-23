@@ -245,9 +245,11 @@ describe('grandFinale', () => {
 
     grandFinale(env);
 
-    expect(env.fs.writeFileSync).toHaveBeenCalledTimes(2);
+    // Also writes units manifest in addition to per-layer CSV files
+    expect(env.fs.writeFileSync).toHaveBeenCalledTimes(3);
     expect(env.fs.writeFileSync).toHaveBeenCalledWith('output/output1.csv', expect.any(String));
     expect(env.fs.writeFileSync).toHaveBeenCalledWith('output/output2.csv', expect.any(String));
+    expect(env.fs.writeFileSync).toHaveBeenCalledWith('output/units.json', expect.any(String));
   });
 
   it('should include header and track markers in CSV', () => {
