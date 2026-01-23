@@ -7,7 +7,7 @@ from .midi.containers import *
 ### Local ###
 from .midi.events import *
 
-COMMENT_DELIMITERS = ("#", ";")
+COMMENT_DELIMITERS = ("#", ";", "|", "//")
 
 
 def parse(file, strict=True):
@@ -32,6 +32,17 @@ def parse(file, strict=True):
         if line[0].startswith(COMMENT_DELIMITERS):
             continue
         tr = int(line[0])
+        # Remove any trailing comments from the time field. We can't pass a tuple
+        # to str.split(), so find the earliest occurrence of any comment delimiter.
+        field = line[1] or ""
+        min_idx = None
+        for delim in COMMENT_DELIMITERS:
+            idx = field.find(delim)
+            if idx != -1 and (min_idx is None or idx < min_idx):
+                min_idx = idx
+        if min_idx is not None:
+            field = field[:min_idx]
+        line[1] = field.strip()
         time = round(float(line[1]))
         identifier = line[2].strip().lower()
         if identifier == "header":
@@ -47,6 +58,12 @@ def parse(file, strict=True):
             track = Track(tick_relative=False)
             pattern.append(track)
         else:
+            if identifier not in csv_to_midi_map:
+                # if strict:
+                #     raise ValueError(f"Unknown event type identifier: '{identifier}'")
+                # else:
+                print(f"Warning: Unknown event type identifier: '{identifier}'. Setting default note_off_c event.")
+                identifier = "note_off_c"
             event = csv_to_midi_map[identifier](tr, time, identifier, line[3:])
             track.append(event)
     pattern.make_ticks_rel()

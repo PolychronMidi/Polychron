@@ -146,6 +146,29 @@ logUnit = (type) => {
       type: 'marker_t',
       vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
     });
+
+    try {
+      const parts = [];
+      if (typeof sectionIndex !== 'undefined') parts.push('section' + ((sectionIndex||0)+1) + '/' + (totalSections||0));
+      if (typeof phraseIndex !== 'undefined') parts.push('phrase' + ((phraseIndex||0)+1) + '/' + (phrasesPerSection||0));
+      if (typeof measureIndex !== 'undefined') parts.push('measure' + ((measureIndex||0)+1) + '/' + (measuresPerPhrase||0));
+      if (typeof beatIndex !== 'undefined') parts.push('beat' + ((beatIndex||0)+1) + '/' + (numerator||0));
+      if (typeof divIndex !== 'undefined') parts.push('division' + ((divIndex||0)+1) + '/' + (divsPerBeat||0));
+      if (typeof subdivIndex !== 'undefined') parts.push('subdivision' + ((subdivIndex||0)+1) + '/' + (subdivsPerDiv||0));
+      if (typeof subsubdivIndex !== 'undefined') parts.push('subsubdivision' + ((subsubdivIndex||0)+1) + '/' + (subsubsPerSub||0));
+
+      const startTickN = Math.round(Number(startTick) || 0);
+      const endTickN = Math.round(Number(endTick) || 0);
+      const startTimeN = Number(startTime) || 0;
+      const endTimeN = Number(endTime) || 0;
+
+      if (c && c.name && typeof LM !== 'undefined' && LM.layers && LM.layers[c.name] && LM.layers[c.name].state) {
+        const st = LM.layers[c.name].state;
+        st.units = st.units || [];
+        st.units.push({ parts: parts.slice(), unitNumber: unit, unitsPerParent, startTick: startTickN, endTick: endTickN, startTime: startTimeN, endTime: endTimeN, type });
+      }
+    } catch (err) {}
+
   })();
 };
 
@@ -185,6 +208,22 @@ grandFinale = () => {
         tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * rf(.1, .3) : i.tick
       }))
       .sort((a, b) => a.tick - b.tick);
+
+    // Collect annotated units from layer state (logUnit stores them there)
+    const unitsForLayer = [];
+    try {
+      if (layerState && Array.isArray(layerState.units)) {
+        layerState.units.forEach(u => {
+          const parts = Array.isArray(u.parts) ? u.parts : (u.parts ? [u.parts] : []);
+          const start = Number(u.startTick || u.start || 0);
+          const end = Number(u.endTick || u.end || 0);
+          const startTime = Number(u.startTime || u.startingTime || 0);
+          const endTime = Number(u.endTime || u.endingTime || 0);
+          const uid = `${parts.join('|')}|${Math.round(start)}-${Math.round(end)}|${(startTime||0).toFixed(6)}-${(endTime||0).toFixed(6)}`;
+          unitsForLayer.push({ unitId: uid, layer: name, startTick: start, endTick: end, startTime, endTime, raw: u });
+        });
+      }
+    } catch (_e) {}
 
     // Generate CSV
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;

@@ -463,6 +463,57 @@ setUnitTiming = (unitType) => {
       return;
   }
 
+  // Persist a compact unit record into the layer state so writers can reference units later.
+  try {
+    const layerName = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
+    const sec = Number.isFinite(Number(sectionIndex)) ? Number(sectionIndex) : 0;
+    const phr = Number.isFinite(Number(phraseIndex)) ? Number(phraseIndex) : 0;
+    const mea = Number.isFinite(Number(measureIndex)) ? Number(measureIndex) : 0;
+    const bIdx = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
+    const divIdx = Number.isFinite(Number(divIndex)) ? Number(divIndex) : 0;
+    const subdivIdx = Number.isFinite(Number(subdivIndex)) ? Number(subdivIndex) : 0;
+    const subsubIdx = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
+
+    const beatTotal = Number.isFinite(Number(numerator)) ? Number(numerator) : 1;
+    const subdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1;
+    const subsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : 1;
+
+    const unitRec = {
+      layer: layerName,
+      unitType,
+      sectionIndex: sec,
+      phraseIndex: phr,
+      measureIndex: mea,
+      beatIndex: bIdx,
+      beatTotal,
+      divIndex: divIdx,
+      subdivIndex: subdivIdx,
+      subdivTotal,
+      subsubIndex: subsubIdx,
+      subsubTotal,
+      startTick: Math.round(startTick),
+      endTick: Math.round(endTick)
+    };
+
+    if (LM && LM.layers && LM.layers[layerName]) {
+      LM.layers[layerName].state.units = LM.layers[layerName].state.units || [];
+      LM.layers[layerName].state.units.push(unitRec);
+    }
+
+    // Build a compact full-id string per spec and emit an internal marker for writers to extract
+    const parts = [];
+    parts.push(layerName);
+    parts.push(`section${sec + 1}`);
+    parts.push(`phrase${phr + 1}`);
+    parts.push(`measure${mea + 1}`);
+    parts.push(`beat${(bIdx + 1)}/${beatTotal}`);
+    parts.push(`subdivision${(subdivIdx + 1)}/${subdivTotal}`);
+    parts.push(`subsubdivision${(subsubIdx + 1)}/${subsubTotal}`);
+    const range = `${Math.round(startTick)}-${Math.round(endTick)}`;
+    const fullId = parts.join('|') + '|' + range;
+    try { p(c, { tick: Math.round(startTick), type: 'marker_t', vals: [`unitRec:${fullId}`], _internal: true }); } catch (_e) {}
+  } catch (_e) {}
+
   // Log the unit after calculating timing
   logUnit(unitType);
 };
