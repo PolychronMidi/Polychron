@@ -4,9 +4,13 @@
  */
 
 import { ICompositionContext } from './CompositionContext.js';
+import { getPolychronContext } from './PolychronInit.js';
+
+const _shouldTrace_playNotes = (() => {
+  try { const poly = getPolychronContext(); return !!(poly && poly.test && (poly.test._traceMode === 'full' || poly.test._traceMode === 'deep')); } catch (_e) { return false; }
+})();
 
 import { requirePush } from './writer.js';
-import { getPolychronContext } from './PolychronInit.js';
 import * as Utils from './utils.js';
 import { source, reflection, bass, cCH1, cCH2, cCH3, flipBinF, flipBinT, reflect, reflect2 } from './backstage.js';
 
@@ -117,10 +121,17 @@ export class PlayNotes {
             ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 9), [-.1, .1], .3)
             : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.1, .1], .3);
           if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
-            console.error(`[PlayNotes.playNotes] NOTE ON tick=0 detected: on=${this.on} tpSubdiv=${ctx.state.tpSubdiv} subdivStart=${ctx.state.subdivStart} sourceCH=${sourceCH} note=${note}`);
+            if (_shouldTrace_playNotes) console.error(`[PlayNotes.playNotes] NOTE ON tick=0 detected: on=${this.on} tpSubdiv=${ctx.state.tpSubdiv} subdivStart=${ctx.state.subdivStart} sourceCH=${sourceCH} note=${note}`);
           }
           pushEvent(ctx, { tick: tickVal, type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? ctx.state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03))), vals: [sourceCH, note] });
+          // Compute robust release tick: ensure it's finite, >= on+1, and integer. Emit explicit 'off' type.
+          try {
+            const rawRel = this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03)));
+            const rel = Number.isFinite(Number(rawRel)) ? Math.round(Math.max(this.on + 1, Number(rawRel))) : Math.round(this.on + 1);
+            // Sparse trace for diagnostics if release tick appears suspicious
+            try { if (_shouldTrace_playNotes && rel <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] release tick suspicious', { layer: (ctx && (ctx as any).LM && (ctx as any).LM.layers) ? (ctx as any).LM.layers : 'unknown', sourceCH, note, on: this.on, sustain: this.sustain, rawRel, rel })).catch(()=>{}); } catch(_) {}
+            pushEvent(ctx, { tick: rel, type: 'off', vals: [sourceCH, note] });
+          } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [sourceCH, note] }); }
         });
 
         // Play reflection channels
@@ -131,10 +142,15 @@ export class PlayNotes {
             ? this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(.2), [-.01, .1], .5)
             : this.on + utils.rv(ctx.state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5);
           if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
-            console.error(`[PlayNotes.playNotes] REFLECTION NOTE ON tick=0 detected: on=${this.on} tpSubsubdiv=${ctx.state.tpSubsubdiv} subsubdivStart=${ctx.state.subsubdivStart} reflectionCH=${reflectionCH} note=${note}`);
+            if (_shouldTrace_playNotes) console.error(`[PlayNotes.playNotes] REFLECTION NOTE ON tick=0 detected: on=${this.on} tpSubsubdiv=${ctx.state.tpSubsubdiv} subsubdivStart=${ctx.state.subsubdivStart} reflectionCH=${reflectionCH} note=${note}`);
           }
           pushEvent(ctx, { tick: tickVal, type: 'on', vals: [reflectionCH, note, reflectionCH === cCH2 ? ctx.state.velocity * utils.rf(.5, .8) : this.binVel * utils.rf(.55, .9)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3))), vals: [reflectionCH, note] });
+          try {
+            const rawRel = this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3)));
+            const rel = Number.isFinite(Number(rawRel)) ? Math.round(Math.max(this.on + 1, Number(rawRel))) : Math.round(this.on + 1);
+            try { if (_shouldTrace_playNotes && rel <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] reflection release suspicious', { reflectionCH, note, on: this.on, sustain: this.sustain, rawRel, rel })).catch(()=>{}); } catch(_) {}
+            pushEvent(ctx, { tick: rel, type: 'off', vals: [reflectionCH, note] });
+          } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [reflectionCH, note] }); }
         });
 
         // Play bass channels (with probability based on BPM)
@@ -150,10 +166,15 @@ export class PlayNotes {
                 ? this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(.1), [-.01, .1], .5)
                 : this.on + utils.rv(ctx.state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5);
               if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
-                console.error(`[PlayNotes.playNotes] BASS NOTE ON tick=0 detected: on=${this.on} tpSubdiv=${ctx.state.tpSubdiv} subdivStart=${ctx.state.subdivStart} bassCH=${bassCH} note=${bassNote}`);
+                if (_shouldTrace_playNotes) console.error(`[PlayNotes.playNotes] BASS NOTE ON tick=0 detected: on=${this.on} tpSubdiv=${ctx.state.tpSubdiv} subdivStart=${ctx.state.subdivStart} bassCH=${bassCH} note=${bassNote}`);
               }
               pushEvent(ctx, { tick: tickVal, type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? ctx.state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
-              pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
+              try {
+                const rawRel = this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5)));
+                const rel = Number.isFinite(Number(rawRel)) ? Math.round(Math.max(this.on + 1, Number(rawRel))) : Math.round(this.on + 1);
+                try { if (_shouldTrace_playNotes && rel <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] bass release suspicious', { bassCH, note: bassNote, on: this.on, sustain: this.sustain, rawRel, rel })).catch(()=>{}); } catch(_) {}
+                pushEvent(ctx, { tick: rel, type: 'off', vals: [bassCH, bassNote] });
+              } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [bassCH, bassNote] }); }
             });
           }
         }
@@ -212,10 +233,15 @@ export class PlayNotes {
           ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 9), [-.1, .1], .3)
           : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.1, .1], .3);
         if (getPolychronContext().test?.enableLogging && Math.round(Number(tickVal)) === 0) {
-          console.error(`[PlayNotes.playNotes2] NOTE ON tick=0 detected: on=${this.on} tpSubsubdiv=${state.tpSubsubdiv} subsubdivStart=${state.subsubdivStart} sourceCH=${sourceCH} note=${note}`);
+          if (_shouldTrace_playNotes) console.error(`[PlayNotes.playNotes2] NOTE ON tick=0 detected: on=${this.on} tpSubsubdiv=${state.tpSubsubdiv} subsubdivStart=${state.subsubdivStart} sourceCH=${sourceCH} note=${note}`);
         }
         pushEvent(ctx, { tick: tickVal, type: 'on', vals: [sourceCH, note, sourceCH === cCH1 ? state.velocity * utils.rf(.95, 1.15) : this.binVel * utils.rf(.95, 1.03)] });
-        pushEvent(ctx, { tick: this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03))), vals: [sourceCH, note] });
+        try {
+          const rawRel = this.on + this.sustain * (sourceCH === cCH1 ? 1 : utils.rv(utils.rf(.92, 1.03)));
+          const rel = Number.isFinite(Number(rawRel)) ? Math.round(Math.max(this.on + 1, Number(rawRel))) : Math.round(this.on + 1);
+          try { if (_shouldTrace_playNotes && rel <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] release suspicious (playNotes2)', { sourceCH, note, on: this.on, sustain: this.sustain, rawRel, rel })).catch(()=>{}); } catch(_) {}
+          pushEvent(ctx, { tick: rel, type: 'off', vals: [sourceCH, note] });
+        } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [sourceCH, note] }); }
 
         // Stutter calculations (shared across channels)
         const numStutters = utils.m.round(utils.rv(utils.rv(utils.ri(3, 9), [2, 5], .33), [2, 5], .1));
@@ -239,10 +265,17 @@ export class PlayNotes {
               const fadeOutMultiplier = 1 - (decay * (i / (numStutters * utils.rf(0.4, 2.2) - 1)));
               currentVelocity = utils.clamp(utils.m.max(0, utils.ri(33) + 127 * fadeOutMultiplier), 0, 127);
             }
-            pushEvent(ctx, { tick: tick - duration * utils.rf(.15), vals: [sourceCH, stutterNote] });
+            // Ensure off ticks are non-negative and explicit
+            const preOff = Math.round(Math.max(0, tick - duration * utils.rf(.15)));
+            pushEvent(ctx, { tick: preOff, type: 'off', vals: [sourceCH, stutterNote] });
             pushEvent(ctx, { tick: tick + duration * utils.rf(.15, .6), type: 'on', vals: [sourceCH, stutterNote, sourceCH === cCH1 ? currentVelocity * utils.rf(.3, .7) : currentVelocity * utils.rf(.45, .8)] });
           }
-          pushEvent(ctx, { tick: this.on + this.sustain * utils.rf(.5, 1.5), vals: [sourceCH, note] });
+          try {
+            const rawRel = this.on + this.sustain * utils.rf(.5, 1.5);
+            const rel = Number.isFinite(Number(rawRel)) ? Math.round(Math.max(this.on + 1, Number(rawRel))) : Math.round(this.on + 1);
+            try { if (_shouldTrace_playNotes && rel <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] post-stutter release suspicious (playNotes2)', { sourceCH, note, on: this.on, sustain: this.sustain, rawRel, rel })).catch(()=>{}); } catch(_) {}
+            pushEvent(ctx, { tick: rel, type: 'off', vals: [sourceCH, note] });
+          } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [sourceCH, note] }); }
         }
 
         // Per-channel second stutter
@@ -257,26 +290,42 @@ export class PlayNotes {
               stutterNote = Utils.modClamp(note + octaveShift, utils.m.max(0, (ctx.state as any).OCTAVE?.min * 12 - 1 || 0), (ctx.state as any).OCTAVE?.max * 12 - 1 || 127);
             }
             if (utils.rf() < .6) {
-              pushEvent(ctx, { tick: tick - duration2 * utils.rf(.15), vals: [sourceCH, stutterNote] });
+              const preOff2 = Math.round(Math.max(0, tick - duration2 * utils.rf(.15)));
+              pushEvent(ctx, { tick: preOff2, type: 'off', vals: [sourceCH, stutterNote] });
               pushEvent(ctx, { tick: tick + duration2 * utils.rf(.15, .6), type: 'on', vals: [sourceCH, stutterNote, sourceCH === cCH1 ? state.velocity * utils.rf(.3, .7) : this.binVel * utils.rf(.45, .8)] });
             }
           }
-          pushEvent(ctx, { tick: this.on + this.sustain * utils.rf(.5, 1.5), vals: [sourceCH, note] });
+          try {
+            const rawRel2 = this.on + this.sustain * utils.rf(.5, 1.5);
+            const rel2 = Number.isFinite(Number(rawRel2)) ? Math.round(Math.max(this.on + 1, Number(rawRel2))) : Math.round(this.on + 1);
+            try { if (_shouldTrace_playNotes && rel2 <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] post-second-stutter release suspicious (playNotes2)', { sourceCH, note, on: this.on, sustain: this.sustain, rawRel2, rel2 })).catch(()=>{}); } catch(_) {}
+            pushEvent(ctx, { tick: rel2, type: 'off', vals: [sourceCH, note] });
+          } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [sourceCH, note] }); }
         }
 
         // Reflection
         const reflectionCH = reflect[sourceCH];
         pushEvent(ctx, { tick: reflectionCH === cCH2 ? this.on + utils.rv(state.tpSubdiv * utils.rf(.2), [-.01, .1], .5) : this.on + utils.rv(state.tpSubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [reflectionCH, note, reflectionCH === cCH2 ? state.velocity * utils.rf(.5, .8) : this.binVel * utils.rf(.55, .9)] });
-        pushEvent(ctx, { tick: this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3))), vals: [reflectionCH, note] });
+        try {
+          const rawRelR = this.on + this.sustain * (reflectionCH === cCH2 ? utils.rf(.7, 1.2) : utils.rv(utils.rf(.65, 1.3)));
+          const relR = Number.isFinite(Number(rawRelR)) ? Math.round(Math.max(this.on + 1, Number(rawRelR))) : Math.round(this.on + 1);
+          try { if (_shouldTrace_playNotes && relR <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] reflection release suspicious (playNotes2)', { reflectionCH, note, on: this.on, sustain: this.sustain, rawRelR, relR })).catch(()=>{}); } catch(_) {}
+          pushEvent(ctx, { tick: relR, type: 'off', vals: [reflectionCH, note] });
+        } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [reflectionCH, note] }); }
 
         // Bass
         if (utils.rf() < utils.clamp(.35 * state.bpmRatio3, .2, .7)) {
           const bassCH = reflect2[sourceCH];
           const bassNote = Utils.modClamp(note, 12, 35);
           // Debug: emit log when probabilistic bass is generated (helps test troubleshooting)
-          try { if (getPolychronContext().test?.enableLogging) console.error('[PlayNotes.playNotes2] emitting bass', { sourceCH, bassCH, threshold: utils.clamp(.35 * state.bpmRatio3, .2, .7) }); } catch (_e) {}
+          try { const _should = _shouldTrace_playNotes || !!(getPolychronContext().test?.enableLogging); if (_should) console.error('[PlayNotes.playNotes2] emitting bass', { sourceCH, bassCH, threshold: utils.clamp(.35 * state.bpmRatio3, .2, .7) }); } catch (_e) {}
           pushEvent(ctx, { tick: bassCH === cCH3 ? this.on + utils.rv(state.tpSubsubdiv * utils.rf(.1), [-.01, .1], .5) : this.on + utils.rv(state.tpSubsubdiv * utils.rf(1 / 3), [-.01, .1], .5), type: 'on', vals: [bassCH, bassNote, bassCH === cCH3 ? state.velocity * utils.rf(1.15, 1.35) : this.binVel * utils.rf(1.85, 2.45)] });
-          pushEvent(ctx, { tick: this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5))), vals: [bassCH, bassNote] });
+          try {
+            const rawRelB = this.on + this.sustain * (bassCH === cCH3 ? utils.rf(1.1, 3) : utils.rv(utils.rf(.8, 3.5)));
+            const relB = Number.isFinite(Number(rawRelB)) ? Math.round(Math.max(this.on + 1, Number(rawRelB))) : Math.round(this.on + 1);
+            try { if (_shouldTrace_playNotes && relB <= 1) import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[PlayNotes][WARN] bass release suspicious (playNotes2)', { bassCH, bassNote, on: this.on, sustain: this.sustain, rawRelB, relB })).catch(()=>{}); } catch(_) {}
+            pushEvent(ctx, { tick: relB, type: 'off', vals: [bassCH, bassNote] });
+          } catch (_e) { pushEvent(ctx, { tick: Math.round(this.on + 1), type: 'off', vals: [bassCH, bassNote] }); }
         }
       });
     });

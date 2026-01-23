@@ -93,12 +93,14 @@ export const getOrCreatePath = (tree: TimingTree, path: string): TimingLeaf => {
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-    if (!current.children) {
-      current.children = {};
+    // First path segment is the layer name; store it as a direct property on the tree
+    if (i === 0) {
+      if (!current[part]) current[part] = {};
+      current = current[part];
+      continue;
     }
-    if (!current.children[part]) {
-      current.children[part] = {};
-    }
+    if (!current.children) current.children = {};
+    if (!current.children[part]) current.children[part] = {};
     current = current.children[part];
   }
 
@@ -160,11 +162,17 @@ export const getTimingValues = (tree: TimingTree, path: string): TimingLeaf | un
   const parts = path.split('/');
   let current: any = tree;
 
-  for (const part of parts) {
-    if (!current.children || !current.children[part]) {
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    // Allow either top-level direct layer keys (tree[layer]) or the nested children mapping
+    if (i === 0) {
+      if (current[part]) { current = current[part]; continue; }
+      if (current.children && current.children[part]) { current = current.children[part]; continue; }
       return undefined;
     }
-    current = current.children[part];
+    if (current.children && current.children[part]) { current = current.children[part]; continue; }
+    if (current[part]) { current = current[part]; continue; }
+    return undefined;
   }
 
   return current;
@@ -223,4 +231,38 @@ export const syncTreeToGlobals = (tree: TimingTree, path: string, globals: any):
   if (values) {
     Object.assign(globals, values);
   }
+};
+
+/**
+ * Find the deepest timing node at or containing the given tick within a layer.
+ * Traverses section -> phrase -> measure -> beat -> division -> subdivision -> subsubdivision
+ * and returns the deepest matching node (or null) which may contain `unitHash`.
+ */
+export const findUnitAtTick = (tree: TimingTree | undefined, layer: string, tick: number): TimingLeaf | null => {
+  if (!tree) return null;
+  // Support both direct layer keys and nested children storage
+  let current: any = (tree as any)[layer] || ((tree as any).children && (tree as any).children[layer]);
+  if (!current) return null;
+  const order = ['section','phrase','measure','beat','division','subdivision','subsubdivision'];
+  let lastMatch: any = null;
+
+  for (const level of order) {
+    if (!current.children || !current.children[level]) break;
+    const entries = Object.entries(current.children[level]) as [string, any][];
+    let found = false;
+    for (const [_key, node] of entries) {
+      const start = Number((node as any).start ?? NaN);
+      const end = Number((node as any).end ?? NaN);
+      if (Number.isFinite(start) && Number.isFinite(end) && tick >= start && tick < end) {
+        lastMatch = node;
+        // descend into this node for next level
+        current = node;
+        found = true;
+        break;
+      }
+    }
+    if (!found) break;
+  }
+
+  return lastMatch || null;
 };

@@ -65,7 +65,7 @@ export const LayerManager = {
   activate: (name: string, isPoly: boolean = false) => {
     const layer = LayerManager.layers[name];
     try {
-      console.error('[traceroute] LayerManager.activate', { name, isPoly, currentActive: LayerManager.activeLayer, numerator: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.numerator) || null, tpMeasure: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.tpMeasure) || null });
+      try { import('../trace.js').then(({ trace }) => trace('anomaly', '[traceroute] LayerManager.activate', { name, isPoly, currentActive: LayerManager.activeLayer, numerator: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.numerator) || null, tpMeasure: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.tpMeasure) || null })).catch(() => {}); } catch (_e) {}
     } catch (_e) {}
     // Set active buffer in DI test namespace (no globals)
     poly.test = poly.test || {} as any;

@@ -283,7 +283,7 @@ export class CompositionStateService implements CompositionState {
     } else {
       // skip writing invalid/zero totalSections (keep existing poly.state.totalSections if present)
     }
-    try { console.error('[traceroute] syncToGlobal wrote totalSections', { polyTotalSections: poly.state.totalSections }); } catch (_e) {}
+    try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] syncToGlobal wrote totalSections', { polyTotalSections: poly.state.totalSections })).catch(() => {}); } catch (_e) {}
     poly.state.sectionStart = this.sectionStart;
     poly.state.phraseIndex = this.phraseIndex;
     poly.state.phrasesPerSection = this.phrasesPerSection;
@@ -335,7 +335,7 @@ export class CompositionStateService implements CompositionState {
     } else {
       // ignore transient or invalid totalSections from global state
     }
-    try { console.error('[traceroute] syncFromGlobal read totalSections', { polyTotalSections: gState.totalSections, thisTotalSections: this.totalSections }); } catch (_e) {}
+    try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] syncFromGlobal read totalSections', { polyTotalSections: gState.totalSections, thisTotalSections: this.totalSections })).catch(() => {}); } catch (_e) {}
     if (gState.phraseIndex !== undefined) this.phraseIndex = gState.phraseIndex;
     if (gState.measureIndex !== undefined) this.measureIndex = gState.measureIndex;
     if (gState.beatIndex !== undefined) this.beatIndex = gState.beatIndex;
@@ -363,7 +363,7 @@ export class CompositionStateService implements CompositionState {
    * Reset to initial state
    */
   reset() {
-    try { console.error('[traceroute] CompositionState.reset() called', new Error().stack); } catch (_e) {}
+    try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] CompositionState.reset() called', new Error().stack)).catch(() => {}); } catch (_e) {}
     this.sectionIndex = 0;
     this.totalSections = 0;
     this.phraseIndex = 0;

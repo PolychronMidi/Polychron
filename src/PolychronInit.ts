@@ -99,7 +99,7 @@ export function initializePolychronContext(): IPolychronContext {
         if (propName === 'totalSections') {
           const rawStack = new Error().stack;
           const stackTrace = rawStack ? rawStack.split('\n').slice(1).join('\n') : undefined;
-          try { console.info('[traceroute] PolychronContext.state.totalSections write', { value, stackTrace }); } catch (_e) {}
+          try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] PolychronContext.state.totalSections write', { value, stackTrace })).catch(() => {}); } catch (_e) {}
           PolychronContext.test = PolychronContext.test || {} as any;
           (PolychronContext.test as any).lastTotalSectionsWrite = { value, stackTrace, ts: Date.now() };
           // Optional strict mode: enable via env var or poly.test.strictTotalSections flag

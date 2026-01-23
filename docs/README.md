@@ -106,6 +106,8 @@ Complete reference documentation for all Polychron modules.
 
 - **[test](test.md)** — Documentation for this module.
 
+- **[test-setup](test-setup.md)** — Documentation for this module.
+
 - **[utils](utils.md)** — `utils.ts` exports common utility functions used throughout Polychron: random number generation (`rf`, `ri`, `ra`, `rv`, `rl`), clamping, modulo arithmetic, and probability helpers. These functions simplify common operations across the codebase and reduce redundancy.
 
 - **[validators](validators.md)** — Documentation for this module.

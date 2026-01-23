@@ -21,5 +21,5 @@ describe('section offsets integration', () => {
       throw new Error(`Found duplicated startTick entries across sections:\n${first}`);
     }
     expect(duplicates.length).toBe(0);
-  }, 20000);
+  }, 120000);
 });

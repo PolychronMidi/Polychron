@@ -310,7 +310,14 @@ export class CompositionStateService implements CompositionState {
 
     // State vars
     poly.state.sectionIndex = this.sectionIndex;
-    poly.state.totalSections = this.totalSections;
+    // Only write totalSections if it's a valid positive number. This avoids transient writes of 0
+    // during initialization that can overwrite a previously-computed non-zero value.
+    if (Number.isFinite(this.totalSections) && this.totalSections > 0) {
+      poly.state.totalSections = this.totalSections;
+    } else {
+      // skip writing invalid/zero totalSections (keep existing poly.state.totalSections if present)
+    }
+    try { console.error('[traceroute] syncToGlobal wrote totalSections', { polyTotalSections: poly.state.totalSections }); } catch (_e) {}
     poly.state.sectionStart = this.sectionStart;
     poly.state.phraseIndex = this.phraseIndex;
     poly.state.phrasesPerSection = this.phrasesPerSection;
@@ -356,7 +363,13 @@ export class CompositionStateService implements CompositionState {
 
     // First read from the DI-friendly namespaces
     if (gState.sectionIndex !== undefined) this.sectionIndex = gState.sectionIndex;
-    if (gState.totalSections !== undefined) this.totalSections = gState.totalSections;
+    // Accept totalSections from global only when it is a valid positive number; ignore zero/invalid writes
+    if (gState.totalSections !== undefined && Number.isFinite(gState.totalSections) && gState.totalSections > 0) {
+      this.totalSections = gState.totalSections;
+    } else {
+      // ignore transient or invalid totalSections from global state
+    }
+    try { console.error('[traceroute] syncFromGlobal read totalSections', { polyTotalSections: gState.totalSections, thisTotalSections: this.totalSections }); } catch (_e) {}
     if (gState.phraseIndex !== undefined) this.phraseIndex = gState.phraseIndex;
     if (gState.measureIndex !== undefined) this.measureIndex = gState.measureIndex;
     if (gState.beatIndex !== undefined) this.beatIndex = gState.beatIndex;
@@ -384,6 +397,7 @@ export class CompositionStateService implements CompositionState {
    * Reset to initial state
    */
   reset() {
+    try { console.error('[traceroute] CompositionState.reset() called', new Error().stack); } catch (_e) {}
     this.sectionIndex = 0;
     this.totalSections = 0;
     this.phraseIndex = 0;
@@ -418,7 +432,14 @@ syncToGlobal() {
 
     // State vars
     poly.state.sectionIndex = this.sectionIndex;
-    poly.state.totalSections = this.totalSections;
+    // Only write totalSections if it's a valid positive number. This avoids transient writes of 0
+    // during initialization that can overwrite a previously-computed non-zero value.
+    if (Number.isFinite(this.totalSections) && this.totalSections > 0) {
+      poly.state.totalSections = this.totalSections;
+    } else {
+      // skip writing invalid/zero totalSections (keep existing poly.state.totalSections if present)
+    }
+    try { console.error('[traceroute] syncToGlobal wrote totalSections', { polyTotalSections: poly.state.totalSections }); } catch (_e) {}
     poly.state.sectionStart = this.sectionStart;
     poly.state.phraseIndex = this.phraseIndex;
     poly.state.phrasesPerSection = this.phrasesPerSection;
@@ -467,7 +488,13 @@ syncFromGlobal() {
 
     // First read from the DI-friendly namespaces
     if (gState.sectionIndex !== undefined) this.sectionIndex = gState.sectionIndex;
-    if (gState.totalSections !== undefined) this.totalSections = gState.totalSections;
+    // Accept totalSections from global only when it is a valid positive number; ignore zero/invalid writes
+    if (gState.totalSections !== undefined && Number.isFinite(gState.totalSections) && gState.totalSections > 0) {
+      this.totalSections = gState.totalSections;
+    } else {
+      // ignore transient or invalid totalSections from global state
+    }
+    try { console.error('[traceroute] syncFromGlobal read totalSections', { polyTotalSections: gState.totalSections, thisTotalSections: this.totalSections }); } catch (_e) {}
     if (gState.phraseIndex !== undefined) this.phraseIndex = gState.phraseIndex;
     if (gState.measureIndex !== undefined) this.measureIndex = gState.measureIndex;
     if (gState.beatIndex !== undefined) this.beatIndex = gState.beatIndex;
@@ -502,6 +529,7 @@ Reset core counters, BPM, and logging to defaults.
 
 ```typescript
 reset() {
+    try { console.error('[traceroute] CompositionState.reset() called', new Error().stack); } catch (_e) {}
     this.sectionIndex = 0;
     this.totalSections = 0;
     this.phraseIndex = 0;

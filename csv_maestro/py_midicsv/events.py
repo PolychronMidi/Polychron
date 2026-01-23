@@ -36,6 +36,10 @@ midi_to_csv_map = {
 csv_to_midi_map = {
     "note_off_c": to_NoteOffEvent,
     "note_on_c": to_NoteOnEvent,
+    "off": to_NoteOffEvent,
+    "": to_NoteOffEvent,
+    None: to_NoteOffEvent,
+    "on": to_NoteOnEvent,
     "poly_aftertouch_c": to_AfterTouchEvent,
     "control_c": to_ControlChangeEvent,
     "program_c": to_ProgramChangeEvent,

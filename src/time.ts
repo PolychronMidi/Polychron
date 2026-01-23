@@ -13,6 +13,17 @@ import { logUnit, requirePush } from './writer.js';
 
 export { TimingCalculator, TimingContext, LayerManager };
 
+// Utility: format seconds into M:SS.ssss (exported for tests and marker formatting)
+export const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds - mins * 60;
+  const secInt = Math.floor(secs);
+  const frac = secs - secInt;
+  const fracStr = frac.toFixed(4).slice(1); // .XXXX
+  const secStr = String(secInt).padStart(2, '0');
+  return `${mins}:${secStr}${fracStr}`;
+};
+
 // Optional: Register timing services into a DIContainer for explicit DI usage
 import { DIContainer } from './DIContainer.js';
 import { getPolychronContext } from './PolychronInit.js';
@@ -137,18 +148,18 @@ const getMidiTiming = (ctx: ICompositionContext): [number, number] => {
     const ppq = state.PPQ ?? ctx.PPQ ?? 480;
     const bpm = state.midiBPM ?? state.BPM ?? ctx.BPM ?? 120;
     state.tpSec = Math.max(1, (bpm / 60) * ppq);
-    try { console.error('[traceroute] getMidiTiming: invalid tpSec detected; applied fallback', { tpSec: state.tpSec, bpm, ppq }); } catch (_e) {}
+    try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] getMidiTiming: invalid tpSec detected; applied fallback', { tpSec: state.tpSec, bpm, ppq })).catch(() => {}); } catch (_e) {}
   }
   if (!Number.isFinite(state.tpMeasure) || state.tpMeasure <= 0) {
     const ppq = state.PPQ ?? ctx.PPQ ?? 480;
     const midiMeterRatio = timingCalculator.midiMeterRatio || 1;
     state.tpMeasure = Math.max(1, ppq * 4 * midiMeterRatio);
     state.spMeasure = Number.isFinite(state.tpMeasure) && state.tpSec ? state.tpMeasure / state.tpSec : state.spMeasure;
-    try { console.error('[traceroute] getMidiTiming: invalid tpMeasure detected; applied fallback', { tpMeasure: state.tpMeasure, ppq, midiMeterRatio }); } catch (_e) {}
+    try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] getMidiTiming: invalid tpMeasure detected; applied fallback', { tpMeasure: state.tpMeasure, ppq, midiMeterRatio })).catch(() => {}); } catch (_e) {}
   }
 
   try {
-    console.error('[traceroute] getMidiTiming computed', { midiMeter: state.midiMeter, tpMeasure: state.tpMeasure, tpSec: state.tpSec, midiBPM: state.midiBPM, meter: [state.numerator, state.denominator] });
+    import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] getMidiTiming computed', { midiMeter: state.midiMeter, tpMeasure: state.tpMeasure, tpSec: state.tpSec, midiBPM: state.midiBPM, meter: [state.numerator, state.denominator] })).catch(() => {});
   } catch (_e) {}
 
   // Write to timing tree for observability (hybrid approach: globals + tree)
@@ -261,7 +272,7 @@ const getPolyrhythm = (ctx: ICompositionContext): void => {
   const composer = getVal('composer');
   if (!composer) return;
   try {
-    console.error('[traceroute] getPolyrhythm entry', { numerator: getVal('numerator'), denominator: getVal('denominator') });
+    import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] getPolyrhythm entry', { numerator: getVal('numerator'), denominator: getVal('denominator') })).catch(() => {});
   } catch (_e) {}
 
   // Respect test-provided explicit measuresPerPhrase (DI-only override) - if a test or DI seed
@@ -373,7 +384,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     const isAnomaly = !(Number.isFinite(state.tpMeasure) && state.tpMeasure > 0) || !(Number.isFinite(state.tpSec) && state.tpSec > 0);
     if (traceMode === 'full' || isAnomaly) {
       const buf = (ctx as any).csvBuffer;
-      console.error('[traceroute] setUnitTiming enter', { unitType, sectionIndex: state.sectionIndex, phraseIndex: state.phraseIndex, measureIndex: state.measureIndex, beatIndex: state.beatIndex, divIndex: state.divIndex, subdivIndex: state.subdivIndex, tpMeasure: state.tpMeasure, tpBeat: state.tpBeat, tpDiv: state.tpDiv, tpSubdiv: state.tpSubdiv, tpSubsubdiv: state.tpSubsubdiv, subdivStart: state.subdivStart, subsubdivStart: state.subsubdivStart, bufHasUnitTiming: !!(buf && (buf as any).unitTiming), isAnomaly });
+      try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] setUnitTiming enter', { unitType, sectionIndex: state.sectionIndex, phraseIndex: state.phraseIndex, measureIndex: state.measureIndex, beatIndex: state.beatIndex, divIndex: state.divIndex, subdivIndex: state.subdivIndex, tpMeasure: state.tpMeasure, tpBeat: state.tpBeat, tpDiv: state.tpDiv, tpSubdiv: state.tpSubdiv, tpSubsubdiv: state.tpSubsubdiv, subdivStart: state.subdivStart, subsubdivStart: state.subsubdivStart, bufHasUnitTiming: !!(buf && (buf as any).unitTiming), isAnomaly })).catch(() => {}); } catch (_e) {}
     }
   } catch (_e) {}
 
@@ -416,6 +427,17 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
   let endTick = 0;
   const layerLabel = layer ? `${layer}:` : '';
   const activeBuf = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
+
+  // Lightweight runtime trace guard to avoid excessive logging in normal runs
+  const shouldTrace = (() => {
+    try {
+      const poly = getPolychronContext();
+      const tm = poly && poly.test && poly.test._traceMode ? poly.test._traceMode : 'none';
+      return tm === 'full' || tm === 'deep';
+    } catch (_e) {
+      return false;
+    }
+  })();
 
   // Before calculating this unit, enforce that the previous sibling unit (if any)
   // has emitted a handoff. This ensures strict, ordered progression across units.
@@ -590,10 +612,10 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
       }
 
       trackRhythm('subdiv', ctx);
-      // Only compute tpSubdiv if not explicitly provided in state to avoid clobbering test fixtures
-      if (!Number.isFinite(Number(getVal('tpSubdiv')))) {
+      // Only compute tpSubdiv if not explicitly provided (or provided as non-positive) in state to avoid clobbering test fixtures
+      if (!Number.isFinite(Number(getVal('tpSubdiv'))) || Number(getVal('tpSubdiv')) <= 0) {
         const computed = getVal('tpDiv') / Math.max(1, getVal('subdivsPerDiv'));
-        setVal('tpSubdiv', Number.isFinite(Number(computed)) ? Number(computed) : getVal('tpSubdiv'));
+        setVal('tpSubdiv', Number.isFinite(Number(computed)) && Number(computed) > 0 ? Number(computed) : getVal('tpSubdiv'));
       }
       setVal('spSubdiv', getVal('tpSubdiv') / tpSec);
       setVal('subdivsPerMinute', 60 / getVal('spSubdiv'));
@@ -699,7 +721,7 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
       // Console snapshot for anomaly or explicit full console tracing
       if (traceMode === 'full' || isAnomaly) {
-        console.error('[traceroute] setUnitTiming snapshot', { unitType, path, timingSnapshot, bufferLen: ((ctx as any).csvBuffer && ((ctx as any).csvBuffer.rows && (ctx as any).csvBuffer.rows.length)) || (Array.isArray((ctx as any).csvBuffer) ? (ctx as any).csvBuffer.length : 0) });
+        import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] setUnitTiming snapshot', { unitType, path, timingSnapshot, bufferLen: ((ctx as any).csvBuffer && ((ctx as any).csvBuffer.rows && (ctx as any).csvBuffer.rows.length)) || (Array.isArray((ctx as any).csvBuffer) ? (ctx as any).csvBuffer.length : 0) })).catch(() => {});
       }
 
       // 'full-file' mode: collect snapshots in memory for a single file output at run end
@@ -753,50 +775,94 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
 
     if (unitType === 'phrase') {
       unitIndex = ctx.state.phraseIndex ?? 0;
-      const tp = pickFinite(ctx.state.tpPhrase, timingSnapshot.tpPhrase, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex))?.start, ctx.state.sectionStart, 0);
-      startTick = allowManual ? (ctx.state.phraseStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpPhrase, timingSnapshot.tpPhrase, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex))?.start, ctx.state.sectionStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.phraseStart))) {
+        startTick = Math.round(Number(ctx.state.phraseStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     } else if (unitType === 'measure') {
       unitIndex = measureIdx;
-      const tp = pickFinite(ctx.state.tpMeasure, timingSnapshot.tpMeasure, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex))?.start, ctx.state.phraseStart, 0);
-      startTick = allowManual ? (ctx.state.measureStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpMeasure, timingSnapshot.tpMeasure, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex))?.start, ctx.state.phraseStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.measureStart))) {
+        startTick = Math.round(Number(ctx.state.measureStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     } else if (unitType === 'beat') {
       unitIndex = ctx.state.beatIndex ?? 0;
-      const tp = pickFinite(ctx.state.tpBeat, timingSnapshot.tpBeat, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0))?.start, ctx.state.measureStart, 0);
-      startTick = allowManual ? (ctx.state.beatStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpBeat, timingSnapshot.tpBeat, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0))?.start, ctx.state.measureStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.beatStart))) {
+        startTick = Math.round(Number(ctx.state.beatStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     } else if (unitType === 'division') {
       unitIndex = ctx.state.divIndex ?? 0;
-      const tp = pickFinite(ctx.state.tpDiv, timingSnapshot.tpDiv, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0))?.start, ctx.state.beatStart, 0);
-      startTick = allowManual ? (ctx.state.divStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpDiv, timingSnapshot.tpDiv, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0))?.start, ctx.state.beatStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.divStart))) {
+        startTick = Math.round(Number(ctx.state.divStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     } else if (unitType === 'subdivision') {
       unitIndex = ctx.state.subdivIndex ?? 0;
-      const tp = pickFinite(ctx.state.tpSubdiv, timingSnapshot.tpSubdiv, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0))?.start, ctx.state.divStart, 0);
-      startTick = allowManual ? (ctx.state.subdivStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpSubdiv, timingSnapshot.tpSubdiv, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0))?.start, ctx.state.divStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.subdivStart))) {
+        startTick = Math.round(Number(ctx.state.subdivStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     } else if (unitType === 'subsubdivision') {
       unitIndex = ctx.state.subsubdivIndex ?? 0;
-      const tp = pickFinite(ctx.state.tpSubsubdiv, timingSnapshot.tpSubsubdiv, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0))?.start, ctx.state.subdivStart, 0);
-      startTick = allowManual ? (ctx.state.subsubdivStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpSubsubdiv, timingSnapshot.tpSubsubdiv, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex, ctx.state.measureIndex ?? 0, ctx.state.beatIndex ?? 0, ctx.state.divIndex ?? 0, ctx.state.subdivIndex ?? 0))?.start, ctx.state.subdivStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.subsubdivStart))) {
+        startTick = Math.round(Number(ctx.state.subsubdivStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     } else {
       // Default to measure span
       unitIndex = measureIdx;
-      const tp = pickFinite(ctx.state.tpMeasure, timingSnapshot.tpMeasure, 0);
-      const parentStart = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex))?.start, ctx.state.phraseStart, 0);
-      startTick = allowManual ? (ctx.state.measureStart ?? (parentStart + unitIndex * tp)) : (parentStart + unitIndex * tp);
-      endTick = startTick + tp;
+      const tpRaw = pickFinite(ctx.state.tpMeasure, timingSnapshot.tpMeasure, 0);
+      const parentStartRaw = pickFinite(getTimingValues(tree, buildPath(layer, sectionIndex, phraseIndex))?.start, ctx.state.phraseStart, 0);
+      const tpTicks = Math.max(1, Math.round(tpRaw));
+      const parentStartTick = Math.round(parentStartRaw);
+      if (allowManual && Number.isFinite(Number(ctx.state.measureStart))) {
+        startTick = Math.round(Number(ctx.state.measureStart));
+      } else {
+        startTick = parentStartTick + unitIndex * tpTicks;
+      }
+      endTick = startTick + tpTicks;
     }
 
-    console.error('[DEBUG][PERSIST] pre-persist', { unitType, unitIndex, startTick, endTick, stateSubdivStart: ctx && (ctx as any).state && (ctx as any).state.subdivStart, stateTpSubdiv: ctx && (ctx as any).state && (ctx as any).state.tpSubdiv });
+    if (shouldTrace) {
+      import('./trace.js').then(({ trace }) => trace('deep', '[DEBUG][PERSIST] pre-persist', { unitType, unitIndex, startTick, endTick, stateSubdivStart: ctx && (ctx as any).state && (ctx as any).state.subdivStart, stateTpSubdiv: ctx && (ctx as any).state && (ctx as any).state.tpSubdiv })).catch(() => {});
+    }
 
     // Strict-mode immediate pre-check (pre-label) to ensure strict errors bubble up unswallowed
 
@@ -857,8 +923,10 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
           if (strict) {
             throw new Error(`Overlapping unit: start ${startTick} < prev.end ${prevEnd} for path ${path}`);
           } else {
-            console.warn('[traceroute][AUTO-FIX] Adjusting startTick to avoid overlap', { unitType, path, oldStart: startTick, newStart: prevEnd, prevPath: prevSiblingPath });
-            startTick = prevEnd;
+            import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[traceroute][AUTO-FIX] Adjusting startTick to avoid overlap', { unitType, path, oldStart: startTick, newStart: prevEnd, prevPath: prevSiblingPath })).catch(() => {});
+            // Round previous end to integer to avoid propagating fractional ticks into unit starts
+            const roundedPrevEnd = Math.round(prevEnd);
+            startTick = roundedPrevEnd;
             if (unitType === 'phrase') ctx.state.phraseStart = startTick;
             else if (unitType === 'measure') ctx.state.measureStart = startTick;
             else if (unitType === 'beat') ctx.state.beatStart = startTick;
@@ -872,7 +940,9 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
                           : (unitType === 'subdivision') ? (Number.isFinite(Number(ctx.state.tpSubdiv)) ? Number(ctx.state.tpSubdiv) : (Number.isFinite(Number(timingSnapshot.tpSubdiv)) ? Number(timingSnapshot.tpSubdiv) : 0))
                           : (unitType === 'subsubdivision') ? (Number.isFinite(Number(ctx.state.tpSubsubdiv)) ? Number(ctx.state.tpSubsubdiv) : (Number.isFinite(Number(timingSnapshot.tpSubsubdiv)) ? Number(timingSnapshot.tpSubsubdiv) : 0))
                           : (Number.isFinite(Number(ctx.state.tpMeasure)) ? Number(ctx.state.tpMeasure) : (Number.isFinite(Number(timingSnapshot.tpMeasure)) ? Number(timingSnapshot.tpMeasure) : 0));
-            endTick = startTick + (Number.isFinite(dur) ? Number(dur) : 0);
+            // Round duration as well to keep everything integer
+            const durTicks = Math.max(0, Math.round(Number.isFinite(dur) ? Number(dur) : 0));
+            endTick = startTick + durTicks;
           }
         }
       }
@@ -896,17 +966,62 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     (ctx as any).state.unitLabel = label;
 
     // Persist start/end and indices into the timing tree so enforcement logic and grandFinale can compute offsets reliably
+    // Additionally, pre-compute and persist a deterministic unitHash *before* events may be written to the
+    // buffer. This reduces races where events are pushed before the final unitHash marker is emitted,
+    // causing validator backfill warnings. Compute the hash early and assign it to the timing tree and
+    // the layer buffer's currentUnitHashes/lastAssignedUnitHash as a resilient early fallback.
     try {
       const persistStart = Number.isFinite(Number(startTick)) ? Number(startTick) : (Number.isFinite(Number(timingSnapshot.start)) ? Number(timingSnapshot.start) : 0);
       const persistEnd = Number.isFinite(Number(endTick)) ? Number(endTick) : (Number.isFinite(Number(timingSnapshot.end)) ? Number(timingSnapshot.end) : persistStart);
-      setTimingValues(tree, path, { start: persistStart, end: persistEnd, sectionIndex: sectionIndex ?? 0, phraseIndex: phraseIndex ?? 0, measureIndex: ctx.state.measureIndex ?? 0 });
+      // Persist timingSnapshot values along with start/end so the timing tree contains full unit metadata (tp/sp, measuresPerPhrase, etc.)
+      const toPersist = Object.assign({}, timingSnapshot || {}, { start: persistStart, end: persistEnd, sectionIndex: sectionIndex ?? 0, phraseIndex: phraseIndex ?? 0, measureIndex: ctx.state.measureIndex ?? 0 });
+      setTimingValues(tree, path, toPersist);
+      try { if (shouldTrace) console.error(`[setUnitTiming][DEBUG] persisted path=${path} toPersistKeys=${Object.keys(toPersist).join(',')}`); } catch (_e) {}
+      // Also persist critical numeric phrase timing fields explicitly to avoid any
+      // accidental omission when reading previous sibling nodes (ensures robust tests)
+      try {
+        if (unitType === 'phrase') {
+          setTimingValues(tree, path, {
+            phraseStart: Number.isFinite(Number(state.phraseStart)) ? Number(state.phraseStart) : 0,
+            tpPhrase: Number.isFinite(Number(state.tpPhrase)) ? Number(state.tpPhrase) : 0,
+            phraseStartTime: Number.isFinite(Number(state.phraseStartTime)) ? Number(state.phraseStartTime) : 0,
+            spPhrase: Number.isFinite(Number(state.spPhrase)) ? Number(state.spPhrase) : 0,
+            measuresPerPhrase: Number.isFinite(Number(state.measuresPerPhrase)) ? Number(state.measuresPerPhrase) : 1
+          });
+        }
+      } catch (_e) {}
+
+      // Pre-compute a deterministic unitHash and persist it immediately so writers can pick it up
+      try {
+        const seed = (ctx && (ctx as any).state && (ctx as any).state.tracerouteSeed) || 0;
+        const hashSourceEarly = `${layer}:${path}:early:${unitType}:${unitIndex ?? ''}:${persistStart ?? ''}:${persistEnd ?? ''}`;
+        let hEarly = 2166136261 >>> 0;
+        for (let i = 0; i < hashSourceEarly.length; i++) {
+          hEarly = Math.imul(hEarly ^ hashSourceEarly.charCodeAt(i), 16777619) >>> 0;
+        }
+        hEarly = (hEarly ^ (seed >>> 0)) >>> 0;
+        const earlyUnitHash = hEarly.toString(36);
+        // Persist early unitHash into the timing tree so TimingTree lookups can succeed
+        try { setTimingValues(tree, path, { unitHash: earlyUnitHash }); } catch (_e) {}
+
+        // Attach early unit hash to the layer buffer(s) so writer.pushMultiple can annotate events synchronously
+        try {
+          const targetBufEarly = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
+          if (targetBufEarly) {
+            targetBufEarly.currentUnitHashes = targetBufEarly.currentUnitHashes || {};
+            targetBufEarly.currentUnitHashes[unitType] = earlyUnitHash;
+            // record lastAssignedUnitHash as resilient fallback
+            try { targetBufEarly.lastAssignedUnitHash = earlyUnitHash; } catch (_e) {}
+          }
+        } catch (_e) {}
+      } catch (_e) {}
     } catch (_e) {}
 
 
 
     // Strict pre-check: when strict enforcement is enabled, throw immediately so callers/tests receive errors
     if (ctx && (ctx as any).state && (ctx as any).state._strictEnforceNoOverlap) {
-      console.warn('[traceroute][STRICT] performing strict pre-check', { unitType, path, measureIndex: ctx.state.measureIndex, beatIndex: ctx.state.beatIndex });
+      import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[traceroute][STRICT] performing strict pre-check', { unitType, path, measureIndex: ctx.state.measureIndex, beatIndex: ctx.state.beatIndex })).catch(() => {});
       const prevSiblingPathStrict = (() => {
         try {
           if (unitType === 'phrase' && ctx.state.phraseIndex > 0) return buildPath(layer, sectionIndex, ctx.state.phraseIndex - 1);
@@ -953,6 +1068,8 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
         type: 'marker_t',
         vals: ["UnitMarker", layer, unitType, (unitIndex !== undefined) ? unitIndex : -1, Number(startTick.toFixed(4)), Number(endTick.toFixed(4))]
       } as any;
+      // Internal-only: do not emit unit markers into CSV outputs
+      try { marker._internal = true; } catch (_e) {}
 
       if (typeof pFn === 'function' && (ctx as any).csvBuffer) {
         try { pFn((ctx as any).csvBuffer, marker); } catch (_e) {}
@@ -1016,6 +1133,8 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
           try { pFn = requirePush(ctx); } catch (_e) { pFn = null; }
           const targetBuf = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
           const unitMarker: any = { tick: Math.round(startTick), type: 'marker_t', vals: [`unitHash:${unitHash}`, `unitType:${unitType}`, `start:${Number(startTick)}`, `end:${Number(prevEnd)}`, `section:${sectionIndex}`, `phrase:${phraseIndex}`, `measure:${ctx.state && ctx.state.measureIndex ? ctx.state.measureIndex : 0}`] };
+          // Internal-only: prevent unit markers from being emitted into CSV outputs
+          try { unitMarker._internal = true; } catch (_e) {}
           if (typeof pFn === 'function' && targetBuf) {
             try { pFn(targetBuf, unitMarker); } catch (_e) {}
           } else if (targetBuf && Array.isArray(targetBuf)) {
@@ -1027,12 +1146,16 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
             if (targetBuf) {
               targetBuf.currentUnitHashes = targetBuf.currentUnitHashes || {};
               targetBuf.currentUnitHashes[unitType] = unitHash;
+              // Record the last assigned unitHash on the buffer as a resilient fallback
+              // when transient timing races cause per-event annotation to be missed.
+              try { targetBuf.lastAssignedUnitHash = unitHash; } catch (_e) {}
             }
           } catch (_e) {}
 
           // Emit a handoff marker at the last meaningful tick of the unit so enforcement can validate
           const handoffTick = Math.max(Math.round(startTick), Math.round(prevEnd) - 1);
           const handoffEvent: any = { tick: handoffTick, type: 'unit_handoff', vals: [unitHash] };
+          try { handoffEvent._internal = true; } catch (_e) {}
           const targetBuf2 = ctx.LM && ctx.LM.layers && ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer ? ctx.LM.layers[layer].buffer : (ctx as any).csvBuffer;
           if (typeof pFn === 'function' && targetBuf2) {
             pFn(targetBuf2, handoffEvent);
@@ -1076,11 +1199,11 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
           if (parentNode) {
             const pStart = Number(parentNode.start ?? NaN);
             if (Number.isFinite(pStart) && startTick < pStart - 0.0001) {
-              console.error('[traceroute][ERROR] setUnitTiming: unit start before parent start', { unitType, path, startTick, parentStart: pStart, parentPath });
+              import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute][ERROR] setUnitTiming: unit start before parent start', { unitType, path, startTick, parentStart: pStart, parentPath })).catch(() => {});
             }
             const pEnd = Number(parentNode.end ?? NaN);
             if (Number.isFinite(pEnd) && endTick > pEnd + 0.0001) {
-              console.error('[traceroute][ERROR] setUnitTiming: unit end after parent end', { unitType, path, endTick, parentEnd: pEnd, parentPath });
+              import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute][ERROR] setUnitTiming: unit end after parent end', { unitType, path, endTick, parentEnd: pEnd, parentPath })).catch(() => {});
             }
           }
 
@@ -1088,14 +1211,14 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
           if (prevNode && Number.isFinite(Number(prevNode.end ?? NaN))) {
             const prevEndVal = Number(prevNode.end);
             if (startTick < prevEndVal - 0.0001) {
-              console.error('[traceroute][WARN] setUnitTiming: unit start overlaps previous sibling', { unitType, path, startTick, prevPrevEnd: prevEndVal, prevPath: prevSiblingPath });
+              import('./trace.js').then(({ traceWarn }) => traceWarn('anomaly', '[traceroute][WARN] setUnitTiming: unit start overlaps previous sibling', { unitType, path, startTick, prevPrevEnd: prevEndVal, prevPath: prevSiblingPath })).catch(() => {});
             }
           }
 
           if (deep) {
             // Dump context: timingSnapshot, parentNode, prevNode and first/last few buffer rows for diagnosing stacking
             const bufRows = ((ctx as any).csvBuffer && ((ctx as any).csvBuffer.rows || ctx.csvBuffer)) || [];
-            console.error('[traceroute][DEEP] setUnitTiming deep snapshot', { unitType, path, timingSnapshot, parentNode, prevNode, bufferSampleHead: bufRows.slice(0, 10), bufferSampleTail: bufRows.slice(-10) });
+            import('./trace.js').then(({ trace }) => trace('deep', '[traceroute][DEEP] setUnitTiming deep snapshot', { unitType, path, timingSnapshot, parentNode, prevNode, bufferSampleHead: bufRows.slice(0, 10), bufferSampleTail: bufRows.slice(-10) })).catch(() => {});
           }
         } catch (_e) {}
       } catch (_e) {
@@ -1171,15 +1294,6 @@ const setUnitTiming = (unitType: string, ctx: ICompositionContext): void => {
     return null;
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds - mins * 60;
-    const secInt = Math.floor(secs);
-    const frac = secs - secInt;
-    const fracStr = frac.toFixed(4).slice(1); // .XXXX
-    const secStr = String(secInt).padStart(2, '0');
-    return `${mins}:${secStr}${fracStr}`;
-  };
-}
 
-export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming, formatTime };
+}
+export { getMidiTiming, setMidiTiming, getPolyrhythm, setUnitTiming };

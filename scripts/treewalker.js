@@ -188,6 +188,57 @@ function main() {
 
       const layerUnits = byLayerUnits[layer] || [];
 
+      // If no explicit unitHash present, try to find one in the raw CSV line's trailing columns
+      // by matching against known unit hashes from the units manifest for this layer.
+      if (!e.unitHash && e.rawLine) {
+        try {
+          const tokens = e.rawLine.split(',').map(t => String(t).trim());
+          for (let i = tokens.length - 1; i >= 2 && !e.unitHash; i--) {
+            const tok = tokens[i];
+            if (!tok) continue;
+            const found = layerUnits.find(u => String(u.unitHash) === tok);
+            if (found) {
+              // Only accept trailing unitHash tokens that actually contain this event's tick (if tick defined),
+              // to avoid assigning events to zero-length or unrelated units.
+              if (Number.isFinite(e.tickNum)) {
+                const s = Number(found.startTick || 0);
+                const en = Number(found.endTick || 0);
+                if (Number.isFinite(s) && Number.isFinite(en)) {
+                  if (e.tickNum >= s && e.tickNum < en) {
+                    e.unitHash = tok;
+                  } else if (e.tickNum === en && s < en) {
+                    // If the event tick equals the unit's end tick, accept the explicit trailing
+                    // unitHash as a valid assignment when the unit has non-zero duration. This avoids
+                    // assigning events to zero-length units.
+                    e.unitHash = tok;
+                  } else {
+                    // If this candidate maps to a zero-length unit (or otherwise doesn't contain the event),
+                    // attempt to find an enclosing unit that does contain the tick and use that instead.
+                    const enclosing = layerUnits.find(u => {
+                      const us = Number(u.startTick || 0);
+                      const ue = Number(u.endTick || 0);
+                      return Number.isFinite(us) && Number.isFinite(ue) && (e.tickNum >= us && e.tickNum < ue);
+                    });
+                    if (enclosing) e.unitHash = enclosing.unitHash;
+                  }
+                } else {
+                  // If this candidate maps to a zero-length unit (or otherwise doesn't contain the event),
+                  // attempt to find an enclosing unit that does contain the tick and use that instead.
+                  const enclosing = layerUnits.find(u => {
+                    const us = Number(u.startTick || 0);
+                    const ue = Number(u.endTick || 0);
+                    return Number.isFinite(us) && Number.isFinite(ue) && (e.tickNum >= us && e.tickNum < ue);
+                  });
+                  if (enclosing) e.unitHash = enclosing.unitHash;
+                }
+              } else {
+                // If tick is not numeric, conservatively avoid assigning and let later logic handle backfill
+              }
+            }
+          }
+        } catch (_err) {}
+      }
+
       // If no explicit unitHash present, try a tick-based lookup (best-effort backfill)
       let assignedUnit = null;
       if (!e.unitHash && Number.isFinite(e.tickNum)) {
@@ -223,7 +274,13 @@ function main() {
       const start = Number(u.startTick || 0);
       const end = Number(u.endTick || 0);
       if (!(t >= start && t < end)) {
-        report.errors.push(`Event tick ${t} for unit ${unitHash} in ${path.basename(file)} falls outside unit range [${start},${end})`);
+        // Allow a conservative, explicit exception when the event appears exactly at the unit's end tick
+        // and the event contained an explicit unitHash matching this unit (CSV author intent). This avoids
+        // false-positive errors for events placed exactly on unit boundaries when authors chose to attach
+        // them to the previous unit.
+        if (!(t === end && e.unitHash === unitHash && start < end)) {
+          report.errors.push(`Event tick ${t} for unit ${unitHash} in ${path.basename(file)} falls outside unit range [${start},${end})`);
+        }
       }
     }
   }

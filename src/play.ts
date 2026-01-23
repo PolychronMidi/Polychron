@@ -38,6 +38,7 @@ import { ProgressCallback, CompositionProgress } from './CompositionProgress.js'
 import { rf, ri, ra, clamp } from './utils.js';
 
 // Import composition context
+import { setUnitTiming } from './time.js';
 import {
   createCompositionContext,
   ICompositionContext
@@ -262,6 +263,10 @@ const registerCoreServices = (container: DIContainer) => {
 };
 
 // Initialize the composition engine
+
+// Lightweight trace guard for play engine to avoid excessive logs during runs
+const _shouldTrace_play = (() => { try { const poly = getPolychronContext(); return poly && poly.test && (poly.test._traceMode === 'full' || poly.test._traceMode === 'deep' || poly.test.enableLogging); } catch (_e) { return false; } })();
+
 const initializePlayEngine = async (
   progressCallback?: ProgressCallback,
   cancellationToken?: CancellationToken,
@@ -272,11 +277,11 @@ const initializePlayEngine = async (
 
   // Prevent concurrent runs
   if (__engineRunning) {
-    console.error('[traceroute] initializePlayEngine: concurrent run detected; rejecting second invocation');
+    if (_shouldTrace_play) try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] initializePlayEngine: concurrent run detected; rejecting second invocation')).catch(() => {}); } catch (_e) {}
     throw new Error('initializePlayEngine: concurrent run detected');
   }
   __engineRunning = true;
-  try { console.error('[traceroute] initializePlayEngine: entry stack', new Error().stack); } catch (_e) {}
+  try { if (_shouldTrace_play) try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] initializePlayEngine: entry stack', new Error().stack)).catch(() => {}); } catch (_e) {} } catch (_e) {}
 
   // Report initialization phase
   progressCallback?.({
@@ -307,7 +312,7 @@ const initializePlayEngine = async (
   // If fastTrace is enabled (via poly.test.fastTrace or env POLYCHRON_FAST_TRACE=1), reduce composition scope to make runs quick
   const fastTrace = g.fastTrace || process.env.POLYCHRON_FAST_TRACE === '1';
   if (fastTrace) {
-    try { console.error('[traceroute] FAST TRACE mode enabled: minimizing composition work for quick runs'); } catch (_e) {}
+    try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] FAST TRACE mode enabled: minimizing composition work for quick runs')).catch(() => {}); } catch (_e) {}
     g.SECTIONS = { min: 1, max: 1 };
     compositionState.SECTIONS = { min: 1, max: 1 } as any;
     compositionState.measuresPerPhrase = 1;
@@ -320,9 +325,9 @@ const initializePlayEngine = async (
   compositionState.BASE_BPM = g.BPM ?? poly.state?.BPM ?? compositionState.BASE_BPM;
   compositionState.LOG = g.LOG !== undefined ? g.LOG : compositionState.LOG;
   // Persist authoritative composition state back into the DI test namespace
-  try { console.error('[traceroute] BEFORE compositionState.syncToGlobal (startup)', { comp_totalSections: compositionState.totalSections }); } catch (_e) {}
+      try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] BEFORE compositionState.syncToGlobal (startup)', { comp_totalSections: compositionState.totalSections })).catch(() => {}); } catch (_e) {}
   compositionState.syncToGlobal();
-  try { console.error('[traceroute] AFTER compositionState.syncToGlobal (startup)', { comp_totalSections: compositionState.totalSections, poly_totalSections: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.totalSections) || null }); } catch (_e) {}
+  try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] AFTER compositionState.syncToGlobal (startup)', { comp_totalSections: compositionState.totalSections, poly_totalSections: (getPolychronContext && getPolychronContext().state && getPolychronContext().state.totalSections) || null })).catch(() => {}); } catch (_e) {}
 
 
   // Create composition context (Step 12: Context threading)
@@ -359,22 +364,22 @@ const initializePlayEngine = async (
 
   // Make context available to module functions
   setCurrentCompositionContext(ctx);
-  try { console.error('[traceroute] initializePlayEngine ctx created', { totalSections: ctx.state.totalSections, BPM: ctx.BPM, PPQ: ctx.PPQ, SECTIONS: ctx.SECTIONS, COMPOSERS: ctx.COMPOSERS || null }); } catch (_e) {}
+  try { if (_shouldTrace_play) try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] initializePlayEngine ctx created', { totalSections: ctx.state.totalSections, BPM: ctx.BPM, PPQ: ctx.PPQ, SECTIONS: ctx.SECTIONS, COMPOSERS: ctx.COMPOSERS || null })).catch(() => {}); } catch (_e) {} } catch (_e) {}
 
   // Diagnostic hook: force a short sample of NOTE generation in the real context when requested
   try {
     if (process.env.POLYCHRON_FORCE_NOTE_SAMPLE === '1') {
       try {
-        console.error('[initializePlayEngine] POLYCHRON_FORCE_NOTE_SAMPLE active: forcing a few stage.playNotes/playNotes2 calls');
+        if (_shouldTrace_play) console.error('[initializePlayEngine] POLYCHRON_FORCE_NOTE_SAMPLE active: forcing a few stage.playNotes/playNotes2 calls');
         ctx.state.bpmRatio3 = 1;
         const st = container.get('stage');
         for (let i = 0; i < 5; i++) {
           st.playNotes(ctx);
           st.playNotes2(ctx);
         }
-        console.error('[initializePlayEngine] forced sample pushed, global note pushes:', (globalThis as any).__PUSH_NOTE_COUNT || 0);
+        if (_shouldTrace_play) console.error('[initializePlayEngine] forced sample pushed, global note pushes:', (globalThis as any).__PUSH_NOTE_COUNT || 0);
       } catch (_e) {
-        console.error('[initializePlayEngine] forced sample failed', _e && (_e as Error).message ? (_e as Error).message : _e);
+        if (_shouldTrace_play) console.error('[initializePlayEngine] forced sample failed', _e && (_e as Error).message ? (_e as Error).message : _e);
       }
     }
   } catch (_e) {}
@@ -385,6 +390,7 @@ const initializePlayEngine = async (
   // Provide DI-based LayerManager and stage references on context
   (ctx as any).LM = container.get('layerManager');
   (ctx as any).stage = container.get('stage');
+
 
   // Defensive: ensure an initial unitLabel exists on the active buffer immediately
   try {
@@ -404,6 +410,21 @@ const initializePlayEngine = async (
       }
       // Ensure we emit an initial unit marker so any early events are associated correctly
       try { ctx.logUnit && ctx.logUnit('measure'); } catch (_e) {}
+
+      // Ensure initial unit timing entries are created for all layers so unitHash is available before any early events
+      try {
+        const layers = ctx.LM && ctx.LM.layers ? Object.keys(ctx.LM.layers) : ['primary'];
+        for (const lname of layers) {
+          try {
+            // Activate layer context and set initial section/phrase/measure timing
+            (ctx as any).LM.activeLayer = lname;
+            setUnitTiming('section', ctx);
+            setUnitTiming('phrase', ctx);
+            setUnitTiming('measure', ctx);
+          } catch (_e) {}
+        }
+      } catch (_e) {}
+
     }
   } catch (_e) {}
 
@@ -430,7 +451,8 @@ const initializePlayEngine = async (
       const seededUtils: any = {
         rf: (min = 0, max = 1) => ((next() * (max - min)) + min),
         ri: (min = 0, max = 1) => Math.floor((next() * (max - min + 1)) + min),
-        rv: (value: number) => value, // deterministic identity variation for safety
+        // deterministic but non-trivial variation: scale value by a small random multiplier in [0.75,1.25]
+        rv: (value: number) => Number(value) * (0.75 + next() * 0.5),
         ra: (arr: any[]) => arr[Math.floor(next() * arr.length)],
         rw: (weights: number[]) => {
           // deterministic weighted choice (index)
@@ -496,7 +518,7 @@ const initializePlayEngine = async (
       const test1 = riFn(sectionsCfg.min, sectionsCfg.max);
       const test2 = riFn(sectionsCfg.min, sectionsCfg.max);
       const funcSrcHead = String(riFn).slice(0,200);
-      try { console.error('[traceroute] riFn test', { isCtxRi: Boolean(ctx.utils && ctx.utils.ri === riFn), isPolyRi: Boolean(polyUtils && polyUtils.ri === riFn), isModuleRi: Boolean(ri === riFn), test1, test2, funcSrcHead, funcLen: String(riFn).length, sectionsCfg }); } catch (_e) {}
+      try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] riFn test', { isCtxRi: Boolean(ctx.utils && ctx.utils.ri === riFn), isPolyRi: Boolean(polyUtils && polyUtils.ri === riFn), isModuleRi: Boolean(ri === riFn), test1, test2, funcSrcHead, funcLen: String(riFn).length, sectionsCfg })).catch(() => {}); } catch (_e) {}
       computedSections = test1;
     }
   } catch (e) {
@@ -582,7 +604,7 @@ const initializePlayEngine = async (
       // Keep legacy globals in sync for compatibility
       try { console.error('[traceroute] BEFORE ctx.state.syncToGlobal (post timing)', { totalSections: ctx.state.totalSections }); } catch (_e) {}
       ctx.state.syncToGlobal();
-      try { console.error('[traceroute] AFTER ctx.state.syncToGlobal (post timing)', { totalSections: ctx.state.totalSections, poly_totalSections: getPolychronContext().state?.totalSections }); } catch (_e) {}
+      try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] AFTER ctx.state.syncToGlobal (post timing)', { totalSections: ctx.state.totalSections, poly_totalSections: getPolychronContext().state?.totalSections })).catch(() => {}); } catch (_e) {}
 
       // Respect any test-seeded measuresPerPhrase value (DI-only override)
       if (compositionState.measuresPerPhrase && compositionState.measuresPerPhrase > 0) {
@@ -754,7 +776,7 @@ const initializePlayEngine = async (
       const grandFinaleFn = container.get('grandFinale');
       if (typeof grandFinaleFn === 'function') grandFinaleFn(ctx);
     } else {
-      console.error('[traceroute] FAST TRACE mode: skipping grandFinale to keep run fast');
+      try { import('./trace.js').then(({ trace }) => trace('anomaly', '[traceroute] FAST TRACE mode: skipping grandFinale to keep run fast')).catch(() => {}); } catch (_e) {}
     }
   } catch (e) {
     // If DI is missing, propagate the error (no global fallback allowed)

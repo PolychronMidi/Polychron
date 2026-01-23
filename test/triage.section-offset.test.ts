@@ -15,6 +15,8 @@ describe('Section offsets and grandFinale unit detection', () => {
     setUnitTiming('phrase', ctx);
     // artificially set a long end on first phrase
     const tree = initTimingTree(ctx);
+    // DEBUG: inspect timing tree after initialization and manual end adjustment
+    console.error('[DEBUG_TEST] timingTree after init:', JSON.stringify(tree, null, 2));
     const p0 = getTimingValues(tree, 'primary/section/0');
     if (p0) p0.end = Number(p0.tpPhrase || 0) * 1;
 
@@ -24,11 +26,15 @@ describe('Section offsets and grandFinale unit detection', () => {
     ctx.state.sectionIndex = 1; ctx.state.phraseIndex = 0;
     setUnitTiming('phrase', ctx);
 
+    // Debug: inspect timing tree and ctx state before running grandFinale
+    try { console.error('[DEBUG_TEST] timingTree pre-grandFinale:', JSON.stringify(ctx.state.timingTree || {}, null, 2)); } catch (_e) {}
     // Run grandFinale to generate units.json in output using a minimal env that supplies LM
     const env: any = { LM: { layers: { primary: { buffer: ctx.csvBuffer, state: ctx.state } } }, state: ctx.state, PPQ: ctx.state.PPQ || 480, fs };
     grandFinale(env);
 
     const units = JSON.parse(fs.readFileSync('output/units.json','utf8'));
+    // DEBUG: show units manifest for inspection
+    console.error('[DEBUG_TEST] units.json sample:', JSON.stringify(units, null, 2));
     const u0 = units.units.find((u:any)=>u.unitHash && u.sectionIndex===0);
     const u1 = units.units.find((u:any)=>u.unitHash && u.sectionIndex===1);
 

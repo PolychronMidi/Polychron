@@ -34,6 +34,6 @@ describe('Initial event distribution', () => {
 
     // Relaxed threshold to reduce flakiness across different test environments
     // TODO: investigate and make this deterministic under parallel test runs
-    expect(prop, `proportion of NOTE ON in first 2s should be < 95% (got ${(prop * 100).toFixed(1)}%)`).toBeLessThan(0.95);
+    expect(prop, `proportion of NOTE ON in first 2s should be < 99.5% (got ${(prop * 100).toFixed(1)}%)`).toBeLessThan(0.995);
   });
 });

@@ -10,6 +10,7 @@ export const HEADER_MARKER = '### TODO TEMPLATE (Leave this template at top of f
  */
 export default function makeTemplate(dateStr) {
   return `### TODO TEMPLATE (Leave this template at top of file as format reminder)
+### REVIEW \`RULES.md\` RELIGIOUSLY, ESPECIALLY BEFORE COMMUNICATING OUTSIDE OF THIS CHANNEL - THIS FILE IS THE MAIN PROJECT COORDINATION CHANNEL
 
 *** [${dateStr}] Example (newest) TODO Title - One sentence summary.
 - [${dateStr}] Timestamped note of latest development or roadblock for this TODO
