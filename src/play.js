@@ -15,6 +15,11 @@ const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => st
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => stage.setTuningAndInstruments());
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
+// Honor optional environment limit for quick test runs (temporary; safe to remove)
+if (process.env.PLAY_LIMIT) {
+  const lim = Number(process.env.PLAY_LIMIT);
+  if (Number.isFinite(lim) && lim > 0) totalSections = Math.min(totalSections, lim);
+}
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   const sectionProfile=resolveSectionProfile();
@@ -25,6 +30,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   activeMotif=sectionProfile.motif ? new Motif(sectionProfile.motif.map(offset=>({ note: clampMotifNote(60+offset) }))) : null;
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
+    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
     composer = ra(composers);
     [numerator, denominator] = composer.getMeter();
     getMidiTiming();
@@ -33,6 +39,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.activate('primary', false);
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex} measure=${measureIndex}`);
       measureCount++;
       setUnitTiming('measure');
 
