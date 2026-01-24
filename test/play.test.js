@@ -9,7 +9,7 @@ require('../src/time');       // Load timing functions
 require('../src/composers');  // Load composer classes
 require('../src/rhythm');     // Load rhythm generation
 require('../src/stage');      // Load audio functions
-require('../src/play');       // Load play functions (orchestrator)
+// require('../src/play'); // Do not execute full orchestrator during tests (it runs on import)
 
 // Setup function to initialize state
 function setupGlobalState() {
