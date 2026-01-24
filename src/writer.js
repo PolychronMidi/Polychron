@@ -253,11 +253,29 @@ grandFinale = () => {
     muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
     // Finalize buffer
     buffer = buffer.filter(i => i !== null)
-      .map(i => ({
-        ...i,
-        tick: isNaN(i.tick) || i.tick < 0 ? Math.abs(i.tick || 0) * rf(.1, .3) : i.tick
-      }))
-      .sort((a, b) => a.tick - b.tick);
+      .map(i => {
+        const rawTick = i && i.tick;
+        let tickNum = null;
+        let unitHash = null;
+        try {
+          if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {
+            const p = String(rawTick).split('|');
+            tickNum = Number(p[0]);
+            // Preserve the full trailing unit id (it may contain '|' separators)
+            unitHash = p.slice(1).join('|') || null;
+          } else if (Number.isFinite(rawTick)) {
+            tickNum = Number(rawTick);
+          } else if (typeof rawTick === 'string') {
+            tickNum = Number(rawTick);
+          }
+        } catch (_e) {}
+        let tickVal = Number.isFinite(tickNum) ? tickNum : Math.abs(Number(rawTick) || 0) * rf(.1, .3);
+        if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
+        tickVal = Math.round(tickVal);
+        const preservedFinal = unitHash || (i && i._unitHash) || null;
+        return { ...i, tick: tickVal, _tickSortKey: tickVal, _unitHash: preservedFinal, _tickRaw: rawTick };
+      })
+      .sort((a, b) => (a._tickSortKey || 0) - (b._tickSortKey || 0));
 
     // Collect annotated units from layer state (logUnit stores them there)
     const unitsForLayer = [];
@@ -273,6 +291,65 @@ grandFinale = () => {
           unitsForLayer.push({ unitId: uid, layer: name, startTick: start, endTick: end, startTime, endTime, raw: u });
         });
       }
+    } catch (_e) {}
+
+    // Add any unitRec markers present in the buffer into unitsForLayer (extract full unitId when available)
+    try {
+      for (const evt of buffer) {
+        try {
+          if (!evt || typeof evt !== 'object') continue;
+          if (String(evt.type).toLowerCase() === 'marker_t' && Array.isArray(evt.vals)) {
+            const m = evt.vals.find(v => String(v).startsWith('unitRec:')) || null;
+            if (m) {
+              try {
+                const fullId = String(m).split(':')[1];
+                const seg = fullId.split('|');
+                const last = seg[seg.length - 1] || '';
+                const secondLast = seg[seg.length - 2] || '';
+                let sTick = undefined; let eTick = undefined; let sTime = undefined; let eTime = undefined;
+                if (secondLast && secondLast.includes('-') && /^[0-9]+\-[0-9]+$/.test(secondLast)) {
+                  const r = secondLast.split('-'); sTick = Number(r[0]); eTick = Number(r[1]);
+                }
+                if (last && last.includes('-') && /^[0-9]+\.[0-9]+\-[0-9]+\.[0-9]+$/.test(last)) {
+                  const rs = last.split('-'); sTime = Number(rs[0]); eTime = Number(rs[1]);
+                }
+                unitsForLayer.push({ unitId: fullId, layer: name, startTick: sTick, endTick: eTick, startTime: sTime, endTime: eTime, raw: { fromMarker: true } });
+              } catch (_e) {}
+            }
+          }
+        } catch (_e) {}
+      }
+    } catch (_e) {}
+
+    // Backfill _unitHash for events that did not receive it during normalization by consulting unitsForLayer ranges
+    try {
+      buffer.forEach(evt => {
+        try {
+          if (!evt || typeof evt !== 'object') return;
+          if (evt._unitHash) return;
+          const t = Number.isFinite(Number(evt._tickSortKey)) ? Math.round(Number(evt._tickSortKey)) : null;
+          if (t === null) return;
+          // Prefer exact-containing, smallest-span unit
+          let candidates = (unitsForLayer || []).filter(u => {
+            const s = Number(u.startTick || 0);
+            const e = Number(u.endTick || 0);
+            return Number.isFinite(s) && Number.isFinite(e) && (t >= s && t <= e);
+          });
+          if (!candidates.length) {
+            // broaden search slightly (+/-1 tick) to tolerate rounding/edge cases
+            candidates = (unitsForLayer || []).filter(u => {
+              const s = Number(u.startTick || 0);
+              const e = Number(u.endTick || 0);
+              return Number.isFinite(s) && Number.isFinite(e) && (t >= (s - 1) && t <= (e + 1));
+            });
+          }
+          if (candidates.length) {
+            candidates.sort((a, b) => (Number(a.endTick || 0) - Number(a.startTick || 0)) - (Number(b.endTick || 0) - Number(b.startTick || 0)));
+            const found = candidates[0];
+            if (found && found.unitId) evt._unitHash = found.unitId;
+          }
+        } catch (_e) {}
+      });
     } catch (_e) {}
 
     // Generate CSV
@@ -315,8 +392,9 @@ grandFinale = () => {
         const outroId = `${outroKey}|${minTick}-${maxTick}`;
         outroUnit = { unitId: outroId, layer: name, startTick: minTick, endTick: maxTick, startTime: 0, endTime: 0, raw: { outro: true } };
         unitsForLayer.push(outroUnit);
-        // Emit a single unitRec marker for the outro range at its start so auditors can detect it
-        composition += `1,${minTick},marker_t,unitRec:${outroId}\n`;
+        // Add a marker event into the buffer so it will be sorted numerically with other events
+        try { buffer.push({ tick: minTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(minTick) }); } catch (_e) {}
+        try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) {}
         emittedUnitRec.add(outroId);
       }
     } catch (e) {}
@@ -336,7 +414,11 @@ grandFinale = () => {
         }
 
         // Append unit id to tick field when available
-        const tickField = unitMatch ? `${tickNum}|${unitMatch.unitId}` : `${tickNum}`;
+        const chosenUnit = unitMatch ? unitMatch.unitId : (_._unitHash ? String(_._unitHash) : null);
+        const chosenClean = chosenUnit ? String(chosenUnit).replace(/^\|+/, '') : null;
+        const isMarker = String(type).toLowerCase() === 'marker_t' || String(type).toLowerCase().includes('marker');
+        const tickNumRound = Math.round(Number(tickNum) || 0);
+        const tickField = isMarker ? `${tickNumRound}` : (chosenClean ? `${tickNumRound}|${chosenClean}` : `${tickNumRound}`);
         composition += `1,${tickField},${type},${_.vals.join(',')}\n`;
 
         finalTick = Math.max(finalTick, tickNum, tickInt);
@@ -353,15 +435,17 @@ grandFinale = () => {
         const outroId = `${outroKey}|${endTick}-${endTick}`;
         outroUnit = { unitId: outroId, layer: name, startTick: endTick, endTick: endTick, startTime: 0, endTime: 0, raw: { outro: true } };
         unitsForLayer.push(outroUnit);
-        composition += `1,${endTick},marker_t,unitRec:${outroId}\n`;
+        try { buffer.push({ tick: endTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(endTick) }); } catch (_e) {}
+        try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) {}
         emittedUnitRec.add(outroId);
       } else if (outroUnit && endTick > Number(outroUnit.endTick)) {
-        // extend the outro unit range and emit an expanded unitRec marker for auditing
+        // extend the outro unit range and add an expanded unitRec marker for auditing
         const base = String(outroUnit.unitId).split('|')[0];
         const newId = `${base}|${Math.round(outroUnit.startTick)}-${endTick}`;
         outroUnit.unitId = newId;
         outroUnit.endTick = endTick;
-        composition += `1,${Math.round(outroUnit.startTick)},marker_t,unitRec:${newId}\n`;
+        try { buffer.push({ tick: Math.round(outroUnit.startTick), type: 'marker_t', vals: [`unitRec:${newId}`], _tickSortKey: Math.round(outroUnit.startTick) }); } catch (_e) {}
+        try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) {}
         emittedUnitRec.add(newId);
       }
     } catch (e) {}
