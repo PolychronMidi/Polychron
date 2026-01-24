@@ -25,11 +25,21 @@ This document describes the current unit-tree audit framework and a roadmap to e
 ## How to use (quick commands) 🧭
 - Regenerate outputs: `npm run play` (produces `output/*.csv` and `output/units.json`)
 - Run unit-tree audit (strict mode): `npm run unit-audit`
+- Run phrase/track verifier: `npm run layer-alignment` (verification-only; writes diagnostics but does not modify CSVs)
 - Summarize audit: `node scripts/analyzeAudit.js`
 
 Acceptance criteria (basic):
 - `output/units.json` non-empty
 - `npm run unit-audit` returns **Errors=0** (non-strict)
+- `npm run layer-alignment` returns no phrase/marker mismatches on the CI fixture (verification-only)
+
+---
+
+## Recent updates (2026-01-24) ✅
+- Optimized per-layer marker cache implemented and marker-preference enabled across unit levels (`src/time.js`). ✅
+- Temporary development DBG log removed from `src/time.js`. ✅
+- Deterministic integration test for marker-preference added (`test/time.markerPreference.integration.test.js`) and passing locally. ✅
+- CI workflow file added for marker-preference checks (`.github/workflows/marker-preference.yml`). ✅
 
 ---
 
@@ -44,12 +54,12 @@ Goal: Verify phrase boundaries align in absolute time across layers (or report a
 
 Planned tasks:
 1. Audit design & spec (this doc) — define tolerance and mapping rules.
-2. Implement `scripts/phraseAlignmentAudit.js` with the following checks:
-   - Load `output/units.json` and group units by canonical phrase identity (e.g., `sectionX/..|phraseY/..`) per layer.
-   - For each phrase-group, compute absolute startTime and endTime from the unit entries (prefer phrase-level units when present; otherwise infer from measure aggregation).
-   - Verify phrase startTimes across layers match within a configurable tolerance (e.g., 10ms / 0.01s or 1% depending on use-case).
-   - Check phrase duration consistency and report mismatched durations or misordered phrases.
-   - Produce a JSON report with counts, top mismatches, and examples (layer pairs, expected vs actual times).
+- `scripts/test/layerAlignment.js` (implemented) with the following checks:
+   - Loads unitRec entries and `unitMasterMap.json` when present; groups units by canonical phrase identity (e.g., `sectionX/...|phraseY/...`) per layer.
+   - Computes per-phrase absolute start/end using unit-level times (prefers phrase-level units when present; falls back to measure aggregation or per-layer median tpSec when needed).
+   - Verifies phrase startTimes across layers match within a configurable tolerance.
+   - Checks phrase duration consistency and reports mismatched durations or misordered phrases; writes `output/layerAlignment-report.json`, and focused diagnostics including `output/layerAlignment-unitRec-mismatch.ndjson` for unitRec-derived mismatches.
+   - Note: This verifier is *read-only* (does not modify CSVs) and intentionally ignores legacy `layerAlignment-corrections-applied.json` artifacts (it logs and does not report them).
 3. Add flags/options:
    - `--tolerance <seconds>` and `--ignore-outro` to exclude after-last-unit events
    - `--strict` to fail on mismatches, otherwise warn
