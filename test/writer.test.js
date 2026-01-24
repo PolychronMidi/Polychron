@@ -189,7 +189,8 @@ describe('grandFinale', () => {
     globalThis.fs = {
       writeFileSync: vi.fn(),
       existsSync: vi.fn(() => true),
-      mkdirSync: vi.fn()
+      mkdirSync: vi.fn(),
+      renameSync: vi.fn()
     };
     // Reset LM
     globalThis.LM = {
@@ -223,7 +224,9 @@ describe('grandFinale', () => {
 
     grandFinale();
 
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
+    // Ensure the CSV outputs were written (masterMap finalize may add extra writes)
+    const csvWrites = fs.writeFileSync.mock.calls.filter(call => String(call[0]).includes('output/output1.csv') || String(call[0]).includes('output/output2.csv'));
+    expect(csvWrites.length).toBe(2);
     expect(fs.writeFileSync).toHaveBeenCalledWith('output/output1.csv', expect.any(String));
     expect(fs.writeFileSync).toHaveBeenCalledWith('output/output2.csv', expect.any(String));
   });
@@ -284,9 +287,14 @@ describe('grandFinale', () => {
 
     const csvContent = fs.writeFileSync.mock.calls[0][1];
     const lines = csvContent.split('\n').filter(line => line.includes('note_on_c'));
-    expect(lines[0]).toContain(',0,');
-    expect(lines[1]).toContain(',50,');
-    expect(lines[2]).toContain(',100,');
+    const ticks = lines.map(l => {
+      const fields = l.split(',');
+      const tickField = fields[1] || '';
+      return String(tickField).split('|')[0];
+    });
+    expect(ticks[0]).toBe('0');
+    expect(ticks[1]).toBe('50');
+    expect(ticks[2]).toBe('100');
   });
 
   it('should handle custom layer names', () => {
@@ -303,6 +311,54 @@ describe('grandFinale', () => {
     grandFinale();
 
     expect(fs.writeFileSync).toHaveBeenCalledWith('output/outputCustom.csv', expect.any(String));
+  });
+
+  it('should append unit id to trailing events and emit one unitRec marker', () => {
+    const buffer = new CSVBuffer('primary');
+    // event after last unit end
+    buffer.push({ tick: 1500, type: 'on', vals: [0, 60, 100] });
+
+    // layer state contains a single unit that ends at 1000
+    LM.layers = {
+      primary: {
+        state: {
+          sectionStart: 0,
+          sectionEnd: 1920,
+          units: [
+            { parts: ['section1','phrase1'], unitNumber: 1, unitsPerParent: 1, startTick: 0, endTick: 1000, startTime: 0, endTime: 1, type: 'phrase' }
+          ]
+        },
+        buffer
+      }
+    };
+
+    // Pre-populate (fresh) master map to simulate live emissions
+    const MasterMap = require('../src/masterMap');
+    MasterMap.reset();
+    MasterMap.addUnit({ parts: ['section1','phrase1'], layer: 'primary', startTick: 0, endTick: 1000, startTime: 0, endTime: 1, raw: {} });
+
+    grandFinale();
+
+    const csvContent = fs.writeFileSync.mock.calls.find(c => c[0] === 'output/output1.csv')[1];
+    // Should have a single outro marker and the event tick should include the explicit outro unit id
+    expect(csvContent).toContain('1,1500,marker_t,unitRec:layer1outro|1500-1500');
+    expect(csvContent).toContain('1,1500|layer1outro|1500-1500,note_on_c,0,60,100');
+  });
+
+  it('should write unitMasterMap.json atomically when finalizing', () => {
+    const MasterMap = require('../src/masterMap');
+    MasterMap.reset();
+    MasterMap.addUnit({ parts: ['section1','phrase1'], layer: 'primary', startTick: 0, endTick: 1000, startTime: 0, endTime: 1, raw: {} });
+
+    // Minimal LM with a single layer to trigger grandFinale flow
+    const buffer = new CSVBuffer('primary'); buffer.push({ tick: 0, type: 'on', vals: [0, 60, 100] });
+    LM.layers = { primary: { state: { sectionStart: 0, sectionEnd: 1920, units: [] }, buffer } };
+
+    grandFinale();
+
+    expect(fs.writeFileSync).toHaveBeenCalled();
+    // Finalization should perform a rename (atomic intent). Exact tmp path may vary in test env.
+    expect(fs.renameSync).toHaveBeenCalledWith(expect.stringContaining('.tmp'), expect.stringContaining('unitMasterMap.json'));
   });
 });
 
