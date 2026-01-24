@@ -1,6 +1,9 @@
 export default {
   test: {
     globals: true,
+    // Ensure Vitest runs to completion and does not stay in watch mode in CI/local runs
+    // `run: true` makes the runner execute tests and exit.
+    run: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -312,7 +312,7 @@ grandFinale = () => {
         if (fs.existsSync(primCsv)) {
           try {
             const primTxt = fs.readFileSync(primCsv, 'utf8');
-            const primLines = primTxt.split(/\r?\n/);
+            const primLines = primTxt.split(new RegExp('\\r?\\n'));
             const canonicalMap = {}; // key -> { startSec, endSec, tick }
             for (const ln of primLines) {
               if (!ln || !ln.startsWith('1,')) continue;
@@ -557,7 +557,7 @@ grandFinale = () => {
         try {
           const primaryCsv = path.join(process.cwd(), 'output', 'output1.csv');
           if (fs.existsSync(primaryCsv)) {
-            const ptxt = fs.readFileSync(primaryCsv, 'utf8').split(/\r?\n/).reverse();
+            const ptxt = fs.readFileSync(primaryCsv, 'utf8').split(new RegExp('\\r?\\n')).reverse();
             for (const ln of ptxt) {
               if (!ln || ln.indexOf('marker_t') === -1) continue;
               const parts = ln.split(',');
