@@ -541,8 +541,8 @@ setUnitTiming = (unitType) => {
     }
 
 
-    const startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
-    const endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
+    let startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
+    let endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
 
 
     const unitRec = {
@@ -647,6 +647,23 @@ setUnitTiming = (unitType) => {
       // also override startSecNum/endSecNum for downstream use
       if (Number.isFinite(markerMatch.startSec)) startSecNum = markerMatch.startSec;
       if (Number.isFinite(markerMatch.endSec)) endSecNum = markerMatch.endSec;
+
+      // Update previously-pushed unitRec (and local unitRec variable) to reflect marker-derived seconds
+      try {
+        if (typeof unitRec !== 'undefined') {
+          unitRec.startTime = Number.isFinite(startSecNum) ? Number(startSecNum.toFixed(6)) : null;
+          unitRec.endTime = Number.isFinite(endSecNum) ? Number(endSecNum.toFixed(6)) : null;
+        }
+        if (LM && LM.layers && LM.layers[layerName] && Array.isArray(LM.layers[layerName].state.units)) {
+          const uarr = LM.layers[layerName].state.units;
+          const last = uarr[uarr.length - 1];
+          if (last && last.unitType === unitType && last.startTick === Math.round(unitStart) && last.endTick === Math.round(unitEnd)) {
+            last.startTime = unitRec.startTime;
+            last.endTime = unitRec.endTime;
+          }
+        }
+      } catch (_e) {}
+
     } else {
       secs = (Number.isFinite(tpSec) && tpSec !== 0) ? `${(unitStart / tpSec).toFixed(6)}-${(unitEnd / tpSec).toFixed(6)}` : null;
     }
@@ -691,7 +708,7 @@ setUnitTiming = (unitType) => {
       try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: parts.slice(), layer: layerName, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), startTime: startSecNum, endTime: endSecNum, raw: unitRec }); } catch (_e) {}
       p(c, { tick: Math.round(unitStart), type: 'marker_t', vals: [`unitRec:${fullId}`], _internal: true });
     } catch (_e) { if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[setUnitTiming] error emitting marker to buffer', _e && _e.stack ? _e.stack : _e); }
-  } catch (_e) {}
+} catch (_e) {}
 
   // Log the unit after calculating timing
   logUnit(unitType);
