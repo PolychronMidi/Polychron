@@ -87,6 +87,8 @@ function parseUnitId(uId) {
 }
 
 (function main() {
+  // Clear previous run's focused diagnostics so outputs reflect the current run only
+  try { require('fs').writeFileSync(require('path').join(process.cwd(),'output','layerAlignment-unitRec-mismatch.ndjson'), ''); } catch (e) {}
   // Merge CSV-derived unitRecs with canonical master map units (if present)
   const unitsCsv = readUnitsFromCsv();
   const masterUnits = readUnitsFromMasterMap();
@@ -445,11 +447,25 @@ function parseUnitId(uId) {
         }
         if (absStart !== null && absEnd !== null) {
           markerRanges[layer][key] = markerRanges[layer][key] || { start: absStart, end: absEnd };
-          markerRanges[layer][key].start = Math.min(markerRanges[layer][key].start, absStart);
-          markerRanges[layer][key].end = Math.max(markerRanges[layer][key].end, absEnd);
-          markerRanges[layer][key].from = 'unitRec';
-          markerRanges[layer][key].absStart = absStart;
-          markerRanges[layer][key].absEnd = absEnd;
+          const existing = markerRanges[layer][key];
+          // If a stronger phrase/section marker already exists for this key (i.e., not unitRec), prefer its start.
+          // Allow unitRec markers to grow the end and record them as candidates for tracing, but do not override a phrase-level start.
+          if (existing.from && existing.from !== 'unitRec') {
+            existing.end = Math.max(existing.end || -Infinity, absEnd);
+            existing.unitRecCandidates = existing.unitRecCandidates || [];
+            existing.unitRecCandidates.push({ absStart, absEnd, raw: mk.raw || mk.full || null, method: usedMethod, tickRange: (mk.tickStart !== undefined ? { start: mk.tickStart, end: mk.tickEnd } : null) });
+          } else {
+            // No stronger source present; apply/tighten bounds using this unitRec
+            existing.start = Math.min(existing.start, absStart);
+            existing.end = Math.max(existing.end, absEnd);
+            existing.from = 'unitRec';
+            if (!Number.isFinite(existing.absStart) || absStart < existing.absStart) {
+              existing.absStart = absStart;
+              existing.unitRecRaw = mk.raw || mk.full || null;
+              existing.unitRecTickRange = (mk.tickStart !== undefined && mk.tickEnd !== undefined) ? { start: mk.tickStart, end: mk.tickEnd } : null;
+            }
+            existing.absEnd = Math.max(existing.absEnd || absEnd, absEnd);
+          }
         }
         continue;
       }
@@ -647,7 +663,14 @@ function parseUnitId(uId) {
       const layMR = (markerRanges[layer] && markerRanges[layer][k]) ? markerRanges[layer][k] : null;
       if (layMR && layMR.from === 'unitRec' && Number.isFinite(Number(layMR.absStart)) && Number.isFinite(Number(layerPhrase.start))) {
         const delta = Math.abs(Number(layMR.absStart) - Number(layerPhrase.start));
-        if (delta > tolerance) mismatches.push({ key: k, layer, expected: layerPhrase.start, start: layMR.absStart, delta, reason: 'unitRec-start-diff', source: 'unitRec' });
+        if (delta > tolerance) {
+          const mobj = { key: k, layer, expected: layerPhrase.start, start: layMR.absStart, delta, reason: 'unitRec-start-diff', source: 'unitRec', unitRecRaw: layMR.unitRecRaw || layMR.raw || null, unitRecTicks: (layMR.unitRecTickRange || (layMR.tickStart !== undefined ? { start: layMR.tickStart, end: layMR.tickEnd } : null)), unitRecMethod: layMR.from };
+          // attach current markerRange snapshot for richer tracing
+          mobj.markerRange = (markerRanges[layer] && markerRanges[layer][k]) ? markerRanges[layer][k] : null;
+          mismatches.push(mobj);
+          // Emit a focused diagnostic record to help trace origin of unitRec-derived mismatches
+          try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','layerAlignment-unitRec-mismatch.ndjson'), JSON.stringify(Object.assign({}, mobj, { when: new Date().toISOString() })) + '\n'); } catch (e) {}
+        }
       } else {
         // For phrase-based markers or unmatched types, do NOT report a mismatch — markers are authoritative and may be relative; log as diagnostics only
       }
