@@ -49,6 +49,14 @@ describe('Marker preference - end-to-end integration', () => {
     global.rv = (a,b,c) => a;
     global.ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
 
+    // minimal composer stub for deterministic behavior
+    global.composer = {
+      getDivisions: () => 1,
+      getSubdivisions: () => 1,
+      getSubsubdivs: () => 1,
+      getMeter: () => [4, 4]
+    };
+
     // ensure MIDI timing values are initialized so setMidiTiming() works
     global.BPM = 120; global.PPQ = 480; getMidiTiming();
 
@@ -57,45 +65,37 @@ describe('Marker preference - end-to-end integration', () => {
     // activate layer so 'c' is set and setMidiTiming writes to the correct buffer
     LM.activate('primary', false);
 
-    // enable module logging so setUnitTiming prints its entry (temporary for debug)
-    globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-    globalThis.__POLYCHRON_TEST__.enableLogging = true;
+
 
     // ensure beat/div counters for rhythm functions
     global.beatsOn = 0; global.beatsOff = 0; global.divsOn = 0; global.divsOff = 0; global.subdivsOn = 0; global.subdivsOff = 0;
 
-    // call measure timing which should build unitRec and preferentially pick secs from CSV
-    try {
-      setUnitTiming('measure');
-      // also call beat timing to force beat-level unit emission (best-effort; non-fatal)
-      try { setUnitTiming('beat'); } catch (e) { console.log('[TEST DEBUG] beat timing non-fatal error:', e && e.stack ? e.stack : e); }
-    } catch (e) {
-      console.log('[TEST DEBUG] setUnitTiming threw:', e && e.stack ? e.stack : e);
-      throw e;
-    }
+    // ensure internal test logging is disabled for clean output
+    globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {}; globalThis.__POLYCHRON_TEST__.enableLogging = false;
 
-    // debug inspect layer state
-    console.log('[TEST DEBUG] LM primary after setUnitTiming:', JSON.stringify(global.LM.layers['primary'] || {}, null, 2));
+    // ensure minimal index variables exist to avoid ReferenceErrors in setUnitTiming
+    global.divIndex = 0; global.subdivIndex = 0; global.subsubdivIndex = 0;
+    // ensure subdivision counts exist to avoid ReferenceErrors
+    global.subdivsPerDiv = 1; global.subsubdivsPerSub = 1;
+
+    // call measure timing which should build unitRec and preferentially pick secs from CSV
+    setUnitTiming('measure');
+    try { setUnitTiming('beat'); } catch (e) { /* non-fatal in some runtimes */ }
+
+
+
+
 
     const units = (global.LM.layers['primary'] && global.LM.layers['primary'].state && global.LM.layers['primary'].state.units) ? global.LM.layers['primary'].state.units : [];
 
-    if (units.length > 0) {
-      // find the measure or beat unit emitted and assert startTime/endTime from CSV seconds
-      const measureUnits = units.filter(u => u.unitType === 'measure' || u.unitType === 'beat');
-      expect(measureUnits.length).toBeGreaterThan(0);
-      const u = measureUnits[measureUnits.length - 1];
-      expect(u.startTime).toBeDefined();
-      expect(u.endTime).toBeDefined();
-      expect(Math.abs(Number(u.startTime) - 0)).toBeLessThan(0.0001);
-      expect(Math.abs(Number(u.endTime) - 1.0)).toBeLessThan(0.0001);
-    } else {
-      // Fallback assertion (resilient): verify marker cache contains expected seconds
-      const map = global.__POLYCHRON_TEST__ && global.__POLYCHRON_TEST__.loadMarkerMapForLayer ? global.__POLYCHRON_TEST__.loadMarkerMapForLayer('primary') : null;
-      const key = 'primary|section1|phrase1|measure1|beat1/4';
-      expect(map).toBeDefined();
-      expect(map[key]).toBeDefined();
-      expect(Number(map[key].startSec)).toBeCloseTo(0.0, 6);
-      expect(Number(map[key].endSec)).toBeCloseTo(1.0, 6);
-    }
+    // find the measure or beat unit emitted and assert startTime/endTime from CSV seconds
+    const measureUnits = units.filter(u => u.unitType === 'measure' || u.unitType === 'beat');
+    expect(measureUnits.length).toBeGreaterThan(0);
+
+
+
+    // assert at least one unit has marker-derived seconds 0.000000 - 1.000000
+    const matched = measureUnits.some(u => Number.isFinite(Number(u.startTime)) && Number.isFinite(Number(u.endTime)) && Math.abs(Number(u.startTime) - 0.0) < 0.0001 && Math.abs(Number(u.endTime) - 1.0) < 0.0001);
+    expect(matched).toBe(true);
   });
 });
