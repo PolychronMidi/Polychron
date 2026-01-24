@@ -545,6 +545,77 @@ setUnitTiming = (unitType) => {
 
 
 
+    // Before building unitRec, prefer authoritative per-layer marker_t info when available.
+    try {
+      const sectionToken = `section${sec+1}`;
+      const phraseToken = `phrase${phr+1}`;
+      const buf = (typeof c !== 'undefined' && c && Array.isArray(c.rows)) ? c.rows : (LM && LM.layers && LM.layers[layerName] && LM.layers[layerName].buffer && Array.isArray(LM.layers[layerName].buffer.rows) ? LM.layers[layerName].buffer.rows : null);
+      if (Array.isArray(buf)) {
+        for (let i = buf.length - 1; i >= 0; i--) {
+          try {
+            const evt = buf[i];
+            if (!evt || String(evt.type).toLowerCase() !== 'marker_t' || !Array.isArray(evt.vals)) continue;
+            const unitRecVal = evt.vals.find(v => typeof v === 'string' && String(v).startsWith('unitRec:')) || null;
+            if (unitRecVal) {
+              const full = String(unitRecVal).split(':')[1] || '';
+              if (full.indexOf(sectionToken) !== -1 && full.indexOf(phraseToken) !== -1) {
+                const seg = full.split('|');
+                const ticksPart = seg[seg.length - 2] || '';
+                const secsPart = seg[seg.length - 1] && seg[seg.length - 1].includes('.') && seg[seg.length - 1].includes('-') ? seg[seg.length - 1] : null;
+                if (ticksPart && ticksPart.indexOf('-') !== -1) {
+                  const r = ticksPart.split('-');
+                  const sTick = Number(r[0]) || unitStart;
+                  const eTick = Number(r[1]) || unitEnd;
+                  unitStart = Math.round(sTick);
+                  unitEnd = Math.round(eTick);
+                }
+                if (secsPart) {
+                  const rs = secsPart.split('-');
+                  const sSec = Number(rs[0]) || (Number.isFinite(unitStart) && Number.isFinite(tpSec) ? unitStart / tpSec : null);
+                  const eSec = Number(rs[1]) || (Number.isFinite(unitEnd) && Number.isFinite(tpSec) ? unitEnd / tpSec : null);
+                  if (Number.isFinite(sSec) && Number.isFinite(eSec)) {
+                    // prefer seconds if present and compute ticks from tpSec when possible
+                    unitStart = (Number.isFinite(tpSec) && tpSec !== 0) ? Math.round(sSec * tpSec) : unitStart;
+                    unitEnd = (Number.isFinite(tpSec) && tpSec !== 0) ? Math.round(eSec * tpSec) : unitEnd;
+                  }
+                }
+                // found a matching unitRec — stop searching
+                break;
+              }
+            }
+            // if no unitRec token, check human-readable markers for parenthetical times or endTick
+            for (const v of evt.vals) {
+              try {
+                const vs = String(v || '');
+                if (vs.indexOf(sectionToken) !== -1 && vs.indexOf(phraseToken) !== -1) {
+                  const mParen = vs.match(/\(([^\)]+)\s*-\s*([^\)]+)\)/);
+                  const mEndTick = vs.match(/endTick:\s*([0-9]+)/i);
+                  if (mParen && mParen[1] && mParen[2]) {
+                    const parseHMS = (s) => { const mm = Number(s.split(':')[0]); const ss = Number(s.split(':')[1]) || 0; return mm * 60 + ss; };
+                    const sSec = parseHMS(mParen[1].trim());
+                    const eSec = parseHMS(mParen[2].trim());
+                    if (Number.isFinite(sSec) && Number.isFinite(eSec)) {
+                      if (mEndTick && mEndTick[1] && Number.isFinite(Number(mEndTick[1])) && Number.isFinite(tpSec) && tpSec !== 0) {
+                        const eTick = Number(mEndTick[1]);
+                        const sTick = Math.round(eTick - ((eSec - sSec) * tpSec));
+                        unitStart = Math.round(sTick);
+                        unitEnd = Math.round(eTick);
+                        break;
+                      } else if (Number.isFinite(tpSec) && tpSec !== 0) {
+                        unitStart = Math.round(sSec * tpSec);
+                        unitEnd = Math.round(eSec * tpSec);
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch (_e) {}
+            }
+          } catch (_e) {}
+        }
+      }
+    } catch (_e) {}
+
     // Build a compact full-id string per spec and emit an internal marker for writers to extract
     const parts = [];
     parts.push(layerName);
@@ -557,7 +628,6 @@ setUnitTiming = (unitType) => {
     const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
     const secs = (Number.isFinite(tpSec) && tpSec !== 0) ? `${(unitStart / tpSec).toFixed(6)}-${(unitEnd / tpSec).toFixed(6)}` : null;
     const fullId = secs ? (parts.join('|') + '|' + range + '|' + secs) : (parts.join('|') + '|' + range);
-
     // Diagnostic: record suspicious unit emissions (start==0 with non-zero end, non-finite, or start>end)
     try {
       const suspicious = !Number.isFinite(unitStart) || !Number.isFinite(unitEnd) || (unitStart === 0 && unitEnd !== 0) || (unitStart > unitEnd);

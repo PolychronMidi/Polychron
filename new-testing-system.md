@@ -14,7 +14,7 @@ This document describes the current unit-tree audit framework and a roadmap to e
 - Auditor: `scripts/unitTreeAudit.js`
   - Resolves events by `unitId` when present
   - Falls back to containment when needed
-  - Supports `--strict` to report post-last-unit events as warnings (default non-strict silently ignores them)
+  - Runs in STRICT mode by default: post-last-unit events and other mismatches are reported as errors
   - Respects: note_off may occur after unit end
 - Aux tools:
   - `scripts/analyzeAudit.js` — summarizer for audit report buckets
@@ -24,8 +24,7 @@ This document describes the current unit-tree audit framework and a roadmap to e
 
 ## How to use (quick commands) 🧭
 - Regenerate outputs: `npm run play` (produces `output/*.csv` and `output/units.json`)
-- Run unit-tree audit (non-strict): `npm run unit-audit`
-- Run audit (strict mode - warnings shown): `npm run unit-audit -- --strict`
+- Run unit-tree audit (strict mode): `npm run unit-audit`
 - Summarize audit: `node scripts/analyzeAudit.js`
 
 Acceptance criteria (basic):

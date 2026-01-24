@@ -161,11 +161,21 @@ logUnit = (type) => {
   }
 
   return (() => {
+    // Emit marker tick that corresponds to the canonical end of the unit when available.
+    // Use a rounded integer endTick in both the event tick and the human-readable marker text
+    const endTickInt = Math.round(Number(endTick) || 0);
+    const markerTick = (Number.isFinite(endTickInt) && endTickInt >= 0) ? endTickInt : Math.round(Number(startTick || 0));
+    const markerRaw = `${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${markerTick} ${meterInfo ? meterInfo : ''}`;
+    // Ensure the emitted event tick and the embedded endTick agree
     c.push({
-      tick: startTick,
+      tick: markerTick,
       type: 'marker_t',
-      vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+      vals: [markerRaw]
     });
+    // If there is ever a mismatch between human text and event tick, this should be a source bug; log lightly for diagnostics
+    if (Number.isFinite(Number(endTick)) && Math.round(Number(endTick)) !== markerTick) {
+      try { console.warn(`Marker tick normalized: original endTick=${endTick} → ${markerTick} (layer=${c && c.name})`); } catch (_e) {}
+    }
 
     try {
       const parts = [];
@@ -258,6 +268,7 @@ grandFinale = () => {
         let tickNum = null;
         let unitHash = null;
         try {
+          // Keep original behavior: parse rawTick field first (may include appended '|<unitId>')
           if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {
             const p = String(rawTick).split('|');
             tickNum = Number(p[0]);
@@ -290,6 +301,86 @@ grandFinale = () => {
           const uid = `${parts.join('|')}|${Math.round(start)}-${Math.round(end)}|${(startTime||0).toFixed(6)}-${(endTime||0).toFixed(6)}`;
           unitsForLayer.push({ unitId: uid, layer: name, startTick: start, endTick: end, startTime, endTime, raw: u });
         });
+      }
+    } catch (_e) {}
+
+    // Source-only canonicalization: If this is a non-primary layer and primary CSV exists,
+    // use primary `marker_t` entries (which include canonical seconds) to compute ticks for this layer
+    try {
+      if (true) {
+        const primCsv = (name === 'primary') ? path.join(process.cwd(), 'output', 'output1.csv') : (name === 'poly' ? path.join(process.cwd(), 'output', 'output2.csv') : path.join(process.cwd(), `output/output${name}.csv`));
+        if (fs.existsSync(primCsv)) {
+          try {
+            const primTxt = fs.readFileSync(primCsv, 'utf8');
+            const primLines = primTxt.split(/\r?\n/);
+            const canonicalMap = {}; // key -> { startSec, endSec, tick }
+            for (const ln of primLines) {
+              if (!ln || !ln.startsWith('1,')) continue;
+              const parts = ln.split(',');
+              if (parts.length < 4) continue;
+              const t = parts[2];
+              if (String(t).toLowerCase() !== 'marker_t') continue;
+              const val = parts.slice(3).join(',');
+              // Look for 'Section X/Y' or 'Phrase X/Y' markers with parenthetical times or unitRec token
+              const mUnit = String(val).match(/unitRec:([^\s,]+)/);
+              if (mUnit) {
+                const full = mUnit[1];
+                const seg = full.split('|');
+                const sec = seg.find(s => /^section\d+/i.test(s)) || null;
+                const phr = seg.find(s => /^phrase\d+/i.test(s)) || null;
+                const ticksPart = seg[seg.length-2] || null; // startTick-endTick
+                const secsPart = seg[seg.length-1] && seg[seg.length-1].includes('.') && seg[seg.length-1].includes('-') ? seg[seg.length-1] : null;
+                if (sec && phr && secsPart) {
+                  const sSec = Number(secsPart.split('-')[0]);
+                  const eSec = Number(secsPart.split('-')[1]);
+                  const key = `s${Number(sec.match(/(\d+)/)[1]) - 1}-p${Number(phr.match(/(\d+)/)[1]) - 1}`;
+                  canonicalMap[key] = canonicalMap[key] || { startSec: sSec, endSec: eSec };
+                }
+              } else {
+                // Try phrase/section human marker like 'Section 3/7 Length: ... (1:01.7965 - 1:01.7965) endTick: 2197500'
+                const mPhrase = String(val).match(/Section\s*(\d+)\/(\d+).*\(([^\)]+)\s*-\s*([^\)]+)\)/i) || String(val).match(/Phrase\s*(\d+)\/./i);
+                if (mPhrase && mPhrase.length >= 4) {
+                  // parse parenthetical times as MM:SS.ssss
+                  const startStr = mPhrase[3];
+                  const endStr = mPhrase[4];
+                  const parseHMS = (s) => {
+                    const mm = Number(s.split(':')[0]);
+                    const ss = Number(s.split(':')[1]) || 0;
+                    return mm * 60 + ss;
+                  };
+                  const sSec = parseHMS(startStr.trim());
+                  const eSec = parseHMS(endStr.trim());
+                  // derive section/phrase indices from the string when possible
+                  const secMatch = String(val).match(/Section\s*(\d+)\/(\d+)/i);
+                  const phrMatch = String(val).match(/Phrase\s*(\d+)\/(\d+)/i);
+                  if (secMatch && phrMatch) {
+                    const key = `s${Number(secMatch[1]) - 1}-p${Number(phrMatch[1]) - 1}`;
+                    canonicalMap[key] = canonicalMap[key] || { startSec: sSec, endSec: eSec };
+                  }
+                }
+              }
+            }
+            // Apply canonicalMap to unitsForLayer when keys match
+            for (const u of unitsForLayer) {
+              try {
+                const parsed = String(u.unitId).split('|');
+                const secToken = parsed.find(p => /^section\d+/i.test(p));
+                const phrToken = parsed.find(p => /^phrase\d+/i.test(p));
+                if (!secToken || !phrToken) continue;
+                const key = `s${Number(secToken.match(/(\d+)/)[1]) - 1}-p${Number(phrToken.match(/(\d+)/)[1]) - 1}`;
+                const canon = canonicalMap[key];
+                if (canon && Number.isFinite(canon.startSec) && Number.isFinite(canon.endSec) && Number.isFinite(layerState.tpSec) && layerState.tpSec !== 0) {
+                  const newStart = Math.round(Number(canon.startSec) * Number(layerState.tpSec));
+                  const newEnd = Math.round(Number(canon.endSec) * Number(layerState.tpSec));
+                  u.startTick = newStart;
+                  u.endTick = newEnd;
+                  u.startTime = Number(canon.startSec);
+                  u.endTime = Number(canon.endSec);
+                }
+              } catch (_e) {}
+            }
+          } catch (_e) {}
+        }
       }
     } catch (_e) {}
 
@@ -377,7 +468,11 @@ grandFinale = () => {
     try {
       const lastEnd = lastUnit ? Number(lastUnit.endTick) : -Infinity;
       const maxEventTick = buffer.reduce((m, i) => Math.max(m, Number(i && i.tick) || -Infinity), -Infinity);
-      const projectedEndTick = Number.isFinite(maxEventTick) ? Math.round(maxEventTick + (SILENT_OUTRO_SECONDS * (layerState && layerState.tpSec || 0))) : -Infinity;
+      // Prefer the layer's last explicit marker_t tick when available (authoritative) to determine projected end.
+      let lastMarkerTick = null;
+      try { lastMarkerTick = buffer.slice().reverse().find(l => l && String(l.type).toLowerCase() === 'marker_t') ? Number(buffer.slice().reverse().find(l => l && String(l.type).toLowerCase() === 'marker_t').tick) : null; } catch (_e) {}
+      const baseTickForProjection = (Number.isFinite(lastMarkerTick) ? lastMarkerTick : (Number.isFinite(maxEventTick) ? maxEventTick : -Infinity));
+      const projectedEndTick = Number.isFinite(baseTickForProjection) ? Math.round(baseTickForProjection + (SILENT_OUTRO_SECONDS * (layerState && layerState.tpSec || 0))) : -Infinity;
       const orphanTicks = buffer
         .map(i => ({ tickNum: i && i.tick, tickInt: Math.round(Number(i && i.tick) || 0) }))
         .filter(i => Number.isFinite(i.tickInt) && !findUnitForTick(i.tickInt) && i.tickInt >= lastEnd)
@@ -448,9 +543,63 @@ grandFinale = () => {
         try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) {}
         emittedUnitRec.add(newId);
       }
+
+      // Ensure there is always a tail unitRec marker at endTick. Prefer existing outroUnit or lastUnit if present, otherwise synthesize a final marker.
+      try {
+        const layerNum = name === 'primary' ? 1 : name === 'poly' ? 2 : 0;
+        let finalId = null;
+        if (outroUnit && outroUnit.unitId) finalId = outroUnit.unitId;
+        else if (lastUnit && lastUnit.unitId) finalId = lastUnit.unitId;
+        else finalId = `layer${layerNum}final|${endTick}-${endTick}`;
+
+        // Compute a target end time in seconds derived from primary's last marker when available to maintain global sync.
+        let targetEndSec = null;
+        try {
+          const primaryCsv = path.join(process.cwd(), 'output', 'output1.csv');
+          if (fs.existsSync(primaryCsv)) {
+            const ptxt = fs.readFileSync(primaryCsv, 'utf8').split(/\r?\n/).reverse();
+            for (const ln of ptxt) {
+              if (!ln || ln.indexOf('marker_t') === -1) continue;
+              const parts = ln.split(',');
+              const val = parts.slice(3).join(',');
+              // Prefer unitRec seconds suffix
+              const mUnitSec = String(val).match(/unitRec:[^\s,]+\|([0-9]+\.[0-9]+-[0-9]+\.[0-9]+)/);
+              if (mUnitSec) { const r = mUnitSec[1].split('-'); targetEndSec = Number(r[1]); break; }
+              // Otherwise use parenthetical times if present
+              const mPhrase = String(val).match(/\(([^(]+)\s*-\s*([^\)]+)\)/);
+              if (mPhrase) {
+                const endStr = String(mPhrase[2]).trim();
+                const mm = Number(endStr.split(':')[0]) || 0; const ss = Number(endStr.split(':')[1]) || 0;
+                targetEndSec = mm * 60 + ss; break;
+              }
+            }
+          }
+        } catch (_e) {}
+
+        if (finalId && !emittedUnitRec.has(finalId)) {
+          // Determine tail tick: if we have a primary targetEndSec and this is not the primary layer,
+          // convert it into this layer's tick space using this layer's tpSec; otherwise fall back to local endTick logic
+          let tailTick;
+          if (name !== 'primary' && Number.isFinite(targetEndSec) && Number.isFinite(layerState.tpSec)) {
+            tailTick = Math.round(Number(targetEndSec) * Number(layerState.tpSec));
+          } else {
+            tailTick = Math.round(Number((lastUnit && lastUnit.endTick) || endTick));
+          }
+
+          try { buffer.push({ tick: tailTick, type: 'marker_t', vals: [`unitRec:${finalId}`], _tickSortKey: tailTick }); } catch (_e) {}
+          try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) {}
+          emittedUnitRec.add(finalId);
+          // If we synthesized a finalId (no lastUnit/outro), add a minimal unit entry for auditing
+          if (!lastUnit && !outroUnit) {
+            const synth = { unitId: finalId, layer: name, startTick: tailTick, endTick: tailTick, startTime: 0, endTime: 0, raw: { synthesized: true } };
+            unitsForLayer.push(synth);
+          }
+        }
+      } catch (_e) {}
+
     } catch (e) {}
 
-    const endTickField = outroUnit ? `${endTick}|${outroUnit.unitId}` : `${endTick}`;
+    const endTickField = outroUnit ? `${endTick}|${outroUnit.unitId}` : (lastUnit && lastUnit.unitId ? `${endTick}|${lastUnit.unitId}` : `${endTick}`);
     composition += `1,${endTickField},end_track`;
 
     // Determine output filename based on layer name

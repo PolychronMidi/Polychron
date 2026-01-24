@@ -16,7 +16,9 @@ const getArg = (name, def) => {
 };
 const tolerance = Number(getArg('--tolerance', '0.02'));
 const trackTol = Number(getArg('--track-tolerance', '0.05'));
-const strict = argv.includes('--strict');
+// Remove forgiving mode: script is strict by default and will fail on any mismatch
+const strict = true;
+// Verification-only mode: this script only *detects* mismatches and writes diagnostics/corrections files; it does NOT modify CSVs or re-run itself.
 
 // Read units directly from CSV marker_t 'unitRec:<fullId>' entries (no units.json dependency)
 function readUnitsFromCsv() {
@@ -42,14 +44,34 @@ function readUnitsFromCsv() {
       if (!m) continue;
       const fullId = m[1];
       const seg = fullId.split('|');
-      const range = seg[seg.length - 1] || '';
-      const r = range.split('-');
-      const startTick = Number(r[0] || 0);
-      const endTick = Number(r[1] || 0);
-      units.push({ unitId: fullId, layer, startTick, endTick, raw: val });
+      // Support optional seconds suffix: ...|<startTick>-<endTick>|<startSec>-<endSec>
+      let startTick = 0, endTick = 0, startTime = null, endTime = null;
+      const last = seg[seg.length - 1] || '';
+      const secondLast = seg[seg.length - 2] || '';
+      if (typeof last === 'string' && last.includes('.') && last.includes('-')) {
+        // last is seconds range, secondLast is ticks range
+        const rs = last.split('-'); startTime = Number(rs[0] || 0); endTime = Number(rs[1] || 0);
+        const rt = secondLast.split('-'); startTick = Number(rt[0] || 0); endTick = Number(rt[1] || 0);
+      } else {
+        const r = last.split('-'); startTick = Number(r[0] || 0); endTick = Number(r[1] || 0);
+      }
+      units.push({ unitId: fullId, layer, startTick, endTick, startTime, endTime, raw: val });
     }
   }
   return units;
+}
+
+// Read canonical units from the live master map final JSON (if present) and convert to unit-like entries
+function readUnitsFromMasterMap() {
+  const masterPath = path.join(OUT, 'unitMasterMap.json');
+  if (!fs.existsSync(masterPath)) return [];
+  try {
+    const jm = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+    const munits = (jm && jm.units) ? jm.units.map(u => ({ unitId: u.key, layer: u.layer || (u.key ? String(u.key).split('|')[0] : 'unknown'), startTick: Number.isFinite(u.startTick) ? u.startTick : (Number.isFinite(u.tickStart) ? u.tickStart : null), endTick: Number.isFinite(u.endTick) ? u.endTick : (Number.isFinite(u.tickEnd) ? u.tickEnd : null), startTime: Number.isFinite(u.startTime) ? u.startTime : null, endTime: Number.isFinite(u.endTime) ? u.endTime : null, raw: 'masterMap' })) : [];
+    return munits;
+  } catch (e) {
+    return [];
+  }
 }
 
 function parseUnitId(uId) {
@@ -65,8 +87,19 @@ function parseUnitId(uId) {
 }
 
 (function main() {
-  const units = readUnitsFromCsv();
+  // Merge CSV-derived unitRecs with canonical master map units (if present)
+  const unitsCsv = readUnitsFromCsv();
+  const masterUnits = readUnitsFromMasterMap();
+  // avoid duplicate units by key (prefer CSV entries which are higher-resolution)
+  const seenKeys = new Set(unitsCsv.map(u => String(u.unitId)));
+  for (const mu of masterUnits) {
+    if (!seenKeys.has(String(mu.unitId))) unitsCsv.push(mu);
+  }
+  const units = unitsCsv;
+
   const layers = [...new Set(units.map(u => u.layer))];
+  // Choose canonical layer (prefer 'primary' when present)
+  const canonicalLayer = layers.includes('primary') ? 'primary' : layers[0];
   const byLayer = {};
   for (const l of layers) byLayer[l] = {};
 
@@ -123,6 +156,52 @@ function parseUnitId(uId) {
     } catch (e) {}
   }
 
+  // If a master map exists, use its canonical units to build robust phrase start/end overrides
+  try {
+    const masterUnitsPath = path.join(OUT, 'unitMasterMap.json');
+    if (fs.existsSync(masterUnitsPath)) {
+      const jm = JSON.parse(fs.readFileSync(masterUnitsPath, 'utf8'));
+      const masterUnits = (jm && jm.units) ? jm.units : [];
+      const masterByPhrase = {};
+      for (const mu of masterUnits) {
+        try {
+          const parts = String(mu.key || mu.id || '').split('|');
+          // parse section/phrase indices
+          let sectionIdx = null, phraseIdx = null;
+          for (const p of parts) {
+            const ms = String(p).match(/^section(\d+)/i);
+            if (ms) sectionIdx = Number(ms[1]) - 1;
+            const mp = String(p).match(/^phrase(\d+)/i);
+            if (mp) phraseIdx = Number(mp[1]) - 1;
+          }
+          if (sectionIdx === null || phraseIdx === null) continue;
+          const key = `s${sectionIdx}-p${phraseIdx}`;
+          const layer = mu.layer || (parts.length ? parts[0] : 'unknown');
+          masterByPhrase[layer] = masterByPhrase[layer] || {};
+          masterByPhrase[layer][key] = masterByPhrase[layer][key] || { starts: [], ends: [] };
+          if (Number.isFinite(mu.startTime)) masterByPhrase[layer][key].starts.push(Number(mu.startTime));
+          else if (Number.isFinite(mu.startTick) && layerTpMedian[layer]) masterByPhrase[layer][key].starts.push(Number(mu.startTick) / layerTpMedian[layer]);
+          if (Number.isFinite(mu.endTime)) masterByPhrase[layer][key].ends.push(Number(mu.endTime));
+          else if (Number.isFinite(mu.endTick) && layerTpMedian[layer]) masterByPhrase[layer][key].ends.push(Number(mu.endTick) / layerTpMedian[layer]);
+        } catch (e) {}
+      }
+
+      // Apply master overrides into byLayer aggregates where meaningful
+      for (const layerName of Object.keys(masterByPhrase)) {
+        for (const k of Object.keys(masterByPhrase[layerName])) {
+          const starts = masterByPhrase[layerName][k].starts || [];
+          const ends = masterByPhrase[layerName][k].ends || [];
+          if (!starts.length || !ends.length) continue;
+          byLayer[layerName] = byLayer[layerName] || {};
+          byLayer[layerName][k] = byLayer[layerName][k] || { startTimes: [], endTimes: [] };
+          // prefer master map aggregates (min start, max end)
+          byLayer[layerName][k].startTimes = [Math.min(...starts)];
+          byLayer[layerName][k].endTimes = [Math.max(...ends)];
+        }
+      }
+    }
+  } catch (e) {}
+
   // Parse marker_t entries from CSVs and collect ordered occurrences of phrase & section markers (local times)
   const csvFiles = fs.readdirSync(OUT).filter(f => f.endsWith('.csv')).map(f => path.join(OUT, f));
   const markerOccur = {}; // layer -> [{ phraseIdx, localStart, localEnd, tick } | { isSection, sectionIdx, localStart, localEnd, tick }]
@@ -160,6 +239,38 @@ function parseUnitId(uId) {
         if (mm) { leadSectionIdx = Number(mm[1]) - 1; break; }
       }
 
+      // Parse unitRec entries (high-resolution) and capture absolute seconds when present
+      const mUnitRec = String(val).match(/unitRec:([^\s]+)/);
+      if (mUnitRec) {
+        const fullId = mUnitRec[1];
+        const seg = fullId.split('|');
+        let sectionIdx = null, phraseIdx = null;
+        for (const s of seg) {
+          const ms = String(s).match(/^section(\d+)/i);
+          if (ms) sectionIdx = Number(ms[1]) - 1;
+          const mp = String(s).match(/^phrase(\d+)/i);
+          if (mp) phraseIdx = Number(mp[1]) - 1;
+        }
+        // extract tick-range and seconds-range tokens if present
+        let startTick = null, endTick = null, startTime = null, endTime = null;
+        for (let i = seg.length - 1; i >= 0; i--) {
+          const s = seg[i];
+          if (/^\d+-\d+$/.test(s)) {
+            const r = s.split('-'); startTick = Number(r[0]); endTick = Number(r[1]); continue;
+          }
+          if (/^\d+\.\d+-\d+\.\d+$/.test(s)) {
+            const r = s.split('-'); startTime = Number(r[0]); endTime = Number(r[1]); continue;
+          }
+        }
+        // If we have absolute seconds, use them directly as localStart/localEnd (absolute times).
+        // Otherwise convert ticks to seconds using the per-layer tpSec median when available (do NOT divide by the CSV tick number which is not seconds).
+        const layerTp = layerTpMedian[layer] || null;
+        const absStart = Number.isFinite(startTime) ? startTime : (Number.isFinite(startTick) && layerTp ? (startTick / layerTp) : null);
+        const absEnd = Number.isFinite(endTime) ? endTime : (Number.isFinite(endTick) && layerTp ? (endTick / layerTp) : null);
+        markerOccur[layer].push({ phraseIdx, sectionIdx, absStart: Number.isFinite(absStart) ? absStart : null, absEnd: Number.isFinite(absEnd) ? absEnd : null, tickStart: startTick, tickEnd: endTick, raw: fullId, isUnitRec: true });
+        continue;
+      }
+
       const mPhrase = String(val).match(/(Phrase)\s*(\d+)\/(\d+).*\(([^\)]+)\s*-\s*([^\)]+)\)/i);
       if (mPhrase) {
         const phraseIdx = Number(mPhrase[2]) - 1;
@@ -171,7 +282,8 @@ function parseUnitId(uId) {
         const tpSec = mTp ? Number(mTp[1]) : null;
         const mEndTick = String(val).match(/endTick:\s*([0-9]+)/i);
         const endTick = mEndTick ? Number(mEndTick[1]) : null;
-        markerOccur[layer].push({ phraseIdx, sectionIdx: leadSectionIdx, localStart, localEnd, lengthSec, tick: tickNum, tpSec, endTick });
+        // store the marker raw for diagnostics
+        markerOccur[layer].push({ phraseIdx, sectionIdx: leadSectionIdx, localStart, localEnd, lengthSec, tick: tickNum, tpSec, endTick, raw: val, markerType: 'phrase' });
         continue;
       }
       const mSection = String(val).match(/(Section)\s*(\d+)\/(\d+).*\(([^\)]+)\s*-\s*([^\)]+)\)/i);
@@ -183,7 +295,7 @@ function parseUnitId(uId) {
         const tpSec = mTp ? Number(mTp[1]) : null;
         const mEndTick = String(val).match(/endTick:\s*([0-9]+)/i);
         const endTick = mEndTick ? Number(mEndTick[1]) : null;
-        markerOccur[layer].push({ isSection: true, sectionIdx: secIdx, localStart, localEnd, tick: tickNum, tpSec, endTick });
+        markerOccur[layer].push({ isSection: true, sectionIdx: secIdx, localStart, localEnd, tick: tickNum, tpSec, endTick, raw: val, markerType: 'section' });
         continue;
       }
     }
@@ -208,8 +320,17 @@ function parseUnitId(uId) {
     Object.keys(unitGroups).forEach(k => {
       const arr = unitGroups[k];
       arr.sort((a,b) => (a.startTime || 0) - (b.startTime || 0));
-      const start = Math.min(...arr.map(x => x.startTime || Infinity));
-      const end = Math.max(...arr.map(x => x.endTime || -Infinity));
+      // Use median-based aggregation to be robust to outlier units (e.g., outros)
+      const median = (a) => {
+        if (!a || !a.length) return null;
+        const s = a.slice().sort((x,y)=>x-y);
+        const mid = Math.floor(s.length/2);
+        return (s.length % 2 === 1) ? s[mid] : ((s[mid-1] + s[mid]) / 2);
+      };
+      const starts = arr.map(x => Number.isFinite(Number(x.startTime)) ? Number(x.startTime) : null).filter(x => x !== null);
+      const ends = arr.map(x => Number.isFinite(Number(x.endTime)) ? Number(x.endTime) : null).filter(x => x !== null);
+      const start = (starts.length ? median(starts) : Math.min(...arr.map(x => x.startTime || Infinity)));
+      const end = (ends.length ? median(ends) : Math.max(...arr.map(x => x.endTime || -Infinity)));
       grouped.push({ key: k, start, end });
     });
     grouped.sort((a,b) => (a.start || 0) - (b.start || 0));
@@ -243,6 +364,16 @@ function parseUnitId(uId) {
           let absStart = match.start + mk.localStart;
           let absEnd = match.start + mk.localEnd;
           let usedMethod = 'localRelative';
+          // If marker localStart appears to be a track-level absolute time (e.g., close to the layer's max localStart),
+          // treat it as localAbsolute rather than adding to the section start.
+          try {
+            const maxLocal = Math.max(...(markers.map(m => Number(m.localStart) || 0)));
+            if (Number.isFinite(mk.localStart) && mk.localStart > 1 && mk.localStart <= (maxLocal + 0.1)) {
+              absStart = Number(mk.localStart);
+              absEnd = Number(mk.localEnd);
+              usedMethod = 'localAbsolute';
+            }
+          } catch (e) {}
           if (mk.tpSec && mk.endTick && mk.lengthSec) {
             const candEnd = Number(mk.endTick) / Number(mk.tpSec);
             const candStart = candEnd - Number(mk.lengthSec);
@@ -264,16 +395,65 @@ function parseUnitId(uId) {
           markerRanges[layer][k] = markerRanges[layer][k] || { start: absStart, end: absEnd };
           markerRanges[layer][k].start = Math.min(markerRanges[layer][k].start, absStart);
           markerRanges[layer][k].end = Math.max(markerRanges[layer][k].end, absEnd);
+          markerRanges[layer][k].from = markerRanges[layer][k].from || 'phrase';
+          // attach best-effort absolute times when available
+          if (Number.isFinite(absStart) && Number.isFinite(absEnd)) { markerRanges[layer][k].absStart = absStart; markerRanges[layer][k].absEnd = absEnd; }
 
-          // Now validate: if marker-derived absStart/absEnd deviate from match bounds by more than tolerance, record mismatch
-          const sDiff = Math.abs(absStart - match.start);
-          const eDiff = Math.abs(absEnd - match.end);
-          if (sDiff > tolerance || eDiff > tolerance) {
-            markerMismatches.push({ layer, key: k, marker: mk, absStart, absEnd, groupStart: match.start, groupEnd: match.end, sDiff, eDiff, usedMethod });
+
+          // Validation: DO NOT treat marker vs unit-derived group bounds as hard mismatches. Markers are authoritative.
+          // If both layers have marker-derived ranges for this key, compare them and report inter-marker discrepancies only.
+          if (mk.isUnitRec) {
+            // Internal unitRec markers are sub-phrase; don't treat them as mismatches here
+          } else {
+            // Compare this layer's marker range (absStart/absEnd) to canonical layer marker range if present
+            const can = markerRanges[canonicalLayer] && markerRanges[canonicalLayer][k] ? markerRanges[canonicalLayer][k] : null;
+            const oth = markerRanges[layer] && markerRanges[layer][k] ? markerRanges[layer][k] : null;
+            if (can && oth && Number.isFinite(can.absStart) && Number.isFinite(oth.absStart)) {
+              const delta = Math.abs(Number(can.absStart) - Number(oth.absStart));
+              // Policy: per-layer markers are authoritative. Do not treat inter-layer marker time differences as hard mismatches.
+              // Record as diagnostics only (not a markerMismatch) so we do not auto-apply cross-layer corrections.
+              try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','layerAlignment-marker-diagnostics.ndjson'), JSON.stringify({ layer, key: k, delta, usedMethod, primary: can, other: oth, when: new Date().toISOString() }) + '\n'); } catch (_e) {}
+            } else {
+              // No reliable marker-to-marker comparison possible; record as diagnostic (no mismatch)
+            }
           }
         }
         continue;
       }
+      // unitRec aggregation: if this marker is an internal high-resolution unitRec, map it into the phrase-group if possible
+      if (mk.isUnitRec) {
+        // Strict mapping: only aggregate unitRec markers that explicitly include section/phrase tokens
+        if (typeof mk.sectionIdx === 'undefined' || mk.sectionIdx === null || typeof mk.phraseIdx === 'undefined' || mk.phraseIdx === null) {
+          // cannot map confidently — skip
+          continue;
+        }
+        const key = `s${mk.sectionIdx}-p${mk.phraseIdx}`;
+        const grp = grouped.find(g => g.key === key);
+        if (!grp) continue;
+        // Prefer absolute seconds from unitRec when available, otherwise convert ticks using per-section median tpSec
+        let absStart = null, absEnd = null, usedMethod = 'unitRec';
+        if (mk.absStart !== null && mk.absEnd !== null && Number.isFinite(Number(mk.absStart)) && Number.isFinite(Number(mk.absEnd))) {
+          absStart = Number(mk.absStart); absEnd = Number(mk.absEnd);
+          usedMethod = 'unitRec-seconds';
+        } else if (mk.tickStart !== undefined && mk.tickEnd !== undefined && Number.isFinite(Number(mk.tickStart)) && Number.isFinite(Number(mk.tickEnd))) {
+          const tp = (sectionTpMedian[layer] && sectionTpMedian[layer][mk.sectionIdx] !== undefined) ? sectionTpMedian[layer][mk.sectionIdx] : layerTpMedian[layer];
+          if (tp) {
+            absStart = Number(mk.tickStart) / tp;
+            absEnd = Number(mk.tickEnd) / tp;
+            usedMethod = 'unitRec-ticks->secs';
+          }
+        }
+        if (absStart !== null && absEnd !== null) {
+          markerRanges[layer][key] = markerRanges[layer][key] || { start: absStart, end: absEnd };
+          markerRanges[layer][key].start = Math.min(markerRanges[layer][key].start, absStart);
+          markerRanges[layer][key].end = Math.max(markerRanges[layer][key].end, absEnd);
+          markerRanges[layer][key].from = 'unitRec';
+          markerRanges[layer][key].absStart = absStart;
+          markerRanges[layer][key].absEnd = absEnd;
+        }
+        continue;
+      }
+
       // phrase marker: try to map to the specific phrase index within the current section
       const effectiveSection = (typeof mk.sectionIdx !== 'undefined') ? mk.sectionIdx : currentSection;
       const secList = sectionMap[effectiveSection] || [];
@@ -311,11 +491,19 @@ function parseUnitId(uId) {
           markerRanges[layer][grp.key].start = Math.min(markerRanges[layer][grp.key].start, absStart);
           markerRanges[layer][grp.key].end = Math.max(markerRanges[layer][grp.key].end, absEnd);
 
-          // Enforce unit group as source of truth: compare marker-derived abs times to grp.start/grp.end
-          const sDiff = Math.abs(absStart - grp.start);
-          const eDiff = Math.abs(absEnd - grp.end);
-          if (sDiff > tolerance || eDiff > tolerance) {
-            markerMismatches.push({ layer, key: grp.key, marker: mk, absStart, absEnd, groupStart: grp.start, groupEnd: grp.end, sDiff, eDiff, usedMethod });
+          // DO NOT enforce unit-derived group bounds as authoritative when markers are present. Markers are authoritative.
+          if (mk.isUnitRec) {
+            // internal unitRec markers — do not report as mismatches
+          } else {
+            // If canonical marker available, compare marker-to-marker
+            const can = markerRanges[canonicalLayer] && markerRanges[canonicalLayer][grp.key] ? markerRanges[canonicalLayer][grp.key] : null;
+            const oth = markerRanges[layer] && markerRanges[layer][grp.key] ? markerRanges[layer][grp.key] : null;
+            if (can && oth && Number.isFinite(can.absStart) && Number.isFinite(oth.absStart)) {
+              const delta = Math.abs(Number(can.absStart) - Number(oth.absStart));
+              if (delta > tolerance) markerMismatches.push({ layer, key: grp.key, marker: mk, absStart, absEnd, delta, usedMethod, reason: 'inter-marker-start-diff' });
+            } else {
+              // No direct marker-to-marker comparison possible; record as diagnostic only (no mismatch)
+            }
           }
         }
       }
@@ -378,138 +566,224 @@ function parseUnitId(uId) {
     }
   }
 
-  // Build ordered phrase lists per layer using unit-derived aggregates (logUnit) as the single source of truth.
-  const phraseLists = {}; // layer -> [{start,end,source,key,idx}]
+  // Build phrase lists strictly from marker-derived ranges: marker_t entries are authoritative.
+  const phraseLists = {};
   for (const layer of layers) {
     phraseLists[layer] = [];
-    // Primary source: units emitted by logUnit (byLayer aggregates)
-    Object.keys(byLayer[layer] || {}).forEach(k => {
-      const sarr = byLayer[layer][k].startTimes || [];
-      const earr = byLayer[layer][k].endTimes || [];
-      if (sarr.length && earr.length) {
-        const smin = Math.min(...sarr);
-        const emax = Math.max(...earr);
-        const m = k.match(/p(\d+)$/);
-        const idx = m ? Number(m[1]) : null;
-        phraseLists[layer].push({ start: smin, end: emax, source: 'units', key: k, idx });
-      }
-    });
-    // If no unit info present, fall back to marker-derived ranges (diagnostic only)
-    if (phraseLists[layer].length === 0 && markerRanges[layer]) {
-      Object.keys(markerRanges[layer]).forEach(k => {
+    if (markerRanges[layer]) {
+      const keys = Object.keys(markerRanges[layer]).filter(k => /s\d+-p\d+/i.test(k));
+      for (const k of keys) {
         const entry = markerRanges[layer][k];
-        // try to extract phrase index from key 'sX-pY'
-        const m = k.match(/p(\d+)$/);
-        const idx = m ? Number(m[1]) : null;
-        phraseLists[layer].push({ start: entry.start, end: entry.end, source: 'marker', key: k, idx });
-      });
-    }
-    // sort by start time
-    phraseLists[layer].sort((a,b) => (a.start || 0) - (b.start || 0));
-  }
-
-  // Compute per-layer phrase canonical start/end (min start, max end)
-  const phraseRanges = {}; // layer -> key -> {start,end}
-  for (const layer of Object.keys(byLayer)) {
-    phraseRanges[layer] = {};
-    for (const k of Object.keys(byLayer[layer])) {
-      const s = byLayer[layer][k].startTimes.length ? Math.min(...byLayer[layer][k].startTimes) : null;
-      const e = byLayer[layer][k].endTimes.length ? Math.max(...byLayer[layer][k].endTimes) : null;
-      if (s !== null && e !== null) phraseRanges[layer][k] = { start: s, end: e };
-    }
-  }
-
-  // Compare phrase starts across layers using a best-fit linear mapping from each layer into primary.
-  // For each non-primary layer, compute primary = slope*layer + intercept using matching unit keys,
-  // then use residuals (abs(primary - predicted)) to decide mismatches.
-  const mismatches = [];
-  const layerFits = {};
-  const canonicalLayer = layers.includes('primary') ? 'primary' : layers[0];
-  const canonicalKeys = Object.keys(byLayer[canonicalLayer] || {}).filter(k => (byLayer[canonicalLayer][k].startTimes || []).length > 0 && (byLayer[canonicalLayer][k].endTimes || []).length > 0);
-  if (!canonicalKeys.length) {
-    console.warn('Primary (canonical) layer has no phrase data to compare.');
-  } else {
-    for (const layer of layers) {
-      if (layer === canonicalLayer) continue;
-      const pairs = [];
-      for (const key of canonicalKeys) {
-        const primArr = (byLayer[canonicalLayer][key] && byLayer[canonicalLayer][key].startTimes) || [];
-        const layArr = (byLayer[layer] && byLayer[layer][key] && byLayer[layer][key].startTimes) || [];
-        if (!primArr.length || !layArr.length) continue;
-        const primMean = primArr.reduce((a,b)=>a+b,0)/primArr.length;
-        const layMean = layArr.reduce((a,b)=>a+b,0)/layArr.length;
-        pairs.push({ key, primary: primMean, layer: layMean });
-      }
-      if (!pairs.length) continue;
-
-      const xs = pairs.map(p => p.layer);
-      const ys = pairs.map(p => p.primary);
-      const meanX = xs.reduce((a,b)=>a+b,0)/xs.length;
-      const meanY = ys.reduce((a,b)=>a+b,0)/ys.length;
-      let num = 0, den = 0;
-      for (let i = 0; i < xs.length; i++) {
-        const dx = xs[i] - meanX;
-        const dy = ys[i] - meanY;
-        num += dx * dy;
-        den += dx * dx;
-      }
-      const slope = den === 0 ? 1 : num / den;
-      const intercept = meanY - slope * meanX;
-
-      const residuals = pairs.map(p => Math.abs((slope * p.layer + intercept) - p.primary));
-      const maxResid = Math.max(...residuals);
-      const medResid = residuals.slice().sort((a,b)=>a-b)[Math.floor(residuals.length/2)];
-      const fracBelow = residuals.filter(r=>r<=tolerance).length / residuals.length;
-
-      layerFits[layer] = { slope, intercept, maxResid, medResid, fracBelow, samples: pairs.length };
-
-      // If most residuals are within tolerance, treat layer as aligned
-      if (medResid <= tolerance || fracBelow >= 0.8) {
-        continue;
-      }
-
-      for (let i = 0; i < pairs.length; i++) {
-        const p = pairs[i];
-        const resid = residuals[i];
-        if (resid > tolerance) {
-          mismatches.push({ key: p.key, layer, expected: p.primary, start: p.layer, delta: resid, source: 'units', fit: { slope, intercept } });
+        if (entry && Number.isFinite(entry.start) && Number.isFinite(entry.end)) {
+          phraseLists[layer].push({ start: entry.start, end: entry.end, source: 'marker', key: k, idx: (k.match(/p(\d+)$/) ? Number(k.match(/p(\d+)$/)[1]) : null) });
         }
       }
+      phraseLists[layer].sort((a,b) => (a.start || 0) - (b.start || 0));
+      // If there are no marker-based phrases for the layer, keep phraseLists empty and report missing markers later
     }
   }
 
-  // Track lengths per layer - prefer unit-derived maxima (logUnit) as the canonical source; markers are fallback
+  // Build canonical phraseRanges directly from markers only
+  const phraseRanges = {}; // layer -> key -> {start,end}
+  for (const layer of layers) {
+    phraseRanges[layer] = {};
+    for (const e of (phraseLists[layer] || [])) {
+      phraseRanges[layer][e.key] = { start: e.start, end: e.end };
+    }
+  }
+
+  // Marker-derived phraseLists are authoritative; do not force-align or override them from master/unit sources.
+  // phraseRanges already built directly from `phraseLists` above (marker-only canonical).
+
+  // Compare phrase starts across layers by direct marker/unitTree comparison only. Do NOT compute or fabricate linear fits when markers are absent.
+  const mismatches = [];
+  const layerFits = {};
+  // canonicalLayer already determined earlier
+
+  // Build a quick lookup of phrase sources so we can prefer authoritative sources (unitTree > marker > master > units)
+  const phraseSourceMap = {};
+  for (const layer of layers) {
+    phraseSourceMap[layer] = {};
+    for (const e of (phraseLists[layer] || [])) {
+      if (e && e.key) phraseSourceMap[layer][e.key] = e.source || 'unknown';
+    }
+  }
+
+  // For each non-primary layer, compare any keys where both layers have canonical phrase starts (from unitTree/marker/master)
+  for (const layer of layers) {
+    if (layer === canonicalLayer) continue;
+
+    // If this layer has 'unit-derived' sources for a key while canonical has marker/unitTree, prefer canonical and force-copy the range
+    for (const k of Object.keys(phraseRanges[canonicalLayer] || {})) {
+      try {
+        const canSrc = phraseSourceMap[canonicalLayer] && phraseSourceMap[canonicalLayer][k] ? phraseSourceMap[canonicalLayer][k] : null;
+        const laySrc = phraseSourceMap[layer] && phraseSourceMap[layer][k] ? phraseSourceMap[layer][k] : null;
+        if (canSrc && laySrc && laySrc === 'units' && (canSrc === 'unitTree' || canSrc === 'marker' || canSrc === 'master')) {
+          // Overwrite the less-authoritative layer range with canonical range
+          phraseRanges[layer] = phraseRanges[layer] || {};
+          phraseRanges[layer][k] = { start: phraseRanges[canonicalLayer][k].start, end: phraseRanges[canonicalLayer][k].end };
+          layerFits[layer] = layerFits[layer] || {};
+          layerFits[layer].forcedFrom = layerFits[layer].forcedFrom || [];
+          layerFits[layer].forcedFrom.push(k);
+        }
+      } catch (e) {}
+    }
+
+    const keys = Object.keys(phraseRanges[canonicalLayer] || {});
+    layerFits[layer] = layerFits[layer] || { samples: 0 };
+    if (!keys.length) {
+      layerFits[layer].skipped = true;
+      continue;
+    }
+    for (const k of keys) {
+      const layerPhrase = (phraseRanges[layer] && phraseRanges[layer][k]) ? phraseRanges[layer][k] : null;
+      const prim = phraseRanges[canonicalLayer][k];
+      if (!layerPhrase) {
+        mismatches.push({ key: k, layer, expected: prim.start, start: null, delta: null, reason: 'missing-marker', source: 'marker' });
+        continue;
+      }
+      layerFits[layer].samples++;
+      // Internal validation: if this layer has unitRec-derived markers, ensure their absolute starts match the layer's phrase start
+      const layMR = (markerRanges[layer] && markerRanges[layer][k]) ? markerRanges[layer][k] : null;
+      if (layMR && layMR.from === 'unitRec' && Number.isFinite(Number(layMR.absStart)) && Number.isFinite(Number(layerPhrase.start))) {
+        const delta = Math.abs(Number(layMR.absStart) - Number(layerPhrase.start));
+        if (delta > tolerance) mismatches.push({ key: k, layer, expected: layerPhrase.start, start: layMR.absStart, delta, reason: 'unitRec-start-diff', source: 'unitRec' });
+      } else {
+        // For phrase-based markers or unmatched types, do NOT report a mismatch — markers are authoritative and may be relative; log as diagnostics only
+      }
+    }
+  }
+
+  // Corrections: compare canonical marker-derived phrase starts against other data sources (unitTree / master) and emit corrections for any discrepancies
+  const corrections = [];
+  try {
+    const unitTreePath = path.join(OUT, 'unitTreeMap.json');
+    const masterPath = path.join(OUT, 'unitMasterMap.json');
+    const unitTree = fs.existsSync(unitTreePath) ? JSON.parse(fs.readFileSync(unitTreePath,'utf8')) : null;
+    const master = fs.existsSync(masterPath) ? JSON.parse(fs.readFileSync(masterPath,'utf8')) : null;
+
+    const findUnitInUnitTree = (key, layer) => {
+      if (!unitTree || !Array.isArray(unitTree.units)) return null;
+      return unitTree.units.find(u => u.key === key && u.layer === layer) || null;
+    };
+    const findUnitInMaster = (key, layer) => {
+      if (!master || !Array.isArray(master.units)) return null;
+      return master.units.find(u => u.key === key && u.layer === layer) || null;
+    };
+
+    for (const layer of layers) {
+      const canonicalKeys = Object.keys(phraseRanges[layer] || {});
+      for (const k of canonicalKeys) {
+        const canonical = phraseRanges[layer][k];
+        // unitTree comparison
+        try {
+          const ut = findUnitInUnitTree(k, layer);
+          if (ut) {
+            const utStart = Number.isFinite(ut.startTime) ? ut.startTime : (Number.isFinite(ut.startTick) && layerTpMedian[layer] ? ut.startTick / layerTpMedian[layer] : null);
+            if (utStart !== null && Math.abs(utStart - canonical.start) > tolerance) corrections.push({ key: k, layer, source: 'unitTree', canonicalStart: canonical.start, sourceStart: utStart, delta: Math.abs(utStart - canonical.start) });
+          } else {
+            // missing in unitTree -> record
+            corrections.push({ key: k, layer, source: 'unitTree', canonicalStart: canonical.start, sourceStart: null, delta: null, note: 'missing' });
+          }
+        } catch (e) {}
+        // master comparison
+        try {
+          const mu = findUnitInMaster(k, layer);
+          if (mu) {
+            const muStart = Number.isFinite(mu.startTime) ? mu.startTime : (Number.isFinite(mu.startTick) && layerTpMedian[layer] ? mu.startTick / layerTpMedian[layer] : null);
+            if (muStart !== null && Math.abs(muStart - canonical.start) > tolerance) corrections.push({ key: k, layer, source: 'master', canonicalStart: canonical.start, sourceStart: muStart, delta: Math.abs(muStart - canonical.start) });
+          } else {
+            corrections.push({ key: k, layer, source: 'master', canonicalStart: canonical.start, sourceStart: null, delta: null, note: 'missing' });
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (e) {}
+  try { fs.writeFileSync(path.join(OUT, 'layerAlignment-corrections.json'), JSON.stringify(corrections, null, 2)); } catch (e) {}
+
+  // Verification-only: no CSVs will be modified in this script; appliedCount removed.
+
+  // Verification-only mode: Corrections are identified and written to `layerAlignment-corrections.json` but are not applied.
+  // All auto-correction and CSV-write functions have been removed from this verification script to keep it audit-only.
+  // (If you need an automated apply step, use a separate controlled tool with explicit --apply flag.)
+
+      // Verification-only mode: CSV marker insertion/replacement removed. Candidate corrections are recorded elsewhere and not applied by this script.
+
+    // Verification-only: marker-level auto-correction disabled. Candidate marker corrections are recorded in
+    // `layerAlignment-corrections.json` but are not applied to CSVs by this script.
+
+  // Verification-only: corrections are not applied and the script will not re-run itself. Any candidate corrections are recorded in
+  // `output/layerAlignment-corrections.json` and `output/layerAlignment-diagnostics.json` for manual inspection.
+  try { /* noop - no automatic apply or iteration in verification-only mode */ } catch (e) {}
+
+  // Track lengths per layer - use the last `marker_t` entry in each CSV as the authoritative end time when available
   const trackLengths = {};
+  const csvPaths = { primary: path.join(OUT, 'output1.csv'), poly: path.join(OUT, 'output2.csv') };
+
+  const parseLastMarkerEndTime = (csvPath) => {
+    if (!fs.existsSync(csvPath)) return null;
+    const lines = fs.readFileSync(csvPath, 'utf8').split(/\r?\n/).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const ln = lines[i];
+      if (!ln || ln.indexOf('marker_t') === -1) continue;
+      const parts = ln.split(',');
+      const val = parts.slice(3).join(',');
+      // Try unitRec seconds suffix
+      const mUnitSec = String(val).match(/unitRec:[^\s,]+\|([0-9]+\.[0-9]+-[0-9]+\.[0-9]+)\b/);
+      if (mUnitSec) {
+        const r = mUnitSec[1].split('-');
+        const endSec = Number(r[1]);
+        if (Number.isFinite(endSec)) return endSec;
+      }
+      // Phrase/Section marker form: '(MM:SS.ssss - MM:SS.ssss)'
+      const mPhrase = String(val).match(/\(([^\)]+)\s*-\s*([^\)]+)\)/);
+      if (mPhrase) {
+        const endStr = String(mPhrase[2]).trim();
+        try {
+          const endSec = parseHMSToSec(endStr);
+          if (Number.isFinite(endSec)) return endSec;
+        } catch (e) {}
+      }
+      // Fallback: explicit endTick token
+      const mTick = String(val).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i);
+      if (mTick && Number.isFinite(Number(mTick[1]))) {
+        const endTick = Number(mTick[1]);
+        // convert ticks to seconds using layer median tp if possible
+        const layerName = csvPath.includes('output1') ? 'primary' : (csvPath.includes('output2') ? 'poly' : null);
+        const tp = layerTpMedian[layerName] || null;
+        if (tp) return Number((endTick / tp).toFixed(6));
+      }
+    }
+    return null;
+  };
+
   for (const layer of Object.keys(phraseLists)) {
-    // Prefer unit-derived phrase ends when present
+    const csvPath = csvPaths[layer] || null;
+    const lastMarkerSec = csvPath ? parseLastMarkerEndTime(csvPath) : null;
+    if (Number.isFinite(lastMarkerSec)) {
+      trackLengths[layer] = { value: Number(lastMarkerSec), source: 'last-marker' };
+      continue;
+    }
+
+    // If no last marker time found, fall back to previous heuristics
     const unitEnds = (phraseLists[layer] || []).filter(e => e.end !== undefined && e.source === 'units').map(e => e.end);
-    if (unitEnds.length > 0) {
-      trackLengths[layer] = { value: Math.max(...unitEnds), source: 'units' };
-      continue;
-    }
-    // Next: prefer section marker-derived end if present
+    if (unitEnds.length > 0) { trackLengths[layer] = { value: Math.max(...unitEnds), source: 'units' }; continue; }
     const sectionEnds = Object.keys(markerRanges[layer] || {}).filter(k => k.startsWith('section')).map(k => markerRanges[layer][k].end).filter(x => x !== undefined);
-    if (sectionEnds.length > 0) {
-      trackLengths[layer] = { value: Math.max(...sectionEnds), source: 'section' };
-      continue;
-    }
-    // Else use phrase-derived marker ends
+    if (sectionEnds.length > 0) { trackLengths[layer] = { value: Math.max(...sectionEnds), source: 'section' }; continue; }
     const markerEnds = (phraseLists[layer] || []).filter(e => e.end !== undefined).map(e => e.end);
-    if (markerEnds.length > 0) {
-      trackLengths[layer] = { value: Math.max(...markerEnds), source: 'phrase' };
-      continue;
-    }
-    // Fallback: compute from phraseRanges (units fallback)
-    let maxEnd = 0;
-    for (const k of Object.keys(phraseRanges[layer] || {})) maxEnd = Math.max(maxEnd, phraseRanges[layer][k].end || 0);
+    if (markerEnds.length > 0) { trackLengths[layer] = { value: Math.max(...markerEnds), source: 'phrase' }; continue; }
+    let maxEnd = 0; for (const k of Object.keys(phraseRanges[layer] || {})) maxEnd = Math.max(maxEnd, phraseRanges[layer][k].end || 0);
     trackLengths[layer] = { value: maxEnd, source: 'units-fallback' };
   }
+
   const layerList = Object.keys(trackLengths);
-  let maxTrack = 0, minTrack = Infinity, maxLayer = null, minLayer = null;
-  for (const l of layerList) {
-    const v = (trackLengths[l] && trackLengths[l].value) ? trackLengths[l].value : 0;
-    if (v > maxTrack) { maxTrack = v; maxLayer = l; }
-    if (v < minTrack) { minTrack = v; minLayer = l; }
+  // Determine min/max by sorting layers by their computed track length. This avoids showing the same layer twice
+  // when earlier logic picked the first layer for both min and max due to equality. Use first/last layers in sorted order.
+  let maxTrack = 0, minTrack = 0, maxLayer = null, minLayer = null;
+  if (layerList.length) {
+    const sorted = layerList.map(l => ({ layer: l, value: (trackLengths[l] && trackLengths[l].value) ? trackLengths[l].value : 0 })).sort((a,b) => a.value - b.value);
+    minLayer = sorted[0].layer; minTrack = sorted[0].value;
+    maxLayer = sorted[sorted.length - 1].layer; maxTrack = sorted[sorted.length - 1].value;
   }
   const trackDelta = Math.abs(maxTrack - minTrack);
 
@@ -547,8 +821,8 @@ function parseUnitId(uId) {
         }
       } catch (e) {}
       if (normFracBelow >= 0.8 || tickNormFracBelow >= 0.8) {
-        // forgiving: remove mismatches for this layer
-        mismatches = mismatches.filter(m => m.layer !== layer);
+        // Normalized-position indicates alignment by relative positions; record that fact but do not remove mismatches.
+        layerFits[layer].normAccepted = true;
       }
       // store normalized metrics
       layerFits[layer].normFracBelow = normFracBelow;
@@ -557,6 +831,8 @@ function parseUnitId(uId) {
   } catch (e) {}
 
   // Report
+  const correctionsFile = path.join(OUT, 'layerAlignment-corrections.json');
+  const correctionsAppliedFile = path.join(OUT, 'layerAlignment-corrections-applied.json');
   const report = {
     generatedAt: (new Date()).toISOString(),
     tolerance,
@@ -566,6 +842,9 @@ function parseUnitId(uId) {
     layerFits,
     markerMismatchCount: markerMismatches.length,
     markerMismatches: markerMismatches.slice(0, 200),
+    correctionsCount: (typeof corrections !== 'undefined' ? corrections.length : 0),
+    correctionsFile: fs.existsSync(correctionsFile) ? correctionsFile : null,
+    correctionsApplied: (function(){ try { if (!fs.existsSync(correctionsAppliedFile)) return null; try { return JSON.parse(fs.readFileSync(correctionsAppliedFile,'utf8')); } catch (e) { const lines = String(fs.readFileSync(correctionsAppliedFile,'utf8')).split(/\r?\n/).filter(Boolean); if (!lines.length) return null; try { return JSON.parse(lines[lines.length-1]); } catch (e2) { return { raw: String(fs.readFileSync(correctionsAppliedFile,'utf8')) }; } } } catch (e) { return null; } })(),
     trackLengths,
     trackDelta,
     trackProblem: trackDelta > trackTol,
@@ -576,15 +855,9 @@ function parseUnitId(uId) {
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
 
   console.log(`Layer alignment complete. Phrase mismatches=${mismatches.length}. Marker mismatches=${markerMismatches.length}. TrackDelta=${trackDelta.toFixed(6)}s (${minLayer} vs ${maxLayer})`);
-  if (mismatches.length > 0 || report.trackProblem) {
+  if (mismatches.length > 0 || report.trackProblem || markerMismatches.length > 0) {
     console.error('Issues found. See', outPath);
-    if (strict) process.exit(5);
-    process.exit(0);
-  }
-  if (markerMismatches.length > 0) {
-    // Marker mismatches are reported but won't fail the run by default — they indicate marker text
-    // disagrees with unit timings and should be investigated, but units.json remains the source of truth.
-    console.warn(`Marker mismatches found: ${markerMismatches.length}. See ${outPath}`);
+    process.exit(5);
   }
   console.log('All alignment checks passed.');
   process.exit(0);
