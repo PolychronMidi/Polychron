@@ -92,6 +92,16 @@ setMidiTiming = (tick=measureStart) => {
  */
 getPolyrhythm = () => {
   if (!composer) return;
+  // For quick local runs (PLAY_LIMIT), avoid expensive getMeter loops and fall back to 1:1 phrasing
+  if (process.env && process.env.PLAY_LIMIT) {
+    // Minimal safe defaults for bounded play runs
+    polyNumerator = numerator;
+    polyDenominator = denominator;
+    polyMeterRatio = polyNumerator / polyDenominator;
+    measuresPerPhrase1 = 1;
+    measuresPerPhrase2 = 1;
+    return;
+  }
   const MAX_ATTEMPTS = 100;
   let attempts = 0;
   while (attempts++ < MAX_ATTEMPTS) {
@@ -389,6 +399,11 @@ globalThis.LM = LM;
  * @returns {void}
  */
 setUnitTiming = (unitType) => {
+  const si = (typeof sectionIndex !== 'undefined') ? sectionIndex : 'undef';
+  const pi = (typeof phraseIndex !== 'undefined') ? phraseIndex : 'undef';
+  const mi = (typeof measureIndex !== 'undefined') ? measureIndex : 'undef';
+  const bi = (typeof beatIndex !== 'undefined') ? beatIndex : 'undef';
+  if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`setUnitTiming enter: unit=${unitType} s=${si} p=${pi} m=${mi} b=${bi}`);
   if (!Number.isFinite(tpSec) || tpSec <= 0) {
     throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
   }
@@ -423,7 +438,10 @@ setUnitTiming = (unitType) => {
       bpmRatio3 = 1 / trueBPM2;
       beatStart = phraseStart + measureIndex * tpMeasure + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
+      // Get divisions from composer and clamp to safe maximum to avoid pathological runtime
       divsPerBeat = composer ? composer.getDivisions() : 1;
+      divsPerBeat = m.max(1, Number(divsPerBeat) || 1);
+      divsPerBeat = m.min(divsPerBeat, 8);
       divRhythm = setRhythm('div');
       break;
 
@@ -434,7 +452,10 @@ setUnitTiming = (unitType) => {
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
       subdivsPerDiv = m.max(1, composer ? composer.getSubdivisions() : 1);
+      // Safety cap for subdivisions per division
+      subdivsPerDiv = m.min(subdivsPerDiv, 8);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`division: divsPerBeat=${divsPerBeat} subdivsPerDiv=${subdivsPerDiv} subdivFreq=${subdivFreq}`);
       subdivRhythm = setRhythm('subdiv');
       break;
 
@@ -446,6 +467,10 @@ setUnitTiming = (unitType) => {
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubdivsPerSub = composer ? composer.getSubsubdivs() : 1;
+      // Safety cap for sub-subdivisions
+      subsubdivsPerSub = m.max(1, Number(subsubdivsPerSub) || 1);
+      subsubdivsPerSub = m.min(subsubdivsPerSub, 4);
+      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`subdivision: subdivsPerDiv=${subdivsPerDiv} subsubdivsPerSub=${subsubdivsPerSub} tpSubdiv=${tpSubdiv} spSubdiv=${spSubdiv}`);
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
@@ -546,75 +571,78 @@ setUnitTiming = (unitType) => {
 
 
     // Before building unitRec, prefer authoritative per-layer marker_t info when available.
-    try {
-      const sectionToken = `section${sec+1}`;
-      const phraseToken = `phrase${phr+1}`;
-      const buf = (typeof c !== 'undefined' && c && Array.isArray(c.rows)) ? c.rows : (LM && LM.layers && LM.layers[layerName] && LM.layers[layerName].buffer && Array.isArray(LM.layers[layerName].buffer.rows) ? LM.layers[layerName].buffer.rows : null);
-      if (Array.isArray(buf)) {
-        for (let i = buf.length - 1; i >= 0; i--) {
-          try {
-            const evt = buf[i];
-            if (!evt || String(evt.type).toLowerCase() !== 'marker_t' || !Array.isArray(evt.vals)) continue;
-            const unitRecVal = evt.vals.find(v => typeof v === 'string' && String(v).startsWith('unitRec:')) || null;
-            if (unitRecVal) {
-              const full = String(unitRecVal).split(':')[1] || '';
-              if (full.indexOf(sectionToken) !== -1 && full.indexOf(phraseToken) !== -1) {
-                const seg = full.split('|');
-                const ticksPart = seg[seg.length - 2] || '';
-                const secsPart = seg[seg.length - 1] && seg[seg.length - 1].includes('.') && seg[seg.length - 1].includes('-') ? seg[seg.length - 1] : null;
-                if (ticksPart && ticksPart.indexOf('-') !== -1) {
-                  const r = ticksPart.split('-');
-                  const sTick = Number(r[0]) || unitStart;
-                  const eTick = Number(r[1]) || unitEnd;
-                  unitStart = Math.round(sTick);
-                  unitEnd = Math.round(eTick);
-                }
-                if (secsPart) {
-                  const rs = secsPart.split('-');
-                  const sSec = Number(rs[0]) || (Number.isFinite(unitStart) && Number.isFinite(tpSec) ? unitStart / tpSec : null);
-                  const eSec = Number(rs[1]) || (Number.isFinite(unitEnd) && Number.isFinite(tpSec) ? unitEnd / tpSec : null);
-                  if (Number.isFinite(sSec) && Number.isFinite(eSec)) {
-                    // prefer seconds if present and compute ticks from tpSec when possible
-                    unitStart = (Number.isFinite(tpSec) && tpSec !== 0) ? Math.round(sSec * tpSec) : unitStart;
-                    unitEnd = (Number.isFinite(tpSec) && tpSec !== 0) ? Math.round(eSec * tpSec) : unitEnd;
+    // To prevent excessive per-unit filesystem parsing (performance regression), only apply marker-preference at phrase level.
+    if (unitType === 'phrase') {
+      try {
+        const sectionToken = `section${sec+1}`;
+        const phraseToken = `phrase${phr+1}`;
+        const buf = (typeof c !== 'undefined' && c && Array.isArray(c.rows)) ? c.rows : (LM && LM.layers && LM.layers[layerName] && LM.layers[layerName].buffer && Array.isArray(LM.layers[layerName].buffer.rows) ? LM.layers[layerName].buffer.rows : null);
+        if (Array.isArray(buf)) {
+          for (let i = buf.length - 1; i >= 0; i--) {
+            try {
+              const evt = buf[i];
+              if (!evt || String(evt.type).toLowerCase() !== 'marker_t' || !Array.isArray(evt.vals)) continue;
+              const unitRecVal = evt.vals.find(v => typeof v === 'string' && String(v).startsWith('unitRec:')) || null;
+              if (unitRecVal) {
+                const full = String(unitRecVal).split(':')[1] || '';
+                if (full.indexOf(sectionToken) !== -1 && full.indexOf(phraseToken) !== -1) {
+                  const seg = full.split('|');
+                  const ticksPart = seg[seg.length - 2] || '';
+                  const secsPart = seg[seg.length - 1] && seg[seg.length - 1].includes('.') && seg[seg.length - 1].includes('-') ? seg[seg.length - 1] : null;
+                  if (ticksPart && ticksPart.indexOf('-') !== -1) {
+                    const r = ticksPart.split('-');
+                    const sTick = Number(r[0]) || unitStart;
+                    const eTick = Number(r[1]) || unitEnd;
+                    unitStart = Math.round(sTick);
+                    unitEnd = Math.round(eTick);
                   }
-                }
-                // found a matching unitRec — stop searching
-                break;
-              }
-            }
-            // if no unitRec token, check human-readable markers for parenthetical times or endTick
-            for (const v of evt.vals) {
-              try {
-                const vs = String(v || '');
-                if (vs.indexOf(sectionToken) !== -1 && vs.indexOf(phraseToken) !== -1) {
-                  const mParen = vs.match(/\(([^\)]+)\s*-\s*([^\)]+)\)/);
-                  const mEndTick = vs.match(/endTick:\s*([0-9]+)/i);
-                  if (mParen && mParen[1] && mParen[2]) {
-                    const parseHMS = (s) => { const mm = Number(s.split(':')[0]); const ss = Number(s.split(':')[1]) || 0; return mm * 60 + ss; };
-                    const sSec = parseHMS(mParen[1].trim());
-                    const eSec = parseHMS(mParen[2].trim());
+                  if (secsPart) {
+                    const rs = secsPart.split('-');
+                    const sSec = Number(rs[0]) || (Number.isFinite(unitStart) && Number.isFinite(tpSec) ? unitStart / tpSec : null);
+                    const eSec = Number(rs[1]) || (Number.isFinite(unitEnd) && Number.isFinite(tpSec) ? unitEnd / tpSec : null);
                     if (Number.isFinite(sSec) && Number.isFinite(eSec)) {
-                      if (mEndTick && mEndTick[1] && Number.isFinite(Number(mEndTick[1])) && Number.isFinite(tpSec) && tpSec !== 0) {
-                        const eTick = Number(mEndTick[1]);
-                        const sTick = Math.round(eTick - ((eSec - sSec) * tpSec));
-                        unitStart = Math.round(sTick);
-                        unitEnd = Math.round(eTick);
-                        break;
-                      } else if (Number.isFinite(tpSec) && tpSec !== 0) {
-                        unitStart = Math.round(sSec * tpSec);
-                        unitEnd = Math.round(eSec * tpSec);
-                        break;
+                      // prefer seconds if present and compute ticks from tpSec when possible
+                      unitStart = (Number.isFinite(tpSec) && tpSec !== 0) ? Math.round(sSec * tpSec) : unitStart;
+                      unitEnd = (Number.isFinite(tpSec) && tpSec !== 0) ? Math.round(eSec * tpSec) : unitEnd;
+                    }
+                  }
+                  // found a matching unitRec — stop searching
+                  break;
+                }
+              }
+              // if no unitRec token, check human-readable markers for parenthetical times or endTick
+              for (const v of evt.vals) {
+                try {
+                  const vs = String(v || '');
+                  if (vs.indexOf(sectionToken) !== -1 && vs.indexOf(phraseToken) !== -1) {
+                    const mParen = vs.match(/\(([^\)]+)\s*-\s*([^\)]+)\)/);
+                    const mEndTick = vs.match(/endTick:\s*([0-9]+)/i);
+                    if (mParen && mParen[1] && mParen[2]) {
+                      const parseHMS = (s) => { const mm = Number(s.split(':')[0]); const ss = Number(s.split(':')[1]) || 0; return mm * 60 + ss; };
+                      const sSec = parseHMS(mParen[1].trim());
+                      const eSec = parseHMS(mParen[2].trim());
+                      if (Number.isFinite(sSec) && Number.isFinite(eSec)) {
+                        if (mEndTick && mEndTick[1] && Number.isFinite(Number(mEndTick[1])) && Number.isFinite(tpSec) && tpSec !== 0) {
+                          const eTick = Number(mEndTick[1]);
+                          const sTick = Math.round(eTick - ((eSec - sSec) * tpSec));
+                          unitStart = Math.round(sTick);
+                          unitEnd = Math.round(eTick);
+                          break;
+                        } else if (Number.isFinite(tpSec) && tpSec !== 0) {
+                          unitStart = Math.round(sSec * tpSec);
+                          unitEnd = Math.round(eSec * tpSec);
+                          break;
+                        }
                       }
                     }
                   }
-                }
-              } catch (_e) {}
-            }
-          } catch (_e) {}
+                } catch (_e) {}
+              }
+            } catch (_e) {}
+          }
         }
-      }
-    } catch (_e) {}
+      } catch (_e) {}
+    }
 
     // Build a compact full-id string per spec and emit an internal marker for writers to extract
     const parts = [];
@@ -626,7 +654,71 @@ setUnitTiming = (unitType) => {
     parts.push(`subdivision${(subdivIdx + 1)}/${subdivTotal}`);
     parts.push(`subsubdivision${(subsubIdx + 1)}/${subsubTotal}`);
     const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
-    const secs = (Number.isFinite(tpSec) && tpSec !== 0) ? `${(unitStart / tpSec).toFixed(6)}-${(unitEnd / tpSec).toFixed(6)}` : null;
+    // Prefer marker-derived seconds when available for this unit (search down from most-specific parts to less-specific)
+    const getCsvForLayer = (layerName) => {
+      // simple cached loader: map layer -> { key -> { startSec, endSec, tickStart, tickEnd, raw } }
+      const cache = getCsvForLayer._cache = getCsvForLayer._cache || {};
+      if (cache[layerName]) return cache[layerName];
+      const map = {};
+      try {
+        const path = require('path'); const fs = require('fs');
+        const csvPath = layerName === 'primary' ? path.join(process.cwd(), 'output', 'output1.csv') : (layerName === 'poly' ? path.join(process.cwd(), 'output', 'output2.csv') : path.join(process.cwd(),'output', `output${layerName}.csv`));
+        if (fs.existsSync(csvPath)) {
+          const txt = fs.readFileSync(csvPath, 'utf8');
+          const lines = txt.split(new RegExp('\\r?\\n'));
+          for (const ln of lines) {
+            if (!ln || !ln.startsWith('1,')) continue;
+            const partsLine = ln.split(','); if (partsLine.length < 4) continue;
+            const tkn = partsLine[2]; if (String(tkn).toLowerCase() !== 'marker_t') continue;
+            const val = partsLine.slice(3).join(',');
+            const m = String(val).match(/unitRec:([^\s,]+)/);
+            if (!m) continue;
+            const full = m[1];
+            const seg = full.split('|');
+            // extract secs suffix if present (last segment like 0.000000-5.490196)
+            let sStart = null, sEnd = null, tickStart = null, tickEnd = null;
+            for (let i = seg.length - 1; i >= 0; i--) {
+              const s = seg[i];
+              if (/^\d+\.\d+-\d+\.\d+$/.test(s)) { const r = s.split('-'); sStart = Number(r[0]); sEnd = Number(r[1]); continue; }
+              if (/^\d+-\d+$/.test(s)) { const r = s.split('-'); tickStart = Number(r[0]); tickEnd = Number(r[1]); continue; }
+            }
+            // build base key (without trailing tick/seconds segments)
+            let baseSeg = seg.slice();
+            while (baseSeg.length && (/^\d+\.\d+-\d+\.\d+$/.test(baseSeg[baseSeg.length-1]) || /^\d+-\d+$/.test(baseSeg[baseSeg.length-1]))) baseSeg.pop();
+            const key = baseSeg.join('|');
+            if (sStart !== null && sEnd !== null) {
+              // prefer earliest start if multiple
+              if (!map[key] || (map[key] && (sStart < map[key].startSec))) map[key] = { startSec: sStart, endSec: sEnd, tickStart, tickEnd, raw: full };
+            } else if (tickStart !== null && tickEnd !== null) {
+              if (!map[key] || (!map[key].startSec && tickStart < (map[key].tickStart || Infinity))) map[key] = { startSec: null, endSec: null, tickStart, tickEnd, raw: full };
+            }
+          }
+        }
+      } catch (e) {}
+      cache[layerName] = map; return map;
+    };
+
+    const findMarkerSecs = (layerName, partsArr) => {
+      const map = getCsvForLayer(layerName);
+      // try most-specific to least-specific
+      for (let len = partsArr.length; len > 0; len--) {
+        const k = partsArr.slice(0, len).join('|');
+        if (map && map[k] && Number.isFinite(map[k].startSec)) return map[k];
+      }
+      return null;
+    };
+
+    const markerMatch = findMarkerSecs(layerName, parts);
+    let secs = null;
+    if (markerMatch && Number.isFinite(markerMatch.startSec) && Number.isFinite(markerMatch.endSec)) {
+      secs = `${markerMatch.startSec.toFixed(6)}-${markerMatch.endSec.toFixed(6)}`;
+      // also override startSecNum/endSecNum for downstream use
+      if (Number.isFinite(markerMatch.startSec)) startSecNum = markerMatch.startSec;
+      if (Number.isFinite(markerMatch.endSec)) endSecNum = markerMatch.endSec;
+    } else {
+      secs = (Number.isFinite(tpSec) && tpSec !== 0) ? `${(unitStart / tpSec).toFixed(6)}-${(unitEnd / tpSec).toFixed(6)}` : null;
+    }
+
     const fullId = secs ? (parts.join('|') + '|' + range + '|' + secs) : (parts.join('|') + '|' + range);
     // Diagnostic: record suspicious unit emissions (start==0 with non-zero end, non-finite, or start>end)
     try {

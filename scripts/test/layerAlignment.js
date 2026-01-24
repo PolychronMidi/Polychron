@@ -856,6 +856,11 @@ function parseUnitId(uId) {
   // Report
   const correctionsFile = path.join(OUT, 'layerAlignment-corrections.json');
   const correctionsAppliedFile = path.join(OUT, 'layerAlignment-corrections-applied.json');
+  // NOTE: Verifier is strictly read-only. Historically there may be a
+  // `layerAlignment-corrections-applied.json` file created by other tooling.
+  // We will never read and report applied corrections in this script; if the
+  // legacy file exists, log a warning and ignore it to avoid confusion.
+
   const report = {
     generatedAt: (new Date()).toISOString(),
     tolerance,
@@ -867,7 +872,7 @@ function parseUnitId(uId) {
     markerMismatches: markerMismatches.slice(0, 200),
     correctionsCount: (typeof corrections !== 'undefined' ? corrections.length : 0),
     correctionsFile: fs.existsSync(correctionsFile) ? correctionsFile : null,
-    correctionsApplied: (function(){ try { if (!fs.existsSync(correctionsAppliedFile)) return null; try { return JSON.parse(fs.readFileSync(correctionsAppliedFile,'utf8')); } catch (e) { const lines = String(fs.readFileSync(correctionsAppliedFile,'utf8')).split(/\r?\n/).filter(Boolean); if (!lines.length) return null; try { return JSON.parse(lines[lines.length-1]); } catch (e2) { return { raw: String(fs.readFileSync(correctionsAppliedFile,'utf8')) }; } } } catch (e) { return null; } })(),
+    correctionsApplied: (function(){ try { if (fs.existsSync(correctionsAppliedFile)) { console.warn('layerAlignment: found legacy "layerAlignment-corrections-applied.json"; ignored.'); } } catch (e) {} return null; })(),
     trackLengths,
     trackDelta,
     trackProblem: trackDelta > trackTol,

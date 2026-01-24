@@ -46,3 +46,30 @@ test('poly s0-p0 unitRec start is aligned to marker start (≈0s)', () => {
     throw new Error('No unitRec markers with explicit seconds found for poly s0-p0');
   }
 });
+
+// Additional consistency test: ensure any unit key with an explicit seconds suffix in unitMasterMap.json
+// has a startTime that matches that seconds suffix within tolerance. This covers all unit levels.
+test('unitMasterMap seconds suffixes match recorded startTime across unit levels', () => {
+  const path = require('path');
+  const fs = require('fs');
+  const OUT = path.join(process.cwd(), 'output');
+  const masterPath = path.join(OUT, 'unitMasterMap.json');
+  if (!fs.existsSync(masterPath)) throw new Error('unitMasterMap.json missing; run npm run play to generate outputs');
+  const jm = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+  const units = (jm && Array.isArray(jm.units)) ? jm.units : [];
+  const bad = [];
+  for (const u of units) {
+    try {
+      const key = String(u.key || u.unitId || '');
+      const m = key.match(/\|([0-9]+\.[0-9]+)-([0-9]+\.[0-9]+)$/);
+      if (!m) continue; // no explicit seconds suffix
+      const secStart = Number(m[1]);
+      const recStart = (u.startTime !== undefined && u.startTime !== null) ? Number(u.startTime) : null;
+      if (!Number.isFinite(recStart) || Math.abs(recStart - secStart) > TOL) bad.push({ key, secStart, recStart });
+    } catch (e) {}
+  }
+  if (bad.length) {
+    const msg = bad.slice(0, 20).map(b => `${b.key} (suffixStart=${b.secStart} startTime=${b.recStart})`).join('\n');
+    throw new Error(`Found ${bad.length} unit(s) where seconds suffix != recorded startTime:\n${msg}`);
+  }
+});
