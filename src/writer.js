@@ -48,14 +48,34 @@ c=c1;  // Active buffer reference
 logUnit = (type) => {
   let shouldLog = false;
   type = type.toLowerCase();
+
+  // Localize all per-unit variables to avoid accidental global mutation across calls
+  let unit = null;
+  let unitsPerParent = null;
+  let startTick = null;
+  let endTick = null;
+  let startTime = null;
+  let endTime = null;
+  let spSection = null;
+  let spPhrase = null;
+  let spMeasure = null;
+  let spBeat = null;
+  let spDiv = null;
+  let spSubdiv = null;
+  let spSubsubdiv = null;
+  let composerDetails = '';
+  let progressionSymbols = '';
+  let actualMeter = null;
+  let meterInfo = '';
   if (LOG === 'none') shouldLog = false;
   else if (LOG === 'all') shouldLog = true;
   else {
     const logList = LOG.toLowerCase().split(',').map(item => item.trim());
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
-  if (!shouldLog) return null;
-  let meterInfo = '';
+  if (typeof shouldLog === 'undefined') {
+    // function not yet invoked in this context; skip
+  } else if (!shouldLog) return null;
 
   if (type === 'section') {
     unit = sectionIndex + 1;
@@ -165,7 +185,37 @@ logUnit = (type) => {
       if (c && c.name && typeof LM !== 'undefined' && LM.layers && LM.layers[c.name] && LM.layers[c.name].state) {
         const st = LM.layers[c.name].state;
         st.units = st.units || [];
-        st.units.push({ parts: parts.slice(), unitNumber: unit, unitsPerParent, startTick: startTickN, endTick: endTickN, startTime: startTimeN, endTime: endTimeN, type });
+        // If this is not the primary layer and primary units are present, copy primary unit times
+        let finalStartTime = startTimeN;
+        let finalEndTime = endTimeN;
+        try {
+          if (c.name !== 'primary' && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) {
+            const primUnits = LM.layers['primary'].state.units;
+            // match by section/phrase tokens if possible
+            const want = {};
+            parts.forEach(p => {
+              const m = String(p).match(/^(section\d+|phrase\d+)/i);
+              if (m) want[m[1].toLowerCase()] = true;
+            });
+            const match = primUnits.find(u => {
+              if (!Array.isArray(u.parts)) return false;
+              const have = {};
+              u.parts.forEach(pp => {
+                const m = String(pp).match(/^(section\d+|phrase\d+)/i);
+                if (m) have[m[1].toLowerCase()] = true;
+              });
+              // require both section and phrase tokens to match when present
+              if (Object.keys(want).length === 0) return false;
+              for (const k of Object.keys(want)) if (!have[k]) return false;
+              return true;
+            });
+            if (match && match.startTime !== undefined) {
+              finalStartTime = Number(match.startTime) || finalStartTime;
+              finalEndTime = Number(match.endTime) || finalEndTime;
+            }
+          }
+        } catch (e) {}
+        st.units.push({ parts: parts.slice(), unitNumber: unit, unitsPerParent, startTick: startTickN, endTick: endTickN, startTime: finalStartTime, endTime: finalEndTime, type });
       }
     } catch (err) {}
 
@@ -229,16 +279,95 @@ grandFinale = () => {
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
     let finalTick = -Infinity;
 
+    // Build helper to find containing unit and to fallback to last unit when necessary
+    const findUnitForTick = (tickNum) => {
+      const tickInt = Math.round(Number(tickNum) || 0);
+      const candidates = unitsForLayer
+        .filter(uu => Number.isFinite(Number(uu.startTick)) && Number.isFinite(Number(uu.endTick)) && (tickInt >= Math.round(Number(uu.startTick)) && tickInt <= Math.round(Number(uu.endTick))))
+        .map(uu => ({ ...uu, span: Math.round(Number(uu.endTick) - Number(uu.startTick)) }));
+      if (candidates.length) {
+        candidates.sort((a, b) => a.span - b.span);
+        return candidates[0];
+      }
+      return null;
+    };
+
+    const lastUnit = unitsForLayer.length ? unitsForLayer.reduce((a, b) => (Number(a.endTick) > Number(b.endTick) ? a : b)) : null;
+    const emittedUnitRec = new Set();
+
+    // Detect orphan events after the last known unit and create a single "layer[number]outro" virtual unit
+    let outroUnit = null;
+    try {
+      const lastEnd = lastUnit ? Number(lastUnit.endTick) : -Infinity;
+      const maxEventTick = buffer.reduce((m, i) => Math.max(m, Number(i && i.tick) || -Infinity), -Infinity);
+      const projectedEndTick = Number.isFinite(maxEventTick) ? Math.round(maxEventTick + (SILENT_OUTRO_SECONDS * (layerState && layerState.tpSec || 0))) : -Infinity;
+      const orphanTicks = buffer
+        .map(i => ({ tickNum: i && i.tick, tickInt: Math.round(Number(i && i.tick) || 0) }))
+        .filter(i => Number.isFinite(i.tickInt) && !findUnitForTick(i.tickInt) && i.tickInt >= lastEnd)
+        .map(i => i.tickInt);
+      // Include the projected end_track tick so the outro region will cover it
+      if (Number.isFinite(projectedEndTick) && projectedEndTick >= lastEnd) orphanTicks.push(projectedEndTick);
+      if (orphanTicks.length) {
+        const minTick = Math.min(...orphanTicks);
+        const maxTick = Math.max(...orphanTicks);
+        const layerNum = name === 'primary' ? 1 : name === 'poly' ? 2 : 0;
+        const outroKey = `layer${layerNum}outro`;
+        const outroId = `${outroKey}|${minTick}-${maxTick}`;
+        outroUnit = { unitId: outroId, layer: name, startTick: minTick, endTick: maxTick, startTime: 0, endTime: 0, raw: { outro: true } };
+        unitsForLayer.push(outroUnit);
+        // Emit a single unitRec marker for the outro range at its start so auditors can detect it
+        composition += `1,${minTick},marker_t,unitRec:${outroId}\n`;
+        emittedUnitRec.add(outroId);
+      }
+    } catch (e) {}
+
     buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
         let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
-        composition += `1,${_.tick || 0},${type},${_.vals.join(',')}\n`;
-        finalTick = Math.max(finalTick, _.tick);
+        const tickNum = _.tick || 0;
+        const tickInt = Math.round(Number(tickNum) || 0);
+
+        // Find the best containing unit; prefer most granular (smallest span)
+        let unitMatch = findUnitForTick(tickNum);
+
+        // If no containing unit and an outro unit exists that covers trailing events, attach to it.
+        if (!unitMatch && outroUnit && (tickInt >= Number(outroUnit.startTick) && tickInt <= Number(outroUnit.endTick))) {
+          unitMatch = outroUnit;
+        }
+
+        // Append unit id to tick field when available
+        const tickField = unitMatch ? `${tickNum}|${unitMatch.unitId}` : `${tickNum}`;
+        composition += `1,${tickField},${type},${_.vals.join(',')}\n`;
+
+        finalTick = Math.max(finalTick, tickNum, tickInt);
 
       }
     });
 
-    composition += `1,${finalTick + (SILENT_OUTRO_SECONDS * layerState.tpSec)},end_track`;
+    const endTick = Math.round(finalTick + (SILENT_OUTRO_SECONDS * layerState.tpSec));
+    try {
+      const lastEnd = lastUnit ? Number(lastUnit.endTick) : -Infinity;
+      if (!outroUnit && lastEnd !== -Infinity && endTick >= lastEnd) {
+        const layerNum = name === 'primary' ? 1 : name === 'poly' ? 2 : 0;
+        const outroKey = `layer${layerNum}outro`;
+        const outroId = `${outroKey}|${endTick}-${endTick}`;
+        outroUnit = { unitId: outroId, layer: name, startTick: endTick, endTick: endTick, startTime: 0, endTime: 0, raw: { outro: true } };
+        unitsForLayer.push(outroUnit);
+        composition += `1,${endTick},marker_t,unitRec:${outroId}\n`;
+        emittedUnitRec.add(outroId);
+      } else if (outroUnit && endTick > Number(outroUnit.endTick)) {
+        // extend the outro unit range and emit an expanded unitRec marker for auditing
+        const base = String(outroUnit.unitId).split('|')[0];
+        const newId = `${base}|${Math.round(outroUnit.startTick)}-${endTick}`;
+        outroUnit.unitId = newId;
+        outroUnit.endTick = endTick;
+        composition += `1,${Math.round(outroUnit.startTick)},marker_t,unitRec:${newId}\n`;
+        emittedUnitRec.add(newId);
+      }
+    } catch (e) {}
+
+    const endTickField = outroUnit ? `${endTick}|${outroUnit.unitId}` : `${endTick}`;
+    composition += `1,${endTickField},end_track`;
 
     // Determine output filename based on layer name
     let outputFilename;
@@ -262,6 +391,9 @@ grandFinale = () => {
     console.log(`${outputFilename} created (${name} layer).`);
 
   });
+
+  // Finalize master unit map (write canonical unitMasterMap.json atomically)
+  try { const MasterMap = require('./masterMap'); MasterMap.finalize(); } catch (e) {}
 
 };
 

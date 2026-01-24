@@ -478,6 +478,46 @@ setUnitTiming = (unitType) => {
     const subdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1;
     const subsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : 1;
 
+    // Compute canonical unit boundaries for this unitType so start/end are accurate
+    let unitStart = 0;
+    let unitEnd = 0;
+    switch (unitType) {
+      case 'section':
+        unitStart = sectionStart;
+        unitEnd = sectionStart + tpSection;
+        break;
+      case 'phrase':
+        unitStart = phraseStart;
+        unitEnd = phraseStart + tpPhrase;
+        break;
+      case 'measure':
+        unitStart = measureStart;
+        unitEnd = measureStart + tpMeasure;
+        break;
+      case 'beat':
+        unitStart = beatStart;
+        unitEnd = beatStart + tpBeat;
+        break;
+      case 'division':
+        unitStart = divStart;
+        unitEnd = divStart + tpDiv;
+        break;
+      case 'subdivision':
+        unitStart = subdivStart;
+        unitEnd = subdivStart + tpSubdiv;
+        break;
+      case 'subsubdivision':
+        unitStart = subsubdivStart;
+        unitEnd = subsubdivStart + tpSubsubdiv;
+        break;
+      default:
+        unitStart = 0;
+        unitEnd = 0;
+    }
+
+    const startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
+    const endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
+
     const unitRec = {
       layer: layerName,
       unitType,
@@ -491,14 +531,19 @@ setUnitTiming = (unitType) => {
       subdivTotal,
       subsubIndex: subsubIdx,
       subsubTotal,
-      startTick: Math.round(startTick),
-      endTick: Math.round(endTick)
+      startTick: Math.round(unitStart),
+      endTick: Math.round(unitEnd),
+      // Persist seconds-based start/end time when tpSec available (null otherwise)
+      startTime: Number.isFinite(startSecNum) ? Number(startSecNum.toFixed(6)) : null,
+      endTime: Number.isFinite(endSecNum) ? Number(endSecNum.toFixed(6)) : null
     };
 
     if (LM && LM.layers && LM.layers[layerName]) {
       LM.layers[layerName].state.units = LM.layers[layerName].state.units || [];
       LM.layers[layerName].state.units.push(unitRec);
     }
+
+
 
     // Build a compact full-id string per spec and emit an internal marker for writers to extract
     const parts = [];
@@ -509,9 +554,49 @@ setUnitTiming = (unitType) => {
     parts.push(`beat${(bIdx + 1)}/${beatTotal}`);
     parts.push(`subdivision${(subdivIdx + 1)}/${subdivTotal}`);
     parts.push(`subsubdivision${(subsubIdx + 1)}/${subsubTotal}`);
-    const range = `${Math.round(startTick)}-${Math.round(endTick)}`;
-    const fullId = parts.join('|') + '|' + range;
-    try { p(c, { tick: Math.round(startTick), type: 'marker_t', vals: [`unitRec:${fullId}`], _internal: true }); } catch (_e) {}
+    const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
+    const secs = (Number.isFinite(tpSec) && tpSec !== 0) ? `${(unitStart / tpSec).toFixed(6)}-${(unitEnd / tpSec).toFixed(6)}` : null;
+    const fullId = secs ? (parts.join('|') + '|' + range + '|' + secs) : (parts.join('|') + '|' + range);
+
+    // Diagnostic: record suspicious unit emissions (start==0 with non-zero end, non-finite, or start>end)
+    try {
+      const suspicious = !Number.isFinite(unitStart) || !Number.isFinite(unitEnd) || (unitStart === 0 && unitEnd !== 0) || (unitStart > unitEnd);
+      if (suspicious) {
+        // Build a rich diagnostic payload with timing snapshot and stack
+        const globalsSnapshot = {
+          phraseStart, phraseStartTime, measureStart, measureStartTime, sectionStart, sectionStartTime,
+          tpPhrase, tpMeasure, tpSection, tpSec, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv,
+          numerator, denominator, measuresPerPhrase, divsPerBeat, subdivsPerDiv, subsubdivsPerSub
+        };
+        const stack = (() => {
+          try { return (new Error()).stack.split('\n').slice(2).map(s => s.trim()); } catch (_e) { return []; }
+        })();
+        const diag = {
+          layer: layerName,
+          unitType,
+          unitId: fullId,
+          start: Math.round(unitStart),
+          end: Math.round(unitEnd),
+          indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx },
+          globals: globalsSnapshot,
+          lmActive: (LM && LM.activeLayer) ? LM.activeLayer : null,
+          when: new Date().toISOString(),
+          stack
+        };
+        try {
+          const _fs = require('fs'); const _path = require('path');
+          _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitTreeAudit-diagnostics.ndjson'), JSON.stringify(diag) + '\n');
+          // Keep legacy short list for quick inspection
+          try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitTreeAudit-suspicious-units.ndjson'), JSON.stringify({ layer: layerName, unitType, unitId: fullId, start: Math.round(unitStart), end: Math.round(unitEnd), when: diag.when }) + '\n'); } catch (_e) {}
+        } catch (_e) {}
+      }
+    } catch (_e) {}
+
+    try {
+      // Add to live master unit map (tick-first canonical aggregator) using the canonical part key
+      try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: parts.slice(), layer: layerName, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), startTime: startSecNum, endTime: endSecNum, raw: unitRec }); } catch (_e) {}
+      p(c, { tick: Math.round(unitStart), type: 'marker_t', vals: [`unitRec:${fullId}`], _internal: true });
+    } catch (_e) {}
   } catch (_e) {}
 
   // Log the unit after calculating timing
