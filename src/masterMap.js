@@ -101,7 +101,7 @@ function finalize() {
     flushed = true;
     ensureOutDir();
     const canonical = getCanonical();
-    const payload = { generated: new Date().toISOString(), version: 1, units: canonical, stats: { units: canonical.length } };
+    const payload = { generated: new Date().toISOString(), version: 3, units: canonical, stats: { units: canonical.length } };
     // Write atomically: .tmp then rename
     getFs().writeFileSync(ATOMIC_TMP, JSON.stringify(payload, null, 2));
     try { getFs().renameSync(ATOMIC_TMP, ATOMIC_JSON_PATH); } catch (e) { /* fallback */ getFs().writeFileSync(ATOMIC_JSON_PATH, JSON.stringify(payload, null, 2)); }
