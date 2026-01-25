@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import { execSync } from 'child_process';
+const fs = require('fs');
+const { execSync } = require('child_process');
 
 // Onboarding helper: ensures README and TODO quick checklist
 const todoPath = 'TODO.md';

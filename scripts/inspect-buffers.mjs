@@ -1,4 +1,4 @@
-import { initializePlayEngine, getCurrentCompositionContext } from '../dist/play.js';
+import { initializePlayEngine, getCurrentCompositionContext } from '../srcplay.js';
 
 (async () => {
   try {
@@ -62,11 +62,11 @@ import { initializePlayEngine, getCurrentCompositionContext } from '../dist/play
       // No LayerManager available; fallback to building a minimal test context and invoking PlayNotes directly
       console.log('No LM.layers found; creating manual test context and invoking Stage.playNotes to generate a small sample');
       // Minimal manual setup
-      const { CompositionStateService } = await import('../dist/CompositionState.js');
-      const { DIContainer } = await import('../dist/DIContainer.js');
-      const { registerWriterServices, CSVBuffer } = await import('../dist/writer.js');
-      const { createCompositionContext } = await import('../dist/CompositionContext.js');
-      const { stage } = await import('../dist/stage.js');
+      const { CompositionStateService } = await import('../srcCompositionState.js');
+      const { DIContainer } = await import('../srcDIContainer.js');
+      const { registerWriterServices, CSVBuffer } = await import('../srcwriter.js');
+      const { createCompositionContext } = await import('../srcCompositionContext.js');
+      const { stage } = await import('../srcstage.js');
 
       const state = new CompositionStateService();
       state.BPM = 120;

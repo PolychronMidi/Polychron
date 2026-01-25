@@ -59,6 +59,10 @@ New contributors to the project can:
 
 ## Testing Philosophy: Real Functions, Not Mocks
 
+**Two verification layers:**
+- **Functional Tests (Vitest / `test/`)** — fast, module- and integration-level tests that import and exercise real functions for quick developer feedback and refactor safety.
+- **Verification / Audit Suite (`scripts/test/`)** — engine-driven system tests that run the real play engine to generate artifacts (CSV, unit maps) and validate global invariants (unit containment, phrase alignment). Use `verify:unit-tree` and `verify:layer-alignment` in CI.
+
 ### The Problem with Mocks
 
 Traditional mocking approaches create a maintenance burden:
@@ -153,6 +157,30 @@ const mockComposer = {
 ```
 
 Note: This mock is necessary because `composers.js` exports class instances, not factories. To test `time.js` functions that use a composer, we need to provide *something*, but it's kept minimal and high-level.
+
+---
+
+## New testing system: unit-tree audit & phrase alignment (succinct)
+Polychron tests validate *actual generated outputs* produced by the real play engine. The core verification loop used during development and CI is:
+
+1. Generate outputs: run the full engine (preferred) via `npm run play` (or a fast deterministic run: `cross-env PLAY_LIMIT=1 node src/play.js`).
+2. Run the unit-tree verifier: `npm run verify:unit-tree` — checks event → unit containment, gap/overlap detection, and produces `output/unitTreeAudit-report.json` and `output/unitTreeAudit-canonicalization.json`.
+3. Run phrase/track verifier: `npm run verify:layer-alignment` — verifies phrase start/duration consistency across layers and writes `output/layerAlignment-report.json` and `output/layerAlignment-corrections.json`.
+
+Key points:
+- Tests should exercise the *real generator* (play) often; use `PLAY_LIMIT` + seed for fast, deterministic CI runs.
+- Acceptance criteria (CI-level): `output/units.json` exists and non-empty; `npm run verify:unit-tree` returns Errors=0; `npm run verify:layer-alignment` reports no phrase mismatches and trackDelta within tolerance.
+- Use `scripts/triage/*` and `scripts/test/analyzeAudit.js` for focused diagnostics; `analyze-audit` has been deprecated in favor of targeted triage scripts.
+- Common failures and quick triage:
+  - "Event after last unit": check outro/unitRec emission in `grandFinale` (writer), ensure last unit/outro marker covers trailing events.
+  - Missing `units.json` or `unitMasterMap.json`: ensure `play` completed successfully and `masterMap.finalize()` ran; try deterministic `node src/play.js` with `PLAY_LIMIT=1`.
+
+Example CI snippet (fast):
+
+```bash
+# set play to run deterministically for CI
+cross-env PLAY_LIMIT=1 npm run play:raw && npm run verify:unit-tree && npm run verify:layer-alignment
+```
 
 ---
 

@@ -1,7 +1,7 @@
 // Simple node script to reproduce setUnitTiming behavior outside vitest
 const { createTestContext } = require('../test/helpers.module.js');
-const { setUnitTiming } = require('../dist/time.js');
-const { initTimingTree } = require('../dist/TimingTree.js');
+const { setUnitTiming } = require('../srctime.js');
+const { initTimingTree } = require('../srcTimingTree.js');
 
 function run() {
   const ctx = createTestContext();
