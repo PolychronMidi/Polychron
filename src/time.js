@@ -561,20 +561,31 @@ setUnitTiming = (unitType) => {
     let startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
     let endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
 
+    // Compute effective totals here to avoid carrying stale/default totals into the first child unit of a new parent
+    const effectiveSectionTotal = Number.isFinite(Number(totalSections)) ? Number(totalSections) : 1;
+    const effectivePhrasesPerSection = Number.isFinite(Number(phrasesPerSection)) ? Number(phrasesPerSection) : 1;
+    const effectiveMeasuresPerPhrase = Number.isFinite(Number(measuresPerPhrase)) ? Number(measuresPerPhrase) : 1;
+    const effectiveBeatTotal = Number.isFinite(Number(numerator)) ? Number(numerator) : 1;
+    const effectiveDivsPerBeat = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : (composer && typeof composer.getDivisions === 'function' ? m.max(1, composer.getDivisions()) : 1);
+    const effectiveSubdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : (composer && typeof composer.getSubdivisions === 'function' ? m.max(1, composer.getSubdivisions()) : 1);
+    const effectiveSubsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : (composer && typeof composer.getSubsubdivs === 'function' ? m.max(1, composer.getSubsubdivs()) : 1);
 
     const unitRec = {
       layer: layerName,
       unitType,
       sectionIndex: sec,
+      sectionTotal: effectiveSectionTotal,
       phraseIndex: phr,
+      phraseTotal: effectivePhrasesPerSection,
       measureIndex: mea,
+      measureTotal: effectiveMeasuresPerPhrase,
       beatIndex: bIdx,
-      beatTotal,
+      beatTotal: effectiveBeatTotal,
       divIndex: divIdx,
       subdivIndex: subdivIdx,
-      subdivTotal,
+      subdivTotal: effectiveSubdivTotal,
       subsubIndex: subsubIdx,
-      subsubTotal,
+      subsubTotal: effectiveSubsubTotal,
       startTick: Math.round(unitStart),
       endTick: Math.round(unitEnd),
       // Persist seconds-based start/end time when tpSec available (null otherwise)
@@ -597,16 +608,19 @@ setUnitTiming = (unitType) => {
     // Use sanitized (clamped) lower-level indices when those levels are not yet set to avoid using stale values
     const parts = [];
     parts.push(layerName);
-    parts.push(`section${sec + 1}`);
-    parts.push(`phrase${phr + 1}`);
-    parts.push(`measure${mea + 1}`);
+    parts.push(`section${sec + 1}/${effectiveSectionTotal}`);
+    parts.push(`phrase${phr + 1}/${effectivePhrasesPerSection}`);
+    parts.push(`measure${mea + 1}/${effectiveMeasuresPerPhrase}`);
     // Sanitize indices: clamp to valid ranges so we never emit index > total
-    const s_bIdx = Number.isFinite(bIdx) ? Math.max(0, Math.min(bIdx, Math.max(0, Number(beatTotal) - 1))) : 0;
-    const s_subdivIdx = Number.isFinite(subdivIdx) ? Math.max(0, Math.min(subdivIdx, Math.max(0, Number(subdivTotal) - 1))) : 0;
-    const s_subsubIdx = Number.isFinite(subsubIdx) ? Math.max(0, Math.min(subsubIdx, Math.max(0, Number(subsubTotal) - 1))) : 0;
-    parts.push(`beat${(s_bIdx + 1)}/${beatTotal}`);
-    parts.push(`subdivision${(s_subdivIdx + 1)}/${subdivTotal}`);
-    parts.push(`subsubdivision${(s_subsubIdx + 1)}/${subsubTotal}`);
+    const s_bIdx = Number.isFinite(bIdx) ? Math.max(0, Math.min(bIdx, Math.max(0, Number(effectiveBeatTotal) - 1))) : 0;
+    const s_subdivIdx = Number.isFinite(subdivIdx) ? Math.max(0, Math.min(subdivIdx, Math.max(0, Number(effectiveSubdivTotal) - 1))) : 0;
+    const s_subsubIdx = Number.isFinite(subsubIdx) ? Math.max(0, Math.min(subsubIdx, Math.max(0, Number(effectiveSubsubTotal) - 1))) : 0;
+    parts.push(`beat${(s_bIdx + 1)}/${effectiveBeatTotal}`);
+    // Include division in canonical key to remove ambiguity across varying subdivision totals per division
+    const s_divIdx = Number.isFinite(divIdx) ? Math.max(0, Math.min(divIdx, Math.max(0, Number(effectiveDivsPerBeat) - 1))) : 0;
+    parts.push(`division${(s_divIdx + 1)}/${effectiveDivsPerBeat}`);
+    parts.push(`subdivision${(s_subdivIdx + 1)}/${effectiveSubdivTotal}`);
+    parts.push(`subsubdivision${(s_subsubIdx + 1)}/${effectiveSubsubTotal}`);
     const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
     // Prefer marker-derived seconds when available for this unit (search down from most-specific parts to less-specific)
     const getCsvForLayer = (layerName) => {

@@ -407,17 +407,18 @@ ra=randomInRangeOrArray = (v) => {
 resetIndexWithChildren = (unit) => {
   switch (unit) {
     case 'section':
-      phraseIndex = measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; break;
+      phraseIndex = measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; phrasesPerSection = undefined; measuresPerPhrase = undefined; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
     case 'phrase':
-      measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; break;
+      measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; measuresPerPhrase = undefined; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
     case 'measure':
-      beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; break;
+      beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
     case 'beat':
-      divIndex = subdivIndex = subsubdivIndex = 0; break;
+      // Reset indices and clear derived totals so children recompute values on entry
+      divIndex = subdivIndex = subsubdivIndex = 0; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
     case 'division':
-      subdivIndex = subsubdivIndex = 0; break;
+      subdivIndex = subsubdivIndex = 0; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
     case 'subdivision':
-      subsubdivIndex = 0; break;
+      subsubdivIndex = 0; subsubdivsPerSub = undefined; break;
     case 'subsubdivision':
       subsubdivIndex = 0; break;
     default:
