@@ -14,6 +14,8 @@
     "cross-env": "^7.0.3"
   },
   "scripts": {
+    "lingt": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
     "test": "node scripts/run-with-log.js test-full.log npm run all",
     "test:raw": "vitest --run --reporter=default",
     "test:watch": "vitest",

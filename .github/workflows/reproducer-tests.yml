@@ -1,0 +1,42 @@
+name: Reproducer Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  reproducers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run getSubdivFlip reproducer
+        env:
+          INDEX_TRACES: '1'
+          INDEX_TRACES_ASSERT: '1'
+          PLAY_LIMIT: '1'
+        run: node scripts/run-getSubdivFlip.js
+      - name: Run getDivFlip reproducer
+        env:
+          INDEX_TRACES: '1'
+          INDEX_TRACES_ASSERT: '1'
+          PLAY_LIMIT: '1'
+        run: node scripts/run-getDivFlip.js
+      - name: Run getSubsubFlip reproducer
+        env:
+          INDEX_TRACES: '1'
+          INDEX_TRACES_ASSERT: '1'
+          PLAY_LIMIT: '1'
+        run: node scripts/run-getSubsubFlip.js
+      - name: Upload output artifacts (for diagnostics)
+        uses: actions/upload-artifact@v4
+        with:
+          name: reproducible-output
+          path: output

@@ -60,8 +60,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             const _fs = require('fs'); const _path = require('path');
             const trace = {
               when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
-              composerDivisions: (composer && typeof composer.getDivisions === 'function') ? composer.getDivisions() : null,
-              composerSubdivisions: (composer && typeof composer.getSubdivisions === 'function') ? composer.getSubdivisions() : null
+              // Avoid calling composer getters here to prevent flip/flop between calls; use clamped values from time.js instead
+              composerDivisions: null,
+              composerSubdivisions: null
             };
             _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
           } catch (_e) {}
@@ -120,8 +121,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             const _fs = require('fs'); const _path = require('path');
             const trace = {
               when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
-              composerDivisions: (composer && typeof composer.getDivisions === 'function') ? composer.getDivisions() : null,
-              composerSubdivisions: (composer && typeof composer.getSubdivisions === 'function') ? composer.getSubdivisions() : null
+              // Avoid calling composer getters here to prevent flip/flop between calls; use clamped values from time.js instead
+              composerDivisions: null,
+              composerSubdivisions: null
             };
             _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
           } catch (_e) {}

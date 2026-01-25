@@ -442,6 +442,8 @@ setUnitTiming = (unitType) => {
       divsPerBeat = composer ? composer.getDivisions() : 1;
       divsPerBeat = m.max(1, Number(divsPerBeat) || 1);
       divsPerBeat = m.min(divsPerBeat, 8);
+      // Reset child indices to avoid carry-over from previous beat/division
+      divIndex = 0; subdivIndex = 0; subsubdivIndex = 0;
       divRhythm = setRhythm('div');
       break;
 
@@ -455,6 +457,8 @@ setUnitTiming = (unitType) => {
       // Safety cap for subdivisions per division
       subdivsPerDiv = m.min(subdivsPerDiv, 8);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
+      // Reset child indices at division entry to avoid carry over from previous division
+      subdivIndex = 0; subsubdivIndex = 0;
       if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`division: divsPerBeat=${divsPerBeat} subdivsPerDiv=${subdivsPerDiv} subdivFreq=${subdivFreq}`);
       // Temporary trace for reproducer: capture composer and globals on division entry
       try {
@@ -749,6 +753,13 @@ setUnitTiming = (unitType) => {
             };
 
             _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitIndex-anomalies-rich.ndjson'), JSON.stringify(rich) + '\n');
+            // If the ASSERT gate is enabled, write a fatal diagnostic and throw so tests fail fast (helps CI detect regressions)
+            try {
+              if (process.env.INDEX_TRACES_ASSERT) {
+                try { const _fs2 = require('fs'); const _path2 = require('path'); _fs2.appendFileSync(_path2.join(process.cwd(), 'output', 'unitIndex-anomalies-fatal.ndjson'), JSON.stringify(Object.assign({ note: 'INDEX_TRACES_ASSERT' }, rich)) + '\n'); } catch (_e2) {}
+                throw new Error('unit index anomaly (INDEX_TRACES_ASSERT) - ' + JSON.stringify(anomalies));
+              }
+            } catch (_e) {}
           } catch (_e) {}
 
         } catch (_e) {}
