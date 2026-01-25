@@ -123,7 +123,11 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 
 ### Testing Philosophy
 
-**[See [docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This approach creates a safe sandbox for experimental music composition, enabling rapid iteration with confidence. All 628 tests validate actual function behavior across 12 test files, supporting the project's mission to explore novel algorithmic composition techniques.
+**[See docs/test.md](docs/test.md) for comprehensive testing documentation.** Polychron uses real implementations throughout its test suite—no mocks duplicating logic. This creates a safe sandbox for experimental music composition and enables rapid iteration with confidence.
+
+Tests are organized at two levels:
+- **Functional Tests (Vitest — `/test`)**: module- and integration-level checks that import and exercise real functions for fast developer feedback.
+- **Engine Verification / Audit Suite (`/scripts/test`)**: system-level verification that runs the real play engine to generate outputs (CSV, unit maps) and validates global invariants. Use `npm run verify:unit-tree` and `npm run verify:layer-alignment` (or `npm run verify:fast` for deterministic CI runs with `PLAY_LIMIT=1`) for CI gating. `analyze-audit` is deprecated — prefer focused triage tools under `scripts/triage/` for diagnostics.
 
 ## Technical Innovations
 

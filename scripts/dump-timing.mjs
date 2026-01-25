@@ -1,4 +1,4 @@
-import { initializePlayEngine } from '../dist/play.js';
+import { initializePlayEngine } from '../srcplay.js';
 
 (async () => {
   const ctx = await initializePlayEngine(undefined, undefined, { seed: 12345 });

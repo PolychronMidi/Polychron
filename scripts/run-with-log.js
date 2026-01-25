@@ -3,11 +3,11 @@
  * Usage: node scripts/run-with-log.js <logFile> <command> [args...]
  * @module scripts/run-with-log
  */
-import { spawn } from 'child_process';
-import { createWriteStream } from 'fs';
-import { mkdir } from 'fs/promises';
-import stripAnsi from './utils/stripAnsi.js';
-import path from 'path';
+const { spawn } = require('child_process');
+const { createWriteStream } = require('fs');
+const { mkdir } = require('fs/promises');
+const stripAnsi = require('./utils/stripAnsi');
+const path = require('path');
 
 const cwd = process.cwd();
 const [, , logFile, ...command] = process.argv;
@@ -19,7 +19,8 @@ if (!logFile || command.length === 0) {
   console.log(`Logging output to log/${logFile}`);
 }
 
-await mkdir('log', { recursive: true });
+// Ensure log directory exists (async-safe)
+mkdir('log', { recursive: true }).catch(() => {});
 
 const logStream = createWriteStream(`log/${logFile}`);
 const proc = spawn(command[0], command.slice(1), { shell: true, stdio: 'pipe' });

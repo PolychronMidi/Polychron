@@ -23,15 +23,18 @@ This document describes the current unit-tree audit framework and a roadmap to e
 ---
 
 ## How to use (quick commands) 🧭
-- Regenerate outputs: `npm run play` (produces `output/*.csv` and `output/units.json`)
-- Run unit-tree audit (strict mode): `npm run unit-audit`
-- Run phrase/track verifier: `npm run layer-alignment` (verification-only; writes diagnostics but does not modify CSVs)
-- Summarize audit: `node scripts/analyzeAudit.js`
+- Regenerate outputs (preferred): run the real composition engine so tests validate actual generated outputs (CSV + unit maps):
+  - If you have a build: `npm run play` (runs `dist/play.js` and generates `output/*.csv` and `output/*map.json`).
+  - For fast local runs or when a build isn't available: run the source engine directly: `PLAY_LIMIT=1 node src/play.js` (fast, deterministic when used with seeded RNG); on Windows use `cross-env PLAY_LIMIT=1 node src/play.js` in CI.
+- Run unit-tree audit: `npm run unit-audit` (uses `scripts/test/unitTreeAudit.js`; validates event → unit mapping and reports gaps/overlaps). Use `--strict` or set `UNIT_AUDIT_STRICT=1` for harder failures in CI.
+- Run phrase/track verifier: `npm run layer-alignment` (verification-only; writes diagnostics to `output/` but does not mutate CSVs).
+- Summarize/triage: `analyze-audit` is **deprecated**; use the targeted triage utilities in `scripts/triage/` or `node scripts/test/analyzeAudit.js` for specific summarizers/diagnostics.
 
 Acceptance criteria (basic):
-- `output/units.json` non-empty
-- `npm run unit-audit` returns **Errors=0** (non-strict)
-- `npm run layer-alignment` returns no phrase/marker mismatches on the CI fixture (verification-only)
+- `output/units.json` exists and contains at least one canonical unit per active layer.
+- `npm run unit-audit` returns Errors=0 (non-strict) and writes `output/unitTreeAudit-report.json`.
+- `npm run layer-alignment` returns no phrase mismatches and trackDelta within the configured tolerance (see `--track-tolerance`).
+- Regression: `npm run test` passes locally and `npm run onboard` completes cleanly before opening PRs or requesting broader review.
 
 ---
 
@@ -40,6 +43,9 @@ Acceptance criteria (basic):
 - Temporary development DBG log removed from `src/time.js`. ✅
 - Deterministic integration test for marker-preference added (`test/time.markerPreference.integration.test.js`) and passing locally. ✅
 - CI workflow file added for marker-preference checks (`.github/workflows/marker-preference.yml`). ✅
+- Onboarding & test infra: `scripts/onboard.js` converted to CommonJS so `npm run onboard` runs without syntax errors and prints checklist. `scripts/run-with-log.js` and `scripts/utils/stripAnsi.js` were converted to CommonJS to align test tooling; consider an explicit migration to ESM if you prefer ESM project-wide. ✅
+- Added `test:ci` helper script for a concise play→audit→alignment CI run (fast fixture mode via `PLAY_LIMIT` recommended). ✅
+- NOTE: `analyze-audit` is now considered deprecated; prefer `scripts/triage/*` tools for diagnostics and focused summarizers. ⚠️
 
 ---
 
@@ -73,12 +79,14 @@ Notes on matching logic:
 
 ## Tests to add (short list) ✅
 - Unit test for `unitId` canonical format (regex + presence of `|start-end|startSec-endSec`).
-- Integration test: run composition on a deterministic fixture -> assert `npm run unit-audit` returns Errors=0 non-strict and Warnings reasonable in strict mode.
-- Phrase alignment unit tests: synthetic fixtures where we intentionally offset a layer phrase start and verify `phraseAlignmentAudit` reports it.
+- Integration tests should exercise the *real* play engine in a deterministic fast mode (not static CSV fixtures): add a deterministic "play fixture" runner that sets `PLAY_LIMIT=1` and a seeded RNG to produce stable `output/*` artifacts quickly for CI, then assert `npm run unit-audit` returns Errors=0 and `npm run layer-alignment` passes.
+- Phrase alignment unit tests: use the play-fixture to create controlled cases where a layer is offset, and verify `layerAlignment` reports mismatches (use `--tolerance` flags to test thresholds).
+- Tests to add around auditor behavior: gap/overlap detection, canonicalization conflicts (`unitTreeAudit-canonicalization.json`), and `unitRec` aggregation consistency.
 
 Example test commands:
 - `npm test` (extend existing test suite)
-- `node scripts/phraseAlignmentAudit.js --tolerance 0.02 --strict` (for CI)
+- Quick CI: `cross-env PLAY_LIMIT=1 npm run play:raw && npm run unit-audit && npm run layer-alignment` (or `npm run test:ci` if available)
+- For focused verification: `node scripts/test/layerAlignment.js --tolerance 0.02 --strict` (for CI)
 
 ---
 

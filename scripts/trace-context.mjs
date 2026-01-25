@@ -3,9 +3,9 @@ process.env.NODE_ENV = 'test';
 globalThis.__POLYCHRON_PREVENT_AUTO_START = true;
 
 (async () => {
-  const mod = await import('../dist/play.js');
+  const mod = await import('../srcplay.js');
   const { initializePlayEngine } = mod;
-  const { getPolychronContext } = await import('../dist/PolychronInit.js');
+  const { getPolychronContext } = await import('../srcPolychronInit.js');
   const poly = getPolychronContext();
   poly.test = poly.test || {};
   // Keep run short and deterministic

@@ -1,6 +1,6 @@
 import { createTestContext } from '../test/helpers.module.js';
-import { setUnitTiming } from '../dist/time.js';
-import { initTimingTree } from '../dist/TimingTree.js';
+import { setUnitTiming } from '../srctime.js';
+import { initTimingTree } from '../srcTimingTree.js';
 
 function run() {
   const ctx = createTestContext();
