@@ -482,6 +482,35 @@ setUnitTiming = (unitType) => {
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
       setMidiTiming();
       beatRhythm = setRhythm('beat');
+
+      // Pre-populate beat & division caches for this measure to avoid read-before-write races
+      try {
+        const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
+        const cache = (LM.layers[layer] && LM.layers[layer].state) ? (LM.layers[layer].state._composerCache = LM.layers[layer].state._composerCache || {}) : null;
+        if (cache && composer) {
+          // Populate beats for entire measure to ensure beat cache exists before 'beat' entries
+          for (let bi = 0; bi < numerator; bi++) {
+            const beatKey = `beat:${measureIndex}:${bi}`;
+            if (!cache[beatKey]) {
+              if (typeof composer.getDivisions === 'function') {
+                cache[beatKey] = { divisions: m.max(1, Number(composer.getDivisions())) };
+                try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey], note: 'prepopulate:measure' }) + '\n'); } catch (_e) {}
+              }
+            }
+            // Now prepopulate divisions for that beat
+            const divCount = cache[beatKey] && Number.isFinite(Number(cache[beatKey].divisions)) ? cache[beatKey].divisions : 1;
+            for (let di = 0; di < divCount; di++) {
+              const divKey = `div:${measureIndex}:${bi}:${di}`;
+              if (!cache[divKey]) {
+                if (typeof composer.getSubdivisions === 'function') {
+                  cache[divKey] = { subdivisions: m.max(1, Number(composer.getSubdivisions())) };
+                  try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey], note: 'prepopulate:measure' }) + '\n'); } catch (_e) {}
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
       break;
 
     case 'beat':
@@ -708,8 +737,8 @@ setUnitTiming = (unitType) => {
         try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _beatKey, value: composerDivisionsCached }) + '\n'); } catch (_e) {}
       } else {
         try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _beatKey }) + '\n'); } catch (_e) {}
-        warnOnce(`missing:divisions:${_beatKey}`, `composer divisions missing for ${_beatKey}; using 1 as fallback`);
-        composerDivisionsCached = 1;
+        // Fail fast on missing high-level beat divisions: write rich diagnostics and throw
+        raiseCritical('missing:divisions', `composer divisions missing for ${_beatKey}; cannot proceed`, { layer, beatKey, measureIndex, beatIndex, unitType });
       }
     }
 
@@ -722,8 +751,8 @@ setUnitTiming = (unitType) => {
         try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _divKey, value: composerSubdivisionsCached }) + '\n'); } catch (_e) {}
       } else {
         try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _divKey }) + '\n'); } catch (_e) {}
-        warnOnce(`missing:subdivisions:${_divKey}`, `composer subdivisions missing for ${_divKey}; using 1 as fallback`);
-        composerSubdivisionsCached = 1;
+        // Fail fast on missing high-level division subdivisions: write rich diagnostics and throw
+        raiseCritical('missing:subdivisions', `composer subdivisions missing for ${_divKey}; cannot proceed`, { layer, divKey, measureIndex, beatIndex, divIndex, unitType });
       }
     }
 
