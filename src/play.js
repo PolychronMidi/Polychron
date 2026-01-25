@@ -11,6 +11,27 @@ if (!composers || composers.length === 0) {
   composers = COMPOSERS.map((config) => ComposerFactory.create(config));
 }
 
+// Validate composers immediately and fail fast if any required getter is missing
+(function validateComposers() {
+  try {
+    const fs = require('fs'); const path = require('path');
+    const out = path.join(process.cwd(), 'output', 'composer-validation.ndjson');
+    for (let i = 0; i < composers.length; i++) {
+      const c = composers[i];
+      const missing = [];
+      if (!c || typeof c.getDivisions !== 'function') missing.push('getDivisions');
+      if (!c || typeof c.getSubdivisions !== 'function') missing.push('getSubdivisions');
+      if (!c || typeof c.getSubsubdivs !== 'function') missing.push('getSubsubdivs');
+      if (!c || typeof c.getMeter !== 'function') missing.push('getMeter');
+      if (missing.length) {
+        const payload = { when: new Date().toISOString(), index: i, missing, config: COMPOSERS[i] };
+        try { fs.appendFileSync(out, JSON.stringify(payload) + '\n'); } catch (e) {}
+        throw new Error(`Composer[${i}] missing required getters: ${missing.join(', ')}`);
+      }
+    }
+  } catch (e) { console.error('Composer validation failed:', e && e.stack ? e.stack : e); throw e; }
+})();
+
 const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => stage.setTuningAndInstruments());
 const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => stage.setTuningAndInstruments());
 
@@ -32,6 +53,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
     composer = ra(composers);
+    // Defensive check: ensure selected composer has required getters; fail fast with diagnostics if not
+    if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivisions !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
+      try {
+        const _fs = require('fs'); const _path = require('path');
+        const payload = { when: new Date().toISOString(), phase: 'select-composer', composerType: (composer && composer.constructor && composer.constructor.name) ? composer.constructor.name : typeof composer, hasGetDivisions: composer && typeof composer.getDivisions === 'function', hasGetSubdivisions: composer && typeof composer.getSubdivisions === 'function', hasGetSubsubdivs: composer && typeof composer.getSubsubdivs === 'function', hasGetMeter: composer && typeof composer.getMeter === 'function', composersSnapshot: (Array.isArray(composers) ? composers.map(c => (c && c.constructor && c.constructor.name) ? c.constructor.name : (typeof c)) : null), stack: (new Error()).stack };
+        _fs.appendFileSync(_path.join(process.cwd(), 'output', 'composer-selection-errors.ndjson'), JSON.stringify(payload) + '\n');
+      } catch (e) {}
+      throw new Error('composer selection invalid: missing getters');
+    }
     [numerator, denominator] = composer.getMeter();
     getMidiTiming();
     getPolyrhythm();
@@ -58,11 +88,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           // Trace pre-division state (temporary debug)
           try {
             const _fs = require('fs'); const _path = require('path');
+            const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
+            const cache = (LM.layers[layer] && LM.layers[layer].state) ? LM.layers[layer].state._composerCache : null;
+            const _beatKey = `beat:${measureIndex}:${beatIndex}`;
+            const _divKey = `div:${measureIndex}:${beatIndex}:${divIndex}`;
             const trace = {
               when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
-              // Avoid calling composer getters here to prevent flip/flop between calls; use clamped values from time.js instead
-              composerDivisions: null,
-              composerSubdivisions: null
+              // Avoid calling composer getters here to prevent flip/flop between calls; instead peek at any existing cache entries
+              composerDivisions: cache && cache[_beatKey] ? cache[_beatKey].divisions : null,
+              composerSubdivisions: cache && cache[_divKey] ? cache[_divKey].subdivisions : null,
+              composerCachePeek: cache ? { beat: !!(cache && cache[_beatKey]), div: !!(cache && cache[_divKey]) } : null
             };
             _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
           } catch (_e) {}

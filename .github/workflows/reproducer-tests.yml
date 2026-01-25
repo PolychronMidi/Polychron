@@ -35,6 +35,12 @@ jobs:
           INDEX_TRACES_ASSERT: '1'
           PLAY_LIMIT: '1'
         run: node scripts/run-getSubsubFlip.js
+      - name: Run short deterministic play for Treewalker
+        env:
+          PLAY_LIMIT: '1'
+        run: node src/play.js
+      - name: Run Treewalker (master map authoritative)
+        run: node scripts/test/treewalker.js
       - name: Upload output artifacts (for diagnostics)
         uses: actions/upload-artifact@v4
         with:

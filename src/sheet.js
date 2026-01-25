@@ -57,13 +57,13 @@ DIVISIONS={
   weights: [1,15,20,25,20,10,10,7,2,2,1]
 };
 SUBDIVISIONS={
-  min: 0,
+  min: 1,
   max: 10,
   weights: [5,10,20,15,20,10,20,4,2,1]
 };
 SUBSUBDIVS={
-  min: 0,
-  max: 5,
+  min: 1,
+  max: 7,
   weights: [5,20,30,20,10,5]
 };
 COMPOSERS=[
@@ -79,12 +79,12 @@ COMPOSERS=[
   { type: 'pentatonic', root: 'random', scaleType: 'random' },
   { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
   { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 },
-  // Melodic Development Composers (Phase 2.3)
-  { type: 'melodicDevelopment', name: 'major', root: 'C', developmentIntensity: 0.6 },
-  { type: 'melodicDevelopment', name: 'major', root: 'C', developmentIntensity: 0.4 },
-  { type: 'melodicDevelopment', name: 'random', root: 'random', developmentIntensity: 0.5 },
-  { type: 'melodicDevelopment', name: 'random', root: 'random', developmentIntensity: 0.7 },
-  // Advanced Voice Leading Composers (Phase 2.4)
+  // Melodic Development Composers
+  { type: 'melodicDevelopment', name: 'major', root: 'C', intensity: 0.6 },
+  { type: 'melodicDevelopment', name: 'major', root: 'C', intensity: 0.4 },
+  { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.5 },
+  { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.7 },
+  // Advanced Voice Leading Composers
   { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 },
   { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.5 },
   { type: 'advancedVoiceLeading', name: 'random', root: 'random', commonToneWeight: 0.6 },
