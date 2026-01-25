@@ -3,6 +3,7 @@
 
 require('./stage');
 require('./structure');
+const { writeIndexTrace, isEnabled } = require('./logGate');
 
 const BASE_BPM=BPM;
 
@@ -87,7 +88,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           // Trace pre-division state (temporary debug)
           try {
-            const _fs = require('fs'); const _path = require('path');
             const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
             const cache = (LM.layers[layer] && LM.layers[layer].state) ? LM.layers[layer].state._composerCache : null;
             const _beatKey = `beat:${measureIndex}:${beatIndex}`;
@@ -99,8 +99,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
               composerSubdivisions: cache && cache[_divKey] ? cache[_divKey].subdivisions : null,
               composerCachePeek: cache ? { beat: !!(cache && cache[_beatKey]), div: !!(cache && cache[_divKey]) } : null
             };
-            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
-          } catch (_e) {}
+            writeIndexTrace(trace); } catch (_e) {}
 
           setUnitTiming('division');
 
@@ -120,9 +119,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
           // Trace post-subdivision summary (temporary debug)
           try {
-            const _fs = require('fs'); const _path = require('path');
             const after = { when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
-            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(after) + '\n');
+            writeIndexTrace(after);
           } catch (_e) {}
         }
         // Reset division children when this was the last division in the beat
@@ -153,15 +151,13 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           // Trace pre-division state (temporary debug)
           try {
-            const _fs = require('fs'); const _path = require('path');
             const trace = {
               when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
               // Avoid calling composer getters here to prevent flip/flop between calls; use clamped values from time.js instead
               composerDivisions: null,
               composerSubdivisions: null
             };
-            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
-          } catch (_e) {}
+            writeIndexTrace(trace); } catch (_e) {}
 
           setUnitTiming('division');
 
@@ -181,9 +177,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
           // Trace post-subdivision summary (temporary debug)
           try {
-            const _fs = require('fs'); const _path = require('path');
             const after = { when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
-            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(after) + '\n');
+            writeIndexTrace(after);
           } catch (_e) {}
         }
         if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
