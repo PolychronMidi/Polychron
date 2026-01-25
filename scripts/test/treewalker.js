@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 // Simple CSV treewalker & validator for Polychron outputs
 // Validations performed:
@@ -12,16 +12,62 @@ import path from 'path';
 const OUT_DIR = path.resolve(process.cwd(), 'output');
 const UNITS_PATH = path.join(OUT_DIR, 'units.json');
 
+// Whether we loaded units from the master map fallback (affects validation strictness)
+let usedMaster = false;
+
 function readUnits() {
-  if (!fs.existsSync(UNITS_PATH)) return [];
-  try {
-    const txt = fs.readFileSync(UNITS_PATH, 'utf8');
-    const manifest = JSON.parse(txt);
-    return manifest.units || [];
-  } catch (e) {
-    console.error('Failed to read units manifest:', e && e.message);
+  // Prefer unitMasterMap.json as the authoritative source of canonical unit ranges.
+  // If absent, fall back to units.json for legacy or fixture support.
+  const masterPath = path.join(OUT_DIR, 'unitMasterMap.json');
+  let units = [];
+  if (fs.existsSync(masterPath)) {
+    usedMaster = true;
+    try {
+      const mt = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+      const masterUnits = (mt && Array.isArray(mt.units)) ? mt.units : [];
+      for (const mu of masterUnits) {
+        const key = mu.key;
+        // Infer unitType from the last segment of the key
+        const segs = String(key).split('|');
+        let unitType = '__unknown__';
+        for (let i = segs.length - 1; i >= 0; i--) {
+          const s = segs[i];
+          if (/^subsubdivision\d+\/.+/.test(s) || /^subsubdivision\d+\/\d+/.test(s)) { unitType = 'subsubdivision'; break; }
+          if (/^subdivision\d+\/.+/.test(s) || /^subdivision\d+\/\d+/.test(s)) { unitType = 'subdivision'; break; }
+          if (/^division\d+\/.+/.test(s) || /^division\d+\/\d+/.test(s)) { unitType = 'division'; break; }
+          if (/^beat\d+\/.+/.test(s) || /^beat\d+\/\d+/.test(s)) { unitType = 'beat'; break; }
+          if (/^measure\d+\/.+/.test(s) || /^measure\d+\/\d+/.test(s)) { unitType = 'measure'; break; }
+          if (/^phrase\d+\/.+/.test(s) || /^phrase\d+\/\d+/.test(s)) { unitType = 'phrase'; break; }
+          if (/^section\d+\/.+/.test(s) || /^section\d+\/\d+/.test(s)) { unitType = 'section'; break; }
+        }
+        // Infer sectionIndex where possible
+        let sectionIndex = undefined;
+        const sec = segs.find(s => /^section\d+\/.+/.test(s) || /^section\d+\/\d+/.test(s));
+        if (sec) {
+          const m = String(sec).match(/section(\d+)\/.+/);
+          if (m) sectionIndex = Number(m[1]) - 1;
+        }
+        units.push({ unitHash: key, layer: mu.layer || 'primary', startTick: mu.startTick, endTick: mu.endTick, unitType, sectionIndex });
+      }
+    } catch (e) {
+      console.error('Failed to read unitMasterMap.json:', e && e.message);
+      process.exit(2);
+    }
+  } else if (fs.existsSync(UNITS_PATH)) {
+    try {
+      const txt = fs.readFileSync(UNITS_PATH, 'utf8');
+      const manifest = JSON.parse(txt);
+      units = manifest.units || [];
+    } catch (e) {
+      console.error('Failed to read units manifest:', e && e.message);
+      process.exit(2);
+    }
+  } else {
+    console.error('No unitMasterMap.json or units.json found; run `play` first to generate outputs.');
     process.exit(2);
   }
+
+  return units;
 }
 
 function listCsvFiles() {
@@ -82,6 +128,28 @@ function groupUnitsByLayer(units) {
     byLayer[k].sort((a,b) => (a.startTick || 0) - (b.startTick || 0));
   }
   return byLayer;
+}
+
+// Produce a concise summary of overlap errors for triage.
+// Parses overlap error messages produced by validateOverlap and groups them by parent unit (up to beat-level).
+function summarizeOverlapErrors(errs, topN = 20) {
+  const overlaps = [];
+  const byParent = new Map();
+  // match strings like: "Overlap in layer primary section 0 unitType subsubdivision: unit <A> [s1,e1) overlaps <B> [s2,e2)"
+  const r = /^Overlap in layer (\S+) section (\S+) unitType (\S+): unit (.+?) \[(\d+),(\d+)[\)\]] overlaps (.+?) \[(\d+),(\d+)[\)\]]/;
+  for (const s of errs) {
+    const m = String(s).match(r);
+    if (!m) continue;
+    const [, layer, section, unitType, a, aS, aE, b, bS, bE] = m;
+    const parent = String(a).split('|').slice(0,5).join('|');
+    const obj = { layer, section, unitType, unitA: a, unitB: b, aStart: Number(aS), aEnd: Number(aE), bStart: Number(bS), bEnd: Number(bE), parent };
+    overlaps.push(obj);
+    const arr = byParent.get(parent) || [];
+    arr.push(obj);
+    byParent.set(parent, arr);
+  }
+  const parents = Array.from(byParent.entries()).map(([parent, arr]) => ({ parent, count: arr.length, examples: arr.slice(0, Math.min(arr.length, 5)) })).sort((x,y) => y.count - x.count);
+  return { total: overlaps.length, topParents: parents.slice(0, topN).map(p => ({ parent: p.parent, count: p.count, example: p.examples[0] })), examples: overlaps.slice(0, topN) };
 }
 
 function validateOverlap(units) {
@@ -171,7 +239,48 @@ function main() {
   // Check overlaps per layer
   for (const layer of Object.keys(byLayerUnits)) {
     const errs = validateOverlap(byLayerUnits[layer]);
+    // Overlaps are always errors — canonical master map units must not overlap.
     report.errors.push(...errs);
+  }
+
+  // If overlaps present, summarize and write a top-N summary to output for triage
+  const overlapErrs = report.errors.filter(e => String(e).startsWith('Overlap in layer'));
+  if (overlapErrs.length) {
+    const summary = summarizeOverlapErrors(overlapErrs, 20);
+    const overlapPath = path.join(process.cwd(), 'output', 'treewalker-overlap-summary.json');
+    try { fs.writeFileSync(overlapPath, JSON.stringify(summary, null, 2)); } catch (e) {}
+
+    // Also create a compact HTML report to make triage quick and visual
+    try {
+      const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const html = [];
+      html.push('<!doctype html>');
+      html.push('<html><head><meta charset="utf-8"><title>Treewalker Overlap Report</title>');
+      html.push('<style>body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f3f3f3}code{background:#f9f9f9;padding:2px 4px;border-radius:4px}</style>');
+      html.push('</head><body>');
+      html.push(`<h1>Treewalker Overlap Report</h1>`);
+      html.push(`<p>Total overlaps: <strong>${summary.total}</strong></p>`);
+      html.push('<h2>Top Parents</h2>');
+      html.push('<table><thead><tr><th>Parent</th><th>Count</th><th>Example overlap</th></tr></thead><tbody>');
+      for (const p of summary.topParents) {
+        const ex = p.example || {};
+        html.push(`<tr><td><code>${esc(p.parent)}</code></td><td>${p.count}</td><td><code>${esc(ex.unitA)} [${ex.aStart},${ex.aEnd}) ↔ ${esc(ex.unitB)} [${ex.bStart},${ex.bEnd})</code></td></tr>`);
+      }
+      html.push('</tbody></table>');
+
+      html.push('<h2>Example Overlaps</h2><ol>');
+      for (const ex of summary.examples) {
+        html.push(`<li><code>${esc(ex.unitA)} [${ex.aStart},${ex.aEnd})</code> overlaps <code>${esc(ex.unitB)} [${ex.bStart},${ex.bEnd})</code> — parent: <code>${esc(ex.parent)}</code></li>`);
+      }
+      html.push('</ol>');
+      html.push('<p>Related: <a href="treewalker-report.json">treewalker-report.json</a> • <a href="unitMasterMap.json">unitMasterMap.json</a></p>');
+      html.push('</body></html>');
+      fs.writeFileSync(path.join(process.cwd(), 'output', 'treewalker-overlap-report.html'), html.join('\n'), 'utf8');
+    } catch (e) {
+      // Best effort: ignore HTML writing errors
+    }
+
+    report.overlapSummary = summary;
   }
 
   // Parse files and validate events
@@ -196,7 +305,8 @@ function main() {
           for (let i = tokens.length - 1; i >= 2 && !e.unitHash; i--) {
             const tok = tokens[i];
             if (!tok) continue;
-            const found = layerUnits.find(u => String(u.unitHash) === tok);
+            // Accept matches against either units.json unitHash or masterMap key
+            const found = layerUnits.find(u => String(u.unitHash) === tok || String(u.unitHash || u.key) === tok);
             if (found) {
               // Only accept trailing unitHash tokens that actually contain this event's tick (if tick defined),
               // to avoid assigning events to zero-length or unrelated units.
@@ -204,32 +314,28 @@ function main() {
                 const s = Number(found.startTick || 0);
                 const en = Number(found.endTick || 0);
                 if (Number.isFinite(s) && Number.isFinite(en)) {
-                  if (e.tickNum >= s && e.tickNum < en) {
+                  // Use inclusive end containment similar to unitTreeAudit: non-note_off events are allowed
+                  // on the unit end tick (<= en). Note-off events are allowed after end (handled later).
+                  if (e.tickNum >= s && e.tickNum <= en) {
                     e.unitHash = tok;
                   } else if (e.tickNum === en && s < en) {
-                    // If the event tick equals the unit's end tick, accept the explicit trailing
-                    // unitHash as a valid assignment when the unit has non-zero duration. This avoids
-                    // assigning events to zero-length units.
                     e.unitHash = tok;
                   } else {
-                    // If this candidate maps to a zero-length unit (or otherwise doesn't contain the event),
-                    // attempt to find an enclosing unit that does contain the tick and use that instead.
+                    // Try to find an enclosing unit that contains the tick using inclusive end
                     const enclosing = layerUnits.find(u => {
                       const us = Number(u.startTick || 0);
                       const ue = Number(u.endTick || 0);
-                      return Number.isFinite(us) && Number.isFinite(ue) && (e.tickNum >= us && e.tickNum < ue);
+                      return Number.isFinite(us) && Number.isFinite(ue) && (e.tickNum >= us && e.tickNum <= ue);
                     });
-                    if (enclosing) e.unitHash = enclosing.unitHash;
+                    if (enclosing) e.unitHash = enclosing.unitHash || enclosing.key;
                   }
                 } else {
-                  // If this candidate maps to a zero-length unit (or otherwise doesn't contain the event),
-                  // attempt to find an enclosing unit that does contain the tick and use that instead.
                   const enclosing = layerUnits.find(u => {
                     const us = Number(u.startTick || 0);
                     const ue = Number(u.endTick || 0);
-                    return Number.isFinite(us) && Number.isFinite(ue) && (e.tickNum >= us && e.tickNum < ue);
+                    return Number.isFinite(us) && Number.isFinite(ue) && (e.tickNum >= us && e.tickNum <= ue);
                   });
-                  if (enclosing) e.unitHash = enclosing.unitHash;
+                  if (enclosing) e.unitHash = enclosing.unitHash || enclosing.key;
                 }
               } else {
                 // If tick is not numeric, conservatively avoid assigning and let later logic handle backfill
@@ -245,7 +351,7 @@ function main() {
         assignedUnit = layerUnits.find(u => {
           const s = Number(u.startTick || 0);
           const en = Number(u.endTick || 0);
-          return Number.isFinite(s) && Number.isFinite(en) && (e.tickNum >= s && e.tickNum < en);
+          return Number.isFinite(s) && Number.isFinite(en) && (e.tickNum >= s && e.tickNum <= en);
         }) || null;
         if (assignedUnit) {
           report.warnings.push(`Backfilled missing unitHash for event at tick ${e.tickNum} in ${path.basename(file)} -> ${assignedUnit.unitHash}`);
@@ -273,13 +379,16 @@ function main() {
       }
       const start = Number(u.startTick || 0);
       const end = Number(u.endTick || 0);
-      if (!(t >= start && t < end)) {
-        // Allow a conservative, explicit exception when the event appears exactly at the unit's end tick
-        // and the event contained an explicit unitHash matching this unit (CSV author intent). This avoids
-        // false-positive errors for events placed exactly on unit boundaries when authors chose to attach
-        // them to the previous unit.
-        if (!(t === end && e.unitHash === unitHash && start < end)) {
-          report.errors.push(`Event tick ${t} for unit ${unitHash} in ${path.basename(file)} falls outside unit range [${start},${end})`);
+      const isOff = String(e.type || '').toLowerCase().includes('off');
+      if (isOff) {
+        // Allow note_off events to be at or after the unit end, but not before the unit start
+        if (!(t >= start)) {
+          report.errors.push(`note_off before unit start in ${path.basename(file)} line: ${e.rawLine}`);
+        }
+      } else {
+        // Non-off events must be within inclusive [start,end]
+        if (!(t >= start && t <= end)) {
+          report.errors.push(`Event tick ${t} for unit ${unitHash} in ${path.basename(file)} falls outside unit range [${start},${end}]`);
         }
       }
     }

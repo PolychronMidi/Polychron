@@ -36,6 +36,17 @@ function addUnit(u) {
     const startTime = (typeof u.startTime === 'number') ? u.startTime : (Number.isFinite(u.startTime) ? Number(u.startTime) : null);
     const endTime = (typeof u.endTime === 'number') ? u.endTime : (Number.isFinite(u.endTime) ? Number(u.endTime) : null);
 
+    // Heuristic diagnostics to catch weird emissions (e.g., zero start for later measures, excessively large spans)
+    try {
+      const _fs = require('fs'); const _path = require('path');
+      if (startTick === 0 && /measure\d+\/.+/.test(key) && !/measure1\//.test(key)) {
+        try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'masterMap-weird-emissions.ndjson'), JSON.stringify({ when: new Date().toISOString(), reason: 'zero-start-with-non-first-measure', key, startTick, endTick, parts, raw: u.raw }) + '\n'); } catch (e) {}
+      }
+      if (Number.isFinite(startTick) && Number.isFinite(endTick) && (endTick - startTick) > 100000) {
+        try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'masterMap-weird-emissions.ndjson'), JSON.stringify({ when: new Date().toISOString(), reason: 'very-long-duration', key, startTick, endTick, duration: endTick - startTick, parts, raw: u.raw }) + '\n'); } catch (e) {}
+      }
+    } catch (e) {}
+
     if (!agg.has(key)) {
       agg.set(key, {
         key,
@@ -70,6 +81,65 @@ function addUnit(u) {
       // ignore
     }
 
+    // Temporary overlap detector (guarded by env vars) — used to capture deterministic repro info
+    try {
+      if (process.env.ENABLE_OVERLAP_DETECT === '1') {
+        const targetPrefix = process.env.TARGET_PARENT || null;
+        const partsJoined = parts.join('|');
+        if (!targetPrefix || partsJoined.startsWith(targetPrefix)) {
+          for (const [otherKey, otherVal] of agg.entries()) {
+            if (otherKey === key) continue;
+            const otherStart = Number.isFinite(otherVal.minStart) ? otherVal.minStart : (otherVal.examples && otherVal.examples.length ? otherVal.examples[0].start : null);
+            const otherEnd = Number.isFinite(otherVal.maxEnd) ? otherVal.maxEnd : (otherVal.examples && otherVal.examples.length ? otherVal.examples[0].end : null);
+            if (Number.isFinite(otherStart) && Number.isFinite(otherEnd) && Number.isFinite(startTick) && Number.isFinite(endTick)) {
+              if (startTick < otherEnd && otherStart < endTick) {
+                try {
+                  const _fs = require('fs'); const _path = require('path');
+                  const payload = { when: new Date().toISOString(), detectedFor: targetPrefix || '<any>', key, parts, startTick, endTick, conflictingKey: otherKey, otherStart, otherEnd, stack: (new Error()).stack };
+                  try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'detected-overlap.ndjson'), JSON.stringify(payload) + '\n'); } catch (e) {}
+
+                  // Verbose trace: include composer cache snapshot (if available) and recent index-traces for richer context
+                  try {
+                    const verbose = Object.assign({}, payload);
+                    // Attach cached composer state for the layer if available
+                    try {
+                      const layerName = (u && u.layer) ? u.layer : null;
+                      if (layerName && typeof LM !== 'undefined' && LM.layers && LM.layers[layerName] && LM.layers[layerName].state) {
+                        verbose.composerCache = LM.layers[layerName].state._composerCache || null;
+                      } else {
+                        verbose.composerCache = null;
+                      }
+                    } catch (_e) { verbose.composerCache = null; }
+
+                    // Attach last 40 lines of index-traces.ndjson for context (if present)
+                    try {
+                      const itPath = _path.join(process.cwd(), 'output', 'index-traces.ndjson');
+                      if (_fs.existsSync(itPath)) {
+                        const txt = String(_fs.readFileSync(itPath, 'utf8') || '');
+                        const lines = txt.trim().split(/\r?\n/).filter(Boolean);
+                        verbose.recentIndexTraces = lines.slice(Math.max(0, lines.length - 40));
+                      } else {
+                        verbose.recentIndexTraces = null;
+                      }
+                    } catch (_e) { verbose.recentIndexTraces = null; }
+
+                    try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'detected-overlap-verbose.ndjson'), JSON.stringify(verbose) + '\n'); } catch (_e) {}
+                  } catch (_e) {}
+
+                } catch (e) {}
+                if (process.env.OVERLAP_FAIL_FAST === '1') {
+                  throw new Error('Overlap detected between ' + key + ' and ' + otherKey);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // If fail-fast triggered, let it bubble up
+      if (process.env.OVERLAP_FAIL_FAST === '1') throw e;
+    }
+
     // Expose live master map on LM if present
     try {
       if (typeof LM !== 'undefined') {
@@ -86,12 +156,39 @@ function addUnit(u) {
 function getCanonical() {
   const out = [];
   for (const [k, v] of agg.entries()) {
-    const canonicalStart = Number.isFinite(v.minStart) ? Math.round(v.minStart) : null;
-    const canonicalEnd = Number.isFinite(v.maxEnd) ? Math.round(v.maxEnd) : null;
+    // Prefer non-zero example-derived starts/ends where available to avoid spurious 0-starts or wide max ranges
+    const exStarts = (v.examples || []).map(x => Number.isFinite(Number(x.start)) ? Math.round(Number(x.start)) : null).filter(n => Number.isFinite(n));
+    const exEnds = (v.examples || []).map(x => Number.isFinite(Number(x.end)) ? Math.round(Number(x.end)) : null).filter(n => Number.isFinite(n));
+    let canonicalStart = null;
+    let canonicalEnd = null;
+    if (exStarts.length) {
+      // prefer smallest positive start if present, else smallest start
+      const pos = exStarts.filter(s => s > 0);
+      canonicalStart = pos.length ? Math.min(...pos) : Math.min(...exStarts);
+    } else if (Number.isFinite(v.minStart)) {
+      canonicalStart = Math.round(v.minStart);
+    }
+    if (exEnds.length) {
+      // prefer smallest end that is >= canonicalStart when possible to avoid spanning gaps
+      if (canonicalStart !== null) {
+        const valid = exEnds.filter(e => e >= canonicalStart);
+        canonicalEnd = valid.length ? Math.max(...valid) : Math.max(...exEnds);
+      } else {
+        canonicalEnd = Math.max(...exEnds);
+      }
+    } else if (Number.isFinite(v.maxEnd)) {
+      canonicalEnd = Math.round(v.maxEnd);
+    }
+
     const canonicalStartTime = Number.isFinite(v.minStartTime) && v.minStartTime !== Infinity ? v.minStartTime : null;
     const canonicalEndTime = Number.isFinite(v.maxEndTime) && v.maxEndTime !== -Infinity ? v.maxEndTime : null;
-    out.push({ key: k, layer: v.layer, startTick: canonicalStart, endTick: canonicalEnd, startTime: canonicalStartTime, endTime: canonicalEndTime, count: v.count });
+    out.push({ key: k, layer: v.layer, startTick: canonicalStart, endTick: canonicalEnd, startTime: canonicalStartTime, endTime: canonicalEndTime, count: v.count, examples: v.examples || [] });
   }
+
+  // Overlap trimming removed — prefer to surface overlaps for source fixes
+  // (previously performed trimming/fixes here were removed to keep master map faithful to emissions)
+
+
   return out;
 }
 

@@ -882,14 +882,14 @@ class MelodicDevelopmentComposer extends ScaleComposer {
   /**
    * @param {string} [name='major'] - Scale name (major, minor, pentatonic, etc.)
    * @param {string} [root='C'] - Root note
-   * @param {number} [developmentIntensity=0.5] - How aggressively to transform (0-1)
+   * @param {number} [intensity=0.5] - How aggressively to transform (0-1)
    */
-  constructor(name = 'major', root = 'C', developmentIntensity = 0.5) {
+  constructor(name = 'major', root = 'C', intensity = 0.5) {
     // Handle random root
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     super(resolvedName, resolvedRoot);
-    this.developmentIntensity = clamp(developmentIntensity, 0, 1);
+    this.intensity = clamp(intensity, 0, 1);
     this.motifPhase = 0;  // Current stage of motif development
     this.measureCount = 0;
     this.responseMode = false;  // Alternate between call and response
@@ -912,7 +912,7 @@ class MelodicDevelopmentComposer extends ScaleComposer {
 
     // Decide development transformation based on phase
     let developedNotes = [...baseNotes];
-    const intensity = this.developmentIntensity;
+    const intensity = this.intensity;
 
     switch (phase) {
       case 0:
@@ -971,8 +971,8 @@ class MelodicDevelopmentComposer extends ScaleComposer {
    * Set development intensity (0=minimal transformation, 1=maximum variation).
    * @param {number} intensity - Development intensity level
    */
-  setDevelopmentIntensity(intensity) {
-    this.developmentIntensity = clamp(intensity, 0, 1);
+  setintensity(intensity) {
+    this.intensity = clamp(intensity, 0, 1);
   }
 
   /**
@@ -1245,7 +1245,7 @@ class ComposerFactory {
     tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
     modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
     harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => new HarmonicRhythmComposer(progression, key, measuresPerChord, quality),
-    melodicDevelopment: ({ name = 'major', root = 'C', developmentIntensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, developmentIntensity),
+    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, intensity),
     advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new AdvancedVoiceLeadingComposer(name, root, commonToneWeight),
   };
 
@@ -1259,8 +1259,11 @@ class ComposerFactory {
     const factory = this.constructors[type];
     if (!factory) {
       console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
+      try { const _fs=require('fs'); const _path=require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','composer-creation.ndjson'), JSON.stringify({ when:new Date().toISOString(), type, config, action:'fallback' }) + '\n'); } catch (e) {}
       return this.constructors.scale({ name: 'random', root: 'random' });
     }
+    // Record composer creation for triage
+    try { const _fs=require('fs'); const _path=require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','composer-creation.ndjson'), JSON.stringify({ when:new Date().toISOString(), type, config, action:'create', stack:(new Error()).stack.split('\n').slice(2).map(s=>s.trim()) }) + '\n'); } catch (e) {}
     return factory(config);
   }
 }

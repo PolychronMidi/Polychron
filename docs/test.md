@@ -63,6 +63,64 @@ New contributors to the project can:
 - **Functional Tests (Vitest / `test/`)** — fast, module- and integration-level tests that import and exercise real functions for quick developer feedback and refactor safety.
 - **Verification / Audit Suite (`scripts/test/`)** — engine-driven system tests that run the real play engine to generate artifacts (CSV, unit maps) and validate global invariants (unit containment, phrase alignment). Use `verify:unit-tree` and `verify:layer-alignment` in CI.
 
+
+## Verification / Audit: `npm run verify`
+Polychron tests validate *actual generated outputs* produced by the real play engine. The core verification loop used during development and CI is:
+
+1. Generate outputs: run the full engine (preferred) via `npm run play` (or a fast deterministic run: `cross-env PLAY_LIMIT=1 node src/play.js`).
+2. Run the unit-tree verifier: `npm run verify:unit-tree` — checks event → unit containment, gap/overlap detection, and produces `output/unitTreeAudit-report.json` and `output/unitTreeAudit-canonicalization.json`.
+3. Run phrase/track verifier: `npm run verify:layer-alignment` — verifies phrase start/duration consistency across layers and writes `output/layerAlignment-report.json` and `output/layerAlignment-corrections.json`.
+
+New focused verification tools (use for triage and repro):
+- Repro per-parent: `node scripts/repro/repro-parent.js "<parentKey>" [playLimit]` — use environment gates `TARGET_PARENT`, `PLAY_LIMIT`, `INDEX_TRACES=1`, `ENABLE_OVERLAP_DETECT=1` and optionally `OVERLAP_FAIL_FAST=1` to capture precise hits. Outputs: `output/repro-parent-<safe>.json` and (if overlaps found) `output/repro-parent-<safe>-overlaps.ndjson` and `output/repro-parent-hit-<safe>.ndjson`.
+- Sweeps and composer scans: `node scripts/repro/repro-parent-sweep.js` and `node scripts/repro/sweep-composers.js` (or `repro-composer.js`) — run many attempts or composer variations; results written to `output/composer-sweep-*.json` and `output/composer-sweep-results.json`.
+- Quick checks: `node scripts/repro/check-overlaps.js "<parentKey>"` to query `output/masterMap-weird-emissions.ndjson` for local overlap candidates.
+- Verbose traces: when overlaps are detected the system now writes `output/detected-overlap.ndjson` and `output/detected-overlap-verbose.ndjson` (the latter includes a snapshot of the composer cache and recent `output/index-traces.ndjson`) to aid root-cause triage.
+
+Key points:
+- Tests should exercise the *real generator* (play) often; use `PLAY_LIMIT` + seed for fast, deterministic CI runs.
+- Acceptance criteria (CI-level): `output/units.json` exists and non-empty; `npm run verify:unit-tree` returns Errors=0; `npm run verify:layer-alignment` reports no phrase mismatches and trackDelta within tolerance.
+- Use `scripts/triage/*`, the repro tools under `scripts/repro/`, and `scripts/test/analyzeAudit.js` for focused diagnostics; `analyze-audit` has been deprecated in favor of targeted triage scripts.
+- Common failures and quick triage:
+  - "Event after last unit": check outro/unitRec emission in `grandFinale` (writer), ensure last unit/outro marker covers trailing events.
+  - Missing `units.json` or `unitMasterMap.json`: ensure `play` completed successfully and `masterMap.finalize()` ran; try deterministic `node src/play.js` with `PLAY_LIMIT=1`.
+
+How the recent change fixed the elusive overlaps:
+- Root cause: intermittent "flapping" composer getters led to inconsistent division/subdivision counts across cascading unit computations, which produced duplicate/conflicting unit emissions.
+- Fix: we removed silent fallback composer calls and implemented controlled, one-shot per-layer cache population using canonical keys (measureIndex/beatIndex/divIndex/subdivIndex). Composer getters are now invoked only during explicit cache population; missing cache entries log a CRITICAL message and use conservative defaults. This makes Treewalker authoritative and eliminates the flip-flop behavior; the overlap detector + verbose traces validated the fix across composer sweeps and targeted repros.
+
+Quick how-to: capture a verbose overlap trace and convert it to a gated CI regression
+
+1. Run a focused repro for a triaged parent and collect verbose traces:
+
+```bash
+# capture verbose overlap traces for a specific parent (writes detected-overlap*.ndjson)
+TARGET_PARENT='primary|section1/1|phrase4/4|measure1/1|beat3/4' \
+  ENABLE_OVERLAP_DETECT=1 INDEX_TRACES=1 PLAY_LIMIT=48 \
+  node scripts/repro/repro-parent.js "env:$TARGET_PARENT" 48
+```
+
+2. Inspect the traces:
+- `output/detected-overlap.ndjson` contains each detected overlap payload.
+- `output/detected-overlap-verbose.ndjson` contains composer cache snapshot and recent `output/index-traces.ndjson` for root-cause analysis.
+
+3. Convert a captured parent into a gated CI test:
+- Add a small Vitest under `test/reproducers/` that runs `scripts/repro/repro-parent.js` for the parent and asserts `overlapCount === 0`.
+- Gate the test with `RUN_REPRO_TEST=1` so it only runs in CI or when explicitly enabled locally (see `test/reproducers/overlap.regression.test.js` for an example).
+
+4. Enable the regression test in CI when you want a targeted regression gate:
+- Set `RUN_REPRO_TEST=1` and `TARGET_PARENT` in the CI job that should verify no regressions for that parent. The test prints verbose traces to `output/detected-overlap-verbose.ndjson` when failures occur to aid triage.
+
+
+Example CI snippet (fast):
+
+```bash
+# set play to run deterministically for CI
+cross-env PLAY_LIMIT=1 npm run play:raw && npm run verify:unit-tree && npm run verify:layer-alignment
+```
+---
+
+
 ### The Problem with Mocks
 
 Traditional mocking approaches create a maintenance burden:
@@ -157,30 +215,6 @@ const mockComposer = {
 ```
 
 Note: This mock is necessary because `composers.js` exports class instances, not factories. To test `time.js` functions that use a composer, we need to provide *something*, but it's kept minimal and high-level.
-
----
-
-## New testing system: unit-tree audit & phrase alignment (succinct)
-Polychron tests validate *actual generated outputs* produced by the real play engine. The core verification loop used during development and CI is:
-
-1. Generate outputs: run the full engine (preferred) via `npm run play` (or a fast deterministic run: `cross-env PLAY_LIMIT=1 node src/play.js`).
-2. Run the unit-tree verifier: `npm run verify:unit-tree` — checks event → unit containment, gap/overlap detection, and produces `output/unitTreeAudit-report.json` and `output/unitTreeAudit-canonicalization.json`.
-3. Run phrase/track verifier: `npm run verify:layer-alignment` — verifies phrase start/duration consistency across layers and writes `output/layerAlignment-report.json` and `output/layerAlignment-corrections.json`.
-
-Key points:
-- Tests should exercise the *real generator* (play) often; use `PLAY_LIMIT` + seed for fast, deterministic CI runs.
-- Acceptance criteria (CI-level): `output/units.json` exists and non-empty; `npm run verify:unit-tree` returns Errors=0; `npm run verify:layer-alignment` reports no phrase mismatches and trackDelta within tolerance.
-- Use `scripts/triage/*` and `scripts/test/analyzeAudit.js` for focused diagnostics; `analyze-audit` has been deprecated in favor of targeted triage scripts.
-- Common failures and quick triage:
-  - "Event after last unit": check outro/unitRec emission in `grandFinale` (writer), ensure last unit/outro marker covers trailing events.
-  - Missing `units.json` or `unitMasterMap.json`: ensure `play` completed successfully and `masterMap.finalize()` ran; try deterministic `node src/play.js` with `PLAY_LIMIT=1`.
-
-Example CI snippet (fast):
-
-```bash
-# set play to run deterministically for CI
-cross-env PLAY_LIMIT=1 npm run play:raw && npm run verify:unit-tree && npm run verify:layer-alignment
-```
 
 ---
 

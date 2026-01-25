@@ -1107,7 +1107,7 @@ describe('MelodicDevelopmentComposer', () => {
   it('should initialize with scale, root, and development intensity', () => {
     const composer = new MelodicDevelopmentComposer('major', 'C', 0.6);
     expect(composer.root).toBe('C');
-    expect(composer.developmentIntensity).toBe(0.6);
+    expect(composer.intensity).toBe(0.6);
     expect(composer.measureCount).toBe(0);
     expect(composer.responseMode).toBe(false);
   });
@@ -1164,9 +1164,9 @@ describe('MelodicDevelopmentComposer', () => {
 
   it('should work via factory with all parameter combinations', () => {
     const configs = [
-      { type: 'melodicDevelopment', name: 'major', root: 'C', developmentIntensity: 0.6 },
-      { type: 'melodicDevelopment', name: 'random', root: 'random', developmentIntensity: 0.5 },
-      { type: 'melodicDevelopment', name: 'minor', root: 'D', developmentIntensity: 0.7 }
+      { type: 'melodicDevelopment', name: 'major', root: 'C', intensity: 0.6 },
+      { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.5 },
+      { type: 'melodicDevelopment', name: 'minor', root: 'D', intensity: 0.7 }
     ];
 
     configs.forEach(config => {
@@ -1179,10 +1179,10 @@ describe('MelodicDevelopmentComposer', () => {
 
   it('should clamp development intensity to 0-1 range', () => {
     const composer1 = new MelodicDevelopmentComposer('major', 'C', -0.5);
-    expect(composer1.developmentIntensity).toBe(0);
+    expect(composer1.intensity).toBe(0);
 
     const composer2 = new MelodicDevelopmentComposer('major', 'C', 1.5);
-    expect(composer2.developmentIntensity).toBe(1);
+    expect(composer2.intensity).toBe(1);
   });
 });
 
