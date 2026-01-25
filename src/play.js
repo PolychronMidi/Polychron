@@ -55,6 +55,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         rf() < .05 ? stage.stutterPan(flipBin ? flipBinT3 : flipBinF3) : stage.stutterPan(stutterPanCHs);
 
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+          // Trace pre-division state (temporary debug)
+          try {
+            const _fs = require('fs'); const _path = require('path');
+            const trace = {
+              when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
+              composerDivisions: (composer && typeof composer.getDivisions === 'function') ? composer.getDivisions() : null,
+              composerSubdivisions: (composer && typeof composer.getSubdivisions === 'function') ? composer.getSubdivisions() : null
+            };
+            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
+          } catch (_e) {}
+
           setUnitTiming('division');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
@@ -71,6 +82,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             if (subdivIndex + 1 === subdivsPerDiv) resetIndexWithChildren('subdivision');
           }
 
+          // Trace post-subdivision summary (temporary debug)
+          try {
+            const _fs = require('fs'); const _path = require('path');
+            const after = { when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
+            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(after) + '\n');
+          } catch (_e) {}
         }
         // Reset division children when this was the last division in the beat
         if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
@@ -98,6 +115,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         rf() < .05 ? stage.stutterPan(flipBin ? flipBinT3 : flipBinF3) : stage.stutterPan(stutterPanCHs);
 
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+          // Trace pre-division state (temporary debug)
+          try {
+            const _fs = require('fs'); const _path = require('path');
+            const trace = {
+              when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
+              composerDivisions: (composer && typeof composer.getDivisions === 'function') ? composer.getDivisions() : null,
+              composerSubdivisions: (composer && typeof composer.getSubdivisions === 'function') ? composer.getSubdivisions() : null
+            };
+            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(trace) + '\n');
+          } catch (_e) {}
+
           setUnitTiming('division');
 
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
@@ -114,6 +142,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             if (subdivIndex + 1 === subdivsPerDiv) resetIndexWithChildren('subdivision');
           }
 
+          // Trace post-subdivision summary (temporary debug)
+          try {
+            const _fs = require('fs'); const _path = require('path');
+            const after = { when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
+            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(after) + '\n');
+          } catch (_e) {}
         }
         if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
         if (beatIndex + 1 === numerator) resetIndexWithChildren('beat');

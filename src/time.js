@@ -456,6 +456,19 @@ setUnitTiming = (unitType) => {
       subdivsPerDiv = m.min(subdivsPerDiv, 8);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`division: divsPerBeat=${divsPerBeat} subdivsPerDiv=${subdivsPerDiv} subdivFreq=${subdivFreq}`);
+      // Temporary trace for reproducer: capture composer and globals on division entry
+      try {
+        const _fs = require('fs'); const _path = require('path');
+        const t = {
+          tag: 'time:division-entry', when: new Date().toISOString(), layer: (LM && LM.activeLayer) ? LM.activeLayer : 'primary',
+          sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex,
+          divsPerBeat, subdivsPerDiv, numerator, meterRatio,
+          // Use the clamped values in the trace to reflect the exact values used for timing
+          composerDivisions: divsPerBeat,
+          composerSubdivisions: subdivsPerDiv
+        };
+        _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(t) + '\n');
+      } catch (_e) {}
       subdivRhythm = setRhythm('subdiv');
       break;
 
@@ -676,7 +689,9 @@ setUnitTiming = (unitType) => {
     const fullId = secs ? (parts.join('|') + '|' + range + '|' + secs) : (parts.join('|') + '|' + range);
 
     // Diagnostic: detect index vs total anomalies (e.g., subdivision4/3)
+    // Temporary trace: record timing snapshot immediately before anomaly checks
     try {
+      try { const _fs = require('fs'); const _path = require('path'); const ctx = { tag: 'time:pre-anomaly', when: new Date().toISOString(), layer: (LM && LM.activeLayer) ? LM.activeLayer : 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, numerator, divsPerBeat, subdivsPerDiv, subsubdivsPerSub, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv, tpSec }; _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(ctx) + '\n'); } catch (_e) {}
       const anomalies = [];
       // Only flag strict greater-than (not loop-exit equality) to reduce transient noise
       // Only compare indices that are relevant to the current unitType to avoid spurious child-index carry-over reports
