@@ -577,14 +577,19 @@ setUnitTiming = (unitType) => {
 
 
     // Build a compact full-id string per spec and emit an internal marker for writers to extract
+    // Use sanitized (clamped) lower-level indices when those levels are not yet set to avoid using stale values
     const parts = [];
     parts.push(layerName);
     parts.push(`section${sec + 1}`);
     parts.push(`phrase${phr + 1}`);
     parts.push(`measure${mea + 1}`);
-    parts.push(`beat${(bIdx + 1)}/${beatTotal}`);
-    parts.push(`subdivision${(subdivIdx + 1)}/${subdivTotal}`);
-    parts.push(`subsubdivision${(subsubIdx + 1)}/${subsubTotal}`);
+    // Sanitize indices: clamp to valid ranges so we never emit index > total
+    const s_bIdx = Number.isFinite(bIdx) ? Math.max(0, Math.min(bIdx, Math.max(0, Number(beatTotal) - 1))) : 0;
+    const s_subdivIdx = Number.isFinite(subdivIdx) ? Math.max(0, Math.min(subdivIdx, Math.max(0, Number(subdivTotal) - 1))) : 0;
+    const s_subsubIdx = Number.isFinite(subsubIdx) ? Math.max(0, Math.min(subsubIdx, Math.max(0, Number(subsubTotal) - 1))) : 0;
+    parts.push(`beat${(s_bIdx + 1)}/${beatTotal}`);
+    parts.push(`subdivision${(s_subdivIdx + 1)}/${subdivTotal}`);
+    parts.push(`subsubdivision${(s_subsubIdx + 1)}/${subsubTotal}`);
     const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
     // Prefer marker-derived seconds when available for this unit (search down from most-specific parts to less-specific)
     const getCsvForLayer = (layerName) => {
@@ -669,6 +674,72 @@ setUnitTiming = (unitType) => {
     }
 
     const fullId = secs ? (parts.join('|') + '|' + range + '|' + secs) : (parts.join('|') + '|' + range);
+
+    // Diagnostic: detect index vs total anomalies (e.g., subdivision4/3)
+    try {
+      const anomalies = [];
+      // Only flag strict greater-than (not loop-exit equality) to reduce transient noise
+      // Only compare indices that are relevant to the current unitType to avoid spurious child-index carry-over reports
+      const divTotal = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : 1;
+      if (unitType === 'beat' && bIdx > beatTotal) anomalies.push({ field: 'beat', idx: bIdx, total: beatTotal });
+      if (unitType === 'division' && divIdx > divTotal) anomalies.push({ field: 'division', idx: divIdx, total: divTotal });
+      if (unitType === 'subdivision' && subdivIdx > subdivTotal) anomalies.push({ field: 'subdivision', idx: subdivIdx, total: subdivTotal });
+      if (unitType === 'subsubdivision' && subsubIdx > subsubTotal) anomalies.push({ field: 'subsubdivision', idx: subsubIdx, total: subsubTotal });
+      if (anomalies.length) {
+        try {
+          // Critical log for index anomalies (do NOT normalize here; just warn)
+          console.error(`CRITICAL: unit index anomaly - ${layerName} ${unitType} ${fullId} ${JSON.stringify(anomalies)}`);
+          const _fs = require('fs'); const _path = require('path');
+          // Basic anomaly record (legacy)
+          _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitIndex-anomalies.ndjson'), JSON.stringify({ layer: layerName, unitType, unitId: fullId, anomalies, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, when: new Date().toISOString() }) + '\n');
+
+          // Enriched diagnostic payload for deep inspection
+          try {
+            const composerInfo = (typeof composer !== 'undefined' && composer) ? {
+              meter: (typeof composer.getMeter === 'function' ? composer.getMeter() : null),
+              divisions: (typeof composer.getDivisions === 'function' ? composer.getDivisions() : null),
+              subdivisions: (typeof composer.getSubdivisions === 'function' ? composer.getSubdivisions() : null),
+              subsubdivs: (typeof composer.getSubsubdivs === 'function' ? composer.getSubsubdivs() : null)
+            } : null;
+
+            const globalsSnapshot = {
+              phraseStart, phraseStartTime, measureStart, measureStartTime, sectionStart, sectionStartTime,
+              tpPhrase, tpMeasure, tpSection, tpSec, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv,
+              numerator, denominator, measuresPerPhrase, divsPerBeat, subdivsPerDiv, subsubdivsPerSub
+            };
+
+            const recentUnits = (() => {
+              try {
+                if (LM && LM.layers && LM.layers[layerName] && Array.isArray(LM.layers[layerName].state.units)) {
+                  const u = LM.layers[layerName].state.units;
+                  return u.slice(Math.max(0, u.length - 6));
+                }
+              } catch (_e) {}
+              return null;
+            })();
+
+            const stack = (() => { try { return (new Error()).stack.split('\n').slice(2).map(s => s.trim()); } catch (_e) { return []; } })();
+
+            const rich = {
+              layer: layerName,
+              unitType,
+              unitId: fullId,
+              anomalies,
+              indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx },
+              composer: composerInfo,
+              globals: globalsSnapshot,
+              recentUnits,
+              stack,
+              when: new Date().toISOString()
+            };
+
+            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitIndex-anomalies-rich.ndjson'), JSON.stringify(rich) + '\n');
+          } catch (_e) {}
+
+        } catch (_e) {}
+      }
+    } catch (_e) {}
+
     // Diagnostic: record suspicious unit emissions (start==0 with non-zero end, non-finite, or start>end)
     try {
       const suspicious = !Number.isFinite(unitStart) || !Number.isFinite(unitEnd) || (unitStart === 0 && unitEnd !== 0) || (unitStart > unitEnd);

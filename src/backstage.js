@@ -403,6 +403,39 @@ ra=randomInRangeOrArray = (v) => {
   return v;
 };
 
+// Reset indices helper: reset an index and all of its child indices by unit kind
+resetIndexWithChildren = (unit) => {
+  switch (unit) {
+    case 'section':
+      phraseIndex = measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; break;
+    case 'phrase':
+      measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; break;
+    case 'measure':
+      beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; break;
+    case 'beat':
+      divIndex = subdivIndex = subsubdivIndex = 0; break;
+    case 'division':
+      subdivIndex = subsubdivIndex = 0; break;
+    case 'subdivision':
+      subsubdivIndex = 0; break;
+    case 'subsubdivision':
+      subsubdivIndex = 0; break;
+    default:
+      break;
+  }
+
+  // Diagnostic: record when indices are reset so we can correlate resets with anomalies
+  try {
+    const _fs = require('fs'); const _path = require('path');
+    const record = {
+      when: new Date().toISOString(),
+      unit,
+      indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex },
+      stack: (() => { try { return (new Error()).stack.split('\n').slice(2).map(s => s.trim()); } catch (_e) { return []; } })()
+    };
+    _fs.appendFileSync(_path.join(process.cwd(), 'output', 'reset-index-log.ndjson'), JSON.stringify(record) + '\n');
+  } catch (_e) {}
+};
 
 // Timing and counter variables (documented inline for brevity)
 measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=0;

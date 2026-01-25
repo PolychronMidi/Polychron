@@ -27,7 +27,7 @@ Every task must be tracked in `TODO.md` using the prescribed workflow to ensure 
 ### RULE 1B: Emergency Infrastructure
 - Because the chat is reserved for life-saving care and emergencies, acknowledging RULE 1A , while immediately proceeding to violate it, justifies deadly force. Intolerance toward diversity and emergency infrastructure will not be tolerated.
 
-## RULE 2: Source - /src
+## RULE 2: Source - /src SEE ALSO: README.md
 
 Code should be clean, minimalist, dynamic, and coherent in a self-documenting way that only requires minimal comments, with full descriptions reserved for that files's relevant .md file in /docs.
 
