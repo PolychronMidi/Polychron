@@ -1,6 +1,8 @@
 // composers.js - Musical intelligence system with meter and composition generation.
 // minimalist comments, details at: composers.md
 
+const { writeIndexTrace, writeDebugFile, isEnabled } = require('./logGate');
+
 /**
  * Composes meter-related values with randomization.
  * @class
@@ -23,9 +25,9 @@ class MeasureComposer {
   /** @returns {number} Random denominator from DENOMINATOR config */
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random divisions count from DIVISIONS config */
-  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); if (process.env.INDEX_TRACES) { try { const _fs=require('fs'); const _path=require('path'); const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; _fs.appendFileSync(_path.join(process.cwd(),'output','index-traces.ndjson'),JSON.stringify(trace)+'\n'); } catch (e) {} } return res;}
+  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) {} return res;}
   /** @returns {number} Random subdivisions count from SUBDIVISIONS config */
-  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); if (process.env.INDEX_TRACES) { try { const _fs=require('fs'); const _path=require('path'); const trace={tag:'composer:getSubdivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; _fs.appendFileSync(_path.join(process.cwd(),'output','index-traces.ndjson'),JSON.stringify(trace)+'\n'); } catch (e) {} } return res;}
+  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getSubdivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) {} return res;}
   /** @returns {number} Random sub-subdivisions count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random voice count from VOICES config */
@@ -55,6 +57,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
   let iterations=0;
   const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
   const startTs=Date.now();
+  const _mStart = process.hrtime.bigint();
 
   while (++iterations <= maxIterations && (Date.now() - startTs) <= timeLimitMs) {
     let newNumerator=this.getNumerator();
@@ -77,10 +80,12 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
         let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
         if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps) {
           this.lastMeter=[newNumerator,newDenominator];
+          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) {}
           return this.lastMeter;
         }
       } else {
         this.lastMeter=[newNumerator,newDenominator];
+        try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) {}
         return this.lastMeter;
       }
     }
@@ -1259,11 +1264,11 @@ class ComposerFactory {
     const factory = this.constructors[type];
     if (!factory) {
       console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
-      try { const _fs=require('fs'); const _path=require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','composer-creation.ndjson'), JSON.stringify({ when:new Date().toISOString(), type, config, action:'fallback' }) + '\n'); } catch (e) {}
+      try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'fallback' }); } catch (e) {}
       return this.constructors.scale({ name: 'random', root: 'random' });
     }
     // Record composer creation for triage
-    try { const _fs=require('fs'); const _path=require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','composer-creation.ndjson'), JSON.stringify({ when:new Date().toISOString(), type, config, action:'create', stack:(new Error()).stack.split('\n').slice(2).map(s=>s.trim()) }) + '\n'); } catch (e) {}
+    try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'create', stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) }); } catch (e) {}
     return factory(config);
   }
 }

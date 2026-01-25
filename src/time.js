@@ -1,6 +1,8 @@
 // time.js - Timing engine with meter spoofing and dual-layer polyrhythm support.
 // minimalist comments, details at: time.md
 
+const { writeIndexTrace, writeDebugFile } = require('./logGate');
+
 // TimingCalculator encapsulates meter spoofing and base duration math to keep globals pure and testable.
 /**
  * Encapsulates meter spoofing and timing computations.
@@ -346,7 +348,7 @@ const LM = layerManager ={
     LM.layers[name] = { buffer: buf, state };
     state.buffer = buf;
     // Emit a trace indicating the per-layer composer cache was initialized for diagnostics
-    try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:init', when: new Date().toISOString(), layer: name, value: state._composerCache }) + '\n'); } catch (_e) {}
+    writeIndexTrace({ tag: 'composer:cache:init', when: new Date().toISOString(), layer: name, value: state._composerCache });
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
     // the active buffer continue to work.
@@ -494,7 +496,7 @@ setUnitTiming = (unitType) => {
             if (!cache[beatKey]) {
               if (typeof composer.getDivisions === 'function') {
                 cache[beatKey] = { divisions: m.max(1, Number(composer.getDivisions())) };
-                try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey], note: 'prepopulate:measure' }) + '\n'); } catch (_e) {}
+                writeIndexTrace({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey], note: 'prepopulate:measure' });
               }
             }
             // Now prepopulate divisions for that beat
@@ -504,7 +506,7 @@ setUnitTiming = (unitType) => {
               if (!cache[divKey]) {
                 if (typeof composer.getSubdivisions === 'function') {
                   cache[divKey] = { subdivisions: m.max(1, Number(composer.getSubdivisions())) };
-                  try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey], note: 'prepopulate:measure' }) + '\n'); } catch (_e) {}
+                  writeIndexTrace({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey], note: 'prepopulate:measure' });
                 }
               }
             }
@@ -534,13 +536,13 @@ setUnitTiming = (unitType) => {
             // Controlled one-shot population: call composer getter only during cache population (not as an error fallback)
             if (composer && typeof composer.getDivisions === 'function') {
               cache[beatKey] = { divisions: m.max(1, Number(composer.getDivisions())) };
-              try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey] }) + '\n'); } catch (_e) {}
+              writeIndexTrace({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey] });
             } else {
               // Fail fast and write diagnostic payload so engineers can triage root cause
               raiseCritical('getter:getDivisions', 'composer getter getDivisions missing; cannot compute divisions', { layer, beatKey, measureIndex, beatIndex });
             }
           } else {
-            try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:hit', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey] }) + '\n'); } catch (_e) {}
+            writeIndexTrace({ tag: 'composer:cache:hit', when: new Date().toISOString(), layer, key: beatKey, value: cache[beatKey] });
           }
           divsPerBeat = cache[beatKey].divisions;
         } else {
@@ -570,12 +572,12 @@ setUnitTiming = (unitType) => {
           if (!cache[divKey]) {
             if (composer && typeof composer.getSubdivisions === 'function') {
               cache[divKey] = { subdivisions: m.max(1, Number(composer.getSubdivisions())) };
-              try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey] }) + '\n'); } catch (_e) {}
+              writeIndexTrace({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey] });
             } else {
               raiseCritical('getter:getSubdivisions', 'composer getter getSubdivisions missing; cannot compute subdivisions', { layer, divKey, measureIndex, beatIndex, divIndex });
             }
           } else {
-            try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:hit', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey] }) + '\n'); } catch (_e) {}
+            writeIndexTrace({ tag: 'composer:cache:hit', when: new Date().toISOString(), layer, key: divKey, value: cache[divKey] });
           }
           subdivsPerDiv = cache[divKey].subdivisions;
         } else {
@@ -599,14 +601,14 @@ setUnitTiming = (unitType) => {
           composerDivisions: divsPerBeat,
           composerSubdivisions: subdivsPerDiv
         };
-        _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(t) + '\n');
+        writeIndexTrace(t);
       } catch (_e) {}
       subdivRhythm = setRhythm('subdiv');
       break;
 
     case 'subdivision':
       trackSubdivRhythm();
-      tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
+      tpSubdiv = tpDiv / m.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
@@ -620,12 +622,12 @@ setUnitTiming = (unitType) => {
           if (!cache[subdivKey]) {
             if (composer && typeof composer.getSubsubdivs === 'function') {
               cache[subdivKey] = { subsubdivs: m.max(1, Number(composer.getSubsubdivs())) };
-              try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: subdivKey, value: cache[subdivKey] }) + '\n'); } catch (_e) {}
+              writeIndexTrace({ tag: 'composer:cache:set', when: new Date().toISOString(), layer, key: subdivKey, value: cache[subdivKey] });
             } else {
               raiseCritical('getter:getSubsubdivs', 'composer getter getSubsubdivs missing; cannot compute subsubdivs', { layer, subdivKey, measureIndex, beatIndex, divIndex, subdivIndex });
             }
           } else {
-            try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:hit', when: new Date().toISOString(), layer, key: subdivKey, value: cache[subdivKey] }) + '\n'); } catch (_e) {}
+            writeIndexTrace({ tag: 'composer:cache:hit', when: new Date().toISOString(), layer, key: subdivKey, value: cache[subdivKey] });
           }
           subsubdivsPerSub = cache[subdivKey].subsubdivs;
         } else {
@@ -641,7 +643,7 @@ setUnitTiming = (unitType) => {
 
     case 'subsubdivision':
       trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
+      tpSubsubdiv = tpSubdiv / m.max(1, Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : 1);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
@@ -722,10 +724,7 @@ setUnitTiming = (unitType) => {
     const _subdivKey = `subdiv:${measureIndex}:${beatIndex}:${divIndex}:${subdivIndex}`;
 
     // Diagnostic cache peek: write a short trace showing whether cache entries exist for the current keys
-    try {
-      const _fs = require('fs'); const _path = require('path');
-      _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:peek', when: new Date().toISOString(), layer, keys: { beat: _beatKey, div: _divKey, subdiv: _subdivKey }, cacheHas: { beat: !!(_cache && _cache[_beatKey]), div: !!(_cache && _cache[_divKey]), subdiv: !!(_cache && _cache[_subdivKey]) } }) + '\n');
-    } catch (_e) {}
+    writeIndexTrace({ tag: 'composer:cache:peek', when: new Date().toISOString(), layer, keys: { beat: _beatKey, div: _divKey, subdiv: _subdivKey }, cacheHas: { beat: !!(_cache && _cache[_beatKey]), div: !!(_cache && _cache[_divKey]), subdiv: !!(_cache && _cache[_subdivKey]) } });
 
     // Only query the cache levels that are relevant for this unitType to avoid spurious warnings
     let composerDivisionsCached;
@@ -734,9 +733,9 @@ setUnitTiming = (unitType) => {
         composerDivisionsCached = Number(divsPerBeat);
       } else if (_cache && _cache[_beatKey] && Number.isFinite(_cache[_beatKey].divisions)) {
         composerDivisionsCached = _cache[_beatKey].divisions;
-        try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _beatKey, value: composerDivisionsCached }) + '\n'); } catch (_e) {}
+        writeIndexTrace({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _beatKey, value: composerDivisionsCached });
       } else {
-        try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _beatKey }) + '\n'); } catch (_e) {}
+        writeIndexTrace({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _beatKey });
         // Fail fast on missing high-level beat divisions: write rich diagnostics and throw
         raiseCritical('missing:divisions', `composer divisions missing for ${_beatKey}; cannot proceed`, { layer, beatKey, measureIndex, beatIndex, unitType });
       }
@@ -748,9 +747,9 @@ setUnitTiming = (unitType) => {
         composerSubdivisionsCached = Number(subdivsPerDiv);
       } else if (_cache && _cache[_divKey] && Number.isFinite(_cache[_divKey].subdivisions)) {
         composerSubdivisionsCached = _cache[_divKey].subdivisions;
-        try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _divKey, value: composerSubdivisionsCached }) + '\n'); } catch (_e) {}
+        writeIndexTrace({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _divKey, value: composerSubdivisionsCached });
       } else {
-        try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _divKey }) + '\n'); } catch (_e) {}
+        writeIndexTrace({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _divKey });
         // Fail fast on missing high-level division subdivisions: write rich diagnostics and throw
         raiseCritical('missing:subdivisions', `composer subdivisions missing for ${_divKey}; cannot proceed`, { layer, divKey, measureIndex, beatIndex, divIndex, unitType });
       }
@@ -762,17 +761,17 @@ setUnitTiming = (unitType) => {
         composerSubsubdivsCached = Number(subsubdivsPerSub);
       } else if (_cache && _cache[_subdivKey] && Number.isFinite(_cache[_subdivKey].subsubdivs)) {
         composerSubsubdivsCached = _cache[_subdivKey].subsubdivs;
-        try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _subdivKey, value: composerSubsubdivsCached }) + '\n'); } catch (_e) {}
+        writeIndexTrace({ tag: 'composer:cache:get', when: new Date().toISOString(), layer, key: _subdivKey, value: composerSubsubdivsCached });
       } else {
-        try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _subdivKey }) + '\n'); } catch (_e) {}
+        writeIndexTrace({ tag: 'composer:cache:miss', when: new Date().toISOString(), layer, key: _subdivKey });
         warnOnce(`missing:subsubdivs:${_subdivKey}`, `composer subsubdivs missing for ${_subdivKey}; using 1 as fallback`);
         composerSubsubdivsCached = 1;
       }
     }
 
-    const effectiveDivsPerBeat = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : composerDivisionsCached;
-    const effectiveSubdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : composerSubdivisionsCached;
-    const effectiveSubsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : composerSubsubdivsCached;
+    const effectiveDivsPerBeat = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : (Number.isFinite(Number(composerDivisionsCached)) ? composerDivisionsCached : 1);
+    const effectiveSubdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : (Number.isFinite(Number(composerSubdivisionsCached)) ? composerSubdivisionsCached : 1);
+    const effectiveSubsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : (Number.isFinite(Number(composerSubsubdivsCached)) ? composerSubsubdivsCached : 1);
 
     const unitRec = {
       layer: layerName,
@@ -844,16 +843,21 @@ setUnitTiming = (unitType) => {
     parts.push(`section${sec + 1}/${effectiveSectionTotal}`);
     parts.push(`phrase${(phr + 1)}/${effectivePhrasesPerSection}`);
     parts.push(`measure${(comp_mea + 1)}/${effectiveMeasuresPerPhrase}`);
+    // Coerce effective totals to safe numeric values to avoid NaN/undefined in IDs
+    const effBeatTotal = Number.isFinite(Number(effectiveBeatTotal)) ? Number(effectiveBeatTotal) : 1;
+    const effDivsPerBeat = Number.isFinite(Number(effectiveDivsPerBeat)) ? Number(effectiveDivsPerBeat) : 1;
+    const effSubdivTotal = Number.isFinite(Number(effectiveSubdivTotal)) ? Number(effectiveSubdivTotal) : 1;
+    const effSubsubTotal = Number.isFinite(Number(effectiveSubsubTotal)) ? Number(effectiveSubsubTotal) : 1;
     // Sanitize indices: clamp to valid ranges so we never emit index > total
-    const s_bIdx = Number.isFinite(bIdx) ? Math.max(0, Math.min(bIdx, Math.max(0, Number(effectiveBeatTotal) - 1))) : 0;
-    const s_subdivIdx = Number.isFinite(subdivIdx) ? Math.max(0, Math.min(subdivIdx, Math.max(0, Number(effectiveSubdivTotal) - 1))) : 0;
-    const s_subsubIdx = Number.isFinite(subsubIdx) ? Math.max(0, Math.min(subsubIdx, Math.max(0, Number(effectiveSubsubTotal) - 1))) : 0;
-    parts.push(`beat${(s_bIdx + 1)}/${effectiveBeatTotal}`);
+    const s_bIdx = Number.isFinite(bIdx) ? Math.max(0, Math.min(bIdx, Math.max(0, Number(effBeatTotal) - 1))) : 0;
+    const s_subdivIdx = Number.isFinite(subdivIdx) ? Math.max(0, Math.min(subdivIdx, Math.max(0, Number(effSubdivTotal) - 1))) : 0;
+    const s_subsubIdx = Number.isFinite(subsubIdx) ? Math.max(0, Math.min(subsubIdx, Math.max(0, Number(effSubsubTotal) - 1))) : 0;
+    parts.push(`beat${(s_bIdx + 1)}/${effBeatTotal}`);
     // Include division in canonical key to remove ambiguity across varying subdivision totals per division
-    const s_divIdx = Number.isFinite(divIdx) ? Math.max(0, Math.min(divIdx, Math.max(0, Number(effectiveDivsPerBeat) - 1))) : 0;
-    parts.push(`division${(s_divIdx + 1)}/${effectiveDivsPerBeat}`);
-    parts.push(`subdivision${(s_subdivIdx + 1)}/${effectiveSubdivTotal}`);
-    parts.push(`subsubdivision${(s_subsubIdx + 1)}/${effectiveSubsubTotal}`);
+    const s_divIdx = Number.isFinite(divIdx) ? Math.max(0, Math.min(divIdx, Math.max(0, Number(effDivsPerBeat) - 1))) : 0;
+    parts.push(`division${(s_divIdx + 1)}/${effDivsPerBeat}`);
+    parts.push(`subdivision${(s_subdivIdx + 1)}/${effSubdivTotal}`);
+    parts.push(`subsubdivision${(s_subsubIdx + 1)}/${effSubsubTotal}`);
     const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
     // Prefer marker-derived seconds when available for this unit (search down from most-specific parts to less-specific)
     const getCsvForLayer = (layerName) => {
@@ -955,12 +959,12 @@ setUnitTiming = (unitType) => {
             };
             const recentUnits = (() => { try { if (LM && LM.layers && LM.layers[LM.activeLayer] && Array.isArray(LM.layers[LM.activeLayer].state.units)) { return LM.layers[LM.activeLayer].state.units.slice(Math.max(0, LM.layers[LM.activeLayer].state.units.length - 10)); } } catch (_e) {} return null; })();
             const hit = { when: new Date().toISOString(), target, parentPrefix, fullId, unitRec, globals: globalsSnapshot, recentUnits, stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) };
-            try { _fs.appendFileSync(_path.join(process.cwd(), 'output', `repro-parent-hit-${safe}.ndjson`), JSON.stringify(hit) + '\n'); } catch (_e) {}
+            try { writeDebugFile(`repro-parent-hit-${safe}.ndjson`, hit); } catch (_e) {}
           }
         } catch (_e) {}
       }
       // Temporary trace: record timing snapshot immediately before anomaly checks
-      try { const _fs2 = require('fs'); const _path2 = require('path'); const ctx = { tag: 'time:pre-anomaly', when: new Date().toISOString(), layer: (LM && LM.activeLayer) ? LM.activeLayer : 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, numerator, divsPerBeat, subdivsPerDiv, subsubdivsPerSub, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv, tpSec }; _fs2.appendFileSync(_path2.join(process.cwd(), 'output', 'index-traces.ndjson'), JSON.stringify(ctx) + '\n'); } catch (_e) {}
+      writeIndexTrace({ tag: 'time:pre-anomaly', when: new Date().toISOString(), layer: (LM && LM.activeLayer) ? LM.activeLayer : 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, numerator, divsPerBeat, subdivsPerDiv, subsubdivsPerSub, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv, tpSec });
       const anomalies = [];
       // Only flag strict greater-than (not loop-exit equality) to reduce transient noise
       // Only compare indices that are relevant to the current unitType to avoid spurious child-index carry-over reports
@@ -973,9 +977,7 @@ setUnitTiming = (unitType) => {
         try {
           // Critical log for index anomalies (do NOT normalize here; just warn)
           console.error(`CRITICAL: unit index anomaly - ${layerName} ${unitType} ${fullId} ${JSON.stringify(anomalies)}`);
-          const _fs = require('fs'); const _path = require('path');
-          // Basic anomaly record (legacy)
-          _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitIndex-anomalies.ndjson'), JSON.stringify({ layer: layerName, unitType, unitId: fullId, anomalies, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, when: new Date().toISOString() }) + '\n');
+          try { writeDebugFile('unitIndex-anomalies.ndjson', { layer: layerName, unitType, unitId: fullId, anomalies, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, when: new Date().toISOString() }); } catch (_e) {}
 
           // Enriched diagnostic payload for deep inspection
           try {
@@ -1017,7 +1019,7 @@ setUnitTiming = (unitType) => {
               when: new Date().toISOString()
             };
 
-            _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitIndex-anomalies-rich.ndjson'), JSON.stringify(rich) + '\n');
+            try { writeDebugFile('unitIndex-anomalies-rich.ndjson', rich); } catch (_e) {}
             // If the ASSERT gate is enabled, write a fatal diagnostic and throw so tests fail fast (helps CI detect regressions)
             try {
               if (process.env.INDEX_TRACES_ASSERT) {
@@ -1058,9 +1060,9 @@ setUnitTiming = (unitType) => {
         };
         try {
           const _fs = require('fs'); const _path = require('path');
-          _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitTreeAudit-diagnostics.ndjson'), JSON.stringify(diag) + '\n');
+          try { writeDebugFile('unitTreeAudit-diagnostics.ndjson', diag); } catch (_e) {}
           // Keep legacy short list for quick inspection
-          try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitTreeAudit-suspicious-units.ndjson'), JSON.stringify({ layer: layerName, unitType, unitId: fullId, start: Math.round(unitStart), end: Math.round(unitEnd), when: diag.when }) + '\n'); } catch (_e) {}
+          try { writeDebugFile('unitTreeAudit-suspicious-units.ndjson', { layer: layerName, unitType, unitId: fullId, start: Math.round(unitStart), end: Math.round(unitEnd), when: diag.when }); } catch (_e) {}
         } catch (_e) {}
       }
     } catch (_e) {}
@@ -1074,7 +1076,7 @@ setUnitTiming = (unitType) => {
           const _fs = require('fs'); const _path = require('path');
           const diag = {
             tag: 'overlong-unit', when: new Date().toISOString(), layer: layerName, unitType, fullId, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), duration: dur, tpMeasure: measureDur, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, parts: parts.slice(), composer: (typeof composer !== 'undefined' && composer) ? { divisions: (typeof composer.getDivisions === 'function' ? composer.getDivisions() : null), subdivisions: (typeof composer.getSubdivisions === 'function' ? composer.getSubdivisions() : null), subsubdivs: (typeof composer.getSubsubdivs === 'function' ? composer.getSubsubdivs() : null) } : null, stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) };
-          try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'overlong-units.ndjson'), JSON.stringify(diag) + '\n'); } catch (e) {}
+          try { writeDebugFile('overlong-units.ndjson', diag); } catch (e) {}
           // If assert gating is enabled, write fatal diag and throw to fail fast
           if (process.env.INDEX_TRACES_ASSERT) {
             try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'unitIndex-anomalies-fatal.ndjson'), JSON.stringify(Object.assign({ note: 'OVERLONG_UNIT_ASSERT' }, diag)) + '\n'); } catch (e) {}

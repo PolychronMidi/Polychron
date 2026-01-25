@@ -1,6 +1,8 @@
 // backstage.js - Core utilities, randomization, and MIDI infrastructure.
 // minimalist comments, details at: backstage.md
 
+const { writeDebugFile } = require('./logGate');
+
 m=Math;
 /**
  * Clamp a value within [min, max] range.
@@ -434,7 +436,7 @@ resetIndexWithChildren = (unit) => {
       indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex },
       stack: (() => { try { return (new Error()).stack.split('\n').slice(2).map(s => s.trim()); } catch (_e) { return []; } })()
     };
-    _fs.appendFileSync(_path.join(process.cwd(), 'output', 'reset-index-log.ndjson'), JSON.stringify(record) + '\n');
+    try { writeDebugFile('reset-index-log.ndjson', record); } catch (_e) {}
   } catch (_e) {}
 };
 

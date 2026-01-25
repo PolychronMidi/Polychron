@@ -1,6 +1,7 @@
 // masterMap.js - live master unit map builder (incremental)
 const path = require('path');
 const getFs = () => (typeof globalThis !== 'undefined' && globalThis.fs) ? globalThis.fs : require('fs');
+const { writeDebugFile } = require('./logGate');
 
 const OUT_DIR = path.join(process.cwd(), 'output');
 const NDJSON_PATH = path.join(OUT_DIR, 'unitMasterMap.ndjson');
@@ -28,6 +29,7 @@ function openNdjson() {
 
 function addUnit(u) {
   try {
+    const _perfStart = process.hrtime.bigint();
     // u: { parts: Array, layer, startTick, endTick, startTime, endTime, raw }
     const parts = Array.isArray(u.parts) ? u.parts : (typeof u.parts === 'string' ? String(u.parts).split('|') : []);
     const key = parts.join('|');
@@ -40,10 +42,10 @@ function addUnit(u) {
     try {
       const _fs = require('fs'); const _path = require('path');
       if (startTick === 0 && /measure\d+\/.+/.test(key) && !/measure1\//.test(key)) {
-        try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'masterMap-weird-emissions.ndjson'), JSON.stringify({ when: new Date().toISOString(), reason: 'zero-start-with-non-first-measure', key, startTick, endTick, parts, raw: u.raw }) + '\n'); } catch (e) {}
+        try { writeDebugFile('masterMap-weird-emissions.ndjson', { when: new Date().toISOString(), reason: 'zero-start-with-non-first-measure', key, startTick, endTick, parts, raw: u.raw }); } catch (e) {}
       }
       if (Number.isFinite(startTick) && Number.isFinite(endTick) && (endTick - startTick) > 100000) {
-        try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'masterMap-weird-emissions.ndjson'), JSON.stringify({ when: new Date().toISOString(), reason: 'very-long-duration', key, startTick, endTick, duration: endTick - startTick, parts, raw: u.raw }) + '\n'); } catch (e) {}
+        try { writeDebugFile('masterMap-weird-emissions.ndjson', { when: new Date().toISOString(), reason: 'very-long-duration', key, startTick, endTick, duration: endTick - startTick, parts, raw: u.raw }); } catch (e) {}
       }
     } catch (e) {}
 
@@ -123,7 +125,7 @@ function addUnit(u) {
                       }
                     } catch (_e) { verbose.recentIndexTraces = null; }
 
-                    try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'detected-overlap-verbose.ndjson'), JSON.stringify(verbose) + '\n'); } catch (_e) {}
+                    try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (_e) {}
                   } catch (_e) {}
 
                 } catch (e) {}
@@ -145,6 +147,14 @@ function addUnit(u) {
       if (typeof LM !== 'undefined') {
         LM.masterMap = LM.masterMap || {};
         LM.masterMap._agg = agg; // expose internal map (not serialized)
+      }
+    } catch (e) {}
+
+    try {
+      const _durMs = Number(process.hrtime.bigint() - _perfStart) / 1e6;
+      if (_durMs > 5) {
+        console.warn(`perf: masterMap.addUnit slow ${_durMs.toFixed(2)}ms key=${key}`);
+        try { writeDebugFile('perf-addUnit.ndjson', { when: new Date().toISOString(), key, durationMs: _durMs }); } catch (e) {}
       }
     } catch (e) {}
 

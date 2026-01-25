@@ -152,12 +152,15 @@ logUnit = (type) => {
     startTime = subdivStartTime;
     endTime = startTime + spSubdiv;
   } else if (type === 'subsubdivision') {
-    unit = subsubdivIndex + 1;
-    unitsPerParent = subsubsPerSub;
+    // Use defensively coerced indices/totals to avoid NaN/undefined emissions
+    const sIndex = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
+    unit = sIndex + 1;
+    // Prefer canonical name `subsubdivsPerSub` but accept legacy `subsubsPerSub` if present
+    unitsPerParent = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : (Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : 1);
     startTick = subsubdivStart;
-    endTick = startTick + tpSubsubdiv;
-    startTime = subsubdivStartTime;
-    endTime = startTime + spSubsubdiv;
+    endTick = startTick + (Number.isFinite(Number(tpSubsubdiv)) ? tpSubsubdiv : 0);
+    startTime = Number.isFinite(Number(subsubdivStartTime)) ? subsubdivStartTime : 0;
+    endTime = startTime + (Number.isFinite(Number(spSubsubdiv)) ? spSubsubdiv : 0);
   }
 
   return (() => {
@@ -179,13 +182,21 @@ logUnit = (type) => {
 
     try {
       const parts = [];
-      if (typeof sectionIndex !== 'undefined') parts.push('section' + ((sectionIndex||0)+1) + '/' + (totalSections||0));
-      if (typeof phraseIndex !== 'undefined') parts.push('phrase' + ((phraseIndex||0)+1) + '/' + (phrasesPerSection||0));
-      if (typeof measureIndex !== 'undefined') parts.push('measure' + ((measureIndex||0)+1) + '/' + (measuresPerPhrase||0));
-      if (typeof beatIndex !== 'undefined') parts.push('beat' + ((beatIndex||0)+1) + '/' + (numerator||0));
-      if (typeof divIndex !== 'undefined') parts.push('division' + ((divIndex||0)+1) + '/' + (divsPerBeat||0));
-      if (typeof subdivIndex !== 'undefined') parts.push('subdivision' + ((subdivIndex||0)+1) + '/' + (subdivsPerDiv||0));
-      if (typeof subsubdivIndex !== 'undefined') parts.push('subsubdivision' + ((subsubdivIndex||0)+1) + '/' + (subsubsPerSub||0));
+      // Coerce totals to safe numeric defaults to avoid NaN/undefined in IDs
+      const safe_totalSections = Number.isFinite(Number(totalSections)) ? Number(totalSections) : 1;
+      const safe_phrasesPerSection = Number.isFinite(Number(phrasesPerSection)) ? Number(phrasesPerSection) : 1;
+      const safe_measuresPerPhrase = Number.isFinite(Number(measuresPerPhrase)) ? Number(measuresPerPhrase) : 1;
+      const safe_numerator = Number.isFinite(Number(numerator)) ? Number(numerator) : 1;
+      const safe_divsPerBeat = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : 1;
+      const safe_subdivsPerDiv = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1;
+      const safe_subsubdivsPerSub = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : (Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : 1);
+      if (typeof sectionIndex !== 'undefined') parts.push('section' + ((sectionIndex||0)+1) + '/' + safe_totalSections);
+      if (typeof phraseIndex !== 'undefined') parts.push('phrase' + ((phraseIndex||0)+1) + '/' + safe_phrasesPerSection);
+      if (typeof measureIndex !== 'undefined') parts.push('measure' + ((measureIndex||0)+1) + '/' + safe_measuresPerPhrase);
+      if (typeof beatIndex !== 'undefined') parts.push('beat' + ((beatIndex||0)+1) + '/' + safe_numerator);
+      if (typeof divIndex !== 'undefined') parts.push('division' + ((divIndex||0)+1) + '/' + safe_divsPerBeat);
+      if (typeof subdivIndex !== 'undefined') parts.push('subdivision' + ((subdivIndex||0)+1) + '/' + safe_subdivsPerDiv);
+      if (Number.isFinite(Number(subsubdivIndex))) parts.push('subsubdivision' + (Number(subsubdivIndex) + 1) + '/' + safe_subsubdivsPerSub);
 
       const startTickN = Math.round(Number(startTick) || 0);
       const endTickN = Math.round(Number(endTick) || 0);
