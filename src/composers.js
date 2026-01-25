@@ -23,9 +23,9 @@ class MeasureComposer {
   /** @returns {number} Random denominator from DENOMINATOR config */
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random divisions count from DIVISIONS config */
-  getDivisions(){const{min,max,weights}=DIVISIONS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); if (process.env.INDEX_TRACES) { try { const _fs=require('fs'); const _path=require('path'); const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; _fs.appendFileSync(_path.join(process.cwd(),'output','index-traces.ndjson'),JSON.stringify(trace)+'\n'); } catch (e) {} } return res;}
   /** @returns {number} Random subdivisions count from SUBDIVISIONS config */
-  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); if (process.env.INDEX_TRACES) { try { const _fs=require('fs'); const _path=require('path'); const trace={tag:'composer:getSubdivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; _fs.appendFileSync(_path.join(process.cwd(),'output','index-traces.ndjson'),JSON.stringify(trace)+'\n'); } catch (e) {} } return res;}
   /** @returns {number} Random sub-subdivisions count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random voice count from VOICES config */

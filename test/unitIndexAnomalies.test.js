@@ -13,7 +13,7 @@ it('PLAY_LIMIT=1 produces no unit index anomalies', () => {
   try { if (fs.existsSync(anomaliesRich)) fs.unlinkSync(anomaliesRich); } catch (e) {}
 
   // Run deterministic play
-  const res = spawnSync(process.execPath, [path.join('src','play.js')], { env: { ...process.env, PLAY_LIMIT: '1' }, stdio: 'inherit' });
+  const res = spawnSync(process.execPath, [path.join('src','play.js')], { env: { ...process.env, PLAY_LIMIT: '1', INDEX_TRACES: '1' }, stdio: 'inherit' });
   if (res.error) throw res.error;
 
   // Read anomalies file
