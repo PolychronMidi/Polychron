@@ -60,13 +60,22 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdivision');
             stage.playNotes();
+
+            // Subsubdivisions are children of subdivisions; iterate inside subdivision loop
+            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+              setUnitTiming('subsubdivision');
+              stage.playNotes2();
+              if (subsubdivIndex + 1 === subsubsPerSub) resetIndexWithChildren('subsubdivision');
+            }
+
+            if (subdivIndex + 1 === subdivsPerDiv) resetIndexWithChildren('subdivision');
           }
 
-          for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-            setUnitTiming('subsubdivision');
-            stage.playNotes2();
-          }
         }
+        // Reset division children when this was the last division in the beat
+        if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
+        // Reset beat children when this was the last beat in the measure
+        if (beatIndex + 1 === numerator) resetIndexWithChildren('beat');
       }
     }
 
@@ -94,18 +103,26 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdivision');
             stage.playNotes();
+
+            // Subsubdivisions belong to a subdivision; iterate here
+            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+              setUnitTiming('subsubdivision');
+              stage.playNotes2();
+              if (subsubdivIndex + 1 === subsubsPerSub) resetIndexWithChildren('subsubdivision');
+            }
+
+            if (subdivIndex + 1 === subdivsPerDiv) resetIndexWithChildren('subdivision');
           }
 
-          for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-            setUnitTiming('subsubdivision');
-            stage.playNotes2();
-          }
         }
+        if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
+        if (beatIndex + 1 === numerator) resetIndexWithChildren('beat');
       }
+      if (measureIndex + 1 === measuresPerPhrase) resetIndexWithChildren('measure');
     }
 
     LM.advance('poly', 'phrase');
-
+    if (phraseIndex + 1 === phrasesPerSection) resetIndexWithChildren('phrase');
   }
 
   LM.advance('primary', 'section');
@@ -113,7 +130,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   LM.advance('poly', 'section');
   logUnit('section');
-
+  if (sectionIndex + 1 === totalSections) resetIndexWithChildren('section');
   BPM=BASE_BPM;
   activeMotif=null;
 }
