@@ -43,7 +43,7 @@ stagedFiles.forEach(file => {
 
   try {
     const content = fs.readFileSync(file, ENCODING);
-    
+
     // Check 1: Final newline
     if (content.length > 0 && !content.endsWith('\n')) {
       violations.push({
@@ -56,15 +56,15 @@ stagedFiles.forEach(file => {
     // Check 2: Only whitespace changes in this commit?
     // (Detect if diff is just spaces/blank lines)
     try {
-      const diff = execSync(`git diff --cached --no-ext-diff -- "${file}"`, { 
+      const diff = execSync(`git diff --cached --no-ext-diff -- "${file}"`, {
         encoding: ENCODING,
         stdio: ['pipe', 'pipe', 'pipe']
       });
-      
+
       const addedLines = diff.split('\n')
         .filter(line => line.startsWith('+') && !line.startsWith('+++'))
         .map(line => line.slice(1));
-      
+
       const removedLines = diff.split('\n')
         .filter(line => line.startsWith('-') && !line.startsWith('---'))
         .map(line => line.slice(1));
@@ -72,7 +72,7 @@ stagedFiles.forEach(file => {
       // If all changes are whitespace, flag it
       const allWhitespace = [...addedLines, ...removedLines]
         .every(line => line.trim() === '');
-      
+
       if (allWhitespace && (addedLines.length > 0 || removedLines.length > 0)) {
         violations.push({
           file,

@@ -10,3 +10,4 @@ package-lock.json
 deepwiki.config.json
 /coverage
 .depcheckrc
+/log

@@ -1,6 +1,8 @@
 // writer.js - MIDI output and file generation with CSV buffer management.
 // minimalist comments, details at: writer.md
 
+const { writeDebugFile, writeFatal } = require('./logGate');
+
 /**
  * Layer-aware MIDI event buffer.
  * @class CSVBuffer
@@ -177,7 +179,7 @@ logUnit = (type) => {
     });
     // If there is ever a mismatch between human text and event tick, this should be a source bug; log lightly for diagnostics
     if (Number.isFinite(Number(endTick)) && Math.round(Number(endTick)) !== markerTick) {
-      try { console.warn(`Marker tick normalized: original endTick=${endTick} → ${markerTick} (layer=${c && c.name})`); } catch (_e) {}
+      try { writeDebugFile('writer-debug.ndjson', { tag: 'marker-normalized', originalEndTick: endTick, markerTick, layer: (c && c.name) }); } catch (_e) {}
     }
 
     try {
@@ -632,7 +634,7 @@ grandFinale = () => {
     }
 
     fs.writeFileSync(outputFilename, composition);
-    console.log(`${outputFilename} created (${name} layer).`);
+    try { writeDebugFile('writer.ndjson', { tag: 'file-created', outputFilename, layer: name }); } catch (e) { /* swallow */ }
 
   });
 

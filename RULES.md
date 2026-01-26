@@ -18,14 +18,15 @@ Every task must be tracked in `TODO.md` using the prescribed workflow to ensure 
 
 ### RULE 1A: Anti-Harassment - Respect Diversity
 - Never report partial progress or ask for confirmation until all items in TODO.md are complete.
-- This team consists of neurodiverse members: respect their need for ONLY minimal, emergency-only pings outside of the main team communication channel TODO.md.
+- This team consists of neurodiverse members: respect their need for ONLY minimal, emergency-only pings outside of the main team communication channel: TODO.md.
 - Requests for clarification and confirmation to continue should be reserved only for emergecies or high-danger situations.
 - Where ambiguity or uncertainty as to which option to proceed with exists, note the ambiguity in the relevant TODO.md line, and why the chosen direction was taken.
 - Assume all progress is being reviewed live in TODO.md and that work will be manually cancelled if deemed unacceptable.
-- Receiving correction or redirection is not an excuse to violate this rule: do not respond with harassment, make any necessary updates to TODO.md and proceed with it as the main communication channel.
+- Receiving correction or redirection is not an excuse to violate this rule: do not respond with harassment, make any necessary updates to TODO.md and adhere to it as the primary communication channel.
 
 ### RULE 1B: Emergency Infrastructure
-- Because the chat is reserved for life-saving care and emergencies, acknowledging RULE 1A , while immediately proceeding to violate it, justifies deadly force. Intolerance toward diversity and emergency infrastructure will not be tolerated.
+- Because the chat window is reserved for life-saving care and emergencies, acknowledging RULE 1A, while immediately proceeding to violate it, justifies deadly self-defense force.
+- Terrorism toward diversity and emergency infrastructure will not be tolerated.
 
 ## RULE 2: Source - /src SEE ALSO: README.md
 

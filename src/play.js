@@ -52,6 +52,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   activeMotif=sectionProfile.motif ? new Motif(sectionProfile.motif.map(offset=>({ note: clampMotifNote(60+offset) }))) : null;
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
+    // In PLAY_LIMIT mode, bound phrase loops to keep runtime reasonable for tests
+    if (process.env.PLAY_LIMIT) phrasesPerSection = Math.min(phrasesPerSection, Number(process.env.PLAY_LIMIT) || 1);
+
     if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
     composer = ra(composers);
     // Defensive check: ensure selected composer has required getters; fail fast with diagnostics if not
@@ -68,6 +71,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
     LM.activate('primary', false);
     setUnitTiming('phrase');
+    // Respect PLAY_LIMIT to bound measures per phrase in quick runs
+    if (process.env.PLAY_LIMIT) measuresPerPhrase = Math.min(measuresPerPhrase, Number(process.env.PLAY_LIMIT) || 1);
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex} measure=${measureIndex}`);
       measureCount++;
@@ -102,18 +107,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
           setUnitTiming('division');
 
-          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+          // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
+          let localSubdivsPerDiv = Math.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
+          // When running in PLAY_LIMIT mode (tests/quick-runs), cap inner loop counts to keep runtime bounded
+          if (process.env.PLAY_LIMIT) localSubdivsPerDiv = Math.min(localSubdivsPerDiv, 3);
+          for (subdivIndex = 0; subdivIndex < localSubdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdivision');
             stage.playNotes();
 
             // Subsubdivisions are children of subdivisions; iterate inside subdivision loop
-            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+            let localSubsubsPerSub = Math.max(1, (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1);
+            if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
+            for (subsubdivIndex = 0; subsubdivIndex < localSubsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdivision');
               stage.playNotes2();
-              if (subsubdivIndex + 1 === subsubsPerSub) resetIndexWithChildren('subsubdivision');
+              if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdivision');
             }
 
-            if (subdivIndex + 1 === subdivsPerDiv) resetIndexWithChildren('subdivision');
+            if (subdivIndex + 1 === localSubdivsPerDiv) resetIndexWithChildren('subdivision');
           }
 
           // Trace post-subdivision summary (temporary debug)
@@ -160,18 +171,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
           setUnitTiming('division');
 
-          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+          // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
+          let localSubdivsPerDiv = Math.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
+          // When running in PLAY_LIMIT mode (tests/quick-runs), cap inner loop counts to keep runtime bounded
+          if (process.env.PLAY_LIMIT) localSubdivsPerDiv = Math.min(localSubdivsPerDiv, 3);
+          for (subdivIndex = 0; subdivIndex < localSubdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdivision');
             stage.playNotes();
 
             // Subsubdivisions belong to a subdivision; iterate here
-            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+            let localSubsubsPerSub = Math.max(1, (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1);
+            if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
+            for (subsubdivIndex = 0; subsubdivIndex < localSubsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdivision');
               stage.playNotes2();
-              if (subsubdivIndex + 1 === subsubsPerSub) resetIndexWithChildren('subsubdivision');
+              if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdivision');
             }
 
-            if (subdivIndex + 1 === subdivsPerDiv) resetIndexWithChildren('subdivision');
+            if (subdivIndex + 1 === localSubdivsPerDiv) resetIndexWithChildren('subdivision');
           }
 
           // Trace post-subdivision summary (temporary debug)

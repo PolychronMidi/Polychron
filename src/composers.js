@@ -80,7 +80,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
         let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
         if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps) {
           this.lastMeter=[newNumerator,newDenominator];
-          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) {}
+          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) {}
           return this.lastMeter;
         }
       } else {
@@ -92,7 +92,11 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
   }
 
   // Log warning with diagnostic info
-  console.warn(`getMeter() failed after ${iterations} iterations or ${(Date.now()-startTs)}ms. Ratio bounds: [${METER_RATIO_MIN}, ${METER_RATIO_MAX}]. LogSteps range: [${MIN_LOG_STEPS}, ${maxLogSteps}]. Returning fallback: [${FALLBACK_METER[0]}, ${FALLBACK_METER[1]}]`);
+  writeDebugFile('composers.ndjson', { tag: 'getMeter-failed', iterations, durationMs: (Date.now()-startTs), meterRatioBounds: [METER_RATIO_MIN, METER_RATIO_MAX], logStepsRange: [MIN_LOG_STEPS, maxLogSteps], fallback: [FALLBACK_METER[0], FALLBACK_METER[1]] }, 'debug');
+  // Also emit a console warning so tests and engineers can observe the fallback directly
+  try {
+    console.warn(`getMeter() failed: fallback ${JSON.stringify(FALLBACK_METER)} iterations=${iterations} Ratio bounds=${METER_RATIO_MIN}-${METER_RATIO_MAX} LogSteps=${MIN_LOG_STEPS}-${maxLogSteps}`);
+  } catch (e) {}
   this.lastMeter=FALLBACK_METER;
   return this.lastMeter;
 }
@@ -103,7 +107,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
    */
   getNotes(octaveRange=null) {
     if (++this.recursionDepth > this.MAX_RECURSION) {
-      console.warn('getNotes recursion limit exceeded; returning fallback note 0');
+      writeDebugFile('composers.ndjson', { tag: 'getNotes-recursion-limit' }, 'debug');
       this.recursionDepth = 0;
       return [{ note: 0 }];
     }
@@ -138,7 +142,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
       }).filter((noteObj,index,self)=>
         index===self.findIndex(n=>n.note===noteObj.note)
       ); }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
-      console.warn(e.message); this.recursionDepth--; return this.getNotes(octaveRange);  }}
+      try { writeDebugFile('composers.ndjson', { tag: 'getNotes-recursion', message: e && e.message ? e.message : String(e) }, 'debug'); } catch (e2) {} this.recursionDepth--; return this.getNotes(octaveRange);  }}
     finally {
       this.recursionDepth--;
     }
@@ -289,12 +293,12 @@ class ChordComposer extends MeasureComposer {
     const validatedProgression=progression.map(normalizeChordSymbol).filter(chordSymbol=>{
       const chord = t.Chord.get(chordSymbol);
       if (chord.empty) {
-        console.warn(`Invalid chord symbol: ${chordSymbol}`);
+        writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol }, 'debug');
         return false;
       }
       return true;
     });
-    if (validatedProgression.length===0) {console.warn('No valid chords in progression');
+    if (validatedProgression.length===0) { writeDebugFile('composers.ndjson', { tag: 'no-valid-chords' }, 'debug');
     } else {
       this.progression=validatedProgression.map(t.Chord.get);
       this.currentChordIndex=this.currentChordIndex || 0;
@@ -304,7 +308,7 @@ class ChordComposer extends MeasureComposer {
         case 'L': next=-1; break;
         case 'E': next=rf() < .5 ? 1 : -1; break;
         case '?': next=ri(-2,2); break;
-        default:console.warn('Invalid direction,defaulting to right'); next=1;
+        default: writeDebugFile('composers.ndjson', { tag: 'invalid-direction', info: 'defaulting to right' }, 'debug'); next=1;
       }
       let startingMeasure=measureCount;
       let progressChord=measureCount>startingMeasure || rf()<.05;
@@ -500,7 +504,7 @@ class ProgressionGenerator {
 
     const pattern = patterns[this.romanQuality || this.quality]?.[type];
     if (!pattern) {
-      console.warn(`Unknown progression type: ${type}, using I-IV-V`);
+      writeDebugFile('composers.ndjson', { tag: 'unknown-progression', type }, 'debug');
       return this.generate('I-IV-V');
     }
 
@@ -1138,7 +1142,7 @@ class PentatonicComposer extends MeasureComposer {
 
     // Fallback if scale not found: pick random root
     if (!this.notes || this.notes.length === 0) {
-      console.warn(`Pentatonic scale not found for ${root} ${type}, using random root`);
+      writeDebugFile('composers.ndjson', { tag: 'pentatonic-missing', root, type }, 'debug');
       this.root = allNotes[ri(allNotes.length - 1)];
       this.type = rf() < 0.5 ? 'major' : 'minor';
       const fallbackScaleName = this.type === 'minor' ? 'minor pentatonic' : 'major pentatonic';
@@ -1263,7 +1267,7 @@ class ComposerFactory {
     const type = config.type || 'scale';
     const factory = this.constructors[type];
     if (!factory) {
-      console.warn(`Unknown composer type: ${type}. Falling back to random scale.`);
+      writeDebugFile('composers.ndjson', { tag: 'unknown-composer-type', type }, 'debug');
       try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'fallback' }); } catch (e) {}
       return this.constructors.scale({ name: 'random', root: 'random' });
     }
