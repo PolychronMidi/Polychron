@@ -11,3 +11,4 @@ deepwiki.config.json
 /coverage
 .depcheckrc
 /log
+/tmp

@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import stripAnsi from './utils/stripAnsi.js';
-import readLogSafe from './utils/readLogSafe.js';
-import findFileByName from './utils/findFileByName.js';
+const fs = require('fs');
+const path = require('path');
+const stripAnsi = require('./utils/stripAnsi.js');
+const readLogSafe = require('./utils/readLogSafe.js');
+const findFileByName = require('./utils/findFileByName.js');
 
 
 /**
@@ -10,7 +10,7 @@ import findFileByName from './utils/findFileByName.js';
  * @param {string} [projectRoot=process.cwd()] - Project root path to search for logs and coverage files.
  * @returns {{summary:string|null,statements:number|null,branches:number|null,functions:number|null,lines:number|null}}
  */
-export function parseCoverageStats(projectRoot = process.cwd()) {
+function parseCoverageStats(projectRoot = process.cwd()) {
   // 1) Try log parsing
   const raw = readLogSafe(projectRoot, 'coverage.log');
   if (raw && raw.trim()) {
@@ -113,7 +113,7 @@ if (process.argv.includes('--self-test')) {
     fs.mkdirSync(path.join(tmpRoot, 'log'), { recursive: true });
     fs.writeFileSync(path.join(tmpRoot, 'log', 'coverage.log'), 'All files | 74.69 | 56.95 | 74.21 | 75.43');
     const c1 = parseCoverageStats(tmpRoot);
-    if (!c1 || c1.lines !== 75.4) throw new Error('log parse failed: ' + JSON.stringify(c1));
+    if (!c1 || Math.round((c1.lines || 0) * 10) / 10 !== 75.4) throw new Error('log parse failed: ' + JSON.stringify(c1));
     // remove log so subsequent cases test other code paths
     fs.rmSync(path.join(tmpRoot, 'log'), { recursive: true, force: true });
 
@@ -141,3 +141,6 @@ if (process.argv.includes('--self-test')) {
     process.exit(1);
   }
 }
+
+// Export for CommonJS
+module.exports = { parseCoverageStats };

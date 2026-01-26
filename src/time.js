@@ -922,6 +922,12 @@ setUnitTiming = (unitType) => {
     parts.push(`section${sec + 1}/${effectiveSectionTotal}`);
     parts.push(`phrase${(phr + 1)}/${effectivePhrasesPerSection}`);
     parts.push(`measure${(comp_mea + 1)}/${effectiveMeasuresPerPhrase}`);
+
+    // Only include lower-level segments down to the current unitType to avoid mixing
+    // example timing from a higher-level unit into a deeper canonical key (causes spurious huge ranges)
+    const levelOrder = ['section','phrase','measure','beat','division','subdivision','subsubdivision'];
+    const unitDepth = Math.max(0, levelOrder.indexOf(unitType));
+
     // Coerce effective totals to safe numeric values to avoid NaN/undefined in IDs
     const effBeatTotal = Number.isFinite(Number(effectiveBeatTotal)) ? Number(effectiveBeatTotal) : 1;
     const effDivsPerBeat = Number.isFinite(Number(effectiveDivsPerBeat)) ? Number(effectiveDivsPerBeat) : 1;
@@ -929,14 +935,15 @@ setUnitTiming = (unitType) => {
     const effSubsubTotal = Number.isFinite(Number(effectiveSubsubTotal)) ? Number(effectiveSubsubTotal) : 1;
     // Sanitize indices: clamp to valid ranges so we never emit index > total
     const s_bIdx = Number.isFinite(bIdx) ? Math.max(0, Math.min(bIdx, Math.max(0, Number(effBeatTotal) - 1))) : 0;
+    const s_divIdx = Number.isFinite(divIdx) ? Math.max(0, Math.min(divIdx, Math.max(0, Number(effDivsPerBeat) - 1))) : 0;
     const s_subdivIdx = Number.isFinite(subdivIdx) ? Math.max(0, Math.min(subdivIdx, Math.max(0, Number(effSubdivTotal) - 1))) : 0;
     const s_subsubIdx = Number.isFinite(subsubIdx) ? Math.max(0, Math.min(subsubIdx, Math.max(0, Number(effSubsubTotal) - 1))) : 0;
-    parts.push(`beat${(s_bIdx + 1)}/${effBeatTotal}`);
+
+    if (unitDepth >= levelOrder.indexOf('beat')) parts.push(`beat${(s_bIdx + 1)}/${effBeatTotal}`);
     // Include division in canonical key to remove ambiguity across varying subdivision totals per division
-    const s_divIdx = Number.isFinite(divIdx) ? Math.max(0, Math.min(divIdx, Math.max(0, Number(effDivsPerBeat) - 1))) : 0;
-    parts.push(`division${(s_divIdx + 1)}/${effDivsPerBeat}`);
-    parts.push(`subdivision${(s_subdivIdx + 1)}/${effSubdivTotal}`);
-    parts.push(`subsubdivision${(s_subsubIdx + 1)}/${effSubsubTotal}`);
+    if (unitDepth >= levelOrder.indexOf('division')) parts.push(`division${(s_divIdx + 1)}/${effDivsPerBeat}`);
+    if (unitDepth >= levelOrder.indexOf('subdivision')) parts.push(`subdivision${(s_subdivIdx + 1)}/${effSubdivTotal}`);
+    if (unitDepth >= levelOrder.indexOf('subsubdivision')) parts.push(`subsubdivision${(s_subsubIdx + 1)}/${effSubsubTotal}`);
     const range = `${Math.round(unitStart)}-${Math.round(unitEnd)}`;
     // Prefer marker-derived seconds when available for this unit (search down from most-specific parts to less-specific)
     const getCsvForLayer = (layerName) => {

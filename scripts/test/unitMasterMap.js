@@ -1,7 +1,8 @@
-const { spawnSync } = require('child_process'); const fs = require('fs'); const path = require('path');
-// Run short play
-const r = spawnSync(process.execPath, [path.join('src','play.js')], { env: {...process.env, PLAY_LIMIT:'1'}, stdio: 'inherit' });
-if (r.error) throw r.error;
+const fs = require('fs');
+const path = require('path');
+
+console.log('Starting unitMasterMap.js ...');
+
 const p = path.join(process.cwd(), 'output', 'unitMasterMap.json');
 if (!fs.existsSync(p)) { console.error('missing unitMasterMap.json'); process.exit(2); }
 const obj = JSON.parse(fs.readFileSync(p,'utf8'));

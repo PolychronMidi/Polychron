@@ -441,7 +441,7 @@ resetIndexWithChildren = (unit) => {
 };
 
 // Timing and counter variables (documented inline for brevity)
-measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=0;
+measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=0;
 
 /**
  * Cross-modulation factor for polyrhythmic interference.

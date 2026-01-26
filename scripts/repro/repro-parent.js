@@ -42,6 +42,10 @@ try { if (fs.existsSync(resultOut)) fs.unlinkSync(resultOut); } catch (e) {}
 process.env.PLAY_LIMIT = String(PLAY_LIMIT);
 process.env.INDEX_TRACES = '1';
 process.env.TARGET_PARENT = parentKey;
+// Allow a FAST/VERBOSE repro mode that enables per-phase logging so progress is visible
+if (process.env.FAST_REPRO || process.env.VERBOSE_REPRO) {
+  process.env.__POLYCHRON_TEST_ENABLE_LOGGING = '1';
+}
 
 // Force deterministic section/phrase counts derived from the parent target so the run reaches the target phrase
 try {

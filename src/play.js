@@ -5,7 +5,15 @@ require('./stage');
 require('./structure');
 const { writeIndexTrace, isEnabled, writeDebugFile } = require('./logGate');
 
+console.log('Starting play.js ...');
+
 const BASE_BPM=BPM;
+
+// Allow environment gating to enable verbose internal logging for repro/test runs
+if (process.env.__POLYCHRON_TEST_ENABLE_LOGGING) {
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  globalThis.__POLYCHRON_TEST__.enableLogging = true;
+}
 
 // Initialize composers from configuration if not already done
 if (!composers || composers.length === 0) {

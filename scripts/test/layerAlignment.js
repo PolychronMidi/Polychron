@@ -1,9 +1,10 @@
-#!/usr/bin/env node
 // layerAlignment.js
 // Checks phrase alignment across layers and compares overall track lengths.
 
 const fs = require('fs');
 const path = require('path');
+
+console.log('Starting layerAlignment.js ...');
 
 const OUT = path.resolve(process.cwd(), 'output');
 const UNITS_PATH = path.join(OUT, 'units.json');

@@ -1,15 +1,47 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
-import { Project } from 'ts-morph';
-import chokidar from 'chokidar';
-import { parseCoverageStats } from './coverage-utils.js';
-import stripAnsi from './utils/stripAnsi.js';
-import readLogSafe from './utils/readLogSafe.js';
-import formatDate from './utils/formatDate.js';
-import splitByCodeFences from './utils/splitByCodeFences.js';
-import normalizeCodeForComparison from './utils/normalizeCodeForComparison.js';
-import { getFailuresFromLog } from './utils/getFailuresFromLog.js';
+const fs = require('fs');
+const path = require('path');
+const { Project } = require('ts-morph');
+const chokidar = require('chokidar');
+const child_process = require('child_process');
+
+// parseCoverageStats wrapper: prefer requiring the helper directly, but if it's an ES module
+// fallback to spawning node to dynamically import and call the function synchronously.
+function parseCoverageStats(projectRoot = process.cwd()) {
+  try {
+    const mod = require('./coverage-utils.js');
+    if (mod && typeof mod.parseCoverageStats === 'function') return mod.parseCoverageStats(projectRoot);
+  } catch (e) {
+    // try dynamic import via a child Node process to handle ES modules
+    try {
+      const cmd = `import('./coverage-utils.js').then(m => console.log(JSON.stringify(m.parseCoverageStats(${JSON.stringify(projectRoot)})))).catch(err => { console.error(err && err.stack ? err.stack : err); process.exit(1); });`;
+      const r = child_process.spawnSync(process.execPath, ['-e', cmd], { encoding: 'utf8' });
+      if (r && r.status === 0 && r.stdout) {
+        try {
+          return JSON.parse(r.stdout.trim());
+        } catch (e2) {}
+      }
+    } catch (e2) {}
+  }
+  return { summary: 'Coverage data unavailable', statements: null, branches: null, functions: null, lines: null };
+}
+let stripAnsi;
+let readLogSafe;
+let formatDate;
+let splitByCodeFences;
+let normalizeCodeForComparison;
+let getFailuresFromLog;
+
+async function loadDeps() {
+  // Try CommonJS require first, fallback to dynamic import for ESM modules
+  // Prefer dynamic import (handles ESM); fall back to require where necessary
+  try { const m = await import('./utils/stripAnsi.js'); stripAnsi = m.default || m; } catch (e) { stripAnsi = require('./utils/stripAnsi.js'); }
+  try { const m = await import('./utils/readLogSafe.js'); readLogSafe = m.default || m; } catch (e) { readLogSafe = require('./utils/readLogSafe.js'); }
+  try { const m = await import('./utils/formatDate.js'); formatDate = m.default || m; } catch (e) { formatDate = require('./utils/formatDate.js'); }
+  try { const m = await import('./utils/splitByCodeFences.js'); splitByCodeFences = m.default || m; } catch (e) { splitByCodeFences = require('./utils/splitByCodeFences.js'); }
+  try { const m = await import('./utils/normalizeCodeForComparison.js'); normalizeCodeForComparison = m.default || m; } catch (e) { normalizeCodeForComparison = require('./utils/normalizeCodeForComparison.js'); }
+  try { const m = await import('./utils/getFailuresFromLog.js'); getFailuresFromLog = m.getFailuresFromLog || m.default || m; } catch (e) { const gf = require('./utils/getFailuresFromLog.js'); getFailuresFromLog = gf.getFailuresFromLog || gf; }
+}
 
 const projectRoot = process.cwd();
 const srcDir = path.join(projectRoot, 'src');
@@ -54,51 +86,81 @@ const srcByDoc = new Map(modules.map(m => [path.join(docsDir, m.doc), path.join(
  */
 function parseTestStats() {
   const raw = readLogSafe(projectRoot, 'test.log');
-  if (!raw.trim()) return { summary: 'No recent test run (log/test.log not found)', total: null, passed: null, percentage: null };
+  if (!raw.trim()) return { summary: 'No recent test run (log/test.log not found)', tests: null, testFiles: null };
   const clean = stripAnsi(raw);
-  const passedMatch = [...clean.matchAll(/Tests\s+(\d+)\s+passed\s*\((\d+)\)/gi)].pop();
-  const failedMatch = [...clean.matchAll(/Tests\s+(\d+)\s+failed.*?(\d+)\s+passed.*?(\d+)\s+total/gi)].pop();
-  let total = null;
-  let passed = null;
-  let failed = null;
 
-  if (passedMatch) {
-    passed = Number(passedMatch[1]);
-    total = Number(passedMatch[2] || passedMatch[1]);
-  }
-
-  if (total === null && failedMatch) {
-    failed = Number(failedMatch[1]);
-    passed = Number(failedMatch[2]);
-    total = Number(failedMatch[3]);
-  }
-
-  if (total === null) {
-    const fallbackLine = clean.split(/\r?\n/).reverse().find(l => /Tests\s+/i.test(l)) || '';
-    const nums = (fallbackLine.match(/\d+/g) || []).map(Number);
-    if (nums.length >= 2) {
-      passed = nums[0];
-      total = nums[nums.length - 1];
+  // If the test runner process exited with a non-zero code, prefer a clear summary
+  const exitMatches = [...clean.matchAll(/PROCESS EXIT:\s*code=(\d+)/gi)];
+  if (exitMatches.length) {
+    const code = Number(exitMatches.pop()[1]);
+    if (!Number.isNaN(code) && code !== 0) {
+      return { summary: `Test run failed (exit code=${code})`, tests: null, testFiles: null };
     }
   }
 
-  if (total === null) {
-    return { summary: 'Tests data unavailable', total: null, passed: null, percentage: null };
+  // Common Windows / shell failure message: npm not found
+  if (/npm' is not recognized|npm is not recognized|npm: command not found/i.test(clean)) {
+    return { summary: 'Test runner unavailable (npm not found)', tests: null, testFiles: null };
   }
 
-  if (passed !== null && total !== null && passed > total) {
-    console.warn(`parseTestStats: parsed passed (${passed}) > total (${total}) - swapping to correct order`);
-    const tmp = passed;
-    passed = total;
-    total = tmp;
+  // Parse the "Test Files" summary line (if present)
+  const testFilesMatch = clean.match(/Test Files\s+.*?(\d+)\s+passed(?:\s*\|\s*(\d+)\s+skipped)?\s*\((\d+)\)/i);
+  const testFiles = { total: null, passed: null, skipped: 0, percentage: null };
+  if (testFilesMatch) {
+    testFiles.passed = Number(testFilesMatch[1]);
+    testFiles.skipped = Number(testFilesMatch[2] || 0);
+    testFiles.total = Number(testFilesMatch[3]);
+    if (testFiles.total > 0) testFiles.percentage = Math.round((testFiles.passed / testFiles.total) * 1000) / 10;
   }
 
-  if (failed === null && total !== null && passed !== null) {
-    failed = Math.max(total - passed, 0);
+  // Parse the "Tests" summary line (preferred)
+  const testsMatch = clean.match(/Tests\s+(\d+)\s+passed(?:\s*\|\s*(\d+)\s+skipped)?\s*\((\d+)\)/i);
+  const failedMatch = clean.match(/Tests\s+(\d+)\s+failed.*?(\d+)\s+passed.*?(\d+)\s+total/i);
+  const tests = { total: null, passed: null, skipped: 0, failed: null, percentage: null };
+
+  if (testsMatch) {
+    tests.passed = Number(testsMatch[1]);
+    tests.skipped = Number(testsMatch[2] || 0);
+    tests.total = Number(testsMatch[3]);
+  } else if (failedMatch) {
+    tests.failed = Number(failedMatch[1]);
+    tests.passed = Number(failedMatch[2]);
+    tests.total = Number(failedMatch[3]);
   }
 
-  const percentage = total > 0 && passed !== null ? Math.round((passed / total) * 1000) / 10 : null;
-  return { summary: null, total, passed, failed, percentage };
+  // If still missing, try a fallback that finds a recent 'tests' containing line and heuristically extracts numbers
+  if (tests.total === null) {
+    const fallbackLine = clean.split(/\r?\n/).reverse().find(l => /\btests?\b/i.test(l) || /Test Files\b/i.test(l)) || '';
+    const nums = (fallbackLine.match(/\d+/g) || []).map(Number);
+    if (nums.length >= 2) {
+      // Heuristic: first number may be passed, last is likely total
+      tests.passed = tests.passed || nums[0];
+      tests.total = tests.total || nums[nums.length - 1];
+    }
+  }
+
+  // If values still missing, return an explanatory summary
+  if (tests.total === null && !testFiles.total) {
+    return { summary: 'Data unavailable (could not parse test results)', tests: null, testFiles: testFiles.total ? testFiles : null };
+  }
+
+  // Sanity: if parsed passed > total, log warning and swap (rare but observed in noisy logs)
+  if (tests.passed !== null && tests.total !== null && tests.passed > tests.total) {
+    console.warn(`parseTestStats: parsed passed (${tests.passed}) > total (${tests.total}) - swapping to correct order`);
+    const tmp = tests.passed;
+    tests.passed = tests.total;
+    tests.total = tmp;
+  }
+
+  if (tests.failed === null && tests.total !== null && tests.passed !== null) {
+    tests.failed = Math.max(tests.total - tests.passed - (tests.skipped || 0), 0);
+  }
+
+  if (tests.total && tests.passed !== null) {
+    tests.percentage = tests.total > 0 ? Math.round((tests.passed / tests.total) * 1000) / 10 : null;
+  }
+
+  return { summary: null, tests, testFiles: testFiles.total ? testFiles : null };
 }
 
 /**
@@ -147,14 +209,26 @@ function parseTypeCheckStats() {
  */
 function buildStatusBlock() {
   const dateStr = formatDate();
-  const tests = parseTestStats();
+  const stats = parseTestStats();
   const lint = parseLintStats();
   const type = parseTypeCheckStats();
   const coverage = parseCoverageStats();
 
-  const testsLine = tests.total !== null && tests.passed !== null && tests.percentage !== null
-    ? `- Tests ${tests.passed}/${tests.total} - ${tests.percentage}%`
-    : `- Tests ${tests.summary}`;
+  // Compose Test Files line (if available)
+  let testFilesLine = null;
+  if (stats.testFiles) {
+    const tf = stats.testFiles;
+    testFilesLine = `- Test Files ${tf.passed} passed | ${tf.skipped} skipped (${tf.total})` + (tf.percentage !== null ? ` - ${tf.percentage}%` : '');
+  }
+
+  // Compose Tests line
+  let testsLine = null;
+  if (stats.tests) {
+    const t = stats.tests;
+    testsLine = `- Tests ${t.passed}/${t.total}` + (t.percentage !== null ? ` - ${t.percentage}%` : '');
+  } else {
+    testsLine = `- Tests ${stats.summary}`;
+  }
 
   const lintLine = lint.errors !== null && lint.warnings !== null
     ? `- Lint ${lint.errors} errors / ${lint.warnings} warnings`
@@ -169,11 +243,11 @@ function buildStatusBlock() {
     : `- Coverage ${coverage.summary}`;
 
   // Multi-line: each tool on its own line, coverage stays as one informative line
-  return `${dateStr} - Latest Status\n${testsLine}\n${lintLine}\n${typeLine}\n${coverageLine}`;
+  return `${dateStr} - Latest Status\n${testFilesLine ? testFilesLine + '\n' : ''}${testsLine}\n${lintLine}\n${typeLine}\n${coverageLine}`;
 }
 
 // Export for external use so other scripts (e.g., onboarding) can reuse the same formatting
-export { buildStatusBlock };
+// (CommonJS: module.exports assigned at EOF)
 
 function updateRootReadmeStatus() {
   const readmePath = path.join(projectRoot, 'README.md');
@@ -215,7 +289,7 @@ function updateRootReadmeStatus() {
 }
 
 
-export { getFailuresFromLog };
+// getFailuresFromLog re-export will be exposed via module.exports at EOF
 
 /*
  * Scan root-level TODO*.md files and synchronize the "Test Failures" section with current log
@@ -422,8 +496,15 @@ function processDoc(project, docPath, verbose=false) {
  * Fix all documentation files by auto-linking and injecting snippets.
  * @param {boolean} [verbose=false] - If true, log file updates.
  */
+function getProject() {
+  const tsPath = path.join(projectRoot, 'tsconfig.json');
+  if (fs.existsSync(tsPath)) return new Project({ tsConfigFilePath: tsPath });
+  // Fallback project for JS-only repos without tsconfig.json
+  return new Project({ compilerOptions: { allowJs: true, checkJs: false, noEmit: true } });
+}
+
 function fixAll(verbose=false) {
-  const project = new Project({ tsConfigFilePath: path.join(projectRoot, 'tsconfig.json') });
+  const project = getProject();
   for (const { doc } of modules) {
     const docPath = path.join(docsDir, doc);
     if (fs.existsSync(docPath)) processDoc(project, docPath, verbose);
@@ -433,7 +514,7 @@ function fixAll(verbose=false) {
 }
 
 function watchAll() {
-  const project = new Project({ tsConfigFilePath: path.join(projectRoot, 'tsconfig.json') });
+  const project = getProject();
   const watcher = chokidar.watch(path.join(srcDir, '**/*.js'), { ignoreInitial: true });
   watcher.on('change', (changed) => {
     const docPath = docBySrc.get(changed);
@@ -550,21 +631,31 @@ function generateIndex() {
   console.log('Generated: docs/README.md');
 }
 
-const cmd = process.argv[2] || 'fix';
-const verbose = process.argv[3] === '--verbose';
-if (cmd === 'fix') fixAll(verbose);
-else if (cmd === 'watch') watchAll();
-else if (cmd === 'check') checkAll();
-else if (cmd === 'index') generateIndex();
-else if (cmd === 'status') {
-  updateRootReadmeStatus();
+(async () => {
+  await loadDeps();
+  const cmd = process.argv[2] || 'fix';
+  const verbose = process.argv[3] === '--verbose';
   try {
-    updateTodosStatus();
+    if (cmd === 'fix') await fixAll(verbose);
+    else if (cmd === 'watch') await watchAll();
+    else if (cmd === 'check') await checkAll();
+    else if (cmd === 'index') await generateIndex();
+    else if (cmd === 'status') {
+      await updateRootReadmeStatus();
+      try { await updateTodosStatus(); } catch (e) { console.error('Error updating TODO status:', e && e.message ? e.message : e); }
+    } else {
+      console.error('Usage: node scripts/docs.js [fix|watch|check|index|status] [--verbose]');
+      process.exit(1);
+    }
   } catch (e) {
-    console.error('Error updating TODO status:', e && e.message ? e.message : e);
+    console.error('docs.js: ERROR', e && e.stack ? e.stack : e);
+    process.exit(1);
   }
-}
-else {
-  console.error('Usage: node scripts/docs.js [fix|watch|check|index|status] [--verbose]');
-  process.exit(1);
-}
+})();
+
+// Expose helper functions for CommonJS consumers/tests
+module.exports = {
+  buildStatusBlock,
+  getFailuresFromLog,
+  parseCoverageStats
+};
