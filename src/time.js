@@ -825,6 +825,13 @@ setUnitTiming = (unitType) => {
     let sTick = Math.round(unitStart);
     let eTick = Math.round(unitEnd);
 
+    // Log rounding differences for diagnostics (always append regardless of gating)
+    try {
+      if (Math.round(unitStart) !== unitStart || Math.round(unitEnd) !== unitEnd) {
+        try { appendToFile('generator-rounding.ndjson', { when: new Date().toISOString(), layer: layerName, unitType, fullId, unitStart, unitEnd, sTick, eTick }); } catch (_e) {}
+      }
+    } catch (_e) {}
+
     // Enforce positive non-zero span
     if (!Number.isFinite(sTick)) sTick = 0;
     if (!Number.isFinite(eTick) || eTick <= sTick) eTick = sTick + 1;
@@ -835,6 +842,12 @@ setUnitTiming = (unitType) => {
       const arr = LM.layers[layerName].state.units;
       const last = arr.length ? arr[arr.length - 1] : null;
       if (last && last.unitType === unitType && Number.isFinite(last.endTick) && last.endTick > sTick) {
+        // Record diagnostic details about the overlap correction (always append regardless of gating)
+        try {
+          const payload = { when: new Date().toISOString(), layer: layerName, unitType, fullId, nominalStart: Math.round(unitStart), nominalEnd: Math.round(unitEnd), beforeStart: sTick, beforeEnd: eTick, correctedStart: last.endTick, correctedEnd: Math.max(eTick, last.endTick + 1), lastUnit: last };
+          try { appendToFile('generator-overlap-corrections.ndjson', payload); } catch (_e) {}
+        } catch (_e) {}
+
         // Shift start to end of previous unit to avoid overlap
         sTick = last.endTick;
         if (eTick <= sTick) eTick = sTick + 1;
@@ -1179,7 +1192,10 @@ setUnitTiming = (unitType) => {
 
       // Add to live master unit map (tick-first canonical aggregator) using the canonical part key
       try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: parts.slice(), layer: layerName, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), startTime: startSecNum, endTime: endSecNum, raw: unitRec }); } catch (_e) {}
-      p(c, { tick: Math.round(unitStart), type: 'marker_t', vals: [`unitRec:${fullId}`], _internal: true });
+      // Emit a labeled unitRec marker so CSV markers are both machine-parseable and human-friendly.
+      // Example: "New Beat:unitRec:primary|section1/9|phrase1/4|measure1/5|beat1/8|1500-1875|0.045113-0.056391"
+      const label = `New ${unitType.charAt(0).toUpperCase() + unitType.slice(1)}`;
+      p(c, { tick: Math.round(unitStart), type: 'marker_t', vals: [`${label}:unitRec:${fullId}`], _internal: true });
     } catch (_e) { if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[setUnitTiming] error emitting marker to buffer', _e && _e.stack ? _e.stack : _e); }
 } catch (_e) { try { console.error('[setUnitTiming] persist block error', _e && _e.stack ? _e.stack : _e); } catch (_e2) {} }
 

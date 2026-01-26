@@ -25,4 +25,4 @@ it('subdivision siblings do not overlap within same parent', () => {
     }
   }
   expect(violations.length).toBe(0);
-}, 120000);
+});

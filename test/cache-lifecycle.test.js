@@ -22,5 +22,5 @@ describe('composer cache lifecycle', () => {
     // Only fail for missing high-level caches (beat or div); missing subdiv caches are expected at parent-level saves
     const badMisses = missEntries.filter(m => (typeof m.key === 'string') && (m.key.startsWith('beat:') || m.key.startsWith('div:')));
     expect(badMisses.length).toBe(0);
-  }, 30000);
+  });
 });

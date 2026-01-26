@@ -36,5 +36,5 @@ describe('reproducer: high-level composer cache misses', () => {
 
     // Expectation: zero high-level misses (this will fail until root cause fixed)
     expect(lines.length).toBe(0);
-  }, 30000);
+  });
 });

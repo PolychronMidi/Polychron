@@ -24,5 +24,5 @@ describe('Critical errors regression', () => {
     // Assert no critical entries were produced
     const hasCritical = fs.existsSync(out) && fs.readFileSync(out, 'utf8').trim().length > 0;
     expect(hasCritical).toBe(false);
-  }, 30000);
+  });
 });

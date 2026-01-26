@@ -1,15 +1,19 @@
 export default [
   {
+    ignores: ['eslint.config.mjs', 'vitest.config.mjs']
+  },
+  {
+    files: ['eslint.config.mjs'],
+    languageOptions: { sourceType: 'module', ecmaVersion: 'latest' }
+  },
+  {
+    files: ['src/**/*.js', 'src/**', 'test/**/*.js', 'test/**'],
     ignores: [
       '**/*.mjs',
       'node_modules/**',
       'csv_maestro/**',
       'output/**',
-      '__pycache__/**',
-      'output/*.csv',
-      'output/*.mid',
-      'output/*.wav',
-      'test/**'
+      '__pycache__/**'
     ]
   },
   {
@@ -339,6 +343,21 @@ export default [
       'no-trailing-spaces': 'warn',
       'eol-last': ['warn', 'always'],
       'no-unused-vars': 'off'  // Too many intentional globals
+    }
+  },
+  {
+    files: ['test/**/*.js', 'test/**'],
+    languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 'latest',
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly'
+      }
     }
   },
   {

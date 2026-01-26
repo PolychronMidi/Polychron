@@ -18,4 +18,4 @@ it('finds subsubdivision units with span > 60000 in LM state for diagnosis', () 
   // Print diagnostics to help developer triage
   large.forEach(l => console.log('LARGE_UNIT', l));
   expect(large.length).toBe(0);
-}, 120000);
+});

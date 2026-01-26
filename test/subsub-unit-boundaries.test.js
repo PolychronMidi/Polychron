@@ -43,4 +43,4 @@ it('subsubdivision units are within their subdivision parent bounds', () => {
 
     expect(violations.length).toBe(0);
   }
-}, 120000);
+});

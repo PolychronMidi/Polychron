@@ -23,4 +23,4 @@ process.env.PLAY_LIMIT='1'; process.env.INDEX_TRACES='1'; require('./src/play.js
   const bad = divisionEntries.filter(e => Number.isFinite(e.subdivIndex) && Number.isFinite(e.subdivsPerDiv) && (e.subdivIndex >= e.subdivsPerDiv));
 
   expect(bad.length, `Found ${bad.length} division entries with subdivIndex >= subdivsPerDiv. Sample: ${bad.slice(0,3).map(x=>JSON.stringify(x)).join('\n')}`).toBe(0);
-}, 20000);
+});
