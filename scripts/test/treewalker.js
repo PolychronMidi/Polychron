@@ -9,6 +9,8 @@ const path = require('path');
 // - Units within the same layer must not overlap (start/end ranges must be disjoint).
 // - Sections (marker lines containing "Section") must appear in each layer and have the same count.
 
+console.log('Starting treewalker.js ...');
+
 const OUT_DIR = path.resolve(process.cwd(), 'output');
 const UNITS_PATH = path.join(OUT_DIR, 'units.json');
 

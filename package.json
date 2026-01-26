@@ -19,7 +19,7 @@
     "lint:raw": "eslint . --ext .js",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
     "lint:fix": "eslint . --ext .js --fix",
-    "test": "cross-env SILENCE_LOGS=1 node scripts/run-with-log.js test-full.log npm run all && npm run docs:status",
+    "test": "cross-env SILENCE_LOGS=1 node scripts/run-with-log.js test-full.log npm run all",
     "test:verbose": "vitest --run --reporter=verbose",
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",
     "test:coverage:raw": "vitest --coverage --run",
@@ -29,7 +29,7 @@
     "onboard": "node scripts/onboard.js",
     "todo": "node scripts/new-todo.js",
     "am-i-done": "node scripts/am-i-done.js",
-    "all": "npm run lint && npm run dont-use-this-directly && npm run verify",
+    "all": "npm run lint && npm run dont-use-this-directly && npm run docs:status && npm run verify",
     "play": "node scripts/run-with-log.js play.log node scripts/play-guard.js",
     "verify": "npm run play && npm run verify:overlap && npm run verify:unit-tree && npm run verify:layer-alignment && npm run verify:unitMasterMap",
     "verify:fast": "cross-env PLAY_LIMIT=1 npm run play && npm run verify:unit-tree && npm run verify:layer-alignment && npm run verify:unitMasterMap",
@@ -46,6 +46,6 @@
     "audit": "npm audit",
     "deps:check": "depcheck",
     "deps:audit": "npm audit && depcheck",
-    "dont-use-this-directly": "node scripts/run-with-log.js test-full.log vitest --run --reporter=default"
+    "dont-use-this-directly": "node scripts/run-with-log.js test.log vitest --run --reporter=default"
   }
 }

@@ -634,6 +634,7 @@ grandFinale = () => {
     }
 
     fs.writeFileSync(outputFilename, composition);
+    console.log(`Wrote file: ${outputFilename}`);
     try { writeDebugFile('writer.ndjson', { tag: 'file-created', outputFilename, layer: name }); } catch (e) { /* swallow */ }
 
   });

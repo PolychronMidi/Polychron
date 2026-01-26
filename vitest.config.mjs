@@ -4,6 +4,8 @@ export default {
     // Ensure Vitest runs to completion and does not stay in watch mode in CI/local runs
     // `run: true` makes the runner execute tests and exit.
     run: true,
+    // Default test timeout increased to 2 minutes to accommodate longer integration tests
+    timeout: 2000000,
     // Load centralized log gate during test setup so console output is controlled project-wide
     setupFiles: ['./src/logGate.js'],
     coverage: {

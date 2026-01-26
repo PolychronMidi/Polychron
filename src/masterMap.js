@@ -194,6 +194,7 @@ function getCanonical() {
 
   // Overlap trimming removed — prefer to surface overlaps for source fixes
   // (previously performed trimming/fixes here were removed to keep master map faithful to emissions)
+  // DO NOT RESTORE THIS FEATURE, IT IS AN EXAMPLE OF ANTI-PATTERN.
 
 
   return out;

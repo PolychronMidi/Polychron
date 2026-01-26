@@ -3,7 +3,7 @@
  * @param {string} content - Markdown content to split.
  * @returns {{type: string, text: string}[]} Array of parts.
  */
-export default function splitByCodeFences(content) {
+module.exports = function splitByCodeFences(content) {
   const parts = [];
   const lines = content.split(/\r?\n/);
   let inFence = false;
@@ -28,4 +28,4 @@ export default function splitByCodeFences(content) {
     parts.push({ type: inFence ? 'code' : 'text', text: buffer.join('\n') });
   }
   return parts;
-}
+};

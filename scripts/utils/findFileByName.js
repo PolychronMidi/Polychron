@@ -5,9 +5,9 @@
  * @param {number} [maxDepth=3] - Max recursion depth.
  * @returns {string|null} Absolute path if found, otherwise null.
  */
-import fs from 'fs';
-import path from 'path';
-export default function findFileByName(root, name, maxDepth = 3) {
+const fs = require('fs');
+const path = require('path');
+module.exports = function findFileByName(root, name, maxDepth = 3) {
   const seen = new Set();
   function search(dir, depth) {
     if (depth > maxDepth) return null;
@@ -26,4 +26,4 @@ export default function findFileByName(root, name, maxDepth = 3) {
     return null;
   }
   return search(root, 0);
-}
+};

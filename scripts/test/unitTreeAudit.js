@@ -1,9 +1,8 @@
-#!/usr/bin/env node
-// Copied from root scripts/unitTreeAudit.js into scripts/test for test tooling and CI
 const fs = require('fs');
 const path = require('path');
-
 const OUT = path.resolve(process.cwd(), 'output');
+
+console.log('Starting unitTreeAudit.js ...');
 
 // Read units from CSV marker_t records. Prefer human-readable 'Phrase/Measure/Beat ... endTick: N' markers to reconstruct reliable start/end boundaries; fall back to internal 'unitRec:<fullId>' markers when present.
 function readUnitsFromCsv() {
@@ -28,9 +27,27 @@ function readUnitsFromCsv() {
     for (const ln of lines) {
       if (!ln || !ln.startsWith('1,')) continue;
       const parts = ln.split(',');
-      if (parts.length < 4) continue;
-      const type = String(parts[2]).toLowerCase();
-      if (type !== 'marker_t') continue;
+      if (parts.length < 3) continue;
+
+      // In some cases writers embed unit ids into the tick field like: "569798|layer1outro|135014-569798"
+      // Extract inline unitRec info when present so we don't miss units used only inline in events.
+      try {
+        const tickField = String(parts[1] || '');
+        if (tickField.includes('|')) {
+          const after = tickField.split('|').slice(1).join('|');
+          const seg = after.split('|');
+          const last = seg[seg.length - 1] || '';
+          if (last && last.includes('-')) {
+            const r = last.split('-');
+            const startTick = Number(r[0] || 0);
+            const endTick = Number(r[1] || 0);
+            if (Number.isFinite(startTick) && Number.isFinite(endTick)) {
+              unitRecEntries.push({ unitId: after, layer, startTick, endTick, startTime: null, endTime: null, raw: `inline:${ln}` });
+            }
+          }
+        }
+      } catch (e) {}
+
       const val = parts.slice(3).join(',');
 
       // unitRec entries (legacy internal markers)
