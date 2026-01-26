@@ -1,13 +1,13 @@
-#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
 
 // Simple CSV treewalker & validator for Polychron outputs
 // Validations performed:
+// Walks the unit tree at all levels to verify and report accurate continuity.
 // - Every non-marker event row must include a unitHash encoded as `tick|unitHash`.
-// - Each event's numeric tick must fall within the start/end range of the unit as recorded in output/units.json.
-// - Units within the same layer must not overlap (start/end ranges must be disjoint).
-// - Sections (marker lines containing "Section") must appear in each layer and have the same count.
+// - Each event's numeric tick must fall within the start/end range of the unit as recorded in unitHash, with the only exception being note_off events to allow for dynamic sustain.
+// - Sibling units within the same layer must not overlap (start/end ranges must be disjoint) and meet with no gap.
+// - Units should increment in order and only up to the total number of units per parent unit (e.g. beat 1..N within each measure).
 
 console.log('Starting treewalker.js ...');
 
