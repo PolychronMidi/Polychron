@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
-import { execSync } from 'child_process';
-import formatDate from './utils/formatDate.js';
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const formatDate = require('./utils/formatDate.js');
+const makeTemplate = require('./utils/TODO-template.js');
+const getFailuresFromLog = require('./utils/getFailuresFromLog.js').getFailuresFromLog;
 
 const dateStr = formatDate();
 const projectRoot = process.cwd();
@@ -17,9 +19,6 @@ const projectRoot = process.cwd();
 function sanitizeName(raw) {
   return raw.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9._-]/g, '-');
 }
-
-import makeTemplate from './utils/TODO-template.js';
-import { getFailuresFromLog } from './utils/getFailuresFromLog.js';
 
 const HEADER = makeTemplate(dateStr);
 
@@ -109,13 +108,32 @@ async function main() {
           const seen = new Set();
           const linesToAppend = ['\n\n## Test Failures (from log/test.log)\n'];
           for (const f of failures) {
-            const key = `${f.file}|${f.loc}|${f.desc}|${f.msg}`;
+            const primary = (f.locs && f.locs[0]) || null;
+            const locStr = primary ? `${primary.path}:${primary.line}${primary.col ? `:${primary.col}` : ''}` : (f.file || 'unknown');
+            const key = `${locStr}|${f.desc}|${f.msg}`;
             if (seen.has(key)) continue;
             seen.add(key);
-            const locPart = f.loc ? `${f.loc}` : f.file;
-            const msgPart = f.msg ? ` — ${f.msg}` : '';
-            linesToAppend.push(`- [ ] ${locPart} — ${f.desc}${msgPart}`);
+
+            // Summary line
+            linesToAppend.push(`- [ ] **${locStr}** — ${f.desc}`);
+
+
+
+            if (f.snippet) {
+              // Trim leading/trailing blank lines in the snippet for compactness
+              let start = f.snippet.startLine;
+              let lines = f.snippet.lines.slice();
+              while (lines.length && lines[0].trim() === '') { lines.shift(); start++; }
+              while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+              const end = start + lines.length - 1;
+              linesToAppend.push('', `\`\`\` js (lines ${start}-${end})`);
+              for (const l of lines) linesToAppend.push(`     ${l}`);
+              linesToAppend.push('```', '');
+            }
+
+            linesToAppend.push('');
           }
+
           fs.appendFileSync(todoPath, linesToAppend.join('\n') + '\n', 'utf8');
           console.log(`Appended ${seen.size} test failure(s) from log/test.log to ${path.relative(projectRoot, todoPath)}`);
         } else {

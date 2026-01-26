@@ -4,10 +4,10 @@
  * @param {string} fileName - The filename inside the log directory.
  * @returns {string} File contents or empty string if missing.
  */
-import fs from 'fs';
-import path from 'path';
-export default function readLogSafe(projectRoot = process.cwd(), fileName) {
+const fs = require('fs');
+const path = require('path');
+module.exports = function readLogSafe(projectRoot = process.cwd(), fileName) {
   const logPath = path.join(projectRoot, 'log', fileName);
   if (!fs.existsSync(logPath)) return '';
   return fs.readFileSync(logPath, 'utf-8');
-}
+};

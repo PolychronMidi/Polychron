@@ -1,14 +1,14 @@
 /**
  * Utilities around the canonical TODO template used in TODO files.
  */
-export const HEADER_MARKER = '### TODO TEMPLATE (Leave this template at top of file as format reminder)';
+const HEADER_MARKER = '### TODO TEMPLATE (Leave this template at top of file as format reminder)';
 
 /**
  * Generate the canonical TODO template with the given date string inserted.
  * @param {string} dateStr
  * @returns {string}
  */
-export default function makeTemplate(dateStr) {
+function makeTemplate(dateStr) {
   return `### TODO TEMPLATE (Leave this template at top of file as format reminder)
 ### REVIEW \`RULES.md\` RELIGIOUSLY, ESPECIALLY BEFORE COMMUNICATING OUTSIDE OF THIS CHANNEL - THIS FILE IS THE MAIN PROJECT COORDINATION CHANNEL
 
@@ -19,3 +19,6 @@ export default function makeTemplate(dateStr) {
 - [${dateStr}] Remember to revisit the TODO often, always adding/updating timestamps at line starts.
 ---\n`;
 }
+
+module.exports = makeTemplate;
+module.exports.HEADER_MARKER = HEADER_MARKER;

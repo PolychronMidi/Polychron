@@ -1,7 +1,7 @@
 // masterMap.js - live master unit map builder (incremental)
 const path = require('path');
 const getFs = () => (typeof globalThis !== 'undefined' && globalThis.fs) ? globalThis.fs : require('fs');
-const { writeDebugFile } = require('./logGate');
+const { writeDebugFile, writeDetectedOverlap } = require('./logGate');
 
 const OUT_DIR = path.join(process.cwd(), 'output');
 const NDJSON_PATH = path.join(OUT_DIR, 'unitMasterMap.ndjson');
@@ -98,13 +98,11 @@ function addUnit(u) {
                 try {
                   const _fs = require('fs'); const _path = require('path');
                   const payload = { when: new Date().toISOString(), detectedFor: targetPrefix || '<any>', key, parts, startTick, endTick, conflictingKey: otherKey, otherStart, otherEnd, stack: (new Error()).stack };
-                  try { _fs.appendFileSync(_path.join(process.cwd(), 'output', 'detected-overlap.ndjson'), JSON.stringify(payload) + '\n'); } catch (e) {}
+                  try { writeDetectedOverlap(payload, null); } catch (e) {}
 
                   // Verbose trace: include composer cache snapshot (if available) and recent index-traces for richer context
                   try {
-                    const verbose = Object.assign({}, payload);
-                    // Attach cached composer state for the layer if available
-                    try {
+                    const verbose = Object.assign({}, payload);                    try {
                       const layerName = (u && u.layer) ? u.layer : null;
                       if (layerName && typeof LM !== 'undefined' && LM.layers && LM.layers[layerName] && LM.layers[layerName].state) {
                         verbose.composerCache = LM.layers[layerName].state._composerCache || null;
@@ -118,7 +116,7 @@ function addUnit(u) {
                       const itPath = _path.join(process.cwd(), 'output', 'index-traces.ndjson');
                       if (_fs.existsSync(itPath)) {
                         const txt = String(_fs.readFileSync(itPath, 'utf8') || '');
-                        const lines = txt.trim().split(/\r?\n/).filter(Boolean);
+                        const lines = txt.trim().split(new RegExp('\\r?\\n')).filter(Boolean);
                         verbose.recentIndexTraces = lines.slice(Math.max(0, lines.length - 40));
                       } else {
                         verbose.recentIndexTraces = null;
