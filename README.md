@@ -1,5 +1,9 @@
 # Polychron
 
+<!-- BEGIN: test-status -->
+
+<!-- END: test-status -->
+
 Polychron is an advanced MIDI composition system that breaks free from traditional MIDI limitations, particularly in the realm of time signatures (meters). The core innovation lies in its ability to work with any musical meter through a process called "meter spoofing" while maintaining compatibility with standard MIDI playback systems.
 
 ## Key Features

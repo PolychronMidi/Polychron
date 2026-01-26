@@ -97,6 +97,67 @@ function writeDetectedOverlap(payload, verbose) {
   try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (e) {}
 }
 
+// Test-mode console gating helpers
+let _consoleRestore = null;
+
+function gateConsoleForTests() {
+  // Do not gate unless running under NODE_ENV=test
+  const testing = process.env.NODE_ENV === 'test';
+  const envAllow = !!process.env.ENABLE_LOGS;
+  if (!testing) return () => {};
+  if (envAllow) return () => {};
+  if (_consoleRestore) return _consoleRestore; // already gated
+
+  const _orig = {
+    log: console.log.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+  };
+
+  // Save previous __POLYCHRON_TEST__.enableLogging so we can restore it
+  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
+  const _origEnableLogging = globalThis.__POLYCHRON_TEST__.enableLogging;
+  // Silence conditional logging hooks used throughout the codebase
+  globalThis.__POLYCHRON_TEST__.enableLogging = false;
+
+  // Silence normal logs and warnings during tests; redirect errors into output/test-errors.ndjson
+  console.log = () => {};
+  console.warn = () => {};
+  console.error = (...args) => {
+    try {
+      appendToFile('test-errors.ndjson', { ts: Date.now(), args: args.map(a => (typeof a === 'string' ? a : (a && a.stack ? a.stack : JSON.stringify(a)))) });
+    } catch (e) {}
+  };
+
+  _consoleRestore = () => {
+    console.log = _orig.log;
+    console.warn = _orig.warn;
+    console.error = _orig.error;
+    // Restore previous enableLogging value
+    try { globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {}; globalThis.__POLYCHRON_TEST__.enableLogging = _origEnableLogging; } catch (e) {}
+    _consoleRestore = null;
+  };
+  return _consoleRestore;
+}
+
+function restoreConsoleForTests() {
+  if (_consoleRestore) _consoleRestore();
+}
+
+// Programmatic API to control silent mode (for scripts/CI)
+let _silentMode = false;
+function setSilentMode(v = true) {
+  _silentMode = !!v;
+  if (_silentMode) {
+    // Apply gating immediately
+    try { gateConsoleForTests(); } catch (e) {}
+  } else {
+    try { restoreConsoleForTests(); } catch (e) {}
+  }
+}
+
+function isSilentMode() { return !!_silentMode; }
+
 module.exports = {
   isEnabled,
   writeIndexTrace,
@@ -104,6 +165,32 @@ module.exports = {
   appendToFile,
   writeFatal,
   writeDetectedOverlap,
+  gateConsoleForTests,
+  restoreConsoleForTests,
+  setSilentMode,
+  isSilentMode,
   MASTER_LOG: MASTER,
   LEVELS
 };
+
+// Default to silent logging unless explicitly opted-in via ENABLE_LOGS or MASTER_LOG.
+// SILENCE_LOGS=1 forces silence; ENABLE_LOGS=1 or setting MASTER_LOG turns logging on.
+try {
+  const envAllow = !!process.env.ENABLE_LOGS;
+  const masterProvided = !!process.env.MASTER_LOG || !!process.env.masterLog;
+  const silenceFlag = process.env.SILENCE_LOGS === '1';
+
+  // SILENCE_LOGS explicit override takes precedence
+  if (silenceFlag) {
+    setSilentMode(true);
+  } else if (envAllow || masterProvided) {
+    // Explicit opt-in via env or master logging provided
+    setSilentMode(false);
+  } else if (process.env.NODE_ENV === 'test') {
+    // For test runs default to silent unless ENABLE_LOGS set
+    setSilentMode(true);
+  } else {
+    // Default policy for local/dev runs: silent by default, opt-in to enable logs
+    setSilentMode(true);
+  }
+} catch (e) {}

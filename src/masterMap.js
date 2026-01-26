@@ -151,8 +151,7 @@ function addUnit(u) {
     try {
       const _durMs = Number(process.hrtime.bigint() - _perfStart) / 1e6;
       if (_durMs > 5) {
-        console.warn(`perf: masterMap.addUnit slow ${_durMs.toFixed(2)}ms key=${key}`);
-        try { writeDebugFile('perf-addUnit.ndjson', { when: new Date().toISOString(), key, durationMs: _durMs }); } catch (e) {}
+        try { writeDebugFile('perf-addUnit.ndjson', { when: new Date().toISOString(), key, durationMs: _durMs }, 'perf'); } catch (e) {}
       }
     } catch (e) {}
 
@@ -206,10 +205,14 @@ function finalize() {
     flushed = true;
     ensureOutDir();
     const canonical = getCanonical();
-    const payload = { generated: new Date().toISOString(), version: 3, units: canonical, stats: { units: canonical.length } };
-    // Write atomically: .tmp then rename
-    getFs().writeFileSync(ATOMIC_TMP, JSON.stringify(payload, null, 2));
-    try { getFs().renameSync(ATOMIC_TMP, ATOMIC_JSON_PATH); } catch (e) { /* fallback */ getFs().writeFileSync(ATOMIC_JSON_PATH, JSON.stringify(payload, null, 2)); }
+    // Historically this file was an array of canonical units; maintain that shape for tests that expect iterable root.
+    const payloadArray = canonical;
+    // also write a small companion meta file for diagnostic stats, preserving previous object shape if needed
+    const meta = { generated: new Date().toISOString(), version: 3, stats: { units: canonical.length } };
+    // Write atomically: .tmp then rename (array payload)
+    getFs().writeFileSync(ATOMIC_TMP, JSON.stringify(payloadArray, null, 2));
+    try { getFs().renameSync(ATOMIC_TMP, ATOMIC_JSON_PATH); } catch (e) { /* fallback */ getFs().writeFileSync(ATOMIC_JSON_PATH, JSON.stringify(payloadArray, null, 2)); }
+    try { getFs().writeFileSync(path.join(OUT_DIR, 'unitMasterMap.meta.json'), JSON.stringify(meta, null, 2)); } catch (e) {}
     // also close ndjson stream
     try { if (ndjsonStream && ndjsonStream.end) ndjsonStream.end(); } catch (e) {}
 

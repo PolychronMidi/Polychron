@@ -29,23 +29,23 @@ function runTestsLoop(iterations, testFile = '') {
 
   for (let i = 1; i <= iterations; i++) {
     try {
-      const cmd = testFile 
-        ? `npm test -- ${testFile} 2>&1` 
+      const cmd = testFile
+        ? `npm test -- ${testFile} 2>&1`
         : `npm test 2>&1`;
-      
+
       const output = execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
-      
+
       // Check if tests passed
       if (output.includes('failed')) {
         failureCount++;
         failedRuns.push(i);
-        
+
         // Extract failure information
         const failureMatch = output.match(/(\d+)\s+failed.*?(\d+)\s+passed/);
         if (failureMatch) {
           fs.appendFileSync(logFile, `\n=== RUN ${i}: FAILED ===\n`);
           fs.appendFileSync(logFile, `Failed: ${failureMatch[1]}, Passed: ${failureMatch[2]}\n`);
-          
+
           // Extract assertion errors
           const errorMatches = output.match(/AssertionError: .+/g);
           if (errorMatches) {
@@ -66,7 +66,7 @@ function runTestsLoop(iterations, testFile = '') {
       fs.appendFileSync(logFile, error.message + '\n');
       process.stdout.write('✗');
     }
-    
+
     if (i % 10 === 0) process.stdout.write(` ${i}\n`);
   }
 

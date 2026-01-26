@@ -6,8 +6,8 @@
  * a success message is printed. Otherwise, a violation message is printed.
  */
 
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 const projectRoot = process.cwd();
 const readmePath = path.join(projectRoot, 'README.md');
@@ -169,8 +169,6 @@ function main() {
   process.exit(anyViolation ? 1 : 0);
 }
 
-if (import.meta.url === `file://${process.cwd().replace(/\\/g, '/')}/scripts/am-i-done.js`) {
-  main();
-} else if (process.argv[1] && process.argv[1].endsWith('am-i-done.js')) {
+if (require.main === module) {
   main();
 }

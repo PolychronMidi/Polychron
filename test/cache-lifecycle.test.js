@@ -13,7 +13,7 @@ describe('composer cache lifecycle', () => {
     try { if (fs.existsSync(tracesFile)) fs.unlinkSync(tracesFile); } catch (e) {}
 
     const env = Object.assign({}, process.env, { PLAY_LIMIT: '1', INDEX_TRACES: '1' });
-    const res = spawnSync(process.execPath, [path.join('src','play.js')], { env, stdio: 'inherit', timeout: 60000 });
+    const res = spawnSync(process.execPath, [path.join('src','play.js')], { env, stdio: 'ignore', timeout: 60000 });
     if (res.error) throw res.error;
     // Read traces and check for any composer:cache:miss entries
     expect(fs.existsSync(tracesFile)).toBe(true);

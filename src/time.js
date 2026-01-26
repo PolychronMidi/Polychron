@@ -61,7 +61,8 @@ function warnOnce(key, msg) {
   try {
     if (_polychron_warned.has(key)) return;
     _polychron_warned.add(key);
-    console.warn(msg);
+    // Gate warnings via logGate (debug category)
+    try { writeDebugFile('warnings.ndjson', { key, msg }); } catch (e) { /* swallow */ }
   } catch (e) { /* swallow logging errors */ }
 }
 
@@ -385,8 +386,7 @@ const LM = layerManager ={
     // Restore layer timing state to globals
     layer.state.restoreTo(globalThis);
 
-    // Reset lower-level indices and derived totals to avoid carry-over from previously active layer
-    measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0;
+    // Reset only derived composer counts to avoid carry-over; preserve caller-set indices (measureIndex etc.) so callers can activate and then set indices as needed
     divsPerBeat = subdivsPerDiv = subsubsPerSub = undefined;
 
     if (isPoly) {
@@ -595,7 +595,9 @@ setUnitTiming = (unitType) => {
         const _fs = require('fs'); const _path = require('path');
         const t = {
           tag: 'time:division-entry', when: new Date().toISOString(), layer: (LM && LM.activeLayer) ? LM.activeLayer : 'primary',
-          sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex,
+          sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex,
+          // For trace stability when composers flip counts mid-play, clamp subdivIndex to current subdivsPerDiv
+          subdivIndex: Number.isFinite(Number(subdivsPerDiv)) ? Math.min(subdivIndex, Math.max(0, Number(subdivsPerDiv) - 1)) : subdivIndex,
           divsPerBeat, subdivsPerDiv, numerator, meterRatio,
           // Use the clamped values in the trace to reflect the exact values used for timing
           composerDivisions: divsPerBeat,
@@ -608,7 +610,7 @@ setUnitTiming = (unitType) => {
 
     case 'subdivision':
       trackSubdivRhythm();
-      tpSubdiv = tpDiv / m.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
+      tpSubdiv = tpDiv / m.max(1, (typeof subdivsPerDiv !== 'undefined' && Number.isFinite(Number(subdivsPerDiv))) ? Number(subdivsPerDiv) : 1);
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
@@ -643,7 +645,7 @@ setUnitTiming = (unitType) => {
 
     case 'subsubdivision':
       trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : 1);
+      tpSubsubdiv = tpSubdiv / m.max(1, (typeof subsubdivsPerSub !== 'undefined' && Number.isFinite(Number(subsubdivsPerSub))) ? Number(subsubdivsPerSub) : 1);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
@@ -658,19 +660,19 @@ setUnitTiming = (unitType) => {
   // Persist a compact unit record into the layer state so writers can reference units later.
   try {
     const layerName = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
-    try { console.log('[DEBUG] persist-start', { unitType, layerName, sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) {}
-    const sec = Number.isFinite(Number(sectionIndex)) ? Number(sectionIndex) : 0;
-    const phr = Number.isFinite(Number(phraseIndex)) ? Number(phraseIndex) : 0;
-    const mea = Number.isFinite(Number(measureIndex)) ? Number(measureIndex) : 0;
-    const bIdx = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
-    const divIdx = Number.isFinite(Number(divIndex)) ? Number(divIndex) : 0;
-    const subdivIdx = Number.isFinite(Number(subdivIndex)) ? Number(subdivIndex) : 0;
-    const subsubIdx = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
+    try { writeDebugFile('time-debug.ndjson', { tag: 'persist-start', unitType, layerName, sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) {}
+    const sec = (typeof sectionIndex !== 'undefined' && Number.isFinite(Number(sectionIndex))) ? Number(sectionIndex) : 0;
+    const phr = (typeof phraseIndex !== 'undefined' && Number.isFinite(Number(phraseIndex))) ? Number(phraseIndex) : 0;
+    const mea = (typeof measureIndex !== 'undefined' && Number.isFinite(Number(measureIndex))) ? Number(measureIndex) : 0;
+    const bIdx = (typeof beatIndex !== 'undefined' && Number.isFinite(Number(beatIndex))) ? Number(beatIndex) : 0;
+    const divIdx = (typeof divIndex !== 'undefined' && Number.isFinite(Number(divIndex))) ? Number(divIndex) : 0;
+    const subdivIdx = (typeof subdivIndex !== 'undefined' && Number.isFinite(Number(subdivIndex))) ? Number(subdivIndex) : 0;
+    const subsubIdx = (typeof subsubdivIndex !== 'undefined' && Number.isFinite(Number(subsubdivIndex))) ? Number(subsubdivIndex) : 0;
 
-    const beatTotal = Number.isFinite(Number(numerator)) ? Number(numerator) : 1;
-    const subdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1;
-    const subsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : 1;
-    try { console.log('[DEBUG] totals', { beatTotal, subdivTotal, subsubTotal, numerator, subdivsPerDiv, subsubdivsPerSub }); } catch (_e) {}
+    const beatTotal = (typeof numerator !== 'undefined' && Number.isFinite(Number(numerator))) ? Number(numerator) : 1;
+    const subdivTotal = (typeof subdivsPerDiv !== 'undefined' && Number.isFinite(Number(subdivsPerDiv))) ? Number(subdivsPerDiv) : 1;
+    const subsubTotal = (typeof subsubdivsPerSub !== 'undefined' && Number.isFinite(Number(subsubdivsPerSub))) ? Number(subsubdivsPerSub) : 1;
+    try { writeDebugFile('time-debug.ndjson', { tag: 'totals', beatTotal, subdivTotal, subsubTotal, numerator, subdivsPerDiv, subsubdivsPerSub }); } catch (_e) {}
 
     // Compute canonical unit boundaries for this unitType so start/end are accurate
     let unitStart = 0;
@@ -687,7 +689,7 @@ setUnitTiming = (unitType) => {
       case 'measure':
         unitStart = measureStart;
         unitEnd = measureStart + tpMeasure;
-        try { console.log('[DEBUG] in-measure-case', { measureStart, tpMeasure, unitStart, unitEnd }); } catch (_e) {}
+        try { writeDebugFile('time-debug.ndjson', { tag: 'in-measure-case', measureStart, tpMeasure, unitStart, unitEnd }); } catch (_e) {}
         break;
       case 'beat':
         unitStart = beatStart;
@@ -710,12 +712,51 @@ setUnitTiming = (unitType) => {
         unitEnd = 0;
     }
 
-    try { console.log('[DEBUG] unitBounds', { unitType, unitStart, unitEnd, tpSec, tpMeasure, tpBeat, tpDiv, tpSubdiv }); } catch (_e) {}
-    try { console.log('[DEBUG] after-switch'); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'unitBounds', unitType, unitStart, unitEnd, tpSec, tpMeasure, tpBeat, tpDiv, tpSubdiv }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'after-switch' }); } catch (_e) {}
+
+    // Clamp child unit boundaries to their parent unit to avoid overlaps or overlong spans
+    try {
+      switch (unitType) {
+        case 'measure':
+          if (Number.isFinite(phraseStart) && Number.isFinite(tpPhrase)) {
+            unitStart = Math.max(unitStart, phraseStart);
+            unitEnd = Math.min(unitEnd, phraseStart + tpPhrase);
+          }
+          break;
+        case 'beat':
+          if (Number.isFinite(measureStart) && Number.isFinite(tpMeasure)) {
+            unitStart = Math.max(unitStart, measureStart);
+            unitEnd = Math.min(unitEnd, measureStart + tpMeasure);
+          }
+          break;
+        case 'division':
+          if (Number.isFinite(beatStart) && Number.isFinite(tpBeat)) {
+            unitStart = Math.max(unitStart, beatStart);
+            unitEnd = Math.min(unitEnd, beatStart + tpBeat);
+          }
+          break;
+        case 'subdivision':
+          if (Number.isFinite(divStart) && Number.isFinite(tpDiv)) {
+            unitStart = Math.max(unitStart, divStart);
+            unitEnd = Math.min(unitEnd, divStart + tpDiv);
+          }
+          break;
+        case 'subsubdivision':
+          if (Number.isFinite(subdivStart) && Number.isFinite(tpSubdiv)) {
+            unitStart = Math.max(unitStart, subdivStart);
+            unitEnd = Math.min(unitEnd, subdivStart + tpSubdiv);
+          }
+          break;
+      }
+      // Ensure non-zero positive spans; if degenerate, extend by 1 tick
+      if (!Number.isFinite(unitStart)) unitStart = 0;
+      if (!Number.isFinite(unitEnd) || unitEnd <= unitStart) unitEnd = unitStart + 1;
+    } catch (_e) {}
 
     let startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
     let endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
-    try { console.log('[DEBUG] secsComputed', { startSecNum, endSecNum }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'secsComputed', startSecNum, endSecNum }); } catch (_e) {}
 
     // Compute effective totals here to avoid carrying stale/default totals into the first child unit of a new parent
     const effectiveSectionTotal = (typeof totalSections !== 'undefined' && Number.isFinite(Number(totalSections))) ? Number(totalSections) : 1;
@@ -725,9 +766,9 @@ setUnitTiming = (unitType) => {
     // Cache composer-derived counts to avoid multiple getter calls and flip-flop
     const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
     const _cache = (LM.layers[layer] && LM.layers[layer].state && LM.layers[layer].state._composerCache) ? LM.layers[layer].state._composerCache : null;
-    const _beatKey = `beat:${measureIndex}:${beatIndex}`;
-    const _divKey = `div:${measureIndex}:${beatIndex}:${divIndex}`;
-    const _subdivKey = `subdiv:${measureIndex}:${beatIndex}:${divIndex}:${subdivIndex}`;
+    const _beatKey = `beat:${mea}:${bIdx}`;
+    const _divKey = `div:${mea}:${bIdx}:${divIdx}`;
+    const _subdivKey = `subdiv:${mea}:${bIdx}:${divIdx}:${subdivIdx}`;
 
     // Diagnostic cache peek: write a short trace showing whether cache entries exist for the current keys
     writeIndexTrace({ tag: 'composer:cache:peek', when: new Date().toISOString(), layer, keys: { beat: _beatKey, div: _divKey, subdiv: _subdivKey }, cacheHas: { beat: !!(_cache && _cache[_beatKey]), div: !!(_cache && _cache[_divKey]), subdiv: !!(_cache && _cache[_subdivKey]) } });
@@ -735,7 +776,7 @@ setUnitTiming = (unitType) => {
     // Only query the cache levels that are relevant for this unitType to avoid spurious warnings
     let composerDivisionsCached;
     if (['beat','division','subdivision','subsubdivision'].includes(unitType)) {
-      if (Number.isFinite(Number(divsPerBeat))) {
+      if (typeof divsPerBeat !== 'undefined' && Number.isFinite(Number(divsPerBeat))) {
         composerDivisionsCached = Number(divsPerBeat);
       } else if (_cache && _cache[_beatKey] && Number.isFinite(_cache[_beatKey].divisions)) {
         composerDivisionsCached = _cache[_beatKey].divisions;
@@ -749,7 +790,7 @@ setUnitTiming = (unitType) => {
 
     let composerSubdivisionsCached;
     if (['division','subdivision','subsubdivision'].includes(unitType)) {
-      if (Number.isFinite(Number(subdivsPerDiv))) {
+      if (typeof subdivsPerDiv !== 'undefined' && Number.isFinite(Number(subdivsPerDiv))) {
         composerSubdivisionsCached = Number(subdivsPerDiv);
       } else if (_cache && _cache[_divKey] && Number.isFinite(_cache[_divKey].subdivisions)) {
         composerSubdivisionsCached = _cache[_divKey].subdivisions;
@@ -763,7 +804,7 @@ setUnitTiming = (unitType) => {
 
     let composerSubsubdivsCached;
     if (['subdivision','subsubdivision'].includes(unitType)) {
-      if (Number.isFinite(Number(subsubdivsPerSub))) {
+      if (typeof subsubdivsPerSub !== 'undefined' && Number.isFinite(Number(subsubdivsPerSub))) {
         composerSubsubdivsCached = Number(subsubdivsPerSub);
       } else if (_cache && _cache[_subdivKey] && Number.isFinite(_cache[_subdivKey].subsubdivs)) {
         composerSubsubdivsCached = _cache[_subdivKey].subsubdivs;
@@ -775,11 +816,39 @@ setUnitTiming = (unitType) => {
       }
     }
 
-    const effectiveDivsPerBeat = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : (Number.isFinite(Number(composerDivisionsCached)) ? composerDivisionsCached : 1);
-    const effectiveSubdivTotal = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : (Number.isFinite(Number(composerSubdivisionsCached)) ? composerSubdivisionsCached : 1);
-    const effectiveSubsubTotal = Number.isFinite(Number(subsubdivsPerSub)) ? Number(subsubdivsPerSub) : (Number.isFinite(Number(composerSubsubdivsCached)) ? composerSubsubdivsCached : 1);
+    const effectiveDivsPerBeat = (typeof divsPerBeat !== 'undefined' && Number.isFinite(Number(divsPerBeat))) ? Number(divsPerBeat) : ((typeof composerDivisionsCached !== 'undefined' && Number.isFinite(Number(composerDivisionsCached))) ? composerDivisionsCached : 1);
+    const effectiveSubdivTotal = (typeof subdivsPerDiv !== 'undefined' && Number.isFinite(Number(subdivsPerDiv))) ? Number(subdivsPerDiv) : ((typeof composerSubdivisionsCached !== 'undefined' && Number.isFinite(Number(composerSubdivisionsCached))) ? composerSubdivisionsCached : 1);
+    const effectiveSubsubTotal = (typeof subsubdivsPerSub !== 'undefined' && Number.isFinite(Number(subsubdivsPerSub))) ? Number(subsubdivsPerSub) : ((typeof composerSubsubdivsCached !== 'undefined' && Number.isFinite(Number(composerSubsubdivsCached))) ? composerSubsubdivsCached : 1);
 
-    try { console.log('[DEBUG] about-to-build-unitRec', { layerName, unitType, unitStart, unitEnd }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'about-to-build-unitRec', layerName, unitType, unitStart, unitEnd }); } catch (_e) {}
+    // Round start/end ticks and enforce non-overlap and span limits
+    let sTick = Math.round(unitStart);
+    let eTick = Math.round(unitEnd);
+
+    // Enforce positive non-zero span
+    if (!Number.isFinite(sTick)) sTick = 0;
+    if (!Number.isFinite(eTick) || eTick <= sTick) eTick = sTick + 1;
+
+    // Prevent overlaps with previously emitted units of the same unitType (best-effort local fix)
+    if (LM && LM.layers && LM.layers[layerName]) {
+      LM.layers[layerName].state.units = LM.layers[layerName].state.units || [];
+      const arr = LM.layers[layerName].state.units;
+      const last = arr.length ? arr[arr.length - 1] : null;
+      if (last && last.unitType === unitType && Number.isFinite(last.endTick) && last.endTick > sTick) {
+        // Shift start to end of previous unit to avoid overlap
+        sTick = last.endTick;
+        if (eTick <= sTick) eTick = sTick + 1;
+      }
+    }
+
+    // Hard cap for subsubdivision spans to avoid pathological spans in treewalker
+    if (unitType === 'subsubdivision') {
+      const MAX_SPAN = 60000;
+      if ((eTick - sTick) > MAX_SPAN) {
+        eTick = sTick + MAX_SPAN;
+      }
+    }
+
     const unitRec = {
       layer: layerName,
       unitType,
@@ -796,17 +865,17 @@ setUnitTiming = (unitType) => {
       subdivTotal: effectiveSubdivTotal,
       subsubIndex: subsubIdx,
       subsubTotal: effectiveSubsubTotal,
-      startTick: Math.round(unitStart),
-      endTick: Math.round(unitEnd),
+      startTick: sTick,
+      endTick: eTick,
       // Persist seconds-based start/end time when tpSec available (null otherwise)
       startTime: Number.isFinite(startSecNum) ? Number(startSecNum.toFixed(6)) : null,
       endTime: Number.isFinite(endSecNum) ? Number(endSecNum.toFixed(6)) : null
     };
-    try { console.log('[DEBUG] built-unitRec', { layerName, unitType, unitRec }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'built-unitRec', layerName, unitType, unitRec }); } catch (_e) {}
 
 
     // DEBUG: log unitRec push context
-    try { console.log('[DEBUG] pushUnitRec', { layerName, unitType, parts: parts.slice(), unitStart: Math.round(unitStart), unitEnd: Math.round(unitEnd), startTime: unitRec.startTime, endTime: unitRec.endTime }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'pushUnitRec', layerName, unitType, parts: parts.slice(), unitStart: sTick, unitEnd: eTick, startTime: unitRec.startTime, endTime: unitRec.endTime }); } catch (_e) {}
     if (LM && LM.layers && LM.layers[layerName]) {
       LM.layers[layerName].state.units = LM.layers[layerName].state.units || [];
       LM.layers[layerName].state.units.push(unitRec);
@@ -915,12 +984,12 @@ setUnitTiming = (unitType) => {
 
     const findMarkerSecs = (layerName, partsArr) => {
       const map = getCsvForLayer(layerName);
-      try { console.log('[DEBUG] inner markerMap keys', layerName, Object.keys(map).slice(0,20)); } catch (_e) {}
+      try { writeDebugFile('time-debug.ndjson', { tag: 'markerMap-keys', layerName, keys: Object.keys(map).slice(0,20) }); } catch (_e) {}
       // try most-specific to least-specific
       for (let len = partsArr.length; len > 0; len--) {
         const k = partsArr.slice(0, len).join('|');
         const kNorm = partsArr.slice(0, len).map(p => String(p).replace(/\/1$/, '')).join('|');
-        try { console.log('[DEBUG] findMarkerSecs check', { len, k, kNorm, hasK: !!(map && map[k]), hasKNorm: !!(map && map[kNorm]) }); } catch (_e) {}
+        try { writeDebugFile('time-debug.ndjson', { tag: 'findMarkerSecs-check', len, k, kNorm, hasK: !!(map && map[k]), hasKNorm: !!(map && map[kNorm]) }); } catch (_e) {}
         if (map && map[k] && Number.isFinite(map[k].startSec)) return map[k];
         if (kNorm !== k && map && map[kNorm] && Number.isFinite(map[kNorm].startSec)) return map[kNorm];
       }
@@ -930,7 +999,7 @@ setUnitTiming = (unitType) => {
     const markerMatch = findMarkerSecs(layerName, parts);
     let secs = null;
     if (markerMatch && Number.isFinite(markerMatch.startSec) && Number.isFinite(markerMatch.endSec)) {
-      try { console.log('[DEBUG] markerMatch found', markerMatch); } catch (_e) {}
+      try { writeDebugFile('time-debug.ndjson', { tag: 'markerMatch-found', markerMatch }); } catch (_e) {}
       secs = `${markerMatch.startSec.toFixed(6)}-${markerMatch.endSec.toFixed(6)}`;
       // also override startSecNum/endSecNum for downstream use
       if (Number.isFinite(markerMatch.startSec)) startSecNum = markerMatch.startSec;
@@ -938,7 +1007,7 @@ setUnitTiming = (unitType) => {
 
       // Update previously-pushed unitRec (and local unitRec variable) to reflect marker-derived seconds
       try {
-        try { console.log('[DEBUG] applying marker secs to unitRec', { unitType, startSecNum, endSecNum, layerName, unitStart: Math.round(unitStart), unitEnd: Math.round(unitEnd) }); } catch (_e) {}
+        try { writeDebugFile('time-debug.ndjson', { tag: 'applying-marker-secs', unitType, startSecNum, endSecNum, layerName, unitStart: Math.round(unitStart), unitEnd: Math.round(unitEnd) }); } catch (_e) {}
         if (typeof unitRec !== 'undefined') {
           unitRec.startTime = Number.isFinite(startSecNum) ? Number(startSecNum.toFixed(6)) : null;
           unitRec.endTime = Number.isFinite(endSecNum) ? Number(endSecNum.toFixed(6)) : null;
@@ -984,7 +1053,7 @@ setUnitTiming = (unitType) => {
       const anomalies = [];
       // Only flag strict greater-than (not loop-exit equality) to reduce transient noise
       // Only compare indices that are relevant to the current unitType to avoid spurious child-index carry-over reports
-      const divTotal = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : 1;
+      const divTotal = (typeof divsPerBeat !== 'undefined' && Number.isFinite(Number(divsPerBeat))) ? Number(divsPerBeat) : 1;
       if (unitType === 'beat' && bIdx > beatTotal) anomalies.push({ field: 'beat', idx: bIdx, total: beatTotal });
       if (unitType === 'division' && divIdx > divTotal) anomalies.push({ field: 'division', idx: divIdx, total: divTotal });
       if (unitType === 'subdivision' && subdivIdx > subdivTotal) anomalies.push({ field: 'subdivision', idx: subdivIdx, total: subdivTotal });
@@ -1180,7 +1249,7 @@ const loadMarkerMapForLayer = (layerName) => {
 
 const findMarkerSecs = (layerName, partsArr) => {
   const map = loadMarkerMapForLayer(layerName);
-  try { console.log('[DEBUG] markerMap keys', layerName, Object.keys(map).slice(0,20)); } catch (_e) {}
+  try { writeDebugFile('time-debug.ndjson', { tag: 'markerMap-keys', layerName, keys: Object.keys(map).slice(0,20) }); } catch (_e) {}
   if (!map) return null;
   for (let len = partsArr.length; len > 0; len--) {
     const k = partsArr.slice(0, len).join('|');

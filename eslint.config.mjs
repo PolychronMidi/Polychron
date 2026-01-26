@@ -340,5 +340,11 @@ export default [
       'eol-last': ['warn', 'always'],
       'no-unused-vars': 'off'  // Too many intentional globals
     }
+  },
+  {
+    files: ['scripts/**/*.js', 'scripts/**'],
+    languageOptions: {
+      sourceType: 'module'
+    }
   }
 ];
