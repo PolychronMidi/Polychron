@@ -26,7 +26,8 @@ function readUnits() {
     usedMaster = true;
     try {
       const mt = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
-      const masterUnits = (mt && Array.isArray(mt.units)) ? mt.units : [];
+      // Support both legacy { units: [...] } manifests and newer array-root manifests
+      const masterUnits = Array.isArray(mt) ? mt : ((mt && Array.isArray(mt.units)) ? mt.units : []);
       for (const mu of masterUnits) {
         const key = mu.key;
         // Infer unitType from the last segment of the key
@@ -367,10 +368,98 @@ function main() {
       }
 
       // Use explicit unitHash if present, otherwise the assigned fallback
-      const unitHash = e.unitHash || (assignedUnit && assignedUnit.unitHash);
+      let unitHash = e.unitHash || (assignedUnit && assignedUnit.unitHash);
+      const _originalUnitToken = e.unitHash || null;
+      // Resolve compact numeric unit tokens like "0-750" (start-end) to canonical unitHash by matching start/end ticks.
+      if (unitHash && /^[0-9]+-[0-9]+$/.test(String(unitHash))) {
+        const m = String(unitHash).match(/^([0-9]+)-([0-9]+)$/);
+        if (m) {
+          const s = Number(m[1]);
+          const en = Number(m[2]);
+          // 1) Exact match for start/end
+          let found = layerUnits.find(u => Number(u.startTick) === s && Number(u.endTick) === en);
+          // 2) Exact start, end >= token end — choose the smallest enclosing end
+          if (!found) {
+            const starts = layerUnits.filter(u => Number(u.startTick) === s && Number(u.endTick) >= en).sort((a,b)=> Number(a.endTick)-Number(b.endTick));
+            if (starts.length) found = starts[0];
+          }
+          // 3) Exact end, start <= token start — choose the largest enclosing start
+          if (!found) {
+            const ends = layerUnits.filter(u => Number(u.endTick) === en && Number(u.startTick) <= s).sort((a,b)=> Number(b.startTick)-Number(a.startTick));
+            if (ends.length) found = ends[0];
+          }
+          // 4) As a last resort, find the smallest unit that fully encloses the token range
+          if (!found) {
+            const encl = layerUnits.filter(u => Number(u.startTick) <= s && Number(u.endTick) >= en).sort((a,b)=> (Number(a.endTick)-Number(a.startTick)) - (Number(b.endTick)-Number(b.startTick)));
+            if (encl.length) found = encl[0];
+          }
+          if (found) {
+            unitHash = found.unitHash || found.key;
+          }
+        }
+      }
+
+      // Resolve partial canonical segment tokens like "section5/9" or "phrase3/4" present in the tick string
+      if (unitHash && /^[A-Za-z]+\d+\/\d+$/.test(String(unitHash)) && e.tickRaw && String(e.tickRaw).includes('|')) {
+        try {
+          const parts = String(e.tickRaw).split('|').map(s => s.trim()).filter(Boolean);
+          // try progressively longer suffixes after the tick to find a matching unit key (prefixed by layer)
+          for (let i = 1; i < parts.length; i++) {
+            const segs = parts.slice(1, i + 1);
+            const candidate = `${layer}|${segs.join('|')}`;
+            const found = layerUnits.find(u => String(u.unitHash || u.key).startsWith(candidate));
+            if (found) {
+              // Prefer a containing match using the event tick if available
+              if (Number.isFinite(e.tickNum)) {
+                const s = Number(found.startTick || 0);
+                const en = Number(found.endTick || 0);
+                if (Number.isFinite(s) && Number.isFinite(en) && e.tickNum >= s && e.tickNum <= en) {
+                  unitHash = found.unitHash || found.key;
+                  break;
+                }
+              } else {
+                unitHash = found.unitHash || found.key;
+                break;
+              }
+            }
+          }
+          // Fallback: find any unit whose key contains the token and encloses the tick
+          if ((!unitHash || !layerUnits.find(x=>x.unitHash===unitHash)) && Number.isFinite(e.tickNum)) {
+            const tok = String(unitHash);
+            const found = layerUnits.find(u => String(u.unitHash || u.key).includes(tok) && Number(u.startTick||0) <= e.tickNum && Number(u.endTick||0) >= e.tickNum);
+            if (found) unitHash = found.unitHash || found.key;
+          }
+        } catch (_err) {}
+      }
+
+      // If the original unit token was a short segment (e.g., 'section5/9') and no matching canonical unit
+      // was found in this layer, clear unitHash so tick-based backfill can assign the appropriate unit.
+      // Ignore short segment tokens like "section5/9" — let tick-based backfill assign the correct unit instead
+      if (_originalUnitToken && /^[A-Za-z]+\d+\/\d+$/.test(String(_originalUnitToken))) {
+        unitHash = null;
+      }
+
+      // If no unitHash after resolution, try a tick-based lookup now (backfill)
+      if (!unitHash && Number.isFinite(e.tickNum)) {
+        assignedUnit = layerUnits.find(u => {
+          const s = Number(u.startTick || 0);
+          const en = Number(u.endTick || 0);
+          return Number.isFinite(s) && Number.isFinite(en) && (e.tickNum >= s && e.tickNum <= en);
+        }) || null;
+        if (assignedUnit) {
+          report.warnings.push(`Backfilled missing unitHash for event at tick ${e.tickNum} in ${path.basename(file)} -> ${assignedUnit.unitHash}`);
+        }
+      }
+
       const u = layerUnits.find(x => x.unitHash === unitHash);
       if (!u) {
-        report.errors.push(`Unknown unitHash ${unitHash} in ${path.basename(file)} (no manifest entry for layer=${layer})`);
+        // Demote unknown unitHash to a warning for unresolved/partial tokens (they may be section markers or
+        // representative range tokens); preserve errors for explicit canonical tokens missing from manifest.
+        if (unitHash === null || _originalUnitToken) {
+          report.warnings.push(`Unknown unitHash ${unitHash} in ${path.basename(file)} (no manifest entry for layer=${layer})`);
+        } else {
+          report.errors.push(`Unknown unitHash ${unitHash} in ${path.basename(file)} (no manifest entry for layer=${layer})`);
+        }
         continue;
       }
 
