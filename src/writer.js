@@ -1,7 +1,15 @@
+// @ts-check
 // writer.js - MIDI output and file generation with CSV buffer management.
 // minimalist comments, details at: writer.md
 
+const fs = require('fs');
+const path = require('path');
 const { writeDebugFile, writeFatal } = require('./logGate');
+
+/**
+ * @typedef {{parts?: string[], startTick?: number, endTick?: number, startTime?: number, endTime?: number}} Unit
+ * @typedef {{tick?: number, type?: string, vals?: any[], _tickSortKey?: number, _unitHash?: string}} BufferEvent
+ */
 
 /**
  * Layer-aware MIDI event buffer.
@@ -11,11 +19,15 @@ const { writeDebugFile, writeFatal } = require('./logGate');
  * @property {Array<object>} rows - MIDI event objects: {tick, type, vals}.
  * @property {number} length - Read-only count of events.
  */
-CSVBuffer = class CSVBuffer {
+class CSVBuffer {
+  /**
+   * @param {string} name
+   */
   constructor(name) {
-    this.name = name;
-    this.rows = [];
+    /** @type {string} */ this.name = name;
+    /** @type {Array<BufferEvent>} */ this.rows = [];
   }
+  /** @param {...BufferEvent} items */
   push(...items) {
     this.rows.push(...items);
   }
@@ -25,20 +37,22 @@ CSVBuffer = class CSVBuffer {
   clear() {
     this.rows = [];
   }
-};
+}
 
 /**
  * Push multiple items onto a buffer/array.
- * @param {CSVBuffer|Array} buffer - The target buffer to push onto.
+ * @param {CSVBuffer|Array<any>} buffer - The target buffer to push onto.
  * @param {...*} items - Items to push onto the buffer.
  * @returns {void}
  */
-p=pushMultiple=(buffer,...items)=>{  buffer.push(...items);  };
+const pushMultiple = (buffer, ...items) => { buffer.push(...items); };
+const p = pushMultiple;
 
 // Initialize buffers (c1/c2 created here, layers register them in play.js)
-c1=new CSVBuffer('primary');
-c2=new CSVBuffer('poly');
-c=c1;  // Active buffer reference
+const c1 = new CSVBuffer('primary');
+const c2 = new CSVBuffer('poly');
+/** @type {CSVBuffer} */ let c = (typeof globalThis !== 'undefined' && globalThis.c) ? globalThis.c : c1;  // Active buffer reference
+if (typeof globalThis !== 'undefined') globalThis.c = c; // keep global `c` in sync
 
 
 /**
@@ -47,7 +61,7 @@ c=c1;  // Active buffer reference
  *
  * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
  */
-logUnit = (type) => {
+const logUnit = (type) => {
   let shouldLog = false;
   type = type.toLowerCase();
 
@@ -79,6 +93,8 @@ logUnit = (type) => {
     // function not yet invoked in this context; skip
   } else if (!shouldLog) return null;
 
+  // Use global buffer if tests or other modules set it at runtime
+  const buf = (typeof globalThis !== 'undefined' && globalThis.c) ? globalThis.c : c;
   if (type === 'section') {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
@@ -172,7 +188,7 @@ logUnit = (type) => {
     const markerTick = (Number.isFinite(endTickInt) && endTickInt >= 0) ? endTickInt : Math.round(Number(startTick || 0));
     const markerRaw = `${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${markerTick} ${meterInfo ? meterInfo : ''}`;
     // Ensure the emitted event tick and the embedded endTick agree
-    c.push({
+    buf.push({
       tick: markerTick,
       type: 'marker_t',
       vals: [markerRaw]
@@ -271,6 +287,7 @@ grandFinale = () => {
   // Process each layer's output
   layerData.forEach(({ name, layer: layerState, buffer }) => {
     c = buffer;
+    if (typeof globalThis !== 'undefined') globalThis.c = c;
     // Cleanup
     allNotesOff((layerState.sectionEnd || layerState.sectionStart) + PPQ);
     muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
@@ -626,14 +643,15 @@ grandFinale = () => {
       outputFilename = `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     }
 
-    // Ensure output directory exists
+    // Ensure output directory exists and prefer test-mocked global fs when present
     const path = require('path');
     const outputDir = path.dirname(outputFilename);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    const effectiveFs = (typeof globalThis !== 'undefined' && globalThis.fs) ? globalThis.fs : fs;
+    if (!effectiveFs.existsSync(outputDir)) {
+      effectiveFs.mkdirSync(outputDir, { recursive: true });
     }
 
-    fs.writeFileSync(outputFilename, composition);
+    effectiveFs.writeFileSync(outputFilename, composition);
     console.log(`Wrote file: ${outputFilename}`);
     try { writeDebugFile('writer.ndjson', { tag: 'file-created', outputFilename, layer: name }); } catch (e) { /* swallow */ }
 
@@ -648,7 +666,6 @@ grandFinale = () => {
  * Node.js filesystem module with wrapped writeFileSync for error logging.
  * @type {Object}
  */
-fs=require('fs');
 // Wrap writeFileSync to log errors centrally
 try {
   const _origWriteFileSync = fs.writeFileSync;
@@ -666,6 +683,12 @@ try {
 
 // Export to globalThis test namespace for clean test access
 if (typeof globalThis !== 'undefined') {
+  // Backwards-compatible global exports used by tests and legacy modules
+  globalThis.CSVBuffer = globalThis.CSVBuffer || CSVBuffer;
+  globalThis.p = globalThis.p || p;
+  globalThis.pushMultiple = globalThis.pushMultiple || p;
+  globalThis.logUnit = globalThis.logUnit || logUnit;
+  globalThis.grandFinale = globalThis.grandFinale || grandFinale;
   globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, { p });
+  Object.assign(globalThis.__POLYCHRON_TEST__, { p, CSVBuffer, logUnit, grandFinale });
 }

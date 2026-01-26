@@ -5,9 +5,9 @@
 <!-- END: docs-autogen-note -->
 
 <!-- BEGIN: test-status -->
-1/26 13:03:41 - Latest Status
-- Test Files 38 passed | 3 skipped (41) - 92.7%
-- Tests 743/746 - 99.6%
+1/26 14:21:03 - Latest Status
+- Test Files 37 passed | 0 skipped (37) - 100%
+- Tests 742/742 - 100%
 - Lint 0 errors / 342 warnings
 - Type-check 0 errors / 0 warnings
 - Coverage Coverage data unavailable

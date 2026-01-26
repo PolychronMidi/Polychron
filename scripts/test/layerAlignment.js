@@ -100,9 +100,11 @@ function parseUnitId(uId) {
   }
   const units = unitsCsv;
 
-  const layers = [...new Set(units.map(u => u.layer))];
+  let layers = [...new Set(units.map(u => u.layer))];
+  // Only consider primary and poly layers for alignment checks to avoid spurious 'unknown' CSVs
+  layers = layers.filter(l => l === 'primary' || l === 'poly');
   // Choose canonical layer (prefer 'primary' when present)
-  const canonicalLayer = layers.includes('primary') ? 'primary' : layers[0];
+  const canonicalLayer = layers.includes('primary') ? 'primary' : (layers[0] || 'primary');
   const byLayer = {};
   for (const l of layers) byLayer[l] = {};
 
