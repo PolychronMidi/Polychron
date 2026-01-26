@@ -8,4 +8,4 @@ it('Reproducer: targeted run reproduces no overlaps for phrase2 beat1/5 (or capt
   const res = spawnSync(process.execPath, [script], { env: { ...process.env, PLAY_LIMIT: '1', INDEX_TRACES: '1' }, stdio: 'inherit' });
   // res.status === 0 means no overlaps (success)
   expect(res.status, 'Expected reproducer to exit 0 (no overlaps). If non-zero, see output/repro-overlaps.ndjson').toBe(0);
-}, 60000);
+});

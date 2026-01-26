@@ -32,4 +32,4 @@ it('unitMasterMap denominators are consistent within parent units', () => {
 
   const bad = Object.entries(groups).filter(([k,s]) => s.size > 1);
   expect(bad.length, `Expected no parents with multiple subdivision denominators. Examples: ${JSON.stringify(bad.slice(0,4))}`).toBe(0);
-}, 30000);
+});

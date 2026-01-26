@@ -19,4 +19,4 @@ it('no subsubdivision overlaps reported by treewalker', () => {
   const errors = Array.isArray(rpt.errors) ? rpt.errors : [];
   const subsubErrors = errors.filter(e => typeof e === 'string' && e.includes('unitType subsubdivision'));
   expect(subsubErrors.length).toBe(0);
-}, 120000);
+});

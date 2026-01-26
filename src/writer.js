@@ -328,7 +328,8 @@ grandFinale = () => {
           const end = Number(u.endTick || u.end || 0);
           const startTime = Number(u.startTime || u.startingTime || 0);
           const endTime = Number(u.endTime || u.endingTime || 0);
-          const uid = `${parts.join('|')}|${Math.round(start)}-${Math.round(end)}|${(startTime||0).toFixed(6)}-${(endTime||0).toFixed(6)}`;
+          // Always include the layer name as the first segment of the canonical unit id so CSV tokens are unambiguous
+          const uid = `${name || 'primary'}|${parts.join('|')}|${Math.round(start)}-${Math.round(end)}|${(startTime||0).toFixed(6)}-${(endTime||0).toFixed(6)}`;
           unitsForLayer.push({ unitId: uid, layer: name, startTick: start, endTick: end, startTime, endTime, raw: u });
         });
       }
@@ -420,21 +421,24 @@ grandFinale = () => {
         try {
           if (!evt || typeof evt !== 'object') continue;
           if (String(evt.type).toLowerCase() === 'marker_t' && Array.isArray(evt.vals)) {
-            const m = evt.vals.find(v => String(v).startsWith('unitRec:')) || null;
+            const m = evt.vals.find(v => String(v).includes('unitRec:')) || null;
             if (m) {
               try {
-                const fullId = String(m).split(':')[1];
-                const seg = fullId.split('|');
-                const last = seg[seg.length - 1] || '';
-                const secondLast = seg[seg.length - 2] || '';
-                let sTick = undefined; let eTick = undefined; let sTime = undefined; let eTime = undefined;
-                if (secondLast && secondLast.includes('-') && /^[0-9]+\-[0-9]+$/.test(secondLast)) {
-                  const r = secondLast.split('-'); sTick = Number(r[0]); eTick = Number(r[1]);
+                const mo = String(m).match(/unitRec:([^\s,]+)/);
+                const fullId = mo ? mo[1] : null;
+                if (fullId) {
+                  const seg = fullId.split('|');
+                  const last = seg[seg.length - 1] || '';
+                  const secondLast = seg[seg.length - 2] || '';
+                  let sTick = undefined; let eTick = undefined; let sTime = undefined; let eTime = undefined;
+                  if (secondLast && secondLast.includes('-') && /^[0-9]+\-[0-9]+$/.test(secondLast)) {
+                    const r = secondLast.split('-'); sTick = Number(r[0]); eTick = Number(r[1]);
+                  }
+                  if (last && last.includes('-') && /^[0-9]+\.[0-9]+\-[0-9]+\.[0-9]+$/.test(last)) {
+                    const rs = last.split('-'); sTime = Number(rs[0]); eTime = Number(rs[1]);
+                  }
+                  unitsForLayer.push({ unitId: fullId, layer: name, startTick: sTick, endTick: eTick, startTime: sTime, endTime: eTime, raw: { fromMarker: true } });
                 }
-                if (last && last.includes('-') && /^[0-9]+\.[0-9]+\-[0-9]+\.[0-9]+$/.test(last)) {
-                  const rs = last.split('-'); sTime = Number(rs[0]); eTime = Number(rs[1]);
-                }
-                unitsForLayer.push({ unitId: fullId, layer: name, startTick: sTick, endTick: eTick, startTime: sTime, endTime: eTime, raw: { fromMarker: true } });
               } catch (_e) {}
             }
           }

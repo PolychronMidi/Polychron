@@ -19,4 +19,4 @@ test('no NaN or undefined in unit ids produced by treewalker', () => {
     expect(String(e)).not.toMatch(/NaN/);
     expect(String(e)).not.toMatch(/undefined/);
   }
-}, 120000);
+});

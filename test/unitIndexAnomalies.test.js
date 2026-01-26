@@ -22,4 +22,4 @@ it('PLAY_LIMIT=1 produces no unit index anomalies', () => {
 
   // Fail if any anomalies were produced
   expect(lines.length, `Expected no unit index anomalies, found ${lines.length}. See ${anomalies} for details.`).toBe(0);
-}, 30000);
+});

@@ -27,4 +27,4 @@ it('no subsubdivision overlap spans exceed 60000 ticks', () => {
   });
 
   expect(large.length).toBe(0);
-}, 120000);
+});
