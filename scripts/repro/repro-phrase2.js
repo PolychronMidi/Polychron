@@ -81,7 +81,8 @@ for (let i = 0; i < candidates.length; i++) {
 }
 
 if (overlaps.length) {
-  fs.appendFileSync(path.join(out, 'repro-overlaps.ndjson'), overlaps.map(o => JSON.stringify(o)).join('\n') + '\n');
+  const { appendToFile } = require('../../src/logGate');
+  try { appendToFile('repro-overlaps.ndjson', { when: new Date().toISOString(), overlaps }); } catch (e) {}
   console.error(`Found ${overlaps.length} overlaps for parent ${parentPrefix} - see output/repro-overlaps.ndjson`);
   process.exit(1);
 }

@@ -20,7 +20,7 @@ function readUnitRecsForLayerPhrase(layer, sectionIdx, phraseIdx) {
     const m = String(val).match(/unitRec:([^\s,]+)/);
     if (!m) continue;
     const full = m[1];
-    if (full.indexOf(`section${sectionIdx+1}|phrase${phraseIdx+1}`) === -1) continue;
+    if (!String(full).match(new RegExp(`section${sectionIdx+1}(?:/\\d+)?\\|phrase${phraseIdx+1}(?:/\\d+)?`))) continue;
     const seg = full.split('|');
     let startTime = null;
     for (let i = seg.length - 1; i >= 0; i--) {

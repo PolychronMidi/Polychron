@@ -75,10 +75,35 @@ function writeDebugFile(filename, obj, category = 'debug') {
   writeFileForCategory(category, filename, obj);
 }
 
+// Append directly to an output file regardless of gate — useful for fatal/assert diagnostics
+function appendToFile(filename, obj) {
+  try {
+    const out = _ensureOutDir();
+    const p = path.join(out, filename);
+    fs.appendFileSync(p, JSON.stringify(obj) + '\n');
+  } catch (e) {
+    // swallow to avoid cascading failures
+  }
+}
+
+// Write a fatal/critical diagnostic payload to critical-errors.ndjson (always written)
+function writeFatal(obj, filename = 'critical-errors.ndjson') {
+  appendToFile(filename, obj);
+}
+
+// Convenience helper for detected overlap payloads — writes the short payload and the verbose trace
+function writeDetectedOverlap(payload, verbose) {
+  try { appendToFile('detected-overlap.ndjson', payload); } catch (e) {}
+  try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (e) {}
+}
+
 module.exports = {
   isEnabled,
   writeIndexTrace,
   writeDebugFile,
+  appendToFile,
+  writeFatal,
+  writeDetectedOverlap,
   MASTER_LOG: MASTER,
   LEVELS
 };

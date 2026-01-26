@@ -203,8 +203,8 @@ logUnit = (type) => {
       const startTimeN = Number(startTime) || 0;
       const endTimeN = Number(endTime) || 0;
 
-      if (c && c.name && typeof LM !== 'undefined' && LM.layers && LM.layers[c.name] && LM.layers[c.name].state) {
-        const st = LM.layers[c.name].state;
+      if ((c && c.name && typeof LM !== 'undefined' && LM.layers && LM.layers[c.name] && LM.layers[c.name].state) || (typeof LM !== 'undefined' && LM.activeLayer && LM.layers && LM.layers[LM.activeLayer] && LM.layers[LM.activeLayer].state)) {
+        const st = (LM.layers[c && c.name && LM.layers[c.name] ? c.name : LM.activeLayer] && LM.layers[c && c.name && LM.layers[c.name] ? c.name : LM.activeLayer].state) ? LM.layers[c && c.name && LM.layers[c.name] ? c.name : LM.activeLayer].state : null;
         st.units = st.units || [];
         // If this is not the primary layer and primary units are present, copy primary unit times
         let finalStartTime = startTimeN;

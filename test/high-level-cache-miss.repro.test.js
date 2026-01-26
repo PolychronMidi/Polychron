@@ -1,7 +1,7 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { describe, it, expect } = require('vitest');
+/* global describe, it, expect */
 
 // Gated reproducer test: run only when RUN_REPRO_TEST=1 to avoid failing CI
 // This test asserts that there are NO beat/div composer:cache:miss entries.
@@ -32,7 +32,7 @@ describe('reproducer: high-level composer cache misses', () => {
     if (r2.error) throw r2.error;
 
     expect(fs.existsSync(compactFile)).toBe(true);
-    const lines = fs.readFileSync(compactFile, 'utf8').split(/\r?\n/).filter(Boolean);
+    const lines = fs.readFileSync(compactFile, 'utf8').split(new RegExp('\\r?\\n')).filter(Boolean);
 
     // Expectation: zero high-level misses (this will fail until root cause fixed)
     expect(lines.length).toBe(0);

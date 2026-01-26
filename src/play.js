@@ -3,7 +3,7 @@
 
 require('./stage');
 require('./structure');
-const { writeIndexTrace, isEnabled } = require('./logGate');
+const { writeIndexTrace, isEnabled, writeDebugFile } = require('./logGate');
 
 const BASE_BPM=BPM;
 
@@ -26,7 +26,7 @@ if (!composers || composers.length === 0) {
       if (!c || typeof c.getMeter !== 'function') missing.push('getMeter');
       if (missing.length) {
         const payload = { when: new Date().toISOString(), index: i, missing, config: COMPOSERS[i] };
-        try { fs.appendFileSync(out, JSON.stringify(payload) + '\n'); } catch (e) {}
+        try { writeDebugFile('composer-validation.ndjson', payload); } catch (e) {}
         throw new Error(`Composer[${i}] missing required getters: ${missing.join(', ')}`);
       }
     }
@@ -57,9 +57,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Defensive check: ensure selected composer has required getters; fail fast with diagnostics if not
     if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivisions !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
       try {
-        const _fs = require('fs'); const _path = require('path');
         const payload = { when: new Date().toISOString(), phase: 'select-composer', composerType: (composer && composer.constructor && composer.constructor.name) ? composer.constructor.name : typeof composer, hasGetDivisions: composer && typeof composer.getDivisions === 'function', hasGetSubdivisions: composer && typeof composer.getSubdivisions === 'function', hasGetSubsubdivs: composer && typeof composer.getSubsubdivs === 'function', hasGetMeter: composer && typeof composer.getMeter === 'function', composersSnapshot: (Array.isArray(composers) ? composers.map(c => (c && c.constructor && c.constructor.name) ? c.constructor.name : (typeof c)) : null), stack: (new Error()).stack };
-        _fs.appendFileSync(_path.join(process.cwd(), 'output', 'composer-selection-errors.ndjson'), JSON.stringify(payload) + '\n');
+        try { writeDebugFile('composer-selection-errors.ndjson', payload); } catch (e) {}
       } catch (e) {}
       throw new Error('composer selection invalid: missing getters');
     }
