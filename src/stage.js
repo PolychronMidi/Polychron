@@ -422,9 +422,7 @@ class Stage {
   }
 }
 
-// Export Stage instance to global namespace for tests
+// Export Stage instance to test namespace for tests
 stage = new Stage();
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  __POLYCHRON_TEST__.stage = stage;
-}
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+__POLYCHRON_TEST__.stage = stage;

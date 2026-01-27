@@ -390,11 +390,14 @@ closestDivisor=(x,target=2)=>{
 getRhythm=(level,length,pattern,method,...args)=>{
   const levelIndex=['beat','div','subdiv'].indexOf(level);
   const checkMethod=(m)=>{
-    if (!global[m] || typeof global[m] !== 'function') {
-      console.warn(`Unknown rhythm method: ${m}`);
-      return null;
-    }
-    return global[m];
+    if (!m) return null;
+    if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__[m] && typeof __POLYCHRON_TEST__[m] === 'function') return __POLYCHRON_TEST__[m];
+    try {
+      const f = (new Function('return typeof ' + m + ' === "function" ? ' + m + ' : null'))();
+      if (typeof f === 'function') return f;
+    } catch (_e) {}
+    console.warn(`Unknown rhythm method: ${m}`);
+    return null;
   };
   if (method) {
     const rhythmMethod=checkMethod(method);
@@ -430,10 +433,6 @@ trackSubdivRhythm=()=>{if (subdivRhythm[subdivIndex] > 0) {subdivsOn++; subdivsO
 
 trackSubsubdivRhythm=()=>{if (subsubdivRhythm[subsubdivIndex] > 0) {subsubdivsOn++; subsubdivsOff=0;} else {subsubdivsOn=0; subsubdivsOff++;} };
 
-// Export to globalThis test namespace for clean test access
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  Object.assign(__POLYCHRON_TEST__, {
-    drummer, patternLength, makeOnsets, closestDivisor, drumMap
-  });
-}
+// Export to test namespace for clean test access
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+Object.assign(__POLYCHRON_TEST__, { drummer, patternLength, makeOnsets, closestDivisor, drumMap });

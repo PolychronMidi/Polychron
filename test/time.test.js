@@ -1176,7 +1176,6 @@ describe('Full Timing Hierarchy', () => {
     getMidiTiming();
 
     // Calculate all levels
-    const tpMeasure = tpMeasure;
     const tpBeat = tpMeasure / 7;
     const tpDiv = tpBeat / 2; // Assume 2 divisions
     const tpSubdiv = tpDiv / 2; // Assume 2 subdivisions
@@ -1195,7 +1194,6 @@ describe('Full Timing Hierarchy', () => {
     PPQ = 480;
     getMidiTiming();
 
-    const tpMeasure = tpMeasure;
     const tpBeat = tpMeasure / 5;
     const tpDiv = tpBeat / 3;
     const tpSubdiv = tpDiv / 2;
@@ -1231,8 +1229,6 @@ describe('Full Timing Hierarchy', () => {
     PPQ = 480;
     getMidiTiming();
 
-    const tpMeasure = tpMeasure;
-    const tpSec = tpSec;
 
     // Measure duration in seconds = tpMeasure / tpSec
     // For 3/4: tpMeasure = 480 * 4 * (3/4) = 1440

@@ -74,7 +74,7 @@ function addUnit(u) {
     try {
       openNdjson();
       const line = JSON.stringify({ when: new Date().toISOString(), parts, layer: u.layer, startTick, endTick, startTime, endTime, raw: u.raw }) + '\n';
-      if (ndjsonStream && ndjsonStream.write) {
+      if (ndjsonStream && typeof ndjsonStream.write === 'function' && !ndjsonStream.writableEnded && !ndjsonStream.destroyed) {
         ndjsonStream.write(line);
       } else if (typeof getFs().appendFileSync === 'function') {
         getFs().appendFileSync(NDJSON_PATH, line);

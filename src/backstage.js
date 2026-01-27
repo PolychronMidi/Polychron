@@ -493,8 +493,7 @@ semitone=neutralPitchBend / 2;
  * Convert cents to tuning frequency offset.
  * @type {number}
  */
-let centsToTuningFreq;
-try { centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440); } catch (e) { centsToTuningFreq = 0; }
+let centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
 
 /**
  * Pitch bend value for tuning frequency.
@@ -506,8 +505,7 @@ tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)
  * Generate binaural frequency offset.
  * @type {number}
  */
-let binauralFreqOffset;
-try { binauralFreqOffset = rf(BINAURAL.min,BINAURAL.max); } catch (e) { binauralFreqOffset = rf(0,0); }
+let binauralFreqOffset = rf(BINAURAL.min, BINAURAL.max);
 
 /**
  * Calculate binaural offset pitch bend values.
@@ -515,12 +513,7 @@ try { binauralFreqOffset = rf(BINAURAL.min,BINAURAL.max); } catch (e) { binaural
  * @returns {number} Pitch bend value.
  */
 binauralOffset=(plusOrMinus)=>{
-  try {
-    return m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
-  } catch (e) {
-    // TUNING_FREQ or associated values may be undefined when sheet.js hasn't been loaded; return safe defaults
-    return tuningPitchBend || 0;
-  }
+  return m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
 };
 
 /**

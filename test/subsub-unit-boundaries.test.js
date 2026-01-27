@@ -10,7 +10,6 @@ it('subsubdivision units are within their subdivision parent bounds', () => {
   require('../src/play.js');
 
   // Inspect LM layer units
-  const LM = LM;
   expect(LM).toBeDefined();
   for (const layerName of Object.keys(LM.layers)) {
     const units = LM.layers[layerName].state.units || [];
