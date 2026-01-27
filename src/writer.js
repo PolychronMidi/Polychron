@@ -275,6 +275,34 @@ const logUnit = (type) => {
  */
 grandFinale = () => {
 
+  // Remove any stale CSV outputs for layers that are not currently registered
+  try {
+    const outDir = require('path').join(process.cwd(), 'output');
+    if (fs.existsSync(outDir)) {
+      const files = fs.readdirSync(outDir).filter(f => f.toLowerCase().endsWith('.csv'));
+      const knownLayers = new Set(Object.keys(LM.layers || {}));
+      const mapFilenameToLayer = (filename) => {
+        const base = require('path').basename(filename).toLowerCase();
+        if (base.includes('output1')) return 'primary';
+        if (base.includes('output2')) return 'poly';
+        const m = base.match(/^output(?:([0-9]+|[A-Za-z].+))?\.csv$/);
+        if (m && m[1]) return m[1];
+        return base.replace(/\.csv$/, '');
+      };
+      for (const f of files) {
+        try {
+          const layer = mapFilenameToLayer(f);
+          if (!knownLayers.has(layer)) {
+            // Only remove non-primary and non-poly stale files
+            if (layer !== 'primary' && layer !== 'poly') {
+              try { fs.unlinkSync(require('path').join(outDir, f)); } catch (_e) {}
+            }
+          }
+        } catch (_e) {}
+      }
+    }
+  } catch (_e) {}
+
   // Collect all layer data
   const layerData = Object.entries(LM.layers).map(([name, layer]) => {
     return {
@@ -323,13 +351,14 @@ grandFinale = () => {
     try {
       if (layerState && Array.isArray(layerState.units)) {
         layerState.units.forEach(u => {
-          const parts = Array.isArray(u.parts) ? u.parts : (u.parts ? [u.parts] : []);
+          const parts = Array.isArray(u.parts) ? u.parts.filter(Boolean) : (u.parts ? [u.parts] : []);
           const start = Number(u.startTick || u.start || 0);
           const end = Number(u.endTick || u.end || 0);
           const startTime = Number(u.startTime || u.startingTime || 0);
           const endTime = Number(u.endTime || u.endingTime || 0);
           // Always include the layer name as the first segment of the canonical unit id so CSV tokens are unambiguous
-          const uid = `${name || 'primary'}|${parts.join('|')}|${Math.round(start)}-${Math.round(end)}|${(startTime||0).toFixed(6)}-${(endTime||0).toFixed(6)}`;
+          const partsJoined = parts.length ? parts.join('|') : '';
+          const uid = `${name || 'primary'}${partsJoined ? ('|' + partsJoined) : ''}|${Math.round(start)}-${Math.round(end)}|${(startTime||0).toFixed(6)}-${(endTime||0).toFixed(6)}`;
           unitsForLayer.push({ unitId: uid, layer: name, startTick: start, endTick: end, startTime, endTime, raw: u });
         });
       }
@@ -339,7 +368,8 @@ grandFinale = () => {
     // use primary `marker_t` entries (which include canonical seconds) to compute ticks for this layer
     try {
       if (true) {
-        const primCsv = (name === 'primary') ? path.join(process.cwd(), 'output', 'output1.csv') : (name === 'poly' ? path.join(process.cwd(), 'output', 'output2.csv') : path.join(process.cwd(), `output/output${name}.csv`));
+        const primCsv = (name === 'primary') ? path.join(process.cwd(), 'output', 'output1.csv') : (name === 'poly' ? path.join(process.cwd(), 'output', 'output2.csv') : path.join(process.cwd(), 'output', 'output1.csv'));
+        // For custom/non-standard layers, default to using primary's canonical markers for mapping/backfill
         if (fs.existsSync(primCsv)) {
           try {
             const primTxt = fs.readFileSync(primCsv, 'utf8');
@@ -357,6 +387,25 @@ grandFinale = () => {
               if (mUnit) {
                 const full = mUnit[1];
                 const seg = full.split('|');
+
+                // Collect canonical section entries for potential backfill into missing layers
+                if (seg && seg.length && seg.find(s => /^section\d+\/.+/.test(s))) {
+                  const key = full;
+                  const parts = seg.slice(1); // drop leading 'primary' layer
+                  const maybeTickRange = seg[seg.length - 2] || null; // e.g. "0-150000"
+                  const maybeSecsRange = seg[seg.length - 1] || null;  // e.g. "0.000000-1.184211"
+                  let startTick = null; let endTick = null; let startSec = null; let endSec = null;
+                  if (maybeTickRange && /^[0-9]+-[0-9]+$/.test(maybeTickRange)) {
+                    startTick = Number(maybeTickRange.split('-')[0]);
+                    endTick = Number(maybeTickRange.split('-')[1]);
+                  }
+                  if (maybeSecsRange && /^[0-9]+\.[0-9]+-[0-9]+\.[0-9]+$/.test(maybeSecsRange)) {
+                    startSec = Number(maybeSecsRange.split('-')[0]);
+                    endSec = Number(maybeSecsRange.split('-')[1]);
+                  }
+                  // store in canonicalMap for later backfill logic
+                  canonicalMap[key] = canonicalMap[key] || { startSec: startSec, endSec: endSec, startTick: startTick, endTick: endTick, parts: parts.slice() };
+                }
                 const sec = seg.find(s => /^section\d+/i.test(s)) || null;
                 const phr = seg.find(s => /^phrase\d+/i.test(s)) || null;
                 const ticksPart = seg[seg.length-2] || null; // startTick-endTick
@@ -442,10 +491,73 @@ grandFinale = () => {
               } catch (_e) {}
             }
           }
+
+          // If this layer has no explicit Section markers, backfill them from primary canonical map
+          try {
+            const hasSection = buffer.some(r => r && String(r.type).toLowerCase() === 'marker_t' && Array.isArray(r.vals) && r.vals.find(v => /Section/i.test(String(v))));
+            if (!hasSection && Object.keys(canonicalMap).length) {
+              const MasterMap = require('./masterMap');
+              for (const [fullKey, info] of Object.entries(canonicalMap)) {
+                try {
+                  // Case A: canonical fullKey already contains primary layer + parts
+                  if (fullKey && fullKey.startsWith('primary|')) {
+                    const parts = Array.isArray(info.parts) ? info.parts.slice() : [];
+                    if (!parts.find(p => /^section\d+\//.test(p))) continue;
+                    // Compute target ticks using seconds if available, else scale tick via tpSec ratio
+                    let targetStartTick = null;
+                    let targetEndTick = null;
+                    if (Number.isFinite(info.startSec) && Number.isFinite(layerState.tpSec)) {
+                      targetStartTick = Math.round(Number(info.startSec) * Number(layerState.tpSec));
+                      targetEndTick = Math.round(Number(info.endSec) * Number(layerState.tpSec));
+                    } else if (Number.isFinite(info.startTick) && Number.isFinite(layerState.tpSec) && Number.isFinite(tpSec)) {
+                      targetStartTick = Math.round(Number(info.startTick) * (Number(layerState.tpSec) / Number(tpSec)));
+                      targetEndTick = Math.round(Number(info.endTick) * (Number(layerState.tpSec) / Number(tpSec)));
+                    } else {
+                      targetStartTick = Number(info.startTick) || 0;
+                      targetEndTick = Number(info.endTick) || 0;
+                    }
+                    const targetSecs = (Number.isFinite(info.startSec) && Number.isFinite(info.endSec)) ? `${Number(info.startSec).toFixed(6)}-${Number(info.endSec).toFixed(6)}` : null;
+                    const otherFullId = targetSecs ? `${name}|${parts.join('|')}|${targetStartTick}-${targetEndTick}|${targetSecs}` : `${name}|${parts.join('|')}|${targetStartTick}-${targetEndTick}`;
+                    // avoid duplicates
+                    const exists = buffer.some(r => r && String(r.type).toLowerCase() === 'marker_t' && Array.isArray(r.vals) && r.vals.find(v => String(v).includes(`unitRec:${name}|${parts.join('|')}`)));
+                    if (!exists) {
+                      try { buffer.push({ tick: targetStartTick, type: 'marker_t', vals: [`New Section:unitRec:${otherFullId}`], _tickSortKey: Math.round(targetStartTick) }); } catch (_e) {}
+                      try { MasterMap.addUnit({ parts: [otherFullId], layer: name, startTick: targetStartTick, endTick: targetEndTick, startTime: info.startSec, endTime: info.endSec, raw: { synthesized: true } }); } catch (_e) {}
+                    }
+                  }
+
+                  // Case B: canonical keys like 's0-p0' that encode section/phrase ranges
+                  const m = String(fullKey).match(/^s(\d+)-p(\d+)/);
+                  if (m) {
+                    const secIdx = Number(m[1]);
+                    const phrIdx = Number(m[2]);
+                    const safe_totalSections = Number.isFinite(Number(totalSections)) ? Number(totalSections) : 1;
+                    const safe_phrasesPerSection = Number.isFinite(Number(phrasesPerSection)) ? Number(phrasesPerSection) : 1;
+                    const parts = [`section${secIdx+1}/${safe_totalSections}`, `phrase${phrIdx+1}/${safe_phrasesPerSection}`];
+                    let targetStartTick = null;
+                    let targetEndTick = null;
+                    if (Number.isFinite(info.startSec) && Number.isFinite(layerState.tpSec)) {
+                      targetStartTick = Math.round(Number(info.startSec) * Number(layerState.tpSec));
+                      targetEndTick = Math.round(Number(info.endSec) * Number(layerState.tpSec));
+                    } else {
+                      targetStartTick = Number(info.startTick) || 0;
+                      targetEndTick = Number(info.endTick) || 0;
+                    }
+                    const targetSecs = (Number.isFinite(info.startSec) && Number.isFinite(info.endSec)) ? `${Number(info.startSec).toFixed(6)}-${Number(info.endSec).toFixed(6)}` : null;
+                    const otherFullId = targetSecs ? `${name}|${parts.join('|')}|${targetStartTick}-${targetEndTick}|${targetSecs}` : `${name}|${parts.join('|')}|${targetStartTick}-${targetEndTick}`;
+                    const exists = buffer.some(r => r && String(r.type).toLowerCase() === 'marker_t' && Array.isArray(r.vals) && r.vals.find(v => String(v).includes(`unitRec:${name}|${parts.join('|')}`)));
+                    if (!exists) {
+                      try { buffer.push({ tick: targetStartTick, type: 'marker_t', vals: [`New Section:unitRec:${otherFullId}`], _tickSortKey: Math.round(targetStartTick) }); } catch (_e) {}
+                      try { MasterMap.addUnit({ parts: [otherFullId], layer: name, startTick: targetStartTick, endTick: targetEndTick, startTime: info.startSec, endTime: info.endSec, raw: { synthesized: true } }); } catch (_e) {}
+                    }
+                  }
+                } catch (_e) {}
+              }
+            }
+          } catch (_e) {}
         } catch (_e) {}
       }
-    } catch (_e) {}
-
+    } catch (trueErr) {}
     // Backfill _unitHash for events that did not receive it during normalization by consulting unitsForLayer ranges
     try {
       buffer.forEach(evt => {
@@ -469,7 +581,15 @@ grandFinale = () => {
             });
           }
           if (candidates.length) {
-            candidates.sort((a, b) => (Number(a.endTick || 0) - Number(a.startTick || 0)) - (Number(b.endTick || 0) - Number(b.startTick || 0)));
+            // Prefer smallest span (most granular) but if spans tie, prefer units with more path segments
+            candidates.sort((a, b) => {
+              const spanA = Number(a.endTick || 0) - Number(a.startTick || 0);
+              const spanB = Number(b.endTick || 0) - Number(b.startTick || 0);
+              if (spanA !== spanB) return spanA - spanB;
+              const partsA = String(a.unitId || '').split('|').length;
+              const partsB = String(b.unitId || '').split('|').length;
+              return partsB - partsA; // prefer more parts
+            });
             const found = candidates[0];
             if (found && found.unitId) evt._unitHash = found.unitId;
           }
@@ -486,9 +606,13 @@ grandFinale = () => {
       const tickInt = Math.round(Number(tickNum) || 0);
       const candidates = unitsForLayer
         .filter(uu => Number.isFinite(Number(uu.startTick)) && Number.isFinite(Number(uu.endTick)) && (tickInt >= Math.round(Number(uu.startTick)) && tickInt <= Math.round(Number(uu.endTick))))
-        .map(uu => ({ ...uu, span: Math.round(Number(uu.endTick) - Number(uu.startTick)) }));
+        .map(uu => ({ ...uu, span: Math.round(Number(uu.endTick) - Number(uu.startTick)), partsCount: (String(uu.unitId || '').split('|').length) }));
       if (candidates.length) {
-        candidates.sort((a, b) => a.span - b.span);
+        // Prefer smallest span (most granular); on ties prefer entries with more path segments
+        candidates.sort((a, b) => {
+          if (a.span !== b.span) return a.span - b.span;
+          return b.partsCount - a.partsCount;
+        });
         return candidates[0];
       }
       return null;
@@ -521,6 +645,8 @@ grandFinale = () => {
         const outroId = `${outroKey}|${minTick}-${maxTick}`;
         outroUnit = { unitId: outroId, layer: name, startTick: minTick, endTick: maxTick, startTime: 0, endTime: 0, raw: { outro: true } };
         unitsForLayer.push(outroUnit);
+        // Register synthesized outro with MasterMap so it appears in the manifest for downstream validation
+        try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: [outroId], layer: name, startTick: minTick, endTick: maxTick, startTime: 0, endTime: 0, raw: { outro: true } }); } catch (_e) {}
         // Add a marker event into the buffer so it will be sorted numerically with other events
         try { buffer.push({ tick: minTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(minTick) }); } catch (_e) {}
         try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) {}
@@ -627,6 +753,8 @@ grandFinale = () => {
           if (!lastUnit && !outroUnit) {
             const synth = { unitId: finalId, layer: name, startTick: tailTick, endTick: tailTick, startTime: 0, endTime: 0, raw: { synthesized: true } };
             unitsForLayer.push(synth);
+            // Also register synthesized final unit in MasterMap for manifest consistency
+            try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: [finalId], layer: name, startTick: tailTick, endTick: tailTick, startTime: 0, endTime: 0, raw: { synthesized: true } }); } catch (_e) {}
           }
         }
       } catch (_e) {}
