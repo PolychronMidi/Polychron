@@ -825,10 +825,10 @@ setUnitTiming = (unitType) => {
     let sTick = Math.round(unitStart);
     let eTick = Math.round(unitEnd);
 
-    // Log rounding differences for diagnostics (always append regardless of gating)
+    // Log rounding differences for diagnostics (write to debug stream; avoid postfix 'corrections' files)
     try {
       if (Math.round(unitStart) !== unitStart || Math.round(unitEnd) !== unitEnd) {
-        try { appendToFile('generator-rounding.ndjson', { when: new Date().toISOString(), layer: layerName, unitType, fullId, unitStart, unitEnd, sTick, eTick }); } catch (_e) {}
+        try { writeDebugFile('time.ndjson', { tag: 'rounding', when: new Date().toISOString(), layer: layerName, unitType, fullId, unitStart, unitEnd, sTick, eTick }); } catch (_e) {}
       }
     } catch (_e) {}
 
@@ -844,10 +844,10 @@ setUnitTiming = (unitType) => {
       const overlapCandidates = arr.slice().reverse().filter(u => u && u.unitType === unitType && Number.isFinite(Number(u.endTick)) && Number(u.endTick) > sTick);
       if (overlapCandidates.length) {
         const maxEnd = Math.max(...overlapCandidates.map(u => Number(u.endTick)));
-        // Record diagnostic details about the overlap correction (always append regardless of gating)
+        // Record diagnostic details (non-invasive debug file, avoid separate corrections file)
         try {
           const payload = { when: new Date().toISOString(), layer: layerName, unitType, fullId, nominalStart: Math.round(unitStart), nominalEnd: Math.round(unitEnd), beforeStart: sTick, beforeEnd: eTick, correctedStart: maxEnd, correctedEnd: Math.max(eTick, maxEnd + 1), candidates: overlapCandidates.slice(0,5) };
-          try { appendToFile('generator-overlap-corrections.ndjson', payload); } catch (_e) {}
+          try { writeDebugFile('time.ndjson', Object.assign({ tag: 'overlap-normalized' }, payload)); } catch (_e) {}
         } catch (_e) {}
         // Move start to the latest observed end to avoid overlap
         sTick = maxEnd;
