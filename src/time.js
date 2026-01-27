@@ -265,24 +265,6 @@ TimingContext = class TimingContext {
     globals.spMeasure = this.spMeasure;
   }
 
-// Helper: apply a layer state's timing fields directly to the project's naked globals
-const restoreLayerToGlobals = (s) => {
-  phraseStart = s.phraseStart;
-  phraseStartTime = s.phraseStartTime;
-  sectionStart = s.sectionStart;
-  sectionStartTime = s.sectionStartTime;
-  sectionEnd = s.sectionEnd;
-  tpSec = s.tpSec;
-  tpSection = s.tpSection;
-  spSection = s.spSection;
-  tpPhrase = s.tpPhrase;
-  spPhrase = s.spPhrase;
-  measureStart = s.measureStart;
-  measureStartTime = s.measureStartTime;
-  tpMeasure = s.tpMeasure;
-  spMeasure = s.spMeasure;
-};
-
   /**
    * Advance phrase timing.
    * @param {number} tpPhrase - Ticks per phrase.
@@ -472,9 +454,9 @@ setUnitTiming = (unitType) => {
   const mi = (typeof measureIndex !== 'undefined') ? measureIndex : 'undef';
   const bi = (typeof beatIndex !== 'undefined') ? beatIndex : 'undef';
   // Prefer test-injected `LM` when present to respect test harnesses that set LM in beforeEach
-  const LMCurrent = (typeof globalThis !== 'undefined' && LM) ? LM : (typeof LM !== 'undefined' ? LM : null);
+  const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : null;
   const layer = (LMCurrent && LMCurrent.activeLayer) ? LMCurrent.activeLayer : 'primary';
-  if (typeof globalThis !== 'undefined' && __POLYCHRON_TEST__?.enableLogging) console.log(`setUnitTiming enter: unit=${unitType} s=${si} p=${pi} m=${mi} b=${bi} layer=${layer}`);
+  if (__POLYCHRON_TEST__?.enableLogging) console.log(`setUnitTiming enter: unit=${unitType} s=${si} p=${pi} m=${mi} b=${bi} layer=${layer}`);
   if (!Number.isFinite(tpSec) || tpSec <= 0) {
     throw new Error(`Invalid tpSec in setUnitTiming: ${tpSec}`);
   }
@@ -1303,14 +1285,10 @@ const findMarkerSecs = (layerName, partsArr) => {
 };
 
 // Export small test helpers
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  __POLYCHRON_TEST__.loadMarkerMapForLayer = loadMarkerMapForLayer;
-  __POLYCHRON_TEST__.findMarkerSecs = findMarkerSecs;
-}
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+__POLYCHRON_TEST__.loadMarkerMapForLayer = loadMarkerMapForLayer;
+__POLYCHRON_TEST__.findMarkerSecs = findMarkerSecs;
 
 // Export for tests and __POLYCHRON_TEST__ namespace usage
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  __POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
-}
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;

@@ -13,6 +13,7 @@ export default [
       'node_modules/**',
       'csv_maestro/**',
       'output/**',
+      'tmp/**',
       '__pycache__/**'
     ]
   },
@@ -387,6 +388,7 @@ export default [
         // 'global' and 'globalThis' are banned project-wide; use naked globals instead
         resolveSectionProfile: 'writable',
         selectSectionType: 'writable',
+        normalizeSectionType: 'writable',
         _origRf: 'writable',
         _origRv: 'writable',
         _origRi: 'writable',
