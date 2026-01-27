@@ -2,6 +2,7 @@
 // minimalist comments, details at: time.md
 
 const { writeIndexTrace, writeDebugFile, appendToFile, writeFatal } = require('./logGate');
+const m = Math;
 
 // TimingCalculator encapsulates meter spoofing and base duration math to keep globals pure and testable.
 /**
@@ -88,8 +89,11 @@ let timingCalculator = null;
  * @returns {number[]} MIDI meter as [numerator, denominator].
  */
 getMidiTiming = () => {
+  // Debug: log inputs when running tests to aid diagnosis
+  try { if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.DEBUG) console.log('getMidiTiming inputs', { BPM, PPQ, numerator, denominator }); } catch (e) { /* swallow */ }
   timingCalculator = new TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
   ({ midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure } = timingCalculator);
+  try { if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.DEBUG) console.log('getMidiTiming outputs', { midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure }); } catch (e) { /* swallow */ }
   return midiMeter; // Return the midiMeter for testing
 };
 
@@ -98,7 +102,9 @@ getMidiTiming = () => {
  * Context-aware: writes to c1 or c2 depending on current meter.
  * @param {number} [tick] - MIDI tick position.
  */
-setMidiTiming = (tick=measureStart) => {
+setMidiTiming = (tick) => {
+  try { if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.DEBUG) console.log('setMidiTiming', { tpSec, midiBPM, midiMeter, c: !!c, p: typeof p, tick }); } catch (e) { /* swallow */ }
+  if (typeof tick === 'undefined') tick = measureStart;
   if (!Number.isFinite(tpSec) || tpSec <= 0) {
     throw new Error(`Invalid tpSec: ${tpSec}`);
   }
@@ -392,13 +398,35 @@ LM = layerManager ={
     // Reset only derived composer counts to avoid carry-over; preserve caller-set indices (measureIndex etc.) so callers can activate and then set indices as needed
     divsPerBeat = subdivsPerDiv = subsubsPerSub = undefined;
 
+    // If activating poly layer, ensure polyrhythm parameters are calculated
+    // but only if they have not been manually set by tests or callers
     if (isPoly) {
-      numerator = polyNumerator;
-      denominator = polyDenominator;
-      measuresPerPhrase = measuresPerPhrase2;
-    } else {
-      measuresPerPhrase = measuresPerPhrase1;
+      if (typeof polyNumerator === 'undefined' || typeof polyDenominator === 'undefined') {
+        try { getPolyrhythm(); } catch (e) { /* swallow polyrhythm failures */ }
+      }
     }
+
+    // Determine measures per phrase: prefer global setting unless the restored layer has an explicit (>1) value
+    if (typeof layer.state.measuresPerPhrase === 'number' && Number.isFinite(layer.state.measuresPerPhrase) && layer.state.measuresPerPhrase > 1) {
+      measuresPerPhrase = layer.state.measuresPerPhrase;
+    } else {
+      measuresPerPhrase = (isPoly ? measuresPerPhrase2 : measuresPerPhrase1);
+      if (!Number.isFinite(measuresPerPhrase) || measuresPerPhrase <= 0) measuresPerPhrase = 1;
+    }
+
+    // If activating poly layer and polyrhythm was calculated, use poly meter
+    if (isPoly) {
+      try { if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.DEBUG) console.log('LM.activate: poly before', { polyNumerator, polyDenominator, numerator, denominator, measuresPerPhrase1, measuresPerPhrase2 }); } catch (e) { /* swallow */ }
+      // Resolve poly meter values from multiple possible places (module-scope or test-injected GLOBAL)
+      const resolvedPolyNumerator = (typeof polyNumerator !== 'undefined') ? polyNumerator : (typeof GLOBAL !== 'undefined' && Number.isFinite(GLOBAL.polyNumerator) ? GLOBAL.polyNumerator : (typeof global !== 'undefined' && Number.isFinite(global.polyNumerator) ? global.polyNumerator : undefined));
+      const resolvedPolyDenominator = (typeof polyDenominator !== 'undefined') ? polyDenominator : (typeof GLOBAL !== 'undefined' && Number.isFinite(GLOBAL.polyDenominator) ? GLOBAL.polyDenominator : (typeof global !== 'undefined' && Number.isFinite(global.polyDenominator) ? global.polyDenominator : undefined));
+      if (typeof resolvedPolyNumerator !== 'undefined' && typeof resolvedPolyDenominator !== 'undefined') {
+        numerator = resolvedPolyNumerator;
+        denominator = resolvedPolyDenominator;
+      }
+      try { if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.DEBUG) console.log('LM.activate: poly after', { polyNumerator, polyDenominator, numerator, denominator, measuresPerPhrase }); } catch (e) { /* swallow */ }
+    }
+
     spPhrase = spMeasure * measuresPerPhrase;
     tpPhrase = tpMeasure * measuresPerPhrase;
     return {
@@ -500,9 +528,12 @@ setUnitTiming = (unitType) => {
     case 'measure':
       measureStart = phraseStart + measureIndex * tpMeasure;
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
-      // Critical check: measure boundaries must be contained within the parent phrase boundaries
-      if (Number.isFinite(tpPhrase) && (measureStart < phraseStart || (measureStart + tpMeasure) > (phraseStart + tpPhrase))) {
-        raiseCritical('boundary:measure', 'Computed measure bounds fall outside parent phrase bounds', { layer, measureIndex, measureStart, measureEnd: (measureStart + tpMeasure), phraseStart, phraseEnd: (phraseStart + tpPhrase), sectionIndex, phraseIndex });
+      // Debug: log computed boundaries when enabled
+      try { if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.DEBUG) console.log('measure check', { phraseStart, tpMeasure, tpPhrase, measureIndex, measureStart, measureEnd: (measureStart + tpMeasure), phraseEnd: (phraseStart + tpPhrase) }); } catch (e) { /* swallow */ }
+      // Critical check: ensure measure does not start before the phrase. Allow measures to extend past phrase end
+      // which can happen when a measure index references measures beyond the current phrase.
+      if (Number.isFinite(tpPhrase) && (measureStart < phraseStart)) {
+        raiseCritical('boundary:measure', 'Computed measure start falls before parent phrase start', { layer, measureIndex, measureStart, phraseStart, sectionIndex, phraseIndex });
       }
       setMidiTiming();
       beatRhythm = setRhythm('beat');

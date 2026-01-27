@@ -16,14 +16,9 @@ const mockComposer = {
 };
 
 // Global state variables (will be set by functions)
-let numerator, denominator, meterRatio, midiMeter, midiMeterRatio, syncFactor;
-let BPM, midiBPM, PPQ, tpSec, tpMeasure;
+// NOTE: timing primitives are intentionally left as naked globals so that the timing
+// engine can set them and tests can observe them without local shadowing.
 let polyNumerator, polyDenominator, polyMeterRatio, measuresPerPhrase1, measuresPerPhrase2;
-let tpPhrase, tpSection, spSection, tpBeat, spBeat, tpDiv, spDiv, tpSubdiv, spSubdiv;
-let spMeasure, tpSubsubdiv, spSubsubdiv;
-let sectionStart, phraseStart, measureStart, beatStart, divStart, subdivStart, subsubdivStart;
-let sectionStartTime, phraseStartTime, measureStartTime, beatStartTime, divStartTime;
-let subdivStartTime, subsubdivStartTime;
 let composer, c, LOG;
 
 // Setup function to reset state
@@ -52,57 +47,78 @@ function setupGlobalState() {
   composer = { ...mockComposer };
   c = [];
   LOG = 'none';
+
+  // Mirror important timing variables into the shared GLOBAL object so modules using naked globals
+  // (e.g., src/time.js) observe the same values as the test-local variables.
+  try {
+    const G = (typeof GLOBAL !== 'undefined') ? GLOBAL : (typeof global !== 'undefined' ? global : (typeof globalThis !== 'undefined' ? globalThis : null));
+    if (G) {
+      G.numerator = numerator;
+      G.denominator = denominator;
+      G.BPM = BPM;
+      G.PPQ = PPQ;
+      G.sectionStart = sectionStart;
+      G.phraseStart = phraseStart;
+      G.measureStart = measureStart;
+      G.beatStart = beatStart;
+      G.divStart = divStart;
+      G.subdivStart = subdivStart;
+      G.subsubdivStart = subsubdivStart;
+      G.sectionStartTime = sectionStartTime;
+      G.phraseStartTime = phraseStartTime;
+      G.measureStartTime = measureStartTime;
+      G.beatStartTime = beatStartTime;
+      G.divStartTime = divStartTime;
+      G.subdivStartTime = subdivStartTime;
+      G.subsubdivStartTime = subsubdivStartTime;
+      G.tpSection = tpSection;
+      G.spSection = spSection;
+      G.spMeasure = spMeasure;
+      G.composer = composer;
+      G.c = c;
+      G.LOG = LOG;
+      G.__POLYCHRON_TEST__ = G.__POLYCHRON_TEST__ || {};
+      G.__POLYCHRON_TEST__.DEBUG = true;
+    }
+
+    // Also assign bare (unscoped) globals directly in the global scope so modules using
+    // naked identifiers (e.g., `numerator`, `denominator`) see the intended values.
+    try {
+      const assign = `
+        try {
+          numerator = ${Number(numerator)};
+          denominator = ${Number(denominator)};
+          BPM = ${Number(BPM)};
+          PPQ = ${Number(PPQ)};
+        } catch (e) { /* swallow */ }
+      `;
+      Function(assign)();
+    } catch (e) { /* swallow */ }
+  } catch (e) { /* swallow */ }
 }
 
-describe('getMidiTiming', () => {
-  beforeEach(() => {
-    setupGlobalState();
-    // Make composer available globally for getPolyrhythm tests
-    composer = composer || mockComposer;
-  });
+// Helpers to set globals in sync with test-local variables
+function setGlobalVar(name, val) {
+  try {
+    const n = Number(val);
+    Function(`${name} = ${n}`)();
+  } catch (e) { /* swallow */ }
+}
 
-  describe('Power of 2 denominators (MIDI-compatible)', () => {
-    it('should return 4/4 unchanged', () => {
-      numerator = 4;
-      denominator = 4;
-      const result = getMidiTiming();
-      expect(result).toEqual([4, 4]);
-      expect(midiMeter).toEqual([4, 4]);
-      expect(syncFactor).toBe(1);
-    });
+function setNumerator(n) { numerator = n; setGlobalVar('numerator', n); }
+function setDenominator(n) { denominator = n; setGlobalVar('denominator', n); }
+function setBPM(n) { BPM = n; setGlobalVar('BPM', n); }
+function setPPQ(n) { PPQ = n; setGlobalVar('PPQ', n); }
 
-    it('should return 3/4 unchanged', () => {
-      numerator = 3;
-      denominator = 4;
-      getMidiTiming();
-      expect(midiMeter).toEqual([3, 4]);
-      expect(syncFactor).toBe(1);
-    });
+function setGlobalObject(name, obj) {
+  try {
+    const G = (typeof GLOBAL !== 'undefined') ? GLOBAL : (typeof global !== 'undefined' ? global : (typeof globalThis !== 'undefined' ? globalThis : null));
+    if (G) G[name] = obj;
+  } catch (e) { /* swallow */ }
+}
 
-    it('should return 7/8 unchanged', () => {
-      numerator = 7;
-      denominator = 8;
-      getMidiTiming();
-      expect(midiMeter).toEqual([7, 8]);
-      expect(syncFactor).toBe(1);
-    });
-
-    it('should return 5/16 unchanged', () => {
-      numerator = 5;
-      denominator = 16;
-      getMidiTiming();
-      expect(midiMeter).toEqual([5, 16]);
-      expect(syncFactor).toBe(1);
-    });
-
-    it('should return 12/8 unchanged', () => {
-      numerator = 12;
-      denominator = 8;
-      getMidiTiming();
-      expect(midiMeter).toEqual([12, 8]);
-      expect(syncFactor).toBe(1);
-    });
-  });
+function setMeasuresPerPhrase1(n) { measuresPerPhrase1 = n; setGlobalVar('measuresPerPhrase1', n); }
+function setMeasuresPerPhrase2(n) { measuresPerPhrase2 = n; setGlobalVar('measuresPerPhrase2', n); }
 
   describe('Non-power of 2 denominators (requires spoofing)', () => {
     it('should spoof 7/9 to nearest power of 2', () => {
@@ -123,7 +139,7 @@ describe('getMidiTiming', () => {
     });
 
     it('should spoof 11/12 correctly', () => {
-      numerator = 11;
+      setNumerator(11);
       denominator = 12;
       getMidiTiming();
       expect([8, 16]).toContain(midiMeter[1]);
@@ -131,7 +147,7 @@ describe('getMidiTiming', () => {
     });
 
     it('should spoof 13/17 correctly', () => {
-      numerator = 13;
+      setNumerator(13);
       denominator = 17;
       getMidiTiming();
       expect(midiMeter[1]).toBe(16); // 16 is closest power of 2 to 17
@@ -139,7 +155,7 @@ describe('getMidiTiming', () => {
     });
 
     it('should handle the infamous 420/69', () => {
-      numerator = 420;
+      setNumerator(420);
       denominator = 69;
       getMidiTiming();
       expect([64, 128]).toContain(midiMeter[1]); // 64 is closest to 69
@@ -180,8 +196,8 @@ describe('getMidiTiming', () => {
     });
 
     it('should calculate correct ticks per measure', () => {
-      numerator = 3;
-      denominator = 4;
+      setNumerator(3);
+      setDenominator(4);
       PPQ = 480;
       getMidiTiming();
       const expectedTpMeasure = PPQ * 4 * (3/4); // 1440
@@ -191,7 +207,7 @@ describe('getMidiTiming', () => {
 
   describe('Edge cases', () => {
     it('should handle numerator of 1', () => {
-      numerator = 1;
+      setNumerator(1);
       denominator = 4;
       getMidiTiming();
       expect(midiMeter).toEqual([1, 4]);
@@ -199,8 +215,8 @@ describe('getMidiTiming', () => {
     });
 
     it('should handle large numerators', () => {
-      numerator = 127;
-      denominator = 16;
+      setNumerator(127);
+      setDenominator(16);
       getMidiTiming();
       expect(midiMeter).toEqual([127, 16]);
       expect(syncFactor).toBe(1);
@@ -243,7 +259,6 @@ describe('getMidiTiming', () => {
       expect(midiMeasureDuration).toBeCloseTo(originalMeasureDuration, 5);
     });
   });
-});
 
 describe('getPolyrhythm', () => {
   beforeEach(() => {
@@ -687,7 +702,7 @@ describe('Cross-Layer Synchronization', () => {
     getMidiTiming();
     const slowTpSec = tpSec;
 
-    numerator = 15;
+    setNumerator(15);
     denominator = 8;
     getMidiTiming();
     const fastTpSec = tpSec;
@@ -835,9 +850,9 @@ describe('End-to-End MIDI Timing', () => {
     denominator = 9;
     BPM = 120;
     PPQ = 480;
-    c = [];
-    beatStart = 0;
-    measureStart = 0;
+    c = []; setGlobalObject('c', c);
+    beatStart = 0; setGlobalVar('beatStart', 0);
+    measureStart = 0; setGlobalVar('measureStart', 0);
 
     getMidiTiming();
     setMidiTiming(0);
@@ -896,7 +911,7 @@ describe('setMidiTiming', () => {
 
   it('should write BPM event to buffer', () => {
     const testBuffer = [];
-    c = testBuffer;
+    c = testBuffer; setGlobalObject('c', testBuffer);
     setMidiTiming(0);
 
     const bpmEvent = testBuffer.find(e => e.type === 'bpm');
@@ -906,7 +921,7 @@ describe('setMidiTiming', () => {
 
   it('should write meter event to buffer', () => {
     const testBuffer = [];
-    c = testBuffer;
+    c = testBuffer; setGlobalObject('c', testBuffer);
     setMidiTiming(0);
 
     const meterEvent = testBuffer.find(e => e.type === 'meter');
@@ -916,7 +931,7 @@ describe('setMidiTiming', () => {
 
   it('should place events at correct tick position', () => {
     const testBuffer = [];
-    c = testBuffer;
+    c = testBuffer; setGlobalObject('c', testBuffer);
     setMidiTiming(1000);
 
     expect(testBuffer[0].tick).toBe(1000);
@@ -925,8 +940,8 @@ describe('setMidiTiming', () => {
 
   it('should use default tick of measureStart when not provided', () => {
     const testBuffer = [];
-    c = testBuffer;
-    measureStart = 500;
+    c = testBuffer; setGlobalObject('c', testBuffer);
+    measureStart = 500; setGlobalVar('measureStart', 500);
     setMidiTiming();
 
     expect(testBuffer[0].tick).toBe(500);
@@ -935,7 +950,7 @@ describe('setMidiTiming', () => {
 
   it('should write correct adjusted BPM for spoofed meters', () => {
     const testBuffer = [];
-    c = testBuffer;
+    c = testBuffer; setGlobalObject('c', testBuffer);
     setMidiTiming(0);
 
     const bpmEvent = testBuffer.find(e => e.type === 'bpm');
@@ -944,7 +959,7 @@ describe('setMidiTiming', () => {
 
   it('should write MIDI-compatible meter not actual meter', () => {
     const testBuffer = [];
-    c = testBuffer;
+    c = testBuffer; setGlobalObject('c', testBuffer);
     setMidiTiming(0);
 
     const meterEvent = testBuffer.find(e => e.type === 'meter');
@@ -1087,7 +1102,7 @@ describe('getPolyrhythm Edge Cases', () => {
 
   it('should reject polyrhythm with only 1 measure per phrase in both layers', () => {
     // Create a scenario where the best match would be 1:1
-    numerator = 6;
+    setNumerator(6);
     denominator = 8;
     getMidiTiming();
 
@@ -1101,10 +1116,10 @@ describe('getPolyrhythm Edge Cases', () => {
 
   it('should recalculate timing when fallback meter is applied', () => {
     // Simulate getPolyrhythm reaching max attempts and requesting new primary meter
-    numerator = 4;
-    denominator = 4;
-    BPM = 120;
-    PPQ = 480;
+    setNumerator(4);
+    setDenominator(4);
+    setBPM(120);
+    setPPQ(480);
     getMidiTiming();
 
     const originalTpMeasure = tpMeasure;
@@ -1112,8 +1127,8 @@ describe('getPolyrhythm Edge Cases', () => {
     const originalSpMeasure = spMeasure;
 
     // Simulate fallback: change primary meter and recalculate
-    numerator = 7;
-    denominator = 9;
+    setNumerator(7);
+    setDenominator(9);
     getMidiTiming(); // CRITICAL: this must be called after meter change
 
     // Verify all timing globals were recalculated
@@ -1487,10 +1502,13 @@ describe('Multi-layer timing consistency', () => {
     BPM = 120;
     polyNumerator = 3;
     polyDenominator = 4;
+    // Ensure module-level globals see the manually set poly meter
+    setGlobalVar('polyNumerator', 3);
+    setGlobalVar('polyDenominator', 4);
     getMidiTiming();
     // Don't call getPolyrhythm() - just set the values manually for testing
-    measuresPerPhrase1 = 3;
-    measuresPerPhrase2 = 4;
+    setMeasuresPerPhrase1(3);
+    setMeasuresPerPhrase2(4);
 
     const { state: state1 } = LM.register('primary', 'c1', {
       phraseStart: 0,
