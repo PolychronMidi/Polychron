@@ -9,50 +9,69 @@ require('./structure');
 const _motifs = require('./motifs');
 
 // Minimal test bootstrap: ensure frequently-used naked globals exist so tests can safely assign to them
-csvRows = csvRows || [];
-c = c || [];
-fs = fs || require('fs');
-performance = performance || (require('perf_hooks').performance);
+// Use an indirect global accessor to avoid using banned identifiers like `global`/`globalThis`.
+const GLOBAL = Function('return this')();
+if (typeof GLOBAL.csvRows === 'undefined') GLOBAL.csvRows = [];
+if (typeof GLOBAL.c === 'undefined') GLOBAL.c = [];
+if (typeof GLOBAL.fs === 'undefined') GLOBAL.fs = require('fs');
+if (typeof GLOBAL.performance === 'undefined') GLOBAL.performance = require('perf_hooks').performance;
+// Ensure tonal (`t`) is available globally for modules that expect it
+if (typeof GLOBAL.t === 'undefined') GLOBAL.t = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.t) || (function(){ try { return require('tonal'); } catch (e) { return undefined; } })();
+
+// Pre-create a broad set of timing and index globals so legacy tests can assign bare names safely
+const _timingNames = ['midiMeter','midiMeterRatio','meterRatio','syncFactor','midiBPM','tpSec','tpMeasure','spMeasure','tpPhrase','spPhrase','measuresPerPhrase','numerator','denominator','composer','measureIndex','phraseIndex','sectionIndex','totalSections','phrasesPerSection','measureStart','measureStartTime','tpMeasure','spMeasure','beatIndex','beatStart','beatStartTime','tpBeat','spBeat','divIndex','divsPerBeat','divStart','divStartTime','tpDiv','spDiv','subdivIndex','subdivsPerDiv','subdivStart','subdivStartTime','tpSubdiv','spSubdiv','subsubdivIndex','subsubsPerSub','subsubdivStart','subsubdivStartTime','tpSubsubdiv','spSubsubdiv','formatTime','LOG','c','csvRows','PPQ'];
+for (const _n of _timingNames) { if (typeof GLOBAL[_n] === 'undefined') GLOBAL[_n] = undefined; }
+
 // Ensure classes exposed into __POLYCHRON_TEST__ by modules are also available as naked globals for legacy tests
 require('./composers');
 require('./voiceLeading');
-MeasureComposer = MeasureComposer || (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.MeasureComposer);
-VoiceLeadingScore = VoiceLeadingScore || (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.VoiceLeadingScore);
-// Promote venue and other helpers into naked globals when available
+// Assign into the test-global object to ensure properties exist for legacy tests that use bare identifiers
+const testns = (typeof __POLYCHRON_TEST__ !== 'undefined') ? __POLYCHRON_TEST__ : {};
+GLOBAL.MeasureComposer = GLOBAL.MeasureComposer || (testns.MeasureComposer || (typeof GLOBAL.MeasureComposer !== 'undefined' ? GLOBAL.MeasureComposer : undefined));
+GLOBAL.VoiceLeadingScore = GLOBAL.VoiceLeadingScore || (testns.VoiceLeadingScore || (typeof GLOBAL.VoiceLeadingScore !== 'undefined' ? GLOBAL.VoiceLeadingScore : undefined));
+
+// Promote venue and other helpers into the GLOBAL object when available
 if (typeof __POLYCHRON_TEST__ !== 'undefined') {
-  midiData = midiData || __POLYCHRON_TEST__.midiData;
-  getMidiValue = getMidiValue || __POLYCHRON_TEST__.getMidiValue;
-  allNotes = allNotes || __POLYCHRON_TEST__.allNotes;
-  allScales = allScales || __POLYCHRON_TEST__.allScales;
-  allChords = allChords || __POLYCHRON_TEST__.allChords;
-  allModes = allModes || __POLYCHRON_TEST__.allModes;
+  GLOBAL.midiData = GLOBAL.midiData || testns.midiData;
+  GLOBAL.getMidiValue = GLOBAL.getMidiValue || testns.getMidiValue;
+  GLOBAL.allNotes = GLOBAL.allNotes || testns.allNotes;
+  GLOBAL.allScales = GLOBAL.allScales || testns.allScales;
+  GLOBAL.allChords = GLOBAL.allChords || testns.allChords;
+  GLOBAL.allModes = GLOBAL.allModes || testns.allModes;
   // Promote composer classes for legacy tests
-  MeasureComposer = MeasureComposer || __POLYCHRON_TEST__.MeasureComposer;
-  ScaleComposer = ScaleComposer || __POLYCHRON_TEST__.ScaleComposer;
-  ChordComposer = ChordComposer || __POLYCHRON_TEST__.ChordComposer;
-  RandomChordComposer = RandomChordComposer || __POLYCHRON_TEST__.RandomChordComposer;
-  PentatonicComposer = PentatonicComposer || __POLYCHRON_TEST__.PentatonicComposer;
-  RandomPentatonicComposer = RandomPentatonicComposer || __POLYCHRON_TEST__.RandomPentatonicComposer;
-  ProgressionGenerator = ProgressionGenerator || __POLYCHRON_TEST__.ProgressionGenerator;
+  GLOBAL.MeasureComposer = GLOBAL.MeasureComposer || testns.MeasureComposer;
+  GLOBAL.ScaleComposer = GLOBAL.ScaleComposer || testns.ScaleComposer;
+  GLOBAL.ChordComposer = GLOBAL.ChordComposer || testns.ChordComposer;
+  GLOBAL.RandomChordComposer = GLOBAL.RandomChordComposer || testns.RandomChordComposer;
+  GLOBAL.PentatonicComposer = GLOBAL.PentatonicComposer || testns.PentatonicComposer;
+  GLOBAL.RandomPentatonicComposer = GLOBAL.RandomPentatonicComposer || testns.RandomPentatonicComposer;
+  GLOBAL.ProgressionGenerator = GLOBAL.ProgressionGenerator || testns.ProgressionGenerator;
   // voice leading
-  VoiceLeadingScore = VoiceLeadingScore || __POLYCHRON_TEST__.VoiceLeadingScore;
-  stage = stage || __POLYCHRON_TEST__.stage;
+  GLOBAL.VoiceLeadingScore = GLOBAL.VoiceLeadingScore || testns.VoiceLeadingScore;
+  GLOBAL.stage = GLOBAL.stage || testns.stage;
 
   // Promote motif helpers and other small helpers used directly by tests
-  const _motifExport = _motifs || __POLYCHRON_TEST__;
-  Motif = Motif || ((_motifExport && _motifExport.Motif) || (_motifs && _motifs.Motif));
-  clampMotifNote = clampMotifNote || ((_motifExport && _motifExport.clampMotifNote) || _motifs.clampMotifNote);
-  applyMotifToNotes = applyMotifToNotes || ((_motifExport && _motifExport.applyMotifToNotes) || _motifs.applyMotifToNotes);
-  resolveSectionProfile = resolveSectionProfile || (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.resolveSectionProfile);
-  selectSectionType = selectSectionType || (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.selectSectionType);
-  normalizeSectionType = normalizeSectionType || (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.normalizeSectionType);
+  const _motifExport = _motifs || testns;
+  GLOBAL.Motif = GLOBAL.Motif || ((_motifExport && _motifExport.Motif) || (_motifs && _motifs.Motif));
+  GLOBAL.clampMotifNote = GLOBAL.clampMotifNote || ((_motifExport && _motifExport.clampMotifNote) || _motifs.clampMotifNote);
+  GLOBAL.applyMotifToNotes = GLOBAL.applyMotifToNotes || ((_motifExport && _motifExport.applyMotifToNotes) || _motifs.applyMotifToNotes);
+  GLOBAL.resolveSectionProfile = GLOBAL.resolveSectionProfile || testns.resolveSectionProfile;
+  GLOBAL.selectSectionType = GLOBAL.selectSectionType || testns.selectSectionType;
+  GLOBAL.normalizeSectionType = GLOBAL.normalizeSectionType || testns.normalizeSectionType;
 
   // Ensure common timing primitives exist so tests assigning to them don't get ReferenceError (modules use these as naked globals)
-  tpPhrase = tpPhrase ?? 1920;
-  tpMeasure = tpMeasure ?? 480 * 4;
-  tpSec = tpSec ?? 480;
-  spPhrase = spPhrase ?? 0;
-  spMeasure = spMeasure ?? 0;
-  measuresPerPhrase = measuresPerPhrase ?? 1;
-  PPQ = PPQ ?? 480;
+  if (typeof GLOBAL.tpPhrase === 'undefined') GLOBAL.tpPhrase = 1920;
+  if (typeof GLOBAL.tpMeasure === 'undefined') GLOBAL.tpMeasure = 480 * 4;
+  if (typeof GLOBAL.tpSec === 'undefined') GLOBAL.tpSec = 480;
+  if (typeof GLOBAL.spPhrase === 'undefined') GLOBAL.spPhrase = 0;
+  if (typeof GLOBAL.spMeasure === 'undefined') GLOBAL.spMeasure = 0;
+  if (typeof GLOBAL.measuresPerPhrase === 'undefined') GLOBAL.measuresPerPhrase = 1;
+  if (typeof GLOBAL.PPQ === 'undefined') GLOBAL.PPQ = 480;
+
+  // Writer exports commonly used by tests
+  GLOBAL.CSVBuffer = GLOBAL.CSVBuffer || testns.CSVBuffer;
+  GLOBAL.p = GLOBAL.p || testns.p;
+  GLOBAL.pushMultiple = GLOBAL.pushMultiple || testns.pushMultiple;
+  GLOBAL.logUnit = GLOBAL.logUnit || testns.logUnit;
+  GLOBAL.grandFinale = GLOBAL.grandFinale || testns.grandFinale;
 }

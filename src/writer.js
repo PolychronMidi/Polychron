@@ -2,7 +2,7 @@
 // writer.js - MIDI output and file generation with CSV buffer management.
 // minimalist comments, details at: writer.md
 
-const fs = require('fs');
+let fs = require('fs');
 const path = require('path');
 const { writeDebugFile, writeFatal } = require('./logGate');
 const { raiseCritical } = require('./postfixGuard');
@@ -643,10 +643,11 @@ grandFinale = () => {
       outputFilename = `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     }
 
-    // Ensure output directory exists and prefer test-mocked fs when present
+    // Ensure output directory exists and prefer test-provided global fs when present
     const path = require('path');
     const outputDir = path.dirname(outputFilename);
-    const effectiveFs = (typeof fs !== 'undefined') ? fs : require('fs');
+    const _G = (function(){ try { return Function('return this')(); } catch (e) { return {}; } })();
+    const effectiveFs = (typeof _G.fs !== 'undefined') ? _G.fs : ((typeof fs !== 'undefined') ? fs : require('fs'));
     if (!effectiveFs.existsSync(outputDir)) {
       effectiveFs.mkdirSync(outputDir, { recursive: true });
     }

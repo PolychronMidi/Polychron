@@ -296,6 +296,29 @@ TimingContext = class TimingContext {
 // Layer timing globals are created by `LM.register` at startup to support infinite layers
 
 /**
+ * Restore TimingContext state into naked globals without using banned globals.
+ * Replaces previous calls like `layer.state.restoreTo(globalThis)`.
+ */
+function restoreLayerToGlobals(state) {
+  if (!state) return;
+  // Copy explicit timing properties into module-level naked globals
+  phraseStart = state.phraseStart;
+  phraseStartTime = state.phraseStartTime;
+  sectionStart = state.sectionStart;
+  sectionStartTime = state.sectionStartTime;
+  sectionEnd = state.sectionEnd;
+  tpSec = state.tpSec;
+  tpSection = state.tpSection;
+  spSection = state.spSection;
+  tpPhrase = state.tpPhrase;
+  spPhrase = state.spPhrase;
+  measureStart = state.measureStart;
+  measureStartTime = state.measureStartTime;
+  tpMeasure = state.tpMeasure;
+  spMeasure = state.spMeasure;
+}
+
+/**
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
  */
 LM = layerManager ={
@@ -1255,8 +1278,11 @@ const loadMarkerMapForLayer = (layerName) => {
       }
     }
     _markerCache[layerName] = { mtime, map };
-    // Expose lightweight test hook
-    if (globalThis && __POLYCHRON_TEST__) __POLYCHRON_TEST__._markerCache = __POLYCHRON_TEST__._markerCache || {}, __POLYCHRON_TEST__._markerCache[layerName] = { mtime, keys: Object.keys(map) };
+    // Expose lightweight test hook (avoid `globalThis`/`global` usage — use test namespace if present)
+    if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__) {
+      __POLYCHRON_TEST__._markerCache = __POLYCHRON_TEST__._markerCache || {};
+      __POLYCHRON_TEST__._markerCache[layerName] = { mtime, keys: Object.keys(map) };
+    }
     return map;
   } catch (e) {
     _markerCache[layerName] = { mtime: null, map: {} };
