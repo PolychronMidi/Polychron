@@ -3,7 +3,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 require('../../src/sheet');
-const composers = global.COMPOSERS || [];
+const composers = COMPOSERS || [];
 
 if (!composers.length) {
   console.error('No composers found in sheet.js');

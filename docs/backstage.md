@@ -174,7 +174,7 @@ tpSubdiv, spSubdiv, tpSubsubdiv, spSubsubdiv
 numerator, denominator, meterRatio
 measuresPerPhrase, measuresPerPhrase1, measuresPerPhrase2
 polyNumerator, polyDenominator
-divsPerBeat, subdivsPerDiv, subsubdivsPerSub
+divsPerBeat, subdivsPerDiv, subsubsPerSub
 ```
 
 ### Loop Counters

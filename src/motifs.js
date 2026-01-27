@@ -164,18 +164,18 @@ class Motif {
 }
 
 // Expose motif utilities globally for stage/play integration and testing.
-globalThis.Motif = Motif;
-globalThis.clampMotifNote = clampNote;
-globalThis.activeMotif = globalThis.activeMotif || null;
+Motif = Motif;
+clampMotifNote = clampNote;
+activeMotif = activeMotif || null;
 
-globalThis.applyMotifToNotes = (notes, motif = globalThis.activeMotif, options = {}) => {
+applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
   if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
   return motif.applyToNotes(notes, options);
 };
 
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, {
     Motif,
     clampMotifNote,
     applyMotifToNotes,

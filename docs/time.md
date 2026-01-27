@@ -92,15 +92,15 @@ setUnitTiming = (unitType) => {
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
-      subsubdivsPerSub = composer ? composer.getSubsubdivs() : 1;
+      subsubsPerSub = composer ? composer.getSubsubdivs() : 1;
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
     case 'subsubdivision':
       trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
+      tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
-      subsubdivsPerMinute = 60 / spSubsubdiv;
+      subsubsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
       subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
       break;
@@ -324,10 +324,10 @@ class TimingCalculator {
 }
 
 // Export TimingCalculator to global namespace for tests and other modules
-globalThis.TimingCalculator = TimingCalculator;
+TimingCalculator = TimingCalculator;
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  globalThis.__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  __POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
 }
 let timingCalculator = null;
 
@@ -650,7 +650,7 @@ const LM = layerManager ={
 
 };
 // Export layer manager to global scope for access from other modules
-globalThis.LM = LM;
+LM = LM;
 // layer manager is initialized in play.js after buffers are created
 // This ensures c1 and c2 are available when registering layers
 
@@ -717,15 +717,15 @@ setUnitTiming = (unitType) => {
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
-      subsubdivsPerSub = composer ? composer.getSubsubdivs() : 1;
+      subsubsPerSub = composer ? composer.getSubsubdivs() : 1;
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
     case 'subsubdivision':
       trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
+      tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
-      subsubdivsPerMinute = 60 / spSubsubdiv;
+      subsubsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
       subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
       break;
@@ -752,9 +752,9 @@ formatTime = (seconds) => {
 
 // Export for tests and __POLYCHRON_TEST__ namespace usage
 if (typeof globalThis !== 'undefined') {
-  globalThis.TimingCalculator = TimingCalculator;
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  globalThis.__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
+  TimingCalculator = TimingCalculator;
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  __POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
 }
 
 ```
@@ -920,13 +920,13 @@ setUnitTiming = (unitType) => {
       spSubdiv = tpSubdiv / tpSec;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
-      subsubdivsPerSub = composer ? composer.getSubsubdivs() : 1;
+      subsubsPerSub = composer ? composer.getSubsubdivs() : 1;
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
     case 'subsubdivision':
       trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, subsubdivsPerSub);
+      tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
       subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;

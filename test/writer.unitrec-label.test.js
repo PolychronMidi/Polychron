@@ -12,8 +12,8 @@ describe('CSV writer: unitRec label and event unit prefix', () => {
     if (!fs.existsSync(OUT)) fs.mkdirSync(OUT);
     try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
     // reset LM
-    if (global.LM) { global.LM.layers = {}; global.LM.activeLayer = null; }
-    global.LOG = 'none';
+    if (LM) { LM.layers = {}; LM.activeLayer = null; }
+    LOG = 'none';
   });
 
   afterEach(() => {
@@ -22,7 +22,7 @@ describe('CSV writer: unitRec label and event unit prefix', () => {
 
   it('preserves human label in marker_t and includes layer prefix on event tick field', () => {
     // register primary layer and push a labeled unitRec marker + an event inside its range
-    const { state: primaryState, buffer: c1 } = global.LM.register('primary', 'c1', {}, () => {});
+    const { state: primaryState, buffer: c1 } = LM.register('primary', 'c1', {}, () => {});
 
     // push labeled unitRec marker (as time.js would emit)
     const label = 'New Beat:unitRec:primary|section1|phrase1|measure1|beat1/4|1500-1875|0.045113-0.056391';
@@ -32,13 +32,13 @@ describe('CSV writer: unitRec label and event unit prefix', () => {
     c1.push({ tick: 1646, type: 'on', vals: [0, 60, 100] });
 
     // stub missing globals used by grandFinale
-    global.allNotesOff = () => {};
-    global.muteAll = () => {};
+    allNotesOff = () => {};
+    muteAll = () => {};
     // minimal MIDI timing defaults used by grandFinale
-    global.PPQ = global.PPQ || 480;
-    global.SILENT_OUTRO_SECONDS = typeof global.SILENT_OUTRO_SECONDS !== 'undefined' ? global.SILENT_OUTRO_SECONDS : 1;
+    PPQ = PPQ || 480;
+    SILENT_OUTRO_SECONDS = typeof SILENT_OUTRO_SECONDS !== 'undefined' ? SILENT_OUTRO_SECONDS : 1;
     // write files
-    global.grandFinale();
+    grandFinale();
 
     const csv = fs.readFileSync(path.join(OUT, 'output1.csv'), 'utf8');
     expect(csv).toContain('1,1500,marker_t,New Beat:unitRec:primary|section1|phrase1|measure1|beat1/4|1500-1875|0.045113-0.056391');

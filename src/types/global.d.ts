@@ -46,7 +46,7 @@ declare global {
   var denominator: any;
   var divsPerBeat: any;
   var subdivsPerDiv: any;
-  var subsubdivsPerSub: any;
+  var subsubsPerSub: any;
   var subsubsPerSub: any;
   var phrasesPerSection: any;
   var measuresPerPhrase: any;

@@ -9,7 +9,7 @@ it('stable when composer.getSubdivisions flips within a division', () => {
   try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) {}
 
   // Run Node with a composer that flips its subdivisions on successive calls
-  const script = `globalThis.composer = { getDivisions: () => 1, getSubdivisions: (function(){let i=0; return function(){ return (i++ % 2 === 0) ? 7 : 1; } })() };
+  const script = `composer = { getDivisions: () => 1, getSubdivisions: (function(){let i=0; return function(){ return (i++ % 2 === 0) ? 7 : 1; } })() };
 process.env.PLAY_LIMIT='1'; process.env.INDEX_TRACES='1'; require('./src/play.js');`;
 
   const res = spawnSync(process.execPath, ['-e', script], { env: { ...process.env }, stdio: 'inherit' });

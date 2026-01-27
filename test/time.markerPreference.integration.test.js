@@ -14,11 +14,11 @@ describe('Marker preference - end-to-end integration', () => {
     if (!fs.existsSync(OUT)) fs.mkdirSync(OUT);
     try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
     // reset LM
-    if (global.LM) {
-      global.LM.layers = {}; global.LM.activeLayer = null;
+    if (LM) {
+      LM.layers = {}; LM.activeLayer = null;
     }
     // safe deterministic helpers
-    global.m = Math; global.LOG = 'none';
+    m = Math; LOG = 'none';
   });
 
   afterEach(() => {
@@ -31,26 +31,26 @@ describe('Marker preference - end-to-end integration', () => {
     fs.writeFileSync(path.join(OUT, 'output1.csv'), line + '\n');
 
     // register layer
-    const { state: primary, buffer: c1 } = global.LM.register('primary', 'c1', {}, () => {});
+    const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => {});
 
     // set indexes and timing globals deterministically
-    global.sectionIndex = 0; global.phraseIndex = 0; global.measureIndex = 0; global.beatIndex = 0;
-    global.tpSec = 1000; // ticks per second mapping (so 1s = 1000 ticks)
-    global.tpMeasure = 1000; global.spMeasure = 1; global.phraseStart = 0; global.phraseStartTime = 0;
-    global.numerator = 4; global.denominator = 4; global.measuresPerPhrase = 1;
+    sectionIndex = 0; phraseIndex = 0; measureIndex = 0; beatIndex = 0;
+    tpSec = 1000; // ticks per second mapping (so 1s = 1000 ticks)
+    tpMeasure = 1000; spMeasure = 1; phraseStart = 0; phraseStartTime = 0;
+    numerator = 4; denominator = 4; measuresPerPhrase = 1;
     // ensure rhythm arrays are present
-    global.beatRhythm = [1,1,1,1]; global.divRhythm = [1]; global.subdivRhythm = [1]; global.subsubdivRhythm = [1];
+    beatRhythm = [1,1,1,1]; divRhythm = [1]; subdivRhythm = [1]; subsubdivRhythm = [1];
     // deterministic rhythm helper used by getRhythm
-    global.randomWeightedSelection = (obj) => Object.keys(obj)[0];
+    randomWeightedSelection = (obj) => Object.keys(obj)[0];
     // numeric random helpers used by rhythm.js
-    global.m = Math;
-    global.ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
-    global.rf = (a,b) => (typeof b === 'undefined' ? (a || 0.5) : a);
-    global.rv = (a,b,c) => a;
-    global.ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
+    m = Math;
+    ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
+    rf = (a,b) => (typeof b === 'undefined' ? (a || 0.5) : a);
+    rv = (a,b,c) => a;
+    ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
 
     // minimal composer stub for deterministic behavior
-    global.composer = {
+    composer = {
       getDivisions: () => 1,
       getSubdivisions: () => 1,
       getSubsubdivs: () => 1,
@@ -58,25 +58,25 @@ describe('Marker preference - end-to-end integration', () => {
     };
 
     // ensure MIDI timing values are initialized so setMidiTiming() works
-    global.BPM = 120; global.PPQ = 480; getMidiTiming();
+    BPM = 120; PPQ = 480; getMidiTiming();
 
     // polyrhythm defaults for deterministic activation
-    global.measuresPerPhrase1 = 1; global.measuresPerPhrase2 = 1;
+    measuresPerPhrase1 = 1; measuresPerPhrase2 = 1;
     // activate layer so 'c' is set and setMidiTiming writes to the correct buffer
     LM.activate('primary', false);
 
 
 
     // ensure beat/div counters for rhythm functions
-    global.beatsOn = 0; global.beatsOff = 0; global.divsOn = 0; global.divsOff = 0; global.subdivsOn = 0; global.subdivsOff = 0;
+    beatsOn = 0; beatsOff = 0; divsOn = 0; divsOff = 0; subdivsOn = 0; subdivsOff = 0;
 
     // ensure internal test logging is disabled for clean output
-    globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {}; globalThis.__POLYCHRON_TEST__.enableLogging = false;
+    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.enableLogging = false;
 
     // ensure minimal index variables exist to avoid ReferenceErrors in setUnitTiming
-    global.divIndex = 0; global.subdivIndex = 0; global.subsubdivIndex = 0;
+    divIndex = 0; subdivIndex = 0; subsubdivIndex = 0;
     // ensure subdivision counts exist to avoid ReferenceErrors
-    global.subdivsPerDiv = 1; global.subsubdivsPerSub = 1;
+    subdivsPerDiv = 1; subsubsPerSub = 1;
 
     // call measure timing which should build unitRec and preferentially pick secs from CSV
     setUnitTiming('measure');
@@ -86,7 +86,7 @@ describe('Marker preference - end-to-end integration', () => {
 
 
 
-    const units = (global.LM.layers['primary'] && global.LM.layers['primary'].state && global.LM.layers['primary'].state.units) ? global.LM.layers['primary'].state.units : [];
+    const units = (LM.layers['primary'] && LM.layers['primary'].state && LM.layers['primary'].state.units) ? LM.layers['primary'].state.units : [];
 
     // find the measure or beat unit emitted and assert startTime/endTime from CSV seconds
     const measureUnits = units.filter(u => u.unitType === 'measure' || u.unitType === 'beat');

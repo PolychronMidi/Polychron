@@ -53,10 +53,10 @@ try {
   if (pm) {
     const neededPhrases = Math.max(1, Number(pm[1]));
     // Override PHRASES_PER_SECTION to ensure the target phrase exists in the single section run
-    global.PHRASES_PER_SECTION = { min: neededPhrases, max: neededPhrases };
+    PHRASES_PER_SECTION = { min: neededPhrases, max: neededPhrases };
   }
   // Force a single section so PLAY_LIMIT controls the number of sections deterministically
-  global.SECTIONS = { min: 1, max: 1 };
+  SECTIONS = { min: 1, max: 1 };
 } catch (e) {}
 
 // Run play in-process

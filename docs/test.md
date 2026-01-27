@@ -181,11 +181,11 @@ Tests use a `setupGlobalState()` function to reset state before each test:
 
 ```javascript
 function setupGlobalState() {
-  globalThis.c = [];           // Clear event buffers
-  globalThis.csvRows = [];     // Clear CSV rows
-  globalThis.numerator = 4;    // Reset timing
-  globalThis.denominator = 4;
-  globalThis.BPM = 120;
+  c = [];           // Clear event buffers
+  csvRows = [];     // Clear CSV rows
+  numerator = 4;    // Reset timing
+  denominator = 4;
+  BPM = 120;
   // ... other globals
 }
 
@@ -429,31 +429,31 @@ This approach catches bugs at multiple levels without the fragility of isolated 
 
 ### Implementation
 
-To maintain clean separation between production and test code while avoiding mock proliferation, Polychron uses a unified test namespace. All test-accessible functions are exported to `globalThis.__POLYCHRON_TEST__`.
+To maintain clean separation between production and test code while avoiding mock proliferation, Polychron uses a unified test namespace. All test-accessible functions are exported to `__POLYCHRON_TEST__`.
 
 **In source files:**
 
 ```javascript
 // src/backstage.js (end of file)
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, {
     rf, ri, clamp, rv, ra  // Utility functions
   });
 }
 
 // src/rhythm.js (end of file)
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, {
     drummer, patternLength, makeOnsets, closestDivisor, drumMap
   });
 }
 
 // src/writer.js (end of file)
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, { p });
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, { p });
 }
 ```
 
@@ -467,14 +467,14 @@ require('../src/backstage');  // Load utilities (exports to __POLYCHRON_TEST__)
 require('../src/rhythm');     // Load rhythm functions (exports to __POLYCHRON_TEST__)
 
 // Import from unified namespace
-const { rf, ri, clamp, drummer, patternLength, makeOnsets, p } = globalThis.__POLYCHRON_TEST__;
+const { rf, ri, clamp, drummer, patternLength, makeOnsets, p } = __POLYCHRON_TEST__;
 
 // Now tests use real functions directly
 describe('drummer', () => {
   it('should accept drum names', () => {
     setupGlobalState();
     drummer(['kick1', 'snare1'], [0, 0.5]);
-    expect(global.c.length).toBeGreaterThan(0);
+    expect(c.length).toBeGreaterThan(0);
   });
 });
 ```
@@ -500,7 +500,7 @@ require('../src/time');
 // ... other dependencies ...
 
 // Import test utilities from namespace (prefer explicit over implicit globals)
-const { rf, ri, clamp } = globalThis.__POLYCHRON_TEST__;
+const { rf, ri, clamp } = __POLYCHRON_TEST__;
 ```
 
 ---
@@ -536,7 +536,7 @@ const { rf, ri, clamp } = globalThis.__POLYCHRON_TEST__;
 **Standard Adherence**: Perfect ✅
 - Correctly loads via `require()`: sheet, writer, backstage, rhythm
 - Uses `setupGlobalState()` properly to initialize test globals
-- **Uses test namespace**: Imports all functions from `globalThis.__POLYCHRON_TEST__`
+- **Uses test namespace**: Imports all functions from `__POLYCHRON_TEST__`
 - Tests real functions from **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)): `drummer()`, `patternLength()`, `makeOnsets()`, `closestDivisor()`
 - Tests real data: `drumMap` from actual rhythm module
 - ✅ **No function redefinitions** - Removed all duplicate function definitions
@@ -551,13 +551,13 @@ require('../src/backstage');  // Defines utility functions (exports to __POLYCHR
 require('../src/rhythm');  // Rhythm functions (exports to __POLYCHRON_TEST__)
 
 // Import from test namespace (all functions are real implementations)
-const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor, drumMap } = globalThis.__POLYCHRON_TEST__;
+const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor, drumMap } = __POLYCHRON_TEST__;
 
 describe('drummer', () => {
   it('should play single drum at offset 0', () => {
     setupGlobalState();
     drummer(['snare1'], [0]);
-    expect(global.c.length).toBeGreaterThan(0);
+    expect(c.length).toBeGreaterThan(0);
   });
 });
 ```
@@ -692,7 +692,7 @@ const mockComposer = {
 
 **Fix Strategy**:
 1. Remove lines 37-120 (all function redefinitions)
-2. Use `globalThis.rf()`, `globalThis.ri()`, etc. from loaded **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))
+2. Use `rf()`, `ri()`, etc. from loaded **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))
 3. Use real `drummer()` and `patternLength()` from loaded **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))
 4. Use real `drumMap` from loaded **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md))
 
@@ -884,22 +884,22 @@ describe('MeasureComposer', () => {
 describe('Global State Variables', () => {
   beforeEach(() => {
     // Reset ALL globals that might be modified
-    globalThis.c = [];
-    globalThis.beatStart = 0;
-    globalThis.beatCount = 0;
-    globalThis.beatsUntilBinauralShift = 16;
-    globalThis.flipBin = false;
-    globalThis.crossModulation = 2.2;
+    c = [];
+    beatStart = 0;
+    beatCount = 0;
+    beatsUntilBinauralShift = 16;
+    flipBin = false;
+    crossModulation = 2.2;
   });
 
   it('should have m (Math) defined', () => {
-    expect(globalThis.m).toBeDefined();
-    expect(globalThis.m.round(5.5)).toBe(6);
+    expect(m).toBeDefined();
+    expect(m.round(5.5)).toBe(6);
   });
 
   it('should have clamp function defined', () => {
-    expect(typeof globalThis.clamp).toBe('function');
-    expect(globalThis.clamp(5, 0, 10)).toBe(5);
+    expect(typeof clamp).toBe('function');
+    expect(clamp(5, 0, 10)).toBe(5);
   });
 });
 ```
@@ -930,23 +930,23 @@ const mockComposer = {
 describe('getMidiTiming', () => {
   beforeEach(() => {
     setupGlobalState();
-    globalThis.composer = { ...mockComposer };
+    composer = { ...mockComposer };
   });
 
   it('should return 4/4 unchanged', () => {
-    globalThis.numerator = 4;
-    globalThis.denominator = 4;
+    numerator = 4;
+    denominator = 4;
     const result = getMidiTiming();
     expect(result).toEqual([4, 4]);
-    expect(globalThis.midiMeter).toEqual([4, 4]);
-    expect(globalThis.syncFactor).toBe(1);
+    expect(midiMeter).toEqual([4, 4]);
+    expect(syncFactor).toBe(1);
   });
 
   it('should spoof non-power-of-2 denominators', () => {
-    globalThis.numerator = 7;
-    globalThis.denominator = 9;
+    numerator = 7;
+    denominator = 9;
     getMidiTiming();
-    expect(globalThis.midiMeter[1]).toBe(8); // Closest power of 2
+    expect(midiMeter[1]).toBe(8); // Closest power of 2
   });
 });
 ```
@@ -1011,28 +1011,28 @@ describe('play.js - Orchestrator Module', () => {
 
   describe('Module Integration', () => {
     it('should have all required functions available', () => {
-      expect(typeof globalThis.getMidiTiming).toBe('function');
-      expect(typeof globalThis.setMidiTiming).toBe('function');
-      expect(typeof globalThis.drummer).toBe('function');
-      expect(typeof globalThis.binaural).toBe('function');
-      expect(typeof globalThis.grandFinale).toBe('function');
+      expect(typeof getMidiTiming).toBe('function');
+      expect(typeof setMidiTiming).toBe('function');
+      expect(typeof drummer).toBe('function');
+      expect(typeof binaural).toBe('function');
+      expect(typeof grandFinale).toBe('function');
     });
 
     it('should have all composer classes available', () => {
-      expect(typeof globalThis.ScaleComposer).toBe('function');
-      expect(typeof globalThis.ChordComposer).toBe('function');
-      expect(typeof globalThis.ModeComposer).toBe('function');
+      expect(typeof ScaleComposer).toBe('function');
+      expect(typeof ChordComposer).toBe('function');
+      expect(typeof ModeComposer).toBe('function');
     });
   });
 
   describe('Full Composition Cycle', () => {
     it('should support multiple beat cycles', () => {
-      globalThis.c = [];
+      c = [];
 
       for (let beatIndex = 0; beatIndex < 4; beatIndex++) {
-        globalThis.beatIndex = beatIndex;
-        globalThis.beatStart = beatIndex * globalThis.tpBeat;
-        p(c, { tick: globalThis.beatStart, type: 'on', vals: [0, 60, 100] });
+        beatIndex = beatIndex;
+        beatStart = beatIndex * tpBeat;
+        p(c, { tick: beatStart, type: 'on', vals: [0, 60, 100] });
       }
 
       expect(c.length).toBe(4);
