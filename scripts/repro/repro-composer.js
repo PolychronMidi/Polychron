@@ -23,10 +23,10 @@ process.env.INDEX_TRACES = '1';
 
 // Remove previous outputs to avoid mixing
 const out = path.join(process.cwd(), 'output');
-try { if (fs.existsSync(path.join(out, 'unitMasterMap.ndjson'))) fs.unlinkSync(path.join(out, 'unitMasterMap.ndjson')); } catch (e) {}
-try { if (fs.existsSync(path.join(out, 'unitMasterMap.json'))) fs.unlinkSync(path.join(out, 'unitMasterMap.json')); } catch (e) {}
+try { if (fs.existsSync(path.join(out, 'unitMasterMap.ndjson'))) fs.unlinkSync(path.join(out, 'unitMasterMap.ndjson')); } catch (e) { /* swallow */ }
+try { if (fs.existsSync(path.join(out, 'unitMasterMap.json'))) fs.unlinkSync(path.join(out, 'unitMasterMap.json')); } catch (e) { /* swallow */ }
 // Also remove any repro-overlaps left over
-try { if (fs.existsSync(path.join(out, 'repro-overlaps.ndjson'))) fs.unlinkSync(path.join(out, 'repro-overlaps.ndjson')); } catch (e) {}
+try { if (fs.existsSync(path.join(out, 'repro-overlaps.ndjson'))) fs.unlinkSync(path.join(out, 'repro-overlaps.ndjson')); } catch (e) { /* swallow */ }
 
 // Run play in-process (require) so globals apply
 try {

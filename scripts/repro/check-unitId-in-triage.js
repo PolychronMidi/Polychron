@@ -16,7 +16,7 @@ for (const d of dirs) {
       const txt = fs.readFileSync(fp, 'utf8');
       const cnt = (txt.split(unitId).length -1);
       if (cnt>0) console.log(`${d}/${f}: ${cnt}`), total += cnt;
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   }
 }
 console.log('TOTAL', total);

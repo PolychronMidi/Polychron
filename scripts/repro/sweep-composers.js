@@ -21,7 +21,7 @@ for (let i = 0; i < composers.length; i++) {
   let parsed = null;
   try {
     parsed = stdout ? JSON.parse(stdout) : null;
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
   const file = path.join(out, `composer-sweep-${i}.json`);
   if (fs.existsSync(file)) {
     const obj = JSON.parse(fs.readFileSync(file, 'utf8'));

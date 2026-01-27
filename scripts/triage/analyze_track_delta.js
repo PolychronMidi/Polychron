@@ -59,8 +59,8 @@ for (const layer of Object.keys(report.trackLengths || {})) {
   const parseHMSToSec = (tstr) => { const parts = String(tstr).trim().split(':').map(s=>s.trim()); if (parts.length===1) return Number(parts[0])||0; const min=Number(parts[0])||0; const sec=Number(parts[1])||0; return min*60+sec; };
   const lastSectionLine = tail.slice().reverse().find(l => /Section\s*\d+\//i.test(l) && /endTick:/i.test(l));
   const lastPhraseLine = tail.slice().reverse().find(l => /Phrase\s*\d+\//i.test(l) && /endTick:/i.test(l));
-  const sectionInfo = lastSectionLine ? (()=>{ const m = String(lastSectionLine).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i); const m2 = String(lastSectionLine).match(/\(([^\)]+)\s*-\s*([^\)]+)\)/); const m3 = String(lastSectionLine).match(/tpSec:\s*([0-9]+(?:\.[0-9]+)?)/i); return { line: lastSectionLine, endTick: m?Number(m[1]):null, endTime: m2?parseHMSToSec(m2[2]):(m3 && m && m[1]? Number(m[1])?Number(m[1]):null : null), tpSec: m3?Number(m3[1]):null }; })() : null;
-  const phraseInfo = lastPhraseLine ? (()=>{ const m = String(lastPhraseLine).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i); const m2 = String(lastPhraseLine).match(/\(([^\)]+)\s*-\s*([^\)]+)\)/); const m3 = String(lastPhraseLine).match(/tpSec:\s*([0-9]+(?:\.[0-9]+)?)/i); return { line: lastPhraseLine, endTick: m?Number(m[1]):null, endTime: m2?parseHMSToSec(m2[2]):(m3 && m && m[1]? Number(m[1])?Number(m[1]):null : null), tpSec: m3?Number(m3[1]):null }; })() : null;
+const sectionInfo = lastSectionLine ? (()=>{ const m = String(lastSectionLine).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i); const m2 = String(lastSectionLine).match(/\(([^)]+)\s*-\s*([^)]+)\)/); const m3 = String(lastSectionLine).match(/tpSec:\s*([0-9]+(?:\.[0-9]+)?)/i); return { line: lastSectionLine, endTick: m?Number(m[1]):null, endTime: m2?parseHMSToSec(m2[2]):(m3 && m && m[1]? Number(m[1])?Number(m[1]):null : null), tpSec: m3?Number(m3[1]):null }; })() : null;
+  const phraseInfo = lastPhraseLine ? (()=>{ const m = String(lastPhraseLine).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i); const m2 = String(lastPhraseLine).match(/\(([^)]+)\s*-\s*([^)]+)\)/); const m3 = String(lastPhraseLine).match(/tpSec:\s*([0-9]+(?:\.[0-9]+)?)/i); return { line: lastPhraseLine, endTick: m?Number(m[1]):null, endTime: m2?parseHMSToSec(m2[2]):(m3 && m && m[1]? Number(m[1])?Number(m[1]):null : null), tpSec: m3?Number(m3[1]):null }; })() : null;
 
   const candidate = { layer, declaredTrackEnd: lk.value, declaredSource: lk.source, lastMarkerCount: lastMarkers.length, lastUnitRecLine: lastUnitRec, lastEndTrackLine, lastSection: sectionInfo, lastPhrase: phraseInfo };
 
@@ -71,7 +71,7 @@ for (const layer of Object.keys(report.trackLengths || {})) {
     let maxSectionEndTime = -Infinity, maxSectionEndTick = -Infinity;
     for (const ln of linesAll) {
       if (!ln || ln.indexOf('marker_t') === -1) continue;
-      const ms = String(ln).match(/Section\s*(\d+)\/\d+.*?\(([\d:\.]+)\s*-\s*([\d:\.]+)\)/i);
+      const ms = String(ln).match(/Section\s*(\d+)\/\d+.*?\(([\d:.]+)\s*-\s*([\d:.]+)\)/i);
       if (ms) {
         const endStr = ms[3];
         const endTime = parseHMSToSec(endStr);
@@ -85,7 +85,7 @@ for (const layer of Object.keys(report.trackLengths || {})) {
     }
     if (maxSectionEndTime !== -Infinity) candidate.maxSectionEndTime = maxSectionEndTime;
     if (maxSectionEndTick !== -Infinity) candidate.maxSectionEndTick = maxSectionEndTick;
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
 
   // If unitTree present, compute last canonical endTime/endTick for this layer
   if (unitTree && Array.isArray(unitTree.units)) {

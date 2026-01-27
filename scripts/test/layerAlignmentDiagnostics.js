@@ -43,7 +43,7 @@ for (const u of units) {
     groupedByLayer[u.layer] = groupedByLayer[u.layer] || {};
     groupedByLayer[u.layer][key] = groupedByLayer[u.layer][key] || [];
     groupedByLayer[u.layer][key].push(u);
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
 }
 
 const groupedBounds = {};
@@ -92,7 +92,7 @@ for (const f of csvFiles) {
       if (mm) { leadSectionIdx = Number(mm[1]) - 1; break; }
     }
 
-    const mPhrase = String(val).match(/(Phrase)\s*(\d+)\/(\d+).*\(([^\)]+)\s*-\s*([^\)]+)\)/i);
+    const mPhrase = String(val).match(/(Phrase)\s*(\d+)\/(\d+).*(([^)]+)\s*-\s*([^)]+))/i);
     if (mPhrase) {
       const phraseIdx = Number(mPhrase[2]) - 1;
       const localStart = parseHMSToSec(mPhrase[4]);

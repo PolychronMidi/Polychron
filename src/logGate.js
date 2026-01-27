@@ -52,7 +52,7 @@ function isEnabled(category) {
 
 function _ensureOutDir() {
   const out = path.join(process.cwd(), 'output');
-  try { if (!fs.existsSync(out)) fs.mkdirSync(out, { recursive: true }); } catch (e) {}
+  try { if (!fs.existsSync(out)) fs.mkdirSync(out, { recursive: true }); } catch (e) { /* swallow */ }
   return out;
 }
 
@@ -93,8 +93,8 @@ function writeFatal(obj, filename = 'critical-errors.ndjson') {
 
 // Convenience helper for detected overlap payloads — writes the short payload and the verbose trace
 function writeDetectedOverlap(payload, verbose) {
-  try { appendToFile('detected-overlap.ndjson', payload); } catch (e) {}
-  try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (e) {}
+  try { appendToFile('detected-overlap.ndjson', payload); } catch (e) { /* swallow */ }
+  try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (e) { /* swallow */ }
 }
 
 // Test-mode console gating helpers
@@ -126,7 +126,7 @@ function gateConsoleForTests() {
   console.error = (...args) => {
     try {
       appendToFile('test-errors.ndjson', { ts: Date.now(), args: args.map(a => (typeof a === 'string' ? a : (a && a.stack ? a.stack : JSON.stringify(a)))) });
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   };
 
   _consoleRestore = () => {
@@ -134,7 +134,7 @@ function gateConsoleForTests() {
     console.warn = _orig.warn;
     console.error = _orig.error;
     // Restore previous enableLogging value
-    try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.enableLogging = _origEnableLogging; } catch (e) {}
+    try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.enableLogging = _origEnableLogging; } catch (e) { /* swallow */ }
     _consoleRestore = null;
   };
   return _consoleRestore;
@@ -150,9 +150,9 @@ function setSilentMode(v = true) {
   _silentMode = !!v;
   if (_silentMode) {
     // Apply gating immediately
-    try { gateConsoleForTests(); } catch (e) {}
+    try { gateConsoleForTests(); } catch (e) { /* swallow */ }
   } else {
-    try { restoreConsoleForTests(); } catch (e) {}
+    try { restoreConsoleForTests(); } catch (e) { /* swallow */ }
   }
 }
 
@@ -193,4 +193,4 @@ try {
     // Default policy for local/dev runs: silent by default, opt-in to enable logs
     setSilentMode(true);
   }
-} catch (e) {}
+} catch (e) { /* swallow */ }

@@ -46,7 +46,7 @@ function readUnitsFromCsv() {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
 
       const val = parts.slice(3).join(',');
 
@@ -154,8 +154,8 @@ function readUnitsFromCsv() {
         }
       }
       try {
-        if (conflicts.length) fs.writeFileSync(path.join(OUT, 'unitTreeAudit-canonicalization.json'), JSON.stringify(conflicts, null, 2)); else try { fs.unlinkSync(path.join(OUT, 'unitTreeAudit-canonicalization.json')); } catch (_e) {}
-      } catch (_e) {}
+        if (conflicts.length) fs.writeFileSync(path.join(OUT, 'unitTreeAudit-canonicalization.json'), JSON.stringify(conflicts, null, 2)); else try { fs.unlinkSync(path.join(OUT, 'unitTreeAudit-canonicalization.json')); } catch (_e) { /* swallow */ }
+      } catch (_e) { /* swallow */ }
     }
   }
 
@@ -243,7 +243,7 @@ function audit() {
     }
   });
   if (gaps.length) {
-    try { const gapsPath = path.join(OUT, 'unitTreeAudit-gaps.json'); fs.writeFileSync(gapsPath, JSON.stringify(gaps, null, 2)); } catch (_e) {}
+    try { const gapsPath = path.join(OUT, 'unitTreeAudit-gaps.json'); fs.writeFileSync(gapsPath, JSON.stringify(gaps, null, 2)); } catch (_e) { /* swallow */ }
   }
 
   if (strict) console.log('Unit tree audit running in STRICT mode: events after last unit will be reported as errors.');

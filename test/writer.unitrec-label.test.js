@@ -10,14 +10,14 @@ describe('CSV writer: unitRec label and event unit prefix', () => {
 
   beforeEach(() => {
     if (!fs.existsSync(OUT)) fs.mkdirSync(OUT);
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
     // reset LM
     if (LM) { LM.layers = {}; LM.activeLayer = null; }
     LOG = 'none';
   });
 
   afterEach(() => {
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
   });
 
   it('preserves human label in marker_t and includes layer prefix on event tick field', () => {

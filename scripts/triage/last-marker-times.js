@@ -12,7 +12,7 @@ for (const csv of csvFiles) {
     const parts = ln.split(','); const val = parts.slice(3).join(',');
     const mUnitSec = String(val).match(/unitRec:[^\s,]+\|([0-9]+\.[0-9]+-[0-9]+\.[0-9]+)\b/);
     if (mUnitSec) { const r = mUnitSec[1].split('-'); found = { csv: path.basename(csv), line: i+1, method: 'unitRec', endSec: Number(r[1]), raw: ln }; break; }
-    const mPhrase = String(val).match(/\(([^\)]+)\s*-\s*([^\)]+)\)/);
+    const mPhrase = String(val).match(/\(([^)]+)\s*-\s*([^)]+)\)/);
     if (mPhrase) { const endStr = String(mPhrase[2]).trim(); found = { csv: path.basename(csv), line: i+1, method: 'phrase', endSec: parseHMSToSec(endStr), raw: ln }; break; }
     const mTick = String(val).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i);
     if (mTick) { const endTick = Number(mTick[1]); found = { csv: path.basename(csv), line: i+1, method: 'endTick', endTick, raw: ln }; break; }

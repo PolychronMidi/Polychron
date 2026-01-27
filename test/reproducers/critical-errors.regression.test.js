@@ -11,7 +11,7 @@ describe('Critical errors regression', () => {
 
     // Clean up previous artifacts
     const out = path.join(process.cwd(), 'output', 'critical-errors.ndjson');
-    try { if (fs.existsSync(out)) fs.unlinkSync(out); } catch (e) {}
+    try { if (fs.existsSync(out)) fs.unlinkSync(out); } catch (e) { /* swallow */ }
 
     // Run a short play to exercise timing and composer getters
     const env = Object.assign({}, process.env, { PLAY_LIMIT: '1' });

@@ -10,7 +10,7 @@ describe('composer cache lifecycle', () => {
   it('emits no composer:cache:miss in a short run', () => {
     const outDir = path.join(process.cwd(), 'output');
     const tracesFile = path.join(outDir, 'index-traces.ndjson');
-    try { if (fs.existsSync(tracesFile)) fs.unlinkSync(tracesFile); } catch (e) {}
+    try { if (fs.existsSync(tracesFile)) fs.unlinkSync(tracesFile); } catch (e) { /* swallow */ }
 
     const env = Object.assign({}, process.env, { PLAY_LIMIT: '1', INDEX_TRACES: '1' });
     const res = spawnSync(process.execPath, [path.join('src','play.js')], { env, stdio: 'ignore', timeout: 60000 });

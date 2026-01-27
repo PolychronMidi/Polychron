@@ -1,4 +1,4 @@
-const fs = require('fs'); const path = require('path'); const traces = path.join(process.cwd(), 'output', 'index-traces.ndjson'); try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) {}
+const fs = require('fs'); const path = require('path'); const traces = path.join(process.cwd(), 'output', 'index-traces.ndjson'); try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) { /* swallow */ }
 const logGate = require('../src/logGate'); const { writeDebugFile } = require('../src/logGate');
 
 // Flapping composer: getSubsubdivs alternates between 2 and 1
@@ -19,7 +19,7 @@ const preAnoms = recs.filter(r => r.tag === 'time:pre-anomaly');
 const bad = preAnoms.filter(e => Number.isFinite(e.subsubdivIndex) && Number.isFinite(e.subsubsPerSub) && (e.subsubdivIndex > e.subsubsPerSub));
 if (logGate.isEnabled('repro')) console.log('preAnoms', preAnoms.length, 'badCount', bad.length);
 if (bad.length > 0) {
-  try { writeDebugFile('repro-errors.ndjson', { when: new Date().toISOString(), bad: bad.slice(0,5) }, 'repro'); } catch (e) {}
+  try { writeDebugFile('repro-errors.ndjson', { when: new Date().toISOString(), bad: bad.slice(0,5) }, 'repro'); } catch (e) { /* swallow */ }
   if (logGate.isEnabled('repro')) console.error('Bad samples:', bad.slice(0,5));
   process.exit(2);
 } else {

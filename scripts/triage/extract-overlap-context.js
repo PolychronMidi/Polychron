@@ -18,7 +18,7 @@ if (!fs.existsSync(summaryPath)) {
 const summary = JSON.parse(read(summaryPath));
 const parents = (summary.topParents || []).slice(0, 10);
 const sources = ['output/index-traces.ndjson','output/composer-creation.ndjson'];
-function safeName(s){ return s.replace(/[^a-z0-9_\-]/gi,'_').slice(0,140); }
+function safeName(s){ return s.replace(/[^a-z0-9_-]/gi,'_').slice(0,140); }
 function writeContextForString(srcPath, match, destPath){
   if (!fs.existsSync(srcPath)) return;
   const lines = read(srcPath).split('\n');

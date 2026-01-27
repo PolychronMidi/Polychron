@@ -36,14 +36,14 @@ function normalizeForLog(line, label = 'STDOUT') {
   let s = String(line || '');
   s = stripAnsi(s);
   // Collapse file:// prefixes that appear in stack traces
-  s = s.replace(/file:\/\/[\/\\]*/g, '');
+  s = s.replace(new RegExp('file:[\\/]{2,}', 'g'), '');
   // Replace absolute repository-root paths with a short <repo>/ prefix
   if (cwd && typeof s === 'string') {
     const safeCwd = cwd.replace(/\\/g, '/');
     s = s.split(safeCwd).join('<repo>');
   }
   // Collapse repetitive node_modules paths to a concise token
-  s = s.replace(/node_modules[\\\/](@?[^\\\/\s]+)[\\\/]?/g, 'node_modules/$1/...');
+  s = s.replace(new RegExp('node_modules[\\/](@?[^\\/\\s]+)[\\/]?', 'g'), 'node_modules/$1/...');
   // Omit timestamps for a cleaner persistent log
   return `${label}: ${s}`;
 }

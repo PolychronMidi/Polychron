@@ -25,9 +25,9 @@ class MeasureComposer {
   /** @returns {number} Random denominator from DENOMINATOR config */
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random divisions count from DIVISIONS config */
-  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) {} return res;}
+  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
   /** @returns {number} Random subdivisions count from SUBDIVISIONS config */
-  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getSubdivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) {} return res;}
+  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getSubdivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
   /** @returns {number} Random sub-subdivisions count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random voice count from VOICES config */
@@ -82,12 +82,12 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
         const ratioChange = m.abs(newMeterRatio - lastMeterRatio);
         if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps && ratioChange <= 1.5) {
           this.lastMeter=[newNumerator,newDenominator];
-          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) {}
+          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) { /* swallow */ }
           return this.lastMeter;
         }
       } else {
         this.lastMeter=[newNumerator,newDenominator];
-        try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) {}
+        try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) { /* swallow */ }
         return this.lastMeter;
       }
     }
@@ -98,7 +98,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
   // Also emit a console warning so tests and engineers can observe the fallback directly
   try {
     console.warn(`getMeter() failed: fallback ${JSON.stringify(FALLBACK_METER)} iterations=${iterations} Ratio bounds=${METER_RATIO_MIN}-${METER_RATIO_MAX} LogSteps=${MIN_LOG_STEPS}-${maxLogSteps}`);
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
   this.lastMeter=FALLBACK_METER;
   return this.lastMeter;
 }
@@ -144,7 +144,7 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
       }).filter((noteObj,index,self)=>
         index===self.findIndex(n=>n.note===noteObj.note)
       ); }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
-      try { writeDebugFile('composers.ndjson', { tag: 'getNotes-recursion', message: e && e.message ? e.message : String(e) }, 'debug'); } catch (e2) {} this.recursionDepth--; return this.getNotes(octaveRange);  }}
+      try { writeDebugFile('composers.ndjson', { tag: 'getNotes-recursion', message: e && e.message ? e.message : String(e) }, 'debug'); } catch (e2) { /* swallow */ } this.recursionDepth--; return this.getNotes(octaveRange);  }}
     finally {
       this.recursionDepth--;
     }
@@ -1270,11 +1270,11 @@ class ComposerFactory {
     const factory = this.constructors[type];
     if (!factory) {
       writeDebugFile('composers.ndjson', { tag: 'unknown-composer-type', type }, 'debug');
-      try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'fallback' }); } catch (e) {}
+      try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'fallback' }); } catch (e) { /* swallow */ }
       return this.constructors.scale({ name: 'random', root: 'random' });
     }
     // Record composer creation for triage
-    try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'create', stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) }); } catch (e) {}
+    try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'create', stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) }); } catch (e) { /* swallow */ }
     return factory(config);
   }
 }

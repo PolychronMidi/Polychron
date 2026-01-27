@@ -7,7 +7,7 @@ function loadJson(p){ if(!fs.existsSync(p)) return null; try { return JSON.parse
 const unitsPath = path.join(OUT,'units.json');
 let units = [];
 if (fs.existsSync(unitsPath)) {
-  try { units = JSON.parse(fs.readFileSync(unitsPath,'utf8')).units || []; } catch(e){}
+  try { units = JSON.parse(fs.readFileSync(unitsPath,'utf8')).units || []; } catch(e){ /* swallow */ }
 }
 const byLayerTp = {};
 for (const u of units) {
@@ -33,12 +33,12 @@ for (const fn of files) {
     try { j = JSON.parse(s); } catch(e) {
       const lines = s.split(/\r?\n/).filter(Boolean);
       for (const ln of lines) {
-        try { const obj = JSON.parse(ln); if(obj){ checkObj(fn,obj); } } catch(e){}
+        try { const obj = JSON.parse(ln); if(obj){ checkObj(fn,obj); } } catch(e){ /* swallow */ }
       }
       continue;
     }
     if (Array.isArray(j.units)) { for (const u of j.units) checkObj(fn,u); }
-  } catch(e){}
+  } catch(e){ /* swallow */ }
 }
 function checkObj(fn,u){
   if (!u) return;

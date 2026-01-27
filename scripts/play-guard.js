@@ -34,7 +34,7 @@ function isPidAlive(pid) {
         }
       } catch (e) {
         // remove corrupted/stale lock file
-        try { fs.unlinkSync(LOCK_PATH); } catch (_) {}
+        try { fs.unlinkSync(LOCK_PATH); } catch (_) { /* swallow */ }
       }
     }
 
@@ -47,22 +47,22 @@ function isPidAlive(pid) {
     child.on('close', (code, sig) => {
       try {
         if (fs.existsSync(LOCK_PATH)) fs.unlinkSync(LOCK_PATH);
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
       const fin = { when: new Date().toISOString(), exitCode: code, signal: sig };
-      try { fs.mkdirSync(path.join(process.cwd(),'output'), { recursive: true }); fs.writeFileSync(FIN_PATH, JSON.stringify(fin, null, 2)); } catch (e) {}
+      try { fs.mkdirSync(path.join(process.cwd(),'output'), { recursive: true }); fs.writeFileSync(FIN_PATH, JSON.stringify(fin, null, 2)); } catch (e) { /* swallow */ }
       console.log(`Play guard: child exited (code=${code}, signal=${sig})`);
       process.exit(code);
     });
 
     child.on('error', (err) => {
-      try { if (fs.existsSync(LOCK_PATH)) fs.unlinkSync(LOCK_PATH); } catch (_e) {}
+      try { if (fs.existsSync(LOCK_PATH)) fs.unlinkSync(LOCK_PATH); } catch (_e) { /* swallow */ }
       console.error('Play guard: failed to spawn play child:', err && err.message);
       process.exit(3);
     });
 
     // Ensure we clean up on signals
     const cleanupAndExit = (code) => {
-      try { if (fs.existsSync(LOCK_PATH)) fs.unlinkSync(LOCK_PATH); } catch (e) {}
+      try { if (fs.existsSync(LOCK_PATH)) fs.unlinkSync(LOCK_PATH); } catch (e) { /* swallow */ }
       process.exit(code || 1);
     };
     process.on('SIGINT', () => cleanupAndExit(130));

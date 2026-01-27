@@ -307,6 +307,7 @@ class Stage {
     let reflectionCH; let bassCH; let bassNote;
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
+    // eslint-disable-next-line no-constant-condition
     if(true){
   if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)

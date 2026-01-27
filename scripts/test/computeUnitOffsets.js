@@ -27,7 +27,7 @@ for (const u of units) {
     byLayerKey[u.layer] = byLayerKey[u.layer] || {};
     byLayerKey[u.layer][key] = byLayerKey[u.layer][key] || [];
     byLayerKey[u.layer][key].push(Number(u.startTime || 0));
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
 }
 
 const layers = Object.keys(byLayerKey);

@@ -3,8 +3,8 @@ const path = require('path');
 
 // Clear previous artifacts
 const out = path.join(process.cwd(), 'output');
-try { if (fs.existsSync(path.join(out, 'unitMasterMap.ndjson'))) fs.unlinkSync(path.join(out, 'unitMasterMap.ndjson')); } catch (e) {}
-try { if (fs.existsSync(path.join(out, 'repro-overlaps.ndjson'))) fs.unlinkSync(path.join(out, 'repro-overlaps.ndjson')); } catch (e) {}
+try { if (fs.existsSync(path.join(out, 'unitMasterMap.ndjson'))) fs.unlinkSync(path.join(out, 'unitMasterMap.ndjson')); } catch (e) { /* swallow */ }
+try { if (fs.existsSync(path.join(out, 'repro-overlaps.ndjson'))) fs.unlinkSync(path.join(out, 'repro-overlaps.ndjson')); } catch (e) { /* swallow */ }
 
 // Force deterministic composers: only use advancedVoiceLeading composer
 try {
@@ -82,7 +82,7 @@ for (let i = 0; i < candidates.length; i++) {
 
 if (overlaps.length) {
   const { appendToFile } = require('../../src/logGate');
-  try { appendToFile('repro-overlaps.ndjson', { when: new Date().toISOString(), overlaps }); } catch (e) {}
+  try { appendToFile('repro-overlaps.ndjson', { when: new Date().toISOString(), overlaps }); } catch (e) { /* swallow */ }
   console.error(`Found ${overlaps.length} overlaps for parent ${parentPrefix} - see output/repro-overlaps.ndjson`);
   process.exit(1);
 }

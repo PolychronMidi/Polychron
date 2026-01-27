@@ -66,7 +66,7 @@ test('unitMasterMap seconds suffixes match recorded startTime across unit levels
       const secStart = Number(m[1]);
       const recStart = (u.startTime !== undefined && u.startTime !== null) ? Number(u.startTime) : null;
       if (!Number.isFinite(recStart) || Math.abs(recStart - secStart) > TOL) bad.push({ key, secStart, recStart });
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   }
   if (bad.length) {
     const msg = bad.slice(0, 20).map(b => `${b.key} (suffixStart=${b.secStart} startTime=${b.recStart})`).join('\n');

@@ -22,7 +22,7 @@ for (let i = 1; i <= attempts; i++) {
         spawnSync(process.execPath, [path.join('scripts','repro','extract-parent-diagnostics.js'), 'env:' + parentArg], { encoding: 'utf8' });
         process.exit(0);
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   }
 }
 console.log('Sweep complete - no reproductions found');

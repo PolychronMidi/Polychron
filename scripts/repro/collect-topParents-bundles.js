@@ -55,7 +55,7 @@ for (const p of selected) {
       if (matches.length) fs.writeFileSync(path.join(dir, 'unitMasterMap.json'), JSON.stringify(matches, null, 2));
       report.counts.unitMasterMap_json = matches.length;
     }
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
   try {
     if (fs.existsSync(mmNd)) {
       const txt = fs.readFileSync(mmNd, 'utf8');
@@ -64,7 +64,7 @@ for (const p of selected) {
       if (matches.length) fs.writeFileSync(path.join(dir, 'unitMasterMap.ndjson'), matches.join('\n') + '\n');
       report.counts.unitMasterMap_ndjson = matches.length;
     }
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
 
   // Write a minimal per-parent summary
   fs.writeFileSync(path.join(dir, 'summary.json'), JSON.stringify(report, null, 2), 'utf8');

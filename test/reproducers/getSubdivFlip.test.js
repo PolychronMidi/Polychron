@@ -6,7 +6,7 @@ import { spawnSync } from 'child_process';
 it('stable when composer.getSubdivisions flips within a division', () => {
   const out = path.join(process.cwd(), 'output');
   const traces = path.join(out, 'index-traces.ndjson');
-  try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) {}
+  try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) { /* swallow */ }
 
   // Run Node with a composer that flips its subdivisions on successive calls
   const script = `composer = { getDivisions: () => 1, getSubdivisions: (function(){let i=0; return function(){ return (i++ % 2 === 0) ? 7 : 1; } })() };

@@ -9,8 +9,8 @@ it('PLAY_LIMIT=1 produces no unit index anomalies', () => {
   const anomaliesRich = path.join(out, 'unitIndex-anomalies-rich.ndjson');
 
   // Clean previous artifacts
-  try { if (fs.existsSync(anomalies)) fs.unlinkSync(anomalies); } catch (e) {}
-  try { if (fs.existsSync(anomaliesRich)) fs.unlinkSync(anomaliesRich); } catch (e) {}
+  try { if (fs.existsSync(anomalies)) fs.unlinkSync(anomalies); } catch (e) { /* swallow */ }
+  try { if (fs.existsSync(anomaliesRich)) fs.unlinkSync(anomaliesRich); } catch (e) { /* swallow */ }
 
   // Run deterministic play
   const res = spawnSync(process.execPath, [path.join('src','play.js')], { env: { ...process.env, PLAY_LIMIT: '1', INDEX_TRACES: '1' }, stdio: 'inherit' });
