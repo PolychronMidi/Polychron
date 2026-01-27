@@ -150,8 +150,6 @@ getPolyrhythm = () => {
     polyNumerator = numerator;
     polyDenominator = denominator;
     polyMeterRatio = polyNumerator / polyDenominator;
-    measuresPerPhrase1 = 1;
-    measuresPerPhrase2 = 1;
     return;
   }
   const MAX_ATTEMPTS = 100;
@@ -203,9 +201,7 @@ getPolyrhythm = () => {
   [numerator, denominator] = composer.getMeter(true, false);
   // CRITICAL: Recalculate all timing after meter change to prevent sync desync
   getMidiTiming();
-  measuresPerPhrase1 = 1;
-  measuresPerPhrase2 = 1;
-};;
+};
 
 /**
  * TimingContext class - encapsulates all timing state for a layer.
@@ -715,60 +711,15 @@ setUnitTiming = (unitType) => {
     try { writeDebugFile('time-debug.ndjson', { tag: 'unitBounds', unitType, unitStart, unitEnd, tpSec, tpMeasure, tpBeat, tpDiv, tpSubdiv }); } catch (_e) {}
     try { writeDebugFile('time-debug.ndjson', { tag: 'after-switch' }); } catch (_e) {}
 
-    // Clamp child unit boundaries to their parent unit to avoid overlaps or overlong spans
-    try {
-      switch (unitType) {
-        case 'measure':
-          if (Number.isFinite(phraseStart) && Number.isFinite(tpPhrase)) {
-            unitStart = Math.max(unitStart, phraseStart);
-            unitEnd = Math.min(unitEnd, phraseStart + tpPhrase);
-          }
-          break;
-        case 'beat':
-          if (Number.isFinite(measureStart) && Number.isFinite(tpMeasure)) {
-            unitStart = Math.max(unitStart, measureStart);
-            unitEnd = Math.min(unitEnd, measureStart + tpMeasure);
-          }
-          break;
-        case 'division':
-          if (Number.isFinite(beatStart) && Number.isFinite(tpBeat)) {
-            unitStart = Math.max(unitStart, beatStart);
-            unitEnd = Math.min(unitEnd, beatStart + tpBeat);
-          }
-          break;
-        case 'subdivision':
-          if (Number.isFinite(divStart) && Number.isFinite(tpDiv)) {
-            unitStart = Math.max(unitStart, divStart);
-            unitEnd = Math.min(unitEnd, divStart + tpDiv);
-          }
-          break;
-        case 'subsubdivision':
-          if (Number.isFinite(subdivStart) && Number.isFinite(tpSubdiv)) {
-            unitStart = Math.max(unitStart, subdivStart);
-            unitEnd = Math.min(unitEnd, subdivStart + tpSubdiv);
-          }
-          break;
-      }
-      // Ensure non-zero positive spans; if degenerate, extend by 1 tick
-      if (!Number.isFinite(unitStart)) unitStart = 0;
-      if (!Number.isFinite(unitEnd) || unitEnd <= unitStart) unitEnd = unitStart + 1;
-    } catch (_e) {}
+    // REMOVED: Clamp child unit boundaries to their parent unit to avoid overlaps or overlong spans
+    // ANTI-PATTERN: NO POSTFIXES
 
     let startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
     let endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
     try { writeDebugFile('time-debug.ndjson', { tag: 'secsComputed', startSecNum, endSecNum }); } catch (_e) {}
 
-    // Compute effective totals here to avoid carrying stale/default totals into the first child unit of a new parent
-    const effectiveSectionTotal = (typeof totalSections !== 'undefined' && Number.isFinite(Number(totalSections))) ? Number(totalSections) : 1;
-    const effectivePhrasesPerSection = (typeof phrasesPerSection !== 'undefined' && Number.isFinite(Number(phrasesPerSection))) ? Number(phrasesPerSection) : 1;
-    const effectiveMeasuresPerPhrase = (typeof measuresPerPhrase !== 'undefined' && Number.isFinite(Number(measuresPerPhrase))) ? Number(measuresPerPhrase) : 1;
-    const effectiveBeatTotal = (typeof numerator !== 'undefined' && Number.isFinite(Number(numerator))) ? Number(numerator) : 1;
-    // Cache composer-derived counts to avoid multiple getter calls and flip-flop
-    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
-    const _cache = (LM.layers[layer] && LM.layers[layer].state && LM.layers[layer].state._composerCache) ? LM.layers[layer].state._composerCache : null;
-    const _beatKey = `beat:${mea}:${bIdx}`;
-    const _divKey = `div:${mea}:${bIdx}:${divIdx}`;
-    const _subdivKey = `subdiv:${mea}:${bIdx}:${divIdx}:${subdivIdx}`;
+    // REMOVED: Compute effective totals here to avoid carrying stale/default totals into the first child unit of a new parent
+    // ANTI-PATTERN: NO POSTFIXES - THE ENTIRE POINT OF LM IS TO PASS STATE CLEANLY
 
     // Diagnostic cache peek: write a short trace showing whether cache entries exist for the current keys
     writeIndexTrace({ tag: 'composer:cache:peek', when: new Date().toISOString(), layer, keys: { beat: _beatKey, div: _divKey, subdiv: _subdivKey }, cacheHas: { beat: !!(_cache && _cache[_beatKey]), div: !!(_cache && _cache[_divKey]), subdiv: !!(_cache && _cache[_subdivKey]) } });
@@ -825,43 +776,15 @@ setUnitTiming = (unitType) => {
     let sTick = Math.round(unitStart);
     let eTick = Math.round(unitEnd);
 
-    // Log rounding differences for diagnostics (write to debug stream; avoid postfix 'corrections' files)
-    try {
-      if (Math.round(unitStart) !== unitStart || Math.round(unitEnd) !== unitEnd) {
-        try { writeDebugFile('time.ndjson', { tag: 'rounding', when: new Date().toISOString(), layer: layerName, unitType, fullId, unitStart, unitEnd, sTick, eTick }); } catch (_e) {}
-      }
-    } catch (_e) {}
-
     // Enforce positive non-zero span
     if (!Number.isFinite(sTick)) sTick = 0;
     if (!Number.isFinite(eTick) || eTick <= sTick) eTick = sTick + 1;
 
-    // Prevent overlaps with previously emitted units of the same unitType (stronger prevention)
-    if (LM && LM.layers && LM.layers[layerName]) {
-      LM.layers[layerName].state.units = LM.layers[layerName].state.units || [];
-      const arr = LM.layers[layerName].state.units;
-      // Look for any recent siblings of the same unitType that end after our proposed start
-      const overlapCandidates = arr.slice().reverse().filter(u => u && u.unitType === unitType && Number.isFinite(Number(u.endTick)) && Number(u.endTick) > sTick);
-      if (overlapCandidates.length) {
-        const maxEnd = Math.max(...overlapCandidates.map(u => Number(u.endTick)));
-        // Record diagnostic details (non-invasive debug file, avoid separate corrections file)
-        try {
-          const payload = { when: new Date().toISOString(), layer: layerName, unitType, fullId, nominalStart: Math.round(unitStart), nominalEnd: Math.round(unitEnd), beforeStart: sTick, beforeEnd: eTick, correctedStart: maxEnd, correctedEnd: Math.max(eTick, maxEnd + 1), candidates: overlapCandidates.slice(0,5) };
-          try { writeDebugFile('time.ndjson', Object.assign({ tag: 'overlap-normalized' }, payload)); } catch (_e) {}
-        } catch (_e) {}
-        // Move start to the latest observed end to avoid overlap
-        sTick = maxEnd;
-        if (eTick <= sTick) eTick = sTick + 1;
-      }
-    }
+    // REMOVED: Prevent overlaps with previously emitted units of the same unitType (stronger prevention)
+   // ANTI-PATTERN: NO POSTIFIXES
 
-    // Hard cap for subsubdivision spans to avoid pathological spans in treewalker
-    if (unitType === 'subsubdivision') {
-      const MAX_SPAN = 60000;
-      if ((eTick - sTick) > MAX_SPAN) {
-        eTick = sTick + MAX_SPAN;
-      }
-    }
+    // REMOVED: Hard cap for subsubdivision spans to avoid pathological spans in treewalker
+    // ANTI-PATTERN: NO POSTIFIXES
 
     const unitRec = {
       layer: layerName,
@@ -894,11 +817,6 @@ setUnitTiming = (unitType) => {
       LM.layers[layerName].state.units = LM.layers[layerName].state.units || [];
       LM.layers[layerName].state.units.push(unitRec);
     }
-
-
-
-
-
 
     // Derive parts indices from the actual computed unitStart to avoid stale/carry-over index values
     // Fallback to nominal indices when timing values are not available
@@ -993,22 +911,9 @@ setUnitTiming = (unitType) => {
             const key = baseSeg.join('|');
             if (sStart !== null && sEnd !== null) {
               // prefer earliest start if multiple
-              if (!map[key] || (map[key] && (sStart < map[key].startSec))) {
-                map[key] = { startSec: sStart, endSec: sEnd, tickStart, tickEnd, raw: full };
-                // also store short key without leading layer (e.g., 'section1|phrase1|measure1') for matching
-                try {
-                  const shortKey = key.split('|').slice(1).join('|');
-                  if (shortKey && !map[shortKey]) map[shortKey] = map[key];
-                } catch (_e) {}
-              }
+              if (!map[key] || (map[key] && (sStart < map[key].startSec))) map[key] = { startSec: sStart, endSec: sEnd, tickStart, tickEnd, raw: full };
             } else if (tickStart !== null && tickEnd !== null) {
-              if (!map[key] || (!map[key].startSec && tickStart < (map[key].tickStart || Infinity))) {
-                map[key] = { startSec: null, endSec: null, tickStart, tickEnd, raw: full };
-                try {
-                  const shortKey = key.split('|').slice(1).join('|');
-                  if (shortKey && !map[shortKey]) map[shortKey] = map[key];
-                } catch (_e) {}
-              }
+              if (!map[key] || (!map[key].startSec && tickStart < (map[key].tickStart || Infinity))) map[key] = { startSec: null, endSec: null, tickStart, tickEnd, raw: full };
             }
           }
         }
@@ -1211,32 +1116,8 @@ setUnitTiming = (unitType) => {
       const label = `New ${unitType.charAt(0).toUpperCase() + unitType.slice(1)}`;
       p(c, { tick: Math.round(unitStart), type: 'marker_t', vals: [`${label}:unitRec:${fullId}`], _internal: true });
 
-      // Ensure section markers present in all layers by propagating primary's section markers into other layers
-      try {
-        if (unitType === 'section' && layerName === 'primary' && typeof LM !== 'undefined' && LM.layers) {
-          for (const otherName of Object.keys(LM.layers)) {
-            if (otherName === 'primary') continue;
-            try {
-              const otherLayer = LM.layers[otherName];
-              if (!otherLayer || !otherLayer.state) continue;
-              const otherState = otherLayer.state;
-              const otherBuf = otherLayer.buffer;
-              if (!otherBuf) continue;
-              // Map primary's marker times to the target layer using seconds if available, else scale by tpSec ratio
-              const targetStartTick = (Number.isFinite(startSecNum) && Number.isFinite(otherState.tpSec)) ? Math.round(Number(startSecNum) * Number(otherState.tpSec)) : (Number.isFinite(markerTick) && Number.isFinite(otherState.tpSec) && Number.isFinite(tpSec) ? Math.round(Number(markerTick) * (Number(otherState.tpSec) / Number(tpSec))) : Math.round(Number(markerTick) || 0));
-              const targetEndTick = (Number.isFinite(endSecNum) && Number.isFinite(otherState.tpSec)) ? Math.round(Number(endSecNum) * Number(otherState.tpSec)) : (targetStartTick + Math.max(1, Math.round((eTick - sTick) * (Number(otherState.tpSec || 1) / Number(tpSec || 1)))));
-              const targetSecs = (Number.isFinite(startSecNum) && Number.isFinite(endSecNum)) ? `${Number(startSecNum).toFixed(6)}-${Number(endSecNum).toFixed(6)}` : null;
-              const otherFullId = targetSecs ? `${otherName}|${parts.join('|')}|${targetStartTick}-${targetEndTick}|${targetSecs}` : `${otherName}|${parts.join('|')}|${targetStartTick}-${targetEndTick}`;
-              const otherLabel = `${label.replace(/unitRec:[^\s,]+/, '')}unitRec:${otherFullId}`;
-              // Avoid duplicate propagation if the target buffer already has an equivalent unitRec marker for these parts
-              const exists = (Array.isArray(otherBuf.rows) ? otherBuf.rows : otherBuf).some(r => r && String(r.type).toLowerCase() === 'marker_t' && Array.isArray(r.vals) && r.vals.find(v => String(v).includes(`unitRec:${otherName}|${parts.join('|')}`)));
-              if (!exists) {
-                try { otherBuf.push({ tick: targetStartTick, type: 'marker_t', vals: [otherLabel], _tickSortKey: Math.round(targetStartTick) }); } catch (_e) {}
-              }
-            } catch (_e) {}
-          }
-        }
-      } catch (_e) {}
+      // REMOVED: Ensure section markers present in all layers by propagating primary's section markers into other layers
+      // ANTI-PATTERN: NO POSTIFXES
     } catch (_e) { if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log('[setUnitTiming] error emitting marker to buffer', _e && _e.stack ? _e.stack : _e); }
 } catch (_e) { try { console.error('[setUnitTiming] persist block error', _e && _e.stack ? _e.stack : _e); } catch (_e2) {} }
 

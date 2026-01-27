@@ -215,15 +215,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     if (phraseIndex + 1 === phrasesPerSection) resetIndexWithChildren('phrase');
   }
 
-    // Emit Section marker before advancing so first section starts at tick 0
-    LM.activate('primary', false);
-    logUnit('section');
-    LM.advance('primary', 'section');
+  LM.advance('primary', 'section');
 
-    LM.activate('poly', true);
-    logUnit('section');
-    LM.advance('poly', 'section');
-  if (sectionIndex + 1 === totalSections) resetIndexWithChildren('section');
+  LM.advance('poly', 'section');
+
   BPM=BASE_BPM;
   activeMotif=null;
 }
