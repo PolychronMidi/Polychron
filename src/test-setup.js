@@ -5,6 +5,7 @@ require('./stage');
 // Ensure venue/writer/motifs modules are loaded so they populate __POLYCHRON_TEST__ before we promote values
 require('./venue');
 require('./writer');
+require('./structure');
 const _motifs = require('./motifs');
 
 // Minimal test bootstrap: ensure frequently-used naked globals exist so tests can safely assign to them

@@ -297,17 +297,8 @@ const allModes=(()=>{
   return Array.from(allModes);
 })();
 
-// Export to global scope for testing
+// Export to test namespace for testing
 /* explicit self-assign exports removed to avoid no-self-assign lint errors */
-
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  Object.assign(__POLYCHRON_TEST__, {
-    midiData,
-    getMidiValue,
-    allNotes,
-    allScales,
-    allChords,
-    allModes,
-  });
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+Object.assign(__POLYCHRON_TEST__, { midiData, getMidiValue, allNotes, allScales, allChords, allModes });
 }

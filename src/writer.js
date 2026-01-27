@@ -643,11 +643,10 @@ grandFinale = () => {
       outputFilename = `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     }
 
-    // Ensure output directory exists and prefer test-mocked global fs when present
+    // Ensure output directory exists and prefer test-mocked fs when present
     const path = require('path');
     const outputDir = path.dirname(outputFilename);
-    // Prefer test-injected fs when present to allow mocks
-    const effectiveFs = (typeof globalThis !== 'undefined' && fs) ? fs : ((typeof fs !== 'undefined') ? fs : require('fs'));
+    const effectiveFs = (typeof fs !== 'undefined') ? fs : require('fs');
     if (!effectiveFs.existsSync(outputDir)) {
       effectiveFs.mkdirSync(outputDir, { recursive: true });
     }
