@@ -27,7 +27,6 @@ describe('Marker preference cache - integration', () => {
     globalThis.__POLYCHRON_TEST__.enableLogging = false;
     // minimal numeric/math random helpers used by rhythm.js
     global.m = Math;
-    global.LOG = 'none'; // disable writer logUnit outputs during tests
     global.ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
     global.rf = (a,b) => typeof b === 'undefined' ? (a || 0.5) : a;
     global.rv = (a,b,c) => a;

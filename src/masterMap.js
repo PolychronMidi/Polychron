@@ -198,7 +198,7 @@ function getCanonical() {
 
 
   return out;
-} 
+}
 
 function finalize() {
   try {
