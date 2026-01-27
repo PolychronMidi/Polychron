@@ -6,8 +6,8 @@ require('../src/time');  // Load time functions (TimingContext, LM, etc.)
 
 // Setup function
 function setupGlobalState() {
-  globalThis.c = [];
-  globalThis.csvRows = [];
+  c = [];
+  csvRows = [];
 }
 
 describe('Clamp functions', () => {
@@ -755,23 +755,23 @@ describe('LayerManager (LM)', () => {
     LM.layers = {};
     LM.activeLayer = null;
     // Set up global timing variables
-    globalThis.numerator = 4;
-    globalThis.denominator = 4;
-    globalThis.tpSec = 960;
-    globalThis.tpMeasure = 1920;
-    globalThis.measuresPerPhrase = 4;
-    globalThis.tpPhrase = 7680;
-    globalThis.spPhrase = 8;
-    globalThis.phraseStart = 0;
-    globalThis.phraseStartTime = 0;
-    globalThis.sectionStart = 0;
-    globalThis.sectionStartTime = 0;
-    globalThis.sectionEnd = 0;
-    globalThis.tpSection = 0;
-    globalThis.spSection = 0;
-    globalThis.measureStart = 0;
-    globalThis.measureStartTime = 0;
-    globalThis.spMeasure = 2;
+    numerator = 4;
+    denominator = 4;
+    tpSec = 960;
+    tpMeasure = 1920;
+    measuresPerPhrase = 4;
+    tpPhrase = 7680;
+    spPhrase = 8;
+    phraseStart = 0;
+    phraseStartTime = 0;
+    sectionStart = 0;
+    sectionStartTime = 0;
+    sectionEnd = 0;
+    tpSection = 0;
+    spSection = 0;
+    measureStart = 0;
+    measureStartTime = 0;
+    spMeasure = 2;
   });
 
   describe('register', () => {
@@ -844,10 +844,10 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should store current meter values from globals', () => {
-      globalThis.numerator = 7;
-      globalThis.denominator = 8;
-      globalThis.tpSec = 1000;
-      globalThis.tpMeasure = 1750;
+      numerator = 7;
+      denominator = 8;
+      tpSec = 1000;
+      tpMeasure = 1750;
 
       LM.activate('primary');
 
@@ -858,9 +858,9 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should handle poly activation with different meter', () => {
-      globalThis.polyNumerator = 5;
-      globalThis.polyDenominator = 6;
-      globalThis.measuresPerPhrase2 = 3;
+      polyNumerator = 5;
+      polyDenominator = 6;
+      measuresPerPhrase2 = 3;
 
       LM.activate('poly', true);
 
@@ -919,11 +919,11 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should update meter values from globals via saveFrom()', () => {
-      globalThis.numerator = 5;
-      globalThis.denominator = 6;
-      globalThis.measuresPerPhrase = 3;
-      globalThis.tpPhrase = 5000;
-      globalThis.spPhrase = 5.0;
+      numerator = 5;
+      denominator = 6;
+      measuresPerPhrase = 3;
+      tpPhrase = 5000;
+      spPhrase = 5.0;
 
       LM.advance('primary', 'phrase');
 
@@ -939,9 +939,9 @@ describe('LayerManager (LM)', () => {
     });
 
     it('should reset beatRhythm, divRhythm, subdivRhythm', () => {
-      globalThis.beatRhythm = 1;
-      globalThis.divRhythm = 1;
-      globalThis.subdivRhythm = 1;
+      beatRhythm = 1;
+      divRhythm = 1;
+      subdivRhythm = 1;
 
       LM.advance('primary', 'phrase');
 
@@ -1031,11 +1031,11 @@ describe('TimingContext class', () => {
     });
 
     it('should handle tpMeasure when PPQ is undefined', () => {
-      const prevPPQ = globalThis.PPQ;
-      delete globalThis.PPQ;
+      const prevPPQ = PPQ;
+      delete PPQ;
       const ctx = new TimingContext();
       expect(ctx.tpMeasure).toBe(480 * 4); // fallback
-      globalThis.PPQ = prevPPQ;
+      PPQ = prevPPQ;
     });
   });
 

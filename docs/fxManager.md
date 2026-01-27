@@ -262,7 +262,7 @@ When a stutter effect cannot find enough new channels (due to reuse), the tracki
 
 ```javascript
 // FxManager is available globally after requiring fxManager.js
-globalThis.fxManager
+fxManager
 ```
 
 ## Related

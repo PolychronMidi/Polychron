@@ -16,24 +16,24 @@ describe('Marker preference cache - integration', () => {
     // remove existing output1.csv
     try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
     // reset LM
-    if (global.LM) {
-      global.LM.layers = {};
-      global.LM.activeLayer = null;
+    if (LM) {
+      LM.layers = {};
+      LM.activeLayer = null;
     }
     // deterministic selection helper for rhythm tests
-    global.randomWeightedSelection = (obj) => Object.keys(obj)[0];
+    randomWeightedSelection = (obj) => Object.keys(obj)[0];
     // enable logging inside modules for debug
-    globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-    globalThis.__POLYCHRON_TEST__.enableLogging = false;
+    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+    __POLYCHRON_TEST__.enableLogging = false;
     // minimal numeric/math random helpers used by rhythm.js
-    global.m = Math;
-    global.ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
-    global.rf = (a,b) => typeof b === 'undefined' ? (a || 0.5) : a;
-    global.rv = (a,b,c) => a;
-    global.ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
+    m = Math;
+    ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
+    rf = (a,b) => typeof b === 'undefined' ? (a || 0.5) : a;
+    rv = (a,b,c) => a;
+    ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
     // simple buffer push helper used by rhythm/drummer
-    global.p = (buff, evt) => { if (!buff.events) buff.events = []; buff.events.push(evt); };
-    global.c = null; // will be set per-test after LM.register
+    p = (buff, evt) => { if (!buff.events) buff.events = []; buff.events.push(evt); };
+    c = null; // will be set per-test after LM.register
   });
 
   afterEach(() => {
@@ -46,7 +46,7 @@ describe('Marker preference cache - integration', () => {
     fs.writeFileSync(path.join(OUT, 'output1.csv'), line + '\n');
 
     // call the module-level loader directly and assert it finds the entry
-    const map = global.__POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
+    const map = __POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
     expect(map).toBeDefined();
     const key = 'primary|section1|phrase1|measure1|beat1/4';
     expect(map[key]).toBeDefined();
@@ -54,7 +54,7 @@ describe('Marker preference cache - integration', () => {
     expect(Number(map[key].endSec)).toBeCloseTo(1.0, 6);
 
     // findMarkerSecs should return the same
-    const found = global.__POLYCHRON_TEST__.findMarkerSecs('primary', key.split('|'));
+    const found = __POLYCHRON_TEST__.findMarkerSecs('primary', key.split('|'));
     expect(found).toBeDefined();
     expect(Number(found.startSec)).toBeCloseTo(0.0, 6);
     expect(Number(found.endSec)).toBeCloseTo(1.0, 6);
@@ -62,10 +62,10 @@ describe('Marker preference cache - integration', () => {
 
   it('findMarkerSecs returns null when no CSV present', () => {
     try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
-    const map = global.__POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
+    const map = __POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
     expect(map).toBeDefined();
     expect(Object.keys(map).length).toBe(0);
-    const found = global.__POLYCHRON_TEST__.findMarkerSecs('primary', ['primary','section1','phrase1','measure1','beat1/4']);
+    const found = __POLYCHRON_TEST__.findMarkerSecs('primary', ['primary','section1','phrase1','measure1','beat1/4']);
     expect(found).toBeNull();
   });
 });

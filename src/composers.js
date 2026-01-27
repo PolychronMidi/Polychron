@@ -1286,27 +1286,27 @@ class ComposerFactory {
 composers = [];  // Lazy-loaded in play.js when all systems are ready
 
 // Export classes and factory globally for testing
-globalThis.MeasureComposer = MeasureComposer;
-globalThis.ScaleComposer = ScaleComposer;
-globalThis.RandomScaleComposer = RandomScaleComposer;
-globalThis.ChordComposer = ChordComposer;
-globalThis.RandomChordComposer = RandomChordComposer;
-globalThis.ModeComposer = ModeComposer;
-globalThis.RandomModeComposer = RandomModeComposer;
-globalThis.PentatonicComposer = PentatonicComposer;
-globalThis.RandomPentatonicComposer = RandomPentatonicComposer;
-globalThis.ProgressionGenerator = ProgressionGenerator;
-globalThis.TensionReleaseComposer = TensionReleaseComposer;
-globalThis.ModalInterchangeComposer = ModalInterchangeComposer;
-globalThis.HarmonicRhythmComposer = HarmonicRhythmComposer;
-globalThis.MelodicDevelopmentComposer = MelodicDevelopmentComposer;
-globalThis.AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
-globalThis.ComposerFactory = ComposerFactory;
+MeasureComposer = MeasureComposer;
+ScaleComposer = ScaleComposer;
+RandomScaleComposer = RandomScaleComposer;
+ChordComposer = ChordComposer;
+RandomChordComposer = RandomChordComposer;
+ModeComposer = ModeComposer;
+RandomModeComposer = RandomModeComposer;
+PentatonicComposer = PentatonicComposer;
+RandomPentatonicComposer = RandomPentatonicComposer;
+ProgressionGenerator = ProgressionGenerator;
+TensionReleaseComposer = TensionReleaseComposer;
+ModalInterchangeComposer = ModalInterchangeComposer;
+HarmonicRhythmComposer = HarmonicRhythmComposer;
+MelodicDevelopmentComposer = MelodicDevelopmentComposer;
+AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
+ComposerFactory = ComposerFactory;
 
 // Mirror into __POLYCHRON_TEST__ to keep test globals namespaced
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, {
     MeasureComposer,
     ScaleComposer,
     RandomScaleComposer,

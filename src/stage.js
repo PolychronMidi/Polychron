@@ -6,7 +6,7 @@ require('./rhythm'); require('./time'); require('./composers'); require('./motif
 require('./fxManager');
 
 // Initialize global temporary variable for FX object spreading
-globalThis._ = null;
+_ = null;
 
 /**
  * Stage class - Encapsulates all audio processing, effects, and MIDI event generation.
@@ -423,8 +423,8 @@ class Stage {
 }
 
 // Export Stage instance to global namespace for tests
-globalThis.stage = new Stage();
+stage = new Stage();
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  globalThis.__POLYCHRON_TEST__.stage = globalThis.stage;
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  __POLYCHRON_TEST__.stage = stage;
 }

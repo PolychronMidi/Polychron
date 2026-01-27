@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 it('subdivision siblings do not overlap within same parent', () => {
   process.env.PLAY_LIMIT = '1';
   require('../src/play.js');
-  const LM = globalThis.LM;
+  const LM = LM;
   expect(LM).toBeDefined();
   const violations = [];
   for (const layerName of Object.keys(LM.layers)) {

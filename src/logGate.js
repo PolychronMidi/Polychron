@@ -115,10 +115,10 @@ function gateConsoleForTests() {
   };
 
   // Save previous __POLYCHRON_TEST__.enableLogging so we can restore it
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  const _origEnableLogging = globalThis.__POLYCHRON_TEST__.enableLogging;
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  const _origEnableLogging = __POLYCHRON_TEST__.enableLogging;
   // Silence conditional logging hooks used throughout the codebase
-  globalThis.__POLYCHRON_TEST__.enableLogging = false;
+  __POLYCHRON_TEST__.enableLogging = false;
 
   // Silence normal logs and warnings during tests; redirect errors into output/test-errors.ndjson
   console.log = () => {};
@@ -134,7 +134,7 @@ function gateConsoleForTests() {
     console.warn = _orig.warn;
     console.error = _orig.error;
     // Restore previous enableLogging value
-    try { globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {}; globalThis.__POLYCHRON_TEST__.enableLogging = _origEnableLogging; } catch (e) {}
+    try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.enableLogging = _origEnableLogging; } catch (e) {}
     _consoleRestore = null;
   };
   return _consoleRestore;

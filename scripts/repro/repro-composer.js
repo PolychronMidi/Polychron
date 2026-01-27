@@ -9,7 +9,7 @@ if (!Number.isFinite(idx)) {
 
 // Load sheet and pick the composer at index
 require('../../src/sheet');
-const composers = global.COMPOSERS || [];
+const composers = COMPOSERS || [];
 const config = composers[idx];
 if (!config) {
   console.error(`No composer at index ${idx}`);
@@ -17,7 +17,7 @@ if (!config) {
 }
 
 // Set single composer and deterministic run env
-global.COMPOSERS = [config];
+COMPOSERS = [config];
 process.env.PLAY_LIMIT = process.env.PLAY_LIMIT || '1';
 process.env.INDEX_TRACES = '1';
 

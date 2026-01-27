@@ -7,9 +7,9 @@ require('../src/composers');  // Defines composer classes and composers array
 
 // Setup function
 function setupGlobalState() {
-  globalThis.bpmRatio = 1;
-  globalThis.measureCount = 0;
-  globalThis.subdivStart = 0;
+  bpmRatio = 1;
+  measureCount = 0;
+  subdivStart = 0;
 }
 
 // Use real composer classes from Composes.js

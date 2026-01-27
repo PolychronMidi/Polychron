@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 it('finds subsubdivision units with span > 60000 in LM state for diagnosis', () => {
   process.env.PLAY_LIMIT = '1';
   require('../src/play.js');
-  const LM = globalThis.LM;
+  const LM = LM;
   expect(LM).toBeDefined();
   const large = [];
   for (const layerName of Object.keys(LM.layers)) {

@@ -5,8 +5,8 @@ require('../src/writer');  // Load writer functions (CSVBuffer, p, grandFinale, 
 
 // Setup function
 function setupGlobalState() {
-  globalThis.c = [];
-  globalThis.csvRows = [];
+  c = [];
+  csvRows = [];
 }
 
 describe('CSVBuffer class', () => {
@@ -80,57 +80,57 @@ describe('pushMultiple (p)', () => {
 describe('logUnit', () => {
   beforeEach(() => {
     setupGlobalState();
-    globalThis.LOG = 'all';
-    globalThis.c = new CSVBuffer('test');
-    globalThis.sectionIndex = 0;
-    globalThis.totalSections = 1;
-    globalThis.sectionStart = 0;
-    globalThis.sectionStartTime = 0;
-    globalThis.tpSection = 1920;
-    globalThis.tpSec = 960;
-    globalThis.phraseIndex = 0;
-    globalThis.phrasesPerSection = 1;
-    globalThis.phraseStart = 0;
-    globalThis.phraseStartTime = 0;
-    globalThis.tpPhrase = 1920;
-    globalThis.numerator = 4;
-    globalThis.denominator = 4;
-    globalThis.midiMeter = [4, 4];
-    globalThis.composer = null;
-    globalThis.measureIndex = 0;
-    globalThis.measuresPerPhrase = 1;
-    globalThis.measureStart = 0;
-    globalThis.measureStartTime = 0;
-    globalThis.tpMeasure = 1920;
-    globalThis.spMeasure = 2;
-    globalThis.beatIndex = 0;
-    globalThis.beatStart = 0;
-    globalThis.beatStartTime = 0;
-    globalThis.tpBeat = 480;
-    globalThis.spBeat = 0.5;
-    globalThis.divIndex = 0;
-    globalThis.divsPerBeat = 4;
-    globalThis.divStart = 0;
-    globalThis.divStartTime = 0;
-    globalThis.tpDiv = 120;
-    globalThis.spDiv = 0.125;
-    globalThis.subdivIndex = 0;
-    globalThis.subdivsPerDiv = 4;
-    globalThis.subdivStart = 0;
-    globalThis.subdivStartTime = 0;
-    globalThis.tpSubdiv = 30;
-    globalThis.spSubdiv = 0.03125;
-    globalThis.subsubdivIndex = 0;
-    globalThis.subsubsPerSub = 4;
-    globalThis.subsubdivStart = 0;
-    globalThis.subsubdivStartTime = 0;
-    globalThis.tpSubsubdiv = 7.5;
-    globalThis.spSubsubdiv = 0.0078125;
-    globalThis.formatTime = (t) => t.toFixed(3);
+    LOG = 'all';
+    c = new CSVBuffer('test');
+    sectionIndex = 0;
+    totalSections = 1;
+    sectionStart = 0;
+    sectionStartTime = 0;
+    tpSection = 1920;
+    tpSec = 960;
+    phraseIndex = 0;
+    phrasesPerSection = 1;
+    phraseStart = 0;
+    phraseStartTime = 0;
+    tpPhrase = 1920;
+    numerator = 4;
+    denominator = 4;
+    midiMeter = [4, 4];
+    composer = null;
+    measureIndex = 0;
+    measuresPerPhrase = 1;
+    measureStart = 0;
+    measureStartTime = 0;
+    tpMeasure = 1920;
+    spMeasure = 2;
+    beatIndex = 0;
+    beatStart = 0;
+    beatStartTime = 0;
+    tpBeat = 480;
+    spBeat = 0.5;
+    divIndex = 0;
+    divsPerBeat = 4;
+    divStart = 0;
+    divStartTime = 0;
+    tpDiv = 120;
+    spDiv = 0.125;
+    subdivIndex = 0;
+    subdivsPerDiv = 4;
+    subdivStart = 0;
+    subdivStartTime = 0;
+    tpSubdiv = 30;
+    spSubdiv = 0.03125;
+    subsubdivIndex = 0;
+    subsubsPerSub = 4;
+    subsubdivStart = 0;
+    subsubdivStartTime = 0;
+    tpSubsubdiv = 7.5;
+    spSubsubdiv = 0.0078125;
+    formatTime = (t) => t.toFixed(3);
   });
 
   it('should log section marker when LOG includes section', () => {
-    globalThis.LOG = 'section';
+    LOG = 'section';
     logUnit('section');
     expect(c.rows.length).toBe(1);
     expect(c.rows[0].type).toBe('marker_t');
@@ -138,7 +138,7 @@ describe('logUnit', () => {
   });
 
   it('should log phrase marker when LOG includes phrase', () => {
-    globalThis.LOG = 'phrase';
+    LOG = 'phrase';
     logUnit('phrase');
     expect(c.rows.length).toBe(1);
     expect(c.rows[0].type).toBe('marker_t');
@@ -146,7 +146,7 @@ describe('logUnit', () => {
   });
 
   it('should log measure marker when LOG includes measure', () => {
-    globalThis.LOG = 'measure';
+    LOG = 'measure';
     logUnit('measure');
     expect(c.rows.length).toBe(1);
     expect(c.rows[0].type).toBe('marker_t');
@@ -154,13 +154,13 @@ describe('logUnit', () => {
   });
 
   it('should not log when LOG is none', () => {
-    globalThis.LOG = 'none';
+    LOG = 'none';
     logUnit('section');
     expect(c.rows.length).toBe(0);
   });
 
   it('should log all types when LOG is all', () => {
-    globalThis.LOG = 'all';
+    LOG = 'all';
     logUnit('section');
     logUnit('phrase');
     logUnit('measure');
@@ -168,7 +168,7 @@ describe('logUnit', () => {
   });
 
   it('should handle comma-separated LOG values', () => {
-    globalThis.LOG = 'section,phrase';
+    LOG = 'section,phrase';
     logUnit('section');
     logUnit('phrase');
     logUnit('measure');
@@ -176,7 +176,7 @@ describe('logUnit', () => {
   });
 
   it('should be case insensitive', () => {
-    globalThis.LOG = 'SECTION';
+    LOG = 'SECTION';
     logUnit('section');
     expect(c.rows.length).toBe(1);
   });
@@ -186,23 +186,23 @@ describe('grandFinale', () => {
   beforeEach(() => {
     setupGlobalState();
     // Mock fs methods - necessary for file I/O tests
-    globalThis.fs = {
+    fs = {
       writeFileSync: vi.fn(),
       existsSync: vi.fn(() => true),
       mkdirSync: vi.fn(),
       renameSync: vi.fn()
     };
     // Reset LM
-    globalThis.LM = {
+    LM = {
       layers: {}
     };
-    globalThis.PPQ = 480;
-    globalThis.SILENT_OUTRO_SECONDS = 1;
-    globalThis.tpSec = 960;
+    PPQ = 480;
+    SILENT_OUTRO_SECONDS = 1;
+    tpSec = 960;
     // Mock these functions - they have external dependencies (allCHs array, etc.)
-    globalThis.allNotesOff = vi.fn(() => []);
-    globalThis.muteAll = vi.fn(() => []);
-    globalThis.rf = (min, max) => (min + max) / 2;
+    allNotesOff = vi.fn(() => []);
+    muteAll = vi.fn(() => []);
+    rf = (min, max) => (min + max) / 2;
   });
 
   it('should write output files for each layer', () => {

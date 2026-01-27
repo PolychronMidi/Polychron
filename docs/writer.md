@@ -279,8 +279,8 @@ try {
 
 // Export to globalThis test namespace for clean test access
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, { p });
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, { p });
 }
 
 ```

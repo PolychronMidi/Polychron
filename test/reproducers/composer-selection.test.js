@@ -11,12 +11,12 @@ describe('Composer selection defensive validation', () => {
     }
 
     // Simulate corrupted composers array where one element is a plain object
-    globalThis.composers = [{ type: 'scale', name: 'Cmaj' }, { getDivisions: () => 3 }];
+    composers = [{ type: 'scale', name: 'Cmaj' }, { getDivisions: () => 3 }];
 
     // ra - random helper from backstage (copied minimal form to avoid importing heavy modules)
     const ra = (v) => { if (typeof v === 'function') return ra(v()); if (Array.isArray(v)) return v[Math.floor(Math.random() * v.length)]; return v; };
 
-    const picked = ra(globalThis.composers);
+    const picked = ra(composers);
     const isValid = picked && typeof picked.getDivisions === 'function' && typeof picked.getSubdivisions === 'function' && typeof picked.getSubsubdivs === 'function' && typeof picked.getMeter === 'function';
     expect(isValid).toBe(false);
   });

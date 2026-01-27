@@ -1,6 +1,6 @@
 // masterMap.js - live master unit map builder (incremental)
 const path = require('path');
-const getFs = () => (typeof globalThis !== 'undefined' && globalThis.fs) ? globalThis.fs : require('fs');
+const getFs = () => (typeof fs !== 'undefined') ? fs : require('fs');
 const { writeDebugFile, writeDetectedOverlap } = require('./logGate');
 
 const OUT_DIR = path.join(process.cwd(), 'output');

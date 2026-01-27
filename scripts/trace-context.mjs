@@ -1,6 +1,6 @@
 process.env.NODE_ENV = 'test';
 // Prevent module auto-start during instrumentation runs
-globalThis.__POLYCHRON_PREVENT_AUTO_START = true;
+__POLYCHRON_PREVENT_AUTO_START = true;
 
 (async () => {
   const mod = await import('../srcplay.js');

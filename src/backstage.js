@@ -409,18 +409,18 @@ ra=randomInRangeOrArray = (v) => {
 resetIndexWithChildren = (unit) => {
   switch (unit) {
     case 'section':
-      phraseIndex = measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; phrasesPerSection = undefined; measuresPerPhrase = undefined; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
+      phraseIndex = measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; phrasesPerSection = undefined; measuresPerPhrase = undefined; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
     case 'phrase':
-      measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; measuresPerPhrase = undefined; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
+      measureIndex = beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; measuresPerPhrase = undefined; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
     case 'measure':
-      beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
+      beatIndex = divIndex = subdivIndex = subsubdivIndex = 0; numerator = undefined; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
     case 'beat':
       // Reset indices and clear derived totals so children recompute values on entry
-      divIndex = subdivIndex = subsubdivIndex = 0; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
+      divIndex = subdivIndex = subsubdivIndex = 0; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
     case 'division':
-      subdivIndex = subsubdivIndex = 0; subdivsPerDiv = undefined; subsubdivsPerSub = undefined; break;
+      subdivIndex = subsubdivIndex = 0; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
     case 'subdivision':
-      subsubdivIndex = 0; subsubdivsPerSub = undefined; break;
+      subsubdivIndex = 0; subsubsPerSub = undefined; break;
     case 'subsubdivision':
       subsubdivIndex = 0; break;
     default:
@@ -441,7 +441,9 @@ resetIndexWithChildren = (unit) => {
 };
 
 // Timing and counter variables (documented inline for brevity)
-measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubdivsPerMinute=numerator=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=0;
+measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpMeasure=tpBeat=tpDiv=tpSubdiv=tpSubsubdiv=subdivStartTime=subsubdivStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=subsubsPerSub=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=subdivsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=0;
+
+composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null;
 
 /**
  * Cross-modulation factor for polyrhythmic interference.
@@ -491,7 +493,8 @@ semitone=neutralPitchBend / 2;
  * Convert cents to tuning frequency offset.
  * @type {number}
  */
-centsToTuningFreq=1200 * m.log2(TUNING_FREQ / 440);
+let centsToTuningFreq;
+try { centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440); } catch (e) { centsToTuningFreq = 0; }
 
 /**
  * Pitch bend value for tuning frequency.
@@ -503,14 +506,22 @@ tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)
  * Generate binaural frequency offset.
  * @type {number}
  */
-binauralFreqOffset=rf(BINAURAL.min,BINAURAL.max);
+let binauralFreqOffset;
+try { binauralFreqOffset = rf(BINAURAL.min,BINAURAL.max); } catch (e) { binauralFreqOffset = rf(0,0); }
 
 /**
  * Calculate binaural offset pitch bend values.
  * @param {number} plusOrMinus - Direction multiplier (+1 or -1).
  * @returns {number} Pitch bend value.
  */
-binauralOffset=(plusOrMinus)=>m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
+binauralOffset=(plusOrMinus)=>{
+  try {
+    return m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
+  } catch (e) {
+    // TUNING_FREQ or associated values may be undefined when sheet.js hasn't been loaded; return safe defaults
+    return tuningPitchBend || 0;
+  }
+};
 
 /**
  * Binaural pitch bend values for + and - frequencies.
@@ -658,10 +669,6 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
  */
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
-// Export to globalThis test namespace for clean test access
-if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
-    rf, ri, clamp, rv, ra
-  });
-}
+// Export helpers to naked global `__POLYCHRON_TEST__` for tests
+try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; } catch (e) { __POLYCHRON_TEST__ = {}; }
+__POLYCHRON_TEST__.rf = rf; __POLYCHRON_TEST__.ri = ri; __POLYCHRON_TEST__.clamp = clamp; __POLYCHRON_TEST__.rv = rv; __POLYCHRON_TEST__.ra = ra;

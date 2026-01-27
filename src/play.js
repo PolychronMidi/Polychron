@@ -11,8 +11,8 @@ const BASE_BPM=BPM;
 
 // Allow environment gating to enable verbose internal logging for repro/test runs
 if (process.env.__POLYCHRON_TEST_ENABLE_LOGGING) {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  globalThis.__POLYCHRON_TEST__.enableLogging = true;
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  __POLYCHRON_TEST__.enableLogging = true;
 }
 
 // Initialize composers from configuration if not already done
@@ -63,7 +63,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // In PLAY_LIMIT mode, bound phrase loops to keep runtime reasonable for tests
     if (process.env.PLAY_LIMIT) phrasesPerSection = Math.min(phrasesPerSection, Number(process.env.PLAY_LIMIT) || 1);
 
-    if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
+    if (__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
     composer = ra(composers);
     // Defensive check: ensure selected composer has required getters; fail fast with diagnostics if not
     if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivisions !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
@@ -78,11 +78,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getPolyrhythm();
 
     LM.activate('primary', false);
+    measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
     // Respect PLAY_LIMIT to bound measures per phrase in quick runs
     if (process.env.PLAY_LIMIT) measuresPerPhrase = Math.min(measuresPerPhrase, Number(process.env.PLAY_LIMIT) || 1);
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
-      if (globalThis.__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex} measure=${measureIndex}`);
+      if (__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex} measure=${measureIndex}`);
       measureCount++;
       setUnitTiming('measure');
 
@@ -152,6 +153,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
     LM.activate('poly', true);
     getMidiTiming();
+    measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');

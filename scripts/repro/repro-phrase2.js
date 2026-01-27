@@ -10,7 +10,7 @@ try { if (fs.existsSync(path.join(out, 'repro-overlaps.ndjson'))) fs.unlinkSync(
 try {
   require('../../src/sheet');
   // Override global COMPOSERS
-  global.COMPOSERS = [ { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 } ];
+  COMPOSERS = [ { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 } ];
 } catch (e) {
   console.error('Failed to load sheet.js', e);
   process.exit(2);

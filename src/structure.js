@@ -45,13 +45,13 @@ const resolveSectionProfile = (sectionType = null) => {
 
 // Expose globally for play.js and tests
 
-globalThis.normalizeSectionType = normalizeSectionType;
-globalThis.selectSectionType = selectSectionType;
-globalThis.resolveSectionProfile = resolveSectionProfile;
+normalizeSectionType = normalizeSectionType;
+selectSectionType = selectSectionType;
+resolveSectionProfile = resolveSectionProfile;
 
 if (typeof globalThis !== 'undefined') {
-  globalThis.__POLYCHRON_TEST__ = globalThis.__POLYCHRON_TEST__ || {};
-  Object.assign(globalThis.__POLYCHRON_TEST__, {
+  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+  Object.assign(__POLYCHRON_TEST__, {
     normalizeSectionType,
     selectSectionType,
     resolveSectionProfile,
