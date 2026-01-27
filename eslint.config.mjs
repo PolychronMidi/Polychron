@@ -1,6 +1,6 @@
 export default [
   {
-    ignores: ['eslint.config.mjs', 'vitest.config.mjs']
+    ignores: ['eslint.config.mjs', 'vitest.config.mjs', 'tmp/**']
   },
   {
     files: ['eslint.config.mjs'],
@@ -392,6 +392,7 @@ export default [
         _origRf: 'writable',
         _origRv: 'writable',
         _origRi: 'writable',
+        __POLYCHRON_PREVENT_AUTO_START: 'writable',
       }
     },
     rules: {

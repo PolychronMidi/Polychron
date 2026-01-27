@@ -300,5 +300,4 @@ const allModes=(()=>{
 // Export to test namespace for testing
 /* explicit self-assign exports removed to avoid no-self-assign lint errors */
 __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-Object.assign(__POLYCHRON_TEST__, { midiData, getMidiValue, allNotes, allScales, allChords, allModes });
-}
+Object.assign(__POLYCHRON_TEST__, { t, midiData, getMidiValue, allNotes, allScales, allChords, allModes });
