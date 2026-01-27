@@ -7,7 +7,7 @@ const path = require('path');
 const { appendToFile, writeDebugFile, writeIndexTrace, isEnabled } = require('../src/logGate');
 
 const OUT = path.join(process.cwd(), 'output');
-const cleanupFile = (name) => { try { const p = path.join(OUT, name); if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {} };
+const cleanupFile = (name) => { try { const p = path.join(OUT, name); if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) { /* swallow */ } };
 
 beforeEach(() => {
   cleanupFile('logGate-append-test.ndjson');

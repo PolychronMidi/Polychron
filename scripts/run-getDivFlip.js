@@ -1,4 +1,4 @@
-const fs = require('fs'); const path = require('path'); const traces = path.join(process.cwd(), 'output', 'index-traces.ndjson'); try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) {}
+const fs = require('fs'); const path = require('path'); const traces = path.join(process.cwd(), 'output', 'index-traces.ndjson'); try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) { /* swallow */ }
 
 // Flapping composer: getDivisions alternates between 3 and 1
 composer = { getDivisions: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 3 : 1; }; })(), getSubdivisions: () => 2, getSubsubdivs: () => 1 };

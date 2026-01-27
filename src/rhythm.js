@@ -395,7 +395,7 @@ getRhythm=(level,length,pattern,method,...args)=>{
     try {
       const f = (new Function('return typeof ' + m + ' === "function" ? ' + m + ' : null'))();
       if (typeof f === 'function') return f;
-    } catch (_e) {}
+    } catch (_e) { /* swallow */ }
     console.warn(`Unknown rhythm method: ${m}`);
     return null;
   };

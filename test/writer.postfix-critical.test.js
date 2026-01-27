@@ -8,7 +8,7 @@ beforeEach(() => {
   const out = require('path').join(process.cwd(), 'output');
   if (!fs.existsSync(out)) fs.mkdirSync(out, { recursive: true });
   const diag = require('path').join(out, 'diagnostics', 'postfix-failures.ndjson');
-  try { if (fs.existsSync(diag)) fs.unlinkSync(diag); } catch (e) {}
+  try { if (fs.existsSync(diag)) fs.unlinkSync(diag); } catch (e) { /* swallow */ }
 
   // Setup a minimal LM with two layers
   LM = { layers: { primary: { state: { units: [] }, buffer: [] }, poly: { state: { units: [] }, buffer: [] } }, activeLayer: 'primary' };

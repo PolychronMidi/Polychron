@@ -19,8 +19,8 @@ describe('reproducer: high-level composer cache misses', () => {
     const compactFile = path.join(outDir, 'cache-miss-compact.ndjson');
 
     // Remove old traces for deterministic run
-    try { if (fs.existsSync(tracesFile)) fs.unlinkSync(tracesFile); } catch (e) {}
-    try { if (fs.existsSync(compactFile)) fs.unlinkSync(compactFile); } catch (e) {}
+    try { if (fs.existsSync(tracesFile)) fs.unlinkSync(tracesFile); } catch (e) { /* swallow */ }
+    try { if (fs.existsSync(compactFile)) fs.unlinkSync(compactFile); } catch (e) { /* swallow */ }
 
     // Run a short bounded play to produce traces
     const env = Object.assign({}, process.env, { PLAY_LIMIT: '1', INDEX_TRACES: '1' });

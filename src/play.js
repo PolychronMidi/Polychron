@@ -34,7 +34,7 @@ if (!composers || composers.length === 0) {
       if (!c || typeof c.getMeter !== 'function') missing.push('getMeter');
       if (missing.length) {
         const payload = { when: new Date().toISOString(), index: i, missing, config: COMPOSERS[i] };
-        try { writeDebugFile('composer-validation.ndjson', payload); } catch (e) {}
+        try { writeDebugFile('composer-validation.ndjson', payload); } catch (e) { /* swallow */ }
         throw new Error(`Composer[${i}] missing required getters: ${missing.join(', ')}`);
       }
     }
@@ -69,8 +69,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivisions !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
       try {
         const payload = { when: new Date().toISOString(), phase: 'select-composer', composerType: (composer && composer.constructor && composer.constructor.name) ? composer.constructor.name : typeof composer, hasGetDivisions: composer && typeof composer.getDivisions === 'function', hasGetSubdivisions: composer && typeof composer.getSubdivisions === 'function', hasGetSubsubdivs: composer && typeof composer.getSubsubdivs === 'function', hasGetMeter: composer && typeof composer.getMeter === 'function', composersSnapshot: (Array.isArray(composers) ? composers.map(c => (c && c.constructor && c.constructor.name) ? c.constructor.name : (typeof c)) : null), stack: (new Error()).stack };
-        try { writeDebugFile('composer-selection-errors.ndjson', payload); } catch (e) {}
-      } catch (e) {}
+        try { writeDebugFile('composer-selection-errors.ndjson', payload); } catch (e) { /* swallow */ }
+      } catch (e) { /* swallow */ }
       throw new Error('composer selection invalid: missing getters');
     }
     [numerator, denominator] = composer.getMeter();
@@ -112,7 +112,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
               composerSubdivisions: cache && cache[_divKey] ? cache[_divKey].subdivisions : null,
               composerCachePeek: cache ? { beat: !!(cache && cache[_beatKey]), div: !!(cache && cache[_divKey]) } : null
             };
-            writeIndexTrace(trace); } catch (_e) {}
+            writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
           setUnitTiming('division');
 
@@ -140,7 +140,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           try {
             const after = { when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
             writeIndexTrace(after);
-          } catch (_e) {}
+          } catch (_e) { /* swallow */ }
         }
         // Reset division children when this was the last division in the beat
         if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
@@ -177,7 +177,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
               composerDivisions: null,
               composerSubdivisions: null
             };
-            writeIndexTrace(trace); } catch (_e) {}
+            writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
           setUnitTiming('division');
 
@@ -205,7 +205,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           try {
             const after = { when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
             writeIndexTrace(after);
-          } catch (_e) {}
+          } catch (_e) { /* swallow */ }
         }
         if (divIndex + 1 === divsPerBeat) resetIndexWithChildren('division');
         if (beatIndex + 1 === numerator) resetIndexWithChildren('beat');

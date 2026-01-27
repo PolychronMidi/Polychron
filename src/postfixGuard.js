@@ -19,9 +19,9 @@ function raiseCritical(key, msg, ctx = {}) {
       // Append a JSON line to a diagnostics ndjson file for later inspection
       const file = path.join(outDir, 'postfix-failures.ndjson');
       fs.appendFileSync(file, JSON.stringify(payload) + '\n', 'utf8');
-    } catch (e) {}
-    try { writeFatal(payload); } catch (e) {}
-  } catch (e) {}
+    } catch (e) { /* swallow */ }
+    try { writeFatal(payload); } catch (e) { /* swallow */ }
+  } catch (e) { /* swallow */ }
   throw new Error('CRITICAL: ' + msg);
 }
 

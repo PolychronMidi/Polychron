@@ -74,7 +74,7 @@ function raiseCritical(key, msg, ctx = {}) {
     return guard.raiseCritical(key, msg, ctx);
   } catch (e) {
     // Fallback: if guard fails for some reason, ensure we still throw loudly
-    try { writeFatal({ when: new Date().toISOString(), type: 'postfix-anti-pattern', severity: 'critical', key, msg, stack: (new Error()).stack, ctx }); } catch (_e) {}
+    try { writeFatal({ when: new Date().toISOString(), type: 'postfix-anti-pattern', severity: 'critical', key, msg, stack: (new Error()).stack, ctx }); } catch (_e) { /* swallow */ }
     throw new Error('CRITICAL: ' + msg);
   }
 }
@@ -360,7 +360,7 @@ LM = layerManager ={
     try {
       c = buf;
       if (typeof setupFn === 'function') setupFn(state, buf);
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
     // return both the state and direct buffer reference so callers can
@@ -463,7 +463,7 @@ try {
     if (typeof __POLYCHRON_TEST__.muteAll !== 'undefined') muteAll = __POLYCHRON_TEST__.muteAll;
     if (typeof __POLYCHRON_TEST__.PPQ !== 'undefined') PPQ = __POLYCHRON_TEST__.PPQ;
   }
-} catch (_e) {}
+} catch (_e) { /* swallow */ }
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
@@ -534,7 +534,7 @@ setUnitTiming = (unitType) => {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
       break;
 
     case 'beat':
@@ -635,7 +635,7 @@ setUnitTiming = (unitType) => {
           composerSubdivisions: subdivsPerDiv
         };
         writeIndexTrace(t);
-      } catch (_e) {}
+      } catch (_e) { /* swallow */ }
       subdivRhythm = setRhythm('subdiv');
       break;
 
@@ -697,7 +697,7 @@ setUnitTiming = (unitType) => {
   // Persist a compact unit record into the layer state so writers can reference units later.
   try {
     const layerName = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
-    try { writeDebugFile('time-debug.ndjson', { tag: 'persist-start', unitType, layerName, sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'persist-start', unitType, layerName, sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
     const sec = (typeof sectionIndex !== 'undefined' && Number.isFinite(Number(sectionIndex))) ? Number(sectionIndex) : 0;
     const phr = (typeof phraseIndex !== 'undefined' && Number.isFinite(Number(phraseIndex))) ? Number(phraseIndex) : 0;
     const mea = (typeof measureIndex !== 'undefined' && Number.isFinite(Number(measureIndex))) ? Number(measureIndex) : 0;
@@ -709,7 +709,7 @@ setUnitTiming = (unitType) => {
     const beatTotal = (typeof numerator !== 'undefined' && Number.isFinite(Number(numerator))) ? Number(numerator) : 1;
     const subdivTotal = (typeof subdivsPerDiv !== 'undefined' && Number.isFinite(Number(subdivsPerDiv))) ? Number(subdivsPerDiv) : 1;
     const subsubTotal = (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1;
-    try { writeDebugFile('time-debug.ndjson', { tag: 'totals', beatTotal, subdivTotal, subsubTotal, numerator, subdivsPerDiv, subsubsPerSub }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'totals', beatTotal, subdivTotal, subsubTotal, numerator, subdivsPerDiv, subsubsPerSub }); } catch (_e) { /* swallow */ }
 
     // Compute canonical unit boundaries for this unitType so start/end are accurate
     let unitStart = 0;
@@ -726,7 +726,7 @@ setUnitTiming = (unitType) => {
       case 'measure':
         unitStart = measureStart;
         unitEnd = measureStart + tpMeasure;
-        try { writeDebugFile('time-debug.ndjson', { tag: 'in-measure-case', measureStart, tpMeasure, unitStart, unitEnd }); } catch (_e) {}
+        try { writeDebugFile('time-debug.ndjson', { tag: 'in-measure-case', measureStart, tpMeasure, unitStart, unitEnd }); } catch (_e) { /* swallow */ }
         break;
       case 'beat':
         unitStart = beatStart;
@@ -749,15 +749,15 @@ setUnitTiming = (unitType) => {
         unitEnd = 0;
     }
 
-    try { writeDebugFile('time-debug.ndjson', { tag: 'unitBounds', unitType, unitStart, unitEnd, tpSec, tpMeasure, tpBeat, tpDiv, tpSubdiv }); } catch (_e) {}
-    try { writeDebugFile('time-debug.ndjson', { tag: 'after-switch' }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'unitBounds', unitType, unitStart, unitEnd, tpSec, tpMeasure, tpBeat, tpDiv, tpSubdiv }); } catch (_e) { /* swallow */ }
+    try { writeDebugFile('time-debug.ndjson', { tag: 'after-switch' }); } catch (_e) { /* swallow */ }
 
     // REMOVED: Clamp child unit boundaries to their parent unit to avoid overlaps or overlong spans
     // ANTI-PATTERN: NO POSTFIXES
 
     let startSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitStart / tpSec) : null;
     let endSecNum = (Number.isFinite(tpSec) && tpSec !== 0) ? (unitEnd / tpSec) : null;
-    try { writeDebugFile('time-debug.ndjson', { tag: 'secsComputed', startSecNum, endSecNum }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'secsComputed', startSecNum, endSecNum }); } catch (_e) { /* swallow */ }
 
     // Compute effective totals - critical-only: if totals are missing/invalid, fail loudly (no silent defaulting)
     // Use canonical `totalSections` variable everywhere; it must be present and numeric.
@@ -831,7 +831,7 @@ setUnitTiming = (unitType) => {
     const effectiveSubdivTotal = (typeof subdivsPerDiv !== 'undefined' && Number.isFinite(Number(subdivsPerDiv))) ? Number(subdivsPerDiv) : ((typeof composerSubdivisionsCached !== 'undefined' && Number.isFinite(Number(composerSubdivisionsCached))) ? composerSubdivisionsCached : 1);
     const effectiveSubsubTotal = (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : ((typeof composerSubsubdivsCached !== 'undefined' && Number.isFinite(Number(composerSubsubdivsCached))) ? composerSubsubdivsCached : 1);
 
-    try { writeDebugFile('time-debug.ndjson', { tag: 'about-to-build-unitRec', layerName, unitType, unitStart, unitEnd }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'about-to-build-unitRec', layerName, unitType, unitStart, unitEnd }); } catch (_e) { /* swallow */ }
     // Round start/end ticks and enforce non-overlap and span limits
     let sTick = Math.round(unitStart);
     let eTick = Math.round(unitEnd);
@@ -868,11 +868,11 @@ setUnitTiming = (unitType) => {
       startTime: Number.isFinite(startSecNum) ? Number(startSecNum.toFixed(6)) : null,
       endTime: Number.isFinite(endSecNum) ? Number(endSecNum.toFixed(6)) : null
     };
-    try { writeDebugFile('time-debug.ndjson', { tag: 'built-unitRec', layerName, unitType, unitRec }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'built-unitRec', layerName, unitType, unitRec }); } catch (_e) { /* swallow */ }
 
 
     // DEBUG: log unitRec push context
-    try { writeDebugFile('time-debug.ndjson', { tag: 'pushUnitRec', layerName, unitType, parts: parts.slice(), unitStart: sTick, unitEnd: eTick, startTime: unitRec.startTime, endTime: unitRec.endTime }); } catch (_e) {}
+    try { writeDebugFile('time-debug.ndjson', { tag: 'pushUnitRec', layerName, unitType, parts: parts.slice(), unitStart: sTick, unitEnd: eTick, startTime: unitRec.startTime, endTime: unitRec.endTime }); } catch (_e) { /* swallow */ }
     if (LMCurrent && LMCurrent.layers && LMCurrent.layers[layerName]) {
       LMCurrent.layers[layerName].state.units = LMCurrent.layers[layerName].state.units || [];
         // Overlap check: fail if any existing unit of same type intersects
@@ -897,7 +897,7 @@ setUnitTiming = (unitType) => {
                 raiseCritical('overlong:subsubdivision_rel', 'Subsubdivision equals subdivision and is unusually large relative to measure; likely generator misconfiguration', { layer: layerName, unitType, start: sTick, end: eTick, duration: (eTick - sTick), tpSubdiv, tpMeasure, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea } });
               }
             }
-          } catch (_e) {}
+          } catch (_e) { /* swallow */ }
         }
         LMCurrent.layers[layerName].state.units.push(unitRec);
     }
@@ -929,7 +929,7 @@ setUnitTiming = (unitType) => {
         const subdivBase = phraseStart + comp_mea * tpMeasure + comp_bIdx * tpBeat + comp_divIdx * tpDiv + comp_subdivIdx * tpSubdiv;
         comp_subsubIdx = Math.max(0, Math.floor((unitStart - subdivBase) / tpSubsubdiv));
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
 
     // Build a compact full-id string per spec and emit an internal marker for writers to extract
     // Use sanitized (clamped) lower-level indices when those levels are not yet set to avoid using stale values
@@ -997,25 +997,25 @@ setUnitTiming = (unitType) => {
               // prefer earliest start if multiple
               if (!map[key] || (map[key] && (sStart < map[key].startSec))) map[key] = { startSec: sStart, endSec: sEnd, tickStart, tickEnd, raw: full };
               // also store key without layer prefix (e.g. section1|phrase1|measure1...) for easier matching
-              try { const keyNoLayer = key.split('|').slice(1).join('|'); if (keyNoLayer && (!map[keyNoLayer] || (map[keyNoLayer] && (sStart < map[keyNoLayer].startSec)))) map[keyNoLayer] = map[key]; } catch (_e) {}
+              try { const keyNoLayer = key.split('|').slice(1).join('|'); if (keyNoLayer && (!map[keyNoLayer] || (map[keyNoLayer] && (sStart < map[keyNoLayer].startSec)))) map[keyNoLayer] = map[key]; } catch (_e) { /* swallow */ }
             } else if (tickStart !== null && tickEnd !== null) {
               if (!map[key] || (!map[key].startSec && tickStart < (map[key].tickStart || Infinity))) map[key] = { startSec: null, endSec: null, tickStart, tickEnd, raw: full };
-              try { const keyNoLayer = key.split('|').slice(1).join('|'); if (keyNoLayer && (!map[keyNoLayer] || (!map[keyNoLayer].startSec && tickStart < (map[keyNoLayer].tickStart || Infinity)))) map[keyNoLayer] = map[key]; } catch (_e) {}
+              try { const keyNoLayer = key.split('|').slice(1).join('|'); if (keyNoLayer && (!map[keyNoLayer] || (!map[keyNoLayer].startSec && tickStart < (map[keyNoLayer].tickStart || Infinity)))) map[keyNoLayer] = map[key]; } catch (_e) { /* swallow */ }
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
       cache[layerName] = map; return map;
     };
 
     const findMarkerSecs = (layerName, partsArr) => {
       const map = getCsvForLayer(layerName);
-      try { writeDebugFile('time-debug.ndjson', { tag: 'markerMap-keys', layerName, keys: Object.keys(map).slice(0,20) }); } catch (_e) {}
+      try { writeDebugFile('time-debug.ndjson', { tag: 'markerMap-keys', layerName, keys: Object.keys(map).slice(0,20) }); } catch (_e) { /* swallow */ }
       // try most-specific to least-specific
       for (let len = partsArr.length; len > 0; len--) {
         const k = partsArr.slice(0, len).join('|');
         const kNorm = partsArr.slice(0, len).map(p => String(p).replace(/\/1$/, '')).join('|');
-        try { writeDebugFile('time-debug.ndjson', { tag: 'findMarkerSecs-check', len, k, kNorm, hasK: !!(map && map[k]), hasKNorm: !!(map && map[kNorm]) }); } catch (_e) {}
+        try { writeDebugFile('time-debug.ndjson', { tag: 'findMarkerSecs-check', len, k, kNorm, hasK: !!(map && map[k]), hasKNorm: !!(map && map[kNorm]) }); } catch (_e) { /* swallow */ }
         if (map && map[k] && Number.isFinite(map[k].startSec)) return map[k];
         if (kNorm !== k && map && map[kNorm] && Number.isFinite(map[kNorm].startSec)) return map[kNorm];
         // as a last resort, try matching more-specific map keys that start with the requested key
@@ -1033,7 +1033,7 @@ setUnitTiming = (unitType) => {
     const markerMatch = findMarkerSecs(layerName, parts);
     let secs = null;
     if (markerMatch && Number.isFinite(markerMatch.startSec) && Number.isFinite(markerMatch.endSec)) {
-      try { writeDebugFile('time-debug.ndjson', { tag: 'markerMatch-found', markerMatch }); } catch (_e) {}
+      try { writeDebugFile('time-debug.ndjson', { tag: 'markerMatch-found', markerMatch }); } catch (_e) { /* swallow */ }
       secs = `${markerMatch.startSec.toFixed(6)}-${markerMatch.endSec.toFixed(6)}`;
       // also override startSecNum/endSecNum for downstream use
       if (Number.isFinite(markerMatch.startSec)) startSecNum = markerMatch.startSec;
@@ -1041,7 +1041,7 @@ setUnitTiming = (unitType) => {
 
       // Update previously-pushed unitRec (and local unitRec variable) to reflect marker-derived seconds
       try {
-        try { writeDebugFile('time-debug.ndjson', { tag: 'applying-marker-secs', unitType, startSecNum, endSecNum, layerName, unitStart: Math.round(unitStart), unitEnd: Math.round(unitEnd) }); } catch (_e) {}
+        try { writeDebugFile('time-debug.ndjson', { tag: 'applying-marker-secs', unitType, startSecNum, endSecNum, layerName, unitStart: Math.round(unitStart), unitEnd: Math.round(unitEnd) }); } catch (_e) { /* swallow */ }
         if (typeof unitRec !== 'undefined') {
           unitRec.startTime = Number.isFinite(startSecNum) ? Number(startSecNum.toFixed(6)) : null;
           unitRec.endTime = Number.isFinite(endSecNum) ? Number(endSecNum.toFixed(6)) : null;
@@ -1054,7 +1054,7 @@ setUnitTiming = (unitType) => {
             last.endTime = unitRec.endTime;
           }
         }
-      } catch (_e) {}
+      } catch (_e) { /* swallow */ }
 
     } else {
       secs = (Number.isFinite(tpSec) && tpSec !== 0) ? `${(unitStart / tpSec).toFixed(6)}-${(unitEnd / tpSec).toFixed(6)}` : null;
@@ -1076,11 +1076,11 @@ setUnitTiming = (unitType) => {
               tpPhrase, tpMeasure, tpSection, tpSec, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv,
               numerator, denominator, measuresPerPhrase, divsPerBeat, subdivsPerDiv, subsubsPerSub
             };
-            const recentUnits = (() => { try { if (LMCurrent && LMCurrent.layers && LMCurrent.layers[LMCurrent.activeLayer] && Array.isArray(LMCurrent.layers[LMCurrent.activeLayer].state.units)) { return LMCurrent.layers[LMCurrent.activeLayer].state.units.slice(Math.max(0, LMCurrent.layers[LMCurrent.activeLayer].state.units.length - 10)); } } catch (_e) {} return null; })();
+            const recentUnits = (() => { try { if (LMCurrent && LMCurrent.layers && LMCurrent.layers[LMCurrent.activeLayer] && Array.isArray(LMCurrent.layers[LMCurrent.activeLayer].state.units)) { return LMCurrent.layers[LMCurrent.activeLayer].state.units.slice(Math.max(0, LMCurrent.layers[LMCurrent.activeLayer].state.units.length - 10)); } } catch (_e) { /* swallow */ } return null; })();
             const hit = { when: new Date().toISOString(), target, parentPrefix, fullId, unitRec, globals: globalsSnapshot, recentUnits, stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) };
-            try { writeDebugFile(`repro-parent-hit-${safe}.ndjson`, hit); } catch (_e) {}
+            try { writeDebugFile(`repro-parent-hit-${safe}.ndjson`, hit); } catch (_e) { /* swallow */ }
           }
-        } catch (_e) {}
+        } catch (_e) { /* swallow */ }
       }
       // Temporary trace: record timing snapshot immediately before anomaly checks
       writeIndexTrace({ tag: 'time:pre-anomaly', when: new Date().toISOString(), layer: (LM && LM.activeLayer) ? LM.activeLayer : 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, numerator, divsPerBeat, subdivsPerDiv, subsubsPerSub, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv, tpSec });
@@ -1096,7 +1096,7 @@ setUnitTiming = (unitType) => {
         try {
           // Critical log for index anomalies (do NOT normalize here; just warn)
           console.error(`CRITICAL: unit index anomaly - ${layerName} ${unitType} ${fullId} ${JSON.stringify(anomalies)}`);
-          try { writeDebugFile('unitIndex-anomalies.ndjson', { layer: layerName, unitType, unitId: fullId, anomalies, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, when: new Date().toISOString() }); } catch (_e) {}
+          try { writeDebugFile('unitIndex-anomalies.ndjson', { layer: layerName, unitType, unitId: fullId, anomalies, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, when: new Date().toISOString() }); } catch (_e) { /* swallow */ }
 
           // Enriched diagnostic payload for deep inspection
           try {
@@ -1119,7 +1119,7 @@ setUnitTiming = (unitType) => {
                   const u = LM.layers[layerName].state.units;
                   return u.slice(Math.max(0, u.length - 6));
                 }
-              } catch (_e) {}
+              } catch (_e) { /* swallow */ }
               return null;
             })();
 
@@ -1138,19 +1138,19 @@ setUnitTiming = (unitType) => {
               when: new Date().toISOString()
             };
 
-            try { writeDebugFile('unitIndex-anomalies-rich.ndjson', rich); } catch (_e) {}
+            try { writeDebugFile('unitIndex-anomalies-rich.ndjson', rich); } catch (_e) { /* swallow */ }
             // If the ASSERT gate is enabled, write a fatal diagnostic and throw so tests fail fast (helps CI detect regressions)
             try {
               if (process.env.INDEX_TRACES_ASSERT) {
-                try { appendToFile('unitIndex-anomalies-fatal.ndjson', Object.assign({ note: 'INDEX_TRACES_ASSERT' }, rich)); } catch (_e2) {}
+                try { appendToFile('unitIndex-anomalies-fatal.ndjson', Object.assign({ note: 'INDEX_TRACES_ASSERT' }, rich)); } catch (_e2) { /* swallow */ }
                 throw new Error('unit index anomaly (INDEX_TRACES_ASSERT) - ' + JSON.stringify(anomalies));
               }
-            } catch (_e) {}
-          } catch (_e) {}
+            } catch (_e) { /* swallow */ }
+          } catch (_e) { /* swallow */ }
 
-        } catch (_e) {}
+        } catch (_e) { /* swallow */ }
       }
-    } catch (_e) {}
+    } catch (_e) { /* swallow */ }
 
     // Diagnostic: record suspicious unit emissions (start==0 with non-zero end, non-finite, or start>end)
     try {
@@ -1179,12 +1179,12 @@ setUnitTiming = (unitType) => {
         };
         try {
           const _fs = require('fs'); const _path = require('path');
-          try { writeDebugFile('unitTreeAudit-diagnostics.ndjson', diag); } catch (_e) {}
+          try { writeDebugFile('unitTreeAudit-diagnostics.ndjson', diag); } catch (_e) { /* swallow */ }
           // Keep legacy short list for quick inspection
-          try { writeDebugFile('unitTreeAudit-suspicious-units.ndjson', { layer: layerName, unitType, unitId: fullId, start: Math.round(unitStart), end: Math.round(unitEnd), when: diag.when }); } catch (_e) {}
-        } catch (_e) {}
+          try { writeDebugFile('unitTreeAudit-suspicious-units.ndjson', { layer: layerName, unitType, unitId: fullId, start: Math.round(unitStart), end: Math.round(unitEnd), when: diag.when }); } catch (_e) { /* swallow */ }
+        } catch (_e) { /* swallow */ }
       }
-    } catch (_e) {}
+    } catch (_e) { /* swallow */ }
 
     try {
       // Diagnostic: record overlong unit emissions that exceed a measure (likely root of overlaps)
@@ -1195,17 +1195,17 @@ setUnitTiming = (unitType) => {
           const _fs = require('fs'); const _path = require('path');
           const diag = {
             tag: 'overlong-unit', when: new Date().toISOString(), layer: layerName, unitType, fullId, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), duration: dur, tpMeasure: measureDur, tpBeat, tpDiv, tpSubdiv, tpSubsubdiv, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, parts: parts.slice(), composer: (typeof composer !== 'undefined' && composer) ? { divisions: (typeof composer.getDivisions === 'function' ? composer.getDivisions() : null), subdivisions: (typeof composer.getSubdivisions === 'function' ? composer.getSubdivisions() : null), subsubdivs: (typeof composer.getSubsubdivs === 'function' ? composer.getSubsubdivs() : null) } : null, stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) };
-          try { writeDebugFile('overlong-units.ndjson', diag); } catch (e) {}
+          try { writeDebugFile('overlong-units.ndjson', diag); } catch (e) { /* swallow */ }
           // If assert gating is enabled, write fatal diag and throw to fail fast
           if (process.env.INDEX_TRACES_ASSERT) {
-            try { appendToFile('unitIndex-anomalies-fatal.ndjson', Object.assign({ note: 'OVERLONG_UNIT_ASSERT' }, diag)); } catch (e) {}
+            try { appendToFile('unitIndex-anomalies-fatal.ndjson', Object.assign({ note: 'OVERLONG_UNIT_ASSERT' }, diag)); } catch (e) { /* swallow */ }
             throw new Error('overlong unit detected');
           }
         }
-      } catch (_e) {}
+      } catch (_e) { /* swallow */ }
 
       // Add to live master unit map (tick-first canonical aggregator) using the canonical part key
-      try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: parts.slice(), layer: layerName, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), startTime: startSecNum, endTime: endSecNum, raw: unitRec }); } catch (_e) {}
+      try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: parts.slice(), layer: layerName, startTick: Math.round(unitStart), endTick: Math.round(unitEnd), startTime: startSecNum, endTime: endSecNum, raw: unitRec }); } catch (_e) { /* swallow */ }
       // Emit a labeled unitRec marker so CSV markers are both machine-parseable and human-friendly.
       // Example: "New Beat:unitRec:primary|section1/9|phrase1/4|measure1/5|beat1/8|1500-1875|0.045113-0.056391"
       const label = `New ${unitType.charAt(0).toUpperCase() + unitType.slice(1)}`;
@@ -1214,7 +1214,7 @@ setUnitTiming = (unitType) => {
       // REMOVED: Ensure section markers present in all layers by propagating primary's section markers into other layers
       // ANTI-PATTERN: NO POSTIFXES
     } catch (_e) { if (__POLYCHRON_TEST__?.enableLogging) console.log('[setUnitTiming] error emitting marker to buffer', _e && _e.stack ? _e.stack : _e); }
-} catch (_e) { try { console.error('[setUnitTiming] persist block error', _e && _e.stack ? _e.stack : _e); } catch (_e2) {} }
+} catch (_e) { try { console.error('[setUnitTiming] persist block error', _e && _e.stack ? _e.stack : _e); } catch (_e2) { /* swallow */ } }
 
   // Log the unit after calculating timing
   logUnit(unitType);
@@ -1292,7 +1292,7 @@ const loadMarkerMapForLayer = (layerName) => {
 
 const findMarkerSecs = (layerName, partsArr) => {
   const map = loadMarkerMapForLayer(layerName);
-  try { writeDebugFile('time-debug.ndjson', { tag: 'markerMap-keys', layerName, keys: Object.keys(map).slice(0,20) }); } catch (_e) {}
+  try { writeDebugFile('time-debug.ndjson', { tag: 'markerMap-keys', layerName, keys: Object.keys(map).slice(0,20) }); } catch (_e) { /* swallow */ }
   if (!map) return null;
   for (let len = partsArr.length; len > 0; len--) {
     const k = partsArr.slice(0, len).join('|');

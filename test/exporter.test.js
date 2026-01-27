@@ -14,6 +14,6 @@ describe('exportUnitTreeJson', () => {
     // there should be at least one unit discovered from current CSVs
     expect(payload.units.length).toBeGreaterThan(0);
     // cleanup
-    try { fs.unlinkSync(outPath); } catch (e) {}
+    try { fs.unlinkSync(outPath); } catch (e) { /* swallow */ }
   });
 });

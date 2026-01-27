@@ -12,7 +12,7 @@ describe('Marker preference - end-to-end integration', () => {
 
   beforeEach(() => {
     if (!fs.existsSync(OUT)) fs.mkdirSync(OUT);
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
     // reset LM
     if (LM) {
       LM.layers = {}; LM.activeLayer = null;
@@ -22,7 +22,7 @@ describe('Marker preference - end-to-end integration', () => {
   });
 
   afterEach(() => {
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
   });
 
   it('setUnitTiming should prefer CSV marker seconds when present', () => {

@@ -42,12 +42,12 @@ function addUnit(u) {
     try {
       const _fs = require('fs'); const _path = require('path');
       if (startTick === 0 && /measure\d+\/.+/.test(key) && !/measure1\//.test(key)) {
-        try { writeDebugFile('masterMap-weird-emissions.ndjson', { when: new Date().toISOString(), reason: 'zero-start-with-non-first-measure', key, startTick, endTick, parts, raw: u.raw }); } catch (e) {}
+        try { writeDebugFile('masterMap-weird-emissions.ndjson', { when: new Date().toISOString(), reason: 'zero-start-with-non-first-measure', key, startTick, endTick, parts, raw: u.raw }); } catch (e) { /* swallow */ }
       }
       if (Number.isFinite(startTick) && Number.isFinite(endTick) && (endTick - startTick) > 100000) {
-        try { writeDebugFile('masterMap-weird-emissions.ndjson', { when: new Date().toISOString(), reason: 'very-long-duration', key, startTick, endTick, duration: endTick - startTick, parts, raw: u.raw }); } catch (e) {}
+        try { writeDebugFile('masterMap-weird-emissions.ndjson', { when: new Date().toISOString(), reason: 'very-long-duration', key, startTick, endTick, duration: endTick - startTick, parts, raw: u.raw }); } catch (e) { /* swallow */ }
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
 
     if (!agg.has(key)) {
       agg.set(key, {
@@ -98,7 +98,7 @@ function addUnit(u) {
                 try {
                   const _fs = require('fs'); const _path = require('path');
                   const payload = { when: new Date().toISOString(), detectedFor: targetPrefix || '<any>', key, parts, startTick, endTick, conflictingKey: otherKey, otherStart, otherEnd, stack: (new Error()).stack };
-                  try { writeDetectedOverlap(payload, null); } catch (e) {}
+                  try { writeDetectedOverlap(payload, null); } catch (e) { /* swallow */ }
 
                   // Verbose trace: include composer cache snapshot (if available) and recent index-traces for richer context
                   try {
@@ -123,10 +123,10 @@ function addUnit(u) {
                       }
                     } catch (_e) { verbose.recentIndexTraces = null; }
 
-                    try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (_e) {}
-                  } catch (_e) {}
+                    try { writeDebugFile('detected-overlap-verbose.ndjson', verbose); } catch (_e) { /* swallow */ }
+                  } catch (_e) { /* swallow */ }
 
-                } catch (e) {}
+                } catch (e) { /* swallow */ }
                 if (process.env.OVERLAP_FAIL_FAST === '1') {
                   throw new Error('Overlap detected between ' + key + ' and ' + otherKey);
                 }
@@ -146,14 +146,14 @@ function addUnit(u) {
         LM.masterMap = LM.masterMap || {};
         LM.masterMap._agg = agg; // expose internal map (not serialized)
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
 
     try {
       const _durMs = Number(process.hrtime.bigint() - _perfStart) / 1e6;
       if (_durMs > 5) {
-        try { writeDebugFile('perf-addUnit.ndjson', { when: new Date().toISOString(), key, durationMs: _durMs }, 'perf'); } catch (e) {}
+        try { writeDebugFile('perf-addUnit.ndjson', { when: new Date().toISOString(), key, durationMs: _durMs }, 'perf'); } catch (e) { /* swallow */ }
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
 
   } catch (e) {
     // swallow errors to avoid breaking time-critical code
@@ -213,12 +213,12 @@ function finalize() {
     // Write atomically: .tmp then rename (array payload)
     getFs().writeFileSync(ATOMIC_TMP, JSON.stringify(payloadArray, null, 2));
     try { getFs().renameSync(ATOMIC_TMP, ATOMIC_JSON_PATH); } catch (e) { /* fallback */ getFs().writeFileSync(ATOMIC_JSON_PATH, JSON.stringify(payloadArray, null, 2)); }
-    try { getFs().writeFileSync(path.join(OUT_DIR, 'unitMasterMap.meta.json'), JSON.stringify(meta, null, 2)); } catch (e) {}
+    try { getFs().writeFileSync(path.join(OUT_DIR, 'unitMasterMap.meta.json'), JSON.stringify(meta, null, 2)); } catch (e) { /* swallow */ }
     // also close ndjson stream
-    try { if (ndjsonStream && ndjsonStream.end) ndjsonStream.end(); } catch (e) {}
+    try { if (ndjsonStream && ndjsonStream.end) ndjsonStream.end(); } catch (e) { /* swallow */ }
 
     // Expose canonical map on LM
-    try { if (typeof LM !== 'undefined') LM.masterMap = LM.masterMap || {}; LM.masterMap.canonical = canonical; } catch (e) {}
+    try { if (typeof LM !== 'undefined') LM.masterMap = LM.masterMap || {}; LM.masterMap.canonical = canonical; } catch (e) { /* swallow */ }
   } catch (e) {
     // swallow
   }
@@ -226,9 +226,9 @@ function finalize() {
 
 function reset() {
   // Test helper: clear internal aggregation and reopen streams
-  try { agg.clear(); } catch (e) {}
+  try { agg.clear(); } catch (e) { /* swallow */ }
   flushed = false;
-  try { if (ndjsonStream && ndjsonStream.end) ndjsonStream.end(); ndjsonStream = null; } catch (e) {}
+  try { if (ndjsonStream && ndjsonStream.end) ndjsonStream.end(); ndjsonStream = null; } catch (e) { /* swallow */ }
 }
 
 module.exports = { addUnit, finalize, getCanonical, reset };

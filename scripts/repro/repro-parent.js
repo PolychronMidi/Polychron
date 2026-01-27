@@ -35,8 +35,8 @@ const out = path.join(process.cwd(), 'output');
 const safeName = parentKey.replace(/[^a-zA-Z0-9-_]/g, '_');
 const overlapsOut = path.join(out, `repro-parent-${safeName}-overlaps.ndjson`);
 const resultOut = path.join(out, `repro-parent-${safeName}.json`);
-try { if (fs.existsSync(overlapsOut)) fs.unlinkSync(overlapsOut); } catch (e) {}
-try { if (fs.existsSync(resultOut)) fs.unlinkSync(resultOut); } catch (e) {}
+try { if (fs.existsSync(overlapsOut)) fs.unlinkSync(overlapsOut); } catch (e) { /* swallow */ }
+try { if (fs.existsSync(resultOut)) fs.unlinkSync(resultOut); } catch (e) { /* swallow */ }
 
 // Ensure environment flags
 process.env.PLAY_LIMIT = String(PLAY_LIMIT);
@@ -57,13 +57,13 @@ try {
   }
   // Force a single section so PLAY_LIMIT controls the number of sections deterministically
   SECTIONS = { min: 1, max: 1 };
-} catch (e) {}
+} catch (e) { /* swallow */ }
 
 // Run play in-process
 try {
   // remove previous master maps to avoid stale entries
-  try { if (fs.existsSync(path.join(out, 'unitMasterMap.ndjson'))) fs.unlinkSync(path.join(out, 'unitMasterMap.ndjson')); } catch (e) {}
-  try { if (fs.existsSync(path.join(out, 'unitMasterMap.json'))) fs.unlinkSync(path.join(out, 'unitMasterMap.json')); } catch (e) {}
+  try { if (fs.existsSync(path.join(out, 'unitMasterMap.ndjson'))) fs.unlinkSync(path.join(out, 'unitMasterMap.ndjson')); } catch (e) { /* swallow */ }
+  try { if (fs.existsSync(path.join(out, 'unitMasterMap.json'))) fs.unlinkSync(path.join(out, 'unitMasterMap.json')); } catch (e) { /* swallow */ }
 
   require('../../src/play');
 } catch (e) {

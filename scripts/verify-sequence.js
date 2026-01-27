@@ -13,7 +13,7 @@ const steps = [
 ];
 
 // Ensure log directory
-try { fs.mkdirSync('log', { recursive: true }); } catch (e) {}
+try { fs.mkdirSync('log', { recursive: true }); } catch (e) { /* swallow */ }
 
 let anyFailed = false;
 const results = [];
@@ -54,7 +54,7 @@ for (const s of steps) {
         fs.appendFileSync(stepLog, '\nplay.log not found\n');
       }
     } catch (e) {
-      try { fs.appendFileSync(stepLog, `\nPost-play diagnostics failed: ${e && e.message}\n`); } catch (_) {}
+      try { fs.appendFileSync(stepLog, `\nPost-play diagnostics failed: ${e && e.message}\n`); } catch (_) { /* swallow */ }
     }
   }
 

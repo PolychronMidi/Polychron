@@ -117,7 +117,7 @@ function parseCsvFile(filePath) {
           unitHashNorm = segs.slice(0, segs.length - 2).join('|');
         }
       }
-    } catch (_e) {}
+    } catch (_e) { /* swallow */ }
 
     events.push({ tickRaw, tickNum, unitHash: unitHashNorm, unitHashRaw, type, vals, rawLine: ln });
   }
@@ -154,7 +154,7 @@ function summarizeOverlapErrors(errs, topN = 20) {
   const overlaps = [];
   const byParent = new Map();
   // match strings like: "Overlap in layer primary section 0 unitType subsubdivision: unit <A> [s1,e1) overlaps <B> [s2,e2)"
-  const r = /^Overlap in layer (\S+) section (\S+) unitType (\S+): unit (.+?) \[(\d+),(\d+)[\)\]] overlaps (.+?) \[(\d+),(\d+)[\)\]]/;
+  const r = /^Overlap in layer (\S+) section (\S+) unitType (\S+): unit (.+?) \[(\d+),(\d+)[)\]] overlaps (.+?) \[(\d+),(\d+)[)\]]/;
   for (const s of errs) {
     const m = String(s).match(r);
     if (!m) continue;
@@ -272,7 +272,7 @@ function main() {
   if (overlapErrs.length) {
     const summary = summarizeOverlapErrors(overlapErrs, 20);
     const overlapPath = path.join(process.cwd(), 'output', 'treewalker-overlap-summary.json');
-    try { fs.writeFileSync(overlapPath, JSON.stringify(summary, null, 2)); } catch (e) {}
+    try { fs.writeFileSync(overlapPath, JSON.stringify(summary, null, 2)); } catch (e) { /* swallow */ }
 
     // Also create a compact HTML report to make triage quick and visual
     try {
@@ -338,7 +338,7 @@ function main() {
               if (secondLast && last && /^[0-9]+-[0-9]+$/.test(secondLast) && /^[0-9]+\.[0-9]+-[0-9]+\.[0-9]+$/.test(last)) {
                 normalizedTok = segs.slice(0, segs.length - 2).join('|');
               }
-            } catch (_e) {}
+            } catch (_e) { /* swallow */ }
 
             // Accept matches against either units.json unitHash or masterMap key (using normalized token)
             const found = layerUnits.find(u => String(u.unitHash) === tok || String(u.unitHash || u.key) === tok || String(u.unitHash) === normalizedTok || String(u.unitHash || u.key) === normalizedTok);
@@ -377,7 +377,7 @@ function main() {
               }
             }
           }
-        } catch (_err) {}
+        } catch (_err) { /* swallow */ }
       }
 
       // If no explicit unitHash present, try a tick-based lookup (best-effort backfill)
@@ -461,7 +461,7 @@ function main() {
             const found = layerUnits.find(u => String(u.unitHash || u.key).includes(tok) && Number(u.startTick||0) <= e.tickNum && Number(u.endTick||0) >= e.tickNum);
             if (found) unitHash = found.unitHash || found.key;
           }
-        } catch (_err) {}
+        } catch (_err) { /* swallow */ }
       }
 
       // If the original unit token was a short segment (e.g., 'section5/9') and no matching canonical unit

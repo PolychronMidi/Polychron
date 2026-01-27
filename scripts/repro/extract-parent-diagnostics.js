@@ -8,7 +8,7 @@ if (!parentArg) {
   process.exit(2);
 }
 if (String(parentArg).startsWith('b64:')) {
-  try { parentArg = Buffer.from(String(parentArg).slice(4), 'base64').toString('utf8'); } catch (e) { }
+  try { parentArg = Buffer.from(String(parentArg).slice(4), 'base64').toString('utf8'); } catch (e) { /* swallow */ }
 }
 const safe = parentArg.replace(/[^a-zA-Z0-9-_]/g, '_');
 const outDir = path.join(process.cwd(), 'output');

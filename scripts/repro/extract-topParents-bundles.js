@@ -121,7 +121,7 @@ for (const p of selected) {
   // Also select any repro-parent-<safe>.json that exists from earlier runs
   const reproJson = path.join(OUT, `repro-parent-${safe}.json`);
   if (fs.existsSync(reproJson)) {
-    try { fs.copyFileSync(reproJson, path.join(dir, path.basename(reproJson))); totalMatches++; } catch (e) {}
+    try { fs.copyFileSync(reproJson, path.join(dir, path.basename(reproJson))); totalMatches++; } catch (e) { /* swallow */ }
   }
 
   // Ensure we always have a marker file indicating we ran triage for this parent

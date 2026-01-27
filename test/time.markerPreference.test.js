@@ -14,7 +14,7 @@ describe('Marker preference cache - integration', () => {
     // ensure clean output
     if (!fs.existsSync(OUT)) fs.mkdirSync(OUT);
     // remove existing output1.csv
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
     // reset LM
     if (LM) {
       LM.layers = {};
@@ -37,7 +37,7 @@ describe('Marker preference cache - integration', () => {
   });
 
   afterEach(() => {
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
   });
 
   it('loadMarkerMapForLayer and findMarkerSecs return correct entries from CSV', () => {
@@ -61,7 +61,7 @@ describe('Marker preference cache - integration', () => {
   });
 
   it('findMarkerSecs returns null when no CSV present', () => {
-    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) {}
+    try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
     const map = __POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
     expect(map).toBeDefined();
     expect(Object.keys(map).length).toBe(0);

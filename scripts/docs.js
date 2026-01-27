@@ -19,9 +19,9 @@ function parseCoverageStats(projectRoot = process.cwd()) {
       if (r && r.status === 0 && r.stdout) {
         try {
           return JSON.parse(r.stdout.trim());
-        } catch (e2) {}
+        } catch (e2) { /* swallow */ }
       }
-    } catch (e2) {}
+    } catch (e2) { /* swallow */ }
   }
   return { summary: 'Coverage data unavailable', statements: null, branches: null, functions: null, lines: null };
 }
@@ -375,8 +375,7 @@ function enforceLinksInText(text, isReadme=false) {
     const docTarget = `${docPrefix}${m.doc}`;
     const docLink = m.doc ? ` ([doc](${docTarget}))` : '';
     const links = `${codeLink}${docLink}`;
-    const nameEsc = m.name.replace('.', '\\.')
-      .replace(/([\\+*?\[\]{}()^$|])/g, '\\$1');
+    const nameEsc = m.name.replace(/[.*+?^${}()|[\\\]\\]/g, '\\$&');
     const plainRegex = new RegExp(`(?<!\\[)\\b${nameEsc}\\b(?!\\])`, 'g');
     out = out.replace(plainRegex, `${m.name} ${links}`);
   }

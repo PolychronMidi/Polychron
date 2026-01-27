@@ -89,7 +89,7 @@ function parseUnitId(uId) {
 
 (function main() {
   // Clear previous run's focused diagnostics so outputs reflect the current run only
-  try { require('fs').writeFileSync(require('path').join(process.cwd(),'output','layerAlignment-unitRec-mismatch.ndjson'), ''); } catch (e) {}
+  try { require('fs').writeFileSync(require('path').join(process.cwd(),'output','layerAlignment-unitRec-mismatch.ndjson'), ''); } catch (e) { /* swallow */ }
   // Merge CSV-derived unitRecs with canonical master map units (if present)
   const unitsCsv = readUnitsFromCsv();
   const masterUnits = readUnitsFromMasterMap();
@@ -123,7 +123,7 @@ function parseUnitId(uId) {
         sectionTp[u.layer][s] = sectionTp[u.layer][s] || [];
         sectionTp[u.layer][s].push(tp);
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   }
 
   const median = (arr) => {
@@ -158,7 +158,7 @@ function parseUnitId(uId) {
         const tp = secMedian || layerTpMedian[u.layer] || null;
         if (tp && Number.isFinite(tp) && Number.isFinite(u.endTick)) u.endTime = Number((Number(u.endTick) / tp).toFixed(6));
       }
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   }
 
   // If a master map exists, use its canonical units to build robust phrase start/end overrides
@@ -188,7 +188,7 @@ function parseUnitId(uId) {
           else if (Number.isFinite(mu.startTick) && layerTpMedian[layer]) masterByPhrase[layer][key].starts.push(Number(mu.startTick) / layerTpMedian[layer]);
           if (Number.isFinite(mu.endTime)) masterByPhrase[layer][key].ends.push(Number(mu.endTime));
           else if (Number.isFinite(mu.endTick) && layerTpMedian[layer]) masterByPhrase[layer][key].ends.push(Number(mu.endTick) / layerTpMedian[layer]);
-        } catch (e) {}
+        } catch (e) { /* swallow */ }
       }
 
       // Apply master overrides into byLayer aggregates where meaningful
@@ -205,7 +205,7 @@ function parseUnitId(uId) {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
 
   // Parse marker_t entries from CSVs and collect ordered occurrences of phrase & section markers (local times)
   const csvFiles = fs.readdirSync(OUT).filter(f => f.endsWith('.csv')).map(f => path.join(OUT, f));
@@ -276,7 +276,7 @@ function parseUnitId(uId) {
         continue;
       }
 
-      const mPhrase = String(val).match(/(Phrase)\s*(\d+)\/(\d+).*\(([^\)]+)\s*-\s*([^\)]+)\)/i);
+      const mPhrase = String(val).match(/(Phrase)\s*(\d+)\/(\d+).*\(([^)]+)\s*-\s*([^)]+)\)/i);
       if (mPhrase) {
         const phraseIdx = Number(mPhrase[2]) - 1;
         const localStart = parseHMSToSec(mPhrase[4]);
@@ -291,7 +291,7 @@ function parseUnitId(uId) {
         markerOccur[layer].push({ phraseIdx, sectionIdx: leadSectionIdx, localStart, localEnd, lengthSec, tick: tickNum, tpSec, endTick, raw: val, markerType: 'phrase' });
         continue;
       }
-      const mSection = String(val).match(/(Section)\s*(\d+)\/(\d+).*\(([^\)]+)\s*-\s*([^\)]+)\)/i);
+      const mSection = String(val).match(/(Section)\s*(\d+)\/(\d+).*\(([^)]+)\s*-\s*([^)]+)\)/i);
       if (mSection) {
         const secIdx = Number(mSection[2]) - 1;
         const localStart = parseHMSToSec(mSection[4]);
@@ -320,7 +320,7 @@ function parseUnitId(uId) {
         const key = `s${s}-p${p}`;
         unitGroups[key] = unitGroups[key] || [];
         unitGroups[key].push(u);
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
     }
     Object.keys(unitGroups).forEach(k => {
       const arr = unitGroups[k];
@@ -378,7 +378,7 @@ function parseUnitId(uId) {
               absEnd = Number(mk.localEnd);
               usedMethod = 'localAbsolute';
             }
-          } catch (e) {}
+          } catch (e) { /* swallow */ }
           if (mk.tpSec && mk.endTick && mk.lengthSec) {
             const candEnd = Number(mk.endTick) / Number(mk.tpSec);
             const candStart = candEnd - Number(mk.lengthSec);
@@ -417,7 +417,7 @@ function parseUnitId(uId) {
               const delta = Math.abs(Number(can.absStart) - Number(oth.absStart));
               // Policy: per-layer markers are authoritative. Do not treat inter-layer marker time differences as hard mismatches.
               // Record as diagnostics only (not a markerMismatch) so we do not auto-apply cross-layer corrections.
-              try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','layerAlignment-marker-diagnostics.ndjson'), JSON.stringify({ layer, key: k, delta, usedMethod, primary: can, other: oth, when: new Date().toISOString() }) + '\n'); } catch (_e) {}
+              try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','layerAlignment-marker-diagnostics.ndjson'), JSON.stringify({ layer, key: k, delta, usedMethod, primary: can, other: oth, when: new Date().toISOString() }) + '\n'); } catch (_e) { /* swallow */ }
             } else {
               // No reliable marker-to-marker comparison possible; record as diagnostic (no mismatch)
             }
@@ -548,7 +548,7 @@ function parseUnitId(uId) {
       byLayer[u.layer][key] = byLayer[u.layer][key] || { startTimes: [], endTimes: [] };
       if (u.startTime !== undefined) byLayer[u.layer][key].startTimes.push(Number(u.startTime));
       if (u.endTime !== undefined) byLayer[u.layer][key].endTimes.push(Number(u.endTime));
-    } catch (e) {}
+    } catch (e) { /* swallow */ }
   }
 
   // Compute per-layer median start offset relative to primary and apply a normalization so
@@ -645,7 +645,7 @@ function parseUnitId(uId) {
           layerFits[layer].forcedFrom = layerFits[layer].forcedFrom || [];
           layerFits[layer].forcedFrom.push(k);
         }
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
     }
 
     const keys = Object.keys(phraseRanges[canonicalLayer] || {});
@@ -672,7 +672,7 @@ function parseUnitId(uId) {
           mobj.markerRange = (markerRanges[layer] && markerRanges[layer][k]) ? markerRanges[layer][k] : null;
           mismatches.push(mobj);
           // Emit a focused diagnostic record to help trace origin of unitRec-derived mismatches
-          try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','layerAlignment-unitRec-mismatch.ndjson'), JSON.stringify(Object.assign({}, mobj, { when: new Date().toISOString() })) + '\n'); } catch (e) {}
+          try { const _fs = require('fs'); const _path = require('path'); _fs.appendFileSync(_path.join(process.cwd(),'output','layerAlignment-unitRec-mismatch.ndjson'), JSON.stringify(Object.assign({}, mobj, { when: new Date().toISOString() })) + '\n'); } catch (e) { /* swallow */ }
         }
       } else {
         // For phrase-based markers or unmatched types, do NOT report a mismatch — markers are authoritative and may be relative; log as diagnostics only
@@ -711,7 +711,7 @@ function parseUnitId(uId) {
             // missing in unitTree -> record
             corrections.push({ key: k, layer, source: 'unitTree', canonicalStart: canonical.start, sourceStart: null, delta: null, note: 'missing' });
           }
-        } catch (e) {}
+        } catch (e) { /* swallow */ }
         // master comparison
         try {
           const mu = findUnitInMaster(k, layer);
@@ -721,11 +721,11 @@ function parseUnitId(uId) {
           } else {
             corrections.push({ key: k, layer, source: 'master', canonicalStart: canonical.start, sourceStart: null, delta: null, note: 'missing' });
           }
-        } catch (e) {}
+        } catch (e) { /* swallow */ }
       }
     }
-  } catch (e) {}
-  try { fs.writeFileSync(path.join(OUT, 'layerAlignment-corrections.json'), JSON.stringify(corrections, null, 2)); } catch (e) {}
+  } catch (e) { /* swallow */ }
+  try { fs.writeFileSync(path.join(OUT, 'layerAlignment-corrections.json'), JSON.stringify(corrections, null, 2)); } catch (e) { /* swallow */ }
 
   // Verification-only: no CSVs will be modified in this script; appliedCount removed.
 
@@ -740,7 +740,7 @@ function parseUnitId(uId) {
 
   // Verification-only: corrections are not applied and the script will not re-run itself. Any candidate corrections are recorded in
   // `output/layerAlignment-corrections.json` and `output/layerAlignment-diagnostics.json` for manual inspection.
-  try { /* noop - no automatic apply or iteration in verification-only mode */ } catch (e) {}
+  try { /* noop - no automatic apply or iteration in verification-only mode */ } catch (e) { /* swallow */ }
 
   // Track lengths per layer - use the last `marker_t` entry in each CSV as the authoritative end time when available
   const trackLengths = {};
@@ -762,13 +762,13 @@ function parseUnitId(uId) {
         if (Number.isFinite(endSec)) return endSec;
       }
       // Phrase/Section marker form: '(MM:SS.ssss - MM:SS.ssss)'
-      const mPhrase = String(val).match(/\(([^\)]+)\s*-\s*([^\)]+)\)/);
+      const mPhrase = String(val).match(/\(([^)]+)\s*-\s*([^)]+)\)/);
       if (mPhrase) {
         const endStr = String(mPhrase[2]).trim();
         try {
           const endSec = parseHMSToSec(endStr);
           if (Number.isFinite(endSec)) return endSec;
-        } catch (e) {}
+        } catch (e) { /* swallow */ }
       }
       // Fallback: explicit endTick token
       const mTick = String(val).match(/endTick:\s*([0-9]+(?:\.[0-9]*)?)/i);
@@ -845,7 +845,7 @@ function parseUnitId(uId) {
           const relTickTol = Number(getArg('--rel-tolerance-tick', '0.01'));
           tickNormFracBelow = diffsTick.filter(d => d <= relTickTol).length / diffsTick.length;
         }
-      } catch (e) {}
+      } catch (e) { /* swallow */ }
       if (normFracBelow >= 0.8 || tickNormFracBelow >= 0.8) {
         // Normalized-position indicates alignment by relative positions; record that fact but do not remove mismatches.
         layerFits[layer].normAccepted = true;
@@ -854,7 +854,7 @@ function parseUnitId(uId) {
       layerFits[layer].normFracBelow = normFracBelow;
       layerFits[layer].tickNormFracBelow = tickNormFracBelow;
     }
-  } catch (e) {}
+  } catch (e) { /* swallow */ }
 
   // Report
   const correctionsFile = path.join(OUT, 'layerAlignment-corrections.json');
@@ -875,7 +875,7 @@ function parseUnitId(uId) {
     markerMismatches: markerMismatches.slice(0, 200),
     correctionsCount: (typeof corrections !== 'undefined' ? corrections.length : 0),
     correctionsFile: fs.existsSync(correctionsFile) ? correctionsFile : null,
-    correctionsApplied: (function(){ try { if (fs.existsSync(correctionsAppliedFile)) { console.warn('layerAlignment: found legacy "layerAlignment-corrections-applied.json"; ignored.'); } } catch (e) {} return null; })(),
+    correctionsApplied: (function(){ try { if (fs.existsSync(correctionsAppliedFile)) { console.warn('layerAlignment: found legacy "layerAlignment-corrections-applied.json"; ignored.'); } } catch (e) { /* swallow */ } return null; })(),
     trackLengths,
     trackDelta,
     trackProblem: trackDelta > trackTol,

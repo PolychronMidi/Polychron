@@ -436,8 +436,8 @@ resetIndexWithChildren = (unit) => {
       indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex },
       stack: (() => { try { return (new Error()).stack.split('\n').slice(2).map(s => s.trim()); } catch (_e) { return []; } })()
     };
-    try { writeDebugFile('reset-index-log.ndjson', record); } catch (_e) {}
-  } catch (_e) {}
+    try { writeDebugFile('reset-index-log.ndjson', record); } catch (_e) { /* swallow */ }
+  } catch (_e) { /* swallow */ }
 };
 
 // Timing and counter variables (documented inline for brevity)
