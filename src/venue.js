@@ -232,7 +232,6 @@ bassInstrument2 = getMidiValue('program', bassInstrument2);
 
 /** Tonal.js library for music theory operations */
 const t=require('tonal');
-t=t;
 
 /**
  * All chromatic notes in standardized enharmonic form.
@@ -299,12 +298,7 @@ const allModes=(()=>{
 })();
 
 // Export to global scope for testing
-midiData=midiData;
-getMidiValue=getMidiValue;
-allNotes=allNotes;
-allScales=allScales;
-allChords=allChords;
-allModes=allModes;
+/* explicit self-assign exports removed to avoid no-self-assign lint errors */
 
 if (typeof globalThis !== 'undefined') {
   __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};

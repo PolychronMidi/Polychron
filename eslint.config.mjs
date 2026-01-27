@@ -294,6 +294,75 @@ export default [
         bassBinaural: 'writable',
         stutterFadeCHs: 'writable',
         stutterPanCHs: 'writable',
+        // Additional timing + globals (project naked globals)
+        measureCount: 'writable',
+        finalTick: 'writable',
+        finalTime: 'writable',
+        bestMatch: 'writable',
+        tpPhrase1: 'writable',
+        tpPhrase2: 'writable',
+        subdivsPerBeat: 'writable',
+        subsubsPerSub: 'writable',
+        beatsUntilBinauralShift: 'writable',
+        beatCount: 'writable',
+        noteCount: 'writable',
+        balOffset: 'writable',
+        sideBias: 'writable',
+        firstLoop: 'writable',
+        lastCrossMod: 'writable',
+        activeMotif: 'writable',
+        currentSectionType: 'writable',
+        currentSectionDynamics: 'writable',
+        crossModulation: 'writable',
+        lastMeter: 'writable',
+        lastUsedCHs: 'writable',
+        lastUsedCHs2: 'writable',
+        lastUsedCHs3: 'writable',
+        velocity: 'writable',
+        neutralPitchBend: 'writable',
+        semitone: 'writable',
+        tuningPitchBend: 'writable',
+        FX: 'writable',
+        __POLYCHRON_TEST__: 'writable',
+        // Exposed helpers / classes
+        TimingCalculator: 'writable',
+        VoiceLeadingScore: 'writable',
+        SECTION_TYPES: 'readonly',
+        csvRows: 'writable',
+        // Utility and temporary globals
+        _: 'writable',
+        // AVOID in favor of naked global usage only!
+        // global: 'readonly',
+        resetIndexWithChildren: 'writable',
+        LM: 'writable',
+        stage: 'writable',
+        fxManager: 'writable',
+        refVar: 'writable',
+        cBal: 'writable',
+        cBal2: 'writable',
+        cBal3: 'writable',
+        lBal: 'writable',
+        rBal: 'writable',
+        bassVar: 'writable',
+        // Motif helpers
+        Motif: 'writable',
+        clampMotifNote: 'writable',
+        applyMotifToNotes: 'writable',
+        // Rhythm helpers
+        closestDivisor: 'writable',
+        binary: 'writable',
+        hex: 'writable',
+        onsets: 'writable',
+        random: 'writable',
+        prob: 'writable',
+        euclid: 'writable',
+        rotate: 'writable',
+        morph: 'writable',
+        // Misc
+        canonicalKeys: 'writable',
+        beatKey: 'writable',
+        divKey: 'writable',
+        performance: 'writable',
         // Audio/rhythm functions
         playDrums: 'writable',
         playDrums2: 'writable',
@@ -305,7 +374,6 @@ export default [
         exports: 'writable',
         __dirname: 'readonly',
         __filename: 'readonly',
-        global: 'readonly',
         process: 'readonly',
         console: 'readonly',
         Buffer: 'readonly',
@@ -315,12 +383,19 @@ export default [
         clearInterval: 'readonly',
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
-        globalThis: 'readonly'
+        // Allow Node and environment global objects and some test-only temp names
+        // 'global' and 'globalThis' are banned project-wide; use naked globals instead
+        resolveSectionProfile: 'writable',
+        selectSectionType: 'writable',
+        _origRf: 'writable',
+        _origRv: 'writable',
+        _origRi: 'writable',
       }
     },
     rules: {
       // Code correctness - errors that break functionality
-      'no-undef': 'warn',  // Catch undefined variables like activeMotif
+      'no-undef': 'error',  // Catch undefined variables like activeMotif
+      'no-restricted-globals': ['error', { name: 'global', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'globalThis', message: 'global or globalThis banned project-wide, use naked globals instead' }],
       'no-unreachable': 'error',  // Dead code after return/throw
       'no-constant-condition': 'warn',  // Conditions always true/false (can be intentional)
       'no-dupe-keys': 'error',  // Duplicate object keys
@@ -353,9 +428,12 @@ export default [
       globals: {
         describe: 'readonly',
         it: 'readonly',
+        test: 'readonly',
         expect: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
         vi: 'readonly'
       }
     }

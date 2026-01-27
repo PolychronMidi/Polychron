@@ -34,22 +34,6 @@ function setupGlobalState() {
     'cymbal1': { note: 59, velocityRange: [66, 77] },
     'conga1': { note: 60, velocityRange: [66, 77] }
   };
-  // Also assign to local for convenience
-  c = c;
-  drumCH = drumCH;
-  beatStart = beatStart;
-  tpBeat = tpBeat;
-  beatIndex = beatIndex;
-  numerator = numerator;
-  beatRhythm = beatRhythm;
-  beatsOff = beatsOff;
-  bpmRatio3 = bpmRatio3;
-  measuresPerPhrase = measuresPerPhrase;
-  divsPerBeat = divsPerBeat;
-  subdivsPerDiv = subdivsPerDiv;
-  divRhythm = divRhythm;
-  subdivRhythm = subdivRhythm;
-  m = m;
 }
 
 // Import from test namespace

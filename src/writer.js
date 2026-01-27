@@ -100,8 +100,8 @@ const logUnit = (type) => {
     // function not yet invoked in this context; skip
   } else if (!shouldLog) return null;
 
-  // Use global buffer if tests or other modules set it at runtime
-  const buf = (typeof globalThis !== 'undefined' && c) ? c : c;
+  // Use buffer for this layer
+  const buf = c;
   if (type === 'section') {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
@@ -284,18 +284,16 @@ grandFinale = () => {
 
   // REMOVED: Remove any stale CSV outputs for layers that are not currently registered
   // ANTI-PATTERN: DO NOT ADD POSTFIXES FOR CRITICAL ERRORS, INSTEAD RAISE A LOGGED FATAL ERROR AND HANDLE IT IN SOURCE GENERATION.
-  // Compatibility shim: honor test harness using globalThis (promote to naked globals used across src)
-  if (typeof globalThis !== 'undefined') {
-    try {
-      if (typeof LM !== 'undefined' && typeof LM === 'undefined') LM = LM;
-      if (typeof fs !== 'undefined' && typeof fs === 'undefined') fs = fs;
-      if (typeof allNotesOff !== 'undefined' && typeof allNotesOff === 'undefined') allNotesOff = allNotesOff;
-      if (typeof muteAll !== 'undefined' && typeof muteAll === 'undefined') muteAll = muteAll;
-    } catch (_e) {}
-  }
-  // Resolve LM dynamically on invocation to honor test harness setups that assign LM in beforeEach
-  // Prefer test-injected `LM` when present to respect test harnesses that set LM in beforeEach
-  const LMCurrent = (typeof globalThis !== 'undefined' && LM) ? LM : ((typeof LM !== 'undefined') ? LM : { layers: {} });
+  // Compatibility shim: honor test harness (pull from __POLYCHRON_TEST__ when present)
+  try {
+    if (typeof __POLYCHRON_TEST__ !== 'undefined') {
+      if (typeof __POLYCHRON_TEST__.LM !== 'undefined') LM = __POLYCHRON_TEST__.LM;
+      if (typeof __POLYCHRON_TEST__.fs !== 'undefined') fs = __POLYCHRON_TEST__.fs;
+      if (typeof __POLYCHRON_TEST__.allNotesOff !== 'undefined') allNotesOff = __POLYCHRON_TEST__.allNotesOff;
+      if (typeof __POLYCHRON_TEST__.muteAll !== 'undefined') muteAll = __POLYCHRON_TEST__.muteAll;
+    }
+  } catch (_e) {}
+  const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
   // Collect all layer data
   const layerData = Object.entries(LMCurrent.layers || {}).map(([name, layer]) => {
     return {
@@ -311,8 +309,8 @@ grandFinale = () => {
     c = buffer;
     // Cleanup - use naked global fallbacks to avoid load-order issues in tests
     try {
-      const _allNotesOff = (typeof allNotesOff === 'function') ? allNotesOff : ((typeof globalThis !== 'undefined' && typeof allNotesOff === 'function') ? allNotesOff : (()=>{}));
-      const _muteAll = (typeof muteAll === 'function') ? muteAll : ((typeof globalThis !== 'undefined' && typeof muteAll === 'function') ? muteAll : (()=>{}));
+      const _allNotesOff = (typeof allNotesOff === 'function') ? allNotesOff : (()=>{});
+      const _muteAll = (typeof muteAll === 'function') ? muteAll : (()=>{});
       _allNotesOff((layerState.sectionEnd || layerState.sectionStart) + PPQ);
       _muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
     } catch (e) {}
@@ -684,7 +682,6 @@ try {
   console.error('Failed to wrap fs.writeFileSync:', err);
 }
 
-// Export to real globals for test and module interoperability (naked/global per project convention)
-try { global.CSVBuffer = CSVBuffer; global.p = p; global.pushMultiple = p; global.logUnit = logUnit; global.grandFinale = grandFinale; } catch (e) { /* ignore when global not present */ }
+// Export to test namespace for module interoperability (naked/global per project convention)
 try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; } catch (e) { __POLYCHRON_TEST__ = {}; }
 Object.assign(__POLYCHRON_TEST__, { p, CSVBuffer, logUnit, grandFinale });

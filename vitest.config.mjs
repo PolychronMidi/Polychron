@@ -7,7 +7,8 @@ export default {
     timeout: 200000,
     testTimeout: 40000,
     // Load centralized log gate during test setup so console output is controlled project-wide
-    setupFiles: ['./src/logGate.js'],
+    // Also load `test-setup.js` which requires `stage.js` to ensure naked globals are initialized
+    setupFiles: ['./src/logGate.js', './src/test-setup.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

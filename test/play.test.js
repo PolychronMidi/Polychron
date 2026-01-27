@@ -451,7 +451,6 @@ describe('play.js - Orchestrator Module', () => {
 
       // Simulate multiple beats
       for (let beatIndex = 0; beatIndex < 4; beatIndex++) {
-        beatIndex = beatIndex;
         beatStart = beatIndex * tpBeat;
 
         // Generate events for this beat

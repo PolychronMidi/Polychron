@@ -1031,8 +1031,8 @@ describe('TimingContext class', () => {
     });
 
     it('should handle tpMeasure when PPQ is undefined', () => {
-      const prevPPQ = PPQ;
-      delete PPQ;
+      const prevPPQ = (typeof PPQ !== 'undefined') ? PPQ : undefined;
+      PPQ = undefined;
       const ctx = new TimingContext();
       expect(ctx.tpMeasure).toBe(480 * 4); // fallback
       PPQ = prevPPQ;

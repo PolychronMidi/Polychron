@@ -294,7 +294,6 @@ class VoiceLeadingScore {
 }
 
 // Export globally for composition integration
-VoiceLeadingScore = VoiceLeadingScore;
 if (typeof globalThis !== 'undefined') {
   __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
   __POLYCHRON_TEST__.VoiceLeadingScore = VoiceLeadingScore;

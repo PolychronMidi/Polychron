@@ -1286,33 +1286,11 @@ class ComposerFactory {
 composers = [];  // Lazy-loaded in play.js when all systems are ready
 
 // Export classes and factory globally for testing
-MeasureComposer = MeasureComposer;
-ScaleComposer = ScaleComposer;
-RandomScaleComposer = RandomScaleComposer;
-ChordComposer = ChordComposer;
-RandomChordComposer = RandomChordComposer;
-ModeComposer = ModeComposer;
-RandomModeComposer = RandomModeComposer;
-PentatonicComposer = PentatonicComposer;
-RandomPentatonicComposer = RandomPentatonicComposer;
-ProgressionGenerator = ProgressionGenerator;
-TensionReleaseComposer = TensionReleaseComposer;
-ModalInterchangeComposer = ModalInterchangeComposer;
-HarmonicRhythmComposer = HarmonicRhythmComposer;
-MelodicDevelopmentComposer = MelodicDevelopmentComposer;
-AdvancedVoiceLeadingComposer = AdvancedVoiceLeadingComposer;
-ComposerFactory = ComposerFactory;
+/* self-assigns removed to satisfy lint (classes are already defined in this scope) */
 
 // Mirror into __POLYCHRON_TEST__ to keep test globals namespaced
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  Object.assign(__POLYCHRON_TEST__, {
-    MeasureComposer,
-    ScaleComposer,
-    RandomScaleComposer,
-    ChordComposer,
-    RandomChordComposer,
-    ModeComposer,
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+Object.assign(__POLYCHRON_TEST__, { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer,
     RandomModeComposer,
     PentatonicComposer,
     RandomPentatonicComposer,
@@ -1324,4 +1302,3 @@ if (typeof globalThis !== 'undefined') {
     AdvancedVoiceLeadingComposer,
     ComposerFactory,
   });
-}

@@ -54,7 +54,7 @@ class TimingCalculator {
 }
 
 // Export TimingCalculator to global namespace for tests and other modules
-TimingCalculator = TimingCalculator;
+// (exposed via __POLYCHRON_TEST__ below)
 // One-time warning helper to avoid flooding logs with the same critical messages
 const _polychron_warned = new Set();
 function warnOnce(key, msg) {
@@ -78,10 +78,8 @@ function raiseCritical(key, msg, ctx = {}) {
     throw new Error('CRITICAL: ' + msg);
   }
 }
-if (typeof globalThis !== 'undefined') {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  __POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
-}
+__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+__POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
 let timingCalculator = null;
 
 /**
@@ -267,6 +265,24 @@ TimingContext = class TimingContext {
     globals.spMeasure = this.spMeasure;
   }
 
+// Helper: apply a layer state's timing fields directly to the project's naked globals
+const restoreLayerToGlobals = (s) => {
+  phraseStart = s.phraseStart;
+  phraseStartTime = s.phraseStartTime;
+  sectionStart = s.sectionStart;
+  sectionStartTime = s.sectionStartTime;
+  sectionEnd = s.sectionEnd;
+  tpSec = s.tpSec;
+  tpSection = s.tpSection;
+  spSection = s.spSection;
+  tpPhrase = s.tpPhrase;
+  spPhrase = s.spPhrase;
+  measureStart = s.measureStart;
+  measureStartTime = s.measureStartTime;
+  tpMeasure = s.tpMeasure;
+  spMeasure = s.spMeasure;
+};
+
   /**
    * Advance phrase timing.
    * @param {number} tpPhrase - Ticks per phrase.
@@ -366,7 +382,7 @@ LM = layerManager ={
     layer.state.tpMeasure = tpMeasure;
 
     // Restore layer timing state to globals
-    layer.state.restoreTo(globalThis);
+    restoreLayerToGlobals(layer.state);
 
     // Reset only derived composer counts to avoid carry-over; preserve caller-set indices (measureIndex etc.) so callers can activate and then set indices as needed
     divsPerBeat = subdivsPerDiv = subsubsPerSub = undefined;
@@ -423,8 +439,8 @@ LM = layerManager ={
       layer.state.advanceSection();
     }
 
-    // Restore advanced state back to globals so they stay in sync
-    layer.state.restoreTo(globalThis);
+    // Restore advanced state back to naked globals so they stay in sync
+    restoreLayerToGlobals(layer.state);
   },
 
 };
@@ -432,19 +448,17 @@ LM = layerManager ={
 // layer manager is initialized in play.js after buffers are created
 // This ensures c1 and c2 are available when registering layers
 
-// Compatibility shim: allow test harness to set globals on `globalThis` (tests do this) — promote them to naked globals used throughout src
-if (typeof globalThis !== 'undefined') {
-  try {
-    if (typeof LM !== 'undefined' && typeof LM === 'undefined') LM = LM;
-    if (typeof composer !== 'undefined' && typeof composer === 'undefined') composer = composer;
-    if (typeof fs !== 'undefined' && typeof fs === 'undefined') fs = fs;
-    if (typeof allNotesOff !== 'undefined' && typeof allNotesOff === 'undefined') allNotesOff = allNotesOff;
-    if (typeof muteAll !== 'undefined' && typeof muteAll === 'undefined') muteAll = muteAll;
-    if (typeof PPQ !== 'undefined' && typeof PPQ === 'undefined') PPQ = PPQ;
-    // Ensure LM points to our LM instance when tests don't inject a full LM
-    if (!LM || typeof LM.register !== 'function') LM = LM;
-  } catch (_e) {}
-}
+// Compatibility shim: allow test harness to provide values via __POLYCHRON_TEST__ — promote them to naked globals used throughout src
+try {
+  if (typeof __POLYCHRON_TEST__ !== 'undefined') {
+    if (typeof __POLYCHRON_TEST__.LM !== 'undefined') LM = __POLYCHRON_TEST__.LM;
+    if (typeof __POLYCHRON_TEST__.composer !== 'undefined') composer = __POLYCHRON_TEST__.composer;
+    if (typeof __POLYCHRON_TEST__.fs !== 'undefined') fs = __POLYCHRON_TEST__.fs;
+    if (typeof __POLYCHRON_TEST__.allNotesOff !== 'undefined') allNotesOff = __POLYCHRON_TEST__.allNotesOff;
+    if (typeof __POLYCHRON_TEST__.muteAll !== 'undefined') muteAll = __POLYCHRON_TEST__.muteAll;
+    if (typeof __POLYCHRON_TEST__.PPQ !== 'undefined') PPQ = __POLYCHRON_TEST__.PPQ;
+  }
+} catch (_e) {}
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
@@ -1297,7 +1311,6 @@ if (typeof globalThis !== 'undefined') {
 
 // Export for tests and __POLYCHRON_TEST__ namespace usage
 if (typeof globalThis !== 'undefined') {
-  TimingCalculator = TimingCalculator;
   __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
   __POLYCHRON_TEST__.TimingCalculator = TimingCalculator;
 }
