@@ -182,11 +182,18 @@ const logUnit = (type) => {
   }
 
   return (() => {
-    // Emit marker tick that corresponds to the canonical end of the unit when available.
-    // Use a rounded integer endTick in both the event tick and the human-readable marker text
+    // Emit marker tick. For sections, use the canonical start tick (so first Section marker will be at 0);
+    // for other unit types, prefer the canonical end tick as before.
     const endTickInt = Math.round(Number(endTick) || 0);
-    const markerTick = (Number.isFinite(endTickInt) && endTickInt >= 0) ? endTickInt : Math.round(Number(startTick || 0));
-    const markerRaw = `${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${markerTick} ${meterInfo ? meterInfo : ''}`;
+    let markerTick;
+    let markerRaw;
+    if (type === 'section') {
+      markerTick = Math.round(Number(startTick || 0));
+      markerRaw = `Section ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (start: ${formatTime(startTime)} - ${formatTime(endTime)}) startTick: ${markerTick} endTick: ${endTickInt} ${meterInfo ? meterInfo : ''}`;
+    } else {
+      markerTick = (Number.isFinite(endTickInt) && endTickInt >= 0) ? endTickInt : Math.round(Number(startTick || 0));
+      markerRaw = `${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${markerTick} ${meterInfo ? meterInfo : ''}`;
+    }
     // Ensure the emitted event tick and the embedded endTick agree
     buf.push({
       tick: markerTick,
@@ -194,8 +201,7 @@ const logUnit = (type) => {
       vals: [markerRaw]
     });
     // If there is ever a mismatch between human text and event tick, this should be a source bug; log lightly for diagnostics
-    if (Number.isFinite(Number(endTick)) && Math.round(Number(endTick)) !== markerTick) {
-      try { writeDebugFile('writer-debug.ndjson', { tag: 'marker-normalized', originalEndTick: endTick, markerTick, layer: (c && c.name) }); } catch (_e) {}
+    if (type !== 'section' && Number.isFinite(Number(endTick)) && Math.round(Number(endTick)) !== markerTick) {
     }
 
     try {
@@ -332,6 +338,10 @@ grandFinale = () => {
             tickNum = Number(p[0]);
             // Preserve the full trailing unit id (it may contain '|' separators)
             unitHash = p.slice(1).join('|') || null;
+            // Guard against trivial/bare-layer suffixes that are not valid canonical unit ids
+            if (unitHash && (/^\s*(primary|poly)\s*$/i.test(unitHash) || (!unitHash.includes('|') && !unitHash.includes('-') && !/(section|phrase|measure|beat|division)/i.test(unitHash)))) {
+              unitHash = null;
+            }
           } else if (Number.isFinite(rawTick)) {
             tickNum = Number(rawTick);
           } else if (typeof rawTick === 'string') {
@@ -671,9 +681,10 @@ grandFinale = () => {
         // Append unit id to tick field when available
         const chosenUnit = unitMatch ? unitMatch.unitId : (_._unitHash ? String(_._unitHash) : null);
         const chosenClean = chosenUnit ? String(chosenUnit).replace(/^\|+/, '') : null;
+        const chosenValid = chosenClean && (chosenClean.includes('|') || chosenClean.includes('-') || /section|phrase|measure|beat/i.test(chosenClean));
         const isMarker = String(type).toLowerCase() === 'marker_t' || String(type).toLowerCase().includes('marker');
         const tickNumRound = Math.round(Number(tickNum) || 0);
-        const tickField = isMarker ? `${tickNumRound}` : (chosenClean ? `${tickNumRound}|${chosenClean}` : `${tickNumRound}`);
+        const tickField = isMarker ? `${tickNumRound}` : (chosenValid ? `${tickNumRound}|${chosenClean}` : `${tickNumRound}`);
         composition += `1,${tickField},${type},${_.vals.join(',')}\n`;
 
         finalTick = Math.max(finalTick, tickNum, tickInt);
