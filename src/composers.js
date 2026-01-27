@@ -78,7 +78,9 @@ getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs
         let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
         // Log ratio: 0 = same, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x difference
         let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
-        if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps) {
+        // Also enforce an absolute ratio change threshold to avoid large linear jumps
+        const ratioChange = m.abs(newMeterRatio - lastMeterRatio);
+        if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps && ratioChange <= 1.5) {
           this.lastMeter=[newNumerator,newDenominator];
           try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) {}
           return this.lastMeter;

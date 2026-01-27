@@ -97,14 +97,29 @@ function parseCsvFile(filePath) {
     if (String(tickRaw).includes('|')) {
       const p = String(tickRaw).split('|');
       tickNum = Number(p[0]);
-      unitHash = p[1] || null;
+      // Preserve the full trailing unit id (it may contain additional '|' separators)
+      unitHash = p.slice(1).join('|') || null;
     } else {
       tickNum = Number(tickRaw);
     }
 
     if (!Number.isFinite(tickNum)) tickNum = null;
 
-    events.push({ tickRaw, tickNum, unitHash, type, vals, rawLine: ln });
+    // Normalize unitHash to strip trailing tick/time suffixes when present so it matches master keys
+    let unitHashRaw = unitHash;
+    let unitHashNorm = unitHash;
+    try {
+      if (unitHash && String(unitHash).includes('|')) {
+        const segs = String(unitHash).split('|').map(s => s.trim()).filter(Boolean);
+        const secondLast = segs[segs.length - 2] || null;
+        const last = segs[segs.length - 1] || null;
+        if (secondLast && last && /^[0-9]+-[0-9]+$/.test(secondLast) && /^[0-9]+\.[0-9]+-[0-9]+\.[0-9]+$/.test(last)) {
+          unitHashNorm = segs.slice(0, segs.length - 2).join('|');
+        }
+      }
+    } catch (_e) {}
+
+    events.push({ tickRaw, tickNum, unitHash: unitHashNorm, unitHashRaw, type, vals, rawLine: ln });
   }
   return events;
 }
@@ -229,7 +244,13 @@ function validateOverlap(units) {
 }
 
 function findSectionMarkers(events) {
-  return events.filter(e => e.type === 'marker_t' && /Section/i.test(e.vals)).map(e => ({ tickNum: e.tickNum, raw: e }));
+  // Strictly detect human-readable section markers (e.g. "Section 3/7 Length: ...")
+  // Avoid matching the literal string "section" inside unitRec tokens.
+  return events.filter(e => {
+    if (e.type !== 'marker_t') return false;
+    const v = String(e.vals || '');
+    return (/\bSection\s+\d+\/\d+/i.test(v) || /^New Section:/i.test(v));
+  }).map(e => ({ tickNum: e.tickNum, raw: e }));
 }
 
 function main() {
@@ -308,8 +329,19 @@ function main() {
           for (let i = tokens.length - 1; i >= 2 && !e.unitHash; i--) {
             const tok = tokens[i];
             if (!tok) continue;
-            // Accept matches against either units.json unitHash or masterMap key
-            const found = layerUnits.find(u => String(u.unitHash) === tok || String(u.unitHash || u.key) === tok);
+            // Normalize trailing tick/time suffixes like "|0-1000|0.000000-1.184211" to match master keys
+            let normalizedTok = tok;
+            try {
+              const segs = String(tok).split('|').map(s => s.trim()).filter(Boolean);
+              const secondLast = segs[segs.length - 2] || null;
+              const last = segs[segs.length - 1] || null;
+              if (secondLast && last && /^[0-9]+-[0-9]+$/.test(secondLast) && /^[0-9]+\.[0-9]+-[0-9]+\.[0-9]+$/.test(last)) {
+                normalizedTok = segs.slice(0, segs.length - 2).join('|');
+              }
+            } catch (_e) {}
+
+            // Accept matches against either units.json unitHash or masterMap key (using normalized token)
+            const found = layerUnits.find(u => String(u.unitHash) === tok || String(u.unitHash || u.key) === tok || String(u.unitHash) === normalizedTok || String(u.unitHash || u.key) === normalizedTok);
             if (found) {
               // Only accept trailing unitHash tokens that actually contain this event's tick (if tick defined),
               // to avoid assigning events to zero-length or unrelated units.
