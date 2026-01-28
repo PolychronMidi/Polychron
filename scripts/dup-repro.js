@@ -24,7 +24,7 @@ m = Math;
 ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
 rf = (a,b) => (typeof b === 'undefined' ? (a || 0.5) : a);
 rv = (a,b,c) => a; ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
-composer = { getDivisions: () => 1, getSubdivisions: () => 7, getSubsubdivs: () => 4, getMeter: () => [4,4] };
+composer = { getDivisions: () => 1, getSubdivs: () => 7, getSubsubdivs: () => 4, getMeter: () => [4,4] };
 BPM = 120; PPQ = 480; getMidiTiming();
 measuresPerPhrase1 = 1; measuresPerPhrase2 = 1; LM.activate('primary', false);
 
@@ -35,7 +35,7 @@ divIndex = 0; subdivIndex = 0; subsubdivIndex = 0; subdivsPerDiv = 7; subsubsPer
 
 console.log('Calling setUnitTiming multiple times to force duplicate');
 for (let i = 0; i < 10; i++) {
-  try { setUnitTiming('subsubdivision'); } catch (e) { console.error('Error in setUnitTiming', e && e.stack ? e.stack : e); break; }
+  try { setUnitTiming('subsubdiv'); } catch (e) { console.error('Error in setUnitTiming', e && e.stack ? e.stack : e); break; }
 }
 console.log('Done, units length:', LM.layers['primary'].state.units.length);
 console.log(LM.layers['primary'].state.units.slice(-10));

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const rpt = JSON.parse(fs.readFileSync('output/treewalker-report.json','utf8'));
-const errs = (rpt.errors||[]).filter(e=>e.includes('unitType subsubdivision'));
+const errs = (rpt.errors||[]).filter(e=>e.includes('unitType subsubdiv'));
 const large = errs.filter(e=>{
   const m = e.match(/\[(\d+),(\d+)\)/);
   if (!m) return false;

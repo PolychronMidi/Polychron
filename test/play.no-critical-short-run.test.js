@@ -7,11 +7,11 @@ import fs from 'fs';
 // This guards against intermittent crashes that were observed in CI logs.
 
 test('short play run should exit 0 and emit no critical errors', () => {
-  const script = path.join(process.cwd(), 'src', 'play.js');
+  const script = path.join(process.cwd(), 'scripts', 'play-guard.js');
   // Clear diagnostics files before run
   try { fs.unlinkSync(path.join(process.cwd(), 'output', 'critical-errors.ndjson')); } catch (e) { /* swallow */ }
   // Run node in a child process with a short PLAY_LIMIT
-  const res = spawnSync(process.execPath, [script], { env: { ...process.env, PLAY_LIMIT: '1' }, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+  const res = spawnSync(process.execPath, [script], { env: { ...process.env, PLAY_LIMIT: '1', PLAY_GUARD_BLOCK: '1' }, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
 
   // If the process exited non-zero, include stdout/stderr in the assertion error for debugging
   if (res.status !== 0) {

@@ -14,7 +14,7 @@ for (const it of items) {
   const parent = parts.slice(0,5).join('|');
   const subdivPart = parts[5];
   if (!subdivPart) continue;
-  const m = String(subdivPart).match(/subdivision\d+\/(\d+)/);
+  const m = String(subdivPart).match(/subdiv\d+\/(\d+)/);
   if (!m) continue;
   const denom = Number(m[1]);
   groups[parent] = groups[parent] || new Set();

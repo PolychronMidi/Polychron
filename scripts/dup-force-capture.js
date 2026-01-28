@@ -21,7 +21,7 @@ if (typeof logUnit === 'undefined') logUnit = (/*type*/) => {};
 sectionIndex = 0; phraseIndex = 0; measureIndex = 0; beatIndex = 0;
 tpSec = 1000; tpMeasure = 1000; spMeasure = 1; phraseStart = 0; phraseStartTime = 0;
 numerator = 4; denominator = 4; measuresPerPhrase = 1;
-composer = { getDivisions: () => 1, getSubdivisions: () => 7, getSubsubdivs: () => 4, getMeter: () => [4,4] };
+composer = { getDivisions: () => 1, getSubdivs: () => 7, getSubsubdivs: () => 4, getMeter: () => [4,4] };
 BPM = 120; PPQ = 480; getMidiTiming();
 LM.activate('primary', false);
 
@@ -30,7 +30,7 @@ divsPerBeat = 1; subdivsPerDiv = 7; subsubsPerSub = 4;
 
 // First call to compute a canonical unitRec and persist it
 try {
-  setUnitTiming('subsubdivision');
+  setUnitTiming('subsubdiv');
 } catch (e) {
   console.error('First setUnitTiming threw unexpectedly:', e && e.stack ? e.stack : e);
   process.exit(1);
@@ -47,7 +47,7 @@ console.log('Seeded duplicate unit - now invoking setUnitTiming again with STRIC
 console.log('Last two units (start/end/indices):', units.slice(-2).map(u => ({ start: u.startTick, end: u.endTick, section: u.sectionIndex, phrase: u.phraseIndex, measure: u.measureIndex })));
 
 try {
-  setUnitTiming('subsubdivision');
+  setUnitTiming('subsubdiv');
   console.log('setUnitTiming completed without throwing (unexpected)');
   console.log('After call, last two units:', LM.layers['primary'].state.units.slice(-2).map(u => ({ start: u.startTick, end: u.endTick, section: u.sectionIndex, phrase: u.phraseIndex, measure: u.measureIndex })));
 } catch (e) {

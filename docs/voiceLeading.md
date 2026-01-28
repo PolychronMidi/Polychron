@@ -435,7 +435,7 @@ console.log('Leap-heavy melody:', quality2);
 - `analyzeQuality()`: **O(n)** where n = sequence length
 - Memory: **~1KB per scorer instance** (history tracking only)
 
-Suitable for real-time composition in **play.js** ([code](../src/play.js)) ([doc](play.md)) measures/beats/subdivisions.
+Suitable for real-time composition in **play.js** ([code](../src/play.js)) ([doc](play.md)) measures/beats/subdivs.
 
 ## Future Extensions
 

@@ -36,7 +36,7 @@ describe('regression: duplicate unit emissions', () => {
     rf = (a,b) => (typeof b === 'undefined' ? (a || 0.5) : a);
     rv = (a,b,c) => a; ra = (v) => { if (typeof v === 'function') return v(); if (Array.isArray(v)) return v[0]; return v; };
 
-    composer = { getDivisions: () => 1, getSubdivisions: () => 7, getSubsubdivs: () => 4, getMeter: () => [4,4] };
+    composer = { getDivisions: () => 1, getSubdivs: () => 7, getSubsubdivs: () => 4, getMeter: () => [4,4] };
 
     BPM = 120; PPQ = 480; getMidiTiming();
     measuresPerPhrase1 = 1; measuresPerPhrase2 = 1; LM.activate('primary', false);
@@ -47,11 +47,11 @@ describe('regression: duplicate unit emissions', () => {
     divIndex = 0; subdivIndex = 0; subsubdivIndex = 0; subdivsPerDiv = 7; subsubsPerSub = 4;
   });
 
-  it('should not emit duplicate subsubdivision unit records (regression)', () => {
+  it('should not emit duplicate subsubdiv unit records (regression)', () => {
     // Call setUnitTiming multiple times to increase chance of reproducing duplicate push
     for (let i = 0; i < 6; i++) {
       try {
-        setUnitTiming('subsubdivision');
+        setUnitTiming('subsubdiv');
       } catch (e) {
         // If setUnitTiming throws (CRITICAL) in some runtimes, fail the test with details
         throw new Error(`setUnitTiming threw unexpectedly: ${e && e.stack ? e.stack : String(e)}`);

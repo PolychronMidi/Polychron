@@ -12,7 +12,7 @@ __POLYCHRON_PREVENT_AUTO_START = true;
   // Keep run short and deterministic
   poly.test.SECTIONS = { min: 1, max: 1 };
   poly.test.SILENT_OUTRO_SECONDS = 0;
-  poly.test.COMPOSERS = [{ getMeter: () => [4, 4], getNotes: () => [{ note: 60 }], getDivisions: () => 1, getSubdivisions: () => 1 }];
+  poly.test.COMPOSERS = [{ getMeter: () => [4, 4], getNotes: () => [{ note: 60 }], getDivisions: () => 1, getSubdivs: () => 1 }];
   // Use full-file trace: collect snapshots into memory (no per-unit console spam), then write a single JSON file at run end.
   poly.test._traceMode = 'full-file';
   poly.test.fastTrace = true;

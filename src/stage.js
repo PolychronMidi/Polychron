@@ -257,7 +257,7 @@ class Stage {
   }
 
   /**
-   * Calculates note timing and sustain parameters for subdivision-based notes
+   * Calculates note timing and sustain parameters for subdiv-based notes
    * @returns {void}
    */
   setNoteParams() {
@@ -270,7 +270,7 @@ class Stage {
   }
 
   /**
-   * Generates MIDI note events for source channels (subdivision-based timing)
+   * Generates MIDI note events for source channels (subdiv-based timing)
    * @returns {void}
    */
   playNotes() {
@@ -316,7 +316,7 @@ class Stage {
   }
 
   /**
-   * Calculates note timing and sustain parameters for subsubdivision-based notes
+   * Calculates note timing and sustain parameters for subsubdiv-based notes
    * @returns {void}
    */
   setNoteParams2() {
@@ -329,7 +329,7 @@ class Stage {
   }
 
   /**
-   * Generates MIDI note events with complex stutter/shift effects (subsubdivision-based timing)
+   * Generates MIDI note events with complex stutter/shift effects (subsubdiv-based timing)
    * @returns {void}
    */
   playNotes2() {
@@ -456,5 +456,5 @@ class Stage {
 
 // Export Stage instance to test namespace for tests
 stage = new Stage();
-__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 __POLYCHRON_TEST__.stage = stage;

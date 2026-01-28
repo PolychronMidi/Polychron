@@ -92,7 +92,7 @@ Initializes all 16 MIDI channels with program changes, pitch bend, and panning:
 
 ```javascript
   /**
-   * Generates MIDI note events for source channels (subdivision-based timing)
+   * Generates MIDI note events for source channels (subdiv-based timing)
    * @returns {void}
    */
   playNotes() {
@@ -256,7 +256,7 @@ crossModulation += beatRhythm[beatIndex] > 0 ? rf(1.5, 3) : m.max(rf(.625, 1.25)
                   divRhythm[divIndex] > 0 ? rf(1, 2) : m.max(rf(.5, 1), pattern) +
                   subdivRhythm[subdivIndex] > 0 ? rf(.5, 1) : m.max(rf(.25, .5), pattern);
 
-// Penalize very high subdivision rates
+// Penalize very high subdiv rates
 crossModulation += (subdivsPerMinute > ri(400, 600) ? rf(-.4, -.6) : rf(.1));
 
 // Bonuses for inactivity (fills silence)
@@ -268,7 +268,7 @@ crossModulation += (subdivRhythm[subdivIndex] < 1 ? rf(.2, .3) : 0);
 **Musical Logic:**
 - **Rewards active beats** - Higher probability when beat/div/subdiv rhythms are active
 - **Fills silence** - Adds notes when rhythms are inactive to maintain density
-- **Limits density** - Penalizes when subdivision rate exceeds 400-600 subs/minute
+- **Limits density** - Penalizes when subdiv rate exceeds 400-600 subs/minute
 - **Temporal smoothing** - Uses lastCrossMod to smooth probability over time
 
 ---
@@ -373,7 +373,7 @@ setOtherInstruments = () => {
 ## Helper Functions
 
 ### `setNoteParams()`
-Calculates on-tick, sustain duration, and velocity for each note based on timing/subdivision context.
+Calculates on-tick, sustain duration, and velocity for each note based on timing/subdiv context.
 
 ### `allNotesOff(tick)`
 Sends note-off (velocity 0) events to all active channels at specified tick for clean transitions.

@@ -18,7 +18,7 @@ it('flapping composer getters should be called only once per beat/division (cach
 
   composer = {
     getDivisions: () => { divCalls++; return (divCalls % 2 === 1) ? 3 : 1; },
-    getSubdivisions: () => { subdivCalls++; return (subdivCalls % 2 === 1) ? 4 : 1; },
+    getSubdivs: () => { subdivCalls++; return (subdivCalls % 2 === 1) ? 4 : 1; },
     getSubsubdivs: () => 1,
     getMeter: () => [4,4]
   };
@@ -56,22 +56,22 @@ it('flapping composer getters should be called only once per beat/division (cach
   setUnitTiming('beat');
   setUnitTiming('division');
   setUnitTiming('division');
-  setUnitTiming('subdivision');
-  setUnitTiming('subdivision');
+  setUnitTiming('subdiv');
+  setUnitTiming('subdiv');
 
   expect(divCalls).toBe(1);
-  // allow at most two calls for subdivisions (one initial + one incidental); caching should exist
+  // allow at most two calls for subdivs (one initial + one incidental); caching should exist
   expect(subdivCalls).toBeGreaterThanOrEqual(1);
   expect(subdivCalls).toBeLessThanOrEqual(2);
 
-  // assert composer cache captured the subdivisions for this division
+  // assert composer cache captured the subdivs for this division
   const cache = (LM.layers['primary'] && LM.layers['primary'].state && LM.layers['primary'].state._composerCache) ? LM.layers['primary'].state._composerCache : null;
   expect(cache).toBeDefined();
   const allKeys = Object.keys(cache || {});
   const divKeys = allKeys.filter(k => k.startsWith(`div:${measureIndex}:${beatIndex}:`));
   expect(divKeys.length).toBeGreaterThan(0);
-  const subdivisionsCached = cache[divKeys[0]].subdivisions;
-  expect(Number.isFinite(subdivisionsCached)).toBe(true);
+  const subdivsCached = cache[divKeys[0]].subdivs;
+  expect(Number.isFinite(subdivsCached)).toBe(true);
 
   const units = (LM.layers['primary'] && LM.layers['primary'].state && LM.layers['primary'].state.units) ? LM.layers['primary'].state.units : [];
   expect(Array.isArray(units)).toBe(true);

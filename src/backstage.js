@@ -419,9 +419,9 @@ resetIndexWithChildren = (unit) => {
       divIndex = subdivIndex = subsubdivIndex = 0; divsPerBeat = undefined; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
     case 'division':
       subdivIndex = subsubdivIndex = 0; subdivsPerDiv = undefined; subsubsPerSub = undefined; break;
-    case 'subdivision':
+    case 'subdiv':
       subsubdivIndex = 0; subsubsPerSub = undefined; break;
-    case 'subsubdivision':
+    case 'subsubdiv':
       subsubdivIndex = 0; break;
     default:
       break;
@@ -443,13 +443,13 @@ resetIndexWithChildren = (unit) => {
   try {
     const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
     const unitsToDrop = {
-      section: ['section','phrase','measure','beat','division','subdivision','subsubdivision'],
-      phrase: ['measure','beat','division','subdivision','subsubdivision'],
-      measure: ['beat','division','subdivision','subsubdivision'],
-      beat: ['division','subdivision','subsubdivision'],
-      division: ['subdivision','subsubdivision'],
-      subdivision: ['subsubdivision'],
-      subsubdivision: []
+      section: ['section','phrase','measure','beat','division','subdiv','subsubdiv'],
+      phrase: ['measure','beat','division','subdiv','subsubdiv'],
+      measure: ['beat','division','subdiv','subsubdiv'],
+      beat: ['division','subdiv','subsubdiv'],
+      division: ['subdiv','subsubdiv'],
+      subdiv: ['subsubdiv'],
+      subsubdiv: []
     };
     if (LM && LM.layers && LM.layers[layer] && Array.isArray(LM.layers[layer].state.units)) {
       LM.layers[layer].state.units = LM.layers[layer].state.units.filter(u => !unitsToDrop[unit] || !unitsToDrop[unit].includes(u.unitType));

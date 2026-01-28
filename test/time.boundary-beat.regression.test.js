@@ -28,7 +28,7 @@ describe('Boundary: beat CRITICAL regression', () => {
     numerator = 1; denominator = 4; measuresPerPhrase = 1;
 
     // minimal composer stub
-    composer = { getDivisions: () => 1, getSubdivisions: () => 1, getSubsubdivs: () => 1, getMeter: () => [1,4] };
+    composer = { getDivisions: () => 1, getSubdivs: () => 1, getSubsubdivs: () => 1, getMeter: () => [1,4] };
 
     // ensure MIDI timing values
     BPM = 120; PPQ = 480; if (typeof getMidiTiming === 'function') getMidiTiming();

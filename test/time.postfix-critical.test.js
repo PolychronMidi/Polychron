@@ -24,7 +24,7 @@ beforeEach(() => {
   // Ensure LM layer state exists (reset each test to avoid cross-test pollution)
   LM = { layers: { primary: { state: { units: [] }, buffer: [] } }, activeLayer: 'primary' };
   // Provide a minimal composer with expected getters when tests do not override it
-  composer = composer || { getDivisions: () => 2, getSubdivisions: () => 2, getSubsubdivs: () => 1, constructor: { name: 'TestComposer' } };
+  composer = composer || { getDivisions: () => 2, getSubdivs: () => 2, getSubsubdivs: () => 1, constructor: { name: 'TestComposer' } };
 });
 
 describe('time critical enforcement', () => {
@@ -33,19 +33,23 @@ describe('time critical enforcement', () => {
     expect(() => setUnitTiming('phrase')).toThrow(/CRITICAL/);
   });
 
-  test('measure bounds outside phrase does NOT throw (measures may extend past phrase end)', () => {
+  test('phrase bounds outside section throws critical error', () => {
+    tpSection = 1000;
+    tpPhrase = 800; // too big for phrases within section when phraseIndex>0
+    sectionIndex = 0; phraseIndex = 1;
+    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.DEBUG = true;
+    try { const fs = require('fs'); fs.writeFileSync(require('path').join(process.cwd(),'output','phrase-ctx.json'), JSON.stringify({ phraseStart, sectionStart, tpPhrase, tpSection, phraseIndex, phrasesPerSection, measuresPerPhrase }, null, 2)); } catch (_e) { /* swallow */ }
+    expect(() => setUnitTiming('phrase')).toThrow(/CRITICAL/);
+  });
+
+
+  test('measure bounds outside phrase throws critical error (unit bounds cannot extent past parent bounds)', () => {
     // Set a tiny phrase and large tpMeasure so measure exceeds phrase
     phraseStart = 0;
     tpPhrase = 1000; // small phrase
     tpMeasure = 2000; // large measure
     measureIndex = 0;
-    // Current behavior allows measures to extend past phrase end; do not raise
-    try {
-      setUnitTiming('measure');
-    } catch (e) {
-      console.error('setUnitTiming(measure) ERROR:', e && e.stack ? e.stack : e);
-      throw e;
-    }
+    expect(() => setUnitTiming('measure')).toThrow(/CRITICAL/);
   });
 
   test('beat bounds outside measure throws critical error', () => {
@@ -55,11 +59,27 @@ describe('time critical enforcement', () => {
     expect(() => setUnitTiming('beat')).toThrow(/CRITICAL/);
   });
 
+  test('subdiv bounds outside beat throws critical error', () => {
+    tpBeat = 1000;
+    tpSubdiv = 800; // too big for beats within measure when beatIndex>0
+    beatIndex = 0; subdivIndex = 1;
+    expect(() => setUnitTiming('subdiv')).toThrow(/CRITICAL/);
+  });
+
+  test('subsubdiv bounds outside subdiv throws critical error', () => {
+    tpSubdiv = 1000;
+    tpSubsubdiv = 800; // too big for beats within measure when beatIndex>0
+    subdivIndex = 0; subsubdivIndex = 1;
+    expect(() => setUnitTiming('subsubdiv')).toThrow(/CRITICAL/);
+  });
+
+
+
   test('missing composer subsubdivs throws critical error', () => {
     // Remove composer.getSubsubdivs to simulate missing getter
-    composer = { getDivisions: () => 2, getSubdivisions: () => 2, constructor: { name: 'X' } };
+    composer = { getDivisions: () => 2, getSubdivs: () => 2, constructor: { name: 'X' } };
     measureIndex = 0; beatIndex = 0; divIndex = 0; subdivIndex = 0;
-    expect(() => setUnitTiming('subdivision')).toThrow(/CRITICAL/);
+    expect(() => setUnitTiming('subdiv')).toThrow(/CRITICAL/);
   });
 
   test('overlap detection throws critical error', () => {
@@ -71,13 +91,4 @@ describe('time critical enforcement', () => {
     expect(() => setUnitTiming('measure')).toThrow(/CRITICAL/);
   });
 
-  test('subsubdivision span cap throws critical error', () => {
-    // create a case where subsubdivision span is larger than measure * 1.5
-    tpMeasure = 4800; // big measure
-    tpSubdiv = 2400; subsubsPerSub = 1; subsubdivIndex = 0;
-    // Provide subdivision start so timing will be computed and span checks will run
-    subdivStart = 0; subdivStartTime = 0;
-    // Force tpSubsubdiv to equal tpSubdiv (since subsubsPerSub=1) which is large
-    expect(() => setUnitTiming('subsubdivision')).toThrow(/CRITICAL/);
-  });
 });

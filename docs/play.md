@@ -23,7 +23,7 @@ The system generates:
 - **Loads **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Initializes all dependencies through the module chain
 - **Coordinates all modules** - Calls functions from **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)), **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) ([code](../src/rhythm.js ([code](../src/rhythm.js)) ([doc](rhythm.md)))) ([doc](rhythm.md)), **time.js** ([code](../src/time.js)) ([doc](time.md)) ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md))
 - **Manages layer contexts** - Registers, activates, and advances both primary and poly layers
-- **Controls hierarchy** - Manages section → phrase → measure → beat → division → subdivision → subsubdivision nesting
+- **Controls hierarchy** - Manages section → phrase → measure → beat → division → subdiv → subsubdiv nesting
 
 ## Code Architecture
 
@@ -109,12 +109,12 @@ for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('division');
 
       for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-        setUnitTiming('subdivision');
+        setUnitTiming('subdiv');
         playNotes();        // Generate primary layer notes
       }
 
       for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-        setUnitTiming('subsubdivision');
+        setUnitTiming('subsubdiv');
         playNotes2();       // Generate primary layer secondary notes
       }
     }
@@ -132,9 +132,9 @@ for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
 7. **playNotes()/playNotes2()** - Generate musical content via **composers.js** ([code](../src/composers.js)) ([doc](composers.md)) ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md))
 
 **Hierarchical timing**:
-- Division loop - 0-10 subdivisions per beat
-- Subdivision loop - 0-10 subdivisions per division
-- Subsubdivision loop - 0-5 finest detail level
+- Division loop - 0-10 subdivs per beat
+- Subdiv loop - 0-10 subdivs per division
+- Subsubdiv loop - 0-5 finest detail level
 - Creates millions of discrete timing points for extreme rhythmic complexity
 
 ### 5. Layer Advancement
@@ -167,12 +167,12 @@ for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('division');
 
       for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-        setUnitTiming('subdivision');
+        setUnitTiming('subdiv');
         playNotes();
       }
 
       for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-        setUnitTiming('subsubdivision');
+        setUnitTiming('subsubdiv');
         playNotes2();
       }
     }
@@ -185,7 +185,7 @@ LM.advance('poly', 'phrase');  // Save poly's state, advance its phraseStart
 **Identical structure to primary layer but**:
 - Uses **poly layer's timing context** - different tpMeasure for different meter
 - Uses **playDrums2()** - alternative drum patterns for rhythmic variety
-- Same **hierarchical subdivision complexity**
+- Same **hierarchical subdiv complexity**
 - **Mathematically perfectly synchronized** with primary layer - phrase boundaries occur at identical absolute times
 
 ### 7. Section and Composition Completion
@@ -210,7 +210,7 @@ setUnitTiming('phrase')      // Calculate: tpPhrase, spPhrase from numerator/den
 setUnitTiming('measure')     // measureStart = phraseStart + measureIndex × tpMeasure
 setUnitTiming('beat')        // beatStart = phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat
 setUnitTiming('division')    // divStart = beatStart + divIndex × tpDiv
-setUnitTiming('subdivision') // subdivStart = divStart + subdivIndex × tpSubdiv
+setUnitTiming('subdiv') // subdivStart = divStart + subdivIndex × tpSubdiv
 setUnitTiming('subsubdiv')   // subsubdivStart = subdivStart + subsubdivIndex × tpSubsubdiv
 ```
 
@@ -240,7 +240,7 @@ Through meter spoofing in **time.js** ([code](../src/time.js)) ([doc](time.md)) 
 Two independent layers with different meters but perfectly synchronized phrase boundaries in absolute time - impossible for human performers but precise in MIDI domain.
 
 ### Extreme Rhythmic Granularity
-7-level hierarchical timing (section → phrase → measure → beat → division → subdivision → subsubdivision) creates millions of discrete musical events.
+7-level hierarchical timing (section → phrase → measure → beat → division → subdiv → subsubdiv) creates millions of discrete musical events.
 
 ### Psychoacoustic Integration
 Binaural beats, spatial audio, and dynamic effects processing add neuroscientific dimensions beyond traditional composition.

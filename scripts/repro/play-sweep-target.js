@@ -13,7 +13,7 @@ console.log(`Sweeping play for target=${target} attempts=${attempts} playLimit=$
 for (let i = 1; i <= attempts; i++) {
   console.log(`Play attempt ${i}/${attempts} ...`);
   const env = Object.assign({}, process.env, { PLAY_LIMIT: String(playLimit), TARGET_PARENT: target, INDEX_TRACES: '1' });
-  const res = spawnSync(process.execPath, ['src/play.js'], { env, encoding: 'utf8', stdio: ['inherit','pipe','pipe'] });
+  const res = spawnSync(process.execPath, ['scripts/play-guard.js'], { env, encoding: 'utf8', stdio: ['inherit','pipe','pipe'] });
   if (fs.existsSync(hitPath)) {
     console.log(`Hit found on attempt ${i} -> ${hitPath}`);
     process.exit(0);

@@ -294,5 +294,5 @@ class VoiceLeadingScore {
 }
 
 // Export for composition integration into test namespace
-__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 __POLYCHRON_TEST__.VoiceLeadingScore = VoiceLeadingScore;

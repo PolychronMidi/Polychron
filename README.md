@@ -5,10 +5,10 @@
 <!-- END: docs-autogen-note -->
 
 <!-- BEGIN: test-status -->
-1/27 22:34:22 - Latest Status
-- Test Files 46 passed | 0 skipped (46) - 100%
-- Tests 753/753 - 100%
-- Lint 0 errors / 24 warnings
+1/28 10:44:58 - Latest Status
+- Test Files 47 passed | 0 skipped (47) - 100%
+- Tests 756/756 - 100%
+- Lint 0 errors / 0 warnings
 - Type-check 0 errors / 0 warnings
 - Coverage Coverage data unavailable
 <!-- END: test-status -->
@@ -23,7 +23,7 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 - **Absolute Timing Accuracy**: Dual-context architecture ensures phrase boundaries align perfectly in absolute time
 - **Advanced Music Theory**: Integration with Tonal.js for scales, chords, modes, and music theory operations
 - **Binaural Beat Effects**: Alpha range (8-12Hz) binaural beats with headphone spatialization
-- **Extreme Granularity**: Support for subdivisions beyond traditional 128th notes
+- **Extreme Granularity**: Support for subdivs beyond traditional 128th notes
 - **Dynamic Composition**: Weighted random selection, algorithmic rhythm generation, and adaptive musical intelligence
 - **Voice Leading & Counterpoint**: Cost function optimization for smooth melodic motion and voice management
 
@@ -67,7 +67,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Dual-Context Architecture**: Independent timing for primary and poly meters
 - **Polyrhythm Calculation**: Finds optimal measure alignments between meters
 - **Absolute Timing**: Phrase boundaries align perfectly in seconds
-- **Hierarchical Timing**: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision
+- **Hierarchical Timing**: Section → Phrase → Measure → Beat → Division → Subdiv → Subsubdiv
 - **MIDI Compatibility**: Converts any denominator to nearest power-of-2
 - **Tempo Synchronization**: Adjusts BPM to preserve actual meter durations
 - **Comprehensive Logging**: Timing markers with context awareness
@@ -159,7 +159,7 @@ Tests are organized at two levels:
 - **Independent Tick Rates**: Each meter has its own `tpSec` (ticks/second)
 - **Perfect Alignment**: Phrase boundaries match in absolute time despite different tick counts
 - **Cascading Calculations**: Formula pattern: currentStart = parentStart + currentIndex × currentDuration
-- **Timing Hierarchy**: Section → Phrase → Measure → Beat → Division → Subdivision → Subsubdivision (7 levels)
+- **Timing Hierarchy**: Section → Phrase → Measure → Beat → Division → Subdiv → Subsubdiv (7 levels)
 
 ### Meter Spoofing Technology
 1. **Actual Meter**: Any ratio (e.g., 7/9 = 0.777...)

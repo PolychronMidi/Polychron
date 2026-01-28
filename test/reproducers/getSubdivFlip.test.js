@@ -3,17 +3,19 @@ import fs from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 
-it('stable when composer.getSubdivisions flips within a division', () => {
+it('stable when composer.getSubdivs flips within a division', () => {
   const out = path.join(process.cwd(), 'output');
   const traces = path.join(out, 'index-traces.ndjson');
   try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) { /* swallow */ }
 
-  // Run Node with a composer that flips its subdivisions on successive calls
-  const script = `composer = { getDivisions: () => 1, getSubdivisions: (function(){let i=0; return function(){ return (i++ % 2 === 0) ? 7 : 1; } })() };
-process.env.PLAY_LIMIT='1'; process.env.INDEX_TRACES='1'; require('./src/play.js');`;
+  // Run Node with a composer module that flips its subdivs on successive calls by using a temporary override module
+  const tmp = path.join(process.cwd(), 'tmp', `composer-override-getSubdivFlip-${Date.now()}.js`);
+  try { fs.mkdirSync(path.dirname(tmp), { recursive: true }); } catch (_e) { /* swallow */ }
+  fs.writeFileSync(tmp, "module.exports = { getDivisions: () => 1, getSubdivs: (function(){let i=0; return function(){ return (i++ % 2 === 0) ? 7 : 1; } })(), getSubsubdivs: () => 1, getMeter: () => [4,4] };", 'utf8');
 
-  const res = spawnSync(process.execPath, ['-e', script], { env: { ...process.env }, stdio: 'inherit' });
-  if (res.error) throw res.error;
+  const res = spawnSync(process.execPath, [path.join(process.cwd(), 'scripts', 'play-guard.js')], { env: Object.assign({}, process.env, { COMPOSER_OVERRIDE_MODULE: tmp, PLAY_LIMIT: '1', INDEX_TRACES: '1', PLAY_GUARD_BLOCK: '1' }), stdio: 'inherit' });
+  try { fs.unlinkSync(tmp); } catch (e) { /* swallow */ }
+  if (res && res.error) throw res.error;
 
   // Read traces and assert there are no division entries where subdivIndex >= subdivsPerDiv
   const exists = fs.existsSync(traces);

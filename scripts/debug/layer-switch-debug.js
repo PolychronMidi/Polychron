@@ -7,7 +7,7 @@ require('../../src/time');
 const mockComposer = {
   getMeter: () => [4, 4],
   getDivisions: () => 2,
-  getSubdivisions: () => 2,
+  getSubdivs: () => 2,
   getSubsubdivs: () => 1,
   constructor: { name: 'MockComposer' },
   root: 'C',

@@ -202,7 +202,7 @@ function audit() {
     if (!u.unitId) return 'unknown';
     const parts = String(u.unitId).split('|');
     for (let i = parts.length - 1; i >= 1; i--) {
-      const m = String(parts[i]).match(/^(section|phrase|measure|beat|division|subdivision|subsubdivision)/i);
+      const m = String(parts[i]).match(/^(section|phrase|measure|beat|division|subdiv|subsubdiv)/i);
       if (m) return m[1].toLowerCase();
     }
     return 'unknown';
