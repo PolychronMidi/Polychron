@@ -96,8 +96,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
-        // Reset loop watchdog counters for this beat to avoid false positives across beats
-        try { LOOP_WATCH.reset('primary:div'); LOOP_WATCH.reset('primary:subdiv'); LOOP_WATCH.reset('primary:subsub'); } catch (_e) { /* swallow */ }
         stage.setOtherInstruments();
         stage.setBinaural();
         stage.setBalanceAndFX();
@@ -122,9 +120,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             };
             writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
-          // Watchdog: increment division counter for primary
-          try { LOOP_WATCH.increment('primary:div'); } catch (_e) { /* swallow */ }
-
           setUnitTiming('division');
 
           // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
@@ -138,8 +133,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'loop-division-primary', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
 
           for (let _subdivIndex = 0; _subdivIndex < localSubdivsPerDiv; _subdivIndex++) { subdivIndex = _subdivIndex;
-            // Watchdog: increment subdivision counter for primary
-            try { LOOP_WATCH.increment('primary:subdiv'); } catch (_e) { /* swallow */ }
             try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
             try { writeIndexTrace({ tag: 'pre-subdivision', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
             setUnitTiming('subdivision');
@@ -152,7 +145,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-entry', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
             for (let _subsubdivIndex = 0; _subsubdivIndex < localSubsubsPerSub; _subsubdivIndex++) { subsubdivIndex = _subsubdivIndex;
               // Watchdog: increment subsubdivision counter for primary
-              try { LOOP_WATCH.increment('primary:subsub'); } catch (_e) { /* swallow */ }
               try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subsub-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, stack: (process.env.CAPTURE_LOOP_STACK === '1') ? (new Error()).stack : undefined, when: (process.env.CAPTURE_LOOP_STACK === '1') ? new Date().toISOString() : undefined }); } catch (_e) { /* swallow */ }
               try { writeIndexTrace({ tag: 'pre-subsub', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
               setUnitTiming('subsubdivision');
@@ -190,8 +182,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
-        // Reset loop watchdog counters for this poly beat
-        try { LOOP_WATCH.reset('poly:div'); LOOP_WATCH.reset('poly:subdiv'); LOOP_WATCH.reset('poly:subsub'); } catch (_e) { /* swallow */ }
         stage.setOtherInstruments();
         stage.setBinaural();
         stage.setBalanceAndFX();
@@ -211,9 +201,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             };
             writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
-          // Watchdog: increment division counter for poly
-          try { LOOP_WATCH.increment('poly:div'); } catch (_e) { /* swallow */ }
-
           setUnitTiming('division');
 
           // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
@@ -227,8 +214,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'loop-division-poly', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
 
           for (let _subdivIndex = 0; _subdivIndex < localSubdivsPerDiv; _subdivIndex++) { subdivIndex = _subdivIndex;
-            // Watchdog: increment subdivision counter for poly
-            try { LOOP_WATCH.increment('poly:subdiv'); } catch (_e) { /* swallow */ }
             try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
             try { writeIndexTrace({ tag: 'pre-subdivision', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
             setUnitTiming('subdivision');
@@ -240,8 +225,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
             try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-entry', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
             for (let _subsubdivIndex = 0; _subsubdivIndex < localSubsubsPerSub; _subsubdivIndex++) { subsubdivIndex = _subsubdivIndex;
-              // Watchdog: increment subsubdivision counter for poly
-              try { LOOP_WATCH.increment('poly:subsub'); } catch (_e) { /* swallow */ }
               try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subsub-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, stack: (process.env.CAPTURE_LOOP_STACK === '1') ? (new Error()).stack : undefined, when: (process.env.CAPTURE_LOOP_STACK === '1') ? new Date().toISOString() : undefined }); } catch (_e) { /* swallow */ }
               try { writeIndexTrace({ tag: 'pre-subsub', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
               setUnitTiming('subsubdivision');
