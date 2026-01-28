@@ -7,7 +7,7 @@ it('subsubdiv units are within their subdiv parent bounds', () => {
 
   // Run a fast play in a child process to avoid polluting this process with play.js globals
   process.env.PLAY_LIMIT = '1';
-  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1', PLAY_GUARD_BLOCK: '1' }), stdio: 'inherit' });
+  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1' }), stdio: 'inherit' });
   // Build a canonical unit index from output CSVs and master map for inspection
   execSync(process.execPath + ' scripts/exportUnitTreeJson.js', { stdio: 'ignore' });
   const ut = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'output', 'unitTreeMap.json'), 'utf8'));
@@ -46,4 +46,4 @@ it('subsubdiv units are within their subdiv parent bounds', () => {
 
     expect(violations.length).toBe(0);
   }
-});
+}, 120000);

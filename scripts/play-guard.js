@@ -26,19 +26,23 @@ function isPidAlive(pid) {
         const data = fs.readFileSync(LOCK_PATH, 'utf8');
         const obj = JSON.parse(data);
         if (obj && obj.pid && isPidAlive(obj.pid)) {
-          // If tests set PLAY_GUARD_BLOCK, wait for the running play to finish rather than exiting
-          if (process.env.PLAY_GUARD_BLOCK) {
+
             console.error(`Play guard: another play is running (pid=${obj.pid}). Waiting until it finishes...`);
             // Poll until lock is removed or owner dies
+            const waitLimitMs = (process.env.PLAY_GUARD_WAIT_LIMIT) ? Number(process.env.PLAY_GUARD_WAIT_LIMIT) : null;
+            const waitStart = Date.now();
             while (fs.existsSync(LOCK_PATH)) {
+              // If a wait limit is configured, bail out after exceeding it to avoid hanging tests
+              if (waitLimitMs && (Date.now() - waitStart) > waitLimitMs) {
+                console.error('Play guard: wait time exceeded PLAY_GUARD_WAIT_LIMIT; failing fast to avoid test hang');
+                try { fs.unlinkSync(LOCK_PATH); } catch (_e) { /* swallow */ }
+                process.exit(2);
+              }
               try { const d = fs.readFileSync(LOCK_PATH, 'utf8'); const o = JSON.parse(d); if (!o || !o.pid || !isPidAlive(o.pid)) { try { fs.unlinkSync(LOCK_PATH); } catch (_) { /* swallow */ } break; } } catch (e) { try { fs.unlinkSync(LOCK_PATH); } catch (_) { /* swallow */ } break; }
               // sleep
               await new Promise(r => setTimeout(r, 200));
             }
-          } else {
-            console.error(`Play guard: another play is running (pid=${obj.pid}). Exiting.`);
-            process.exit(2);
-          }
+
         } else {
           // stale lock
           fs.unlinkSync(LOCK_PATH);
@@ -62,6 +66,20 @@ function isPidAlive(pid) {
       const fin = { when: new Date().toISOString(), exitCode: code, signal: sig };
       try { fs.mkdirSync(path.join(process.cwd(),'output'), { recursive: true }); fs.writeFileSync(FIN_PATH, JSON.stringify(fin, null, 2)); } catch (e) { /* swallow */ }
       console.log(`Play guard: child exited (code=${code}, signal=${sig})`);
+
+      // Post-run: fail if any CRITICAL diagnostics were emitted during this run.
+      try {
+          const { checkCriticalsSince } = require('./play-guard-check');
+          let relevant = checkCriticalsSince(lock.when);
+
+          if (relevant && relevant.length > 0) {
+            console.error(`Play guard: Detected ${relevant.length} critical error(s) emitted during play run; failing guard.`);
+            relevant.slice(0,5).forEach(r => console.error('CRITICAL:', r.key || r.type, r.msg || '', r.when));
+            process.exit(4);
+          }
+
+      } catch (e) { /* swallow check errors to avoid masking child exit */ }
+
       process.exit(code);
     });
 
