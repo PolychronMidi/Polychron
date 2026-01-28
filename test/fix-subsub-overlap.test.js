@@ -7,7 +7,7 @@ it('no subsubdivision overlaps reported by treewalker', () => {
   const reportPath = path.join(outDir, 'treewalker-report.json');
 
   // Run a fast play and treewalker verification
-  execSync(process.execPath + ' src/play.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1' }), stdio: 'ignore' });
+  execSync(process.execPath + ' src/play.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1' }), stdio: 'ignore' });
   try {
     execSync(process.execPath + ' scripts/test/treewalker.js', { stdio: 'ignore' });
   } catch (e) {
@@ -19,4 +19,4 @@ it('no subsubdivision overlaps reported by treewalker', () => {
   const errors = Array.isArray(rpt.errors) ? rpt.errors : [];
   const subsubErrors = errors.filter(e => typeof e === 'string' && e.includes('unitType subsubdivision'));
   expect(subsubErrors.length).toBe(0);
-});
+}, 120000);

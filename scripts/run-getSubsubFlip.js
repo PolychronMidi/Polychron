@@ -7,7 +7,7 @@ composer = { getDivisions: () => 1, getSubdivisions: () => 2, getSubsubdivs: (fu
 if (!process.env.INDEX_TRACES) process.env.INDEX_TRACES = '1';
 // Run the play engine as a child process so we do NOT import the main module into this script (avoids side-effects during tests)
 const { spawnSync } = require('child_process');
-const playPath = require.resolve('../src/play.js');
+const playPath = path.join(process.cwd(), 'src', 'play.js');
 const env = Object.assign({}, process.env, { INDEX_TRACES: process.env.INDEX_TRACES || '1', PLAY_LIMIT: process.env.PLAY_LIMIT || '1' });
 const res = spawnSync(process.execPath, [playPath], { env, stdio: 'inherit' });
 if (res.error) { console.error('play process execution failed', res.error); process.exit(1); }

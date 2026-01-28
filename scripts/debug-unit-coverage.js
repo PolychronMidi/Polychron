@@ -1,5 +1,3 @@
-import { initializePlayEngine } from '../src/play.js';
-
 console.log('debug-unit-coverage: starting');
 
 // Only run this heavy diagnostic when explicitly enabled via env var to avoid accidental slow test runs
@@ -8,59 +6,36 @@ if (!process.env.DEBUG_UNIT_COVERAGE) {
   process.exit(0);
 }
 
-function walkTree(node, path = [], results = []) {
-  if (!node) return results;
-  const keys = Object.keys(node.children || {});
-  if (keys.length === 0) {
-    results.push({ path: path.join('/'), node });
-  } else {
-    for (const k of keys) {
-      results.push({ path: path.concat(k).join('/'), node: node.children[k] });
-      walkTree(node.children[k], path.concat(k), results);
-    }
-  }
-  return results;
+// Run a child Node process that imports play.js and prints a compact JSON summary so we don't import play.js into this script
+const { spawnSync } = require('child_process');
+const childScript = `
+(async () => {
+  try {
+    const mod = './' + ['src','play.js'].join('/');
+    const { initializePlayEngine, getCurrentCompositionContext } = await import(mod);
+    await initializePlayEngine();
+    const ctx = getCurrentCompositionContext();
+    const out = { layers: Object.keys(ctx && ctx.LM && ctx.LM.layers ? ctx.LM.layers : {}), timingTreeKeys: Object.keys(ctx && ctx.state && ctx.state.timingTree ? ctx.state.timingTree : {}) };
+    console.log(JSON.stringify(out));
+  } catch (e) { console.error('CHILD_ERR', e && e.stack ? e.stack : e); process.exit(2); }
+})();
+`;
+const res = spawnSync(process.execPath, ['-e', childScript], { env: process.env, stdio: ['ignore','pipe','inherit'], encoding: 'utf8' });
+if (res.error) { console.error('Child execution failed', res.error); process.exit(1); }
+if (res.status !== 0) process.exit(res.status);
+let parsed;
+try {
+  parsed = JSON.parse(res.stdout.trim());
+  console.log('Child play context summary:', parsed);
+} catch (e) {
+  console.error('Failed to parse child output', e && e.stack ? e.stack : e, 'stdout:', res.stdout);
+  process.exit(2);
 }
 
-(async () => {
-  await initializePlayEngine();
-  const { getCurrentCompositionContext } = await import('../src/play.js');
-  const ctx = getCurrentCompositionContext();
-
-  const tree = ctx.state.timingTree;
-  const layerNames = Object.keys(tree);
-  console.log('layers:', layerNames);
-
-  const emptySamples = [];
-
-  for (const layer of layerNames) {
-    const layerNode = tree[layer];
-    const rows = ctx.LM.layers[layer] && ctx.LM.layers[layer].buffer
-      ? (ctx.LM.layers[layer].buffer.rows || ctx.LM.layers[layer].buffer)
-      : [];
-
-    const points = walkTree(layerNode, [layer], []);
-
-    for (const p of points) {
-      const path = p.path;
-      const node = p.node;
-      const parts = path.split('/');
-      const unitKinds = ['measure', 'beat', 'division', 'subdivision', 'subsubdivision'];
-      const presentKinds = parts.filter((x) => unitKinds.includes(x));
-      if (presentKinds.length === 0) continue;
-      const level = presentKinds[presentKinds.length - 1];
-
-      const start = node.start;
-      const end = node.end;
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
-
-      const cnt = (rows || []).filter((r) => Number.isFinite(r && r.tick) && r.tick >= start && r.tick < end).length;
-      if (cnt === 0) {
-        emptySamples.push({ layer, level, path, start, end });
-      }
-    }
-  }
-
-  console.log('emptySamples count:', emptySamples.length);
-  console.log('first 20 empties:', emptySamples.slice(0, 20));
-})();
+// Use the parsed summary produced by the child run; for deep inspections run `node -e` diagnostic scripts that import play.js in their own process.
+try {
+  console.log('Child play context summary (layers, timingTreeKeys):', parsed);
+} catch (e) {
+  console.error('No child summary available', e && e.stack ? e.stack : e);
+}
+process.exit(0);

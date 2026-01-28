@@ -1,8 +1,11 @@
 // play.js - Main composition engine orchestrating section, phrase, measure hierarchy.
 // minimalist comments, details at: play.md
 
+if (typeof __POLYCHRON_TEST__ === 'undefined') { try { __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ } }
+require('./bootstrap');
+require('./bootstrap-fallbacks');
 require('./stage');
-require('./structure');
+const { resolveSectionProfile } = require('./structure');
 const { writeIndexTrace, isEnabled, writeDebugFile } = require('./logGate');
 
 console.log('Starting play.js ...');
@@ -57,7 +60,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   currentSectionType=sectionProfile.type;
   currentSectionDynamics=sectionProfile.dynamics;
   BPM=m.max(1,m.round(BASE_BPM * sectionProfile.bpmScale));
-  activeMotif=sectionProfile.motif ? new Motif(sectionProfile.motif.map(offset=>({ note: clampMotifNote(60+offset) }))) : null;
+  const motifs = require('./motifs');
+  activeMotif = sectionProfile.motif ? new motifs.Motif(sectionProfile.motif.map(offset => ({ note: clampMotifNote(60+offset) }))) : null;
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     // In PLAY_LIMIT mode, bound phrase loops to keep runtime reasonable for tests
@@ -78,6 +82,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getPolyrhythm();
 
     LM.activate('primary', false);
+    // CHECK_GLOBALS: record active layer and indices after activation to verify naked globals are visible to LM
+    try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'after-activate-primary', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
     // Respect PLAY_LIMIT to bound measures per phrase in quick runs
@@ -90,6 +96,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
+        // Reset loop watchdog counters for this beat to avoid false positives across beats
+        try { LOOP_WATCH.reset('primary:div'); LOOP_WATCH.reset('primary:subdiv'); LOOP_WATCH.reset('primary:subsub'); } catch (_e) { /* swallow */ }
         stage.setOtherInstruments();
         stage.setBinaural();
         stage.setBalanceAndFX();
@@ -98,7 +106,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stage.stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stage.stutterPan(flipBin ? flipBinT3 : flipBinF3) : stage.stutterPan(stutterPanCHs);
 
-        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+        for (let _divIndex = 0; _divIndex < divsPerBeat; _divIndex++) { divIndex = _divIndex;
           // Trace pre-division state (temporary debug)
           try {
             const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
@@ -114,21 +122,41 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             };
             writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
+          // Watchdog: increment division counter for primary
+          try { LOOP_WATCH.increment('primary:div'); } catch (_e) { /* swallow */ }
+
           setUnitTiming('division');
 
           // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
           let localSubdivsPerDiv = Math.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
           // When running in PLAY_LIMIT mode (tests/quick-runs), cap inner loop counts to keep runtime bounded
           if (process.env.PLAY_LIMIT) localSubdivsPerDiv = Math.min(localSubdivsPerDiv, 3);
-          for (subdivIndex = 0; subdivIndex < localSubdivsPerDiv; subdivIndex++) {
+
+          // Diagnostic: record division loop entry
+          try { writeDebugFile('time-debug.ndjson', { tag: 'loop-division-entry', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, localSubdivsPerDiv }); } catch (_e) { /* swallow */ }
+          // CHECK_GLOBALS: record that LM.activeLayer and globals are visible inside loops
+          try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'loop-division-primary', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
+
+          for (let _subdivIndex = 0; _subdivIndex < localSubdivsPerDiv; _subdivIndex++) { subdivIndex = _subdivIndex;
+            // Watchdog: increment subdivision counter for primary
+            try { LOOP_WATCH.increment('primary:subdiv'); } catch (_e) { /* swallow */ }
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
+            try { writeIndexTrace({ tag: 'pre-subdivision', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
             setUnitTiming('subdivision');
+            try { writeIndexTrace({ tag: 'post-subdivision', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, tpSubdiv, subdivStart, lastUnits: (LM && LM.layers && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) ? LM.layers['primary'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
             stage.playNotes();
 
             // Subsubdivisions are children of subdivisions; iterate inside subdivision loop
             let localSubsubsPerSub = Math.max(1, (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1);
             if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
-            for (subsubdivIndex = 0; subsubdivIndex < localSubsubsPerSub; subsubdivIndex++) {
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-entry', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
+            for (let _subsubdivIndex = 0; _subsubdivIndex < localSubsubsPerSub; _subsubdivIndex++) { subsubdivIndex = _subsubdivIndex;
+              // Watchdog: increment subsubdivision counter for primary
+              try { LOOP_WATCH.increment('primary:subsub'); } catch (_e) { /* swallow */ }
+              try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subsub-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, stack: (process.env.CAPTURE_LOOP_STACK === '1') ? (new Error()).stack : undefined, when: (process.env.CAPTURE_LOOP_STACK === '1') ? new Date().toISOString() : undefined }); } catch (_e) { /* swallow */ }
+              try { writeIndexTrace({ tag: 'pre-subsub', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
               setUnitTiming('subsubdivision');
+              try { writeIndexTrace({ tag: 'post-subsub', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, tpSubsubdiv, subsubdivStart, lastUnits: (LM && LM.layers && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) ? LM.layers['primary'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
               stage.playNotes2();
               if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdivision');
             }
@@ -152,6 +180,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.advance('primary', 'phrase');
 
     LM.activate('poly', true);
+    // CHECK_GLOBALS: record active layer and indices after activation to verify naked globals are visible to LM
+    try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'after-activate-poly', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
@@ -160,6 +190,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
+        // Reset loop watchdog counters for this poly beat
+        try { LOOP_WATCH.reset('poly:div'); LOOP_WATCH.reset('poly:subdiv'); LOOP_WATCH.reset('poly:subsub'); } catch (_e) { /* swallow */ }
         stage.setOtherInstruments();
         stage.setBinaural();
         stage.setBalanceAndFX();
@@ -168,7 +200,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stage.stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stage.stutterPan(flipBin ? flipBinT3 : flipBinF3) : stage.stutterPan(stutterPanCHs);
 
-        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+        for (let _divIndex = 0; _divIndex < divsPerBeat; _divIndex++) { divIndex = _divIndex;
           // Trace pre-division state (temporary debug)
           try {
             const trace = {
@@ -179,21 +211,41 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             };
             writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
+          // Watchdog: increment division counter for poly
+          try { LOOP_WATCH.increment('poly:div'); } catch (_e) { /* swallow */ }
+
           setUnitTiming('division');
 
           // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
           let localSubdivsPerDiv = Math.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
           // When running in PLAY_LIMIT mode (tests/quick-runs), cap inner loop counts to keep runtime bounded
           if (process.env.PLAY_LIMIT) localSubdivsPerDiv = Math.min(localSubdivsPerDiv, 3);
-          for (subdivIndex = 0; subdivIndex < localSubdivsPerDiv; subdivIndex++) {
+
+          // Diagnostic: record division loop entry
+          try { writeDebugFile('time-debug.ndjson', { tag: 'loop-division-entry', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, localSubdivsPerDiv }); } catch (_e) { /* swallow */ }
+          // CHECK_GLOBALS: record that LM.activeLayer and globals are visible inside loops
+          try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'loop-division-poly', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
+
+          for (let _subdivIndex = 0; _subdivIndex < localSubdivsPerDiv; _subdivIndex++) { subdivIndex = _subdivIndex;
+            // Watchdog: increment subdivision counter for poly
+            try { LOOP_WATCH.increment('poly:subdiv'); } catch (_e) { /* swallow */ }
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
+            try { writeIndexTrace({ tag: 'pre-subdivision', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
             setUnitTiming('subdivision');
+            try { writeIndexTrace({ tag: 'post-subdivision', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, tpSubdiv, subdivStart, lastUnits: (LM && LM.layers && LM.layers['poly'] && LM.layers['poly'].state && Array.isArray(LM.layers['poly'].state.units)) ? LM.layers['poly'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
             stage.playNotes();
 
             // Subsubdivisions belong to a subdivision; iterate here
             let localSubsubsPerSub = Math.max(1, (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1);
             if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
-            for (subsubdivIndex = 0; subsubdivIndex < localSubsubsPerSub; subsubdivIndex++) {
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-entry', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
+            for (let _subsubdivIndex = 0; _subsubdivIndex < localSubsubsPerSub; _subsubdivIndex++) { subsubdivIndex = _subsubdivIndex;
+              // Watchdog: increment subsubdivision counter for poly
+              try { LOOP_WATCH.increment('poly:subsub'); } catch (_e) { /* swallow */ }
+              try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subsub-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, stack: (process.env.CAPTURE_LOOP_STACK === '1') ? (new Error()).stack : undefined, when: (process.env.CAPTURE_LOOP_STACK === '1') ? new Date().toISOString() : undefined }); } catch (_e) { /* swallow */ }
+              try { writeIndexTrace({ tag: 'pre-subsub', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
               setUnitTiming('subsubdivision');
+              try { writeIndexTrace({ tag: 'post-subsub', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, tpSubsubdiv, subsubdivStart, lastUnits: (LM && LM.layers && LM.layers['poly'] && LM.layers['poly'].state && Array.isArray(LM.layers['poly'].state.units)) ? LM.layers['poly'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
               stage.playNotes2();
               if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdivision');
             }

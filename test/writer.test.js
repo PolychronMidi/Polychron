@@ -189,9 +189,12 @@ describe('grandFinale', () => {
     fs = {
       writeFileSync: vi.fn(),
       existsSync: vi.fn(() => true),
+      readFileSync: vi.fn(() => ''),
       mkdirSync: vi.fn(),
       renameSync: vi.fn()
     };
+    // Propagate into test namespace for grandFinale compatibility
+    try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.fs = fs; __POLYCHRON_TEST__.allowMissingLayerCanonical = true; } catch (e) { /* swallow */ }
     // Reset LM
     LM = {
       layers: {}

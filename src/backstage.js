@@ -438,10 +438,28 @@ resetIndexWithChildren = (unit) => {
     };
     try { writeDebugFile('reset-index-log.ndjson', record); } catch (_e) { /* swallow */ }
   } catch (_e) { /* swallow */ }
+
+  // Clear any emitted child unit records from the active layer when resetting higher-level units
+  try {
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'primary';
+    const unitsToDrop = {
+      section: ['section','phrase','measure','beat','division','subdivision','subsubdivision'],
+      phrase: ['measure','beat','division','subdivision','subsubdivision'],
+      measure: ['beat','division','subdivision','subsubdivision'],
+      beat: ['division','subdivision','subsubdivision'],
+      division: ['subdivision','subsubdivision'],
+      subdivision: ['subsubdivision'],
+      subsubdivision: []
+    };
+    if (LM && LM.layers && LM.layers[layer] && Array.isArray(LM.layers[layer].state.units)) {
+      LM.layers[layer].state.units = LM.layers[layer].state.units.filter(u => !unitsToDrop[unit] || !unitsToDrop[unit].includes(u.unitType));
+      try { writeDebugFile('reset-index-log.ndjson', { when: new Date().toISOString(), action: 'cleared-units', unit, layer, remaining: LM.layers[layer].state.units.length }); } catch (_e) { /* swallow */ }
+    }
+  } catch (_e) { /* swallow */ }
 };
 
 // Timing and counter variables (documented inline for brevity)
-measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=tpMeasure=tpBeat=tpDiv=tpSubdiv=tpSubsubdiv=subdivStartTime=subsubdivStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=subsubsPerSub=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=0;
+measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=sectionEnd=tpMeasure=tpBeat=tpDiv=tpSubdiv=tpSubsubdiv=subdivStartTime=subsubdivStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=subsubsPerSub=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=0;
 
 composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null;
 

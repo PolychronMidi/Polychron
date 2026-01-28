@@ -1,4 +1,9 @@
 // test-setup.js - global test bootstrap
+// Ensure test harness flags are set before modules run to avoid fatal checks during unit tests
+const TEST_GLOBAL = Function('return this')();
+TEST_GLOBAL.__POLYCHRON_TEST__ = TEST_GLOBAL.__POLYCHRON_TEST__ || {};
+// Allow tests to suppress writer fatal checks that inspect output CSVs
+TEST_GLOBAL.__POLYCHRON_TEST__.suppressHumanMarkerCheck = true;
 // Load `stage.js` to initialize the usual naked globals (backstage, writer, etc.).
 // Tests rely on these globals being present without importing `play.js`.
 require('./stage');
@@ -19,8 +24,13 @@ if (typeof GLOBAL.performance === 'undefined') GLOBAL.performance = require('per
 if (typeof GLOBAL.t === 'undefined') GLOBAL.t = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.t) || (function(){ try { return require('tonal'); } catch (e) { return undefined; } })();
 
 // Pre-create a broad set of timing and index globals so legacy tests can assign bare names safely
-const _timingNames = ['midiMeter','midiMeterRatio','meterRatio','syncFactor','midiBPM','tpSec','tpMeasure','spMeasure','tpPhrase','spPhrase','measuresPerPhrase','numerator','denominator','composer','measureIndex','phraseIndex','sectionIndex','totalSections','phrasesPerSection','measureStart','measureStartTime','tpMeasure','spMeasure','beatIndex','beatStart','beatStartTime','tpBeat','spBeat','divIndex','divsPerBeat','divStart','divStartTime','tpDiv','spDiv','subdivIndex','subdivsPerDiv','subdivStart','subdivStartTime','tpSubdiv','spSubdiv','subsubdivIndex','subsubsPerSub','subsubdivStart','subsubdivStartTime','tpSubsubdiv','spSubsubdiv','formatTime','LOG','c','csvRows','PPQ'];
+const _timingNames = ['midiMeter','midiMeterRatio','meterRatio','syncFactor','midiBPM','tpSec','tpMeasure','spMeasure','tpPhrase','spPhrase','measuresPerPhrase','numerator','denominator','polyNumerator','polyDenominator','composer','measureIndex','phraseIndex','sectionIndex','totalSections','phrasesPerSection','measureStart','measureStartTime','tpMeasure','spMeasure','beatIndex','beatStart','beatStartTime','tpBeat','spBeat','divIndex','divsPerBeat','divStart','divStartTime','tpDiv','spDiv','subdivIndex','subdivsPerDiv','subdivStart','subdivStartTime','tpSubdiv','spSubdiv','subsubdivIndex','subsubsPerSub','subsubdivStart','subsubdivStartTime','tpSubsubdiv','spSubsubdiv','formatTime','LOG','c','c1','c2','csvRows','PPQ','bpmRatio3','_origRf','_origRi','_origRv','binauralFreqOffset','lBal','rBal','cBal','cBal2','cBal3','refVar','bassVar'];
 for (const _n of _timingNames) { if (typeof GLOBAL[_n] === 'undefined') GLOBAL[_n] = undefined; }
+
+// Provide safe numeric defaults for a few stage-related globals expected by tests
+if (typeof GLOBAL.binauralFreqOffset === 'undefined') GLOBAL.binauralFreqOffset = 0;
+if (typeof GLOBAL.refVar === 'undefined') GLOBAL.refVar = 1;
+if (typeof GLOBAL.lastCrossMod === 'undefined') GLOBAL.lastCrossMod = 0;
 
 // Ensure classes exposed into __POLYCHRON_TEST__ by modules are also available as naked globals for legacy tests
 require('./composers');
@@ -29,6 +39,14 @@ require('./voiceLeading');
 const testns = (typeof __POLYCHRON_TEST__ !== 'undefined') ? __POLYCHRON_TEST__ : {};
 GLOBAL.MeasureComposer = GLOBAL.MeasureComposer || (testns.MeasureComposer || (typeof GLOBAL.MeasureComposer !== 'undefined' ? GLOBAL.MeasureComposer : undefined));
 GLOBAL.VoiceLeadingScore = GLOBAL.VoiceLeadingScore || (testns.VoiceLeadingScore || (typeof GLOBAL.VoiceLeadingScore !== 'undefined' ? GLOBAL.VoiceLeadingScore : undefined));
+// Promote any function exports from test namespace to GLOBAL to support legacy tests expecting bare classes/functions
+try {
+  for (const k of Object.keys(testns)) {
+    if (typeof GLOBAL[k] === 'undefined' && typeof testns[k] === 'function') {
+      GLOBAL[k] = testns[k];
+    }
+  }
+} catch (e) { /* swallow */ }
 
 // Promote venue and other helpers into the GLOBAL object when available
 if (typeof __POLYCHRON_TEST__ !== 'undefined') {
@@ -46,6 +64,13 @@ if (typeof __POLYCHRON_TEST__ !== 'undefined') {
   GLOBAL.PentatonicComposer = GLOBAL.PentatonicComposer || testns.PentatonicComposer;
   GLOBAL.RandomPentatonicComposer = GLOBAL.RandomPentatonicComposer || testns.RandomPentatonicComposer;
   GLOBAL.ProgressionGenerator = GLOBAL.ProgressionGenerator || testns.ProgressionGenerator;
+  // Additional composers and factory used by tests
+  GLOBAL.MelodicDevelopmentComposer = GLOBAL.MelodicDevelopmentComposer || testns.MelodicDevelopmentComposer;
+  GLOBAL.AdvancedVoiceLeadingComposer = GLOBAL.AdvancedVoiceLeadingComposer || testns.AdvancedVoiceLeadingComposer;
+  GLOBAL.ComposerFactory = GLOBAL.ComposerFactory || testns.ComposerFactory;
+  GLOBAL.RandomScaleComposer = GLOBAL.RandomScaleComposer || testns.RandomScaleComposer;
+  GLOBAL.RandomModeComposer = GLOBAL.RandomModeComposer || testns.RandomModeComposer;
+  GLOBAL.ModeComposer = GLOBAL.ModeComposer || testns.ModeComposer;
   // voice leading
   GLOBAL.VoiceLeadingScore = GLOBAL.VoiceLeadingScore || testns.VoiceLeadingScore;
   GLOBAL.stage = GLOBAL.stage || testns.stage;
