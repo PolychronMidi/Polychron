@@ -46,4 +46,4 @@ it('subsubdiv units are within their subdiv parent bounds', () => {
 
     expect(violations.length).toBe(0);
   }
-}, 120000);
+});
