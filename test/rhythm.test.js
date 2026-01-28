@@ -34,26 +34,68 @@ function setupGlobalState() {
     'cymbal1': { note: 59, velocityRange: [66, 77] },
     'conga1': { note: 60, velocityRange: [66, 77] }
   };
+  // Propagate into the test namespace used by imported helpers and set globals
+  try {
+    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+    __POLYCHRON_TEST__.drumMap = drumMap;
+    // Expose runtime test values to the test harness namespace so modules using __POLYCHRON_TEST__ can read them
+    try { __POLYCHRON_TEST__.c = c; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.drumCH = drumCH; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.beatStart = beatStart; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.tpBeat = tpBeat; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.beatIndex = beatIndex; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.numerator = numerator; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.beatRhythm = beatRhythm; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.beatsOff = beatsOff; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.bpmRatio3 = bpmRatio3; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.measuresPerPhrase = measuresPerPhrase; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.divsPerBeat = divsPerBeat; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.subdivsPerDiv = subdivsPerDiv; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.divRhythm = divRhythm; } catch (e) { /* swallow */ }
+    try { __POLYCHRON_TEST__.subdivRhythm = subdivRhythm; } catch (e) { /* swallow */ }
+    // Also ensure runtime globals used by modules are set (use naked globals)
+    try { if (typeof c === 'undefined') { c = null; } } catch (e) { /* swallow */ }
+    try { if (typeof drumCH === 'undefined') { drumCH = null; } } catch (e) { /* swallow */ }
+    try { if (typeof beatStart === 'undefined') { beatStart = null; } } catch (e) { /* swallow */ }
+    try { if (typeof tpBeat === 'undefined') { tpBeat = null; } } catch (e) { /* swallow */ }
+    try { if (typeof beatIndex === 'undefined') { beatIndex = null; } } catch (e) { /* swallow */ }
+    try { if (typeof numerator === 'undefined') { numerator = null; } } catch (e) { /* swallow */ }
+    try { if (typeof beatRhythm === 'undefined') { beatRhythm = null; } } catch (e) { /* swallow */ }
+    try { if (typeof beatsOff === 'undefined') { beatsOff = null; } } catch (e) { /* swallow */ }
+    try { if (typeof bpmRatio3 === 'undefined') { bpmRatio3 = null; } } catch (e) { /* swallow */ }
+    try { if (typeof measuresPerPhrase === 'undefined') { measuresPerPhrase = null; } } catch (e) { /* swallow */ }
+    try { if (typeof divsPerBeat === 'undefined') { divsPerBeat = null; } } catch (e) { /* swallow */ }
+    try { if (typeof subdivsPerDiv === 'undefined') { subdivsPerDiv = null; } } catch (e) { /* swallow */ }
+    try { if (typeof divRhythm === 'undefined') { divRhythm = null; } } catch (e) { /* swallow */ }
+    try { if (typeof subdivRhythm === 'undefined') { subdivRhythm = null; } } catch (e) { /* swallow */ }
+  } catch (e) { /* swallow */ }
+  // Use deterministic randomness for stable tests
+  try { rf = (min,max) => (typeof max === 'undefined' ? (min || 0.5) : min); ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; }; __POLYCHRON_TEST__.rf = rf; __POLYCHRON_TEST__.ri = ri; } catch (e) { /* swallow */ }
 }
 
+
 // Import from test namespace
-const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor, drumMap } = __POLYCHRON_TEST__;
+const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor } = __POLYCHRON_TEST__;
+// drumMap will be initialized by setupGlobalState()
+let drumMap;
 
 describe('drumMap', () => {
+  const dm = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.drumMap) ? __POLYCHRON_TEST__.drumMap : (typeof drumMap !== 'undefined' ? drumMap : {});
+
   it('should define drum mappings with notes and velocity ranges', () => {
-    expect(drumMap.snare1).toEqual({ note: 31, velocityRange: [99, 111] });
-    expect(drumMap.kick1).toEqual({ note: 12, velocityRange: [111, 127] });
+    expect(dm.snare1).toEqual({ note: 31, velocityRange: [99, 111] });
+    expect(dm.kick1).toEqual({ note: 12, velocityRange: [111, 127] });
   });
 
   it('should have valid MIDI note numbers', () => {
-    Object.values(drumMap).forEach(drum => {
+    Object.values(dm).forEach(drum => {
       expect(drum.note).toBeGreaterThanOrEqual(0);
       expect(drum.note).toBeLessThanOrEqual(127);
     });
   });
 
   it('should have valid velocity ranges', () => {
-    Object.values(drumMap).forEach(drum => {
+    Object.values(dm).forEach(drum => {
       expect(drum.velocityRange[0]).toBeGreaterThanOrEqual(0);
       expect(drum.velocityRange[1]).toBeLessThanOrEqual(127);
       expect(drum.velocityRange[0]).toBeLessThanOrEqual(drum.velocityRange[1]);

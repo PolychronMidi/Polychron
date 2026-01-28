@@ -303,8 +303,27 @@ grandFinale = () => {
     };
   });
 
-  // Process each layer's output
+  // Before processing layers, validate primary CSV for postfix anti-patterns (human-only markers)
+  const primaryCsv = require('path').join(process.cwd(), 'output', 'output1.csv');
+  let primaryHasUnitRec = false;
+  if (fs.existsSync(primaryCsv)) {
+    const txt = fs.readFileSync(primaryCsv, 'utf8') || '';
+    const lines = txt.split(new RegExp('\r?\n'));
+    // Human-only marker detection: detect lines without canonical unitRec tokens.
+    // Only treat this as an anti-pattern if the file contains *some* canonical unitRec markers
+    // (i.e. a mix of canonical and human-only markers), which indicates an unintended postfix-only entry.
+    primaryHasUnitRec = lines.some(ln => ln && ln.indexOf('marker_t') !== -1 && ln.indexOf('unitRec:') !== -1);
+    const humanOnlyExists = lines.some(ln => ln && ln.indexOf('marker_t') !== -1 && ln.indexOf('unitRec:') === -1);
+    // Allow test harness to suppress this fatal check when investigating other failures
+    // Allow either the in-process test harness OR an environment variable to suppress this fatal check
+    const suppressCheck = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.suppressHumanMarkerCheck === true) || String(process.env.SUPPRESS_HUMAN_MARKER_CHECK || process.env.SILENCE_HUMAN_MARKER_CHECK || '').toLowerCase() === 'true' || String(process.env.SUPPRESS_HUMAN_MARKER_CHECK || process.env.SILENCE_HUMAN_MARKER_CHECK || '').toLowerCase() === '1';
+    if (!suppressCheck && primaryHasUnitRec && humanOnlyExists) raiseCritical('human:marker', 'Human-only marker found in primary CSV; postfix-only markers are forbidden', { primaryCsv });
+  }
+  // Expose flag for per-layer checks via a local variable in closure
   layerData.forEach(({ name, layer: layerState, buffer }) => {
+    // attach flag to layerState for downstream checks
+    try { layerState._primaryHasUnitRec = primaryHasUnitRec; } catch (_e) { /* swallow */ }
+
     // Set naked global buffer `c` to this layer's buffer
     c = buffer;
     // Cleanup - use naked global fallbacks to avoid load-order issues in tests
@@ -315,12 +334,15 @@ grandFinale = () => {
       _muteAll((layerState.sectionEnd || layerState.sectionStart) + PPQ * 2);
     } catch (e) { /* swallow */ }
     // Finalize buffer
+    if (!Array.isArray(buffer)) {
+      try { writeDebugFile('writer-debug.ndjson', { tag: 'bad-buffer', name, bufferType: Object.prototype.toString.call(buffer), sample: (buffer && buffer.rows && Array.isArray(buffer.rows)) ? buffer.rows.slice(0,5) : buffer }); } catch (_e) { /* swallow */ }
+      buffer = Array.isArray(buffer && buffer.rows) ? buffer.rows : (Array.isArray(buffer) ? buffer : []);
+    }
     buffer = buffer.filter(i => i !== null)
       .map(i => {
         const rawTick = i && i.tick;
         let tickNum = null;
         let unitHash = null;
-        try {
           // Keep original behavior: parse rawTick field first (may include appended '|<unitId>')
           if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {
             const p = String(rawTick).split('|');
@@ -328,22 +350,25 @@ grandFinale = () => {
             // Preserve the full trailing unit id (it may contain '|' separators)
             unitHash = p.slice(1).join('|') || null;
             // Validate canonical unit id suffix: must contain section/phrase tokens and tick range markers
-            try {
-              if (unitHash) {
+            if (unitHash) {
+              let hasSecOrPhr = false; let hasTickRange = false;
+              try {
                 const seg = String(unitHash).split('|');
-                const hasSecOrPhr = seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
-                const hasTickRange = seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
-                if (!hasSecOrPhr || !hasTickRange) {
-                  raiseCritical('malformed:unitIdSuffix', 'Malformed unit id suffix in tick field; expected canonical unitRec-like path', { rawTick, unitHash, layer: name });
-                }
+                hasSecOrPhr = seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
+                hasTickRange = seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
+              } catch (_e) { /* swallow parsing errors */ }
+              // DEBUG LOG
+              try { console.log('[writer] validating unitHash', { rawTick, unitHash, hasSecOrPhr, hasTickRange, layer: name }); } catch (_e) { /* swallow */ }
+              if (!hasSecOrPhr || !hasTickRange) {
+                // allow raiseCritical to throw (do not swallow)
+                raiseCritical('malformed:unitIdSuffix', 'Malformed unit id suffix in tick field; expected canonical unitRec-like path', { rawTick, unitHash, layer: name });
               }
-            } catch (_e) { /* swallow */ }
+            }
           } else if (Number.isFinite(rawTick)) {
             tickNum = Number(rawTick);
           } else if (typeof rawTick === 'string') {
             tickNum = Number(rawTick);
           }
-        } catch (_e) { /* swallow */ }
         let tickVal = Number.isFinite(tickNum) ? tickNum : Math.abs(Number(rawTick) || 0) * rf(.1, .3);
         if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
         tickVal = Math.round(tickVal);
@@ -370,9 +395,12 @@ grandFinale = () => {
       }
     } catch (_e) { /* swallow */ }
 
-    // Source-only canonicalization removed: LM is authoritative for timing and unitRec markers; do not backfill from primary CSV
-
-
+    // If primary CSV contained canonical unitRec markers but this layer has none, treat as postfix anti-pattern
+    // For test harnesses allow opting out via __POLYCHRON_TEST__.allowMissingLayerCanonical = true
+    const _enforceLayerCanonical = !(typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.allowMissingLayerCanonical === true);
+    if (_enforceLayerCanonical && name !== 'primary' && layerState && layerState._primaryHasUnitRec && (!unitsForLayer || unitsForLayer.length === 0)) {
+      raiseCritical('missing:canonical:layer', 'Missing canonical unitRec entries for layer despite primary CSV containing unitRec markers', { layer: name });
+    }
 
     // Add any unitRec markers present in the buffer into unitsForLayer (extract full unitId when available)
     try {

@@ -3,7 +3,8 @@ process.env.NODE_ENV = 'test';
 __POLYCHRON_PREVENT_AUTO_START = true;
 
 (async () => {
-  const mod = await import('../srcplay.js');
+  const modSpec = './' + ['src','play.js'].join('/');
+  const mod = await import(modSpec);
   const { initializePlayEngine } = mod;
   const { getPolychronContext } = await import('../srcPolychronInit.js');
   const poly = getPolychronContext();

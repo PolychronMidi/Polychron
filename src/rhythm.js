@@ -1,4 +1,6 @@
 // rhythm.js - Rhythmic pattern generation with drum mapping and stutter effects.
+const { raiseCritical } = require('./postfixGuard');
+const { writeDebugFile } = require('./logGate');
 // minimalist comments, details at: rhythm.md
 
 drumMap={
@@ -43,14 +45,22 @@ drumMap={
  */
 drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] START',drumNames);
-  if (drumNames==='random') {
-    const allDrums=Object.keys(drumMap);
-    drumNames=[allDrums[m.floor(m.random() * allDrums.length)]];
-    beatOffsets=[0];
+  if (drumNames === 'random') {
+    // Prefer test-injected drumMap when running tests so 'random' selects from the test set
+    const allDrums = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.drumMap) ? Object.keys(__POLYCHRON_TEST__.drumMap) : Object.keys(drumMap);
+    drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
+    beatOffsets = [0];
   }
   const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
   const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
   if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] drums/offsets prepared');
+  // Prefer test-injected buffer/ drumMap when present to avoid relying on globals in test harness
+  const outBuf = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.c) ? __POLYCHRON_TEST__.c : c;
+  const dm = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.drumMap) ? __POLYCHRON_TEST__.drumMap : drumMap;
+  // Allow tests to inject timing context (tpBeat/beatStart) and channel (drumCH) via __POLYCHRON_TEST__ when module-level globals are not available
+  const effectiveBeatStart = (typeof __POLYCHRON_TEST__ !== 'undefined' && typeof __POLYCHRON_TEST__.beatStart !== 'undefined') ? __POLYCHRON_TEST__.beatStart : (typeof beatStart !== 'undefined' ? beatStart : 0);
+  const effectiveTpBeat = (typeof __POLYCHRON_TEST__ !== 'undefined' && typeof __POLYCHRON_TEST__.tpBeat !== 'undefined') ? __POLYCHRON_TEST__.tpBeat : (typeof tpBeat !== 'undefined' ? tpBeat : 0);
+  const effectiveDrumCH = (typeof __POLYCHRON_TEST__ !== 'undefined' && typeof __POLYCHRON_TEST__.drumCH !== 'undefined') ? __POLYCHRON_TEST__.drumCH : (typeof drumCH !== 'undefined' ? drumCH : 9);
   if (offsets.length < drums.length) {
     offsets.push(...new Array(drums.length - offsets.length).fill(0));
   } else if (offsets.length > drums.length) {
@@ -69,40 +79,56 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
     }
   }
   if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] randomization done');
-  const adjustedOffsets=combined.map(({ offset })=>{
+  const adjustedOffsets = combined.map(({ offset }) => {
+    // Preserve large/offbeat integer offsets (e.g., 10 beats) rather than reducing them to
+    // their fractional part. For fractional offsets (0..1), allow jitter and wrap into [0,1).
+    // Preserve explicit zero offsets exactly
+    if (offset === 0) return 0;
+    if (Math.abs(offset) >= 1) {
+      if (rf() < .3) return offset;
+      const jitter = (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
+      return offset + jitter;
+    }
     if (rf() < .3) {
       return offset;
     } else {
-      let adjusted=offset + (m.random() < 0.5 ? -offsetJitter*rf(.5,1) : offsetJitter*rf(.5,1));
-      return adjusted - m.floor(adjusted);
+      let adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
+      // keep only the fractional component for sub-beat offsets but avoid returning exactly 0
+      const fractional = adjusted - m.floor(adjusted);
+      // Never allow jitter to move a fractional offset *earlier* than the original offset — only allow equal or later adjustments
+      return fractional === 0 ? offset : Math.max(fractional, offset);
     }
   });
   if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] offsets adjusted');
-  combined.forEach(({ drum,offset },idx)=>{
+  combined.forEach(({ drum, offset }, idx) => {
+    const useOffset = (typeof adjustedOffsets[idx] !== 'undefined') ? adjustedOffsets[idx] : offset;
     if (__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] processing drum ${idx}:`,drum);
-    const drumInfo=drumMap[drum];
+    const drumInfo = dm ? dm[drum] : drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {
         if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] applying stutter');
-        const numStutters=ri(...stutterRange);
-        const stutterDuration=.25*ri(1,8) / numStutters;
-        const [minVelocity,maxVelocity]=drumInfo.velocityRange;
-        const isFadeIn=rf() < 0.7;
-        for (let i=0; i < numStutters; i++) {
-          const tick=beatStart + (offset + i * stutterDuration) * tpBeat;
+        const numStutters = ri(...stutterRange);
+        const stutterDuration = .25 * ri(1, 8) / numStutters;
+        const [minVelocity, maxVelocity] = drumInfo.velocityRange;
+        const isFadeIn = rf() < 0.7;
+        for (let i = 0; i < numStutters; i++) {
+          const tickVal = (Number.isFinite(Number(effectiveBeatStart)) ? Number(effectiveBeatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(effectiveTpBeat)) ? Number(effectiveTpBeat) : 0);
+          const tick = Math.round(tickVal);
           let currentVelocity;
           if (isFadeIn) {
-            const fadeInMultiplier=stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1));
-            currentVelocity=clamp(m.min(maxVelocity,ri(33) + maxVelocity * fadeInMultiplier),0,127);
+            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
+            currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 127);
           } else {
-            const fadeOutMultiplier=1 - (stutterDecayFactor * (i / (numStutters*rf(0.4,2.2) - 1)));
-            currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,127);
+            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
+            currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
           }
-          p(c,{tick:tick,type:'on',vals:[drumCH,drumInfo.note,m.floor(currentVelocity)]});
+          p(outBuf, { tick: tick, type: 'on', vals: [effectiveDrumCH, drumInfo.note, m.floor(currentVelocity)] });
         }
       } else {
         if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] no stutter');
-        p(c,{tick:beatStart + offset * tpBeat,type:'on',vals:[drumCH,drumInfo.note,ri(...drumInfo.velocityRange)]});
+        const tickVal = (Number.isFinite(Number(effectiveBeatStart)) ? Number(effectiveBeatStart) : 0) + (Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) * (Number.isFinite(Number(effectiveTpBeat)) ? Number(effectiveTpBeat) : 0);
+        const tick = Math.round(tickVal);
+        p(outBuf, { tick: tick, type: 'on', vals: [effectiveDrumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
       }
     }
     if (__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] drum ${idx} done`);
@@ -273,15 +299,35 @@ morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
 setRhythm=(level)=>{
   random=(length,probOn)=> { return _random(length,1 - probOn); };
   switch(level) {
-    case 'beat':
-      return beatRhythm=beatRhythm < 1 ? _random(numerator) : getRhythm('beat',numerator,beatRhythm);
-    case 'div':
-      return divRhythm=divRhythm < 1 ? _random(divsPerBeat,.4) : getRhythm('div',divsPerBeat,divRhythm);
-    case 'subdiv':
-      return subdivRhythm=subdivRhythm < 1 ? _random(subdivsPerDiv,.3) : getRhythm('subdiv',subdivsPerDiv,subdivRhythm)
-    case 'subsubdiv':
-      return subsubdivRhythm=subsubdivRhythm < 1 ? _random(subsubsPerSub,.3) : getRhythm('subsubdiv',subsubsPerSub,subsubdivRhythm)
-    default:throw new Error('Invalid level provided to setRhythm');
+    case 'beat': {
+      const res = beatRhythm < 1 ? _random(numerator) : getRhythm('beat', numerator, beatRhythm);
+      if (!Array.isArray(res)) {
+        try { raiseCritical('missing:rhythm', 'Beat rhythm could not be generated', { level: 'beat', numerator, beatRhythm }); } catch (e) { throw new Error('CRITICAL: Beat rhythm missing'); }
+      }
+      return beatRhythm = res;
+    }
+    case 'div': {
+      const res = divRhythm < 1 ? _random(divsPerBeat, .4) : getRhythm('div', divsPerBeat, divRhythm);
+      if (!Array.isArray(res)) {
+        try { raiseCritical('missing:rhythm', 'Division rhythm could not be generated', { level: 'div', divsPerBeat, divRhythm }); } catch (e) { throw new Error('CRITICAL: Division rhythm missing'); }
+      }
+      return divRhythm = res;
+    }
+    case 'subdiv': {
+      const res = subdivRhythm < 1 ? _random(subdivsPerDiv, .3) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm);
+      if (!Array.isArray(res)) {
+        try { raiseCritical('missing:rhythm', 'Subdivision rhythm could not be generated', { level: 'subdiv', subdivsPerDiv, subdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subdivision rhythm missing'); }
+      }
+      return subdivRhythm = res;
+    }
+    case 'subsubdiv': {
+      const res = subsubdivRhythm < 1 ? _random(subsubsPerSub, .3) : getRhythm('subsubdiv', subsubsPerSub, subsubdivRhythm);
+      if (!Array.isArray(res)) {
+        try { raiseCritical('missing:rhythm', 'Subsubdivision rhythm could not be generated', { level: 'subsubdiv', subsubsPerSub, subsubdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subsubdivision rhythm missing'); }
+      }
+      return subsubdivRhythm = res;
+    }
+    default: throw new Error('Invalid level provided to setRhythm');
   }
 };
 
@@ -388,7 +434,8 @@ closestDivisor=(x,target=2)=>{
  * @returns {number[]} Rhythm pattern.
  */
 getRhythm=(level,length,pattern,method,...args)=>{
-  const levelIndex=['beat','div','subdiv'].indexOf(level);
+  // Map subsubdiv to subdiv's level index so subsubdivision rhythm selection reuses subdiv candidates
+  const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
   const checkMethod=(m)=>{
     if (!m) return null;
     if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__[m] && typeof __POLYCHRON_TEST__[m] === 'function') return __POLYCHRON_TEST__[m];
@@ -406,14 +453,23 @@ getRhythm=(level,length,pattern,method,...args)=>{
     const filteredRhythms=Object.fromEntries(
       Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
     );
+    // Diagnostic: if no candidate rhythms exist for the given level, emit debug payload
+    try { if (!Object.keys(filteredRhythms).length) writeDebugFile('rhythm-debug.ndjson', { tag: 'no-candidates', level, levelIndex, length, pattern, rhythms: Object.keys(rhythms) }); } catch (_e) { /* swallow */ }
+
     const rhythmKey=randomWeightedSelection(filteredRhythms);
+    try { writeDebugFile('rhythm-debug.ndjson', { tag: 'candidate-selected', level, rhythmKey, candidates: Object.keys(filteredRhythms) }); } catch (_e) { /* swallow */ }
+
     if (rhythmKey && rhythms[rhythmKey]) {
       const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
       const rhythmMethod=checkMethod(rhythmMethodKey);
+      if (!rhythmMethod) {
+        try { writeDebugFile('rhythm-debug.ndjson', { tag: 'missing-method', level, rhythmKey, rhythmMethodKey }); } catch (_e) { /* swallow */ }
+      }
       if (rhythmMethod) return rhythmMethod(...rhythmArgs(length,pattern));
     }
   }
   console.warn('unknown rhythm');
+  try { writeDebugFile('rhythm-debug.ndjson', { tag: 'unknown-rhythm', level, levelIndex, length, pattern, candidates: Object.keys(rhythms).filter(k => rhythms[k].weights[levelIndex] > 0) }); } catch (_e) { /* swallow */ }
   return null;
 };
 

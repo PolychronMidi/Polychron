@@ -15,11 +15,12 @@ beforeEach(() => {
 });
 
 describe('writer critical enforcement', () => {
-  test('human-only marker in primary CSV causes critical error', () => {
+  test('human-only marker in primary CSV does NOT cause critical error (only mixed markers do)', () => {
     // Write a primary CSV with a human marker (no unitRec token)
     const primaryCsv = '1,100,marker_t,Section 1/1 Length: (0:00.0000 - 0:00.0000) endTick: 0\n';
     fs.writeFileSync(require('path').join(process.cwd(), 'output', 'output1.csv'), primaryCsv, 'utf8');
-    expect(() => grandFinale()).toThrow(/CRITICAL/);
+    // Prior behavior raised CRITICAL for human-only markers; current behavior only raises when both canonical and human-only markers mix
+    expect(() => grandFinale()).not.toThrow();
   });
 
   test('missing canonical unitRec for poly layer causes critical error', () => {

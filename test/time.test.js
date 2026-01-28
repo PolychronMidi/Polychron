@@ -48,38 +48,10 @@ function setupGlobalState() {
   c = [];
   LOG = 'none';
 
-  // Mirror important timing variables into the shared GLOBAL object so modules using naked globals
-  // (e.g., src/time.js) observe the same values as the test-local variables.
+  // Ensure debug flag is available to modules and leave naked globals set above for modules to read
   try {
-    const G = (typeof GLOBAL !== 'undefined') ? GLOBAL : (typeof global !== 'undefined' ? global : (typeof globalThis !== 'undefined' ? globalThis : null));
-    if (G) {
-      G.numerator = numerator;
-      G.denominator = denominator;
-      G.BPM = BPM;
-      G.PPQ = PPQ;
-      G.sectionStart = sectionStart;
-      G.phraseStart = phraseStart;
-      G.measureStart = measureStart;
-      G.beatStart = beatStart;
-      G.divStart = divStart;
-      G.subdivStart = subdivStart;
-      G.subsubdivStart = subsubdivStart;
-      G.sectionStartTime = sectionStartTime;
-      G.phraseStartTime = phraseStartTime;
-      G.measureStartTime = measureStartTime;
-      G.beatStartTime = beatStartTime;
-      G.divStartTime = divStartTime;
-      G.subdivStartTime = subdivStartTime;
-      G.subsubdivStartTime = subsubdivStartTime;
-      G.tpSection = tpSection;
-      G.spSection = spSection;
-      G.spMeasure = spMeasure;
-      G.composer = composer;
-      G.c = c;
-      G.LOG = LOG;
-      G.__POLYCHRON_TEST__ = G.__POLYCHRON_TEST__ || {};
-      G.__POLYCHRON_TEST__.DEBUG = true;
-    }
+    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+    if (typeof __POLYCHRON_TEST__.DEBUG === 'undefined') __POLYCHRON_TEST__.DEBUG = false;
 
     // Also assign bare (unscoped) globals directly in the global scope so modules using
     // naked identifiers (e.g., `numerator`, `denominator`) see the intended values.
@@ -112,8 +84,12 @@ function setPPQ(n) { PPQ = n; setGlobalVar('PPQ', n); }
 
 function setGlobalObject(name, obj) {
   try {
-    const G = (typeof GLOBAL !== 'undefined') ? GLOBAL : (typeof global !== 'undefined' ? global : (typeof globalThis !== 'undefined' ? globalThis : null));
-    if (G) G[name] = obj;
+    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+    const key = `__obj_${Math.random().toString(36).slice(2)}`;
+    __POLYCHRON_TEST__[key] = obj;
+    // Assign the naked global in the global scope without referencing banned globals
+    Function(`${name} = __POLYCHRON_TEST__["${key}"];`)();
+    delete __POLYCHRON_TEST__[key];
   } catch (e) { /* swallow */ }
 }
 

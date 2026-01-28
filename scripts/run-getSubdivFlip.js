@@ -4,7 +4,12 @@ const fs = require('fs'); const path = require('path'); const traces = path.join
 composer = { getDivisions: () => 1, getSubdivisions: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 7 : 1; }; })() };
 // Enable tracing by default for reproducer; do not force PLAY_LIMIT so we can run full plays locally
 if (!process.env.INDEX_TRACES) process.env.INDEX_TRACES = '1';
-require('../src/play.js');
+// Run play.js as a child process to avoid importing it into this script (prevents global pollution)
+const { spawnSync } = require('child_process');
+const playPath = path.join(process.cwd(), 'src', 'play.js');
+const res = spawnSync(process.execPath, [playPath], { env: Object.assign({}, process.env, { INDEX_TRACES: process.env.INDEX_TRACES }), stdio: 'inherit' });
+if (res.error) { console.error('play process execution failed', res.error); process.exit(1); }
+if (res.status !== 0) process.exit(res.status);
 
 const lines = fs.existsSync(traces) ? fs.readFileSync(traces, 'utf8').trim().split(/\r?\n/).filter(Boolean) : [];
 const recs = lines.map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);

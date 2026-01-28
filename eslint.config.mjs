@@ -398,7 +398,7 @@ export default [
     rules: {
       // Code correctness - errors that break functionality
       'no-undef': 'error',  // Catch undefined variables like activeMotif
-      'no-restricted-globals': ['error', { name: 'global', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'globalThis', message: 'global or globalThis banned project-wide, use naked globals instead' }],
+      'no-restricted-globals': ['error', { name: 'global', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'globalThis', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'GLOBAL', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'GLOBALTHIS', message: 'global or globalThis banned project-wide, use naked globals instead' }],
       'no-unreachable': 'error',  // Dead code after return/throw
       'no-constant-condition': 'warn',  // Conditions always true/false (can be intentional)
       'no-dupe-keys': 'error',  // Duplicate object keys
