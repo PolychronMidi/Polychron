@@ -31,7 +31,7 @@ test('setUnitTiming throws CRITICAL for out-of-range beatIndex', () => {
   m = Math; ri = (...a) => (a.length === 1 ? Math.floor(a[0]) : a[0]); rf = (a,b) => (typeof b === 'undefined' ? (a || 0.5) : a);
   rv = (a,b,c) => a; ra = v => (typeof v === 'function' ? v() : (Array.isArray(v) ? v[0] : v));
 
-  composer = { getDivisions: () => 1, getSubdivisions: () => 1, getSubsubdivs: () => 1, getMeter: () => [4,4] };
+  composer = { getDivisions: () => 1, getSubdivs: () => 1, getSubsubdivs: () => 1, getMeter: () => [4,4] };
   BPM = 120; PPQ = 480; getMidiTiming();
 
   // call beat timing - out-of-range should throw CRITICAL rather than silently clamp

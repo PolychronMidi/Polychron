@@ -2,12 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-it('no subsubdivision overlap spans exceed 60000 ticks', () => {
+it('no subsubdiv overlap spans exceed 60000 ticks', () => {
   const outDir = path.join(process.cwd(), 'output');
   const reportPath = path.join(outDir, 'treewalker-report.json');
 
   // Run a fast play and treewalker verification
-  execSync(process.execPath + ' src/play.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1' }), stdio: 'ignore' });
+  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1', PLAY_GUARD_BLOCK: '1' }), stdio: 'ignore' });
   try {
     execSync(process.execPath + ' scripts/test/treewalker.js', { stdio: 'ignore' });
   } catch (e) {
@@ -17,7 +17,7 @@ it('no subsubdivision overlap spans exceed 60000 ticks', () => {
   expect(fs.existsSync(reportPath)).toBe(true);
   const rpt = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   const errors = Array.isArray(rpt.errors) ? rpt.errors : [];
-  const subsubErrors = errors.filter(e => typeof e === 'string' && e.includes('unitType subsubdivision'));
+  const subsubErrors = errors.filter(e => typeof e === 'string' && e.includes('unitType subsubdiv'));
 
   const large = subsubErrors.filter(e => {
     const m = e.match(/\[(\d+),(\d+)\)/);

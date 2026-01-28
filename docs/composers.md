@@ -11,7 +11,7 @@
 **Core Responsibilities:**
 - **Meter generation** - Creates complex time signatures with musical smoothing
 - **Note selection** - Generates pitches from scales, chords, modes, and progressions
-- **Subdivision control** - Determines rhythmic granularity (divisions/subdivisions)
+- **Subdiv control** - Determines rhythmic granularity (divisions/subdivs)
 - **Voice management** - Controls polyphonic density and octave ranges
 - **Music theory validation** - Ensures generated content is musically coherent with enharmonic normalization
 - **Harmonic progression** - Advanced chord progressions with tension/release curves and modal interchange
@@ -19,8 +19,8 @@
 ## Architecture Role
 
 **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) operates in the **content generation layer**:
-- **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls composer.getNotes() at each subdivision
-- **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses getMeter(), getDivisions(), getSubdivisions()
+- **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls composer.getNotes() at each subdiv
+- **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) - Uses getMeter(), getDivisions(), getSubdivs()
 - **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** ([code](../src/stage.js ([code](../src/stage.js)) ([doc](stage.md)))) ([doc](stage.md)) - Uses composer via **play.js** ([code](../src/play.js)) ([doc](play.md))
 - **venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) - Provides scale/chord/mode data via Tonal.js
 
@@ -44,7 +44,7 @@ getNumerator() {
 - **Weighted selection** - Uses probability weights for musical preference
 - **BPM modulation** - 50% chance to scale by bpmRatio for tempo coherence
 
-#### `getDivisions()`, `getSubdivisions()`, `getSubsubdivs()`, `getVoices()`
+#### `getDivisions()`, `getSubdivs()`, `getSubsubdivs()`, `getVoices()`
 Similar patterns for hierarchical timing and voice count generation.
 
 #### `getOctaveRange()`
@@ -579,9 +579,9 @@ const composer = ComposerFactory.create({
 });
 ```
 
-**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) calls at each subdivision:
+**play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) calls at each subdiv:
 ```javascript
-setUnitTiming('subdivision');
+setUnitTiming('subdiv');
 const notes = composer.getNotes();  // Get 1-7 notes based on VOICES config
 playNotes();  // Send MIDI note-ons
 ```
@@ -589,7 +589,7 @@ playNotes();  // Send MIDI note-ons
 **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) calls for timing:
 ```javascript
 divsPerBeat = composer.getDivisions();
-subdivsPerDiv = composer.getSubdivisions();
+subdivsPerDiv = composer.getSubdivs();
 numerator = composer.getNumerator();  // When changing meters
 ```
 

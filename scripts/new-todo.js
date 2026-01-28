@@ -135,7 +135,7 @@ async function main() {
           }
 
           fs.appendFileSync(todoPath, linesToAppend.join('\n') + '\n', 'utf8');
-          console.log(`Appended ${seen.size} test failure(s) from log/test.log to ${path.relative(projectRoot, todoPath)}`);
+          console.log(`Appended ${seen.size} test failure(s) from log/test.log to ./${path.relative(projectRoot, todoPath)}`);
         } else {
           console.log('No test failures found in log/test.log to append.');
         }

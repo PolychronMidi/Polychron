@@ -18,7 +18,7 @@ it('flapping composer getters should be called only once per beat/division (cach
 
   composer = {
     getDivisions: () => { divCalls++; return (divCalls % 2 === 1) ? 3 : 1; },
-    getSubdivisions: () => { subdivCalls++; return (subdivCalls % 2 === 1) ? 4 : 1; },
+    getSubdivs: () => { subdivCalls++; return (subdivCalls % 2 === 1) ? 4 : 1; },
     getSubsubdivs: () => 1,
     getMeter: () => [4,4]
   };
@@ -51,8 +51,8 @@ it('flapping composer getters should be called only once per beat/division (cach
   setUnitTiming('beat');
   setUnitTiming('division');
   setUnitTiming('division');
-  setUnitTiming('subdivision');
-  setUnitTiming('subdivision');
+  setUnitTiming('subdiv');
+  setUnitTiming('subdiv');
 
   expect(divCalls).toBe(1);
   expect(subdivCalls).toBe(1);

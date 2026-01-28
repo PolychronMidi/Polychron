@@ -12,9 +12,16 @@ describe('composer cache lifecycle', () => {
     const tracesFile = path.join(outDir, 'index-traces.ndjson');
     try { if (fs.existsSync(tracesFile)) fs.unlinkSync(tracesFile); } catch (e) { /* swallow */ }
 
-    const env = Object.assign({}, process.env, { PLAY_LIMIT: '1', INDEX_TRACES: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1' });
-    const res = spawnSync(process.execPath, [path.join('src','play.js')], { env, stdio: 'ignore', timeout: 60000 });
-    if (res.error) throw res.error;
+    const env = Object.assign({}, process.env, { PLAY_LIMIT: '1', INDEX_TRACES: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1', PLAY_GUARD_BLOCK: '1' });
+    // Increase timeout and capture stdio to help diagnose spawn timeouts in CI/Windows environments
+    // Use the test-friendly play guard to ensure a play instance runs even when other tests use the lock
+    const res = spawnSync(process.execPath, [path.join('scripts','play-guard.js')], { env, stdio: 'pipe', timeout: 120000 });
+    if (res.error) {
+      // Persist child stderr/stdout to output for triage
+      try { if (res.stdout) require('fs').writeFileSync('output/play-child-stdout.log', res.stdout); } catch (e) { /* swallow */ }
+      try { if (res.stderr) require('fs').writeFileSync('output/play-child-stderr.log', res.stderr); } catch (e) { /* swallow */ }
+      throw res.error;
+    }
     // Read traces and check for any composer:cache:miss entries
     expect(fs.existsSync(tracesFile)).toBe(true);
     const lines = fs.readFileSync(tracesFile, 'utf8').split(new RegExp('\r?\n')).filter(Boolean);

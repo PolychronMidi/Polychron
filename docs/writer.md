@@ -74,7 +74,7 @@ c=c1;  // Active buffer reference
  * Logs timing markers with context awareness.
  * Writes to active buffer (c = c1 or c2) for proper file separation.
  *
- * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
+ * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdiv', 'subsubdiv'
  */
 logUnit = (type) => {
   let shouldLog = false;
@@ -155,14 +155,14 @@ logUnit = (type) => {
     endTick = startTick + tpDiv;
     startTime = divStartTime;
     endTime = startTime + spDiv;
-  } else if (type === 'subdivision') {
+  } else if (type === 'subdiv') {
     unit = subdivIndex + 1;
     unitsPerParent = subdivsPerDiv;
     startTick = subdivStart;
     endTick = startTick + tpSubdiv;
     startTime = subdivStartTime;
     endTime = startTime + spSubdiv;
-  } else if (type === 'subsubdivision') {
+  } else if (type === 'subsubdiv') {
     unit = subsubdivIndex + 1;
     unitsPerParent = subsubsPerSub;
     startTick = subsubdivStart;
@@ -477,7 +477,7 @@ logUnit = (type) => {
   } else if (type === 'measure') {
     // ... similar pattern ...
   }
-  // ... beat, division, subdivision, subsubdivision ...
+  // ... beat, division, subdiv, subsubdiv ...
 
   p(c, {
     tick: startTick,

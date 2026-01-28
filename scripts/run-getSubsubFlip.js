@@ -2,7 +2,7 @@ const fs = require('fs'); const path = require('path'); const traces = path.join
 const logGate = require('../src/logGate'); const { writeDebugFile } = require('../src/logGate');
 
 // Flapping composer: getSubsubdivs alternates between 2 and 1
-composer = { getDivisions: () => 1, getSubdivisions: () => 2, getSubsubdivs: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 2 : 1; }; })() };
+composer = { getDivisions: () => 1, getSubdivs: () => 2, getSubsubdivs: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 2 : 1; }; })() };
 // Enable tracing by default for reproducer; do not force PLAY_LIMIT so we can run full plays locally
 if (!process.env.INDEX_TRACES) process.env.INDEX_TRACES = '1';
 // Run the play engine as a child process so we do NOT import the main module into this script (avoids side-effects during tests)
@@ -23,5 +23,5 @@ if (bad.length > 0) {
   if (logGate.isEnabled('repro')) console.error('Bad samples:', bad.slice(0,5));
   process.exit(2);
 } else {
-  if (logGate.isEnabled('repro')) console.log('No bad pre-anomaly subsubdivision entries found');
+  if (logGate.isEnabled('repro')) console.log('No bad pre-anomaly subsubdiv entries found');
 }

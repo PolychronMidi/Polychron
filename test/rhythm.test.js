@@ -547,11 +547,11 @@ describe('Rhythm state tracking functions', () => {
     expect(beatRhythm.length).toBe(4);
   });
 
-  it('subdivision tracking with nested rhythm structure', () => {
-    // Subdivisions are nested under divisions
+  it('subdiv tracking with nested rhythm structure', () => {
+    // Subdivs are nested under divisions
     subdivIndex = 0;
     subdivsPerDiv = 2;
-    // Multiple subdivisions per division should track independently
+    // Multiple subdivs per division should track independently
     expect(subdivRhythm.length).toBeGreaterThan(0);
   });
 

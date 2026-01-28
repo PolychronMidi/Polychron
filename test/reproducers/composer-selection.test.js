@@ -17,7 +17,7 @@ describe('Composer selection defensive validation', () => {
     const ra = (v) => { if (typeof v === 'function') return ra(v()); if (Array.isArray(v)) return v[Math.floor(Math.random() * v.length)]; return v; };
 
     const picked = ra(composers);
-    const isValid = picked && typeof picked.getDivisions === 'function' && typeof picked.getSubdivisions === 'function' && typeof picked.getSubsubdivs === 'function' && typeof picked.getMeter === 'function';
+    const isValid = picked && typeof picked.getDivisions === 'function' && typeof picked.getSubdivs === 'function' && typeof picked.getSubsubdivs === 'function' && typeof picked.getMeter === 'function';
     expect(isValid).toBe(false);
   });
 });

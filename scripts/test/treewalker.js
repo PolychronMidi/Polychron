@@ -35,8 +35,8 @@ function readUnits() {
         let unitType = '__unknown__';
         for (let i = segs.length - 1; i >= 0; i--) {
           const s = segs[i];
-          if (/^subsubdivision\d+\/.+/.test(s) || /^subsubdivision\d+\/\d+/.test(s)) { unitType = 'subsubdivision'; break; }
-          if (/^subdivision\d+\/.+/.test(s) || /^subdivision\d+\/\d+/.test(s)) { unitType = 'subdivision'; break; }
+          if (/^subsubdiv\d+\/.+/.test(s) || /^subsubdiv\d+\/\d+/.test(s)) { unitType = 'subsubdiv'; break; }
+          if (/^subdiv\d+\/.+/.test(s) || /^subdiv\d+\/\d+/.test(s)) { unitType = 'subdiv'; break; }
           if (/^division\d+\/.+/.test(s) || /^division\d+\/\d+/.test(s)) { unitType = 'division'; break; }
           if (/^beat\d+\/.+/.test(s) || /^beat\d+\/\d+/.test(s)) { unitType = 'beat'; break; }
           if (/^measure\d+\/.+/.test(s) || /^measure\d+\/\d+/.test(s)) { unitType = 'measure'; break; }
@@ -153,7 +153,7 @@ function groupUnitsByLayer(units) {
 function summarizeOverlapErrors(errs, topN = 20) {
   const overlaps = [];
   const byParent = new Map();
-  // match strings like: "Overlap in layer primary section 0 unitType subsubdivision: unit <A> [s1,e1) overlaps <B> [s2,e2)"
+  // match strings like: "Overlap in layer primary section 0 unitType subsubdiv: unit <A> [s1,e1) overlaps <B> [s2,e2)"
   const r = /^Overlap in layer (\S+) section (\S+) unitType (\S+): unit (.+?) \[(\d+),(\d+)[)\]] overlaps (.+?) \[(\d+),(\d+)[)\]]/;
   for (const s of errs) {
     const m = String(s).match(r);

@@ -24,7 +24,7 @@ describe('reproducer: high-level composer cache misses', () => {
 
     // Run a short bounded play to produce traces
     const env = Object.assign({}, process.env, { PLAY_LIMIT: '1', INDEX_TRACES: '1' });
-    const res = spawnSync('node', ['src/play.js'], { env, stdio: 'inherit', shell: true, timeout: 20000 });
+    const res = spawnSync('node', ['scripts/play-guard.js'], { env, stdio: 'inherit', shell: true, timeout: 20000 });
     if (res.error) throw res.error;
 
     // Run extractor to produce compact miss file

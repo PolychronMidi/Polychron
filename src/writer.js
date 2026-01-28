@@ -66,7 +66,7 @@ if (typeof c === 'undefined') c = c1;
  * Logs timing markers with context awareness.
  * Writes to active buffer (c = c1 or c2) for proper file separation.
  *
- * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdivision', 'subsubdivision'
+ * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdiv', 'subsubdiv'
  */
 const logUnit = (type) => {
   let shouldLog = false;
@@ -130,9 +130,13 @@ const logUnit = (type) => {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
     actualMeter = [numerator, denominator];
-    meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+    try {
+      if (Array.isArray(midiMeter) && midiMeter[1] === actualMeter[1]) {
+        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+      } else {
+        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
+      }
+    } catch (_e) { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
   } else if (type === 'measure') {
     unit = measureIndex + 1;
     unitsPerParent = measuresPerPhrase;
@@ -152,9 +156,13 @@ const logUnit = (type) => {
       composerDetails += `${composer.root} ${composer.mode.name}`;
     }
     actualMeter = [numerator, denominator];
-    meterInfo = midiMeter[1] === actualMeter[1]
-      ? `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`
-      : `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${midiMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+    try {
+      if (Array.isArray(midiMeter) && midiMeter[1] === actualMeter[1]) {
+        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+      } else {
+        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
+      }
+    } catch (_e) { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
   } else if (type === 'beat') {
     unit = beatIndex + 1;
     unitsPerParent = numerator;
@@ -169,14 +177,14 @@ const logUnit = (type) => {
     endTick = startTick + tpDiv;
     startTime = divStartTime;
     endTime = startTime + spDiv;
-  } else if (type === 'subdivision') {
+  } else if (type === 'subdiv') {
     unit = subdivIndex + 1;
     unitsPerParent = subdivsPerDiv;
     startTick = subdivStart;
     endTick = startTick + tpSubdiv;
     startTime = subdivStartTime;
     endTime = startTime + spSubdiv;
-  } else if (type === 'subsubdivision') {
+  } else if (type === 'subsubdiv') {
     // Use defensively coerced indices/totals to avoid NaN/undefined emissions
     const sIndex = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
     unit = sIndex + 1;
@@ -220,8 +228,8 @@ const logUnit = (type) => {
       if (typeof measureIndex !== 'undefined') parts.push('measure' + ((measureIndex||0)+1) + '/' + safe_measuresPerPhrase);
       if (typeof beatIndex !== 'undefined') parts.push('beat' + ((beatIndex||0)+1) + '/' + safe_numerator);
       if (typeof divIndex !== 'undefined') parts.push('division' + ((divIndex||0)+1) + '/' + safe_divsPerBeat);
-      if (typeof subdivIndex !== 'undefined') parts.push('subdivision' + ((subdivIndex||0)+1) + '/' + safe_subdivsPerDiv);
-      if (Number.isFinite(Number(subsubdivIndex))) parts.push('subsubdivision' + (Number(subsubdivIndex) + 1) + '/' + safe_subsubsPerSub);
+      if (typeof subdivIndex !== 'undefined') parts.push('subdiv' + ((subdivIndex||0)+1) + '/' + safe_subdivsPerDiv);
+      if (Number.isFinite(Number(subsubdivIndex))) parts.push('subsubdiv' + (Number(subsubdivIndex) + 1) + '/' + safe_subsubsPerSub);
 
       const startTickN = Math.round(Number(startTick) || 0);
       const endTickN = Math.round(Number(endTick) || 0);
@@ -395,12 +403,7 @@ grandFinale = () => {
       }
     } catch (_e) { /* swallow */ }
 
-    // If primary CSV contained canonical unitRec markers but this layer has none, treat as postfix anti-pattern
-    // For test harnesses allow opting out via __POLYCHRON_TEST__.allowMissingLayerCanonical = true
-    const _enforceLayerCanonical = !(typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.allowMissingLayerCanonical === true);
-    if (_enforceLayerCanonical && name !== 'primary' && layerState && layerState._primaryHasUnitRec && (!unitsForLayer || unitsForLayer.length === 0)) {
-      raiseCritical('missing:canonical:layer', 'Missing canonical unitRec entries for layer despite primary CSV containing unitRec markers', { layer: name });
-    }
+
 
     // Add any unitRec markers present in the buffer into unitsForLayer (extract full unitId when available)
     try {
@@ -432,6 +435,13 @@ grandFinale = () => {
         } catch (_e) { /* swallow */ }
       }
     } catch (_e) { /* swallow */ }
+
+    // If primary CSV contained canonical unitRec markers but this layer has none, treat as postfix anti-pattern
+    // For test harnesses allow opting out via __POLYCHRON_TEST__.allowMissingLayerCanonical = true
+    const _enforceLayerCanonical = !(typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.allowMissingLayerCanonical === true);
+    if (_enforceLayerCanonical && name !== 'primary' && layerState && layerState._primaryHasUnitRec && (!unitsForLayer || unitsForLayer.length === 0)) {
+      raiseCritical('missing:canonical:layer', 'Missing canonical unitRec entries for layer despite primary CSV containing unitRec markers', { layer: name });
+    }
 
     // Backfill _unitHash for events that did not receive it during normalization by consulting unitsForLayer ranges
     try {

@@ -19,26 +19,37 @@ function walkDir(dir, files = [], base = '') {
   return files;
 }
 
-it('no in-process imports of src/play.js (use child process instead)', () => {
-  const banned = /(require\s*\(\s*['\"][^'\"]*src[\/\\]play\.js['\"]\s*\)|import[^\n]*['\"][^'\"]*src[\/\\]play\.js['\"]|require\.resolve\s*\(\s*['\"][^'\"]*src[\/\\]play\.js['\"]\s*\)|import\s*\(\s*['\"][^'\"]*src[\/\\]play\.js['\"]\s*\))/;
+it('no in-process imports or concurrent spawn/exec of src/play.js (use guarded child process only)', () => {
+  const bannedPatterns = [
+    { name: 'in-process import', re: /(require\s*\(\s*['"][^'"]*src[/\\]play\.js['"]\s*\)|import[^\n]*['"][^'"]*src[/\\]play\.js['"]|require\.resolve\s*\(\s*['"][^'"]*src[/\\]play\.js['"]\s*\)|import\s*\(\s*['"][^'"]*src[/\\]play\.js['"]\s*\))/ },
+    { name: 'spawn/exec of play.js', re: /(\bspawn\b|\bspawnSync\b|\bexec\b|\bexecSync\b)\s*\([^)]*['"`]([^'"`]*src[/\\]play\.js)[^'"`]*['"`]/ },
+    { name: 'path.join src/play.js', re: /path\.join\s*\([^)]*['"]src[/\\]play\.js['"][^)]*\)/ }
+  ];
+
   const files = walkDir(process.cwd(), [], '');
   const matches = [];
 
   for (const f of files) {
     let content = '';
     try { content = fs.readFileSync(f, 'utf8'); } catch (e) { continue; }
-    if (banned.test(content)) {
-      const lines = content.split(/\r?\n/);
-      for (let i = 0; i < lines.length; i++) {
-        if (banned.test(lines[i])) matches.push({ file: path.relative(process.cwd(), f), line: i + 1, text: lines[i].trim() });
+    const lines = content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i];
+      for (const p of bannedPatterns) {
+        if (p.re.test(ln)) {
+          const relPath = path.relative(process.cwd(), f);
+          // Allow the guarded wrapper `scripts/play-guard.js` to reference `src/play.js` internally
+          if (relPath === path.join('scripts','play-guard.js')) continue;
+          matches.push({ file: relPath, line: i + 1, text: ln.trim(), pattern: p.name });
+        }
       }
     }
   }
 
   if (matches.length) {
-    console.error('In-process imports of src/play.js found:');
-    matches.forEach(m => console.error(`${m.file}:${m.line}: ${m.text}`));
+    console.error('Disallowed references to src/play.js found (imports/spawn/exec/path.join):');
+    matches.forEach(m => console.error(`${m.file}:${m.line} [${m.pattern}]: ${m.text}`));
   }
 
-  expect(matches.length, 'Found in-process imports of src/play.js; prefer running play.js in a child process (spawnSync/process.execPath) instead of importing it in-process').toBe(0);
+  expect(matches.length, 'Found disallowed in-process import or spawn/exec/path.join referencing src/play.js; avoid importing or concurrently spawning the main play script. Use a guarded child process or the play guard.').toBe(0);
 });

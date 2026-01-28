@@ -8,7 +8,7 @@ require('../src/time');  // Time functions
 const mockComposer = {
   getMeter: () => [4, 4],
   getDivisions: () => 2,
-  getSubdivisions: () => 2,
+  getSubdivs: () => 2,
   getSubsubdivs: () => 1,
   constructor: { name: 'MockComposer' },
   root: 'C',
@@ -511,27 +511,27 @@ describe('Timing calculation functions', () => {
     });
   });
 
-  describe('Subdivision timing', () => {
+  describe('Subdiv timing', () => {
     const setSubdivTiming = () => {
-      const subdivsPerDiv = composer.getSubdivisions();
+      const subdivsPerDiv = composer.getSubdivs();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
       subdivStart = divStart + 0 * tpSubdiv;
       subdivStartTime = divStartTime + 0 * spSubdiv;
     };
 
-    it('should calculate subdivision timing', () => {
+    it('should calculate subdiv timing', () => {
       tpDiv = 240;
       tpSec = 960;
-      composer.getSubdivisions = vi.fn().mockReturnValue(2);
+      composer.getSubdivs = vi.fn().mockReturnValue(2);
       setSubdivTiming();
       expect(tpSubdiv).toBe(120);
       expect(spSubdiv).toBe(0.125);
     });
 
-    it('should handle complex subdivisions', () => {
+    it('should handle complex subdivs', () => {
       tpDiv = 160;
-      composer.getSubdivisions = vi.fn().mockReturnValue(5);
+      composer.getSubdivs = vi.fn().mockReturnValue(5);
       setSubdivTiming();
       expect(tpSubdiv).toBe(32);
     });
@@ -774,18 +774,18 @@ describe('Edge Case Meter Spoofing', () => {
 
 
 describe('Real-Time Performance', () => {
-  it('should maintain timing accuracy with high subdivision counts', () => {
+  it('should maintain timing accuracy with high subdiv counts', () => {
     numerator = 4;
     denominator = 4;
     BPM = 120;
     PPQ = 480;
     getMidiTiming();
 
-    // Test with extreme subdivisions
-    const subdivisions = [2, 4, 8, 16, 32, 64, 128, 256];
+    // Test with extreme subdivs
+    const subdivs = [2, 4, 8, 16, 32, 64, 128, 256];
     let totalError = 0;
 
-    subdivisions.forEach(subdivs => {
+    subdivs.forEach(subdivs => {
       const tpBeat = tpMeasure / 4;
       const tpSubdiv = tpBeat / subdivs;
       const expectedSubdivDuration = (60 / 120) / 4 / subdivs; // seconds
@@ -794,8 +794,8 @@ describe('Real-Time Performance', () => {
       totalError += Math.abs(expectedSubdivDuration - actualSubdivDuration);
     });
 
-    const avgError = totalError / subdivisions.length;
-    expect(avgError).toBeLessThan(0.1); // Realistic tolerance for high subdivision floating point operations
+    const avgError = totalError / subdivs.length;
+    expect(avgError).toBeLessThan(0.1); // Realistic tolerance for high subdiv floating point operations
   });
 
   it('should handle rapid tempo changes without glitches', () => {
@@ -1169,7 +1169,7 @@ describe('Full Timing Hierarchy', () => {
     // Calculate all levels
     const tpBeat = tpMeasure / 7;
     const tpDiv = tpBeat / 2; // Assume 2 divisions
-    const tpSubdiv = tpDiv / 2; // Assume 2 subdivisions
+    const tpSubdiv = tpDiv / 2; // Assume 2 subdivs
 
     // tpMeasure should use MIDI meter ratio (7/8) not actual meter ratio (7/9)
     expect(tpMeasure).toBeCloseTo(480 * 4 * (7/8), 1);
@@ -1196,7 +1196,7 @@ describe('Full Timing Hierarchy', () => {
     expect(tpPhrase / 4).toBeCloseTo(tpMeasure, 5);
   });
 
-  it('should handle deep subdivision chains (4 levels) correctly', () => {
+  it('should handle deep subdiv chains (4 levels) correctly', () => {
     numerator = 4;
     denominator = 4;
     BPM = 120;
@@ -1206,11 +1206,11 @@ describe('Full Timing Hierarchy', () => {
     const measure = tpMeasure;
     const beat = measure / 4;
     const division = beat / 2;
-    const subdivision = division / 2;
-    const subsubdivision = subdivision / 2;
+    const subdiv = division / 2;
+    const subsubdiv = subdiv / 2;
 
-    expect(subsubdivision).toBeCloseTo(beat / 8, 5);
-    expect(subsubdivision * 32).toBeCloseTo(measure, 5);
+    expect(subsubdiv).toBeCloseTo(beat / 8, 5);
+    expect(subsubdiv * 32).toBeCloseTo(measure, 5);
   });
 
   it('should correctly relate tpSec to all timing levels', () => {

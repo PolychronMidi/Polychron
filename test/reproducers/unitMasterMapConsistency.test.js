@@ -23,7 +23,7 @@ it('unitMasterMap denominators are consistent within parent units', () => {
     // subdiv part may be parts[5]
     const subdivPart = parts[5];
     if (!subdivPart) continue;
-    const match = String(subdivPart).match(/subdivision\d+\/(\d+)/);
+    const match = String(subdivPart).match(/subdiv\d+\/(\d+)/);
     if (!match) continue;
     const denom = Number(match[1]);
     groups[parent] = groups[parent] || new Set();
@@ -31,5 +31,5 @@ it('unitMasterMap denominators are consistent within parent units', () => {
   }
 
   const bad = Object.entries(groups).filter(([k,s]) => s.size > 1);
-  expect(bad.length, `Expected no parents with multiple subdivision denominators. Examples: ${JSON.stringify(bad.slice(0,4))}`).toBe(0);
+  expect(bad.length, `Expected no parents with multiple subdiv denominators. Examples: ${JSON.stringify(bad.slice(0,4))}`).toBe(0);
 });

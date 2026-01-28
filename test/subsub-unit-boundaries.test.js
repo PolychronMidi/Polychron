@@ -2,12 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-it('subsubdivision units are within their subdivision parent bounds', () => {
+it('subsubdiv units are within their subdiv parent bounds', () => {
   const outDir = path.join(process.cwd(), 'output');
 
   // Run a fast play in a child process to avoid polluting this process with play.js globals
   process.env.PLAY_LIMIT = '1';
-  execSync(process.execPath + ' src/play.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1' }), stdio: 'inherit' });
+  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1', PLAY_GUARD_BLOCK: '1' }), stdio: 'inherit' });
   // Build a canonical unit index from output CSVs and master map for inspection
   execSync(process.execPath + ' scripts/exportUnitTreeJson.js', { stdio: 'ignore' });
   const ut = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'output', 'unitTreeMap.json'), 'utf8'));
@@ -17,10 +17,10 @@ it('subsubdivision units are within their subdivision parent bounds', () => {
   units.forEach(u => { const layer = u.layer || 'primary'; byLayer[layer] = byLayer[layer] || []; byLayer[layer].push(u); });
   for (const layerName of Object.keys(byLayer)) {
     const layerUnits = byLayer[layerName];
-    // Build an index of subdivision parents keyed by section/phrase/measure/beat/div/subdiv
+    // Build an index of subdiv parents keyed by section/phrase/measure/beat/div/subdiv
     const subdivIndex = {};
     for (const u of units) {
-      if (u.unitType === 'subdivision') {
+      if (u.unitType === 'subdiv') {
         const key = `${u.sectionIndex}|${u.phraseIndex}|${u.measureIndex}|${u.beatIndex}|${u.divIndex}|${u.subdivIndex}`;
         subdivIndex[key] = u;
       }
@@ -28,7 +28,7 @@ it('subsubdivision units are within their subdivision parent bounds', () => {
 
     const violations = [];
     for (const u of units) {
-      if (u.unitType === 'subsubdivision') {
+      if (u.unitType === 'subsubdiv') {
         const pkey = `${u.sectionIndex}|${u.phraseIndex}|${u.measureIndex}|${u.beatIndex}|${u.divIndex}|${u.subdivIndex}`;
         const parent = subdivIndex[pkey];
         if (!parent) {

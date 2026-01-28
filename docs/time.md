@@ -11,7 +11,7 @@
 **Core Capabilities:**
 - **Meter spoofing** - Converts non-power-of-2 time signatures (7/11, 420/69, etc.) to MIDI-compatible equivalents
 - **Polyrhythm calculation** - Finds optimal measure alignments between different meters
-- **Hierarchical timing** - Precise calculations across 7 nested levels: section → phrase → measure → beat → division → subdivision → subsubdivision
+- **Hierarchical timing** - Precise calculations across 7 nested levels: section → phrase → measure → beat → division → subdiv → subsubdiv
 - **Dual-layer context management** - LayerManager (LM) enables independent polyrhythmic layers with synchronized time
 - **MIDI timing events** - Generates tempo and meter change events via **writer.js** ([code](../src/writer.js)) ([doc](writer.md))
 
@@ -19,7 +19,7 @@
 
 **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) serves as the **timing coordinator**:
 - **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls setUnitTiming() at each hierarchy level and drives phrase/section advancement via LM
-- **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides division/subdivision counts that determine timing granularity
+- **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides division/subdiv counts that determine timing granularity
 - **writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - Receives MIDI timing events (tempo, meter) via setMidiTiming()
 - **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Mathematical utility support (pow, log, ceil, floor)
 ## Unit Timing: `setUnitTiming()`
@@ -80,12 +80,12 @@ setUnitTiming = (unitType) => {
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
-      subdivsPerDiv = m.max(1, composer ? composer.getSubdivisions() : 1);
+      subdivsPerDiv = m.max(1, composer ? composer.getSubdivs() : 1);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv');
       break;
 
-    case 'subdivision':
+    case 'subdiv':
       trackSubdivRhythm();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
@@ -96,7 +96,7 @@ setUnitTiming = (unitType) => {
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
-    case 'subsubdivision':
+    case 'subsubdiv':
       trackSubsubdivRhythm();
       tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
@@ -705,12 +705,12 @@ setUnitTiming = (unitType) => {
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
-      subdivsPerDiv = m.max(1, composer ? composer.getSubdivisions() : 1);
+      subdivsPerDiv = m.max(1, composer ? composer.getSubdivs() : 1);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv');
       break;
 
-    case 'subdivision':
+    case 'subdiv':
       trackSubdivRhythm();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
@@ -721,7 +721,7 @@ setUnitTiming = (unitType) => {
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
-    case 'subsubdivision':
+    case 'subsubdiv':
       trackSubsubdivRhythm();
       tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
@@ -868,9 +868,9 @@ for (sectionIndex = 0; ...)
         for (divIndex = 0; ...)
           setUnitTiming('division')
           for (subdivIndex = 0; ...)
-            setUnitTiming('subdivision')
+            setUnitTiming('subdiv')
             for (subsubdivIndex = 0; ...)
-              setUnitTiming('subsubdivision')
+              setUnitTiming('subsubdiv')
               playNotes()  // Uses subsubdivStart
 ```
 
@@ -910,11 +910,11 @@ setUnitTiming = (unitType) => {
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
-      subdivsPerDiv = m.max(1, composer ? composer.getSubdivisions() : 1);
+      subdivsPerDiv = m.max(1, composer ? composer.getSubdivs() : 1);
       subdivRhythm = setRhythm('subdiv');
       break;
 
-    case 'subdivision':
+    case 'subdiv':
       trackSubdivRhythm();
       tpSubdiv = tpDiv / m.max(1, subdivsPerDiv);
       spSubdiv = tpSubdiv / tpSec;
@@ -924,7 +924,7 @@ setUnitTiming = (unitType) => {
       subsubdivRhythm = setRhythm('subsubdiv');
       break;
 
-    case 'subsubdivision':
+    case 'subsubdiv':
       trackSubsubdivRhythm();
       tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
       spSubsubdiv = tpSubsubdiv / tpSec;
@@ -950,8 +950,8 @@ Each level computes absolute position as: **parent_start + current_index × dura
 | **Measure** | `phraseStart + measureIndex × tpMeasure` | 0 + 1 × 480 = 480 |
 | **Beat** | `phraseStart + measureIndex × tpMeasure + beatIndex × tpBeat` | 0 + 0 × 480 + 2 × 120 = 240 |
 | **Division** | `beatStart + divIndex × tpDiv` | 240 + 3 × 30 = 330 |
-| **Subdivision** | `divStart + subdivIndex × tpSubdiv` | 330 + 1 × 10 = 340 |
-| **Subsubdivision** | `subdivStart + subsubdivIndex × tpSubsubdiv` | 340 + 2 × 2 = 344 |
+| **Subdiv** | `divStart + subdivIndex × tpSubdiv` | 330 + 1 × 10 = 340 |
+| **Subsubdiv** | `subdivStart + subsubdivIndex × tpSubsubdiv` | 340 + 2 × 2 = 344 |
 
 ### Why This Matters
 - **Precision**: Every note has an absolute, unambiguous tick position

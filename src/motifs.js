@@ -172,7 +172,7 @@ applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
   return motif.applyToNotes(notes, options);
 };
 
-__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 Object.assign(__POLYCHRON_TEST__, { Motif, clampMotifNote, applyMotifToNotes });
 
 module.exports = { Motif };

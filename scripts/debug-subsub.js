@@ -1,4 +1,4 @@
-// Debug subsubdivision span cap check
+// Debug subsubdiv span cap check
 require('./../src/test-setup');
 require('./../src/backstage');
 require('./../src/time');
@@ -14,7 +14,7 @@ subdivStart = 0; subdivStartTime = 0;
 tpSec = 480 * 4;
 try {
   console.log('Before call', { tpMeasure, tpSubdiv, subsubsPerSub, subsubdivIndex, subdivStart });
-  setUnitTiming('subsubdivision');
+  setUnitTiming('subsubdiv');
   console.log('setUnitTiming returned without throwing');
 } catch (e) {
   console.error('setUnitTiming threw', e && e.message);

@@ -52,7 +52,7 @@ describe('Marker preference - end-to-end integration', () => {
     // minimal composer stub for deterministic behavior
     composer = {
       getDivisions: () => 1,
-      getSubdivisions: () => 1,
+      getSubdivs: () => 1,
       getSubsubdivs: () => 1,
       getMeter: () => [4, 4]
     };
@@ -75,7 +75,7 @@ describe('Marker preference - end-to-end integration', () => {
 
     // ensure minimal index variables exist to avoid ReferenceErrors in setUnitTiming
     divIndex = 0; subdivIndex = 0; subsubdivIndex = 0;
-    // ensure subdivision counts exist to avoid ReferenceErrors
+    // ensure subdiv counts exist to avoid ReferenceErrors
     subdivsPerDiv = 1; subsubsPerSub = 1;
 
     // call measure timing which should build unitRec and preferentially pick secs from CSV

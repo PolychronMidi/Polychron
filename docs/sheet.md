@@ -12,7 +12,7 @@
 
 This module provides **comprehensive system configuration** including:
 - **Instrument definitions** - Primary, secondary, bass, and drum instrument specifications
-- **Musical range parameters** - Meter, octave, voice, and subdivision constraints with probability weights
+- **Musical range parameters** - Meter, octave, voice, and subdiv constraints with probability weights
 - **System settings** - Tuning frequency, binaural beat ranges, timing resolution, logging levels
 - **Structural parameters** - Section counts, phrase lengths, composition organization
 - **Composer configurations** - Which types of musical composers to use and their settings
@@ -173,7 +173,7 @@ SECTION_TYPES = [
 - **Motif seeding**: Optional `motif` arrays (interval offsets) feed `activeMotif` in **play.js** ([code](../src/play.js)) ([doc](play.md)) to imprint shapes on generated notes.
 ### Rhythmic Complexity Parameters
 
-#### `DIVISIONS` - Beat Subdivision Density
+#### `DIVISIONS` - Beat Subdiv Density
 ```javascript
 DIVISIONS = {
   min: 0,
@@ -181,7 +181,7 @@ DIVISIONS = {
   weights: [1,15,20,25,20,10,10,7,2,2,1]
 };
 ```
-- **Peak at 3-4 divisions** - Most common subdivision levels
+- **Peak at 3-4 divisions** - Most common subdiv levels
 - **Allows extreme complexity** - Up to 10 divisions per beat
 - **Musical balance** - Simple rhythms common, complex rhythms possible
 
@@ -198,8 +198,8 @@ SUBSUBDIVS = {
   weights: [5,20,30,20,10,5]
 };
 ```
-- **Subdivision focus** - Peak at 2-4 subdivisions per division
-- **Subsubdivision restraint** - Lower maximum (5) prevents excessive fragmentation
+- **Subdiv focus** - Peak at 2-4 subdivs per division
+- **Subsubdiv restraint** - Lower maximum (5) prevents excessive fragmentation
 - **Hierarchical complexity** - Each level adds complexity while maintaining coherence
 
 ## Composer Configuration
@@ -237,9 +237,9 @@ SILENT_OUTRO_SECONDS = 5;
 ## Parameter Interaction Effects
 
 ### Cross-Parameter Relationships
-- **Meter complexity affects subdivision complexity** - Complex time signatures reduce rhythmic density
+- **Meter complexity affects subdiv complexity** - Complex time signatures reduce rhythmic density
 - **Octave range affects voice count** - Wider ranges support more voices without crowding
-- **BPM variations scale subdivision parameters** - Higher tempos reduce subdivision likelihood
+- **BPM variations scale subdiv parameters** - Higher tempos reduce subdiv likelihood
 
 ### Dynamic Parameter Scaling
 Many parameters are modified by **BPM ratios** during composition:

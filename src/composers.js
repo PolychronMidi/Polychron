@@ -26,9 +26,9 @@ class MeasureComposer {
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random divisions count from DIVISIONS config */
   getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
-  /** @returns {number} Random subdivisions count from SUBDIVISIONS config */
-  getSubdivisions(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getSubdivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
-  /** @returns {number} Random sub-subdivisions count from SUBSUBDIVS config */
+  /** @returns {number} Random subdivs count from SUBDIVISIONS config */
+  getSubdivs(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getSubdivs',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
+  /** @returns {number} Random sub-subdivs count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random voice count from VOICES config */
   getVoices(){const{min,max,weights}=VOICES;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
@@ -1289,7 +1289,7 @@ composers = [];  // Lazy-loaded in play.js when all systems are ready
 /* self-assigns removed to satisfy lint (classes are already defined in this scope) */
 
 // Mirror into __POLYCHRON_TEST__ to keep test globals namespaced
-__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 Object.assign(__POLYCHRON_TEST__, { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer,
     RandomModeComposer,
     PentatonicComposer,
@@ -1302,3 +1302,13 @@ Object.assign(__POLYCHRON_TEST__, { MeasureComposer, ScaleComposer, RandomScaleC
     AdvancedVoiceLeadingComposer,
     ComposerFactory,
   });
+
+// Export ComposerFactory (and related classes) via CommonJS so modules can require them explicitly
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Object.assign(module.exports || {}, {
+    ComposerFactory,
+    MeasureComposer,
+    ScaleComposer,
+    ChordComposer,
+  });
+}

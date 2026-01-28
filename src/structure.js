@@ -44,6 +44,6 @@ const resolveSectionProfile = (sectionType = null) => {
 };
 
 // Expose globally for play.js and tests
-__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 Object.assign(__POLYCHRON_TEST__, { normalizeSectionType, selectSectionType, resolveSectionProfile });
 module.exports = { normalizeSectionType, selectSectionType, resolveSectionProfile };

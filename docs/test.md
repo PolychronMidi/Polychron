@@ -86,7 +86,7 @@ Key points:
   - Missing `units.json` or `unitMasterMap.json`: ensure `play` completed successfully and `masterMap.finalize()` ran; try deterministic `node src/play.js` with `PLAY_LIMIT=1`.
 
 How the recent change fixed the elusive overlaps:
-- Root cause: intermittent "flapping" composer getters led to inconsistent division/subdivision counts across cascading unit computations, which produced duplicate/conflicting unit emissions.
+- Root cause: intermittent "flapping" composer getters led to inconsistent division/subdiv counts across cascading unit computations, which produced duplicate/conflicting unit emissions.
 - Fix: we removed silent fallback composer calls and implemented controlled, one-shot per-layer cache population using canonical keys (measureIndex/beatIndex/divIndex/subdivIndex). Composer getters are now invoked only during explicit cache population; missing cache entries log a CRITICAL message and use conservative defaults. This makes Treewalker authoritative and eliminates the flip-flop behavior; the overlap detector + verbose traces validated the fix across composer sweeps and targeted repros.
 
 Quick how-to: capture a verbose overlap trace and convert it to a gated CI regression
@@ -209,7 +209,7 @@ When mocks are *absolutely necessary* (for example, when testing code that requi
 const mockComposer = {
   getMeter: () => [4, 4],
   getDivisions: () => 2,
-  getSubdivisions: () => 2,
+  getSubdivs: () => 2,
   constructor: { name: 'MockComposer' }
 };
 ```
@@ -233,7 +233,7 @@ Each module has a corresponding `.test.js` file that imports the real implementa
 | rhythm.test.js | **rhythm.js** ([code](../src/rhythm.js)) ([doc](rhythm.md)) | Drum sound mapping (drumMap), pattern generation (drummer), context-aware rhythm logic | ~800 |
 | stage.test.js | **stage.js** ([code](../src/stage.js)) ([doc](stage.md)) | Binaural beat generation (binaural), stutter effects (stutter), note generation (note), channel management | ~1000 |
 | venue.test.js | **venue.js** ([code](../src/venue.js)) ([doc](venue.md)) | MIDI note/program lookups (getMidiValue), music theory constants (scales, chords, modes) | ~400 |
-| play.test.js | **play.js** ([code](../src/play.js)) ([doc](play.md)) | Composition orchestration, subdivision handling, integration between all modules | ~600 |
+| play.test.js | **play.js** ([code](../src/play.js)) ([doc](play.md)) | Composition orchestration, subdiv handling, integration between all modules | ~600 |
 
 ### Code Quality Test (1 file)
 
@@ -591,7 +591,7 @@ describe('drummer', () => {
 const mockComposer = {
   getMeter: () => [4, 4],
   getDivisions: () => 2,
-  getSubdivisions: () => 2,
+  getSubdivs: () => 2,
   getSubsubdivs: () => 1,
   constructor: { name: 'MockComposer' },
   root: 'C',
@@ -715,7 +715,7 @@ const mockComposer = {
 
 **Test Strategy**:
 1. Load all real modules: sheet, writer, backstage, time, composers, rhythm, stage, venue, play
-2. Test integration scenarios: subdivision, beat, measure loops
+2. Test integration scenarios: subdiv, beat, measure loops
 3. Verify correct sequencing of initialization functions
 4. Test state transitions through full composition cycle
 
@@ -803,7 +803,7 @@ const mockComposer = {
 
 **For Complex State Transitions**:
 1. Consider state machine testing with all possible transitions
-2. Example: timing functions transitioning through subdivision→beat→measure
+2. Example: timing functions transitioning through subdiv→beat→measure
 3. Use state diagrams to ensure all paths are tested
 
 ---
@@ -922,7 +922,7 @@ describe('Global State Variables', () => {
 const mockComposer = {
   getMeter: () => [4, 4],
   getDivisions: () => 2,
-  getSubdivisions: () => 2,
+  getSubdivs: () => 2,
   getSubsubdivs: () => 1,
   constructor: { name: 'MockComposer' }
 };

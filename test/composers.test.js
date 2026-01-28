@@ -59,10 +59,10 @@ describe('MeasureComposer', () => {
     });
   });
 
-  describe('getSubdivisions', () => {
+  describe('getSubdivs', () => {
     it('should return a number within configured range', () => {
       const composer = new MeasureComposer();
-      const result = composer.getSubdivisions();
+      const result = composer.getSubdivs();
       expect(result).toBeGreaterThanOrEqual(SUBDIVISIONS.min);
       expect(result).toBeLessThanOrEqual(SUBDIVISIONS.max);
     });

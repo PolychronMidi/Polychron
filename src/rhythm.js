@@ -316,14 +316,14 @@ setRhythm=(level)=>{
     case 'subdiv': {
       const res = subdivRhythm < 1 ? _random(subdivsPerDiv, .3) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm);
       if (!Array.isArray(res)) {
-        try { raiseCritical('missing:rhythm', 'Subdivision rhythm could not be generated', { level: 'subdiv', subdivsPerDiv, subdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subdivision rhythm missing'); }
+        try { raiseCritical('missing:rhythm', 'Subdiv rhythm could not be generated', { level: 'subdiv', subdivsPerDiv, subdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subdiv rhythm missing'); }
       }
       return subdivRhythm = res;
     }
     case 'subsubdiv': {
       const res = subsubdivRhythm < 1 ? _random(subsubsPerSub, .3) : getRhythm('subsubdiv', subsubsPerSub, subsubdivRhythm);
       if (!Array.isArray(res)) {
-        try { raiseCritical('missing:rhythm', 'Subsubdivision rhythm could not be generated', { level: 'subsubdiv', subsubsPerSub, subsubdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subsubdivision rhythm missing'); }
+        try { raiseCritical('missing:rhythm', 'Subsubdiv rhythm could not be generated', { level: 'subsubdiv', subsubsPerSub, subsubdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subsubdiv rhythm missing'); }
       }
       return subsubdivRhythm = res;
     }
@@ -434,7 +434,7 @@ closestDivisor=(x,target=2)=>{
  * @returns {number[]} Rhythm pattern.
  */
 getRhythm=(level,length,pattern,method,...args)=>{
-  // Map subsubdiv to subdiv's level index so subsubdivision rhythm selection reuses subdiv candidates
+  // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
   const checkMethod=(m)=>{
     if (!m) return null;
@@ -490,5 +490,5 @@ trackSubdivRhythm=()=>{if (subdivRhythm[subdivIndex] > 0) {subdivsOn++; subdivsO
 trackSubsubdivRhythm=()=>{if (subsubdivRhythm[subsubdivIndex] > 0) {subsubdivsOn++; subsubdivsOff=0;} else {subsubdivsOn=0; subsubdivsOff++;} };
 
 // Export to test namespace for clean test access
-__POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 Object.assign(__POLYCHRON_TEST__, { drummer, patternLength, makeOnsets, closestDivisor, drumMap });

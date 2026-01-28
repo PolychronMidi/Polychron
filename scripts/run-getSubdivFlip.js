@@ -1,7 +1,7 @@
 const fs = require('fs'); const path = require('path'); const traces = path.join(process.cwd(), 'output', 'index-traces.ndjson'); try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) { /* swallow */ }
 
 // Flapping composer: returns 7 then 1 alternating
-composer = { getDivisions: () => 1, getSubdivisions: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 7 : 1; }; })() };
+composer = { getDivisions: () => 1, getSubdivs: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 7 : 1; }; })() };
 // Enable tracing by default for reproducer; do not force PLAY_LIMIT so we can run full plays locally
 if (!process.env.INDEX_TRACES) process.env.INDEX_TRACES = '1';
 // Run play.js as a child process to avoid importing it into this script (prevents global pollution)

@@ -1,16 +1,83 @@
 // play.js - Main composition engine orchestrating section, phrase, measure hierarchy.
 // minimalist comments, details at: play.md
 
-if (typeof __POLYCHRON_TEST__ === 'undefined') { try { __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ } }
-require('./bootstrap');
-require('./bootstrap-fallbacks');
-require('./stage');
-const { resolveSectionProfile } = require('./structure');
-const { writeIndexTrace, isEnabled, writeDebugFile } = require('./logGate');
+const fs = require('fs');
+const path = require('path');
 
-console.log('Starting play.js ...');
+// Inter-process lock to ensure only one play.js runs at a time. Uses a lock file in `tmp/`.
+const LOCK_FILE = path.join(process.cwd(), 'tmp', 'play.lock');
 
-const BASE_BPM=BPM;
+function writeLock() {
+  fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
+  try {
+    fs.writeFileSync(LOCK_FILE, JSON.stringify({ pid: process.pid, when: new Date().toISOString() }), { flag: 'wx' });
+    return true;
+  } catch (e) {
+    if (e && e.code === 'EEXIST') return false;
+    throw e;
+  }
+}
+
+function isProcessAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch (e) { return false; }
+}
+
+function acquireLock() {
+  // Try to acquire lock. If already held by a running process, fail fast (do not queue).
+  if (writeLock()) {
+    console.log('Acquired play lock');
+    return;
+  }
+
+  // Lock exists; check if owner process is alive
+  try {
+    const data = fs.readFileSync(LOCK_FILE, 'utf8');
+    const obj = JSON.parse(data);
+    if (obj && obj.pid && isProcessAlive(obj.pid)) {
+      // If the lock is owned by our parent (the play-guard), treat it as transient and attempt to replace it.
+      if (typeof process.ppid !== 'undefined' && obj.pid === process.ppid) {
+        try { fs.unlinkSync(LOCK_FILE); } catch (_) { /* swallow */ }
+        if (!writeLock()) { console.error('Unable to acquire play lock after replacing guard lock; exiting'); process.exit(2); }
+        console.log('Acquired play lock (replaced guard lock)');
+        return;
+      }
+      console.error('New concurrent play.js instance requested; exiting');
+      process.exit(2);
+    }
+    // Stale lock — remove and try once
+    try { fs.unlinkSync(LOCK_FILE); } catch (_) { /* swallow */ }
+    if (!writeLock()) { console.error('Unable to acquire play lock after removing stale lock; exiting'); process.exit(2); }
+    console.log('Acquired play lock');
+  } catch (e) {
+    console.error('Error checking play lock', e && e.stack ? e.stack : e);
+    process.exit(1);
+  }
+}
+
+function releaseLock() {
+  try { if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE); } catch (e) { /* swallow */ }
+}
+
+['exit','SIGINT','SIGTERM','SIGUSR1','SIGUSR2'].forEach(sig => {
+  process.on(sig, () => { try { releaseLock(); } catch (_) { /* swallow */ } process.exit(0); });
+});
+process.on('uncaughtException', (err) => { try { releaseLock(); } catch (_) { /* swallow */ } throw err; });
+process.on('unhandledRejection', (r) => { try { releaseLock(); } catch (_) { /* swallow */ } throw r; });
+
+(async function main() {
+  acquireLock();
+  try {
+    if (typeof __POLYCHRON_TEST__ === 'undefined') { try { __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ } }
+    require('./bootstrap');
+    require('./bootstrap-fallbacks');
+    require('./stage');
+    const { resolveSectionProfile } = require('./structure');
+    const { writeIndexTrace, isEnabled, writeDebugFile } = require('./logGate');
+    const { ComposerFactory } = require('./composers');
+
+    console.log('Starting play.js ...');
+
+    const BASE_BPM=BPM;
 
 // Allow environment gating to enable verbose internal logging for repro/test runs
 if (process.env.__POLYCHRON_TEST_ENABLE_LOGGING) {
@@ -19,8 +86,26 @@ if (process.env.__POLYCHRON_TEST_ENABLE_LOGGING) {
 }
 
 // Initialize composers from configuration if not already done
+// Support COMPOSER_OVERRIDE_MODULE for tests: if provided, require it and set `composers` or `composer` accordingly.
 if (!composers || composers.length === 0) {
-  composers = COMPOSERS.map((config) => ComposerFactory.create(config));
+  if (process.env.COMPOSER_OVERRIDE_MODULE) {
+    try {
+      const ovPath = path.resolve(process.env.COMPOSER_OVERRIDE_MODULE);
+      const ov = require(ovPath);
+      if (Array.isArray(ov)) {
+        composers = ov;
+      } else if (ov && typeof ov === 'object' && ov.composers) {
+        composers = ov.composers;
+      } else if (ov && typeof ov === 'object') {
+        // Single composer object exported
+        composers = [ov];
+      }
+      // Tests can provide ready-to-use composer objects/functions; don't wrap them via ComposerFactory here.
+    } catch (e) { console.error('Failed to load COMPOSER_OVERRIDE_MODULE', e && e.stack ? e.stack : e); }
+  }
+  if (!composers || composers.length === 0) {
+    composers = COMPOSERS.map((config) => ComposerFactory.create(config));
+  }
 }
 
 // Validate composers immediately and fail fast if any required getter is missing
@@ -32,7 +117,7 @@ if (!composers || composers.length === 0) {
       const c = composers[i];
       const missing = [];
       if (!c || typeof c.getDivisions !== 'function') missing.push('getDivisions');
-      if (!c || typeof c.getSubdivisions !== 'function') missing.push('getSubdivisions');
+      if (!c || typeof c.getSubdivs !== 'function') missing.push('getSubdivs');
       if (!c || typeof c.getSubsubdivs !== 'function') missing.push('getSubsubdivs');
       if (!c || typeof c.getMeter !== 'function') missing.push('getMeter');
       if (missing.length) {
@@ -70,9 +155,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     if (__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
     composer = ra(composers);
     // Defensive check: ensure selected composer has required getters; fail fast with diagnostics if not
-    if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivisions !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
+    if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivs !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
       try {
-        const payload = { when: new Date().toISOString(), phase: 'select-composer', composerType: (composer && composer.constructor && composer.constructor.name) ? composer.constructor.name : typeof composer, hasGetDivisions: composer && typeof composer.getDivisions === 'function', hasGetSubdivisions: composer && typeof composer.getSubdivisions === 'function', hasGetSubsubdivs: composer && typeof composer.getSubsubdivs === 'function', hasGetMeter: composer && typeof composer.getMeter === 'function', composersSnapshot: (Array.isArray(composers) ? composers.map(c => (c && c.constructor && c.constructor.name) ? c.constructor.name : (typeof c)) : null), stack: (new Error()).stack };
+        const payload = { when: new Date().toISOString(), phase: 'select-composer', composerType: (composer && composer.constructor && composer.constructor.name) ? composer.constructor.name : typeof composer, hasGetDivisions: composer && typeof composer.getDivisions === 'function', hasGetSubdivs: composer && typeof composer.getSubdivs === 'function', hasGetSubsubdivs: composer && typeof composer.getSubsubdivs === 'function', hasGetMeter: composer && typeof composer.getMeter === 'function', composersSnapshot: (Array.isArray(composers) ? composers.map(c => (c && c.constructor && c.constructor.name) ? c.constructor.name : (typeof c)) : null), stack: (new Error()).stack };
         try { writeDebugFile('composer-selection-errors.ndjson', payload); } catch (e) { /* swallow */ }
       } catch (e) { /* swallow */ }
       throw new Error('composer selection invalid: missing getters');
@@ -115,14 +200,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
               when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
               // Avoid calling composer getters here to prevent flip/flop between calls; instead peek at any existing cache entries
               composerDivisions: cache && cache[_beatKey] ? cache[_beatKey].divisions : null,
-              composerSubdivisions: cache && cache[_divKey] ? cache[_divKey].subdivisions : null,
+              composerSubdivs: cache && cache[_divKey] ? cache[_divKey].subdivs : null,
               composerCachePeek: cache ? { beat: !!(cache && cache[_beatKey]), div: !!(cache && cache[_divKey]) } : null
             };
             writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
           setUnitTiming('division');
 
-          // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
+          // Snapshot subdiv/subsubdiv counts to avoid flip-flop during iteration
           let localSubdivsPerDiv = Math.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
           // When running in PLAY_LIMIT mode (tests/quick-runs), cap inner loop counts to keep runtime bounded
           if (process.env.PLAY_LIMIT) localSubdivsPerDiv = Math.min(localSubdivsPerDiv, 3);
@@ -133,30 +218,30 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'loop-division-primary', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
 
           for (let _subdivIndex = 0; _subdivIndex < localSubdivsPerDiv; _subdivIndex++) { subdivIndex = _subdivIndex;
-            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
-            try { writeIndexTrace({ tag: 'pre-subdivision', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
-            setUnitTiming('subdivision');
-            try { writeIndexTrace({ tag: 'post-subdivision', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, tpSubdiv, subdivStart, lastUnits: (LM && LM.layers && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) ? LM.layers['primary'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdiv-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
+            try { writeIndexTrace({ tag: 'pre-subdiv', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
+            setUnitTiming('subdiv');
+            try { writeIndexTrace({ tag: 'post-subdiv', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, tpSubdiv, subdivStart, lastUnits: (LM && LM.layers && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) ? LM.layers['primary'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
             stage.playNotes();
 
-            // Subsubdivisions are children of subdivisions; iterate inside subdivision loop
+            // Subsubdivs are children of subdivs; iterate inside subdiv loop
             let localSubsubsPerSub = Math.max(1, (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1);
             if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
-            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-entry', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdiv-entry', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
             for (let _subsubdivIndex = 0; _subsubdivIndex < localSubsubsPerSub; _subsubdivIndex++) { subsubdivIndex = _subsubdivIndex;
-              // Watchdog: increment subsubdivision counter for primary
+              // Watchdog: increment subsubdiv counter for primary
               try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subsub-iter', layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, stack: (process.env.CAPTURE_LOOP_STACK === '1') ? (new Error()).stack : undefined, when: (process.env.CAPTURE_LOOP_STACK === '1') ? new Date().toISOString() : undefined }); } catch (_e) { /* swallow */ }
               try { writeIndexTrace({ tag: 'pre-subsub', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
-              setUnitTiming('subsubdivision');
+              setUnitTiming('subsubdiv');
               try { writeIndexTrace({ tag: 'post-subsub', when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, tpSubsubdiv, subsubdivStart, lastUnits: (LM && LM.layers && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) ? LM.layers['primary'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
               stage.playNotes2();
-              if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdivision');
+              if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdiv');
             }
 
-            if (subdivIndex + 1 === localSubdivsPerDiv) resetIndexWithChildren('subdivision');
+            if (subdivIndex + 1 === localSubdivsPerDiv) resetIndexWithChildren('subdiv');
           }
 
-          // Trace post-subdivision summary (temporary debug)
+          // Trace post-subdiv summary (temporary debug)
           try {
             const after = { when: new Date().toISOString(), layer: 'primary', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
             writeIndexTrace(after);
@@ -197,13 +282,13 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
               when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv,
               // Avoid calling composer getters here to prevent flip/flop between calls; use clamped values from time.js instead
               composerDivisions: null,
-              composerSubdivisions: null
+              composerSubdivs: null
             };
             writeIndexTrace(trace); } catch (_e) { /* swallow */ }
 
           setUnitTiming('division');
 
-          // Snapshot subdivision/subsubdivision counts to avoid flip-flop during iteration
+          // Snapshot subdiv/subsubdiv counts to avoid flip-flop during iteration
           let localSubdivsPerDiv = Math.max(1, Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1);
           // When running in PLAY_LIMIT mode (tests/quick-runs), cap inner loop counts to keep runtime bounded
           if (process.env.PLAY_LIMIT) localSubdivsPerDiv = Math.min(localSubdivsPerDiv, 3);
@@ -214,29 +299,29 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           try { if (process.env.CHECK_GLOBALS) writeDebugFile('globals-check.ndjson', { tag: 'loop-division-poly', layer: LM.activeLayer, indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex } }); } catch (_e) { /* swallow */ }
 
           for (let _subdivIndex = 0; _subdivIndex < localSubdivsPerDiv; _subdivIndex++) { subdivIndex = _subdivIndex;
-            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
-            try { writeIndexTrace({ tag: 'pre-subdivision', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
-            setUnitTiming('subdivision');
-            try { writeIndexTrace({ tag: 'post-subdivision', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, tpSubdiv, subdivStart, lastUnits: (LM && LM.layers && LM.layers['poly'] && LM.layers['poly'].state && Array.isArray(LM.layers['poly'].state.units)) ? LM.layers['poly'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdiv-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex }); } catch (_e) { /* swallow */ }
+            try { writeIndexTrace({ tag: 'pre-subdiv', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubdivsPerDiv, divsPerBeat }); } catch (_e) { /* swallow */ }
+            setUnitTiming('subdiv');
+            try { writeIndexTrace({ tag: 'post-subdiv', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, tpSubdiv, subdivStart, lastUnits: (LM && LM.layers && LM.layers['poly'] && LM.layers['poly'].state && Array.isArray(LM.layers['poly'].state.units)) ? LM.layers['poly'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
             stage.playNotes();
 
-            // Subsubdivisions belong to a subdivision; iterate here
+            // Subsubdivs belong to a subdiv; iterate here
             let localSubsubsPerSub = Math.max(1, (typeof subsubsPerSub !== 'undefined' && Number.isFinite(Number(subsubsPerSub))) ? Number(subsubsPerSub) : 1);
             if (process.env.PLAY_LIMIT) localSubsubsPerSub = Math.min(localSubsubsPerSub, 2);
-            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdivision-entry', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
+            try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subdiv-entry', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
             for (let _subsubdivIndex = 0; _subsubdivIndex < localSubsubsPerSub; _subsubdivIndex++) { subsubdivIndex = _subsubdivIndex;
               try { writeDebugFile('time-debug.ndjson', { tag: 'loop-subsub-iter', layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, stack: (process.env.CAPTURE_LOOP_STACK === '1') ? (new Error()).stack : undefined, when: (process.env.CAPTURE_LOOP_STACK === '1') ? new Date().toISOString() : undefined }); } catch (_e) { /* swallow */ }
               try { writeIndexTrace({ tag: 'pre-subsub', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, localSubsubsPerSub }); } catch (_e) { /* swallow */ }
-              setUnitTiming('subsubdivision');
+              setUnitTiming('subsubdiv');
               try { writeIndexTrace({ tag: 'post-subsub', when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex, tpSubsubdiv, subsubdivStart, lastUnits: (LM && LM.layers && LM.layers['poly'] && LM.layers['poly'].state && Array.isArray(LM.layers['poly'].state.units)) ? LM.layers['poly'].state.units.slice(-3) : null }); } catch (_e) { /* swallow */ }
               stage.playNotes2();
-              if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdivision');
+              if (subsubdivIndex + 1 === localSubsubsPerSub) resetIndexWithChildren('subsubdiv');
             }
 
-            if (subdivIndex + 1 === localSubdivsPerDiv) resetIndexWithChildren('subdivision');
+            if (subdivIndex + 1 === localSubdivsPerDiv) resetIndexWithChildren('subdiv');
           }
 
-          // Trace post-subdivision summary (temporary debug)
+          // Trace post-subdiv summary (temporary debug)
           try {
             const after = { when: new Date().toISOString(), layer: 'poly', sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, divsPerBeat, subdivsPerDiv };
             writeIndexTrace(after);
@@ -261,3 +346,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 }
 
 grandFinale();
+  } finally {
+    try { releaseLock(); } catch (_) { /* swallow */ }
+  }
+})().catch((err) => {
+  try { releaseLock(); } catch (_) { /* swallow */ }
+  console.error('play.js failed:', err && err.stack ? err.stack : err);
+  process.exit(1);
+});
