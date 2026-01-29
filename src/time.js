@@ -53,169 +53,30 @@ getMidiTiming = () => {
   return midiMeter; // Return the midiMeter for testing
 };
 
-/**
- * Writes MIDI timing events to active buffer (c).
- * Context-aware: writes to c1 or c2 depending on current meter.
- * @param {number} [tick] - MIDI tick position.
- */
-setMidiTiming = (tick) => {
-  try { if (TEST && TEST.DEBUG) console.log('setMidiTiming', { tpSec, midiBPM, midiMeter, c: !!c, p: typeof p, tick }); } catch (e) { /* swallow */ }
-
-  // Debug: always log minimal buffer state to help triage why events are not appearing in tests
-  try { console.log('setMidiTiming-debug-start', { cType: Object.prototype.toString.call(c), isArray: Array.isArray(c), cLen: Array.isArray(c) ? c.length : (c && Array.isArray(c.rows) ? c.rows.length : null), pType: typeof p }); } catch (_e) { /* swallow */ }
-
-  if (typeof tick === 'undefined') tick = measureStart;
-
-  // Test harness compatibility: if a test set a desired global assignment via
-  // setGlobalObject, it may have recorded the object on TEST.__lastAssignedObjects.
-  // Prefer that explicit per-test buffer when present to ensure deterministic writes.
-  try {
-    if (typeof TEST !== 'undefined' && TEST && TEST.__lastAssignedObjects && TEST.__lastAssignedObjects.c) {
-      c = TEST.__lastAssignedObjects.c;
-    }
-  } catch (_e) { /* swallow */ }
-  if (!Number.isFinite(tpSec) || tpSec <= 0) {
-    throw new Error(`Invalid tpSec: ${tpSec}`);
-  }
-  // Defensive: ensure midiMeter is defined before accessing indices
-  if (!Array.isArray(midiMeter) || midiMeter.length < 2) {
-    const defaultNumerator = (typeof numerator !== 'undefined' && Number.isFinite(Number(numerator))) ? Number(numerator) : 4;
-    const defaultDenominator = (typeof denominator !== 'undefined' && Number.isFinite(Number(denominator))) ? Number(denominator) : 4;
-    midiMeter = [defaultNumerator, defaultDenominator];
-  }
-  // If `p` (push helper) isn't available or has been overridden in tests,
-  // write directly to the buffer for robustness in unit tests.
-  try {
-    if (typeof p !== 'function') {
-      if (Array.isArray(c) || (c && typeof c.push === 'function')) {
-        c.push({ tick: tick, type: 'bpm', vals: [midiBPM] });
-        c.push({ tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] });
-        return;
-      }
-    }
-  } catch (_e) { /* swallow */ }
-
-  p(c,
-    { tick: tick, type: 'bpm', vals: [midiBPM] },
-    { tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
-  );
-
-  // Some test harnesses may replace `p` with a function that doesn't correctly
-  // handle multiple event objects. If we didn't actually write the events above,
-  // fall back to direct buffer writes so tests remain deterministic.
-  try {
-    const bufferArr = Array.isArray(c) ? c : (c && Array.isArray(c.rows) ? c.rows : null);
-    const hasBpm = bufferArr && bufferArr.some(e => e && e.type === 'bpm');
-    const hasMeter = bufferArr && bufferArr.some(e => e && e.type === 'meter');
-    if (!hasBpm || !hasMeter) {
-      if (bufferArr) {
-        // Avoid duplicating events if partial write occurred
-        if (!hasBpm) bufferArr.push({ tick: tick, type: 'bpm', vals: [midiBPM] });
-        if (!hasMeter) bufferArr.push({ tick: tick, type: 'meter', vals: [midiMeter[0], midiMeter[1]] });
-        try { writeDebugFile('time-debug.ndjson', { tag: 'setMidiTiming-fallback-wrote', tick, hasBpm, hasMeter, bufSample: bufferArr.slice(0,3) }); } catch (_e) { /* swallow */ }
-      } else {
-        try { writeDebugFile('time-debug.ndjson', { tag: 'setMidiTiming-no-buffer', tick, cType: (c === undefined ? 'undefined' : Object.prototype.toString.call(c)) }); } catch (_e) { /* swallow */ }
-      }
-    }
-  } catch (_e) { /* swallow */ }
-};
-
-/**
- * Compute phrase alignment between primary and poly meters in seconds.
- * Sets: measuresPerPhrase1, measuresPerPhrase2.
- * @returns {void}
- */
-getPolyrhythm = () => {
-  if (!composer) return;
-  // For quick local runs (PLAY_LIMIT), avoid expensive getMeter loops and fall back to 1:1 phrasing
-  if (process.env && process.env.PLAY_LIMIT) {
-    // Minimal safe defaults for bounded play runs. Only apply defaults when caller
-    // hasn't explicitly provided polyNumerator/polyDenominator (allow tests to set them).
-    if (typeof polyNumerator === 'undefined' || typeof polyDenominator === 'undefined') {
-      polyNumerator = numerator;
-      polyDenominator = denominator;
-    }
-    polyMeterRatio = polyNumerator / polyDenominator;
-    // In PLAY_LIMIT mode, prefer simple 1:1 phrasing to avoid complex polyrhythm loops
-    measuresPerPhrase1 = 1;
-    measuresPerPhrase2 = 1;
-    return;
-  }
-  const MAX_ATTEMPTS = 100;
-  let attempts = 0;
-  while (attempts++ < MAX_ATTEMPTS) {
-    [polyNumerator, polyDenominator] = composer.getMeter(true, true);
-    if (!Number.isFinite(polyNumerator) || !Number.isFinite(polyDenominator) || polyDenominator <= 0) {
-      continue;
-    }
-    polyMeterRatio = polyNumerator / polyDenominator;
-    let allMatches = [];
-    let bestMatch = {
-      primaryMeasures: Infinity,
-      polyMeasures: Infinity,
-      totalMeasures: Infinity,
-      polyNumerator: polyNumerator,
-      polyDenominator: polyDenominator
-    };
-
-    for (let primaryMeasures = 1; primaryMeasures < 7; primaryMeasures++) {
-      for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-        if (m.abs(primaryMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
-          let currentMatch = {
-            primaryMeasures: primaryMeasures,
-            polyMeasures: polyMeasures,
-            totalMeasures: primaryMeasures + polyMeasures,
-            polyNumerator: polyNumerator,
-            polyDenominator: polyDenominator
-          };
-          allMatches.push(currentMatch);
-          if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
-            bestMatch = currentMatch;
-          }
-        }
-      }
-    }
-
-    // If meters are identical, phrasing is trivially 1:1
-    if (numerator === polyNumerator && denominator === polyDenominator) {
-      measuresPerPhrase1 = 1;
-      measuresPerPhrase2 = 1;
-      return;
-    }
-
-    if (bestMatch.totalMeasures !== Infinity &&
-        (bestMatch.totalMeasures > 2 &&
-         (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1))) {
-      measuresPerPhrase1 = bestMatch.primaryMeasures;
-      measuresPerPhrase2 = bestMatch.polyMeasures;
-      return;
-    }
-  }
-  // Max attempts reached: try new meter on primary layer with relaxed constraints
-  console.warn(`getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new primary meter...`);
-  [numerator, denominator] = composer.getMeter(true, false);
-  // CRITICAL: Recalculate all timing after meter change to prevent sync desync
-  getMidiTiming();
-  // As a last resort, fall back to 1:1 phrasing to allow play to proceed while logging a warning
-  warnOnce('polyrhythm:relaxed', 'getPolyrhythm relaxed to 1:1 phrasing after max attempts');
-  measuresPerPhrase1 = 1;
-  measuresPerPhrase2 = 1;
-};
-
 // Load TimingContext implementation from its own module to reduce file size and improve testability
 try { TimingContext = require('./time/TimingContext'); } catch (e) { /* swallow */ }
 // Load LayerManager module which sets global LM for tests and runtime (keeps legacy naked-global semantics)
 try { require('./time/LayerManager'); } catch (e) { /* swallow */ }
+// Load setMidiTiming implementation so the naked global `setMidiTiming` is available to other modules
+try { require('./time/setMidiTiming'); } catch (e) { /* swallow */ }
+/**
+ * Write MIDI timing events to the active buffer.
+ * Implemented in `src/time/setMidiTiming.js`.
+ * @param {number} [tick] - MIDI tick position.
+ */
+setMidiTiming = (typeof setMidiTiming === 'function') ? setMidiTiming : function () { /* delegated to src/time/setMidiTiming.js */ };
 // Load setUnitTiming implementation moved to its own file to keep time.js smaller and testable
 try { require('./time/setUnitTiming'); } catch (e) { /* swallow */ }
 /**
  * Set timing variables for each unit level. Implemented in `src/time/setUnitTiming.js`.
- * Delegated definition preserved to keep JSDoc in this file for code-quality checks.
  * @param {string} unitType - Unit type for timing calculation and logging.
  */
-setUnitTiming = setUnitTiming || function () { /* placeholder - actual implementation in src/time/setUnitTiming.js */ };
-
-
+setUnitTiming = (typeof setUnitTiming === 'function') ? setUnitTiming : function () { /* delegated to src/time/setUnitTiming.js */ };
+/**
+ * Compute phrase alignment between primary and poly meters.
+ * Implemented in `src/time/getPolyrhythm.js` and exposed as a naked global.
+ */
+getPolyrhythm = (typeof getPolyrhythm === 'function') ? getPolyrhythm : function () { /* delegated to src/time/getPolyrhythm.js */ };
 
 // Layer timing globals are created by `LM.register` at startup to support infinite layers
 
@@ -271,13 +132,18 @@ formatTime = (seconds) => {
   return `${minutes}:${seconds}`;
 };
 
-
-
 // Marker map delegated to `src/time/markerMap.js` (imported directly)
 const { _csvPathForLayer, loadMarkerMapForLayer, findMarkerSecs, clearMarkerCache } = require('./time/markerMap');
 
 // Export TimingCalculator to TEST hooks
 try { TEST.TimingCalculator = TimingCalculator; } catch (e) { /* swallow */ }
+
+// Import polyrhythm helper and expose as a naked global (keeps behavior consistent with earlier design)
+try {
+  const getPolyrhythm = require('./time/getPolyrhythm');
+  try { Function('f', 'this.getPolyrhythm = f')(getPolyrhythm); } catch (e) { /* swallow */ }
+  module.exports.getPolyrhythm = getPolyrhythm;
+} catch (e) { /* swallow */ }
 
 // Export public API for programmatic imports and testing
 try {
