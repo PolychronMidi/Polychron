@@ -5,7 +5,7 @@ const { writeIndexTrace, writeDebugFile, appendToFile, writeFatal } = require('.
 const m = Math;
 
 // TimingCalculator moved to its own module to keep `time.js` smaller and more testable.
-try { TimingCalculator = require('./time/TimingCalculator'); } catch (e) { /* swallow */ }
+TimingCalculator = require('./time/TimingCalculator');
 
 // Export TimingCalculator to test hooks and for other modules
 // Use centralized test hooks instead of global mutation
@@ -53,25 +53,20 @@ getMidiTiming = () => {
 };
 
 // Load TimingContext implementation from its own module to reduce file size and improve testability
-try { TimingContext = require('./time/TimingContext'); } catch (e) { /* swallow */ }
-// Load LayerManager module which sets global LM for tests and runtime (keeps legacy naked-global semantics)
-try { require('./time/LayerManager'); } catch (e) { /* swallow */ }
+TimingContext = require('./time/TimingContext');
+// Load LayerManager which sets global LM for tests and runtime (legacy naked-global semantics kept)
+require('./time/LayerManager');
 /**
  * Write MIDI timing events to the active buffer.
  * Implemented in `src/time/setMidiTiming.js`.
  * @param {number} [tick] - MIDI tick position.
  */
-setMidiTiming = (function () { try { return require('./time/setMidiTiming'); } catch (e) { return (typeof setMidiTiming === 'function') ? setMidiTiming : undefined; } })();
+setMidiTiming = require('./time/setMidiTiming');
 /**
  * Set timing variables for each unit level. Implemented in `src/time/setUnitTiming.js`.
  * @param {string} unitType - Unit type for timing calculation and logging.
  */
-setUnitTiming = (function () { try { return require('./time/setUnitTiming'); } catch (e) { return (typeof setUnitTiming === 'function') ? setUnitTiming : undefined; } })();
-/**
- * Compute phrase alignment between primary and poly meters in seconds.
- * Implemented in `src/time/getPolyrhythm.js`.
- * Exposed as a naked global for backward compatibility.
- */
+setUnitTiming = require('./time/setUnitTiming');
 getPolyrhythm = require('./time/getPolyrhythm');
 try { Function('f', 'this.getPolyrhythm = f')(getPolyrhythm); } catch (e) { /* swallow */ }
 try { module.exports.getPolyrhythm = getPolyrhythm; } catch (e) { /* swallow */ }
@@ -103,6 +98,7 @@ try {
   module.exports.findMarkerSecs = findMarkerSecs;
   module.exports.clearMarkerCache = clearMarkerCache;
   // Import and expose restoreLayerToGlobals implementation moved to its own module
-  try { restoreLayerToGlobals = require('./time/restoreLayerToGlobals'); try { Function('f', 'this.restoreLayerToGlobals = f')(restoreLayerToGlobals); } catch (e) { /* swallow */ } } catch (e) { /* swallow */ }
+  restoreLayerToGlobals = require('./time/restoreLayerToGlobals');
+  try { Function('f', 'this.restoreLayerToGlobals = f')(restoreLayerToGlobals); } catch (e) { /* swallow */ }
   module.exports.restoreLayerToGlobals = restoreLayerToGlobals;
 } catch (e) { /* swallow export errors */ }
