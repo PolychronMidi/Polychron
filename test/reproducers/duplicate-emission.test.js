@@ -19,7 +19,7 @@ describe('regression: duplicate unit emissions', () => {
     BINAURAL = { min: 0.1, max: 1.0 };
 
     require('../../src/writer.js'); // sets up CSVBuffer, logUnit
-    require('../../src/time.js');
+    require('../../src/time');
     require('../../src/rhythm.js');
 
     // Register primary layer

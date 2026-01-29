@@ -6,7 +6,7 @@ import { test, expect, beforeEach } from 'vitest';
 
 beforeEach(() => {
   // Require runtime modules for accurate behavior
-  require('../src/writer.js'); require('../src/time.js'); require('../src/rhythm.js');
+  require('../src/writer.js'); require('../src/time'); require('../src/rhythm.js');
   // reset globals
   numerator = 4; denominator = 4; measuresPerPhrase = 1;
   BPM = 120; PPQ = 480; // ensure getMidiTiming can run

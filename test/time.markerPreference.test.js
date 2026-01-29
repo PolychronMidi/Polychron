@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 // ensure time module is loaded to initialize LM and globals
-const _time = require('../src/time.js');
+const _time = require('../src/time');
 // ensure writer is loaded so CSVBuffer is defined for LM.register
 require('../src/writer.js');
 // ensure rhythm helpers are available

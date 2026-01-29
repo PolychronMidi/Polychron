@@ -120,8 +120,6 @@ test('source files should end with newline', () => {
  * Check that critical timing functions have JSDoc annotations.
  */
 test('critical timing functions should have JSDoc', () => {
-  const filePath = path.join(__dirname, '..', 'src', 'time.js');
-  const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
     { name: 'getMidiTiming', file: path.join(__dirname, '..', 'src', 'debug', 'getMidiTiming.js') },
@@ -480,7 +478,6 @@ test('each source module should have corresponding test file', () => {
     'composers.js',
     'rhythm.js',
     'stage.js',
-    'time.js',
     'venue.js',
     'writer.js'
   ];

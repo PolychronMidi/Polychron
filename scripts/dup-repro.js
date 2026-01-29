@@ -2,7 +2,7 @@
 // Minimal required globals for writer/backstage initialization
 TUNING_FREQ = 440; BINAURAL = { min: 0.1, max: 1.0 };
 require('../src/writer.js');
-require('../src/time.js');
+require('../src/time');
 require('../src/rhythm.js');
 const fs = require('fs');
 const path = require('path');
