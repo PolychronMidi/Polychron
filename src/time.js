@@ -10,47 +10,19 @@ TimingCalculator = require('./time/TimingCalculator');
 // Export TimingCalculator to test hooks and for other modules
 // Use centralized test hooks instead of global mutation
 const TEST = require('./test-hooks');
-// One-time warning helper to avoid flooding logs with the same critical messages
-const _polychron_warned = new Set();
-function warnOnce(key, msg) {
-  try {
-    if (_polychron_warned.has(key)) return;
-    _polychron_warned.add(key);
-    // Gate warnings via logGate (debug category)
-    try { writeDebugFile('warnings.ndjson', { key, msg }); } catch (e) { /* swallow */ }
-  } catch (e) { /* swallow logging errors */ }
-}
+// One-time warning helper (moved to its own module at src/debug/warnOnce.js)
+const warnOnce = require('./debug/warnOnce');
+try { Function('f', 'this.warnOnce = f')(warnOnce); } catch (e) { /* swallow */ }
 
-// Fail-fast critical handler: delegate to centralized postfix guard
-function raiseCritical(key, msg, ctx = {}) {
-  // Debug assist: log the key/msg when critical is raised (helps detect undefined messages)
-  try { if (TEST && TEST.DEBUG) console.log('raiseCritical called', { key, msg }); } catch (e) { /* swallow */ }
-  // Delegate to shared raiseCritical implementation so all modules write consistent diagnostics
-  try {
-    const guard = require('./postfixGuard');
-    return guard.raiseCritical(key, msg, ctx);
-  } catch (e) {
-    // Fallback: if guard fails for some reason, ensure we still throw loudly
-    try { writeFatal({ when: new Date().toISOString(), type: 'postfix-anti-pattern', severity: 'critical', key, msg, stack: (new Error()).stack, ctx }); } catch (_e) { /* swallow */ }
-    throw new Error('CRITICAL: ' + msg);
-  }
-}
+// Fail-fast critical handler (moved to `src/debug/raiseCritical.js`)
+const raiseCritical = require('./debug/raiseCritical');
+try { Function('f', 'this.raiseCritical = f')(raiseCritical); } catch (e) { /* swallow */ }
 let timingCalculator = null;
 let restoreLayerToGlobals;
 
-/**
- * Compute MIDI-compatible meter and tempo sync factor.
- * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
- * @returns {number[]} MIDI meter as [numerator, denominator].
- */
-getMidiTiming = () => {
-  // Debug: log inputs when running tests to aid diagnosis
-  try { if (TEST && TEST.DEBUG) console.log('getMidiTiming inputs', { BPM, PPQ, numerator, denominator }); } catch (e) { /* swallow */ }
-  timingCalculator = new TimingCalculator({ bpm: BPM, ppq: PPQ, meter: [numerator, denominator] });
-  ({ midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure } = timingCalculator);
-  try { if (TEST && TEST.DEBUG) console.log('getMidiTiming outputs', { midiMeter, midiMeterRatio, meterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure }); } catch (e) { /* swallow */ }
-  return midiMeter; // Return the midiMeter for testing
-};
+// Compute MIDI-compatible meter and tempo sync factor (moved to `src/debug/getMidiTiming.js`)
+const getMidiTiming = require('./debug/getMidiTiming');
+try { Function('f', 'this.getMidiTiming = f')(getMidiTiming); } catch (e) { /* swallow */ }
 
 // Load TimingContext implementation from its own module to reduce file size and improve testability
 TimingContext = require('./time/TimingContext');
@@ -69,18 +41,9 @@ setMidiTiming = require('./time/setMidiTiming');
 setUnitTiming = require('./time/setUnitTiming');
 getPolyrhythm = require('./time/getPolyrhythm');
 try { Function('f', 'this.getPolyrhythm = f')(getPolyrhythm); } catch (e) { /* swallow */ }
-try { module.exports.getPolyrhythm = getPolyrhythm; } catch (e) { /* swallow */ }
 
-/**
- * Format seconds as MM:SS.ssss time string.
- * @param {number} seconds - Time in seconds.
- * @returns {string} Formatted time string (MM:SS.ssss).
- */
-formatTime = (seconds) => {
-  const minutes = m.floor(seconds / 60);
-  seconds = (seconds % 60).toFixed(4).padStart(7, '0');
-  return `${minutes}:${seconds}`;
-};
+const formatTime = require('./debug/formatTime');
+try { Function('f', 'this.formatTime = f')(formatTime); } catch (e) { /* swallow */ }
 
 // Marker map delegated to `src/time/markerMap.js` (imported directly)
 const { _csvPathForLayer, loadMarkerMapForLayer, findMarkerSecs, clearMarkerCache } = require('./time/markerMap');
@@ -92,6 +55,10 @@ try {
   module.exports = module.exports || {};
   module.exports.TimingCalculator = TimingCalculator;
   module.exports.getMidiTiming = getMidiTiming;
+  module.exports.formatTime = formatTime;
+  module.exports.getPolyrhythm = getPolyrhythm;
+  module.exports.warnOnce = warnOnce;
+  module.exports.raiseCritical = raiseCritical;
   module.exports.setMidiTiming = setMidiTiming;
   module.exports.setUnitTiming = setUnitTiming;
   module.exports.loadMarkerMapForLayer = loadMarkerMapForLayer;

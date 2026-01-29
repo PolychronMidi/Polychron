@@ -124,11 +124,14 @@ test('critical timing functions should have JSDoc', () => {
   const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
-    { name: 'getMidiTiming', file: path.join(__dirname, '..', 'src', 'time.js') },
+    { name: 'getMidiTiming', file: path.join(__dirname, '..', 'src', 'debug', 'getMidiTiming.js') },
     { name: 'setMidiTiming', file: path.join(__dirname, '..', 'src', 'time', 'setMidiTiming.js') },
     { name: 'setUnitTiming', file: path.join(__dirname, '..', 'src', 'time', 'setUnitTiming.js') },
     { name: 'getPolyrhythm', file: path.join(__dirname, '..', 'src', 'time', 'getPolyrhythm.js') },
-    { name: 'restoreLayerToGlobals', file: path.join(__dirname, '..', 'src', 'time', 'restoreLayerToGlobals.js') }
+    { name: 'restoreLayerToGlobals', file: path.join(__dirname, '..', 'src', 'time', 'restoreLayerToGlobals.js') },
+    { name: 'warnOnce', file: path.join(__dirname, '..', 'src', 'debug', 'warnOnce.js') },
+    { name: 'formatTime', file: path.join(__dirname, '..', 'src', 'debug', 'formatTime.js') },
+    { name: 'raiseCritical', file: path.join(__dirname, '..', 'src', 'debug', 'raiseCritical.js') }
   ];
 
   const violations = [];
