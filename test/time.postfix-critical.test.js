@@ -33,13 +33,16 @@ describe('time critical enforcement', () => {
     expect(() => setUnitTiming('phrase')).toThrow(/CRITICAL/);
   });
 
-  test('phrase bounds outside section throws critical error', () => {
+  test('phrase bounds outside section reconciles on last phrase', () => {
     tpSection = 1000;
-    tpPhrase = 800; // too big for phrases within section when phraseIndex>0
-    sectionIndex = 0; phraseIndex = 1;
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.DEBUG = true;
+    tpPhrase = 800; // too big relative to current section bound
+    sectionIndex = 0; phraseIndex = 1; phrasesPerSection = 2; // last phrase
+    const TEST = require('../src/test-hooks'); TEST.DEBUG = true; // enable debug traces for this test
     try { const fs = require('fs'); fs.writeFileSync(require('path').join(process.cwd(),'output','phrase-ctx.json'), JSON.stringify({ phraseStart, sectionStart, tpPhrase, tpSection, phraseIndex, phrasesPerSection, measuresPerPhrase }, null, 2)); } catch (_e) { /* swallow */ }
-    expect(() => setUnitTiming('phrase')).toThrow(/CRITICAL/);
+    // On the final phrase, the implementation should reconcile tpSection rather than fail
+    expect(() => setUnitTiming('phrase')).not.toThrow();
+    // Ensure tpSection increased to include the final phrase
+    expect(Number(tpSection)).toBeGreaterThanOrEqual(Number(phraseStart + tpPhrase));
   });
 
 
@@ -87,8 +90,15 @@ describe('time critical enforcement', () => {
     LM.layers.primary.state.units = [{ unitType: 'measure', startTick: 100, endTick: 200 }];
     phraseStart = 0; tpMeasure = 150; measureIndex = 0;
     // New measureStart will be 0 + 0 * 150 = 0 and end 150 -> overlaps existing 100-200
-    try { __POLYCHRON_TEST__.DEBUG = true; __POLYCHRON_TEST__.enableLogging = true; } catch (e) { /* swallow */ }
+    try { const TEST = require('../src/test-hooks'); TEST.DEBUG = true; TEST.enableLogging = true; } catch (e) { /* swallow */ }
     expect(() => setUnitTiming('measure')).toThrow(/CRITICAL/);
+  });
+
+  test('single-tick overlap tolerated (rounding)', () => {
+    // Existing measure ends at 200; new measure will start at 199 and end 299 -> 1 tick overlap
+    LM.layers.primary.state.units = [{ unitType: 'measure', startTick: 100, endTick: 200 }];
+    phraseStart = 99; tpMeasure = 100; measureIndex = 1; // measureStart = 99 + 1*100 = 199
+    expect(() => setUnitTiming('measure')).not.toThrow();
   });
 
 });

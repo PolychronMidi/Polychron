@@ -19,11 +19,65 @@ if (!logFile || command.length === 0) {
   console.log(`Logging output to log/${logFile}`);
 }
 
+// Concurrency guard: create a PID lock so concurrent invocations are rejected loudly
+const fs = require('fs');
+const lockDir = 'tmp';
+const lockPath = require('path').join(lockDir, 'run.lock');
+// Support nested run-with-log invocations spawned from a root: they set RUN_WITH_LOG_OWNER to the root PID
+const owner = process.env.RUN_WITH_LOG_OWNER ? Number(process.env.RUN_WITH_LOG_OWNER) : null;
+let wroteLock = false;
+try {
+  // Ensure lock directory exists
+  mkdir(lockDir, { recursive: true }).catch(() => {});
+  // If an owner is present and it's **not** us, skip lock handling (we're a nested child)
+  if (!owner || owner === process.pid) {
+    if (fs.existsSync(lockPath)) {
+      try {
+        const pid = Number(fs.readFileSync(lockPath, 'utf8').trim());
+        if (pid && pid > 0) {
+          // If the existing PID equals our PID, it's a stale leftover from this process; remove and continue
+          if (pid === process.pid) {
+            try { fs.unlinkSync(lockPath); } catch (_e) { /* swallow */ }
+          } else {
+            try {
+              // Check if the PID is still running
+              process.kill(pid, 0);
+              // If no error, process exists -> refuse to start another command
+              console.error('\n\n=================================================================');
+              console.error(`ERROR: Another command is running (pid=${pid}).`);
+              console.error('Please wait for it to finish or remove the stale lock at', lockPath);
+              console.error('=================================================================\n\n');
+              process.exit(2);
+            } catch (e) {
+              // Process not running -> stale lock, remove it and continue
+              try { fs.unlinkSync(lockPath); } catch (_e) { /* swallow */ }
+            }
+          }
+        }
+      } catch (e) { /* malformed lock: remove and continue */ try { fs.unlinkSync(lockPath); } catch (_e) { /* swallow */ } }
+    }
+    // Write our PID to the lock file so subsequent invocations detect it
+    try { fs.writeFileSync(lockPath, String(process.pid)); wroteLock = true; } catch (_e) { /* swallow */ }
+  } else {
+    // We're a nested invocation; do not touch global lock
+  }
+} catch (_e) { /* swallow any lock errors to avoid preventing normal runs */ }
+
+// Ensure we remove the lock on exit (only if we wrote it)
+const removeLock = () => { try { if (wroteLock && fs.existsSync(lockPath)) fs.unlinkSync(lockPath); } catch (e) { /* swallow */ } };
+process.on('exit', removeLock);
+process.on('SIGINT', () => { removeLock(); process.exit(130); });
+process.on('SIGTERM', () => { removeLock(); process.exit(143); });
+process.on('uncaughtException', (err) => { removeLock(); throw err; });
+
 // Ensure log directory exists (async-safe)
 mkdir('log', { recursive: true }).catch(() => {});
 
 const logStream = createWriteStream(`log/${logFile}`);
-const proc = spawn(command[0], command.slice(1), { shell: true, stdio: 'pipe' });
+// Preserve and propagate RUN_WITH_LOG_OWNER so nested run-with-log invocations are recognized as children
+const childEnv = Object.assign({}, process.env);
+if (!childEnv.RUN_WITH_LOG_OWNER) childEnv.RUN_WITH_LOG_OWNER = String(owner || process.pid);
+const proc = spawn(command[0], command.slice(1), { shell: true, stdio: 'pipe', env: childEnv });
 
 /**
  * Normalize a single line for the persistent log:

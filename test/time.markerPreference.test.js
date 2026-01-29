@@ -23,8 +23,8 @@ describe('Marker preference cache - integration', () => {
     // deterministic selection helper for rhythm tests
     randomWeightedSelection = (obj) => Object.keys(obj)[0];
     // enable logging inside modules for debug
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-    __POLYCHRON_TEST__.enableLogging = false;
+    const TEST = require('../src/test-hooks');
+    TEST.enableLogging = false;
     // minimal numeric/math random helpers used by rhythm.js
     m = Math;
     ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; };
@@ -45,8 +45,11 @@ describe('Marker preference cache - integration', () => {
     const line = '1,0,marker_t,unitRec:primary|section1|phrase1|measure1|beat1/4|0-1000|0.000000-1.000000';
     fs.writeFileSync(path.join(OUT, 'output1.csv'), line + '\n');
 
+    // Clear any cached marker map to avoid flakiness from concurrent tests
+    const TEST = require('../src/test-hooks'); if (TEST && typeof TEST.clearMarkerCache === 'function') TEST.clearMarkerCache('primary');
+
     // call the module-level loader directly and assert it finds the entry
-    const map = __POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
+    const map = _time.loadMarkerMapForLayer('primary');
     expect(map).toBeDefined();
     const key = 'primary|section1|phrase1|measure1|beat1/4';
     expect(map[key]).toBeDefined();
@@ -54,7 +57,7 @@ describe('Marker preference cache - integration', () => {
     expect(Number(map[key].endSec)).toBeCloseTo(1.0, 6);
 
     // findMarkerSecs should return the same
-    const found = __POLYCHRON_TEST__.findMarkerSecs('primary', key.split('|'));
+    const found = _time.findMarkerSecs('primary', key.split('|'));
     expect(found).toBeDefined();
     expect(Number(found.startSec)).toBeCloseTo(0.0, 6);
     expect(Number(found.endSec)).toBeCloseTo(1.0, 6);
@@ -62,10 +65,10 @@ describe('Marker preference cache - integration', () => {
 
   it('findMarkerSecs returns null when no CSV present', () => {
     try { fs.unlinkSync(path.join(OUT, 'output1.csv')); } catch (e) { /* swallow */ }
-    const map = __POLYCHRON_TEST__.loadMarkerMapForLayer('primary');
+    const map = _time.loadMarkerMapForLayer('primary');
     expect(map).toBeDefined();
     expect(Object.keys(map).length).toBe(0);
-    const found = __POLYCHRON_TEST__.findMarkerSecs('primary', ['primary','section1','phrase1','measure1','beat1/4']);
+    const found = _time.findMarkerSecs('primary', ['primary','section1','phrase1','measure1','beat1/4']);
     expect(found).toBeNull();
   });
 });

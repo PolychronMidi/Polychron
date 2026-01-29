@@ -680,6 +680,6 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
  */
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
 
-// Export helpers to naked global `__POLYCHRON_TEST__` for tests
-try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; } catch (e) { __POLYCHRON_TEST__ = {}; }
-__POLYCHRON_TEST__.rf = rf; __POLYCHRON_TEST__.ri = ri; __POLYCHRON_TEST__.clamp = clamp; __POLYCHRON_TEST__.rv = rv; __POLYCHRON_TEST__.ra = ra;
+// Export helpers to centralized test hooks (preferred over global mutation)
+const TEST = require('./test-hooks');
+try { if (TEST) { TEST.rf = rf; TEST.ri = ri; TEST.clamp = clamp; TEST.rv = rv; TEST.ra = ra; } } catch (e) { /* swallow */ }

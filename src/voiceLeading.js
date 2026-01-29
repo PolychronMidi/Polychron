@@ -293,6 +293,12 @@ class VoiceLeadingScore {
   }
 }
 
-// Export for composition integration into test namespace
-try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-__POLYCHRON_TEST__.VoiceLeadingScore = VoiceLeadingScore;
+// Export for composition integration into centralized TEST hooks
+const TEST = require('./test-hooks');
+try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { /* swallow */ }
+
+// Export for direct import in tests and tools
+try {
+  module.exports = module.exports || {};
+  module.exports.VoiceLeadingScore = VoiceLeadingScore;
+} catch (e) { /* swallow */ }

@@ -194,7 +194,8 @@ describe('grandFinale', () => {
       renameSync: vi.fn()
     };
     // Propagate into test namespace for grandFinale compatibility
-    try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.fs = fs; __POLYCHRON_TEST__.allowMissingLayerCanonical = true; } catch (e) { /* swallow */ }
+    const TEST = require('../src/test-hooks');
+    TEST.fs = fs; TEST.allowMissingLayerCanonical = true;
     // Reset LM
     LM = {
       layers: {}

@@ -9,9 +9,12 @@ TEST_GLOBAL.__POLYCHRON_TEST__.suppressHumanMarkerCheck = true;
 require('./stage');
 // Ensure venue/writer/motifs modules are loaded so they populate __POLYCHRON_TEST__ before we promote values
 require('./venue');
-require('./writer');
+const writerExports = require('./writer');
+const rhythmExports = require('./rhythm');
 require('./structure');
 const _motifs = require('./motifs');
+// Merge writer & rhythm exports into test namespace so legacy tests can get them via __POLYCHRON_TEST__
+try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; Object.assign(__POLYCHRON_TEST__, writerExports, rhythmExports); } catch (e) { /* swallow */ }
 
 // Minimal test bootstrap: ensure frequently-used naked globals exist so tests can safely assign to them
 // Use an indirect global accessor to avoid using banned identifiers like `global`/`globalThis`.
@@ -33,8 +36,10 @@ if (typeof GLOBAL.refVar === 'undefined') GLOBAL.refVar = 1;
 if (typeof GLOBAL.lastCrossMod === 'undefined') GLOBAL.lastCrossMod = 0;
 
 // Ensure classes exposed into __POLYCHRON_TEST__ by modules are also available as naked globals for legacy tests
-require('./composers');
-require('./voiceLeading');
+const composersExports = require('./composers');
+const voiceLeadingExports = require('./voiceLeading');
+// Merge composer and voiceLeading exports into test namespace to support legacy globals
+try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; Object.assign(__POLYCHRON_TEST__, composersExports.TestExports || composersExports, voiceLeadingExports); } catch (e) { /* swallow */ }
 // Assign into the test-global object to ensure properties exist for legacy tests that use bare identifiers
 const testns = (typeof __POLYCHRON_TEST__ !== 'undefined') ? __POLYCHRON_TEST__ : {};
 GLOBAL.MeasureComposer = GLOBAL.MeasureComposer || (testns.MeasureComposer || (typeof GLOBAL.MeasureComposer !== 'undefined' ? GLOBAL.MeasureComposer : undefined));

@@ -43,7 +43,7 @@ describe('regression: duplicate unit emissions', () => {
 
     // ensure counters and indices exist
     beatsOn = 0; beatsOff = 0; divsOn = 0; divsOff = 0; subdivsOn = 0; subdivsOff = 0;
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.enableLogging = false;
+    const TEST = require('../../src/test-hooks'); TEST.enableLogging = false;
     divIndex = 0; subdivIndex = 0; subsubdivIndex = 0; subdivsPerDiv = 7; subsubsPerSub = 4;
   });
 

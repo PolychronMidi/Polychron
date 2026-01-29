@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 
 it('subdiv siblings do not overlap within same parent', () => {
   process.env.PLAY_LIMIT = '1';
-  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1', PLAY_GUARD_BLOCK: '1' }), stdio: 'inherit' });
+  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1' }), stdio: 'inherit' });
   execSync(process.execPath + ' scripts/exportUnitTreeJson.js', { stdio: 'ignore' });
   const ut = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'output', 'unitTreeMap.json'), 'utf8'));
   const units = (ut.units || []).filter(u => ((u.parts || []).join('|').indexOf('subdiv') !== -1) || (u.key && String(u.key).indexOf('subdiv') !== -1));

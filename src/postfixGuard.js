@@ -15,6 +15,10 @@ function raiseCritical(key, msg, ctx = {}) {
   try {
     const outDir = _ensureOutDir();
     const payload = Object.assign({ when: new Date().toISOString(), type: 'postfix-anti-pattern', severity: 'critical', key, msg, stack: (new Error()).stack }, ctx);
+    // Include optional play-run identifier from environment so callers can correlate CRITICALs to a specific play run
+    try {
+      if (process && process.env && process.env.PLAY_RUN_ID) payload.playRunId = process.env.PLAY_RUN_ID;
+    } catch (e) { /* swallow */ }
     try {
       // Append a JSON line to a diagnostics ndjson file for later inspection
       const file = path.join(outDir, 'postfix-failures.ndjson');

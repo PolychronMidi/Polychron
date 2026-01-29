@@ -49,9 +49,9 @@ function setupGlobalState() {
   LOG = 'none';
 
   // Ensure debug flag is available to modules and leave naked globals set above for modules to read
+  const TEST = require('../src/test-hooks');
   try {
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-    if (typeof __POLYCHRON_TEST__.DEBUG === 'undefined') __POLYCHRON_TEST__.DEBUG = false;
+    if (typeof TEST.DEBUG === 'undefined') TEST.DEBUG = false;
 
     // Also assign bare (unscoped) globals directly in the global scope so modules using
     // naked identifiers (e.g., `numerator`, `denominator`) see the intended values.
@@ -84,12 +84,16 @@ function setPPQ(n) { PPQ = n; setGlobalVar('PPQ', n); }
 
 function setGlobalObject(name, obj) {
   try {
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
+    const TEST = require('../src/test-hooks');
     const key = `__obj_${Math.random().toString(36).slice(2)}`;
-    __POLYCHRON_TEST__[key] = obj;
+    TEST[key] = obj;
+    // Also record direct assignment on TEST so modules can access it if the
+    // Function-based global assignment does not take effect in some runtimes
+    TEST.__lastAssignedObjects = TEST.__lastAssignedObjects || {};
+    TEST.__lastAssignedObjects[name] = obj;
     // Assign the naked global in the global scope without referencing banned globals
-    Function(`${name} = __POLYCHRON_TEST__["${key}"];`)();
-    delete __POLYCHRON_TEST__[key];
+    Function(`${name} = TEST["${key}"];`)();
+    delete TEST[key];
   } catch (e) { /* swallow */ }
 }
 
