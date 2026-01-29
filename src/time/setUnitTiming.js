@@ -4,6 +4,11 @@
  * @param {string} unitType - Unit type for timing calculation and logging.
  * @returns {void}
  */
+const { writeIndexTrace, writeDebugFile, appendToFile } = require('../logGate');
+const { raiseCritical } = require('../postfixGuard');
+const TEST = require('../test-hooks');
+const m = Math;
+
 setUnitTiming = (unitType) => {
   const si = (typeof sectionIndex !== 'undefined') ? sectionIndex : 'undef';
   const pi = (typeof phraseIndex !== 'undefined') ? phraseIndex : 'undef';
