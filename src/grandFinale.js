@@ -116,11 +116,13 @@ const grandFinale = () => {
 
 
 
-    // Add any unitRec markers present in the buffer into unitsForLayer (extract full unitId when available)
+    // Single-pass over buffer to incorporate unitRec markers into unitsForLayer and backfill unit hashes for events
     try {
       for (const evt of buffer) {
         try {
           if (!evt || typeof evt !== 'object') continue;
+
+          // Marker extraction: if this event is a unitRec marker, capture its full id and push into unitsForLayer
           if (String(evt.type).toLowerCase() === 'marker_t' && Array.isArray(evt.vals)) {
             const m = evt.vals.find(v => String(v).includes('unitRec:')) || null;
             if (m) {
@@ -143,6 +145,36 @@ const grandFinale = () => {
               } catch (_e) { /* swallow */ }
             }
           }
+
+          // Backfill unit hash for this event if missing (use currently accumulated unitsForLayer which includes markers parsed above)
+          if (!evt._unitHash) {
+            const t = Number.isFinite(Number(evt._tickSortKey)) ? Math.round(Number(evt._tickSortKey)) : null;
+            if (t === null) continue;
+            let candidates = (unitsForLayer || []).filter(u => {
+              const s = Number(u.startTick || 0);
+              const e = Number(u.endTick || 0);
+              return Number.isFinite(s) && Number.isFinite(e) && (t >= s && t <= e);
+            });
+            if (!candidates.length) {
+              candidates = (unitsForLayer || []).filter(u => {
+                const s = Number(u.startTick || 0);
+                const e = Number(u.endTick || 0);
+                return Number.isFinite(s) && Number.isFinite(e) && (t >= (s - 1) && t <= (e + 1));
+              });
+            }
+            if (candidates.length) {
+              candidates.sort((a, b) => {
+                const spanA = Number(a.endTick || 0) - Number(a.startTick || 0);
+                const spanB = Number(b.endTick || 0) - Number(b.startTick || 0);
+                if (spanA !== spanB) return spanA - spanB;
+                const partsA = String(a.unitId || '').split('|').length;
+                const partsB = String(b.unitId || '').split('|').length;
+                return partsB - partsA; // prefer more parts
+              });
+              const found = candidates[0];
+              if (found && found.unitId) evt._unitHash = found.unitId;
+            }
+          }
         } catch (_e) { /* swallow */ }
       }
     } catch (_e) { /* swallow */ }
@@ -153,45 +185,6 @@ const grandFinale = () => {
     if (_enforceLayerCanonical && name !== 'primary' && layerState && layerState._primaryHasUnitRec && (!unitsForLayer || unitsForLayer.length === 0)) {
       raiseCritical('missing:canonical:layer', 'Missing canonical unitRec entries for layer despite primary CSV containing unitRec markers', { layer: name });
     }
-
-    // Backfill _unitHash for events that did not receive it during normalization by consulting unitsForLayer ranges
-    try {
-      buffer.forEach(evt => {
-        try {
-          if (!evt || typeof evt !== 'object') return;
-          if (evt._unitHash) return;
-          const t = Number.isFinite(Number(evt._tickSortKey)) ? Math.round(Number(evt._tickSortKey)) : null;
-          if (t === null) return;
-          // Prefer exact-containing, smallest-span unit
-          let candidates = (unitsForLayer || []).filter(u => {
-            const s = Number(u.startTick || 0);
-            const e = Number(u.endTick || 0);
-            return Number.isFinite(s) && Number.isFinite(e) && (t >= s && t <= e);
-          });
-          if (!candidates.length) {
-            // broaden search slightly (+/-1 tick) to tolerate rounding/edge cases
-            candidates = (unitsForLayer || []).filter(u => {
-              const s = Number(u.startTick || 0);
-              const e = Number(u.endTick || 0);
-              return Number.isFinite(s) && Number.isFinite(e) && (t >= (s - 1) && t <= (e + 1));
-            });
-          }
-          if (candidates.length) {
-            // Prefer smallest span (most granular) but if spans tie, prefer units with more path segments
-            candidates.sort((a, b) => {
-              const spanA = Number(a.endTick || 0) - Number(a.startTick || 0);
-              const spanB = Number(b.endTick || 0) - Number(b.startTick || 0);
-              if (spanA !== spanB) return spanA - spanB;
-              const partsA = String(a.unitId || '').split('|').length;
-              const partsB = String(b.unitId || '').split('|').length;
-              return partsB - partsA; // prefer more parts
-            });
-            const found = candidates[0];
-            if (found && found.unitId) evt._unitHash = found.unitId;
-          }
-        } catch (_e) { /* swallow */ }
-      });
-    } catch (_e) { /* swallow */ }
 
     // Generate CSV
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
@@ -217,22 +210,36 @@ const grandFinale = () => {
     const lastUnit = unitsForLayer.length ? unitsForLayer.reduce((a, b) => (Number(a.endTick) > Number(b.endTick) ? a : b)) : null;
     const emittedUnitRec = new Set();
 
-    // Detect orphan events after the last known unit and create a single "layer[number]outro" virtual unit
+    // Optimization helpers: record event ticks/markers during a single scan and control deferred sorting
     let outroUnit = null;
+    let needsSort = false;
+    let maxEventTick = -Infinity;
+    let lastMarkerTick = null;
+
     try {
+      // Scan to compute maxEventTick and lastMarkerTick efficiently
+      for (const evt of buffer) {
+        try {
+          const t = Number(evt && evt.tick);
+          if (Number.isFinite(t)) maxEventTick = Math.max(maxEventTick, Math.round(t));
+          if (evt && String(evt.type).toLowerCase() === 'marker_t') {
+            const mt = Number(evt.tick);
+            if (Number.isFinite(mt)) lastMarkerTick = Math.max(lastMarkerTick || -Infinity, Math.round(mt));
+          }
+        } catch (_e) { /* swallow */ }
+      }
+
       const lastEnd = lastUnit ? Number(lastUnit.endTick) : -Infinity;
-      const maxEventTick = buffer.reduce((m, i) => Math.max(m, Number(i && i.tick) || -Infinity), -Infinity);
-      // Prefer the layer's last explicit marker_t tick when available (authoritative) to determine projected end.
-      let lastMarkerTick = null;
-      try { lastMarkerTick = buffer.slice().reverse().find(l => l && String(l.type).toLowerCase() === 'marker_t') ? Number(buffer.slice().reverse().find(l => l && String(l.type).toLowerCase() === 'marker_t').tick) : null; } catch (_e) { /* swallow */ }
       const baseTickForProjection = (Number.isFinite(lastMarkerTick) ? lastMarkerTick : (Number.isFinite(maxEventTick) ? maxEventTick : -Infinity));
       const projectedEndTick = Number.isFinite(baseTickForProjection) ? Math.round(baseTickForProjection + (SILENT_OUTRO_SECONDS * (layerState && layerState.tpSec || 0))) : -Infinity;
+
       const orphanTicks = buffer
         .map(i => ({ tickNum: i && i.tick, tickInt: Math.round(Number(i && i.tick) || 0) }))
         .filter(i => Number.isFinite(i.tickInt) && !findUnitForTick(i.tickInt) && i.tickInt >= lastEnd)
         .map(i => i.tickInt);
-      // Include the projected end_track tick so the outro region will cover it
+
       if (Number.isFinite(projectedEndTick) && projectedEndTick >= lastEnd) orphanTicks.push(projectedEndTick);
+
       if (orphanTicks.length) {
         const minTick = Math.min(...orphanTicks);
         const maxTick = Math.max(...orphanTicks);
@@ -241,14 +248,16 @@ const grandFinale = () => {
         const outroId = `${outroKey}|${minTick}-${maxTick}`;
         outroUnit = { unitId: outroId, layer: name, startTick: minTick, endTick: maxTick, startTime: 0, endTime: 0, raw: { outro: true } };
         unitsForLayer.push(outroUnit);
-        // Register synthesized outro with MasterMap so it appears in the manifest for downstream validation
         try { const MasterMap = require('./masterMap'); MasterMap.addUnit({ parts: [outroId], layer: name, startTick: minTick, endTick: maxTick, startTime: 0, endTime: 0, raw: { outro: true } }); } catch (_e) { /* swallow */ }
-        // Add a marker event into the buffer so it will be sorted numerically with other events
-        try { buffer.push({ tick: minTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(minTick) }); } catch (_e) { /* swallow */ }
-        try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) { /* swallow */ }
+        try { buffer.push({ tick: minTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(minTick) }); needsSort = true; } catch (_e) { /* swallow */ }
         emittedUnitRec.add(outroId);
       }
     } catch (e) { /* swallow */ }
+
+    // If any synthesized markers were pushed, perform a single numeric sort pass before composing output
+    if (needsSort) {
+      try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) { /* swallow */ }
+    }
 
     buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
@@ -305,8 +314,7 @@ const grandFinale = () => {
         const outroId = `${outroKey}|${computedEndTick}-${computedEndTick}`;
         outroUnit = { unitId: outroId, layer: name, startTick: computedEndTick, endTick: computedEndTick, startTime: 0, endTime: 0, raw: { outro: true } };
         unitsForLayer.push(outroUnit);
-        try { buffer.push({ tick: computedEndTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(computedEndTick) }); } catch (_e) { /* swallow */ }
-        try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) { /* swallow */ }
+        try { buffer.push({ tick: computedEndTick, type: 'marker_t', vals: [`unitRec:${outroId}`], _tickSortKey: Math.round(computedEndTick) }); needsSort = true; } catch (_e) { /* swallow */ }
         emittedUnitRec.add(outroId);
       } else if (outroUnit && Number.isFinite(computedEndTick) && computedEndTick > Number(outroUnit.endTick || -Infinity)) {
         // extend existing outro unit
@@ -314,8 +322,7 @@ const grandFinale = () => {
         const newId = `${base}|${Math.round(outroUnit.startTick)}-${computedEndTick}`;
         outroUnit.unitId = newId;
         outroUnit.endTick = computedEndTick;
-        try { buffer.push({ tick: Math.round(outroUnit.startTick), type: 'marker_t', vals: [`unitRec:${newId}`], _tickSortKey: Math.round(outroUnit.startTick) }); } catch (_e) { /* swallow */ }
-        try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) { /* swallow */ }
+        try { buffer.push({ tick: Math.round(outroUnit.startTick), type: 'marker_t', vals: [`unitRec:${newId}`], _tickSortKey: Math.round(outroUnit.startTick) }); needsSort = true; } catch (_e) { /* swallow */ }
         emittedUnitRec.add(newId);
       }
 
@@ -361,8 +368,7 @@ const grandFinale = () => {
             tailTick = Math.round(Number((lastUnit && lastUnit.endTick) || endTick));
           }
 
-          try { buffer.push({ tick: tailTick, type: 'marker_t', vals: [`unitRec:${finalId}`], _tickSortKey: tailTick }); } catch (_e) { /* swallow */ }
-          try { buffer.sort((A,B)=> (A._tickSortKey || Math.round(Number(A.tick)||0)) - (B._tickSortKey || Math.round(Number(B.tick)||0))); } catch (_e) { /* swallow */ }
+          try { buffer.push({ tick: tailTick, type: 'marker_t', vals: [`unitRec:${finalId}`], _tickSortKey: tailTick }); needsSort = true; } catch (_e) { /* swallow */ }
           emittedUnitRec.add(finalId);
           // If we synthesized a finalId (no lastUnit/outro), add a minimal unit entry for auditing
           if (!lastUnit && !outroUnit) {
