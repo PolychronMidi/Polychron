@@ -58,7 +58,7 @@ for (const f of files) {
   while ((gs = globalSetTimeoutRe.exec(src)) !== null) {
     fileOffenders.push({ file: f, call: gs[0], timeout: gs[2], reason: 'global setTimeout' });
   }
-  const childTimeoutRe = /\b(spawnSync|execSync)\s*\([^\)]{0,400}\btimeout\s*:\s*([\d][\d\s\*\+\-\/\(\)]*)\b/g;
+  const childTimeoutRe = /\b(spawnSync|execSync)\s*\([^)]{0,400}\btimeout\s*:\s*([\d][\d\s*+()/ -]*)\b/g;
   let ct;
   while ((ct = childTimeoutRe.exec(src)) !== null) {
     fileOffenders.push({ file: f, call: ct[0].slice(0,200), rawTimeout: ct[2] || null, reason: 'child spawn timeout' });

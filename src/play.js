@@ -4,20 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Inter-process lock helpers moved into the play-guard module to keep this file tidy.
-// We still call acquireLock()/releaseLock() here to preserve identical semantics when play.js
-// is invoked directly (tests sometimes do this).
-const { acquireLock, releaseLock } = require('../scripts/play-guard');
-
-['exit','SIGINT','SIGTERM','SIGUSR1','SIGUSR2'].forEach(sig => {
-  process.on(sig, () => { try { releaseLock(); } catch (_) { /* swallow */ } process.exit(0); });
-});
-process.on('uncaughtException', (err) => { try { releaseLock(); } catch (_) { /* swallow */ } throw err; });
-process.on('unhandledRejection', (r) => { try { releaseLock(); } catch (_) { /* swallow */ } throw r; });
-
 (async function main() {
-  acquireLock();
-  try {
     // Use centralized test hooks instead of mutating a global
     const TEST = require('./test-hooks');
     require('./bootstrap');
@@ -298,11 +285,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 }
 
 grandFinale();
-  } finally {
-    try { releaseLock(); } catch (_) { /* swallow */ }
-  }
 })().catch((err) => {
-  try { releaseLock(); } catch (_) { /* swallow */ }
   console.error('play.js failed:', err && err.stack ? err.stack : err);
   process.exit(1);
 });

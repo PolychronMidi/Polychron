@@ -402,11 +402,11 @@ export default [
       'no-undef': 'error',  // Catch undefined variables like activeMotif
       'no-restricted-globals': ['error', { name: 'global', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globalThis', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBAL', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALTHIS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globals', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }],
       'no-unreachable': 'error',  // Dead code after return/throw
-      'no-constant-condition': 'warn',  // Conditions always true/false (can be intentional)
+      'no-constant-condition': 'error',  // Conditions always true/false (can be intentional)
       'no-dupe-keys': 'error',  // Duplicate object keys
       'no-dupe-args': 'error',  // Duplicate function parameters
       'no-duplicate-case': 'error',  // Duplicate switch cases
-      'no-empty': 'warn',  // Empty blocks (may be intentional)
+      'no-empty': 'error',  // Empty blocks (may be intentional)
       'no-ex-assign': 'error',  // Reassigning exception variable
       'no-func-assign': 'error',  // Reassigning function declarations
       'no-invalid-regexp': 'error',  // Invalid regex patterns
@@ -414,14 +414,14 @@ export default [
       'valid-typeof': 'error',  // Enforce valid typeof comparisons
       'no-self-assign': 'error',  // Catch x = x mistakes
       'no-cond-assign': ['error', 'except-parens'],  // No assignment in conditions (catch = vs ==)
-      'no-fallthrough': 'warn',  // Require break in switch cases
+      'no-fallthrough': 'error',  // Require break in switch cases
 
       // Code quality
       'no-irregular-whitespace': 'error',
       'no-unexpected-multiline': 'error',
-      'no-useless-escape': 'warn',
-      'no-trailing-spaces': 'warn',
-      'eol-last': ['warn', 'always'],
+      'no-useless-escape': 'error',
+      'no-trailing-spaces': 'error',
+      'eol-last': ['error', 'always'],
       'no-unused-vars': 'off'  // Too many intentional globals
     }
   },
