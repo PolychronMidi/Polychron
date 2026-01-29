@@ -3,7 +3,8 @@ require('../src/sheet');  // Defines constants and configuration objects
 require('../src/venue');  // Defines tonal (t), allScales, allNotes, allChords, allModes
 require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
 require('../src/backstage');  // Defines helper functions like rf, ri, clamp, etc.
-require('../src/composers');  // Defines composer classes and composers array
+const { TestExports } = require('../src/composers');  // Defines composer classes and composers array
+const { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer, RandomModeComposer, PentatonicComposer, RandomPentatonicComposer, ProgressionGenerator, TensionReleaseComposer, ModalInterchangeComposer, MelodicDevelopmentComposer, AdvancedVoiceLeadingComposer, ComposerFactory } = TestExports;
 
 // Setup function
 function setupGlobalState() {

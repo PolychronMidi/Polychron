@@ -2,10 +2,10 @@
 require('../src/sheet');  // Defines constants
 require('../src/writer');  // Defines writer functions (CSVBuffer, p, etc.)
 require('../src/backstage');  // Defines utility functions
-require('../src/rhythm');  // Rhythm functions
+const { drummer, makeOnsets, patternLength, closestDivisor, patternLength: _patternLength, makeOnsets: _makeOnsets, closestDivisor: _closestDivisor } = require('../src/rhythm');  // Rhythm functions
 
 // Enable test logging
-__POLYCHRON_TEST__.enableLogging = true;
+const TEST = require('../src/test-hooks'); TEST.enableLogging = true;
 
 let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
@@ -36,22 +36,22 @@ function setupGlobalState() {
   };
   // Propagate into the test namespace used by imported helpers and set globals
   try {
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-    __POLYCHRON_TEST__.drumMap = drumMap;
-    // Expose runtime test values to the test harness namespace so modules using __POLYCHRON_TEST__ can read them
-    try { __POLYCHRON_TEST__.c = c; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.drumCH = drumCH; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.beatStart = beatStart; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.tpBeat = tpBeat; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.beatIndex = beatIndex; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.numerator = numerator; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.beatRhythm = beatRhythm; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.beatsOff = beatsOff; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.bpmRatio3 = bpmRatio3; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.measuresPerPhrase = measuresPerPhrase; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.divsPerBeat = divsPerBeat; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.subdivsPerDiv = subdivsPerDiv; } catch (e) { /* swallow */ }
-    try { __POLYCHRON_TEST__.divRhythm = divRhythm; } catch (e) { /* swallow */ }
+    const TEST = require('../src/test-hooks');
+    TEST.drumMap = drumMap;
+    // Expose runtime test values to the test harness namespace so modules using TEST hooks can read them
+    try { TEST.c = c; } catch (e) { /* swallow */ }
+    try { TEST.drumCH = drumCH; } catch (e) { /* swallow */ }
+    try { TEST.beatStart = beatStart; } catch (e) { /* swallow */ }
+    try { TEST.tpBeat = tpBeat; } catch (e) { /* swallow */ }
+    try { TEST.beatIndex = beatIndex; } catch (e) { /* swallow */ }
+    try { TEST.numerator = numerator; } catch (e) { /* swallow */ }
+    try { TEST.beatRhythm = beatRhythm; } catch (e) { /* swallow */ }
+    try { TEST.beatsOff = beatsOff; } catch (e) { /* swallow */ }
+    try { TEST.bpmRatio3 = bpmRatio3; } catch (e) { /* swallow */ }
+    try { TEST.measuresPerPhrase = measuresPerPhrase; } catch (e) { /* swallow */ }
+    try { TEST.divsPerBeat = divsPerBeat; } catch (e) { /* swallow */ }
+    try { TEST.subdivsPerDiv = subdivsPerDiv; } catch (e) { /* swallow */ }
+    try { TEST.divRhythm = divRhythm; } catch (e) { /* swallow */ }
     try { __POLYCHRON_TEST__.subdivRhythm = subdivRhythm; } catch (e) { /* swallow */ }
     // Also ensure runtime globals used by modules are set (use naked globals)
     try { if (typeof c === 'undefined') { c = null; } } catch (e) { /* swallow */ }
@@ -70,12 +70,13 @@ function setupGlobalState() {
     try { if (typeof subdivRhythm === 'undefined') { subdivRhythm = null; } } catch (e) { /* swallow */ }
   } catch (e) { /* swallow */ }
   // Use deterministic randomness for stable tests
-  try { rf = (min,max) => (typeof max === 'undefined' ? (min || 0.5) : min); ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; }; __POLYCHRON_TEST__.rf = rf; __POLYCHRON_TEST__.ri = ri; } catch (e) { /* swallow */ }
+  try { rf = (min,max) => (typeof max === 'undefined' ? (min || 0.5) : min); ri = (...args) => { if (args.length === 1) return Math.floor(args[0]) || 0; if (args.length === 2) return args[0]; return args[0]; }; TEST.rf = rf; TEST.ri = ri; } catch (e) { /* swallow */ }
 }
 
 
 // Import from test namespace
-const { rf, ri, clamp, rv, ra, p, drummer, patternLength, makeOnsets, closestDivisor } = __POLYCHRON_TEST__;
+const TEST_NS = require('../src/test-hooks');
+const { rf, ri, clamp, rv, ra, p } = TEST_NS;
 // drumMap will be initialized by setupGlobalState()
 let drumMap;
 

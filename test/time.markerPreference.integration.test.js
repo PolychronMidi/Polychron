@@ -17,6 +17,8 @@ describe('Marker preference - end-to-end integration', () => {
     if (LM) {
       LM.layers = {}; LM.activeLayer = null;
     }
+    // Clear marker cache to avoid stale CSV map from other tests
+    try { const TEST = require('../src/test-hooks'); TEST.clearMarkerCache && TEST.clearMarkerCache('primary'); } catch (e) { /* swallow */ }
     // safe deterministic helpers
     m = Math; LOG = 'none';
   });
@@ -71,7 +73,7 @@ describe('Marker preference - end-to-end integration', () => {
     beatsOn = 0; beatsOff = 0; divsOn = 0; divsOff = 0; subdivsOn = 0; subdivsOff = 0;
 
     // ensure internal test logging is disabled for clean output
-    __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; __POLYCHRON_TEST__.enableLogging = false;
+    const TEST = require('../src/test-hooks'); TEST.enableLogging = false;
 
     // ensure minimal index variables exist to avoid ReferenceErrors in setUnitTiming
     divIndex = 0; subdivIndex = 0; subsubdivIndex = 0;

@@ -1,3 +1,5 @@
+const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked globals instead (Example: DONT use: globalThis.variable DO use: variable)';
+
 export default [
   {
     ignores: ['eslint.config.mjs', 'vitest.config.mjs', 'tmp/**']
@@ -385,7 +387,7 @@ export default [
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
         // Allow Node and environment global objects and some test-only temp names
-        // 'global' and 'globalThis' are banned project-wide; use naked globals instead
+        // 'global' and 'globalThis' are banned project-wide; use naked globals instead(DONT use: globalThis.variable DO use: variable)
         resolveSectionProfile: 'writable',
         selectSectionType: 'writable',
         normalizeSectionType: 'writable',
@@ -398,7 +400,7 @@ export default [
     rules: {
       // Code correctness - errors that break functionality
       'no-undef': 'error',  // Catch undefined variables like activeMotif
-      'no-restricted-globals': ['error', { name: 'global', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'globalThis', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'GLOBAL', message: 'global or globalThis banned project-wide, use naked globals instead' }, { name: 'GLOBALTHIS', message: 'global or globalThis banned project-wide, use naked globals instead' }],
+      'no-restricted-globals': ['error', { name: 'global', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globalThis', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBAL', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALTHIS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globals', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }],
       'no-unreachable': 'error',  // Dead code after return/throw
       'no-constant-condition': 'warn',  // Conditions always true/false (can be intentional)
       'no-dupe-keys': 'error',  // Duplicate object keys

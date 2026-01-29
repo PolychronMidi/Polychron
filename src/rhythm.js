@@ -1,6 +1,7 @@
 // rhythm.js - Rhythmic pattern generation with drum mapping and stutter effects.
 const { raiseCritical } = require('./postfixGuard');
 const { writeDebugFile } = require('./logGate');
+const TEST = require('./test-hooks');
 // minimalist comments, details at: rhythm.md
 
 drumMap={
@@ -44,30 +45,30 @@ drumMap={
  * @returns {void}
  */
 drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] START',drumNames);
+  if (TEST?.enableLogging) console.log('[drummer] START',drumNames);
   if (drumNames === 'random') {
     // Prefer test-injected drumMap when running tests so 'random' selects from the test set
-    const allDrums = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.drumMap) ? Object.keys(__POLYCHRON_TEST__.drumMap) : Object.keys(drumMap);
+    const allDrums = (TEST && TEST.drumMap) ? Object.keys(TEST.drumMap) : Object.keys(drumMap);
     drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
     beatOffsets = [0];
   }
   const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
   const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] drums/offsets prepared');
+  if (TEST?.enableLogging) console.log('[drummer] drums/offsets prepared');
   // Prefer test-injected buffer/ drumMap when present to avoid relying on globals in test harness
-  const outBuf = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.c) ? __POLYCHRON_TEST__.c : c;
-  const dm = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.drumMap) ? __POLYCHRON_TEST__.drumMap : drumMap;
+  const outBuf = (TEST && TEST.c) ? TEST.c : c;
+  const dm = (TEST && TEST.drumMap) ? TEST.drumMap : drumMap;
   // Allow tests to inject timing context (tpBeat/beatStart) and channel (drumCH) via __POLYCHRON_TEST__ when module-level globals are not available
-  const effectiveBeatStart = (typeof __POLYCHRON_TEST__ !== 'undefined' && typeof __POLYCHRON_TEST__.beatStart !== 'undefined') ? __POLYCHRON_TEST__.beatStart : (typeof beatStart !== 'undefined' ? beatStart : 0);
-  const effectiveTpBeat = (typeof __POLYCHRON_TEST__ !== 'undefined' && typeof __POLYCHRON_TEST__.tpBeat !== 'undefined') ? __POLYCHRON_TEST__.tpBeat : (typeof tpBeat !== 'undefined' ? tpBeat : 0);
-  const effectiveDrumCH = (typeof __POLYCHRON_TEST__ !== 'undefined' && typeof __POLYCHRON_TEST__.drumCH !== 'undefined') ? __POLYCHRON_TEST__.drumCH : (typeof drumCH !== 'undefined' ? drumCH : 9);
+  const effectiveBeatStart = (TEST && typeof TEST.beatStart !== 'undefined') ? TEST.beatStart : (typeof beatStart !== 'undefined' ? beatStart : 0);
+  const effectiveTpBeat = (TEST && typeof TEST.tpBeat !== 'undefined') ? TEST.tpBeat : (typeof tpBeat !== 'undefined' ? tpBeat : 0);
+  const effectiveDrumCH = (TEST && typeof TEST.drumCH !== 'undefined') ? TEST.drumCH : (typeof drumCH !== 'undefined' ? drumCH : 9);
   if (offsets.length < drums.length) {
     offsets.push(...new Array(drums.length - offsets.length).fill(0));
   } else if (offsets.length > drums.length) {
     offsets.length=drums.length;
   }
   const combined=drums.map((drum,index)=>({ drum,offset: offsets[index] }));
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] combined prepared');
+  if (TEST?.enableLogging) console.log('[drummer] combined prepared');
   if (rf() < .7) {
     if (rf() < .5) {
       combined.reverse();
@@ -78,7 +79,7 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] randomization done');
+  if (TEST?.enableLogging) console.log('[drummer] randomization done');
   const adjustedOffsets = combined.map(({ offset }) => {
     // Preserve large/offbeat integer offsets (e.g., 10 beats) rather than reducing them to
     // their fractional part. For fractional offsets (0..1), allow jitter and wrap into [0,1).
@@ -99,14 +100,14 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
       return fractional === 0 ? offset : Math.max(fractional, offset);
     }
   });
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] offsets adjusted');
+  if (TEST?.enableLogging) console.log('[drummer] offsets adjusted');
   combined.forEach(({ drum, offset }, idx) => {
     const useOffset = (typeof adjustedOffsets[idx] !== 'undefined') ? adjustedOffsets[idx] : offset;
-    if (__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] processing drum ${idx}:`,drum);
+    if (TEST?.enableLogging) console.log(`[drummer] processing drum ${idx}:`,drum);
     const drumInfo = dm ? dm[drum] : drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {
-        if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] applying stutter');
+        if (TEST?.enableLogging) console.log('[drummer] applying stutter');
         const numStutters = ri(...stutterRange);
         const stutterDuration = .25 * ri(1, 8) / numStutters;
         const [minVelocity, maxVelocity] = drumInfo.velocityRange;
@@ -125,15 +126,15 @@ drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange
           p(outBuf, { tick: tick, type: 'on', vals: [effectiveDrumCH, drumInfo.note, m.floor(currentVelocity)] });
         }
       } else {
-        if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] no stutter');
+        if (TEST?.enableLogging) console.log('[drummer] no stutter');
         const tickVal = (Number.isFinite(Number(effectiveBeatStart)) ? Number(effectiveBeatStart) : 0) + (Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) * (Number.isFinite(Number(effectiveTpBeat)) ? Number(effectiveTpBeat) : 0);
         const tick = Math.round(tickVal);
         p(outBuf, { tick: tick, type: 'on', vals: [effectiveDrumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
       }
     }
-    if (__POLYCHRON_TEST__?.enableLogging) console.log(`[drummer] drum ${idx} done`);
+    if (TEST?.enableLogging) console.log(`[drummer] drum ${idx} done`);
   });
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[drummer] END');
+  if (TEST?.enableLogging) console.log('[drummer] END');
 };
 
 /**
@@ -489,6 +490,5 @@ trackSubdivRhythm=()=>{if (subdivRhythm[subdivIndex] > 0) {subdivsOn++; subdivsO
 
 trackSubsubdivRhythm=()=>{if (subsubdivRhythm[subsubdivIndex] > 0) {subsubdivsOn++; subsubdivsOff=0;} else {subsubdivsOn=0; subsubdivsOff++;} };
 
-// Export to test namespace for clean test access
-try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-Object.assign(__POLYCHRON_TEST__, { drummer, patternLength, makeOnsets, closestDivisor, drumMap });
+// Explicit exports for tests/tools (avoid mutating global test namespace here)
+module.exports = { drummer, playDrums, playDrums2, patternLength, makeOnsets, closestDivisor, drumMap, binary, hex, onsets, random, prob, euclid, rotate, morph, setRhythm, getRhythm };

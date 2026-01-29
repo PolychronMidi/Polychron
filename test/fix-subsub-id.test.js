@@ -5,7 +5,7 @@ const path = require('path');
 
 test('no NaN or undefined in unit ids produced by treewalker', () => {
   // Run a fast play and treewalker verification using Node directly (avoid cross-env cli dependency)
-  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1', SUPPRESS_HUMAN_MARKER_CHECK: '1', PLAY_GUARD_BLOCK: '1' }), stdio: 'inherit' });
+  execSync(process.execPath + ' scripts/play-guard.js', { env: Object.assign({}, process.env, { PLAY_LIMIT: '1' }), stdio: 'inherit' });
   try {
     execSync(process.execPath + ' scripts/test/treewalker.js', { stdio: 'inherit' });
   } catch (e) {

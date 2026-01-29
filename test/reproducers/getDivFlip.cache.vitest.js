@@ -41,8 +41,8 @@ it('flapping composer getters should be called only once per beat/division (cach
   const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => {});
   LM.activate('primary', false);
 
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  __POLYCHRON_TEST__.enableLogging = false;
+  const TEST = require('../../src/test-hooks');
+  TEST.enableLogging = false;
 
   divIndex = 0; subdivIndex = 0; subsubdivIndex = 0;
 

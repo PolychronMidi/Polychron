@@ -454,7 +454,7 @@ class Stage {
   }
 }
 
-// Export Stage instance to test namespace for tests
+// Export Stage instance to centralized TEST hooks
 stage = new Stage();
-try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-__POLYCHRON_TEST__.stage = stage;
+const TEST = require('./test-hooks');
+try { if (TEST) TEST.stage = stage; } catch (e) { /* swallow */ }

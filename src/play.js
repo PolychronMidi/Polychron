@@ -4,59 +4,10 @@
 const fs = require('fs');
 const path = require('path');
 
-// Inter-process lock to ensure only one play.js runs at a time. Uses a lock file in `tmp/`.
-const LOCK_FILE = path.join(process.cwd(), 'tmp', 'play.lock');
-
-function writeLock() {
-  fs.mkdirSync(path.dirname(LOCK_FILE), { recursive: true });
-  try {
-    fs.writeFileSync(LOCK_FILE, JSON.stringify({ pid: process.pid, when: new Date().toISOString() }), { flag: 'wx' });
-    return true;
-  } catch (e) {
-    if (e && e.code === 'EEXIST') return false;
-    throw e;
-  }
-}
-
-function isProcessAlive(pid) {
-  try { process.kill(pid, 0); return true; } catch (e) { return false; }
-}
-
-function acquireLock() {
-  // Try to acquire lock. If already held by a running process, fail fast (do not queue).
-  if (writeLock()) {
-    console.log('Acquired play lock');
-    return;
-  }
-
-  // Lock exists; check if owner process is alive
-  try {
-    const data = fs.readFileSync(LOCK_FILE, 'utf8');
-    const obj = JSON.parse(data);
-    if (obj && obj.pid && isProcessAlive(obj.pid)) {
-      // If the lock is owned by our parent (the play-guard), treat it as transient and attempt to replace it.
-      if (typeof process.ppid !== 'undefined' && obj.pid === process.ppid) {
-        try { fs.unlinkSync(LOCK_FILE); } catch (_) { /* swallow */ }
-        if (!writeLock()) { console.error('Unable to acquire play lock after replacing guard lock; exiting'); process.exit(2); }
-        console.log('Acquired play lock (replaced guard lock)');
-        return;
-      }
-      console.error('New concurrent play.js instance requested; exiting');
-      process.exit(2);
-    }
-    // Stale lock — remove and try once
-    try { fs.unlinkSync(LOCK_FILE); } catch (_) { /* swallow */ }
-    if (!writeLock()) { console.error('Unable to acquire play lock after removing stale lock; exiting'); process.exit(2); }
-    console.log('Acquired play lock');
-  } catch (e) {
-    console.error('Error checking play lock', e && e.stack ? e.stack : e);
-    process.exit(1);
-  }
-}
-
-function releaseLock() {
-  try { if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE); } catch (e) { /* swallow */ }
-}
+// Inter-process lock helpers moved into the play-guard module to keep this file tidy.
+// We still call acquireLock()/releaseLock() here to preserve identical semantics when play.js
+// is invoked directly (tests sometimes do this).
+const { acquireLock, releaseLock } = require('../scripts/play-guard');
 
 ['exit','SIGINT','SIGTERM','SIGUSR1','SIGUSR2'].forEach(sig => {
   process.on(sig, () => { try { releaseLock(); } catch (_) { /* swallow */ } process.exit(0); });
@@ -67,7 +18,8 @@ process.on('unhandledRejection', (r) => { try { releaseLock(); } catch (_) { /* 
 (async function main() {
   acquireLock();
   try {
-    if (typeof __POLYCHRON_TEST__ === 'undefined') { try { __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ } }
+    // Use centralized test hooks instead of mutating a global
+    const TEST = require('./test-hooks');
     require('./bootstrap');
     require('./bootstrap-fallbacks');
     require('./stage');
@@ -81,8 +33,8 @@ process.on('unhandledRejection', (r) => { try { releaseLock(); } catch (_) { /* 
 
 // Allow environment gating to enable verbose internal logging for repro/test runs
 if (process.env.__POLYCHRON_TEST_ENABLE_LOGGING) {
-  __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {};
-  __POLYCHRON_TEST__.enableLogging = true;
+  const TEST = require('./test-hooks');
+  TEST.enableLogging = true;
 }
 
 // Initialize composers from configuration if not already done
@@ -152,7 +104,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // In PLAY_LIMIT mode, bound phrase loops to keep runtime reasonable for tests
     if (process.env.PLAY_LIMIT) phrasesPerSection = Math.min(phrasesPerSection, Number(process.env.PLAY_LIMIT) || 1);
 
-    if (__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
+    if (TEST && TEST.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex}`);
     composer = ra(composers);
     // Defensive check: ensure selected composer has required getters; fail fast with diagnostics if not
     if (!composer || typeof composer.getDivisions !== 'function' || typeof composer.getSubdivs !== 'function' || typeof composer.getSubsubdivs !== 'function' || typeof composer.getMeter !== 'function') {
@@ -174,7 +126,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Respect PLAY_LIMIT to bound measures per phrase in quick runs
     if (process.env.PLAY_LIMIT) measuresPerPhrase = Math.min(measuresPerPhrase, Number(process.env.PLAY_LIMIT) || 1);
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
-      if (__POLYCHRON_TEST__?.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex} measure=${measureIndex}`);
+      if (TEST && TEST.enableLogging) console.log(`PLAY: section=${sectionIndex} phrase=${phraseIndex} measure=${measureIndex}`);
       measureCount++;
       setUnitTiming('measure');
 

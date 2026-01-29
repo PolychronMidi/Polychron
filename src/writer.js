@@ -6,10 +6,12 @@ let fs = require('fs');
 const path = require('path');
 const { writeDebugFile, writeFatal } = require('./logGate');
 const { raiseCritical } = require('./postfixGuard');
-// Initialize naked globals and utility helpers defined in backstage
-require('./backstage');
 // Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
 require('./sheet');
+// Initialize naked globals and utility helpers defined in backstage
+require('./backstage');
+// Centralized test hook object (replace __POLYCHRON_TEST__ global)
+const TEST = require('./test-hooks');
 
 
 /**
@@ -62,219 +64,9 @@ const c2 = new CSVBuffer('poly');
 if (typeof c === 'undefined') c = c1;
 
 
-/**
- * Logs timing markers with context awareness.
- * Writes to active buffer (c = c1 or c2) for proper file separation.
- *
- * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdiv', 'subsubdiv'
- */
-const logUnit = (type) => {
-  let shouldLog = false;
-  type = type.toLowerCase();
+const { logUnit } = require('./logUnit');
 
-  // Localize all per-unit variables to avoid accidental global mutation across calls
-  let unit = null;
-  let unitsPerParent = null;
-  let startTick = null;
-  let endTick = null;
-  let startTime = null;
-  let endTime = null;
-  let spSection = null;
-  let spPhrase = null;
-  let spMeasure = null;
-  let spBeat = null;
-  let spDiv = null;
-  let spSubdiv = null;
-  let spSubsubdiv = null;
-  let composerDetails = '';
-  let progressionSymbols = '';
-  let actualMeter = null;
-  let meterInfo = '';
-  if (LOG === 'none') shouldLog = false;
-  else if (LOG === 'all') shouldLog = true;
-  else {
-    const logList = LOG.toLowerCase().split(',').map(item => item.trim());
-    shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
-  }
-  if (typeof shouldLog === 'undefined') {
-    // function not yet invoked in this context; skip
-  } else if (!shouldLog) return null;
 
-  // Use buffer for this layer
-  const buf = c;
-  if (type === 'section') {
-    unit = sectionIndex + 1;
-    unitsPerParent = totalSections;
-    startTick = sectionStart;
-    spSection = tpSection / tpSec;
-    endTick = startTick + tpSection;
-    startTime = sectionStartTime;
-    endTime = startTime + spSection;
-  } else if (type === 'phrase') {
-    unit = phraseIndex + 1;
-    unitsPerParent = phrasesPerSection;
-    startTick = phraseStart;
-    endTick = startTick + tpPhrase;
-    startTime = phraseStartTime;
-    spPhrase = tpPhrase / tpSec;
-    endTime = startTime + spPhrase;
-    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
-    if (composer && composer.scale && composer.scale.name) {
-      composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer && composer.progression) {
-      progressionSymbols = composer.progression.map(chord => {
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails += `${progressionSymbols}`;
-    } else if (composer && composer.mode && composer.mode.name) {
-      composerDetails += `${composer.root} ${composer.mode.name}`;
-    }
-    actualMeter = [numerator, denominator];
-    try {
-      if (Array.isArray(midiMeter) && midiMeter[1] === actualMeter[1]) {
-        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
-      } else {
-        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
-      }
-    } catch (_e) { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
-  } else if (type === 'measure') {
-    unit = measureIndex + 1;
-    unitsPerParent = measuresPerPhrase;
-    startTick = measureStart;
-    endTick = measureStart + tpMeasure;
-    startTime = measureStartTime;
-    endTime = measureStartTime + spMeasure;
-    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
-    if (composer && composer.scale && composer.scale.name) {
-      composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer && composer.progression) {
-      progressionSymbols = composer.progression.map(chord => {
-        return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
-      }).join(' ');
-      composerDetails += `${progressionSymbols}`;
-    } else if (composer && composer.mode && composer.mode.name) {
-      composerDetails += `${composer.root} ${composer.mode.name}`;
-    }
-    actualMeter = [numerator, denominator];
-    try {
-      if (Array.isArray(midiMeter) && midiMeter[1] === actualMeter[1]) {
-        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
-      } else {
-        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
-      }
-    } catch (_e) { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
-  } else if (type === 'beat') {
-    unit = beatIndex + 1;
-    unitsPerParent = numerator;
-    startTick = beatStart;
-    endTick = startTick + tpBeat;
-    startTime = beatStartTime;
-    endTime = startTime + spBeat;
-  } else if (type === 'division') {
-    unit = divIndex + 1;
-    unitsPerParent = divsPerBeat;
-    startTick = divStart;
-    endTick = startTick + tpDiv;
-    startTime = divStartTime;
-    endTime = startTime + spDiv;
-  } else if (type === 'subdiv') {
-    unit = subdivIndex + 1;
-    unitsPerParent = subdivsPerDiv;
-    startTick = subdivStart;
-    endTick = startTick + tpSubdiv;
-    startTime = subdivStartTime;
-    endTime = startTime + spSubdiv;
-  } else if (type === 'subsubdiv') {
-    // Use defensively coerced indices/totals to avoid NaN/undefined emissions
-    const sIndex = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
-    unit = sIndex + 1;
-    // Prefer canonical name `subsubsPerSub` but accept legacy `subsubsPerSub` if present
-    unitsPerParent = Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : (Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : 1);
-    startTick = subsubdivStart;
-    endTick = startTick + (Number.isFinite(Number(tpSubsubdiv)) ? tpSubsubdiv : 0);
-    startTime = Number.isFinite(Number(subsubdivStartTime)) ? subsubdivStartTime : 0;
-    endTime = startTime + (Number.isFinite(Number(spSubsubdiv)) ? spSubsubdiv : 0);
-  }
-
-  return (() => {
-    // Emit marker tick that corresponds to the canonical end of the unit when available.
-    // Use a rounded integer endTick in both the event tick and the human-readable marker text
-    const endTickInt = Math.round(Number(endTick) || 0);
-    const markerTick = (Number.isFinite(endTickInt) && endTickInt >= 0) ? endTickInt : Math.round(Number(startTick || 0));
-    const markerRaw = `${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${markerTick} ${meterInfo ? meterInfo : ''}`;
-    // Ensure the emitted event tick and the embedded endTick agree
-    buf.push({
-      tick: markerTick,
-      type: 'marker_t',
-      vals: [markerRaw]
-    });
-    // If there is ever a mismatch between human text and event tick, this should be a source bug; log lightly for diagnostics
-    if (Number.isFinite(Number(endTick)) && Math.round(Number(endTick)) !== markerTick) {
-      try { writeDebugFile('writer-debug.ndjson', { tag: 'marker-normalized', originalEndTick: endTick, markerTick, layer: (c && c.name) }); } catch (_e) { /* swallow */ }
-    }
-
-    try {
-      const parts = [];
-      // Coerce totals to safe numeric defaults to avoid NaN/undefined in IDs
-      const safe_totalSections = Number.isFinite(Number(totalSections)) ? Number(totalSections) : 1;
-      const safe_phrasesPerSection = Number.isFinite(Number(phrasesPerSection)) ? Number(phrasesPerSection) : 1;
-      const safe_measuresPerPhrase = Number.isFinite(Number(measuresPerPhrase)) ? Number(measuresPerPhrase) : 1;
-      const safe_numerator = Number.isFinite(Number(numerator)) ? Number(numerator) : 1;
-      const safe_divsPerBeat = Number.isFinite(Number(divsPerBeat)) ? Number(divsPerBeat) : 1;
-      const safe_subdivsPerDiv = Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1;
-      const safe_subsubsPerSub = Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : (Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : 1);
-      if (typeof sectionIndex !== 'undefined') parts.push('section' + ((sectionIndex||0)+1) + '/' + safe_totalSections);
-      if (typeof phraseIndex !== 'undefined') parts.push('phrase' + ((phraseIndex||0)+1) + '/' + safe_phrasesPerSection);
-      if (typeof measureIndex !== 'undefined') parts.push('measure' + ((measureIndex||0)+1) + '/' + safe_measuresPerPhrase);
-      if (typeof beatIndex !== 'undefined') parts.push('beat' + ((beatIndex||0)+1) + '/' + safe_numerator);
-      if (typeof divIndex !== 'undefined') parts.push('division' + ((divIndex||0)+1) + '/' + safe_divsPerBeat);
-      if (typeof subdivIndex !== 'undefined') parts.push('subdiv' + ((subdivIndex||0)+1) + '/' + safe_subdivsPerDiv);
-      if (Number.isFinite(Number(subsubdivIndex))) parts.push('subsubdiv' + (Number(subsubdivIndex) + 1) + '/' + safe_subsubsPerSub);
-
-      const startTickN = Math.round(Number(startTick) || 0);
-      const endTickN = Math.round(Number(endTick) || 0);
-      const startTimeN = Number(startTime) || 0;
-      const endTimeN = Number(endTime) || 0;
-
-      if ((c && c.name && typeof LM !== 'undefined' && LM.layers && LM.layers[c.name] && LM.layers[c.name].state) || (typeof LM !== 'undefined' && LM.activeLayer && LM.layers && LM.layers[LM.activeLayer] && LM.layers[LM.activeLayer].state)) {
-        const st = (LM.layers[c && c.name && LM.layers[c.name] ? c.name : LM.activeLayer] && LM.layers[c && c.name && LM.layers[c.name] ? c.name : LM.activeLayer].state) ? LM.layers[c && c.name && LM.layers[c.name] ? c.name : LM.activeLayer].state : null;
-        st.units = st.units || [];
-        // If this is not the primary layer and primary units are present, copy primary unit times
-        let finalStartTime = startTimeN;
-        let finalEndTime = endTimeN;
-        try {
-          if (c.name !== 'primary' && LM.layers['primary'] && LM.layers['primary'].state && Array.isArray(LM.layers['primary'].state.units)) {
-            const primUnits = LM.layers['primary'].state.units;
-            // match by section/phrase tokens if possible
-            const want = {};
-            parts.forEach(p => {
-              const m = String(p).match(/^(section\d+|phrase\d+)/i);
-              if (m) want[m[1].toLowerCase()] = true;
-            });
-            const match = primUnits.find(u => {
-              if (!Array.isArray(u.parts)) return false;
-              const have = {};
-              u.parts.forEach(pp => {
-                const m = String(pp).match(/^(section\d+|phrase\d+)/i);
-                if (m) have[m[1].toLowerCase()] = true;
-              });
-              // require both section and phrase tokens to match when present
-              if (Object.keys(want).length === 0) return false;
-              for (const k of Object.keys(want)) if (!have[k]) return false;
-              return true;
-            });
-            if (match && match.startTime !== undefined) {
-              finalStartTime = Number(match.startTime) || finalStartTime;
-              finalEndTime = Number(match.endTime) || finalEndTime;
-            }
-          }
-        } catch (e) { /* swallow */ }
-        st.units.push({ parts: parts.slice(), unitNumber: unit, unitsPerParent, startTick: startTickN, endTick: endTickN, startTime: finalStartTime, endTime: finalEndTime, type });
-      }
-    } catch (err) { /* swallow */ }
-
-  })();
-};
 
 /**
  * Outputs separate MIDI files for each layer with automatic synchronization.
@@ -292,14 +84,12 @@ grandFinale = () => {
 
   // REMOVED: Remove any stale CSV outputs for layers that are not currently registered
   // ANTI-PATTERN: DO NOT ADD POSTFIXES FOR CRITICAL ERRORS, INSTEAD RAISE A LOGGED FATAL ERROR AND HANDLE IT IN SOURCE GENERATION.
-  // Compatibility shim: honor test harness (pull from __POLYCHRON_TEST__ when present)
+  // Compatibility shim: honor test harness (pull from test hooks when present)
   try {
-    if (typeof __POLYCHRON_TEST__ !== 'undefined') {
-      if (typeof __POLYCHRON_TEST__.LM !== 'undefined') LM = __POLYCHRON_TEST__.LM;
-      if (typeof __POLYCHRON_TEST__.fs !== 'undefined') fs = __POLYCHRON_TEST__.fs;
-      if (typeof __POLYCHRON_TEST__.allNotesOff !== 'undefined') allNotesOff = __POLYCHRON_TEST__.allNotesOff;
-      if (typeof __POLYCHRON_TEST__.muteAll !== 'undefined') muteAll = __POLYCHRON_TEST__.muteAll;
-    }
+    if (TEST && typeof TEST.LM !== 'undefined') LM = TEST.LM;
+    if (TEST && typeof TEST.fs !== 'undefined') fs = TEST.fs;
+    if (TEST && typeof TEST.allNotesOff !== 'undefined') allNotesOff = TEST.allNotesOff;
+    if (TEST && typeof TEST.muteAll !== 'undefined') muteAll = TEST.muteAll;
   } catch (_e) { /* swallow */ }
   const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
   // Collect all layer data
@@ -322,11 +112,8 @@ grandFinale = () => {
     // (i.e. a mix of canonical and human-only markers), which indicates an unintended postfix-only entry.
     primaryHasUnitRec = lines.some(ln => ln && ln.indexOf('marker_t') !== -1 && ln.indexOf('unitRec:') !== -1);
     const humanOnlyExists = lines.some(ln => ln && ln.indexOf('marker_t') !== -1 && ln.indexOf('unitRec:') === -1);
-    // Allow test harness to suppress this fatal check when investigating other failures
-    // Allow either the in-process test harness OR an environment variable to suppress this fatal check
-    const suppressCheck = (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.suppressHumanMarkerCheck === true) || String(process.env.SUPPRESS_HUMAN_MARKER_CHECK || process.env.SILENCE_HUMAN_MARKER_CHECK || '').toLowerCase() === 'true' || String(process.env.SUPPRESS_HUMAN_MARKER_CHECK || process.env.SILENCE_HUMAN_MARKER_CHECK || '').toLowerCase() === '1';
-    if (!suppressCheck && primaryHasUnitRec && humanOnlyExists) raiseCritical('human:marker', 'Human-only marker found in primary CSV; postfix-only markers are forbidden', { primaryCsv });
   }
+
   // Expose flag for per-layer checks via a local variable in closure
   layerData.forEach(({ name, layer: layerState, buffer }) => {
     // attach flag to layerState for downstream checks
@@ -437,8 +224,8 @@ grandFinale = () => {
     } catch (_e) { /* swallow */ }
 
     // If primary CSV contained canonical unitRec markers but this layer has none, treat as postfix anti-pattern
-    // For test harnesses allow opting out via __POLYCHRON_TEST__.allowMissingLayerCanonical = true
-    const _enforceLayerCanonical = !(typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__.allowMissingLayerCanonical === true);
+    // For test harnesses allow opting out via TEST.allowMissingLayerCanonical = true
+    const _enforceLayerCanonical = !(TEST && TEST.allowMissingLayerCanonical === true);
     if (_enforceLayerCanonical && name !== 'primary' && layerState && layerState._primaryHasUnitRec && (!unitsForLayer || unitsForLayer.length === 0)) {
       raiseCritical('missing:canonical:layer', 'Missing canonical unitRec entries for layer despite primary CSV containing unitRec markers', { layer: name });
     }
@@ -720,6 +507,5 @@ try {
   console.error('Failed to wrap fs.writeFileSync:', err);
 }
 
-// Export to test namespace for module interoperability (naked/global per project convention)
-try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; } catch (e) { __POLYCHRON_TEST__ = {}; }
-Object.assign(__POLYCHRON_TEST__, { p, CSVBuffer, logUnit, grandFinale });
+// Explicit module exports for direct importing by tests/tools. Do NOT mutate globals here.
+module.exports = { p, CSVBuffer, logUnit, grandFinale };

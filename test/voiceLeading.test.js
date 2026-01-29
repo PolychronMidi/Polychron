@@ -4,7 +4,7 @@ require('../src/venue');       // Defines tonal (t), allScales, allNotes, allCho
 require('../src/writer');      // Defines writer functions (CSVBuffer, p, etc.)
 require('../src/backstage');   // Defines helper functions like rf, ri, clamp, etc.
 require('../src/composers');   // Defines composer classes and composers array
-require('../src/voiceLeading'); // Defines VoiceLeadingScore class
+const { VoiceLeadingScore } = require('../src/voiceLeading'); // Defines VoiceLeadingScore class
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
@@ -266,10 +266,9 @@ describe('VoiceLeadingScore', () => {
   });
 });
 
-/**
- * Composer Integration Tests
- * Tests voice leading integration with MeasureComposer and subclasses
- */
+// Composer Integration Tests - import test constructors explicitly for isolation
+const { TestExports } = require('../src/composers');
+const { MeasureComposer, ScaleComposer, ChordComposer, ModeComposer, RandomScaleComposer, RandomChordComposer, RandomModeComposer } = TestExports;
 describe('Composer Voice Leading Integration', () => {
   let composer;
   let scorer;

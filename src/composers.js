@@ -1288,20 +1288,7 @@ composers = [];  // Lazy-loaded in play.js when all systems are ready
 // Export classes and factory globally for testing
 /* self-assigns removed to satisfy lint (classes are already defined in this scope) */
 
-// Mirror into __POLYCHRON_TEST__ to keep test globals namespaced
-try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-Object.assign(__POLYCHRON_TEST__, { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer,
-    RandomModeComposer,
-    PentatonicComposer,
-    RandomPentatonicComposer,
-    ProgressionGenerator,
-    TensionReleaseComposer,
-    ModalInterchangeComposer,
-    HarmonicRhythmComposer,
-    MelodicDevelopmentComposer,
-    AdvancedVoiceLeadingComposer,
-    ComposerFactory,
-  });
+
 
 // Export ComposerFactory (and related classes) via CommonJS so modules can require them explicitly
 if (typeof module !== 'undefined' && module.exports) {
@@ -1310,5 +1297,7 @@ if (typeof module !== 'undefined' && module.exports) {
     MeasureComposer,
     ScaleComposer,
     ChordComposer,
+    // Expose constructors for tests via TestExports to avoid global mutation
+    TestExports: { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer, RandomModeComposer, PentatonicComposer, RandomPentatonicComposer, ProgressionGenerator, TensionReleaseComposer, ModalInterchangeComposer, HarmonicRhythmComposer, MelodicDevelopmentComposer, AdvancedVoiceLeadingComposer, ComposerFactory }
   });
 }

@@ -1,10 +1,10 @@
 // bootstrap.js - Small initialization to ensure minimal globals exist when running scripts directly.
-try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; } catch (e) { /* swallow */ }
+const TEST = require('./test-hooks');
 
 // Ensure Tonal is available globally as `t` for modules that expect it
 try {
   if (typeof t === 'undefined' || !t) {
-    try { t = require('tonal'); } catch (e) { t = (__POLYCHRON_TEST__ && __POLYCHRON_TEST__.t) || undefined; }
+    try { t = require('tonal'); } catch (e) { t = (TEST && TEST.t) || undefined; }
   }
 } catch (e) { /* swallow */ }
 

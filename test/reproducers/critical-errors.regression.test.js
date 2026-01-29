@@ -16,7 +16,8 @@ describe('Critical errors regression', () => {
     // Run a short play to exercise timing and composer getters
     const env = Object.assign({}, process.env, { PLAY_LIMIT: '1' });
     try {
-      execSync('node scripts/play-guard.js', { env, stdio: 'inherit', timeout: 30 * 1000 });
+      const { SHORT_CHILD_PROC_TIMEOUT } = require('../test-timeouts');
+      execSync('node scripts/play-guard.js', { env, stdio: 'inherit', timeout: SHORT_CHILD_PROC_TIMEOUT });
     } catch (e) {
       // Play is expected to exit non-zero when a real critical condition is present
     }
