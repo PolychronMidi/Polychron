@@ -1116,3 +1116,6 @@ setUnitTiming = (unitType) => {
   // Log the unit after calculating timing
   logUnit(unitType);
 };
+
+// Export for programmatic use
+try { module.exports = setUnitTiming; } catch (e) { /* swallow export errors */ }

@@ -67,3 +67,6 @@ setMidiTiming = (tick) => {
     }
   } catch (_e) { /* swallow */ }
 };
+
+// Export for programmatic use
+try { module.exports = setMidiTiming; } catch (e) { /* swallow export errors */ }
