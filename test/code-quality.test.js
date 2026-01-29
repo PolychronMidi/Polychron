@@ -124,27 +124,30 @@ test('critical timing functions should have JSDoc', () => {
   const content = fs.readFileSync(filePath, 'utf8');
 
   const criticalFunctions = [
-    'getMidiTiming',
-    'setMidiTiming',
-    'setUnitTiming',
-    'getPolyrhythm'
+    { name: 'getMidiTiming', file: path.join(__dirname, '..', 'src', 'time.js') },
+    { name: 'setMidiTiming', file: path.join(__dirname, '..', 'src', 'time', 'setMidiTiming.js') },
+    { name: 'setUnitTiming', file: path.join(__dirname, '..', 'src', 'time', 'setUnitTiming.js') },
+    { name: 'getPolyrhythm', file: path.join(__dirname, '..', 'src', 'time', 'getPolyrhythm.js') },
+    { name: 'restoreLayerToGlobals', file: path.join(__dirname, '..', 'src', 'time', 'restoreLayerToGlobals.js') }
   ];
 
   const violations = [];
 
-  criticalFunctions.forEach(funcName => {
-    // Look for JSDoc (/** ... */) before function declaration
+  for (const { name: funcName, file: funcFile } of criticalFunctions) {
+    if (!fs.existsSync(funcFile)) { violations.push(funcName); continue; }
+    const funcContent = fs.readFileSync(funcFile, 'utf8');
+    // Look for JSDoc (/** ... */) immediately before the function declaration/assignment in its file
     const patterns = [
-      new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*${funcName}\\s*[=(]`, 'g'),
+      new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*(?:const|let|var)?\\s*${funcName}\\s*[=(]`, 'g'),
       new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*function\\s+${funcName}\\s*\\(`, 'g')
     ];
 
-    const hasJSDoc = patterns.some(pattern => pattern.test(content));
+    const hasJSDoc = patterns.some(pattern => pattern.test(funcContent));
 
     if (!hasJSDoc) {
       violations.push(funcName);
     }
-  });
+  }
 
   if (violations.length > 0) {
     expect.fail(`Missing JSDoc for critical functions: ${violations.join(', ')}`);

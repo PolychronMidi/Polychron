@@ -1,13 +1,14 @@
+const { writeIndexTrace, writeDebugFile, appendToFile } = require('../logGate');
+const { raiseCritical } = require('../postfixGuard');
+const TEST = require('../test-hooks');
+const m = Math;
+
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
  * cascading parent position + index × duration pattern. See time.md for details.
  * @param {string} unitType - Unit type for timing calculation and logging.
  * @returns {void}
  */
-const { writeIndexTrace, writeDebugFile, appendToFile } = require('../logGate');
-const { raiseCritical } = require('../postfixGuard');
-const TEST = require('../test-hooks');
-const m = Math;
 
 setUnitTiming = (unitType) => {
   const si = (typeof sectionIndex !== 'undefined') ? sectionIndex : 'undef';
