@@ -1,4 +1,3 @@
-// @ts-check
 // writer.js - MIDI output and file generation with CSV buffer management.
 // minimalist comments, details at: writer.md
 
