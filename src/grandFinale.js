@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { writeDebugFile } = require('./logGate');
 const { raiseCritical } = require('./postfixGuard');
+const { parseMarkersAndBackfill } = require('./grandFinale.parse');
+const { ensureTailMarker } = require('./grandFinale.tail');
 const grandFinale = () => {
   // Compatibility shim & notes: avoid postfixes for critical errors; honor TEST harness
   try {
@@ -105,66 +107,8 @@ const grandFinale = () => {
         });
       }
     } catch (_e) { /* swallow */ }
-    // Single-pass over buffer to incorporate unitRec markers into unitsForLayer and backfill unit hashes for events
-    try {
-      for (const evt of buffer) {
-        try {
-          if (!evt || typeof evt !== 'object') continue;
-          // Marker extraction: if this event is a unitRec marker, capture its full id and push into unitsForLayer
-          if (String(evt.type).toLowerCase() === 'marker_t' && Array.isArray(evt.vals)) {
-            const m = evt.vals.find(v => String(v).includes('unitRec:')) || null;
-            if (m) {
-              try {
-                const mo = String(m).match(/unitRec:([^\s,]+)/);
-                const fullId = mo ? mo[1] : null;
-                if (fullId) {
-                  const seg = fullId.split('|');
-                  const last = seg[seg.length - 1] || '';
-                  const secondLast = seg[seg.length - 2] || '';
-                  let sTick = undefined; let eTick = undefined; let sTime = undefined; let eTime = undefined;
-                  if (secondLast && secondLast.includes('-') && /^[0-9]+-[0-9]+$/.test(secondLast)) {
-                    const r = secondLast.split('-'); sTick = Number(r[0]); eTick = Number(r[1]);
-                  }
-                  if (last && last.includes('-') && /^[0-9]+\.[0-9]+-[0-9]+\.[0-9]+$/.test(last)) {
-                    const rs = last.split('-'); sTime = Number(rs[0]); eTime = Number(rs[1]);
-                  }
-                  unitsForLayer.push({ unitId: fullId, layer: name, startTick: sTick, endTick: eTick, startTime: sTime, endTime: eTime, raw: { fromMarker: true } });
-                }
-              } catch (_e) { /* swallow */ }
-            }
-          }
-          // Backfill unit hash for this event if missing (use currently accumulated unitsForLayer which includes markers parsed above)
-          if (!evt._unitHash) {
-            const t = Number.isFinite(Number(evt._tickSortKey)) ? Math.round(Number(evt._tickSortKey)) : null;
-            if (t === null) continue;
-            let candidates = (unitsForLayer || []).filter(u => {
-              const s = Number(u.startTick || 0);
-              const e = Number(u.endTick || 0);
-              return Number.isFinite(s) && Number.isFinite(e) && (t >= s && t <= e);
-            });
-            if (!candidates.length) {
-              candidates = (unitsForLayer || []).filter(u => {
-                const s = Number(u.startTick || 0);
-                const e = Number(u.endTick || 0);
-                return Number.isFinite(s) && Number.isFinite(e) && (t >= (s - 1) && t <= (e + 1));
-              });
-            }
-            if (candidates.length) {
-              candidates.sort((a, b) => {
-                const spanA = Number(a.endTick || 0) - Number(a.startTick || 0);
-                const spanB = Number(b.endTick || 0) - Number(b.startTick || 0);
-                if (spanA !== spanB) return spanA - spanB;
-                const partsA = String(a.unitId || '').split('|').length;
-                const partsB = String(b.unitId || '').split('|').length;
-                return partsB - partsA; // prefer more parts
-              });
-              const found = candidates[0];
-              if (found && found.unitId) evt._unitHash = found.unitId;
-            }
-          }
-        } catch (_e) { /* swallow */ }
-      }
-    } catch (_e) { /* swallow */ }
+    // Single-pass: parse markers and backfill unit hashes (extracted)
+    try { parseMarkersAndBackfill(buffer, unitsForLayer, name); } catch (_e) { /* swallow */ }
     // If primary CSV contained canonical unitRec markers but this layer has none, treat as postfix anti-pattern
     // For test harnesses allow opting out via TEST.allowMissingLayerCanonical = true
     const _enforceLayerCanonical = !(TEST && TEST.allowMissingLayerCanonical === true);
@@ -296,56 +240,7 @@ const grandFinale = () => {
     const safeFinalTick = Number.isFinite(finalTick) && finalTick !== -Infinity ? Math.round(finalTick) : NaN;
     let computedEndTick = Number.isFinite(safeFinalTick) ? safeFinalTick : NaN;
     try {
-      const lastEnd = lastUnit ? Number(lastUnit.endTick) : NaN;
-      // Prefer lastUnit's end if it exists
-      if (!Number.isFinite(computedEndTick) && Number.isFinite(lastEnd)) computedEndTick = Math.round(lastEnd);
-      // If we have an outroUnit in memory, use its bounds instead of deriving from tpSec
-      if (outroUnit && (Number.isFinite(outroUnit.startTick) || Number.isFinite(outroUnit.endTick))) {
-        const oStart = Number.isFinite(outroUnit.startTick) ? Math.round(outroUnit.startTick) : null;
-        const oEnd = Number.isFinite(outroUnit.endTick) ? Math.round(outroUnit.endTick) : null;
-        // ensure computedEndTick covers the outro
-        if (oEnd !== null) computedEndTick = Math.max(computedEndTick || -Infinity, oEnd);
-        else if (oStart !== null) computedEndTick = Math.max(computedEndTick || -Infinity, oStart);
-      }
-      // If still undefined, fall back to 0 to ensure determinism
-      if (!Number.isFinite(computedEndTick)) computedEndTick = 0;
-      // When there is no outroUnit but we have a lastUnit and no outro, synthesize an outro marker at computedEndTick
-      if (!outroUnit && lastUnit && Number.isFinite(computedEndTick) && computedEndTick >= Number(lastUnit.endTick || 0)) {
-        const layerNum = name === 'primary' ? 1 : name === 'poly' ? 2 : 0;
-        const outroKey = `layer${layerNum}outro`;
-        const outroId = `${outroKey}|${computedEndTick}-${computedEndTick}`;
-        outroUnit = { unitId: outroId, layer: name, startTick: computedEndTick, endTick: computedEndTick, startTime: 0, endTime: 0, raw: { outro: true } };
-        synthUnit({ unit: outroUnit, markerTick: computedEndTick, register: true, emitMarker: true });
-      } else if (outroUnit && Number.isFinite(computedEndTick) && computedEndTick > Number(outroUnit.endTick || -Infinity)) {
-        // extend existing outro unit
-        const base = String(outroUnit.unitId).split('|')[0];
-        const newId = `${base}|${Math.round(outroUnit.startTick)}-${computedEndTick}`;
-        outroUnit.unitId = newId;
-        outroUnit.endTick = computedEndTick;
-        synthUnit({ id: newId, markerTick: Math.round(outroUnit.startTick), register: false, emitMarker: true });
-      }
-      // Ensure there is always a tail unitRec marker at endTick. Prefer existing outroUnit or lastUnit if present, otherwise synthesize a final marker.
-      try {
-        const layerNum = name === 'primary' ? 1 : name === 'poly' ? 2 : 0;
-        let finalId = null;
-        if (outroUnit && outroUnit.unitId) finalId = outroUnit.unitId;
-        else if (lastUnit && lastUnit.unitId) finalId = lastUnit.unitId;
-        else finalId = `layer${layerNum}final|${endTick}-${endTick}`;
-        // Compute a target end time in seconds derived from primary's last marker when available to maintain global sync.
-        let targetEndSec = getPrimaryTargetEndSec();
-        if (finalId && !emittedUnitRec.has(finalId)) {
-          // Determine tail tick: if we have a primary targetEndSec and this is not the primary layer,
-          // convert it into this layer's tick space using this layer's tpSec; otherwise fall back to local endTick logic
-          let tailTick;
-          if (name !== 'primary' && Number.isFinite(targetEndSec) && Number.isFinite(layerState.tpSec)) {
-            tailTick = Math.round(Number(targetEndSec) * Number(layerState.tpSec));
-          } else {
-            tailTick = Math.round(Number((lastUnit && lastUnit.endTick) || endTick));
-          }
-          synthUnit({ id: finalId, markerTick: tailTick, register: true, emitMarker: true });
-          // If we synthesized a finalId (no lastUnit/outro), add a minimal unit entry for auditing (already handled by synthUnit above when register=true)
-        }
-      } catch (_e) { /* swallow */ }
+      try { const res = require('./grandFinale.tail').ensureTailMarker({ buffer, unitsForLayer, lastUnit, outroUnit, computedEndTick, emittedUnitRec, layerState, name, endTick, synthUnit, getPrimaryTargetEndSec }); if (res) { outroUnit = res.outroUnit; computedEndTick = res.computedEndTick; } } catch (_e) { /* swallow */ }
     } catch (e) { /* swallow */ }
     // Use computedEndTick and append the unit id (no 'unitRec:' prefix) for the end_track field
     const endUnitId = (outroUnit && outroUnit.unitId) ? outroUnit.unitId : (lastUnit && lastUnit.unitId) ? lastUnit.unitId : null;
