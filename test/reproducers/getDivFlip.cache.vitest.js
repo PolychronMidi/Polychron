@@ -2,7 +2,7 @@ import { it, expect, beforeEach } from 'vitest';
 
 // Load runtime modules required for timing helpers
 require('../../src/writer.js'); // CSVBuffer
-require('../../src/time.js');
+require('../../src/time');
 require('../../src/rhythm.js');
 
 beforeEach(() => {

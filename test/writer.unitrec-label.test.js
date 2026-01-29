@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 require('../src/writer'); // CSVBuffer, grandFinale
-require('../src/time'); // ensure LM is initialized (LM.register)
+require('../src/time');
 
 describe('CSV writer: unitRec label and event unit prefix', () => {
   const OUT = path.join(process.cwd(), 'output');

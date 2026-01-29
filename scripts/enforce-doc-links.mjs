@@ -21,7 +21,7 @@ const modules = [
   { name: 'rhythm.js', doc: 'rhythm.md' },
   { name: 'sheet.js', doc: 'sheet.md' },
   { name: 'stage.js', doc: 'stage.md' },
-  { name: 'time.js', doc: 'time.md' },
+  { name: 'time/index.js', doc: 'time.md' },
   { name: 'venue.js', doc: 'venue.md' },
   { name: 'voiceLeading.js', doc: 'voiceLeading.md' },
   { name: 'writer.js', doc: 'writer.md' },

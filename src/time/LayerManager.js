@@ -69,8 +69,8 @@ LM = layerManager ={
     layer.state.tpSec = tpSec;
     layer.state.tpMeasure = tpMeasure;
 
-    // Restore layer timing state to globals (via time module to avoid circular init issues)
-    try { require('../time').restoreLayerToGlobals(layer.state); } catch (e) { /* swallow */ }
+    // Restore layer timing state to globals (avoid circular init issues by requiring local module)
+    try { require('./restoreLayerToGlobals')(layer.state); } catch (e) { /* swallow */ }
 
     // Reset only derived composer counts to avoid carry-over; preserve caller-set indices (measureIndex etc.) so callers can activate and then set indices as needed
     divsPerBeat = subdivsPerDiv = subsubsPerSub = undefined;
@@ -203,3 +203,6 @@ try {
     if (typeof TEST.PPQ !== 'undefined') PPQ = TEST.PPQ;
   }
 } catch (_e) { /* swallow */ }
+
+// Export LM for programmatic imports in addition to the naked global
+try { module.exports = LM; } catch (e) { /* swallow */ }

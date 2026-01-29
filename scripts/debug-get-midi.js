@@ -2,7 +2,8 @@
 require('../src/test-setup.js');
 // ensure globals
 try { numerator = 7; denominator = 9; BPM = 120; PPQ = 480; } catch (e) { console.error('assign error', e); }
-const t = require('../src/time');
+require('../src/time');
+
 try {
   const res = getMidiTiming();
   console.log('getMidiTiming returned', res);

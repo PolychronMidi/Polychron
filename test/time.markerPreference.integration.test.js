@@ -4,7 +4,7 @@ import path from 'path';
 
 // Load runtime modules required for integration behavior
 require('../src/writer.js'); // CSVBuffer
-require('../src/time.js');
+require('../src/time');
 require('../src/rhythm.js');
 
 describe('Marker preference - end-to-end integration', () => {
