@@ -1,6 +1,6 @@
 // test/structure.test.js
 require('../src/sheet');
-require('../src/structure');
+require('../src/test-setup');
 
 describe('Section type selection', () => {
   const originalTypes = SECTION_TYPES ? JSON.parse(JSON.stringify(SECTION_TYPES)) : null;

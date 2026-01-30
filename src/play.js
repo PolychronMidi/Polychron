@@ -8,7 +8,7 @@ const path = require('path');
     // Use centralized test hooks instead of mutating a global
     const TEST = require('./test-setup');
     require('./stage');
-    const { resolveSectionProfile } = require('./structure');
+    const { resolveSectionProfile } = require('./test-setup');
     const { writeIndexTrace, isEnabled, writeDebugFile } = require('./debug/logGate');
     const { ComposerFactory } = require('./composers');
 
