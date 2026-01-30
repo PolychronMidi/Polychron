@@ -1,185 +1,32 @@
-// rhythm.js - Rhythmic pattern generation with drum mapping and stutter effects.
-const { raiseCritical } = require('./debug/postfixGuard');
-const { writeDebugFile } = require('./debug/logGate');
-const TEST = require('./test-hooks');
-// minimalist comments, details at: rhythm.md
+// rhythm.js - Legacy facade (moved to src/rhythm/index.js). Keep this file as a compatibility shim.
 
-drumMap={
-  'snare1': {note: 31,velocityRange: [99,111]},
-  'snare2': {note: 33,velocityRange: [99,111]},
-  'snare3': {note: 124,velocityRange: [77,88]},
-  'snare4': {note: 125,velocityRange: [77,88]},
-  'snare5': {note: 75,velocityRange: [77,88]},
-  'snare6': {note: 85,velocityRange: [77,88]},
-  'snare7': {note: 118,velocityRange: [66,77]},
-  'snare8': {note: 41,velocityRange: [66,77]},
+// Re-export the modern rhythm implementation and its TestExports
+const rhythmExports = require('./rhythm/index');
 
-  'kick1': {note: 12,velocityRange: [111,127]},
-  'kick2': {note: 14,velocityRange: [111,127]},
-  'kick3': {note: 0,velocityRange: [99,111]},
-  'kick4': {note: 2,velocityRange: [99,111]},
-  'kick5': {note: 4,velocityRange: [88,99]},
-  'kick6': {note: 5,velocityRange: [88,99]},
-  'kick7': {note: 6,velocityRange: [88,99]},
-
-  'cymbal1': {note: 59,velocityRange: [66,77]},
-  'cymbal2': {note: 53,velocityRange: [66,77]},
-  'cymbal3': {note: 80,velocityRange: [66,77]},
-  'cymbal4': {note: 81,velocityRange: [66,77]},
-
-  'conga1': {note: 60,velocityRange: [66,77]},
-  'conga2': {note: 61,velocityRange: [66,77]},
-  'conga3': {note: 62,velocityRange: [66,77]},
-  'conga4': {note: 63,velocityRange: [66,77]},
-  'conga5': {note: 64,velocityRange: [66,77]},
-};
-
-/**
- * Generate drum pattern for a beat.
- * @param {string|string[]} drumNames - Drum name(s) or 'random'.
- * @param {number|number[]} beatOffsets - Offset(s) within the beat.
- * @param {number} [offsetJitter=rf(.1)] - Random offset jitter amount.
- * @param {number} [stutterChance=.3] - Probability of stutter effect.
- * @param {number[]} [stutterRange=[2,ri(1,11)]] - Range of stutter counts.
- * @param {number} [stutterDecayFactor=rf(.9,1.1)] - Velocity decay per stutter.
- * @returns {void}
- */
-drummer=(drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
-  if (TEST?.enableLogging) console.log('[drummer] START',drumNames);
-  if (drumNames === 'random') {
-    // Prefer test-injected drumMap when running tests so 'random' selects from the test set
-    const allDrums = (TEST && TEST.drumMap) ? Object.keys(TEST.drumMap) : Object.keys(drumMap);
-    drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
-    beatOffsets = [0];
-  }
-  const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
-  const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
-  if (TEST?.enableLogging) console.log('[drummer] drums/offsets prepared');
-  // Prefer test-injected buffer/ drumMap when present to avoid relying on globals in test harness
-  const outBuf = (TEST && TEST.c) ? TEST.c : c;
-  const dm = (TEST && TEST.drumMap) ? TEST.drumMap : drumMap;
-  // Allow tests to inject timing context (tpBeat/beatStart) and channel (drumCH) via __POLYCHRON_TEST__ when module-level globals are not available
-  const effectiveBeatStart = (TEST && typeof TEST.beatStart !== 'undefined') ? TEST.beatStart : (typeof beatStart !== 'undefined' ? beatStart : 0);
-  const effectiveTpBeat = (TEST && typeof TEST.tpBeat !== 'undefined') ? TEST.tpBeat : (typeof tpBeat !== 'undefined' ? tpBeat : 0);
-  const effectiveDrumCH = (TEST && typeof TEST.drumCH !== 'undefined') ? TEST.drumCH : (typeof drumCH !== 'undefined' ? drumCH : 9);
-  if (offsets.length < drums.length) {
-    offsets.push(...new Array(drums.length - offsets.length).fill(0));
-  } else if (offsets.length > drums.length) {
-    offsets.length=drums.length;
-  }
-  const combined=drums.map((drum,index)=>({ drum,offset: offsets[index] }));
-  if (TEST?.enableLogging) console.log('[drummer] combined prepared');
-  if (rf() < .7) {
-    if (rf() < .5) {
-      combined.reverse();
-    }
-  } else {
-    for (let i=combined.length - 1; i > 0; i--) {
-      const j=m.floor(m.random() * (i + 1));
-      [combined[i],combined[j]]=[combined[j],combined[i]];
-    }
-  }
-  if (TEST?.enableLogging) console.log('[drummer] randomization done');
-  const adjustedOffsets = combined.map(({ offset }) => {
-    // Preserve large/offbeat integer offsets (e.g., 10 beats) rather than reducing them to
-    // their fractional part. For fractional offsets (0..1), allow jitter and wrap into [0,1).
-    // Preserve explicit zero offsets exactly
-    if (offset === 0) return 0;
-    if (Math.abs(offset) >= 1) {
-      if (rf() < .3) return offset;
-      const jitter = (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
-      return offset + jitter;
-    }
-    if (rf() < .3) {
-      return offset;
-    } else {
-      let adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
-      // keep only the fractional component for sub-beat offsets but avoid returning exactly 0
-      const fractional = adjusted - m.floor(adjusted);
-      // Never allow jitter to move a fractional offset *earlier* than the original offset — only allow equal or later adjustments
-      return fractional === 0 ? offset : Math.max(fractional, offset);
-    }
-  });
-  if (TEST?.enableLogging) console.log('[drummer] offsets adjusted');
-  combined.forEach(({ drum, offset }, idx) => {
-    const useOffset = (typeof adjustedOffsets[idx] !== 'undefined') ? adjustedOffsets[idx] : offset;
-    if (TEST?.enableLogging) console.log(`[drummer] processing drum ${idx}:`,drum);
-    const drumInfo = dm ? dm[drum] : drumMap[drum];
-    if (drumInfo) {
-      if (rf() < stutterChance) {
-        if (TEST?.enableLogging) console.log('[drummer] applying stutter');
-        const numStutters = ri(...stutterRange);
-        const stutterDuration = .25 * ri(1, 8) / numStutters;
-        const [minVelocity, maxVelocity] = drumInfo.velocityRange;
-        const isFadeIn = rf() < 0.7;
-        for (let i = 0; i < numStutters; i++) {
-          const tickVal = (Number.isFinite(Number(effectiveBeatStart)) ? Number(effectiveBeatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(effectiveTpBeat)) ? Number(effectiveTpBeat) : 0);
-          const tick = Math.round(tickVal);
-          let currentVelocity;
-          if (isFadeIn) {
-            const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
-            currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 127);
-          } else {
-            const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
-            currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
-          }
-          p(outBuf, { tick: tick, type: 'on', vals: [effectiveDrumCH, drumInfo.note, m.floor(currentVelocity)] });
-        }
-      } else {
-        if (TEST?.enableLogging) console.log('[drummer] no stutter');
-        const tickVal = (Number.isFinite(Number(effectiveBeatStart)) ? Number(effectiveBeatStart) : 0) + (Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) * (Number.isFinite(Number(effectiveTpBeat)) ? Number(effectiveTpBeat) : 0);
-        const tick = Math.round(tickVal);
-        p(outBuf, { tick: tick, type: 'on', vals: [effectiveDrumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
-      }
-    }
-    if (TEST?.enableLogging) console.log(`[drummer] drum ${idx} done`);
-  });
-  if (TEST?.enableLogging) console.log('[drummer] END');
-};
-
-/**
- * Play drums for primary meter (beat index 0-3 pattern).
- * @returns {void}
- */
-playDrums=()=>{
-  if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
-    drummer(['kick1','kick3'],[0,.5]);
-    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
-      drummer(['kick2','kick5'],[0,.5]);
-    }
-  } else if (beatRhythm[beatIndex] > 0  && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
-    drummer(['snare1','kick4','kick7','snare4'],[0,.5,.75,.25]);
-  } else if (beatIndex % 2===0) {
-    drummer('random');
-    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
-      drummer(['snare5'],[0]);
-    }
-  } else  {
-    drummer(['snare6'],[0]);
-  }
-};
-
-/**
- * Play drums for poly meter (different pattern from primary).
- * @returns {void}
- */
-playDrums2=()=>{
-  if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
-    drummer(['kick2','kick5','kick7'],[0,.5,.25]);
-    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
-      drummer(['kick1','kick3','kick7'],[0,.5,.25]);
-    }
-  } else if (beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
-    drummer(['snare2','kick6','snare3'],[0,.5,.75]);
-  } else if (beatIndex % 2===0) {
-    drummer(['snare7'],[0]);
-    if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
-      drummer(['snare7'],[0]);
-    }
-  } else  {
-    drummer('random');
-  }
-};
+/* eslint-disable no-restricted-globals */
+// Preserve legacy naked globals on the global object (avoids TDZ)
+if (typeof globalThis.drummer === 'undefined') globalThis.drummer = rhythmExports.drummer;
+if (typeof globalThis.playDrums === 'undefined') globalThis.playDrums = rhythmExports.playDrums;
+if (typeof globalThis.playDrums2 === 'undefined') globalThis.playDrums2 = rhythmExports.playDrums2;
+if (typeof globalThis.makeOnsets === 'undefined') globalThis.makeOnsets = rhythmExports.makeOnsets;
+if (typeof globalThis.patternLength === 'undefined') globalThis.patternLength = rhythmExports.patternLength;
+if (typeof globalThis.getRhythm === 'undefined') globalThis.getRhythm = rhythmExports.getRhythm;
+if (typeof globalThis.setRhythm === 'undefined') globalThis.setRhythm = rhythmExports.setRhythm;
+if (typeof globalThis.drumMap === 'undefined') globalThis.drumMap = rhythmExports.drumMap;
+if (typeof globalThis.binary === 'undefined') globalThis.binary = rhythmExports.binary;
+if (typeof globalThis.hex === 'undefined') globalThis.hex = rhythmExports.hex;
+if (typeof globalThis.onsets === 'undefined') globalThis.onsets = rhythmExports.onsets;
+if (typeof globalThis.random === 'undefined') globalThis.random = rhythmExports.random;
+if (typeof globalThis.prob === 'undefined') globalThis.prob = rhythmExports.prob;
+if (typeof globalThis.euclid === 'undefined') globalThis.euclid = rhythmExports.euclid;
+if (typeof globalThis.rotate === 'undefined') globalThis.rotate = rhythmExports.rotate;
+if (typeof globalThis.morph === 'undefined') globalThis.morph = rhythmExports.morph;
+if (typeof globalThis.closestDivisor === 'undefined') globalThis.closestDivisor = rhythmExports.closestDivisor;
+if (typeof globalThis.trackBeatRhythm === 'undefined') globalThis.trackBeatRhythm = rhythmExports.trackBeatRhythm;
+if (typeof globalThis.trackDivRhythm === 'undefined') globalThis.trackDivRhythm = rhythmExports.trackDivRhythm;
+if (typeof globalThis.trackSubdivRhythm === 'undefined') globalThis.trackSubdivRhythm = rhythmExports.trackSubdivRhythm;
+if (typeof globalThis.trackSubsubdivRhythm === 'undefined') globalThis.trackSubsubdivRhythm = rhythmExports.trackSubsubdivRhythm;
+/* eslint-enable no-restricted-globals */
 
 /**
  * Rhythm patterns library with weighted selection.
@@ -199,97 +46,17 @@ rhythms={
   'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
 };
 
-// @tonaljs/rhythm-pattern exports
-const { binary: _binary, hex: _hex, onsets: _onsets, random: _random, probability: _probability, euclid: _euclid, rotate: _rotate } = require('@tonaljs/rhythm-pattern');
+// Use extracted patterns implementation
+const { binary, hex, onsets, random, prob, euclid, rotate, morph, closestDivisor } = require('./rhythm/patterns');
 
-/**
- * Generate binary rhythm pattern.
- * @param {number} length - Target pattern length.
- * @returns {number[]} Binary rhythm pattern.
- */
-binary=(length)=>{ let pattern=[];
-  while (pattern.length < length) { pattern=pattern.concat(_binary(ri(99))); }
-  return patternLength(pattern,length);
-};
 
-/**
- * Generate hexadecimal rhythm pattern.
- * @param {number} length - Target pattern length.
- * @returns {number[]} Hex rhythm pattern.
- */
-hex=(length)=>{ let pattern=[];
-  while (pattern.length < length) { pattern=pattern.concat(_hex(ri(99).toString(16))); }
-  return patternLength(pattern,length);
-};
 
-/**
- * Generate onsets rhythm pattern.
- * @param {number|Object} numbers - Number or config object.
- * @returns {number[]} Onsets pattern.
- */
-onsets = (numbers) => {
-  if (typeof numbers === 'object' && numbers.hasOwnProperty('make')) {
-    return makeOnsets(...numbers.make);
-  }
-  return _onsets(numbers);
-};
 
-/**
- * Generate random rhythm with probability.
- * @param {number} length - Pattern length.
- * @param {number} probOn - Probability of "on" (1) notes.
- * @returns {number[]} Random pattern.
- */
-random=(length,probOn)=>{ return _random(length,1 - probOn); };
 
-/**
- * Generate probability-based rhythm.
- * @param {number[]} probs - Probability array.
- * @returns {number[]} Probability pattern.
- */
-prob=(probs)=>{ return _probability(probs); };
 
-/**
- * Generate Euclidean rhythm pattern.
- * @param {number} length - Pattern length.
- * @param {number} ones - Number of "on" beats.
- * @returns {number[]} Euclidean pattern.
- */
-euclid=(length,ones)=>{ return _euclid(length,ones); };
 
-/**
- * Rotate rhythm pattern.
- * @param {number[]} pattern - Pattern to rotate.
- * @param {number} rotations - Number of rotations.
- * @param {string} [direction='R'] - 'L' (left), 'R' (right), or '?' (random).
- * @param {number} [length=pattern.length] - Output length.
- * @returns {number[]} Rotated pattern.
- */
-rotate=(pattern,rotations,direction="R",length=pattern.length)=>{
-  if (direction==='?') { direction=rf() < .5 ? 'L' : 'R'; }
-  if (direction.toUpperCase()==='L') { rotations=(pattern.length - rotations) % pattern.length; }
-  return patternLength(_rotate(pattern,rotations),length);
-};
 
-/**
- * Morph rhythm pattern by adjusting probabilities.
- * @param {number[]} pattern - Pattern to morph.
- * @param {string} [direction='both'] - 'up', 'down', 'both', or '?'.
- * @param {number} [length=pattern.length] - Output length.
- * @param {number} [probLow=.1] - Low probability bound.
- * @param {number} [probHigh] - High probability bound (defaults to probLow).
- * @returns {number[]} Morphed pattern.
- */
-morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
-  probHigh=probHigh===undefined ? probLow : probHigh;
-  let morpheus=pattern.map((v,index)=>{
-    let morph=probHigh===probLow ? rf(probLow) : rf(probLow,probHigh);
-    let _=['up','down','both']; let d=direction==='?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
-    let up=v < 1 ? m.min(v + morph,1) : v;  let down=v > 0 ? m.max(v - morph,0) : v;
-    return (d==='up' ? up : d==='down' ? down : d==='both' ? (v < 1 ? up : down) : v);
-  });
-  return prob(patternLength(morpheus,length));
-};
+
 
 /**
  * Set rhythm for a given level.
@@ -297,40 +64,10 @@ morph=(pattern,direction='both',length=pattern.length,probLow=.1,probHigh)=>{
  * @returns {number[]} Rhythm pattern for the level.
  * @throws {Error} If invalid level provided.
  */
-setRhythm=(level)=>{
-  random=(length,probOn)=> { return _random(length,1 - probOn); };
-  switch(level) {
-    case 'beat': {
-      const res = beatRhythm < 1 ? _random(numerator) : getRhythm('beat', numerator, beatRhythm);
-      if (!Array.isArray(res)) {
-        try { raiseCritical('missing:rhythm', 'Beat rhythm could not be generated', { level: 'beat', numerator, beatRhythm }); } catch (e) { throw new Error('CRITICAL: Beat rhythm missing'); }
-      }
-      return beatRhythm = res;
-    }
-    case 'div': {
-      const res = divRhythm < 1 ? _random(divsPerBeat, .4) : getRhythm('div', divsPerBeat, divRhythm);
-      if (!Array.isArray(res)) {
-        try { raiseCritical('missing:rhythm', 'Division rhythm could not be generated', { level: 'div', divsPerBeat, divRhythm }); } catch (e) { throw new Error('CRITICAL: Division rhythm missing'); }
-      }
-      return divRhythm = res;
-    }
-    case 'subdiv': {
-      const res = subdivRhythm < 1 ? _random(subdivsPerDiv, .3) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm);
-      if (!Array.isArray(res)) {
-        try { raiseCritical('missing:rhythm', 'Subdiv rhythm could not be generated', { level: 'subdiv', subdivsPerDiv, subdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subdiv rhythm missing'); }
-      }
-      return subdivRhythm = res;
-    }
-    case 'subsubdiv': {
-      const res = subsubdivRhythm < 1 ? _random(subsubsPerSub, .3) : getRhythm('subsubdiv', subsubsPerSub, subsubdivRhythm);
-      if (!Array.isArray(res)) {
-        try { raiseCritical('missing:rhythm', 'Subsubdiv rhythm could not be generated', { level: 'subsubdiv', subsubsPerSub, subsubdivRhythm }); } catch (e) { throw new Error('CRITICAL: Subsubdiv rhythm missing'); }
-      }
-      return subsubdivRhythm = res;
-    }
-    default: throw new Error('Invalid level provided to setRhythm');
-  }
-};
+// Use extracted setRhythm implementation
+setRhythm = require('./rhythm/setRhythm').setRhythm;
+
+/* Serena: setRhythm extracted to src/rhythm/setRhythm.js */
 
 /**
  * Create custom onsets pattern.
@@ -338,46 +75,10 @@ setRhythm=(level)=>{
  * @param {number|number[]|function} valuesOrRange - Onset values or range.
  * @returns {number[]} Onset pattern.
  */
-makeOnsets=(length,valuesOrRange)=>{
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] START',length,valuesOrRange);
-  let onsets=[];  let total=0;
-  let iterations=0;
-  while (total < length) {
-    if (__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] iteration ${iterations}, total=${total}`);
-    let v=ra(valuesOrRange);
-    if (__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] v=${v}`);
-    if (total + (v+1) <= length) {
-      onsets.push(v);
-      total+=v+1;
-      if (__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
-    } else if (Array.isArray(valuesOrRange) && valuesOrRange.length===2) {
-      v=valuesOrRange[0];
-      if (total + (v+1) <= length) {
-        onsets.push(v);
-        total+=v+1;
-        if (__POLYCHRON_TEST__?.enableLogging) console.log(`[makeOnsets] added onset, new total=${total}`);
-      }
-      if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
-      break;
-    } else {
-      if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
-      break;
-  }
-    iterations++;
-    if (iterations > length * 10) {
-      if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] breaking');
-      break;
-    }
-  }
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] building rhythm array');
-  let rhythm=[];
-  for (let onset of onsets) {  rhythm.push(1);
-    for (let i=0; i < onset; i++) { rhythm.push(0); }
-  }
-  while (rhythm.length < length) { rhythm.push(0); }
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] END, length=',rhythm.length);
-  return rhythm;
-};
+// Use extracted makeOnsets implementation
+makeOnsets = require('./rhythm/makeOnsets').makeOnsets;
+
+/* Serena: makeOnsets extracted to src/rhythm/makeOnsets.js */
 
 /**
  * Adjust pattern to desired length.
@@ -385,45 +86,12 @@ makeOnsets=(length,valuesOrRange)=>{
  * @param {number} [length] - Target length.
  * @returns {number[]} Pattern adjusted to length.
  */
-patternLength=(pattern,length)=>{
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] START',pattern.length,length);
-  if (length===undefined) {
-    if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
-    return pattern;
-  }
-  if (pattern.length===0) {
-    if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
-    return pattern;  // Can't extend empty pattern
-  }
-  if (length > pattern.length) {
-    while (pattern.length < length) {  pattern=pattern.concat(pattern.slice(0,length - pattern.length));  }
-    if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] extended to',pattern.length);
-  } else if (length < pattern.length) {
-    pattern=pattern.slice(0,length);
-    if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] truncated to',pattern.length);
-  }
-  if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');
-  return pattern;
-};
+// Use extracted patternLength implementation
+patternLength = require('./rhythm/patternLength').patternLength;
 
-/**
- * Find closest divisor to target value.
- * @param {number} x - Value to find divisor for.
- * @param {number} [target=2] - Target divisor value.
- * @returns {number} Closest divisor.
- */
-closestDivisor=(x,target=2)=>{
-  let closest=Infinity;
-  let smallestDiff=Infinity;
-  for (let i=1; i <= m.sqrt(x); i++) {
-    if (x % i===0) {
-      [i,x / i].forEach(divisor=>{
-        if (divisor !== closest) { let diff=m.abs(divisor - target);
-          if (diff < smallestDiff) {smallestDiff=diff;closest=divisor;}
-        }});}}
-  if (closest===Infinity) { return x; }
-  return x % target===0 ? target : closest;
-};
+/* Serena: patternLength extracted to src/rhythm/patternLength.js */
+
+
 
 /**
  * Get rhythm using weighted selection or specific method.
@@ -434,61 +102,18 @@ closestDivisor=(x,target=2)=>{
  * @param {...*} [args] - Arguments for the method.
  * @returns {number[]} Rhythm pattern.
  */
-getRhythm=(level,length,pattern,method,...args)=>{
-  // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
-  const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
-  const checkMethod=(m)=>{
-    if (!m) return null;
-    if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__[m] && typeof __POLYCHRON_TEST__[m] === 'function') return __POLYCHRON_TEST__[m];
-    try {
-      const f = (new Function('return typeof ' + m + ' === "function" ? ' + m + ' : null'))();
-      if (typeof f === 'function') return f;
-    } catch (_e) { /* swallow */ }
-    console.warn(`Unknown rhythm method: ${m}`);
-    return null;
-  };
-  if (method) {
-    const rhythmMethod=checkMethod(method);
-    if (rhythmMethod) return rhythmMethod(...args);
-  } else {
-    const filteredRhythms=Object.fromEntries(
-      Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
-    );
-    // Diagnostic: if no candidate rhythms exist for the given level, emit debug payload
-    try { if (!Object.keys(filteredRhythms).length) writeDebugFile('rhythm-debug.ndjson', { tag: 'no-candidates', level, levelIndex, length, pattern, rhythms: Object.keys(rhythms) }); } catch (_e) { /* swallow */ }
+// Use extracted getRhythm implementation
+getRhythm = require('./rhythm/getRhythm').getRhythm;
 
-    const rhythmKey=randomWeightedSelection(filteredRhythms);
-    try { writeDebugFile('rhythm-debug.ndjson', { tag: 'candidate-selected', level, rhythmKey, candidates: Object.keys(filteredRhythms) }); } catch (_e) { /* swallow */ }
-
-    if (rhythmKey && rhythms[rhythmKey]) {
-      const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
-      const rhythmMethod=checkMethod(rhythmMethodKey);
-      if (!rhythmMethod) {
-        try { writeDebugFile('rhythm-debug.ndjson', { tag: 'missing-method', level, rhythmKey, rhythmMethodKey }); } catch (_e) { /* swallow */ }
-      }
-      if (rhythmMethod) return rhythmMethod(...rhythmArgs(length,pattern));
-    }
-  }
-  console.warn('unknown rhythm');
-  try { writeDebugFile('rhythm-debug.ndjson', { tag: 'unknown-rhythm', level, levelIndex, length, pattern, candidates: Object.keys(rhythms).filter(k => rhythms[k].weights[levelIndex] > 0) }); } catch (_e) { /* swallow */ }
-  return null;
-};
+/* Serena: getRhythm extracted to src/rhythm/getRhythm.js */
 
 /**
  * Track beat rhythm state (on/off).
  * @returns {void}
  */
-trackBeatRhythm=()=>{if (beatRhythm[beatIndex] > 0) {beatsOn++; beatsOff=0;} else {beatsOn=0; beatsOff++;} };
 
-/**
- * Track division rhythm state (on/off).
- * @returns {void}
- */
-trackDivRhythm=()=>{if (divRhythm[divIndex] > 0) {divsOn++; divsOff=0;} else {divsOn=0; divsOff++;} };
 
-trackSubdivRhythm=()=>{if (subdivRhythm[subdivIndex] > 0) {subdivsOn++; subdivsOff=0;} else {subdivsOn=0; subdivsOff++;} };
-
-trackSubsubdivRhythm=()=>{if (subsubdivRhythm[subsubdivIndex] > 0) {subsubdivsOn++; subsubdivsOff=0;} else {subsubdivsOn=0; subsubdivsOff++;} };
-
-// Explicit exports for tests/tools (avoid mutating global test namespace here)
-module.exports = { drummer, playDrums, playDrums2, patternLength, makeOnsets, closestDivisor, drumMap, binary, hex, onsets, random, prob, euclid, rotate, morph, setRhythm, getRhythm };
+// Re-export the modern rhythm index
+module.exports = rhythmExports;
+/* Serena: makeOnsets extracted to src/rhythm/makeOnsets.js */
+/* Serena: makeOnsets extracted to src/rhythm/makeOnsets.js */
