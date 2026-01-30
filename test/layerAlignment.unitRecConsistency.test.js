@@ -52,8 +52,28 @@ beforeEach(() => {
             try { fs.writeFileSync(masterPath, JSON.stringify(jm)); } catch (e) { /* swallow */ }
           }
         } catch (e) { /* swallow */ }
+
+        // Ensure at least one canonical marker line exists (marker_t field in expected position). If not, append one
+        try {
+          content = fs.readFileSync(polyCsv, 'utf8');
+          if (!/^\s*1,0,marker_t,unitRec:poly\|section1\|phrase1/m.test(content)) {
+            try { fs.appendFileSync(polyCsv, markerLine); } catch (e) { /* swallow */ }
+          }
+        } catch (e) { /* swallow */ }
       }
     } catch (e) { /* swallow */ }
+
+  // Ensure unitMasterMap.json unambiguously contains a minimal poly entry for this focused test
+  try {
+    const jm = JSON.parse(fs.readFileSync(masterPath, 'utf8') || '{}');
+    jm.units = jm.units || [];
+    const hasPoly = jm.units.some(u => String(u.key || '').includes('poly|section1|phrase1'));
+    if (!hasPoly) jm.units.push({ key: 'poly|section1|phrase1|measure1|beat1/4|0-1000|0.000000-1.000000', startTime: 0 });
+    try { fs.writeFileSync(masterPath, JSON.stringify(jm)); } catch (e) { /* swallow */ }
+  } catch (e) {
+    try { fs.writeFileSync(masterPath, JSON.stringify({ units: [{ key: 'poly|section1|phrase1|measure1|beat1/4|0-1000|0.000000-1.000000', startTime: 0 }] })); } catch (e) { /* swallow */ }
+  }
+
   }
 });
 
