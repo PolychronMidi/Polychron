@@ -88,7 +88,6 @@ require('./stage');
 require('./venue');
 const writerExports = require('./writer');
 const rhythmExports = require('./rhythm');
-try { require('./structure'); } catch (e) { /* swallow */ }
 const _motifs = require('./motifs');
 // Merge writer & rhythm exports into test namespace so legacy tests can get them via __POLYCHRON_TEST__
 try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; Object.assign(__POLYCHRON_TEST__, writerExports, rhythmExports); } catch (e) { /* swallow */ }

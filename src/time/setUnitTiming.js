@@ -698,7 +698,6 @@ setUnitTiming = (unitType) => {
         try { appendToFile('built-unitRec-stacks.ndjson', { tag: 'built-unitRec-stack', when: new Date().toISOString(), layerName, unitType, indices: { sectionIndex: sec, phraseIndex: phr, measureIndex: mea, beatIndex: bIdx, divIndex: divIdx, subdivIndex: subdivIdx, subsubIndex: subsubIdx }, unitRec, stack: (new Error()).stack }); } catch (_e) { /* swallow */ }
       }
 
-
     // DEBUG: log unitRec push context
     try { writeDebugFile('time-debug.ndjson', { tag: 'pushUnitRec', layerName, unitType, parts: parts.slice(), unitStart: sTick, unitEnd: eTick, startTime: unitRec.startTime, endTime: unitRec.endTime }); } catch (_e) { /* swallow */ }
     if (LMCurrent && LMCurrent.layers && LMCurrent.layers[layerName]) {
@@ -706,15 +705,6 @@ setUnitTiming = (unitType) => {
         // Overlap check: fail if any existing unit of same type intersects
         for (const ex of LMCurrent.layers[layerName].state.units) {
           if (ex && ex.unitType === unitType && Number.isFinite(Number(ex.startTick)) && Number.isFinite(Number(ex.endTick))) {
-            // Only treat as an overlap when the existing unit shares the same parent indices
-            // (section/phrase/measure). This avoids false positives when units from different
-            // parent contexts naturally have identical absolute ticks due to reused timing origin.
-            // REMOVED: ANTI-PATTERN: NO POSTFIXES - EACH UNIT HAS TO INCREMENT, NOT STACK ON SIBLINGS!
-            // const sameSection = (typeof ex.sectionIndex !== 'undefined' && typeof sec !== 'undefined') ? Number(ex.sectionIndex) === Number(sec) : true;
-            // const samePhrase = (typeof ex.phraseIndex !== 'undefined' && typeof phr !== 'undefined') ? Number(ex.phraseIndex) === Number(phr) : true;
-            // const sameMeasure = (typeof ex.measureIndex !== 'undefined' && typeof mea !== 'undefined') ? Number(ex.measureIndex) === Number(mea) : true;
-            // if (!sameSection || !samePhrase || !sameMeasure) continue;
-
           const es = Number(ex.startTick); const ee = Number(ex.endTick);
           if (sTick < ee && eTick > es) {
             // Only treat as overlap when the existing unit shares the same parent indices
@@ -1109,8 +1099,6 @@ setUnitTiming = (unitType) => {
       const label = `New ${unitType.charAt(0).toUpperCase() + unitType.slice(1)}`;
       p(c, { tick: Math.round(unitStart), type: 'marker_t', vals: [`${label}:unitRec:${fullId}`], _internal: true });
 
-      // REMOVED: Ensure section markers present in all layers by propagating primary's section markers into other layers
-      // ANTI-PATTERN: NO POSTIFXES
     } catch (_e) { if (TEST?.enableLogging) console.log('[setUnitTiming] error emitting marker to buffer', _e && _e.stack ? _e.stack : _e); }
 } catch (_e) { try { console.error('[setUnitTiming] persist block error', _e && _e.stack ? _e.stack : _e); } catch (_e2) { /* swallow */ } }
 
