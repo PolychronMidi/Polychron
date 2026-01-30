@@ -86,9 +86,8 @@ class ComposerFactory {
 composers = [];  // Lazy-loaded in play.js when all systems are ready
 
 // Legacy facade: load new composer modules and ensure global `composers` exists for old callers
-const composersExports = require('./composers');
+const composersExports = require('./composers/index');
 // Preserve legacy global composers array used by play.js and tests
 composers = composers || []; // ensure global exists
 // Re-export the modern composer index (includes ComposerFactory and TestExports)
 module.exports = composersExports;
-
