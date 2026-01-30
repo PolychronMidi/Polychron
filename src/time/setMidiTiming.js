@@ -1,5 +1,5 @@
 const TEST = require('../test-hooks');
-const { writeDebugFile } = require('../logGate');
+const { writeDebugFile } = require('../debug/logGate');
 
 /**
  * Writes MIDI timing events to active buffer (c).

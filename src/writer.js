@@ -3,7 +3,7 @@
 
 let fs = require('fs');
 const path = require('path');
-const { writeDebugFile, writeFatal } = require('./logGate');
+const { writeDebugFile, writeFatal } = require('./debug/logGate');
 const { raiseCritical } = require('./postfixGuard');
 // Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
 require('./sheet');

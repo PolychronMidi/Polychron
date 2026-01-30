@@ -1,7 +1,7 @@
 // postfixGuard.js - centralized critical-only enforcement utilities
 const fs = require('fs');
 const path = require('path');
-const { writeFatal } = require('./logGate');
+const { writeFatal } = require('./debug/logGate');
 
 function _ensureOutDir() {
   try {

@@ -1,5 +1,5 @@
 const fs = require('fs'); const path = require('path'); const traces = path.join(process.cwd(), 'output', 'index-traces.ndjson'); try { if (fs.existsSync(traces)) fs.unlinkSync(traces); } catch (e) { /* swallow */ }
-const logGate = require('../src/logGate'); const { writeDebugFile } = require('../src/logGate');
+const logGate = require('../src/debug/logGate'); const { writeDebugFile } = require('../src/debug/logGate');
 
 // Flapping composer: getSubsubdivs alternates between 2 and 1
 composer = { getDivisions: () => 1, getSubdivs: () => 2, getSubsubdivs: (function () { let i = 0; return function () { return (i++ % 2 === 0) ? 2 : 1; }; })() };

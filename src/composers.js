@@ -1,7 +1,7 @@
 // composers.js - Musical intelligence system with meter and composition generation.
 // minimalist comments, details at: composers.md
 
-const { writeIndexTrace, writeDebugFile, isEnabled } = require('./logGate');
+const { writeIndexTrace, writeDebugFile, isEnabled } = require('./debug/logGate');
 
 /**
  * Composes meter-related values with randomization.

@@ -1,7 +1,7 @@
 // masterMap.js - live master unit map builder (incremental)
 const path = require('path');
 const getFs = () => (typeof fs !== 'undefined') ? fs : require('fs');
-const { writeDebugFile, writeDetectedOverlap } = require('./logGate');
+const { writeDebugFile, writeDetectedOverlap } = require('./debug/logGate');
 
 const OUT_DIR = path.join(process.cwd(), 'output');
 const NDJSON_PATH = path.join(OUT_DIR, 'unitMasterMap.ndjson');

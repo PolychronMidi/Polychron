@@ -1,7 +1,7 @@
 // backstage.js - Core utilities, randomization, and MIDI infrastructure.
 // minimalist comments, details at: backstage.md
 
-const { writeDebugFile } = require('./logGate');
+const { writeDebugFile } = require('./debug/logGate');
 
 m=Math;
 /**

@@ -11,7 +11,7 @@ const path = require('path');
     require('./bootstrap-fallbacks');
     require('./stage');
     const { resolveSectionProfile } = require('./structure');
-    const { writeIndexTrace, isEnabled, writeDebugFile } = require('./logGate');
+    const { writeIndexTrace, isEnabled, writeDebugFile } = require('./debug/logGate');
     const { ComposerFactory } = require('./composers');
 
     console.log('Starting play.js ...');
