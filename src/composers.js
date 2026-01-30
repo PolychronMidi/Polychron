@@ -6,12 +6,7 @@ const MeasureComposer = require('./composers/MeasureComposer');
 
 const { ScaleComposer, RandomScaleComposer } = require('./composers/ScaleComposer');
 const { ChordComposer, RandomChordComposer } = require('./composers/ChordComposer');
-    }
-    super.noteSet(randomProgression,'?');
-  }
-  /** @returns {{note: number}[]} Random progression notes */
-  x() { this.noteSet(); return super.x(); }
-}
+
 /**
  * Composes notes from a specific mode.
  * @extends MeasureComposer
