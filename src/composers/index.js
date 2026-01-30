@@ -1,7 +1,9 @@
 // Legacy compatibility: ensure naked global `composers` exists for legacy callers.
 // TODO: remove this shim once all call sites use the module exports directly.
-// Use globalThis to avoid ReferenceError in strict/module scope.
+/* eslint-disable no-restricted-globals */
+// Using globalThis here is intentional to initialize the legacy naked global safely.
 globalThis.composers = globalThis.composers || [];
+/* eslint-enable no-restricted-globals */
 
 const MeasureComposer = require('./MeasureComposer');
 const { ScaleComposer, RandomScaleComposer } = require('./ScaleComposer');
