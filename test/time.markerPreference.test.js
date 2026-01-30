@@ -6,7 +6,7 @@ const _time = require('../src/time');
 // ensure writer is loaded so CSVBuffer is defined for LM.register
 require('../src/writer.js');
 // ensure rhythm helpers are available
-require('../src/rhythm.js');
+require('../src/rhythm');
 
 describe('Marker preference cache - integration', () => {
   const OUT = path.join(process.cwd(), 'output');
@@ -23,7 +23,7 @@ describe('Marker preference cache - integration', () => {
     // deterministic selection helper for rhythm tests
     randomWeightedSelection = (obj) => Object.keys(obj)[0];
     // enable logging inside modules for debug
-    const TEST = require('../src/test-hooks');
+    const TEST = require('../src/test-setup');
     TEST.enableLogging = false;
     // minimal numeric/math random helpers used by rhythm.js
     m = Math;
@@ -46,7 +46,7 @@ describe('Marker preference cache - integration', () => {
     fs.writeFileSync(path.join(OUT, 'output1.csv'), line + '\n');
 
     // Clear any cached marker map to avoid flakiness from concurrent tests
-    const TEST = require('../src/test-hooks'); if (TEST && typeof TEST.clearMarkerCache === 'function') TEST.clearMarkerCache('primary');
+    const TEST = require('../src/test-setup'); if (TEST && typeof TEST.clearMarkerCache === 'function') TEST.clearMarkerCache('primary');
 
     // call the module-level loader directly and assert it finds the entry
     const map = _time.loadMarkerMapForLayer('primary');

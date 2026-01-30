@@ -20,7 +20,7 @@ describe('regression: duplicate unit emissions', () => {
 
     require('../../src/writer.js'); // sets up CSVBuffer, logUnit
     require('../../src/time');
-    require('../../src/rhythm.js');
+    require('../../src/rhythm');
 
     // Register primary layer
     if (LM && LM.register) LM.register('primary', 'c1', {}, () => {});
@@ -43,7 +43,7 @@ describe('regression: duplicate unit emissions', () => {
 
     // ensure counters and indices exist
     beatsOn = 0; beatsOff = 0; divsOn = 0; divsOff = 0; subdivsOn = 0; subdivsOff = 0;
-    const TEST = require('../../src/test-hooks'); TEST.enableLogging = false;
+    const TEST = require('../../src/test-setup'); TEST.enableLogging = false;
     divIndex = 0; subdivIndex = 0; subsubdivIndex = 0; subdivsPerDiv = 7; subsubsPerSub = 4;
   });
 

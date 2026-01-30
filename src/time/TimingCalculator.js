@@ -50,4 +50,4 @@ class TimingCalculator {
 }
 
 try { module.exports = TimingCalculator; } catch (e) { /* swallow */ }
-try { const TEST = require('../test-hooks'); TEST.TimingCalculator = TimingCalculator; } catch (e) { /* swallow */ }
+try { const TEST = require('../test-setup'); TEST.TimingCalculator = TimingCalculator; } catch (e) { /* swallow */ }

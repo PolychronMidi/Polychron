@@ -10,7 +10,7 @@ require('./sheet');
 // Initialize naked globals and utility helpers defined in backstage
 require('./backstage');
 // Centralized test hook object (replace __POLYCHRON_TEST__ global)
-const TEST = require('./test-hooks');
+const TEST = require('./test-setup');
 
 
 /**
@@ -103,6 +103,8 @@ try {
 // Load external grandFinale implementation and expose global for tests that expect it
 const grandFinale = require('./grandFinale');
 try { Function('return this')().grandFinale = grandFinale; } catch (e) { /* swallow */ }
+// Ensure legacy tests that call the unscoped `logUnit()` global find the real implementation
+try { Function('return this')().logUnit = logUnit; } catch (e) { /* swallow */ }
 
 // Explicit module exports for direct importing by tests/tools. Do NOT mutate globals here.
 module.exports = { p, CSVBuffer, logUnit, grandFinale };

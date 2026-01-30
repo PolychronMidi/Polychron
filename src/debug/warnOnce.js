@@ -1,5 +1,5 @@
 const { writeDebugFile } = require('./logGate');
-const TEST = require('../test-hooks');
+const TEST = require('../test-setup');
 
 const _polychron_warned = new Set();
 

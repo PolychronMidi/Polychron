@@ -43,7 +43,7 @@ describe('Boundary: beat CRITICAL regression', () => {
     LM.register && LM.register('primary', 'c1', {}, () => {});
 
     // Require runtime modules so setUnitTiming is available
-    require('../src/writer.js'); require('../src/time'); require('../src/rhythm.js');
+    require('../src/writer.js'); require('../src/time'); require('../src/rhythm');
 
     // We expect a CRITICAL error indicating beat boundary is outside parent measure
     expect(() => {

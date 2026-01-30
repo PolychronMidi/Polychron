@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const TEST = require('../src/test-hooks');
+const TEST = require('../src/test-setup');
 const grandFinale = require('../src/grandFinale');
 const MasterMap = require('../src/masterMap');
 

@@ -194,7 +194,7 @@ describe('grandFinale', () => {
       renameSync: vi.fn()
     };
     // Propagate into test namespace for grandFinale compatibility
-    const TEST = require('../src/test-hooks');
+    const TEST = require('../src/test-setup');
     TEST.fs = fs; TEST.allowMissingLayerCanonical = true;
     // Reset LM
     LM = {

@@ -1,6 +1,6 @@
 // src/rhythm/drummer.js - extracted from src/rhythm.js
 // Preserves behavior by relying on the same global helpers (rf, ri, rv, m, p, clamp, c, beatStart, tpBeat, drumCH)
-const TEST = require('../test-hooks');
+const TEST = require('../test-setup');
 const { drumMap } = require('./drumMap');
 
 module.exports.drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{

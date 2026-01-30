@@ -3,7 +3,7 @@ import { it, expect, beforeEach } from 'vitest';
 // Load runtime modules required for timing helpers
 require('../../src/writer.js'); // CSVBuffer
 require('../../src/time');
-require('../../src/rhythm.js');
+require('../../src/rhythm');
 
 beforeEach(() => {
   // reset LM and small globals
@@ -41,7 +41,7 @@ it('flapping composer getters should be called only once per beat/division (cach
   const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => {});
   LM.activate('primary', false);
 
-  const TEST = require('../../src/test-hooks');
+  const TEST = require('../../src/test-setup');
   TEST.enableLogging = false;
 
   divIndex = 0; subdivIndex = 0; subsubdivIndex = 0;
