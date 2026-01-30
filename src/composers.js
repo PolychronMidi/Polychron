@@ -47,61 +47,61 @@ class MeasureComposer {
    * @returns {number[]} [numerator, denominator]
    * @throws {Error} When max iterations exceeded and no valid meter found
    */
-getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs=100) {
-  // Constants for ratio validation
-  const METER_RATIO_MIN = 0.25;
-  const METER_RATIO_MAX = 4;
-  const MIN_LOG_STEPS = 0.5;
-  const FALLBACK_METER = [4, 4];
+  getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs=100) {
+    // Constants for ratio validation
+    const METER_RATIO_MIN = 0.25;
+    const METER_RATIO_MAX = 4;
+    const MIN_LOG_STEPS = 0.5;
+    const FALLBACK_METER = [4, 4];
 
-  let iterations=0;
-  const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
-  const startTs=Date.now();
-  const _mStart = process.hrtime.bigint();
+    let iterations=0;
+    const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
+    const startTs=Date.now();
+    const _mStart = process.hrtime.bigint();
 
-  while (++iterations <= maxIterations && (Date.now() - startTs) <= timeLimitMs) {
-    let newNumerator=this.getNumerator();
-    let newDenominator=this.getDenominator();
+    while (++iterations <= maxIterations && (Date.now() - startTs) <= timeLimitMs) {
+      let newNumerator=this.getNumerator();
+      let newDenominator=this.getDenominator();
 
-    // Validate numerator and denominator are positive integers
-    if (!Number.isInteger(newNumerator) || !Number.isInteger(newDenominator) || newNumerator <= 0 || newDenominator <= 0) {
-      continue;
-    }
+      // Validate numerator and denominator are positive integers
+      if (!Number.isInteger(newNumerator) || !Number.isInteger(newDenominator) || newNumerator <= 0 || newDenominator <= 0) {
+        continue;
+      }
 
-    let newMeterRatio=newNumerator / newDenominator;
+      let newMeterRatio=newNumerator / newDenominator;
 
-    // Check if new meter ratio is within acceptable range
-    const ratioValid = ignoreRatioCheck || (newMeterRatio >= METER_RATIO_MIN && newMeterRatio <= METER_RATIO_MAX);
+      // Check if new meter ratio is within acceptable range
+      const ratioValid = ignoreRatioCheck || (newMeterRatio >= METER_RATIO_MIN && newMeterRatio <= METER_RATIO_MAX);
 
-    if (ratioValid) {
-      if (this.lastMeter) {
-        let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
-        // Log ratio: 0 = same, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x difference
-        let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
-        // Also enforce an absolute ratio change threshold to avoid large linear jumps
-        const ratioChange = m.abs(newMeterRatio - lastMeterRatio);
-        if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps && ratioChange <= 1.5) {
+      if (ratioValid) {
+        if (this.lastMeter) {
+          let lastMeterRatio=this.lastMeter[0] / this.lastMeter[1];
+          // Log ratio: 0 = same, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x difference
+          let logSteps=m.abs(m.log(newMeterRatio / lastMeterRatio) / m.LN2);
+          // Also enforce an absolute ratio change threshold to avoid large linear jumps
+          const ratioChange = m.abs(newMeterRatio - lastMeterRatio);
+          if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps && ratioChange <= 1.5) {
+            this.lastMeter=[newNumerator,newDenominator];
+            try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) { /* swallow */ }
+            return this.lastMeter;
+          }
+        } else {
           this.lastMeter=[newNumerator,newDenominator];
-          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) { /* swallow */ }
+          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) { /* swallow */ }
           return this.lastMeter;
         }
-      } else {
-        this.lastMeter=[newNumerator,newDenominator];
-        try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) { /* swallow */ }
-        return this.lastMeter;
       }
     }
-  }
 
-  // Log warning with diagnostic info
-  writeDebugFile('composers.ndjson', { tag: 'getMeter-failed', iterations, durationMs: (Date.now()-startTs), meterRatioBounds: [METER_RATIO_MIN, METER_RATIO_MAX], logStepsRange: [MIN_LOG_STEPS, maxLogSteps], fallback: [FALLBACK_METER[0], FALLBACK_METER[1]] }, 'debug');
-  // Also emit a console warning so tests and engineers can observe the fallback directly
-  try {
-    console.warn(`getMeter() failed: fallback ${JSON.stringify(FALLBACK_METER)} iterations=${iterations} Ratio bounds=${METER_RATIO_MIN}-${METER_RATIO_MAX} LogSteps=${MIN_LOG_STEPS}-${maxLogSteps}`);
-  } catch (e) { /* swallow */ }
-  this.lastMeter=FALLBACK_METER;
-  return this.lastMeter;
-}
+    // Log warning with diagnostic info
+    writeDebugFile('composers.ndjson', { tag: 'getMeter-failed', iterations, durationMs: (Date.now()-startTs), meterRatioBounds: [METER_RATIO_MIN, METER_RATIO_MAX], logStepsRange: [MIN_LOG_STEPS, maxLogSteps], fallback: [FALLBACK_METER[0], FALLBACK_METER[1]] }, 'debug');
+    // Also emit a console warning so tests and engineers can observe the fallback directly
+    try {
+      console.warn(`getMeter() failed: fallback ${JSON.stringify(FALLBACK_METER)} iterations=${iterations} Ratio bounds=${METER_RATIO_MIN}-${METER_RATIO_MAX} LogSteps=${MIN_LOG_STEPS}-${maxLogSteps}`);
+    } catch (e) { /* swallow */ }
+    this.lastMeter=FALLBACK_METER;
+    return this.lastMeter;
+  }
   /**
    * Generates note objects within octave range.
    * @param {number[]|null} [octaveRange=null] - [min, max] octaves, or auto-generate
@@ -998,7 +998,7 @@ class MelodicDevelopmentComposer extends ScaleComposer {
 }
 
 /**
- * Phase 2.4: Advanced Voice Leading
+ * Advanced Voice Leading
  * Extends voice leading with figured bass analysis and common-tone retention.
  * Creates more sophisticated chord voicings with smooth voice motion.
  * @extends ScaleComposer
