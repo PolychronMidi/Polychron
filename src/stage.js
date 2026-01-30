@@ -4,7 +4,6 @@
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers'); require('./motifs');
 require('./fxManager');
-const { writeDebugFile, appendToFile } = require('./debug/logGate');
 
 // Initialize global temporary variable for FX object spreading
 _ = null;
@@ -245,22 +244,16 @@ class Stage {
    */
   crossModulateRhythms() {
     this.lastCrossMod=this.crossModulation; this.crossModulation=0;
-    try {
-      this.crossModulation+=beatRhythm[beatIndex] > 0 ? rf(1.5,3) : m.max(rf(.625,1.25),(1 / numerator) * beatsOff + (1 / numerator) * beatsOn) +
-      divRhythm[divIndex] > 0 ? rf(1,2) : m.max(rf(.5,1),(1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) +
-      subdivRhythm[subdivIndex] > 0 ? rf(.5,1) : m.max(rf(.25,.5),(1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) +
-      (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri() ? rf(.1,.3) : rf(-.1)) +
-      (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) +
-      (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) +
-      (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) +
-      (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) +
-      (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) +
-      (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatRhythm[beatIndex]<1?rf(.4,.5):0) + (divRhythm[divIndex]<1?rf(.3,.4):0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3):0);
-    } catch (e) {
-      try { appendToFile('play_loop_trace.ndjson', { event: 'crossMod-exception', when: new Date().toISOString(), sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, error: String(e && e.stack ? e.stack.split('\n')[0] : e) }); } catch (_e) { /* swallow */ }
-      try { process.stderr.write(`[crossMod-call] ${new Date().toISOString()} ERROR crossMod=EXCEPTION last=${this.lastCrossMod} idxs=${sectionIndex}/${phraseIndex}/${measureIndex}/${beatIndex}/${divIndex}/${subdivIndex}\n`); } catch (_e) { /* swallow */ }
-      this.crossModulation = null;
-    }
+    this.crossModulation+=beatRhythm[beatIndex] > 0 ? rf(1.5,3) : m.max(rf(.625,1.25),(1 / numerator) * beatsOff + (1 / numerator) * beatsOn) +
+    divRhythm[divIndex] > 0 ? rf(1,2) : m.max(rf(.5,1),(1 / divsPerBeat) * divsOff + (1 / divsPerBeat) * divsOn ) +
+    subdivRhythm[subdivIndex] > 0 ? rf(.5,1) : m.max(rf(.25,.5),(1 / subdivsPerDiv) * subdivsOff + (1 / subdivsPerDiv) * subdivsOn) +
+    (subdivsOn < ri(7,15) ? rf(.1,.3) : rf(-.1)) + (subdivsOff > ri() ? rf(.1,.3) : rf(-.1)) +
+    (divsOn < ri(9,15) ? rf(.1,.3) : rf(-.1)) + (divsOff > ri(3,7) ? rf(.1,.3) : rf(-.1)) +
+    (beatsOn < ri(3) ? rf(.1,.3) : rf(-.1)) + (beatsOff > ri(3) ? rf(.1,.3) : rf(-.1)) +
+    (subdivsOn > ri(7,15) ? rf(-.3,-.5) : rf(.1)) + (subdivsOff < ri() ? rf(-.3,-.5) : rf(.1)) +
+    (divsOn > ri(9,15) ? rf(-.2,-.4) : rf(.1)) + (divsOff < ri(3,7) ? rf(-.2,-.4) : rf(.1)) +
+    (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) +
+    (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) + (beatRhythm[beatIndex]<1?rf(.4,.5):0) + (divRhythm[divIndex]<1?rf(.3,.4):0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3):0);
   }
 
   /**
@@ -283,11 +276,6 @@ class Stage {
   playNotes() {
     this.setNoteParams();
     this.crossModulateRhythms();
-    try { this.playNotesCallCount++; } catch (e) { /* swallow */ }
-    try { appendToFile('play_notes.ndjson', { event: 'playNotes-entry', composer: composer && (composer.constructor && composer.constructor.name), crossModulation: this.crossModulation, lastCrossMod: this.lastCrossMod, layer: (LM && LM.activeLayer) ? LM.activeLayer : null, playNotesCallCount: this.playNotesCallCount, ts: Date.now() }); } catch (e) { /* swallow */ }
-    // Unignorable immediate per-call CROSSMOD line
-    try { process.stderr.write(`[CROSSMOD] ${new Date().toISOString()} crossMod=${(typeof this.crossModulation==='number'&&Number.isFinite(this.crossModulation))?this.crossModulation.toFixed(6):String(this.crossModulation)} last=${this.lastCrossMod} composer=${composer && composer.constructor ? composer.constructor.name : typeof composer} layer=${(LM && LM.activeLayer) ? LM.activeLayer : 'unknown'} playNotesCallCount=${this.playNotesCallCount}\n`); } catch (e) { /* swallow */ }
-    try { const fs = require('fs'); const p = require('path'); const line = `[CROSSMOD:PLAYNOTES] ${new Date().toISOString()} crossMod=${(typeof this.crossModulation==='number'&&Number.isFinite(this.crossModulation))?this.crossModulation.toFixed(6):String(this.crossModulation)} last=${this.lastCrossMod} composer=${composer && composer.constructor ? composer.constructor.name : typeof composer} layer=${(LM && LM.activeLayer) ? LM.activeLayer : 'unknown'} playNotesCallCount=${this.playNotesCallCount}\n`; fs.appendFileSync(p.join(process.cwd(),'log','play.log'), line); } catch (e) { /* swallow */ }
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
     if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
