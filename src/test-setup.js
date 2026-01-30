@@ -4,6 +4,83 @@ const TEST_GLOBAL = Function('return this')();
 TEST_GLOBAL.__POLYCHRON_TEST__ = TEST_GLOBAL.__POLYCHRON_TEST__ || {};
 // Allow tests to suppress writer fatal checks that inspect output CSVs
 TEST_GLOBAL.__POLYCHRON_TEST__.suppressHumanMarkerCheck = true;
+
+// --- BEGIN: combined test helper content (bootstrap, bootstrap-fallbacks, structure, test-hooks) ---
+try {
+  // Ensure a test-hooks object exists and is available to other modules that require('./test-hooks')
+  const TEST_HOOKS = TEST_GLOBAL.__POLYCHRON_TEST__ = TEST_GLOBAL.__POLYCHRON_TEST__ || {};
+  // bootstrap-fallbacks: minimal fallbacks
+  try { if (typeof p === 'undefined') p = (buff, ...items) => { if (!buff) return; if (typeof buff.push === 'function') buff.push(...items); else if (Array.isArray(buff)) buff.push(...items); }; } catch (e) { /* swallow */ }
+  try {
+    if (typeof CSVBuffer === 'undefined') {
+      class _CSVBufferShim { constructor(name) { this.name = name; this.rows = []; } push(...items) { this.rows.push(...items); } get length() { return this.rows.length; } clear() { this.rows = []; } }
+      CSVBuffer = _CSVBufferShim;
+    }
+  } catch (e) { /* swallow */ }
+  try { if (typeof logUnit === 'undefined') logUnit = (type) => {}; } catch (e) { /* swallow */ }
+
+  // bootstrap: small initialization to ensure minimal globals
+  try {
+    // Ensure Tonal is available globally as `t` for modules that expect it
+    if (typeof t === 'undefined' || !t) {
+      try { t = require('tonal'); } catch (e) { t = (TEST_HOOKS && TEST_HOOKS.t) || undefined; }
+    }
+  } catch (e) { /* swallow */ }
+
+  // Compute fallback musical lists when venue.js isn't loaded
+  try {
+    if (typeof allNotes === 'undefined' || !Array.isArray(allNotes)) {
+      try { allNotes = t && t.Scale ? t.Scale.get('C chromatic').notes.map(n=>t.Note.enharmonic(t.Note.get(n))) : ['C','D','E','F','G','A','B']; } catch (e) { allNotes = ['C','D','E','F','G','A','B']; }
+    }
+    if (typeof allScales === 'undefined' || !Array.isArray(allScales)) {
+      try { allScales = t && t.Scale && typeof t.Scale.names === 'function' ? t.Scale.names().filter(n=>{ try { return t.Scale.get('C '+n).notes.length > 0; } catch (e) { return false; } }) : ['major','minor','chromatic']; } catch (e) { allScales = ['major','minor','chromatic']; }
+    }
+    if (typeof allChords === 'undefined' || !Array.isArray(allChords)) {
+      try {
+        const _set = new Set();
+        if (t && t.ChordType && t.Chord) {
+          t.ChordType.all().forEach(ct => { (allNotes||[]).forEach(root => { try { const chord = t.Chord.get(`${root} ${ct.name}`); if (!chord.empty && chord.symbol) _set.add(chord.symbol); } catch (e) { /* swallow per-root */ } }); });
+        }
+        allChords = Array.from(_set);
+      } catch (e) { allChords = []; }
+    }
+    if (typeof allModes === 'undefined' || !Array.isArray(allModes)) {
+      try {
+        const _m = new Set();
+        if (t && t.Mode) {
+          t.Mode.all().forEach(mode => { (allNotes||[]).forEach(root => { _m.add(`${root} ${mode.name}`); }); });
+        }
+        allModes = Array.from(_m);
+      } catch (e) { allModes = []; }
+    }
+  } catch (e) { /* swallow */ }
+
+  // structure.js: section type helpers
+  try { require('./backstage'); require('./sheet'); } catch (e) { /* swallow - tests may require these later */ }
+  const normalizeSectionType = (entry = {}) => {
+    const phrases = entry.phrases || entry.phrasesPerSection || PHRASES_PER_SECTION || { min: 1, max: 1 };
+    const min = typeof phrases.min === 'number' ? phrases.min : Array.isArray(phrases) ? phrases[0] : PHRASES_PER_SECTION.min;
+    const max = typeof phrases.max === 'number' ? phrases.max : Array.isArray(phrases) ? phrases[1] ?? phrases[0] : PHRASES_PER_SECTION.max;
+    return { type: entry.type || entry.name || 'section', weight: typeof entry.weight === 'number' ? entry.weight : 1, bpmScale: typeof entry.bpmScale === 'number' ? entry.bpmScale : 1, dynamics: entry.dynamics || 'mf', phrasesMin: min, phrasesMax: max, motif: entry.motif || null };
+  };
+  const selectSectionType = () => {
+    const types = Array.isArray(SECTION_TYPES) && SECTION_TYPES.length ? SECTION_TYPES : [{ type: 'default' }];
+    const normalized = types.map(normalizeSectionType);
+    const totalWeight = normalized.reduce((sum, t) => sum + (t.weight || 0), 0) || 1;
+    let pick = rf(0, totalWeight);
+    for (const type of normalized) { pick -= (type.weight || 0); if (pick <= 0) return type; }
+    return normalized[0];
+  };
+  const resolveSectionProfile = (sectionType = null) => {
+    const type = sectionType ? normalizeSectionType(sectionType) : normalizeSectionType(selectSectionType());
+    const phrasesPerSection = ri(type.phrasesMin, type.phrasesMax);
+    return { type: type.type, phrasesPerSection, bpmScale: type.bpmScale, dynamics: type.dynamics, motif: type.motif || null };
+  };
+  // expose structure helpers into test namespace
+  try { TEST_HOOKS.normalizeSectionType = normalizeSectionType; TEST_HOOKS.selectSectionType = selectSectionType; TEST_HOOKS.resolveSectionProfile = resolveSectionProfile; } catch (e) { /* swallow */ }
+
+} catch (e) { /* swallow combined block */ }
+// --- END: combined test helper content ---
 // Load `stage.js` to initialize the usual naked globals (backstage, writer, etc.).
 // Tests rely on these globals being present without importing `play.js`.
 require('./stage');
@@ -105,3 +182,12 @@ if (typeof __POLYCHRON_TEST__ !== 'undefined') {
   GLOBAL.logUnit = GLOBAL.logUnit || testns.logUnit;
   GLOBAL.grandFinale = GLOBAL.grandFinale || testns.grandFinale;
 }
+
+// Export inlined helpers for compatibility shims
+try {
+  module.exports = module.exports || {};
+  module.exports.normalizeSectionType = typeof normalizeSectionType !== 'undefined' ? normalizeSectionType : undefined;
+  module.exports.selectSectionType = typeof selectSectionType !== 'undefined' ? selectSectionType : undefined;
+  module.exports.resolveSectionProfile = typeof resolveSectionProfile !== 'undefined' ? resolveSectionProfile : undefined;
+  module.exports.TEST_HOOKS = (typeof __POLYCHRON_TEST__ !== 'undefined') ? __POLYCHRON_TEST__ : {};
+} catch (e) { /* swallow */ }
