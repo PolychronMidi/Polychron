@@ -20,7 +20,7 @@ const TEST = require('../test-hooks');
 function raiseCritical(key, msg, ctx = {}) {
   try { if (TEST && TEST.DEBUG) console.log('raiseCritical called', { key, msg }); } catch (e) { /* swallow */ }
   try {
-    const guard = require('../postfixGuard');
+    const guard = require('./postfixGuard');
     return guard.raiseCritical(key, msg, ctx);
   } catch (e) {
     try { writeFatal({ when: new Date().toISOString(), type: 'postfix-anti-pattern', severity: 'critical', key, msg, stack: (new Error()).stack, ctx }); } catch (_e) { /* swallow */ }

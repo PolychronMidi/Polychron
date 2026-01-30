@@ -2,7 +2,7 @@ const TEST = require('./test-hooks');
 const fs = require('fs');
 const path = require('path');
 const { writeDebugFile } = require('./debug/logGate');
-const { raiseCritical } = require('./postfixGuard');
+const { raiseCritical } = require('./debug/postfixGuard');
 const { parseMarkersAndBackfill } = require('./grandFinale.parse');
 const { ensureTailMarker } = require('./grandFinale.tail');
 const grandFinale = () => {
