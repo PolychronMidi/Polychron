@@ -4,7 +4,7 @@
 let fs = require('fs');
 const path = require('path');
 const { writeDebugFile, writeFatal } = require('./debug/logGate');
-const { raiseCritical } = require('./postfixGuard');
+const { raiseCritical } = require('./debug/postfixGuard');
 // Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
 require('./sheet');
 // Initialize naked globals and utility helpers defined in backstage
@@ -63,7 +63,7 @@ const c2 = new CSVBuffer('poly');
 if (typeof c === 'undefined') c = c1;
 
 
-const { logUnit } = require('./logUnit');
+const { logUnit } = require('./debug/logUnit');
 
 
 
