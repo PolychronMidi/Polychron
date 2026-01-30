@@ -85,19 +85,10 @@ class ComposerFactory {
  */
 composers = [];  // Lazy-loaded in play.js when all systems are ready
 
-// Export classes and factory globally for testing
-/* self-assigns removed to satisfy lint (classes are already defined in this scope) */
+// Legacy facade: load new composer modules and ensure global `composers` exists for old callers
+const composersExports = require('./composers');
+// Preserve legacy global composers array used by play.js and tests
+composers = composers || []; // ensure global exists
+// Re-export the modern composer index (includes ComposerFactory and TestExports)
+module.exports = composersExports;
 
-
-
-// Export ComposerFactory (and related classes) via CommonJS so modules can require them explicitly
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = Object.assign(module.exports || {}, {
-    ComposerFactory,
-    MeasureComposer,
-    ScaleComposer,
-    ChordComposer,
-    // Expose constructors for tests via TestExports to avoid global mutation
-    TestExports: { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer, RandomModeComposer, PentatonicComposer, RandomPentatonicComposer, ProgressionGenerator, TensionReleaseComposer, ModalInterchangeComposer, HarmonicRhythmComposer, MelodicDevelopmentComposer, AdvancedVoiceLeadingComposer, ComposerFactory }
-  });
-}
