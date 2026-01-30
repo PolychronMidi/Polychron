@@ -40,7 +40,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - Coordinates all modules to generate complete MIDI compositions
 - Handles section/phrase/measure hierarchy with perfect timing alignment
 
-#### 2. **composers.js** ([code](src/composers.js)) ([doc](docs/composers.md))** - Musical Intelligence System
+#### 2. **composers** ([code](src/composers/index.js)) ([doc](docs/composers.md))** - Musical Intelligence System
 - **MeasureComposer**: Base class for meter and division generation
 - **ScaleComposer**: Generates notes from specific scales with octave ranges
 - **RandomScaleComposer**: Random scale selection from all available scales

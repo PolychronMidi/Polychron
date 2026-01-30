@@ -19,7 +19,7 @@
 
 **time.js** ([code](../src/time.js)) ([doc](time.md))** ([code](../src/time.js ([code](../src/time.js)) ([doc](time.md)))) ([doc](time.md)) serves as the **timing coordinator**:
 - **play.js** ([code](../src/play.js)) ([doc](play.md))** ([code](../src/play.js ([code](../src/play.js)) ([doc](play.md)))) ([doc](play.md)) - Calls setUnitTiming() at each hierarchy level and drives phrase/section advancement via LM
-- **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** ([code](../src/composers.js ([code](../src/composers.js)) ([doc](composers.md)))) ([doc](composers.md)) - Provides division/subdiv counts that determine timing granularity
+- **composers** ([code](../src/composers/index.js)) ([doc](composers.md)) - Provides division/subdiv counts that determine timing granularity
 - **writer.js** ([code](../src/writer.js)) ([doc](writer.md))** ([code](../src/writer.js ([code](../src/writer.js)) ([doc](writer.md)))) ([doc](writer.md)) - Receives MIDI timing events (tempo, meter) via setMidiTiming()
 - **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** ([code](../src/backstage.js ([code](../src/backstage.js)) ([doc](backstage.md)))) ([doc](backstage.md)) - Mathematical utility support (pow, log, ceil, floor)
 ## Unit Timing: `setUnitTiming()`

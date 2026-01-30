@@ -18,7 +18,7 @@
 
 **venue.js** ([code](../src/venue.js)) ([doc](venue.md))** ([code](../src/venue.js ([code](../src/venue.js)) ([doc](venue.md)))) ([doc](venue.md)) is the **data foundation**:
 - **Imported by **backstage.js** ([code](../src/backstage.js)) ([doc](backstage.md))** to establish music theory constants
-- **Used by **composers.js** ([code](../src/composers.js)) ([doc](composers.md))** for scale/chord/mode selection
+- **Used by **composers** ([code](../src/composers/index.js)) ([doc](composers.md))** for scale/chord/mode selection
 - **Used by **stage.js** ([code](../src/stage.js)) ([doc](stage.md))** for instrument assignment and effects
 - **No computational logic** - Pure data and simple lookup functions
 
