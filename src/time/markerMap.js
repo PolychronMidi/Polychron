@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { writeDebugFile } = require('../debug/logGate');
-const TEST = require('../test-hooks');
+const TEST = require('../test-setup');
 
 /**
  * Return CSV path for a layer name.

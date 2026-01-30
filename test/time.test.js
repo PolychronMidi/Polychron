@@ -49,7 +49,7 @@ function setupGlobalState() {
   LOG = 'none';
 
   // Ensure debug flag is available to modules and leave naked globals set above for modules to read
-  const TEST = require('../src/test-hooks');
+  const TEST = require('../src/test-setup');
   try {
     if (typeof TEST.DEBUG === 'undefined') TEST.DEBUG = false;
 
@@ -84,7 +84,7 @@ function setPPQ(n) { PPQ = n; setGlobalVar('PPQ', n); }
 
 function setGlobalObject(name, obj) {
   try {
-    const TEST = require('../src/test-hooks');
+    const TEST = require('../src/test-setup');
     const key = `__obj_${Math.random().toString(36).slice(2)}`;
     TEST[key] = obj;
     // Also record direct assignment on TEST so modules can access it if the

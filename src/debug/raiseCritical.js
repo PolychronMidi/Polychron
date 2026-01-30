@@ -7,7 +7,7 @@
  * @returns {any}
  */
 const { writeFatal } = require('./logGate');
-const TEST = require('../test-hooks');
+const TEST = require('../test-setup');
 
 /**
  * Raise a critical error via centralized postfix guard.

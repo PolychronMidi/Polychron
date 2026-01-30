@@ -5,7 +5,7 @@
 TUNING_FREQ = 440; BINAURAL = { min: 0.1, max: 1.0 };
 require('../src/writer.js');
 require('../src/time');
-require('../src/rhythm.js');
+require('../src/rhythm');
 
 // Reset LM
 if (LM) { LM.layers = {}; LM.activeLayer = null; }

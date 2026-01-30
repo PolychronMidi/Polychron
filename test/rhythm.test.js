@@ -5,7 +5,7 @@ require('../src/backstage');  // Defines utility functions
 const { drummer, makeOnsets, patternLength, closestDivisor, patternLength: _patternLength, makeOnsets: _makeOnsets, closestDivisor: _closestDivisor } = require('../src/rhythm');  // Rhythm functions
 
 // Enable test logging
-const TEST = require('../src/test-hooks'); TEST.enableLogging = true;
+const TEST = require('../src/test-setup'); TEST.enableLogging = true;
 
 let m = Math;
 let c, drumCH, beatStart, tpBeat, beatIndex, numerator, beatRhythm, beatsOff, bpmRatio3, measuresPerPhrase;
@@ -36,7 +36,7 @@ function setupGlobalState() {
   };
   // Propagate into the test namespace used by imported helpers and set globals
   try {
-    const TEST = require('../src/test-hooks');
+    const TEST = require('../src/test-setup');
     TEST.drumMap = drumMap;
     // Expose runtime test values to the test harness namespace so modules using TEST hooks can read them
     try { TEST.c = c; } catch (e) { /* swallow */ }
@@ -75,7 +75,7 @@ function setupGlobalState() {
 
 
 // Import from test namespace
-const TEST_NS = require('../src/test-hooks');
+const TEST_NS = require('../src/test-setup');
 const { rf, ri, clamp, rv, ra, p } = TEST_NS;
 // drumMap will be initialized by setupGlobalState()
 let drumMap;

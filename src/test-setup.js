@@ -17,7 +17,7 @@ try {
       CSVBuffer = _CSVBufferShim;
     }
   } catch (e) { /* swallow */ }
-  try { if (typeof logUnit === 'undefined') logUnit = (type) => {}; } catch (e) { /* swallow */ }
+  try { if (!TEST_HOOKS.logUnit) TEST_HOOKS.logUnit = (type) => {}; } catch (e) { /* swallow */ }
 
   // bootstrap: small initialization to ensure minimal globals
   try {
@@ -88,7 +88,7 @@ require('./stage');
 require('./venue');
 const writerExports = require('./writer');
 const rhythmExports = require('./rhythm');
-require('./structure');
+try { require('./structure'); } catch (e) { /* swallow */ }
 const _motifs = require('./motifs');
 // Merge writer & rhythm exports into test namespace so legacy tests can get them via __POLYCHRON_TEST__
 try { __POLYCHRON_TEST__ = __POLYCHRON_TEST__ || {}; Object.assign(__POLYCHRON_TEST__, writerExports, rhythmExports); } catch (e) { /* swallow */ }
@@ -190,4 +190,14 @@ try {
   module.exports.selectSectionType = typeof selectSectionType !== 'undefined' ? selectSectionType : undefined;
   module.exports.resolveSectionProfile = typeof resolveSectionProfile !== 'undefined' ? resolveSectionProfile : undefined;
   module.exports.TEST_HOOKS = (typeof __POLYCHRON_TEST__ !== 'undefined') ? __POLYCHRON_TEST__ : {};
+  // Backwards compatibility: ensure properties from the legacy test-hooks object
+  // are available directly on the module.exports object so early `require()` callers
+  // (possibly involved in circular dependencies) see a stable object identity.
+  try {
+    if (module.exports && module.exports.TEST_HOOKS) {
+      const _hooks = module.exports.TEST_HOOKS;
+      for (const k of Object.keys(_hooks)) { module.exports[k] = _hooks[k]; }
+      module.exports.TEST_HOOKS = _hooks; // keep a reference too
+    }
+  } catch (e) { /* swallow */ }
 } catch (e) { /* swallow */ }

@@ -6,9 +6,7 @@ const path = require('path');
 
 (async function main() {
     // Use centralized test hooks instead of mutating a global
-    const TEST = require('./test-hooks');
-    require('./bootstrap');
-    require('./bootstrap-fallbacks');
+    const TEST = require('./test-setup');
     require('./stage');
     const { resolveSectionProfile } = require('./structure');
     const { writeIndexTrace, isEnabled, writeDebugFile } = require('./debug/logGate');
@@ -20,7 +18,7 @@ const path = require('path');
 
 // Allow environment gating to enable verbose internal logging for repro/test runs
 if (process.env.__POLYCHRON_TEST_ENABLE_LOGGING) {
-  const TEST = require('./test-hooks');
+  const TEST = require('./test-setup');
   TEST.enableLogging = true;
 }
 

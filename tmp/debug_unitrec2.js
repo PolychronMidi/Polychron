@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path');
 const OUT=path.join(process.cwd(),'output'); if(!fs.existsSync(OUT)) fs.mkdirSync(OUT);
 fs.writeFileSync(path.join(OUT,'output1.csv'),'1,0,marker_t,unitRec:primary|section1|phrase1|measure1|beat1/4|0-1000|0.000000-1.000000\n');
-require('../src/writer.js'); require('../src/time.js'); require('../src/rhythm.js');
+require('../src/writer.js'); require('../src/time.js'); require('../src/rhythm');
 global.m=Math; global.LOG='none';
 const reg = LM.register('primary','c1',{}, ()=>{}); const primary = reg.state; const c1 = reg.buffer;
 console.log('LM.layers.primary.state === primary?', LM.layers['primary'] && LM.layers['primary'].state === primary);

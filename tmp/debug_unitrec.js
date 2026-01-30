@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path');
 const OUT=path.join(process.cwd(),'output'); if(!fs.existsSync(OUT)) fs.mkdirSync(OUT);
 fs.writeFileSync(path.join(OUT,'output1.csv'),'1,0,marker_t,unitRec:primary|section1|phrase1|measure1|beat1/4|0-1000|0.000000-1.000000\n');
-require('../src/writer.js'); require('../src/time.js'); require('../src/rhythm.js');
+require('../src/writer.js'); require('../src/time.js'); require('../src/rhythm');
 global.m=Math; global.LOG='none';
 const { state: primary, buffer: c1 } = LM.register('primary','c1',{}, ()=>{});
 global.sectionIndex=0; global.phraseIndex=0; global.measureIndex=0; global.beatIndex=0; global.tpSec=1000; global.tpMeasure=1000; global.spMeasure=1; global.phraseStart=0; global.phraseStartTime=0; global.numerator=4; global.denominator=4; global.measuresPerPhrase=1; global.beatRhythm=[1,1,1,1]; global.divRhythm=[1]; global.subdivRhythm=[1]; global.subsubdivRhythm=[1];

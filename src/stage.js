@@ -456,5 +456,5 @@ class Stage {
 
 // Export Stage instance to centralized TEST hooks
 stage = new Stage();
-const TEST = require('./test-hooks');
+const TEST = require('./test-setup');
 try { if (TEST) TEST.stage = stage; } catch (e) { /* swallow */ }

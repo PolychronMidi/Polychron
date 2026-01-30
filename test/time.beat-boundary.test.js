@@ -5,7 +5,7 @@ import path from 'path';
 // Ensure runtime modules are loaded
 require('../src/writer.js');
 require('../src/time');
-require('../src/rhythm.js');
+require('../src/rhythm');
 
 const OUT = path.join(process.cwd(), 'output');
 

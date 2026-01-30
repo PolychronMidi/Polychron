@@ -1,4 +1,4 @@
-const TEST = require('../test-hooks');
+const TEST = require('../test-setup');
 const { writeDebugFile } = require('../debug/logGate');
 
 /**

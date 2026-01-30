@@ -1,3 +1,2 @@
-// Compatibility shim: now consolidated into test-setup.js
-require('./test-setup');
-module.exports = require('./test-setup');
+// Compatibility shim: re-export helpers from consolidated `test-setup`
+try { module.exports = require('./test-setup'); } catch (e) { module.exports = {}; }

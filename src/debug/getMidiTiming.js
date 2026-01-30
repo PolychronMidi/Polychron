@@ -4,7 +4,7 @@
  * @returns {number[]} MIDI meter as [numerator, denominator].
  */
 const TimingCalculator = require('../time/TimingCalculator');
-const TEST = require('../test-hooks');
+const TEST = require('../test-setup');
 
 /**
  * Compute MIDI-compatible meter and tempo sync factor.
