@@ -1,4 +1,4 @@
-const { writeIndexTrace, writeDebugFile, appendToFile } = require('../logGate');
+const { writeIndexTrace, writeDebugFile, appendToFile } = require('../debug/logGate');
 const { raiseCritical } = require('../postfixGuard');
 const TEST = require('../test-hooks');
 const m = Math;

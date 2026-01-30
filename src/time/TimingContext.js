@@ -70,7 +70,7 @@ class TimingContext {
     const after = { phraseStart: this.phraseStart, tpSection: this.tpSection, sectionStart: this.sectionStart };
     try {
       if (process.env.DEBUG_TRACES || (typeof TEST !== 'undefined' && TEST && TEST.DEBUG)) {
-        const { writeIndexTrace } = require('../logGate');
+        const { writeIndexTrace } = require('../debug/logGate');
         writeIndexTrace({ tag: 'timing:advancePhrase', when: new Date().toISOString(), before, after, tpPhrase, spPhrase, layer: (typeof LM !== 'undefined' && LM && LM.activeLayer) ? LM.activeLayer : null });
       }
     } catch (e) { /* swallow */ }

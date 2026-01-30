@@ -4,7 +4,7 @@ const path = require('path');
 // Use Vitest globals (configured via vitest.config.mjs)
 /* global describe, it, expect, beforeEach, afterEach */
 
-const { appendToFile, writeDebugFile, writeIndexTrace, isEnabled } = require('../src/logGate');
+const { appendToFile, writeDebugFile, writeIndexTrace, isEnabled } = require('../src/debug/logGate');
 
 const OUT = path.join(process.cwd(), 'output');
 const cleanupFile = (name) => { try { const p = path.join(OUT, name); if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) { /* swallow */ } };

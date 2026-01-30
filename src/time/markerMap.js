@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { writeDebugFile } = require('../logGate');
+const { writeDebugFile } = require('../debug/logGate');
 const TEST = require('../test-hooks');
 
 /**

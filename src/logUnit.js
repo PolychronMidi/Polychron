@@ -1,7 +1,7 @@
 // logUnit.js - Extracted logUnit function to simplify writer.js and enable isolated refactor
 // Relies on project globals (sectionIndex, phraseIndex, measureIndex, composer, LOG, c, etc.)
 // Uses writeDebugFile from logGate for diagnostic traces.
-const { writeDebugFile } = require('./logGate');
+const { writeDebugFile } = require('./debug/logGate');
 
 /**
  * Logs timing markers with context awareness.

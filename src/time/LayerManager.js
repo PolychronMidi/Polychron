@@ -2,7 +2,7 @@
 /**
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
  */
-const { writeIndexTrace } = require('../logGate');
+const { writeIndexTrace } = require('../debug/logGate');
 LM = layerManager ={
   layers: {},
 

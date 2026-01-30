@@ -6,7 +6,7 @@
  * @param {object} [ctx] - Additional context to attach to diagnostics
  * @returns {any}
  */
-const { writeFatal } = require('../logGate');
+const { writeFatal } = require('./logGate');
 const TEST = require('../test-hooks');
 
 /**

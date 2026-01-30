@@ -1,6 +1,6 @@
 // rhythm.js - Rhythmic pattern generation with drum mapping and stutter effects.
 const { raiseCritical } = require('./postfixGuard');
-const { writeDebugFile } = require('./logGate');
+const { writeDebugFile } = require('./debug/logGate');
 const TEST = require('./test-hooks');
 // minimalist comments, details at: rhythm.md
 
