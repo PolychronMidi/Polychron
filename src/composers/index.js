@@ -1,6 +1,7 @@
 // Legacy compatibility: ensure naked global `composers` exists for legacy callers.
 // TODO: remove this shim once all call sites use the module exports directly.
-composers = composers || [];
+// Use globalThis to avoid ReferenceError in strict/module scope.
+globalThis.composers = globalThis.composers || [];
 
 const MeasureComposer = require('./MeasureComposer');
 const { ScaleComposer, RandomScaleComposer } = require('./ScaleComposer');
