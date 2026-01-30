@@ -1,3 +1,7 @@
+// Legacy compatibility: ensure naked global `composers` exists for legacy callers.
+// TODO: remove this shim once all call sites use the module exports directly.
+composers = composers || [];
+
 const MeasureComposer = require('./MeasureComposer');
 const { ScaleComposer, RandomScaleComposer } = require('./ScaleComposer');
 const { ChordComposer, RandomChordComposer } = require('./ChordComposer');
