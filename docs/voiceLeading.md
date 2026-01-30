@@ -425,7 +425,7 @@ console.log('Leap-heavy melody:', quality2);
 
 ## Dependencies
 
-- Requires `composers.js` (MeasureComposer base class)
+- Requires `src/composers/index.js` (MeasureComposer base class)
 - Requires `venue.js` globals (for note/scale/chord data)
 - No external libraries
 

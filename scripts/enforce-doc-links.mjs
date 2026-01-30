@@ -14,7 +14,7 @@ if (fs.existsSync(docsDir)) {
 // Module mapping: src file -> docs file name
 const modules = [
   { name: 'backstage.js', doc: 'backstage.md' },
-  { name: 'composers.js', doc: 'composers.md' },
+  { name: 'composers/index.js', doc: 'composers.md' },
   { name: 'fxManager.js', doc: 'fxManager.md' },
   { name: 'motifs.js', doc: 'motifs.md' },
   { name: 'play.js', doc: 'play.md' },
