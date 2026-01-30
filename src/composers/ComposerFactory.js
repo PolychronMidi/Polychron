@@ -9,6 +9,8 @@ const HarmonicRhythm = require('./HarmonicRhythmComposer');
 const MelodicDevelopment = require('./MelodicDevelopmentComposer');
 const AdvancedVoiceLeading = require('./AdvancedVoiceLeadingComposer');
 
+const { writeDebugFile } = require('../debug/logGate');
+
 class ComposerFactory {
   static constructors = {
     measure: () => new MeasureComposer(),
