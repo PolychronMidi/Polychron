@@ -2,6 +2,7 @@
  * Composes meter-related values with randomization.
  * @class
  */
+const { writeIndexTrace, writeDebugFile } = require('../debug/logGate');
 class MeasureComposer {
   constructor() {
     /** @type {number[]|null} Previous meter [numerator, denominator] */
