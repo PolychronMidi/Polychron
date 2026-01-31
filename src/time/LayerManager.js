@@ -123,8 +123,21 @@ LM = layerManager ={
 
     } else if (advancementType === 'section') {
       layer.sectionStart=phraseStart; layer.sectionStartTime=phraseStartTime;
+      try { fs.appendFileSync('log/timing-events.log', JSON.stringify({ time: new Date().toISOString(), event: 'advance', layer: name, type: 'section', section: sectionIndex+1, phraseStart, tpSec }) + '\n'); } catch (_e) { /* swallow */ }
 
     }
+  },
+
+  // Minimal helpers to initialize section origin for layers (keeps it tiny and explicit).
+  setSectionStartFor: (name) => {
+    const layer = LM.layers[name];
+    if (!layer) return;
+    layer.sectionStart = phraseStart;
+    layer.sectionStartTime = phraseStartTime;
+  },
+
+  setSectionStartAll: () => {
+    Object.keys(LM.layers).forEach((ln) => LM.setSectionStartFor(ln));
   },
 };
 

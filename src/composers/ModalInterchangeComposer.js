@@ -59,4 +59,3 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     return super.x();
   }
 }
-

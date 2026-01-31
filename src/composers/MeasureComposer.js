@@ -195,4 +195,3 @@ MeasureComposer = class MeasureComposer {
     }
   }
 }
-

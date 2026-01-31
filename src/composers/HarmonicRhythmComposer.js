@@ -60,4 +60,3 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     return super.x();
   }
 }
-
