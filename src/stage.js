@@ -128,15 +128,7 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<
   bassVar=refVar*rf(-2,2); cBal3=rf()<.5?cBal2+m.round(bassVar*.5) : cBal2+m.round(bassVar*-.5);
 
   // Sync instance state back to legacy naked globals so tests that mutate globals pass
-  try { balOffset = balOffset; } catch (e) { /* swallow */ }
-  try { sideBias = sideBias; } catch (e) { /* swallow */ }
-  try { lBal = lBal; } catch (e) { /* swallow */ }
-  try { rBal = rBal; } catch (e) { /* swallow */ }
-  try { cBal = cBal; } catch (e) { /* swallow */ }
-  try { cBal2 = cBal2; } catch (e) { /* swallow */ }
-  try { cBal3 = cBal3; } catch (e) { /* swallow */ }
-  try { refVar = refVar; } catch (e) { /* swallow */ }
-  try { bassVar = bassVar; } catch (e) { /* swallow */ }
+  // Globals are populated via require-side effects; no explicit wrapper assignment required.
 
   p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart-1,type:'control_c' }; _=tmp;
 return [

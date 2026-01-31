@@ -1,15 +1,15 @@
 // src/rhythm/getRhythm.js - extracted from src/rhythm.js
 
-module.exports.getRhythm = function getRhythm(level,length,pattern,method,...args){
+// Ensure rhythmMethods registry exists (populated by `rhythm/index.js` on require)
+rhythmMethods = (typeof rhythmMethods !== 'undefined' && rhythmMethods) ? rhythmMethods : {};
+
+getRhythm = function getRhythm(level,length,pattern,method,...args){
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
   const checkMethod=(m)=>{
     if (!m) return null;
     if (typeof __POLYCHRON_TEST__ !== 'undefined' && __POLYCHRON_TEST__[m] && typeof __POLYCHRON_TEST__[m] === 'function') return __POLYCHRON_TEST__[m];
-    try {
-      const f = (new Function('return typeof ' + m + ' === "function" ? ' + m + ' : null'))();
-      if (typeof f === 'function') return f;
-    } catch (_e) { /* swallow */ }
+    if (typeof rhythmMethods !== 'undefined' && rhythmMethods[m] && typeof rhythmMethods[m] === 'function') return rhythmMethods[m];
     console.warn(`Unknown rhythm method: ${m}`);
     return null;
   };

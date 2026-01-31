@@ -1,6 +1,6 @@
 const { random: _random } = require('@tonaljs/rhythm-pattern');
 
-module.exports.setRhythm = function setRhythm(level) {
+setRhythm = function setRhythm(level) {
   const random = (length, probOn) => { return _random(length, 1 - probOn); };
   switch (level) {
     case 'beat': {

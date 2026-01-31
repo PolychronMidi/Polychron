@@ -1,6 +1,6 @@
-const ScaleComposer = require('./ScaleComposer').ScaleComposer || require('./ScaleComposer');
+require('./ScaleComposer');
 
-class AdvancedVoiceLeadingComposer extends ScaleComposer {
+AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7) {
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
@@ -61,4 +61,4 @@ class AdvancedVoiceLeadingComposer extends ScaleComposer {
   }
 }
 
-try { module.exports = AdvancedVoiceLeadingComposer; } catch (e) { /* swallow */ }
+/* AdvancedVoiceLeadingComposer exposed via require */

@@ -1,7 +1,7 @@
 const ProgressionGenerator = require('./ProgressionGenerator');
-const ChordComposer = require('./ChordComposer').ChordComposer || require('./ChordComposer');
+require('./ChordComposer');
 
-class TensionReleaseComposer extends ChordComposer {
+TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
     const generator = new ProgressionGenerator(key, quality);
     const progressionChords = generator.random();
@@ -67,5 +67,3 @@ class TensionReleaseComposer extends ChordComposer {
     return super.x();
   }
 }
-
-try { module.exports = TensionReleaseComposer; } catch (e) { /* swallow */ }

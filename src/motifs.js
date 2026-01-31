@@ -174,5 +174,3 @@ applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
 
 try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 Object.assign(__POLYCHRON_TEST__, { Motif, clampMotifNote, applyMotifToNotes });
-
-module.exports = { Motif };

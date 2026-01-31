@@ -1,5 +1,5 @@
 // src/rhythm/patternLength.js - extracted from src/rhythm.js
-module.exports.patternLength = function patternLength(pattern, length) {
+patternLength = function patternLength(pattern, length) {
   if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] START', pattern.length, length);
   if (length === undefined) {
     if (__POLYCHRON_TEST__?.enableLogging) console.log('[patternLength] END');

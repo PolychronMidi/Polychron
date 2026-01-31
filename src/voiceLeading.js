@@ -298,7 +298,4 @@ const TEST = require('./test-setup');
 try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { /* swallow */ }
 
 // Export for direct import in tests and tools
-try {
-  module.exports = module.exports || {};
-  module.exports.VoiceLeadingScore = VoiceLeadingScore;
-} catch (e) { /* swallow */ }
+// VoiceLeadingScore is available via require-side effects and naked globals

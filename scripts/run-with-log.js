@@ -1,3 +1,4 @@
+/* global stripAnsi */
 /**
  * Run a command and stream stdout/stderr to a log file while mirroring it to the console.
  * Usage: node scripts/run-with-log.js <logFile> <command> [args...]
@@ -6,7 +7,8 @@
 const { spawn } = require('child_process');
 const { createWriteStream } = require('fs');
 const { mkdir } = require('fs/promises');
-const stripAnsi = require('./utils/stripAnsi');
+// Load stripAnsi for side-effects (defines naked global `stripAnsi`)
+require('./utils/stripAnsi');
 const path = require('path');
 
 const cwd = process.cwd();

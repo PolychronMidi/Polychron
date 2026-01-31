@@ -1,5 +1,5 @@
 
-class ProgressionGenerator {
+ProgressionGenerator = class ProgressionGenerator {
   constructor(key, quality = 'major') {
     this.key = key;
     this.quality = quality.toLowerCase();
@@ -89,4 +89,3 @@ class ProgressionGenerator {
   }
 }
 
-try { module.exports = ProgressionGenerator; } catch (e) { /* swallow */ }

@@ -1,6 +1,6 @@
 // src/debug/logUnit.js - moved from src/logUnit.js
 // Logs timing markers with context awareness for writer and diagnostics.
-const formatTime = require('./formatTime');
+require('./formatTime');
 
 /**
  * Logs timing markers with context awareness.
@@ -8,7 +8,7 @@ const formatTime = require('./formatTime');
  *
  * @param {string} type - Unit type: 'section', 'phrase', 'measure', 'beat', 'division', 'subdiv', 'subsubdiv'
  */
-const logUnit = (type) => {
+logUnit = (type) => {
   let shouldLog = false;
   type = type.toLowerCase();
 
@@ -142,5 +142,3 @@ const logUnit = (type) => {
     });
   })();
 };
-
-try { module.exports = { logUnit }; } catch (e) { /* swallow */ }

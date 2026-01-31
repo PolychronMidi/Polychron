@@ -1,6 +1,6 @@
 // src/rhythm/makeOnsets.js - extracted from src/rhythm.js
 // Preserves original logic and uses __POLYCHRON_TEST__ for debug logging
-module.exports.makeOnsets = (length, valuesOrRange) => {
+makeOnsets = (length, valuesOrRange) => {
   if (__POLYCHRON_TEST__?.enableLogging) console.log('[makeOnsets] START', length, valuesOrRange);
   let onsets = []; let total = 0;
   let iterations = 0;

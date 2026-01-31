@@ -155,4 +155,4 @@ class FxManager {
 }
 
 // Export FxManager instance and class to global namespace
-this.fx = new FxManager();
+fx = new FxManager();

@@ -1,10 +1,10 @@
-const MeasureComposer = require('./MeasureComposer');
+require('./MeasureComposer');
 
 /**
  * Composes notes from a specific mode.
  * @extends MeasureComposer
  */
-class ModeComposer extends MeasureComposer {
+ModeComposer = class ModeComposer extends MeasureComposer {
   /**
    * @param {string} modeName - e.g., 'ionian', 'aeolian'
    * @param {string} root - e.g., 'A', 'C'
@@ -30,7 +30,7 @@ class ModeComposer extends MeasureComposer {
   x=()=>this.getNotes();
 }
 
-class RandomModeComposer extends ModeComposer {
+RandomModeComposer = class RandomModeComposer extends ModeComposer {
   constructor() {
     super('','');
     this.noteSet();
@@ -46,4 +46,4 @@ class RandomModeComposer extends ModeComposer {
   x() { this.noteSet(); return super.x(); }
 }
 
-try { module.exports = { ModeComposer, RandomModeComposer }; } catch (e) { /* swallow */ }
+/* ModeComposer and RandomModeComposer exposed via require */

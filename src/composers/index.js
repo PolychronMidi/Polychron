@@ -1,15 +1,13 @@
 // Legacy compatibility: ensure naked global `composers` exists for legacy callers.
 // TODO: remove this shim once all call sites use the module exports directly.
-/* eslint-disable no-restricted-globals */
-// Using globalThis here is intentional to initialize the legacy naked global safely.
-globalThis.composers = globalThis.composers || [];
-/* eslint-enable no-restricted-globals */
+// Preserve legacy naked global `composers` without `globalThis` usage
+if (typeof composers === 'undefined') composers = [];
 
-const MeasureComposer = require('./MeasureComposer');
-const { ScaleComposer, RandomScaleComposer } = require('./ScaleComposer');
-const { ChordComposer, RandomChordComposer } = require('./ChordComposer');
-const { ModeComposer, RandomModeComposer } = require('./ModeComposer');
-const { PentatonicComposer, RandomPentatonicComposer } = require('./PentatonicComposer');
+require('./MeasureComposer');
+require('./ScaleComposer');
+require('./ChordComposer');
+require('./ModeComposer');
+require('./PentatonicComposer');
 const ProgressionGenerator = require('./ProgressionGenerator');
 const TensionReleaseComposer = require('./TensionReleaseComposer');
 const ModalInterchangeComposer = require('./ModalInterchangeComposer');
@@ -38,4 +36,4 @@ const TestExports = {
   ComposerFactory
 };
 
-try { module.exports = Object.assign({ ComposerFactory, TestExports }, { MeasureComposer, ScaleComposer, RandomScaleComposer, ChordComposer, RandomChordComposer, ModeComposer, RandomModeComposer, PentatonicComposer, RandomPentatonicComposer, ProgressionGenerator, TensionReleaseComposer, ModalInterchangeComposer, HarmonicRhythmComposer, MelodicDevelopmentComposer, AdvancedVoiceLeadingComposer }); } catch (e) { /* swallow */ }
+/* Components are exposed via their require() side-effects; explicit Function wrappers removed */

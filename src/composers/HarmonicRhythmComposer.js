@@ -1,7 +1,7 @@
 const ProgressionGenerator = require('./ProgressionGenerator');
-const ChordComposer = require('./ChordComposer').ChordComposer || require('./ChordComposer');
+require('./ChordComposer');
 
-class HarmonicRhythmComposer extends ChordComposer {
+HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {
     let chordSymbols = progression;
     if (progression && progression[0] && progression[0].match(/^[ivIV]/)) {
@@ -61,4 +61,3 @@ class HarmonicRhythmComposer extends ChordComposer {
   }
 }
 
-try { module.exports = HarmonicRhythmComposer; } catch (e) { /* swallow */ }
