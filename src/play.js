@@ -1,27 +1,20 @@
 // play.js - Main composition engine orchestrating section, phrase, measure hierarchy.
 // minimalist comments, details at: play.md
-require('./stage');
-const fs = require('fs');
-const path = require('path');
+require('./stage'); // This file imports EVERY other file & dependency in the project - Global scope used by design: DO NOT spam up files with useless import / export statements
+(async function main() { console.log('Starting play.js ...');
 
-(async function main() {
-
-    const { ComposerFactory } = require('./composers');
-
-    console.log('Starting play.js ...');
-
-
-const { state: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => stage.setTuningAndInstruments());
-const { state: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => stage.setTuningAndInstruments());
+const { layer: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => setTuningAndInstruments());
+const { layer: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => setTuningAndInstruments());
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+  setUnitTiming('section');
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     composer = ComposerFactory.createRandom({ root: 'random' });
     [numerator, denominator] = composer.getMeter();
-    setMidiTiming();
+    getMidiTiming();
     getPolyrhythm();
     LM.activate('primary', false);
     measuresPerPhrase = measuresPerPhrase1;
@@ -33,21 +26,21 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
-        stage.setOtherInstruments();
-        stage.setBinaural();
-        stage.setBalanceAndFX();
+        setOtherInstruments();
+        setBinaural();
+        setBalanceAndFX();
         playDrums();
-        stage.stutterFX(flipBin ? flipBinT3 : flipBinF3);
-        stage.stutterFade(flipBin ? flipBinT3 : flipBinF3);
-        rf() < .05 ? stage.stutterPan(flipBin ? flipBinT3 : flipBinF3) : stage.stutterPan(stutterPanCHs);
+        stutterFX(flipBin ? flipBinT3 : flipBinF3);
+        stutterFade(flipBin ? flipBinT3 : flipBinF3);
+        rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('division');
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            stage.playNotes();
+            playNotes();
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              stage.playNotes2();
+              playNotes2();
             }
           }
         }
@@ -58,7 +51,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
     LM.activate('poly', true);
 
-    setMidiTiming();
+    getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
@@ -66,13 +59,13 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
-        stage.setOtherInstruments();
-        stage.setBinaural();
-        stage.setBalanceAndFX();
+        setOtherInstruments();
+        setBinaural();
+        setBalanceAndFX();
         playDrums2();
-        stage.stutterFX(flipBin ? flipBinT3 : flipBinF3);
-        stage.stutterFade(flipBin ? flipBinT3 : flipBinF3);
-        rf() < .05 ? stage.stutterPan(flipBin ? flipBinT3 : flipBinF3) : stage.stutterPan(stutterPanCHs);
+        stutterFX(flipBin ? flipBinT3 : flipBinF3);
+        stutterFade(flipBin ? flipBinT3 : flipBinF3);
+        rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
@@ -80,18 +73,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-
-            stage.playNotes();
+            playNotes();
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              stage.playNotes2();
+              playNotes2();
             }
-
           }
-
         }
-
       }
     }
 
@@ -102,7 +91,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   LM.advance('poly', 'section');
 
-  activeMotif=null;
 }
 
 grandFinale();

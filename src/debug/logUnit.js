@@ -37,7 +37,8 @@ const logUnit = (type) => {
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
   if (typeof shouldLog === 'undefined') {
-    // function not yet invoked in this context; skip
+    console.warn('logUnit: shouldLog is undefined, defaulting to true');
+    shouldLog = true;
   } else if (!shouldLog) return null;
 
   // Use buffer for this layer
@@ -46,10 +47,8 @@ const logUnit = (type) => {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
     startTick = sectionStart;
-    spSection = tpSection / tpSec;
-    endTick = startTick + tpSection;
     startTime = sectionStartTime;
-    endTime = startTime + spSection;
+    // Section duration not known this early in the loop.
   } else if (type === 'phrase') {
     unit = phraseIndex + 1;
     unitsPerParent = phrasesPerSection;
@@ -135,6 +134,14 @@ const logUnit = (type) => {
     startTime = Number.isFinite(Number(subsubdivStartTime)) ? subsubdivStartTime : 0;
     endTime = startTime + (Number.isFinite(Number(spSubsubdiv)) ? spSubsubdiv : 0);
   }
+  return (() => {
+    c.push({
+      tick: startTick,
+      type: 'marker_t',
+      vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+    });
+  })();
+};
 
 };
 

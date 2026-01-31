@@ -149,7 +149,7 @@ Tests are organized at two levels:
 - **LayerManager (LM)** (**time.js** ([code](../src/time.js)) ([doc](time.md))): Context switching object managing per-layer timing state
 - **Global State Pattern**: Shared variables (phraseStart, tpMeasure, etc.) switched between layer contexts
 - **Transparent Integration**: p(c) syntax allows code to work with active layer's buffer automatically
-- **Independent Timing**: Each layer maintains separate timing state via LM.layers[name].state
+- **Independent Timing**: Each layer maintains separate timing via `LM.layers[name]` (flattened timing props)
 - **Automatic Restoration**: LM.activate() switches global variables to target layer's preserved values
 
 ### Dual-Context Timing Architecture

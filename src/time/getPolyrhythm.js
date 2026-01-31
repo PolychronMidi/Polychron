@@ -1,4 +1,4 @@
-/* global composer, numerator, denominator, polyNumerator, polyDenominator, polyMeterRatio, meterRatio, m, measuresPerPhrase1, measuresPerPhrase2, getMidiTiming, warnOnce */
+require('./midiTiming');
 /**
  * Compute phrase alignment between primary and poly meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
