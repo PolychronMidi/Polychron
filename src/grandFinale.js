@@ -84,7 +84,7 @@ const grandFinale = () => {
       try { const res = require('./grandFinale.tail').ensureTailMarker({ buffer, computedEndTick, layerState, name, endTick }); if (res) { computedEndTick = res.computedEndTick; } } catch (_e) { /* swallow */ }
     } catch (e) { /* swallow */ }
 
-    composition += `1,${tickNumRound},end_track`;
+    composition += `1,${phraseStart},end_track`;
     const outputFilename = name === 'primary' ? 'output/output1.csv' : name === 'poly' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     fs.writeFileSync(outputFilename, composition);
     console.log(`Wrote file: ${outputFilename}`);

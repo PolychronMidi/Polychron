@@ -138,11 +138,9 @@ const logUnit = (type) => {
     c.push({
       tick: startTick,
       type: 'marker_t',
-      vals: [`${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick} ${meterInfo ? meterInfo : ''}`]
+      vals: [`${LM.activeLayer} ${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} ${typeof endTick === 'undefined' || typeof endTime === 'undefined' ? `Start: ${formatTime(startTime)}` : `Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick}`} ${meterInfo ? meterInfo : ''}`]
     });
   })();
-};
-
 };
 
 try { module.exports = { logUnit }; } catch (e) { /* swallow */ }
