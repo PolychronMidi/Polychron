@@ -98,7 +98,7 @@ setUnitTiming = (unitType) => {
 
     case 'subsubdiv':
       trackSubsubdivRhythm();
-      tpSubsubdiv = tpSubdiv / m.max(1, subsubsPerSub);
+      tpSubsubdiv = tpSubdiv / subsubsPerSub;
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;

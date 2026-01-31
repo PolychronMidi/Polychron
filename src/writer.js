@@ -3,15 +3,10 @@
 
 let fs = require('fs');
 const path = require('path');
-const { writeDebugFile, writeFatal } = require('./debug/logGate');
-const { raiseCritical } = require('./debug/postfixGuard');
 // Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
 require('./sheet');
 // Initialize naked globals and utility helpers defined in backstage
 require('./backstage');
-// Centralized test hook object (replace __POLYCHRON_TEST__ global)
-const TEST = require('./test-setup');
-
 
 /**
  * @typedef {{parts?: string[], startTick?: number, endTick?: number, startTime?: number, endTime?: number}} Unit

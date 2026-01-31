@@ -52,7 +52,7 @@ SECTIONS={
   max: 9
 };
 DIVISIONS={
-  min: 0,
+  min: 1,
   max: 10,
   weights: [1,15,20,25,20,10,10,7,2,2,1]
 };

@@ -231,7 +231,7 @@ bassInstrument = getMidiValue('program', bassInstrument);
 bassInstrument2 = getMidiValue('program', bassInstrument2);
 
 /** Tonal.js library for music theory operations */
-const t=require('tonal');
+t=require('tonal');
 
 /**
  * All chromatic notes in standardized enharmonic form.
@@ -239,7 +239,7 @@ const t=require('tonal');
  * @example
  * allNotes[0]; // 'C'
  */
-const allNotes=t.Scale.get('C chromatic').notes.map(note=>
+allNotes = t.Scale.get('C chromatic').notes.map(note=>
   t.Note.enharmonic(t.Note.get(note))
 );
 
@@ -249,7 +249,7 @@ const allNotes=t.Scale.get('C chromatic').notes.map(note=>
  * @example
  * allScales[0]; // 'major'
  */
-const allScales=t.Scale.names().filter(scaleName=>{
+allScales=t.Scale.names().filter(scaleName=>{
   return allNotes.some(root=>{
     const scale=t.Scale.get(`${root} ${scaleName}`);
     return scale.notes.length > 0;
@@ -262,7 +262,7 @@ const allScales=t.Scale.names().filter(scaleName=>{
  * @example
  * allChords[0]; // 'CM'
  */
-const allChords=(function() {
+allChords=(function() {
   /** @param {string} chordType @param {string} root @returns {{symbol: string, notes: string[]}|undefined} */
   function getChordNotes(chordType,root) {
     const chord=t.Chord.get(`${root} ${chordType}`);
@@ -286,7 +286,7 @@ const allChords=(function() {
  * @example
  * allModes[0]; // 'C ionian'
  */
-const allModes=(()=>{
+allModes=(()=>{
   const allModes=new Set();
   t.Mode.all().forEach(mode=>{
     allNotes.forEach(root=>{

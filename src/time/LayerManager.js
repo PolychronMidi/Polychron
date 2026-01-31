@@ -1,8 +1,8 @@
-/* global writeIndexTrace, restoreLayerToGlobals, TEST, getPolyrhythm, c */
+
 /**
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
  */
-const { writeIndexTrace } = require('../debug/logGate');
+
 LM = layerManager ={
   layers: {},
 
@@ -33,8 +33,7 @@ LM = layerManager ={
     state._composerCache = state._composerCache || {};
     LM.layers[name] = { buffer: buf, state };
     state.buffer = buf;
-    // Emit a trace indicating the per-layer composer cache was initialized for diagnostics
-    writeIndexTrace({ tag: 'composer:cache:init', when: new Date().toISOString(), layer: name, value: state._composerCache });
+
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
     // the active buffer continue to work.
@@ -97,33 +96,13 @@ LM = layerManager ={
 
     // If activating poly layer and polyrhythm was calculated, use poly meter
     if (isPoly) {
-      try { if (TEST && TEST.DEBUG) console.log('LM.activate: poly before', { polyNumerator, polyDenominator, numerator, denominator, measuresPerPhrase1, measuresPerPhrase2 }); } catch (e) { /* swallow */ }
-      // Respect explicit test-provided overrides when present
-      try {
-        if (TEST && typeof TEST.polyNumerator !== 'undefined') {
-          polyNumerator = TEST.polyNumerator;
-          polyDenominator = TEST.polyDenominator;
-        }
-      } catch (_e) { /* swallow */ }
-      // Use module-scope poly values if present (tests may set them directly)
-      // Be permissive: allow tests to set only `polyNumerator` and default the
-      // missing `polyDenominator` to the current `denominator` so legacy test
-      // assignment patterns (which may fail to set both) still work as intended.
-      if (typeof polyNumerator !== 'undefined') {
-        if (typeof polyDenominator === 'undefined') polyDenominator = denominator;
-        numerator = polyNumerator;
-        denominator = polyDenominator;
-      }
-      try { if (TEST && TEST.DEBUG) console.log('LM.activate: poly after', { polyNumerator, polyDenominator, numerator, denominator, measuresPerPhrase }); } catch (e) { /* swallow */ }
+      numerator = polyNumerator;
+      denominator = polyDenominator;
     }
 
     spPhrase = spMeasure * measuresPerPhrase;
     tpPhrase = tpMeasure * measuresPerPhrase;
-    try {
-      if (process.env.DEBUG_TRACES || (TEST && TEST.DEBUG)) {
-        writeIndexTrace({ tag: 'lm:activate:timing', when: new Date().toISOString(), layer: name, tpMeasure, measuresPerPhrase, tpPhrase, tpSection, sectionStart });
-      }
-    } catch (e) { /* swallow */ }
+
     return {
       phraseStart: layer.state.phraseStart,
       phraseStartTime: layer.state.phraseStartTime,
@@ -161,21 +140,7 @@ LM = layerManager ={
         tpSec, tpSection, spSection
       });
       layer.state.advancePhrase(layer.state.tpPhrase, layer.state.spPhrase);
-      // Instrumentation: capture post-advance timing snapshot for diagnostic tracing
-      try {
-        if (process.env.DEBUG_TRACES || (TEST && TEST.DEBUG)) {
-          writeIndexTrace({
-            tag: 'lm:advance:phrase',
-            when: new Date().toISOString(),
-            layer: name,
-            tpMeasure,
-            measuresPerPhrase,
-            tpPhrase: layer.state.tpPhrase,
-            tpSection: layer.state.tpSection,
-            sectionStart: layer.state.sectionStart
-          });
-        }
-      } catch (e) { /* swallow */ }
+
     } else if (advancementType === 'section') {
       // For section advancement, use layer's own accumulated tpSection/spSection
       // Don't pull from globals - they may be from a different layer!
@@ -190,19 +155,44 @@ LM = layerManager ={
 // LM is intentionally a naked global (set via LM = layerManager above) so other modules can access it without global qualifiers
 // layer manager is initialized in play.js after buffers are created
 // This ensures c1 and c2 are available when registering layers
+// Layer timing globals are created by `LM.register` at startup to support infinite layers
 
-// REMOVED: ANTI-PATTERN - these are all defined globally, just import the file(s) that define them!
-// Test compatibility mapping: allow tests to inject runtime dependencies via TEST (preferred over global mutation)
-try {
-  if (TEST) {
-    if (typeof TEST.LM !== 'undefined') LM = TEST.LM;
-    if (typeof TEST.composer !== 'undefined') composer = TEST.composer;
-    if (typeof TEST.fs !== 'undefined') fs = TEST.fs;
-    if (typeof TEST.allNotesOff !== 'undefined') allNotesOff = TEST.allNotesOff;
-    if (typeof TEST.muteAll !== 'undefined') muteAll = TEST.muteAll;
-    if (typeof TEST.PPQ !== 'undefined') PPQ = TEST.PPQ;
-  }
-} catch (_e) { /* swallow */ }
+/**
+ * Restore TimingContext state into naked globals without using banned globals.
+ * Replaces previous calls like `layer.state.restoreTo(globalThis)`.
+ */
+function restoreLayerToGlobals(state) {
+  if (!state) return;
+  // Copy explicit timing properties into module-level naked globals
+  phraseStart = state.phraseStart;
+  phraseStartTime = state.phraseStartTime;
+  sectionStart = state.sectionStart;
+  sectionStartTime = state.sectionStartTime;
+  sectionEnd = state.sectionEnd;
+  tpSec = state.tpSec;
+  tpSection = state.tpSection;
+  spSection = state.spSection;
+  tpPhrase = state.tpPhrase;
+  spPhrase = state.spPhrase;
+  measureStart = state.measureStart;
+  measureStartTime = state.measureStartTime;
+  tpMeasure = state.tpMeasure;
+  spMeasure = state.spMeasure;
 
-// Export LM for programmatic imports in addition to the naked global
+  // Restore canonical meter information (numerator/denominator) from layer state.
+  // This ensures that when switching layers (primary <-> poly) we do not leave
+  // numerator/denominator mismatched, which can lead to incorrect tpBeat/tpMeasure math
+  // and trigger boundary CRITICALs during subsequent setUnitTiming calls.
+  try {
+    const prevNum = typeof numerator !== 'undefined' ? Number(numerator) : undefined;
+    const prevDen = typeof denominator !== 'undefined' ? Number(denominator) : undefined;
+    if (typeof state.numerator !== 'undefined' && Number.isFinite(Number(state.numerator))) numerator = Number(state.numerator);
+    if (typeof state.denominator !== 'undefined' && Number.isFinite(Number(state.denominator))) denominator = Number(state.denominator);
+    if (typeof state.measuresPerPhrase === 'number' && Number.isFinite(state.measuresPerPhrase) && state.measuresPerPhrase > 0) measuresPerPhrase = state.measuresPerPhrase;
+    // If meter changed due to restore, recompute midi timing so derived values (tpSec/tpMeasure) are consistent.
+    if ((typeof prevNum !== 'undefined' && prevNum !== numerator) || (typeof prevDen !== 'undefined' && prevDen !== denominator)) {
+      try { getMidiTiming(); } catch (e) { console.warn('restoreLayerToGlobals: getMidiTiming failed after meter change', e);}
+    }
+  } catch (e) { console.warn('restoreLayerToGlobals: failed to restore meter from layer state', e); }
+}
 try { module.exports = LM; } catch (e) { /* swallow */ }

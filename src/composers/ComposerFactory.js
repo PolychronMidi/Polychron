@@ -9,8 +9,6 @@ const HarmonicRhythm = require('./HarmonicRhythmComposer');
 const MelodicDevelopment = require('./MelodicDevelopmentComposer');
 const AdvancedVoiceLeading = require('./AdvancedVoiceLeadingComposer');
 
-const { writeDebugFile } = require('../debug/logGate');
-
 class ComposerFactory {
   static constructors = {
     measure: () => new MeasureComposer(),
@@ -49,12 +47,47 @@ class ComposerFactory {
     const type = config.type || 'scale';
     const factory = this.constructors[type];
     if (!factory) {
-      try { writeDebugFile('composer-creation.ndjson', { tag: 'unknown-composer-type', type }, 'debug'); } catch (e) { /* swallow */ }
+      console.warn(`ComposerFactory.create: unknown composer type "${type}", defaulting to random scale composer.`);
       return this.constructors.scale({ name: 'random', root: 'random' });
     }
-    try { writeDebugFile('composer-creation.ndjson', { when: new Date().toISOString(), type, config, action: 'create', stack: (new Error()).stack.split('\n').slice(2).map(s => s.trim()) }); } catch (e) { /* swallow */ }
     return factory(config);
   }
+
+  static createRandom(extraConfig = {}) {
+    // Strictly sample from global COMPOSERS array (defined in src/sheet.js / sheet.md).
+    // Do not fall back to arbitrary constructor types (e.g., 'measure').
+    if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS) && COMPOSERS.length > 0) {
+      const tries = Math.min(8, COMPOSERS.length);
+      for (let i = 0; i < tries; i++) {
+        const cfg = COMPOSERS[ri(COMPOSERS.length - 1)];
+        try {
+          const composer = this.create(Object.assign({}, cfg, extraConfig));
+          // Prefer composers that can return notes
+          if (composer && typeof composer.getNotes === 'function') {
+            try {
+              const notes = composer.getNotes();
+              if (Array.isArray(notes) && notes.length > 0) return composer;
+            } catch (e) {
+              // getNotes failed; try another COMPOSERS entry
+              continue;
+            }
+          } else if (composer) {
+            // Composer doesn't implement getNotes but creation succeeded; accept it.
+            return composer;
+          }
+        } catch (e) {
+          // Creation from this COMPOSERS entry failed; try another entry
+          continue;
+        }
+      }
+      // If none of the COMPOSERS entries produced a valid composer, fall back to a safe random scale composer
+      try { return this.create(Object.assign({}, { type: 'scale', name: 'random', root: 'random' }, extraConfig)); } catch (e) { /* final fallback below */ }
+    }
+
+    // Final fallback: create a random scale composer
+    return this.create(Object.assign({}, extraConfig, { type: 'scale', name: 'random', root: 'random' }));
+  }
+
 }
 
-try { module.exports = ComposerFactory; } catch (e) { /* swallow */ }
+module.exports = ComposerFactory;
