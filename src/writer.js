@@ -1,67 +1,6 @@
 // writer.js - MIDI output and file generation with CSV buffer management.
 // minimalist comments, details at: writer.md
 
-let fs = require('fs');
-const path = require('path');
-// Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
-require('./sheet');
-// Initialize naked globals and utility helpers defined in backstage
-require('./backstage');
-
-/**
- * @typedef {{parts?: string[], startTick?: number, endTick?: number, startTime?: number, endTime?: number}} Unit
- * @typedef {{tick?: number, type?: string, vals?: any[], _tickSortKey?: number, _unitHash?: string}} BufferEvent
- */
-
-/**
- * Layer-aware MIDI event buffer.
- * @class CSVBuffer
- * @param {string} name - Layer identifier ('primary', 'poly', etc.).
- * @property {string} name - Layer identifier.
- * @property {Array<object>} rows - MIDI event objects: {tick, type, vals}.
- * @property {number} length - Read-only count of events.
- */
-class CSVBuffer {
-  /**
-   * @param {string} name
-   */
-  constructor(name) {
-    /** @type {string} */ this.name = name;
-    /** @type {Array<BufferEvent>} */ this.rows = [];
-  }
-  /** @param {...BufferEvent} items */
-  push(...items) {
-    this.rows.push(...items);
-  }
-  get length() {
-    return this.rows.length;
-  }
-  clear() {
-    this.rows = [];
-  }
-}
-
-/**
- * Push multiple items onto a buffer/array.
- * @param {CSVBuffer|Array<any>} buffer - The target buffer to push onto.
- * @param {...*} items - Items to push onto the buffer.
- * @returns {void}
- */
-const pushMultiple = (buffer, ...items) => { buffer.push(...items); };
-const p = pushMultiple;
-
-// Initialize buffers (c1/c2 created here, layers register them in play.js)
-const c1 = new CSVBuffer('primary');
-const c2 = new CSVBuffer('poly');
-/** @type {CSVBuffer} */ c = (typeof c !== 'undefined') ? c : c1;  // Active buffer reference (naked global)
-// ensure a naked global c exists and references c1 (preserve legacy behavior)
-if (typeof c === 'undefined') c = c1;
-
-
-const { logUnit } = require('./debug/logUnit');
-
-
-
 /**
  * Outputs separate MIDI files for each layer with automatic synchronization.
  * @description
@@ -74,6 +13,24 @@ const { logUnit } = require('./debug/logUnit');
  * - Automatically handles any number of layers
  * @returns {void}
  */
+
+let fs = require('fs');
+const path = require('path');
+// Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
+require('./sheet');
+// Initialize naked globals and utility helpers defined in backstage
+require('./backstage');
+
+
+/**
+ * Push multiple items onto a buffer/array.
+ * @param {...*} items - Items to push onto the buffer.
+ * @returns {void}
+ */
+pushMultiple = (buffer, ...items) => { buffer.push(...items); };
+p = pushMultiple;
+
+c = c1 = c2 = []; // naked global current buffer and layer buffers for csv rows
 
 
 /**
@@ -97,9 +54,3 @@ try {
 
 // Load external grandFinale implementation and expose global for tests that expect it
 const grandFinale = require('./grandFinale');
-try { Function('return this')().grandFinale = grandFinale; } catch (e) { /* swallow */ }
-// Ensure legacy tests that call the unscoped `logUnit()` global find the real implementation
-try { Function('return this')().logUnit = logUnit; } catch (e) { /* swallow */ }
-
-// Explicit module exports for direct importing by tests/tools. Do NOT mutate globals here.
-module.exports = { p, CSVBuffer, logUnit, grandFinale };

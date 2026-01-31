@@ -9,30 +9,48 @@ LM = layerManager ={
   /**
    * Register a layer with buffer and initial timing state.
    * @param {string} name
-   * @param {CSVBuffer|string|Array} buffer
    * @param {object} [initialState]
    * @param {Function} [setupFn]
-   * @returns {{state: TimingContext, buffer: CSVBuffer|Array}}
    */
   register: (name, buffer, initialState = {}, setupFn = null) => {
-    const state = new TimingContext(initialState);
+    // Create a plain timing object (flattened, no TimingContext class)
+    const defaults = {
+      phraseStart: 0,
+      phraseStartTime: 0,
+      sectionStart: 0,
+      sectionStartTime: 0,
+      tpSec: 0,
+      tpSection: 0,
+      spSection: 0,
+      numerator: 4,
+      denominator: 4,
+      measuresPerPhrase: 1,
+      tpPhrase: 0,
+      spPhrase: 0,
+      measureStart: 0,
+      measureStartTime: 0,
+      tpMeasure: (typeof PPQ !== 'undefined' ? PPQ * 4 : 480 * 4),
+      spMeasure: 0,
+      meterRatio: 4 / 4,
+      bufferName: ''
+    };
 
-    // Accept a CSVBuffer instance, array, or string name
+    // Build the flattened timing object from defaults + any provided initialState
+    const layer = Object.assign({}, defaults, initialState || {});
+
     let buf;
-    if (typeof CSVBuffer !== 'undefined' && buffer instanceof CSVBuffer) {
-      buf = buffer;
-      state.bufferName = buffer.name;
-    } else if (typeof buffer === 'string') {
-      state.bufferName = buffer;
-      try { buf = (typeof CSVBuffer !== 'undefined') ? new CSVBuffer(buffer) : []; } catch (e) { buf = []; }
+
+    if (typeof buffer === 'string') {
+      // Name-only buffer; keep a clean array for events but record the name
+      layer.bufferName = buffer;
+      buf = [];
     } else {
       buf = Array.isArray(buffer) ? buffer : [];
     }
-    // attach buffer onto both LM entry and the returned state
-    // Initialize per-layer composer cache early to avoid cache-unavailable races
-    state._composerCache = state._composerCache || {};
-    LM.layers[name] = { buffer: buf, state };
-    state.buffer = buf;
+
+
+    // Attach buffer and timing props directly to the layer object
+    LM.layers[name] = Object.assign({ buffer: buf }, layer);
 
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
@@ -40,13 +58,12 @@ LM = layerManager ={
     const prevC = typeof c !== 'undefined' ? c : undefined;
     try {
       c = buf;
-      if (typeof setupFn === 'function') setupFn(state, buf);
+      if (typeof setupFn === 'function') setupFn(LM.layers[name], buf);
     } catch (e) { /* swallow */ }
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
-    // return both the state and direct buffer reference so callers can
-    // destructure in one line and avoid separate buffer assignment lines
-    return { state, buffer: buf };
+    // return the layer object (no backward-compatibility `state` key)
+    return { layer: LM.layers[name], buffer: buf };
   },
 
   /**
@@ -60,60 +77,12 @@ LM = layerManager ={
     const layer = LM.layers[name];
     c = layer.buffer;
     LM.activeLayer = name;
-
-    // Store meter into layer state (set externally before activation)
-    layer.state.numerator = numerator;
-    layer.state.denominator = denominator;
-    layer.state.meterRatio = numerator / denominator;
-    layer.state.tpSec = tpSec;
-    layer.state.tpMeasure = tpMeasure;
-
-    // Restore layer timing state to globals (avoid circular init issues by requiring local module)
-    try { require('./restoreLayerToGlobals')(layer.state); } catch (e) { /* swallow */ }
-
-    // Reset only derived composer counts to avoid carry-over; preserve caller-set indices (measureIndex etc.) so callers can activate and then set indices as needed
-    divsPerBeat = subdivsPerDiv = subsubsPerSub = undefined;
-
-    // If activating poly layer, ensure polyrhythm parameters are calculated
-    // but only if they have not been manually set by tests or callers
-    if (isPoly) {
-      // Only calculate polyrhythm automatically when both poly values are absent.
-      // If a test or caller sets one or both values, prefer those explicit values
-      // (avoids silently overwriting test-provided polyNumerator alone when polyDenominator
-      // is omitted due to legacy test assignment patterns).
-      if (typeof polyNumerator === 'undefined' && typeof polyDenominator === 'undefined') {
-        try { getPolyrhythm(); } catch (e) { /* swallow polyrhythm failures */ }
-      }
-    }
-
-    // Determine measures per phrase: prefer global setting unless the restored layer has an explicit (>1) value
-    if (typeof layer.state.measuresPerPhrase === 'number' && Number.isFinite(layer.state.measuresPerPhrase) && layer.state.measuresPerPhrase > 1) {
-      measuresPerPhrase = layer.state.measuresPerPhrase;
-    } else {
-      measuresPerPhrase = (isPoly ? measuresPerPhrase2 : measuresPerPhrase1);
-      if (!Number.isFinite(measuresPerPhrase) || measuresPerPhrase <= 0) measuresPerPhrase = 1;
-    }
-
-    // If activating poly layer and polyrhythm was calculated, use poly meter
+    loadLayerToGlobals(layer);
     if (isPoly) {
       numerator = polyNumerator;
       denominator = polyDenominator;
     }
-
-    spPhrase = spMeasure * measuresPerPhrase;
-    tpPhrase = tpMeasure * measuresPerPhrase;
-
-    return {
-      phraseStart: layer.state.phraseStart,
-      phraseStartTime: layer.state.phraseStartTime,
-      sectionStart: layer.state.sectionStart,
-      sectionStartTime: layer.state.sectionStartTime,
-      sectionEnd: layer.state.sectionEnd,
-      tpSec: layer.state.tpSec,
-      tpSection: layer.state.tpSection,
-      spSection: layer.state.spSection,
-      state: layer.state
-    };
+    return layer;
   },
 
   /**
@@ -129,70 +98,56 @@ LM = layerManager ={
 
     beatRhythm = divRhythm = subdivRhythm = subsubdivRhythm = 0;
 
-    // Advance using layer's own state values
+    // Advance using the layer's timing values
     if (advancementType === 'phrase') {
-      // Save current globals for phrase timing (layer was just active)
-      layer.state.saveFrom({
-        numerator, denominator, measuresPerPhrase,
-        tpPhrase, spPhrase, measureStart, measureStartTime,
-        tpMeasure, spMeasure, phraseStart, phraseStartTime,
-        sectionStart, sectionStartTime, sectionEnd,
-        tpSec, tpSection, spSection
+      phraseStart+=tpPhrase; phraseStartTime+=spPhrase;
+      // Save current globals into the flattened layer object
+      Object.assign(layer, {
+        tpPhrase,
+        spPhrase,
+        phraseStart,
+        phraseStartTime,
+
+        tpMeasure,
+        spMeasure,
+        measureStart,
+        measureStartTime,
+
+        tpSection,
+        spSection,
+        sectionStart,
+        sectionStartTime,
+
+        tpSec,
       });
-      layer.state.advancePhrase(layer.state.tpPhrase, layer.state.spPhrase);
 
     } else if (advancementType === 'section') {
-      // For section advancement, use layer's own accumulated tpSection/spSection
-      // Don't pull from globals - they may be from a different layer!
-      layer.state.advanceSection();
+      layer.sectionStart=phraseStart; layer.sectionStartTime=phraseStartTime;
+
     }
-
-    // Restore advanced state back to naked globals so they stay in sync
-    restoreLayerToGlobals(layer.state);
   },
-
 };
-// LM is intentionally a naked global (set via LM = layerManager above) so other modules can access it without global qualifiers
-// layer manager is initialized in play.js after buffers are created
-// This ensures c1 and c2 are available when registering layers
-// Layer timing globals are created by `LM.register` at startup to support infinite layers
 
 /**
- * Restore TimingContext state into naked globals without using banned globals.
- * Replaces previous calls like `layer.state.restoreTo(globalThis)`.
+ * Restore timing into naked globals without using banned globals.
  */
-function restoreLayerToGlobals(state) {
-  if (!state) return;
-  // Copy explicit timing properties into module-level naked globals
-  phraseStart = state.phraseStart;
-  phraseStartTime = state.phraseStartTime;
-  sectionStart = state.sectionStart;
-  sectionStartTime = state.sectionStartTime;
-  sectionEnd = state.sectionEnd;
-  tpSec = state.tpSec;
-  tpSection = state.tpSection;
-  spSection = state.spSection;
-  tpPhrase = state.tpPhrase;
-  spPhrase = state.spPhrase;
-  measureStart = state.measureStart;
-  measureStartTime = state.measureStartTime;
-  tpMeasure = state.tpMeasure;
-  spMeasure = state.spMeasure;
+function loadLayerToGlobals(layer) {
+  if (!layer) return;
+  tpSection = layer.tpSection;
+  spSection = layer.spSection;
+  sectionStart = layer.sectionStart;
+  sectionStartTime = layer.sectionStartTime;
 
-  // Restore canonical meter information (numerator/denominator) from layer state.
-  // This ensures that when switching layers (primary <-> poly) we do not leave
-  // numerator/denominator mismatched, which can lead to incorrect tpBeat/tpMeasure math
-  // and trigger boundary CRITICALs during subsequent setUnitTiming calls.
-  try {
-    const prevNum = typeof numerator !== 'undefined' ? Number(numerator) : undefined;
-    const prevDen = typeof denominator !== 'undefined' ? Number(denominator) : undefined;
-    if (typeof state.numerator !== 'undefined' && Number.isFinite(Number(state.numerator))) numerator = Number(state.numerator);
-    if (typeof state.denominator !== 'undefined' && Number.isFinite(Number(state.denominator))) denominator = Number(state.denominator);
-    if (typeof state.measuresPerPhrase === 'number' && Number.isFinite(state.measuresPerPhrase) && state.measuresPerPhrase > 0) measuresPerPhrase = state.measuresPerPhrase;
-    // If meter changed due to restore, recompute midi timing so derived values (tpSec/tpMeasure) are consistent.
-    if ((typeof prevNum !== 'undefined' && prevNum !== numerator) || (typeof prevDen !== 'undefined' && prevDen !== denominator)) {
-      try { getMidiTiming(); } catch (e) { console.warn('restoreLayerToGlobals: getMidiTiming failed after meter change', e);}
-    }
-  } catch (e) { console.warn('restoreLayerToGlobals: failed to restore meter from layer state', e); }
+  tpPhrase = layer.tpPhrase;
+  spPhrase = layer.spPhrase;
+  phraseStart = layer.phraseStart;
+  phraseStartTime = layer.phraseStartTime;
+
+  measureStart = layer.measureStart;
+  measureStartTime = layer.measureStartTime;
+  tpMeasure = layer.tpMeasure;
+  spMeasure = layer.spMeasure;
+
+  tpSec = layer.tpSec;
+
 }
-try { module.exports = LM; } catch (e) { /* swallow */ }

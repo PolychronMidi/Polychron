@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-let tickNumRound = 0;
 const grandFinale = () => {
 
   const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
@@ -9,8 +8,8 @@ const grandFinale = () => {
   const layerData = Object.entries(LMCurrent.layers || {}).map(([name, layer]) => {
     return {
       name,
-      layer: layer.state,
-      buffer: layer.buffer instanceof CSVBuffer ? layer.buffer.rows : layer.buffer
+      layer: layer,
+      buffer: layer.buffer
     };
   });
   // Expose flag for per-layer checks via a local variable in closure
@@ -72,10 +71,9 @@ const grandFinale = () => {
 
         // Append unit id to tick field when available
         const isMarker = String(type).toLowerCase() === 'marker_t' || String(type).toLowerCase().includes('marker');
-        tickNumRound = Math.round(Number(tickNum) || 0);
         // For non-marker events, append unit identity using the same path used in unitRec markers (no 'unitRec:' prefix in the tick field)
 
-        composition += `1,${tickNumRound},${type},${_.vals.join(',')}\n`;
+        composition += `1,${tickInt},${type},${_.vals.join(',')}\n`;
         finalTick = Math.max(finalTick, tickNum, tickInt);
       }
     });
@@ -88,19 +86,11 @@ const grandFinale = () => {
 
     composition += `1,${tickNumRound},end_track`;
     const outputFilename = name === 'primary' ? 'output/output1.csv' : name === 'poly' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
-    // Ensure output directory exists and prefer test-provided global fs when present
-    const path = require('path');
-    const outputDir = path.dirname(outputFilename);
-    const _G = (function(){ try { return Function('return this')(); } catch (e) { return {}; } })();
-    const effectiveFs = (typeof _G.fs !== 'undefined') ? _G.fs : ((typeof fs !== 'undefined') ? fs : require('fs'));
-    if (!effectiveFs.existsSync(outputDir)) {
-      effectiveFs.mkdirSync(outputDir, { recursive: true });
-    }
-    effectiveFs.writeFileSync(outputFilename, composition);
+    fs.writeFileSync(outputFilename, composition);
     console.log(`Wrote file: ${outputFilename}`);
 
   });
   // Finalize master unit map (write canonical unitMasterMap.json atomically)
   try { const MasterMap = require('./masterMap'); MasterMap.finalize(); } catch (e) { /* swallow */ }
 };
-module.exports = grandFinale;
+try { Function('return this')().grandFinale = grandFinale; } catch (e) { /* swallow */ }

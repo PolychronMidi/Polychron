@@ -1,5 +1,6 @@
 const { trackRhythm, buildGlobalContext } = require('../rhythm/trackRhythm');
 const m = Math;
+const { logUnit } = require('../debug/logUnit');
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
@@ -10,10 +11,14 @@ const m = Math;
 
 setUnitTiming = (unitType) => {
 
-  // Use globals (not layer.state) because LM.activate() already restored layer state to globals.
+  // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals.
   // This ensures consistent timing across all unit calculations in cascading hierarchy.
 
   switch (unitType) {
+    case 'section':
+      // Just log section; section timing already set in LayerManager
+      break;
+
     case 'phrase':
       tpPhrase = tpMeasure * measuresPerPhrase;
       spPhrase = tpPhrase / tpSec;
