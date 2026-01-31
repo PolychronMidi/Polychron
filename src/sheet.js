@@ -56,7 +56,7 @@ DIVISIONS={
   max: 10,
   weights: [1,15,20,25,20,10,10,7,2,2,1]
 };
-SUBDIVISIONS={
+SUBDIVS={
   min: 1,
   max: 10,
   weights: [5,10,20,15,20,10,20,4,2,1]

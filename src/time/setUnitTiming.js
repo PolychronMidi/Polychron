@@ -30,7 +30,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'beat':
-      try { trackRhythm('beat', buildGlobalContext()); } catch (e) { console.warn('trackRhythm(beat) failed', e); }
+      try { trackRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(beat) failed', e); }
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -42,11 +42,14 @@ setUnitTiming = (unitType) => {
       beatStart = measureStart + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
 
+      // Ensure we have a positive divisions-per-beat before generating div rhythms
+      divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
+
       divRhythm = setRhythm('div');
       break;
 
     case 'division':
-      try { trackRhythm('div', buildGlobalContext()); } catch (e) { console.warn('trackRhythm(div) failed', e); }
+      try { trackRhythm('div', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(div) failed', e); }
       tpDiv = tpBeat / divsPerBeat;
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -57,7 +60,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdiv':
-      try { trackRhythm('subdiv', buildGlobalContext()); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+      try { trackRhythm('subdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
       tpSubdiv = tpDiv / subdivsPerDiv;
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
@@ -68,7 +71,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdiv':
-      try { trackRhythm('subsubdiv', buildGlobalContext()); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+      try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
       tpSubsubdiv = tpSubdiv / subsubsPerSub;
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubsPerMinute = 60 / spSubsubdiv;
