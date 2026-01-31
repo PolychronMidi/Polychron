@@ -1,5 +1,5 @@
 // Consolidated rhythm tracking function — explicit context-based API
-function trackRhythm(unit, ctx) {
+trackRhythm = function trackRhythm(unit, ctx) {
   try {
     if (!ctx) throw new Error('trackRhythm requires a context object');
     const key = (unit || '').toString().toLowerCase();
@@ -20,7 +20,7 @@ function trackRhythm(unit, ctx) {
   } catch (e) { /* swallow to avoid impacting runtime */ }
 }
 
-function buildGlobalContext() {
+buildGlobalContext = function buildGlobalContext() {
   // Return an object with getters/setters that map to module globals used across timing
   return {
     get beatRhythm() { return beatRhythm; }, set beatRhythm(v) { beatRhythm = v; },
@@ -45,4 +45,4 @@ function buildGlobalContext() {
   };
 }
 
-try { module.exports = { trackRhythm, buildGlobalContext }; } catch (e) { /* swallow */ }
+// trackRhythm and buildGlobalContext are available as naked globals via require of this module.

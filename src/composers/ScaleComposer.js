@@ -1,10 +1,10 @@
-const MeasureComposer = require('./MeasureComposer');
+require('./MeasureComposer');
 
 /**
  * Composes notes from a specific scale.
  * @extends MeasureComposer
  */
-class ScaleComposer extends MeasureComposer {
+ScaleComposer = class ScaleComposer extends MeasureComposer {
   /**
    * @param {string} scaleName - e.g., 'major', 'minor'
    * @param {string} root - e.g., 'C', 'D#'
@@ -27,7 +27,7 @@ class ScaleComposer extends MeasureComposer {
   x=()=>this.getNotes();
 }
 
-class RandomScaleComposer extends ScaleComposer {
+RandomScaleComposer = class RandomScaleComposer extends ScaleComposer {
   constructor() {
     super('','');
     this.noteSet();
@@ -42,4 +42,4 @@ class RandomScaleComposer extends ScaleComposer {
   x() { this.noteSet(); return super.x(); }
 }
 
-try { module.exports = { ScaleComposer, RandomScaleComposer }; } catch (e) { /* swallow */ }
+/* ScaleComposer and RandomScaleComposer exposed by require side-effects */

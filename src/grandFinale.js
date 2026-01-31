@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const grandFinale = () => {
+grandFinale = () => {
 
   const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
   // Collect all layer data
@@ -93,4 +93,4 @@ const grandFinale = () => {
   // Finalize master unit map (write canonical unitMasterMap.json atomically)
   try { const MasterMap = require('./masterMap'); MasterMap.finalize(); } catch (e) { /* swallow */ }
 };
-try { Function('return this')().grandFinale = grandFinale; } catch (e) { /* swallow */ }
+

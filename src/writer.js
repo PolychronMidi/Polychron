@@ -53,4 +53,4 @@ try {
 }
 
 // Load external grandFinale implementation and expose global for tests that expect it
-const grandFinale = require('./grandFinale');
+require('./grandFinale');

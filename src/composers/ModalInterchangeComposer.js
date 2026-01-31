@@ -1,7 +1,7 @@
 const ProgressionGenerator = require('./ProgressionGenerator');
-const ChordComposer = require('./ChordComposer').ChordComposer || require('./ChordComposer');
+require('./ChordComposer');
 
-class ModalInterchangeComposer extends ChordComposer {
+ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
     const generator = new ProgressionGenerator(key, primaryMode);
     const progressionChords = generator.random();
@@ -60,4 +60,3 @@ class ModalInterchangeComposer extends ChordComposer {
   }
 }
 
-try { module.exports = ModalInterchangeComposer; } catch (e) { /* swallow */ }

@@ -1,8 +1,8 @@
 // src/rhythm/drummer.js - extracted from src/rhythm.js
 // Preserves behavior by relying on the same global helpers (rf, ri, rv, m, p, clamp, c, beatStart, tpBeat, drumCH)
-const { drumMap } = require('./drumMap');
+require('./drumMap');
 
-module.exports.drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
+drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (drumNames === 'random') {
     // Prefer test-injected drumMap when running tests so 'random' selects from the test set
     const allDrums = Object.keys(drumMap);

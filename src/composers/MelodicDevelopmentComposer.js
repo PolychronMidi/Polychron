@@ -1,6 +1,6 @@
-const ScaleComposer = require('./ScaleComposer').ScaleComposer || require('./ScaleComposer');
+require('./ScaleComposer');
 
-class MelodicDevelopmentComposer extends ScaleComposer {
+MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', intensity = 0.5) {
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
@@ -59,4 +59,3 @@ class MelodicDevelopmentComposer extends ScaleComposer {
   }
 }
 
-try { module.exports = MelodicDevelopmentComposer; } catch (e) { /* swallow */ }

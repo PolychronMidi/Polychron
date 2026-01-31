@@ -2,7 +2,7 @@
  * Composes meter-related values with randomization.
  * @class
  */
-class MeasureComposer {
+MeasureComposer = class MeasureComposer {
   constructor() {
     /** @type {number[]|null} Previous meter [numerator, denominator] */
     this.lastMeter=null;
@@ -196,5 +196,3 @@ class MeasureComposer {
   }
 }
 
-try { module.exports = MeasureComposer; } catch (e) { /* swallow */ }
-try { Function('f', 'this.MeasureComposer = f')(MeasureComposer); } catch (e) { /* swallow */ }

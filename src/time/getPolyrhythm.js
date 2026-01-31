@@ -4,7 +4,7 @@ require('./midiTiming');
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
  * @returns {void}
  */
-const getPolyrhythm = () => {
+getPolyrhythm = () => {
   if (!composer){
     console.warn('getPolyrhythm() called without valid composer');
     return;
@@ -59,5 +59,3 @@ const getPolyrhythm = () => {
   getMidiTiming();
   return getPolyrhythm();
 };
-
-module.exports = getPolyrhythm;

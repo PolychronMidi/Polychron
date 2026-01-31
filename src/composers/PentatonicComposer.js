@@ -1,6 +1,6 @@
-const MeasureComposer = require('./MeasureComposer');
+require('./MeasureComposer');
 
-class PentatonicComposer extends MeasureComposer {
+PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {
     super();
     this.root = root;
@@ -64,7 +64,7 @@ class PentatonicComposer extends MeasureComposer {
   x = () => this.getNotes();
 }
 
-class RandomPentatonicComposer extends PentatonicComposer {
+RandomPentatonicComposer = class RandomPentatonicComposer extends PentatonicComposer {
   constructor() {
     super();
     this.noteSet();
@@ -82,4 +82,4 @@ class RandomPentatonicComposer extends PentatonicComposer {
   }
 }
 
-try { module.exports = { PentatonicComposer, RandomPentatonicComposer }; } catch (e) { /* swallow */ }
+/* PentatonicComposer and RandomPentatonicComposer exposed via require */

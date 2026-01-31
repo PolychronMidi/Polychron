@@ -327,6 +327,18 @@ export default [
         tuningPitchBend: 'writable',
         FX: 'writable',
         __POLYCHRON_TEST__: 'writable',
+        // Play-guard / script helpers
+        LOCK_DIR: 'writable',
+        LOCK_PATH: 'writable',
+        FIN_PATH: 'writable',
+        HEARTBEAT_INTERVAL_MS: 'writable',
+        STALE_MS: 'writable',
+        GRACE_MS: 'writable',
+        isPidAlive: 'writable',
+        writeLock: 'writable',
+        acquireLock: 'writable',
+        releaseLock: 'writable',
+        main: 'writable',
         // Exposed helpers / classes
         TimingCalculator: 'writable',
         VoiceLeadingScore: 'writable',
@@ -371,6 +383,32 @@ export default [
         playDrums2: 'writable',
         getRhythm: 'writable',
         rhythms: 'writable',
+        // Play & FX helpers (project-naked globals)
+        setOtherInstruments: 'writable',
+        setBinaural: 'writable',
+        setBalanceAndFX: 'writable',
+        stutterFX: 'writable',
+        stutterFade: 'writable',
+        stutterPan: 'writable',
+        playNotes: 'writable',
+        playNotes2: 'writable',
+        setNoteParams: 'writable',
+        setNoteParams2: 'writable',
+        crossModulateRhythms: 'writable',
+        // Short-lived audio helpers
+        on: 'writable',
+        shortSustain: 'writable',
+        longSustain: 'writable',
+        useShort: 'writable',
+        sustain: 'writable',
+        binVel: 'writable',
+        fx: 'writable',
+        balOffset: 'writable',
+        sideBias: 'writable',
+        // Rhythm helper globals
+        trackRhythm: 'writable',
+        buildGlobalContext: 'writable',
+        rhythmMethods: 'writable',
         // Node.js globals
         require: 'readonly',
         module: 'readonly',
@@ -401,6 +439,25 @@ export default [
       // Code correctness - errors that break functionality
       'no-undef': 'error',  // Catch undefined variables like activeMotif
       'no-restricted-globals': ['error', { name: 'global', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globalThis', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBAL', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALTHIS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globals', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }],
+      // Disallow runtime code-gen and common module-export workarounds that subvert naked global policy
+      'no-new-func': 'error',
+      'no-restricted-syntax': [
+        'error',
+        // Prevent calling Function(...) to synthesize code or create globals (covers Function(...))
+        { selector: "CallExpression[callee.name='Function']", message: 'Do not call the Function constructor to generate code or create globals; use naked global assignment instead.' },
+        // Prevent new Function(...)
+        { selector: "NewExpression[callee.name='Function']", message: 'Do not use the Function constructor; use naked global assignment instead.' },
+        // Prevent top-level assignments to `this` (e.g., `this.x = ...`) which act like module-scoped exports
+        { selector: "Program > ExpressionStatement > AssignmentExpression[left.type='MemberExpression'][left.object.type='ThisExpression']", message: 'Top-level assignments to `this` are banned; define naked globals instead (e.g. `x = ...`).' },
+        // Ban direct module.exports and exports usage (use naked globals instead)
+        { selector: "MemberExpression[object.name='module'][property.name='exports']", message: 'module.exports is banned; use naked global assignments and side-effect requires.' },
+        { selector: "MemberExpression[object.name='exports']", message: 'exports.* is banned; use naked global assignments and side-effect requires.' },
+        // Ban global/globalThis property access
+        { selector: "MemberExpression[object.name='globalThis']", message: 'Do not use globalThis; use naked globals instead.' },
+        { selector: "MemberExpression[object.name='global']", message: 'Do not use global; use naked globals instead.' },
+        // Ban eval-based code execution
+        { selector: "CallExpression[callee.name='eval']", message: 'eval is banned; do not use string-to-code execution.' }
+      ],
       'no-unreachable': 'error',  // Dead code after return/throw
       'no-constant-condition': 'error',  // Conditions always true/false (can be intentional)
       'no-dupe-keys': 'error',  // Duplicate object keys
@@ -446,7 +503,20 @@ export default [
   {
     files: ['scripts/**/*.js', 'scripts/**'],
     languageOptions: {
-      sourceType: 'module'
+      sourceType: 'module',
+      globals: {
+        LOCK_DIR: 'writable',
+        LOCK_PATH: 'writable',
+        FIN_PATH: 'writable',
+        HEARTBEAT_INTERVAL_MS: 'writable',
+        STALE_MS: 'writable',
+        GRACE_MS: 'writable',
+        isPidAlive: 'writable',
+        writeLock: 'writable',
+        acquireLock: 'writable',
+        releaseLock: 'writable',
+        main: 'writable'
+      }
     }
   }
 ];

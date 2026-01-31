@@ -1,4 +1,4 @@
-const MeasureComposer = require('./MeasureComposer');
+require('./MeasureComposer');
 
 function normalizeChordSymbol(chordSymbol) {
   const enharmonicMap = {
@@ -19,7 +19,7 @@ function normalizeChordSymbol(chordSymbol) {
   return normalized;
 }
 
-class ChordComposer extends MeasureComposer {
+ChordComposer = class ChordComposer extends MeasureComposer {
   /**
    * @param {string[]} progression - Array of chord symbols, e.g., ['CM', 'Dm', 'Em']
    */
@@ -65,7 +65,7 @@ class ChordComposer extends MeasureComposer {
   x=()=>this.getNotes();
 }
 
-class RandomChordComposer extends ChordComposer {
+RandomChordComposer = class RandomChordComposer extends ChordComposer {
   constructor() {
     super([]);
     this.noteSet();
@@ -82,4 +82,4 @@ class RandomChordComposer extends ChordComposer {
   }
 }
 
-try { module.exports = { ChordComposer, RandomChordComposer }; } catch (e) { /* swallow */ }
+/* ChordComposer and RandomChordComposer exposed via require side-effects */

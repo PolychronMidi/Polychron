@@ -76,4 +76,4 @@ closestDivisor = (x, target = 2) => {
   return x % target === 0 ? target : closest;
 };
 
-module.exports = { binary, hex, onsets, random, prob, euclid, rotate, morph, closestDivisor };
+// Legacy compatibility: expose functions as naked globals (module.exports removed)

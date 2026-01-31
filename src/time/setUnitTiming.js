@@ -1,6 +1,6 @@
-const { trackRhythm, buildGlobalContext } = require('../rhythm/trackRhythm');
+require('../rhythm/trackRhythm');
 const m = Math;
-const { logUnit } = require('../debug/logUnit');
+require('../debug/logUnit');
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
@@ -84,5 +84,3 @@ setUnitTiming = (unitType) => {
   // Log the unit after calculating timing
   logUnit(unitType);
 };
-
-module.exports = setUnitTiming;

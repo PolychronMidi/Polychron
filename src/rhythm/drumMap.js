@@ -1,5 +1,5 @@
 // src/rhythm/drumMap.js - drum map extracted from src/rhythm.js
-module.exports.drumMap = {
+drumMap = {
   'snare1': {note: 31,velocityRange: [99,111]},
   'snare2': {note: 33,velocityRange: [99,111]},
   'snare3': {note: 124,velocityRange: [77,88]},

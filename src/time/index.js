@@ -4,25 +4,15 @@
 
 // LayerManager intentionally sets the LM naked global when required
 require('./LayerManager');
-const midiTiming = require('./midiTiming');
-const setUnitTiming = require('./setUnitTiming');
-const getPolyrhythm = require('./getPolyrhythm');
+require('./midiTiming');
+require('./setUnitTiming');
+require('./getPolyrhythm');
 
 // Debug helpers that were previously reachable via time.js
-const formatTime = require('../debug/formatTime');
+require('../debug/formatTime');
 
-// Expose a compact API surface for convenience
-module.exports = {
-  setUnitTiming,
-  getPolyrhythm,
-};
-
-// Backwards-compatibility: export unscoped globals used by legacy imports/tests
-try { Function('f', 'setUnitTiming = f')(setUnitTiming); } catch (e) { /* swallow */ }
-try { Function('f', 'getPolyrhythm = f')(getPolyrhythm); } catch (e) { /* swallow */ }
+// Backwards-compatibility: timing modules restore globals themselves (module.exports removed)
 
 
-// Ensure LM naked global exists by exporting and assigning
-try { const LM_export = require('./LayerManager'); Function('f','LM = f')(LM_export); } catch (e) { /* swallow */ }
 // Also export a default assignment for earlier `require('../src/time')` usages
-try { module.exports = module.exports || module.exports; } catch (e) { /* swallow */ }
+/* module.exports intentionally removed; timing modules restore globals themselves */
