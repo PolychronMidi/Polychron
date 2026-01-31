@@ -2,7 +2,6 @@
  * Composes meter-related values with randomization.
  * @class
  */
-const { writeIndexTrace, writeDebugFile } = require('../debug/logGate');
 class MeasureComposer {
   constructor() {
     /** @type {number[]|null} Previous meter [numerator, denominator] */
@@ -21,9 +20,9 @@ class MeasureComposer {
   /** @returns {number} Random denominator from DENOMINATOR config */
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random divisions count from DIVISIONS config */
-  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getDivisions',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
+  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
   /** @returns {number} Random subdivs count from SUBDIVISIONS config */
-  getSubdivs(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); try { const trace={tag:'composer:getSubdivs',when:new Date().toISOString(),composer:this.constructor && this.constructor.name ? this.constructor.name : 'MeasureComposer',value:res,stack:(new Error()).stack,layer:(LM && LM.activeLayer) ? LM.activeLayer : 'primary'}; writeIndexTrace(trace); } catch (e) { /* swallow */ } return res;}
+  getSubdivs(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
   /** @returns {number} Random sub-subdivs count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random voice count from VOICES config */
@@ -78,7 +77,6 @@ class MeasureComposer {
           const ratioChange = m.abs(newMeterRatio - lastMeterRatio);
           if (logSteps >= MIN_LOG_STEPS && logSteps <= maxLogSteps && ratioChange <= 1.5) {
             this.lastMeter=[newNumerator,newDenominator];
-            try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) writeDebugFile('composers-perf.ndjson', { tag: 'getMeter-slow', ms: _durMs, iterations }, 'perf'); } catch (e) { /* swallow */ }
             return this.lastMeter;
           }
         } else {
@@ -88,13 +86,6 @@ class MeasureComposer {
         }
       }
     }
-
-    // Log warning with diagnostic info
-    writeDebugFile('composers.ndjson', { tag: 'getMeter-failed', iterations, durationMs: (Date.now()-startTs), meterRatioBounds: [METER_RATIO_MIN, METER_RATIO_MAX], logStepsRange: [MIN_LOG_STEPS, maxLogSteps], fallback: [FALLBACK_METER[0], FALLBACK_METER[1]] }, 'debug');
-    // Also emit a console warning so tests and engineers can observe the fallback directly
-    try {
-      console.warn(`getMeter() failed: fallback ${JSON.stringify(FALLBACK_METER)} iterations=${iterations} Ratio bounds=${METER_RATIO_MIN}-${METER_RATIO_MAX} LogSteps=${MIN_LOG_STEPS}-${maxLogSteps}`);
-    } catch (e) { /* swallow */ }
     this.lastMeter=FALLBACK_METER;
     return this.lastMeter;
   }
@@ -104,8 +95,13 @@ class MeasureComposer {
    * @returns {{note: number}[]} Array of note objects
    */
   getNotes(octaveRange=null) {
+    // Defensive fallback: ensure this.notes exists and is non-empty
+    if (!Array.isArray(this.notes) || this.notes.length === 0) {
+      console.warn('MeasureComposer.getNotes() called but this.notes is invalid.');
+    }
+
     if (++this.recursionDepth > this.MAX_RECURSION) {
-      writeDebugFile('composers.ndjson', { tag: 'getNotes-recursion-limit' }, 'debug');
+      console.warn('MeasureComposer.getNotes() exceeded max recursion depth; returning default note.');
       this.recursionDepth = 0;
       return [{ note: 0 }];
     }
@@ -140,7 +136,7 @@ class MeasureComposer {
       }).filter((noteObj,index,self)=>
         index===self.findIndex(n=>n.note===noteObj.note)
       ); }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
-      try { writeDebugFile('composers.ndjson', { tag: 'getNotes-recursion', message: e && e.message ? e.message : String(e) }, 'debug'); } catch (e2) { /* swallow */ } this.recursionDepth--; return this.getNotes(octaveRange);  }}
+      this.recursionDepth--; return this.getNotes(octaveRange);  }}
     finally {
       this.recursionDepth--;
     }

@@ -1,5 +1,4 @@
 const MeasureComposer = require('./MeasureComposer');
-const { writeDebugFile } = require('../debug/logGate');
 
 function normalizeChordSymbol(chordSymbol) {
   const enharmonicMap = {
@@ -37,12 +36,12 @@ class ChordComposer extends MeasureComposer {
     const validatedProgression=progression.map(normalizeChordSymbol).filter(chordSymbol=>{
       const chord = t.Chord.get(chordSymbol);
       if (chord.empty) {
-        writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol }, 'debug');
+        console.warn(`ChordComposer.noteSet: invalid chord symbol "${chordSymbol}"`);
         return false;
       }
       return true;
     });
-    if (validatedProgression.length===0) { writeDebugFile('composers.ndjson', { tag: 'no-valid-chords' }, 'debug');
+    if (validatedProgression.length===0) { throw new Error('ChordComposer.noteSet: no valid chords');
     } else {
       this.progression=validatedProgression.map(t.Chord.get);
       this.currentChordIndex=this.currentChordIndex || 0;
@@ -52,7 +51,7 @@ class ChordComposer extends MeasureComposer {
         case 'L': next=-1; break;
         case 'E': next=rf() < .5 ? 1 : -1; break;
         case '?': next=ri(-2,2); break;
-        default: writeDebugFile('composers.ndjson', { tag: 'invalid-direction', info: 'defaulting to right' }, 'debug'); next=1;
+        default: console.warn(`ChordComposer.noteSet: invalid direction "${direction}", defaulting to right`); next=1;
       }
       let startingMeasure=measureCount;
       let progressChord=measureCount>startingMeasure || rf()<.05;

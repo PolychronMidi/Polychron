@@ -1,4 +1,3 @@
-const { writeDebugFile } = require('../debug/logGate');
 
 class ProgressionGenerator {
   constructor(key, quality = 'major') {
@@ -74,7 +73,7 @@ class ProgressionGenerator {
 
     const pattern = patterns[this.romanQuality || this.quality]?.[type];
     if (!pattern) {
-      writeDebugFile('composers.ndjson', { tag: 'unknown-progression', type }, 'debug');
+      console.warn(`ProgressionGenerator.generate: unknown progression type "${type}", defaulting to "I-IV-V".`);
       return this.generate('I-IV-V');
     }
 

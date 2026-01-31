@@ -278,6 +278,7 @@ class Stage {
     this.crossModulateRhythms();
     const noteObjects = composer ? composer.getNotes() : [];
     const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
+    console.warn('Cross Modulation:', this.crossModulation, 'Last:', this.lastCrossMod);
     if((this.crossModulation+this.lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
   if (composer) motifNotes.forEach(({ note })=>{
     // Play source channels
@@ -453,8 +454,3 @@ class Stage {
     }); }); }
   }
 }
-
-// Export Stage instance to centralized TEST hooks
-stage = new Stage();
-const TEST = require('./test-setup');
-try { if (TEST) TEST.stage = stage; } catch (e) { /* swallow */ }

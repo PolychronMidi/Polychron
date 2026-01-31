@@ -1,5 +1,3 @@
-const TEST = require('../test-setup');
-
 class TimingContext {
   constructor(initialState = {}) {
     this.phraseStart = initialState.phraseStart || 0;
@@ -68,12 +66,6 @@ class TimingContext {
     this.tpSection += tpPhrase;
     this.spSection += spPhrase;
     const after = { phraseStart: this.phraseStart, tpSection: this.tpSection, sectionStart: this.sectionStart };
-    try {
-      if (process.env.DEBUG_TRACES || (typeof TEST !== 'undefined' && TEST && TEST.DEBUG)) {
-        const { writeIndexTrace } = require('../debug/logGate');
-        writeIndexTrace({ tag: 'timing:advancePhrase', when: new Date().toISOString(), before, after, tpPhrase, spPhrase, layer: (typeof LM !== 'undefined' && LM && LM.activeLayer) ? LM.activeLayer : null });
-      }
-    } catch (e) { /* swallow */ }
   }
 
   advanceSection() {

@@ -6,7 +6,7 @@ const { patternLength } = require('./patternLength');
 const { getRhythm } = require('./getRhythm');
 const { setRhythm } = require('./setRhythm');
 const { drumMap } = require('./drumMap');
-const { trackBeatRhythm, trackDivRhythm, trackSubdivRhythm, trackSubsubdivRhythm } = require('./trackRhythm');
+const { trackRhythm } = require('./trackRhythm');
 const { binary, hex, onsets, random, prob, euclid, rotate, morph, closestDivisor } = require('./patterns');
 
 const TestExports = {
@@ -18,10 +18,7 @@ const TestExports = {
   getRhythm,
   setRhythm,
   drumMap,
-  trackBeatRhythm,
-  trackDivRhythm,
-  trackSubdivRhythm,
-  trackSubsubdivRhythm,
+  trackRhythm,
   binary,
   hex,
   onsets,
@@ -33,9 +30,7 @@ const TestExports = {
   closestDivisor
 };
 
-try {
-  module.exports = Object.assign({ TestExports }, TestExports);
-} catch (e) { /* swallow */ }
+
 
 // Preserve legacy naked globals for backwards compatibility
 /* eslint-disable no-restricted-globals */
@@ -56,8 +51,5 @@ if (typeof globalThis.euclid === 'undefined') globalThis.euclid = module.exports
 if (typeof globalThis.rotate === 'undefined') globalThis.rotate = module.exports.rotate;
 if (typeof globalThis.morph === 'undefined') globalThis.morph = module.exports.morph;
 if (typeof globalThis.closestDivisor === 'undefined') globalThis.closestDivisor = module.exports.closestDivisor;
-if (typeof globalThis.trackBeatRhythm === 'undefined') globalThis.trackBeatRhythm = module.exports.trackBeatRhythm;
-if (typeof globalThis.trackDivRhythm === 'undefined') globalThis.trackDivRhythm = module.exports.trackDivRhythm;
-if (typeof globalThis.trackSubdivRhythm === 'undefined') globalThis.trackSubdivRhythm = module.exports.trackSubdivRhythm;
-if (typeof globalThis.trackSubsubdivRhythm === 'undefined') globalThis.trackSubsubdivRhythm = module.exports.trackSubsubdivRhythm;
+
 /* eslint-enable no-restricted-globals */

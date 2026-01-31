@@ -1,8 +1,5 @@
 // backstage.js - Core utilities, randomization, and MIDI infrastructure.
 // minimalist comments, details at: backstage.md
-
-const { writeDebugFile } = require('./debug/logGate');
-
 m=Math;
 /**
  * Clamp a value within [min, max] range.
@@ -436,7 +433,6 @@ resetIndexWithChildren = (unit) => {
       indices: { sectionIndex, phraseIndex, measureIndex, beatIndex, divIndex, subdivIndex, subsubdivIndex },
       stack: (() => { try { return (new Error()).stack.split('\n').slice(2).map(s => s.trim()); } catch (_e) { return []; } })()
     };
-    try { writeDebugFile('reset-index-log.ndjson', record); } catch (_e) { /* swallow */ }
   } catch (_e) { /* swallow */ }
 
   // Clear any emitted child unit records from the active layer when resetting higher-level units
@@ -453,7 +449,6 @@ resetIndexWithChildren = (unit) => {
     };
     if (LM && LM.layers && LM.layers[layer] && Array.isArray(LM.layers[layer].state.units)) {
       LM.layers[layer].state.units = LM.layers[layer].state.units.filter(u => !unitsToDrop[unit] || !unitsToDrop[unit].includes(u.unitType));
-      try { writeDebugFile('reset-index-log.ndjson', { when: new Date().toISOString(), action: 'cleared-units', unit, layer, remaining: LM.layers[layer].state.units.length }); } catch (_e) { /* swallow */ }
     }
   } catch (_e) { /* swallow */ }
 };
@@ -679,7 +674,3 @@ allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,ti
  * @returns {Array} Array of CC events.
  */
 muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
-
-// Export helpers to centralized test hooks (preferred over global mutation)
-const TEST = require('./test-setup');
-try { if (TEST) { TEST.rf = rf; TEST.ri = ri; TEST.clamp = clamp; TEST.rv = rv; TEST.ra = ra; } } catch (e) { /* swallow */ }

@@ -1,4 +1,3 @@
-const { writeDebugFile } = require('../debug/logGate');
 const ProgressionGenerator = require('./ProgressionGenerator');
 const ChordComposer = require('./ChordComposer').ChordComposer || require('./ChordComposer');
 

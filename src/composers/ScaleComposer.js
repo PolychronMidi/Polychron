@@ -1,5 +1,4 @@
 const MeasureComposer = require('./MeasureComposer');
-const { writeIndexTrace, writeDebugFile } = require('../debug/logGate');
 
 /**
  * Composes notes from a specific scale.

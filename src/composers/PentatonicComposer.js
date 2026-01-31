@@ -1,5 +1,4 @@
 const MeasureComposer = require('./MeasureComposer');
-const { writeDebugFile } = require('../debug/logGate');
 
 class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {
@@ -18,7 +17,7 @@ class PentatonicComposer extends MeasureComposer {
     this.notes = this.scale.notes;
 
     if (!this.notes || this.notes.length === 0) {
-      writeDebugFile('composers.ndjson', { tag: 'pentatonic-missing', root, type }, 'debug');
+      console.warn(`PentatonicComposer.noteSet produced empty notes for root=${root} type=${type}. Falling back to ${this.type} pentatonic scale.`);
       this.root = allNotes[ri(allNotes.length - 1)];
       this.type = rf() < 0.5 ? 'major' : 'minor';
       const fallbackScaleName = this.type === 'minor' ? 'minor pentatonic' : 'major pentatonic';

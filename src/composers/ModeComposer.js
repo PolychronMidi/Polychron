@@ -20,8 +20,11 @@ class ModeComposer extends MeasureComposer {
    * @param {string} root
    */
   noteSet(modeName,root) {
-    this.mode=t.Mode.get(modeName);
-    this.notes=t.Mode.notes(this.mode,root);
+    this.mode = t.Mode.get(modeName);
+    this.notes = t.Mode.notes(this.mode, root);
+    if (!Array.isArray(this.notes) || this.notes.length === 0) {
+      throw new Error(`ModeComposer.noteSet produced empty notes for mode=${modeName} root=${root}`);
+    }
   }
   /** @returns {{note: number}[]} Mode notes */
   x=()=>this.getNotes();

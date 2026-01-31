@@ -1,6 +1,5 @@
 // src/debug/logUnit.js - moved from src/logUnit.js
 // Logs timing markers with context awareness for writer and diagnostics.
-const { writeDebugFile } = require('./logGate');
 const formatTime = require('./formatTime');
 
 /**
@@ -137,36 +136,6 @@ const logUnit = (type) => {
     endTime = startTime + (Number.isFinite(Number(spSubsubdiv)) ? spSubsubdiv : 0);
   }
 
-  return (() => {
-    // Emit marker tick that corresponds to the canonical end of the unit when available.
-    // Use a rounded integer endTick in both the event tick and the human-readable marker text
-    const endTickInt = Math.round(Number(endTick) || 0);
-    const markerTick = (Number.isFinite(endTickInt) && endTickInt >= 0) ? endTickInt : Math.round(Number(startTick || 0));
-    const markerRaw = `${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${markerTick} ${meterInfo ? meterInfo : ''}`;
-
-
-    try {
-      const parts = [];
-      // Coerce totals to safe numeric defaults to avoid NaN/undefined in IDs
-      const total = Number.isFinite(Number(unitsPerParent)) ? Number(unitsPerParent) : 1;
-      const formattedUnit = `${type}${unit}/${total}`;
-      const idParts = ['unitRec', (c && c.name) ? `layer:${c.name}` : 'layer:unknown', `section${sectionIndex + 1}/${totalSections}`, `phrase${phraseIndex + 1}`, formattedUnit, `${startTick}-${endTick}`, `${startTime.toFixed(6)}-${endTime.toFixed(6)}`];
-      const raw = `unitRec:${idParts.join('|')}`;
-      parts.push(raw);
-
-      // Emit human-readable marker event
-      buf.push({
-        tick: markerTick,
-        type: 'marker_t',
-        vals: [markerRaw]
-      });
-
-      return raw;
-    } catch (e) {
-      try { writeDebugFile('writer-debug.ndjson', { tag: 'marker-broken', error: e && e.message ? e.message : String(e), ctx: { type, unit, unitsPerParent } }); } catch (_e) { /* swallow */ }
-      return null;
-    }
-  })();
 };
 
 try { module.exports = { logUnit }; } catch (e) { /* swallow */ }
