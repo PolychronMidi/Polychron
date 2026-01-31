@@ -21,8 +21,8 @@ MeasureComposer = class MeasureComposer {
   getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random divisions count from DIVISIONS config */
   getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
-  /** @returns {number} Random subdivs count from SUBDIVISIONS config */
-  getSubdivs(){const{min,max,weights}=SUBDIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
+  /** @returns {number} Random subdivs count from SUBDIVS config */
+  getSubdivs(){const{min,max,weights}=SUBDIVS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
   /** @returns {number} Random sub-subdivs count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
   /** @returns {number} Random voice count from VOICES config */

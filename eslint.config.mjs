@@ -131,7 +131,7 @@ export default [
         DENOMINATOR: 'readonly',
         MEASURES_PER_PHRASE: 'readonly',
         DIVISIONS: 'readonly',
-        SUBDIVISIONS: 'readonly',
+        SUBDIVS: 'readonly',
         SUBSUBDIVISIONS: 'readonly',
         VOICES: 'readonly',
         OCTAVES: 'readonly',

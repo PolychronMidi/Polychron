@@ -235,6 +235,7 @@ setNoteParams = () => {
 playNotes = () => {
   setNoteParams();
   crossModulateRhythms();
+  console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
   console.warn('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);

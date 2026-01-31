@@ -19,30 +19,3 @@ trackRhythm = function trackRhythm(unit, ctx) {
     }
   } catch (e) { /* swallow to avoid impacting runtime */ }
 }
-
-buildGlobalContext = function buildGlobalContext() {
-  // Return an object with getters/setters that map to module globals used across timing
-  return {
-    get beatRhythm() { return beatRhythm; }, set beatRhythm(v) { beatRhythm = v; },
-    get beatIndex() { return beatIndex; }, set beatIndex(v) { beatIndex = v; },
-    get beatsOn() { return beatsOn; }, set beatsOn(v) { beatsOn = v; },
-    get beatsOff() { return beatsOff; }, set beatsOff(v) { beatsOff = v; },
-
-    get divRhythm() { return divRhythm; }, set divRhythm(v) { divRhythm = v; },
-    get divIndex() { return divIndex; }, set divIndex(v) { divIndex = v; },
-    get divsOn() { return divsOn; }, set divsOn(v) { divsOn = v; },
-    get divsOff() { return divsOff; }, set divsOff(v) { divsOff = v; },
-
-    get subdivRhythm() { return subdivRhythm; }, set subdivRhythm(v) { subdivRhythm = v; },
-    get subdivIndex() { return subdivIndex; }, set subdivIndex(v) { subdivIndex = v; },
-    get subdivsOn() { return subdivsOn; }, set subdivsOn(v) { subdivsOn = v; },
-    get subdivsOff() { return subdivsOff; }, set subdivsOff(v) { subdivsOff = v; },
-
-    get subsubdivRhythm() { return subsubdivRhythm; }, set subsubdivRhythm(v) { subsubdivRhythm = v; },
-    get subsubdivIndex() { return subsubdivIndex; }, set subsubdivIndex(v) { subsubdivIndex = v; },
-    get subsubdivsOn() { return subsubdivsOn; }, set subsubdivsOn(v) { subsubdivsOn = v; },
-    get subsubdivsOff() { return subsubdivsOff; }, set subsubdivsOff(v) { subsubdivsOff = v; },
-  };
-}
-
-// trackRhythm and buildGlobalContext are available as naked globals via require of this module.
