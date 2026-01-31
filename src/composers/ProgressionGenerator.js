@@ -88,4 +88,3 @@ ProgressionGenerator = class ProgressionGenerator {
     return this.generate(randomType);
   }
 }
-

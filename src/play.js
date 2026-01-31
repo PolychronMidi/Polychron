@@ -9,14 +9,27 @@ const { layer: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => setTunin
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+
+  // Initialize each layer's section origin so relative ticks are correct and explicit
+  LM.setSectionStartAll();
+
+  // Explicitly log a `section` marker for both layers so Section 1 is present
+  // for both `primary` and `poly` outputs. Restore `primary` as active for
+  // the phrase loop immediately after logging.
+  LM.activate('primary', false);
   setUnitTiming('section');
+  // Activate poly without setting `isPoly` yet (poly meter isn't known until later)
+  LM.activate('poly', false);
+  setUnitTiming('section');
+  LM.activate('primary', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     composer = ComposerFactory.createRandom({ root: 'random' });
     [numerator, denominator] = composer.getMeter();
+    // Activate primary layer first so activation doesn't overwrite freshly computed timing
+    LM.activate('primary', false);
     getMidiTiming();
     getPolyrhythm();
-    LM.activate('primary', false);
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
 

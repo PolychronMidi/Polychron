@@ -89,4 +89,3 @@ ComposerFactory = class ComposerFactory {
   }
 
 }
-

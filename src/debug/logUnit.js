@@ -46,17 +46,20 @@ logUnit = (type) => {
   if (type === 'section') {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
-    startTick = sectionStart;
-    startTime = sectionStartTime;
+    // Ensure we always have a safe numeric start for sections.
+    startTick = Number.isFinite(sectionStart) ? sectionStart : 0;
+    startTime = Number.isFinite(sectionStartTime) ? sectionStartTime : 0;
     // Section duration not known this early in the loop.
   } else if (type === 'phrase') {
     unit = phraseIndex + 1;
     unitsPerParent = phrasesPerSection;
     startTick = phraseStart;
-    endTick = startTick + tpPhrase;
+    // Compute endTick only when tpPhrase is a finite number
+    endTick = Number.isFinite(tpPhrase) && Number.isFinite(startTick) ? (startTick + tpPhrase) : undefined;
     startTime = phraseStartTime;
     spPhrase = tpPhrase / tpSec;
     endTime = startTime + spPhrase;
+
     composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
     if (composer && composer.scale && composer.scale.name) {
       composerDetails += `${composer.root} ${composer.scale.name}`;

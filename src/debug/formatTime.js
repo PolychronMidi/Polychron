@@ -10,5 +10,3 @@ formatTime = (seconds) => {
   seconds = (seconds % 60).toFixed(4).padStart(7, '0');
   return `${minutes}:${seconds}`;
 };
-
-

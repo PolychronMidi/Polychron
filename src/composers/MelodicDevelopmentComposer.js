@@ -58,4 +58,3 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.transpositionOffset = 0;
   }
 }
-
