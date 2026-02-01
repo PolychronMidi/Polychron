@@ -54,6 +54,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         if (layer) {
           layer.activeMotif = motif;
           layer.motifSchedule = schedule;
+          // Group scheduled motif events into per-beat buckets for runtime pickup
+          try {
+            layer.beatMotifs = layer.beatMotifs || {};
+            const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
+            schedule.forEach((evt) => {
+              const startTick = Number(evt.startTick);
+              const beatKey = Math.floor(startTick / beatLen);
+              layer.beatMotifs[beatKey] = layer.beatMotifs[beatKey] || [];
+              layer.beatMotifs[beatKey].push({ ...evt, startTick });
+            });
+          } catch (_e) { /* swallow */ }
         }
       } catch (_e) { /* swallow */ }
     } catch (e) { /* swallow - motif generation is best-effort */ }
@@ -113,6 +124,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         if (layer2) {
           layer2.activeMotif = motif2;
           layer2.motifSchedule = schedule2;
+          // Group scheduled motif events into per-beat buckets for runtime pickup
+          try {
+            layer2.beatMotifs = layer2.beatMotifs || {};
+            const beatLen2 = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
+            schedule2.forEach((evt) => {
+              const startTick2 = Number(evt.startTick);
+              const beatKey2 = Math.floor(startTick2 / beatLen2);
+              layer2.beatMotifs[beatKey2] = layer2.beatMotifs[beatKey2] || [];
+              layer2.beatMotifs[beatKey2].push({ ...evt, startTick: startTick2 });
+            });
+          } catch (_e) { /* swallow */ }
         }
       } catch (_e) { /* swallow */ }
     } catch (e) { /* swallow */ }
