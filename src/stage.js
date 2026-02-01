@@ -1,13 +1,8 @@
 // stage.js - Audio processing engine with MIDI event generation and binaural effects.
 // minimalist comments, details at: stage.md
-
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers'); require('./composers/motifs');
 require('./fx');
-
-// Initialize global temporary variable for FX object spreading
-_ = null;
-
 
 /**
  * Sets program, pitch bend, and volume for all instrument channels
@@ -18,7 +13,6 @@ setTuningAndInstruments = () => {
   type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
   { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
   { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
-
   p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
     type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
@@ -38,11 +32,6 @@ p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' }
     { ...tmp,vals:[drumCH,ra(drumSets)] }
   ];  })  );  }
 }
-
-// stutter helpers are delegated to the `fx` module (exposed by `src/fx/index.js`).
-// The naked functions `stutterFade`, `stutterPan`, and `stutterFX` are initialized when `./fx` is required.
-
-
 
 /**
  * Calculates cross-modulation value based on rhythm state across all levels
@@ -262,7 +251,6 @@ if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
       p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,note]});
     }
   }
-
   }); });
   try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
   subsubdivsOff=0; subsubdivsOn++;
