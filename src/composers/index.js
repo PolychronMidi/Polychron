@@ -14,6 +14,7 @@ const ModalInterchangeComposer = require('./ModalInterchangeComposer');
 const HarmonicRhythmComposer = require('./HarmonicRhythmComposer');
 const MelodicDevelopmentComposer = require('./MelodicDevelopmentComposer');
 const AdvancedVoiceLeadingComposer = require('./AdvancedVoiceLeadingComposer');
+require('./MotifComposer');
 
 const ComposerFactory = require('./ComposerFactory');
 
@@ -33,6 +34,7 @@ const TestExports = {
   HarmonicRhythmComposer,
   MelodicDevelopmentComposer,
   AdvancedVoiceLeadingComposer,
+  MotifComposer,
   ComposerFactory
 };
 

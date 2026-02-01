@@ -294,7 +294,8 @@ class VoiceLeadingScore {
 }
 
 // Export for composition integration into centralized TEST hooks
-const TEST = require('./test-setup');
+let TEST;
+try { TEST = require('../test-setup'); } catch (e) { TEST = null; }
 try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { /* swallow */ }
 
 // Export for direct import in tests and tools

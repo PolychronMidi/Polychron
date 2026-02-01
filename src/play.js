@@ -33,6 +33,32 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
 
+    // Generate an active motif for this phrase that fits the phrase duration
+    try {
+      // Allow composer to seed motif generation when possible
+      const mc = new MotifComposer({ useVoiceLeading: !!(composer && composer.voiceLeading) });
+      const phraseTicks = Number(tpMeasure) * Number(measuresPerPhrase);
+      const length = ri(2, Math.max(2, Math.min(8, measuresPerPhrase * 2)));
+      const motif = mc.generate({ length, fitToTotalTicks: true, totalTicks: phraseTicks, developFromComposer: composer, measureComposer: composer });
+      // Store both legacy global and per-layer schedule for playback
+      activeMotif = motif;
+      try {
+        const schedule = [];
+        let cursor = Number(phraseStart) || 0;
+        (motif.sequence || motif.events || []).forEach((evt) => {
+          const dur = Number(evt.duration) || Math.max(1, Math.round(Number(tpSubdiv) || 30));
+          schedule.push({ note: Number(evt.note), startTick: cursor, duration: dur });
+          cursor += dur;
+        });
+        const layer = LM.layers[LM.activeLayer];
+        if (layer) {
+          layer.activeMotif = motif;
+          layer.motifSchedule = schedule;
+        }
+      } catch (_e) { /* swallow */ }
+    } catch (e) { /* swallow - motif generation is best-effort */ }
+
+
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
@@ -67,6 +93,30 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
+
+    // Generate a poly-layer motif for this poly-phrase as well
+    try {
+      const mc2 = new MotifComposer({ useVoiceLeading: !!(composer && composer.voiceLeading) });
+      const phraseTicks2 = Number(tpMeasure) * Number(measuresPerPhrase);
+      const length2 = ri(2, Math.max(2, Math.min(8, measuresPerPhrase * 2)));
+      const motif2 = mc2.generate({ length: length2, fitToTotalTicks: true, totalTicks: phraseTicks2, developFromComposer: composer, measureComposer: composer });
+      activeMotif = motif2;
+      try {
+        const schedule2 = [];
+        let cursor2 = Number(phraseStart) || 0;
+        (motif2.sequence || motif2.events || []).forEach((evt) => {
+          const dur = Number(evt.duration) || Math.max(1, Math.round(Number(tpSubdiv) || 30));
+          schedule2.push({ note: Number(evt.note), startTick: cursor2, duration: dur });
+          cursor2 += dur;
+        });
+        const layer2 = LM.layers[LM.activeLayer];
+        if (layer2) {
+          layer2.activeMotif = motif2;
+          layer2.motifSchedule = schedule2;
+        }
+      } catch (_e) { /* swallow */ }
+    } catch (e) { /* swallow */ }
+
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
 

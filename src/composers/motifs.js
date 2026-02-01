@@ -164,13 +164,32 @@ class Motif {
 }
 
 // Expose motif utilities globally for stage/play integration and testing.
-clampMotifNote = clampNote;
-activeMotif = activeMotif || null;
+try { clampMotifNote = clampNote; } catch (e) { /* swallow */ }
+try { activeMotif = (typeof activeMotif === 'undefined') ? null : activeMotif; } catch (e) { activeMotif = null; }
 
-applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
-  if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
-  return motif.applyToNotes(notes, options);
-};
+try {
+  applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
+    if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
+    return motif.applyToNotes(notes, options);
+  };
+} catch (e) { /* swallow */ }
 
 try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-Object.assign(__POLYCHRON_TEST__, { Motif, clampMotifNote, applyMotifToNotes });
+
+/**
+ * Return up to `max` scheduled notes that start within [windowStart, windowEnd).
+ * Preserves order by start time and caps result size. Returns shallow copies.
+ * @param {{note:number,startTick:number,duration:number}[]} schedule
+ * @param {number} windowStart
+ * @param {number} windowEnd
+ * @param {number} [max=3]
+ * @returns {{note:number,startTick:number,duration:number}[]
+ */
+getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max = 3) => {
+  if (!Array.isArray(schedule) || schedule.length === 0) return [];
+  const hits = schedule.filter(s => Number.isFinite(Number(s.startTick)) && s.startTick >= windowStart && s.startTick < windowEnd);
+  hits.sort((a, b) => a.startTick - b.startTick);
+  return hits.slice(0, Math.max(0, Math.min(max, hits.length))).map(s => ({ ...s }));
+};
+
+Object.assign(__POLYCHRON_TEST__, { Motif, clampMotifNote, applyMotifToNotes, getScheduledNotes });

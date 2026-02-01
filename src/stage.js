@@ -2,7 +2,7 @@
 // minimalist comments, details at: stage.md
 
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers'); require('./motifs');
+require('./rhythm'); require('./time'); require('./composers'); require('./composers/motifs');
 require('./fxManager');
 
 // Initialize global temporary variable for FX object spreading
@@ -238,7 +238,7 @@ playNotes = () => {
   // console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
-  if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
+  if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
 if (composer) motifNotes.forEach(({ note })=>{
   // Play source channels
   source.filter(sourceCH=>
@@ -272,7 +272,14 @@ if (composer) motifNotes.forEach(({ note })=>{
 
     });
   }
-}); subdivsOff=0; subdivsOn++; } else { subdivsOff++; subdivsOn=0; }
+  }); // close motifNotes.forEach
+  // Update per-layer tracking via the canonical helper and preserve globals
+  try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+  subdivsOff=0; subdivsOn++;
+  } else {
+    try { trackRhythm('subdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+    subdivsOff++; subdivsOn=0;
+  }
 }
 
 /**
@@ -295,7 +302,7 @@ setNoteParams2 = () => {
 playNotes2 = () => {
   setNoteParams2();
   crossModulateRhythms();
-  if((crossModulation+lastCrossMod)/rf(1.8,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
+  if((crossModulation+lastCrossMod)/rf(1.6,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
   let reflectionCH; let bassCH; let bassNote;
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;

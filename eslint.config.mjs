@@ -158,10 +158,15 @@ export default [
         HarmonicRhythmComposer: 'writable',
         MelodicDevelopmentComposer: 'writable',
         AdvancedVoiceLeadingComposer: 'writable',
+        MotifComposer: 'writable',
+        Motif: 'writable',
         PentatonicComposer: 'writable',
         RandomPentatonicComposer: 'writable',
         ComposerFactory: 'writable',
         ProgressionGenerator: 'writable',
+        // Debug/Test helpers
+        logGate: 'writable',
+        getScheduledNotes: 'writable',
         // Functions
         getMidiTiming: 'writable',
         setMidiTiming: 'writable',

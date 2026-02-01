@@ -161,4 +161,35 @@ function loadLayerToGlobals(layer) {
 
   tpSec = layer.tpSec;
 
+  // Restore per-layer rhythms into globals so rhythms carry over and can morph between instances.
+  // If a layer lacks a rhythm, we avoid clobbering existing globals.
+  try {
+    // Beat
+    if (Array.isArray(layer.beatRhythm)) {
+      beatRhythm = [...layer.beatRhythm];
+      beatIndex = typeof layer.beatIndex !== 'undefined' ? layer.beatIndex : (typeof beatIndex !== 'undefined' ? beatIndex : 0);
+    } else if (typeof beatRhythm === 'undefined') {
+      // Ensure a beat rhythm exists by generating one for the layer (best-effort)
+      try { setRhythm('beat', layer); if (Array.isArray(layer.beatRhythm)) beatRhythm = [...layer.beatRhythm]; } catch (e) { /* swallow */ }
+    }
+
+    // Div
+    if (Array.isArray(layer.divRhythm)) {
+      divRhythm = [...layer.divRhythm];
+      divIndex = typeof layer.divIndex !== 'undefined' ? layer.divIndex : (typeof divIndex !== 'undefined' ? divIndex : 0);
+    }
+
+    // Subdiv
+    if (Array.isArray(layer.subdivRhythm)) {
+      subdivRhythm = [...layer.subdivRhythm];
+      subdivIndex = typeof layer.subdivIndex !== 'undefined' ? layer.subdivIndex : (typeof subdivIndex !== 'undefined' ? subdivIndex : 0);
+    }
+
+    // Subsubdiv
+    if (Array.isArray(layer.subsubdivRhythm)) {
+      subsubdivRhythm = [...layer.subsubdivRhythm];
+      subsubdivIndex = typeof layer.subsubdivIndex !== 'undefined' ? layer.subsubdivIndex : (typeof subsubdivIndex !== 'undefined' ? subsubdivIndex : 0);
+    }
+  } catch (e) { /* swallow --- defensive */ }
+
 }
