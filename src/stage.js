@@ -235,10 +235,9 @@ setNoteParams = () => {
 playNotes = () => {
   setNoteParams();
   crossModulateRhythms();
-  console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
+  // console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
-  console.warn('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
   if((crossModulation+lastCrossMod)/rf(1.8,2.2)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
 if (composer) motifNotes.forEach(({ note })=>{
   // Play source channels
@@ -296,11 +295,10 @@ setNoteParams2 = () => {
 playNotes2 = () => {
   setNoteParams2();
   crossModulateRhythms();
+  if((crossModulation+lastCrossMod)/rf(1.8,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
   let reflectionCH; let bassCH; let bassNote;
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
-  // eslint-disable-next-line no-constant-condition
-  if(true){
 if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{

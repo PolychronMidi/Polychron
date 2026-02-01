@@ -24,7 +24,6 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     try { if (!Object.keys(filteredRhythms).length) console.warn(`No candidate rhythms for level "${level}"`); } catch (_e) { /* swallow */ }
 
     const rhythmKey=randomWeightedSelection(filteredRhythms);
-    try { console.warn(`Candidate rhythm selected for level "${level}": ${rhythmKey}`); } catch (_e) { /* swallow */ }
 
     if (rhythmKey && rhythms[rhythmKey]) {
       const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
