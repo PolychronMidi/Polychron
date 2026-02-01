@@ -22,16 +22,14 @@ LM = layerManager ={
       tpSec: 0,
       tpSection: 0,
       spSection: 0,
-      numerator: 4,
-      denominator: 4,
-      measuresPerPhrase: 1,
+      numerator: 0,
+      denominator: 0,
       tpPhrase: 0,
       spPhrase: 0,
       measureStart: 0,
       measureStartTime: 0,
-      tpMeasure: (typeof PPQ !== 'undefined' ? PPQ * 4 : 480 * 4),
+      tpMeasure: 0,
       spMeasure: 0,
-      meterRatio: 4 / 4,
       bufferName: ''
     };
 
