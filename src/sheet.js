@@ -53,18 +53,18 @@ SECTIONS={
 };
 DIVISIONS={
   min: 1,
-  max: 10,
+  max: 15,
   weights: [1,15,20,25,20,10,10,7,2,2,1]
 };
 SUBDIVS={
   min: 1,
-  max: 10,
-  weights: [5,10,20,15,20,10,20,4,2,1]
+  max: 15,
+  weights: [5,10,20,15,20,10,20,4,2,1,1,1,1]
 };
 SUBSUBDIVS={
   min: 1,
-  max: 7,
-  weights: [5,20,30,20,10,5]
+  max: 15,
+  weights: [5,20,30,20,3,5,1,1,1,1]
 };
 COMPOSERS=[
   { type: 'scale', name: 'major', root: 'C' },

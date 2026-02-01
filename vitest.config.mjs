@@ -14,7 +14,7 @@ export default {
     retry: 1,
     // Load centralized log gate during test setup so console output is controlled project-wide
     // Also load `test-setup.js` which requires `stage.js` to ensure naked globals are initialized
-    setupFiles: ['./src/debug/logGate.js', './src/test-setup.js'],
+    setupFiles: ['./test/test-setup.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

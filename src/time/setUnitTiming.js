@@ -30,6 +30,8 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'beat':
+      // Ensure the active layer has a beat rhythm generated before tracking it
+      try { setRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
       try { trackRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(beat) failed', e); }
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
@@ -45,7 +47,7 @@ setUnitTiming = (unitType) => {
       // Ensure we have a positive divisions-per-beat before generating div rhythms
       divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
 
-      divRhythm = setRhythm('div');
+      divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
       break;
 
     case 'division':
@@ -56,7 +58,7 @@ setUnitTiming = (unitType) => {
       divStartTime = beatStartTime + divIndex * spDiv;
       subdivsPerDiv = m.max(1, composer ? composer.getSubdivs() : 1);
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
-      subdivRhythm = setRhythm('subdiv');
+      subdivRhythm = setRhythm('subdiv', LM.layers[LM.activeLayer]);
       break;
 
     case 'subdiv':
@@ -67,7 +69,7 @@ setUnitTiming = (unitType) => {
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubsPerSub = composer ? composer.getSubsubdivs() : 1;
-      subsubdivRhythm = setRhythm('subsubdiv');
+      subsubdivRhythm = setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
       break;
 
     case 'subsubdiv':
