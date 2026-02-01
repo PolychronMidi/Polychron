@@ -1,6 +1,8 @@
 // Test setup helper: initialize minimal runtime globals required by unit tests
 // Prefer the full runtime: require the canonical `stage.js` (it imports the rest of the project)
 try { require('../src/stage'); } catch (e) { /* swallow to allow partial test runs */ }
+// Ensure fx helpers are available for lightweight tests without importing entire stage
+try { require('../src/fx'); } catch (e) { /* swallow */ }
 // Keep this file focused and lightweight so unit tests don't require the full runtime when not needed
 try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
 

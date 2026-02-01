@@ -3,7 +3,7 @@
 
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers'); require('./composers/motifs');
-require('./fxManager');
+require('./fx');
 
 // Initialize global temporary variable for FX object spreading
 _ = null;
@@ -39,163 +39,10 @@ p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' }
   ];  })  );  }
 }
 
-/**
- * Manages binaural beat pitch shifts and volume crossfades at beat boundaries
- * @returns {void}
- */
-setBinaural = () => {
-  if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
-  beatCount=0; flipBin=!flipBin; allNotesOff(beatStart);
-  beatsUntilBinauralShift = ri(numerator, numerator * 2 * bpmRatio3);
-  // REMOVED: ANTI-PATTERN - THIS IS ABSURD, AS THEY ARE AVAILABLE GLOBALLY THROUGH BACKSTAGE.JS AND SHEET.JS
-  // let _bfo = 0;
-  // try { _bfo = (typeof binauralFreqOffset !== 'undefined') ? binauralFreqOffset : 0; } catch (e) { _bfo = 0; }
-  // _bfo = rl(_bfo, -1, 1, (typeof BINAURAL !== 'undefined' && BINAURAL.min) ? BINAURAL.min : 8, (typeof BINAURAL !== 'undefined' && BINAURAL.max) ? BINAURAL.max : 12);
-  // try { binauralFreqOffset = _bfo; } catch (e) { /* swallow */ }
-  p(c,...binauralL.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===lCH1 || ch===lCH3 || ch===lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)]})),
-  ...binauralR.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===rCH1 || ch===rCH3 || ch===rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)]})),
-  );
-  // flipBin (flip binaural) volume transition
-  const startTick=beatStart - tpSec/4; const endTick=beatStart + tpSec/4;
-  const steps=10; const tickIncrement=(endTick - startTick) / steps;
-  for (let i=steps/2-1; i <= steps; i++) {
-    const tick=startTick + (tickIncrement * i);
-    const currentVolumeF2=flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
-    const currentVolumeT2=flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
-    const maxVol=rf(.9,1.2);
-    flipBinF2.forEach(ch => {
-      p(c,{tick:tick,type:'control_c',vals:[ch,7,m.round(currentVolumeF2*maxVol)]});
-    });
-    flipBinT2.forEach(ch => {
-      p(c,{tick:tick,type:'control_c',vals:[ch,7,m.round(currentVolumeT2*maxVol)]});
-    });
-  }
-}
-}
+// stutter helpers are delegated to the `fx` module (exposed by `src/fx/index.js`).
+// The naked functions `stutterFade`, `stutterPan`, and `stutterFX` are initialized when `./fx` is required.
 
-/**
- * Applies rapid volume stutter/fade effect to selected channels (delegates to FxManager)
- * @param {Array} channels - Array of channel numbers to potentially stutter
- * @param {number} [numStutters] - Number of stutter events
- * @param {number} [duration] - Duration of stutter effect in ticks
- * @returns {void}
- */
-stutterFade = (channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) => {
-  fx.stutterFade(channels, numStutters, duration);
-}
 
-/**
- * Applies rapid pan stutter effect to selected channels (delegates to FxManager)
- * @param {Array} channels - Array of channel numbers to potentially stutter
- * @param {number} [numStutters] - Number of stutter events
- * @param {number} [duration] - Duration of stutter effect in ticks
- * @returns {void}
- */
-stutterPan = (channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) => {
-  fx.stutterPan(channels, numStutters, duration);
-}
-
-/**
- * Applies rapid FX parameter stutter effect to selected channels (delegates to FxManager)
- * @param {Array} channels - Array of channel numbers to potentially stutter
- * @param {number} [numStutters] - Number of stutter events
- * @param {number} [duration] - Duration of stutter effect in ticks
- * @returns {void}
- */
-stutterFX = (channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2))  => {
-  fx.stutterFX(channels, numStutters, duration);
-}
-
-/**
- * Sets pan positions, balance offsets, and detailed FX parameters for all channels
- * @returns {void}
- */
-setBalanceAndFX = () => {
-// Respect both instance state and legacy naked global `firstLoop` set by tests
-if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 || (typeof firstLoop !== 'undefined' && firstLoop < 1)) { firstLoop=1; firstLoop = 1;
-  // Apply a limited change to balance offset: use rl() but cap per-iteration change to +/-4 ticks for stability
-  const prevBal = Number.isFinite(Number(balOffset)) ? Number(balOffset) : 0;
-  // Use global previous balOffset when available so tests observing global changes see
-  // a limited delta relative to the global baseline rather than instance baseline
-  const prevGlobalBal = (typeof balOffset !== 'undefined' && Number.isFinite(Number(balOffset))) ? Number(balOffset) : prevBal;
-  const candidateBal = rl(prevGlobalBal, -4, 4, 0, 45);
-  balOffset = clamp(candidateBal, Math.max(0, prevGlobalBal - 4), Math.min(45, prevGlobalBal + 4));
-  sideBias=rl(sideBias,-2,2,-20,20);
-  lBal=m.max(0,m.min(54,balOffset + ri(3) + sideBias));
-  rBal=m.min(127,m.max(74,127 - balOffset - ri(3) + sideBias));
-  cBal=m.min(96,(m.max(32,64 + m.round(rv(balOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
-  refVar=ri(1,10); cBal2=rf()<.5?cBal+m.round(refVar*.5) : cBal+m.round(refVar*-.5);
-  bassVar=refVar*rf(-2,2); cBal3=rf()<.5?cBal2+m.round(bassVar*.5) : cBal2+m.round(bassVar*-.5);
-
-  // Sync instance state back to legacy naked globals so tests that mutate globals pass
-  // Globals are populated via require-side effects; no explicit wrapper assignment required.
-
-  p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart-1,type:'control_c' }; _=tmp;
-return [
-    ...source2.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal : rBal) : ch.toString().startsWith('rCH') ? (flipBin ? rBal : lBal) : ch===drumCH ? cBal3+m.round((rf(-.5,.5)*bassVar)) : cBal]})),
-    ...reflection.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? (rf()<.1 ? lBal+refVar*2 : lBal+refVar) : (rf()<.1 ? rBal-refVar*2 : rBal-refVar)) : ch.toString().startsWith('rCH') ? (flipBin ? (rf()<.1 ? rBal-refVar*2 : rBal-refVar) : (rf()<.1 ? lBal+refVar*2 : lBal+refVar)) : cBal2+m.round((rf(-.5,.5)*refVar)) ]})),
-    ...bass.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal+bassVar : rBal-bassVar) : ch.toString().startsWith('rCH') ? (flipBin ? rBal-bassVar : lBal+bassVar) : cBal3+m.round((rf(-.5,.5)*bassVar)) ]})),
-    ...source2.map(ch=>rlFX(ch,1,0,60,(c)=>c===cCH1,0,10)),
-    ...source2.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH1,126,127)),
-    ...source2.map(ch=>rlFX(ch,11,64,127,(c)=>c===cCH1||c===drumCH,115,127)),
-    ...source2.map(ch=>rlFX(ch,65,45,64,(c)=>c===cCH1,35,64)),
-    ...source2.map(ch=>rlFX(ch,67,63,64)),
-    ...source2.map(ch=>rlFX(ch,68,63,64)),
-    ...source2.map(ch=>rlFX(ch,69,63,64)),
-    ...source2.map(ch=>rlFX(ch,70,0,127)),
-    ...source2.map(ch=>rlFX(ch,71,0,127)),
-    ...source2.map(ch=>rlFX(ch,72,64,127)),
-    ...source2.map(ch=>rlFX(ch,73,0,64)),
-    ...source2.map(ch=>rlFX(ch,74,80,127)),
-    ...source2.map(ch=>rlFX(ch,91,0,33)),
-    ...source2.map(ch=>rlFX(ch,92,0,33)),
-    ...source2.map(ch=>rlFX(ch,93,0,33)),
-    ...source2.map(ch=>rlFX(ch,94,0,5,(c)=>c===drumCH,0,64)),
-    ...source2.map(ch=>rlFX(ch,95,0,33)),
-    ...reflection.map(ch=>rlFX(ch,1,0,90,(c)=>c===cCH2,0,15)),
-    ...reflection.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH2,126,127)),
-    ...reflection.map(ch=>rlFX(ch,11,77,111,(c)=>c===cCH2,66,99)),
-    ...reflection.map(ch=>rlFX(ch,65,45,64,(c)=>c===cCH2,35,64)),
-    ...reflection.map(ch=>rlFX(ch,67,63,64)),
-    ...reflection.map(ch=>rlFX(ch,68,63,64)),
-    ...reflection.map(ch=>rlFX(ch,69,63,64)),
-    ...reflection.map(ch=>rlFX(ch,70,0,127)),
-    ...reflection.map(ch=>rlFX(ch,71,0,127)),
-    ...reflection.map(ch=>rlFX(ch,72,64,127)),
-    ...reflection.map(ch=>rlFX(ch,73,0,64)),
-    ...reflection.map(ch=>rlFX(ch,74,80,127)),
-    ...reflection.map(ch=>rlFX(ch,91,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rlFX(ch,92,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rlFX(ch,93,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rlFX(ch,94,0,64,(c)=>c===cCH2,0,11)),
-    ...reflection.map(ch=>rlFX(ch,95,0,77,(c)=>c===cCH2,0,32)),
-    ...bass.map(ch=>rlFX(ch,1,0,60,(c)=>c===cCH3,0,10)),
-    ...bass.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH3,126,127)),
-    ...bass.map(ch=>rlFX(ch,11,88,127,(c)=>c===cCH3,115,127)),
-    ...bass.map(ch=>rlFX(ch,65,45,64,(c)=>c===cCH3,35,64)),
-    ...bass.map(ch=>rlFX(ch,67,63,64)),
-    ...bass.map(ch=>rlFX(ch,68,63,64)),
-    ...bass.map(ch=>rlFX(ch,69,63,64)),
-    ...bass.map(ch=>rlFX(ch,70,0,127)),
-    ...bass.map(ch=>rlFX(ch,71,0,127)),
-    ...bass.map(ch=>rlFX(ch,72,64,127)),
-    ...bass.map(ch=>rlFX(ch,73,0,64)),
-    ...bass.map(ch=>rlFX(ch,74,80,127)),
-    ...bass.map(ch=>rlFX(ch,91,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rlFX(ch,92,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rlFX(ch,93,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rlFX(ch,94,0,64,(c)=>c===cCH3,0,11)),
-    ...bass.map(ch=>rlFX(ch,95,0,99,(c)=>c===cCH3,0,64)),
-  ];  })  );
-  // Defensive fallback: ensure pan events exist for tests
-  try {
-    const panNow = (Array.isArray(c) ? c.filter(evt => evt.vals && evt.vals[1] === 10) : []);
-    if (panNow.length === 0 && Array.isArray(source2)) {
-      source2.forEach(ch => p(c, { tick: beatStart - 1, type: 'control_c', vals: [ch, 10, ch.toString().startsWith('lCH') ? lBal : ch.toString().startsWith('rCH') ? rBal : cBal] }));
-    }
-  } catch (_e) { /* swallow */ }
-}
-}
 
 /**
  * Calculates cross-modulation value based on rhythm state across all levels
@@ -219,7 +66,7 @@ crossModulateRhythms = () => {
  * Calculates note timing and sustain parameters for subdiv-based notes
  * @returns {void}
  */
-setNoteParams = () => {
+setSubdivNoteParams = () => {
   on=subdivStart+(tpSubdiv*rv(rf(.2),[-.1,.07],.3));
   shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],.1,[-.05,-.1]);
   longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],.1,[-.05,-.1]);
@@ -232,13 +79,13 @@ setNoteParams = () => {
  * Generates MIDI note events for source channels (subdiv-based timing)
  * @returns {void}
  */
-playNotes = () => {
-  setNoteParams();
+playSubdivNotes = () => {
+  setSubdivNoteParams();
   crossModulateRhythms();
   // console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
-  const noteObjects = composer ? composer.getNotes() : [];
-  const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
   if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
+const noteObjects = composer ? composer.getNotes() : [];
+const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
 if (composer) motifNotes.forEach(({ note })=>{
   // Play source channels
   source.filter(sourceCH=>
@@ -272,7 +119,7 @@ if (composer) motifNotes.forEach(({ note })=>{
 
     });
   }
-  }); // close motifNotes.forEach
+  });
   // Update per-layer tracking via the canonical helper and preserve globals
   try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
   subdivsOff=0; subdivsOn++;
@@ -286,7 +133,7 @@ if (composer) motifNotes.forEach(({ note })=>{
  * Calculates note timing and sustain parameters for subsubdiv-based notes
  * @returns {void}
  */
-setNoteParams2 = () => {
+setSubsubdivNoteParams = () => {
   on=subsubdivStart+(tpSubsubdiv*rv(rf(.2),[-.1,.07],.3));
   shortSustain=rv(rf(m.max(tpDiv*.5,tpDiv / subdivsPerDiv),(tpBeat*(.3+rf()*.7))),[.1,.2],.1,[-.05,-.1]);
   longSustain=rv(rf(tpDiv*.8,(tpBeat*(.3+rf()*.7))),[.1,.3],.1,[-.05,-.1]);
@@ -299,8 +146,8 @@ setNoteParams2 = () => {
  * Generates MIDI note events with complex stutter/shift effects (subsubdiv-based timing)
  * @returns {void}
  */
-playNotes2 = () => {
-  setNoteParams2();
+playSubsubdivNotes = () => {
+  setSubsubdivNoteParams();
   crossModulateRhythms();
   if((crossModulation+lastCrossMod)/rf(1.6,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
   let reflectionCH; let bassCH; let bassNote;
@@ -416,5 +263,11 @@ if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
     }
   }
 
-  }); }); }
+  }); });
+  try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+  subsubdivsOff=0; subsubdivsOn++;
+  } else {
+    try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+    subsubdivsOff++; subsubdivsOn=0;
+  }
 }

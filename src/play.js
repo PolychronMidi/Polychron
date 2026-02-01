@@ -76,10 +76,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           setUnitTiming('division');
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotes();
+            playSubdivNotes();
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              playNotes2();
+              playSubsubdivNotes();
             }
           }
         }
@@ -136,11 +136,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotes();
+            playSubdivNotes();
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              playNotes2();
+              playSubsubdivNotes();
             }
           }
         }

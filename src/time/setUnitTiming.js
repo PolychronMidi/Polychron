@@ -62,7 +62,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdiv':
-      try { trackRhythm('subdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+      // subdiv trackRhythm handled by playSubdivNotes()
       tpSubdiv = tpDiv / subdivsPerDiv;
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
@@ -73,7 +73,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdiv':
-      try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+      // subsubdiv trackRhythm handled by playSubsubdivNotes()
       tpSubsubdiv = tpSubdiv / subsubsPerSub;
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubsPerMinute = 60 / spSubsubdiv;
