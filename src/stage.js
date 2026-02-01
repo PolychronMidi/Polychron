@@ -75,14 +75,19 @@ playSubdivNotes = () => {
   if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
 const noteObjects = composer ? composer.getNotes() : [];
 const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
-if (composer) motifNotes.forEach(({ note })=>{
+try {
+  const layer = LM.layers[LM.activeLayer];
+  if (layer && Array.isArray(layer.motifSchedule) && layer.motifSchedule.length) {
+    const maxPicks = ri(1, 7);
+    const picks = getScheduledNotes(layer.motifSchedule, on, on + sustain, maxPicks);
+    picks.forEach(() => { const s = picks.shift(); // use each pick once
   // Play source channels
   source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
 
-    p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
-    p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
+    p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
+    p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
   });
 
@@ -91,8 +96,8 @@ if (composer) motifNotes.forEach(({ note })=>{
     flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
   ).map(reflectionCH=>{
 
-    p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
-    p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
+    p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,s.note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
+    p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
 
   });
 
@@ -101,14 +106,16 @@ if (composer) motifNotes.forEach(({ note })=>{
     bass.filter(bassCH=>
       flipBin ? flipBinT.includes(bassCH) : flipBinF.includes(bassCH)
     ).map(bassCH=>{
-      const bassNote=modClamp(note,12,35);
+      const bassNote=modClamp(s.note,12,35);
 
       p(c,{tick:bassCH===cCH3 ? on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : binVel*rf(1.85,2.45)]});
       p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
+    });
+  }
 
     });
   }
-  });
+} catch (e) { /* swallow — keep scheduling non-fatal */ }
   // Update per-layer tracking via the canonical helper and preserve globals
   try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
   subdivsOff=0; subdivsOn++;
@@ -142,12 +149,19 @@ playSubsubdivNotes = () => {
   let reflectionCH; let bassCH; let bassNote;
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
-if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
+try {
+  const layer = LM.layers[LM.activeLayer];
+  if (layer && Array.isArray(layer.motifSchedule) && layer.motifSchedule.length) {
+    const maxPicks = ri(1, 7);
+    const picks = getScheduledNotes(layer.motifSchedule, on, on + sustain, maxPicks);
+    picks.forEach(() => {
+      const s = picks.shift(); // use each pick once
+      source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
 
-  p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
-  p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,note]});
+  p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
+  p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
   // Stutter-Shift: Random note stutter and octave shift.
   const stutters=new Map(); const shifts=new Map();
@@ -168,11 +182,11 @@ if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
   if (globalStutterData) {
     const {numStutters,duration,minVelocity,maxVelocity,isFadeIn,decay}=globalStutterData;
     for (let i=0; i < numStutters; i++) {
-      const tick=on + duration * i; let stutterNote=note;
+      const tick=on + duration * i; let stutterNote=s.note;
       if (rf() < .25) {
         if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
         const octaveShift=shifts.get(sourceCH);
-        stutterNote=modClamp(note + octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
+        stutterNote=modClamp(s.note + octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
       let currentVelocity;
       if (isFadeIn) {
@@ -185,51 +199,51 @@ if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
       p(c,{tick:tick - duration * rf(.15),vals:[sourceCH,stutterNote]});
       p(c,{tick:tick + duration * rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
     }
-    p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,note]});
+    p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,s.note]});
   }
   if (rf()<rv(.07,[.5,1],.2)){ // Source Channels Stutter-Shift #2: Unique per channel.
     if (!stutters.has(sourceCH)) stutters.set(sourceCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
     const numStutters=stutters.get(sourceCH);
     const duration=.25 * ri(1,5) * sustain / numStutters;
     for (let i=0;i<numStutters;i++) {
-      const tick=on+duration*i; let stutterNote=note;
+      const tick=on+duration*i; let stutterNote=s.note;
       if(rf()<.15){
         if (!shifts.has(sourceCH)) shifts.set(sourceCH,ri(-3,3)*12);
         const octaveShift=shifts.get(sourceCH);
-        stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
+        stutterNote=modClamp(s.note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
       if(rf()<.6){
       p(c,{tick:tick-duration*rf(.15),vals:[sourceCH,stutterNote]});
       p(c,{tick:tick+duration*rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1?velocity*rf(.3,.7):binVel*rf(.45,.8)]});
       }
     }
-    p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,note]});
+    p(c,{tick:on+sustain*rf(.5,1.5),vals:[sourceCH,s.note]});
   }
 
   reflectionCH=reflect[sourceCH];
-  p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
-  p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,note]});
+  p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,s.note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
+  p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
   if (rf()<.2){ // Reflection Channels Stutter-Shift
     if (!stutters.has(reflectionCH)) stutters.set(reflectionCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
     const numStutters=stutters.get(reflectionCH);
     const duration=.25 * ri(1,8) * sustain / numStutters;
     for (let i=0;i<numStutters;i++) {
-      const tick=on+duration*i; let stutterNote=note;
+      const tick=on+duration*i; let stutterNote=s.note;
       if(rf()<.7){
         if (!shifts.has(reflectionCH)) shifts.set(reflectionCH,ri(-3,3)*12);
         const octaveShift=shifts.get(reflectionCH);
-        stutterNote=modClamp(note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
+        stutterNote=modClamp(s.note+octaveShift,m.max(0,OCTAVE.min*12-1),OCTAVE.max*12-1);
       }
       if(rf()<.5){
       p(c,{tick:tick-duration*rf(.3),vals:[reflectionCH,stutterNote]});
       p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[reflectionCH,stutterNote,reflectionCH===cCH2?velocity*rf(.25,.65):binVel*rf(.4,.75)]});
       }
     }
-    p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,note]});
+    p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,s.note]});
   }
 
   if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
-    bassCH=reflect2[sourceCH]; bassNote=modClamp(note,12,35);
+    bassCH=reflect2[sourceCH]; bassNote=modClamp(s.note,12,35);
     p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : binVel*rf(1.85,2.45)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     if (rf()<.7){ // Bass Channels Stutter-Shift
@@ -248,10 +262,11 @@ if (composer) motifNotes.forEach(({ note })=>{ source.filter(sourceCH=>
         p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[bassCH,stutterNote,bassCH===cCH3?velocity*rf(.55,.85):binVel*rf(.75,1.05)]});
         }
       }
-      p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,note]});
+      p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,s.note]});
     }
   }
-  }); });
+  }); })}
+} catch (e) { /* swallow — keep scheduling non-fatal */ }
   try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
   subsubdivsOff=0; subsubdivsOn++;
   } else {
