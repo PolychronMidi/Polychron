@@ -77,10 +77,12 @@ const noteObjects = composer ? composer.getNotes() : [];
 const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
 try {
   const layer = LM.layers[LM.activeLayer];
-  if (layer && Array.isArray(layer.motifSchedule) && layer.motifSchedule.length) {
-    const maxPicks = ri(1, 7);
-    const picks = getScheduledNotes(layer.motifSchedule, on, on + sustain, maxPicks);
-    picks.forEach(() => { const s = picks.shift(); // use each pick once
+  if (layer && layer.beatMotifs) {
+    const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
+    const beatKey = Math.floor(on / beatLen);
+    const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
+    const picks = bucket.length ? getScheduledNotes(bucket, on, on + sustain, ri(1, 3)) : [];
+    for (let _pi = 0; _pi < picks.length; _pi++) { const s = picks[_pi];
   // Play source channels
   source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
@@ -113,7 +115,7 @@ try {
     });
   }
 
-    });
+  }
   }
 } catch (e) { /* swallow — keep scheduling non-fatal */ }
   // Update per-layer tracking via the canonical helper and preserve globals
@@ -151,11 +153,14 @@ playSubsubdivNotes = () => {
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
 try {
   const layer = LM.layers[LM.activeLayer];
-  if (layer && Array.isArray(layer.motifSchedule) && layer.motifSchedule.length) {
-    const maxPicks = ri(1, 7);
-    const picks = getScheduledNotes(layer.motifSchedule, on, on + sustain, maxPicks);
-    picks.forEach(() => {
-      const s = picks.shift(); // use each pick once
+  if (layer && layer.beatMotifs) {
+    const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
+    const beatKey = Math.floor(on / beatLen);
+    const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
+    if (bucket.length) {
+      const picks = getScheduledNotes(bucket, on, on + sustain, ri(1, 3));
+      for (let _pi = 0; _pi < picks.length; _pi++) {
+        const s = picks[_pi]; // use each pick once
       source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
@@ -265,7 +270,7 @@ try {
       p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,s.note]});
     }
   }
-  }); })}
+  }); }}}
 } catch (e) { /* swallow — keep scheduling non-fatal */ }
   try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
   subsubdivsOff=0; subsubdivsOn++;
