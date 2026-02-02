@@ -1,6 +1,8 @@
 // play.js - Main composition engine orchestrating section, phrase, measure hierarchy.
 // minimalist comments, details at: play.md
 require('./stage'); // This file imports EVERY other file & dependency in the project - Global scope used by design: DO NOT spam up files with useless import / export statements
+// Load utility that spreads motifs across a measure into beat buckets
+require('./composers/motifSpreader');
 (async function main() { console.log('Starting play.js ...');
 
 const { layer: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => setTuningAndInstruments());
@@ -33,46 +35,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
 
-    // Generate an active motif for this phrase that fits the phrase duration
-    try {
-      // Allow composer to seed motif generation when possible
-      const mc = new MotifComposer({ useVoiceLeading: !!(composer && composer.voiceLeading) });
-      const phraseTicks = Number(tpMeasure) * Number(measuresPerPhrase);
-      const length = ri(2, Math.max(2, Math.min(8, measuresPerPhrase * 2)));
-      const motif = mc.generate({ length, fitToTotalTicks: true, totalTicks: phraseTicks, developFromComposer: composer, measureComposer: composer });
-      // Store both legacy global and per-layer schedule for playback
-      activeMotif = motif;
-      try {
-        const schedule = [];
-        let cursor = Number(phraseStart) || 0;
-        (motif.sequence || motif.events || []).forEach((evt) => {
-          const dur = Number(evt.duration) || Math.max(1, Math.round(Number(tpSubdiv) || 30));
-          schedule.push({ note: Number(evt.note), startTick: cursor, duration: dur });
-          cursor += dur;
-        });
-        const layer = LM.layers[LM.activeLayer];
-        if (layer) {
-          layer.activeMotif = motif;
-          layer.motifSchedule = schedule;
-          // Group scheduled motif events into per-beat buckets for runtime pickup
-          try {
-            layer.beatMotifs = layer.beatMotifs || {};
-            const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
-            schedule.forEach((evt) => {
-              const startTick = Number(evt.startTick);
-              const beatKey = Math.floor(startTick / beatLen);
-              layer.beatMotifs[beatKey] = layer.beatMotifs[beatKey] || [];
-              layer.beatMotifs[beatKey].push({ ...evt, startTick });
-            });
-          } catch (_e) { /* swallow */ }
-        }
-      } catch (_e) { /* swallow */ }
-    } catch (e) { /* swallow - motif generation is best-effort */ }
+    // per-measure motif planning: moved into the measure loop to plan groups spanning multiple beats (see below).
 
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
+      // plan motif groups across this measure
+      try {
+        const layer = LM.layers[LM.activeLayer];
+        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+      } catch (_e) { /* swallow */ }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
@@ -105,42 +78,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
 
-    // Generate a poly-layer motif for this poly-phrase as well
-    try {
-      const mc2 = new MotifComposer({ useVoiceLeading: !!(composer && composer.voiceLeading) });
-      const phraseTicks2 = Number(tpMeasure) * Number(measuresPerPhrase);
-      const length2 = ri(2, Math.max(2, Math.min(8, measuresPerPhrase * 2)));
-      const motif2 = mc2.generate({ length: length2, fitToTotalTicks: true, totalTicks: phraseTicks2, developFromComposer: composer, measureComposer: composer });
-      activeMotif = motif2;
-      try {
-        const schedule2 = [];
-        let cursor2 = Number(phraseStart) || 0;
-        (motif2.sequence || motif2.events || []).forEach((evt) => {
-          const dur = Number(evt.duration) || Math.max(1, Math.round(Number(tpSubdiv) || 30));
-          schedule2.push({ note: Number(evt.note), startTick: cursor2, duration: dur });
-          cursor2 += dur;
-        });
-        const layer2 = LM.layers[LM.activeLayer];
-        if (layer2) {
-          layer2.activeMotif = motif2;
-          layer2.motifSchedule = schedule2;
-          // Group scheduled motif events into per-beat buckets for runtime pickup
-          try {
-            layer2.beatMotifs = layer2.beatMotifs || {};
-            const beatLen2 = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
-            schedule2.forEach((evt) => {
-              const startTick2 = Number(evt.startTick);
-              const beatKey2 = Math.floor(startTick2 / beatLen2);
-              layer2.beatMotifs[beatKey2] = layer2.beatMotifs[beatKey2] || [];
-              layer2.beatMotifs[beatKey2].push({ ...evt, startTick: startTick2 });
-            });
-          } catch (_e) { /* swallow */ }
-        }
-      } catch (_e) { /* swallow */ }
-    } catch (e) { /* swallow */ }
+    // per-measure motif planning: moved into the measure loop to plan groups spanning multiple beats (see below).
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
+      // plan motif groups across this measure
+      try {
+        const layer = LM.layers[LM.activeLayer];
+        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+      } catch (_e) { /* swallow */ }
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');

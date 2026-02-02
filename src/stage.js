@@ -70,9 +70,9 @@ setSubdivNoteParams = () => {
  */
 playSubdivNotes = () => {
   setSubdivNoteParams();
-  crossModulateRhythms();
+  // crossModulateRhythms();
   // console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
-  if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
+  // if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
 const noteObjects = composer ? composer.getNotes() : [];
 const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
 try {
@@ -119,12 +119,12 @@ try {
   }
 } catch (e) { /* swallow — keep scheduling non-fatal */ }
   // Update per-layer tracking via the canonical helper and preserve globals
-  try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
-  subdivsOff=0; subdivsOn++;
-  } else {
-    try { trackRhythm('subdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
-    subdivsOff++; subdivsOn=0;
-  }
+  // try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+  // subdivsOff=0; subdivsOn++;
+  // } else {
+  //   try { trackRhythm('subdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+  //   subdivsOff++; subdivsOn=0;
+  // }
 }
 
 /**
@@ -146,8 +146,8 @@ setSubsubdivNoteParams = () => {
  */
 playSubsubdivNotes = () => {
   setSubsubdivNoteParams();
-  crossModulateRhythms();
-  if((crossModulation+lastCrossMod)/rf(1.6,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
+  // crossModulateRhythms();
+  // if((crossModulation+lastCrossMod)/rf(1.6,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
   let reflectionCH; let bassCH; let bassNote;
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
@@ -158,7 +158,7 @@ try {
     const beatKey = Math.floor(on / beatLen);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
     if (bucket.length) {
-      const picks = getScheduledNotes(bucket, on, on + sustain, ri(1, 3));
+      const picks = getScheduledNotes(bucket, on, on + sustain, ri(1, 2));
       for (let _pi = 0; _pi < picks.length; _pi++) {
         const s = picks[_pi]; // use each pick once
       source.filter(sourceCH=>
@@ -270,12 +270,13 @@ try {
       p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,s.note]});
     }
   }
-  }); }}}
+  });
+}}}
 } catch (e) { /* swallow — keep scheduling non-fatal */ }
-  try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
-  subsubdivsOff=0; subsubdivsOn++;
-  } else {
-    try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
-    subsubdivsOff++; subsubdivsOn=0;
-  }
+  // try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+  // subsubdivsOff=0; subsubdivsOn++;
+  // } else {
+  //   try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+  //   subsubdivsOff++; subsubdivsOn=0;
+  // }
 }
