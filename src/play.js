@@ -32,10 +32,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getPolyrhythm();
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
-
-    // per-measure motif planning: moved into the measure loop to plan groups spanning multiple beats (see below).
-
-
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
@@ -75,9 +71,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
-
-    // per-measure motif planning: moved into the measure loop to plan groups spanning multiple beats (see below).
-
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
       // plan motif groups across this measure
@@ -85,7 +78,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const layer = LM.layers[LM.activeLayer];
         MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
       } catch (_e) { /* swallow */ }
-
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
