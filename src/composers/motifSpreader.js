@@ -54,7 +54,25 @@ MotifSpreader = {
       });
 
     } catch (e) { /* swallow */ }
+  },
+
+  // Return up to `max` motif steps from a beat bucket using a per-beat modulo cursor
+  getBeatMotifPicks(layer, beatKey, max = 1) {
+    if (!layer || !layer.beatMotifs) return [];
+    const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
+    if (!bucket.length) return [];
+
+    layer._motifCursor = layer._motifCursor || {};
+    let cursor = Number.isFinite(layer._motifCursor[beatKey]) ? layer._motifCursor[beatKey] : 0;
+
+    const picks = [];
+    for (let i = 0; i < max; i++) {
+      const idx = (cursor + i) % bucket.length;
+      const step = bucket[idx];
+      picks.push({ note: Number(step.note), groupId: step.groupId, seqIndex: step.seqIndex, seqLen: step.seqLen });
+    }
+
+    layer._motifCursor[beatKey] = (cursor + max) % bucket.length;
+    return picks;
   }
 };
-
-// Keep naked global for legacy callers

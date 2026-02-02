@@ -63,6 +63,9 @@ setSubdivNoteParams = () => {
   binVel=rv(velocity * rf(.42,.57));
 }
 
+// Motif picks are delegated to `MotifSpreader.getBeatMotifPicks(layer, beatKey, max)`
+// (kept in composers to centralize motif planning and state)
+
 /**
  * Generates MIDI note events for source channels (subdiv-based timing)
  * @returns {void}
@@ -80,7 +83,7 @@ try {
     const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
     const beatKey = Math.floor(on / beatLen);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-    const picks = bucket.length ? getScheduledNotes(bucket, on, on + sustain, ri(1, 3)) : [];
+    const picks = bucket.length ? MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3)) : [];
     for (let _pi = 0; _pi < picks.length; _pi++) { const s = picks[_pi];
   // Play source channels
   source.filter(sourceCH=>
@@ -157,7 +160,7 @@ try {
     const beatKey = Math.floor(on / beatLen);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
     if (bucket.length) {
-      const picks = getScheduledNotes(bucket, on, on + sustain, ri(1, 2));
+      const picks = bucket.length ? MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3)) : [];
       for (let _pi = 0; _pi < picks.length; _pi++) {
         const s = picks[_pi]; // use each pick once
       source.filter(sourceCH=>
