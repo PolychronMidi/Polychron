@@ -30,7 +30,7 @@ const normalizeEvent = (evt, defaultDuration = 1) => {
   return { note, duration };
 };
 
-class Motif {
+Motif = class Motif {
   /**
    * @param {Array<number|{note:number,duration?:number}>} sequence
    * @param {{defaultDuration?:number}} [options]
@@ -174,8 +174,6 @@ try {
   };
 } catch (e) { /* swallow */ }
 
-try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-
 /**
  * Return up to `max` scheduled notes that start within [windowStart, windowEnd).
  * Preserves order by start time and caps result size. Returns shallow copies.
@@ -187,9 +185,11 @@ try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } 
  */
 getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max = 3) => {
   if (!Array.isArray(schedule) || schedule.length === 0) return [];
-  const hits = schedule.filter(s => Number.isFinite(Number(s.startTick)) && s.startTick >= windowStart && s.startTick < windowEnd);
+  // Allow a small slack so events that start slightly before the micro-unit
+  // (e.g., due to jitter) are still considered. Slack is based on the
+  // subdiv/subsubdiv tick lengths (use .1 as reasonable tolerance).
+  const slack = Math.max(1, Math.round((Number(tpSubdiv) || 0) * 0.1), Math.round((Number(tpSubsubdiv) || 0) * 0.1));
+  const hits = schedule.filter(s => Number.isFinite(Number(s.startTick)) && s.startTick >= (windowStart - slack) && s.startTick < windowEnd);
   hits.sort((a, b) => a.startTick - b.startTick);
   return hits.slice(0, Math.max(0, Math.min(max, hits.length))).map(s => ({ ...s }));
 };
-
-Object.assign(__POLYCHRON_TEST__, { Motif, clampMotifNote, applyMotifToNotes, getScheduledNotes });

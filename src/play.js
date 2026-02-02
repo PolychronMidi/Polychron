@@ -1,8 +1,6 @@
 // play.js - Main composition engine orchestrating section, phrase, measure hierarchy.
 // minimalist comments, details at: play.md
 require('./stage'); // This file imports EVERY other file & dependency in the project - Global scope used by design: DO NOT spam up files with useless import / export statements
-// Load utility that spreads motifs across a measure into beat buckets
-require('./composers/motifSpreader');
 (async function main() { console.log('Starting play.js ...');
 
 const { layer: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => setTuningAndInstruments());
