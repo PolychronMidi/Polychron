@@ -24,7 +24,7 @@
     "test": "node scripts/run-with-log.js test.log vitest --run --reporter=default",
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",
     "test:coverage:raw": "vitest --coverage --run",
-    "play": "node scripts/run-with-log.js play.log node scripts/play-guard.js",
+    "play": "npm run lint && node scripts/run-with-log.js play.log node scripts/play-guard.js",
     "all": "npm run lint && npm run test && npm run play",
     "prepare": "husky install",
     "audit": "npm audit",

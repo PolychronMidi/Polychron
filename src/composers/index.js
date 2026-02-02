@@ -15,6 +15,7 @@ const HarmonicRhythmComposer = require('./HarmonicRhythmComposer');
 const MelodicDevelopmentComposer = require('./MelodicDevelopmentComposer');
 const AdvancedVoiceLeadingComposer = require('./AdvancedVoiceLeadingComposer');
 require('./MotifComposer');
+require('./motifSpreader');
 
 const ComposerFactory = require('./ComposerFactory');
 

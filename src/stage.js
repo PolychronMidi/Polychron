@@ -1,8 +1,7 @@
 // stage.js - Audio processing engine with MIDI event generation and binaural effects.
 // minimalist comments, details at: stage.md
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers'); require('./composers/motifs');
-require('./fx');
+require('./rhythm'); require('./time'); require('./composers'); require('./fx');
 
 /**
  * Sets program, pitch bend, and volume for all instrument channels
@@ -110,7 +109,7 @@ try {
     ).map(bassCH=>{
       const bassNote=modClamp(s.note,12,35);
 
-      p(c,{tick:bassCH===cCH3 ? on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : binVel*rf(1.85,2.45)]});
+      p(c,{tick:bassCH===cCH3 ? on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
       p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     });
   }
@@ -176,9 +175,9 @@ try {
     const numStutters=m.round(rv(rv(ri(3,9),[2,5],.33),[2,5],.1));
     globalStutterData={
       numStutters: numStutters,
-      duration: .25 * ri(1,6) * sustain / numStutters,
+      duration: rf(.9,1.1) * sustain / numStutters,
       minVelocity: 11,
-      maxVelocity: 111,
+      maxVelocity: 100,
       isFadeIn: rf() < 0.5,
       decay: rf(.75,1.25)
     };
@@ -201,8 +200,8 @@ try {
         const fadeOutMultiplier=1 - (decay * (i / (numStutters * rf(0.4,2.2) - 1)));
         currentVelocity=clamp(m.max(0,ri(33) + maxVelocity * fadeOutMultiplier),0,100);
       }
-      p(c,{tick:tick - duration * rf(.15),vals:[sourceCH,stutterNote]});
       p(c,{tick:tick + duration * rf(.15,.6),type:'on',vals:[sourceCH,stutterNote,sourceCH===cCH1 ? currentVelocity * rf(.3,.7) : currentVelocity * rf(.45,.8)]});
+      p(c,{tick:Math.max(tick, tick - duration * rf(.15)),vals:[sourceCH,stutterNote]});
     }
     p(c,{tick:on + sustain * rf(.5,1.5),vals:[sourceCH,s.note]});
   }
@@ -244,12 +243,12 @@ try {
       p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[reflectionCH,stutterNote,reflectionCH===cCH2?velocity*rf(.25,.65):binVel*rf(.4,.75)]});
       }
     }
-    p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,s.note]});
+    // p(c,{tick:on+sustain*rf(.75,2),vals:[reflectionCH,s.note]});
   }
 
   if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
     bassCH=reflect2[sourceCH]; bassNote=modClamp(s.note,12,35);
-    p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.35) : binVel*rf(1.85,2.45)]});
+    p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     if (rf()<.7){ // Bass Channels Stutter-Shift
       if (!stutters.has(bassCH)) stutters.set(bassCH,m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
@@ -267,7 +266,7 @@ try {
         p(c,{tick:tick+duration*rf(.25,.7),type:'on',vals:[bassCH,stutterNote,bassCH===cCH3?velocity*rf(.55,.85):binVel*rf(.75,1.05)]});
         }
       }
-      p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,s.note]});
+      // p(c,{tick:on+sustain*rf(.15,.35),vals:[bassCH,s.note]});
     }
   }
   });

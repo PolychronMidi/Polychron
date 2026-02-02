@@ -13,8 +13,8 @@ export default {
     // Retry once on flaky failures to improve CI stability (useful for rare RNG- or timing-based flakes)
     retry: 1,
     // Load centralized log gate during test setup so console output is controlled project-wide
-    // Also load `test-setup.js` which requires `stage.js` to ensure naked globals are initialized
-    setupFiles: ['./test/test-setup.js'],
+    // Also load `stage.js` to ensure everything is initialized
+    setupFiles: ['./src/stage.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

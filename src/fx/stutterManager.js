@@ -13,9 +13,6 @@ class StutterManager {
     try { require('./stutterFX'); } catch (e) { /* swallow */ }
     try { require('./resetChannelTracking'); } catch (e) { /* swallow */ }
 
-    // Silence linter re: naked globals used by convention
-    /* global stutterFade, stutterPan, stutterFX, resetChannelTracking */
-
     // Capture the naked globals if present (project convention)
     this._stutterFade = (typeof stutterFade !== 'undefined') ? stutterFade : null;
     this._stutterPan = (typeof stutterPan !== 'undefined') ? stutterPan : null;

@@ -10,7 +10,6 @@ require('./setBalanceAndFX');
 require('./StutterManager');
 
 // Expose lightweight naked wrappers that delegate to the StutterManager instance
-/* global Stutter */
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
   try { if (typeof Stutter !== 'undefined' && Stutter && typeof stutterFade === 'function') return stutterFade(channels, numStutters, duration); } catch (e) { /* swallow */ }
 };

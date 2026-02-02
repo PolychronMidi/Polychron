@@ -160,13 +160,10 @@ MotifComposer = class MotifComposer {
       seq.push({ note: chosen, duration: dur });
     }
 
-    const MotifCtor = (typeof Motif !== 'undefined') ? Motif : (typeof __POLYCHRON_TEST__ !== 'undefined' ? __POLYCHRON_TEST__.Motif : null);
+    const MotifCtor = (typeof Motif !== "undefined") ? Motif : null;
     if (MotifCtor) return new MotifCtor(seq, { defaultDuration: 1 }); // durations are in ticks now
     // Fallback: return plain object if Motif class not available
+    console.warn('MotifComposer.generate: Motif class not available, returning plain object');
     return { sequence: seq, defaultDuration: 1 };
   }
 };
-
-// Expose for tests & legacy access
-try { if (typeof __POLYCHRON_TEST__ === 'undefined') __POLYCHRON_TEST__ = {}; } catch (e) { /* swallow */ }
-try { if (__POLYCHRON_TEST__) __POLYCHRON_TEST__.MotifComposer = MotifComposer; } catch (e) { /* swallow */ }

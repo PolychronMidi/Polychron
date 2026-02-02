@@ -17,8 +17,14 @@ export default [
       'output/**',
       'tmp/**',
       '__pycache__/**'
-    ]
+    ],
+    // Ban any comment that begins with "global" (e.g., /* global ... */) to enforce
+    // the project's requirement to use naked globals via side-effect requires only.
+    rules: {
+      'no-warning-comments': ['error', { terms: ['global'], location: 'start' }]
+    }
   },
+
   {
     languageOptions: {
       ecmaVersion: 'latest',
@@ -333,7 +339,6 @@ export default [
         semitone: 'writable',
         tuningPitchBend: 'writable',
         FX: 'writable',
-        __POLYCHRON_TEST__: 'writable',
         // Play-guard / script helpers
         LOCK_DIR: 'writable',
         LOCK_PATH: 'writable',
@@ -359,6 +364,7 @@ export default [
         LM: 'writable',
         stage: 'writable',
         StutterManager: 'writable',
+        Stutter: 'writable',
         refVar: 'writable',
         cBal: 'writable',
         cBal2: 'writable',
@@ -368,6 +374,7 @@ export default [
         bassVar: 'writable',
         // Motif helpers
         Motif: 'writable',
+        MotifSpreader: 'writable',
         clampMotifNote: 'writable',
         applyMotifToNotes: 'writable',
         // Rhythm helpers
@@ -397,6 +404,7 @@ export default [
         stutterFX: 'writable',
         stutterFade: 'writable',
         stutterPan: 'writable',
+        resetChannelTracking: 'writable',
         playSubdivNotes: 'writable',
         playSubsubdivNotes: 'writable',
         setSubdivNoteParams: 'writable',
@@ -439,7 +447,6 @@ export default [
         _origRf: 'writable',
         _origRv: 'writable',
         _origRi: 'writable',
-        __POLYCHRON_PREVENT_AUTO_START: 'writable',
       }
     },
     rules: {
