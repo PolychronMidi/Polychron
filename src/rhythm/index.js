@@ -9,9 +9,6 @@ require('./drumMap');
 require('./trackRhythm');
 require('./patterns');
 
-// Individual rhythm modules should be required directly where needed.
-// (Avoid exporting a large compatibility bundle; import specific modules instead.)
-
 // Preserve legacy naked globals: modules set these on require side-effect.
 // Provide an explicit registry for rhythm method lookup (no runtime code-gen).
 rhythmMethods = (typeof rhythmMethods !== 'undefined' && rhythmMethods) ? rhythmMethods : {};

@@ -1,13 +1,11 @@
 // src/fx/index.js - central entry for fx helpers and manager
-// Requiring this file ensures all fx helpers and the `fx` instance are initialized.
 require('./stutterFade');
 require('./stutterPan');
 require('./stutterFX');
 require('./resetChannelTracking');
 require('./setBinaural');
 require('./setBalanceAndFX');
-// Requiring this file sets up the fx helpers and the `Stutter` instance via side-effects.
-require('./StutterManager');
+require('./stutterManager');
 
 // Expose lightweight naked wrappers that delegate to the StutterManager instance
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {

@@ -26,8 +26,8 @@ test('each src subfolder with index.js requires its local .js files', () => {
       const missing = [];
       jsFiles.forEach((f) => {
         const base = f.replace(/\.js$/, '');
-        // Match require('./name') or require("./name") or require('./name.js') etc.
-        const patt = new RegExp("require\\(\\s*['\"]\\./" + escapeRegExp(base) + "(\\.js)?['\"]\\s*\\)");
+        // Match exact standalone require('./name'); line (no assignment, no extra tokens)
+        const patt = new RegExp("^\\s*require\\(\\s*['\"]\\./" + escapeRegExp(base) + "(\\.js)?['\"]\\s*\\)\\s*;\\s*$","m");
         if (!patt.test(indexContent)) missing.push(f);
       });
       if (missing.length) missingMap.push({ dir: path.relative(process.cwd(), dir), missing });
