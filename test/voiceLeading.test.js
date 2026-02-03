@@ -1,6 +1,6 @@
 // Unit tests for core voice leading selection logic
 const { VoiceLeadingScore } = (() => {
-  try { return require('../src/composers/voiceLeading'); } catch (e) { return { VoiceLeadingScore: typeof VoiceLeadingScore !== 'undefined' ? VoiceLeadingScore : null }; }
+  try { return require('../src/composers/VoiceLeadingScore'); } catch (e) { return { VoiceLeadingScore: typeof VoiceLeadingScore !== 'undefined' ? VoiceLeadingScore : null }; }
 })();
 
 describe('VoiceLeadingScore.selectNextNote candidates', () => {

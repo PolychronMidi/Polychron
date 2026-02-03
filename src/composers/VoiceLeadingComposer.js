@@ -1,16 +1,14 @@
 require('./ScaleComposer');
-const { VoiceLeadingScore } = require('./voiceLeading');
+const { VoiceLeadingScore } = require('./VoiceLeadingScore');
 
-AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleComposer {
-  constructor(name = 'major', root = 'C', commonToneWeight = 0.7) {
+VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
+  constructor(name = 'major', root = 'C', commonToneWeight = 0.7, contraryMotionPreference = 0.4) {
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     super(resolvedName, resolvedRoot);
-    this.commonToneWeight = clamp(commonToneWeight, 0, 1);
     this.previousNotes = [];
-    this.contraryMotionPreference = 0.4;
-    // enable voice-leading scorer for pick delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    // enable voice-leading scorer for pick delegation with composer-provided tunables
+    try { this.enableVoiceLeading(new VoiceLeadingScore({ commonToneWeight: clamp(commonToneWeight, 0, 1), contraryMotionPreference: clamp(contraryMotionPreference, 0, 1) })); } catch (e) { /* swallow */ }
   }
 
   getNotes(octaveRange) {
@@ -35,7 +33,7 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
    * @returns {{note: number}[]} optimized notes
    */
   optimizeVoiceLeading(newNotes) {
-    if (!this.voiceLeading) return newNotes;
+    if (!this.VoiceLeadingScore) return newNotes;
 
     const result = [];
     const prevByVoice = [...this.previousNotes];
@@ -69,13 +67,13 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
         candidates.add(v);
       }
 
-      // Convert set -> array and score via voiceLeading
+      // Convert set -> array and score via VoiceLeadingScore
       const candidateArr = Array.from(candidates);
       const lastNotesContext = this.previousNotes.map(n => n.note);
       const register = registerForIndex(voiceIdx);
 
       try {
-        const chosen = this.voiceLeading.selectNextNote(lastNotesContext, candidateArr, { register, commonToneWeight: this.commonToneWeight });
+        const chosen = this.VoiceLeadingScore.selectNextNote(lastNotesContext, candidateArr, { register });
         result.push({ ...newNote, note: chosen });
       } catch (e) {
         // Fallback to previous deterministic logic: prefer prev when included
@@ -88,11 +86,11 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
   }
 
   setCommonToneWeight(weight) {
-    this.commonToneWeight = clamp(weight, 0, 1);
+    if (this.VoiceLeadingScore) this.VoiceLeadingScore.commonToneWeight = clamp(weight, 0, 1);
   }
 
   setContraryMotionPreference(probability) {
-    this.contraryMotionPreference = clamp(probability, 0, 1);
+    if (this.VoiceLeadingScore) this.VoiceLeadingScore.contraryMotionPreference = clamp(probability, 0, 1);
   }
 
   analyzeFiguredBass(notes) {
@@ -117,13 +115,13 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
       if (candidates.includes(prev)) return prev;
     }
     try {
-      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
+      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
         const lastNotes = Array.isArray(this.previousNotes) ? this.previousNotes.map(n => n.note) : (this.voiceHistory || []);
-        return this.voiceLeading.selectNextNote(lastNotes, candidates, { commonToneWeight: this.commonToneWeight });
+        return this.VoiceLeadingScore.selectNextNote(lastNotes, candidates, { commonToneWeight: this.commonToneWeight });
       }
     } catch (e) { /* swallow and fallback */ }
     return candidates[0];
   }
 }
 
-/* AdvancedVoiceLeadingComposer exposed via require */
+/* VoiceLeadingComposer exposed via require */

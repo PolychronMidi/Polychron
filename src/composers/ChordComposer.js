@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./voiceLeading');
+const { VoiceLeadingScore } = require('./VoiceLeadingScore');
 
 function normalizeChordSymbol(chordSymbol) {
   if (typeof chordSymbol !== 'string') return chordSymbol;
@@ -65,9 +65,9 @@ ChordComposer = class ChordComposer extends MeasureComposer {
   selectNoteWithLeading(candidates = []) {
     if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
     try {
-      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
+      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
         const lastNotes = Array.isArray(this.voiceHistory) ? this.voiceHistory : [];
-        return this.voiceLeading.selectNextNote(lastNotes, candidates, {});
+        return this.VoiceLeadingScore.selectNextNote(lastNotes, candidates, {});
       }
     } catch (e) { /* swallow and fallback */ }
     return candidates[0];

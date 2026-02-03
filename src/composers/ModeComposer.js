@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./voiceLeading');
+const { VoiceLeadingScore } = require('./VoiceLeadingScore');
 
 /**
  * Composes notes from a specific mode.
@@ -34,8 +34,8 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   selectNoteWithLeading(candidates = []) {
     if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
     try {
-      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
-        return this.voiceLeading.selectNextNote(this.voiceHistory || [], candidates, {});
+      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
+        return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
     } catch (e) { /* swallow */ }
     return candidates[Math.floor(candidates.length / 2)];

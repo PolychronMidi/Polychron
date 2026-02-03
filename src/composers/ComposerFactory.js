@@ -7,7 +7,7 @@ require('./TensionReleaseComposer');
 require('./ModalInterchangeComposer');
 require('./HarmonicRhythmComposer');
 require('./MelodicDevelopmentComposer');
-require('./AdvancedVoiceLeadingComposer');
+require('./VoiceLeadingComposer');
 
 ComposerFactory = class ComposerFactory {
   static constructors = {
@@ -40,7 +40,7 @@ ComposerFactory = class ComposerFactory {
     modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
     harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => new HarmonicRhythmComposer(progression, key, measuresPerChord, quality),
     melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, intensity),
-    advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new AdvancedVoiceLeadingComposer(name, root, commonToneWeight),
+    advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
   };
 
   static create(config = {}) {

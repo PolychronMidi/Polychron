@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./voiceLeading');
+const { VoiceLeadingScore } = require('./VoiceLeadingScore');
 
 PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {

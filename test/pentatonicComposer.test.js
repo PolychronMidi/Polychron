@@ -2,11 +2,11 @@ require('../src/composers/PentatonicComposer');
 require('../src/composers/motifSpreader');
 
 describe('PentatonicComposer.selectNoteWithLeading', () => {
-  it('prefers last selected note via voiceLeading', () => {
+  it('prefers last selected note via VoiceLeadingScore', () => {
     require('../src/composers/PentatonicComposer');
     const c = new PentatonicComposer('C','major');
-    require('../src/composers/voiceLeading');
-    c.voiceLeading = new VoiceLeadingScore({});
+    require('../src/composers/VoiceLeadingScore');
+    c.VoiceLeadingScore = new VoiceLeadingScore({});
     c.voiceHistory = [67];
     const chosen = c.selectNoteWithLeading([60,67,72]);
     expect(chosen).toBe(67);
@@ -16,8 +16,8 @@ describe('PentatonicComposer.selectNoteWithLeading', () => {
     require('../src/composers/PentatonicComposer');
     const pc = new PentatonicComposer('C','major');
     const layer = { beatMotifs: { 0: [{ note: 61 }, { note: 67 }, { note: 72 }] }, measureComposer: pc };
-    require('../src/composers/voiceLeading');
-    layer.measureComposer.voiceLeading = new VoiceLeadingScore({});
+    require('../src/composers/VoiceLeadingScore');
+    layer.measureComposer.VoiceLeadingScore = new VoiceLeadingScore({});
     layer.measureComposer.voiceHistory = [67];
     const picks = MotifSpreader.getBeatMotifPicks(layer, 0, 1);
     expect(picks[0].note).toBe(67);
