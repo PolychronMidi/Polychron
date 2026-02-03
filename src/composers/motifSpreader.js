@@ -1,12 +1,13 @@
 /* exported MotifSpreader */
 // motifSpreader.js - centralize planning of motif groups across a measure
-var MotifSpreader;
+
 // Generates motif groups (min-max beats) and populates layer.beatMotifs accordingly
 
 MotifSpreader = {
   spreadMeasure({ layer, measureStart, measureBeats, composer }) {
     try {
       if (!layer) return;
+      try { console.log('[MotifSpreader] spreadMeasure called layer', (typeof LM !== 'undefined' && LM && LM.activeLayer) ? LM.activeLayer : 'unknown', 'measureStart', measureStart, 'beats', measureBeats); } catch (_e) { /* swallow */ }
       const measureB = Number.isFinite(Number(measureBeats)) ? Number(measureBeats) : 0;
       let remaining = measureB;
       const groups = [];
@@ -30,6 +31,7 @@ MotifSpreader = {
       }
 
       let beatOffset = 0;
+      let added = 0;
       const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
 
       // distribute motif steps across beats WITHOUT absolute ticks
@@ -48,10 +50,16 @@ MotifSpreader = {
           layer.beatMotifs = layer.beatMotifs || {};
           layer.beatMotifs[bKey] = layer.beatMotifs[bKey] || [];
           layer.beatMotifs[bKey].push({ note: Number(evt.note), groupId, seqIndex: i, seqLen: totalEvents });
+          added++;
         }
         layer.activeMotif = motifGroup;
         beatOffset += gLen;
       });
+
+      // Debug: report number of steps added to layer beatMotifs for this measure
+      try {
+        if (added > 0) console.log('[MotifSpreader] added', added, 'steps to layer', (typeof LM !== 'undefined' && LM && LM.activeLayer) ? LM.activeLayer : 'unknown', 'measureStart', measureStart, 'beats', measureBeats);
+      } catch (_e) { /* swallow */ }
 
     } catch (e) { /* swallow */ }
   },
