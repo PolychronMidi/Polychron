@@ -1,9 +1,8 @@
 // stage.js - Audio processing engine with MIDI event generation and binaural effects.
 
-// Central importation hub to keep play.js and other file imports clean:
-require('./sheet'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers');
-require('./fx'); require('./debug'); require('./writer');
+// Central importation hub to keep main.js and other file imports clean:
+require('./config'); require('./utils'); require('./rhythm'); require('./time'); require('./composers');
+require('./fx'); require('./writer');
 
 /**
  * Sets program, pitch bend, and volume for all instrument channels

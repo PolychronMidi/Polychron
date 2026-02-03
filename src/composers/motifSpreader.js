@@ -34,7 +34,7 @@ MotifSpreader = {
       const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
 
       // Add group's steps as candidates on every beat of the group's span;
-      // placement/length/offset is decided later by stage/play loops.
+      // placement/length/offset is decided later by stage/main loops.
       const baseBeat = Math.floor(measureStart / beatLen);
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: !!(composer && composer.VoiceLeadingScore) });

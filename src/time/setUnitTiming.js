@@ -1,5 +1,4 @@
 require('../rhythm/trackRhythm');
-require('../debug/logUnit');
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using

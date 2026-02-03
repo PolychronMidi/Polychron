@@ -4,4 +4,3 @@ require('./LayerManager');
 require('./midiTiming');
 require('./setUnitTiming');
 require('./getPolyrhythm');
-require('../debug/formatTime');

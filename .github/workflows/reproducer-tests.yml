@@ -38,7 +38,7 @@ jobs:
       - name: Run short deterministic play for Treewalker
         env:
           PLAY_LIMIT: '1'
-        run: node src/play.js
+        run: node src/main.js
       - name: Run Treewalker (master map authoritative)
         run: node scripts/test/treewalker.js
       - name: Upload output artifacts (for diagnostics)

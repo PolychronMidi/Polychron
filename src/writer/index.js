@@ -1,7 +1,8 @@
-// writer.js - MIDI output and file generation with CSV buffer management.
+require('./formatTime');
+require('./logUnit');
+require('./grandFinale');
 fs = require('fs');
 path = require('path');
-require('./grandFinale');
 /**
  * Outputs separate MIDI files for each layer with automatic synchronization.
  * @description

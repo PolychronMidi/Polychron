@@ -54,7 +54,7 @@ ComposerFactory = class ComposerFactory {
   }
 
   static createRandom(extraConfig = {}) {
-    // Strictly sample from global COMPOSERS array (defined in src/sheet.js / sheet.md).
+    // Strictly sample from global COMPOSERS array (defined in src/config.js / config.md).
     // Do not fall back to arbitrary constructor types (e.g., 'measure').
     if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS) && COMPOSERS.length > 0) {
       const tries = Math.min(8, COMPOSERS.length);
