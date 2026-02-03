@@ -1,7 +1,40 @@
 // stutterNotes.js - per-note stutter and octave-shift helper
 
+/**
+ * @typedef {Object} StutterShared
+ * @property {Map} stutters
+ * @property {Map} shifts
+ * @property {Object} global
+ */
+
+// Module-scope helpers to avoid hot-path allocations
+const _clampStutterNote = (n, isBassLocal) => {
+  if (isBassLocal) return modClamp(n, 0, 59);
+  return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+};
+
+const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, otherRange, rfLocal) => {
+  return isPrimaryLocal ? velocityLocal * rfLocal(primaryRange[0], primaryRange[1]) : binVelLocal * rfLocal(otherRange[0], otherRange[1]);
+};
+
+/**
+ * stutterNotes: apply per-note stutter/shift effects.
+ * Accepts injected RNG helpers (`rf`, `ri`) and returns the `shared` object for testing convenience.
+ * @param {Object} opts
+ * @param {string} [opts.profile='source']
+ * @param {string|number} opts.channel
+ * @param {number} opts.note
+ * @param {number} opts.on
+ * @param {number} opts.sustain
+ * @param {number} opts.velocity
+ * @param {number} opts.binVel
+ * @param {boolean} [opts.isPrimary=false]
+ * @param {StutterShared} [opts.shared]
+ * @param {function} [opts.rf] - optional RNG float generator overriding global `rf`
+ * @param {function} [opts.ri] - optional RNG int generator overriding global `ri`
+ * @returns {StutterShared}
+ */
 stutterNotes = (opts = {}) => {
-  try {
     const {
       profile = 'source',
       channel,
@@ -11,39 +44,52 @@ stutterNotes = (opts = {}) => {
       velocity,
       binVel,
       isPrimary = false,
-      shared
+      shared = null,
+      rf: rfLocal = rf,
+      ri: riLocal = ri,
+      clamp: clampLocal = clamp,
+      modClamp: modClampLocal = modClamp
     } = opts;
 
-    if (typeof channel === 'undefined' || typeof note !== 'number') return;
+    if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
 
-    const stutters = shared?.stutters || (shared ? (shared.stutters = new Map()) : new Map());
-    const shifts = shared?.shifts || (shared ? (shared.shifts = new Map()) : new Map());
-    const globalState = shared?.global || (shared ? (shared.global = {}) : {});
+    // Ensure shared shape exists and is attached to caller when provided
+    let localShared = shared;
+    if (!localShared) {
+      localShared = { stutters: new Map(), shifts: new Map(), global: {} };
+    }
+    if (!localShared.stutters) localShared.stutters = new Map();
+    if (!localShared.shifts) localShared.shifts = new Map();
+    if (!localShared.global) localShared.global = {};
+
+    const stutters = localShared.stutters;
+    const shifts = localShared.shifts;
+    const globalState = localShared.global;
 
     const isSource = profile === 'source';
     const isReflection = profile === 'reflection';
     const isBass = profile === 'bass';
 
+    // Local wrapper uses module-scope helper for performance; falls back to injected modClamp if provided
     const clampStutterNote = (n) => {
-      if (isBass) return modClamp(n, 0, 59);
-      return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-    };
-
-    const velScale = (primaryRange, otherRange) => {
-      return isPrimary ? velocity * rf(primaryRange[0], primaryRange[1]) : binVel * rf(otherRange[0], otherRange[1]);
+      if (typeof modClampLocal === 'function') {
+        if (isBass) return modClampLocal(n, 0, 59);
+        return modClampLocal(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+      }
+      return _clampStutterNote(n, isBass);
     };
 
     // Source: optional global stutter plan shared across channels
-    if (isSource && !globalState.applied && rf() < rv(.2, [.5, 1], .3)) {
-      const numStutters = m.round(rv(rv(ri(3, 9), [2, 5], .33), [2, 5], .1));
+    if (isSource && !globalState.applied && rfLocal() < rv(.2, [.5, 1], .3)) {
+      const numStutters = m.round(rv(rv(riLocal(3, 9), [2, 5], .33), [2, 5], .1));
       globalState.applied = true;
       globalState.data = {
         numStutters,
-        duration: rf(.9, 1.1) * sustain / numStutters,
+        duration: rfLocal(.9, 1.1) * sustain / numStutters,
         minVelocity: 11,
         maxVelocity: 100,
-        isFadeIn: rf() < 0.5,
-        decay: rf(.75, 1.25)
+        isFadeIn: rfLocal() < 0.5,
+        decay: rfLocal(.75, 1.25)
       };
     }
 
@@ -52,37 +98,37 @@ stutterNotes = (opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = note;
-        if (rf() < .25) {
-          if (!shifts.has(channel)) shifts.set(channel, ri(-3, 3) * 12);
-          stutterNote = clampStutterNote(note + shifts.get(channel));
+        if (rfLocal() < .25) {
+          if (!shifts.has(channel)) shifts.set(channel, riLocal(-3, 3) * 12);
+          stutterNote = _clampStutterNote(note + shifts.get(channel), isBass);
         }
 
         let currentVelocity;
         if (isFadeIn) {
-          const fadeInMultiplier = decay * (i / (numStutters * rf(0.4, 2.2) - 1));
-          currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 100);
+          const fadeInMultiplier = decay * (i / (numStutters * rfLocal(0.4, 2.2) - 1));
+          currentVelocity = clampLocal(m.min(maxVelocity, riLocal(33) + maxVelocity * fadeInMultiplier), 0, 100);
         } else {
-          const fadeOutMultiplier = 1 - (decay * (i / (numStutters * rf(0.4, 2.2) - 1)));
-          currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 100);
+          const fadeOutMultiplier = 1 - (decay * (i / (numStutters * rfLocal(0.4, 2.2) - 1)));
+          currentVelocity = clampLocal(m.max(0, riLocal(33) + maxVelocity * fadeOutMultiplier), 0, 100);
         }
 
-        p(c, { tick: tick + duration * rf(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rf(.3, .7) : currentVelocity * rf(.45, .8)] });
-        p(c, { tick: Math.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] });
+        p(c, { tick: tick + duration * rfLocal(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rfLocal(.3, .7) : currentVelocity * rfLocal(.45, .8)] });
+        p(c, { tick: Math.max(tick, tick - duration * rfLocal(.15)), vals: [channel, stutterNote] });
       }
-      p(c, { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] });
+      p(c, { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] });
     }
 
     // Per-channel stutter (source/reflection/bass)
     const perProb = isSource ? rv(.07, [.5, 1], .2) : (isReflection ? .2 : .7);
-    if (rf() < perProb) {
+    if (rfLocal() < perProb) {
       if (!stutters.has(channel)) {
-        if (isSource) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
-        else if (isReflection) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
-        else stutters.set(channel, m.round(rv(rv(ri(2, 5), [2, 3], .33), [2, 10], .1)));
+        if (isSource) stutters.set(channel, m.round(rv(rv(riLocal(2, 7), [2, 5], .33), [2, 5], .1)));
+        else if (isReflection) stutters.set(channel, m.round(rv(rv(riLocal(2, 7), [2, 5], .33), [2, 5], .1)));
+        else stutters.set(channel, m.round(rv(rv(riLocal(2, 5), [2, 3], .33), [2, 10], .1)));
       }
 
       const numStutters = stutters.get(channel);
-      const duration = .25 * ri(1, isSource ? 5 : 8) * sustain / numStutters;
+      const duration = .25 * riLocal(1, isSource ? 5 : 8) * sustain / numStutters;
       const shiftProb = isSource ? .15 : (isReflection ? .7 : .5);
       const shiftRange = isBass ? 2 : 3;
       const fireProb = isSource ? .6 : (isReflection ? .5 : .3);
@@ -93,17 +139,19 @@ stutterNotes = (opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = note;
-        if (rf() < shiftProb) {
-          if (!shifts.has(channel)) shifts.set(channel, ri(-shiftRange, shiftRange) * 12);
+        if (rfLocal() < shiftProb) {
+          if (!shifts.has(channel)) shifts.set(channel, riLocal(-shiftRange, shiftRange) * 12);
           stutterNote = clampStutterNote(note + shifts.get(channel));
         }
-        if (rf() < fireProb) {
-          p(c, { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] });
-          p(c, { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rf(velRanges[0], velRanges[1])] });
+        if (rfLocal() < fireProb) {
+          p(c, { tick: tick - duration * rfLocal(.15, .3), vals: [channel, stutterNote] });
+          p(c, { tick: tick + duration * rfLocal(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rfLocal(velRanges[0], velRanges[1])] });
         }
       }
 
-      if (isSource) p(c, { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] });
+      if (isSource) p(c, { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] });
     }
+
+    return localShared;
   } catch (e) { /* swallow */ }
-}
+};

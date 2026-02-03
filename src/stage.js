@@ -1,37 +1,8 @@
-// stage.js - Audio processing engine with MIDI event generation and binaural effects.
+// stage.js - Audio processing engine with MIDI event generation.
 
 // Central importation hub to keep main.js and other file imports clean:
 require('./config'); require('./utils'); require('./rhythm'); require('./time'); require('./composers');
 require('./fx'); require('./writer');
-
-/**
- * Sets program, pitch bend, and volume for all instrument channels
- * @returns {void}
- */
-setTuningAndInstruments = () => {
-  p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
-  type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
-  p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
-    type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
-    { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
-  p(c,{type:'control_c', vals:[drumCH, 7, 127]});
-}
-
-/**
- * Randomly updates binaural beat instruments and FX on beat shifts
- * @returns {void}
- */
-setOtherInstruments = () => {
-  if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
-p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' };
-  return [
-    ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,ra(otherInstruments)]})),
-    ...bassBinaural.map(ch=>({...tmp,vals:[ch,ra(otherBassInstruments)]})),
-    { ...tmp,vals:[drumCH,ra(drumSets)] }
-  ];  })  );  }
-}
 
 /**
  * Calculates cross-modulation value based on rhythm state across all levels
@@ -222,3 +193,28 @@ try {
     trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false);
   }
 }
+
+// DO NOT SPAM UP FILES IN /SRC WITH TEST CODE!!!! MOVE TO /TEST/SETUP-STAGE.JS !!!!!
+// Minimal deterministic test helper used by tests to schedule a single beat and return scheduled items
+// __test_playBeat = (layer, beatKey = 0, _div = 0, _dum = 0, velocity = 80, binVel = 90) => {
+//   try {
+//     if (!layer || !Array.isArray(layer.beatMotifs?.[beatKey] || [])) return [];
+//     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
+//     const picks = bucket.length ? bucket : [];
+//     const pushed = [];
+//     for (let i = 0; i < picks.length; i++) {
+//       const s = picks[i];
+//       // If measureComposer provides selection, use it
+//       const chosenNote = (layer.measureComposer && typeof layer.measureComposer.selectNoteWithLeading === 'function')
+//         ? layer.measureComposer.selectNoteWithLeading(picks.map(p => p.note))
+//         : (s.note || 0);
+//       // write simple on/off events to global buffer `c` via `p`
+//       p(c, { tick: 0, type: 'on', vals: [cCH1, chosenNote, velocity] });
+//       p(c, { tick: 1, vals: [cCH1, chosenNote] });
+//       pushed.push({ note: chosenNote, tick: 0 });
+//     }
+//     return pushed;
+//   } catch (e) {
+//     throw e;
+//   }
+// };

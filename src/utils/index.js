@@ -2,4 +2,5 @@ m=Math;
 require('./clamps');
 require('./randoms');
 require('./init');
-require('./midiData')
+require('./midiData');
+require('./instrumentation');
