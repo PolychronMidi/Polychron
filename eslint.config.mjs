@@ -166,7 +166,7 @@ export default [
         ModalInterchangeComposer: 'writable',
         HarmonicRhythmComposer: 'writable',
         MelodicDevelopmentComposer: 'writable',
-        AdvancedVoiceLeadingComposer: 'writable',
+        VoiceLeadingComposer: 'writable',
         MotifComposer: 'writable',
         Motif: 'writable',
         PentatonicComposer: 'writable',

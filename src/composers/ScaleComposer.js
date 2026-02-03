@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./voiceLeading');
+const { VoiceLeadingScore } = require('./VoiceLeadingScore');
 
 /**
  * Composes notes from a specific scale.
@@ -30,15 +30,15 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
   x=()=>this.getNotes();
 
   /**
-   * Delegate selection to voiceLeading when available
+   * Delegate selection to VoiceLeadingScore when available
    * @param {number[]} candidates
    * @returns {number}
    */
   selectNoteWithLeading(candidates = []) {
     if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
     try {
-      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
-        return this.voiceLeading.selectNextNote(this.voiceHistory || [], candidates, {});
+      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
+        return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
     } catch (e) { /* swallow */ }
     return candidates[Math.floor(candidates.length / 2)];

@@ -11,7 +11,7 @@ MeasureComposer = class MeasureComposer {
     /** @type {number} Max allowed recursion depth */
     this.MAX_RECURSION=5;
     /** @type {VoiceLeadingScore|null} Optional voice leading optimizer */
-    this.voiceLeading=null;
+    this.VoiceLeadingScore=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
   }
@@ -144,12 +144,36 @@ MeasureComposer = class MeasureComposer {
 
   /**
    * Enables voice leading optimization for this composer.
-   * @param {VoiceLeadingScore} [scorer] - Optional custom voice leading scorer
-   * @returns {void}
+   * Accepts either a VoiceLeadingScore instance or a configuration object
+   * to create one: `enableVoiceLeading({ commonToneWeight: 1 })`.
+   * @param {VoiceLeadingScore|Object} [scorerOrConfig]
+   * @returns {VoiceLeadingScore} the active scorer
    */
-  enableVoiceLeading(scorer) {
-    this.voiceLeading = scorer || new VoiceLeadingScore();
+  enableVoiceLeading(scorerOrConfig) {
+    if (!scorerOrConfig) {
+      this.VoiceLeadingScore = new VoiceLeadingScore();
+    } else if (typeof scorerOrConfig === 'object' && typeof scorerOrConfig.selectNextNote !== 'function') {
+      // Treat as config
+      this.VoiceLeadingScore = new VoiceLeadingScore(scorerOrConfig);
+    } else {
+      // Assume an instance
+      this.VoiceLeadingScore = scorerOrConfig;
+    }
+
     this.voiceHistory = [];
+    return this.VoiceLeadingScore;
+  }
+
+  /**
+   * Update voice leading configuration at runtime. If a scorer is present,
+   * delegates to its updateConfig; otherwise creates a new scorer with cfg.
+   * @param {Object} cfg
+   * @returns {VoiceLeadingScore}
+   */
+  setVoiceLeadingConfig(cfg = {}) {
+    if (!this.VoiceLeadingScore) this.enableVoiceLeading(cfg);
+    else if (typeof this.VoiceLeadingScore.updateConfig === 'function') this.VoiceLeadingScore.updateConfig(cfg);
+    return this.VoiceLeadingScore;
   }
 
   /**
@@ -157,7 +181,7 @@ MeasureComposer = class MeasureComposer {
    * @returns {void}
    */
   disableVoiceLeading() {
-    this.voiceLeading = null;
+    this.VoiceLeadingScore = null;
     this.voiceHistory = [];
   }
 
@@ -169,11 +193,11 @@ MeasureComposer = class MeasureComposer {
    * @returns {number} Selected note
    */
   selectNoteWithLeading(availableNotes, config = {}) {
-    if (!this.voiceLeading || !availableNotes || availableNotes.length === 0) {
+    if (!this.VoiceLeadingScore || !availableNotes || availableNotes.length === 0) {
       return availableNotes?.[ri(availableNotes.length - 1)] ?? 60;
     }
 
-    const selectedNote = this.voiceLeading.selectNextNote(this.voiceHistory, availableNotes, config);
+    const selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory, availableNotes, config);
     this.voiceHistory.push(selectedNote);
 
     // Keep history shallow for memory efficiency
@@ -190,8 +214,8 @@ MeasureComposer = class MeasureComposer {
    */
   resetVoiceLeading() {
     this.voiceHistory = [];
-    if (this.voiceLeading) {
-      this.voiceLeading.reset();
+    if (this.VoiceLeadingScore) {
+      this.VoiceLeadingScore.reset();
     }
   }
 }

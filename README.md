@@ -81,7 +81,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Channel Tracking**: Avoids repetition with last-used channel tracking
 - **Dynamic FX Processing**: Randomized effect parameters with constraints
 
-#### 6. **voiceLeading.js** ([code](src/voiceLeading.js)) ([doc](docs/voiceLeading.md))** - Voice Leading & Counterpoint
+#### 6. **VoiceLeadingScore.js** ([code](src/VoiceLeadingScore.js)) ([doc](docs/VoiceLeadingScore.md))** - Voice Leading & Counterpoint
 - **Cost Function Optimizer**: Weighted penalty system for voice leading rules
 - **Smooth Motion**: Prefers stepwise motion (1-2 semitones) over large leaps
 - **Voice Range**: Enforces soprano/alto/tenor/bass register boundaries

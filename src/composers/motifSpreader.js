@@ -37,7 +37,7 @@ MotifSpreader = {
       // placement/length/offset is decided later by stage/play loops.
       const baseBeat = Math.floor(measureStart / beatLen);
       groups.forEach((gLen, groupIdx) => {
-        const mcGroup = new MotifComposer({ useVoiceLeading: !!(composer && composer.voiceLeading) });
+        const mcGroup = new MotifComposer({ useVoiceLeading: !!(composer && composer.VoiceLeadingScore) });
         const length = ri(min, Math.max(1, Math.min(8, gLen * min)));
         const motifGroup = mcGroup.generate({ length, fitToTotalTicks: true, totalTicks: gLen * beatLen, developFromComposer: composer, measureComposer: composer });
         const seq = motifGroup.sequence || motifGroup.events || [];
@@ -91,9 +91,9 @@ MotifSpreader = {
       } catch (e) { /* fall through to other strategies */ }
 
       // If no MeasureComposer choice, but a layer-level VoiceLeadingScore exists, use it
-      if (!chosenStep && layer.voiceLeading && typeof layer.voiceLeading.selectNextNote === 'function') {
+      if (!chosenStep && layer.VoiceLeadingScore && typeof layer.VoiceLeadingScore.selectNextNote === 'function') {
         const candidates = bucket.map(s => Number(s.note));
-        const chosenNote = layer.voiceLeading.selectNextNote(layer._voiceHistory || [], candidates, opts.voiceOptions || {});
+        const chosenNote = layer.VoiceLeadingScore.selectNextNote(layer._voiceHistory || [], candidates, opts.voiceOptions || {});
         const startIdx = cursor % bucket.length;
         for (let k = 0; k < bucket.length; k++) {
           const idx = (startIdx + k) % bucket.length;
@@ -110,7 +110,7 @@ MotifSpreader = {
 
       picks.push({ note: Number(chosenStep.note), groupId: chosenStep.groupId, seqIndex: chosenStep.seqIndex, seqLen: chosenStep.seqLen });
 
-      // Track per-layer minimal voice history for layer.voiceLeading use
+      // Track per-layer minimal voice history for layer.VoiceLeadingScore use
       if (!layer._voiceHistory) layer._voiceHistory = [];
       layer._voiceHistory.unshift(Number(chosenStep.note));
       if (layer._voiceHistory.length > 8) layer._voiceHistory.pop();

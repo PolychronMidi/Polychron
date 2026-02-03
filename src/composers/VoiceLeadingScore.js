@@ -1,5 +1,5 @@
-// voiceLeading.js - Voice leading optimization with cost function scoring
-// minimalist comments, details at: voiceLeading.md
+// VoiceLeadingScore.js - Voice leading optimization with cost function scoring
+// minimalist comments, details at: VoiceLeadingScore.md
 
 /**
  * Voice leading cost function optimizer.
@@ -29,6 +29,10 @@ VoiceLeadingScore = class VoiceLeadingScore {
     // Historical tracking for context-aware scoring
     this.history = [];
     this.maxHistoryDepth = 4;
+
+    // Tunable defaults (can be set via constructor config or updateConfig)
+    this.commonToneWeight = typeof config.commonToneWeight === 'number' ? clamp(config.commonToneWeight, 0, 1) : 0;
+    this.contraryMotionPreference = typeof config.contraryMotionPreference === 'number' ? clamp(config.contraryMotionPreference, 0, 1) : 0.4;
   }
 
   /**
@@ -100,10 +104,11 @@ VoiceLeadingScore = class VoiceLeadingScore {
       totalCost += this._scoreParallelMotion(candidate - lastNote, lastMotion) * this.weights.parallelMotion;
     }
 
-    // Small preference for common-tone (same pitch-class) when requested via opts.commonToneWeight
-    if (opts && typeof opts.commonToneWeight === 'number' && opts.commonToneWeight > 0) {
+    // Small preference for common-tone (same pitch-class); prefers per-call opts first, then scorer default
+    const ctWeight = (opts && typeof opts.commonToneWeight === 'number') ? opts.commonToneWeight : this.commonToneWeight;
+    if (typeof ctWeight === 'number' && ctWeight > 0) {
       const samePC = ((candidate % 12) + 12) % 12 === ((lastNote % 12) + 12) % 12;
-      if (samePC) totalCost -= Math.min(8, opts.commonToneWeight * 4); // reduce cost to favor common tones
+      if (samePC) totalCost -= Math.min(8, ctWeight * 4); // reduce cost to favor common tones
     }
 
     // Apply hard constraints if provided
@@ -183,7 +188,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
       const upPrev = lastNotes[0] > lastNotes[1];
       const upCurrent = lastNotes[1] > lastNotes[2];
       if (upPrev === upCurrent) {
-        return 2; // Mild penalty: same direction instead of reversing
+        // Penalty scaled by contraryMotionPreference: higher preference means larger penalty for same-direction motion
+        return 2 * (this.contraryMotionPreference ?? 0.4);
       }
     }
 
@@ -289,6 +295,92 @@ VoiceLeadingScore = class VoiceLeadingScore {
       avgRange: noteSequence.reduce((a, b) => a + b, 0) / noteSequence.length,
       leapRecoveries: leapCount > 0 ? recoveryCount / leapCount : 1.0,
     };
+  }
+
+  /**
+   * Joint voice selection helper.
+   * Selects notes for multiple voices jointly using the existing single-voice
+   * cost function and simple inter-voice penalties (crossing/parallel motion).
+   * @param {number[][]} lastNotesByVoice - Array of per-voice history arrays (each voice -> [last, prev, ...])
+   * @param {number[][]} candidatesPerVoice - Array of per-voice candidate arrays
+   * @param {{ registers?: string[], commonToneWeight?: number }} [opts]
+   * @returns {number[]} chosen notes (by voice index)
+   */
+  selectForVoices(lastNotesByVoice, candidatesPerVoice, opts = {}) {
+    if (!Array.isArray(candidatesPerVoice) || candidatesPerVoice.length === 0) return [];
+
+    const voices = candidatesPerVoice.length;
+    const chosen = new Array(voices).fill(null);
+
+    const registerForIndex = (idx) => {
+      if (Array.isArray(opts.registers) && opts.registers[idx]) return opts.registers[idx];
+      switch (idx) {
+        case 0: return 'soprano';
+        case 1: return 'alto';
+        case 2: return 'tenor';
+        case 3: return 'bass';
+        default: return 'soprano';
+      }
+    };
+
+    for (let i = 0; i < voices; i++) {
+      const candidates = Array.isArray(candidatesPerVoice[i]) ? candidatesPerVoice[i] : [];
+      if (candidates.length === 0) { chosen[i] = null; continue; }
+
+      const register = registerForIndex(i);
+      const lastNotes = Array.isArray(lastNotesByVoice[i]) ? lastNotesByVoice[i] : [];
+
+      let bestCandidate = candidates[0];
+      let bestScore = Infinity;
+
+      for (const candidate of candidates) {
+        // Base single-voice cost
+        const baseCost = this._scoreCandidate(candidate, lastNotes, this.registers[register] || this.registers.soprano, [], { commonToneWeight: opts.commonToneWeight });
+
+        // Crossing penalty vs higher voices already chosen
+        let crossPenalty = 0;
+        if (i > 0 && chosen[i - 1] !== null && typeof chosen[i - 1] === 'number') {
+          // soprano should be >= alto, etc. If violated add a big penalty
+          if (candidate <= chosen[i - 1]) crossPenalty += 6;
+        }
+
+        // Small penalty to discourage exact parallel motion with previous intervals
+        let parallelPenalty = 0;
+        if (this.history.length > 0 && lastNotes.length > 0) {
+          const lastMotion = (lastNotes[0] - (lastNotes[1] || lastNotes[0]));
+          const currentMotion = candidate - (lastNotes[0] || candidate);
+          if ((currentMotion > 0 && lastMotion > 0) || (currentMotion < 0 && lastMotion < 0)) {
+            parallelPenalty += 2;
+          }
+        }
+
+        const total = baseCost + crossPenalty + parallelPenalty;
+        if (total < bestScore) { bestScore = total; bestCandidate = candidate; }
+      }
+
+      chosen[i] = bestCandidate;
+    }
+
+    return chosen;
+  }
+
+  /**
+   * Update scorer configuration at runtime. Accepts any subset of:
+   * - weights: { smoothMotion, voiceRange, leapRecovery, voiceCrossing, parallelMotion }
+   * - commonToneWeight
+   * - contraryMotionPreference
+   * - registers
+   */
+  updateConfig(cfg = {}) {
+    if (typeof cfg !== 'object' || cfg === null) return;
+    if (cfg.weights && typeof cfg.weights === 'object') {
+      Object.assign(this.weights, cfg.weights);
+    }
+    if (typeof cfg.commonToneWeight === 'number') this.commonToneWeight = clamp(cfg.commonToneWeight, 0, 1);
+    if (typeof cfg.contraryMotionPreference === 'number') this.contraryMotionPreference = clamp(cfg.contraryMotionPreference, 0, 1);
+    if (cfg.registers && typeof cfg.registers === 'object') {
+      this.registers = Object.assign({}, this.registers, cfg.registers);
+    }
   }
 
   /**

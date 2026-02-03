@@ -1,7 +1,7 @@
 // MotifComposer - thin adapter to produce Motif objects from scale/meter/voice-leading
 require('./ScaleComposer');
 require('./motifs'); // provides Motif, applyMotifToNotes
-require('./voiceLeading');
+require('./VoiceLeadingScore');
 
 /**
  * MotifComposer: factory for short motifs that fit a scale/meter and optionally use voice-leading.
@@ -18,7 +18,7 @@ MotifComposer = class MotifComposer {
     this.defaultDuration = options.defaultDuration || 1; // multiplier of chosen unit
     this.octaveRange = options.octaveRange || [3, 5]; // inclusive
     this.useVoiceLeading = !!options.useVoiceLeading;
-    this.voiceLeading = options.voiceLeading || (this.useVoiceLeading ? new VoiceLeadingScore() : null);
+    this.VoiceLeadingScore = options.VoiceLeadingScore || (this.useVoiceLeading ? new VoiceLeadingScore() : null);
     this.durationUnit = options.durationUnit || 'subdiv';
     this.durationScale = options.durationScale || 1;
     this.developFromComposer = options.developFromComposer || null; // composer with getNotes()
@@ -138,9 +138,9 @@ MotifComposer = class MotifComposer {
         const mc = opts.measureComposer || this.measureComposer;
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
         try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)]; } catch (e) { chosen = avail[Math.floor(Math.random() * avail.length)]; }
-      } else if (this.voiceLeading && this.useVoiceLeading) {
+      } else if (this.VoiceLeadingScore && this.useVoiceLeading) {
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
-        chosen = this.voiceLeading.selectNextNote(lastNotes, avail, { register: 'soprano' });
+        chosen = this.VoiceLeadingScore.selectNextNote(lastNotes, avail, { register: 'soprano' });
         lastNotes.unshift(chosen);
         if (lastNotes.length > 4) lastNotes.pop();
       } else {

@@ -1,5 +1,5 @@
 // Tests for MotifSpreader.getBeatMotifPicks
-// Ensures it prefers MeasureComposer.voice-leading selection, falls back to layer.voiceLeading,
+// Ensures it prefers MeasureComposer.voice-leading selection, falls back to layer.VoiceLeadingScore,
 // and uses round-robin cursor behavior when no voice-leading is available.
 
 // Vitest globals are enabled via vitest.config.mjs (globals: true)
@@ -30,10 +30,10 @@ describe('MotifSpreader.getBeatMotifPicks', () => {
     expect(picks[0].note).toBe(67);
   });
 
-  it('falls back to layer.voiceLeading.selectNextNote when measureComposer absent', () => {
+  it('falls back to layer.VoiceLeadingScore.selectNextNote when measureComposer absent', () => {
     const layer = {
       beatMotifs: { 0: [{ note: 50 }, { note: 51 }, { note: 52 }] },
-      voiceLeading: { selectNextNote: (_hist, cands) => cands[2] }
+      VoiceLeadingScore: { selectNextNote: (_hist, cands) => cands[2] }
     };
 
     const picks = MotifSpreader.getBeatMotifPicks(layer, 0, 1);
