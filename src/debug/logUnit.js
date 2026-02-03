@@ -1,5 +1,3 @@
-// src/debug/logUnit.js - moved from src/logUnit.js
-// Logs timing markers with context awareness for writer and diagnostics.
 require('./formatTime');
 
 /**

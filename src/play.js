@@ -38,7 +38,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       // plan motif groups across this measure
       try {
         const layer = LM.layers[LM.activeLayer];
-        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+        if (typeof MotifSpreader === 'undefined') console.warn('[play] MotifSpreader is undefined at measureStart', measureStart, 'layer', LM.activeLayer);
+        else MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
       } catch (_e) { /* swallow */ }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
@@ -76,7 +77,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       // plan motif groups across this measure
       try {
         const layer = LM.layers[LM.activeLayer];
-        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+        if (typeof MotifSpreader === 'undefined') console.warn('[play] MotifSpreader is undefined at measureStart', measureStart, 'layer', LM.activeLayer);
+        else MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
       } catch (_e) { /* swallow */ }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
