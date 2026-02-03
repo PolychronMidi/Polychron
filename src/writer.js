@@ -13,9 +13,8 @@
  * - Automatically handles any number of layers
  * @returns {void}
  */
-
-let fs = require('fs');
-const path = require('path');
+fs = require('fs');
+path = require('path');
 // Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
 require('./sheet');
 // Initialize naked globals and utility helpers defined in backstage

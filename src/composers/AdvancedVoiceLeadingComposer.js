@@ -1,4 +1,5 @@
 require('./ScaleComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7) {
@@ -7,8 +8,9 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
     super(resolvedName, resolvedRoot);
     this.commonToneWeight = clamp(commonToneWeight, 0, 1);
     this.previousNotes = [];
-    this.voiceBalanceThreshold = 3;
     this.contraryMotionPreference = 0.4;
+    // enable voice-leading scorer for pick delegation
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
   }
 
   getNotes(octaveRange) {
@@ -23,9 +25,31 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
     return optimizedNotes;
   }
 
+  /**
+   * Optimize each voice by delegating candidate scoring to VoiceLeadingScore.
+   * For each voice, build a small candidate set around the proposed note (including
+   * the previous note) and pick the lowest-cost choice given the voice context.
+   * This centralizes cost logic in VoiceLeadingScore and makes the composer
+   * behavior more extensible and testable.
+   * @param {{note: number}[]} newNotes
+   * @returns {{note: number}[]} optimized notes
+   */
   optimizeVoiceLeading(newNotes) {
+    if (!this.voiceLeading) return newNotes;
+
     const result = [];
     const prevByVoice = [...this.previousNotes];
+
+    const registerForIndex = (idx) => {
+      switch (idx) {
+        case 0: return 'soprano';
+        case 1: return 'alto';
+        case 2: return 'tenor';
+        case 3: return 'bass';
+        default: return 'soprano';
+      }
+    };
+
     for (let voiceIdx = 0; voiceIdx < newNotes.length && voiceIdx < prevByVoice.length; voiceIdx++) {
       const newNote = newNotes[voiceIdx];
       const prevNote = prevByVoice[voiceIdx];
@@ -33,15 +57,33 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
         result.push(newNote || prevNote);
         continue;
       }
-      const newPC = newNote.note % 12;
-      const prevPC = prevNote.note % 12;
-      if (newPC === prevPC && rf() < this.commonToneWeight) {
-        result.push({ ...newNote, note: prevNote.note });
-      } else {
-        const step = rf() < this.contraryMotionPreference ? ri(-4, -1) : ri(1, 4);
-        result.push({ ...newNote, note: clamp(prevNote.note + step, 0, 127) });
+
+      // Build a small, local candidate pool: the proposed note, the previous note
+      // (to prefer continuity), and small nearby offsets to allow stepwise motion.
+      const base = newNote.note;
+      const candidates = new Set();
+      candidates.add(base);
+      candidates.add(prevNote.note);
+      for (const d of [-4, -2, -1, 1, 2, 4]) {
+        const v = clamp(base + d, 0, 127);
+        candidates.add(v);
+      }
+
+      // Convert set -> array and score via voiceLeading
+      const candidateArr = Array.from(candidates);
+      const lastNotesContext = this.previousNotes.map(n => n.note);
+      const register = registerForIndex(voiceIdx);
+
+      try {
+        const chosen = this.voiceLeading.selectNextNote(lastNotesContext, candidateArr, { register, commonToneWeight: this.commonToneWeight });
+        result.push({ ...newNote, note: chosen });
+      } catch (e) {
+        // Fallback to previous deterministic logic: prefer prev when included
+        if (candidateArr.includes(prevNote.note)) result.push({ ...newNote, note: prevNote.note });
+        else result.push({ ...newNote });
       }
     }
+
     return result;
   }
 
@@ -58,6 +100,29 @@ AdvancedVoiceLeadingComposer = class AdvancedVoiceLeadingComposer extends ScaleC
     const bass = m.min(...notes.map(n => n.note));
     const intervals = notes.map(n => n.note - bass).filter((v, i, arr) => arr.indexOf(v) === i).sort((a, b) => a - b);
     return { bass, intervals };
+  }
+
+  /**
+   * Select a single candidate note respecting internal voice-leading memory.
+   * Used by `MotifSpreader.getBeatMotifPicks` when this composer is attached
+   * as `layer.measureComposer` so stage can prefer smoother motion.
+   * @param {number[]} candidates - array of MIDI note numbers
+   * @returns {number} chosen note
+   */
+  selectNoteWithLeading(candidates = []) {
+    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    // Prefer exact previous note if available for deterministic behavior
+    if (Array.isArray(this.previousNotes) && this.previousNotes.length > 0) {
+      const prev = this.previousNotes[0].note;
+      if (candidates.includes(prev)) return prev;
+    }
+    try {
+      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
+        const lastNotes = Array.isArray(this.previousNotes) ? this.previousNotes.map(n => n.note) : (this.voiceHistory || []);
+        return this.voiceLeading.selectNextNote(lastNotes, candidates, { commonToneWeight: this.commonToneWeight });
+      }
+    } catch (e) { /* swallow and fallback */ }
+    return candidates[0];
   }
 }
 

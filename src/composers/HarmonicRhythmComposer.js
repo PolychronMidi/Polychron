@@ -1,5 +1,6 @@
-const ProgressionGenerator = require('./ProgressionGenerator');
+require('./ProgressionGenerator');
 require('./ChordComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {
@@ -14,6 +15,13 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.measuresPerChord = clamp(measuresPerChord, 1, 8);
     this.measureCount = 0;
     this.generator = new ProgressionGenerator(key, quality);
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+  }
+
+  selectNoteWithLeading(candidates = []) {
+    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    try { if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') return this.voiceLeading.selectNextNote(this.voiceHistory || [], candidates, {}); } catch (e) { /* swallow */ }
+    return candidates[0];
   }
 
   getCurrentChord() {

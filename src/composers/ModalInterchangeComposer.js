@@ -1,11 +1,14 @@
-const ProgressionGenerator = require('./ProgressionGenerator');
+require('./ProgressionGenerator');
 require('./ChordComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
     const generator = new ProgressionGenerator(key, primaryMode);
     const progressionChords = generator.random();
     super(progressionChords);
+    // enable voice-leading delegation
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
     this.key = key;
     this.primaryMode = primaryMode;
     this.borrowProbability = clamp(borrowProbability, 0, 1);

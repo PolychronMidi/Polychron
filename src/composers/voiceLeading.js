@@ -7,7 +7,7 @@
  * and leap recovery rules using weighted penalty scoring.
  * @class
  */
-class VoiceLeadingScore {
+VoiceLeadingScore = class VoiceLeadingScore {
   constructor(config = {}) {
     // Tuning weights for different voice leading rules
     this.weights = {
@@ -50,7 +50,7 @@ class VoiceLeadingScore {
     // Score each candidate
     const scores = availableNotes.map((note) => ({
       note,
-      score: this._scoreCandidate(note, lastNotes, registerRange, constraints),
+      score: this._scoreCandidate(note, lastNotes, registerRange, constraints, config),
     }));
 
     // Sort by score (lower is better) and return best
@@ -72,7 +72,7 @@ class VoiceLeadingScore {
    * @param {string[]} constraints - Applied constraints
    * @returns {number} Total weighted cost (lower is better)
    */
-  _scoreCandidate(candidate, lastNotes, registerRange, constraints) {
+  _scoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {
     let totalCost = 0;
 
     // Voice motion smoothness (stepwise vs leap)
@@ -98,6 +98,12 @@ class VoiceLeadingScore {
     if (this.history.length > 0) {
       const lastMotion = this.history[this.history.length - 1];
       totalCost += this._scoreParallelMotion(candidate - lastNote, lastMotion) * this.weights.parallelMotion;
+    }
+
+    // Small preference for common-tone (same pitch-class) when requested via opts.commonToneWeight
+    if (opts && typeof opts.commonToneWeight === 'number' && opts.commonToneWeight > 0) {
+      const samePC = ((candidate % 12) + 12) % 12 === ((lastNote % 12) + 12) % 12;
+      if (samePC) totalCost -= Math.min(8, opts.commonToneWeight * 4); // reduce cost to favor common tones
     }
 
     // Apply hard constraints if provided
@@ -298,5 +304,9 @@ let TEST;
 try { TEST = require('../test-setup'); } catch (e) { TEST = null; }
 try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { /* swallow */ }
 
-// Export for direct import in tests and tools
-// VoiceLeadingScore is available via require-side effects and naked globals
+// VoiceLeadingScore is exposed as a naked global via the assignment above
+// (declared as `VoiceLeadingScore = class ...`) so requiring this file
+// makes `VoiceLeadingScore` available to test scaffolding and runtime.
+// Allow tests to `require()` this module and destructure the constructor.
+/* eslint-disable-next-line no-restricted-syntax */
+try { module.exports = { VoiceLeadingScore }; } catch (e) { /* swallow */ }

@@ -1,4 +1,5 @@
 require('./MeasureComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 /**
  * Composes notes from a specific scale.
@@ -12,6 +13,8 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
   constructor(scaleName,root) {
     super();
     this.root=root;
+    // enable voice-leading by default for selection delegation
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
     this.noteSet(scaleName,root);
   }
   /**
@@ -25,6 +28,21 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
   }
   /** @returns {{note: number}[]} Scale notes */
   x=()=>this.getNotes();
+
+  /**
+   * Delegate selection to voiceLeading when available
+   * @param {number[]} candidates
+   * @returns {number}
+   */
+  selectNoteWithLeading(candidates = []) {
+    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    try {
+      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
+        return this.voiceLeading.selectNextNote(this.voiceHistory || [], candidates, {});
+      }
+    } catch (e) { /* swallow */ }
+    return candidates[Math.floor(candidates.length / 2)];
+  }
 }
 
 RandomScaleComposer = class RandomScaleComposer extends ScaleComposer {
