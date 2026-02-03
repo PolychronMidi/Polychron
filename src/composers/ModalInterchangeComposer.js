@@ -8,7 +8,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     const progressionChords = generator.random();
     super(progressionChords);
     // enable voice-leading delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ModalInterchangeComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this.key = key;
     this.primaryMode = primaryMode;
     this.borrowProbability = clamp(borrowProbability, 0, 1);

@@ -6,7 +6,7 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
     super();
     this.root = root;
     this.type = type;
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('PentatonicComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this.noteSet(root, type);
   }
 

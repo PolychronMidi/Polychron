@@ -393,11 +393,11 @@ VoiceLeadingScore = class VoiceLeadingScore {
 // Export for composition integration into centralized TEST hooks
 let TEST;
 try { TEST = require('../test-setup'); } catch (e) { TEST = null; }
-try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { /* swallow */ }
+try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { console.warn('VoiceLeadingScore: assigning to TEST failed:', e && e.stack ? e.stack : e); }
 
 // VoiceLeadingScore is exposed as a naked global via the assignment above
 // (declared as `VoiceLeadingScore = class ...`) so requiring this file
 // makes `VoiceLeadingScore` available to test scaffolding and runtime.
 // Allow tests to `require()` this module and destructure the constructor.
 /* eslint-disable-next-line no-restricted-syntax */
-try { module.exports = { VoiceLeadingScore }; } catch (e) { /* swallow */ }
+try { module.exports = { VoiceLeadingScore }; } catch (e) { console.warn('VoiceLeadingScore: module.exports assignment failed:', e && e.stack ? e.stack : e); }

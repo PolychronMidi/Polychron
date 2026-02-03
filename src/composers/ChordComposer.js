@@ -58,7 +58,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
   constructor(progression) {
     super();
     // enable basic voice-leading scorer to allow selectNoteWithLeading delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ChordComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this.noteSet(progression,'R');
   }
 
@@ -75,7 +75,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         const lastNotes = Array.isArray(this.voiceHistory) ? this.voiceHistory : [];
         return this.VoiceLeadingScore.selectNextNote(lastNotes, candidates, {});
       }
-    } catch (e) { /* swallow and fallback */ }
+    } catch (e) { console.warn('ChordComposer: scoring failed, falling back to deterministic behavior:', e && e.stack ? e.stack : e); }
     return candidates[0];
   }
   /**

@@ -39,7 +39,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       try {
         const layer = LM.layers[LM.activeLayer];
         MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
-      } catch (_e) { /* swallow */ }
+      } catch (_e) { console.warn('main.js: MotifSpreader.spreadMeasure failed while planning measure (continuing):', _e && _e.stack ? _e.stack : _e); }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
@@ -77,7 +77,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       try {
         const layer = LM.layers[LM.activeLayer];
         MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
-      } catch (_e) { /* swallow */ }
+      } catch (_e) { console.warn('main.js: MotifSpreader.spreadMeasure failed while planning measure (continuing):', _e && _e.stack ? _e.stack : _e); }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();

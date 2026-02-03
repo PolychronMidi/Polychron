@@ -11,7 +11,7 @@ try {
   if (typeof setSubsubdivNoteParams === 'undefined') setSubsubdivNoteParams = function(){};
   if (typeof playSubsubdivNotes === 'undefined') playSubsubdivNotes = function(){};
   // Ensure writer/grandFinale accessible if tests rely on them
-  try { require('../src/writer'); } catch (_e) { /* swallow */ }
+  try { require('../src/writer'); } catch (_e) { console.warn('test setup: require ../src/writer failed (continuing):', _e && _e.stack ? _e.stack : _e); }
 }
 
 // Provide deterministic helper used by integration tests: schedule a single beat and return scheduled items

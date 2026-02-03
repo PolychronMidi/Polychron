@@ -23,7 +23,7 @@ describe('StutterManager basic behavior', () => {
     Stutter.lastUsedCHs.add('a');
     Stutter.lastUsedCHs2.add('b');
     // Debug sizes immediately after add
-    try { if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('test: after add', { s1: Stutter.lastUsedCHs.size, s2: Stutter.lastUsedCHs2.size }); } catch (e) { /* swallow */ }
+    try { if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('test: after add', { s1: Stutter.lastUsedCHs.size, s2: Stutter.lastUsedCHs2.size }); } catch (e) { console.warn('Test debug logging failed:', e && e.stack ? e.stack : e); }
     expect(Stutter.lastUsedCHs.size).toBe(1);
     expect(Stutter.lastUsedCHs2.size).toBe(1);
 

@@ -21,7 +21,7 @@ test('each src subfolder with index.js requires its local .js files', () => {
     if (files.includes('index.js')) {
       const indexPath = path.join(dir, 'index.js');
       let indexContent = '';
-      try { indexContent = fs.readFileSync(indexPath, 'utf8'); } catch (e) { /* swallow - will be caught as missing */ }
+      try { indexContent = fs.readFileSync(indexPath, 'utf8'); } catch (e) { console.warn('index read failed (expected when index missing):', e && e.stack ? e.stack : e); }
       const jsFiles = files.filter(f => f.endsWith('.js') && f !== 'index.js');
       const missing = [];
       jsFiles.forEach((f) => {

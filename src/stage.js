@@ -91,7 +91,7 @@ try {
 
   }
   }
-} catch (e) { /* swallow — keep scheduling non-fatal */ }
+} catch (e) { console.warn('Non-fatal error in playSubdivNotes, continuing scheduling:', e && e.stack ? e.stack : e); }
     trackRhythm('subdiv', LM.layers[LM.activeLayer], true);
   } else {
     trackRhythm('subdiv', LM.layers[LM.activeLayer], false);
@@ -187,7 +187,7 @@ try {
   }
   });
 }}}
-} catch (e) { /* swallow — keep scheduling non-fatal */ }
+} catch (e) { console.warn('Non-fatal error in playSubsubdivNotes, continuing scheduling:', e && e.stack ? e.stack : e); }
   trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true);
   } else {
     trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false);

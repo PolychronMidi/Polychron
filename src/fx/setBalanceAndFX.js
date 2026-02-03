@@ -85,6 +85,6 @@ return [
     if (panNow.length === 0 && Array.isArray(source2)) {
       source2.forEach(ch => p(c, { tick: beatStart - 1, type: 'control_c', vals: [ch, 10, ch.toString().startsWith('lCH') ? lBal : ch.toString().startsWith('rCH') ? rBal : cBal] }));
     }
-  } catch (_e) { /* swallow */ }
+  } catch (_e) { console.warn('setBalanceAndFX: failed to ensure pan events (continuing):', _e && _e.stack ? _e.stack : _e); }
 }
 }

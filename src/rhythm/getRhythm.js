@@ -17,7 +17,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
       Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
     );
     // Diagnostic: if no candidate rhythms exist for the given level, emit debug payload
-    try { if (!Object.keys(filteredRhythms).length) console.warn(`No candidate rhythms for level "${level}"`); } catch (_e) { /* swallow */ }
+    try { if (!Object.keys(filteredRhythms).length) console.warn(`No candidate rhythms for level "${level}"`); } catch (_e) { console.warn('getRhythm: diagnostic emit failed:', _e && _e.stack ? _e.stack : _e); }
 
     const rhythmKey=randomWeightedSelection(filteredRhythms);
 
@@ -25,7 +25,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
       const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
       const rhythmMethod=checkMethod(rhythmMethodKey);
       if (!rhythmMethod) {
-        try { console.warn(`Missing rhythm method for level "${level}": ${rhythmMethodKey}`); } catch (_e) { /* swallow */ }
+        try { console.warn(`Missing rhythm method for level "${level}": ${rhythmMethodKey}`); } catch (_e) { console.warn('getRhythm: missing rhythm method diagnostic failed:', _e && _e.stack ? _e.stack : _e); }
       }
       if (rhythmMethod) return rhythmMethod(...rhythmArgs(length,pattern));
     }

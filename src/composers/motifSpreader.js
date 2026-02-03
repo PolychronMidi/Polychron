@@ -58,7 +58,7 @@ MotifSpreader = {
         beatOffset += gLen;
       });
 
-    } catch (e) { /* swallow */ }
+    } catch (e) { console.warn('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ' (continuing):', e && e.stack ? e.stack : e); }
   },
 
   // Return up to `max` motif steps from a beat bucket using a per-beat modulo cursor

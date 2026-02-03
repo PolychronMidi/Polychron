@@ -38,7 +38,7 @@ grandFinale = () => {
                 const seg = String(unitHash).split('|');
                 hasSecOrPhr = seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
                 hasTickRange = seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
-              } catch (_e) { /* swallow parsing errors */ }
+              } catch (_e) { console.warn('grandFinale parsing failed:', _e && _e.stack ? _e.stack : _e); }
             }
           } else if (Number.isFinite(rawTick)) {
             tickNum = Number(rawTick);
