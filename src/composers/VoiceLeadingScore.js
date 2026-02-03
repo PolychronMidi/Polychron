@@ -1,5 +1,4 @@
 // VoiceLeadingScore.js - Voice leading optimization with cost function scoring
-// minimalist comments, details at: VoiceLeadingScore.md
 
 /**
  * Voice leading cost function optimizer.

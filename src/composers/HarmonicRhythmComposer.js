@@ -1,6 +1,6 @@
 require('./ProgressionGenerator');
 require('./ChordComposer');
-const { VoiceLeadingScore } = require('./VoiceLeadingScore');
+require('./VoiceLeadingScore');
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {

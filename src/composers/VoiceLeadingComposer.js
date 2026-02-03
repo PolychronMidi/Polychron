@@ -1,5 +1,5 @@
 require('./ScaleComposer');
-const { VoiceLeadingScore } = require('./VoiceLeadingScore');
+require('./VoiceLeadingScore');
 
 VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7, contraryMotionPreference = 0.4) {
@@ -123,5 +123,3 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
     return candidates[0];
   }
 }
-
-/* VoiceLeadingComposer exposed via require */

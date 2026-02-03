@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./VoiceLeadingScore');
+require('./VoiceLeadingScore');
 
 PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {
@@ -33,7 +33,6 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
     const voices = this.getVoices();
     const uniqueNotes = new Set();
     const result = [];
-
     const openIntervals = [0, 2, 4];
 
     for (let i = 0; i < voices && i < this.notes.length; i++) {
@@ -46,7 +45,6 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
       }
 
       let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-
       let attempts = 0;
       while (uniqueNotes.has(note) && attempts < 12) {
         octave = ri(minOctave, maxOctave);
@@ -83,5 +81,3 @@ RandomPentatonicComposer = class RandomPentatonicComposer extends PentatonicComp
     return super.x();
   }
 }
-
-/* PentatonicComposer and RandomPentatonicComposer exposed via require */

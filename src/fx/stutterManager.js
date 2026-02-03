@@ -40,16 +40,36 @@ class StutterManager {
     } catch (e) { /* swallow */ }
   }
 
-  resetChannelTracking() {
-    if (this._resetChannelTracking) return this._resetChannelTracking.call(this);
+  resetChannelTracking(channels = null) {
+    // If channels provided, clear only those channels from tracking sets
+    if (Array.isArray(channels) && channels.length > 0) {
+      for (const ch of channels) {
+        this.lastUsedCHs.delete(ch);
+        this.lastUsedCHs2.delete(ch);
+      }
+      // Call external hook for compatibility but always perform internal clear first
+      if (this._resetChannelTracking && this._resetChannelTracking !== this.resetChannelTracking) {
+        try { this._resetChannelTracking.call(this, channels); } catch (e) { /* swallow */ }
+      }
+      return { cleared: channels.length };
+    }
+
+    // Full reset - always clear internal state first
+    const prev1 = this.lastUsedCHs.size;
+    const prev2 = this.lastUsedCHs2.size;
+    // DEBUG
+    try { if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('resetChannelTracking/full', { prev1, prev2, _resetHook: !!this._resetChannelTracking }); } catch (e) { /* swallow */ }
     this.lastUsedCHs.clear();
     this.lastUsedCHs2.clear();
+
+    // Call external hook for compatibility (do not trust its return value)
+    if (this._resetChannelTracking && this._resetChannelTracking !== this.resetChannelTracking) {
+      try { this._resetChannelTracking.call(this, channels); } catch (e) { /* swallow */ }
+    }
+
+    return { cleared: prev1 + prev2, lastUsedCHs: prev1, lastUsedCHs2: prev2 };
   }
 }
-// Bind instance methods to naked globals for backwards compatibility
-try { stutterFade = Stutter && typeof Stutter.stutterFade === 'function' ? Stutter.stutterFade.bind(Stutter) : stutterFade; } catch (e) { /* swallow */ }
-try { stutterPan = Stutter && typeof Stutter.stutterPan === 'function' ? Stutter.stutterPan.bind(Stutter) : stutterPan; } catch (e) { /* swallow */ }
-try { stutterFX = Stutter && typeof Stutter.stutterFX === 'function' ? Stutter.stutterFX.bind(Stutter) : stutterFX; } catch (e) { /* swallow */ }
 
 // Export StutterManager instance and class to global namespace
 Stutter = new StutterManager();

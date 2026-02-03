@@ -484,6 +484,8 @@ export default [
         // Ban global/globalThis property access
         { selector: "MemberExpression[object.name='globalThis']", message: 'Do not use globalThis; use naked globals instead.' },
         { selector: "MemberExpression[object.name='global']", message: 'Do not use global; use naked globals instead.' },
+        // Prevent noisy conditional top-level assignments to naked globals e.g. `x = typeof Stutter.x === 'function' ? Stutter.x.bind(Stutter) : x;`
+        { selector: "Program > ExpressionStatement > AssignmentExpression[left.type='Identifier'][right.type='ConditionalExpression']", message: 'Avoid conditional top-level reassignments to naked globals; bind instance methods once or provide explicit wrapper functions instead.' },
         // Ban eval-based code execution
         { selector: "CallExpression[callee.name='eval']", message: 'eval is banned; do not use string-to-code execution.' }
       ],

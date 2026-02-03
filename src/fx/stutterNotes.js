@@ -24,7 +24,7 @@ stutterNotes = (opts = {}) => {
     const isReflection = profile === 'reflection';
     const isBass = profile === 'bass';
 
-    const clampNote = (n) => {
+    const clampStutterNote = (n) => {
       if (isBass) return modClamp(n, 0, 59);
       return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
     };
@@ -54,7 +54,7 @@ stutterNotes = (opts = {}) => {
         let stutterNote = note;
         if (rf() < .25) {
           if (!shifts.has(channel)) shifts.set(channel, ri(-3, 3) * 12);
-          stutterNote = clampNote(note + shifts.get(channel));
+          stutterNote = clampStutterNote(note + shifts.get(channel));
         }
 
         let currentVelocity;
@@ -95,7 +95,7 @@ stutterNotes = (opts = {}) => {
         let stutterNote = note;
         if (rf() < shiftProb) {
           if (!shifts.has(channel)) shifts.set(channel, ri(-shiftRange, shiftRange) * 12);
-          stutterNote = clampNote(note + shifts.get(channel));
+          stutterNote = clampStutterNote(note + shifts.get(channel));
         }
         if (rf() < fireProb) {
           p(c, { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] });

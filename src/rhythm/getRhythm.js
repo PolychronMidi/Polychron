@@ -1,7 +1,4 @@
-// src/rhythm/getRhythm.js - extracted from src/rhythm.js
-
-// Ensure rhythmMethods registry exists (populated by `rhythm/index.js` on require)
-rhythmMethods = (typeof rhythmMethods !== 'undefined' && rhythmMethods) ? rhythmMethods : {};
+// src/rhythm/getRhythm.js - Rhythm pattern retrieval with dynamic method selection.
 
 getRhythm = function getRhythm(level,length,pattern,method,...args){
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
