@@ -8,7 +8,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
     super(resolvedName, resolvedRoot);
     this.previousNotes = [];
     // enable voice-leading scorer for pick delegation with composer-provided tunables
-    try { this.enableVoiceLeading(new VoiceLeadingScore({ commonToneWeight: clamp(commonToneWeight, 0, 1), contraryMotionPreference: clamp(contraryMotionPreference, 0, 1) })); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore({ commonToneWeight: clamp(commonToneWeight, 0, 1), contraryMotionPreference: clamp(contraryMotionPreference, 0, 1) })); } catch (e) { console.warn('VoiceLeadingComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
   }
 
   getNotes(octaveRange) {
@@ -75,7 +75,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
       try {
         const chosen = this.VoiceLeadingScore.selectNextNote(lastNotesContext, candidateArr, { register });
         result.push({ ...newNote, note: chosen });
-      } catch (e) {
+      } catch (e) { console.warn('VoiceLeadingScore.selectNextNote failed, falling back:', e && e.stack ? e.stack : e);
         // Fallback to previous deterministic logic: prefer prev when included
         if (candidateArr.includes(prevNote.note)) result.push({ ...newNote, note: prevNote.note });
         else result.push({ ...newNote });
@@ -119,7 +119,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
         const lastNotes = Array.isArray(this.previousNotes) ? this.previousNotes.map(n => n.note) : (this.voiceHistory || []);
         return this.VoiceLeadingScore.selectNextNote(lastNotes, candidates, { commonToneWeight: this.commonToneWeight });
       }
-    } catch (e) { /* swallow and fallback */ }
+    } catch (e) { console.warn('VoiceLeading selectNote failed, falling back to deterministic choice:', e && e.stack ? e.stack : e); }
     return candidates[0];
   }
 }

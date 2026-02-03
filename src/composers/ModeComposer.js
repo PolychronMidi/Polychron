@@ -13,7 +13,7 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   constructor(modeName,root) {
     super();
     this.root=root;
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ModeComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this.noteSet(modeName,root);
   }
   /**
@@ -37,7 +37,7 @@ ModeComposer = class ModeComposer extends MeasureComposer {
       if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
         return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
-    } catch (e) { /* swallow */ }
+    } catch (e) { console.warn('ModeComposer: error during operation, continuing:', e && e.stack ? e.stack : e); }
     return candidates[Math.floor(candidates.length / 2)];
   }
 }

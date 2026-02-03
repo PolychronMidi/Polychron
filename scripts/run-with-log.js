@@ -39,7 +39,7 @@ try {
         if (pid && pid > 0) {
           // If the existing PID equals our PID, it's a stale leftover from this process; remove and continue
           if (pid === process.pid) {
-            try { fs.unlinkSync(lockPath); } catch (_e) { /* swallow */ }
+            try { fs.unlinkSync(lockPath); } catch (_e) { console.warn('run-with-log: failed to remove stale lock file (continuing):', _e && _e.stack ? _e.stack : _e); }
           } else {
             try {
               // Check if the PID is still running
@@ -52,21 +52,21 @@ try {
               process.exit(2);
             } catch (e) {
               // Process not running -> stale lock, remove it and continue
-              try { fs.unlinkSync(lockPath); } catch (_e) { /* swallow */ }
+              try { fs.unlinkSync(lockPath); } catch (_e) { console.warn('run-with-log: failed to remove malformed lock file (continuing):', _e && _e.stack ? _e.stack : _e); }
             }
           }
         }
-      } catch (e) { /* malformed lock: remove and continue */ try { fs.unlinkSync(lockPath); } catch (_e) { /* swallow */ } }
+      } catch (e) { /* malformed lock: remove and continue */ try { fs.unlinkSync(lockPath); } catch (_e) { console.warn('run-with-log: failed to remove malformed lock file (continuing):', _e && _e.stack ? _e.stack : _e); } }
     }
     // Write our PID to the lock file so subsequent invocations detect it
-    try { fs.writeFileSync(lockPath, String(process.pid)); wroteLock = true; } catch (_e) { /* swallow */ }
+    try { fs.writeFileSync(lockPath, String(process.pid)); wroteLock = true; } catch (_e) { console.warn('run-with-log: failed to write lock file (continuing):', _e && _e.stack ? _e.stack : _e); }
   } else {
     // We're a nested invocation; do not touch global lock
   }
-} catch (_e) { /* swallow any lock errors to avoid preventing normal runs */ }
+} catch (_e) { console.warn('run-with-log: lock handling failed (continuing):', _e && _e.stack ? _e.stack : _e); }
 
 // Ensure we remove the lock on exit (only if we wrote it)
-const removeLock = () => { try { if (wroteLock && fs.existsSync(lockPath)) fs.unlinkSync(lockPath); } catch (e) { /* swallow */ } };
+const removeLock = () => { try { if (wroteLock && fs.existsSync(lockPath)) fs.unlinkSync(lockPath); } catch (e) { console.warn('run-with-log: removeLock failed (continuing):', e && e.stack ? e.stack : e); } };
 process.on('exit', removeLock);
 process.on('SIGINT', () => { removeLock(); process.exit(130); });
 process.on('SIGTERM', () => { removeLock(); process.exit(143); });

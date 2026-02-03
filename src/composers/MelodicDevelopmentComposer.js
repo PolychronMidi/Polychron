@@ -11,7 +11,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.responseMode = false;
     this.transpositionOffset = 0;
     // enable lightweight voice-leading scorer and keep last-selected for compatibility
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('MelodicDevelopmentComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this._lastSelected = null;
   }
 

@@ -15,12 +15,12 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.measuresPerChord = clamp(measuresPerChord, 1, 8);
     this.measureCount = 0;
     this.generator = new ProgressionGenerator(key, quality);
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('HarmonicRhythmComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
   }
 
   selectNoteWithLeading(candidates = []) {
     if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
-    try { if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {}); } catch (e) { /* swallow */ }
+    try { if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {}); } catch (e) { console.warn('HarmonicRhythmComposer: selectNextNote failed, falling back:', e && e.stack ? e.stack : e); }
     return candidates[0];
   }
 

@@ -14,7 +14,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     super();
     this.root=root;
     // enable voice-leading by default for selection delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ScaleComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this.noteSet(scaleName,root);
   }
   /**
@@ -40,7 +40,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
       if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
         return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
-    } catch (e) { /* swallow */ }
+    } catch (e) { console.warn('ScaleComposer.selectNoteWithLeading failed, falling back to default choice:', e && e.stack ? e.stack : e); }
     return candidates[Math.floor(candidates.length / 2)];
   }
 }

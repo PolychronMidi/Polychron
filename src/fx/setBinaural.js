@@ -6,7 +6,7 @@ setBinaural = () => {
   if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   beatCount=0; flipBin=!flipBin; allNotesOff(beatStart);
   beatsUntilBinauralShift = ri(numerator, numerator * 2 * bpmRatio3);
-  // REMOVED: ANTI-PATTERN - THIS IS ABSURD, AS THEY ARE AVAILABLE GLOBALLY THROUGH BACKSTAGE.JS AND SHEET.JS
+  // REMOVED: ANTI-PATTERN - THIS IS ABSURD, AS THEY ARE AVAILABLE GLOBALLY
   // let _bfo = 0;
   // try { _bfo = (typeof binauralFreqOffset !== 'undefined') ? binauralFreqOffset : 0; } catch (e) { _bfo = 0; }
   // _bfo = rl(_bfo, -1, 1, (typeof BINAURAL !== 'undefined' && BINAURAL.min) ? BINAURAL.min : 8, (typeof BINAURAL !== 'undefined' && BINAURAL.max) ? BINAURAL.max : 12);

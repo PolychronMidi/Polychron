@@ -57,7 +57,7 @@ LM = layerManager ={
     try {
       c = buf;
       if (typeof setupFn === 'function') setupFn(LM.layers[name], buf);
-    } catch (e) { /* swallow */ }
+    } catch (e) { console.warn('LayerManager.register: layer setup function threw, continuing:', e && e.stack ? e.stack : e); }
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
     // return the layer object (no backward-compatibility `state` key)
@@ -121,7 +121,7 @@ LM = layerManager ={
 
     } else if (advancementType === 'section') {
       layer.sectionStart=phraseStart; layer.sectionStartTime=phraseStartTime;
-      try { fs.appendFileSync('log/timing-events.log', JSON.stringify({ time: new Date().toISOString(), event: 'advance', layer: name, type: 'section', section: sectionIndex+1, phraseStart, tpSec }) + '\n'); } catch (_e) { /* swallow */ }
+      try { fs.appendFileSync('log/timing-events.log', JSON.stringify({ time: new Date().toISOString(), event: 'advance', layer: name, type: 'section', section: sectionIndex+1, phraseStart, tpSec }) + '\n'); } catch (_e) { console.warn('LayerManager: failed to append timing-events.log:', _e && _e.stack ? _e.stack : _e); }
 
     }
   },
@@ -170,7 +170,7 @@ function loadLayerToGlobals(layer) {
       beatIndex = typeof layer.beatIndex !== 'undefined' ? layer.beatIndex : (typeof beatIndex !== 'undefined' ? beatIndex : 0);
     } else if (typeof beatRhythm === 'undefined') {
       // Ensure a beat rhythm exists by generating one for the layer (best-effort)
-      try { setRhythm('beat', layer); if (Array.isArray(layer.beatRhythm)) beatRhythm = [...layer.beatRhythm]; } catch (e) { /* swallow */ }
+      try { setRhythm('beat', layer); if (Array.isArray(layer.beatRhythm)) beatRhythm = [...layer.beatRhythm]; } catch (e) { console.warn('LayerManager: failed to set beat rhythm for layer, continuing:', e && e.stack ? e.stack : e); }
     }
 
     // Div
@@ -190,6 +190,6 @@ function loadLayerToGlobals(layer) {
       subsubdivRhythm = [...layer.subsubdivRhythm];
       subsubdivIndex = typeof layer.subsubdivIndex !== 'undefined' ? layer.subsubdivIndex : (typeof subsubdivIndex !== 'undefined' ? subsubdivIndex : 0);
     }
-  } catch (e) { /* swallow --- defensive */ }
+  } catch (e) { console.warn('LayerManager.loadLayerToGlobals: unexpected error loading layer rhythms:', e && e.stack ? e.stack : e); }
 
 }

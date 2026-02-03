@@ -81,7 +81,7 @@ MeasureComposer = class MeasureComposer {
           }
         } else {
           this.lastMeter=[newNumerator,newDenominator];
-          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) { /* swallow */ }
+          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) { console.warn('MeasureComposer: perf diagnostic failed:', e && e.stack ? e.stack : e); }
           return this.lastMeter;
         }
       }
