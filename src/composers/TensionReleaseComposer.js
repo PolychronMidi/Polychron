@@ -49,7 +49,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   noteSet(progression, direction = 'tension') {
     if (progression && Array.isArray(progression) && progression.length > 0) {
       const firstItem = progression[0];
-      if (firstItem === null) return;
+      if (firstItem === null) { console.warn('TensionReleaseComposer.noteSet: progression first item is null — skipping'); return; }
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
@@ -57,7 +57,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
       }
     }
 
-    if (!this.progression || this.progression.length === 0) return;
+    if (!this.progression || this.progression.length === 0) { console.warn('TensionReleaseComposer.noteSet: no progression defined — skipping'); return; }
     if (direction !== 'tension') return super.noteSet(this.progression.map(c => c.symbol), direction);
     this.measureInSection = (this.measureInSection || 0) + 1;
     const position = (this.measureInSection % 16) / 16;

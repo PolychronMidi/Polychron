@@ -91,7 +91,7 @@ LM = layerManager ={
    */
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
-    if (!layer) return;
+    if (!layer) { console.warn(`LayerManager.advance: layer "${name}" not found — skipping advance`); return; }
     c = layer.buffer;
 
     beatRhythm = divRhythm = subdivRhythm = subsubdivRhythm = 0;
@@ -129,7 +129,7 @@ LM = layerManager ={
   // Minimal helpers to initialize section origin for layers (keeps it tiny and explicit).
   setSectionStartFor: (name) => {
     const layer = LM.layers[name];
-    if (!layer) return;
+    if (!layer) { console.warn(`LayerManager.setSectionStartFor: layer "${name}" not found`); return; }
     layer.sectionStart = phraseStart;
     layer.sectionStartTime = phraseStartTime;
   },
@@ -143,7 +143,7 @@ LM = layerManager ={
  * Restore timing into naked globals without using banned globals.
  */
 function loadLayerToGlobals(layer) {
-  if (!layer) return;
+  if (!layer) { console.warn('loadLayerToGlobals: no layer provided — skipping'); return; }
   tpSection = layer.tpSection;
   spSection = layer.spSection;
   sectionStart = layer.sectionStart;

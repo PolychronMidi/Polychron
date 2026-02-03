@@ -16,17 +16,17 @@ MeasureComposer = class MeasureComposer {
     this.voiceHistory=[];
   }
   /** @returns {number} Random numerator from NUMERATOR config */
-  getNumerator(){const{min,max,weights}=NUMERATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getNumerator(){const{min,max,weights}=NUMERATOR;return rw(min,max,weights);}
   /** @returns {number} Random denominator from DENOMINATOR config */
-  getDenominator(){const{min,max,weights}=DENOMINATOR;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getDenominator(){const{min,max,weights}=DENOMINATOR;return rw(min,max,weights);}
   /** @returns {number} Random divisions count from DIVISIONS config */
-  getDivisions(){const{min,max,weights}=DIVISIONS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
+  getDivisions(){const{min,max,weights}=DIVISIONS;return rw(min,max,weights);}
   /** @returns {number} Random subdivs count from SUBDIVS config */
-  getSubdivs(){const{min,max,weights}=SUBDIVS;const res=m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1)); return res;}
+  getSubdivs(){const{min,max,weights}=SUBDIVS;return rw(min,max,weights);}
   /** @returns {number} Random sub-subdivs count from SUBSUBDIVS config */
-  getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return rw(min,max,weights);}
   /** @returns {number} Random voice count from VOICES config */
-  getVoices(){const{min,max,weights}=VOICES;return m.floor(rw(min,max,weights)*(rf()>0.5?bpmRatio:1));}
+  getVoices(){const{min,max,weights}=VOICES;return rw(min,max,weights);}
   /** @returns {number[]} Two octaves with minimum 2-3 octave difference */
   getOctaveRange() { const { min,max,weights }=OCTAVE;
   let [o1,o2]=[rw(min,max,weights),rw(min,max,weights)];
@@ -97,7 +97,7 @@ MeasureComposer = class MeasureComposer {
   getNotes(octaveRange=null) {
     // Defensive fallback: ensure this.notes exists and is non-empty
     if (!Array.isArray(this.notes) || this.notes.length === 0) {
-      console.warn('MeasureComposer.getNotes() called but this.notes is invalid.');
+      console.warn('MeasureComposer.getNotes() called but this.notes is invalid.', { composer: this && this.constructor && this.constructor.name, scale: this && this.scale && this.scale.name, notes: this.notes });
     }
 
     if (++this.recursionDepth > this.MAX_RECURSION) {
@@ -125,17 +125,30 @@ MeasureComposer = class MeasureComposer {
         // Return the validated interval that produces a proper scale degree
         return validatedInterval;
       });
-      return intervals.slice(0,voices).map((interval,index)=>{
+      const notesOut = intervals.slice(0,voices).map((interval,index)=>{
         const noteIndex=(this.notes.indexOf(rootNote)+interval) % this.notes.length;
         let octave=ri(minOctave,maxOctave);
         let note=t.Note.chroma(this.notes[noteIndex])+12*octave;
         while (uniqueNotes.has(note)) {
-          octave=octave < maxOctave ? octave++ : octave > minOctave ? octave-- : octave < OCTAVE.max ? octave++ : octave > OCTAVE.min ? octave-- : (()=>{ return false; })();
-          if (octave===false) break; note=t.Note.chroma(this.notes[noteIndex])+12*octave;  }
+          if (octave < maxOctave) { octave++; }
+          else if (octave > minOctave) { octave--; }
+          else if (octave < OCTAVE.max) { octave++; }
+          else if (octave > OCTAVE.min) { octave--; }
+          else { octave = false; break; }
+          if (octave === false) break;
+          note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
+        }
         return { note };
       }).filter((noteObj,index,self)=>
         index===self.findIndex(n=>n.note===noteObj.note)
-      ); }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
+      );
+
+      if (!Array.isArray(notesOut) || notesOut.length === 0) {
+        console.warn('MeasureComposer.getNotes produced empty result; falling back to single note', { composer: this && this.constructor && this.constructor.name, notes: this.notes, intervals, voices, octaveRange, rootNote });
+        return [{ note: 60 }];
+      }
+
+      return notesOut; }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
       this.recursionDepth--; return this.getNotes(octaveRange);  }}
     finally {
       this.recursionDepth--;

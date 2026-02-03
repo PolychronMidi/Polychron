@@ -13,7 +13,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
 
   getNotes(octaveRange) {
     const baseNotes = super.getNotes(octaveRange);
-    if (!baseNotes || baseNotes.length === 0) return baseNotes;
+    if (!baseNotes || baseNotes.length === 0) { console.warn('VoiceLeadingComposer.getNotes: base notes missing or empty'); return baseNotes; }
     if (this.previousNotes.length === 0) {
       this.previousNotes = baseNotes;
       return baseNotes;
@@ -94,7 +94,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
   }
 
   analyzeFiguredBass(notes) {
-    if (!notes || notes.length === 0) return null;
+    if (!notes || notes.length === 0) { console.warn('VoiceLeadingComposer.analyzeFiguredBass: notes absent — returning null'); return null; }
     const bass = m.min(...notes.map(n => n.note));
     const intervals = notes.map(n => n.note - bass).filter((v, i, arr) => arr.indexOf(v) === i).sort((a, b) => a - b);
     return { bass, intervals };
@@ -108,7 +108,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
    * @returns {number} chosen note
    */
   selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    if (!Array.isArray(candidates) || candidates.length === 0) { console.warn('VoiceLeadingComposer.selectNoteWithLeading: empty candidates provided — returning default'); return candidates[0]; }
     // Prefer exact previous note if available for deterministic behavior
     if (Array.isArray(this.previousNotes) && this.previousNotes.length > 0) {
       const prev = this.previousNotes[0].note;

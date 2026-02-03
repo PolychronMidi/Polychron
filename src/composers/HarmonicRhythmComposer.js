@@ -32,14 +32,14 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   noteSet(progression, direction = 'R') {
     if (progression && Array.isArray(progression) && progression.length > 0) {
       const firstItem = progression[0];
-      if (firstItem === null) return;
+      if (firstItem === null) { console.warn('HarmonicRhythmComposer.noteSet: progression first item is null — skipping'); return; }
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
         return super.noteSet(progression, direction);
       }
     }
-    if (!this.progression || this.progression.length === 0) return;
+    if (!this.progression || this.progression.length === 0) { console.warn('HarmonicRhythmComposer.noteSet: no progression defined — skipping'); return; }
     const currentChord = this.getCurrentChord();
     super.noteSet([currentChord], 'R');
     this.measureCount++;

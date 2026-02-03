@@ -6,7 +6,7 @@
 MotifSpreader = {
   spreadMeasure({ layer, measureStart, measureBeats, composer }) {
     try {
-      if (!layer) return;
+      if (!layer) { console.warn('MotifSpreader.spreadMeasure: no layer provided — skipping'); return; }
       const measureB = Number.isFinite(Number(measureBeats)) ? Number(measureBeats) : 0;
       let remaining = measureB;
       const groups = [];
