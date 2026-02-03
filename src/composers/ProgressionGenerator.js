@@ -18,18 +18,18 @@ ProgressionGenerator = class ProgressionGenerator {
 
   romanToChord(roman) {
     const degreeMatch = roman.match(/^([b#]?[IiVv]+)/);
-    if (!degreeMatch) return null;
+    if (!degreeMatch) { console.warn('ProgressionGenerator.romanToChord: could not parse roman numeral:', roman); return null; }
 
     const degree = degreeMatch[1];
     const isFlat = degree.startsWith('b');
     const isSharp = degree.startsWith('#');
     const romanNumeral = degree.replace(/^[b#]/, '');
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(r => romanNumeral.toUpperCase() === r);
-    if (degreeIndex === -1) return null;
+    if (degreeIndex === -1) { console.warn('ProgressionGenerator.romanToChord: unrecognized roman numeral:', roman); return null; }
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];
     const diatonicRoot = this.scaleNotes?.[degreeIndex];
-    if (!diatonicChord || !diatonicRoot) return null;
+    if (!diatonicChord || !diatonicRoot) { console.warn(`ProgressionGenerator.romanToChord: missing diatonic data for degreeIndex=${degreeIndex}`); return null; }
 
     const chordParts = diatonicChord.match(/^([A-G][b#]?)(.*)$/);
     const baseRoot = chordParts?.[1] || diatonicRoot;

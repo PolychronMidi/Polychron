@@ -38,7 +38,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
   noteSet(progression, direction = 'R') {
     if (progression && Array.isArray(progression) && progression.length > 0) {
       const firstItem = progression[0];
-      if (firstItem === null) return;
+      if (firstItem === null) { console.warn('ModalInterchangeComposer.noteSet: progression first item is null — skipping'); return; }
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
@@ -46,7 +46,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
       }
     }
 
-    if (!this.progression || this.progression.length === 0) return;
+    if (!this.progression || this.progression.length === 0) { console.warn('ModalInterchangeComposer.noteSet: no progression defined — skipping'); return; }
     if (rf() < this.borrowProbability) {
       const borrowedChord = this.borrowChord();
       const modifiedProgression = [...this.progression.map(c => c.symbol)];

@@ -5,12 +5,12 @@ const path = require('path');
 
 function parseTimeStr(t) {
   // Expect formats like "0:01.4286" or "1:35.0556" => mm:ss.fraction
-  if (typeof t !== 'string') return null;
+  if (typeof t !== 'string') { console.warn('parseTimeStr: expected string, got', typeof t); return null; }
   const m = t.trim().match(/^(\d+):(\d+(?:\.\d+)?)$/);
-  if (!m) return null;
+  if (!m) { console.warn('parseTimeStr: time string did not match expected format:', t); return null; }
   const minutes = Number(m[1]);
   const seconds = Number(m[2]);
-  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) return null;
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) { console.warn('parseTimeStr: parsed time parts are not finite:', t); return null; }
   return minutes * 60 + seconds;
 }
 

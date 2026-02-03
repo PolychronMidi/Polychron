@@ -23,8 +23,26 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    * @param {string} root
    */
   noteSet(scaleName,root) {
-    this.scale=t.Scale.get(`${root} ${scaleName}`);
-    this.notes=this.scale.notes;
+    const name = scaleName || '';
+    const rt = root || '';
+    const scaleKey = `${rt} ${name}`.trim();
+    try {
+      this.scale = t.Scale.get(scaleKey);
+    } catch (e) {
+      console.warn('ScaleComposer.noteSet: t.Scale.get threw for', scaleKey, e && e.stack ? e.stack : e);
+      this.scale = null;
+    }
+
+    if (!this.scale || !Array.isArray(this.scale.notes) || this.scale.notes.length === 0) {
+      console.warn(`ScaleComposer.noteSet: scale lookup failed for "${scaleKey}", falling back to C major`);
+      try { this.scale = t.Scale.get('C major'); } catch (e) { this.scale = null; }
+      if (!this.scale || !Array.isArray(this.scale.notes) || this.scale.notes.length === 0) {
+        console.warn('ScaleComposer.noteSet: fallback scale lookup failed; using single-note fallback [C]');
+        this.notes = ['C'];
+        return;
+      }
+    }
+    this.notes = this.scale.notes;
   }
   /** @returns {{note: number}[]} Scale notes */
   x=()=>this.getNotes();

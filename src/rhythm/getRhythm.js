@@ -4,7 +4,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
   const checkMethod=(m)=>{
-    if (!m) return null;
+    if (!m) { console.warn('getRhythm.checkMethod: empty method key requested'); return null; }
     if (typeof rhythmMethods !== 'undefined' && rhythmMethods[m] && typeof rhythmMethods[m] === 'function') return rhythmMethods[m];
     console.warn(`Unknown rhythm method: ${m}`);
     return null;
