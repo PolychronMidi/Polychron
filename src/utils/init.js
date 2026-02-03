@@ -1,7 +1,4 @@
-// init.js - global initialization.
-
-
-
+// init.js - global initialization & channel mapping.
 
 // Timing and counter variables (documented inline for brevity)
 measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=sectionEnd=tpMeasure=tpBeat=tpDiv=tpSubdiv=tpSubsubdiv=subdivStartTime=subsubdivStartTime=tpSubsubdiv=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=subsubsPerSub=meterRatio=divsPerBeat=subdivsPerBeat=subdivsPerDiv=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=subsubsPerSub=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=sectionIndex=phraseIndex=phrasesPerSection=totalSections=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=0;
@@ -39,51 +36,6 @@ velocity=99;
  * @type {boolean}
  */
 flipBin=false;
-
-/**
- * Neutral pitch bend value (center of pitch bend range).
- * @type {number}
- */
-neutralPitchBend=8192;
-
-/**
- * Semitone value in pitch bend units.
- * @type {number}
- */
-semitone=neutralPitchBend / 2;
-
-/**
- * Convert cents to tuning frequency offset.
- * @type {number}
- */
-let centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
-
-/**
- * Pitch bend value for tuning frequency.
- * @type {number}
- */
-tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
-
-/**
- * Generate binaural frequency offset.
- * @type {number}
- */
-let binauralFreqOffset = rf(BINAURAL.min, BINAURAL.max);
-
-/**
- * Calculate binaural offset pitch bend values.
- * @param {number} plusOrMinus - Direction multiplier (+1 or -1).
- * @returns {number} Pitch bend value.
- */
-binauralOffset=(plusOrMinus)=>{
-  return m.round(tuningPitchBend + semitone * (12 * m.log2((TUNING_FREQ + plusOrMinus * binauralFreqOffset) / TUNING_FREQ)));
-};
-
-/**
- * Binaural pitch bend values for + and - frequencies.
- * @type {number[]}
- */
-[binauralPlus,binauralMinus]=[1,-1].map(binauralOffset);
 
 /**
  * MIDI channel constants for center channels.
@@ -210,17 +162,3 @@ stutterPanCHs=[cCH1,cCH2,cCH3,drumCH];
  * @type {number[]}
  */
 FX=[1,5,11,65,67,68,69,70,71,72,73,74,91,92,93,94,95];
-
-/**
- * Send All Notes Off CC (123) to prevent sustain across transitions.
- * @param {number} [tick=measureStart] - Tick position for All Notes Off.
- * @returns {Array} Array of CC events.
- */
-allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
-
-/**
- * Send Mute All CC (120) to silence all channels.
- * @param {number} [tick=measureStart] - Tick position for Mute All.
- * @returns {Array} Array of CC events.
- */
-muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}

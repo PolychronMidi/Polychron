@@ -3,7 +3,7 @@
 
 require('../src/writer'); // ensures `p` and `c` globals exist
 require('../src/composers/motifSpreader');
-require('../src/backstage');
+require('../src/utils');
 require('../src/stage'); // setup-stage shim should make this safe in test env
 
 describe('stage integration: playSubdivNotes', () => {

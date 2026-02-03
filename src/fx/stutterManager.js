@@ -6,38 +6,31 @@ class StutterManager {
     this.lastUsedCHs = new Set();      // for stutterFade
     this.lastUsedCHs2 = new Set();     // for stutterPan and stutterFX
 
-    // Bind external implementations (keeps tests and callers stable)
-    try { require('./stutterFade'); } catch (e) { /* swallow */ }
-    try { require('./stutterPan'); } catch (e) { /* swallow */ }
-    try { require('./stutterFX'); } catch (e) { /* swallow */ }
-    try { require('./resetChannelTracking'); } catch (e) { /* swallow */ }
+    // Bind external implementations via require side-effects (fail fast if missing)
+    require('./stutterFade');
+    require('./stutterPan');
+    require('./stutterFX');
 
-    // Capture the naked globals if present (project convention)
-    this._stutterFade = (typeof stutterFade !== 'undefined') ? stutterFade : null;
-    this._stutterPan = (typeof stutterPan !== 'undefined') ? stutterPan : null;
-    this._stutterFX = (typeof stutterFX !== 'undefined') ? stutterFX : null;
-    this._resetChannelTracking = (typeof resetChannelTracking !== 'undefined') ? resetChannelTracking : null;
+    // Capture the naked globals (rely on require-side effects to define them)
+    this._stutterFade = stutterFade;
+    this._stutterPan = stutterPan;
+    this._stutterFX = stutterFX;
+    this._resetChannelTracking = resetChannelTracking;
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-    try {
-      if (!channels) return;
-      if (this._stutterFade) return this._stutterFade.call(this, channels, numStutters, duration);
-    } catch (e) { /* swallow */ }
+    if (!channels) return;
+    if (typeof this._stutterFade === 'function') return this._stutterFade.call(this, channels, numStutters, duration);
   }
 
   stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-    try {
-      if (!channels) return;
-      if (this._stutterPan) return this._stutterPan.call(this, channels, numStutters, duration);
-    } catch (e) { /* swallow */ }
+    if (!channels) return;
+    if (typeof this._stutterPan === 'function') return this._stutterPan.call(this, channels, numStutters, duration);
   }
 
   stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-    try {
-      if (!channels) return;
-      if (this._stutterFX) return this._stutterFX.call(this, channels, numStutters, duration);
-    } catch (e) { /* swallow */ }
+    if (!channels) return;
+    if (typeof this._stutterFX === 'function') return this._stutterFX.call(this, channels, numStutters, duration);
   }
 
   resetChannelTracking(channels = null) {
@@ -49,7 +42,7 @@ class StutterManager {
       }
       // Call external hook for compatibility but always perform internal clear first
       if (this._resetChannelTracking && this._resetChannelTracking !== this.resetChannelTracking) {
-        try { this._resetChannelTracking.call(this, channels); } catch (e) { /* swallow */ }
+        this._resetChannelTracking.call(this, channels);
       }
       return { cleared: channels.length };
     }
@@ -58,13 +51,13 @@ class StutterManager {
     const prev1 = this.lastUsedCHs.size;
     const prev2 = this.lastUsedCHs2.size;
     // DEBUG
-    try { if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('resetChannelTracking/full', { prev1, prev2, _resetHook: !!this._resetChannelTracking }); } catch (e) { /* swallow */ }
+    if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('resetChannelTracking/full', { prev1, prev2, _resetHook: !!this._resetChannelTracking });
     this.lastUsedCHs.clear();
     this.lastUsedCHs2.clear();
 
-    // Call external hook for compatibility (do not trust its return value)
+    // Call external hook for compatibility — allow errors to surface
     if (this._resetChannelTracking && this._resetChannelTracking !== this.resetChannelTracking) {
-      try { this._resetChannelTracking.call(this, channels); } catch (e) { /* swallow */ }
+      this._resetChannelTracking.call(this, channels);
     }
 
     return { cleared: prev1 + prev2, lastUsedCHs: prev1, lastUsedCHs2: prev2 };
@@ -73,3 +66,8 @@ class StutterManager {
 
 // Export StutterManager instance and class to global namespace
 Stutter = new StutterManager();
+
+// Global delegators for ease of use in runtime/tests. Keep minimal and fail-fast.
+stutterFade = (...args) => Stutter.stutterFade(...args);
+stutterPan = (...args) => Stutter.stutterPan(...args);
+stutterFX = (...args) => Stutter.stutterFX(...args);
