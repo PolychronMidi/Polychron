@@ -1,18 +1,15 @@
-// src/rhythm/drummer.js - extracted from src/rhythm.js
-// Preserves behavior by relying on the same global helpers (rf, ri, rv, m, p, clamp, c, beatStart, tpBeat, drumCH)
+// src/rhythm/drummer.js - drummer utility for rhythm generation
+require('../backstage');
 require('./drumMap');
 
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (drumNames === 'random') {
-    // Prefer test-injected drumMap when running tests so 'random' selects from the test set
     const allDrums = Object.keys(drumMap);
     drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
     beatOffsets = [0];
   }
   const drums=Array.isArray(drumNames) ? drumNames : drumNames.split(',').map(d=>d.trim());
   const offsets=Array.isArray(beatOffsets) ? beatOffsets : [beatOffsets];
-  const outBuf = c;
-  const dm = drumMap;
   if (offsets.length < drums.length) {
     offsets.push(...new Array(drums.length - offsets.length).fill(0));
   } else if (offsets.length > drums.length) {
@@ -34,7 +31,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
     // their fractional part. For fractional offsets (0..1), allow jitter and wrap into [0,1).
     // Preserve explicit zero offsets exactly
     if (offset === 0) return 0;
-    if (Math.abs(offset) >= 1) {
+    if (m.abs(offset) >= 1) {
       if (rf() < .3) return offset;
       const jitter = (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
       return offset + jitter;
@@ -46,12 +43,12 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       // keep only the fractional component for sub-beat offsets but avoid returning exactly 0
       const fractional = adjusted - m.floor(adjusted);
       // Never allow jitter to move a fractional offset *earlier* than the original offset — only allow equal or later adjustments
-      return fractional === 0 ? offset : Math.max(fractional, offset);
+      return fractional === 0 ? offset : m.max(fractional, offset);
     }
   });
   combined.forEach(({ drum, offset }, idx) => {
     const useOffset = (typeof adjustedOffsets[idx] !== 'undefined') ? adjustedOffsets[idx] : offset;
-    const drumInfo = dm ? dm[drum] : drumMap[drum];
+    const drumInfo = drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {
         const numStutters = ri(...stutterRange);
@@ -59,8 +56,10 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         const [minVelocity, maxVelocity] = drumInfo.velocityRange;
         const isFadeIn = rf() < 0.7;
         for (let i = 0; i < numStutters; i++) {
-          const tickVal = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 0);
-          const tick = Math.round(tickVal);
+          // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
+          // const tickVal = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 0);
+          const tickVal = beatStart + useOffset + i * stutterDuration * tpBeat;
+          const tick = m.round(tickVal);
           let currentVelocity;
           if (isFadeIn) {
             const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
@@ -69,12 +68,12 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
             const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
             currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
           }
-          p(outBuf, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
+          p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
         }
       } else {
-        const tickVal = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0) + (Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) * (Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 0);
-        const tick = Math.round(tickVal);
-        p(outBuf, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
+        const tickVal = beatStart + useOffset * tpBeat;
+        const tick = m.round(tickVal);
+        p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
       }
     }
   });

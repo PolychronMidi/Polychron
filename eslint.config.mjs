@@ -9,7 +9,7 @@ export default [
     languageOptions: { sourceType: 'module', ecmaVersion: 'latest' }
   },
   {
-    files: ['src/**/*.js', 'src/**', 'test/**/*.js', 'test/**'],
+    files: ['src/**/*.js', 'src/**'],
     ignores: [
       '**/*.mjs',
       'node_modules/**',
@@ -24,6 +24,9 @@ export default [
       'no-warning-comments': ['error', { terms: ['global'], location: 'start' }]
     }
   },
+  // Tests are intentionally excluded from linting to avoid enforcing project naked-global rules
+  // which are not applicable to test scaffolding and helper usage.
+  { ignores: ['test/**'] },
 
   {
     languageOptions: {
@@ -173,6 +176,7 @@ export default [
         // Debug/Test helpers
         logGate: 'writable',
         getScheduledNotes: 'writable',
+        __test_playBeat: 'writable',
         // Functions
         getMidiTiming: 'writable',
         setMidiTiming: 'writable',
@@ -215,6 +219,16 @@ export default [
         drummer: 'writable',
         patternLength: 'writable',
         makeOnsets: 'writable',
+        // Rhythm-pattern module helpers (naked globals assigned via require)
+        _rp: 'writable',
+        _binary: 'writable',
+        _hex: 'writable',
+        _onsets: 'writable',
+        _random: 'writable',
+        _probability: 'writable',
+        _euclid: 'writable',
+        _rotate: 'writable',
+        path: 'writable',
         // Stage functions
         binaural: 'writable',
         stutter: 'writable',

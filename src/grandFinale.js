@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+require('./writer');
 
 grandFinale = () => {
 
@@ -40,9 +39,6 @@ grandFinale = () => {
                 hasSecOrPhr = seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
                 hasTickRange = seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
               } catch (_e) { /* swallow parsing errors */ }
-              // DEBUG LOG
-              try { console.log('[writer] validating unitHash', { rawTick, unitHash, hasSecOrPhr, hasTickRange, layer: name }); } catch (_e) { /* swallow */ }
-
             }
           } else if (Number.isFinite(rawTick)) {
             tickNum = Number(rawTick);
@@ -61,28 +57,22 @@ grandFinale = () => {
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
     let finalTick = -Infinity;
 
-
     buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
         let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
         const tickNum = _.tick || 0;
         const tickInt = Math.round(Number(tickNum) || 0);
-        // Find the best containing unit; prefer most granular (smallest span)
 
-        // Append unit id to tick field when available
-        const isMarker = String(type).toLowerCase() === 'marker_t' || String(type).toLowerCase().includes('marker');
-        // For non-marker events, append unit identity using the same path used in unitRec markers (no 'unitRec:' prefix in the tick field)
+        // Clamp velocity for Note_on events to a max of 100 (rounded)
+        if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
+          const vel = Number(_.vals[2]) || 0;
+          _.vals[2] = Math.min(90, Math.round(vel));
+        }
 
         composition += `1,${tickInt},${type},${_.vals.join(',')}\n`;
         finalTick = Math.max(finalTick, tickNum, tickInt);
       }
     });
-    // Compute a safe numeric end tick using lastUnit/outroUnit when available; avoid tpSec-based calculations that can be NaN in tests
-    const safeFinalTick = Number.isFinite(finalTick) && finalTick !== -Infinity ? Math.round(finalTick) : NaN;
-    let computedEndTick = Number.isFinite(safeFinalTick) ? safeFinalTick : NaN;
-    try {
-      try { const res = require('./grandFinale.tail').ensureTailMarker({ buffer, computedEndTick, layerState, name, endTick }); if (res) { computedEndTick = res.computedEndTick; } } catch (_e) { /* swallow */ }
-    } catch (e) { /* swallow */ }
 
     composition += `1,${phraseStart},end_track`;
     const outputFilename = name === 'primary' ? 'output/output1.csv' : name === 'poly' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
@@ -90,6 +80,4 @@ grandFinale = () => {
     console.log(`Wrote file: ${outputFilename}`);
 
   });
-  // Finalize master unit map (write canonical unitMasterMap.json atomically)
-  try { const MasterMap = require('./masterMap'); MasterMap.finalize(); } catch (e) { /* swallow */ }
 };

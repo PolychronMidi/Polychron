@@ -72,9 +72,9 @@ setSubdivNoteParams = () => {
  */
 playSubdivNotes = () => {
   setSubdivNoteParams();
-  // crossModulateRhythms();
+  crossModulateRhythms();
   // console.log('Cross Modulation:', crossModulation, 'Last:', lastCrossMod);
-  // if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
+  if((crossModulation+lastCrossMod)/rf(1.7,2.3)>rv(rf(1.8,2.8),[-.2,-.3],.05)){
 const noteObjects = composer ? composer.getNotes() : [];
 const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
 try {
@@ -121,12 +121,12 @@ try {
   }
 } catch (e) { /* swallow — keep scheduling non-fatal */ }
   // Update per-layer tracking via the canonical helper and preserve globals
-  // try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
-  // subdivsOff=0; subdivsOn++;
-  // } else {
-  //   try { trackRhythm('subdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
-  //   subdivsOff++; subdivsOn=0;
-  // }
+  try { trackRhythm('subdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+  subdivsOff=0; subdivsOn++;
+  } else {
+    try { trackRhythm('subdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subdiv) failed', e); }
+    subdivsOff++; subdivsOn=0;
+  }
 }
 
 /**
@@ -148,8 +148,8 @@ setSubsubdivNoteParams = () => {
  */
 playSubsubdivNotes = () => {
   setSubsubdivNoteParams();
-  // crossModulateRhythms();
-  // if((crossModulation+lastCrossMod)/rf(1.6,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
+  crossModulateRhythms();
+  if((crossModulation+lastCrossMod)/rf(1.6,2.4)>rv(rf(1.8,2.2),[-.2,-.3],.05)){
   let reflectionCH; let bassCH; let bassNote;
   const noteObjects = composer ? composer.getNotes() : [];
   const motifNotes = activeMotif ? applyMotifToNotes(noteObjects, activeMotif) : noteObjects;
@@ -275,10 +275,34 @@ try {
   });
 }}}
 } catch (e) { /* swallow — keep scheduling non-fatal */ }
-  // try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
-  // subsubdivsOff=0; subsubdivsOn++;
-  // } else {
-  //   try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
-  //   subsubdivsOff++; subsubdivsOn=0;
-  // }
+  try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], true); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+  subsubdivsOff=0; subsubdivsOn++;
+  } else {
+    try { trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false); } catch (e) { console.warn('trackRhythm(subsubdiv) failed', e); }
+    subsubdivsOff++; subsubdivsOn=0;
+  }
 }
+
+// Test helper: schedule one beat deterministically for integration tests
+try {
+  __test_playBeat = function(layer, beatKey, onArg = 0, sustainArg = 1, binVelArg = 80, velocityArg = 90) {
+    try {
+      if (!layer || !layer.beatMotifs) return [];
+      const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
+      if (!bucket.length) return [];
+      const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, 1);
+      const pushed = [];
+      for (let pi = 0; pi < picks.length; pi++) {
+        const s = picks[pi];
+        source.filter(sourceCH => flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)).forEach(sourceCH => {
+          const onTick = onArg;
+          const vel = sourceCH === cCH1 ? velocityArg : binVelArg;
+          const ev = { tick: onTick, type: 'on', vals: [sourceCH, s.note, vel] };
+          p(c, ev);
+          pushed.push(ev);
+        });
+      }
+      return pushed;
+    } catch (e) { return []; }
+  };
+} catch (e) { /* swallow test helper registration errors */ }

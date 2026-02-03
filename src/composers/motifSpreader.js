@@ -10,7 +10,7 @@ MotifSpreader = {
       const measureB = Number.isFinite(Number(measureBeats)) ? Number(measureBeats) : 0;
       let remaining = measureB;
       const groups = [];
-      const min = 2; const max = 7;
+      const min = 1; const max = 3;
       // Ensure group sizes are between min and max beats where possible
       if (remaining <= max) {
         // small measure: one group (can be 1 if measure is 1-beat)
@@ -33,7 +33,8 @@ MotifSpreader = {
       let added = 0;
       const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
 
-      // distribute motif steps across beats WITHOUT absolute ticks
+      // Add group's steps as candidates on every beat of the group's span;
+      // placement/length/offset is decided later by stage/play loops.
       const baseBeat = Math.floor(measureStart / beatLen);
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: !!(composer && composer.voiceLeading) });
@@ -42,14 +43,16 @@ MotifSpreader = {
         const seq = motifGroup.sequence || motifGroup.events || [];
         const totalEvents = seq.length || 0;
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
-        for (let i = 0; i < totalEvents; i++) {
-          const evt = seq[i];
-          const relativeBeat = Math.floor((i * gLen) / Math.max(1, totalEvents));
-          const bKey = baseBeat + beatOffset + relativeBeat;
-          layer.beatMotifs = layer.beatMotifs || {};
+        layer.beatMotifs = layer.beatMotifs || {};
+        // For each beat in this group's span, add all motif steps as candidates.
+        for (let b = 0; b < gLen; b++) {
+          const bKey = baseBeat + beatOffset + b;
           layer.beatMotifs[bKey] = layer.beatMotifs[bKey] || [];
-          layer.beatMotifs[bKey].push({ note: Number(evt.note), groupId, seqIndex: i, seqLen: totalEvents });
-          added++;
+          for (let i = 0; i < totalEvents; i++) {
+            const evt = seq[i];
+            layer.beatMotifs[bKey].push({ note: Number(evt.note), groupId, seqIndex: i, seqLen: totalEvents });
+            added++;
+          }
         }
         layer.activeMotif = motifGroup;
         beatOffset += gLen;
@@ -59,7 +62,7 @@ MotifSpreader = {
   },
 
   // Return up to `max` motif steps from a beat bucket using a per-beat modulo cursor
-  getBeatMotifPicks(layer, beatKey, max = 1) {
+  getBeatMotifPicks(layer, beatKey, max = 1, opts = {}) {
     if (!layer || !layer.beatMotifs) return [];
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
     if (!bucket.length) return [];
@@ -68,13 +71,52 @@ MotifSpreader = {
     let cursor = Number.isFinite(layer._motifCursor[beatKey]) ? layer._motifCursor[beatKey] : 0;
 
     const picks = [];
+
     for (let i = 0; i < max; i++) {
-      const idx = (cursor + i) % bucket.length;
-      const step = bucket[idx];
-      picks.push({ note: Number(step.note), groupId: step.groupId, seqIndex: step.seqIndex, seqLen: step.seqLen });
+      // If a MeasureComposer with voice leading is present on the layer, prefer it
+      let chosenStep = null;
+
+      try {
+        if (layer.measureComposer && typeof layer.measureComposer.selectNoteWithLeading === 'function') {
+          // pick using the measure composer's voice-leading selection
+          const candidates = bucket.map(s => Number(s.note));
+          const chosenNote = layer.measureComposer.selectNoteWithLeading(candidates, opts.voiceOptions || {});
+          // prefer the first candidate step matching the chosen note that starts at or after cursor
+          const startIdx = cursor % bucket.length;
+          for (let k = 0; k < bucket.length; k++) {
+            const idx = (startIdx + k) % bucket.length;
+            if (Number(bucket[idx].note) === chosenNote) { chosenStep = bucket[idx]; cursor = (idx + 1) % bucket.length; break; }
+          }
+        }
+      } catch (e) { /* fall through to other strategies */ }
+
+      // If no MeasureComposer choice, but a layer-level VoiceLeadingScore exists, use it
+      if (!chosenStep && layer.voiceLeading && typeof layer.voiceLeading.selectNextNote === 'function') {
+        const candidates = bucket.map(s => Number(s.note));
+        const chosenNote = layer.voiceLeading.selectNextNote(layer._voiceHistory || [], candidates, opts.voiceOptions || {});
+        const startIdx = cursor % bucket.length;
+        for (let k = 0; k < bucket.length; k++) {
+          const idx = (startIdx + k) % bucket.length;
+          if (Number(bucket[idx].note) === chosenNote) { chosenStep = bucket[idx]; cursor = (idx + 1) % bucket.length; break; }
+        }
+      }
+
+      // Fallback: simple cursor-based selection
+      if (!chosenStep) {
+        const idx = (cursor + i) % bucket.length;
+        chosenStep = bucket[idx];
+        cursor = (idx + 1) % bucket.length;
+      }
+
+      picks.push({ note: Number(chosenStep.note), groupId: chosenStep.groupId, seqIndex: chosenStep.seqIndex, seqLen: chosenStep.seqLen });
+
+      // Track per-layer minimal voice history for layer.voiceLeading use
+      if (!layer._voiceHistory) layer._voiceHistory = [];
+      layer._voiceHistory.unshift(Number(chosenStep.note));
+      if (layer._voiceHistory.length > 8) layer._voiceHistory.pop();
     }
 
-    layer._motifCursor[beatKey] = (cursor + max) % bucket.length;
+    layer._motifCursor[beatKey] = cursor % bucket.length;
     return picks;
   }
 };

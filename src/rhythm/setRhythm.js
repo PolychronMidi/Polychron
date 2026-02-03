@@ -1,4 +1,4 @@
-const { random: _random } = require('@tonaljs/rhythm-pattern');
+_random = require('@tonaljs/rhythm-pattern').random;
 
 setRhythm = function setRhythm(level, ctx = null) {
   const random = (length, probOn) => { return _random(length, 1 - probOn); };

@@ -18,7 +18,8 @@ rhythms={
   'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
 };
 
-const { binary: _binary, hex: _hex, onsets: _onsets, random: _random, probability: _probability, euclid: _euclid, rotate: _rotate } = require('@tonaljs/rhythm-pattern');
+_rp = require('@tonaljs/rhythm-pattern');
+_binary = _rp.binary; _hex = _rp.hex; _onsets = _rp.onsets; _random = _rp.random; _probability = _rp.probability; _euclid = _rp.euclid; _rotate = _rp.rotate;
 
 binary = (length) => { let pattern = [];
   while (pattern.length < length) { pattern = pattern.concat(_binary(ri(99))); }

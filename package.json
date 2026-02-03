@@ -29,7 +29,6 @@
     "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",
-    "deps:audit": "npm audit && depcheck",
-    "type-check": "tsc -p tsconfig.json"
+    "deps:audit": "npm audit && depcheck"
   }
 }

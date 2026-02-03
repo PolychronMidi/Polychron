@@ -1,4 +1,5 @@
 require('./MeasureComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 /**
  * Composes notes from a specific mode.
@@ -12,6 +13,7 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   constructor(modeName,root) {
     super();
     this.root=root;
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
     this.noteSet(modeName,root);
   }
   /**
@@ -28,6 +30,16 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   }
   /** @returns {{note: number}[]} Mode notes */
   x=()=>this.getNotes();
+
+  selectNoteWithLeading(candidates = []) {
+    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    try {
+      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
+        return this.voiceLeading.selectNextNote(this.voiceHistory || [], candidates, {});
+      }
+    } catch (e) { /* swallow */ }
+    return candidates[Math.floor(candidates.length / 2)];
+  }
 }
 
 RandomModeComposer = class RandomModeComposer extends ModeComposer {

@@ -1,11 +1,14 @@
-const ProgressionGenerator = require('./ProgressionGenerator');
+require('./ProgressionGenerator');
 require('./ChordComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
     const generator = new ProgressionGenerator(key, quality);
     const progressionChords = generator.random();
     super(progressionChords);
+    // enable voice-leading delegation
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
     this.generator = generator;
     this.tensionCurve = clamp(tensionCurve, 0, 1);
     this.key = key;

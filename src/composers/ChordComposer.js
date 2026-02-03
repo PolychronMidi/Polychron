@@ -1,20 +1,46 @@
 require('./MeasureComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 function normalizeChordSymbol(chordSymbol) {
+  if (typeof chordSymbol !== 'string') return chordSymbol;
   const enharmonicMap = {
     'B#': 'C', 'E#': 'F', 'Cb': 'B', 'Fb': 'E',
     'Bb#': 'B', 'Eb#': 'E', 'Ab#': 'A', 'Db#': 'D', 'Gb#': 'G',
     'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
   };
 
-  let normalized = chordSymbol;
+  let normalized = chordSymbol.trim();
 
-  for (const [from, to] of Object.entries(enharmonicMap).sort((a, b) => b[0].length - a[0].length)) {
-    if (normalized.startsWith(from)) {
-      normalized = to + normalized.slice(from.length);
-      break;
+  // Split off a slash-bass if present so we can normalize both parts
+  const parts = normalized.split('/');
+  let main = parts[0] || '';
+  let bass = parts[1] || '';
+
+  // Normalize a single note/root string: remove cancelling accidental pairs and uppercase root
+  const normalizeRoot = (str) => {
+    const rootMatch = String(str).match(/^([A-Ga-g][#b]*)(.*)$/);
+    if (!rootMatch) return str;
+    const rawRoot = rootMatch[1];
+    const rest = rootMatch[2] || '';
+    const cleanedRoot = rawRoot.replace(/(#b|b#)+/g, '');
+    let out = cleanedRoot + rest;
+    // Capitalize the root letter for tonal compatibility
+    out = out.replace(/^([a-g])/, ch => ch.toUpperCase());
+
+    // Apply enharmonic map to the root if it matches any 'from' patterns
+    for (const [from, to] of Object.entries(enharmonicMap).sort((a, b) => b[0].length - a[0].length)) {
+      if (out.startsWith(from)) {
+        out = to + out.slice(from.length);
+        break;
+      }
     }
-  }
+    return out;
+  };
+
+  // Normalize main and bass parts
+  main = normalizeRoot(main);
+  if (bass) bass = normalizeRoot(bass);
+  normalized = bass ? `${main}/${bass}` : main;
 
   return normalized;
 }
@@ -25,7 +51,26 @@ ChordComposer = class ChordComposer extends MeasureComposer {
    */
   constructor(progression) {
     super();
+    // enable basic voice-leading scorer to allow selectNoteWithLeading delegation
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
     this.noteSet(progression,'R');
+  }
+
+  /**
+   * Select a candidate using composer-local voice-leading if available.
+   * Delegates to VoiceLeadingScore.selectNextNote when enabled.
+   * @param {number[]} candidates
+   * @returns {number}
+   */
+  selectNoteWithLeading(candidates = []) {
+    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    try {
+      if (this.voiceLeading && typeof this.voiceLeading.selectNextNote === 'function') {
+        const lastNotes = Array.isArray(this.voiceHistory) ? this.voiceHistory : [];
+        return this.voiceLeading.selectNextNote(lastNotes, candidates, {});
+      }
+    } catch (e) { /* swallow and fallback */ }
+    return candidates[0];
   }
   /**
    * Sets progression and validates chords.
@@ -81,5 +126,3 @@ RandomChordComposer = class RandomChordComposer extends ChordComposer {
     super.noteSet(randomProgression);
   }
 }
-
-/* ChordComposer and RandomChordComposer exposed via require side-effects */

@@ -1,10 +1,12 @@
 require('./MeasureComposer');
+const { VoiceLeadingScore } = require('./voiceLeading');
 
 PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {
     super();
     this.root = root;
     this.type = type;
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { /* swallow */ }
     this.noteSet(root, type);
   }
 
