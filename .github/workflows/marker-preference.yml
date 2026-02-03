@@ -25,10 +25,10 @@ jobs:
       - name: Run tests
         run: npm test --silent
 
-      - name: Run bounded play (fast)
+      - name: Run bounded main (fast)
         env:
           PLAY_LIMIT: '1'
-        run: node src/play
+        run: node src/main
 
       - name: Run layer alignment verifier
         run: npm run layer-alignment

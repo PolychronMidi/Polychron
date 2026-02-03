@@ -61,7 +61,7 @@ This meta-event specifies that subsequent events in the Track should be sent to 
 This meta-event specifies the MIDI channel that subsequent meta-events and System_exclusive events pertain to. The channel Number specifies a MIDI channel from 0 to 15. In fact, the Number may be as large as 255, but the consequences of specifying a channel number greater than 15 are undefined.
 
 `Track, Time, Time_signature, Num, Denom, Click, NotesQ`
-Time_signature, Meter, or Metre are valid identifiers, depending on your preference. Num and Denom are the numerator and denominator of the time signature as specified on sheet music. Click and NotesQ can be left empty for default values. Click is the number of MIDI clocks per metronome click (default value is 24). NotesQ is the number of 32nd notes in a quarter note (default value is 8).
+Time_signature, Meter, or Metre are valid identifiers, depending on your preference. Num and Denom are the numerator and denominator of the time signature as specified on config music. Click and NotesQ can be left empty for default values. Click is the number of MIDI clocks per metronome click (default value is 24). NotesQ is the number of 32nd notes in a quarter note (default value is 8).
 
 `Track, Time, Key_signature, Key, Major/Minor`
 The key signature is specified by the numeric Key value, which is 0 for the key of C, a positive value for each sharp above C, or a negative value for each flat below C, thus in the inclusive range −7 to 7. The Major/Minor field is a quoted string which will be major for a major key and minor for a minor key.

@@ -1,4 +1,4 @@
-// venue.js - MIDI data definitions with program changes, controls, and music theory.
+// midiData.js - MIDI data definitions with program changes, controls, and music theory.
 
 const midiData={
   /** @type {Array<{number: number, name: string}>} */

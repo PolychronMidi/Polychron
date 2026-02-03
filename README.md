@@ -33,7 +33,7 @@ Polychron is an advanced MIDI composition system that breaks free from tradition
 
 Polychron consists of 11 specialized JavaScript modules following a clean minimal code philosophy:
 
-#### 1. **play.js** ([code](src/play.js)) ([doc](docs/play.md))** - Main Composition Engine
+#### 1. **main.js** ([code](src/main.js)) ([doc](docs/main.md))** - Main Composition Engine
 - Orchestrates the entire composition process
 - Implements dual-context architecture for primary and poly meters
 - Manages phrase-level timing synchronization
@@ -96,7 +96,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Interval Motifs**: Ordered `{ note, duration }` sequences
 - **Transformations**: transpose, invert, augment/diminish, reverse, develop chain
 - **Application**: `applyToNotes()` imprints motif offsets onto generated notes (used by stage)
-- **Integration**: Section types can seed `activeMotif` per section via **play.js** ([code](../src/play.js)) ([doc](play.md))
+- **Integration**: Section types can seed `activeMotif` per section via **main.js** ([code](../src/main.js)) ([doc](main.md))
 
 #### 8. **backstage.js** ([code](src/backstage.js)) ([doc](docs/backstage.md))** - Core Utilities & State
 - **Mathematical Utilities**: 15+ clamping functions (regular, mod, soft, step, log, exp)
@@ -125,7 +125,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 - **Global Exports**: Music theory data exposed for testing
 - **Validation Systems**: Chord and scale validation
 
-#### 11. **sheet.js** ([code](src/sheet.js)) ([doc](docs/sheet.md))** - Configuration System
+#### 11. **config.js** ([code](src/config.js)) ([doc](docs/config.md))** - Configuration System
 - **Musical Parameters**: BPM, PPQ, tuning frequency (432Hz)
 - **Weighted Distributions**: Numerators, denominators, octaves, voices
 - **Structural Parameters**: Sections, phrases per section, divisions (plus weighted SECTION_TYPES profiles)
@@ -140,7 +140,7 @@ Polychron consists of 11 specialized JavaScript modules following a clean minima
 
 Tests are organized at two levels:
 - **Functional Tests (Vitest — `/test`)**: module- and integration-level checks that import and exercise real functions for fast developer feedback.
-- **Engine Verification / Audit Suite (`/scripts/test`)**: system-level verification that runs the real play engine to generate outputs (CSV, unit maps) and validates global invariants. Use `npm run verify:unit-tree` and `npm run verify:layer-alignment` (or `npm run verify:fast` for deterministic CI runs with `PLAY_LIMIT=1`) for CI gating. `analyze-audit` is deprecated — prefer focused triage tools under `scripts/triage/` for diagnostics.
+- **Engine Verification / Audit Suite (`/scripts/test`)**: system-level verification that runs the real main engine to generate outputs (CSV, unit maps) and validates global invariants. Use `npm run verify:unit-tree` and `npm run verify:layer-alignment` (or `npm run verify:fast` for deterministic CI runs with `PLAY_LIMIT=1`) for CI gating. `analyze-audit` is deprecated — prefer focused triage tools under `scripts/triage/` for diagnostics.
 
 ## Technical Innovations
 
@@ -284,15 +284,15 @@ Runs the full test suite with Vitest (620 tests across 10 test files). Automatic
 npm run test
 ```
 
-#### `npm run play` ⭐ **Main Command**
+#### `npm run main` ⭐ **Main Command**
 **Generates a complete MIDI composition and converts it to playable format.**
 
 This is the primary workflow command that:
-1. Runs `node src/play` - Executes the composition engine, generates MIDI events as CSV
+1. Runs `node src/main` - Executes the composition engine, generates MIDI events as CSV
 2. Runs `py c2m.py` - Converts the CSV output to standard MIDI .mid files
 
 ```bash
-npm run play
+npm run main
 ```
 
 This creates output files in the `output/` directory:
@@ -305,7 +305,7 @@ The `c2m.py` script requires Python and the csv_maestro library. If running comp
 
 ```bash
 # Generate composition as CSV
-node src/play
+node src/main
 
 # Convert CSV to MIDI (requires Python)
 py c2m.py

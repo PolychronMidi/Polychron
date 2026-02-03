@@ -23,7 +23,7 @@ isPidAlive = function isPidAlive(pid) {
   }
 }
 
-// Lightweight lock helpers exported for use by `src/play.js` so that play.js can be
+// Lightweight lock helpers exported for use by `src/main.js` so that main.js can be
 // invoked directly (tests sometimes do this) without duplicating behavior.
 writeLock = function writeLock() {
   try { if (!fs.existsSync(LOCK_DIR)) fs.mkdirSync(LOCK_DIR, { recursive: true }); } catch (e) { /* swallow */ }
@@ -55,7 +55,7 @@ acquireLock = function acquireLock() {
         console.log('Acquired play lock (replaced guard lock)');
         return;
       }
-      console.error('New concurrent play.js instance requested; exiting');
+      console.error('New concurrent main.js instance requested; exiting');
       process.exit(2);
     }
     // Stale lock — remove and try once
@@ -73,7 +73,7 @@ releaseLock = function releaseLock() {
 }
 
 // Main guard behavior (unchanged) but run only when invoked directly so the module may be
-// required by `src/play.js` without executing the guard loop.
+// required by `src/main.js` without executing the guard loop.
 main = async function main() {
   try {
     if (!fs.existsSync(LOCK_DIR)) fs.mkdirSync(LOCK_DIR, { recursive: true });
@@ -178,7 +178,7 @@ main = async function main() {
       } catch (e) { /* swallow */ }
     }, HEARTBEAT_INTERVAL_MS);
 
-    const child = spawn(process.execPath, ['src/play.js'], { stdio: 'inherit', shell: false });
+    const child = spawn(process.execPath, ['src/main.js'], { stdio: 'inherit', shell: false });
     // Write child pid to lock for diagnostics
     try {
       if (child && child.pid) {

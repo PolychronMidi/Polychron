@@ -1,4 +1,4 @@
-// sheet.js - Configuration system with musical parameters and structural settings.
+// config.js - Configuration system with musical parameters and structural settings.
 
 primaryInstrument='glockenspiel';
 secondaryInstrument='music box';
