@@ -193,28 +193,3 @@ try {
     trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false);
   }
 }
-
-// DO NOT SPAM UP FILES IN /SRC WITH TEST CODE!!!! MOVE TO /TEST/SETUP-STAGE.JS !!!!!
-// Minimal deterministic test helper used by tests to schedule a single beat and return scheduled items
-// __test_playBeat = (layer, beatKey = 0, _div = 0, _dum = 0, velocity = 80, binVel = 90) => {
-//   try {
-//     if (!layer || !Array.isArray(layer.beatMotifs?.[beatKey] || [])) return [];
-//     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-//     const picks = bucket.length ? bucket : [];
-//     const pushed = [];
-//     for (let i = 0; i < picks.length; i++) {
-//       const s = picks[i];
-//       // If measureComposer provides selection, use it
-//       const chosenNote = (layer.measureComposer && typeof layer.measureComposer.selectNoteWithLeading === 'function')
-//         ? layer.measureComposer.selectNoteWithLeading(picks.map(p => p.note))
-//         : (s.note || 0);
-//       // write simple on/off events to global buffer `c` via `p`
-//       p(c, { tick: 0, type: 'on', vals: [cCH1, chosenNote, velocity] });
-//       p(c, { tick: 1, vals: [cCH1, chosenNote] });
-//       pushed.push({ note: chosenNote, tick: 0 });
-//     }
-//     return pushed;
-//   } catch (e) {
-//     throw e;
-//   }
-// };

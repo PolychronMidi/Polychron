@@ -153,5 +153,4 @@ stutterNotes = (opts = {}) => {
     }
 
     return localShared;
-  } catch (e) { /* swallow */ }
 };
