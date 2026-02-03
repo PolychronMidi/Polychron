@@ -6,7 +6,7 @@ trackRhythm = (unit, ctx, played) => {
     const unitNames = ['beat', 'div', 'subdiv', 'subsubdiv'];
     if (!unitNames.includes(key)) {
       console.warn(`trackRhythm: unknown unit "${unit}"`);
-      return;
+      return false;
     }
 
     // If caller explicitly tells us whether a play occurred, respect that
@@ -18,7 +18,7 @@ trackRhythm = (unit, ctx, played) => {
         ctx[`${key}sOn`] = 0;
         ctx[`${key}sOff`] = (ctx[`${key}sOff`] || 0) + 1;
       }
-      return;
+      return true;
     }
 
     // Otherwise, derive from the rhythm array as before
@@ -69,4 +69,6 @@ trackRhythm = (unit, ctx, played) => {
       ctx[`${key}sOff`] = (ctx[`${key}sOff`] || 0) + 1;
     }
   } catch (e) { console.warn('trackRhythm error:', e); throw e; }
+  // Normalize return to boolean for consistent-return rule
+  return true;
 }

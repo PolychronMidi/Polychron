@@ -53,12 +53,13 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
-        return super.noteSet(progression, direction === 'tension' ? 'R' : direction);
+        super.noteSet(progression, direction === 'tension' ? 'R' : direction);
+        return;
       }
     }
 
     if (!this.progression || this.progression.length === 0) { console.warn('TensionReleaseComposer.noteSet: no progression defined — skipping'); return; }
-    if (direction !== 'tension') return super.noteSet(this.progression.map(c => c.symbol), direction);
+    if (direction !== 'tension') { super.noteSet(this.progression.map(c => c.symbol), direction); return; }
     this.measureInSection = (this.measureInSection || 0) + 1;
     const position = (this.measureInSection % 16) / 16;
     const selectedChords = this.selectChordByTension(position);
