@@ -1,8 +1,11 @@
+import localRules from './eslint-rules/index.js';
+
 const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked globals instead (Example: DONT use: globalThis.variable DO use: variable)';
 
 export default [
   {
-    ignores: ['eslint.config.mjs', 'vitest.config.mjs', 'tmp/**']
+    // Do not lint ESLint helpers and config shims
+    ignores: ['eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**']
   },
   {
     files: ['eslint.config.mjs'],
@@ -20,8 +23,16 @@ export default [
     ],
     // Ban any comment that begins with "global" (e.g., /* global ... */) to enforce
     // the project's requirement to use naked globals via side-effect requires only.
+    // Also enforce stricter static rules and a project-specific rule to catch
+    // silent early returns (must log or explicitly handle before returning).
+    plugins: { local: localRules },
     rules: {
-      'no-warning-comments': ['error', { terms: ['global'], location: 'start' }]
+      'no-warning-comments': ['error', { terms: ['global'], location: 'start' }],
+      'consistent-return': 'error',
+      'no-unsafe-optional-chaining': 'error',
+      'no-implicit-coercion': ['warn', { 'boolean': true, 'number': true, 'string': true, 'allow': [] }],
+      'no-undef': 'error',
+      'local/no-silent-early-return': ['error', { allowInTests: false }]
     }
   },
   // Tests are intentionally excluded from linting to avoid enforcing project naked-global rules

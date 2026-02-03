@@ -18,18 +18,21 @@ class StutterManager {
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-    if (!channels) { console.warn('StutterManager.stutterFade: called with no channels — skipping'); return; }
+    if (!channels) { console.warn('StutterManager.stutterFade: called with no channels — skipping'); return { skipped: true }; }
     if (typeof this._stutterFade === 'function') return this._stutterFade.call(this, channels, numStutters, duration);
+    return null;
   }
 
   stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-    if (!channels) { console.warn('StutterManager.stutterPan: called with no channels — skipping'); return; }
+    if (!channels) { console.warn('StutterManager.stutterPan: called with no channels — skipping'); return { skipped: true }; }
     if (typeof this._stutterPan === 'function') return this._stutterPan.call(this, channels, numStutters, duration);
+    return null;
   }
 
   stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-    if (!channels) { console.warn('StutterManager.stutterFX: called with no channels — skipping'); return; }
+    if (!channels) { console.warn('StutterManager.stutterFX: called with no channels — skipping'); return { skipped: true }; }
     if (typeof this._stutterFX === 'function') return this._stutterFX.call(this, channels, numStutters, duration);
+    return null;
   }
 
   resetChannelTracking(channels = null) {
@@ -50,7 +53,7 @@ class StutterManager {
     const prev1 = this.lastUsedCHs.size;
     const prev2 = this.lastUsedCHs2.size;
     // DEBUG
-    if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('resetChannelTracking/full', { prev1, prev2, _resetHook: !!this._resetChannelTracking });
+    if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug('resetChannelTracking/full', { prev1, prev2, _resetHook: Boolean(this._resetChannelTracking) });
     this.lastUsedCHs.clear();
     this.lastUsedCHs2.clear();
 

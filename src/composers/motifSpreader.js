@@ -37,7 +37,7 @@ MotifSpreader = {
       // placement/length/offset is decided later by stage/main loops.
       const baseBeat = Math.floor(measureStart / beatLen);
       groups.forEach((gLen, groupIdx) => {
-        const mcGroup = new MotifComposer({ useVoiceLeading: !!(composer && composer.VoiceLeadingScore) });
+        const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
         const length = ri(min, Math.max(1, Math.min(8, gLen * min)));
         const motifGroup = mcGroup.generate({ length, fitToTotalTicks: true, totalTicks: gLen * beatLen, developFromComposer: composer, measureComposer: composer });
         const seq = motifGroup.sequence || motifGroup.events || [];

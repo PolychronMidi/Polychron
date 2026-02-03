@@ -36,7 +36,8 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
-        return super.noteSet(progression, direction);
+        super.noteSet(progression, direction);
+        return;
       }
     }
     if (!this.progression || this.progression.length === 0) { console.warn('HarmonicRhythmComposer.noteSet: no progression defined — skipping'); return; }

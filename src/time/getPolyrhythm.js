@@ -7,7 +7,7 @@ require('./midiTiming');
 getPolyrhythm = () => {
   if (!composer){
     console.warn('getPolyrhythm() called without valid composer');
-    return;
+    return false;
   }
 
   const MAX_ATTEMPTS = 100;
@@ -49,7 +49,7 @@ getPolyrhythm = () => {
          (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1))) {
       measuresPerPhrase1 = bestMatch.primaryMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
-      return;
+      return true;
     }
   }
   // Max attempts reached: try new meter on primary layer with relaxed constraints
@@ -57,5 +57,6 @@ getPolyrhythm = () => {
   [numerator, denominator] = composer.getMeter(true, false);
   // CRITICAL: Recalculate all timing after meter change to prevent sync desync
   getMidiTiming();
-  return getPolyrhythm();
+  getPolyrhythm();
+  return true;
 };
