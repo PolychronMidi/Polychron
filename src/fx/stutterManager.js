@@ -15,7 +15,6 @@ class StutterManager {
     this._stutterFade = stutterFade;
     this._stutterPan = stutterPan;
     this._stutterFX = stutterFX;
-    this._resetChannelTracking = resetChannelTracking;
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
@@ -67,7 +66,7 @@ class StutterManager {
 // Export StutterManager instance and class to global namespace
 Stutter = new StutterManager();
 
-// Global delegators for ease of use in runtime/tests. Keep minimal and fail-fast.
+// Delegator wrappers for runtime/tests (minimal and fail-fast).
 stutterFade = (...args) => Stutter.stutterFade(...args);
 stutterPan = (...args) => Stutter.stutterPan(...args);
 stutterFX = (...args) => Stutter.stutterFX(...args);
