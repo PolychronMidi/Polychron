@@ -58,13 +58,6 @@ grandFinale = () => {
       .sort((a, b) => (a._tickSortKey || 0) - (b._tickSortKey || 0));
 
     // Generate CSV
-    // Debug: tally per-channel 'on' events in this buffer
-    try {
-      const perChannelOn = {};
-      buffer.forEach(evt => { if (evt && evt.type === 'on' && Array.isArray(evt.vals) && Number.isFinite(Number(evt.vals[0]))) { const ch = String(evt.vals[0]); perChannelOn[ch] = (perChannelOn[ch] || 0) + 1; } });
-      console.log(`[grandFinale] layer=${name} onCounts=`, perChannelOn);
-    } catch (_e) { /* swallow */ }
-
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
     let finalTick = -Infinity;
 
