@@ -3,12 +3,6 @@
 require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
 require('./rhythm'); require('./time'); require('./composers'); require('./fx');
 
-// Debug counters for limited logging
-let _motifPickLog = 0;
-let _melodicOnLogCount = 0;
-const _MOTIF_PICK_LOG_LIMIT = 6; // keep sample-sized
-const _MELODIC_ON_LOG_LIMIT = 30; // limit melodic logs to avoid excessive output
-
 /**
  * Sets program, pitch bend, and volume for all instrument channels
  * @returns {void}
@@ -90,25 +84,13 @@ try {
     const beatKey = Math.floor(on / beatLen);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
     const picks = bucket.length ? MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3)) : [];
-    try {
-      if (bucket.length && _motifPickLog < _MOTIF_PICK_LOG_LIMIT) { console.log('[stage][subdiv] beatKey', beatKey, 'bucketLen', bucket.length); _motifPickLog++; }
-    } catch (_e) { /* swallow */ }
-    try {
-      if (picks.length && _motifPickLog < _MOTIF_PICK_LOG_LIMIT) {
-        console.log('[stage][subdiv] beatKey', beatKey, 'picksLen', picks.length, 'sample', picks.slice(0,5).map(p=>p.note));
-        _motifPickLog++;
-      }
-    } catch (_e) { /* swallow */ }
     for (let _pi = 0; _pi < picks.length; _pi++) { const s = picks[_pi];
   // Play source channels
   source.filter(sourceCH=>
     flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
 
-    const tickVal = sourceCH===cCH1 ? on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3);
-    const velVal = sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03);
-    try { if (sourceCH !== drumCH && _melodicOnLogCount < _MELODIC_ON_LOG_LIMIT) { console.log('[stage][subdiv][emit] tick', Math.round(tickVal), 'chan', sourceCH, 'note', s.note, 'vel', Math.round(velVal)); _melodicOnLogCount++; } } catch (_e) { /* swallow */ }
-    p(c,{tick: tickVal, type:'on', vals:[sourceCH,s.note,velVal]});
+    p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
     p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
   });
@@ -118,10 +100,7 @@ try {
     flipBin ? flipBinT.includes(reflectionCH) : flipBinF.includes(reflectionCH)
   ).map(reflectionCH=>{
 
-    const tickVal = reflectionCH===cCH2 ? on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5);
-    const velVal = reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9);
-    try { if (reflectionCH !== drumCH && _melodicOnLogCount < _MELODIC_ON_LOG_LIMIT) { console.log('[stage][subdiv][emit][reflection] tick', Math.round(tickVal), 'chan', reflectionCH, 'note', s.note, 'vel', Math.round(velVal)); _melodicOnLogCount++; } } catch (_e) { /* swallow */ }
-    p(c,{tick:tickVal,type:'on',vals:[reflectionCH,s.note,velVal]});
+    p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,s.note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
     p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
 
   });
@@ -133,11 +112,7 @@ try {
     ).map(bassCH=>{
       const bassNote=modClamp(s.note,12,35);
 
-      const tickVal = bassCH===cCH3 ? on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5);
-      const velVal = bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2);
-      try { if (bassCH !== drumCH && _melodicOnLogCount < _MELODIC_ON_LOG_LIMIT) { console.log('[stage][subdiv][emit][bass] tick', Math.round(tickVal), 'chan', bassCH, 'note', bassNote, 'vel', Math.round(velVal)); _melodicOnLogCount++; } } catch (_e) { /* swallow */ }
-
-      p(c,{tick:tickVal,type:'on',vals:[bassCH,bassNote,velVal]});
+      p(c,{tick:bassCH===cCH3 ? on+rv(tpSubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
       p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     });
   }
@@ -185,24 +160,14 @@ try {
     const beatKey = Math.floor(on / beatLen);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
     if (bucket.length) {
-      try { if (_motifPickLog < _MOTIF_PICK_LOG_LIMIT) { console.log('[stage][subsubdiv] beatKey', beatKey, 'bucketLen', bucket.length); _motifPickLog++; } } catch (_e) { /* swallow */ }
       const picks = bucket.length ? MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3)) : [];
-      try {
-        if (picks.length && _motifPickLog < _MOTIF_PICK_LOG_LIMIT) {
-          console.log('[stage][subsubdiv] beatKey', beatKey, 'picksLen', picks.length, 'sample', picks.slice(0,5).map(p=>p.note));
-          _motifPickLog++;
-        }
-      } catch (_e) { /* swallow */ }
       for (let _pi = 0; _pi < picks.length; _pi++) {
         const s = picks[_pi]; // use each pick once
       source.filter(sourceCH=>
   flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)
   ).map(sourceCH=>{
 
-  const tickVal = sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3);
-  const velVal = sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03);
-  try { if (sourceCH !== drumCH && _melodicOnLogCount < _MELODIC_ON_LOG_LIMIT) { console.log('[stage][subsubdiv][emit] tick', Math.round(tickVal), 'chan', sourceCH, 'note', s.note, 'vel', Math.round(velVal)); _melodicOnLogCount++; } } catch (_e) { /* swallow */ }
-  p(c,{tick:tickVal,type:'on',vals:[sourceCH,s.note,velVal]});
+  p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
   p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
   // Stutter-Shift: Random note stutter and octave shift.
@@ -263,10 +228,7 @@ try {
   }
 
   reflectionCH=reflect[sourceCH];
-  const reflectionTick = reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5);
-  const reflectionVel = reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9);
-  try { if (reflectionCH !== drumCH && _melodicOnLogCount < _MELODIC_ON_LOG_LIMIT) { console.log('[stage][subsubdiv][emit][reflection] tick', Math.round(reflectionTick), 'chan', reflectionCH, 'note', s.note, 'vel', Math.round(reflectionVel)); _melodicOnLogCount++; } } catch (_e) { /* swallow */ }
-  p(c,{tick:reflectionTick,type:'on',vals:[reflectionCH,s.note,reflectionVel]});
+  p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,s.note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
   p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
   if (rf()<.2){ // Reflection Channels Stutter-Shift
     if (!stutters.has(reflectionCH)) stutters.set(reflectionCH,m.round(rv(rv(ri(2,7),[2,5],.33),[2,5],.1)));
@@ -289,10 +251,7 @@ try {
 
   if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
     bassCH=reflect2[sourceCH]; bassNote=modClamp(s.note,12,35);
-  const bassTick = bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5);
-  const bassVel = bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2);
-  try { if (bassCH !== drumCH && _melodicOnLogCount < _MELODIC_ON_LOG_LIMIT) { console.log('[stage][subsubdiv][emit][bass] tick', Math.round(bassTick), 'chan', bassCH, 'note', bassNote, 'vel', Math.round(bassVel)); _melodicOnLogCount++; } } catch (_e) { /* swallow */ }
-  p(c,{tick:bassTick,type:'on',vals:[bassCH,bassNote,bassVel]});
+    p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
     if (rf()<.7){ // Bass Channels Stutter-Shift
       if (!stutters.has(bassCH)) stutters.set(bassCH,m.round(rv(rv(ri(2,5),[2,3],.33),[2,10],.1)));
