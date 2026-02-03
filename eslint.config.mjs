@@ -418,6 +418,7 @@ export default [
         stutterFX: 'writable',
         stutterFade: 'writable',
         stutterPan: 'writable',
+        stutterNotes: 'writable',
         resetChannelTracking: 'writable',
         playSubdivNotes: 'writable',
         playSubsubdivNotes: 'writable',

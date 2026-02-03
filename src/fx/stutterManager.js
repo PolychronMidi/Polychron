@@ -1,5 +1,4 @@
-// fx/StutterManager.js - Audio effects manager moved into `src/fx` folder
-// Minimal changes from original: still exports `fx` global and keeps class interface.
+// fx/StutterManager.js - Audio effects manager
 
 class StutterManager {
   constructor() {
@@ -20,16 +19,25 @@ class StutterManager {
     this._resetChannelTracking = (typeof resetChannelTracking !== 'undefined') ? resetChannelTracking : null;
   }
 
-  stutterFade(channels, numStutters, duration) {
-    if (this._stutterFade) return this._stutterFade.call(this, channels, numStutters, duration);
+  stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
+    try {
+      if (!channels) return;
+      if (this._stutterFade) return this._stutterFade.call(this, channels, numStutters, duration);
+    } catch (e) { /* swallow */ }
   }
 
-  stutterPan(channels, numStutters, duration) {
-    if (this._stutterPan) return this._stutterPan.call(this, channels, numStutters, duration);
+  stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
+    try {
+      if (!channels) return;
+      if (this._stutterPan) return this._stutterPan.call(this, channels, numStutters, duration);
+    } catch (e) { /* swallow */ }
   }
 
-  stutterFX(channels, numStutters, duration) {
-    if (this._stutterFX) return this._stutterFX.call(this, channels, numStutters, duration);
+  stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
+    try {
+      if (!channels) return;
+      if (this._stutterFX) return this._stutterFX.call(this, channels, numStutters, duration);
+    } catch (e) { /* swallow */ }
   }
 
   resetChannelTracking() {
@@ -38,8 +46,10 @@ class StutterManager {
     this.lastUsedCHs2.clear();
   }
 }
+// Bind instance methods to naked globals for backwards compatibility
+try { stutterFade = Stutter && typeof Stutter.stutterFade === 'function' ? Stutter.stutterFade.bind(Stutter) : stutterFade; } catch (e) { /* swallow */ }
+try { stutterPan = Stutter && typeof Stutter.stutterPan === 'function' ? Stutter.stutterPan.bind(Stutter) : stutterPan; } catch (e) { /* swallow */ }
+try { stutterFX = Stutter && typeof Stutter.stutterFX === 'function' ? Stutter.stutterFX.bind(Stutter) : stutterFX; } catch (e) { /* swallow */ }
 
 // Export StutterManager instance and class to global namespace
 Stutter = new StutterManager();
-
-// Side-effect: `Stutter` and `StutterManager` are available as globals/exports via the fx module.
