@@ -2,14 +2,20 @@ require('./MeasureComposer');
 const { VoiceLeadingScore } = require('./VoiceLeadingScore');
 
 function normalizeChordSymbol(chordSymbol) {
-  if (typeof chordSymbol !== 'string') return chordSymbol;
+  // Accept chord objects like { symbol: 'Cmaj7' } or raw strings
+  if (typeof chordSymbol !== 'string') {
+    if (chordSymbol && typeof chordSymbol === 'object' && typeof chordSymbol.symbol === 'string') {
+      chordSymbol = chordSymbol.symbol;
+    } else return chordSymbol;
+  }
   const enharmonicMap = {
     'B#': 'C', 'E#': 'F', 'Cb': 'B', 'Fb': 'E',
     'Bb#': 'B', 'Eb#': 'E', 'Ab#': 'A', 'Db#': 'D', 'Gb#': 'G',
     'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
   };
 
-  let normalized = chordSymbol.trim();
+  // Normalize Unicode sharps/flats to ASCII and trim
+  let normalized = chordSymbol.replace(/[♯♭]/g, ch => ch === '♯' ? '#' : 'b').trim();
 
   // Split off a slash-bass if present so we can normalize both parts
   const parts = normalized.split('/');
