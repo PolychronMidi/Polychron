@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./VoiceLeadingScore');
+require('./VoiceLeadingScore');
 
 /**
  * Composes notes from a specific scale.
@@ -59,5 +59,3 @@ RandomScaleComposer = class RandomScaleComposer extends ScaleComposer {
   /** @returns {{note: number}[]} Random scale notes */
   x() { this.noteSet(); return super.x(); }
 }
-
-/* ScaleComposer and RandomScaleComposer exposed by require side-effects */

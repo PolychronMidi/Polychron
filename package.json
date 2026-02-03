@@ -21,7 +21,7 @@
     "lint:raw": "eslint . --ext .js",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
     "lint:fix": "eslint . --ext .js --fix",
-    "test": "node scripts/run-with-log.js test.log vitest --run --reporter=default",
+    "test": "npm run lint && node scripts/run-with-log.js test.log vitest --run --reporter=default",
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",
     "test:coverage:raw": "vitest --coverage --run",
     "play": "npm run lint && node scripts/run-with-log.js play.log node scripts/play-guard.js",

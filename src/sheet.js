@@ -1,5 +1,4 @@
 // sheet.js - Configuration system with musical parameters and structural settings.
-// minimalist comments, details at: sheet.md
 
 primaryInstrument='glockenspiel';
 secondaryInstrument='music box';

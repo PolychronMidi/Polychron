@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./VoiceLeadingScore');
+require('./VoiceLeadingScore');
 
 /**
  * Composes notes from a specific mode.
@@ -57,5 +57,3 @@ RandomModeComposer = class RandomModeComposer extends ModeComposer {
   /** @returns {{note: number}[]} Random mode notes */
   x() { this.noteSet(); return super.x(); }
 }
-
-/* ModeComposer and RandomModeComposer exposed via require */

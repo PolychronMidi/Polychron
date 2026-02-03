@@ -1,6 +1,7 @@
 // writer.js - MIDI output and file generation with CSV buffer management.
-// minimalist comments, details at: writer.md
-
+fs = require('fs');
+path = require('path');
+require('./grandFinale');
 /**
  * Outputs separate MIDI files for each layer with automatic synchronization.
  * @description
@@ -13,12 +14,6 @@
  * - Automatically handles any number of layers
  * @returns {void}
  */
-fs = require('fs');
-path = require('path');
-// Import canonical system constants from sheet.js (LOG, TUNING_FREQ, BINAURAL, etc.)
-require('./sheet');
-// Initialize naked globals and utility helpers defined in backstage
-require('./backstage');
 
 
 /**
@@ -50,6 +45,3 @@ try {
 } catch (err) {
   console.error('Failed to wrap fs.writeFileSync:', err);
 }
-
-// Load external grandFinale implementation and expose global for tests that expect it
-require('./grandFinale');

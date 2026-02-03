@@ -1,7 +1,4 @@
 // motifs.js - Motif utilities for interval-based transformations and development.
-// minimalist comments, details at: motifs.md
-
-const MATH = Math;
 
 /**
  * Clamp helper to keep MIDI notes in range.
@@ -10,7 +7,7 @@ const MATH = Math;
  * @param {number} max
  * @returns {number}
  */
-const clampNote = (val, min = 0, max = 127) => MATH.min(max, MATH.max(min, val));
+const clampMotifNote = (val, min = 0, max = 127) => m.min(max, m.max(min, val));
 
 /**
  * Normalize a motif event into { note, duration } shape.
@@ -59,7 +56,7 @@ Motif = class Motif {
    */
   transpose(semitones = 0) {
     return new Motif(this.sequence.map(({ note, duration }) => ({
-      note: clampNote(note + semitones),
+      note: clampMotifNote(note + semitones),
       duration
     })), { defaultDuration: this.defaultDuration });
   }
@@ -74,7 +71,7 @@ Motif = class Motif {
       ? (this.sequence[0]?.note ?? 0)
       : pivot;
     return new Motif(this.sequence.map(({ note, duration }) => ({
-      note: clampNote(pivotNote - (note - pivotNote)),
+      note: clampMotifNote(pivotNote - (note - pivotNote)),
       duration
     })), { defaultDuration: this.defaultDuration });
   }
@@ -157,22 +154,16 @@ Motif = class Motif {
     return notes.map((noteObj, idx) => {
       const motifEvent = this.sequence[idx % this.sequence.length];
       const offset = motifEvent.note - baseNote;
-      const newNote = clampNote((noteObj?.note ?? 0) + offset, clampMin, clampMax);
+      const newNote = clampMotifNote((noteObj?.note ?? 0) + offset, clampMin, clampMax);
       return { ...noteObj, note: newNote };
     });
   }
 }
 
-// Expose motif utilities globally for stage/play integration and testing.
-try { clampMotifNote = clampNote; } catch (e) { /* swallow */ }
-try { activeMotif = (typeof activeMotif === 'undefined') ? null : activeMotif; } catch (e) { activeMotif = null; }
-
-try {
-  applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
-    if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
-    return motif.applyToNotes(notes, options);
-  };
-} catch (e) { /* swallow */ }
+applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
+  if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
+  return motif.applyToNotes(notes, options);
+};
 
 /**
  * Return up to `max` scheduled notes that start within [windowStart, windowEnd).
@@ -188,8 +179,8 @@ getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max =
   // Allow a small slack so events that start slightly before the micro-unit
   // (e.g., due to jitter) are still considered. Slack is based on the
   // subdiv/subsubdiv tick lengths (use .1 as reasonable tolerance).
-  const slack = Math.max(1, Math.round((Number(tpSubdiv) || 0) * 0.1), Math.round((Number(tpSubsubdiv) || 0) * 0.1));
+  const slack = m.max(1, m.round((Number(tpSubdiv) || 0) * 0.1), m.round((Number(tpSubsubdiv) || 0) * 0.1));
   const hits = schedule.filter(s => Number.isFinite(Number(s.startTick)) && s.startTick >= (windowStart - slack) && s.startTick < windowEnd);
   hits.sort((a, b) => a.startTick - b.startTick);
-  return hits.slice(0, Math.max(0, Math.min(max, hits.length))).map(s => ({ ...s }));
+  return hits.slice(0, m.max(0, m.min(max, hits.length))).map(s => ({ ...s }));
 };

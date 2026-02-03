@@ -1,4 +1,4 @@
-require('./writer');
+// grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 grandFinale = () => {
 

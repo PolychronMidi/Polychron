@@ -1,5 +1,4 @@
 require('../rhythm/trackRhythm');
-const m = Math;
 require('../debug/logUnit');
 
 /**
@@ -44,8 +43,9 @@ setUnitTiming = (unitType) => {
       beatStart = measureStart + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
 
-      // Ensure we have a positive divisions-per-beat before generating div rhythms
-      divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
+      // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
+      // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
+      divsPerBeat = composer.getDivisions();
 
       divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
       break;
@@ -56,7 +56,7 @@ setUnitTiming = (unitType) => {
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
-      subdivsPerDiv = m.max(1, composer ? composer.getSubdivs() : 1);
+      subdivsPerDiv = composer.getSubdivs();
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv', LM.layers[LM.activeLayer]);
       break;
@@ -68,7 +68,7 @@ setUnitTiming = (unitType) => {
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
-      subsubsPerSub = composer ? composer.getSubsubdivs() : 1;
+      subsubsPerSub =composer.getSubsubdivs();
       subsubdivRhythm = setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
       break;
 

@@ -1,5 +1,5 @@
 require('./MeasureComposer');
-const { VoiceLeadingScore } = require('./VoiceLeadingScore');
+require('./VoiceLeadingScore');
 
 function normalizeChordSymbol(chordSymbol) {
   // Accept chord objects like { symbol: 'Cmaj7' } or raw strings

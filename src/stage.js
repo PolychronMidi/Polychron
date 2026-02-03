@@ -1,7 +1,9 @@
 // stage.js - Audio processing engine with MIDI event generation and binaural effects.
-// minimalist comments, details at: stage.md
-require('./sheet'); require('./writer'); require('./venue'); require('./backstage');
-require('./rhythm'); require('./time'); require('./composers'); require('./fx');
+
+// Central importation hub to keep play.js and other file imports clean:
+require('./sheet'); require('./venue'); require('./backstage');
+require('./rhythm'); require('./time'); require('./composers');
+require('./fx'); require('./debug'); require('./writer');
 
 /**
  * Sets program, pitch bend, and volume for all instrument channels
@@ -221,27 +223,3 @@ try {
     trackRhythm('subsubdiv', LM.layers[LM.activeLayer], false);
   }
 }
-
-// Test helper: schedule one beat deterministically for integration tests
-try {
-  __test_playBeat = function(layer, beatKey, onArg = 0, sustainArg = 1, binVelArg = 80, velocityArg = 90) {
-    try {
-      if (!layer || !layer.beatMotifs) return [];
-      const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-      if (!bucket.length) return [];
-      const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, 1);
-      const pushed = [];
-      for (let pi = 0; pi < picks.length; pi++) {
-        const s = picks[pi];
-        source.filter(sourceCH => flipBin ? flipBinT.includes(sourceCH) : flipBinF.includes(sourceCH)).forEach(sourceCH => {
-          const onTick = onArg;
-          const vel = sourceCH === cCH1 ? velocityArg : binVelArg;
-          const ev = { tick: onTick, type: 'on', vals: [sourceCH, s.note, vel] };
-          p(c, ev);
-          pushed.push(ev);
-        });
-      }
-      return pushed;
-    } catch (e) { return []; }
-  };
-} catch (e) { /* swallow test helper registration errors */ }

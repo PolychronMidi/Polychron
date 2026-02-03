@@ -1,4 +1,4 @@
-// src/rhythm/patterns.js - pattern utilities moved from src/rhythm.js
+// src/rhythm/patterns.js - pattern utilities and rhythm methods
 
 /**
  * Rhythm patterns library with weighted selection.
@@ -76,5 +76,3 @@ closestDivisor = (x, target = 2) => {
   if (closest === Infinity) { return x; }
   return x % target === 0 ? target : closest;
 };
-
-// Legacy compatibility: expose functions as naked globals (module.exports removed)

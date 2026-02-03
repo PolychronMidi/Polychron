@@ -1,5 +1,4 @@
 // backstage.js - Core utilities, randomization, and MIDI infrastructure.
-// minimalist comments, details at: backstage.md
 m=Math;
 /**
  * Clamp a value within [min, max] range.
