@@ -57,7 +57,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             playSubdivNotes();
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              playSubsubdivNotes();
+              if (subsubdivIndex > 0) {playSubsubdivNotes();}
             }
           }
         }
@@ -98,7 +98,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              playSubsubdivNotes();
+              if (subsubdivIndex > 0) {playSubsubdivNotes();}
             }
           }
         }

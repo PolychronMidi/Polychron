@@ -6,6 +6,7 @@ require('./resetChannelTracking');
 require('./setBinaural');
 require('./setBalanceAndFX');
 require('./stutterManager');
+require('./stutterNotes');
 
 // Expose lightweight naked wrappers that delegate to the StutterManager instance
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
