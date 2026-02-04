@@ -1,4 +1,6 @@
+// @ts-ignore: load side-effect module with globals
 require('./ScaleComposer');
+// @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingScore');
 
 VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {

@@ -1,6 +1,9 @@
 // MotifComposer - thin adapter to produce Motif objects from scale/meter/voice-leading
+// @ts-ignore: load side-effect module with globals
 require('./ScaleComposer');
+// @ts-ignore: load side-effect module with globals
 require('./motifs'); // provides Motif, applyMotifToNotes
+// @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingScore');
 
 /**
@@ -41,21 +44,22 @@ MotifComposer = class MotifComposer {
 
   /**
    * Generate a Motif instance.
-   * @param {{length?:number, scaleComposer?:ScaleComposer, defaultDuration?:number, developFromComposer?:object, measureComposer?:MeasureComposer}} opts
+   * @param {{length?:number, scaleComposer?:ScaleComposer, defaultDuration?:number, durationUnit?:string, durationScale?:number, fitToTotalTicks?:boolean, fitToPhrase?:boolean, totalTicks?:number, developFromComposer?:object, measureComposer?:MeasureComposer}} opts
    * @returns {Motif|object}
    */
   generate(opts = {}) {
-    const length = opts.length || this.length;
-    const durationMult = opts.defaultDuration || this.defaultDuration;
-    const durationUnit = opts.durationUnit || this.durationUnit;
-    const durationScale = typeof opts.durationScale === 'number' ? opts.durationScale : this.durationScale;
+    const optsAny = /** @type {any} */ (opts);
+    const length = optsAny.length || this.length;
+    const durationMult = optsAny.defaultDuration || this.defaultDuration;
+    const durationUnit = optsAny.durationUnit || this.durationUnit;
+    const durationScale = typeof optsAny.durationScale === 'number' ? optsAny.durationScale : this.durationScale;
 
     // Prefer developFromComposer if provided in call, else fall back to instance-level composer
-    const developer = opts.developFromComposer || this.developFromComposer || null;
+    const developer = optsAny.developFromComposer || this.developFromComposer || null;
 
     // Resolve scale notes (fallback to safe Major/C scale)
     let scaleNotes = [];
-    if (opts.scaleComposer && typeof opts.scaleComposer.getNotes === 'function') {
+    if (optsAny.scaleComposer && typeof optsAny.scaleComposer.getNotes === 'function') {
       scaleNotes = opts.scaleComposer.getNotes() || [];
     } else if (developer && typeof developer.getNotes === 'function') {
       // If developer provided, seed scale notes from it
@@ -93,8 +97,8 @@ MotifComposer = class MotifComposer {
     const defaultDurationTicks = Math.max(1, Math.round(unitTicks * durationMult * durationScale));
 
     // If caller asks to fit the motif into a total tick budget, compute durations accordingly
-    const fitToTotal = Boolean(opts.fitToTotalTicks || opts.fitToPhrase);
-    const totalTicksProvided = Number.isFinite(Number(opts.totalTicks)) ? Number(opts.totalTicks) : null;
+    const fitToTotal = Boolean(optsAny.fitToTotalTicks || optsAny.fitToPhrase);
+    const totalTicksProvided = Number.isFinite(Number(optsAny.totalTicks)) ? Number(optsAny.totalTicks) : null;
     const inferredTotalTicks = (fitToTotal && (totalTicksProvided || (typeof measuresPerPhrase !== 'undefined' && Number.isFinite(Number(tpMeasure)) && Number.isFinite(Number(measuresPerPhrase)))))
       ? (totalTicksProvided || (measuresPerPhrase * Number(tpMeasure)))
       : null;
@@ -133,9 +137,9 @@ MotifComposer = class MotifComposer {
       if (devNotes && devNotes.length > 0) {
         const n = devNotes[i % devNotes.length];
         chosen = (typeof n.note === 'number') ? n.note : (n ?? 60);
-      } else if (this.measureComposer || opts.measureComposer) {
+      } else if (this.measureComposer || optsAny.measureComposer) {
         // Use provided measureComposer to select a note using its voice-leading hooks
-        const mc = opts.measureComposer || this.measureComposer;
+        const mc = optsAny.measureComposer || this.measureComposer;
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
         try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)]; } catch (e) { chosen = avail[Math.floor(Math.random() * avail.length)]; }
       } else if (this.VoiceLeadingScore && this.useVoiceLeading) {

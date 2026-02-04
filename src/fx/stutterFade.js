@@ -10,7 +10,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   }
 
   if (channelsToStutter.size < CHsToStutter) {
-    this.lastUsedCHs.clear();
+    if (this && this.lastUsedCHs && typeof (/** @type {any} */ (this.lastUsedCHs)).clear === 'function') (/** @type {any} */ (this.lastUsedCHs)).clear();
   } else {
     this.lastUsedCHs = new Set(channelsToStutter);
   }

@@ -22,6 +22,7 @@
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
     "lint:fix": "eslint . --ext .js --fix",
     "test": "npm run lint && node scripts/run-with-log.js test.log vitest --run --reporter=default",
+    "typecheck": "tsc -p . --noEmit" ,
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",
     "test:coverage:raw": "vitest --coverage --run",
     "main": "npm run lint && node scripts/run-with-log.js main.log node src/main.js",
