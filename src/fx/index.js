@@ -22,8 +22,6 @@ try {
     StutterConfig.registerOriginalHelper(stutterNotes);
   }
 } catch (e) { /* ignore */ }
-// Ensure generic note-cascade helper is available for scheduling
-// @ts-ignore: load side-effect module with globals
-require('../noteCascade');
+// Note: noteCascade is removed; scheduling is now handled by StutterManager.scheduleStutterForUnit
 // @ts-ignore: load side-effect module with globals
 require('./StutterManager');
