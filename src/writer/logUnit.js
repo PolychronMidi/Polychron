@@ -1,4 +1,4 @@
-require('./formatTime');
+// Dependency: formatTime is required via `src/writer/index.js`
 
 /**
  * Logs timing markers with context awareness.

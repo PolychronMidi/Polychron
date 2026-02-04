@@ -1,4 +1,4 @@
-require('./midiTiming');
+// Dependency: midiTiming is required via `src/time/index.js`
 /**
  * Compute phrase alignment between primary and poly meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.

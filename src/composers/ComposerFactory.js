@@ -1,15 +1,3 @@
-/* Side-effect requires: these modules assign globals (legacy pattern). Use an explicit any cast to satisfy tsc while keeping runtime behavior. */
-/** @type {any} */ (require('./MeasureComposer'));
-/** @type {any} */ (require('./ScaleComposer'));
-/** @type {any} */ (require('./ChordComposer'));
-/** @type {any} */ (require('./ModeComposer'));
-/** @type {any} */ (require('./PentatonicComposer'));
-/** @type {any} */ (require('./TensionReleaseComposer'));
-/** @type {any} */ (require('./ModalInterchangeComposer'));
-/** @type {any} */ (require('./HarmonicRhythmComposer'));
-/** @type {any} */ (require('./MelodicDevelopmentComposer'));
-/** @type {any} */ (require('./VoiceLeadingComposer'));
-
 ComposerFactory = class ComposerFactory {
   static constructors = {
     measure: () => new MeasureComposer(),

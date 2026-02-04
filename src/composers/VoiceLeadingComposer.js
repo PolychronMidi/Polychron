@@ -1,7 +1,4 @@
-// @ts-ignore: load side-effect module with globals
-require('./ScaleComposer');
-// @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScore');
+// Dependencies are required via `src/composers/index.js`
 
 VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7, contraryMotionPreference = 0.4) {

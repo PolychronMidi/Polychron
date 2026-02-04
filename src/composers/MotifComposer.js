@@ -1,10 +1,5 @@
 // MotifComposer - thin adapter to produce Motif objects from scale/meter/voice-leading
-// @ts-ignore: load side-effect module with globals
-require('./ScaleComposer');
-// @ts-ignore: load side-effect module with globals
-require('./motifs'); // provides Motif, applyMotifToNotes
-// @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScore');
+// Dependencies are required via `src/composers/index.js` (aggregated side-effect requires)
 
 /**
  * MotifComposer: factory for short motifs that fit a scale/meter and optionally use voice-leading.

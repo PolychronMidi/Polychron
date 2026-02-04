@@ -1,9 +1,4 @@
-// @ts-ignore: load side-effect module with globals
-require('./ProgressionGenerator');
-// @ts-ignore: load side-effect module with globals
-require('./ChordComposer');
-// @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScore');
+// Dependencies are required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {

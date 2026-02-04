@@ -1,5 +1,5 @@
 // src/rhythm/drummer.js - drummer utility for rhythm generation
-require('./drumMap');
+// Dependency: drumMap is required via `src/rhythm/index.js`
 
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (drumNames === 'random') {
