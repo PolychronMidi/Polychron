@@ -17,6 +17,8 @@
  * @param {number} [opts.velocity] - Base velocity
  * @param {number} [opts.binVel] - Binaural velocity
  * @param {boolean} [opts.enableStutter] - Whether to schedule stutter effects (50/50 gate)
+ * @param {number} [opts.playProb] - Probability to skip playing this unit (0 = always play). Internally proceeds when playProb > rf().
+ * @param {number} [opts.stutterProb] - Probability to skip scheduling stutter for this note (0 = standard behavior). Internally stutters when stutterProb > rf().
  * @returns {number} Number of events scheduled
  */
 noteCascade = (opts = {}) => {
@@ -26,8 +28,13 @@ noteCascade = (opts = {}) => {
     sustain = 100,
     velocity = 64,
     binVel = 32,
-    enableStutter = false
+    enableStutter = false,
+    playProb = 1,
+    stutterProb = 0
   } = opts;
+
+  // Gate play invocation with playProb: proceed only when playProb > rf()
+  if (typeof playProb === 'number' && !(playProb > rf())) return 0;
 
   // Unit-specific timing reference (fail-fast; use project globals directly)
   const tp = unit === 'beat' ? tpBeat : unit === 'div' ? tpDiv : unit === 'subdiv' ? tpSubdiv : tpSubsubdiv;
@@ -50,8 +57,9 @@ noteCascade = (opts = {}) => {
       // Shared stutter state for this note (all channels share same stutter events)
       const stutterState = { stutters: new Map(), shifts: new Map(), global: {} };
 
-      // Determine if stutter is enabled for this note (50/50 gate)
-      const shouldStutter = enableStutter && rf() > 0.5;
+      // Determine if stutter is enabled for this note: prefer explicit stutterProb if provided
+      const stutterEnabledByProb = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
+      const shouldStutter = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
 
       // ===== SOURCE CHANNELS =====
       const activeSourceChannels = source.filter(ch =>

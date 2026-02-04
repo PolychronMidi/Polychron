@@ -8,7 +8,9 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
     sustain: providedSustain,
     velocity: providedVelocity = velocity,
     binVel: providedBinVel,
-    enableStutter = false
+    enableStutter = false,
+    playProb = 0,
+    stutterProb = 0
   } = opts || {};
 
   // Timing base per unit
@@ -26,6 +28,9 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
   let scheduled = 0;
 
   try {
+    // Gate play invocation with playProb: proceed only when playProb) > rf()
+    if (typeof playProb === 'number' && !( playProb > rf() )) { return 0; }
+
     const layer = LM.layers[LM.activeLayer];
     if (!layer || !layer.beatMotifs) { trackRhythm(unit, LM.layers[LM.activeLayer], false); return 0; }
 
@@ -53,14 +58,17 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
         p(c, { tick: offTick, vals: [sourceCH, s.note] }); scheduled++;
 
-        // Schedule stutter if requested
-        if (enableStutter && rf() > 0.5) {
-          if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
-            noteCascade.scheduleNoteCascade(Stutter, { profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity: providedVelocity, binVel, isPrimary, shared: stutterState });
-          } else {
-            if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug(`${unit}.playNotesForUnit: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped`); StutterConfig._warnedMissingNoteCascade = true; }
+          // Schedule stutter if requested — stutter can be controlled by stutterProb or enableStutter boolean
+          const stutterEnabledByProb = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
+          const shouldStutterNow = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
+          if (shouldStutterNow) {
+            if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
+              noteCascade.scheduleNoteCascade(Stutter, { profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity: providedVelocity, binVel, isPrimary, shared: stutterState });
+            } else {
+              if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug(`${unit}.playNotesForUnit: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped`); StutterConfig._warnedMissingNoteCascade = true; }
+            }
           }
-        }
+
       }
 
       // Reflection channels
@@ -74,12 +82,17 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
 
-        if (enableStutter && rf() > 0.5) {
-          if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
-            noteCascade.scheduleNoteCascade(Stutter, { profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity: providedVelocity, binVel, isPrimary, shared: stutterState });
-          } else {
-            if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug(`${unit}.playNotesForUnit: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped`); StutterConfig._warnedMissingNoteCascade = true; }
-          }
+          const stutterEnabledByProb_ref = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
+          const shouldStutterNow_ref = (typeof stutterEnabledByProb_ref === 'boolean') ? stutterEnabledByProb_ref : (enableStutter && rf() > 0.5);
+          if (shouldStutterNow_ref) {
+            if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
+              noteCascade.scheduleNoteCascade(Stutter, { profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity: providedVelocity, binVel, isPrimary, shared: stutterState });
+            } else {
+              if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug(`${unit}.playNotesForUnit: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped`); StutterConfig._warnedMissingNoteCascade = true; }
+            }
+
+        } else {
+          if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedDedupe) { StutterConfig.logDebug(`${unit}.playNotesForUnit: deduped duplicate on for channel ${reflectionCH} note ${s.note} at ${Math.round(onTick)}`); StutterConfig._warnedDedupe = true; }
         }
       }
 
@@ -96,16 +109,17 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
           p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;
 
-          if (enableStutter && rf() > 0.5) {
-            if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
-              noteCascade.scheduleNoteCascade(Stutter, { profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity: providedVelocity, binVel, isPrimary, shared: stutterState });
-            } else {
-              if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug(`${unit}.playNotesForUnit: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped`); StutterConfig._warnedMissingNoteCascade = true; }
+            if (enableStutter && rf() > 0.5) {
+              if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
+                noteCascade.scheduleNoteCascade(Stutter, { profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity: providedVelocity, binVel, isPrimary, shared: stutterState });
+              } else {
+                if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug(`${unit}.playNotesForUnit: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped`); StutterConfig._warnedMissingNoteCascade = true; }
+              }
             }
           }
         }
       }
-    }
+
 
     trackRhythm(unit, layer, true);
   } catch (e) {
