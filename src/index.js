@@ -4,6 +4,7 @@ require('./rhythm');
 require('./time');
 require('./composers');
 require('./fx');
+require('./noteCascade');
 require('./writer');
 require('./stage');
 // Explicitly include main in index require list so that file listings are comprehensive

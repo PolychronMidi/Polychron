@@ -1,9 +1,9 @@
-require('../src/fx/stutterNotes');
+require('../src/fx/stutterManager'); // ensures Stutter and helper are loaded via fx/index.js
 
 describe('stutterNotes helper', () => {
   it('initializes and preserves shared shape', () => {
     const shared = {};
-    const res = stutterNotes({ profile: 'source', channel: 'ch1', note: 60, on: 0, sustain: 10, velocity: 80, binVel: 40, isPrimary: true, shared });
+    const res = Stutter.stutterNotes({ profile: 'source', channel: 'ch1', note: 60, on: 0, sustain: 10, velocity: 80, binVel: 40, isPrimary: true, shared });
     expect(shared.stutters instanceof Map).toBe(true);
     expect(shared.shifts instanceof Map).toBe(true);
     expect(typeof shared.global === 'object').toBe(true);
@@ -23,7 +23,7 @@ describe('stutterNotes helper', () => {
     const rf = () => 0.1; // triggers comparisons predictably
     const ri = (a) => a; // deterministic
 
-    const res = stutterNotes({ profile: 'source', channel: 'chX', note: 60, on: 100, sustain: 20, velocity: 80, binVel: 40, isPrimary: true, shared, rf, ri });
+    const res = Stutter.stutterNotes({ profile: 'source', channel: 'chX', note: 60, on: 100, sustain: 20, velocity: 80, binVel: 40, isPrimary: true, shared, rf, ri });
 
     expect(shared.global.data).toBeDefined();
     expect(calls.length).toBeGreaterThan(0);
