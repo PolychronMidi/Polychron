@@ -163,3 +163,13 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
     return emit === false ? { shared: localShared, events: plannedEvents } : localShared;
 };
+
+var StutterConfig;
+// Register helper with stutterConfig so manager can detect the original implementation and avoid recursion/warnings
+try {
+  // @ts-ignore: runtime-only naked global registration
+  if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.registerOriginalHelper === 'function') {
+    // @ts-ignore: runtime-only naked global registration
+    StutterConfig.registerOriginalHelper(stutterNotes);
+  }
+} catch (e) { /* ignore if module not present */ }
