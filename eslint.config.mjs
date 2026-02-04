@@ -392,7 +392,7 @@ export default [
         StutterManager: 'writable',
         Stutter: 'writable',
         StutterConfig: 'readonly',
-        NoteCascade: 'readonly',
+        noteCascade: 'readonly',
         refVar: 'writable',
         cBal: 'writable',
         cBal2: 'writable',
@@ -420,6 +420,9 @@ export default [
         beatKey: 'writable',
         divKey: 'writable',
         performance: 'writable',
+        // Utility functions
+        normalizeChordSymbol: 'readonly',
+        writeDebugFile: 'readonly',
         // Audio/rhythm functions
         playDrums: 'writable',
         playDrums2: 'writable',

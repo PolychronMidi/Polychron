@@ -1,13 +1,4 @@
-// noteCascade.js - Schedule and cascade note events across units (generic helper)
-
-// NOTE: This module follows the project's naked-global, side-effect require pattern.
-// It exposes a single API: NoteCascade.playNotesAcrossUnits(opts)
-
-/* Note: Scheduling implementation (previously `scheduleNoteCascade`) has been moved to test-only helpers in `test/setup-stage.js`.
- * The runtime API exported here is `playNotesAcrossUnits(opts)` for cross-unit note emission. For test-backed scheduling
- * StutterManager delegates to the test-provided `NoteCascade.scheduleNoteCascade` where available.
- */
-
+// noteCascade.js - Schedule and cascade note events across units
 
 /**
  * Plays notes cascading across multiple unit levels (beat → div → subdiv → subsubdiv)
@@ -28,7 +19,7 @@
  * @param {boolean} [opts.enableStutter] - Whether to schedule stutter effects (50/50 gate)
  * @returns {number} Number of events scheduled
  */
-function playNotesAcrossUnits(opts = {}) {
+noteCascade = (opts = {}) => {
   const {
     unit = 'subdiv',
     on = 0,
@@ -51,18 +42,6 @@ function playNotesAcrossUnits(opts = {}) {
     // Get motif picks (fail-fast; expect MotifSpreader to exist)
     const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3));
 
-    // Use raw channel globals (fail-fast if missing)
-    const sourceChannels = source;
-    const reflectionChannels = reflection;
-    const bassChannels = bass;
-
-    // FlipBin gating
-    const flipBinState = flipBin;
-    const flipBinTrueSet = flipBinT;
-    const flipBinFalseSet = flipBinF;
-
-    // (removed helper indirection - using raw naked globals)
-
     // Process each motif pick
     for (let _pi = 0; _pi < picks.length; _pi++) {
       const s = picks[_pi];
@@ -75,8 +54,8 @@ function playNotesAcrossUnits(opts = {}) {
       const shouldStutter = enableStutter && rf() > 0.5;
 
       // ===== SOURCE CHANNELS =====
-      const activeSourceChannels = sourceChannels.filter(ch =>
-        flipBinState ? flipBinTrueSet.includes(ch) : flipBinFalseSet.includes(ch)
+      const activeSourceChannels = source.filter(ch =>
+        flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch)
       );
 
       for (let sci = 0; sci < activeSourceChannels.length; sci++) {
@@ -99,12 +78,12 @@ function playNotesAcrossUnits(opts = {}) {
         p(c, { tick: offTick, vals: [sourceCH, s.note] });
         scheduled++;
 
-        // Schedule stutter if enabled (use test-provided NoteCascade scheduler)
+        // Schedule stutter if enabled (use test-provided noteCascade scheduler)
         if (shouldStutter) {
-          if (typeof NoteCascade === 'undefined' || !NoteCascade || typeof NoteCascade.scheduleNoteCascade !== 'function') {
-            throw new Error('playNotesAcrossUnits: NoteCascade.scheduleNoteCascade is not available; scheduling must be provided by tests');
+          if (typeof noteCascade === 'undefined' || !noteCascade || typeof noteCascade.scheduleNoteCascade !== 'function') {
+            throw new Error('noteCascade: noteCascade.scheduleNoteCascade is not available; scheduling must be provided by tests');
           }
-          NoteCascade.scheduleNoteCascade(Stutter, {
+          noteCascade.scheduleNoteCascade(Stutter, {
             profile: 'source',
             channel: sourceCH,
             note: s.note,
@@ -119,8 +98,8 @@ function playNotesAcrossUnits(opts = {}) {
       }
 
       // ===== REFLECTION CHANNELS =====
-      const activeReflectionChannels = reflectionChannels.filter(ch =>
-        flipBinState ? flipBinTrueSet.includes(ch) : flipBinFalseSet.includes(ch)
+      const activeReflectionChannels = reflection.filter(ch =>
+        flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch)
       );
 
       for (let rci = 0; rci < activeReflectionChannels.length; rci++) {
@@ -143,12 +122,12 @@ function playNotesAcrossUnits(opts = {}) {
         p(c, { tick: offTick, vals: [reflectionCH, s.note] });
         scheduled++;
 
-        // Schedule stutter if enabled (use test-provided NoteCascade scheduler)
+        // Schedule stutter if enabled (use test-provided noteCascade scheduler)
         if (shouldStutter) {
-          if (typeof NoteCascade === 'undefined' || !NoteCascade || typeof NoteCascade.scheduleNoteCascade !== 'function') {
-            throw new Error('playNotesAcrossUnits: NoteCascade.scheduleNoteCascade is not available; scheduling must be provided by tests');
+          if (typeof noteCascade === 'undefined' || !noteCascade || typeof noteCascade.scheduleNoteCascade !== 'function') {
+            throw new Error('noteCascade: noteCascade.scheduleNoteCascade is not available; scheduling must be provided by tests');
           }
-          NoteCascade.scheduleNoteCascade(Stutter, {
+          noteCascade.scheduleNoteCascade(Stutter, {
             profile: 'reflection',
             channel: reflectionCH,
             note: s.note,
@@ -164,8 +143,8 @@ function playNotesAcrossUnits(opts = {}) {
 
       // ===== BASS CHANNELS (with BPM-based probability) =====
       if (rf() < clamp(.35 * bpmRatio3, .2, .7)) {
-        const activeBassChannels = bassChannels.filter(ch =>
-          flipBinState ? flipBinTrueSet.includes(ch) : flipBinFalseSet.includes(ch)
+        const activeBassChannels = bass.filter(ch =>
+          flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch)
         );
 
         for (let bci = 0; bci < activeBassChannels.length; bci++) {
@@ -189,12 +168,12 @@ function playNotesAcrossUnits(opts = {}) {
           p(c, { tick: offTick, vals: [bassCH, bassNote] });
           scheduled++;
 
-          // Schedule stutter if enabled (use test-provided NoteCascade scheduler)
+          // Schedule stutter if enabled (use test-provided noteCascade scheduler)
           if (shouldStutter) {
-            if (typeof NoteCascade === 'undefined' || !NoteCascade || typeof NoteCascade.scheduleNoteCascade !== 'function') {
-              throw new Error('playNotesAcrossUnits: NoteCascade.scheduleNoteCascade is not available; scheduling must be provided by tests');
+            if (typeof noteCascade === 'undefined' || !noteCascade || typeof noteCascade.scheduleNoteCascade !== 'function') {
+              throw new Error('noteCascade: noteCascade.scheduleNoteCascade is not available; scheduling must be provided by tests');
             }
-            NoteCascade.scheduleNoteCascade(Stutter, {
+            noteCascade.scheduleNoteCascade(Stutter, {
               profile: 'bass',
               channel: bassCH,
               note: bassNote,
@@ -213,5 +192,5 @@ function playNotesAcrossUnits(opts = {}) {
   return scheduled;
 }
 
-// Export as naked global
-NoteCascade = { playNotesAcrossUnits };
+// Expose as canonical naked global (single canonical function name: noteCascade)
+// Ensure tests can set a schedule helper on the function object, e.g. noteCascade.scheduleNoteCascade = fn

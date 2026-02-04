@@ -56,10 +56,10 @@ describe('StutterManager basic behavior', () => {
     const tinyHelper = (opts) => ({ events: [{ tick: opts.on, type: 'on', vals: [opts.channel, opts.note, opts.velocity] }] });
     StutterConfig.registerOriginalHelper && StutterConfig.registerOriginalHelper(tinyHelper);
 
-    // Provide a test NoteCascade.scheduleNoteCascade shim so scheduleStutterForUnit (now strict) can delegate
-    const origNoteCascadeFn = global.NoteCascade?.scheduleNoteCascade;
-    global.NoteCascade = global.NoteCascade || {};
-    global.NoteCascade.scheduleNoteCascade = function(manager, opts) {
+    // Provide a test noteCascade.scheduleNoteCascade shim so scheduleStutterForUnit (now strict) can delegate
+    const origNoteCascadeFn = global.noteCascade?.scheduleNoteCascade;
+    global.noteCascade = global.noteCascade || {};
+    global.noteCascade.scheduleNoteCascade = function(manager, opts) {
       const helper = (typeof manager._helperOverride === 'function') ? manager._helperOverride : (StutterConfig && StutterConfig.getRegisteredHelper ? StutterConfig.getRegisteredHelper() : null);
       const result = (typeof helper === 'function') ? helper(opts) : { events: [] };
       const events = result && result.events ? result.events : [];

@@ -98,7 +98,9 @@ declare var LOG: any;
 // Stutter subsystem shared config & metrics
 declare var StutterConfig: any;
 // Note cascade helper (schedules note events across unit levels)
-declare var NoteCascade: any;
+declare var noteCascade: any;
+declare var normalizeChordSymbol: any;
+declare var writeDebugFile: any;
 declare var BINAURAL: any;
 declare var SILENT_OUTRO_SECONDS: any;
 declare var SECTIONS: any;

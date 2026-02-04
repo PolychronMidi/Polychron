@@ -1,54 +1,6 @@
 // Dependencies are required via `src/composers/index.js`
 
-function normalizeChordSymbol(chordSymbol) {
-  // Accept chord objects like { symbol: 'Cmaj7' } or raw strings
-  if (typeof chordSymbol !== 'string') {
-    if (chordSymbol && typeof chordSymbol === 'object' && typeof chordSymbol.symbol === 'string') {
-      chordSymbol = chordSymbol.symbol;
-    } else return chordSymbol;
-  }
-  const enharmonicMap = {
-    'B#': 'C', 'E#': 'F', 'Cb': 'B', 'Fb': 'E',
-    'Bb#': 'B', 'Eb#': 'E', 'Ab#': 'A', 'Db#': 'D', 'Gb#': 'G',
-    'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
-  };
-
-  // Normalize Unicode sharps/flats to ASCII and trim
-  let normalized = chordSymbol.replace(/[♯♭]/g, ch => ch === '♯' ? '#' : 'b').trim();
-
-  // Split off a slash-bass if present so we can normalize both parts
-  const parts = normalized.split('/');
-  let main = parts[0] || '';
-  let bass = parts[1] || '';
-
-  // Normalize a single note/root string: remove cancelling accidental pairs and uppercase root
-  const normalizeRoot = (str) => {
-    const rootMatch = String(str).match(/^([A-Ga-g][#b]*)(.*)$/);
-    if (!rootMatch) return str;
-    const rawRoot = rootMatch[1];
-    const rest = rootMatch[2] || '';
-    const cleanedRoot = rawRoot.replace(/(#b|b#)+/g, '');
-    let out = cleanedRoot + rest;
-    // Capitalize the root letter for tonal compatibility
-    out = out.replace(/^([a-g])/, ch => ch.toUpperCase());
-
-    // Apply enharmonic map to the root if it matches any 'from' patterns
-    for (const [from, to] of Object.entries(enharmonicMap).sort((a, b) => b[0].length - a[0].length)) {
-      if (out.startsWith(from)) {
-        out = to + out.slice(from.length);
-        break;
-      }
-    }
-    return out;
-  };
-
-  // Normalize main and bass parts
-  main = normalizeRoot(main);
-  if (bass) bass = normalizeRoot(bass);
-  normalized = bass ? `${main}/${bass}` : main;
-
-  return normalized;
-}
+const _warnedInvalidChordSymbols = new Set();
 
 ChordComposer = class ChordComposer extends MeasureComposer {
   /**
@@ -83,14 +35,34 @@ ChordComposer = class ChordComposer extends MeasureComposer {
    * @param {string} [direction='R'] - 'R' (right), 'L' (left), 'E' (either), '?' (random)
    */
   noteSet(progression,direction='R') {
-    const validatedProgression=progression.map(normalizeChordSymbol).filter(chordSymbol=>{
-      const chord = t.Chord.get(chordSymbol);
-      if (chord.empty) {
-        console.warn(`ChordComposer.noteSet: invalid chord symbol "${chordSymbol}"`);
-        return false;
+    const arr = Array.isArray(progression) ? progression : [];
+    const validatedProgression = arr.map(raw => {
+      const asRaw = String(raw);
+      const normalized = normalizeChordSymbol(raw);
+      const chordRaw = t.Chord.get(asRaw);
+      const chordNorm = t.Chord.get(normalized);
+
+      // Case A: raw string is valid => accept quietly
+      if (!chordRaw.empty) return normalized;
+
+      // Case B: raw invalid but normalization produced a valid chord -> acceptable
+      if (chordRaw.empty && !chordNorm.empty) {
+        if (!_warnedInvalidChordSymbols.has(asRaw)) {
+          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch (e) { /* swallow logging errors */ }
+          _warnedInvalidChordSymbols.add(asRaw);
+        }
+        return normalized;
       }
-      return true;
-    });
+
+      // Case C: both raw and normalized are invalid -> real warning (not labeled acceptable)
+      if (!_warnedInvalidChordSymbols.has(asRaw)) {
+        try { console.warn(`ChordComposer.noteSet: invalid chord symbol "${asRaw}" (normalized -> "${normalized}")`); } catch (e) { /* swallow */ }
+        _warnedInvalidChordSymbols.add(asRaw);
+      }
+      try { if (typeof writeDebugFile === 'function') writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol: asRaw }); } catch (e) { /* swallow */ }
+      return null;
+    }).filter(Boolean);
+
     if (validatedProgression.length===0) { throw new Error('ChordComposer.noteSet: no valid chords');
     } else {
       this.progression=validatedProgression.map(t.Chord.get);

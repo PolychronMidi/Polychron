@@ -1,8 +1,8 @@
-// Test for NoteCascade.playNotesAcrossUnits - cross-unit cascade scheduling
+// Test for noteCascade - cross-unit cascade scheduling
 require('../src/index');
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-describe('NoteCascade.playNotesAcrossUnits', () => {
+describe('noteCascade', () => {
   let origRf, origC, eventBuffer, origLM;
 
   beforeEach(() => {
@@ -59,10 +59,10 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
     const tinyHelper = (opts) => ({ events: [{ tick: opts.on, type: 'on', vals: [opts.channel, opts.note, opts.velocity] }] });
     if (StutterConfig && StutterConfig.registerOriginalHelper) StutterConfig.registerOriginalHelper(tinyHelper);
 
-    // Ensure test NoteCascade scheduler is present (setup-stage should provide this, but be defensive)
-    if (typeof NoteCascade === 'undefined' || !NoteCascade || typeof NoteCascade.scheduleNoteCascade !== 'function') {
-      NoteCascade = NoteCascade || {};
-      NoteCascade.scheduleNoteCascade = global.__test_scheduleNoteCascade;
+    // Ensure test `noteCascade` scheduler is present (setup-stage should provide this, but be defensive)
+    if (typeof noteCascade === 'undefined' || !noteCascade || typeof noteCascade.scheduleNoteCascade !== 'function') {
+      noteCascade = noteCascade || {};
+      noteCascade.scheduleNoteCascade = global.__test_scheduleNoteCascade;
     }
   });
 
@@ -73,7 +73,7 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
   });
 
   it('schedules notes across units with source/reflection/bass channels', () => {
-    const scheduled = NoteCascade.playNotesAcrossUnits({
+    const scheduled = noteCascade({
       unit: 'subdiv',
       on: 0,
       sustain: 100,
@@ -101,16 +101,16 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
   });
 
   it('gates stutter with 50/50 random when enableStutter=true', () => {
-    // Track stutter scheduling via NoteCascade.scheduleNoteCascade wrapper
+    // Track stutter scheduling via noteCascade.scheduleNoteCascade wrapper
     const stutterCalls = [];
-    const origNoteCascadeFn = NoteCascade && NoteCascade.scheduleNoteCascade ? NoteCascade.scheduleNoteCascade : null;
-    NoteCascade.scheduleNoteCascade = (manager, opts) => {
+    const origNoteCascadeFn = noteCascade && noteCascade.scheduleNoteCascade ? noteCascade.scheduleNoteCascade : null;
+    noteCascade.scheduleNoteCascade = (manager, opts) => {
       stutterCalls.push(opts);
       if (typeof origNoteCascadeFn === 'function') return origNoteCascadeFn(manager, opts);
       return 1;
     };
 
-    const scheduled = NoteCascade.playNotesAcrossUnits({
+    const scheduled = noteCascade({
       unit: 'subsubdiv',
       on: 0,
       sustain: 100,
@@ -125,7 +125,7 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
     expect(scheduled).toBeGreaterThan(0);
 
     // Restore
-    if (origNoteCascadeFn) NoteCascade.scheduleNoteCascade = origNoteCascadeFn; else delete NoteCascade.scheduleNoteCascade;
+    if (origNoteCascadeFn) noteCascade.scheduleNoteCascade = origNoteCascadeFn; else delete noteCascade.scheduleNoteCascade;
 
     // Note: exact stutter call count depends on rf() pattern and channel counts
     // The important thing is the feature works without errors
@@ -136,7 +136,7 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
 
     units.forEach(unit => {
       eventBuffer.length = 0; // Clear buffer
-      const scheduled = NoteCascade.playNotesAcrossUnits({
+      const scheduled = noteCascade({
         unit,
         on: 0,
         sustain: 100,
@@ -156,7 +156,7 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
     // Test with flipBin = false
     global.flipBin = false;
     eventBuffer.length = 0;
-    const scheduledFalse = NoteCascade.playNotesAcrossUnits({
+    const scheduledFalse = noteCascade({
       unit: 'subdiv',
       on: 0,
       sustain: 100,
@@ -170,7 +170,7 @@ describe('NoteCascade.playNotesAcrossUnits', () => {
     // Test with flipBin = true
     global.flipBin = true;
     eventBuffer.length = 0;
-    const scheduledTrue = NoteCascade.playNotesAcrossUnits({
+    const scheduledTrue = noteCascade({
       unit: 'subdiv',
       on: 0,
       sustain: 100,

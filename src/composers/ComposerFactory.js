@@ -13,6 +13,10 @@ ComposerFactory = class ComposerFactory {
         p = [];
         for (let i = 0; i < len; i++) p.push(allChords[ri(allChords.length - 1)]);
       }
+      // Defensive: ensure externally supplied progression entries are normalized strings
+      if (Array.isArray(p)) {
+        try { p = p.map(normalizeChordSymbol); } catch (e) { /* swallow */ }
+      }
       return new (ChordComposer)(p);
     },
     mode: ({ name = 'ionian', root = 'C' } = {}) => {
