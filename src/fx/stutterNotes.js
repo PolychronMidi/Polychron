@@ -29,10 +29,11 @@ const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, oth
  * @param {number} opts.velocity
  * @param {number} opts.binVel
  * @param {boolean} [opts.isPrimary=false]
- * @param {StutterShared} [opts.shared]
+ * @param {StutterShared|any} [opts.shared]
  * @param {function} [opts.rf] - optional RNG float generator overriding global `rf`
  * @param {function} [opts.ri] - optional RNG int generator overriding global `ri`
- * @returns {StutterShared}
+ * @param {boolean} [opts.emit=true] - if false, do not call `p()`; instead return planned events
+ * @returns {StutterShared|{shared:StutterShared,events:any[]}}
  */
 stutterNotes = (/** @type {any} */ opts = {}) => {
     const {
@@ -48,10 +49,14 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       rf: rfLocal = rf,
       ri: riLocal = ri,
       clamp: clampLocal = clamp,
-      modClamp: modClampLocal = modClamp
+      modClamp: modClampLocal = modClamp,
+      emit = true // when false, do not call p(); instead return planned events
     } = opts;
 
     if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
+
+    // Collect planned events when emit === false
+    const plannedEvents = [];
 
     // Ensure shared shape exists and is attached to caller when provided
     let localShared = shared;
@@ -112,10 +117,12 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
           currentVelocity = clampLocal(m.max(0, riLocal(33) + maxVelocity * fadeOutMultiplier), 0, 100);
         }
 
-        p(c, { tick: tick + duration * rfLocal(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rfLocal(.3, .7) : currentVelocity * rfLocal(.45, .8)] });
-        p(c, { tick: Math.max(tick, tick - duration * rfLocal(.15)), vals: [channel, stutterNote] });
+        const ev1 = { tick: tick + duration * rfLocal(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rfLocal(.3, .7) : currentVelocity * rfLocal(.45, .8)] };
+        const ev2 = { tick: Math.max(tick, tick - duration * rfLocal(.15)), vals: [channel, stutterNote] };
+        if (emit === false) { plannedEvents.push(ev1); plannedEvents.push(ev2); } else { p(c, ev1); p(c, ev2); }
       }
-      p(c, { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] });
+        const evFinal = { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] };
+        if (emit === false) plannedEvents.push(evFinal); else p(c, evFinal);
     }
 
     // Per-channel stutter (source/reflection/bass)
@@ -144,13 +151,15 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
           stutterNote = clampStutterNote(note + shifts.get(channel));
         }
         if (rfLocal() < fireProb) {
-          p(c, { tick: tick - duration * rfLocal(.15, .3), vals: [channel, stutterNote] });
-          p(c, { tick: tick + duration * rfLocal(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rfLocal(velRanges[0], velRanges[1])] });
+          const evA = { tick: tick - duration * rfLocal(.15, .3), vals: [channel, stutterNote] };
+          const evB = { tick: tick + duration * rfLocal(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rfLocal(velRanges[0], velRanges[1])] };
+          if (emit === false) { plannedEvents.push(evA); plannedEvents.push(evB); } else { p(c, evA); p(c, evB); }
         }
       }
 
-      if (isSource) p(c, { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] });
+      const evEnd = { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] };
+      if (emit === false) plannedEvents.push(evEnd); else { if (isSource) p(c, evEnd); }
     }
 
-    return localShared;
+    return emit === false ? { shared: localShared, events: plannedEvents } : localShared;
 };

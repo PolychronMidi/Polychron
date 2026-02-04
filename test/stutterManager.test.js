@@ -40,4 +40,33 @@ describe('StutterManager basic behavior', () => {
     expect(typeof partial.cleared).toBe('number');
     expect(Stutter.lastUsedCHs.has('c')).toBe(false);
   });
+
+  it('schedules stutter events and plays them on tick', () => {
+    // Replace p with recording function
+    const origP = global.p;
+    const recorded = [];
+    global.p = function(cArg, ev) { recorded.push({ cArg, ev }); };
+
+    // deterministic RNG
+    const rf = () => 0.5;
+    const ri = (a, b) => (typeof b === 'undefined' ? a : a);
+
+    Stutter.resetChannelTracking();
+    // schedule events at on=1000
+    const added = Stutter.scheduleStutterForUnit({ profile: 'source', channel: 1, note: 60, on: 1000, sustain: 480, velocity: 80, binVel: 90, rf, ri });
+    expect(typeof added).toBe('number');
+    expect(added).toBeGreaterThanOrEqual(0);
+
+    // nothing emitted yet
+    expect(recorded.length).toBe(0);
+
+    // play pending at tick 1000
+    const played = Stutter.playPendingForTick(1000);
+    expect(played).toBeGreaterThanOrEqual(0);
+    // after playing, recorded should have at least one event
+    expect(recorded.length).toBeGreaterThanOrEqual(1);
+
+    // restore
+    global.p = origP;
+  });
 });
