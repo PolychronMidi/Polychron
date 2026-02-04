@@ -87,6 +87,12 @@ class StutterManager {
     // propagate manager config into the scheduling call
     provided.config = Object.assign({}, this.config, provided.config || {});
     provided.emit = false;
+    // If NoteCascade exists, delegate scheduling there to handle cascades across units
+    if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
+      return NoteCascade.scheduleNoteCascade(this, provided);
+    }
+
+    // Fallback: inline scheduling logic (keeps behavior when NoteCascade not loaded)
     // Prefer a captured helper but ensure it is not the manager delegator itself (avoid recursion)
     // Allow an instance-level override (set via setStutterNotesHelper) as highest priority
     // Prefer instance override, then registered helper from stutterConfig; avoid calling manager delegator
@@ -220,5 +226,3 @@ Stutter = new StutterManager();
 stutterFade = (...args) => Stutter.stutterFade(...args);
 stutterPan = (...args) => Stutter.stutterPan(...args);
 stutterFX = (...args) => Stutter.stutterFX(...args);
-// Backwards-compatible delegator for per-note helper so existing call sites keep working
-stutterNotes = (...args) => Stutter.stutterNotes(...args);

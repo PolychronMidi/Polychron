@@ -392,6 +392,7 @@ export default [
         StutterManager: 'writable',
         Stutter: 'writable',
         StutterConfig: 'readonly',
+        NoteCascade: 'readonly',
         refVar: 'writable',
         cBal: 'writable',
         cBal2: 'writable',

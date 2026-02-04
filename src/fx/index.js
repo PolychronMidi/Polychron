@@ -11,6 +11,9 @@ require('./setBinaural');
 require('./setBalanceAndFX');
 // @ts-ignore: load side-effect module with globals
 require('./stutterConfig');
+// Ensure generic note-cascade helper is available for scheduling
+// @ts-ignore: load side-effect module with globals
+require('../noteCascade');
 // @ts-ignore: load side-effect module with globals
 require('./StutterManager');
 // @ts-ignore: load side-effect module with globals
