@@ -118,8 +118,8 @@ try {
   p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
   p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
-  if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
-    NoteCascade.scheduleNoteCascade(Stutter, {
+  if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
+    noteCascade.scheduleNoteCascade(Stutter, {
       profile: 'source',
       channel: sourceCH,
       note: s.note,
@@ -131,7 +131,7 @@ try {
       shared: stutterState
     });
   } else {
-    if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: NoteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
+    if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
   }
 
   reflectionCH=reflect[sourceCH];
@@ -139,8 +139,8 @@ try {
   p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
 
 // Schedule per-note stutter via Stutter manager so events are queued and emitted at the right tick
-  if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
-    NoteCascade.scheduleNoteCascade(Stutter, {
+  if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
+    noteCascade.scheduleNoteCascade(Stutter, {
       profile: 'reflection',
       channel: reflectionCH,
       note: s.note,
@@ -152,7 +152,7 @@ try {
       shared: stutterState
     });
   } else {
-    if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: NoteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
+    if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
   }
 
   if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
@@ -160,8 +160,8 @@ try {
     p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
 
-    if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
-      NoteCascade.scheduleNoteCascade(Stutter, {
+    if (typeof noteCascade !== 'undefined' && noteCascade && typeof noteCascade.scheduleNoteCascade === 'function') {
+      noteCascade.scheduleNoteCascade(Stutter, {
         profile: 'bass',
         channel: bassCH,
         note: bassNote,
@@ -173,7 +173,7 @@ try {
         shared: stutterState
       });
     } else {
-      if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: NoteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
+      if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: noteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
     }
   }
   });

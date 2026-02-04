@@ -56,10 +56,10 @@ global.__test_scheduleNoteCascade = function(manager, opts = {}) {
 
 // Expose scheduleNoteCascade for tests so runtime delegator in StutterManager can pick it up
 if (typeof global.__test_scheduleNoteCascade === 'function') {
-  if (typeof global.NoteCascade === 'undefined' || !global.NoteCascade) {
-    global.NoteCascade = { scheduleNoteCascade: global.__test_scheduleNoteCascade };
+  if (typeof global.noteCascade === 'undefined' || !global.noteCascade) {
+    global.noteCascade = { scheduleNoteCascade: global.__test_scheduleNoteCascade };
   } else {
-    global.NoteCascade.scheduleNoteCascade = global.__test_scheduleNoteCascade;
+    global.noteCascade.scheduleNoteCascade = global.__test_scheduleNoteCascade;
   }
 }
 

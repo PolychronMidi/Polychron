@@ -9,10 +9,10 @@ describe('StutterManager metrics & config', () => {
     // ensure manager uses our injected helper
     Stutter.setStutterNotesHelper(global.stutterNotes);
 
-    // Provide a test NoteCascade.scheduleNoteCascade shim so scheduleStutterForUnit (now strict) can delegate
-    const origNoteCascadeFn = global.NoteCascade?.scheduleNoteCascade;
-    global.NoteCascade = global.NoteCascade || {};
-    global.NoteCascade.scheduleNoteCascade = function(manager, opts) {
+    // Provide a test noteCascade.scheduleNoteCascade shim so scheduleStutterForUnit (now strict) can delegate
+    const origNoteCascadeFn = global.noteCascade?.scheduleNoteCascade;
+    global.noteCascade = global.noteCascade || {};
+    global.noteCascade.scheduleNoteCascade = function(manager, opts) {
       const helper = (typeof manager._helperOverride === 'function') ? manager._helperOverride : (StutterConfig && StutterConfig.getRegisteredHelper ? StutterConfig.getRegisteredHelper() : null);
       const result = (typeof helper === 'function') ? helper(opts) : { events: [] };
       const events = result && result.events ? result.events : [];
@@ -34,7 +34,7 @@ describe('StutterManager metrics & config', () => {
 
     // restore
     if (orig) { global.stutterNotes = orig; Stutter.setStutterNotesHelper(orig); } else { delete global.stutterNotes; Stutter.setStutterNotesHelper(null); }
-    if (origNoteCascadeFn) global.NoteCascade.scheduleNoteCascade = origNoteCascadeFn; else delete global.NoteCascade.scheduleNoteCascade;
+    if (origNoteCascadeFn) global.noteCascade.scheduleNoteCascade = origNoteCascadeFn; else delete global.noteCascade.scheduleNoteCascade;
   });
 
   it('metrics increment on schedule and play', () => {

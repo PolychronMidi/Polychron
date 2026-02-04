@@ -90,13 +90,13 @@ class StutterManager {
     provided.config = Object.assign({}, this.config, provided.config || {});
     provided.emit = false;
 
-    // Strict delegation: require test-provided NoteCascade.scheduleNoteCascade. Throw if unavailable.
-    if (typeof NoteCascade === 'undefined' || !NoteCascade || typeof NoteCascade.scheduleNoteCascade !== 'function') {
-      throw new Error('StutterManager.scheduleStutterForUnit: NoteCascade.scheduleNoteCascade is not available. Scheduling for unit-level stutters is test-only and must be provided (e.g., via test setup).');
+    // Strict delegation: require `noteCascade.scheduleNoteCascade`. Throw if unavailable.
+    if (typeof noteCascade === 'undefined' || !noteCascade || typeof noteCascade.scheduleNoteCascade !== 'function') {
+      throw new Error('StutterManager.scheduleStutterForUnit: noteCascade.scheduleNoteCascade is not available. Scheduling for unit-level stutters is test-only and must be provided (e.g., via test setup).');
     }
 
-    // Delegate to the NoteCascade implementation (test-provided)
-    return NoteCascade.scheduleNoteCascade(this, provided);
+    // Delegate to the noteCascade implementation (test-provided)
+    return noteCascade.scheduleNoteCascade(this, provided);
   }
 
   /**
