@@ -118,7 +118,7 @@ try {
   p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
   p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
-  stutterNotes({
+  Stutter.scheduleStutterForUnit({
     profile: 'source',
     channel: sourceCH,
     note: s.note,
@@ -134,7 +134,8 @@ try {
   p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,s.note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
   p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
 
-  stutterNotes({
+// Schedule per-note stutter via Stutter manager so events are queued and emitted at the right tick
+  Stutter.scheduleStutterForUnit({
     profile: 'reflection',
     channel: reflectionCH,
     note: s.note,
@@ -151,7 +152,7 @@ try {
     p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
 
-    stutterNotes({
+    Stutter.scheduleStutterForUnit({
       profile: 'bass',
       channel: bassCH,
       note: bassNote,
