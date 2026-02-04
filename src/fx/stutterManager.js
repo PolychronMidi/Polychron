@@ -77,7 +77,9 @@ class StutterManager {
     return null;
   }
   /**
-   * Schedule a stutter plan for a given unit-level note. This collects events from `stutterNotes` and stores them in the pending queue.
+   * Schedule a stutter plan for a given unit-level note. This now delegates to NoteCascade.scheduleNoteCascade
+   * and will throw if the test-only scheduling helper is not available. This enforces fail-fast behavior so
+   * runtime code cannot silently fall back to implicit behavior.
    * @param {any} opts
    * @returns {number} number of events scheduled
    */
@@ -87,59 +89,14 @@ class StutterManager {
     // propagate manager config into the scheduling call
     provided.config = Object.assign({}, this.config, provided.config || {});
     provided.emit = false;
-    // If NoteCascade exists, delegate scheduling there to handle cascades across units
-    if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
-      return NoteCascade.scheduleNoteCascade(this, provided);
+
+    // Strict delegation: require test-provided NoteCascade.scheduleNoteCascade. Throw if unavailable.
+    if (typeof NoteCascade === 'undefined' || !NoteCascade || typeof NoteCascade.scheduleNoteCascade !== 'function') {
+      throw new Error('StutterManager.scheduleStutterForUnit: NoteCascade.scheduleNoteCascade is not available. Scheduling for unit-level stutters is test-only and must be provided (e.g., via test setup).');
     }
 
-    // Fallback: inline scheduling logic (keeps behavior when NoteCascade not loaded)
-    // Prefer a captured helper but ensure it is not the manager delegator itself (avoid recursion)
-    // Allow an instance-level override (set via setStutterNotesHelper) as highest priority
-    // Prefer instance override, then registered helper from stutterConfig; avoid calling manager delegator
-    let helper = (typeof this._helperOverride === 'function') ? this._helperOverride : (SC && SC.getRegisteredHelper ? SC.getRegisteredHelper() : null);
-    if (helper === null) {
-      if (SC && SC.logDebug) SC.logDebug('scheduleStutterForUnit: no stutterNotes helper available (will use fallback on event)');
-      // If we have no safe helper, we will still use fallback 'on' event behavior below
-    }
-    let events = [];
-    if (!helper || typeof helper !== 'function') {
-      if (SC && SC.logDebug) SC.logDebug('scheduleStutterForUnit: no valid helper available, skipping helper call');
-    } else if (helper === this.stutterNotes) {
-      // helper resolved to the manager delegator (could be due to load order); avoid recursion and fall back
-      if (SC && SC.logDebug) SC.logDebug('scheduleStutterForUnit: helper resolved to manager delegator, skipping helper call');
-    } else {
-      const result = helper(provided);
-      // result is { shared, events }
-      events = result && result.events ? result.events : [];
-    }
-    if (SC && SC.logDebug) SC.logDebug('scheduleStutterForUnit: events', events.length, events.map(e => Math.round(e.tick)));
-    let added = 0;
-    for (const ev of events) {
-        // annotate events with profile for metrics later (internal-only)
-      ev._profile = provided.profile || 'unknown';
-      const key = Math.round(ev.tick);
-      if (!this.pending.has(key)) this.pending.set(key, []);
-      this.pending.get(key).push(ev);
-      // track pending counts by tick
-      if (SC && SC.incPendingForTick) SC.incPendingForTick(key, 1);
-      added++;
-    }
-
-    // Ensure at least the original 'on' event is present at the requested 'on' tick when no events were produced
-    const onTick = Math.round(provided.on);
-    const hasOnAtRequested = events.some(ev => Math.round(ev.tick) === onTick || (ev.type === 'on' && Math.round(ev.tick) === onTick));
-    if (!hasOnAtRequested) {
-      const fallbackEv = { tick: provided.on, type: 'on', vals: [provided.channel, provided.note, provided.velocity || provided.binVel || (SC && SC.getConfig ? SC.getConfig().fallbackVelocity : 64)], _profile: provided.profile || 'unknown' };
-      if (!this.pending.has(onTick)) this.pending.set(onTick, []);
-      this.pending.get(onTick).push(fallbackEv);
-      if (SC && SC.incPendingForTick) SC.incPendingForTick(onTick, 1);
-      added++;
-    }
-
-    // update metrics
-    if (SC && SC.incScheduled) SC.incScheduled(added, provided.profile || 'unknown');
-
-    return added;
+    // Delegate to the NoteCascade implementation (test-provided)
+    return NoteCascade.scheduleNoteCascade(this, provided);
   }
 
   /**

@@ -9,6 +9,24 @@ describe('StutterManager metrics & config', () => {
     // ensure manager uses our injected helper
     Stutter.setStutterNotesHelper(global.stutterNotes);
 
+    // Provide a test NoteCascade.scheduleNoteCascade shim so scheduleStutterForUnit (now strict) can delegate
+    const origNoteCascadeFn = global.NoteCascade?.scheduleNoteCascade;
+    global.NoteCascade = global.NoteCascade || {};
+    global.NoteCascade.scheduleNoteCascade = function(manager, opts) {
+      const helper = (typeof manager._helperOverride === 'function') ? manager._helperOverride : (StutterConfig && StutterConfig.getRegisteredHelper ? StutterConfig.getRegisteredHelper() : null);
+      const result = (typeof helper === 'function') ? helper(opts) : { events: [] };
+      const events = result && result.events ? result.events : [];
+      for (const ev of events) {
+        ev._profile = opts.profile || 'unknown';
+        const key = Math.round(ev.tick);
+        if (!manager.pending.has(key)) manager.pending.set(key, []);
+        manager.pending.get(key).push(ev);
+        if (StutterConfig && StutterConfig.incPendingForTick) StutterConfig.incPendingForTick(key, 1);
+      }
+      if (StutterConfig && StutterConfig.incScheduled) StutterConfig.incScheduled(events.length, opts.profile || 'unknown');
+      return events.length;
+    };
+
     const added = Stutter.scheduleStutterForUnit({ profile: 'test', channel: 1, note: 60, on: 1234, sustain: 10, velocity: 80, binVel: 90 });
     expect(captured).toBeTruthy();
     expect(captured.config).toBeTruthy();
@@ -16,6 +34,7 @@ describe('StutterManager metrics & config', () => {
 
     // restore
     if (orig) { global.stutterNotes = orig; Stutter.setStutterNotesHelper(orig); } else { delete global.stutterNotes; Stutter.setStutterNotesHelper(null); }
+    if (origNoteCascadeFn) global.NoteCascade.scheduleNoteCascade = origNoteCascadeFn; else delete global.NoteCascade.scheduleNoteCascade;
   });
 
   it('metrics increment on schedule and play', () => {
