@@ -6,13 +6,7 @@ class StutterManager {
     this.lastUsedCHs = new Set();      // for stutterFade
     this.lastUsedCHs2 = new Set();     // for stutterPan and stutterFX
 
-    // Bind external implementations via require side-effects (fail fast if missing)
-    // @ts-ignore: load side-effect module with globals
-    require('./stutterFade');
-    // @ts-ignore: load side-effect module with globals
-    require('./stutterPan');
-    // @ts-ignore: load side-effect module with globals
-    require('./stutterFX');
+    // Implementations (stutterFade, stutterPan, stutterFX) are provided by `src/fx/index.js` (aggregated side-effect requires)
 
     // Capture the naked globals (rely on require-side effects to define them)
     this._stutterFade = stutterFade;

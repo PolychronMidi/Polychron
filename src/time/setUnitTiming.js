@@ -1,4 +1,4 @@
-require('../rhythm/trackRhythm');
+// Dependency: rhythm functions (trackRhythm etc) are required via `src/rhythm/index.js`
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using

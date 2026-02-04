@@ -32,7 +32,8 @@ export default [
       'no-unsafe-optional-chaining': 'error',
       'no-implicit-coercion': ['warn', { 'boolean': true, 'number': true, 'string': true, 'allow': [] }],
       'no-undef': 'error',
-      'local/no-silent-early-return': ['error', { allowInTests: false }]
+      'local/no-silent-early-return': ['error', { allowInTests: false }],
+      'local/no-requires-outside-index': ['error']
     }
   },
   // Tests are intentionally excluded from linting to avoid enforcing project naked-global rules

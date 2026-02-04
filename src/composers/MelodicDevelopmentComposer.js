@@ -1,4 +1,4 @@
-require('./ScaleComposer');
+// Dependency: required via `src/composers/index.js`
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', intensity = 0.5) {

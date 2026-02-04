@@ -1,6 +1,6 @@
 // Test setup shim: require the real stage side-effect module when possible, otherwise provide minimal test-only shims
 try {
-  require('../src/stage');
+  require('../src/index');
 } catch (e) {
   // If src/stage uses implicit global assignments that error in test runner, provide minimal no-op shims
   if (typeof setTuningAndInstruments === 'undefined') setTuningAndInstruments = function(){};

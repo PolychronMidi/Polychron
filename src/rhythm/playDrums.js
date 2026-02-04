@@ -1,4 +1,4 @@
-require('./drummer');
+// Dependency: drummer is required via `src/rhythm/index.js`
 
 playDrums = function playDrums() {
   if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {

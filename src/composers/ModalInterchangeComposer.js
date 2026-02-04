@@ -1,9 +1,4 @@
-// @ts-ignore: load side-effect module with globals
-require('./ProgressionGenerator');
-// @ts-ignore: load side-effect module with globals
-require('./ChordComposer');
-// @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScore');
+// Dependencies are required via `src/composers/index.js` (aggregated side-effect requires)
 
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {

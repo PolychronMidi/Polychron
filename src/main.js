@@ -1,7 +1,7 @@
 // main.js - Main composition engine orchestrating section, phrase, measure hierarchy.
-require('./stage'); // This file imports EVERY other file & dependency in the project - Global scope used by design: DO NOT spam up files with useless import / export statements
+require('./index');
 
-(async function main() { console.log('Starting main.js ...');
+main = async function main() { console.log('Starting main.js ...');
 
 const { layer: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => setTuningAndInstruments());
 const { layer: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => setTuningAndInstruments());
@@ -114,8 +114,13 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
 }
 
-grandFinale();
-})().catch((err) => {
-  console.error('main.js failed:', err && err.stack ? err.stack : err);
-  process.exit(1);
-});
+  grandFinale();
+}
+
+// Run main only when invoked as the entry script
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('main.js failed:', err && err.stack ? err.stack : err);
+    process.exit(1);
+  });
+}
