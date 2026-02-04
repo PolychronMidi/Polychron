@@ -391,6 +391,7 @@ export default [
         stage: 'writable',
         StutterManager: 'writable',
         Stutter: 'writable',
+        StutterConfig: 'readonly',
         refVar: 'writable',
         cBal: 'writable',
         cBal2: 'writable',

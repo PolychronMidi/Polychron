@@ -95,6 +95,8 @@ declare var TimingContext: any;
 // Configuration
 declare var TUNING_FREQ: any;
 declare var LOG: any;
+// Stutter subsystem shared config & metrics
+declare var StutterConfig: any;
 declare var BINAURAL: any;
 declare var SILENT_OUTRO_SECONDS: any;
 declare var SECTIONS: any;
