@@ -5,6 +5,8 @@ require('./time');
 require('./composers');
 require('./fx');
 require('./noteCascade');
+// Side-effect require to expose unit-level play helper
+require('./playNotesForUnit');
 require('./writer');
 require('./stage');
 // Explicitly include main in index require list so that file listings are comprehensive

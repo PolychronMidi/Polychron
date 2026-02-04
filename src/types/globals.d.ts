@@ -101,6 +101,7 @@ declare var StutterConfig: any;
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;
 declare var writeDebugFile: any;
+declare var playNotesForUnit: any;
 declare var BINAURAL: any;
 declare var SILENT_OUTRO_SECONDS: any;
 declare var SECTIONS: any;
