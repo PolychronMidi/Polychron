@@ -1,3 +1,68 @@
+// Test helper: scheduleNoteCascade moved from src/noteCascade.js into test-only setup.
+// Schedules stutter events using registered helper (if available). Returns number scheduled.
+let _testWarnedNoHelper = false;
+let _testWarnedInvalidResult = false;
+let _testWarnedRecursion = false;
+
+global.__test_scheduleNoteCascade = function(manager, opts = {}) {
+  const provided = Object.assign({}, opts);
+  if (!provided.shared) provided.shared = manager.shared;
+  provided.config = Object.assign({}, manager.config || {}, provided.config || {});
+  provided.emit = false;
+
+  const hasStutterConfig = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getRegisteredHelper === 'function');
+  const helper = (typeof manager._helperOverride === 'function') ? manager._helperOverride : (hasStutterConfig ? StutterConfig.getRegisteredHelper() : undefined);
+
+  if (typeof helper !== 'function') {
+    if (!_testWarnedNoHelper) { console.warn('test: scheduleNoteCascade: no stutter helper available — skipping'); _testWarnedNoHelper = true; }
+    return 0;
+  }
+  if (helper === manager.stutterNotes) {
+    if (!_testWarnedRecursion) { console.warn('test: scheduleNoteCascade: helper resolved to manager.stutterNotes (recursion) — skipping'); _testWarnedRecursion = true; }
+    return 0;
+  }
+
+  const result = helper(provided);
+  if (!result || !Array.isArray(result.events)) {
+    if (!_testWarnedInvalidResult) { console.warn('test: scheduleNoteCascade: helper returned invalid events — skipping'); _testWarnedInvalidResult = true; }
+    return 0;
+  }
+  const events = result.events;
+
+  if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug) {
+    const ticks = events.slice(0, 10).map(e => Math.round(e.tick));
+    StutterConfig.logDebug('test.scheduleNoteCascade: events', events.length, ticks, events.length > 10 ? '...+' + (events.length - 10) + ' more' : '');
+  }
+
+  let added = 0;
+  for (const ev of events) {
+    ev._profile = provided.profile || 'unknown';
+    const key = Math.round(ev.tick);
+    if (!manager.pending.has(key)) manager.pending.set(key, []);
+    manager.pending.get(key).push(ev);
+    if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.incPendingForTick === 'function') {
+      StutterConfig.incPendingForTick(key, 1);
+    }
+    added++;
+  }
+  if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.incScheduled === 'function') {
+    StutterConfig.incScheduled(added, provided.profile || 'unknown');
+  }
+  if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug) {
+    StutterConfig.logDebug(`test.scheduleNoteCascade: scheduled ${added} events (profile=${provided.profile || 'unknown'})`);
+  }
+  return added;
+};
+
+// Expose scheduleNoteCascade for tests so runtime delegator in StutterManager can pick it up
+if (typeof global.__test_scheduleNoteCascade === 'function') {
+  if (typeof global.NoteCascade === 'undefined' || !global.NoteCascade) {
+    global.NoteCascade = { scheduleNoteCascade: global.__test_scheduleNoteCascade };
+  } else {
+    global.NoteCascade.scheduleNoteCascade = global.__test_scheduleNoteCascade;
+  }
+}
+
 // Test setup shim: require the real stage side-effect module when possible, otherwise provide minimal test-only shims
 try {
   require('../src/index');

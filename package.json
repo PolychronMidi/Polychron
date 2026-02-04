@@ -25,7 +25,7 @@
     "tc": "node scripts/run-with-log.js tc.log tsc -p . --noEmit",
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",
     "test:coverage:raw": "vitest --coverage --run",
-    "main": "npm run lint && npm run tc && node scripts/run-with-log.js main.log node src/main.js",
+    "main": "npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/main.js",
     "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",

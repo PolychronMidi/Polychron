@@ -52,6 +52,28 @@ describe('StutterManager basic behavior', () => {
     const ri = (a, b) => (typeof b === 'undefined' ? a : a);
 
     Stutter.resetChannelTracking();
+    // Register a tiny stutter helper so the scheduler (which now fails fast) has a real implementation
+    const tinyHelper = (opts) => ({ events: [{ tick: opts.on, type: 'on', vals: [opts.channel, opts.note, opts.velocity] }] });
+    StutterConfig.registerOriginalHelper && StutterConfig.registerOriginalHelper(tinyHelper);
+
+    // Provide a test NoteCascade.scheduleNoteCascade shim so scheduleStutterForUnit (now strict) can delegate
+    const origNoteCascadeFn = global.NoteCascade?.scheduleNoteCascade;
+    global.NoteCascade = global.NoteCascade || {};
+    global.NoteCascade.scheduleNoteCascade = function(manager, opts) {
+      const helper = (typeof manager._helperOverride === 'function') ? manager._helperOverride : (StutterConfig && StutterConfig.getRegisteredHelper ? StutterConfig.getRegisteredHelper() : null);
+      const result = (typeof helper === 'function') ? helper(opts) : { events: [] };
+      const events = result && result.events ? result.events : [];
+      for (const ev of events) {
+        ev._profile = opts.profile || 'unknown';
+        const key = Math.round(ev.tick);
+        if (!manager.pending.has(key)) manager.pending.set(key, []);
+        manager.pending.get(key).push(ev);
+        if (StutterConfig && StutterConfig.incPendingForTick) StutterConfig.incPendingForTick(key, 1);
+      }
+      if (StutterConfig && StutterConfig.incScheduled) StutterConfig.incScheduled(events.length, opts.profile || 'unknown');
+      return events.length;
+    };
+
     // schedule events at on=1000
     const added = Stutter.scheduleStutterForUnit({ profile: 'source', channel: 1, note: 60, on: 1000, sustain: 480, velocity: 80, binVel: 90, rf, ri });
     expect(typeof added).toBe('number');

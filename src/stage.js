@@ -118,51 +118,63 @@ try {
   p(c,{tick:sourceCH===cCH1 ? on + rv(tpSubsubdiv*rf(1/9),[-.1,.1],.3) : on + rv(tpSubsubdiv*rf(1/3),[-.1,.1],.3),type:'on',vals:[sourceCH,s.note,sourceCH===cCH1 ? velocity*rf(.95,1.15) : binVel*rf(.95,1.03)]});
   p(c,{tick:on+sustain*(sourceCH===cCH1 ? 1 : rv(rf(.92,1.03))),vals:[sourceCH,s.note]});
 
-  Stutter.scheduleStutterForUnit({
-    profile: 'source',
-    channel: sourceCH,
-    note: s.note,
-    on,
-    sustain,
-    velocity,
-    binVel,
-    isPrimary: sourceCH === cCH1,
-    shared: stutterState
-  });
+  if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
+    NoteCascade.scheduleNoteCascade(Stutter, {
+      profile: 'source',
+      channel: sourceCH,
+      note: s.note,
+      on,
+      sustain,
+      velocity,
+      binVel,
+      isPrimary: sourceCH === cCH1,
+      shared: stutterState
+    });
+  } else {
+    if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: NoteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
+  }
 
   reflectionCH=reflect[sourceCH];
   p(c,{tick:reflectionCH===cCH2 ? on+rv(tpSubsubdiv*rf(.2),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[reflectionCH,s.note,reflectionCH===cCH2 ? velocity*rf(.5,.8) : binVel*rf(.55,.9)]});
   p(c,{tick:on+sustain*(reflectionCH===cCH2 ? rf(.7,1.2) : rv(rf(.65,1.3))),vals:[reflectionCH,s.note]});
 
 // Schedule per-note stutter via Stutter manager so events are queued and emitted at the right tick
-  Stutter.scheduleStutterForUnit({
-    profile: 'reflection',
-    channel: reflectionCH,
-    note: s.note,
-    on,
-    sustain,
-    velocity,
-    binVel,
-    isPrimary: reflectionCH === cCH2,
-    shared: stutterState
-  });
+  if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
+    NoteCascade.scheduleNoteCascade(Stutter, {
+      profile: 'reflection',
+      channel: reflectionCH,
+      note: s.note,
+      on,
+      sustain,
+      velocity,
+      binVel,
+      isPrimary: reflectionCH === cCH2,
+      shared: stutterState
+    });
+  } else {
+    if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: NoteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
+  }
 
   if (rf()<clamp(.35*bpmRatio3,.2,.7)) {
     bassCH=reflect2[sourceCH]; bassNote=modClamp(s.note,12,35);
     p(c,{tick:bassCH===cCH3 ? on+rv(tpSubsubdiv*rf(.1),[-.01,.1],.5) : on+rv(tpSubsubdiv*rf(1/3),[-.01,.1],.5),type:'on',vals:[bassCH,bassNote,bassCH===cCH3 ? velocity*rf(1.15,1.3) : binVel*rf(1.85,2)]});
     p(c,{tick:on+sustain*(bassCH===cCH3 ? rf(1.1,3) : rv(rf(.8,3.5))),vals:[bassCH,bassNote]});
 
-    Stutter.scheduleStutterForUnit({
-      profile: 'bass',
-      channel: bassCH,
-      note: bassNote,
-      on,
-      sustain,
-      velocity,
-      binVel,
-      isPrimary: bassCH === cCH3,
-      shared: stutterState
-    });
+    if (typeof NoteCascade !== 'undefined' && NoteCascade && typeof NoteCascade.scheduleNoteCascade === 'function') {
+      NoteCascade.scheduleNoteCascade(Stutter, {
+        profile: 'bass',
+        channel: bassCH,
+        note: bassNote,
+        on,
+        sustain,
+        velocity,
+        binVel,
+        isPrimary: bassCH === cCH3,
+        shared: stutterState
+      });
+    } else {
+      if (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.logDebug && !StutterConfig._warnedMissingNoteCascade) { StutterConfig.logDebug('playSubsubdivNotes: NoteCascade.scheduleNoteCascade missing — stutter scheduling skipped'); StutterConfig._warnedMissingNoteCascade = true; }
+    }
   }
   });
 }}}

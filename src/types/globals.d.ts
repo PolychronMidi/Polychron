@@ -151,6 +151,7 @@ declare var rCH4: any;
 declare var rCH5: any;
 declare var rCH6: any;
 declare var drumCH: any;
+declare var source: any;
 declare var source2: any;
 declare var reflection: any;
 declare var bass: any;
