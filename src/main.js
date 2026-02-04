@@ -35,7 +35,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
-      // plan motif groups across this measure
       try {
         const layer = LM.layers[LM.activeLayer];
         MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
@@ -50,15 +49,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        // Use centralized unit-level player for beat notes (stutter decided internally)
         playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('division');
-          // Division-level note emission (stutter decided internally)
           playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            // Subdiv-level note emission (stutter decided internally)
             playNotesForUnit('subdiv', { playProb: .2, stutterProb: .2 });
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
@@ -78,7 +74,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
-      // plan motif groups across this measure
       try {
         const layer = LM.layers[LM.activeLayer];
         MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
@@ -92,7 +87,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        // Use centralized unit-level player for beat notes (stutter decided internally)
         playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {

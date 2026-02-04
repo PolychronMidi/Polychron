@@ -77,26 +77,35 @@ class StutterManager {
     return null;
   }
   /**
-   * Schedule a stutter plan for a given unit-level note. This now delegates to NoteCascade.scheduleNoteCascade
-   * and will throw if the test-only scheduling helper is not available. This enforces fail-fast behavior so
-   * runtime code cannot silently fall back to implicit behavior.
+   * Schedule a stutter plan for a given unit-level note. This delegates to the naked global `noteCascade` function
+   * and will throw if it is not available. This enforces fail-fast behavior so runtime code cannot silently fall back to implicit behavior.
    * @param {any} opts
    * @returns {number} number of events scheduled
    */
   scheduleStutterForUnit(opts = {}) {
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
-    // propagate manager config into the scheduling call
     provided.config = Object.assign({}, this.config, provided.config || {});
     provided.emit = false;
 
-    // Strict delegation: require `noteCascade.scheduleNoteCascade`. Throw if unavailable.
-    if (typeof noteCascade === 'undefined' || !noteCascade || typeof noteCascade.scheduleNoteCascade !== 'function') {
-      throw new Error('StutterManager.scheduleStutterForUnit: noteCascade.scheduleNoteCascade is not available. Scheduling for unit-level stutters is test-only and must be provided (e.g., via test setup).');
-    }
+    const helper = (typeof this._helperOverride === 'function') ? this._helperOverride : (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getRegisteredHelper === 'function') ? StutterConfig.getRegisteredHelper() : undefined;
+    if (typeof helper !== 'function') throw new Error('StutterManager.scheduleStutterForUnit: stutter helper not available');
 
-    // Delegate to the noteCascade implementation (test-provided)
-    return noteCascade.scheduleNoteCascade(this, provided);
+    const result = helper(provided);
+    if (!result || !Array.isArray(result.events)) return 0;
+
+    const events = result.events;
+    let added = 0;
+    for (const ev of events) {
+      ev._profile = provided.profile || 'unknown';
+      const key = Math.round(ev.tick);
+      if (!this.pending.has(key)) this.pending.set(key, []);
+      this.pending.get(key).push(ev);
+      if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.incPendingForTick === 'function') StutterConfig.incPendingForTick(key, 1);
+      added++;
+    }
+    if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.incScheduled === 'function') StutterConfig.incScheduled(added, provided.profile || 'unknown');
+    return added;
   }
 
   /**
