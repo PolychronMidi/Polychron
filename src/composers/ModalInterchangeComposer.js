@@ -1,5 +1,8 @@
+// @ts-ignore: load side-effect module with globals
 require('./ProgressionGenerator');
+// @ts-ignore: load side-effect module with globals
 require('./ChordComposer');
+// @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingScore');
 
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {

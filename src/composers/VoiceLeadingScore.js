@@ -372,13 +372,14 @@ VoiceLeadingScore = class VoiceLeadingScore {
    */
   updateConfig(cfg = {}) {
     if (typeof cfg !== 'object' || cfg === null) { console.warn('VoiceLeadingScore.updateConfig: invalid config provided — expected object'); return; }
-    if (cfg.weights && typeof cfg.weights === 'object') {
-      Object.assign(this.weights, cfg.weights);
+    const cfgAny = /** @type {any} */ (cfg);
+    if (cfgAny.weights && typeof cfgAny.weights === 'object') {
+      Object.assign(this.weights, cfgAny.weights);
     }
-    if (typeof cfg.commonToneWeight === 'number') this.commonToneWeight = clamp(cfg.commonToneWeight, 0, 1);
-    if (typeof cfg.contraryMotionPreference === 'number') this.contraryMotionPreference = clamp(cfg.contraryMotionPreference, 0, 1);
-    if (cfg.registers && typeof cfg.registers === 'object') {
-      this.registers = Object.assign({}, this.registers, cfg.registers);
+    if (typeof cfgAny.commonToneWeight === 'number') this.commonToneWeight = clamp(cfgAny.commonToneWeight, 0, 1);
+    if (typeof cfgAny.contraryMotionPreference === 'number') this.contraryMotionPreference = clamp(cfgAny.contraryMotionPreference, 0, 1);
+    if (cfgAny.registers && typeof cfgAny.registers === 'object') {
+      this.registers = Object.assign({}, this.registers, cfgAny.registers);
     }
   }
 
@@ -390,14 +391,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
   }
 }
 
-// Export for composition integration into centralized TEST hooks
-let TEST;
-try { TEST = require('../test-setup'); } catch (e) { TEST = null; }
-try { if (TEST) TEST.VoiceLeadingScore = VoiceLeadingScore; } catch (e) { console.warn('VoiceLeadingScore: assigning to TEST failed:', e && e.stack ? e.stack : e); }
+// No test-specific exports or requires here. When this module is required during test setup it performs a naked global assignment (legacy project pattern).
 
 // VoiceLeadingScore is exposed as a naked global via the assignment above
 // (declared as `VoiceLeadingScore = class ...`) so requiring this file
 // makes `VoiceLeadingScore` available to test scaffolding and runtime.
 // Allow tests to `require()` this module and destructure the constructor.
-/* eslint-disable-next-line no-restricted-syntax */
-try { module.exports = { VoiceLeadingScore }; } catch (e) { console.warn('VoiceLeadingScore: module.exports assignment failed:', e && e.stack ? e.stack : e); }

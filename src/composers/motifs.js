@@ -52,68 +52,68 @@ Motif = class Motif {
   /**
    * Transpose motif by semitones.
    * @param {number} semitones
-   * @returns {Motif}
+   * @returns {this}
    */
   transpose(semitones = 0) {
-    return new Motif(this.sequence.map(({ note, duration }) => ({
+    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
       note: clampMotifNote(note + semitones),
       duration
-    })), { defaultDuration: this.defaultDuration });
+    })), { defaultDuration: this.defaultDuration }));
   }
 
   /**
    * Invert motif around a pivot (default: first note).
    * @param {number|null} [pivot]
-   * @returns {Motif}
+   * @returns {this}
    */
   invert(pivot = null) {
     const pivotNote = pivot === null
       ? (this.sequence[0]?.note ?? 0)
       : pivot;
-    return new Motif(this.sequence.map(({ note, duration }) => ({
+    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
       note: clampMotifNote(pivotNote - (note - pivotNote)),
       duration
-    })), { defaultDuration: this.defaultDuration });
+    })), { defaultDuration: this.defaultDuration }));
   }
 
   /**
    * Augment durations by factor.
    * @param {number} factor
-   * @returns {Motif}
+   * @returns {this}
    */
   augment(factor = 2) {
     const safeFactor = factor <= 0 ? 1 : factor;
-    return new Motif(this.sequence.map(({ note, duration }) => ({
+    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
       note,
       duration: duration * safeFactor
-    })), { defaultDuration: this.defaultDuration * safeFactor });
+    })), { defaultDuration: this.defaultDuration * safeFactor }));
   }
 
   /**
    * Diminish durations by factor.
    * @param {number} factor
-   * @returns {Motif}
+   * @returns {this}
    */
   diminish(factor = 2) {
     const safeFactor = factor <= 0 ? 1 : factor;
-    return new Motif(this.sequence.map(({ note, duration }) => ({
+    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
       note,
       duration: duration / safeFactor
-    })), { defaultDuration: this.defaultDuration / safeFactor });
+    })), { defaultDuration: this.defaultDuration / safeFactor }));
   }
 
   /**
    * Reverse motif order.
-   * @returns {Motif}
+   * @returns {this}
    */
   reverse() {
-    return new Motif([...this.sequence].reverse(), { defaultDuration: this.defaultDuration });
+    return /** @type {this} */ (new Motif([...this.sequence].reverse(), { defaultDuration: this.defaultDuration }));
   }
 
   /**
    * Apply a small development chain: transpose, optional inversion, optional reverse, optional scaling.
    * @param {{transposeBy?:number,invertPivot?:number|false,reverse?:boolean,scale?:number}} [options]
-   * @returns {Motif}
+   * @returns {this}
    */
   develop(options = {}) {
     const {
@@ -135,7 +135,7 @@ Motif = class Motif {
     if (scale !== 1) {
       next = scale > 1 ? next.augment(scale) : next.diminish(1 / scale);
     }
-    return next;
+    return /** @type {this} */ (next);
   }
 
   /**
@@ -172,7 +172,7 @@ applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
  * @param {number} windowStart
  * @param {number} windowEnd
  * @param {number} [max=3]
- * @returns {{note:number,startTick:number,duration:number}[]
+ * @returns {Array<{note:number,startTick:number,duration:number}>}
  */
 getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max = 3) => {
   if (!Array.isArray(schedule) || schedule.length === 0) return [];

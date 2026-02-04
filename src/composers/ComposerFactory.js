@@ -1,13 +1,14 @@
-require('./MeasureComposer');
-require('./ScaleComposer');
-require('./ChordComposer');
-require('./ModeComposer');
-require('./PentatonicComposer');
-require('./TensionReleaseComposer');
-require('./ModalInterchangeComposer');
-require('./HarmonicRhythmComposer');
-require('./MelodicDevelopmentComposer');
-require('./VoiceLeadingComposer');
+/* Side-effect requires: these modules assign globals (legacy pattern). Use an explicit any cast to satisfy tsc while keeping runtime behavior. */
+/** @type {any} */ (require('./MeasureComposer'));
+/** @type {any} */ (require('./ScaleComposer'));
+/** @type {any} */ (require('./ChordComposer'));
+/** @type {any} */ (require('./ModeComposer'));
+/** @type {any} */ (require('./PentatonicComposer'));
+/** @type {any} */ (require('./TensionReleaseComposer'));
+/** @type {any} */ (require('./ModalInterchangeComposer'));
+/** @type {any} */ (require('./HarmonicRhythmComposer'));
+/** @type {any} */ (require('./MelodicDevelopmentComposer'));
+/** @type {any} */ (require('./VoiceLeadingComposer'));
 
 ComposerFactory = class ComposerFactory {
   static constructors = {
@@ -19,7 +20,7 @@ ComposerFactory = class ComposerFactory {
     },
     chords: ({ progression = ['C'] } = {}) => {
       let p = progression;
-      if (progression === 'random') {
+      if (/** @type {any} */ (progression) === 'random') {
         const len = ri(2, 5);
         p = [];
         for (let i = 0; i < len; i++) p.push(allChords[ri(allChords.length - 1)]);

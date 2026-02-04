@@ -1,4 +1,6 @@
+// @ts-ignore: load side-effect module with globals
 require('./MeasureComposer');
+// @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingScore');
 
 PentatonicComposer = class PentatonicComposer extends MeasureComposer {

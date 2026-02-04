@@ -10,7 +10,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
   }
 
   if (channelsToStutter.size < CHsToStutter) {
-    this.lastUsedCHs2.clear();
+    if (this && this.lastUsedCHs2 && typeof (/** @type {any} */ (this.lastUsedCHs2)).clear === 'function') (/** @type {any} */ (this.lastUsedCHs2)).clear();
   } else {
     this.lastUsedCHs2 = new Set(channelsToStutter);
   }

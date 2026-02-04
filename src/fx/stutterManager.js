@@ -7,14 +7,19 @@ class StutterManager {
     this.lastUsedCHs2 = new Set();     // for stutterPan and stutterFX
 
     // Bind external implementations via require side-effects (fail fast if missing)
+    // @ts-ignore: load side-effect module with globals
     require('./stutterFade');
+    // @ts-ignore: load side-effect module with globals
     require('./stutterPan');
+    // @ts-ignore: load side-effect module with globals
     require('./stutterFX');
 
     // Capture the naked globals (rely on require-side effects to define them)
     this._stutterFade = stutterFade;
     this._stutterPan = stutterPan;
     this._stutterFX = stutterFX;
+    // Optional external hook which can override/reset channel tracking
+    this._resetChannelTracking = null;
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {

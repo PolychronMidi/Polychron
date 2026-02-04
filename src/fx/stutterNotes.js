@@ -34,7 +34,7 @@ const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, oth
  * @param {function} [opts.ri] - optional RNG int generator overriding global `ri`
  * @returns {StutterShared}
  */
-stutterNotes = (opts = {}) => {
+stutterNotes = (/** @type {any} */ opts = {}) => {
     const {
       profile = 'source',
       channel,
