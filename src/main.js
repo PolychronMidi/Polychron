@@ -51,18 +51,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Use centralized unit-level player for beat notes (stutter decided internally)
-        playNotesForUnit('beat');
+        playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('division');
           // Division-level note emission (stutter decided internally)
-          playNotesForUnit('div');
+          playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
             // Subdiv-level note emission (stutter decided internally)
-            playNotesForUnit('subdiv');
+            playNotesForUnit('subdiv', { playProb: .2, stutterProb: .2 });
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotesForUnit('subsubdiv'); }
+              if (subsubdivIndex > 0) { playNotesForUnit('subsubdiv', { playProb: .2, stutterProb: .2 }); }
             }
           }
         }
@@ -93,22 +93,22 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Use centralized unit-level player for beat notes (stutter decided internally)
-        playNotesForUnit('beat');
+        playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
           setUnitTiming('division');
           // Division-level note emission (stutter decided internally)
-          playNotesForUnit('div');
+          playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
             // Subdiv-level note emission (stutter decided internally)
-            playNotesForUnit('subdiv');
+            playNotesForUnit('subdiv', { playProb: .2, stutterProb: .2 });
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotesForUnit('subsubdiv'); }
+              if (subsubdivIndex > 0) { playNotesForUnit('subsubdiv', { playProb: .2, stutterProb: .2 }); }
             }
           }
         }
