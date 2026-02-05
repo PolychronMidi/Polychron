@@ -3,10 +3,6 @@
 // Use centralized stutterConfig for config/metrics/helper registration/logging
 const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
 
-// Capture reference to original helper (before we reassign global stutterNotes delegator at bottom)
-let _stutterNotesHelper = (typeof stutterNotes === 'function') ? stutterNotes : null;
-// Note: Do not require modules from within fx files (project lint rule). If the helper is not available at
-// load time we will detect and use the registered helper at call time while avoiding recursion.
 
 class StutterManager {
   constructor() {
@@ -24,16 +20,13 @@ class StutterManager {
     this.shared = { stutters: new Map(), shifts: new Map(), global: {} };
 
     // Use central config object from stutterConfig (read-only reference)
-    this.config = (SC && SC.getConfig ? SC.getConfig() : { probabilities: {}, fallbackVelocity: 64 });
+    this.config = (SC && SC.getConfig ? SC.getConfig() : { probabilities: {} });
 
     // Pending scheduled events: Map<tick, Array<event>>
     this.pending = new Map();
 
     // Optional external hook which can override/reset channel tracking
     this._resetChannelTracking = null;
-
-    // Instance-level helper override (for tests)
-    this._helperOverride = null;
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
@@ -71,10 +64,9 @@ class StutterManager {
     if (!provided.shared) provided.shared = this.shared;
     // propagate manager config into helper options so tests/runtime can tune behavior
     provided.config = Object.assign({}, this.config, provided.config || {});
-    if (typeof _stutterNotesHelper === 'function') return _stutterNotesHelper(provided);
-    // Do NOT call global `stutterNotes` from here - it may be the manager delegator and cause recursion.
-    if (typeof console !== 'undefined' && console && typeof console.warn === 'function') console.warn('stutterNotes: helper not available');
-    return null;
+    const helper = (SC && typeof SC.getHelper === 'function') ? SC.getHelper() : undefined;
+    if (typeof helper === 'function') return helper(provided);
+    throw new Error('stutterNotes: helper not available');
   }
   /**
    * Schedule a stutter plan for a given unit-level note. This delegates to the naked global `noteCascade` function
@@ -88,7 +80,7 @@ class StutterManager {
     provided.config = Object.assign({}, this.config, provided.config || {});
     provided.emit = false;
 
-    const helper = (typeof this._helperOverride === 'function') ? this._helperOverride : (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getRegisteredHelper === 'function') ? StutterConfig.getRegisteredHelper() : undefined;
+    const helper = (SC && typeof SC.getHelper === 'function') ? SC.getHelper() : undefined;
     if (typeof helper !== 'function') throw new Error('StutterManager.scheduleStutterForUnit: stutter helper not available');
 
     const result = helper(provided);
@@ -143,10 +135,7 @@ class StutterManager {
 
   // For tests or runtime adjustments we allow swapping the helper implementation
   setStutterNotesHelper(fn) {
-    // mark and register as original helper, and set instance override
-    if (SC && SC.registerOriginalHelper) SC.registerOriginalHelper(fn);
-    this._helperOverride = (typeof fn === 'function') ? fn : null;
-    _stutterNotesHelper = (typeof fn === 'function') ? fn : null;
+    if (SC && typeof SC.registerHelper === 'function') SC.registerHelper(fn);
     return true;
   }
 

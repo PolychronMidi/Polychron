@@ -20,10 +20,27 @@ ComposerFactory = class ComposerFactory {
       return new (ChordComposer)(p);
     },
     mode: ({ name = 'ionian', root = 'C' } = {}) => {
-      const n = name === 'random' ? allModes[ri(allModes.length - 1)] : name;
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
-      return new (ModeComposer)(n, r);
+      if (name === 'random') {
+        // If root is also random, pick a precomputed valid pair ("C ionian") and split it
+        if (root === 'random') {
+          const pair = allModes[ri(allModes.length - 1)];
+          if (typeof pair === 'string' && pair.indexOf(' ') > -1) {
+            const parts = pair.split(' ');
+            const rootFromPair = parts[0];
+            const modeName = parts.slice(1).join(' ');
+            return new (ModeComposer)(modeName, rootFromPair);
+          }
+        }
+        // Otherwise pick a random mode name and use the provided root
+        const modeEntries = t.Mode.all();
+        const modeEntry = modeEntries[ri(modeEntries.length - 1)];
+        const modeName = (modeEntry && modeEntry.name) ? modeEntry.name : 'ionian';
+        return new (ModeComposer)(modeName, r);
+      }
+      return new (ModeComposer)(name, r);
     },
+
     pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
@@ -65,22 +82,23 @@ ComposerFactory = class ComposerFactory {
               if (Array.isArray(notes) && notes.length > 0) return composer;
             } catch (e) {
               // getNotes failed; try another COMPOSERS entry
+              console.warn('ComposerFactory.createRandom: composer.getNotes() threw, trying another COMPOSERS entry:', e && e.stack ? e.stack : e);
               continue;
             }
           } else if (composer) {
             // Composer doesn't implement getNotes but creation succeeded; accept it.
+            console.warn('ComposerFactory.createRandom: created composer without getNotes(), accepting it.', composer);
             return composer;
           }
         } catch (e) {
-          // Creation from this COMPOSERS entry failed; try another entry
+          // Creation from this COMPOSERS entry failed; try another entry.
+          console.warn('ComposerFactory.createRandom: failed to create composer from COMPOSERS entry, trying another:', e && e.stack ? e.stack : e);
           continue;
         }
       }
-      // If none of the COMPOSERS entries produced a valid composer, fall back to a safe random scale composer
-      try { return this.create(Object.assign({}, { type: 'scale', name: 'random', root: 'random' }, extraConfig)); } catch (e) { /* final fallback below */ }
+        try { return this.create(Object.assign({}, { type: 'scale', name: 'random', root: 'random' }, extraConfig)); } catch (e) { console.warn('No valid entry found in COMPOSERS array, falling back to random scale composer:', e && e.stack ? e.stack : e); }
     }
 
-    // Final fallback: create a random scale composer
     return this.create(Object.assign({}, extraConfig, { type: 'scale', name: 'random', root: 'random' }));
   }
 

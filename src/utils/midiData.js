@@ -291,7 +291,16 @@ allModes=(()=>{
   t.Mode.all().forEach(mode=>{
     allNotes.forEach(root=>{
       const modeName=`${root} ${mode.name}`;
-      allModes.add(modeName);
+      // Include only valid mode/root pairs where Tonal returns notes
+      try {
+        const modeObj = t.Mode.get(mode.name);
+        const notes = t.Mode.notes(modeObj, root);
+        if (Array.isArray(notes) && notes.length > 0) {
+          allModes.add(modeName);
+        }
+      } catch (e) {
+        // skip invalid combinations
+      }
     });
   });
   return Array.from(allModes);
