@@ -29,7 +29,7 @@ lastUsedCHs3=new Set();
  * Default MIDI velocity.
  * @type {number}
  */
-velocity=30;
+velocity=99;
 
 /**
  * Toggle for binaural beat channel flip.

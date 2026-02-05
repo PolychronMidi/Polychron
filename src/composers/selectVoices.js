@@ -13,6 +13,7 @@
 selectVoices = function(scorer, lastNotesByVoice, candidatesPerVoice, opts = {}) {
   const voices = candidatesPerVoice.length;
   const chosen = new Array(voices);
+  const chosenSet = new Set();
 
   const registerForIndex = (idx) => {
     if (opts.registers?.[idx]) return opts.registers[idx];
@@ -25,10 +26,18 @@ selectVoices = function(scorer, lastNotesByVoice, candidatesPerVoice, opts = {})
     const lastNotes = lastNotesByVoice[i] || [];
     const registerRange = scorer.registers[register] || scorer.registers.soprano;
 
-    let bestCandidate = candidates[0];
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      const fallback = lastNotes[0] ?? 60;
+      chosen[i] = fallback;
+      chosenSet.add(fallback);
+      continue;
+    }
+
+    let bestCandidate = null;
     let bestScore = Infinity;
 
     for (const candidate of candidates) {
+      if (chosenSet.has(candidate)) continue;
       // Base single-voice cost from VoiceLeadingScore
       const baseCost = scorer._scoreCandidate(
         candidate,
@@ -61,7 +70,13 @@ selectVoices = function(scorer, lastNotesByVoice, candidatesPerVoice, opts = {})
       }
     }
 
+    if (bestCandidate === null) {
+      const fallback = candidates.find(note => !chosenSet.has(note));
+      bestCandidate = (typeof fallback === 'number') ? fallback : (lastNotes[0] ?? candidates[0] ?? 60);
+    }
+
     chosen[i] = bestCandidate;
+    chosenSet.add(bestCandidate);
   }
 
   return chosen;

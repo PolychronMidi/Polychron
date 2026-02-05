@@ -96,9 +96,12 @@ MotifSpreader = {
 
     // Map selected notes back to bucket entries with metadata
     const picks = [];
+    const usedIndices = new Set();
     for (const note of selectedNotes) {
-      const match = bucket.find(s => Number(s.note) === note);
-      if (match) {
+      const matchIndex = bucket.findIndex((s, idx) => !usedIndices.has(idx) && Number(s.note) === note);
+      if (matchIndex >= 0) {
+        usedIndices.add(matchIndex);
+        const match = bucket[matchIndex];
         picks.push({
           note: Number(match.note),
           groupId: match.groupId,

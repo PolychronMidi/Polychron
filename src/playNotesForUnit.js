@@ -15,7 +15,8 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
   const longSustain = rv(rf(tpUnit * .8, (tpParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
   const useShort = subdivsPerMinute > ri(400, 650);
   const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));
-  const binVel = rv(velocity * rf(.42, .57));
+  velocity = rl(velocity,-3,3,95,105);
+  const binVel = rv(velocity * rf(.4, .9));
 
   let scheduled = 0;
   crossModulateRhythms();
@@ -47,11 +48,22 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
       return trackRhythm(unit, layer, false);
     }
 
+    const beatNoteHistory = (layer && layer._beatNoteHistory instanceof Map) ? layer._beatNoteHistory : new Map();
+    if (!layer._beatNoteHistory || layer._beatNoteHistory !== beatNoteHistory) layer._beatNoteHistory = beatNoteHistory;
+    if (!beatNoteHistory.has(beatKey)) {
+      beatNoteHistory.clear();
+      beatNoteHistory.set(beatKey, new Set());
+    }
+    const beatNoteSet = beatNoteHistory.get(beatKey);
+
     const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 7));
 
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];
       if (!s || typeof s.note === 'undefined') console.warn(`${unit}.playNotesForUnit: invalid note object in motif picks`, s);
+
+      if (beatNoteSet && beatNoteSet.has(s.note)) { continue; }
+      if (beatNoteSet) beatNoteSet.add(s.note);
 
       // Source channels
       const activeSourceChannels = source.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
@@ -59,7 +71,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
         const sourceCH = activeSourceChannels[sci];
         const isPrimary = sourceCH === cCH1;
         const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
-        const onVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.95, 1.03);
+        const onVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03);
         p(c, { tick: onTick, type: 'on', vals: [sourceCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
         p(c, { tick: offTick, vals: [sourceCH, s.note] }); scheduled++;
@@ -81,7 +93,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
         const reflectionCH = activeReflectionChannels[rci];
         const isPrimary = reflectionCH === cCH2;
         const onTick = isPrimary ? on + rv(tpUnit * rf(.2), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-        const onVel = isPrimary ? velocity * rf(.5, .8) : binVel * rf(.55, .9);
+        const onVel = isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1);
         p(c, { tick: onTick, type: 'on', vals: [reflectionCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
@@ -104,7 +116,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           const isPrimary = bassCH === cCH3;
           const bassNote = modClamp(s.note, 12, 35);
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-          const onVel = isPrimary ? velocity * rf(1.15, 1.3) : binVel * rf(1.85, 2);
+          const onVel = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
           p(c, { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] }); scheduled++;
           const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
           p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;
