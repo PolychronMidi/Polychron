@@ -118,7 +118,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
         const lastNotes = Array.isArray(this.previousNotes) ? this.previousNotes.map(n => n.note) : (this.voiceHistory || []);
         return this.VoiceLeadingScore.selectNextNote(lastNotes, candidates, { commonToneWeight: this.commonToneWeight });
       }
-    } catch (e) { console.warn('VoiceLeading selectNote failed, falling back to deterministic choice:', e && e.stack ? e.stack : e); }
+    } catch (e) { console.warn('VoiceLeadingComposer selectNoteWithLeading failed, falling back to deterministic choice:', e && e.stack ? e.stack : e); }
     return candidates[0];
   }
 }
