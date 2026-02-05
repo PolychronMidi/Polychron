@@ -28,8 +28,24 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
 
     if (!layer || !layer.beatMotifs) { console.warn(`${unit}.playNotesForUnit: missing layer or beatMotifs`); return trackRhythm(unit, layer, false); }
     const beatKey = Math.floor(on / tpBeat);
-    const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-    if (!bucket.length) { console.warn(`${unit}.playNotesForUnit: empty beatMotifs bucket`); return trackRhythm(unit, layer, false); }
+    const bucketIsArray = (layer && layer.beatMotifs && Array.isArray(layer.beatMotifs[beatKey]));
+    const bucket = bucketIsArray ? layer.beatMotifs[beatKey] : [];
+
+    // If there is no bucket (undefined), this is normal silence; do not warn.
+    if (!bucketIsArray) return trackRhythm(unit, layer, false);
+
+    // If we have an explicit bucket but it's empty, capture context once and warn (possible bug)
+    if (!bucket.length) {
+      // One-time diagnostic marker: record that an explicit empty bucket was observed
+      try {
+        if (!layer._emptyBucketCaptured) {
+          layer._emptyBucketCaptured = true;
+        }
+      } catch (__) { /* defensive */ }
+
+      console.warn(`${unit}.playNotesForUnit: empty beatMotifs bucket`);
+      return trackRhythm(unit, layer, false);
+    }
 
     const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3));
 
