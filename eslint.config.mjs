@@ -56,6 +56,11 @@ export default [
         syncFactor: 'writable',
         midiBPM: 'writable',
         tpSec: 'writable',
+        unitStart: 'writable',
+        tpUnit: 'writable',
+        parentStart: 'writable',
+        tpParent: 'writable',
+        unitsPerParent: 'writable',
         // Last layer for which getMidiTiming/setMidiTiming was executed
         lastMidiLayer: 'writable',
         tpMeasure: 'writable',

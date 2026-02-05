@@ -9,8 +9,7 @@
 
 setUnitTiming = (unitType) => {
 
-  // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals.
-  // This ensures consistent timing across all unit calculations in cascading hierarchy.
+  // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals in main.js
 
   switch (unitType) {
     case 'section':
@@ -20,11 +19,21 @@ setUnitTiming = (unitType) => {
     case 'phrase':
       tpPhrase = tpMeasure * measuresPerPhrase;
       spPhrase = tpPhrase / tpSec;
+      unitStart = phraseStart;
+      tpUnit = tpPhrase;
+      parentStart = sectionStart;
+      // tpParent = tpSection; // unknown at phrase start time
+      unitsPerParent = phrasesPerSection;
       break;
 
     case 'measure':
       measureStart = phraseStart + measureIndex * tpMeasure;
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
+      unitStart = measureStart;
+      tpUnit = tpMeasure;
+      parentStart = phraseStart;
+      tpParent = tpPhrase;
+      unitsPerParent = measuresPerPhrase;
       break;
 
     case 'beat':
@@ -41,12 +50,15 @@ setUnitTiming = (unitType) => {
 
       beatStart = measureStart + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
-
       // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
       // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
       divsPerBeat = composer.getDivisions();
-
       divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
+      unitStart = beatStart;
+      tpUnit = tpBeat;
+      parentStart = measureStart;
+      tpParent = tpMeasure;
+      unitsPerParent = numerator;
       break;
 
     case 'division':
@@ -58,6 +70,11 @@ setUnitTiming = (unitType) => {
       subdivsPerDiv = composer.getSubdivs();
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv', LM.layers[LM.activeLayer]);
+      unitStart = divStart;
+      tpUnit = tpDiv;
+      parentStart = beatStart;
+      tpParent = tpBeat;
+      unitsPerParent = divsPerBeat;
       break;
 
     case 'subdiv':
@@ -69,6 +86,11 @@ setUnitTiming = (unitType) => {
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubsPerSub =composer.getSubsubdivs();
       subsubdivRhythm = setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
+      unitStart = subdivStart;
+      tpUnit = tpSubdiv;
+      parentStart = divStart;
+      tpParent = tpDiv;
+      unitsPerParent = subdivsPerDiv;
       break;
 
     case 'subsubdiv':
@@ -78,6 +100,11 @@ setUnitTiming = (unitType) => {
       subsubsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
       subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
+      unitStart = subsubdivStart;
+      tpUnit = tpSubsubdiv;
+      parentStart = subdivStart;
+      tpParent = tpSubdiv;
+      unitsPerParent = subsubsPerSub;
       break;
 
     default:
