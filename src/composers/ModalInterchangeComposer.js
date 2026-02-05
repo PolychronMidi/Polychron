@@ -12,6 +12,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     this.borrowProbability = clamp(borrowProbability, 0, 1);
     this.generator = generator;
     this.borrowModes = primaryMode === 'major' ? ['minor', 'dorian', 'mixolydian', 'lydian'] : ['major', 'dorian', 'phrygian', 'locrian'];
+    this._lastBorrowed = null;
   }
 
   borrowChord() {
@@ -51,9 +52,26 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
       const modifiedProgression = [...this.progression.map(c => c.symbol)];
       modifiedProgression[this.currentChordIndex % modifiedProgression.length] = borrowedChord;
       super.noteSet(modifiedProgression, direction);
+      this._lastBorrowed = borrowedChord;
     } else {
       super.noteSet(this.progression.map(c => c.symbol), direction);
+      this._lastBorrowed = null;
     }
+  }
+
+  getVoicingIntent(candidateNotes = []) {
+    const base = super.getVoicingIntent(candidateNotes);
+    if (!base || !base.candidateWeights) return base;
+
+    if (this._lastBorrowed) {
+      for (const note of candidateNotes) {
+        const key = String(note);
+        const existing = typeof base.candidateWeights[key] === 'number' ? base.candidateWeights[key] : 0;
+        if (existing > 0) base.candidateWeights[key] = existing * 1.5;
+      }
+    }
+
+    return base;
   }
 
   x() {

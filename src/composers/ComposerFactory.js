@@ -52,7 +52,7 @@ ComposerFactory = class ComposerFactory {
       const k = key === 'random' ? allNotes[ri(allNotes.length - 1)] : key;
       return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality);
     },
-    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, intensity),
+    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7 } = {}) => new MelodicDevelopmentComposer(name, root, intensity, developmentBias),
     voiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
   };
 

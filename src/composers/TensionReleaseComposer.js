@@ -64,6 +64,22 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     super.noteSet(selectedChords, 'R');
   }
 
+  getVoicingIntent(candidateNotes = []) {
+    const base = super.getVoicingIntent(candidateNotes) || { candidateWeights: {} };
+    const weights = base.candidateWeights || {};
+    const current = this.progression && this.progression[this.currentChordIndex];
+    const symbol = current && current.symbol ? current.symbol : null;
+    const tension = symbol ? this.calculateTension(symbol) : 0.5;
+
+    for (const note of candidateNotes) {
+      const key = String(note);
+      const existing = typeof weights[key] === 'number' ? weights[key] : 0;
+      weights[key] = existing > 0 ? existing * (1 - tension * 0.5) : (tension * 0.5);
+    }
+
+    return { candidateWeights: weights };
+  }
+
   x() {
     this.noteSet('tension');
     return super.x();

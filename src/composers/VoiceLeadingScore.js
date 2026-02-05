@@ -38,7 +38,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * Scores all available notes and returns the best candidate.
    * @param {number[]} lastNotes - Previous notes [soprano, alto, tenor, bass]
    * @param {number[]} availableNotes - Pool of candidate notes to evaluate
-   * @param {{ register?: string, constraints?: string[] }} [config] - Voice context
+   * @param {{ register?: string, constraints?: string[], candidateWeights?: Object, commonToneWeight?: number }} [config] - Voice context
    * @returns {number} Best scoring note
    */
   selectNextNote(lastNotes, availableNotes, config = {}) {
@@ -53,7 +53,10 @@ VoiceLeadingScore = class VoiceLeadingScore {
     // Score each candidate
     const scores = availableNotes.map((note) => ({
       note,
-      score: this._scoreCandidate(note, lastNotes, registerRange, constraints, config),
+      score: this._scoreCandidate(note, lastNotes, registerRange, constraints, {
+        commonToneWeight: config.commonToneWeight,
+        weight: config.candidateWeights ? Number(config.candidateWeights[note]) || 0 : 0
+      }),
     }));
 
     // Sort by score (lower is better) and return best
@@ -109,6 +112,11 @@ VoiceLeadingScore = class VoiceLeadingScore {
     if (typeof ctWeight === 'number' && ctWeight > 0) {
       const samePC = ((candidate % 12) + 12) % 12 === ((lastNote % 12) + 12) % 12;
       if (samePC) totalCost -= Math.min(8, ctWeight * 4); // reduce cost to favor common tones
+    }
+
+    // Candidate weight bias (lower cost is preferred)
+    if (opts && typeof opts.weight === 'number' && opts.weight > 0) {
+      totalCost -= Math.min(8, opts.weight * 4);
     }
 
     // Apply hard constraints if provided
