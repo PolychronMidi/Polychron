@@ -27,8 +27,6 @@ MeasureComposer = class MeasureComposer {
   getSubdivs(){const{min,max,weights}=SUBDIVS;return rw(min,max,weights);}
   /** @returns {number} Random sub-subdivs count from SUBSUBDIVS config */
   getSubsubdivs(){const{min,max,weights}=SUBSUBDIVS;return rw(min,max,weights);}
-  /** @returns {number} Random voice count from VOICES config */
-  getVoices(){const{min,max,weights}=VOICES;return rw(min,max,weights);}
   /** @returns {number[]} Two octaves with minimum 2-3 octave difference */
   getOctaveRange() { const { min,max,weights }=OCTAVE;
   let [o1,o2]=[rw(min,max,weights),rw(min,max,weights)];

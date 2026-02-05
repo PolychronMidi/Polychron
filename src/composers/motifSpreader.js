@@ -1,4 +1,3 @@
-/* exported MotifSpreader, globalVoiceCoordinator */
 // motifSpreader.js - centralize planning of motif groups across a measure
 
 // Generates motif groups (min-max beats) and populates layer.beatMotifs accordingly
@@ -70,47 +69,4 @@ MotifSpreader = {
     } catch (e) { console.warn('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ' (continuing):', e && e.stack ? e.stack : e); }
   },
 
-  // Return up to `max` motif steps from a beat bucket using centralized voice coordination
-  getBeatMotifPicks(layer, beatKey, max = 1, opts = {}) {
-    if (!layer || !layer.beatMotifs) return [];
-    const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-    if (!bucket.length) return [];
-
-    // Extract candidate notes from bucket
-    const candidateNotes = bucket.map(s => Number(s.note));
-
-    // Get voice count (use max as hint but apply VOICES config)
-    const voiceCount = Math.min(max, globalVoiceCoordinator.getVoiceCount());
-
-    // Get scorer from layer's measureComposer if available
-    const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
-
-    // Use VoiceCoordinator for selection
-    const selectedNotes = globalVoiceCoordinator.pickNotesForBeat(
-      layer,
-      candidateNotes,
-      voiceCount,
-      scorer,
-      opts.voiceOptions || {}
-    );
-
-    // Map selected notes back to bucket entries with metadata
-    const picks = [];
-    const usedIndices = new Set();
-    for (const note of selectedNotes) {
-      const matchIndex = bucket.findIndex((s, idx) => !usedIndices.has(idx) && Number(s.note) === note);
-      if (matchIndex >= 0) {
-        usedIndices.add(matchIndex);
-        const match = bucket[matchIndex];
-        picks.push({
-          note: Number(match.note),
-          groupId: match.groupId,
-          seqIndex: match.seqIndex,
-          seqLen: match.seqLen
-        });
-      }
-    }
-
-    return picks;
-  }
 };

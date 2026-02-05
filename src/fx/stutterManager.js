@@ -3,7 +3,6 @@
 // Use centralized stutterConfig for config/metrics/helper registration/logging
 const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
 
-
 class StutterManager {
   constructor() {
     // Channel tracking state for fade/pan/FX stutters
