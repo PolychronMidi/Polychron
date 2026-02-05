@@ -47,7 +47,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
       return trackRhythm(unit, layer, false);
     }
 
-    const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3));
+    const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 7));
 
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];

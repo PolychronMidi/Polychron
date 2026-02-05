@@ -25,11 +25,15 @@ require('./VoiceLeadingComposer');
 // @ts-ignore: load side-effect module with globals
 require('./MotifComposer');
 // @ts-ignore: load side-effect module with globals
+require('./VoiceLeadingScore');
+// @ts-ignore: load side-effect module with globals
+require('./selectVoices');
+// @ts-ignore: load side-effect module with globals
+require('./VoiceCoordinator');
+// @ts-ignore: load side-effect module with globals
 require('./motifSpreader');
 // @ts-ignore: load side-effect module with globals
 require('./motifs');
-// @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScore');
 // @ts-ignore: load side-effect module with globals
 require('./ComposerFactory');
 

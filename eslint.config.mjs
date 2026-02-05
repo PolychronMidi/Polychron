@@ -386,6 +386,9 @@ export default [
         // Exposed helpers / classes
         TimingCalculator: 'writable',
         VoiceLeadingScore: 'writable',
+        VoiceCoordinator: 'writable',
+        selectVoices: 'writable',
+        globalVoiceCoordinator: 'writable',
         SECTION_TYPES: 'readonly',
         csvRows: 'writable',
         // Utility and temporary globals

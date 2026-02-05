@@ -297,73 +297,6 @@ VoiceLeadingScore = class VoiceLeadingScore {
   }
 
   /**
-   * Joint voice selection helper.
-   * Selects notes for multiple voices jointly using the existing single-voice
-   * cost function and simple inter-voice penalties (crossing/parallel motion).
-   * @param {number[][]} lastNotesByVoice - Array of per-voice history arrays (each voice -> [last, prev, ...])
-   * @param {number[][]} candidatesPerVoice - Array of per-voice candidate arrays
-   * @param {{ registers?: string[], commonToneWeight?: number }} [opts]
-   * @returns {number[]} chosen notes (by voice index)
-   */
-  selectForVoices(lastNotesByVoice, candidatesPerVoice, opts = {}) {
-    if (!Array.isArray(candidatesPerVoice) || candidatesPerVoice.length === 0) return [];
-
-    const voices = candidatesPerVoice.length;
-    const chosen = new Array(voices).fill(null);
-
-    const registerForIndex = (idx) => {
-      if (Array.isArray(opts.registers) && opts.registers[idx]) return opts.registers[idx];
-      switch (idx) {
-        case 0: return 'soprano';
-        case 1: return 'alto';
-        case 2: return 'tenor';
-        case 3: return 'bass';
-        default: return 'soprano';
-      }
-    };
-
-    for (let i = 0; i < voices; i++) {
-      const candidates = Array.isArray(candidatesPerVoice[i]) ? candidatesPerVoice[i] : [];
-      if (candidates.length === 0) { chosen[i] = null; continue; }
-
-      const register = registerForIndex(i);
-      const lastNotes = Array.isArray(lastNotesByVoice[i]) ? lastNotesByVoice[i] : [];
-
-      let bestCandidate = candidates[0];
-      let bestScore = Infinity;
-
-      for (const candidate of candidates) {
-        // Base single-voice cost
-        const baseCost = this._scoreCandidate(candidate, lastNotes, this.registers[register] || this.registers.soprano, [], { commonToneWeight: opts.commonToneWeight });
-
-        // Crossing penalty vs higher voices already chosen
-        let crossPenalty = 0;
-        if (i > 0 && chosen[i - 1] !== null && typeof chosen[i - 1] === 'number') {
-          // soprano should be >= alto, etc. If violated add a big penalty
-          if (candidate <= chosen[i - 1]) crossPenalty += 6;
-        }
-
-        // Small penalty to discourage exact parallel motion with previous intervals
-        let parallelPenalty = 0;
-        if (this.history.length > 0 && lastNotes.length > 0) {
-          const lastMotion = (lastNotes[0] - (lastNotes[1] || lastNotes[0]));
-          const currentMotion = candidate - (lastNotes[0] || candidate);
-          if ((currentMotion > 0 && lastMotion > 0) || (currentMotion < 0 && lastMotion < 0)) {
-            parallelPenalty += 2;
-          }
-        }
-
-        const total = baseCost + crossPenalty + parallelPenalty;
-        if (total < bestScore) { bestScore = total; bestCandidate = candidate; }
-      }
-
-      chosen[i] = bestCandidate;
-    }
-
-    return chosen;
-  }
-
-  /**
    * Update scorer configuration at runtime. Accepts any subset of:
    * - weights: { smoothMotion, voiceRange, leapRecovery, voiceCrossing, parallelMotion }
    * - commonToneWeight
@@ -390,10 +323,3 @@ VoiceLeadingScore = class VoiceLeadingScore {
     this.history = [];
   }
 }
-
-// No test-specific exports or requires here. When this module is required during test setup it performs a naked global assignment (legacy project pattern).
-
-// VoiceLeadingScore is exposed as a naked global via the assignment above
-// (declared as `VoiceLeadingScore = class ...`) so requiring this file
-// makes `VoiceLeadingScore` available to test scaffolding and runtime.
-// Allow tests to `require()` this module and destructure the constructor.

@@ -93,8 +93,9 @@ MeasureComposer = class MeasureComposer {
   }
   /**
    * Generates note objects within octave range.
+   * Returns full note pool across all octaves (for use with VoiceCoordinator).
    * @param {number[]|null} [octaveRange=null] - [min, max] octaves, or auto-generate
-   * @returns {{note: number}[]} Array of note objects
+   * @returns {{note: number}[]} Array of note objects (full pool)
    */
   getNotes(octaveRange=null) {
     // Defensive fallback: ensure this.notes exists and is non-empty
@@ -106,11 +107,12 @@ MeasureComposer = class MeasureComposer {
     if (++self.recursionDepth > self.MAX_RECURSION) {
       console.warn('MeasureComposer.getNotes() exceeded max recursion depth; returning default note.');
       self.recursionDepth = 0;
-      return [{ note: 0 }];
+      return [{ note: 60 }];
     }
     const uniqueNotes=new Set();
-    const voices=self.getVoices();
-    const [minOctave,maxOctave]=octaveRange || self.getOctaveRange();
+    const [o1, o2]=octaveRange || self.getOctaveRange();
+    const minOctave = Math.min(o1, o2);
+    const maxOctave = Math.max(o1, o2);
     const rootNote=self.notes[ri(self.notes.length - 1)];
     let intervals=[],fallback=false;
     try {  const shift=ri();
@@ -128,26 +130,27 @@ MeasureComposer = class MeasureComposer {
         // Return the validated interval that produces a proper scale degree
         return validatedInterval;
       });
-      const notesOut = intervals.slice(0,voices).map((interval,index)=>{
-        const noteIndex=(self.notes.indexOf(rootNote)+interval) % self.notes.length;
-        let octave=ri(minOctave,maxOctave);
-        let note=t.Note.chroma(self.notes[noteIndex])+12*octave;
-        while (uniqueNotes.has(note)) {
-          if (octave < maxOctave) { octave++; }
-          else if (octave > minOctave) { octave--; }
-          else if (octave < OCTAVE.max) { octave++; }
-          else if (octave > OCTAVE.min) { octave--; }
-          else { octave = false; break; }
-          if (octave === false) break;
-          note = t.Note.chroma(self.notes[noteIndex]) + 12 * octave;
+      // Build full note pool across octave range
+      const notesOut = [];
+      for (const interval of intervals) {
+        const rootIndex = self.notes.indexOf(rootNote);
+        if (rootIndex === -1) continue; // Skip if root note not found
+        const noteIndex = (rootIndex + interval) % self.notes.length;
+        const noteName = self.notes[noteIndex];
+        if (!noteName) continue; // Skip if note name undefined
+        const chroma = t.Note.chroma(noteName);
+        if (typeof chroma !== 'number' || !Number.isFinite(chroma)) continue; // Skip invalid chroma
+        for (let octave = minOctave; octave <= maxOctave; octave++) {
+          const note = chroma + 12 * octave;
+          if (!uniqueNotes.has(note)) {
+            uniqueNotes.add(note);
+            notesOut.push({ note });
+          }
         }
-        return { note };
-      }).filter((noteObj,index,self)=>
-        index===self.findIndex(n=>n.note===noteObj.note)
-      );
+      }
 
       if (!Array.isArray(notesOut) || notesOut.length === 0) {
-        console.warn('MeasureComposer.getNotes produced empty result; falling back to single note', { composer: this && this.constructor && this.constructor.name, notes: self.notes, intervals, voices, octaveRange, rootNote });
+        console.warn('MeasureComposer.getNotes produced empty result; falling back to single note', { composer: this && this.constructor && this.constructor.name, notes: self.notes, intervals, octaveRange, rootNote });
         return [{ note: 60 }];
       }
 
