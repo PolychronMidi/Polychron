@@ -135,10 +135,19 @@ MotifComposer = class MotifComposer {
         const n = devNotes[i % devNotes.length];
         chosen = (typeof n.note === 'number') ? n.note : (n ?? 60);
       } else if (this.measureComposer || optsAny.measureComposer) {
-        // Use provided measureComposer to select a note using its voice-leading hooks
+        // Use centralized voice coordination for single-voice selection
         const mc = optsAny.measureComposer || this.measureComposer;
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
-        try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)]; } catch (e) { chosen = avail[Math.floor(Math.random() * avail.length)]; }
+        const coordinator = (typeof globalVoiceCoordinator !== 'undefined' && globalVoiceCoordinator)
+          ? globalVoiceCoordinator
+          : (typeof VoiceCoordinator !== 'undefined' ? new VoiceCoordinator() : null);
+        if (coordinator && typeof coordinator.pickNotesForBeat === 'function') {
+          const scorer = mc && mc.VoiceLeadingScore ? mc.VoiceLeadingScore : null;
+          const selected = coordinator.pickNotesForBeat(mc || {}, avail, 1, scorer, { register: 'soprano' });
+          chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)];
+        } else {
+          try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)]; } catch (e) { chosen = avail[Math.floor(Math.random() * avail.length)]; }
+        }
       } else if (this.VoiceLeadingScore && this.useVoiceLeading) {
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
         chosen = this.VoiceLeadingScore.selectNextNote(lastNotes, avail, { register: 'soprano' });

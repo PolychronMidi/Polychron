@@ -29,16 +29,6 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   }
   /** @returns {{note: number}[]} Mode notes */
   x=()=>this.getNotes();
-
-  selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
-    try {
-      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
-        return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
-      }
-    } catch (e) { console.warn('ModeComposer: error during operation, continuing:', e && e.stack ? e.stack : e); }
-    return candidates[Math.floor(candidates.length / 2)];
-  }
 }
 
 RandomModeComposer = class RandomModeComposer extends ModeComposer {
