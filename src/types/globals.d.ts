@@ -220,6 +220,9 @@ declare module './VoiceLeadingComposer' { const x: any; export = x; }
 declare module './VoiceLeadingComposer.js' { const x: any; export = x; }
 
 declare var VoiceLeadingScore: any;
+declare var VoiceCoordinator: any;
+declare var selectVoices: any;
+declare var globalVoiceCoordinator: any;
 
 // Helpers & debug/test
 declare var logGate: any;

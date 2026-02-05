@@ -37,6 +37,10 @@ setUnitTiming = (unitType) => {
       parentStart = phraseStart;
       tpParent = tpPhrase;
       unitsPerParent = measuresPerPhrase;
+      try {
+        const layer = LM.layers[LM.activeLayer];
+        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+      } catch (_e) { console.warn('main.js: MotifSpreader.spreadMeasure failed while planning measure (continuing):', _e && _e.stack ? _e.stack : _e); }
       break;
 
     case 'beat':

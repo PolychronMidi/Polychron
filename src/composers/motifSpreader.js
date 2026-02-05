@@ -1,7 +1,10 @@
-/* exported MotifSpreader */
+/* exported MotifSpreader, globalVoiceCoordinator */
 // motifSpreader.js - centralize planning of motif groups across a measure
 
 // Generates motif groups (min-max beats) and populates layer.beatMotifs accordingly
+
+// Shared VoiceCoordinator instance for centralized voice selection
+globalVoiceCoordinator = new VoiceCoordinator();
 
 MotifSpreader = {
   spreadMeasure({ layer, measureStart, measureBeats, composer }) {
@@ -67,62 +70,44 @@ MotifSpreader = {
     } catch (e) { console.warn('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ' (continuing):', e && e.stack ? e.stack : e); }
   },
 
-  // Return up to `max` motif steps from a beat bucket using a per-beat modulo cursor
+  // Return up to `max` motif steps from a beat bucket using centralized voice coordination
   getBeatMotifPicks(layer, beatKey, max = 1, opts = {}) {
     if (!layer || !layer.beatMotifs) return [];
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
     if (!bucket.length) return [];
 
-    layer._motifCursor = layer._motifCursor || {};
-    let cursor = Number.isFinite(layer._motifCursor[beatKey]) ? layer._motifCursor[beatKey] : 0;
+    // Extract candidate notes from bucket
+    const candidateNotes = bucket.map(s => Number(s.note));
 
+    // Get voice count (use max as hint but apply VOICES config)
+    const voiceCount = Math.min(max, globalVoiceCoordinator.getVoiceCount());
+
+    // Get scorer from layer's measureComposer if available
+    const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
+
+    // Use VoiceCoordinator for selection
+    const selectedNotes = globalVoiceCoordinator.pickNotesForBeat(
+      layer,
+      candidateNotes,
+      voiceCount,
+      scorer,
+      opts.voiceOptions || {}
+    );
+
+    // Map selected notes back to bucket entries with metadata
     const picks = [];
-
-    for (let i = 0; i < max; i++) {
-      // If a MeasureComposer with voice leading is present on the layer, prefer it
-      let chosenStep = null;
-
-      try {
-        if (layer.measureComposer && typeof layer.measureComposer.selectNoteWithLeading === 'function') {
-          // pick using the measure composer's voice-leading selection
-          const candidates = bucket.map(s => Number(s.note));
-          const chosenNote = layer.measureComposer.selectNoteWithLeading(candidates, opts.voiceOptions || {});
-          // prefer the first candidate step matching the chosen note that starts at or after cursor
-          const startIdx = cursor % bucket.length;
-          for (let k = 0; k < bucket.length; k++) {
-            const idx = (startIdx + k) % bucket.length;
-            if (Number(bucket[idx].note) === chosenNote) { chosenStep = bucket[idx]; cursor = (idx + 1) % bucket.length; break; }
-          }
-        }
-      } catch (e) { /* fall through to other strategies */ }
-
-      // If no MeasureComposer choice, but a layer-level VoiceLeadingScore exists, use it
-      if (!chosenStep && layer.VoiceLeadingScore && typeof layer.VoiceLeadingScore.selectNextNote === 'function') {
-        const candidates = bucket.map(s => Number(s.note));
-        const chosenNote = layer.VoiceLeadingScore.selectNextNote(layer._voiceHistory || [], candidates, opts.voiceOptions || {});
-        const startIdx = cursor % bucket.length;
-        for (let k = 0; k < bucket.length; k++) {
-          const idx = (startIdx + k) % bucket.length;
-          if (Number(bucket[idx].note) === chosenNote) { chosenStep = bucket[idx]; cursor = (idx + 1) % bucket.length; break; }
-        }
+    for (const note of selectedNotes) {
+      const match = bucket.find(s => Number(s.note) === note);
+      if (match) {
+        picks.push({
+          note: Number(match.note),
+          groupId: match.groupId,
+          seqIndex: match.seqIndex,
+          seqLen: match.seqLen
+        });
       }
-
-      // Fallback: simple cursor-based selection
-      if (!chosenStep) {
-        const idx = (cursor + i) % bucket.length;
-        chosenStep = bucket[idx];
-        cursor = (idx + 1) % bucket.length;
-      }
-
-      picks.push({ note: Number(chosenStep.note), groupId: chosenStep.groupId, seqIndex: chosenStep.seqIndex, seqLen: chosenStep.seqLen });
-
-      // Track per-layer minimal voice history for layer.VoiceLeadingScore use
-      if (!layer._voiceHistory) layer._voiceHistory = [];
-      layer._voiceHistory.unshift(Number(chosenStep.note));
-      if (layer._voiceHistory.length > 8) layer._voiceHistory.pop();
     }
 
-    layer._motifCursor[beatKey] = cursor % bucket.length;
     return picks;
   }
 };
