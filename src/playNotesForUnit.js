@@ -27,23 +27,9 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
     }
 
     if (!layer || !layer.beatMotifs) { console.warn(`${unit}.playNotesForUnit: missing layer or beatMotifs`); return trackRhythm(unit, layer, false); }
-
-
     const beatKey = Math.floor(on / tpBeat);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-    if (!bucket.length) {
-      // Avoid spamming the console: log at most once per measureStart per layer
-      layer._loggedEmptyMeasures = layer._loggedEmptyMeasures || new Set();
-      const msKey = Math.round(measureStart || 0);
-      if (!layer._loggedEmptyMeasures.has(msKey)) {
-        if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug(`${unit}.playNotesForUnit: no motif in measure ${msKey}`);
-        layer._loggedEmptyMeasures.add(msKey);
-      }
-
-
-
-      return trackRhythm(unit, layer, false);
-    }
+    if (!bucket.length) { console.warn(`${unit}.playNotesForUnit: empty beatMotifs bucket`); return trackRhythm(unit, layer, false); }
 
     const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3));
 
