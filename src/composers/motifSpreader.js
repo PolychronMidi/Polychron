@@ -36,15 +36,25 @@ MotifSpreader = {
       // Add group's steps as candidates on every beat of the group's span;
       // placement/length/offset is decided later by stage/main loops.
       const baseBeat = Math.floor(measureStart / beatLen);
+      // Reset per-measure debug tracking when planning a measure
+      if (layer && layer._loggedEmptyBeatKeys) layer._loggedEmptyBeatKeys = new Set();
+
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
         const length = ri(min, Math.max(1, Math.min(8, gLen * min)));
         const motifGroup = mcGroup.generate({ length, fitToTotalTicks: true, totalTicks: gLen * beatLen, developFromComposer: composer, measureComposer: composer });
         const seq = motifGroup.sequence || motifGroup.events || [];
         const totalEvents = seq.length || 0;
+
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
         layer.beatMotifs = layer.beatMotifs || {};
-        // For each beat in this group's span, add all motif steps as candidates.
+        // If the generated motif group contains no events, skip creating empty beat buckets
+        if (!totalEvents) {
+          console.warn('MotifSpreader.spreadMeasure: generated empty motif group, skipping', { measureStart, groupIdx, gLen });
+          beatOffset += gLen;
+          return; // exit this group iteration (forEach callback)
+        }
+
         for (let b = 0; b < gLen; b++) {
           const bKey = baseBeat + beatOffset + b;
           layer.beatMotifs[bKey] = layer.beatMotifs[bKey] || [];
@@ -57,6 +67,8 @@ MotifSpreader = {
         layer.activeMotif = motifGroup;
         beatOffset += gLen;
       });
+
+
 
     } catch (e) { console.warn('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ' (continuing):', e && e.stack ? e.stack : e); }
   },

@@ -161,6 +161,8 @@ MotifComposer = class MotifComposer {
       seq.push({ note: chosen, duration: dur });
     }
 
+
+
     const MotifCtor = (typeof Motif !== "undefined") ? Motif : null;
     if (MotifCtor) return new MotifCtor(seq, { defaultDuration: 1 }); // durations are in ticks now
     // Fallback: return plain object if Motif class not available

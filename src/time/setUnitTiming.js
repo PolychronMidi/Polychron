@@ -34,6 +34,16 @@ setUnitTiming = (unitType) => {
       parentStart = phraseStart;
       tpParent = tpPhrase;
       unitsPerParent = measuresPerPhrase;
+
+      // Ensure active layer has been planned for this measure before any play occurs.
+      try {
+        const layer = LM && LM.layers && LM.layers[LM.activeLayer];
+        if (layer && (typeof layer.measureStart === 'undefined' || layer.measureStart !== measureStart)) {
+          try {
+            MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+          } catch (e) { console.warn('setUnitTiming(measure): MotifSpreader.spreadMeasure failed', e && e.stack ? e.stack : e); }
+        }
+      } catch (e) { /* defensive */ }
       break;
 
     case 'beat':

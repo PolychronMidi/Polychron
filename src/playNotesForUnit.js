@@ -19,19 +19,31 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
 
   let scheduled = 0;
   crossModulateRhythms();
+  const layer = LM.layers[LM.activeLayer];
   try {
     // Gate play invocation with playProb: proceed only when playProb > rf()
     if (typeof playProb === 'number' && !( playProb > rf() ) && crossModulation < rv(rf(1.8, 2.2), [-.2, -.3], .05)) {
-      return trackRhythm(unit, LM.layers[LM.activeLayer], false);
+      return trackRhythm(unit, layer, false);
     }
 
-    const layer = LM.layers[LM.activeLayer];
-    if (!layer || !layer.beatMotifs) { trackRhythm(unit, LM.layers[LM.activeLayer], false); return 0; }
+    if (!layer || !layer.beatMotifs) { console.warn(`${unit}.playNotesForUnit: missing layer or beatMotifs`); return trackRhythm(unit, layer, false); }
 
 
     const beatKey = Math.floor(on / tpBeat);
     const bucket = Array.isArray(layer.beatMotifs[beatKey]) ? layer.beatMotifs[beatKey] : [];
-    if (!bucket.length) { trackRhythm(unit, layer, false); return 0; }
+    if (!bucket.length) {
+      // Avoid spamming the console: log at most once per measureStart per layer
+      layer._loggedEmptyMeasures = layer._loggedEmptyMeasures || new Set();
+      const msKey = Math.round(measureStart || 0);
+      if (!layer._loggedEmptyMeasures.has(msKey)) {
+        if (typeof console !== 'undefined' && console && typeof console.debug === 'function') console.debug(`${unit}.playNotesForUnit: no motif in measure ${msKey}`);
+        layer._loggedEmptyMeasures.add(msKey);
+      }
+
+
+
+      return trackRhythm(unit, layer, false);
+    }
 
     const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 3));
 
@@ -107,7 +119,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
     trackRhythm(unit, layer, true);
   } catch (e) {
     console.warn(`${unit}.playNotesForUnit: non-fatal error while playing notes:`, e && e.stack ? e.stack : e);
-    try { trackRhythm(unit, LM.layers[LM.activeLayer], false); } catch (e2) { /* swallow */ }
+    trackRhythm(unit, layer, false);
   }
 
   return scheduled;
