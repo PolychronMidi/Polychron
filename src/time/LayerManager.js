@@ -60,7 +60,7 @@ LM = layerManager ={
     } catch (e) { console.warn('LayerManager.register: layer setup function threw, continuing:', e && e.stack ? e.stack : e); }
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
-    // return the layer object (no backward-compatibility `state` key)
+    // return the layer object
     return { layer: LM.layers[name], buffer: buf };
   },
 

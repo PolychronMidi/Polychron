@@ -6,8 +6,7 @@ const config = {
     globalApplyProb: 0.2,
     perProb: { source: 0.07, reflection: 0.2, bass: 0.7 },
     shiftProb: { source: 0.15, reflection: 0.7, bass: 0.5 }
-  },
-  fallbackVelocity: 64
+  }
 };
 
 // Simple debug flag controlled by env
@@ -26,16 +25,16 @@ const metrics = {
 // Helper registration
 let _registeredHelper = null; // function
 
-function registerOriginalHelper(fn) {
+function registerHelper(fn) {
   if (typeof fn === 'function') {
     _registeredHelper = fn;
-    try { fn._isOriginalStutterNotes = true; } catch (e) { /* ignore */ }
+    try { _registeredHelper._isStutterNotesHelper = true; } catch (e) { /* ignore */ }
     return true;
   }
   _registeredHelper = null;
   return false;
 }
-function getRegisteredHelper() { return _registeredHelper; }
+function getHelper() { return _registeredHelper; }
 
 // Config API
 function getConfig() { return config; }
@@ -88,8 +87,8 @@ StutterConfig = {
   incEmitted,
   incPendingForTick,
   decPendingForTick,
-  registerOriginalHelper,
-  getRegisteredHelper,
+  registerHelper,
+  getHelper,
   logDebug,
   DEBUG
 };

@@ -60,11 +60,13 @@ MotifComposer = class MotifComposer {
       // If developer provided, seed scale notes from it
       scaleNotes = developer.getNotes() || [];
     } else {
+      console.warn('MotifComposer.generate: no scaleComposer or developFromComposer provided, falling back to C major scale.');
       let sc = null;
       try { sc = new ScaleComposer('major','C'); } catch (e) { sc = null; }
       if (sc && typeof sc.x === 'function') {
         scaleNotes = sc.x() || [];
       } else {
+        console.warn('MotifComposer.generate: failed to create fallback ScaleComposer, using single note C (60).');
         scaleNotes = [{ note: 60 }];
       }
     }

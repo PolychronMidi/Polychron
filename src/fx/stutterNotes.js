@@ -13,8 +13,8 @@ const _clampStutterNote = (n, isBassLocal) => {
   return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
 };
 
-const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, otherRange, rfLocal) => {
-  return isPrimaryLocal ? velocityLocal * rfLocal(primaryRange[0], primaryRange[1]) : binVelLocal * rfLocal(otherRange[0], otherRange[1]);
+const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, otherRange, rf) => {
+  return isPrimaryLocal ? velocityLocal * rf(primaryRange[0], primaryRange[1]) : binVelLocal * rf(otherRange[0], otherRange[1]);
 };
 
 /**
@@ -46,10 +46,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       binVel,
       isPrimary = false,
       shared = null,
-      rf: rfLocal = rf,
-      ri: riLocal = ri,
-      clamp: clampLocal = clamp,
-      modClamp: modClampLocal = modClamp,
       emit = true // when false, do not call p(); instead return planned events
     } = opts;
 
@@ -77,24 +73,24 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
     // Local wrapper uses module-scope helper for performance; falls back to injected modClamp if provided
     const clampStutterNote = (n) => {
-      if (typeof modClampLocal === 'function') {
-        if (isBass) return modClampLocal(n, 0, 59);
-        return modClampLocal(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+      if (typeof modClamp === 'function') {
+        if (isBass) return modClamp(n, 0, 59);
+        return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
       }
       return _clampStutterNote(n, isBass);
     };
 
     // Source: optional global stutter plan shared across channels
-    if (isSource && !globalState.applied && rfLocal() < rv(.2, [.5, 1], .3)) {
-      const numStutters = m.round(rv(rv(riLocal(3, 9), [2, 5], .33), [2, 5], .1));
+    if (isSource && !globalState.applied && rf() < rv(.2, [.5, 1], .3)) {
+      const numStutters = m.round(rv(rv(ri(3, 9), [2, 5], .33), [2, 5], .1));
       globalState.applied = true;
       globalState.data = {
         numStutters,
-        duration: rfLocal(.9, 1.1) * sustain / numStutters,
+        duration: rf(.9, 1.1) * sustain / numStutters,
         minVelocity: 11,
         maxVelocity: 100,
-        isFadeIn: rfLocal() < 0.5,
-        decay: rfLocal(.75, 1.25)
+        isFadeIn: rf() < 0.5,
+        decay: rf(.75, 1.25)
       };
     }
 
@@ -103,39 +99,39 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = note;
-        if (rfLocal() < .25) {
-          if (!shifts.has(channel)) shifts.set(channel, riLocal(-3, 3) * 12);
+        if (rf() < .25) {
+          if (!shifts.has(channel)) shifts.set(channel, ri(-3, 3) * 12);
           stutterNote = _clampStutterNote(note + shifts.get(channel), isBass);
         }
 
         let currentVelocity;
         if (isFadeIn) {
-          const fadeInMultiplier = decay * (i / (numStutters * rfLocal(0.4, 2.2) - 1));
-          currentVelocity = clampLocal(m.min(maxVelocity, riLocal(33) + maxVelocity * fadeInMultiplier), 0, 100);
+          const fadeInMultiplier = decay * (i / (numStutters * rf(0.4, 2.2) - 1));
+          currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 100);
         } else {
-          const fadeOutMultiplier = 1 - (decay * (i / (numStutters * rfLocal(0.4, 2.2) - 1)));
-          currentVelocity = clampLocal(m.max(0, riLocal(33) + maxVelocity * fadeOutMultiplier), 0, 100);
+          const fadeOutMultiplier = 1 - (decay * (i / (numStutters * rf(0.4, 2.2) - 1)));
+          currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 100);
         }
 
-        const ev1 = { tick: tick + duration * rfLocal(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rfLocal(.3, .7) : currentVelocity * rfLocal(.45, .8)] };
-        const ev2 = { tick: Math.max(tick, tick - duration * rfLocal(.15)), vals: [channel, stutterNote] };
+        const ev1 = { tick: tick + duration * rf(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rf(.3, .7) : currentVelocity * rf(.45, .8)] };
+        const ev2 = { tick: Math.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] };
         if (emit === false) { plannedEvents.push(ev1); plannedEvents.push(ev2); } else { p(c, ev1); p(c, ev2); }
       }
-        const evFinal = { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] };
+        const evFinal = { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] };
         if (emit === false) plannedEvents.push(evFinal); else p(c, evFinal);
     }
 
     // Per-channel stutter (source/reflection/bass)
     const perProb = isSource ? rv(.07, [.5, 1], .2) : (isReflection ? .2 : .7);
-    if (rfLocal() < perProb) {
+    if (rf() < perProb) {
       if (!stutters.has(channel)) {
-        if (isSource) stutters.set(channel, m.round(rv(rv(riLocal(2, 7), [2, 5], .33), [2, 5], .1)));
-        else if (isReflection) stutters.set(channel, m.round(rv(rv(riLocal(2, 7), [2, 5], .33), [2, 5], .1)));
-        else stutters.set(channel, m.round(rv(rv(riLocal(2, 5), [2, 3], .33), [2, 10], .1)));
+        if (isSource) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
+        else if (isReflection) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
+        else stutters.set(channel, m.round(rv(rv(ri(2, 5), [2, 3], .33), [2, 10], .1)));
       }
 
       const numStutters = stutters.get(channel);
-      const duration = .25 * riLocal(1, isSource ? 5 : 8) * sustain / numStutters;
+      const duration = .25 * ri(1, isSource ? 5 : 8) * sustain / numStutters;
       const shiftProb = isSource ? .15 : (isReflection ? .7 : .5);
       const shiftRange = isBass ? 2 : 3;
       const fireProb = isSource ? .6 : (isReflection ? .5 : .3);
@@ -146,18 +142,18 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = note;
-        if (rfLocal() < shiftProb) {
-          if (!shifts.has(channel)) shifts.set(channel, riLocal(-shiftRange, shiftRange) * 12);
+        if (rf() < shiftProb) {
+          if (!shifts.has(channel)) shifts.set(channel, ri(-shiftRange, shiftRange) * 12);
           stutterNote = clampStutterNote(note + shifts.get(channel));
         }
-        if (rfLocal() < fireProb) {
-          const evA = { tick: tick - duration * rfLocal(.15, .3), vals: [channel, stutterNote] };
-          const evB = { tick: tick + duration * rfLocal(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rfLocal(velRanges[0], velRanges[1])] };
+        if (rf() < fireProb) {
+          const evA = { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] };
+          const evB = { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rf(velRanges[0], velRanges[1])] };
           if (emit === false) { plannedEvents.push(evA); plannedEvents.push(evB); } else { p(c, evA); p(c, evB); }
         }
       }
 
-      const evEnd = { tick: on + sustain * rfLocal(.5, 1.5), vals: [channel, note] };
+      const evEnd = { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] };
       if (emit === false) plannedEvents.push(evEnd); else { if (isSource) p(c, evEnd); }
     }
 
@@ -165,11 +161,11 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 };
 
 var StutterConfig;
-// Register helper with stutterConfig so manager can detect the original implementation and avoid recursion/warnings
+// Register helper with stutterConfig so manager can detect the original implementation
 try {
   // @ts-ignore: runtime-only naked global registration
-  if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.registerOriginalHelper === 'function') {
+  if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.registerHelper === 'function') {
     // @ts-ignore: runtime-only naked global registration
-    StutterConfig.registerOriginalHelper(stutterNotes);
+    StutterConfig.registerHelper(stutterNotes);
   }
 } catch (e) { /* ignore if module not present */ }
