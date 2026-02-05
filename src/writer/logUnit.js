@@ -45,15 +45,15 @@ logUnit = (type) => {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
     // Ensure we always have a safe numeric start for sections.
-    startTick = Number.isFinite(sectionStart) ? sectionStart : 0;
-    startTime = Number.isFinite(sectionStartTime) ? sectionStartTime : 0;
+    startTick = sectionStart;
+    startTime = sectionStartTime;
     // Section duration not known this early in the loop.
   } else if (type === 'phrase') {
     unit = phraseIndex + 1;
     unitsPerParent = phrasesPerSection;
     startTick = phraseStart;
     // Compute endTick only when tpPhrase is a finite number
-    endTick = Number.isFinite(tpPhrase) && Number.isFinite(startTick) ? (startTick + tpPhrase) : undefined;
+    endTick = startTick + tpPhrase;
     startTime = phraseStartTime;
     spPhrase = tpPhrase / tpSec;
     endTime = startTime + spPhrase;
@@ -126,14 +126,14 @@ logUnit = (type) => {
     endTime = startTime + spSubdiv;
   } else if (type === 'subsubdiv') {
     // Use defensively coerced indices/totals to avoid NaN/undefined emissions
-    const sIndex = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
+    const sIndex = subsubdivIndex;
     unit = sIndex + 1;
     // Prefer canonical name `subsubsPerSub` but accept legacy `subsubsPerSub` if present
-    unitsPerParent = Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : (Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : 1);
+    unitsPerParent = subsubsPerSub;
     startTick = subsubdivStart;
-    endTick = startTick + (Number.isFinite(Number(tpSubsubdiv)) ? tpSubsubdiv : 0);
-    startTime = Number.isFinite(Number(subsubdivStartTime)) ? subsubdivStartTime : 0;
-    endTime = startTime + (Number.isFinite(Number(spSubsubdiv)) ? spSubsubdiv : 0);
+    endTick = startTick + tpSubsubdiv;
+    startTime = subsubdivStartTime;
+    endTime = startTime + spSubsubdiv;
   }
   return (() => {
     c.push({
