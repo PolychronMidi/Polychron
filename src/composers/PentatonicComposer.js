@@ -28,36 +28,8 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   }
 
   getNotes(octaveRange = null) {
-    const [minOctave, maxOctave] = octaveRange || this.getOctaveRange();
-    const voices = this.getVoices();
-    const uniqueNotes = new Set();
-    const result = [];
-    const openIntervals = [0, 2, 4];
-
-    for (let i = 0; i < voices && i < this.notes.length; i++) {
-      const intervalIndex = openIntervals[i % openIntervals.length];
-      const noteIndex = intervalIndex % this.notes.length;
-      let octave = ri(minOctave, maxOctave);
-
-      if (i > 0 && voices > 2) {
-        octave = minOctave + Math.floor(i * (maxOctave - minOctave) / (voices - 1));
-      }
-
-      let note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-      let attempts = 0;
-      while (uniqueNotes.has(note) && attempts < 12) {
-        octave = ri(minOctave, maxOctave);
-        note = t.Note.chroma(this.notes[noteIndex]) + 12 * octave;
-        attempts++;
-      }
-
-      if (!uniqueNotes.has(note)) {
-        uniqueNotes.add(note);
-        result.push({ note });
-      }
-    }
-
-    return result;
+    // Return full note pool for centralized voice selection
+    return super.getNotes(octaveRange);
   }
 
   x = () => this.getNotes();

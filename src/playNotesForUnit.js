@@ -22,7 +22,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
   crossModulateRhythms();
   const layer = LM.layers[LM.activeLayer];
   try {
-    // Gate play invocation with playProb: proceed only when playProb > rf()
+    // Gate play invocation with playProb and crossModulation
     if (typeof playProb === 'number' && !( playProb > rf() ) && crossModulation < rv(rf(1.8, 2.2), [-.2, -.3], .05)) {
       return trackRhythm(unit, layer, false);
     }
@@ -56,7 +56,11 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
     }
     const beatNoteSet = beatNoteHistory.get(beatKey);
 
-    const picks = MotifSpreader.getBeatMotifPicks(layer, beatKey, ri(1, 7));
+    // Get candidate notes from bucket and select via centralized voice coordination
+    const candidateNotes = bucket.map(s => Number(s.note));
+    const voiceCount = Math.min(ri(1, 7), globalVoiceCoordinator.getVoiceCount());
+    const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
+    const picks = globalVoiceCoordinator.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, {}).map(note => ({ note }));
 
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];
@@ -81,7 +85,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           const shouldStutterNow = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
           if (shouldStutterNow) {
             try {
-              Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity: velocity, binVel, isPrimary });
+              Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
             } catch (e) { console.warn(`${unit}.playNotesForUnit: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
             }
           }
@@ -102,7 +106,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           const shouldStutterNow_ref = (typeof stutterEnabledByProb_ref === 'boolean') ? stutterEnabledByProb_ref : (enableStutter && rf() > 0.5);
           if (shouldStutterNow_ref) {
             try {
-              Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity: velocity, binVel, isPrimary });
+              Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
             } catch (e) { console.warn(`${unit}.playNotesForUnit: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
             }
           }
@@ -123,7 +127,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
 
           if (enableStutter && rf() > 0.5) {
             try {
-              Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity: velocity, binVel, isPrimary });
+              Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
             } catch (e) { console.warn(`${unit}.playNotesForUnit: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
             }
           }
