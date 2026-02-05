@@ -99,7 +99,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
 
     // Parallel motion avoidance (soft constraint)
     if (this.history.length > 0) {
-      const lastMotion = this.history[this.history.length - 1];
+      const lastHistory = this.history[this.history.length - 1];
+      const lastMotion = (lastHistory && typeof lastHistory.interval === 'number') ? lastHistory.interval : 0;
       totalCost += this._scoreParallelMotion(candidate - lastNote, lastMotion) * this.weights.parallelMotion;
     }
 

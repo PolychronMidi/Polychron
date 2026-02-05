@@ -20,30 +20,6 @@ VoiceCoordinator = class VoiceCoordinator {
   }
 
   /**
-   * Build note pool from composer - returns all available notes without voice count filtering
-   * @param {Object} composer - MeasureComposer instance
-   * @param {number[]} octaveRange - [min, max] octaves
-   * @returns {number[]} Array of MIDI note numbers (the full pool)
-   */
-  buildNotePool(composer, octaveRange) {
-    const notes = composer.notes;
-    const [minOctave, maxOctave] = octaveRange;
-    const pool = [];
-
-    // Generate all notes across octave range
-    for (const noteName of notes) {
-      for (let octave = minOctave; octave <= maxOctave; octave++) {
-        const note = t.Note.chroma(noteName) + 12 * octave;
-        if (!pool.includes(note)) {
-          pool.push(note);
-        }
-      }
-    }
-
-    return pool.sort((a, b) => a - b);
-  }
-
-  /**
    * Pick notes for a beat using voice leading optimization
    * @param {Object} layer - Layer object with voice history
    * @param {number[]} candidateNotes - Available notes for this beat
@@ -53,7 +29,12 @@ VoiceCoordinator = class VoiceCoordinator {
    * @returns {number[]} Selected notes (length = voiceCount)
    */
   pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, opts = {}) {
+    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0 || !Number.isFinite(voiceCount) || voiceCount <= 0) {
+      return [];
+    }
+
     const layerId = layer.id || 'default';
+    const maxVoices = Math.min(voiceCount, candidateNotes.length);
 
     if (!this.voiceHistoryByLayer.has(layerId)) {
       this.voiceHistoryByLayer.set(layerId, []);
@@ -62,12 +43,12 @@ VoiceCoordinator = class VoiceCoordinator {
     const voiceHistory = this.voiceHistoryByLayer.get(layerId);
 
     // If we have a scorer and multiple voices, use joint selection
-    if (scorer && voiceCount > 1 && candidateNotes.length >= voiceCount) {
+    if (scorer && maxVoices > 1 && candidateNotes.length >= maxVoices) {
       // Build per-voice candidate arrays from the pool
       const candidatesPerVoice = [];
       const lastNotesByVoice = [];
 
-      for (let i = 0; i < voiceCount; i++) {
+      for (let i = 0; i < maxVoices; i++) {
         candidatesPerVoice.push([...candidateNotes]);
         lastNotesByVoice.push(voiceHistory[i] || []);
       }
@@ -87,7 +68,7 @@ VoiceCoordinator = class VoiceCoordinator {
 
     // Single voice or no scorer - simpler selection
     const selected = [];
-    for (let i = 0; i < voiceCount; i++) {
+    for (let i = 0; i < maxVoices; i++) {
       let note;
 
       if (scorer && voiceHistory[i] && voiceHistory[i].length > 0) {

@@ -63,10 +63,10 @@ grandFinale = () => {
         const tickNum = _.tick || 0;
         const tickInt = Math.round(Number(tickNum) || 0);
 
-        // Clamp velocity for Note_on events to a max of 100 (rounded)
+        // Clamp velocity for Note_on events to a max (rounded)
         if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
           const vel = Number(_.vals[2]) || 0;
-          _.vals[2] = Math.min(90, Math.round(vel));
+          _.vals[2] = Math.min(127, Math.round(vel));
         }
 
         composition += `1,${tickInt},${type},${_.vals.join(',')}\n`;
