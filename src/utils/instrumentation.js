@@ -59,7 +59,7 @@ semitone=neutralPitchBend / 2;
  * Convert cents to tuning frequency offset.
  * @type {number}
  */
-let centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
+const centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
 
 /**
  * Pitch bend value for tuning frequency.
@@ -71,7 +71,7 @@ tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)
  * Generate binaural frequency offset.
  * @type {number}
  */
-let binauralFreqOffset = rf(BINAURAL.min, BINAURAL.max);
+binauralFreqOffset = rf(BINAURAL.min, BINAURAL.max);
 
 /**
  * Calculate binaural offset pitch bend values.

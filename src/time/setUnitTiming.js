@@ -19,6 +19,7 @@ setUnitTiming = (unitType) => {
     case 'phrase':
       tpPhrase = tpMeasure * measuresPerPhrase;
       spPhrase = tpPhrase / tpSec;
+      unitIndex = phraseIndex;
       unitStart = phraseStart;
       tpUnit = tpPhrase;
       parentStart = sectionStart;
@@ -27,29 +28,20 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'measure':
+      try { setRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
       measureStart = phraseStart + measureIndex * tpMeasure;
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
+      unitIndex = measureIndex;
       unitStart = measureStart;
       tpUnit = tpMeasure;
       parentStart = phraseStart;
       tpParent = tpPhrase;
       unitsPerParent = measuresPerPhrase;
-
-      // Ensure active layer has been planned for this measure before any play occurs.
-      try {
-        const layer = LM && LM.layers && LM.layers[LM.activeLayer];
-        if (layer && (typeof layer.measureStart === 'undefined' || layer.measureStart !== measureStart)) {
-          try {
-            MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
-          } catch (e) { console.warn('setUnitTiming(measure): MotifSpreader.spreadMeasure failed', e && e.stack ? e.stack : e); }
-        }
-      } catch (e) { /* defensive */ }
       break;
 
     case 'beat':
       // Ensure the active layer has a beat rhythm generated before tracking it
-      try { setRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
-      try { trackRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(beat) failed', e); }
+      try { setRhythm('div', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -64,6 +56,7 @@ setUnitTiming = (unitType) => {
       // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
       divsPerBeat = composer.getDivisions();
       divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
+      unitIndex = beatIndex;
       unitStart = beatStart;
       tpUnit = tpBeat;
       parentStart = measureStart;
@@ -71,8 +64,8 @@ setUnitTiming = (unitType) => {
       unitsPerParent = numerator;
       break;
 
-    case 'division':
-      try { trackRhythm('div', LM.layers[LM.activeLayer]); } catch (e) { console.warn('trackRhythm(div) failed', e); }
+    case 'div':
+      try { setRhythm('subdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
       tpDiv = tpBeat / divsPerBeat;
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -80,6 +73,7 @@ setUnitTiming = (unitType) => {
       subdivsPerDiv = composer.getSubdivs();
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv', LM.layers[LM.activeLayer]);
+      unitIndex = divIndex;
       unitStart = divStart;
       tpUnit = tpDiv;
       parentStart = beatStart;
@@ -88,7 +82,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdiv':
-      // subdiv trackRhythm handled by playSubdivNotes()
+      try { setRhythm('subsubdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
       tpSubdiv = tpDiv / subdivsPerDiv;
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
@@ -96,6 +90,7 @@ setUnitTiming = (unitType) => {
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubsPerSub =composer.getSubsubdivs();
       subsubdivRhythm = setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
+      unitIndex = subdivIndex;
       unitStart = subdivStart;
       tpUnit = tpSubdiv;
       parentStart = divStart;
@@ -104,12 +99,12 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdiv':
-      // subsubdiv trackRhythm handled by playSubsubdivNotes()
       tpSubsubdiv = tpSubdiv / subsubsPerSub;
       spSubsubdiv = tpSubsubdiv / tpSec;
       subsubsPerMinute = 60 / spSubsubdiv;
       subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
       subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
+      unitIndex = subsubdivIndex;
       unitStart = subsubdivStart;
       tpUnit = tpSubsubdiv;
       parentStart = subdivStart;

@@ -56,6 +56,7 @@ export default [
         syncFactor: 'writable',
         midiBPM: 'writable',
         tpSec: 'writable',
+        unitIndex: 'writable',
         unitStart: 'writable',
         tpUnit: 'writable',
         parentStart: 'writable',

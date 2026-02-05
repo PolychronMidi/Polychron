@@ -1,6 +1,6 @@
 // Dependency: midiTiming is required via `src/time/index.js`
 /**
- * Compute phrase alignment between primary and poly meters in seconds.
+ * Compute phrase alignment between L1 and L2 meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.
  * @returns {void}
  */
@@ -52,8 +52,8 @@ getPolyrhythm = () => {
       return true;
     }
   }
-  // Max attempts reached: try new meter on primary layer with relaxed constraints
-  console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new primary meter...`);
+  // Max attempts reached: try new meter on L1 layer with relaxed constraints
+  console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new L1 meter...`);
   [numerator, denominator] = composer.getMeter(true, false);
   // CRITICAL: Recalculate all timing after meter change to prevent sync desync
   getMidiTiming();

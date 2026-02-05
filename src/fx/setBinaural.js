@@ -6,6 +6,7 @@ setBinaural = () => {
   if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
   beatCount=0; flipBin=!flipBin; allNotesOff(beatStart);
   beatsUntilBinauralShift = ri(numerator, numerator * 2 * bpmRatio3);
+  binauralFreqOffset=rl(binauralFreqOffset,-1,1,BINAURAL.min,BINAURAL.max);
   // REMOVED: ANTI-PATTERN - THIS IS ABSURD, AS THEY ARE AVAILABLE GLOBALLY
   // let _bfo = 0;
   // try { _bfo = (typeof binauralFreqOffset !== 'undefined') ? binauralFreqOffset : 0; } catch (e) { _bfo = 0; }
