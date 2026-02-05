@@ -15,7 +15,7 @@ ComposerFactory = class ComposerFactory {
       }
       // Defensive: ensure externally supplied progression entries are normalized strings
       if (Array.isArray(p)) {
-        try { p = p.map(normalizeChordSymbol); } catch (e) { /* swallow */ }
+        try { p = p.map(normalizeChordSymbol); } catch (e) { console.warn('ComposerFactory.chords: failed to normalize chord symbols in progression, using as-is:', e && e.stack ? e.stack : e); }
       }
       return new (ChordComposer)(p);
     },
@@ -53,7 +53,7 @@ ComposerFactory = class ComposerFactory {
       return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality);
     },
     melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5 } = {}) => new MelodicDevelopmentComposer(name, root, intensity),
-    advancedVoiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
+    voiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
   };
 
   static create(config = {}) {
@@ -68,7 +68,6 @@ ComposerFactory = class ComposerFactory {
 
   static createRandom(extraConfig = {}) {
     // Strictly sample from global COMPOSERS array (defined in src/config.js / config.md).
-    // Do not fall back to arbitrary constructor types (e.g., 'measure').
     if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS) && COMPOSERS.length > 0) {
       const tries = Math.min(8, COMPOSERS.length);
       for (let i = 0; i < tries; i++) {
@@ -97,9 +96,9 @@ ComposerFactory = class ComposerFactory {
         }
       }
         try { return this.create(Object.assign({}, { type: 'scale', name: 'random', root: 'random' }, extraConfig)); } catch (e) { console.warn('No valid entry found in COMPOSERS array, falling back to random scale composer:', e && e.stack ? e.stack : e); }
+    } else {
+      console.warn('ComposerFactory.createRandom: COMPOSERS array is undefined or empty, defaulting to random scale composer.');
     }
-
     return this.create(Object.assign({}, extraConfig, { type: 'scale', name: 'random', root: 'random' }));
   }
-
 }

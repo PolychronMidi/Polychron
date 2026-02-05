@@ -84,10 +84,10 @@ COMPOSERS=[
   { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.5 },
   { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.7 },
   // Advanced Voice Leading Composers
-  { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 },
-  { type: 'advancedVoiceLeading', name: 'major', root: 'C', commonToneWeight: 0.5 },
-  { type: 'advancedVoiceLeading', name: 'random', root: 'random', commonToneWeight: 0.6 },
-  { type: 'advancedVoiceLeading', name: 'random', root: 'random', commonToneWeight: 0.8 },
+  { type: 'voiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 },
+  { type: 'voiceLeading', name: 'major', root: 'C', commonToneWeight: 0.5 },
+  { type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.6 },
+  { type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.8 },
   // Harmonic Rhythm (limited to avoid too many drums)
   { type: 'harmonicRhythm', progression: ['I','IV','V','I'], key: 'random', measuresPerChord: 2, quality: 'major' }
 ];
