@@ -80,17 +80,14 @@ ComposerFactory = class ComposerFactory {
               const notes = composer.getNotes();
               if (Array.isArray(notes) && notes.length > 0) return composer;
             } catch (e) {
-              // getNotes failed; try another COMPOSERS entry
               console.warn('ComposerFactory.createRandom: composer.getNotes() threw, trying another COMPOSERS entry:', e && e.stack ? e.stack : e);
               continue;
             }
           } else if (composer) {
-            // Composer doesn't implement getNotes but creation succeeded; accept it.
             console.warn('ComposerFactory.createRandom: created composer without getNotes(), accepting it.', composer);
             return composer;
           }
         } catch (e) {
-          // Creation from this COMPOSERS entry failed; try another entry.
           console.warn('ComposerFactory.createRandom: failed to create composer from COMPOSERS entry, trying another:', e && e.stack ? e.stack : e);
           continue;
         }
