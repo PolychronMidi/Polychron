@@ -19,6 +19,48 @@ VoiceCoordinator = class VoiceCoordinator {
     return rw(min, max, weights);
   }
 
+  _normalizeCandidates(candidateNotes = []) {
+    const notes = [];
+    const weights = {};
+
+    for (const item of candidateNotes) {
+      if (typeof item === 'number' && Number.isFinite(item)) {
+        notes.push(item);
+        continue;
+      }
+
+      if (item && typeof item.note === 'number' && Number.isFinite(item.note)) {
+        notes.push(item.note);
+        if (typeof item.weight === 'number' && Number.isFinite(item.weight)) {
+          weights[item.note] = item.weight;
+        }
+      }
+    }
+
+    return { notes, weights: Object.keys(weights).length > 0 ? weights : null };
+  }
+
+  _weightedPick(notes, weights) {
+    if (!weights) return notes[ri(notes.length - 1)];
+
+    let total = 0;
+    for (const note of notes) {
+      const weight = Math.max(0, Number(weights[note]) || 0);
+      total += weight;
+    }
+
+    if (total <= 0) return notes[ri(notes.length - 1)];
+
+    let roll = rf() * total;
+    for (const note of notes) {
+      const weight = Math.max(0, Number(weights[note]) || 0);
+      roll -= weight;
+      if (roll <= 0) return note;
+    }
+
+    return notes[notes.length - 1];
+  }
+
   /**
    * Pick notes for a beat using voice leading optimization
    * @param {Object} layer - Layer object with voice history
@@ -29,12 +71,16 @@ VoiceCoordinator = class VoiceCoordinator {
    * @returns {number[]} Selected notes (length = voiceCount)
    */
   pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, opts = {}) {
-    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0 || !Number.isFinite(voiceCount) || voiceCount <= 0) {
+    const normalized = this._normalizeCandidates(candidateNotes);
+    let notePool = normalized.notes;
+    const weightMap = opts.candidateWeights || normalized.weights;
+
+    if (!Array.isArray(notePool) || notePool.length === 0 || !Number.isFinite(voiceCount) || voiceCount <= 0) {
       return [];
     }
 
     const layerId = layer.id || 'default';
-    const maxVoices = Math.min(voiceCount, candidateNotes.length);
+    const maxVoices = Math.min(voiceCount, notePool.length);
 
     if (!this.voiceHistoryByLayer.has(layerId)) {
       this.voiceHistoryByLayer.set(layerId, []);
@@ -43,18 +89,18 @@ VoiceCoordinator = class VoiceCoordinator {
     const voiceHistory = this.voiceHistoryByLayer.get(layerId);
 
     // If we have a scorer and multiple voices, use joint selection
-    if (scorer && maxVoices > 1 && candidateNotes.length >= maxVoices) {
+    if (scorer && maxVoices > 1 && notePool.length >= maxVoices) {
       // Build per-voice candidate arrays from the pool
       const candidatesPerVoice = [];
       const lastNotesByVoice = [];
 
       for (let i = 0; i < maxVoices; i++) {
-        candidatesPerVoice.push([...candidateNotes]);
+        candidatesPerVoice.push([...notePool]);
         lastNotesByVoice.push(voiceHistory[i] || []);
       }
 
       // Call selectVoices for joint optimization
-      const selected = selectVoices(scorer, lastNotesByVoice, candidatesPerVoice, opts);
+      const selected = selectVoices(scorer, lastNotesByVoice, candidatesPerVoice, Object.assign({}, opts, { candidateWeights: weightMap }));
 
       // Update history
       for (let i = 0; i < selected.length; i++) {
@@ -73,10 +119,10 @@ VoiceCoordinator = class VoiceCoordinator {
 
       if (scorer && voiceHistory[i] && voiceHistory[i].length > 0) {
         // Single-voice selection with leading
-        note = scorer.selectNextNote(voiceHistory[i], candidateNotes, opts);
+        note = scorer.selectNextNote(voiceHistory[i], notePool, Object.assign({}, opts, { candidateWeights: weightMap }));
       } else {
         // Random selection from available candidates
-        note = candidateNotes[ri(candidateNotes.length - 1)];
+        note = this._weightedPick(notePool, weightMap);
       }
 
       selected.push(note);
@@ -87,10 +133,10 @@ VoiceCoordinator = class VoiceCoordinator {
       if (voiceHistory[i].length > 8) voiceHistory[i].pop();
 
       // Remove selected note from candidates to avoid duplicates
-      const idx = candidateNotes.indexOf(note);
+      const idx = notePool.indexOf(note);
       if (idx >= 0) {
-        candidateNotes = [...candidateNotes];
-        candidateNotes.splice(idx, 1);
+        notePool = [...notePool];
+        notePool.splice(idx, 1);
       }
     }
 

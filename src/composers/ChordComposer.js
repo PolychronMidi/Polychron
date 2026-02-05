@@ -13,6 +13,29 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     this.noteSet(progression,'R');
   }
 
+  getVoicingIntent(candidateNotes = []) {
+    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) return null;
+    if (!this.notes || this.notes.length === 0) return null;
+
+    const chordPCs = new Set();
+    for (const noteName of this.notes) {
+      const chroma = t.Note.chroma(noteName);
+      if (typeof chroma === 'number' && Number.isFinite(chroma)) {
+        chordPCs.add(((chroma % 12) + 12) % 12);
+      }
+    }
+
+    if (chordPCs.size === 0) return null;
+
+    const candidateWeights = {};
+    for (const note of candidateNotes) {
+      const pc = ((note % 12) + 12) % 12;
+      candidateWeights[note] = chordPCs.has(pc) ? 1 : 0;
+    }
+
+    return { candidateWeights };
+  }
+
   /**
    * Sets progression and validates chords.
    * @param {string[]} progression

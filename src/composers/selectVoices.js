@@ -7,7 +7,7 @@
  * @param {VoiceLeadingScore} scorer - Voice leading scorer instance
  * @param {number[][]} lastNotesByVoice - Per-voice history arrays [[last, prev, ...], ...]
  * @param {number[][]} candidatesPerVoice - Per-voice candidate arrays
- * @param {{ registers?: string[], commonToneWeight?: number }} opts - Optional config
+ * @param {{ registers?: string[], commonToneWeight?: number, candidateWeights?: Object }} opts - Optional config
  * @returns {number[]} Selected notes (one per voice)
  */
 selectVoices = function(scorer, lastNotesByVoice, candidatesPerVoice, opts = {}) {
@@ -38,13 +38,14 @@ selectVoices = function(scorer, lastNotesByVoice, candidatesPerVoice, opts = {})
 
     for (const candidate of candidates) {
       if (chosenSet.has(candidate)) continue;
+      const candidateWeight = opts.candidateWeights ? Number(opts.candidateWeights[candidate]) || 0 : 0;
       // Base single-voice cost from VoiceLeadingScore
       const baseCost = scorer._scoreCandidate(
         candidate,
         lastNotes,
         registerRange,
         [],
-        { commonToneWeight: opts.commonToneWeight }
+        { commonToneWeight: opts.commonToneWeight, weight: candidateWeight }
       );
 
       // Crossing penalty - soprano >= alto >= tenor >= bass
