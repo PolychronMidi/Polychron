@@ -75,7 +75,7 @@ grandFinale = () => {
     });
 
     composition += `1,${phraseStart},end_track`;
-    const outputFilename = name === 'primary' ? 'output/output1.csv' : name === 'poly' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+    const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     fs.writeFileSync(outputFilename, composition);
     console.log(`Wrote file: ${outputFilename}`);
 

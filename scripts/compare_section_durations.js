@@ -1,5 +1,5 @@
 // Simple script to compare summed phrase durations (endTick - startTick) per section
-// across two output CSVs: output1.csv (primary) and output2.csv (poly).
+// across two output CSVs: output1.csv (L1) and output2.csv (L2).
 
 const fs = require('fs');
 const path = require('path');
@@ -52,13 +52,13 @@ function sumSection(section) {
 }
 
 function compareUsingPolyBounds(primaryPath, polyPath) {
-  const primary = parseFile(primaryPath, 'primary');
-  const poly = parseFile(polyPath, 'poly');
+  const L1 = parseFile(primaryPath, 'L1');
+  const L2 = parseFile(polyPath, 'L2');
 
-  // Build poly section boundaries (startTick inclusive, endTick exclusive)
-  const bounds = poly.map((s, i) => {
+  // Build L2 section boundaries (startTick inclusive, endTick exclusive)
+  const bounds = L2.map((s, i) => {
     const start = s.startTick === null ? (s.phrases[0] && s.phrases[0].startTick || 0) : s.startTick;
-    const end = (i < poly.length - 1) ? (poly[i+1].startTick === null ? Infinity : poly[i+1].startTick) : Infinity;
+    const end = (i < L2.length - 1) ? (L2[i+1].startTick === null ? Infinity : L2[i+1].startTick) : Infinity;
     return { index: i+1, start, end, section: s };
   });
 
@@ -79,11 +79,11 @@ function compareUsingPolyBounds(primaryPath, polyPath) {
       return { total, count, phrases };
     }
 
-    const pSum = sumInBound(primary);
+    const pSum = sumInBound(L1);
     const qSum = sumInBound([b.section]);
     const diff = pSum.total - qSum.total;
     const pct = qSum.total === 0 ? null : (diff / qSum.total) * 100;
-    return { section: b.index, primary: pSum, poly: qSum, diff, pct };
+    return { section: b.index, L1: pSum, L2: qSum, diff, pct };
   });
 
   return rows;
@@ -100,17 +100,17 @@ function human(ms) {
 const out = compare(path.join(__dirname,'..','output','output1.csv'), path.join(__dirname,'..','output','output2.csv'));
 console.log('Section | primaryTicks | polyTicks | diffTicks | %diff | primaryPhrases | polyPhrases');
 out.forEach(r => {
-  const pTicks = r.primary.total || 0;
-  const qTicks = r.poly.total || 0;
-  const pPhrases = r.primary.phrases || 0;
-  const qPhrases = r.poly.phrases || 0;
+  const pTicks = r.L1.total || 0;
+  const qTicks = r.L2.total || 0;
+  const pPhrases = r.L1.phrases || 0;
+  const qPhrases = r.L2.phrases || 0;
   console.log(`${r.section.toString().padStart(7)} | ${pTicks.toString().padStart(12)} | ${qTicks.toString().padStart(9)} | ${r.diff.toString().padStart(9)} | ${r.pct === null ? '   N/A' : r.pct.toFixed(2).padStart(6) + '%'} | ${pPhrases.toString().padStart(14)} | ${qPhrases.toString().padStart(11)}`);
 });
 
 // Also print sections with mismatches
 console.log('\nSections with non-zero differences:');
 out.filter(r => r.diff !== 0).forEach(r => {
-  const pTicks = r.primary.total || 0;
-  const qTicks = r.poly.total || 0;
-  console.log(`Section ${r.section}: primary=${pTicks} ticks, poly=${qTicks} ticks, diff=${r.diff} ticks`);
+  const pTicks = r.L1.total || 0;
+  const qTicks = r.L2.total || 0;
+  console.log(`Section ${r.section}: L1=${pTicks} ticks, L2=${qTicks} ticks, diff=${r.diff} ticks`);
 });

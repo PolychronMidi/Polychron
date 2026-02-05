@@ -3,31 +3,31 @@ require('./index');
 
 main = async function main() { console.log('Starting main.js ...');
 
-const { layer: primary, buffer: c1 } = LM.register('primary', 'c1', {}, () => setTuningAndInstruments());
-const { layer: poly, buffer: c2 } = LM.register('poly', 'c2', {}, () => setTuningAndInstruments());
+const { layer: L1, buffer: c1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
+const { layer: L2, buffer: c2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 
-  // Initialize each layer's section origin so relative ticks are correct and explicit
+  // Initialize each layer's section origin so layer-relative ticks are correct and explicit
   LM.setSectionStartAll();
 
   // Explicitly log a `section` marker for both layers so Section 1 is present
-  // for both `primary` and `poly` outputs. Restore `primary` as active for
+  // for both `L1` and `L2` outputs. Restore `L1` as active for
   // the phrase loop immediately after logging.
-  LM.activate('primary', false);
+  LM.activate('L1', false);
   setUnitTiming('section');
-  // Activate poly without setting `isPoly` yet (poly meter isn't known until later)
-  LM.activate('poly', false);
+  // Activate L2 without setting `isPoly` yet (L2 meter isn't known until later)
+  LM.activate('L2', false);
   setUnitTiming('section');
-  LM.activate('primary', false);
+  LM.activate('L1', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     composer = ComposerFactory.createRandom({ root: 'random' });
     [numerator, denominator] = composer.getMeter();
-    // Activate primary layer first so activation doesn't overwrite freshly computed timing
-    LM.activate('primary', false);
+    // Activate L1 layer first so activation doesn't overwrite freshly computed timing
+    LM.activate('L1', false);
     getMidiTiming();
     getPolyrhythm();
     measuresPerPhrase = measuresPerPhrase1;
@@ -35,10 +35,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
       setUnitTiming('measure');
-      try {
-        const layer = LM.layers[LM.activeLayer];
-        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
-      } catch (_e) { console.warn('main.js: MotifSpreader.spreadMeasure failed while planning measure (continuing):', _e && _e.stack ? _e.stack : _e); }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
@@ -51,7 +47,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-          setUnitTiming('division');
+          setUnitTiming('div');
           playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
@@ -65,19 +61,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
-    LM.advance('primary', 'phrase');
+    LM.advance('L1', 'phrase');
 
-    LM.activate('poly', true);
+    LM.activate('L2', true);
 
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
-      try {
-        const layer = LM.layers[LM.activeLayer];
-        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
-      } catch (_e) { console.warn('main.js: MotifSpreader.spreadMeasure failed while planning measure (continuing):', _e && _e.stack ? _e.stack : _e); }
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
@@ -91,13 +83,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
-          setUnitTiming('division');
-          // Division-level note emission (stutter decided internally)
+          setUnitTiming('div');
           playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            // Subdiv-level note emission (stutter decided internally)
             playNotesForUnit('subdiv', { playProb: .2, stutterProb: .2 });
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
@@ -109,12 +99,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
-    LM.advance('poly', 'phrase');
+    LM.advance('L2', 'phrase');
   }
 
-  LM.advance('primary', 'section');
+  LM.advance('L1', 'section');
 
-  LM.advance('poly', 'section');
+  LM.advance('L2', 'section');
 
 }
 

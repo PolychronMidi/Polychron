@@ -35,7 +35,6 @@ LM = layerManager ={
 
     // Build the flattened timing object from defaults + any provided initialState
     const layer = Object.assign({}, defaults, initialState || {});
-
     let buf;
 
     if (typeof buffer === 'string') {
@@ -45,7 +44,6 @@ LM = layerManager ={
     } else {
       buf = Array.isArray(buffer) ? buffer : [];
     }
-
 
     // Attach buffer and timing props directly to the layer object
     LM.layers[name] = Object.assign({ buffer: buf }, layer);
@@ -94,8 +92,6 @@ LM = layerManager ={
     if (!layer) { console.warn(`LayerManager.advance: layer "${name}" not found — skipping advance`); return; }
     c = layer.buffer;
 
-    beatRhythm = divRhythm = subdivRhythm = subsubdivRhythm = 0;
-
     // Advance using the layer's timing values
     if (advancementType === 'phrase') {
       phraseStart+=tpPhrase; phraseStartTime+=spPhrase;
@@ -121,8 +117,6 @@ LM = layerManager ={
 
     } else if (advancementType === 'section') {
       layer.sectionStart=phraseStart; layer.sectionStartTime=phraseStartTime;
-      try { fs.appendFileSync('log/timing-events.log', JSON.stringify({ time: new Date().toISOString(), event: 'advance', layer: name, type: 'section', section: sectionIndex+1, phraseStart, tpSec }) + '\n'); } catch (_e) { console.warn('LayerManager: failed to append timing-events.log:', _e && _e.stack ? _e.stack : _e); }
-
     }
   },
 
@@ -160,36 +154,5 @@ function loadLayerToGlobals(layer) {
   spMeasure = layer.spMeasure;
 
   tpSec = layer.tpSec;
-
-  // Restore per-layer rhythms into globals so rhythms carry over and can morph between instances.
-  // If a layer lacks a rhythm, we avoid clobbering existing globals.
-  try {
-    // Beat
-    if (Array.isArray(layer.beatRhythm)) {
-      beatRhythm = [...layer.beatRhythm];
-      beatIndex = typeof layer.beatIndex !== 'undefined' ? layer.beatIndex : (typeof beatIndex !== 'undefined' ? beatIndex : 0);
-    } else if (typeof beatRhythm === 'undefined') {
-      // Ensure a beat rhythm exists by generating one for the layer (best-effort)
-      try { setRhythm('beat', layer); if (Array.isArray(layer.beatRhythm)) beatRhythm = [...layer.beatRhythm]; } catch (e) { console.warn('LayerManager: failed to set beat rhythm for layer, continuing:', e && e.stack ? e.stack : e); }
-    }
-
-    // Div
-    if (Array.isArray(layer.divRhythm)) {
-      divRhythm = [...layer.divRhythm];
-      divIndex = typeof layer.divIndex !== 'undefined' ? layer.divIndex : (typeof divIndex !== 'undefined' ? divIndex : 0);
-    }
-
-    // Subdiv
-    if (Array.isArray(layer.subdivRhythm)) {
-      subdivRhythm = [...layer.subdivRhythm];
-      subdivIndex = typeof layer.subdivIndex !== 'undefined' ? layer.subdivIndex : (typeof subdivIndex !== 'undefined' ? subdivIndex : 0);
-    }
-
-    // Subsubdiv
-    if (Array.isArray(layer.subsubdivRhythm)) {
-      subsubdivRhythm = [...layer.subsubdivRhythm];
-      subsubdivIndex = typeof layer.subsubdivIndex !== 'undefined' ? layer.subsubdivIndex : (typeof subsubdivIndex !== 'undefined' ? subsubdivIndex : 0);
-    }
-  } catch (e) { console.warn('LayerManager.loadLayerToGlobals: unexpected error loading layer rhythms:', e && e.stack ? e.stack : e); }
 
 }

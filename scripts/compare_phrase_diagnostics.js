@@ -1,4 +1,4 @@
-// Per-phrase diagnostics: pair poly phrases with primary phrases and report time/tick mismatches
+// Per-phrase diagnostics: pair L2 phrases with L1 phrases and report time/tick mismatches
 const fs = require('fs');
 const path = require('path');
 
@@ -30,7 +30,7 @@ function parseFile(filePath) {
       currentSection = { index: Number(sectionMatch[1]), startTick: tick, phrases: [] };
       continue;
     }
-    const phraseMatch = text.match(/(primary|poly)\s+Phrase\s+(\d+)\/(\d+)/i);
+    const phraseMatch = text.match(/(L1|L2)\s+Phrase\s+(\d+)\/(\d+)/i);
     if (phraseMatch) {
       const layer = phraseMatch[1].toLowerCase();
       const pIdx = Number(phraseMatch[2]);
@@ -87,7 +87,7 @@ function groupBySection(phrases) {
 function matchAndReport(primaryList, polyList) {
   const rows = [];
   for (const polyPhrase of polyList) {
-    // find primary phrases that overlap or start within poly's boundaries
+    // find L1 phrases that overlap or start within L2's boundaries
     const polyStart = polyPhrase.startTick !== null ? polyPhrase.startTick : -Infinity;
     const polyEnd = polyPhrase.endTick !== null ? polyPhrase.endTick : Infinity;
     const matches = primaryList.filter(p => {
@@ -97,7 +97,7 @@ function matchAndReport(primaryList, polyList) {
     });
 
     if (matches.length === 0) {
-      rows.push({ poly: polyPhrase, primary: null, note: 'no matching primary phrase' });
+      rows.push({ L2: polyPhrase, L1: null, note: 'no matching L1 phrase' });
       continue;
     }
 
@@ -106,7 +106,7 @@ function matchAndReport(primaryList, polyList) {
       const polyComputedSec = polyPhrase.lengthSec !== null ? polyPhrase.lengthSec : (polyPhrase.endTick !== null && polyPhrase.startTick !== null && polyPhrase.tpSec ? (polyPhrase.endTick - polyPhrase.startTick) / polyPhrase.tpSec : null);
       const secDiff = (primComputedSec !== null && polyComputedSec !== null) ? (primComputedSec - polyComputedSec) : null;
       const tickDiff = (prim.endTick !== null && polyPhrase.endTick !== null) ? ((prim.endTick - prim.startTick) - (polyPhrase.endTick - polyPhrase.startTick)) : null;
-      rows.push({ poly: polyPhrase, primary: prim, primComputedSec, polyComputedSec, secDiff, tickDiff });
+      rows.push({ L2: polyPhrase, L1: prim, primComputedSec, polyComputedSec, secDiff, tickDiff });
     }
   }
   return rows;
@@ -115,10 +115,10 @@ function matchAndReport(primaryList, polyList) {
 function formatSec(s) { return s === null || typeof s === 'undefined' ? 'N/A' : s.toFixed(4); }
 
 function run() {
-  const primary = parseFile(path.join(__dirname,'..','output','output1.csv'));
-  const poly = parseFile(path.join(__dirname,'..','output','output2.csv'));
-  const primaryBySection = groupBySection(primary);
-  const polyBySection = groupBySection(poly);
+  const L1 = parseFile(path.join(__dirname,'..','output','output1.csv'));
+  const L2 = parseFile(path.join(__dirname,'..','output','output2.csv'));
+  const primaryBySection = groupBySection(L1);
+  const polyBySection = groupBySection(L2);
 
   const diagnostics = [];
   for (const sec of Object.keys(polyBySection).sort((a,b)=>a-b)) {
@@ -128,15 +128,15 @@ function run() {
     for (const r of rows) diagnostics.push({ section: sec, ...r });
   }
 
-  // Filter for any secDiff absolute >= 0.001 or missing primary
-  const issues = diagnostics.filter(d => (d.secDiff !== null && Math.abs(d.secDiff) >= 0.001) || d.primary === null);
+  // Filter for any secDiff absolute >= 0.001 or missing L1
+  const issues = diagnostics.filter(d => (d.secDiff !== null && Math.abs(d.secDiff) >= 0.001) || d.L1 === null);
 
   console.log(`Found ${diagnostics.length} pairings; ${issues.length} issues (|sec diff| >= 0.001 or no match).`);
   for (const it of issues) {
-    if (!it.primary) {
-      console.log(`Section ${it.section} POLY p${it.poly.phraseIndex} [startTick=${it.poly.startTick} endTick=${it.poly.endTick} lenSec=${formatSec(it.poly.lengthSec)} tpSec=${it.poly.tpSec}] -> NO PRIMARY MATCH`);
+    if (!it.L1) {
+      console.log(`Section ${it.section} POLY p${it.L2.phraseIndex} [startTick=${it.L2.startTick} endTick=${it.L2.endTick} lenSec=${formatSec(it.L2.lengthSec)} tpSec=${it.L2.tpSec}] -> NO PRIMARY MATCH`);
     } else {
-      console.log(`Section ${it.section} POLY p${it.poly.phraseIndex} len=${formatSec(it.polyComputedSec)} (tpSec=${it.poly.tpSec})  VS PRIMARY p${it.primary.phraseIndex} len=${formatSec(it.primComputedSec)} (tpSec=${it.primary.tpSec})  diff=${formatSec(it.secDiff)} ticksDiff=${it.tickDiff}`);
+      console.log(`Section ${it.section} POLY p${it.L2.phraseIndex} len=${formatSec(it.polyComputedSec)} (tpSec=${it.L2.tpSec})  VS PRIMARY p${it.L1.phraseIndex} len=${formatSec(it.primComputedSec)} (tpSec=${it.L1.tpSec})  diff=${formatSec(it.secDiff)} ticksDiff=${it.tickDiff}`);
     }
   }
 }
