@@ -16,12 +16,6 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('HarmonicRhythmComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
   }
 
-  selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
-    try { if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {}); } catch (e) { console.warn('HarmonicRhythmComposer: selectNextNote failed, falling back:', e && e.stack ? e.stack : e); }
-    return candidates[0];
-  }
-
   getCurrentChord() {
     const chordIndex = m.floor(this.measureCount / this.measuresPerChord) % this.progression.length;
     return this.progression[chordIndex].symbol || this.progression[chordIndex];

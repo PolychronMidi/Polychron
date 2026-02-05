@@ -10,9 +10,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.measureCount = 0;
     this.responseMode = false;
     this.transpositionOffset = 0;
-    // enable lightweight voice-leading scorer and keep last-selected for compatibility
+    // enable lightweight voice-leading scorer for selection delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('MelodicDevelopmentComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
-    this._lastSelected = null;
   }
 
   getNotes(octaveRange) {
@@ -59,13 +58,6 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.measureCount = 0;
     this.responseMode = false;
     this.transpositionOffset = 0;
-  }
-
-  // Preserve and prefer a local last-selected note when present; otherwise delegate
-  selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
-    if (this._lastSelected !== null && candidates.includes(this._lastSelected)) return this._lastSelected;
-    return super.selectNoteWithLeading(candidates);
   }
 
 }

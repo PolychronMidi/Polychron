@@ -58,7 +58,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
 
     // Get candidate notes from bucket and select via centralized voice coordination
     const candidateNotes = bucket.map(s => Number(s.note));
-    const voiceCount = Math.min(ri(1, 7), globalVoiceCoordinator.getVoiceCount());
+    const voiceCount = globalVoiceCoordinator.getVoiceCount();
     const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
     const picks = globalVoiceCoordinator.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, {}).map(note => ({ note }));
 

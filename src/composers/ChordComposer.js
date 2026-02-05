@@ -14,22 +14,6 @@ ChordComposer = class ChordComposer extends MeasureComposer {
   }
 
   /**
-   * Select a candidate using composer-local voice-leading if available.
-   * Delegates to VoiceLeadingScore.selectNextNote when enabled.
-   * @param {number[]} candidates
-   * @returns {number}
-   */
-  selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
-    try {
-      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
-        const lastNotes = Array.isArray(this.voiceHistory) ? this.voiceHistory : [];
-        return this.VoiceLeadingScore.selectNextNote(lastNotes, candidates, {});
-      }
-    } catch (e) { console.warn('ChordComposer: scoring failed, falling back to deterministic behavior:', e && e.stack ? e.stack : e); }
-    return candidates[0];
-  }
-  /**
    * Sets progression and validates chords.
    * @param {string[]} progression
    * @param {string} [direction='R'] - 'R' (right), 'L' (left), 'E' (either), '?' (random)
