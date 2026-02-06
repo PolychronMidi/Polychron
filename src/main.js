@@ -45,16 +45,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
+        playNotes('beat', { playProb: .2, stutterProb: .2 });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('div');
-          playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
+          playNotes('div', { playProb: .2, stutterProb: .2 });
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotesForUnit('subdiv', { playProb: .2, stutterProb: .2 });
+            playNotes('subdiv', { playProb: .2, stutterProb: .2 });
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotesForUnit('subsubdiv', { playProb: .2, stutterProb: .2 }); }
+              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb: .2, stutterProb: .2 }); }
             }
           }
         }
@@ -79,20 +79,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        playNotesForUnit('beat', { playProb: .2, stutterProb: .2 });
+        playNotes('beat', { playProb: .2, stutterProb: .2 });
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
           setUnitTiming('div');
-          playNotesForUnit('div', { playProb: .2, stutterProb: .2 });
+          playNotes('div', { playProb: .2, stutterProb: .2 });
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotesForUnit('subdiv', { playProb: .2, stutterProb: .2 });
+            playNotes('subdiv', { playProb: .2, stutterProb: .2 });
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotesForUnit('subsubdiv', { playProb: .2, stutterProb: .2 }); }
+              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb: .2, stutterProb: .2 }); }
             }
           }
         }

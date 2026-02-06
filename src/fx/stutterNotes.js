@@ -9,7 +9,7 @@
 
 // Module-scope helpers to avoid hot-path allocations
 const _clampStutterNote = (n, isBassLocal) => {
-  if (isBassLocal) return modClamp(n, 0, 59);
+  if (isBassLocal) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);
   return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
 };
 
@@ -74,7 +74,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     // Local wrapper uses module-scope helper for performance; falls back to injected modClamp if provided
     const clampStutterNote = (n) => {
       if (typeof modClamp === 'function') {
-        if (isBass) return modClamp(n, 0, 59);
+        if (isBass) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);
         return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
       }
       return _clampStutterNote(n, isBass);

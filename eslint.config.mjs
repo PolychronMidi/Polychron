@@ -432,7 +432,7 @@ export default [
         // Utility functions
         normalizeChordSymbol: 'readonly',
         writeDebugFile: 'readonly',
-        playNotesForUnit: 'readonly',
+        playNotes: 'readonly',
         // Audio/rhythm functions
         playDrums: 'writable',
         playDrums2: 'writable',
