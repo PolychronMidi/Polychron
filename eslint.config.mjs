@@ -189,6 +189,7 @@ export default [
         Motif: 'writable',
         PentatonicComposer: 'writable',
         RandomPentatonicComposer: 'writable',
+        PhraseArcManager: 'writable',
         ComposerFactory: 'writable',
         ProgressionGenerator: 'writable',
         // Debug/Test helpers

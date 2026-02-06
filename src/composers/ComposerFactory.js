@@ -1,4 +1,28 @@
 ComposerFactory = class ComposerFactory {
+  // Shared phrase arc manager instance
+  static sharedPhraseArcManager = null;
+
+  /**
+   * Get or create shared PhraseArcManager
+   * @param {Object} opts - Options for creating PhraseArcManager if needed
+   * @returns {PhraseArcManager}
+   */
+  static getPhraseArcManager(opts = {}) {
+    if (!this.sharedPhraseArcManager) {
+      this.sharedPhraseArcManager = new PhraseArcManager(opts);
+    }
+    return this.sharedPhraseArcManager;
+  }
+
+  /**
+   * Reset shared PhraseArcManager (call at section boundaries)
+   */
+  static resetPhraseArcManager() {
+    if (this.sharedPhraseArcManager) {
+      this.sharedPhraseArcManager.reset();
+    }
+  }
+
   static constructors = {
     measure: () => new MeasureComposer(),
     scale: ({ name = 'major', root = 'C' } = {}) => {
@@ -46,13 +70,20 @@ ComposerFactory = class ComposerFactory {
       const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
       return new (PentatonicComposer)(r, t);
     },
-    tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
-    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
-    harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true } = {}) => {
-      const k = key === 'random' ? allNotes[ri(allNotes.length - 1)] : key;
-      return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling });
+    tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {} } = {}) => {
+      const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
+      return new TensionReleaseComposer(key, quality, tensionCurve, { phraseArcManager });
     },
-    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7 } = {}) => new MelodicDevelopmentComposer(name, root, intensity, developmentBias),
+    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
+    harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true, enablePhraseArcs = true, phraseArcOpts = {} } = {}) => {
+      const k = key === 'random' ? allNotes[ri(allNotes.length - 1)] : key;
+      const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
+      return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling, phraseArcManager });
+    },
+    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, enablePhraseArcs = true, phraseArcOpts = {} } = {}) => {
+      const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
+      return new MelodicDevelopmentComposer(name, root, intensity, developmentBias, { phraseArcManager });
+    },
     voiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
   };
 

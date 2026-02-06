@@ -82,7 +82,14 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     });
     const voiceCount = globalVoiceCoordinator.getVoiceCount();
     const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
-    const picks = globalVoiceCoordinator.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, {}).map(note => ({ note }));
+
+    // Get phrase context from PhraseArcManager if available
+    let phraseContext = null;
+    if (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager) {
+      phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
+    }
+
+    const picks = globalVoiceCoordinator.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext }).map(note => ({ note }));
 
     // Track which motif indices are being played this beat
     const playedGroupIndices = new Map();

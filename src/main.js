@@ -34,6 +34,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
+      // Advance phrase arc manager at each measure boundary
+      if (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager) {
+        ComposerFactory.sharedPhraseArcManager.nextMeasure();
+      }
       setUnitTiming('measure');
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;

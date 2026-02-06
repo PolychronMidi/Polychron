@@ -20,6 +20,9 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.changeEmphasis = opts.changeEmphasis ?? 2.0; // Weight multiplier during chord changes
     this.anticipation = opts.anticipation ?? false; // Pre-change activity boost
     this.settling = opts.settling ?? true; // Post-change gradual reduction
+    // Phrase-level coordination
+    this.phraseArcManager = opts.phraseArcManager || null; // Optional PhraseArcManager reference
+    this.phraseBoundaryEmphasis = opts.phraseBoundaryEmphasis ?? 1.3; // Extra emphasis at phrase boundaries
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('HarmonicRhythmComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
   }
 
@@ -84,12 +87,20 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   getVoicingIntent(candidateNotes) {
     if (!candidateNotes || candidateNotes.length === 0) return {};
 
+    // Check phrase boundary if manager is available
+    const atPhraseBoundary = this.phraseArcManager ? this.phraseArcManager.isAtBoundary() : false;
+    const atPhraseEnd = this.phraseArcManager ? this.phraseArcManager.isAtEnd() : false;
+
     // Calculate emphasis based on harmonic rhythm state
     let emphasisFactor = 1.0;
 
     // Chord change: maximum emphasis
     if (this._isChordChange) {
       emphasisFactor = this.changeEmphasis;
+      // Extra emphasis if chord change aligns with phrase boundary (cadence!)
+      if (atPhraseBoundary) {
+        emphasisFactor *= this.phraseBoundaryEmphasis;
+      }
     }
     // Anticipation: slight boost 1 measure before change
     else if (this.anticipation && this._measuresSinceChange === this.measuresPerChord - 1) {
@@ -99,6 +110,10 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     else if (this.settling && this._measuresSinceChange <= 2) {
       const settleProgress = this._measuresSinceChange / 2; // 0 to 1 over 2 measures
       emphasisFactor = this.changeEmphasis - (this.changeEmphasis - 1.0) * settleProgress * 0.7;
+    }
+    // Phrase boundary emphasis even without chord change (cadential feeling)
+    else if (atPhraseBoundary) {
+      emphasisFactor = 1.0 + (this.changeEmphasis - 1.0) * 0.5; // 50% of change emphasis
     }
 
     // Get chord tones from parent class voicing intent
@@ -114,10 +129,10 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
 
     return {
       candidateWeights: emphasizedWeights,
-      // Optional: suggest register lift during chord changes
-      registerBias: this._isChordChange ? 'higher' : undefined,
-      // Optional: suggest increased voice count during changes
-      voiceCountMultiplier: this._isChordChange ? 1.5 : 1.0
+      // Register bias: higher during changes, lower at phrase end (cadence resolution)
+      registerBias: this._isChordChange ? 'higher' : (atPhraseEnd ? 'lower' : undefined),
+      // Voice count: increased during changes, potentially reduced at phrase end for clarity
+      voiceCountMultiplier: this._isChordChange ? 1.5 : (atPhraseEnd ? 0.9 : 1.0)
     };
   }
 }

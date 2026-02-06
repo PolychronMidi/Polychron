@@ -35,6 +35,8 @@ require('./motifSpreader');
 // @ts-ignore: load side-effect module with globals
 require('./motifs');
 // @ts-ignore: load side-effect module with globals
+require('./PhraseArcManager');
+// @ts-ignore: load side-effect module with globals
 require('./ComposerFactory');
 
 // Normalize chord progressions coming from the configuration so entries
