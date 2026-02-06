@@ -193,6 +193,7 @@ declare var MotifComposer: any;
 declare var Motif: any;
 declare var PentatonicComposer: any;
 declare var RandomPentatonicComposer: any;
+declare var PhraseArcManager: any;
 declare var ComposerFactory: any;
 declare var ProgressionGenerator: any;
 
@@ -218,6 +219,8 @@ declare module './MelodicDevelopmentComposer' { const x: any; export = x; }
 declare module './MelodicDevelopmentComposer.js' { const x: any; export = x; }
 declare module './VoiceLeadingComposer' { const x: any; export = x; }
 declare module './VoiceLeadingComposer.js' { const x: any; export = x; }
+declare module './PhraseArcManager' { const x: any; export = x; }
+declare module './PhraseArcManager.js' { const x: any; export = x; }
 
 declare var VoiceLeadingScore: any;
 declare var VoiceCoordinator: any;

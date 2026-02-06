@@ -63,6 +63,25 @@ grandFinale = () => {
         const tickNum = _.tick || 0;
         const tickInt = Math.round(Number(tickNum) || 0);
 
+        // CRITICAL: Event with undefined pitch is a serious bug in note generation
+        if (Array.isArray(_.vals)) {
+          // For note_on_c/note_off_c, pitch is at index 1
+          if ((type === 'note_on_c' || type === 'note_off_c') && (_.vals[1] === undefined || _.vals[1] === null)) {
+            console.error('🚨 CRITICAL ERROR: Event with undefined pitch detected!');
+            console.error(`  Type: ${type}`);
+            console.error(`  Tick: ${tickInt}`);
+            console.error(`  Full event:`, JSON.stringify(_));
+            console.error(`  Values array:`, JSON.stringify(_.vals));
+            throw new Error(`CRITICAL: ${type} event has undefined pitch at tick ${tickInt}`);
+          }
+        } else {
+          console.error('🚨 CRITICAL ERROR: Event vals is not an array!');
+          console.error(`  Type: ${type}`);
+          console.error(`  Tick: ${tickInt}`);
+          console.error(`  Full event:`, JSON.stringify(_));
+          throw new Error(`CRITICAL: ${type} event has invalid vals format at tick ${tickInt}`);
+        }
+
         // Clamp velocity for Note_on events to a max (rounded)
         if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
           const vel = Number(_.vals[2]) || 0;

@@ -1,7 +1,7 @@
 // Dependencies are required via `src/composers/index.js`
 
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
-  constructor(key = 'C', quality = 'major', tensionCurve = 0.5) {
+  constructor(key = 'C', quality = 'major', tensionCurve = 0.5, opts = {}) {
     const generator = new ProgressionGenerator(key, quality);
     const progressionChords = generator.random();
     super(progressionChords);
@@ -12,6 +12,9 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     this.key = key;
     this.quality = quality;
     this.measureInSection = 0;
+    // Phrase-level coordination
+    this.phraseArcManager = opts.phraseArcManager || null; // Optional PhraseArcManager reference
+    this.phraseTensionScaling = opts.phraseTensionScaling !== false; // Whether to scale tension with phrase arc (default: true)
   }
 
   calculateTension(chordSymbol) {
@@ -25,8 +28,33 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   }
 
   selectChordByTension(position) {
-    const targetTension = this.tensionCurve * Math.sin(position * Math.PI);
-    if (position > 0.85) {
+    // Use phrase position if manager is available and scaling is enabled
+    let effectivePosition = position;
+    if (this.phraseTensionScaling && this.phraseArcManager) {
+      const phrasePos = this.phraseArcManager.getPosition();
+      const phrasePhase = this.phraseArcManager.getPhase();
+
+      // Map phrase position to tension curve (peak around 0.6-0.75)
+      // Opening: low tension (0-0.25) → 0.2-0.4
+      // Development: rising tension (0.25-0.5) → 0.4-0.7
+      // Climax: peak tension (0.5-0.75) → 0.7-0.95
+      // Resolution: falling tension (0.75-1.0) → 0.95-0.2
+      if (phrasePhase === 'opening') {
+        effectivePosition = 0.2 + phrasePos * 0.8; // 0.2-0.4
+      } else if (phrasePhase === 'development') {
+        effectivePosition = 0.4 + (phrasePos - 0.25) * 1.2; // 0.4-0.7
+      } else if (phrasePhase === 'climax') {
+        effectivePosition = 0.7 + (phrasePos - 0.5) * 1.0; // 0.7-0.95
+      } else if (phrasePhase === 'resolution') {
+        // Fall from peak (0.95) back to tonic (0.2)
+        effectivePosition = 0.95 - (phrasePos - 0.75) * 3.0; // 0.95-0.2
+      }
+
+      effectivePosition = clamp(effectivePosition, 0, 1);
+    }
+
+    const targetTension = this.tensionCurve * Math.sin(effectivePosition * Math.PI);
+    if (effectivePosition > 0.85) {
       return this.generator.generate('I-IV-V').slice(-1);
     }
     const allProgressions = [

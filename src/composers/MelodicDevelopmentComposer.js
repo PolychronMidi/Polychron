@@ -1,11 +1,11 @@
 // Dependency: required via `src/composers/index.js`
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
-  constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7) {
+  constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, opts = {}) {
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     super(resolvedName, resolvedRoot);
-    this.intensity = clamp(intensity, 0, 1);
+    this.baseIntensity = clamp(intensity, 0, 1); // Base intensity (scaled by phrase arc)
     this.developmentBias = clamp(developmentBias, 0, 1);
     this.motifPhase = 0;
     this.measureCount = 0;
@@ -14,8 +14,32 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.currentPhase = 0;
     this._lastBaseNotes = [];
     this._lastDevelopedNotes = [];
+    // Phrase-level coordination
+    this.phraseArcManager = opts.phraseArcManager || null; // Optional PhraseArcManager reference
+    this.arcScaling = opts.arcScaling !== false; // Whether to scale intensity with phrase arc (default: true)
     // enable lightweight voice-leading scorer for selection delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('MelodicDevelopmentComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+  }
+
+  /**
+   * Get effective intensity scaled by phrase arc
+   */
+  get intensity() {
+    if (!this.arcScaling || !this.phraseArcManager) {
+      return this.baseIntensity;
+    }
+
+    const phraseContext = this.phraseArcManager.getPhraseContext();
+    // Scale intensity with dynamism (0.5-1.0 typically)
+    // Higher dynamism during climax = more aggressive development
+    return clamp(this.baseIntensity * phraseContext.dynamism * 1.5, 0, 1);
+  }
+
+  /**
+   * Set base intensity (will still be scaled by phrase arc)
+   */
+  set intensity(value) {
+    this.baseIntensity = clamp(value, 0, 1);
   }
 
   getNotes(octaveRange) {
@@ -56,7 +80,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
   }
 
   setintensity(intensity) {
-    this.intensity = clamp(intensity, 0, 1);
+    this.baseIntensity = clamp(intensity, 0, 1);
   }
 
   resetMotifPhase() {

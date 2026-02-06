@@ -41,6 +41,13 @@ VoiceCoordinator = class VoiceCoordinator {
   }
 
   _weightedPick(notes, weights) {
+    if (!Array.isArray(notes) || notes.length === 0) {
+      console.error('🚨 CRITICAL: _weightedPick called with empty or invalid notes array!');
+      console.error(`  notes:`, notes);
+      console.error(`  weights:`, weights);
+      throw new Error('CRITICAL: _weightedPick received empty notes array');
+    }
+
     if (!weights) return notes[ri(notes.length - 1)];
 
     let total = 0;
@@ -67,7 +74,7 @@ VoiceCoordinator = class VoiceCoordinator {
    * @param {number[]} candidateNotes - Available notes for this beat
    * @param {number} voiceCount - How many voices to select
    * @param {VoiceLeadingScore} scorer - Voice leading scorer instance
-   * @param {Object} opts - Additional options
+   * @param {Object} opts - Additional options (candidateWeights, registerBias, voiceCountMultiplier, phraseContext)
    * @returns {number[]} Selected notes (length = voiceCount)
    */
   pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, opts = {}) {
@@ -81,21 +88,61 @@ VoiceCoordinator = class VoiceCoordinator {
 
     const layerId = layer.id || 'default';
 
-    // Apply voice count multiplier from voicing intent (e.g., more voices during chord changes)
+    // Extract phrase context for arc-driven biases
+    const phraseContext = opts.phraseContext || {};
+    const arcRegisterBias = phraseContext.registerBias || 0; // Semitones to shift register
+    const arcDensityMultiplier = phraseContext.densityMultiplier || 1.0;
+    const voiceIndependence = phraseContext.voiceIndependence || 0.5; // 0-1 scale (contrapuntal vs homophonic)
+
+    // Apply voice count multiplier: stack chord change emphasis with phrase arc density
+    // But only apply arc density influence probabilistically (50% of the time) to maintain variety
     const voiceCountMultiplier = opts.voiceCountMultiplier ?? 1.0;
-    const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * voiceCountMultiplier));
+    const shouldApplyArcDensity = rf() < 0.5; // 50% chance
+    const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
+    const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
+    const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * combinedMultiplier));
     const maxVoices = Math.min(adjustedVoiceCount, notePool.length);
 
-    // Apply register bias from voicing intent
-    if (opts.registerBias === 'higher' && notePool.length > maxVoices) {
+    // Apply register bias: combine intent-based (higher/lower) with arc-based preference
+    // Make arc-based bias less aggressive and only apply probabilistically
+    let finalRegisterBias = opts.registerBias; // 'higher', 'lower', or undefined
+
+    // Arc-based register bias: if arc suggests upward/downward trajectory, apply as preference
+    // Positive arcRegisterBias (+semitones) suggests higher register, negative suggests lower
+    // Only apply arc bias probabilistically (30% of time) and with higher threshold to preserve variety
+    if (!finalRegisterBias && Math.abs(arcRegisterBias) > 5 && rf() < 0.3) { // Stricter threshold + probabilistic
+      finalRegisterBias = arcRegisterBias > 0 ? 'higher' : 'lower';
+    }
+
+    // Register filtering based on final bias (from intent or arc)
+    // But only if it won't result in an empty pool
+    if (finalRegisterBias === 'higher' && notePool.length > maxVoices * 1.5) { // Only filter if pool is large enough
       // Sort pool by pitch and favor upper portion
-      notePool = [...notePool].sort((a, b) => b - a); // Descending
-      const upperBias = Math.ceil(notePool.length * 0.6); // Top 60%
-      notePool = notePool.slice(0, upperBias);
-    } else if (opts.registerBias === 'lower' && notePool.length > maxVoices) {
-      notePool = [...notePool].sort((a, b) => a - b); // Ascending
-      const lowerBias = Math.ceil(notePool.length * 0.6); // Bottom 60%
-      notePool = notePool.slice(0, lowerBias);
+      const sorted = [...notePool].sort((a, b) => b - a); // Descending
+      const upperBias = Math.ceil(sorted.length * 0.7); // Top 70% (less aggressive)
+      const filtered = sorted.slice(0, upperBias);
+      // Only apply if filter result is non-empty and substantial
+      if (filtered.length >= maxVoices) {
+        notePool = filtered;
+      }
+    } else if (finalRegisterBias === 'lower' && notePool.length > maxVoices * 1.5) { // Only filter if pool is large enough
+      const sorted = [...notePool].sort((a, b) => a - b); // Ascending
+      const lowerBias = Math.ceil(sorted.length * 0.7); // Bottom 70% (less aggressive)
+      const filtered = sorted.slice(0, lowerBias);
+      // Only apply if filter result is non-empty and substantial
+      if (filtered.length >= maxVoices) {
+        notePool = filtered;
+      }
+    }
+
+    // SAFETY CHECK: If notePool is empty after all processing, this is a critical error
+    if (notePool.length === 0) {
+      console.error('🚨 CRITICAL: pickNotesForBeat has empty notePool after filtering!');
+      console.error(`  candidateNotes length: ${candidateNotes.length}`);
+      console.error(`  normalizedNotes length: ${normalized.notes.length}`);
+      console.error(`  registerBias: ${finalRegisterBias}`);
+      console.error(`  maxVoices: ${maxVoices}`);
+      throw new Error('CRITICAL: pickNotesForBeat produced empty notePool - check register bias filtering');
     }
 
     if (!this.voiceHistoryByLayer.has(layerId)) {
@@ -115,8 +162,12 @@ VoiceCoordinator = class VoiceCoordinator {
         lastNotesByVoice.push(voiceHistory[i] || []);
       }
 
-      // Call selectVoices for joint optimization
-      const selected = selectVoices(scorer, lastNotesByVoice, candidatesPerVoice, Object.assign({}, opts, { candidateWeights: weightMap }));
+      // Call selectVoices for joint optimization with voiceIndependence hint
+      const scorerOpts = Object.assign({}, opts, {
+        candidateWeights: weightMap,
+        voiceIndependence: voiceIndependence // Pass to scorer for contrapuntal vs homophonic tendency
+      });
+      const selected = selectVoices(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
 
       // Update history
       for (let i = 0; i < selected.length; i++) {
@@ -131,6 +182,11 @@ VoiceCoordinator = class VoiceCoordinator {
     // Single voice or no scorer - simpler selection
     const selected = [];
     for (let i = 0; i < maxVoices; i++) {
+      // Stop if we've exhausted all available notes
+      if (notePool.length === 0) {
+        break;
+      }
+
       let note;
 
       if (scorer && voiceHistory[i] && voiceHistory[i].length > 0) {
@@ -139,6 +195,17 @@ VoiceCoordinator = class VoiceCoordinator {
       } else {
         // Random selection from available candidates
         note = this._weightedPick(notePool, weightMap);
+      }
+
+      // CRITICAL CHECK: note must be a valid number
+      if (!Number.isFinite(note)) {
+        console.error(`🚨 CRITICAL: pickNotesForBeat voice ${i} returned undefined/invalid note!`);
+        console.error(`  notePool:`, notePool);
+        console.error(`  notePool.length:`, notePool.length);
+        console.error(`  maxVoices:`, maxVoices);
+        console.error(`  voiceHistory[${i}]:`, voiceHistory[i]);
+        console.error(`  weightMap:`, weightMap);
+        throw new Error(`CRITICAL: Voice ${i} selection returned undefined note`);
       }
 
       selected.push(note);
