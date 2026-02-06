@@ -27,13 +27,13 @@ DENOMINATOR={
 };
 OCTAVE={
   min: 0,
-  max: 8,
+  max: 9,
   weights: [11,27,33,35,33,35,30,7,3]
 };
 VOICES={
   min: 1,
   max: 7,
-  weights: [15,30,25,7,4,3,2,1]
+  weights: [15,30,25,7,1,1,1,1]
 };
 SECTION_TYPES=[
   { type: 'intro', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: .9, dynamics: 'pp', motif: [0,2,4,7] },

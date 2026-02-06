@@ -1,8 +1,8 @@
-// playNotesForUnit.js - Unit-level note emission for beat/div/subdiv/subsubdiv
+// playNotes.js - Unit-level note emission for beat/div/subdiv/subsubdiv
 // Implements a focused subset of stage.js note emission logic and delegates
 // stutter scheduling to the naked global `noteCascade` when available.
 
-playNotesForUnit = function(unit = 'subdiv', opts = {}) {
+playNotes = function(unit = 'subdiv', opts = {}) {
   const {
     enableStutter = false,
     playProb = 0,
@@ -27,7 +27,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
       return trackRhythm(unit, layer, false);
     }
 
-    if (!layer || !layer.beatMotifs) { console.warn(`${unit}.playNotesForUnit: missing layer or beatMotifs`); return trackRhythm(unit, layer, false); }
+    if (!layer || !layer.beatMotifs) { console.warn(`${unit}.playNotes: missing layer or beatMotifs`); return trackRhythm(unit, layer, false); }
     const beatKey = Math.floor(on / tpBeat);
     const bucketIsArray = (layer && layer.beatMotifs && Array.isArray(layer.beatMotifs[beatKey]));
     const bucket = bucketIsArray ? layer.beatMotifs[beatKey] : [];
@@ -44,7 +44,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
         }
       } catch (__) { /* defensive */ }
 
-      console.warn(`${unit}.playNotesForUnit: empty beatMotifs bucket`);
+      console.warn(`${unit}.playNotes: empty beatMotifs bucket`);
       return trackRhythm(unit, layer, false);
     }
 
@@ -56,15 +56,104 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
     }
     const beatNoteSet = beatNoteHistory.get(beatKey);
 
+    // Track motif cycle completion per groupId and apply transformations after each cycle
+    if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
+    const cycleTracker = layer._motifCycleTracking;
+
+    // Check if any groups completed a cycle and need transformation
+    const groupsToCheck = new Set(bucket.map(entry => entry.groupId).filter(g => g));
+    for (const groupId of groupsToCheck) {
+      if (!cycleTracker.has(groupId)) {
+        const firstEntry = bucket.find(e => e.groupId === groupId);
+        if (firstEntry && Number.isFinite(firstEntry.seqLen)) {
+          cycleTracker.set(groupId, { playedIndices: new Set(), seqLen: firstEntry.seqLen, cycleCount: 0 });
+        }
+      }
+    }
+
     // Get candidate notes from bucket and select via centralized voice coordination
-    const candidateNotes = bucket.map(s => Number(s.note));
+    const candidateNotes = bucket.map(s => {
+      const note = Number(s.note);
+      // Validate MIDI range and clamp if needed
+      if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
+        return modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+      }
+      return note;
+    });
     const voiceCount = globalVoiceCoordinator.getVoiceCount();
     const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
     const picks = globalVoiceCoordinator.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, {}).map(note => ({ note }));
 
+    // Track which motif indices are being played this beat
+    const playedGroupIndices = new Map();
+    for (let pi = 0; pi < picks.length; pi++) {
+      const pickNote = picks[pi].note;
+      const matchingEntry = bucket.find(e => e.note === pickNote);
+      if (matchingEntry && matchingEntry.groupId && Number.isFinite(matchingEntry.seqIndex)) {
+        if (!playedGroupIndices.has(matchingEntry.groupId)) playedGroupIndices.set(matchingEntry.groupId, []);
+        playedGroupIndices.get(matchingEntry.groupId).push(matchingEntry.seqIndex);
+      }
+    }
+
+    // Update cycle tracking and apply transformations when cycles complete
+    for (const [groupId, indices] of playedGroupIndices) {
+      const tracking = cycleTracker.get(groupId);
+      if (!tracking) continue;
+
+      for (const idx of indices) tracking.playedIndices.add(idx);
+
+      // Check if cycle completed (all indices 0..seqLen-1 have been played)
+      if (tracking.playedIndices.size >= tracking.seqLen) {
+        tracking.cycleCount++;
+        tracking.playedIndices.clear();
+
+        // Apply transformations to this groupId's notes in the bucket
+        const groupEntries = bucket.filter(e => e.groupId === groupId);
+        if (groupEntries.length > 0) {
+          // Choose 1-3 random transformations
+          const transformations = [];
+          if (rf() > 0.5) transformations.push('invert');
+          if (rf() > 0.5) transformations.push('shuffle');
+          if (rf() > 0.5) transformations.push('octaveShift');
+
+          // Ensure at least one transformation
+          if (transformations.length === 0) transformations.push(['invert', 'shuffle', 'octaveShift'][ri(0, 2)]);
+
+          // Apply transformations with MIDI range validation (0-127)
+          if (transformations.includes('invert')) {
+            // Invert around average pitch of the group
+            const avgPitch = groupEntries.reduce((sum, e) => sum + e.note, 0) / groupEntries.length;
+            groupEntries.forEach(e => {
+              const inverted = Math.round(2 * avgPitch - e.note);
+              e.note = modClamp(inverted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            });
+          }
+
+          if (transformations.includes('shuffle')) {
+            // Shuffle note assignments while preserving seqIndex order
+            const notes = groupEntries.map(e => e.note);
+            for (let i = notes.length - 1; i > 0; i--) {
+              const j = ri(0, i);
+              [notes[i], notes[j]] = [notes[j], notes[i]];
+            }
+            groupEntries.forEach((e, i) => { e.note = notes[i]; });
+          }
+
+          if (transformations.includes('octaveShift')) {
+            // Shift by +/-1 octave with bounds checking
+            const shift = (rf() > 0.5 ? 12 : -12);
+            groupEntries.forEach(e => {
+              const shifted = e.note + shift;
+              e.note = modClamp(shifted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            });
+          }
+        }
+      }
+    }
+
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];
-      if (!s || typeof s.note === 'undefined') console.warn(`${unit}.playNotesForUnit: invalid note object in motif picks`, s);
+      if (!s || typeof s.note === 'undefined') console.warn(`${unit}.playNotes: invalid note object in motif picks`, s);
 
       if (beatNoteSet && beatNoteSet.has(s.note)) { continue; }
       if (beatNoteSet) beatNoteSet.add(s.note);
@@ -86,7 +175,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           if (shouldStutterNow) {
             try {
               Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-            } catch (e) { console.warn(`${unit}.playNotesForUnit: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
+            } catch (e) { console.warn(`${unit}.playNotes: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
             }
           }
         }
@@ -107,7 +196,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           if (shouldStutterNow_ref) {
             try {
               Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-            } catch (e) { console.warn(`${unit}.playNotesForUnit: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
+            } catch (e) { console.warn(`${unit}.playNotes: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
             }
           }
         }
@@ -118,7 +207,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
         for (let bci = 0; bci < activeBassChannels.length; bci++) {
           const bassCH = activeBassChannels[bci];
           const isPrimary = bassCH === cCH3;
-          const bassNote = modClamp(s.note, 12, 35);
+          const bassNote = modClamp(s.note, m.max(0, OCTAVE.min * 12 - 1), 59);
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
           const onVel = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
           p(c, { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] }); scheduled++;
@@ -128,7 +217,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
           if (enableStutter && rf() > 0.5) {
             try {
               Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
-            } catch (e) { console.warn(`${unit}.playNotesForUnit: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
+            } catch (e) { console.warn(`${unit}.playNotes: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
             }
           }
         }
@@ -136,7 +225,7 @@ playNotesForUnit = function(unit = 'subdiv', opts = {}) {
     }
     trackRhythm(unit, layer, true);
   } catch (e) {
-    console.warn(`${unit}.playNotesForUnit: non-fatal error while playing notes:`, e && e.stack ? e.stack : e);
+    console.warn(`${unit}.playNotes: non-fatal error while playing notes:`, e && e.stack ? e.stack : e);
     trackRhythm(unit, layer, false);
   }
 

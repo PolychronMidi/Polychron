@@ -58,7 +58,10 @@ MotifSpreader = {
           layer.beatMotifs[bKey] = layer.beatMotifs[bKey] || [];
           for (let i = 0; i < totalEvents; i++) {
             const evt = seq[i];
-            layer.beatMotifs[bKey].push({ note: Number(evt.note), groupId, seqIndex: i, seqLen: totalEvents });
+            const noteValue = Number(evt.note);
+            // Clamp to valid MIDI range 0-127 before adding to bucket
+            const clampedNote = modClamp(noteValue, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            layer.beatMotifs[bKey].push({ note: clampedNote, groupId, seqIndex: i, seqLen: totalEvents });
             added++;
           }
         }
