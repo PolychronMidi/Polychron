@@ -18,9 +18,8 @@
     "vitest": "^4.0.16"
   },
   "scripts": {
-    "lint:raw": "eslint . --ext .js",
+    "lint:raw": "eslint . --ext .js --fix",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
-    "lint:fix": "eslint . --ext .js --fix",
     "test": "npm run lint && npm run tc && node scripts/run-with-log.js test.log vitest --run --reporter=default && npm run main",
     "tc": "node scripts/run-with-log.js tc.log tsc -p . --noEmit",
     "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",

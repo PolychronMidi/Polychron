@@ -1,7 +1,7 @@
 // Dependencies are required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
-  constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major') {
+  constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', opts = {}) {
     let chordSymbols = progression;
     if (progression && progression[0] && progression[0].match(/^[ivIV]/)) {
       const generator = new ProgressionGenerator(key, quality);
@@ -13,6 +13,13 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.measuresPerChord = clamp(measuresPerChord, 1, 8);
     this.measureCount = 0;
     this.generator = new ProgressionGenerator(key, quality);
+    this._lastChord = null;
+    this._isChordChange = false;
+    this._measuresSinceChange = 0;
+    // Harmonic rhythm emphasis parameters
+    this.changeEmphasis = opts.changeEmphasis ?? 2.0; // Weight multiplier during chord changes
+    this.anticipation = opts.anticipation ?? false; // Pre-change activity boost
+    this.settling = opts.settling ?? true; // Post-change gradual reduction
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('HarmonicRhythmComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
   }
 
@@ -34,6 +41,19 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     }
     if (!this.progression || this.progression.length === 0) { console.warn('HarmonicRhythmComposer.noteSet: no progression defined — skipping'); return; }
     const currentChord = this.getCurrentChord();
+
+    // Detect chord change
+    const currentSymbol = typeof currentChord === 'string' ? currentChord : (currentChord.symbol || currentChord);
+    const lastSymbol = this._lastChord;
+    this._isChordChange = (lastSymbol !== null && lastSymbol !== currentSymbol);
+
+    if (this._isChordChange) {
+      this._measuresSinceChange = 0;
+    } else {
+      this._measuresSinceChange++;
+    }
+
+    this._lastChord = currentSymbol;
     super.noteSet([currentChord], 'R');
     this.measureCount++;
   }
@@ -59,5 +79,45 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   x() {
     this.noteSet();
     return super.x();
+  }
+
+  getVoicingIntent(candidateNotes) {
+    if (!candidateNotes || candidateNotes.length === 0) return {};
+
+    // Calculate emphasis based on harmonic rhythm state
+    let emphasisFactor = 1.0;
+
+    // Chord change: maximum emphasis
+    if (this._isChordChange) {
+      emphasisFactor = this.changeEmphasis;
+    }
+    // Anticipation: slight boost 1 measure before change
+    else if (this.anticipation && this._measuresSinceChange === this.measuresPerChord - 1) {
+      emphasisFactor = 1.0 + (this.changeEmphasis - 1.0) * 0.3; // 30% of change emphasis
+    }
+    // Settling: gradual reduction after change
+    else if (this.settling && this._measuresSinceChange <= 2) {
+      const settleProgress = this._measuresSinceChange / 2; // 0 to 1 over 2 measures
+      emphasisFactor = this.changeEmphasis - (this.changeEmphasis - 1.0) * settleProgress * 0.7;
+    }
+
+    // Get chord tones from parent class voicing intent
+    const parentIntent = super.getVoicingIntent ? super.getVoicingIntent(candidateNotes) : {};
+    const candidateWeights = parentIntent.candidateWeights || {};
+
+    // Apply harmonic rhythm emphasis to all notes
+    const emphasizedWeights = {};
+    for (const note of candidateNotes) {
+      const baseWeight = candidateWeights[note] || 1.0;
+      emphasizedWeights[note] = baseWeight * emphasisFactor;
+    }
+
+    return {
+      candidateWeights: emphasizedWeights,
+      // Optional: suggest register lift during chord changes
+      registerBias: this._isChordChange ? 'higher' : undefined,
+      // Optional: suggest increased voice count during changes
+      voiceCountMultiplier: this._isChordChange ? 1.5 : 1.0
+    };
   }
 }

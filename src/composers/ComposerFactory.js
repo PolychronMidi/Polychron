@@ -48,9 +48,9 @@ ComposerFactory = class ComposerFactory {
     },
     tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5 } = {}) => new TensionReleaseComposer(key, quality, tensionCurve),
     modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
-    harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major' } = {}) => {
+    harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true } = {}) => {
       const k = key === 'random' ? allNotes[ri(allNotes.length - 1)] : key;
-      return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality);
+      return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling });
     },
     melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7 } = {}) => new MelodicDevelopmentComposer(name, root, intensity, developmentBias),
     voiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),

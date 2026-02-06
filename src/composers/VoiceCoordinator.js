@@ -80,7 +80,23 @@ VoiceCoordinator = class VoiceCoordinator {
     }
 
     const layerId = layer.id || 'default';
-    const maxVoices = Math.min(voiceCount, notePool.length);
+
+    // Apply voice count multiplier from voicing intent (e.g., more voices during chord changes)
+    const voiceCountMultiplier = opts.voiceCountMultiplier ?? 1.0;
+    const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * voiceCountMultiplier));
+    const maxVoices = Math.min(adjustedVoiceCount, notePool.length);
+
+    // Apply register bias from voicing intent
+    if (opts.registerBias === 'higher' && notePool.length > maxVoices) {
+      // Sort pool by pitch and favor upper portion
+      notePool = [...notePool].sort((a, b) => b - a); // Descending
+      const upperBias = Math.ceil(notePool.length * 0.6); // Top 60%
+      notePool = notePool.slice(0, upperBias);
+    } else if (opts.registerBias === 'lower' && notePool.length > maxVoices) {
+      notePool = [...notePool].sort((a, b) => a - b); // Ascending
+      const lowerBias = Math.ceil(notePool.length * 0.6); // Bottom 60%
+      notePool = notePool.slice(0, lowerBias);
+    }
 
     if (!this.voiceHistoryByLayer.has(layerId)) {
       this.voiceHistoryByLayer.set(layerId, []);
