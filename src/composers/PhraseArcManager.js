@@ -1,116 +1,67 @@
 /**
  * PhraseArcManager
  *
- * Manages phrase-level musical structure with directional momentum.
- * Tracks phrase position and generates arc profiles for:
+ * Stateless phrase arc profiler - reads from existing global state.
+ * Uses measureIndex, measuresPerPhrase, phraseIndex from main.js loops.
+ * Generates arc profiles for:
  * - Register trajectory (pitch height over time)
  * - Density profile (voice count variations)
  * - Voice independence (contrapuntal vs homophonic)
  * - Dynamism scaling (rhythmic activity)
- *
- * Coordinates all composers toward unified phrase-level goals.
  */
 
 PhraseArcManager = class PhraseArcManager {
   /**
    * @param {Object} [opts]
-   * @param {number} [opts.phraseLength] - Length in measures (default: 8)
    * @param {string} [opts.arcType] - 'rise-fall', 'build-resolve', 'wave', 'arch' (default: 'arch')
    * @param {number} [opts.registerRange] - Semitones of register variation (default: 12)
-   * @param {Object} [opts.densityRange] - Voice count multiplier range (default: {min: 0.7, max: 1.5})
-   * @param {boolean} [opts.boundaryArticulation] - Enforce phrase boundaries (default: true)
+   * @param {Object} [opts.densityRange] - Voice count multiplier range (default: {min: 0.85, max: 1.3})
    */
   constructor(opts = {}) {
-    this.phraseLength = opts.phraseLength || 8;
     this.arcType = opts.arcType || 'arch';
     this.registerRange = opts.registerRange || 12;
-    // Ensure densityRange is always an object with min/max
-    // Make density range less extreme to preserve variety (0.85-1.3 instead of 0.7-1.5)
     this.densityRange = (opts.densityRange && typeof opts.densityRange === 'object' && 'min' in opts.densityRange)
       ? opts.densityRange
       : { min: 0.85, max: 1.3 };
-    this.boundaryArticulation = opts.boundaryArticulation !== false;
-
-    // Phrase tracking
-    this._currentMeasure = 0;
-    this._currentPhrase = 0;
 
     // Arc profiles cache
     this._arcProfiles = this._generateArcProfiles();
   }
 
   /**
-   * Advance to next measure
-   */
-  nextMeasure() {
-    this._currentMeasure++;
-    if (this._currentMeasure >= this.phraseLength) {
-      this._currentMeasure = 0;
-      this._currentPhrase++;
-    }
-  }
-
-  /**
-   * Get current phrase position (0.0 = start, 1.0 = end)
-   */
-  getPosition() {
-    return this._currentMeasure / this.phraseLength;
-  }
-
-  /**
-   * Get current phrase phase
-   */
-  getPhase() {
-    const pos = this.getPosition();
-    if (pos < 0.25) return 'opening';
-    if (pos < 0.5) return 'development';
-    if (pos < 0.75) return 'climax';
-    return 'resolution';
-  }
-
-  /**
-   * Check if at phrase boundary
-   */
-  isAtBoundary() {
-    return this._currentMeasure === 0 || this._currentMeasure === this.phraseLength - 1;
-  }
-
-  /**
-   * Check if at phrase start
-   */
-  isAtStart() {
-    return this._currentMeasure === 0;
-  }
-
-  /**
-   * Check if at phrase end
-   */
-  isAtEnd() {
-    return this._currentMeasure === this.phraseLength - 1;
-  }
-
-  /**
-   * Get phrase context for current measure
+   * Get phrase context using current global state
    * @returns {Object} { position, phase, registerBias, densityMultiplier, voiceIndependence, dynamism, atBoundary }
    */
   getPhraseContext() {
-    const pos = this.getPosition();
-    const phase = this.getPhase();
+    // Read directly from globals set in main.js loops
+    if (typeof measureIndex === 'undefined' || typeof measuresPerPhrase === 'undefined' || typeof phraseIndex === 'undefined') {
+      console.warn('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
+    }
+
+    const pos = measuresPerPhrase > 0 ? measureIndex / measuresPerPhrase : 0;
+    const phase = this._getPhase(pos);
     const profile = this._arcProfiles[this.arcType];
 
     return {
       position: pos,
       phase: phase,
-      measureInPhrase: this._currentMeasure,
-      phraseNumber: this._currentPhrase,
+      measureInPhrase: measureIndex,
+      phraseNumber: phraseIndex,
       registerBias: profile.register(pos),
       densityMultiplier: profile.density(pos),
       voiceIndependence: profile.independence(pos),
       dynamism: profile.dynamism(pos),
-      atBoundary: this.isAtBoundary(),
-      atStart: this.isAtStart(),
-      atEnd: this.isAtEnd()
+      atBoundary: measureIndex === 0 || measureIndex === measuresPerPhrase - 1,
+      atStart: measureIndex === 0,
+      atEnd: measureIndex === measuresPerPhrase - 1
     };
+  }
+
+  _getPhase(pos) {
+    if (pos < 0.25) return 'opening';
+    if (pos < 0.5) return 'development';
+    if (pos < 0.75) return 'climax';
+    return 'resolution';
   }
 
   /**
@@ -193,13 +144,5 @@ PhraseArcManager = class PhraseArcManager {
         }
       }
     };
-  }
-
-  /**
-   * Reset to phrase start
-   */
-  reset() {
-    this._currentMeasure = 0;
-    this._currentPhrase = 0;
   }
 }

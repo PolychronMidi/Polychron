@@ -34,11 +34,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
-      // Advance phrase arc manager at each measure boundary
-      if (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager) {
-        ComposerFactory.sharedPhraseArcManager.nextMeasure();
-      }
       setUnitTiming('measure');
+
+      // Get phrase context for dynamism scaling
+      const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)
+        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
+        : { dynamism: 0.7, atStart: false, atEnd: false };
+
+      // Scale play/stutter probabilities by dynamism (0.75-1.25 range)
+      const dynScale = 0.75 + phraseCtx.dynamism * 0.5;
+      const basePlayProb = phraseCtx.atStart ? 0.15 : 0.2; // Slightly sparse at phrase start
+      const baseStutterProb = phraseCtx.atEnd ? 0.4 : 0.2; // More stutter at phrase end
+      const playProb = basePlayProb * dynScale;
+      const stutterProb = baseStutterProb * dynScale;
+
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         beatCount++;
         setUnitTiming('beat');
@@ -49,16 +58,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        playNotes('beat', { playProb: .2, stutterProb: .2 });
+        playNotes('beat', { playProb, stutterProb });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('div');
-          playNotes('div', { playProb: .2, stutterProb: .2 });
+          playNotes('div', { playProb, stutterProb });
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotes('subdiv', { playProb: .2, stutterProb: .2 });
+            playNotes('subdiv', { playProb, stutterProb });
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb: .2, stutterProb: .2 }); }
+              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
             }
           }
         }
@@ -74,6 +83,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
+
+      // Get phrase context for L2 dynamism scaling
+      const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)
+        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
+        : { dynamism: 0.7, atStart: false, atEnd: false };
+
+      const dynScale = 0.75 + phraseCtx.dynamism * 0.5;
+      const basePlayProb = phraseCtx.atStart ? 0.15 : 0.2;
+      const baseStutterProb = phraseCtx.atEnd ? 0.4 : 0.2;
+      const playProb = basePlayProb * dynScale;
+      const stutterProb = baseStutterProb * dynScale;
+
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
@@ -83,20 +104,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        playNotes('beat', { playProb: .2, stutterProb: .2 });
+        playNotes('beat', { playProb, stutterProb });
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
           setUnitTiming('div');
-          playNotes('div', { playProb: .2, stutterProb: .2 });
+          playNotes('div', { playProb, stutterProb });
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotes('subdiv', { playProb: .2, stutterProb: .2 });
+            playNotes('subdiv', { playProb, stutterProb });
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb: .2, stutterProb: .2 }); }
+              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
             }
           }
         }
