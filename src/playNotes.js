@@ -28,12 +28,14 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     }
 
     if (!layer || !layer.beatMotifs) { console.warn(`${unit}.playNotes: missing layer or beatMotifs`); return trackRhythm(unit, layer, false); }
-    const beatKey = Math.floor(on / tpBeat);
-    const bucketIsArray = (layer && layer.beatMotifs && Array.isArray(layer.beatMotifs[beatKey]));
-    const bucket = bucketIsArray ? layer.beatMotifs[beatKey] : [];
+    const bucketIsArray = (layer && layer.beatMotifs && Array.isArray(layer.beatMotifs[beatIndex]));
+    const bucket = bucketIsArray ? layer.beatMotifs[beatIndex] : [];
 
-    // If there is no bucket (undefined), this is normal silence; do not warn.
-    if (!bucketIsArray) return trackRhythm(unit, layer, false);
+    // If there is no bucket (undefined), this is not normal silence; play gating above via probOn and crossModulation handles that
+    if (!bucketIsArray) {
+      console.warn(`${unit}.playNotes: missing beatMotifs bucket for beatIndex ${beatIndex}`);
+      return trackRhythm(unit, layer, false);
+    }
 
     // If we have an explicit bucket but it's empty, capture context once and warn (possible bug)
     if (!bucket.length) {
@@ -50,11 +52,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
     const beatNoteHistory = (layer && layer._beatNoteHistory instanceof Map) ? layer._beatNoteHistory : new Map();
     if (!layer._beatNoteHistory || layer._beatNoteHistory !== beatNoteHistory) layer._beatNoteHistory = beatNoteHistory;
-    if (!beatNoteHistory.has(beatKey)) {
+    if (!beatNoteHistory.has(beatIndex)) {
       beatNoteHistory.clear();
-      beatNoteHistory.set(beatKey, new Set());
+      beatNoteHistory.set(beatIndex, new Set());
     }
-    const beatNoteSet = beatNoteHistory.get(beatKey);
+    const beatNoteSet = beatNoteHistory.get(beatIndex);
 
     // Track motif cycle completion per groupId and apply transformations after each cycle
     if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
@@ -209,7 +211,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         }
 
       // Bass channels
-      if (rf() < clamp(.35 * bpmRatio3, .2, .7)) {
+      if (rf() < clamp(.75 * bpmRatio3, .2, .7)) {
         const activeBassChannels = bass.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
         for (let bci = 0; bci < activeBassChannels.length; bci++) {
           const bassCH = activeBassChannels[bci];
