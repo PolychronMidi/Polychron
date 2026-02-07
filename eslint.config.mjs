@@ -434,6 +434,7 @@ export default [
         normalizeChordSymbol: 'readonly',
         writeDebugFile: 'readonly',
         playNotes: 'readonly',
+        playMotifs: 'readonly',
         // Audio/rhythm functions
         playDrums: 'writable',
         playDrums2: 'writable',

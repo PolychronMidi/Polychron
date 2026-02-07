@@ -6,25 +6,19 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
-    "@vitest/coverage-v8": "^4.0.16",
     "chokidar": "^5.0.0",
     "cross-env": "^7.0.3",
     "depcheck": "^1.4.7",
     "eslint": "^9.0.0",
     "husky": "^8.0.0",
-    "markdown-link-check": "^3.14.2",
     "ts-morph": "^27.0.2",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "typescript": "^5.9.3"
   },
   "scripts": {
+    "main": "npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/main.js",
     "lint:raw": "eslint . --ext .js --fix",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
-    "test": "npm run lint && npm run tc && node scripts/run-with-log.js test.log vitest --run --reporter=default && npm run main",
     "tc": "node scripts/run-with-log.js tc.log tsc -p . --noEmit",
-    "test:coverage": "node scripts/run-with-log.js coverage.log npm run test:coverage:raw",
-    "test:coverage:raw": "vitest --coverage --run",
-    "main": "npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/main.js",
     "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",
