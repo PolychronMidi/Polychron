@@ -4,7 +4,8 @@ require('./rhythm');
 require('./time');
 require('./composers');
 require('./fx');
-// Side-effect require to expose unit-level play helper
+// Side-effect require to expose unit-level play helper and motif handler
+require('./playMotifs');
 require('./playNotes');
 require('./writer');
 // Explicitly include main in index require list so that file listings are comprehensive
