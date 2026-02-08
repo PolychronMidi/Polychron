@@ -65,9 +65,9 @@ playMotifs = function(unit = 'subdiv', layer) {
     }
     return note;
   });
-  // Preserve voice coordinator instance per layer to maintain voice history across beats within a phrase
-  if (!layer._voiceCoordinator) layer._voiceCoordinator = new VoiceCoordinator();
-  const VC = layer._voiceCoordinator;
+  // Preserve voice Manager instance per layer to maintain voice history across beats within a phrase
+  if (!layer._voiceManager) layer._voiceManager = new VoiceManager();
+  const VC = layer._voiceManager;
   const voiceCount = VC.getVoiceCount();
   const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
 
@@ -193,12 +193,12 @@ playMotifs._cloneBucketEntry = function(entry) {
 
 /**
  * Reset all internal layer state (call at phrase/section boundaries)
- * Clears beatNoteHistory, motifCycleTracking, and voice coordinator history
+ * Clears beatNoteHistory, motifCycleTracking, and voice Manager history
  */
 playMotifs.resetLayerState = function(layer) {
   if (!layer) return;
   layer._beatNoteHistory = null;
   layer._motifCycleTracking = null;
   layer._emptyBucketCaptured = null;
-  // DO NOT reset _voiceCoordinator here; it maintains voice leading continuity within a phrase
+  // DO NOT reset _voiceManager here; it maintains voice leading continuity within a phrase
 };

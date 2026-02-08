@@ -1,4 +1,4 @@
-// NoiseCoordinator.js - Central noise generation registry and multi-layer coordination
+// NoiseManager.js - Central noise generation registry and multi-layer coordination
 
 // Initialize default simplex instance for shared use
 defaultSimplex = new SimplexNoise(rf());

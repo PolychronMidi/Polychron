@@ -302,7 +302,7 @@ export default [
         STUTTER_PROFILES: 'readonly',
         STUTTER_VELOCITY_RANGES: 'readonly',
         NOISE_PROFILES: 'readonly',
-        VOICE_COORDINATOR: 'readonly',
+        VOICE_Manager: 'readonly',
         // Audio channels (left/right pairs)
         lCH1: 'writable',
         rCH1: 'writable',
@@ -393,9 +393,9 @@ export default [
         // Exposed helpers / classes
         TimingCalculator: 'writable',
         VoiceLeadingScore: 'writable',
-        VoiceCoordinator: 'writable',
+        VoiceManager: 'writable',
         selectVoices: 'writable',
-        VoiceCoordinator: 'writable',
+        VoiceManager: 'writable',
         SECTION_TYPES: 'readonly',
         csvRows: 'writable',
         // Utility and temporary globals
@@ -472,7 +472,7 @@ export default [
         lerp: 'writable',
         grad: 'writable',
         perlinNoise: 'writable',
-        // Noise coordinator
+        // Noise Manager
         defaultSimplex: 'writable',
         noiseGenerators: 'writable',
         generatorKeys: 'writable',

@@ -114,7 +114,7 @@ NOISE_PROFILES = {
   }
 };
 
-VOICE_COORDINATOR = {
+VOICE_Manager = {
   voiceIndependenceDefault: 0.5, // 0-1 scale (contrapuntal vs homophonic)
   arcDensityChance: 0.5,         // Probability of applying arc density multiplier
   arcRegisterBiasChance: 0.3,    // Probability of applying arc register bias

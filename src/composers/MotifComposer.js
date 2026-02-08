@@ -129,9 +129,9 @@ MotifComposer = class MotifComposer {
       }
     }
 
-    const VC = (typeof VoiceCoordinator !== 'undefined' && VoiceCoordinator)
-      ? VoiceCoordinator
-      : (typeof VoiceCoordinator !== 'undefined' ? new VoiceCoordinator() : null);
+    const VC = (typeof VoiceManager !== 'undefined' && VoiceManager)
+      ? VoiceManager
+      : (typeof VoiceManager !== 'undefined' ? new VoiceManager() : null);
     const motifLayer = VC ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;
 
     for (let i = 0; i < length; i++) {

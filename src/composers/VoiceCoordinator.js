@@ -1,11 +1,11 @@
-// VoiceCoordinator.js - Centralized voice count selection and multi-voice coordination
+// VoiceManager.js - Centralized voice count selection and multi-voice coordination
 
 /**
  * Coordinates voice selection using VOICES config, composer note pools, and voice leading.
  * Manages per-voice history and calls selectVoices for joint optimization.
  * @class
  */
-VoiceCoordinator = class VoiceCoordinator {
+VoiceManager = class VoiceManager {
   constructor() {
     this.voiceHistoryByLayer = new Map();
   }
@@ -90,12 +90,12 @@ VoiceCoordinator = class VoiceCoordinator {
     const phraseContext = opts.phraseContext || {};
     const arcRegisterBias = phraseContext.registerBias || 0; // Semitones to shift register
     const arcDensityMultiplier = phraseContext.densityMultiplier || 1.0;
-    const voiceIndependence = phraseContext.voiceIndependence || VOICE_COORDINATOR.voiceIndependenceDefault;
+    const voiceIndependence = phraseContext.voiceIndependence || VOICE_Manager.voiceIndependenceDefault;
 
     // Apply voice count multiplier: stack chord change emphasis with phrase arc density
     // But only apply arc density influence probabilistically to maintain variety
     const voiceCountMultiplier = opts.voiceCountMultiplier ?? 1.0;
-    const shouldApplyArcDensity = rf() < VOICE_COORDINATOR.arcDensityChance;
+    const shouldApplyArcDensity = rf() < VOICE_Manager.arcDensityChance;
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
     const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * combinedMultiplier));
@@ -108,7 +108,7 @@ VoiceCoordinator = class VoiceCoordinator {
     // Arc-based register bias: if arc suggests upward/downward trajectory, apply as preference
     // Positive arcRegisterBias (+semitones) suggests higher register, negative suggests lower
     // Only apply arc bias probabilistically with threshold to preserve variety
-    if (!finalRegisterBias && Math.abs(arcRegisterBias) > VOICE_COORDINATOR.arcRegisterBiasThreshold && rf() < VOICE_COORDINATOR.arcRegisterBiasChance) {
+    if (!finalRegisterBias && Math.abs(arcRegisterBias) > VOICE_Manager.arcRegisterBiasThreshold && rf() < VOICE_Manager.arcRegisterBiasChance) {
       finalRegisterBias = arcRegisterBias > 0 ? 'higher' : 'lower';
     }
 
