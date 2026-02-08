@@ -105,11 +105,9 @@ playMotifs = function(unit = 'subdiv', layer) {
       // Apply transformations to cloned copies of group entries (preserve originals in bucket)
       const groupEntries = bucket.filter(e => e.groupId === groupId).map(e => playMotifs._cloneBucketEntry(e));
       if (groupEntries.length > 0) {
-        // 5% chance: repeat (no transformation)
         if (rf() < 0.05) {
-          // Keep the notes as-is, no transformation
+          // No transformation - use entries as-is
         } else {
-          // Choose 1-3 random transformations
           const transformations = [];
           if (rf() > 0.5) transformations.push('invert');
           if (rf() > 0.5) transformations.push('shuffle');

@@ -67,16 +67,38 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     const shifts = localShared.shifts;
     const globalState = localShared.global;
 
-    // Reset per-channel octave shifts when the beat index changes
+    // Reset per-channel octave shifts and selected channels when beat index changes
     const currentBeatIndex = (typeof beatIndex !== 'undefined') ? beatIndex : null;
     if (globalState._lastBeatIndex !== currentBeatIndex) {
       shifts.clear();
       globalState._lastBeatIndex = currentBeatIndex;
+      globalState.selectedReflectionChannels = new Set();
+      globalState.selectedBassChannels = new Set();
     }
 
     const isSource = profile === 'source';
     const isReflection = profile === 'reflection';
     const isBass = profile === 'bass';
+
+    // Channel selection: for reflection/bass, limit to 1-2 random channels per beat
+    if (isReflection || isBass) {
+      const selectedSet = isReflection
+        ? (globalState.selectedReflectionChannels || (globalState.selectedReflectionChannels = new Set()))
+        : (globalState.selectedBassChannels || (globalState.selectedBassChannels = new Set()));
+
+      if (!selectedSet.has(channel)) {
+        // First time seeing this channel in this beat - decide if it should be active
+        // Limit to 2 channels max, with 50% probability for each candidate
+        if (selectedSet.size < 2 && rf() < 0.5) {
+          selectedSet.add(channel);
+        }
+      }
+
+      // Skip stutter if this channel wasn't selected
+      if (!selectedSet.has(channel)) {
+        return emit === false ? { shared: localShared, events: plannedEvents } : localShared;
+      }
+    }
 
     // Get profile-specific config from centralized StutterConfig
     const profileCfg = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
@@ -111,9 +133,12 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = note;
-        if (rf() < .25) {
-          if (!shifts.has(channel)) shifts.set(channel, ri(-3, 3) * 12);
-          stutterNote = _clampStutterNote(note + shifts.get(channel), isBass);
+        // Per-step independent octave shift: high probability for rapid random shifts (excluding 0)
+        if (rf() < 0.85) {
+          const shiftDir = rf() < 0.5 ? -1 : 1;
+          const shiftMag = ri(1, 3); // 1-3 octaves
+          const stepShift = shiftDir * shiftMag * 12;
+          stutterNote = _clampStutterNote(note + stepShift, isBass);
         }
 
         let currentVelocity;
@@ -144,7 +169,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
       const numStutters = stutters.get(channel);
       const duration = .25 * ri(1, isSource ? 5 : 8) * sustain / numStutters;
-      const shiftProb = profileCfg.shiftProb;
       const shiftRange = isBass ? 2 : 3;
       const fireProb = isSource ? .6 : (isReflection ? .5 : .3);
       const velRanges = (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.getVelocityRange)
@@ -156,9 +180,12 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = note;
-        if (rf() < shiftProb) {
-          if (!shifts.has(channel)) shifts.set(channel, ri(-shiftRange, shiftRange) * 12);
-          stutterNote = clampStutterNote(note + shifts.get(channel));
+        // Per-step independent octave shift: high probability for rapid random shifts (excluding 0)
+        if (rf() < 0.85) {
+          const shiftDir = rf() < 0.5 ? -1 : 1; // Random direction
+          const shiftMag = ri(1, shiftRange); // Random magnitude (1 to shiftRange)
+          const stepShift = shiftDir * shiftMag * 12;
+          stutterNote = clampStutterNote(note + stepShift);
         }
         if (rf() < fireProb) {
           const evA = { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] };
