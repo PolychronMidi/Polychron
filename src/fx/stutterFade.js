@@ -19,15 +19,38 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   channelsArray.forEach(channelToStutter => {
     const maxVol = ri(90, 120);
     const isFadeIn = rf() < 0.5;
+
+    // Use moderate noise profile for stutter fades (more interesting than subtle)
+    const noiseProfile = typeof getNoiseProfile === 'function' ? getNoiseProfile('moderate') : null;
+
     let tick, volume;
 
     for (let i = m.floor(numStutters * (rf(1/3, 2/3))); i < numStutters; i++) {
       tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
+
+      // Compute base fade curve
+      let baseVolume;
       if (isFadeIn) {
-        volume = modClamp(m.floor(maxVol * (i / (numStutters - 1))), 25, maxVol);
+        baseVolume = m.floor(maxVol * (i / (numStutters - 1)));
       } else {
-        volume = modClamp(m.floor(100 * (1 - (i / (numStutters - 1)))), 25, 100);
+        baseVolume = m.floor(100 * (1 - (i / (numStutters - 1))));
       }
+
+      // Apply noise modulation to fade curve
+      if (noiseProfile && typeof getParameterModulation === 'function') {
+        try {
+          const mod = getParameterModulation(channelToStutter, 'fade', tick);
+          // Modulate volume by noise influence
+          // Use X axis for volume variation, scale by profile influence
+          const noiseVariation = (mod.x - 0.5) * 2 * maxVol * noiseProfile.influenceX;
+          volume = modClamp(m.floor(baseVolume + noiseVariation), 25, maxVol);
+        } catch (e) {
+          volume = modClamp(baseVolume, 25, maxVol);
+        }
+      } else {
+        volume = modClamp(baseVolume, 25, maxVol);
+      }
+
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
     }

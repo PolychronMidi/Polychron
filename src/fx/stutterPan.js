@@ -22,15 +22,35 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     const centerZone = fullRange / 3;
     const leftBoundary = edgeMargin + centerZone;
     const rightBoundary = edgeMargin + 2 * centerZone;
+
+    // Use dramatic noise profile for pan movement (creates interesting flutter)
+    const noiseProfile = typeof getNoiseProfile === 'function' ? getNoiseProfile('dramatic') : null;
+
     let currentPan = edgeMargin;
     let direction = 1;
     let tick;
 
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
       tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
+
+      // Compute base pan direction
       if (currentPan >= rightBoundary) direction = -1;
       else if (currentPan <= leftBoundary) direction = 1;
-      currentPan += direction * (fullRange / numStutters) * rf(.5, 1.5);
+
+      // Apply noise modulation to pan movement
+      let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
+      if (noiseProfile && typeof getParameterModulation === 'function') {
+        try {
+          const mod = getParameterModulation(channelToStutter, 'pan', tick);
+          // Y axis controls pan flutter - add oscillation on top of movement
+          const flutterAmount = (mod.y - 0.5) * 2 * fullRange * 0.3 * noiseProfile.influenceY;
+          basePanDelta += flutterAmount;
+        } catch (e) {
+          // Silently continue if noise fails
+        }
+      }
+
+      currentPan += basePanDelta;
       currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }

@@ -1,9 +1,11 @@
 // noise-test.js - Monkey-patch test for noise module functionality
 
+
 const path = require('path');
 
 // Setup globals that noise module expects
-global.m = {
+// Note: This is a test file, so we use global. as an exception for test setup
+m = {
   sqrt: Math.sqrt,
   sin: Math.sin,
   cos: Math.cos,
@@ -17,8 +19,8 @@ global.m = {
   PI: Math.PI
 };
 
-global.rf = (min = 0, max = 1) => min + Math.random() * (max - min);
-global.ri = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
+rf = (min = 0, max = 1) => min + Math.random() * (max - min);
+ri = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
 
 // Load the noise module
 require('../src/fx/noise');
@@ -63,7 +65,7 @@ test('SimplexNoise class instantiation', () => {
 test('SimplexNoise.noise() produces deterministic noise', () => {
   const noise = new SimplexNoise(0.5);
   for (let i = 0; i < 10; i++) {
-    const val = noise.noise(global.rf(-100, 100), global.rf(-100, 100));
+    const val = noise.noise(rf(-100, 100), rf(-100, 100));
     if (typeof val !== 'number' || isNaN(val)) throw new Error('Invalid noise output');
   }
 });
@@ -424,7 +426,7 @@ test('permutation arrays exist for Perlin', () => {
 test('Noise generators produce varied outputs in sequence', () => {
   const samples = [];
   for (let i = 0; i < 20; i++) {
-    samples.push(getNoiseValue('simplex', global.rf(-100, 100), global.rf(-100, 100), global.rf(0, 100)));
+    samples.push(getNoiseValue('simplex', rf(-100, 100), rf(-100, 100), rf(0, 100)));
   }
   const range = m.max(...samples) - m.min(...samples);
   if (range < 0.1) throw new Error('Noise samples not varied enough');
