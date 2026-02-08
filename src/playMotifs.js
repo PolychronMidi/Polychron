@@ -4,30 +4,32 @@
 playMotifs = function(unit = 'subdiv', layer) {
   // Validate layer and beatMotifs bucket
   if (!layer || !layer.beatMotifs) {
-    console.warn(`${unit}.playMotifs: missing layer or beatMotifs`);
-    return [];
+    console.error(`🚨 CRITICAL: ${unit}.playMotifs missing layer or beatMotifs`);
+    process.exit(1);
+  }
+
+  // Cache picks per beatIndex to avoid re-selecting from bucket 40+ times per beat
+  if (!layer._beatPicksCache) layer._beatPicksCache = { beatIndex: -1, picks: [] };
+  const cache = layer._beatPicksCache;
+
+  // If we already have picks for this beatIndex, return them (same beat, different timing unit)
+  if (cache.beatIndex === beatIndex && cache.picks && cache.picks.length > 0) {
+    return cache.picks;
   }
 
   const bucketIsArray = (layer && layer.beatMotifs && Array.isArray(layer.beatMotifs[beatIndex]));
-  const bucket = bucketIsArray ? layer.beatMotifs[beatIndex] : [];
+  const bucket = bucketIsArray ? layer.beatMotifs[beatIndex] : null;
 
-  // If there is no bucket (undefined), this is not normal silence; play gating in playNotes handles that
-  if (!bucketIsArray) {
-    console.warn(`${unit}.playMotifs: missing beatMotifs bucket for beatIndex ${beatIndex}`);
-    return [];
+  // If there is no bucket (undefined), this is a critical bug - gating happens BEFORE playMotifs is called
+  if (!bucketIsArray || !bucket) {
+    console.error(`🚨 CRITICAL: ${unit}.playMotifs missing beatMotifs bucket for beatIndex ${beatIndex} - gating should have prevented this call`);
+    process.exit(1);
   }
 
-  // If we have an explicit bucket but it's empty, capture context once and warn (possible bug)
+  // If we have an explicit bucket but it's empty, this is a critical generation bug
   if (!bucket.length) {
-    // One-time diagnostic marker: record that an explicit empty bucket was observed
-    try {
-      if (!layer._emptyBucketCaptured) {
-        layer._emptyBucketCaptured = true;
-      }
-    } catch (__) { /* defensive */ }
-
-    console.warn(`${unit}.playMotifs: empty beatMotifs bucket`);
-    return [];
+    console.error(`🚨 CRITICAL: ${unit}.playMotifs empty beatMotifs bucket at beatIndex ${beatIndex} - generation failed to populate`);
+    process.exit(1);
   }
 
   // Initialize beatNoteHistory tracking per beat
@@ -63,7 +65,9 @@ playMotifs = function(unit = 'subdiv', layer) {
     }
     return note;
   });
-  const VC = new VoiceCoordinator();
+  // Preserve voice coordinator instance per layer to maintain voice history across beats within a phrase
+  if (!layer._voiceCoordinator) layer._voiceCoordinator = new VoiceCoordinator();
+  const VC = layer._voiceCoordinator;
   const voiceCount = VC.getVoiceCount();
   const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
 
@@ -98,8 +102,8 @@ playMotifs = function(unit = 'subdiv', layer) {
       tracking.cycleCount++;
       tracking.playedIndices.clear();
 
-      // Apply transformations to this groupId's notes in the bucket
-      const groupEntries = bucket.filter(e => e.groupId === groupId);
+      // Apply transformations to cloned copies of group entries (preserve originals in bucket)
+      const groupEntries = bucket.filter(e => e.groupId === groupId).map(e => playMotifs._cloneBucketEntry(e));
       if (groupEntries.length > 0) {
         // Choose 1-3 random transformations
         const transformations = [];
@@ -138,6 +142,12 @@ playMotifs = function(unit = 'subdiv', layer) {
             e.note = modClamp(shifted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
           });
         }
+
+        // Apply transformed notes back to bucket (update in-place)
+        for (let i = 0; i < groupEntries.length; i++) {
+          const orig = bucket.filter(e => e.groupId === groupId)[i];
+          if (orig) orig.note = groupEntries[i].note;
+        }
       }
     }
   }
@@ -149,5 +159,34 @@ playMotifs = function(unit = 'subdiv', layer) {
     return true;
   });
 
+  // Cache the picks for this beatIndex so subsequent unit calls within the same beat reuse them
+  cache.beatIndex = beatIndex;
+  cache.picks = filteredPicks;
+
   return filteredPicks;
+};
+
+/**
+ * Deep clone a bucket entry (preserve original, transform copy)
+ */
+playMotifs._cloneBucketEntry = function(entry) {
+  return {
+    note: entry.note,
+    duration: entry.duration,
+    groupId: entry.groupId,
+    seqIndex: entry.seqIndex,
+    seqLen: entry.seqLen
+  };
+};
+
+/**
+ * Reset all internal layer state (call at phrase/section boundaries)
+ * Clears beatNoteHistory, motifCycleTracking, and voice coordinator history
+ */
+playMotifs.resetLayerState = function(layer) {
+  if (!layer) return;
+  layer._beatNoteHistory = null;
+  layer._motifCycleTracking = null;
+  layer._emptyBucketCaptured = null;
+  // DO NOT reset _voiceCoordinator here; it maintains voice leading continuity within a phrase
 };
