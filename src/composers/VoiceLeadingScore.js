@@ -100,10 +100,18 @@ VoiceLeadingScore = class VoiceLeadingScore {
     const lastNote = lastNotes[0] ?? 60;
     const interval = Math.abs(candidate - lastNote);
     const currentRegister = opts.register || 'soprano';
-    totalCost += this._scoreVoiceMotion(interval, lastNote, candidate) * this.weights.smoothMotion;
 
-    // Melodic interval quality (consonance preference with occasional dissonance)
-    totalCost += this._scoreIntervalQuality(interval, lastNote, candidate) * this.weights.intervalQuality;
+    // Build context for noise helper
+    const currentTime = (typeof beatStart !== 'undefined' ? beatStart : 0);
+    const voiceId = candidate + (lastNote * 17);
+    const noiseContext = { currentTime, voiceId };
+
+    // Apply noise-modulated weight multipliers via helper
+    const smoothMotionMod = applyVoiceLeadingWeightNoise(1.0, 'smoothMotion', noiseContext);
+    totalCost += this._scoreVoiceMotion(interval, lastNote, candidate) * this.weights.smoothMotion * smoothMotionMod;
+
+    const intervalQualityMod = applyVoiceLeadingWeightNoise(1.0, 'intervalQuality', noiseContext);
+    totalCost += this._scoreIntervalQuality(interval, lastNote, candidate) * this.weights.intervalQuality * intervalQualityMod;
 
     // Consecutive leap prevention (with dynamism allowing occasional runs)
     totalCost += this._scoreConsecutiveLeaps(interval, lastNotes) * this.weights.consecutiveLeaps;
@@ -136,7 +144,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
     }
 
     // Small preference for common-tone (same pitch-class); prefers per-call opts first, then scorer default
-    const ctWeight = (opts && typeof opts.commonToneWeight === 'number') ? opts.commonToneWeight : this.commonToneWeight;
+    const baseCtWeight = (opts && typeof opts.commonToneWeight === 'number') ? opts.commonToneWeight : this.commonToneWeight;
+    const ctWeightMod = applyVoiceLeadingWeightNoise(1.0, 'commonTone', noiseContext);
+    const ctWeight = baseCtWeight * ctWeightMod;
     if (typeof ctWeight === 'number' && ctWeight > 0) {
       const samePC = ((candidate % 12) + 12) % 12 === ((lastNote % 12) + 12) % 12;
       if (samePC) totalCost -= Math.min(8, ctWeight * 4); // reduce cost to favor common tones

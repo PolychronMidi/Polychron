@@ -22,12 +22,12 @@
 ## Build & Test
 - Key commands (agents should call these automatically):
   - `npm run main` - !!! THIS IS THE ONE AND ONLY SCRIPT ALLOWED TO BE CALLED BY AGENTS TO RUN/TEST THE PROJECT (it includes validation and logging).
-  - LET COMMANDS FINISH BEFORE MOVING ON - do not skip forward until the terminal output clearly states the script exited.
+  - LET COMMANDS FINISH BEFORE MOVING ON - do not progress prematurely - only once the terminal output clearly states the script exited - err on the side of "siting and waiting for nothing" over skipping ahead and abandoning a running script.
 
 ## Project Conventions
 - Naked globals are intentional and centralized: when adding new globals, prefer a single side-effect module to define them and document the usage in `eslint.config.mjs` (update globals list when necessary).
 - Never use intermediary variables instead of the globals directly in the codebase, as this can lead to confusion and errors. Always reference the globals directly to maintain clarity and consistency.
-- Never validate or sanitize global values with ad-hoc checks; if a global is expected to have a certain shape or type, ensure it is correctly initialized at the source and rely on fail-fast error handling rather than subversive, quiet "validation."
+- Never validate or sanitize global values with ad-hoc checks; if a global is expected to have a certain shape or type, ensure it is correctly initialized at the source and rely on fail-fast error handling rather than subversive, quiet "validation," or "graceful degradation."
 - Minimal, clear functions are preferred over large validation helpers that suppress errors.
 - Prefer `const` and pure functions where possible, but accept writable globals where the project convention requires it (timing, play-state, debug helpers).
 - Prefer files that are small and focused on a single responsibility (target max of roughly 150-200 lines), with clear file names matching the file's main function/class.

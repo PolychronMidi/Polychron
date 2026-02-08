@@ -49,19 +49,28 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.currentPhase = m.floor((this.measureCount - 1) / 2) % 4;
     let developedNotes = [...baseNotes];
     const intensity = this.intensity;
+
+    // Build context for noise helper
+    const currentTime = (typeof beatStart !== 'undefined' ? beatStart : 0);
+    const voiceId = (this.root ? this.root.charCodeAt(0) : 60) + this.measureCount;
+    const noiseContext = { currentTime, voiceId, phase: this.currentPhase };
+
     switch (this.currentPhase) {
       case 0:
         this.transpositionOffset = intensity > 0.5 ? ri(-2, 2) : 0;
+        this.transpositionOffset = applyMelodicTranspositionNoise(this.transpositionOffset, noiseContext);
         developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
         break;
       case 1:
         this.transpositionOffset = m.round(intensity * 7);
+        this.transpositionOffset = applyMelodicTranspositionNoise(this.transpositionOffset, noiseContext);
         developedNotes = baseNotes.map(n => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
         break;
       case 2:
         if (intensity > 0.3) {
           const pivot = baseNotes[0]?.note || 60;
-          developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(2 * pivot - n.note, 0, 127) }));
+          const noisyPivot = applyMelodicPivotNoise(pivot, noiseContext);
+          developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(2 * noisyPivot - n.note, 0, 127) }));
         }
         break;
       case 3:
@@ -71,7 +80,10 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     if (rf() < 0.3) {
       this.responseMode = !this.responseMode;
       if (this.responseMode) {
-        developedNotes = developedNotes.map((n, i) => ({ ...n, duration: (n.duration || 480) * (intensity + 0.5) }));
+        developedNotes = developedNotes.map((n, i) => {
+          const baseDuration = (n.duration || 480) * (intensity + 0.5);
+          return { ...n, duration: applyMelodicDurationNoise(baseDuration, noiseContext) };
+        });
       }
     }
     this._lastBaseNotes = baseNotes;

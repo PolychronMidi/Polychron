@@ -1,5 +1,4 @@
 // NoiseCoordinator.js - Central noise generation registry and multi-layer coordination
-// Patterns extracted from visual screensaver adapted for audio parameter modulation
 
 // Initialize default simplex instance for shared use
 defaultSimplex = new SimplexNoise(rf());

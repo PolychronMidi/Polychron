@@ -319,8 +319,13 @@ declare var applyNoiseToVelocity: any;
 declare var applyNoiseToPan: any;
 declare var applyNoiseToSustain: any;
 declare var applyNoiseToParameter: any;
-declare var getSafeNoiseProfile: any;
+declare var getNoiseProfileOrFail: any;
 declare const NOISE_PROFILES: any;
+declare var applyComposerPitchNoise: any;
+declare var applyMelodicTranspositionNoise: any;
+declare var applyMelodicPivotNoise: any;
+declare var applyMelodicDurationNoise: any;
+declare var applyVoiceLeadingWeightNoise: any;
 
 declare var OCTAVE: any;
 

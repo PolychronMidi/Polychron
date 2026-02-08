@@ -53,12 +53,23 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    */
   selectNoteWithLeading(candidates = []) {
     if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+
+    let selectedNote;
     try {
       if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
-        return this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
+        selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
     } catch (e) { console.warn('ScaleComposer.selectNoteWithLeading failed, falling back to default choice:', e && e.stack ? e.stack : e); }
-    return candidates[Math.floor(candidates.length / 2)];
+
+    if (typeof selectedNote === 'undefined') {
+      selectedNote = candidates[Math.floor(candidates.length / 2)];
+    }
+
+    // Apply noise-based pitch variation via helper
+    if (typeof this._noiseCallCount === 'undefined') this._noiseCallCount = 0;
+    this._noiseCallCount++;
+    const voiceId = this.root ? this.root.charCodeAt(0) : 60;
+    return applyComposerPitchNoise(selectedNote, { voiceId, callCount: this._noiseCallCount });
   }
 }
 
