@@ -71,6 +71,12 @@ declare var divIndex: any;
 declare var subdivIndex: any;
 declare var subsubdivIndex: any;
 
+declare var RhythmRegistry: any;
+declare var RhythmManager: any;
+declare var RhythmValues: any;
+declare var rhythmConfig: any;
+declare var rhythmModulator: any;
+
 // Structure / counters
 declare var totalSections: any;
 declare var phrasesPerSection: any;
