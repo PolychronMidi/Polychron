@@ -32,8 +32,8 @@ MotifSpreader = {
       const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
 
       // Add group's steps as candidates on every beat of the group's span;
-      // placement/length/offset is decided later by stage/main loops.
-      const baseBeat = Math.floor(measureStart / beatLen);
+      // Use LOCAL beat indices (0..numerator-1) to match how main.js indexes beats
+      // beatIndex in playback is a local index within the measure, not an absolute tick-based index
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
         const length = ri(min, Math.max(1, Math.min(8, gLen * min)));
@@ -42,23 +42,23 @@ MotifSpreader = {
         const totalEvents = seq.length || 0;
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
         layer.beatMotifs = layer.beatMotifs || {};
-        // If the generated motif group contains no events, skip creating empty beat buckets
-        if (!totalEvents) {
-          console.warn('MotifSpreader.spreadMeasure: generated empty motif group, skipping', { measureStart, groupIdx, gLen });
-          beatOffset += gLen;
-          return; // exit this group iteration (forEach callback)
-        }
 
+        // ALWAYS create beat bucket entries for this group's beats, using LOCAL beat indices
+        // playMotifs expects every beat to have a key in layer.beatMotifs
         for (let b = 0; b < gLen; b++) {
-          const bKey = baseBeat + beatOffset + b;
+          const bKey = beatOffset + b;  // LOCAL beat index, not absolute
           layer.beatMotifs[bKey] = layer.beatMotifs[bKey] || [];
-          for (let i = 0; i < totalEvents; i++) {
-            const evt = seq[i];
-            const noteValue = Number(evt.note);
-            // Clamp to valid MIDI range 0-127 before adding to bucket
-            const clampedNote = modClamp(noteValue, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            layer.beatMotifs[bKey].push({ note: clampedNote, groupId, seqIndex: i, seqLen: totalEvents });
-            added++;
+
+          // Populate with motif notes if generation succeeded; otherwise empty array is correct
+          if (totalEvents > 0) {
+            for (let i = 0; i < totalEvents; i++) {
+              const evt = seq[i];
+              const noteValue = Number(evt.note);
+              // Clamp to valid MIDI range 0-127 before adding to bucket
+              const clampedNote = modClamp(noteValue, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+              layer.beatMotifs[bKey].push({ note: clampedNote, groupId, seqIndex: i, seqLen: totalEvents });
+              added++;
+            }
           }
         }
         layer.activeMotif = motifGroup;

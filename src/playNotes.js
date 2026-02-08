@@ -23,7 +23,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const layer = LM.layers[LM.activeLayer];
   try {
     // Gate play invocation with playProb and crossModulation
-    if (typeof playProb === 'number' && !( playProb > rf() ) && crossModulation < rv(rf(1.8, 2.2), [-.2, -.3], .05)) {
+    if (typeof playProb === 'number' && (rf() > playProb) && (crossModulation < rv(rf(2, 4), [-.2, -.3], .05))) {
       return trackRhythm(unit, layer, false);
     }
 

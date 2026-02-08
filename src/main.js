@@ -74,6 +74,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
+    // Clean layer state at phrase boundary to prevent state bleeding
+    playMotifs.resetLayerState(L1);
     LM.advance('L1', 'phrase');
 
     LM.activate('L2', true);
@@ -124,6 +126,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       }
     }
 
+    // Clean layer state at phrase boundary to prevent state bleeding
+    playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
   }
 
