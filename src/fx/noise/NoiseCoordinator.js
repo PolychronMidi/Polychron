@@ -100,16 +100,54 @@ applyDualAxisNoise = function(config, x, y, time) {
   return { x: noiseX, y: noiseY };
 };
 
-// Smooth noise value integration with lerping (prevents sudden jumps)
-smoothNoiseValue = function(currentValue, targetNoise, deltaTime, smoothing = 0.7) {
-  const lerpAmount = deltaTime * smoothing;
-  return currentValue + (targetNoise - currentValue) * lerpAmount;
+// Clamp noise values to 0-1 range
+clampNoiseValue = function(value) {
+  return m.max(0, m.min(1, value));
 };
 
-// Register additional noise generator at runtime
+// Cache generatorKeys to avoid repeated Object.keys() calls
+generatorKeys = Object.keys(noiseGenerators);
+
+// Get random generator name from registry (optimized with cached keys)
+randomNoiseGenerator = function() {
+  return generatorKeys[ri(0, generatorKeys.length - 1)];
+};
+
+// Register additional noise generator at runtime (updates cache)
 registerNoiseGenerator = function(name, generatorFunc) {
   if (noiseGenerators[name]) {
     throw new Error(`Noise generator '${name}' already registered`);
   }
   noiseGenerators[name] = generatorFunc;
+  generatorKeys = Object.keys(noiseGenerators);
+};
+
+// Apply noise with automatic clamping (safe integration API)
+safeApplyNoise = function(config, x, y, time) {
+  const noise = applyDualAxisNoise(config, x, y, time);
+  return {
+    x: clampNoiseValue(noise.x),
+    y: clampNoiseValue(noise.y)
+  };
+};
+
+// One-shot unified modulation call (typical integration pattern)
+// Returns {x, y} values 0-1 for parameter modulation
+getParameterModulation = function(voiceId, paramKey, time, generatorName = randomNoiseGenerator()) {
+  const seed = voiceId * 73 + paramKey.length * 43; // deterministic seed from voice+param
+  const offsetX = rf(-1000, 1000) + seed;
+  const offsetY = rf(-1000, 1000) + seed * 2;
+  return {
+    x: clampNoiseValue(layeredNoise(generatorName, offsetX, offsetY, time, 0.01, 0.1)),
+    y: clampNoiseValue(layeredNoise(generatorName, offsetY, offsetX, time, 0.01, 0.1)),
+    generator: generatorName
+  };
+};
+
+
+
+// Smooth noise value integration with lerping (prevents sudden jumps)
+smoothNoiseValue = function(currentValue, targetNoise, deltaTime, smoothing = 0.7) {
+  const lerpAmount = deltaTime * smoothing;
+  return currentValue + (targetNoise - currentValue) * lerpAmount;
 };

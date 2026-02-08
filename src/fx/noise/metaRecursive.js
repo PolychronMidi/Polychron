@@ -3,21 +3,21 @@
 easeInOut = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
 easingFunctions = [
-  (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, // easeInOutCubic
+  (t) => t < 0.5 ? 4 * t * t * t : 1 - m.pow(-2 * t + 2, 3) / 2, // easeInOutCubic
   (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t, // easeInOutQuad
-  (t) => t < 0.5 ? (1 - Math.sqrt(1 - 4 * t * t)) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2, // easeInOutCirc
-  (t) => -(Math.cos(Math.PI * t) - 1) / 2, // easeInOutSine
+  (t) => t < 0.5 ? (1 - m.sqrt(1 - 4 * t * t)) / 2 : (m.sqrt(1 - m.pow(-2 * t + 2, 2)) + 1) / 2, // easeInOutCirc
+  (t) => -(m.cos(m.PI * t) - 1) / 2, // easeInOutSine
   // easeInOutExpo
   (t) => t === 0 ? 0 : t === 1 ? 1 :
-    t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 :
-    (2 - Math.pow(2, -20 * t + 10)) / 2,
+    t < 0.5 ? m.pow(2, 20 * t - 10) / 2 :
+    (2 - m.pow(2, -20 * t + 10)) / 2,
   // easeInOutElastic
   (t) => {
-    const c5 = (2 * Math.PI) / 4.5;
+    const c5 = (2 * m.PI) / 4.5;
     return t === 0 ? 0 : t === 1 ? 1 :
       t < 0.5 ?
-        -(Math.pow(2, 20 * t - 10) * Math.sin((t * 2 - 1.075) * c5)) / 2 :
-        (Math.pow(2, -20 * t + 10) * Math.sin((t * 2 - 0.075) * c5)) / 2 + 1;
+        -(m.pow(2, 20 * t - 10) * m.sin((t * 2 - 1.075) * c5)) / 2 :
+        (m.pow(2, -20 * t + 10) * m.sin((t * 2 - 0.075) * c5)) / 2 + 1;
   },
 ];
 

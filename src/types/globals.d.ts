@@ -301,6 +301,7 @@ declare var perlinNoise: any;
 // Noise coordinator
 declare var defaultSimplex: any;
 declare var noiseGenerators: any;
+declare var generatorKeys: any;
 declare var getNoiseValue: any;
 declare var layeredNoise: any;
 declare var createNoiseOffset: any;
@@ -308,8 +309,13 @@ declare var randomNoiseGenerator: any;
 declare var noiseInfluenceMap: any;
 declare var createDualAxisNoiseConfig: any;
 declare var applyDualAxisNoise: any;
+declare var safeApplyNoise: any;
+declare var clampNoiseValue: any;
+declare var getParameterModulation: any;
 declare var smoothNoiseValue: any;
+declare var getNoiseProfile: any;
 declare var registerNoiseGenerator: any;
+declare const NOISE_PROFILES: any;
 
 declare var OCTAVE: any;
 
