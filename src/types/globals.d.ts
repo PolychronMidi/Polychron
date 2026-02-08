@@ -279,6 +279,22 @@ declare var Stutter: any;
 declare var setBalanceAndFX: any;
 declare var setBinaural: any;
 
+// Noise functions
+declare var SimplexNoise: any;
+declare var fbm: any;
+declare var turbulence: any;
+declare var worley: any;
+declare var easeInOut: any;
+declare var easingFunctions: any;
+declare var noiseFunctions: any;
+declare var metaRecursiveEaseNoise: any;
+declare var metaRecursiveNoise: any;
+declare var permutation: any;
+declare var fade: any;
+declare var lerp: any;
+declare var grad: any;
+declare var perlinNoise: any;
+
 declare var OCTAVE: any;
 
 // Audio helpers / state
