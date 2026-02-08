@@ -24,7 +24,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     const rightBoundary = edgeMargin + 2 * centerZone;
 
     // Use dramatic noise profile for pan movement (creates interesting flutter)
-    const noiseProfile = typeof getNoiseProfile === 'function' ? getNoiseProfile('dramatic') : null;
+    const noiseProfile = getNoiseProfile('dramatic');
 
     let currentPan = edgeMargin;
     let direction = 1;
@@ -39,16 +39,10 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
-      if (noiseProfile && typeof getParameterModulation === 'function') {
-        try {
-          const mod = getParameterModulation(channelToStutter, 'pan', tick);
-          // Y axis controls pan flutter - add oscillation on top of movement
-          const flutterAmount = (mod.y - 0.5) * 2 * fullRange * 0.3 * noiseProfile.influenceY;
-          basePanDelta += flutterAmount;
-        } catch (e) {
-          // Silently continue if noise fails
-        }
-      }
+      const mod = getParameterModulation(channelToStutter, 'pan', tick);
+      // Y axis controls pan flutter - add oscillation on top of movement
+      const flutterAmount = (mod.y - 0.5) * 2 * fullRange * 0.3 * noiseProfile.influenceY;
+      basePanDelta += flutterAmount;
 
       currentPan += basePanDelta;
       currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);

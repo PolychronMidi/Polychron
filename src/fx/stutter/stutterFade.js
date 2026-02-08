@@ -21,7 +21,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
     const isFadeIn = rf() < 0.5;
 
     // Use moderate noise profile for stutter fades (more interesting than subtle)
-    const noiseProfile = typeof getNoiseProfile === 'function' ? getNoiseProfile('moderate') : null;
+    const noiseProfile = getNoiseProfile('moderate');
 
     let tick, volume;
 
@@ -37,19 +37,11 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       }
 
       // Apply noise modulation to fade curve
-      if (noiseProfile && typeof getParameterModulation === 'function') {
-        try {
-          const mod = getParameterModulation(channelToStutter, 'fade', tick);
-          // Modulate volume by noise influence
-          // Use X axis for volume variation, scale by profile influence
-          const noiseVariation = (mod.x - 0.5) * 2 * maxVol * noiseProfile.influenceX;
-          volume = modClamp(m.floor(baseVolume + noiseVariation), 25, maxVol);
-        } catch (e) {
-          volume = modClamp(baseVolume, 25, maxVol);
-        }
-      } else {
-        volume = modClamp(baseVolume, 25, maxVol);
-      }
+      const mod = getParameterModulation(channelToStutter, 'fade', tick);
+      // Modulate volume by noise influence
+      // Use X axis for volume variation, scale by profile influence
+      const noiseVariation = (mod.x - 0.5) * 2 * maxVol * noiseProfile.influenceX;
+      volume = modClamp(m.floor(baseVolume + noiseVariation), 25, maxVol);
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
