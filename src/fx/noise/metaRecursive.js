@@ -22,7 +22,7 @@ easingFunctions = [
 ];
 
 // Perlin noise implementation
-permutation = [...Array(256)].map(() => Math.floor(Math.random() * 256));
+permutation = [...Array(256)].map(() => ri(0, 255));
 p = [...permutation, ...permutation];
 
 fade = function(t) {
@@ -40,39 +40,67 @@ grad = function(hash, x) {
 };
 
 perlinNoise = function(x) {
-  const X = Math.floor(x) & 255;
-  x -= Math.floor(x);
+  const X = m.floor(x) & 255;
+  x -= m.floor(x);
   const u = fade(x);
   return lerp(u, grad(p[X], x), grad(p[X+1], x-1));
 };
 
 noiseFunctions = [
   (x) => perlinNoise(x),
-  (x) => Math.sin(x * 10) * 0.5 + 0.5, // Sine wave noise
-  (x) => Math.exp(-Math.pow(x - 0.5, 2) / 0.05), // Gaussian curve
-  (x) => Math.pow(Math.sin(x * Math.PI), 3), // Cubic sine wave
+  (x) => m.sin(x * 10) * 0.5 + 0.5, // Sine wave noise
+  (x) => m.exp(-m.pow(x - 0.5, 2) / 0.05), // Gaussian curve
+  (x) => m.pow(m.sin(x * m.PI), 3), // Cubic sine wave
 ];
 
-metaRecursiveEaseNoise = function(t, depth = 0, maxDepth = Math.ceil(Math.random() * 300) + 33) {
+metaRecursiveEaseNoise = function(t, depth = 0, maxDepth = ri(34, 333)) {
   if (depth >= maxDepth) {
-    const randomEase = easingFunctions[Math.floor(Math.random() * easingFunctions.length)];
+    const randomEase = easingFunctions[ri(0, easingFunctions.length - 1)];
     return randomEase(t);
   }
-  const randomEase = easingFunctions[Math.floor(Math.random() * easingFunctions.length)];
-  const randomNoise = noiseFunctions[Math.floor(Math.random() * noiseFunctions.length)];
-  const noiseScale = Math.random();
+  const randomEase = easingFunctions[ri(0, easingFunctions.length - 1)];
+  const randomNoise = noiseFunctions[ri(0, noiseFunctions.length - 1)];
+  const noiseScale = rf();
   const noiseAmplitude = noiseScale / rf(1.5,2.5);
   const easedT = randomEase(t);
   const noiseValue = metaRecursiveNoise(t * noiseScale, depth + 1, maxDepth, randomNoise) * noiseAmplitude;
-  return Math.max(0, Math.min(1, easedT + noiseValue));
+  return m.max(0, m.min(1, easedT + noiseValue));
 };
 
 metaRecursiveNoise = function(x, depth = 0, maxDepth = ri(33,111), noiseFunc) {
   if (depth >= maxDepth) {
     return noiseFunc(x);
   }
-  const X = Math.floor(x) & 255;
-  x -= Math.floor(x);
+  const X = m.floor(x) & 255;
+  x -= m.floor(x);
   const u = metaRecursiveEaseNoise(fade(x), depth + 1, maxDepth);
   return lerp(u, grad(p[X], x), grad(p[X+1], x-1));
+};
+
+// Meta-recursive 2D using SimplexNoise - combines easing with simplex at multiple scales
+metaRecursiveSimplex2D = function(x, y, simplexInstance, depth = 0, maxDepth = ri(33, 111)) {
+  if (depth >= maxDepth) {
+    return simplexInstance.noise(x, y);
+  }
+  const randomEase = easingFunctions[ri(0, easingFunctions.length - 1)];
+  const noiseScale = rf(0.5, 2.5);
+  const amplitude = rf(0.3, 0.7);
+  const easedX = randomEase((x * noiseScale) % 1);
+  const easedY = randomEase((y * noiseScale) % 1);
+  return simplexInstance.noise(easedX, easedY) * (1 - amplitude) +
+         metaRecursiveSimplex2D(x * noiseScale, y * noiseScale, simplexInstance, depth + 1, maxDepth) * amplitude;
+};
+
+// Meta-recursive FBM - recursively varies octave count and parameters
+metaRecursiveFBM = function(x, y, simplexInstance, depth = 0, maxDepth = ri(20, 60)) {
+  if (depth >= maxDepth) {
+    return simplexInstance.noise(x, y);
+  }
+  const octaves = ri(2, 6);
+  const persistence = rf(0.3, 0.7);
+  const lacunarity = rf(1.8, 2.5);
+  const scale = rf(1.5, 2.5);
+  const mix = rf(0.2, 0.5);
+  return fbm(simplexInstance, x, y, octaves, persistence, lacunarity) * (1 - mix) +
+         metaRecursiveFBM(x * scale, y * scale, simplexInstance, depth + 1, maxDepth) * mix;
 };

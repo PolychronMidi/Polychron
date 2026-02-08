@@ -283,17 +283,33 @@ declare var setBinaural: any;
 declare var SimplexNoise: any;
 declare var fbm: any;
 declare var turbulence: any;
+declare var ridged: any;
 declare var worley: any;
 declare var easeInOut: any;
 declare var easingFunctions: any;
 declare var noiseFunctions: any;
 declare var metaRecursiveEaseNoise: any;
 declare var metaRecursiveNoise: any;
+declare var metaRecursiveSimplex2D: any;
+declare var metaRecursiveFBM: any;
 declare var permutation: any;
 declare var fade: any;
 declare var lerp: any;
 declare var grad: any;
 declare var perlinNoise: any;
+
+// Noise coordinator
+declare var defaultSimplex: any;
+declare var noiseGenerators: any;
+declare var getNoiseValue: any;
+declare var layeredNoise: any;
+declare var createNoiseOffset: any;
+declare var randomNoiseGenerator: any;
+declare var noiseInfluenceMap: any;
+declare var createDualAxisNoiseConfig: any;
+declare var applyDualAxisNoise: any;
+declare var smoothNoiseValue: any;
+declare var registerNoiseGenerator: any;
 
 declare var OCTAVE: any;
 

@@ -3,3 +3,5 @@
 require('./metaRecursive');
 // @ts-ignore: load side-effect module with globals
 require('./SimplexNoise');
+// @ts-ignore: load side-effect module with globals
+require('./NoiseCoordinator');
