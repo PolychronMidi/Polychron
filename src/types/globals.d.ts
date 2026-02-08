@@ -115,6 +115,9 @@ declare var SUBSUBDIVISIONS: any;
 declare var VOICES: any;
 declare var OCTAVE: any;
 declare var COMPOSER_TYPES: any;
+declare var DYNAMISM: any;
+declare var STUTTER_PROBABILITIES: any;
+declare var STUTTER_PROFILES: any;
 
 // Instruments & MIDI
 declare var primaryInstrument: any;

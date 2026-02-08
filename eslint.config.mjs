@@ -297,6 +297,9 @@ export default [
         SUBSUBDIVS: 'readonly',
         COMPOSERS: 'readonly',
         SECTIONS: 'readonly',
+        DYNAMISM: 'readonly',
+        STUTTER_PROBABILITIES: 'readonly',
+        STUTTER_PROFILES: 'readonly',
         // Audio channels (left/right pairs)
         lCH1: 'writable',
         rCH1: 'writable',

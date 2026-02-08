@@ -41,10 +41,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
         : { dynamism: 0.7, atStart: false, atEnd: false };
 
-      // Scale play/stutter probabilities by dynamism (0.75-1.25 range)
-      const dynScale = 0.75 + phraseCtx.dynamism * 0.5;
-      const basePlayProb = phraseCtx.atStart ? 0.15 : 0.2; // Slightly sparse at phrase start
-      const baseStutterProb = phraseCtx.atEnd ? 0.4 : 0.2; // More stutter at phrase end
+      // Scale play/stutter probabilities by dynamism
+      const dynScale = DYNAMISM.scaleBase + phraseCtx.dynamism * DYNAMISM.scaleRange;
+      const basePlayProb = phraseCtx.atStart ? DYNAMISM.playProb.start : DYNAMISM.playProb.mid;
+      const baseStutterProb = phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid;
       const playProb = basePlayProb * dynScale;
       const stutterProb = baseStutterProb * dynScale;
 
@@ -91,9 +91,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
         : { dynamism: 0.7, atStart: false, atEnd: false };
 
-      const dynScale = 0.75 + phraseCtx.dynamism * 0.5;
-      const basePlayProb = phraseCtx.atStart ? 0.15 : 0.2;
-      const baseStutterProb = phraseCtx.atEnd ? 0.4 : 0.2;
+      const dynScale = DYNAMISM.scaleBase + phraseCtx.dynamism * DYNAMISM.scaleRange;
+      const basePlayProb = phraseCtx.atStart ? DYNAMISM.playProb.start : DYNAMISM.playProb.mid;
+      const baseStutterProb = phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid;
       const playProb = basePlayProb * dynScale;
       const stutterProb = baseStutterProb * dynScale;
 
