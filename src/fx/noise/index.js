@@ -4,6 +4,10 @@ require('./metaRecursive');
 // @ts-ignore: load side-effect module with globals
 require('./SimplexNoise');
 // @ts-ignore: load side-effect module with globals
+require('./NoiseRegistry');
+// @ts-ignore: load side-effect module with globals
+require('./NoiseValues');
+// @ts-ignore: load side-effect module with globals
 require('./NoiseManager');
 // @ts-ignore: load side-effect module with globals
 require('./noiseConfig');
