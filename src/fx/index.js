@@ -25,3 +25,5 @@ try {
 // Note: noteCascade is removed; scheduling is now handled by StutterManager.scheduleStutterForUnit
 // @ts-ignore: load side-effect module with globals
 require('./StutterManager');
+// @ts-ignore: load side-effect module with globals
+require('./noise');
