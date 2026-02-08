@@ -87,6 +87,33 @@ STUTTER_VELOCITY_RANGES = {
   bass: { primary: [0.55, 0.85], secondary: [0.75, 1.05] }
 };
 
+NOISE_PROFILES = {
+  subtle: {
+    generatorX: 'simplex',
+    generatorY: 'perlin',
+    influenceX: 0.15,
+    influenceY: 0.12
+  },
+  moderate: {
+    generatorX: null,
+    generatorY: null,
+    influenceX: null,
+    influenceY: null
+  },
+  dramatic: {
+    generatorX: ['fbm', 'turbulence', 'metaSimplex2D'],
+    generatorY: ['metaFBM', 'worley', 'ridged'],
+    influenceX: { min: 0.6, max: 0.95 },
+    influenceY: { min: 0.6, max: 0.95 }
+  },
+  chaotic: {
+    generatorX: null,
+    generatorY: null,
+    influenceX: { min: 0.8, max: 1.0 },
+    influenceY: { min: 0.8, max: 1.0 }
+  }
+};
+
 VOICE_COORDINATOR = {
   voiceIndependenceDefault: 0.5, // 0-1 scale (contrapuntal vs homophonic)
   arcDensityChance: 0.5,         // Probability of applying arc density multiplier

@@ -1,8 +1,8 @@
 // SimplexNoise.js - Simplex noise implementation with supporting noise functions
 
 // Simplex noise constants
-const F2 = 0.5 * (Math.sqrt(3) - 1);
-const G2 = (3 - Math.sqrt(3)) / 6;
+const F2 = 0.5 * (m.sqrt(3) - 1);
+const G2 = (3 - m.sqrt(3)) / 6;
 const grad3 = [
   [1, 1, 0], [-1, 1, 0], [1, -1, 0], [-1, -1, 0],
   [1, 0, 1], [-1, 0, 1], [1, 0, -1], [-1, 0, -1],

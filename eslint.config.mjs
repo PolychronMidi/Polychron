@@ -301,6 +301,7 @@ export default [
         STUTTER_PROBABILITIES: 'readonly',
         STUTTER_PROFILES: 'readonly',
         STUTTER_VELOCITY_RANGES: 'readonly',
+        NOISE_PROFILES: 'readonly',
         VOICE_COORDINATOR: 'readonly',
         // Audio channels (left/right pairs)
         lCH1: 'writable',
@@ -474,6 +475,7 @@ export default [
         // Noise coordinator
         defaultSimplex: 'writable',
         noiseGenerators: 'writable',
+        generatorKeys: 'writable',
         getNoiseValue: 'writable',
         layeredNoise: 'writable',
         createNoiseOffset: 'writable',
@@ -481,7 +483,11 @@ export default [
         noiseInfluenceMap: 'writable',
         createDualAxisNoiseConfig: 'writable',
         applyDualAxisNoise: 'writable',
+        safeApplyNoise: 'writable',
+        clampNoiseValue: 'writable',
+        getParameterModulation: 'writable',
         smoothNoiseValue: 'writable',
+        getNoiseProfile: 'writable',
         registerNoiseGenerator: 'writable',
         resetChannelTracking: 'writable',
         playSubdivNotes: 'writable',

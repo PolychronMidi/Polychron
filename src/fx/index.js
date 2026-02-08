@@ -27,3 +27,5 @@ try {
 require('./StutterManager');
 // @ts-ignore: load side-effect module with globals
 require('./noise');
+// @ts-ignore: load side-effect module with globals
+require('./noiseConfig');
