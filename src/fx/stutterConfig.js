@@ -76,6 +76,14 @@ function getProfileConfig(profile = 'source') {
   validateConfig();
   return config.profiles[profile] || config.profiles.source;
 }
+function getVelocityRange(profile = 'source', isPrimary = true) {
+  if (!STUTTER_VELOCITY_RANGES) {
+    console.error('[StutterConfig] STUTTER_VELOCITY_RANGES global not found.');
+    process.exit(1);
+  }
+  const ranges = STUTTER_VELOCITY_RANGES[profile] || STUTTER_VELOCITY_RANGES.source;
+  return isPrimary ? ranges.primary : ranges.secondary;
+}
 
 // Metrics API
 function getMetrics() {
@@ -120,6 +128,7 @@ StutterConfig = {
   setConfig,
   validateConfig,
   getProfileConfig,
+  getVelocityRange,
   getMetrics,
   resetMetrics,
   incScheduled,

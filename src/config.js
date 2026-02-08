@@ -81,7 +81,18 @@ STUTTER_PROFILES={
   reflection: { perProb: 0.2, shiftProb: 0.7 },
   bass: { perProb: 0.7, shiftProb: 0.5 }
 };
-COMPOSERS=[
+STUTTER_VELOCITY_RANGES = {
+  source: { primary: [0.3, 0.7], secondary: [0.45, 0.8] },
+  reflection: { primary: [0.25, 0.65], secondary: [0.4, 0.75] },
+  bass: { primary: [0.55, 0.85], secondary: [0.75, 1.05] }
+};
+
+VOICE_COORDINATOR = {
+  voiceIndependenceDefault: 0.5, // 0-1 scale (contrapuntal vs homophonic)
+  arcDensityChance: 0.5,         // Probability of applying arc density multiplier
+  arcRegisterBiasChance: 0.3,    // Probability of applying arc register bias
+  arcRegisterBiasThreshold: 5    // Minimum semitone shift to trigger arc bias
+};COMPOSERS=[
   { type: 'scale', name: 'major', root: 'C' },
   { type: 'chords', progression: ['Cmaj7','Dm','G','Cmaj7'] },
   { type: 'mode', name: 'ionian', root: 'C' },

@@ -20,7 +20,8 @@
 
 ## Build & Test ✅
 - Key commands (agents should call these automatically):
-  - `npm run main` - THIS IS THE ONLY SCRIPT ALLOWED TO BE CALLED BY AGENTS TO RUN THE PROJECT (it includes necessary setup and logging)
+  - `npm run main` - THIS IS THE ONE AND ONLY SCRIPT ALLOWED TO BE CALLED BY AGENTS TO RUN THE PROJECT (it includes necessary setup and logging)
+  - LET COMMANDS FINISH BEFORE MOVING ON - do not skip forward until the terminal output clearly states the script exited.
 
 ## Project Conventions 📌
 - Naked globals are intentional and centralized: when adding new globals, prefer a single side-effect module to define them and document the usage in `eslint.config.mjs` (update globals list only when necessary).

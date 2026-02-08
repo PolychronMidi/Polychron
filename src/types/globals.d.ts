@@ -118,6 +118,8 @@ declare var COMPOSER_TYPES: any;
 declare var DYNAMISM: any;
 declare var STUTTER_PROBABILITIES: any;
 declare var STUTTER_PROFILES: any;
+declare var STUTTER_VELOCITY_RANGES: any;
+declare var VOICE_COORDINATOR: any;
 
 // Instruments & MIDI
 declare var primaryInstrument: any;

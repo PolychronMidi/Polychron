@@ -147,9 +147,11 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       const shiftProb = profileCfg.shiftProb;
       const shiftRange = isBass ? 2 : 3;
       const fireProb = isSource ? .6 : (isReflection ? .5 : .3);
-      const velRanges = isSource
-        ? (isPrimary ? [0.3, 0.7] : [0.45, 0.8])
-        : (isReflection ? (isPrimary ? [0.25, 0.65] : [0.4, 0.75]) : (isPrimary ? [0.55, 0.85] : [0.75, 1.05]));
+      const velRanges = (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.getVelocityRange)
+        ? StutterConfig.getVelocityRange(profile, isPrimary)
+        : (isSource
+          ? (isPrimary ? [0.3, 0.7] : [0.45, 0.8])
+          : (isReflection ? (isPrimary ? [0.25, 0.65] : [0.4, 0.75]) : (isPrimary ? [0.55, 0.85] : [0.75, 1.05])));
 
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;

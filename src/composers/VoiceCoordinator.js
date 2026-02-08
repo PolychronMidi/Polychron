@@ -92,12 +92,12 @@ VoiceCoordinator = class VoiceCoordinator {
     const phraseContext = opts.phraseContext || {};
     const arcRegisterBias = phraseContext.registerBias || 0; // Semitones to shift register
     const arcDensityMultiplier = phraseContext.densityMultiplier || 1.0;
-    const voiceIndependence = phraseContext.voiceIndependence || 0.5; // 0-1 scale (contrapuntal vs homophonic)
+    const voiceIndependence = phraseContext.voiceIndependence || VOICE_COORDINATOR.voiceIndependenceDefault;
 
     // Apply voice count multiplier: stack chord change emphasis with phrase arc density
-    // But only apply arc density influence probabilistically (50% of the time) to maintain variety
+    // But only apply arc density influence probabilistically to maintain variety
     const voiceCountMultiplier = opts.voiceCountMultiplier ?? 1.0;
-    const shouldApplyArcDensity = rf() < 0.5; // 50% chance
+    const shouldApplyArcDensity = rf() < VOICE_COORDINATOR.arcDensityChance;
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
     const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * combinedMultiplier));
@@ -109,8 +109,8 @@ VoiceCoordinator = class VoiceCoordinator {
 
     // Arc-based register bias: if arc suggests upward/downward trajectory, apply as preference
     // Positive arcRegisterBias (+semitones) suggests higher register, negative suggests lower
-    // Only apply arc bias probabilistically (30% of time) and with higher threshold to preserve variety
-    if (!finalRegisterBias && Math.abs(arcRegisterBias) > 5 && rf() < 0.3) { // Stricter threshold + probabilistic
+    // Only apply arc bias probabilistically with threshold to preserve variety
+    if (!finalRegisterBias && Math.abs(arcRegisterBias) > VOICE_COORDINATOR.arcRegisterBiasThreshold && rf() < VOICE_COORDINATOR.arcRegisterBiasChance) {
       finalRegisterBias = arcRegisterBias > 0 ? 'higher' : 'lower';
     }
 
