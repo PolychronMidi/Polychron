@@ -135,7 +135,7 @@ VoiceCoordinator = class VoiceCoordinator {
 
     // SAFETY CHECK: If notePool is empty after all processing, this is a critical error
     if (notePool.length === 0) {
-      console.error('pickNotesForBeat has empty notePool after filtering! - candidateNotes length: ${candidateNotes.length} - normalizedNotes length: ${normalized.notes.length} - registerBias: ${finalRegisterBias} - maxVoices: ${maxVoices}`);
+      console.error(`pickNotesForBeat has empty notePool after filtering! - candidateNotes length: ${candidateNotes.length} - normalizedNotes length: ${normalized.notes.length} - registerBias: ${finalRegisterBias} - maxVoices: ${maxVoices}`);
       throw new Error('pickNotesForBeat produced empty notePool - check register bias filtering');
     }
 
