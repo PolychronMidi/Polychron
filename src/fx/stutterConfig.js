@@ -1,12 +1,16 @@
 // stutterConfig.js - shared config, metrics and helper registration for stutter system
 
-// Default tuning configuration
+// Default tuning configuration (sourced from config.js globals)
+if (typeof STUTTER_PROBABILITIES === 'undefined' || typeof STUTTER_PROFILES === 'undefined') {
+  console.error('stutterConfig.js: missing STUTTER_PROBABILITIES or STUTTER_PROFILES globals');
+  process.exit(1);
+}
+const DEFAULT_PROBABILITIES = STUTTER_PROBABILITIES;
+const DEFAULT_PROFILES = STUTTER_PROFILES;
+
 const config = {
-  probabilities: {
-    globalApplyProb: 0.2,
-    perProb: { source: 0.07, reflection: 0.2, bass: 0.7 },
-    shiftProb: { source: 0.15, reflection: 0.7, bass: 0.5 }
-  }
+  probabilities: Object.assign({}, DEFAULT_PROBABILITIES),
+  profiles: Object.assign({}, DEFAULT_PROFILES)
 };
 
 // Simple debug flag controlled by env
@@ -37,8 +41,41 @@ function registerHelper(fn) {
 function getHelper() { return _registeredHelper; }
 
 // Config API
-function getConfig() { return config; }
-function setConfig(partial = {}) { Object.assign(config, partial); return config; }
+function _clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+function validateConfig() {
+  if (!config.probabilities) config.probabilities = Object.assign({}, DEFAULT_PROBABILITIES);
+  if (!config.profiles) config.profiles = Object.assign({}, DEFAULT_PROFILES);
+
+  if (typeof config.probabilities.globalApplyProb !== 'number') config.probabilities.globalApplyProb = 0.2;
+  config.probabilities.globalApplyProb = _clamp01(config.probabilities.globalApplyProb);
+
+  const profiles = ['source', 'reflection', 'bass'];
+  for (const prof of profiles) {
+    const fallback = (config.probabilities.perProb && Number.isFinite(config.probabilities.perProb[prof]))
+      ? config.probabilities.perProb[prof]
+      : 0;
+    const fallbackShift = (config.probabilities.shiftProb && Number.isFinite(config.probabilities.shiftProb[prof]))
+      ? config.probabilities.shiftProb[prof]
+      : 0;
+
+    if (!config.profiles[prof]) config.profiles[prof] = { perProb: fallback, shiftProb: fallbackShift };
+    if (typeof config.profiles[prof].perProb !== 'number') config.profiles[prof].perProb = fallback;
+    if (typeof config.profiles[prof].shiftProb !== 'number') config.profiles[prof].shiftProb = fallbackShift;
+    config.profiles[prof].perProb = _clamp01(config.profiles[prof].perProb);
+    config.profiles[prof].shiftProb = _clamp01(config.profiles[prof].shiftProb);
+  }
+
+  return config;
+}
+function getConfig() { return validateConfig(); }
+function setConfig(partial = {}) { Object.assign(config, partial); return validateConfig(); }
+function getProfileConfig(profile = 'source') {
+  validateConfig();
+  return config.profiles[profile] || config.profiles.source;
+}
 
 // Metrics API
 function getMetrics() {
@@ -81,6 +118,8 @@ function decPendingForTick(tick, n = 1) {
 StutterConfig = {
   getConfig,
   setConfig,
+  validateConfig,
+  getProfileConfig,
   getMetrics,
   resetMetrics,
   incScheduled,

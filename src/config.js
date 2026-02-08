@@ -65,6 +65,22 @@ SUBSUBDIVS={
   max: 15,
   weights: [5,20,30,20,3,5,1,1,1,1]
 };
+DYNAMISM={
+  scaleBase: 0.75,
+  scaleRange: 0.5,
+  playProb: { start: 0.15, mid: 0.2 },
+  stutterProb: { end: 0.4, mid: 0.2 }
+};
+STUTTER_PROBABILITIES={
+  globalApplyProb: 0.2,
+  perProb: { source: 0.07, reflection: 0.2, bass: 0.7 },
+  shiftProb: { source: 0.15, reflection: 0.7, bass: 0.5 }
+};
+STUTTER_PROFILES={
+  source: { perProb: 0.07, shiftProb: 0.15 },
+  reflection: { perProb: 0.2, shiftProb: 0.7 },
+  bass: { perProb: 0.7, shiftProb: 0.5 }
+};
 COMPOSERS=[
   { type: 'scale', name: 'major', root: 'C' },
   { type: 'chords', progression: ['Cmaj7','Dm','G','Cmaj7'] },

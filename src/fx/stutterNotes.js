@@ -67,9 +67,21 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     const shifts = localShared.shifts;
     const globalState = localShared.global;
 
+    // Reset per-channel octave shifts when the beat index changes
+    const currentBeatIndex = (typeof beatIndex !== 'undefined') ? beatIndex : null;
+    if (globalState._lastBeatIndex !== currentBeatIndex) {
+      shifts.clear();
+      globalState._lastBeatIndex = currentBeatIndex;
+    }
+
     const isSource = profile === 'source';
     const isReflection = profile === 'reflection';
     const isBass = profile === 'bass';
+
+    // Get profile-specific config from centralized StutterConfig
+    const profileCfg = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
+      ? StutterConfig.getProfileConfig(profile)
+      : { perProb: 0.2, shiftProb: 0.5 }; // Fallback if config unavailable
 
     // Local wrapper uses module-scope helper for performance; falls back to injected modClamp if provided
     const clampStutterNote = (n) => {
@@ -107,10 +119,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         let currentVelocity;
         if (isFadeIn) {
           const fadeInMultiplier = decay * (i / (numStutters * rf(0.4, 2.2) - 1));
-          currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 100);
+          currentVelocity = clamp(minVelocity + (maxVelocity - minVelocity) * fadeInMultiplier, 0, 127);
         } else {
           const fadeOutMultiplier = 1 - (decay * (i / (numStutters * rf(0.4, 2.2) - 1)));
-          currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 100);
+          currentVelocity = clamp(minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier, 0, 127);
         }
 
         const ev1 = { tick: tick + duration * rf(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rf(.3, .7) : currentVelocity * rf(.45, .8)] };
@@ -122,7 +134,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     }
 
     // Per-channel stutter (source/reflection/bass)
-    const perProb = isSource ? rv(.07, [.5, 1], .2) : (isReflection ? .2 : .7);
+    const perProb = isSource ? rv(profileCfg.perProb, [.5, 1], .2) : profileCfg.perProb;
     if (rf() < perProb) {
       if (!stutters.has(channel)) {
         if (isSource) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
@@ -132,7 +144,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
       const numStutters = stutters.get(channel);
       const duration = .25 * ri(1, isSource ? 5 : 8) * sustain / numStutters;
-      const shiftProb = isSource ? .15 : (isReflection ? .7 : .5);
+      const shiftProb = profileCfg.shiftProb;
       const shiftRange = isBass ? 2 : 3;
       const fireProb = isSource ? .6 : (isReflection ? .5 : .3);
       const velRanges = isSource
