@@ -10,10 +10,10 @@ const grad3 = [
 ];
 
 SimplexNoise = class {
-  constructor(seed = Math.random()) {
+  constructor(seed = rf()) {
     this.p = new Uint8Array(256);
     for (let i = 0; i < 256; i++) {
-      this.p[i] = Math.floor(seed * 256);
+      this.p[i] = m.floor(seed * 256);
       seed = (seed * 9301 + 49297) % 233280 / 233280;
     }
     this.perm = new Uint8Array(512);
@@ -26,13 +26,15 @@ SimplexNoise = class {
     return g[0] * x + g[1] * y;
   }
 
+  noise1D(xin) {
+    return this.noise(xin, xin);
+  }
+
   noise(xin, yin) {
-    xin = Math.round(xin * 1000) / 1000;
-    yin = Math.round(yin * 1000) / 1000;
     let n0, n1, n2;
     let s = (xin + yin) * F2;
-    let i = Math.floor(xin + s);
-    let j = Math.floor(yin + s);
+    let i = m.floor(xin + s);
+    let j = m.floor(yin + s);
     let t = (i + j) * G2;
     let X0 = i - t;
     let Y0 = j - t;
@@ -94,10 +96,26 @@ turbulence = function(simplexInstance, x, y, octaves = 4) {
   return value;
 };
 
+// Ridged Multifractal - sharp ridges for terrain/dramatic effects
+ridged = function(simplexInstance, x, y, octaves = 4, persistence = 0.5, lacunarity = 2) {
+  let value = 0;
+  let amplitude = 1;
+  let frequency = 1;
+  let maxValue = 0;
+  for (let i = 0; i < octaves; i++) {
+    const sample = 1 - m.abs(simplexInstance.noise(x * frequency, y * frequency));
+    value += amplitude * sample * sample;
+    maxValue += amplitude;
+    amplitude *= persistence;
+    frequency *= lacunarity;
+  }
+  return value / maxValue;
+};
+
 // Worley Noise (Cellular Noise) - creates organic cellular patterns
 worley = function(x, y, cellCount = 4) {
-  const cellX = Math.floor(x * cellCount);
-  const cellY = Math.floor(y * cellCount);
+  const cellX = m.floor(x * cellCount);
+  const cellY = m.floor(y * cellCount);
   const fracX = x * cellCount - cellX;
   const fracY = y * cellCount - cellY;
   let minDist = Infinity;
@@ -106,13 +124,13 @@ worley = function(x, y, cellCount = 4) {
       const nx = cellX + dx;
       const ny = cellY + dy;
       // Pseudo-random point in cell using hash function
-      const hashX = Math.sin(nx * 73.156 + ny * 94.673) * 43758.5453;
-      const hashY = Math.sin(nx * 45.164 + ny * 94.673) * 43758.5453;
-      const px = (hashX - Math.floor(hashX)) + dx - fracX;
-      const py = (hashY - Math.floor(hashY)) + dy - fracY;
-      const dist = Math.sqrt(px * px + py * py);
+      const hashX = m.sin(nx * 73.156 + ny * 94.673) * 43758.5453;
+      const hashY = m.sin(nx * 45.164 + ny * 94.673) * 43758.5453;
+      const px = (hashX - m.floor(hashX)) + dx - fracX;
+      const py = (hashY - m.floor(hashY)) + dy - fracY;
+      const dist = m.sqrt(px * px + py * py);
       if (dist < minDist) minDist = dist;
     }
   }
-  return Math.min(1, minDist);
+  return m.min(1, minDist);
 };
