@@ -63,8 +63,8 @@ playMotifs = function(unit = 'subdiv', layer) {
     }
     return note;
   });
-
-  const voiceCount = globalVoiceCoordinator.getVoiceCount();
+  const VC = new VoiceCoordinator();
+  const voiceCount = VC.getVoiceCount();
   const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
 
   // Get phrase context from PhraseArcManager if available
@@ -73,7 +73,7 @@ playMotifs = function(unit = 'subdiv', layer) {
     phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
   }
 
-  const picks = globalVoiceCoordinator.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext }).map(note => ({ note }));
+  const picks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext }).map(note => ({ note }));
 
   // Track which motif indices are being played this beat
   const playedGroupIndices = new Map();

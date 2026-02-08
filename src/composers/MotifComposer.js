@@ -88,11 +88,6 @@ MotifComposer = class MotifComposer {
     const seq = [];
     const lastNotes = [];
 
-    const coordinator = (typeof globalVoiceCoordinator !== 'undefined' && globalVoiceCoordinator)
-      ? globalVoiceCoordinator
-      : (typeof VoiceCoordinator !== 'undefined' ? new VoiceCoordinator() : null);
-    const motifLayer = coordinator ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;
-
     // If developer provides a note feed, cycle through its notes with octave normalization
     const devNotes = developer && typeof developer.getNotes === 'function' ? (developer.getNotes() || []) : null;
 
@@ -134,6 +129,11 @@ MotifComposer = class MotifComposer {
       }
     }
 
+    const VC = (typeof VoiceCoordinator !== 'undefined' && VoiceCoordinator)
+      ? VoiceCoordinator
+      : (typeof VoiceCoordinator !== 'undefined' ? new VoiceCoordinator() : null);
+    const motifLayer = VC ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;
+
     for (let i = 0; i < length; i++) {
       let chosen;
 
@@ -145,12 +145,12 @@ MotifComposer = class MotifComposer {
         // Use centralized voice coordination for single-voice selection
         const mc = optsAny.measureComposer || this.measureComposer;
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
-        if (coordinator && typeof coordinator.pickNotesForBeat === 'function') {
+        if (VC && typeof VC.pickNotesForBeat === 'function') {
           const scorer = mc && mc.VoiceLeadingScore ? mc.VoiceLeadingScore : null;
           const intent = mc && typeof mc.getVoicingIntent === 'function' ? mc.getVoicingIntent(avail) : null;
           const voiceOpts = Object.assign({ register: 'soprano' }, intent || {});
           const targetLayer = motifLayer || mc || {};
-          const selected = coordinator.pickNotesForBeat(targetLayer, avail, 1, scorer, voiceOpts);
+          const selected = VC.pickNotesForBeat(targetLayer, avail, 1, scorer, voiceOpts);
           chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)];
         } else {
           try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)]; } catch (e) { chosen = avail[Math.floor(Math.random() * avail.length)]; }
@@ -177,8 +177,8 @@ MotifComposer = class MotifComposer {
       seq.push({ note: chosen, duration: dur });
     }
 
-    if (coordinator && motifLayer && typeof coordinator.resetLayer === 'function') {
-      coordinator.resetLayer(motifLayer);
+    if (VC && motifLayer && typeof VC.resetLayer === 'function') {
+      VC.resetLayer(motifLayer);
     }
 
     const MotifCtor = (typeof Motif !== "undefined") ? Motif : null;

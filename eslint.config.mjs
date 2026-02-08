@@ -389,7 +389,7 @@ export default [
         VoiceLeadingScore: 'writable',
         VoiceCoordinator: 'writable',
         selectVoices: 'writable',
-        globalVoiceCoordinator: 'writable',
+        VoiceCoordinator: 'writable',
         SECTION_TYPES: 'readonly',
         csvRows: 'writable',
         // Utility and temporary globals
