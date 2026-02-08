@@ -4,14 +4,13 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
   const checkMethod=(m)=>{
-    if (!m) { console.warn('getRhythm.checkMethod: empty method key requested'); return null; }
+    if (!m) { throw new Error('getRhythm.checkMethod: empty method key requested'); }
     if (typeof rhythmMethods !== 'undefined' && rhythmMethods[m] && typeof rhythmMethods[m] === 'function') return rhythmMethods[m];
-    console.warn(`Unknown rhythm method: ${m}`);
-    return null;
+    throw new Error(`Unknown rhythm method: ${m}`);
   };
   if (method) {
     const rhythmMethod=checkMethod(method);
-    if (rhythmMethod) return rhythmMethod(...args);
+    return rhythmMethod(...args);
   } else {
     const filteredRhythms=Object.fromEntries(
       Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
@@ -24,12 +23,8 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     if (rhythmKey && rhythms[rhythmKey]) {
       const { method: rhythmMethodKey,args: rhythmArgs }=rhythms[rhythmKey];
       const rhythmMethod=checkMethod(rhythmMethodKey);
-      if (!rhythmMethod) {
-        try { console.warn(`Missing rhythm method for level "${level}": ${rhythmMethodKey}`); } catch (_e) { console.warn('getRhythm: missing rhythm method diagnostic failed:', _e && _e.stack ? _e.stack : _e); }
-      }
-      if (rhythmMethod) return rhythmMethod(...rhythmArgs(length,pattern));
+      return rhythmMethod(...rhythmArgs(length,pattern));
     }
   }
-  console.warn('unknown rhythm');
-  return null;
+  throw new Error('getRhythm: unknown rhythm selection');
 };

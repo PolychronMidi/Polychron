@@ -522,6 +522,11 @@ export default [
         trackRhythm: 'writable',
         buildGlobalContext: 'writable',
         rhythmMethods: 'writable',
+        RhythmRegistry: 'writable',
+        RhythmManager: 'writable',
+        RhythmValues: 'writable',
+        rhythmConfig: 'writable',
+        rhythmModulator: 'writable',
         // Node.js globals
         require: 'readonly',
         module: 'readonly',

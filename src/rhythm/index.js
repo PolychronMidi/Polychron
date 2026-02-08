@@ -1,3 +1,10 @@
+// Subsystem helpers (helpers first, manager last)
+require('./RhythmValues');
+require('./rhythmModulator');
+require('./rhythmConfig');
+require('./RhythmRegistry');
+require('./RhythmManager');
+
 // Ensure drumMap is loaded before drummer (drummer depends on drumMap internals)
 require('./drumMap');
 require('./drummer');
@@ -11,15 +18,16 @@ require('./trackRhythm');
 require('./patterns');
 require('./crossModulateRhythms');
 
-// Preserve legacy naked globals: modules set these on require side-effect.
-// Provide an explicit registry for rhythm method lookup (no runtime code-gen).
-rhythmMethods = {};
-rhythmMethods.binary = binary;
-rhythmMethods.hex = hex;
-rhythmMethods.onsets = onsets;
-rhythmMethods.random = random;
-rhythmMethods.prob = prob;
-rhythmMethods.euclid = euclid;
-rhythmMethods.rotate = rotate;
-rhythmMethods.morph = morph;
-rhythmMethods.closestDivisor = closestDivisor;
+// Register existing generator methods into the RhythmRegistry (fail-fast)
+RhythmRegistry.register('binary', binary);
+RhythmRegistry.register('hex', hex);
+RhythmRegistry.register('onsets', onsets);
+RhythmRegistry.register('random', random);
+RhythmRegistry.register('prob', prob);
+RhythmRegistry.register('euclid', euclid);
+RhythmRegistry.register('rotate', rotate);
+RhythmRegistry.register('morph', morph);
+RhythmRegistry.register('closestDivisor', closestDivisor);
+
+// Preserve legacy naked global mapping for backward compatibility
+rhythmMethods = RhythmRegistry.getAll();
