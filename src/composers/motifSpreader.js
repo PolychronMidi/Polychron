@@ -1,9 +1,5 @@
 // motifSpreader.js - centralize planning of motif groups across a measure
-
 // Generates motif groups (min-max beats) and populates layer.beatMotifs accordingly
-
-// Shared VoiceCoordinator instance for centralized voice selection
-globalVoiceCoordinator = new VoiceCoordinator();
 
 MotifSpreader = {
   spreadMeasure({ layer, measureStart, measureBeats, composer }) {
