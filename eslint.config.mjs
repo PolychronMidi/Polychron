@@ -300,6 +300,8 @@ export default [
         DYNAMISM: 'readonly',
         STUTTER_PROBABILITIES: 'readonly',
         STUTTER_PROFILES: 'readonly',
+        STUTTER_VELOCITY_RANGES: 'readonly',
+        VOICE_COORDINATOR: 'readonly',
         // Audio channels (left/right pairs)
         lCH1: 'writable',
         rCH1: 'writable',
