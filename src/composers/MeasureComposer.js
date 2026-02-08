@@ -91,7 +91,7 @@ MeasureComposer = class MeasureComposer {
   }
   /**
    * Generates note objects within octave range.
-   * Returns full note pool across all octaves (for use with VoiceCoordinator).
+   * Returns full note pool across all octaves (for use with VoiceManager).
    * @param {number[]|null} [octaveRange=null] - [min, max] octaves, or auto-generate
    * @returns {{note: number}[]} Array of note objects (full pool)
    */

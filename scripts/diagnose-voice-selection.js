@@ -3,8 +3,8 @@
 
 require('../src/main.js');
 
-// Monkey-patch VoiceCoordinator to log selection behavior
-const originalPickNotes = VoiceCoordinator.prototype.pickNotesForBeat;
+// Monkey-patch VoiceManager to log selection behavior
+const originalPickNotes = VoiceManager.prototype.pickNotesForBeat;
 let callCount = 0;
 const stats = {
   totalCalls: 0,
@@ -14,13 +14,13 @@ const stats = {
   densityMultipliers: []
 };
 
-VoiceCoordinator.prototype.pickNotesForBeat = function(layer, candidateNotes, voiceCount, scorer, opts = {}) {
+VoiceManager.prototype.pickNotesForBeat = function(layer, candidateNotes, voiceCount, scorer, opts = {}) {
   callCount++;
   const normalized = this._normalizeCandidates(candidateNotes);
 
   if (callCount <= 50) { // Log first 50 calls
     const phraseContext = opts.phraseContext || {};
-    console.log(`\n[Call ${callCount}] VoiceCoordinator.pickNotesForBeat:`);
+    console.log(`\n[Call ${callCount}] VoiceManager.pickNotesForBeat:`);
     console.log(`  Input: ${candidateNotes.length} candidates, voiceCount=${voiceCount}`);
     console.log(`  Normalized pool: ${normalized.notes.length} notes`);
     console.log(`  Phrase context:`, {

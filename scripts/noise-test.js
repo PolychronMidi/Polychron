@@ -136,7 +136,7 @@ test('metaRecursiveFBM exists', () => {
   if (typeof val !== 'number' || isNaN(val)) throw new Error('metaRecursiveFBM returned invalid value');
 });
 
-// Test 9: Noise coordinator registry exists
+// Test 9: Noise Manager registry exists
 test('noiseGenerators registry exists with 11+ generators', () => {
   if (typeof noiseGenerators !== 'object') throw new Error('noiseGenerators not an object');
   const count = Object.keys(noiseGenerators).length;

@@ -119,7 +119,7 @@ declare var DYNAMISM: any;
 declare var STUTTER_PROBABILITIES: any;
 declare var STUTTER_PROFILES: any;
 declare var STUTTER_VELOCITY_RANGES: any;
-declare var VOICE_COORDINATOR: any;
+declare var VOICE_Manager: any;
 
 // Instruments & MIDI
 declare var primaryInstrument: any;
@@ -228,9 +228,9 @@ declare module './PhraseArcManager' { const x: any; export = x; }
 declare module './PhraseArcManager.js' { const x: any; export = x; }
 
 declare var VoiceLeadingScore: any;
-declare var VoiceCoordinator: any;
+declare var VoiceManager: any;
 declare var selectVoices: any;
-declare var VoiceCoordinator: any;
+declare var VoiceManager: any;
 
 // Helpers & debug/test
 declare var logGate: any;
@@ -298,7 +298,7 @@ declare var lerp: any;
 declare var grad: any;
 declare var perlinNoise: any;
 
-// Noise coordinator
+// Noise Manager
 declare var defaultSimplex: any;
 declare var noiseGenerators: any;
 declare var generatorKeys: any;

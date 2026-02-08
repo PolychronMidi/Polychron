@@ -31,7 +31,7 @@ require('./VoiceLeadingScore');
 // @ts-ignore: load side-effect module with globals
 require('./selectVoices');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceCoordinator');
+require('./VoiceManager');
 // @ts-ignore: load side-effect module with globals
 require('./motifSpreader');
 // @ts-ignore: load side-effect module with globals
