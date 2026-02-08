@@ -21,6 +21,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   let scheduled = 0;
   crossModulateRhythms();
   const layer = LM.layers[LM.activeLayer];
+
+  // Apply subtle noise modulation to base velocity for organic variation
+  const noiseProfile = typeof getSafeNoiseProfile === 'function' ? getSafeNoiseProfile('subtle') : null;
+  const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
+  const voiceIdSeed = beatStart * 73 + layer.id * 43; // Deterministic voice ID from context
   try {
     // Gate play invocation with playProb and crossModulation
     if (typeof playProb === 'number' && (rf() > playProb) && (crossModulation < rv(rf(2, 4), [-.2, -.3], .05))) {
@@ -40,7 +45,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const sourceCH = activeSourceChannels[sci];
         const isPrimary = sourceCH === cCH1;
         const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
-        const onVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03);
+        const baseOnVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03);
+        const onVel = noiseProfile && typeof applyNoiseToVelocity === 'function'
+          ? applyNoiseToVelocity(baseOnVel, sourceCH, currentTime, 'subtle')
+          : baseOnVel;
         p(c, { tick: onTick, type: 'on', vals: [sourceCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
         p(c, { tick: offTick, vals: [sourceCH, s.note] }); scheduled++;
@@ -62,7 +70,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const reflectionCH = activeReflectionChannels[rci];
         const isPrimary = reflectionCH === cCH2;
         const onTick = isPrimary ? on + rv(tpUnit * rf(.2), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-        const onVel = isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1);
+        const baseOnVel = isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1);
+        const onVel = noiseProfile && typeof applyNoiseToVelocity === 'function'
+          ? applyNoiseToVelocity(baseOnVel, reflectionCH, currentTime, 'subtle')
+          : baseOnVel;
         p(c, { tick: onTick, type: 'on', vals: [reflectionCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;

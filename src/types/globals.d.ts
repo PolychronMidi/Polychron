@@ -315,6 +315,11 @@ declare var getParameterModulation: any;
 declare var smoothNoiseValue: any;
 declare var getNoiseProfile: any;
 declare var registerNoiseGenerator: any;
+declare var applyNoiseToVelocity: any;
+declare var applyNoiseToPan: any;
+declare var applyNoiseToSustain: any;
+declare var applyNoiseToParameter: any;
+declare var getSafeNoiseProfile: any;
 declare const NOISE_PROFILES: any;
 
 declare var OCTAVE: any;
