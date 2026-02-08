@@ -42,10 +42,8 @@ VoiceCoordinator = class VoiceCoordinator {
 
   _weightedPick(notes, weights) {
     if (!Array.isArray(notes) || notes.length === 0) {
-      console.error('🚨 CRITICAL: _weightedPick called with empty or invalid notes array!');
-      console.error(`  notes:`, notes);
-      console.error(`  weights:`, weights);
-      throw new Error('CRITICAL: _weightedPick received empty notes array');
+      console.error('_weightedPick called with empty or invalid notes array! - notes:', notes, 'weights:', weights);
+      throw new Error('_weightedPick received empty notes array');
     }
 
     if (!weights) return notes[ri(notes.length - 1)];
@@ -137,12 +135,8 @@ VoiceCoordinator = class VoiceCoordinator {
 
     // SAFETY CHECK: If notePool is empty after all processing, this is a critical error
     if (notePool.length === 0) {
-      console.error('🚨 CRITICAL: pickNotesForBeat has empty notePool after filtering!');
-      console.error(`  candidateNotes length: ${candidateNotes.length}`);
-      console.error(`  normalizedNotes length: ${normalized.notes.length}`);
-      console.error(`  registerBias: ${finalRegisterBias}`);
-      console.error(`  maxVoices: ${maxVoices}`);
-      throw new Error('CRITICAL: pickNotesForBeat produced empty notePool - check register bias filtering');
+      console.error('pickNotesForBeat has empty notePool after filtering! - candidateNotes length: ${candidateNotes.length} - normalizedNotes length: ${normalized.notes.length} - registerBias: ${finalRegisterBias} - maxVoices: ${maxVoices}`);
+      throw new Error('pickNotesForBeat produced empty notePool - check register bias filtering');
     }
 
     if (!this.voiceHistoryByLayer.has(layerId)) {
@@ -199,13 +193,7 @@ VoiceCoordinator = class VoiceCoordinator {
 
       // CRITICAL CHECK: note must be a valid number
       if (!Number.isFinite(note)) {
-        console.error(`🚨 CRITICAL: pickNotesForBeat voice ${i} returned undefined/invalid note!`);
-        console.error(`  notePool:`, notePool);
-        console.error(`  notePool.length:`, notePool.length);
-        console.error(`  maxVoices:`, maxVoices);
-        console.error(`  voiceHistory[${i}]:`, voiceHistory[i]);
-        console.error(`  weightMap:`, weightMap);
-        throw new Error(`CRITICAL: Voice ${i} selection returned undefined note`);
+        throw new Error(`Voice ${i} selection returned undefined note`);
       }
 
       selected.push(note);

@@ -55,7 +55,7 @@ getPolyrhythm = () => {
   // Max attempts reached: try new meter on L1 layer with relaxed constraints
   console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new L1 meter...`);
   [numerator, denominator] = composer.getMeter(true, false);
-  // CRITICAL: Recalculate all timing after meter change to prevent sync desync
+  // Recalculate all timing after meter change to prevent sync desync
   getMidiTiming();
   getPolyrhythm();
   return true;

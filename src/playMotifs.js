@@ -4,7 +4,7 @@
 playMotifs = function(unit = 'subdiv', layer) {
   // Validate layer and beatMotifs bucket
   if (!layer || !layer.beatMotifs) {
-    console.error(`🚨 CRITICAL: ${unit}.playMotifs missing layer or beatMotifs`);
+    console.error(`${unit}.playMotifs missing layer or beatMotifs`);
     process.exit(1);
   }
 
@@ -22,13 +22,13 @@ playMotifs = function(unit = 'subdiv', layer) {
 
   // If there is no bucket (undefined), this is a critical bug - gating happens BEFORE playMotifs is called
   if (!bucketIsArray || !bucket) {
-    console.error(`🚨 CRITICAL: ${unit}.playMotifs missing beatMotifs bucket for beatIndex ${beatIndex} - gating should have prevented this call`);
+    console.error(`${unit}.playMotifs missing beatMotifs bucket for beatIndex ${beatIndex} - gating should have prevented this call`);
     process.exit(1);
   }
 
   // If we have an explicit bucket but it's empty, this is a critical generation bug
   if (!bucket.length) {
-    console.error(`🚨 CRITICAL: ${unit}.playMotifs empty beatMotifs bucket at beatIndex ${beatIndex} - generation failed to populate`);
+    console.error(`${unit}.playMotifs empty beatMotifs bucket at beatIndex ${beatIndex} - generation failed to populate`);
     process.exit(1);
   }
 
