@@ -97,6 +97,9 @@ declare var TUNING_FREQ: any;
 declare var LOG: any;
 // Stutter subsystem shared config & metrics
 declare var StutterConfig: any;
+declare var StutterConfigStore: any;
+declare var StutterMetrics: any;
+declare var StutterRegistry: any;
 // Note cascade helper (schedules note events across unit levels)
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;

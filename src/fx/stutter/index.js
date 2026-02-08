@@ -1,15 +1,21 @@
-// src/fx/index.js - central entry for fx helpers and manager
+// src/fx/stutter/index.js - central entry for stutter system
+// @ts-ignore: load side-effect module with globals
+require('./StutterConfigStore');
+// @ts-ignore: load side-effect module with globals
+require('./StutterMetrics');
+// @ts-ignore: load side-effect module with globals
+require('./StutterRegistry');
+// @ts-ignore: load side-effect module with globals
+require('./stutterConfig');
+// @ts-ignore: load side-effect module with globals
+require('./stutterNotes');
 // @ts-ignore: load side-effect module with globals
 require('./stutterFade');
 // @ts-ignore: load side-effect module with globals
 require('./stutterPan');
 // @ts-ignore: load side-effect module with globals
 require('./stutterFX');
-// @ts-ignore: load side-effect module with globals
-require('./stutterConfig');
-// Register the original helper early so any scheduling that runs after fx load can find it
-// @ts-ignore: load side-effect module with globals
-require('./stutterNotes');
+
 // Ensure the helper is registered with StutterConfig (defensive explicit registration)
 try {
   // @ts-ignore: runtime-only naked global registration
@@ -18,5 +24,6 @@ try {
     StutterConfig.registerHelper(stutterNotes);
   }
 } catch (e) { /* ignore */ }
+
 // @ts-ignore: load side-effect module with globals
-require('./StutterManager');
+require('./stutterManager');
