@@ -119,7 +119,34 @@ VOICE_Manager = {
   arcDensityChance: 0.5,         // Probability of applying arc density multiplier
   arcRegisterBiasChance: 0.3,    // Probability of applying arc register bias
   arcRegisterBiasThreshold: 5    // Minimum semitone shift to trigger arc bias
-};COMPOSERS=[
+};
+
+// Centralized profile definitions (authoritative config; modules should delegate here)
+VOICE_PROFILES = {
+  default: { baseVelocity: 90 },
+  soft: { baseVelocity: 70 },
+  loud: { baseVelocity: 110 }
+};
+
+CHORD_PROFILES = {
+  pop: { voices: 4, velocityScale: 1, inversion: 0, baseVelocity: 100 },
+  jazz: { voices: 4, velocityScale: 0.9, inversion: 1, baseVelocity: 90 },
+  ambient: { voices: 3, velocityScale: 0.6, inversion: 0, baseVelocity: 70 }
+};
+
+MOTIF_PROFILES = {
+  default: { velocityScale: 1, timingOffset: 0 },
+  sparse: { velocityScale: 0.8, timingOffset: 0.1 },
+  dense: { velocityScale: 1.2, timingOffset: -0.05 }
+};
+
+RHYTHM_PROFILES = {
+  straight: { swing: 0, velocityScale: 1 },
+  swung: { swing: 0.2, velocityScale: 1 },
+  laidBack: { swing: 0.15, velocityScale: 0.9 }
+};
+
+COMPOSERS=[
   { type: 'scale', name: 'major', root: 'C' },
   { type: 'chords', progression: ['Cmaj7','Dm','G','Cmaj7'] },
   { type: 'mode', name: 'ionian', root: 'C' },
