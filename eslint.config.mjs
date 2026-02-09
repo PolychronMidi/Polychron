@@ -191,6 +191,7 @@ export default [
         RandomPentatonicComposer: 'writable',
         PhraseArcManager: 'writable',
         ComposerFactory: 'writable',
+        EventBus: 'writable',
         ProgressionGenerator: 'writable',
         // Debug/Test helpers
         logGate: 'writable',
