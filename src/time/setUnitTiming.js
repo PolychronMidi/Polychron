@@ -1,4 +1,4 @@
-// Dependency: rhythm functions (trackRhythm etc) are required via `src/rhythm/index.js`
+// setUnitTiming.js - Calculate timing variables for each unit level based on the current musical context
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using

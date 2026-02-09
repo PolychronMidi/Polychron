@@ -1,5 +1,4 @@
-// src/rhythm/drummer.js - drummer utility for rhythm generation
-// Dependency: drumMap is required via `src/rhythm/index.js`
+// drummer.js - Generates drum patterns with human-like timing
 
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
   if (drumNames === 'random') {

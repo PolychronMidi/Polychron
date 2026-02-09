@@ -1,4 +1,4 @@
-// Dependency: midiTiming is required via `src/time/index.js`
+// getPolyrhythm.js - Compute phrase alignment between L1 and L2 meters in seconds
 /**
  * Compute phrase alignment between L1 and L2 meters in seconds.
  * Sets: measuresPerPhrase1, measuresPerPhrase2.

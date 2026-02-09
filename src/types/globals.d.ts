@@ -205,6 +205,7 @@ declare var MelodicDevelopmentComposer: any;
 declare var VoiceLeadingComposer: any;
 declare var MotifComposer: any;
 declare var Motif: any;
+declare var playMotifs: any;
 declare var PentatonicComposer: any;
 declare var RandomPentatonicComposer: any;
 declare var PhraseArcManager: any;
@@ -294,6 +295,7 @@ declare var _random: any;
 declare var _probability: any;
 declare var _euclid: any;
 declare var _rotate: any;
+declare var rotate: any;
 
 declare var binaural: any;
 declare var stutter: any;
