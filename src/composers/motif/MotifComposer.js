@@ -137,10 +137,14 @@ MotifComposer = class MotifComposer {
     for (let i = 0; i < length; i++) {
       let chosen;
 
-      // Prefer notes from developer feed when available
+      // Prefer notes from developer feed when available, but constrain to scale candidates
       if (devNotes && devNotes.length > 0) {
         const n = devNotes[i % devNotes.length];
-        chosen = (typeof n.note === 'number') ? n.note : (n ?? 60);
+        const devNote = (typeof n.note === 'number') ? n.note : (typeof n === 'number' ? n : 60);
+        // Constrain developer note to nearest note in the scale
+        const normalized = devNote % 12;
+        const matchInCandidates = candidates.find(c => (c % 12) === normalized);
+        chosen = matchInCandidates !== undefined ? matchInCandidates : candidates[Math.floor(Math.random() * candidates.length)];
       } else if (this.measureComposer || optsAny.measureComposer) {
         // Use centralized voice coordination for single-voice selection
         const mc = optsAny.measureComposer || this.measureComposer;

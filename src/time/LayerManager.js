@@ -74,6 +74,10 @@ LM = layerManager ={
     c = layer.buffer;
     LM.activeLayer = name;
     loadLayerToGlobals(layer);
+    // Set active layer context in PhaseLockedRhythmGenerator for layer-aware phase tracking
+    if (typeof PhaseLockedRhythmGenerator !== 'undefined') {
+      PhaseLockedRhythmGenerator.setActiveLayer(name);
+    }
     if (isPoly) {
       numerator = polyNumerator;
       denominator = polyDenominator;

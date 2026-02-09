@@ -86,6 +86,18 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         });
       }
     }
+    if (typeof HarmonicContext !== 'undefined') {
+      const scale = HarmonicContext.getField('scale');
+      if (Array.isArray(scale) && scale.length > 0) {
+        for (const n of developedNotes) {
+          const note = typeof n.note === 'number' ? n.note : n;
+          if (!HarmonicContext.isNoteInScale(note)) {
+            throw new Error(`MelodicDevelopmentComposer.getNotes: note ${note} not in HarmonicContext scale`);
+          }
+        }
+      }
+    }
+
     this._lastBaseNotes = baseNotes;
     this._lastDevelopedNotes = developedNotes;
     return developedNotes;
