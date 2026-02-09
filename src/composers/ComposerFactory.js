@@ -37,9 +37,9 @@ ComposerFactory = class ComposerFactory {
         p = [];
         for (let i = 0; i < len; i++) p.push(allChords[ri(allChords.length - 1)]);
       }
-      // Defensive: ensure externally supplied progression entries are normalized strings
+      // Normalize chord symbols; fail-fast if normalization fails
       if (Array.isArray(p)) {
-        try { p = p.map(normalizeChordSymbol); } catch (e) { console.warn('ComposerFactory.chords: failed to normalize chord symbols in progression, using as-is:', e && e.stack ? e.stack : e); }
+        p = p.map(normalizeChordSymbol); // Will throw on invalid chord symbols
       }
       return new (ChordComposer)(p);
     },
@@ -91,42 +91,45 @@ ComposerFactory = class ComposerFactory {
     const type = config.type || 'scale';
     const factory = this.constructors[type];
     if (!factory) {
-      console.warn(`ComposerFactory.create: unknown composer type "${type}", defaulting to random scale composer.`);
-      return this.constructors.scale({ name: 'random', root: 'random' });
+      throw new Error(`ComposerFactory.create: unknown composer type "${type}"—fail-fast`);
     }
     return factory(config);
   }
 
   static createRandom(extraConfig = {}) {
-    // Strictly sample from global COMPOSERS array (defined in src/config.js / config.md).
-    if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS) && COMPOSERS.length > 0) {
-      const tries = Math.min(8, COMPOSERS.length);
-      for (let i = 0; i < tries; i++) {
-        const cfg = COMPOSERS[ri(COMPOSERS.length - 1)];
-        try {
-          const composer = this.create(Object.assign({}, cfg, extraConfig));
-          // Prefer composers that can return notes
-          if (composer && typeof composer.getNotes === 'function') {
-            try {
-              const notes = composer.getNotes();
-              if (Array.isArray(notes) && notes.length > 0) return composer;
-            } catch (e) {
-              console.warn('ComposerFactory.createRandom: composer.getNotes() threw, trying another COMPOSERS entry:', e && e.stack ? e.stack : e);
-              continue;
-            }
-          } else if (composer) {
-            console.warn('ComposerFactory.createRandom: created composer without getNotes(), accepting it.', composer);
-            return composer;
-          }
-        } catch (e) {
-          console.warn('ComposerFactory.createRandom: failed to create composer from COMPOSERS entry, trying another:', e && e.stack ? e.stack : e);
-          continue;
-        }
-      }
-        try { return this.create(Object.assign({}, { type: 'scale', name: 'random', root: 'random' }, extraConfig)); } catch (e) { console.warn('No valid entry found in COMPOSERS array, falling back to random scale composer:', e && e.stack ? e.stack : e); }
-    } else {
-      console.warn('ComposerFactory.createRandom: COMPOSERS array is undefined or empty, defaulting to random scale composer.');
+    // Fail-fast: COMPOSERS array must be defined and non-empty
+    if (typeof COMPOSERS === 'undefined' || !Array.isArray(COMPOSERS) || COMPOSERS.length === 0) {
+      throw new Error('ComposerFactory.createRandom: COMPOSERS array is undefined or empty—fail-fast');
     }
-    return this.create(Object.assign({}, extraConfig, { type: 'scale', name: 'random', root: 'random' }));
+
+    // Try up to N composers from COMPOSERS; fail-fast if all attempts exhaust
+    const maxAttempts = Math.min(8, COMPOSERS.length);
+    let lastError = null;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const cfg = COMPOSERS[ri(COMPOSERS.length - 1)];
+      try {
+        const composer = this.create(Object.assign({}, cfg, extraConfig));
+
+        // Verify composer has getNotes method
+        if (typeof composer.getNotes !== 'function') {
+          throw new Error(`ComposerFactory.createRandom: created composer missing getNotes() method`);
+        }
+
+        // Verify composer can produce notes
+        const notes = composer.getNotes();
+        if (!Array.isArray(notes) || notes.length === 0) {
+          throw new Error(`ComposerFactory.createRandom: composer.getNotes() returned empty or invalid array`);
+        }
+
+        return composer;
+      } catch (e) {
+        lastError = e;
+        // Continue to next attempt
+      }
+    }
+
+    // All attempts exhausted
+    throw new Error(`ComposerFactory.createRandom: failed to create valid composer after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
   }
 }
