@@ -2,6 +2,8 @@
 
 VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7, contraryMotionPreference = 0.4) {
+    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('VoiceLeadingComposer: allNotes not available');
+    if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('VoiceLeadingComposer: allScales not available');
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     super(resolvedName, resolvedRoot);

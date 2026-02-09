@@ -76,6 +76,8 @@ RandomScaleComposer = class RandomScaleComposer extends ScaleComposer {
   }
   /** Randomly selects scale and root from venue.js data */
   noteSet() {
+    if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('RandomScaleComposer.noteSet: allScales not available');
+    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('RandomScaleComposer.noteSet: allNotes not available');
     const randomScale=allScales[ri(allScales.length - 1)];
     const randomRoot=allNotes[ri(allNotes.length - 1)];
     super.noteSet(randomScale,randomRoot);

@@ -29,21 +29,21 @@ class StutterManager {
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-    if (!channels) { console.warn('StutterManager.stutterFade: called with no channels — skipping'); return { skipped: true }; }
-    if (typeof this._stutterFade === 'function') return this._stutterFade.call(this, channels, numStutters, duration);
-    return null;
+    if (!channels) throw new Error('StutterManager.stutterFade: called with no channels');
+    if (typeof this._stutterFade !== 'function') throw new Error('StutterManager.stutterFade: implementation not available');
+    return this._stutterFade.call(this, channels, numStutters, duration);
   }
 
   stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-    if (!channels) { console.warn('StutterManager.stutterPan: called with no channels — skipping'); return { skipped: true }; }
-    if (typeof this._stutterPan === 'function') return this._stutterPan.call(this, channels, numStutters, duration);
-    return null;
+    if (!channels) throw new Error('StutterManager.stutterPan: called with no channels');
+    if (typeof this._stutterPan !== 'function') throw new Error('StutterManager.stutterPan: implementation not available');
+    return this._stutterPan.call(this, channels, numStutters, duration);
   }
 
   stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-    if (!channels) { console.warn('StutterManager.stutterFX: called with no channels — skipping'); return { skipped: true }; }
-    if (typeof this._stutterFX === 'function') return this._stutterFX.call(this, channels, numStutters, duration);
-    return null;
+    if (!channels) throw new Error('StutterManager.stutterFX: called with no channels');
+    if (typeof this._stutterFX !== 'function') throw new Error('StutterManager.stutterFX: implementation not available');
+    return this._stutterFX.call(this, channels, numStutters, duration);
   }
 
   /**

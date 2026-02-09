@@ -37,7 +37,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];
-      if (!s || typeof s.note === 'undefined') console.warn(`${unit}.playNotes: invalid note object in motif picks`, s);
+      if (!s || typeof s.note === 'undefined') throw new Error(`${unit}.playNotes: invalid note object in motif picks`);
 
       // Source channels
       const activeSourceChannels = source.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
@@ -55,11 +55,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const stutterEnabledByProb = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
           const shouldStutterNow = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
           if (shouldStutterNow) {
-            try {
-              Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-              scheduleStutterNotesFromDensity('source', sourceCH, s.note, onVel, onTick, sustain, stutterProb);
-            } catch (e) { console.warn(`${unit}.playNotes: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
-            }
+            Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
+            scheduleStutterNotesFromDensity('source', sourceCH, s.note, onVel, onTick, sustain, stutterProb);
           }
         }
 
@@ -78,11 +75,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const stutterEnabledByProb_ref = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
           const shouldStutterNow_ref = (typeof stutterEnabledByProb_ref === 'boolean') ? stutterEnabledByProb_ref : (enableStutter && rf() > 0.5);
           if (shouldStutterNow_ref) {
-            try {
-              Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-              scheduleStutterNotesFromDensity('reflection', reflectionCH, s.note, onVel, onTick, sustain, stutterProb);
-            } catch (e) { console.warn(`${unit}.playNotes: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
-            }
+            Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
+            scheduleStutterNotesFromDensity('reflection', reflectionCH, s.note, onVel, onTick, sustain, stutterProb);
           }
         }
 
@@ -100,11 +94,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;
 
           if (enableStutter && rf() > 0.5) {
-            try {
-              Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
-              scheduleStutterNotesFromDensity('bass', bassCH, bassNote, onVel, onTick, sustain, stutterProb);
-            } catch (e) { console.warn(`${unit}.playNotes: Stutter.scheduleStutterForUnit failed`, e && e.stack ? e.stack : e);
-            }
+            Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
+            scheduleStutterNotesFromDensity('bass', bassCH, bassNote, onVel, onTick, sustain, stutterProb);
           }
         }
       }

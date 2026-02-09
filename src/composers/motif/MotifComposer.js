@@ -25,18 +25,21 @@ MotifComposer = class MotifComposer {
     this._motifSequenceId = 0;
   }
 
-  /** Resolve global ticks for a unit. Falls back to sensible defaults. */
+  /** Resolve global ticks for a unit. */
   _unitTicks(unit) {
-    try {
-      switch ((unit || '').toLowerCase()) {
-        case 'measure': return Number.isFinite(Number(tpMeasure)) ? Number(tpMeasure) : 1920;
-        case 'beat': return Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 480;
-        case 'div': return Number.isFinite(Number(tpDiv)) ? Number(tpDiv) : 120;
-        case 'subdiv': return Number.isFinite(Number(tpSubdiv)) ? Number(tpSubdiv) : 30;
-        case 'subsubdiv': return Number.isFinite(Number(tpSubsubdiv)) ? Number(tpSubsubdiv) : 8;
-        default: return Number.isFinite(Number(tpSubdiv)) ? Number(tpSubdiv) : 30;
-      }
-    } catch (e) { return 30; }
+    let value;
+    switch ((unit || '').toLowerCase()) {
+      case 'measure': value = tpMeasure; break;
+      case 'beat': value = tpBeat; break;
+      case 'div': value = tpDiv; break;
+      case 'subdiv': value = tpSubdiv; break;
+      case 'subsubdiv': value = tpSubsubdiv; break;
+      default: value = tpSubdiv;
+    }
+    if (!Number.isFinite(Number(value))) {
+      throw new Error(`MotifComposer._unitTicks: invalid or undefined tick value for unit "${unit}"`);
+    }
+    return Number(value);
   }
 
   /**
@@ -128,7 +131,7 @@ MotifComposer = class MotifComposer {
 
     const VC = (typeof VoiceManager !== 'undefined' && VoiceManager)
       ? VoiceManager
-      : (typeof VoiceManager !== 'undefined' ? new VoiceManager() : null);
+      : (() => { throw new Error('MotifComposer.generate: VoiceManager not available'); })();
     const motifLayer = VC ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;
 
     for (let i = 0; i < length; i++) {
@@ -184,8 +187,7 @@ MotifComposer = class MotifComposer {
 
     const MotifCtor = (typeof Motif !== "undefined") ? Motif : null;
     if (MotifCtor) return new MotifCtor(seq, { defaultDuration: 1 }); // durations are in ticks now
-    // Fallback: return plain object if Motif class not available
-    console.warn('MotifComposer.generate: Motif class not available, returning plain object');
-    return { sequence: seq, defaultDuration: 1 };
+    // Fail-fast: Motif class is required
+    throw new Error('MotifComposer.generate: Motif class not available');
   }
 };

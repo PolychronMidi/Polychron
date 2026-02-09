@@ -38,6 +38,8 @@ ComposerFactory = class ComposerFactory {
   static constructors = {
     measure: () => new MeasureComposer(),
     scale: ({ name = 'major', root = 'C' } = {}) => {
+      if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('ComposerFactory.scale: allScales not available');
+      if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.scale: allNotes not available');
       const n = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       return new (ScaleComposer)(n, r);
@@ -45,6 +47,7 @@ ComposerFactory = class ComposerFactory {
     chords: ({ progression = ['C'] } = {}) => {
       let p = progression;
       if (/** @type {any} */ (progression) === 'random') {
+        if (!Array.isArray(allChords) || allChords.length === 0) throw new Error('ComposerFactory.chords: allChords not available');
         const len = ri(2, 5);
         p = [];
         for (let i = 0; i < len; i++) p.push(allChords[ri(allChords.length - 1)]);
@@ -56,10 +59,12 @@ ComposerFactory = class ComposerFactory {
       return new (ChordComposer)(p);
     },
     mode: ({ name = 'ionian', root = 'C' } = {}) => {
+      if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.mode: allNotes not available');
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       if (name === 'random') {
         // If root is also random, pick a precomputed valid pair ("C ionian") and split it
         if (root === 'random') {
+          if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('ComposerFactory.mode: allModes not available');
           const pair = allModes[ri(allModes.length - 1)];
           if (typeof pair === 'string' && pair.indexOf(' ') > -1) {
             const parts = pair.split(' ');
@@ -78,16 +83,22 @@ ComposerFactory = class ComposerFactory {
     },
 
     pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
+      if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.pentatonic: allNotes not available');
       const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
       const t = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
       return new (PentatonicComposer)(r, t);
     },
     tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {} } = {}) => {
+      if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.tensionRelease: allNotes not available');
       const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
       return new TensionReleaseComposer(key, quality, tensionCurve, { phraseArcManager });
     },
-    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => new ModalInterchangeComposer(key, primaryMode, borrowProbability),
+    modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => {
+      if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.modalInterchange: allNotes not available');
+      return new ModalInterchangeComposer(key, primaryMode, borrowProbability);
+    },
     harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true, enablePhraseArcs = true, phraseArcOpts = {} } = {}) => {
+      if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.harmonicRhythm: allNotes not available');
       const k = key === 'random' ? allNotes[ri(allNotes.length - 1)] : key;
       const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
       return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling, phraseArcManager });

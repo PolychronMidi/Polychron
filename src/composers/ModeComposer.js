@@ -38,6 +38,7 @@ RandomModeComposer = class RandomModeComposer extends ModeComposer {
   }
   /** Randomly selects mode and root from venue.js data */
   noteSet() {
+    if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('RandomModeComposer.noteSet: allModes not available');
     const randomMode=allModes[ri(allModes.length - 1)];
     const [root,modeName]=randomMode.split(' ');
     this.root=root;
