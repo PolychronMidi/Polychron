@@ -147,26 +147,26 @@ RHYTHM_PROFILES = {
 };
 
 COMPOSERS=[
-  { type: 'scale', name: 'major', root: 'C' },
-  { type: 'chords', progression: ['Cmaj7','Dm','G','Cmaj7'] },
-  { type: 'mode', name: 'ionian', root: 'C' },
-  { type: 'scale', name: 'random', root: 'C' },
+  { type: 'scale', name: 'major', root: 'random' },
+  { type: 'chords', progression: 'random' },
+  { type: 'mode', name: 'ionian', root: 'random' },
+  { type: 'scale', name: 'random', root: 'random' },
   { type: 'scale', name: 'major', root: 'random' },
   { type: 'chords', progression: 'random' },
   { type: 'mode', name: 'ionian', root: 'random' },
   { type: 'mode', name: 'random', root: 'random' },
-  { type: 'pentatonic', root: 'C', scaleType: 'major' },
+  { type: 'pentatonic', root: 'random', scaleType: 'random' },
   { type: 'pentatonic', root: 'random', scaleType: 'random' },
   { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
   { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 },
   // Melodic Development Composers
-  { type: 'melodicDevelopment', name: 'major', root: 'C', intensity: 0.6 },
-  { type: 'melodicDevelopment', name: 'major', root: 'C', intensity: 0.4 },
+  { type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.6 },
+  { type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.4 },
   { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.5 },
   { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.7 },
   // Advanced Voice Leading Composers
-  { type: 'voiceLeading', name: 'major', root: 'C', commonToneWeight: 0.7 },
-  { type: 'voiceLeading', name: 'major', root: 'C', commonToneWeight: 0.5 },
+  { type: 'voiceLeading', name: 'major', root: 'random', commonToneWeight: 0.7 },
+  { type: 'voiceLeading', name: 'major', root: 'random', commonToneWeight: 0.5 },
   { type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.6 },
   { type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.8 },
   // Harmonic Rhythm (limited to avoid too many drums)
