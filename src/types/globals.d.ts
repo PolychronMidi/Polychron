@@ -76,6 +76,7 @@ declare var RhythmManager: any;
 declare var RhythmValues: any;
 declare var rhythmConfig: any;
 declare var rhythmModulator: any;
+declare var PhaseLockedRhythmGenerator: any;
 declare var FXFeedbackListener: any;
 declare var EventBus: any;
 

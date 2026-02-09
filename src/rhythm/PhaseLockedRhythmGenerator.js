@@ -1,0 +1,178 @@
+// src/rhythm/PhaseLockedRhythmGenerator.js - Phase-locked polyrhythmic generation
+// Enables explicit polyrhythmic interlocking via phase offset tracking
+// Reflects African music principles: cyclic patterns with phase relationships
+
+PhaseLockedRhythmGenerator = (() => {
+  const phases = new Map();         // Map<patternName, offset>
+  const generationHistory = [];     // Track recent generations for coherence analysis
+
+  /**
+   * Generate rhythm pattern with phase locking
+   * @param {number} length - Pattern length
+   * @param {string} patternName - Name of pattern generator (must be registered in RhythmRegistry)
+   * @param {number} [phaseOffset] - Optional explicit phase offset; uses stored phase if omitted
+   * @returns {Array} rotated rhythm pattern
+   * @throws {Error} if length invalid, patternName not found, or offset calculation fails
+   */
+  function generate(length, patternName, phaseOffset = undefined) {
+    if (!Number.isInteger(length) || length <= 0) {
+      throw new Error(`PhaseLockedRhythmGenerator.generate: length must be positive integer, got ${length}`);
+    }
+
+    if (typeof patternName !== 'string' || !patternName) {
+      throw new Error('PhaseLockedRhythmGenerator.generate: patternName must be non-empty string');
+    }
+
+    // Generate base pattern via RhythmRegistry
+    if (typeof RhythmRegistry === 'undefined') {
+      throw new Error('PhaseLockedRhythmGenerator.generate: RhythmRegistry not available');
+    }
+
+    let pattern;
+    try {
+      pattern = RhythmRegistry.execute(patternName, length);
+    } catch (e) {
+      throw new Error(`PhaseLockedRhythmGenerator.generate: failed to execute pattern "${patternName}": ${e && e.message ? e.message : e}`);
+    }
+
+    if (!Array.isArray(pattern) || pattern.length === 0) {
+      throw new Error(`PhaseLockedRhythmGenerator.generate: pattern "${patternName}" returned invalid result`);
+    }
+
+    // Determine phase offset
+    let offset = 0;
+    if (typeof phaseOffset === 'number' && Number.isFinite(phaseOffset)) {
+      offset = phaseOffset;
+    } else if (phases.has(patternName)) {
+      offset = phases.get(patternName);
+    }
+
+    offset = ((offset % length) + length) % length; // Normalize to [0, length)
+
+    // Rotate pattern by offset
+    if (typeof rotate === 'undefined') {
+      throw new Error('PhaseLockedRhythmGenerator.generate: rotate() function not available');
+    }
+
+    let rotated;
+    try {
+      rotated = rotate(pattern, offset, 'R', length);
+    } catch (e) {
+      throw new Error(`PhaseLockedRhythmGenerator.generate: rotate() failed: ${e && e.message ? e.message : e}`);
+    }
+
+    if (!Array.isArray(rotated)) {
+      throw new Error('PhaseLockedRhythmGenerator.generate: rotate() did not return array');
+    }
+
+    // Record generation for history
+    generationHistory.push({
+      patternName,
+      length,
+      offset,
+      timestamp: Date.now()
+    });
+
+    return rotated;
+  }
+
+  /**
+   * Lock pattern to specific phase offset
+   * @param {string} patternName - Pattern name
+   * @param {number} phase - Phase offset to lock to
+   * @throws {Error} if phase not a valid number
+   */
+  function lock(patternName, phase) {
+    if (typeof patternName !== 'string' || !patternName) {
+      throw new Error('PhaseLockedRhythmGenerator.lock: patternName must be non-empty string');
+    }
+
+    if (typeof phase !== 'number' || !Number.isFinite(phase)) {
+      throw new Error(`PhaseLockedRhythmGenerator.lock: phase must be finite number, got ${phase}`);
+    }
+
+    phases.set(patternName, phase);
+  }
+
+  /**
+   * Get current phase for a pattern
+   * @param {string} patternName - Pattern name
+   * @returns {number} current phase offset (0 if not yet set)
+   */
+  function getPhase(patternName) {
+    if (typeof patternName !== 'string' || !patternName) {
+      throw new Error('PhaseLockedRhythmGenerator.getPhase: patternName must be non-empty string');
+    }
+
+    return phases.get(patternName) || 0;
+  }
+
+  /**
+   * Advance phase for a pattern (rotate by delta)
+   * @param {string} patternName - Pattern name
+   * @param {number} delta - Amount to advance (can be negative)
+   * @param {number} [modulo] - Wrap phase to this value (default: no wrap)
+   * @throws {Error} if delta not a valid number
+   */
+  function advancePhase(patternName, delta, modulo = undefined) {
+    if (typeof patternName !== 'string' || !patternName) {
+      throw new Error('PhaseLockedRhythmGenerator.advancePhase: patternName must be non-empty string');
+    }
+
+    if (typeof delta !== 'number' || !Number.isFinite(delta)) {
+      throw new Error(`PhaseLockedRhythmGenerator.advancePhase: delta must be finite number, got ${delta}`);
+    }
+
+    const current = getPhase(patternName);
+    let newPhase = current + delta;
+
+    if (typeof modulo === 'number' && modulo > 0) {
+      newPhase = ((newPhase % modulo) + modulo) % modulo;
+    }
+
+    phases.set(patternName, newPhase);
+  }
+
+  /**
+   * Get phase relationship between two patterns
+   * Useful for analyzing polyrhythmic interlocking
+   * @param {string} patternA - First pattern name
+   * @param {string} patternB - Second pattern name
+   * @returns {number} phase difference (B - A)
+   */
+  function getPhaseRelationship(patternA, patternB) {
+    if (typeof patternA !== 'string' || !patternA || typeof patternB !== 'string' || !patternB) {
+      throw new Error('PhaseLockedRhythmGenerator.getPhaseRelationship: pattern names must be non-empty strings');
+    }
+
+    const phaseA = getPhase(patternA);
+    const phaseB = getPhase(patternB);
+    return phaseB - phaseA;
+  }
+
+  /**
+   * Clear all tracked phases
+   */
+  function reset() {
+    phases.clear();
+    generationHistory.length = 0;
+  }
+
+  /**
+   * Get generation history (for analysis/debugging)
+   * @returns {Array} recent generation records
+   */
+  function getHistory(limit = 50) {
+    return generationHistory.slice(-limit);
+  }
+
+  return {
+    generate,
+    lock,
+    getPhase,
+    advancePhase,
+    getPhaseRelationship,
+    reset,
+    getHistory
+  };
+})();

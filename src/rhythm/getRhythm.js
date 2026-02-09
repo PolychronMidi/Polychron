@@ -6,6 +6,10 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
 
   if (method) {
     if (!method) throw new Error('getRhythm: empty method key requested');
+    // Phase-locked path: length-only patterns can be generated with phase cohesion
+    if (typeof PhaseLockedRhythmGenerator !== 'undefined' && args && args.length === 1 && args[0] === length) {
+      return PhaseLockedRhythmGenerator.generate(length, method);
+    }
     // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
     return RhythmRegistry.execute(method, ...args);
   } else {
@@ -22,7 +26,12 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     }
 
     const { method: rhythmMethodKey, args: rhythmArgs }=rhythms[rhythmKey];
+    const generatedArgs = rhythmArgs(length, pattern);
+    // Phase-locked path: only for length-only generators
+    if (typeof PhaseLockedRhythmGenerator !== 'undefined' && Array.isArray(generatedArgs) && generatedArgs.length === 1 && generatedArgs[0] === length) {
+      return PhaseLockedRhythmGenerator.generate(length, rhythmMethodKey);
+    }
     // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
-    return RhythmRegistry.execute(rhythmMethodKey, ...rhythmArgs(length,pattern));
+    return RhythmRegistry.execute(rhythmMethodKey, ...generatedArgs);
   }
 };
