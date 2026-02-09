@@ -194,6 +194,7 @@ export default [
         HarmonicContext: 'writable',
         EventBus: 'writable',
         FXFeedbackListener: 'writable',
+        PhaseLockedRhythmGenerator: 'writable',
         ProgressionGenerator: 'writable',
         // Debug/Test helpers
         logGate: 'writable',
