@@ -2,7 +2,7 @@
 
 /**
  * Coordinates voice selection using VOICES config, composer note pools, and voice leading.
- * Manages per-voice history and calls selectVoices for joint optimization.
+ * Manages per-voice history and calls VoiceRegistry for joint optimization.
  * @class
  */
 VoiceManager = class VoiceManager {
@@ -156,13 +156,12 @@ VoiceManager = class VoiceManager {
         lastNotesByVoice.push(voiceHistory[i] || []);
       }
 
-      // Call selectVoices for joint optimization with voiceIndependence hint
+      // Call VoiceRegistry for joint optimization with voiceIndependence hint
       const scorerOpts = Object.assign({}, opts, {
         candidateWeights: weightMap,
         voiceIndependence: voiceIndependence // Pass to scorer for contrapuntal vs homophonic tendency
       });
-      const selected = selectVoices(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
-
+      const selected = VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
       // Update history
       for (let i = 0; i < selected.length; i++) {
         if (!voiceHistory[i]) voiceHistory[i] = [];

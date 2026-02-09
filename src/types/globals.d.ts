@@ -255,7 +255,8 @@ declare module './PhraseArcManager.js' { const x: any; export = x; }
 
 declare var VoiceLeadingScore: any;
 declare var VoiceManager: any;
-declare var selectVoices: any;
+declare var VoiceRegistry: any;
+declare var VoiceStrategyRegistry: any;
 declare var VoiceManager: any;
 
 // Helpers & debug/test
