@@ -1,6 +1,7 @@
 // Subsystem helpers (helpers first, manager last)
 require('./RhythmValues');
 require('./rhythmModulator');
+require('./FXFeedbackListener');
 require('./rhythmConfig');
 require('./RhythmRegistry');
 require('./RhythmManager');

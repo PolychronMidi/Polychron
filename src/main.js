@@ -16,9 +16,17 @@ const composerCtx = {
 };
 ComposerFactory.setComposerContext(composerCtx);
 
+// Initialize EventBus feedback loop: FX intensity → rhythm pattern modulation
+if (typeof FXFeedbackListener !== 'undefined') {
+  FXFeedbackListener.initialize();
+}
+
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+
+  // Emit section boundary event to reset FX feedback accumulator
+  EventBus.emit('section-boundary', { sectionIndex });
 
   // Initialize each layer's section origin so layer-relative ticks are correct and explicit
   LM.setSectionStartAll();
