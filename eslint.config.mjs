@@ -533,6 +533,17 @@ export default [
         ChordValues: 'writable',
         chordConfig: 'writable',
         chordModulator: 'writable',
+        // Motif subsystem globals
+        MotifRegistry: 'writable',
+        MotifManager: 'writable',
+        MotifValues: 'writable',
+        motifConfig: 'writable',
+        motifModulator: 'writable',
+        // Voice subsystem globals
+        VoiceRegistry: 'writable',
+        VoiceValues: 'writable',
+        voiceConfig: 'writable',
+        voiceModulator: 'writable',
         // Node.js globals
         require: 'readonly',
         module: 'readonly',

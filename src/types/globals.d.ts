@@ -217,6 +217,17 @@ declare var ChordValues: any;
 declare var chordConfig: any;
 declare var chordModulator: any;
 
+declare var MotifRegistry: any;
+declare var MotifManager: any;
+declare var MotifValues: any;
+declare var motifConfig: any;
+declare var motifModulator: any;
+
+declare var VoiceRegistry: any;
+declare var VoiceValues: any;
+declare var voiceConfig: any;
+declare var voiceModulator: any;
+
 // Ambient module declarations for composer side-effect requires (legacy pattern)
 // These declare the file paths as modules so `require('./XComposer')` doesn't error
 declare module './MeasureComposer' { const x: any; export = x; }
