@@ -9,8 +9,8 @@ require('./StutterRegistry');
 require('./stutterConfig');
 // @ts-ignore: load side-effect module with globals
 require('./stutterNotes');
-// @ts-ignore: load side-effect module with globals
-require('./stutterFade');
+// @ts-ignore: load side-effect module with globalsrequire('./StutterAsNoteSource');
+// @ts-ignore: load side-effect module with globalsrequire('./stutterFade');
 // @ts-ignore: load side-effect module with globals
 require('./stutterPan');
 // @ts-ignore: load side-effect module with globals
