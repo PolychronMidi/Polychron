@@ -218,6 +218,10 @@ declare var chordConfig: any;
 declare var chordModulator: any;
 
 declare var MotifRegistry: any;
+declare var VOICE_PROFILES: any;
+declare var CHORD_PROFILES: any;
+declare var MOTIF_PROFILES: any;
+declare var RHYTHM_PROFILES: any;
 declare var MotifManager: any;
 declare var MotifValues: any;
 declare var motifConfig: any;
