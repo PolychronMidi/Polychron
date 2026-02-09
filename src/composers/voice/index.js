@@ -6,11 +6,11 @@ require('./voiceModulator');
 // @ts-ignore: load side-effect module with globals
 require('./voiceConfig');
 // @ts-ignore: load side-effect module with globals
+require('./VoiceStrategyRegistry');
+// @ts-ignore: load side-effect module with globals
 require('./VoiceRegistry');
 
 // Core components
-// @ts-ignore: load side-effect module with globals
-require('./selectVoices');
 // @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingComposer');
 // @ts-ignore: load side-effect module with globals

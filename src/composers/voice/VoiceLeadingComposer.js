@@ -11,7 +11,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
 
   getNotes(octaveRange) {
     // Return full note pool for centralized voice selection
-    // Voice leading optimization now handled by VoiceManager/selectVoices
+    // Voice leading optimization now handled by VoiceManager/VoiceRegistry
     return super.getNotes(octaveRange);
   }
 
