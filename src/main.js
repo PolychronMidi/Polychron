@@ -75,7 +75,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         setBinaural();
         EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex });
         setBalanceAndFX();
-        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex });
+        // Capture FX intensity from balance and variation globals (normalized 0-1)
+        const fxStereoPan = typeof balOffset === 'number' ? Math.abs(balOffset) / 45 : 0;
+        const fxVelocityShift = (typeof refVar === 'number' && typeof bassVar === 'number')
+          ? Math.abs(refVar + bassVar) / 20 : 0;
+        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
         playDrums();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
