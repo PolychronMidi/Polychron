@@ -28,10 +28,16 @@ RhythmRegistry = (function() {
 
   function getAll() { return Object.assign({}, _map); }
 
+  function execute(name, ...args) {
+    const fn = get(name); // Will throw if name not found
+    return fn(...args);   // Fail-fast: let any strategy error bubble
+  }
+
   return {
     register,
     registerMany,
     get,
+    execute,
     list,
     getAll
   };
