@@ -1,6 +1,18 @@
 ComposerFactory = class ComposerFactory {
   // Shared phrase arc manager instance
   static sharedPhraseArcManager = null;
+  // Shared composer context (passed from main.js)
+  static sharedComposerCtx = null;
+
+  /**
+   * Set shared composer context (call from main.js before creating composers)
+   * @param {Object} ctx - Context object { phraseArc, layerMgr, rhythmMgr, stutterMgr, noiseProfile }
+   */
+  static setComposerContext(ctx) {
+    if (ctx && typeof ctx === 'object') {
+      this.sharedComposerCtx = ctx;
+    }
+  }
 
   /**
    * Get or create shared PhraseArcManager
@@ -87,16 +99,23 @@ ComposerFactory = class ComposerFactory {
     voiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
   };
 
-  static create(config = {}) {
+  static create(config = {}, ctx = null) {
     const type = config.type || 'scale';
     const factory = this.constructors[type];
     if (!factory) {
       throw new Error(`ComposerFactory.create: unknown composer type "${type}"—fail-fast`);
     }
+    // Set context if provided; fall back to shared context
+    const composerCtx = ctx || this.sharedComposerCtx;
+    if (composerCtx) this.setComposerContext(composerCtx);
     return factory(config);
   }
 
-  static createRandom(extraConfig = {}) {
+  static createRandom(extraConfig = {}, ctx = null) {
+    // Set context if provided; fall back to shared context
+    const composerCtx = ctx || this.sharedComposerCtx;
+    if (composerCtx) this.setComposerContext(composerCtx);
+
     // Fail-fast: COMPOSERS array must be defined and non-empty
     if (typeof COMPOSERS === 'undefined' || !Array.isArray(COMPOSERS) || COMPOSERS.length === 0) {
       throw new Error('ComposerFactory.createRandom: COMPOSERS array is undefined or empty—fail-fast');
@@ -109,7 +128,7 @@ ComposerFactory = class ComposerFactory {
     for (let i = 0; i < maxAttempts; i++) {
       const cfg = COMPOSERS[ri(COMPOSERS.length - 1)];
       try {
-        const composer = this.create(Object.assign({}, cfg, extraConfig));
+        const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
 
         // Verify composer has getNotes method
         if (typeof composer.getNotes !== 'function') {

@@ -6,6 +6,16 @@ main = async function main() { console.log('Starting main.js ...');
 const { layer: L1, buffer: c1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
 const { layer: L2, buffer: c2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
 
+// Create composer context for explicit dependency passing (fail-fast: throw if managers missing)
+const composerCtx = {
+  phraseArc: ComposerFactory.getPhraseArcManager(),
+  layerMgr: typeof LM !== 'undefined' ? LM : (() => { throw new Error('main: LayerManager (LM) not available'); })(),
+  rhythmMgr: typeof RhythmRegistry !== 'undefined' ? RhythmRegistry : (() => { throw new Error('main: RhythmRegistry not available'); })(),
+  stutterMgr: typeof StutterManager !== 'undefined' ? new StutterManager() : null,
+  eventBus: typeof EventBus !== 'undefined' ? EventBus : (() => { throw new Error('main: EventBus not available'); })()
+};
+ComposerFactory.setComposerContext(composerCtx);
+
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
@@ -24,7 +34,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   LM.activate('L1', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
-    composer = ComposerFactory.createRandom({ root: 'random' });
+    composer = ComposerFactory.createRandom({ root: 'random' }, composerCtx);
     [numerator, denominator] = composer.getMeter();
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
     LM.activate('L1', false);
@@ -53,7 +63,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
         setBinaural();
+        EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex });
         setBalanceAndFX();
+        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex });
         playDrums();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
@@ -101,7 +113,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
         setBinaural();
+        EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2' });
         setBalanceAndFX();
+        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2' });
         playDrums2();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);

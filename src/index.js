@@ -1,4 +1,5 @@
 require('./config');
+require('./events');
 require('./utils');
 require('./rhythm');
 require('./time');
