@@ -415,6 +415,7 @@ export default [
         // global: 'readonly',
         LM: 'writable',
         StutterManager: 'writable',
+        StutterAsNoteSource: 'writable',
         Stutter: 'writable',
         StutterConfig: 'readonly',
         StutterConfigStore: 'readonly',
