@@ -109,6 +109,8 @@ declare var StutterConfig: any;
 declare var StutterConfigStore: any;
 declare var StutterMetrics: any;
 declare var StutterRegistry: any;
+declare var StutterAsNoteSource: any;
+declare var scheduleStutterNotesFromDensity: any;
 // Note cascade helper (schedules note events across unit levels)
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;
@@ -225,7 +227,6 @@ declare var chordModulator: any;
 
 declare var MotifRegistry: any;
 declare var StutterConfig: any;
-declare var StutterAsNoteSource: any;
 declare var VOICE_PROFILES: any;
 declare var CHORD_PROFILES: any;
 declare var MOTIF_PROFILES: any;
