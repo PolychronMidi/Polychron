@@ -527,6 +527,12 @@ export default [
         RhythmValues: 'writable',
         rhythmConfig: 'writable',
         rhythmModulator: 'writable',
+        // Chord subsystem globals
+        ChordRegistry: 'writable',
+        ChordManager: 'writable',
+        ChordValues: 'writable',
+        chordConfig: 'writable',
+        chordModulator: 'writable',
         // Node.js globals
         require: 'readonly',
         module: 'readonly',

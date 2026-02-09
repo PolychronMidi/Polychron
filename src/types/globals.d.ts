@@ -211,6 +211,12 @@ declare var PhraseArcManager: any;
 declare var ComposerFactory: any;
 declare var ProgressionGenerator: any;
 
+declare var ChordRegistry: any;
+declare var ChordManager: any;
+declare var ChordValues: any;
+declare var chordConfig: any;
+declare var chordModulator: any;
+
 // Ambient module declarations for composer side-effect requires (legacy pattern)
 // These declare the file paths as modules so `require('./XComposer')` doesn't error
 declare module './MeasureComposer' { const x: any; export = x; }

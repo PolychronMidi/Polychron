@@ -4,16 +4,13 @@ require('./MeasureComposer');
 require('./noiseComposer');
 // @ts-ignore: load side-effect module with globals
 require('./ScaleComposer');
+// Grouped submodules: chord, motif, voice (each has an index to load its files)
 // @ts-ignore: load side-effect module with globals
-require('./chordUtils');
-// @ts-ignore: load side-effect module with globals
-require('./ChordComposer');
+require('./chord');
 // @ts-ignore: load side-effect module with globals
 require('./ModeComposer');
 // @ts-ignore: load side-effect module with globals
 require('./PentatonicComposer');
-// @ts-ignore: load side-effect module with globals
-require('./ProgressionGenerator');
 // @ts-ignore: load side-effect module with globals
 require('./TensionReleaseComposer');
 // @ts-ignore: load side-effect module with globals
@@ -23,19 +20,9 @@ require('./HarmonicRhythmComposer');
 // @ts-ignore: load side-effect module with globals
 require('./MelodicDevelopmentComposer');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingComposer');
+require('./motif');
 // @ts-ignore: load side-effect module with globals
-require('./MotifComposer');
-// @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScore');
-// @ts-ignore: load side-effect module with globals
-require('./selectVoices');
-// @ts-ignore: load side-effect module with globals
-require('./VoiceManager');
-// @ts-ignore: load side-effect module with globals
-require('./motifSpreader');
-// @ts-ignore: load side-effect module with globals
-require('./motifs');
+require('./voice');
 // @ts-ignore: load side-effect module with globals
 require('./PhraseArcManager');
 // @ts-ignore: load side-effect module with globals
