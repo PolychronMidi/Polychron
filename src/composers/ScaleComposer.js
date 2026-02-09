@@ -33,13 +33,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     }
 
     if (!this.scale || !Array.isArray(this.scale.notes) || this.scale.notes.length === 0) {
-      console.warn(`ScaleComposer.noteSet: scale lookup failed for "${scaleKey}", falling back to C major`);
-      try { this.scale = t.Scale.get('C major'); } catch (e) { this.scale = null; }
-      if (!this.scale || !Array.isArray(this.scale.notes) || this.scale.notes.length === 0) {
-        console.warn('ScaleComposer.noteSet: fallback scale lookup failed; using single-note fallback [C]');
-        this.notes = ['C'];
-        return;
-      }
+      throw new Error(`ScaleComposer.noteSet: scale lookup failed for "${scaleKey}" and no fallback available`);
     }
     this.notes = this.scale.notes;
   }
@@ -52,7 +46,9 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    * @returns {number}
    */
   selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return candidates[0];
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      throw new Error('ScaleComposer.selectNoteWithLeading: no candidate notes provided');
+    }
 
     let selectedNote;
     try {

@@ -58,7 +58,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    */
   selectNextNote(lastNotes, availableNotes, config = {}) {
     if (!availableNotes || availableNotes.length === 0) {
-      return lastNotes[0] ?? 60; // Fallback to C4
+      throw new Error(`VoiceLeadingScore.selectNextNote: availableNotes is empty - check scale or candidate filtering`);
     }
 
     const register = config.register || 'soprano';
@@ -97,7 +97,10 @@ VoiceLeadingScore = class VoiceLeadingScore {
     let totalCost = 0;
 
     // Voice motion smoothness (stepwise vs leap)
-    const lastNote = lastNotes[0] ?? 60;
+    if (!lastNotes || lastNotes.length === 0) {
+      throw new Error('VoiceLeadingScore._scoreCandidate: lastNotes is empty - voice history corrupted or not initialized');
+    }
+    const lastNote = lastNotes[0];
     const interval = Math.abs(candidate - lastNote);
     const currentRegister = opts.register || 'soprano';
 

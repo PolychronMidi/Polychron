@@ -17,10 +17,7 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
     const registerRange = scorer.registers[register] || scorer.registers.soprano;
 
     if (!Array.isArray(candidates) || candidates.length === 0) {
-      const fallback = lastNotes[0] ?? 60;
-      chosen[i] = fallback;
-      chosenSet.add(fallback);
-      continue;
+      throw new Error(`VoiceRegistry: voice ${i} (${register}) has no candidate notes available`);
     }
 
     let bestCandidate = null;
@@ -62,8 +59,11 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
     }
 
     if (bestCandidate === null) {
-      const fallback = candidates.find(note => !chosenSet.has(note));
-      bestCandidate = (typeof fallback === 'number') ? fallback : (lastNotes[0] ?? candidates[0] ?? 60);
+      const available = candidates.find(note => !chosenSet.has(note));
+      if (typeof available !== 'number') {
+        throw new Error(`VoiceRegistry: voice ${i} (${register}) unable to select note - all candidates already chosen or no candidates available`);
+      }
+      bestCandidate = available;
     }
 
     chosen[i] = bestCandidate;

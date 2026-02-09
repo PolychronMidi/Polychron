@@ -54,7 +54,7 @@ MotifComposer = class MotifComposer {
     // Prefer developFromComposer if provided in call, else fall back to instance-level composer
     const developer = optsAny.developFromComposer || this.developFromComposer || null;
 
-    // Resolve scale notes (fallback to safe Major/C scale)
+    // Resolve scale notes - must have explicit scale source
     let scaleNotes = [];
     if (optsAny.scaleComposer && typeof optsAny.scaleComposer.getNotes === 'function') {
       scaleNotes = opts.scaleComposer.getNotes() || [];
@@ -62,15 +62,10 @@ MotifComposer = class MotifComposer {
       // If developer provided, seed scale notes from it
       scaleNotes = developer.getNotes() || [];
     } else {
-      console.warn('MotifComposer.generate: no scaleComposer or developFromComposer provided, falling back to C major scale.');
-      let sc = null;
-      try { sc = new ScaleComposer('major','C'); } catch (e) { sc = null; }
-      if (sc && typeof sc.x === 'function') {
-        scaleNotes = sc.x() || [];
-      } else {
-        console.warn('MotifComposer.generate: failed to create fallback ScaleComposer, using single note C (60).');
-        scaleNotes = [{ note: 60 }];
-      }
+      throw new Error('MotifComposer.generate: must provide scaleComposer or developFromComposer - no default fallback');
+    }
+    if (!Array.isArray(scaleNotes) || scaleNotes.length === 0) {
+      throw new Error(`MotifComposer.generate: scaleComposer/developFromComposer returned empty or invalid scale notes`);
     }
 
     // Build candidate pitches across octave range
