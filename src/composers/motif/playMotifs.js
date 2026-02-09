@@ -108,50 +108,47 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
         if (rf() < 0.05) {
           // No transformation - use entries as-is
         } else {
-          const transformations = [];
-          if (rf() > 0.5) transformations.push('invert');
-          if (rf() > 0.5) transformations.push('shuffle');
-          if (rf() > 0.5) transformations.push('octaveShift');
-          if (rf() > 0.5) transformations.push('rotate');
+          try {
+            // Create Motif from group notes
+            if (typeof Motif !== 'undefined' && typeof MotifChain !== 'undefined') {
+              const notes = groupEntries.map(e => e.note);
+              const motif = new Motif(notes, { defaultDuration: 1 });
+              MotifChain.setActive(motif);
 
-          // Ensure at least one transformation
-          if (transformations.length === 0) transformations.push(['invert', 'shuffle', 'octaveShift', 'rotate'][ri(0, 3)]);
+              // Queue transformations probabilistically
+              if (rf() > 0.5) MotifChain.addTransform('invert');
+              if (rf() > 0.5) MotifChain.addTransform('transpose', ri(-12, 12));
+              if (rf() > 0.5) MotifChain.addTransform('reverse');
+              if (rf() > 0.5) MotifChain.addTransform('augment');
 
-          // Apply transformations with MIDI range validation (0-127)
-          if (transformations.includes('invert')) {
-            // Invert around average pitch of the group
-            const avgPitch = groupEntries.reduce((sum, e) => sum + e.note, 0) / groupEntries.length;
-            groupEntries.forEach(e => {
-              const inverted = Math.round(2 * avgPitch - e.note);
-              e.note = modClamp(inverted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            });
-          }
+              // Ensure at least one transformation queued
+              if (MotifChain.getTransforms().length === 0) {
+                MotifChain.addTransform(['invert', 'transpose', 'reverse', 'augment'][ri(0, 3)]);
+              }
 
-          if (transformations.includes('shuffle')) {
-            // Shuffle note assignments while preserving seqIndex order
-            const notes = groupEntries.map(e => e.note);
-            for (let i = notes.length - 1; i > 0; i--) {
-              const j = ri(0, i);
-              [notes[i], notes[j]] = [notes[j], notes[i]];
+              // Apply the chain and extract transformed notes
+              const transformedMotif = MotifChain.apply();
+              const transformedNotes = transformedMotif.applyToNotes(notes);
+
+              // Update groupEntries with transformed notes, clamped to MIDI range
+              transformedNotes.forEach((note, i) => {
+                if (groupEntries[i]) {
+                  groupEntries[i].note = modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+                }
+              });
+
+              // Clear transforms for next cycle
+              MotifChain.clearTransforms();
+            } else {
+              // Fallback: simple transformations if MotifChain unavailable
+              const avgPitch = groupEntries.reduce((sum, e) => sum + e.note, 0) / groupEntries.length;
+              groupEntries.forEach(e => {
+                const inverted = Math.round(2 * avgPitch - e.note);
+                e.note = modClamp(inverted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+              });
             }
-            groupEntries.forEach((e, i) => { e.note = notes[i]; });
-          }
-
-          if (transformations.includes('octaveShift')) {
-            // Shift by +/-1 octave with bounds checking
-            const shift = (rf() > 0.5 ? 12 : -12);
-            groupEntries.forEach(e => {
-              const shifted = e.note + shift;
-              e.note = modClamp(shifted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            });
-          }
-
-          if (transformations.includes('rotate')) {
-            // Rotate motif notes left or right by 1 position using global rotate function
-            if (typeof rotate === 'function') {
-              const rotatedNotes = rotate(groupEntries.map(e => e.note), 1, '?', groupEntries.length);
-              groupEntries.forEach((e, i) => { e.note = rotatedNotes[i]; });
-            }
+          } catch (e) {
+            console.warn(`playMotifs: MotifChain transformation failed, skipping for groupId ${groupId}:`, e && e.message ? e.message : e);
           }
         }
 
