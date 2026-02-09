@@ -192,6 +192,7 @@ export default [
         PhraseArcManager: 'writable',
         ComposerFactory: 'writable',
         EventBus: 'writable',
+        FXFeedbackListener: 'writable',
         ProgressionGenerator: 'writable',
         // Debug/Test helpers
         logGate: 'writable',
