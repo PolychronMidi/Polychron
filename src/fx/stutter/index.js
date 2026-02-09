@@ -12,6 +12,8 @@ require('./stutterNotes');
 // @ts-ignore: load side-effect module with globals
 require('./StutterAsNoteSource');
 // @ts-ignore: load side-effect module with globals
+require('./stutterNoteSourceScheduler');
+// @ts-ignore: load side-effect module with globals
 require('./stutterFade');
 // @ts-ignore: load side-effect module with globals
 require('./stutterPan');

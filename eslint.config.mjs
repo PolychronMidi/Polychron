@@ -416,6 +416,7 @@ export default [
         LM: 'writable',
         StutterManager: 'writable',
         StutterAsNoteSource: 'writable',
+        scheduleStutterNotesFromDensity: 'writable',
         Stutter: 'writable',
         StutterConfig: 'readonly',
         StutterConfigStore: 'readonly',
