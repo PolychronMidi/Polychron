@@ -11,6 +11,17 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     // enable basic voice-leading scorer to allow selectNoteWithLeading delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ChordComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
     this.noteSet(progression,'R');
+
+    // Update HarmonicContext with active chord set for type coherence
+    if (typeof HarmonicContext !== 'undefined' && this.progression && this.progression.length > 0) {
+      try {
+        const chordSymbols = this.progression.map(c => c.symbol);
+        HarmonicContext.set({ chords: chordSymbols });
+      } catch (e) {
+        // Fail-fast for context updates; let error bubble
+        throw new Error(`ChordComposer: failed to update HarmonicContext: ${e && e.message ? e.message : e}`);
+      }
+    }
   }
 
   getVoicingIntent(candidateNotes = []) {
