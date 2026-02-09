@@ -9,7 +9,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
   constructor(progression) {
     super();
     // enable basic voice-leading scorer to allow selectNoteWithLeading delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ChordComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(progression,'R');
 
     // Update HarmonicContext with active chord set for type coherence
@@ -91,7 +91,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         case 'L': next=-1; break;
         case 'E': next=rf() < .5 ? 1 : -1; break;
         case '?': next=ri(-2,2); break;
-        default: console.warn(`ChordComposer.noteSet: invalid direction "${direction}", defaulting to right`); next=1;
+        default: throw new Error(`ChordComposer.noteSet: invalid direction "${direction}"`);
       }
       let startingMeasure=measureCount;
       let progressChord=measureCount>startingMeasure || rf()<.05;
@@ -130,6 +130,7 @@ RandomChordComposer = class RandomChordComposer extends ChordComposer {
   }
   /** Generates 2-5 random chords */
   noteSet() {
+    if (!Array.isArray(allChords) || allChords.length === 0) throw new Error('RandomChordComposer.noteSet: allChords not available');
     const progressionLength=ri(2,5);
     const randomProgression=[];
     for (let i=0; i < progressionLength; i++) {

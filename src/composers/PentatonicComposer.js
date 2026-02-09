@@ -37,6 +37,7 @@ RandomPentatonicComposer = class RandomPentatonicComposer extends PentatonicComp
   }
 
   noteSet() {
+    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('RandomPentatonicComposer.noteSet: allNotes not available');
     const randomRoot = allNotes[ri(allNotes.length - 1)];
     const randomType = rf() < 0.5 ? 'major' : 'minor';
     super.noteSet(randomRoot, randomType);

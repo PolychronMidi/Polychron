@@ -96,16 +96,14 @@ MeasureComposer = class MeasureComposer {
    * @returns {{note: number}[]} Array of note objects (full pool)
    */
   getNotes(octaveRange=null) {
-    // Defensive fallback: ensure this.notes exists and is non-empty
+    // Fail-fast: ensure this.notes exists and is non-empty
     const self = /** @type {any} */ (this);
     if (!Array.isArray(self.notes) || self.notes.length === 0) {
-      console.warn('MeasureComposer.getNotes() called but this.notes is invalid.', { composer: this && this.constructor && this.constructor.name, scale: self && self.scale && self.scale.name, notes: self.notes });
+      throw new Error(`MeasureComposer.getNotes(): this.notes is invalid - composer=${this?.constructor?.name}, scale=${self?.scale?.name}, notes=${JSON.stringify(self?.notes)}`);
     }
 
     if (++self.recursionDepth > self.MAX_RECURSION) {
-      console.warn('MeasureComposer.getNotes() exceeded max recursion depth; returning default note.');
-      self.recursionDepth = 0;
-      return [{ note: 60 }];
+      throw new Error('MeasureComposer.getNotes() exceeded max recursion depth');
     }
     const uniqueNotes=new Set();
     const [o1, o2]=octaveRange || self.getOctaveRange();
@@ -151,10 +149,11 @@ MeasureComposer = class MeasureComposer {
         throw new Error(`MeasureComposer.getNotes produced empty result: no valid notes generated for intervals [${intervals}], octaveRange ${JSON.stringify(octaveRange)}, rootNote ${rootNote}`);
       }
 
-      return notesOut; }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {
-      this.recursionDepth--; return this.getNotes(octaveRange);  }}
-    finally {
       this.recursionDepth--;
+      return notesOut;
+    } catch (e) {
+      this.recursionDepth--;
+      throw e;
     }
   }
 

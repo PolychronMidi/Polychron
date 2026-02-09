@@ -2,6 +2,8 @@
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, opts = {}) {
+    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('MelodicDevelopmentComposer: allNotes not available');
+    if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('MelodicDevelopmentComposer: allScales not available');
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     super(resolvedName, resolvedRoot);

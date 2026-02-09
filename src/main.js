@@ -11,10 +11,10 @@ const composerCtx = {
   phraseArc: ComposerFactory.getPhraseArcManager(),
   layerMgr: typeof LM !== 'undefined' ? LM : (() => { throw new Error('main: LayerManager (LM) not available'); })(),
   rhythmMgr: typeof RhythmRegistry !== 'undefined' ? RhythmRegistry : (() => { throw new Error('main: RhythmRegistry not available'); })(),
-  stutterMgr: typeof StutterManager !== 'undefined' ? new StutterManager() : null,
+  stutterMgr: typeof Stutter !== 'undefined' ? Stutter : (() => { throw new Error('main: Stutter not available'); })(),
   eventBus: typeof EventBus !== 'undefined' ? EventBus : (() => { throw new Error('main: EventBus not available'); })(),
   harmonicCtx: typeof HarmonicContext !== 'undefined' ? HarmonicContext : (() => { throw new Error('main: HarmonicContext not available'); })(),
-  motifChain: typeof MotifChain !== 'undefined' ? MotifChain : null
+  motifChain: typeof MotifChain !== 'undefined' ? MotifChain : (() => { throw new Error('main: MotifChain not available'); })()
 };
 ComposerFactory.setComposerContext(composerCtx);
 

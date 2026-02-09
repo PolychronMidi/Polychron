@@ -214,14 +214,9 @@ const midiData={
  * getMidiValue('control', 'Volume (coarse)'); // returns 7
  */
 const getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
-  if (!midiData[category]) {  console.warn(`Invalid MIDI category: ${category}`);
-    return 0; // Fallback to 0 instead of null
-  }
+  if (!midiData[category]) { throw new Error(`Invalid MIDI category: ${category}`); }
   const item=midiData[category].find(item=>item.name.toLowerCase()===name);
-  if (!item) {
-    console.warn(`MIDI ${category} '${name}' not found, using fallback value 0`);
-    return 0;
-  }
+  if (!item) { throw new Error(`MIDI ${category} '${name}' not found`); }
   return item.number;
 };
 primaryInstrument = getMidiValue('program', primaryInstrument);
@@ -241,6 +236,9 @@ t=require('tonal');
 allNotes = t.Scale.get('C chromatic').notes.map(note=>
   t.Note.enharmonic(t.Note.get(note))
 );
+if (!Array.isArray(allNotes) || allNotes.length === 0) {
+  throw new Error('midiData.js: allNotes is empty - tonal.js failed to provide chromatic scale notes');
+}
 
 /**
  * All available scale names that have valid note configurations.
@@ -254,6 +252,9 @@ allScales=t.Scale.names().filter(scaleName=>{
     return scale.notes.length > 0;
   });
 });
+if (!Array.isArray(allScales) || allScales.length === 0) {
+  throw new Error('midiData.js: allScales is empty - tonal.js failed to provide valid scales');
+}
 
 /**
  * All available chord symbols that exist in the tonal library.
@@ -277,7 +278,11 @@ allChords=(function() {
       if (chord) {  allChords.add(chord.symbol);  }
     });
   });
-  return Array.from(allChords);
+  const chordsArray = Array.from(allChords);
+  if (!Array.isArray(chordsArray) || chordsArray.length === 0) {
+    throw new Error('midiData.js: allChords is empty - tonal.js failed to provide valid chords');
+  }
+  return chordsArray;
 })();
 
 /**
@@ -303,5 +308,9 @@ allModes=(()=>{
       }
     });
   });
-  return Array.from(allModes);
+  const modesArray = Array.from(allModes);
+  if (!Array.isArray(modesArray) || modesArray.length === 0) {
+    throw new Error('midiData.js: allModes is empty - tonal.js failed to provide valid modes');
+  }
+  return modesArray;
 })();
