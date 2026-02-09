@@ -50,6 +50,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.activate('L1', false);
     getMidiTiming();
     getPolyrhythm();
+    // Initialize polyrhythmic phase coupling after alignment is computed
+    if (typeof PhaseLockedRhythmGenerator !== 'undefined') {
+      PhaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
+    }
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
@@ -111,6 +115,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       setUnitTiming('measure');
+
 
       // Get phrase context for L2 dynamism scaling
       const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)

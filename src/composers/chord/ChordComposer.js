@@ -99,6 +99,24 @@ ChordComposer = class ChordComposer extends MeasureComposer {
       this.currentChordIndex+= progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
       this.notes=this.progression[this.currentChordIndex].notes;
+
+      if (typeof HarmonicContext !== 'undefined') {
+        const currentChord = this.progression[this.currentChordIndex];
+        if (!currentChord) {
+          throw new Error('ChordComposer.noteSet: current chord missing for HarmonicContext update');
+        }
+        const chordSymbols = this.progression.map(c => c.symbol);
+        const scale = Array.isArray(currentChord.notes) ? currentChord.notes : [];
+        if (!scale.length) {
+          throw new Error(`ChordComposer.noteSet: current chord has no notes for scale (${currentChord.symbol})`);
+        }
+        const key = currentChord.tonic;
+        if (typeof key !== 'string' || !key) {
+          throw new Error(`ChordComposer.noteSet: current chord missing tonic (${currentChord.symbol})`);
+        }
+        const quality = currentChord.type || 'unknown';
+        HarmonicContext.set({ key, quality, scale, chords: chordSymbols });
+      }
     }
   }
   /** @returns {{note: number}[]} Chord notes */

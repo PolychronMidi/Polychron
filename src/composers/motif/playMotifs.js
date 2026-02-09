@@ -57,7 +57,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   // Get candidate notes from bucket and select via centralized voice coordination
-  const candidateNotes = bucket.map(s => {
+  let candidateNotes = bucket.map(s => {
     const note = Number(s.note);
     // Validate MIDI range and clamp if needed
     if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
@@ -65,6 +65,17 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     }
     return note;
   });
+
+  if (typeof HarmonicContext !== 'undefined') {
+    const scale = HarmonicContext.getField('scale');
+    if (Array.isArray(scale) && scale.length > 0) {
+      const filtered = candidateNotes.filter(note => HarmonicContext.isNoteInScale(note));
+      if (filtered.length > 0) {
+        candidateNotes = filtered;
+      }
+    }
+  }
+
   // Preserve voice Manager instance per layer to maintain voice history across beats within a phrase
   if (!layer._voiceManager) layer._voiceManager = new VoiceManager();
   const VC = layer._voiceManager;
