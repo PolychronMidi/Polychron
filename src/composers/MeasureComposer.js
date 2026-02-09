@@ -148,8 +148,7 @@ MeasureComposer = class MeasureComposer {
       }
 
       if (!Array.isArray(notesOut) || notesOut.length === 0) {
-        console.warn('MeasureComposer.getNotes produced empty result; falling back to single note', { composer: this && this.constructor && this.constructor.name, notes: self.notes, intervals, octaveRange, rootNote });
-        return [{ note: 60 }];
+        throw new Error(`MeasureComposer.getNotes produced empty result: no valid notes generated for intervals [${intervals}], octaveRange ${JSON.stringify(octaveRange)}, rootNote ${rootNote}`);
       }
 
       return notesOut; }  catch (e) { if (!fallback) { this.recursionDepth--; return this.getNotes(octaveRange); } else {

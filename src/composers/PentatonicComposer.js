@@ -18,12 +18,7 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
     this.notes = this.scale.notes;
 
     if (!this.notes || this.notes.length === 0) {
-      console.warn(`PentatonicComposer.noteSet produced empty notes for root=${root} type=${type}. Falling back to ${this.type} pentatonic scale.`);
-      this.root = allNotes[ri(allNotes.length - 1)];
-      this.type = rf() < 0.5 ? 'major' : 'minor';
-      const fallbackScaleName = this.type === 'minor' ? 'minor pentatonic' : 'major pentatonic';
-      this.scale = t.Scale.get(`${this.root} ${fallbackScaleName}`);
-      this.notes = this.scale.notes;
+      throw new Error(`PentatonicComposer.noteSet: unable to create pentatonic scale for root=${root} type=${type}`);
     }
   }
 
