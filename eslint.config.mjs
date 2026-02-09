@@ -191,6 +191,7 @@ export default [
         RandomPentatonicComposer: 'writable',
         PhraseArcManager: 'writable',
         ComposerFactory: 'writable',
+        HarmonicContext: 'writable',
         EventBus: 'writable',
         FXFeedbackListener: 'writable',
         ProgressionGenerator: 'writable',

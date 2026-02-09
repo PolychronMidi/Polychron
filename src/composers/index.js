@@ -1,6 +1,8 @@
 // @ts-ignore: load side-effect module with globals
 require('./MeasureComposer');
 // @ts-ignore: load side-effect module with globals
+require('./HarmonicContext');
+// @ts-ignore: load side-effect module with globals
 require('./noiseComposer');
 // @ts-ignore: load side-effect module with globals
 require('./ScaleComposer');
