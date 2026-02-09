@@ -1,4 +1,4 @@
-// Dependency: required via `src/composers/index.js`
+// MelodicDevelopmentComposer.js - A ScaleComposer that applies melodic transformations based on intensity and phrase arc
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, opts = {}) {

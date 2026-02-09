@@ -9,13 +9,14 @@ require('./motifConfig');
 require('./MotifRegistry');
 // @ts-ignore: load side-effect module with globals
 require('./MotifManager');
-
 // @ts-ignore: load side-effect module with globals
 require('./MotifComposer');
 // @ts-ignore: load side-effect module with globals
 require('./motifs');
 // @ts-ignore: load side-effect module with globals
 require('./motifSpreader');
+// @ts-ignore: load side-effect module with globals
+require('./playMotifs');
 
 // Register default generator wrapper
 MotifRegistry.register('motif', (opts = {}) => {

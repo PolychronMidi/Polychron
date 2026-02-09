@@ -1,7 +1,7 @@
 // playMotifs.js - Motif-driven note selection and transformation
 // Handles beatMotifs bucket retrieval, cycle tracking, transformations, and voice coordination
 
-playMotifs = function(unit = 'subdiv', layer) {
+playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer and beatMotifs bucket
   if (!layer || !layer.beatMotifs) {
     console.error(`${unit}.playMotifs missing layer or beatMotifs`);
@@ -103,7 +103,7 @@ playMotifs = function(unit = 'subdiv', layer) {
       tracking.playedIndices.clear();
 
       // Apply transformations to cloned copies of group entries (preserve originals in bucket)
-      const groupEntries = bucket.filter(e => e.groupId === groupId).map(e => playMotifs._cloneBucketEntry(e));
+      const groupEntries = bucket.filter(e => e.groupId === groupId).map(e => /** @type {any} */ (playMotifs)._cloneBucketEntry(e));
       if (groupEntries.length > 0) {
         if (rf() < 0.05) {
           // No transformation - use entries as-is
@@ -176,12 +176,12 @@ playMotifs = function(unit = 'subdiv', layer) {
   cache.picks = filteredPicks;
 
   return filteredPicks;
-};
+});
 
 /**
  * Deep clone a bucket entry (preserve original, transform copy)
  */
-playMotifs._cloneBucketEntry = function(entry) {
+/** @type {any} */ (playMotifs)._cloneBucketEntry = function(entry) {
   return {
     note: entry.note,
     duration: entry.duration,
@@ -195,7 +195,7 @@ playMotifs._cloneBucketEntry = function(entry) {
  * Reset all internal layer state (call at phrase/section boundaries)
  * Clears beatNoteHistory, motifCycleTracking, and voice Manager history
  */
-playMotifs.resetLayerState = function(layer) {
+/** @type {any} */ (playMotifs).resetLayerState = function(layer) {
   if (!layer) return;
   layer._beatNoteHistory = null;
   layer._motifCycleTracking = null;
