@@ -192,6 +192,7 @@ export default [
         PhraseArcManager: 'writable',
         ComposerFactory: 'writable',
         HarmonicContext: 'writable',
+        MotifChain: 'writable',
         EventBus: 'writable',
         FXFeedbackListener: 'writable',
         PhaseLockedRhythmGenerator: 'writable',

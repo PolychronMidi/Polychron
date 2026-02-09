@@ -214,6 +214,7 @@ declare var RandomPentatonicComposer: any;
 declare var PhraseArcManager: any;
 declare var ComposerFactory: any;
 declare var HarmonicContext: any;
+declare var MotifChain: any;
 declare var ProgressionGenerator: any;
 
 declare var ChordRegistry: any;

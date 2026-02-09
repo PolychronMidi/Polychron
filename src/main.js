@@ -13,7 +13,8 @@ const composerCtx = {
   rhythmMgr: typeof RhythmRegistry !== 'undefined' ? RhythmRegistry : (() => { throw new Error('main: RhythmRegistry not available'); })(),
   stutterMgr: typeof StutterManager !== 'undefined' ? new StutterManager() : null,
   eventBus: typeof EventBus !== 'undefined' ? EventBus : (() => { throw new Error('main: EventBus not available'); })(),
-  harmonicCtx: typeof HarmonicContext !== 'undefined' ? HarmonicContext : (() => { throw new Error('main: HarmonicContext not available'); })()
+  harmonicCtx: typeof HarmonicContext !== 'undefined' ? HarmonicContext : (() => { throw new Error('main: HarmonicContext not available'); })(),
+  motifChain: typeof MotifChain !== 'undefined' ? MotifChain : null
 };
 ComposerFactory.setComposerContext(composerCtx);
 
