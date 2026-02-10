@@ -29,7 +29,10 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
   for (let i = 0; i < voices; i++) {
     const candidates = candidatesPerVoice[i];
     const register = registerForIndex(i);
-    const lastNotes = lastNotesByVoice[i] || [];
+    const lastNotes = Array.isArray(lastNotesByVoice[i]) ? lastNotesByVoice[i] : [];
+    if (typeof lastNotesByVoice[i] !== 'undefined' && !Array.isArray(lastNotesByVoice[i])) {
+      throw new Error(`VoiceRegistry: lastNotesByVoice[${i}] must be an array if provided`);
+    }
     const registerRange = scorer.registers[register] || scorer.registers.soprano;
 
     if (!Array.isArray(candidates) || candidates.length === 0) {

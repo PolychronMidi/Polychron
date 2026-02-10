@@ -28,6 +28,7 @@ RhythmManager = (function() {
 
   function applyToNote(note, hit, profileName, options = {}) {
     const profile = profileName ? config.getProfile(profileName) : null;
+    if (options !== undefined && (typeof options !== 'object' || options === null)) throw new Error('RhythmManager.applyToNote: options must be an object if provided');
     const opts = Object.assign({}, profile || {}, options);
     return mod.apply(note, hit, opts);
   }

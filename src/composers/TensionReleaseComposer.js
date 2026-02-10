@@ -13,7 +13,14 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     this.quality = quality;
     this.measureInSection = 0;
     // Phrase-level coordination
-    this.phraseArcManager = opts.phraseArcManager || null; // Optional PhraseArcManager reference
+    if (opts.phraseArcManager !== undefined) {
+      if (!opts.phraseArcManager || typeof opts.phraseArcManager.getPosition !== 'function' || typeof opts.phraseArcManager.getPhase !== 'function') {
+        throw new Error('TensionReleaseComposer: opts.phraseArcManager must implement getPosition() and getPhase()');
+      }
+      this.phraseArcManager = opts.phraseArcManager;
+    } else {
+      this.phraseArcManager = null;
+    }
     this.phraseTensionScaling = opts.phraseTensionScaling !== false; // Whether to scale tension with phrase arc (default: true)
   }
 
@@ -93,8 +100,11 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   }
 
   getVoicingIntent(candidateNotes = []) {
-    const base = super.getVoicingIntent(candidateNotes) || { candidateWeights: {} };
-    const weights = base.candidateWeights || {};
+    const base = super.getVoicingIntent(candidateNotes);
+    if (!base || typeof base !== 'object' || !base.candidateWeights || typeof base.candidateWeights !== 'object') {
+      throw new Error('TensionReleaseComposer.getVoicingIntent: expected parent getVoicingIntent to return object with candidateWeights');
+    }
+    const weights = base.candidateWeights;
     const current = this.progression && this.progression[this.currentChordIndex];
     const symbol = current && current.symbol ? current.symbol : null;
     const tension = symbol ? this.calculateTension(symbol) : 0.5;

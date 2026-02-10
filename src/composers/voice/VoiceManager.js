@@ -130,7 +130,11 @@ VoiceManager = class VoiceManager {
 
       for (let i = 0; i < maxVoices; i++) {
         candidatesPerVoice.push([...notePool]);
-        lastNotesByVoice.push(voiceHistory[i] || []);
+        const lnv = (typeof voiceHistory[i] === 'undefined') ? [] : voiceHistory[i];
+        if (typeof voiceHistory[i] !== 'undefined' && !Array.isArray(voiceHistory[i])) {
+          throw new Error('VoiceManager.pickNotesForBeat: voiceHistory entries must be arrays if provided');
+        }
+        lastNotesByVoice.push(lnv);
       }
 
       // Call VoiceRegistry for joint optimization with voiceIndependence hint
