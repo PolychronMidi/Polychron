@@ -36,6 +36,13 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
       throw new Error(`ScaleComposer.noteSet: scale lookup failed for "${scaleKey}" and no fallback available`);
     }
     this.notes = this.scale.notes;
+    this.intervalOptions = {
+      style: 'rising',
+      density: 0.6,
+      minNotes: m.min(3, this.notes.length),
+      maxNotes: this.notes.length,
+      jitter: true,
+    };
   }
   /** @returns {{note: number}[]} Scale notes */
   x=()=>this.getNotes();

@@ -189,6 +189,7 @@ export default [
         Motif: 'writable',
         PentatonicComposer: 'writable',
         RandomPentatonicComposer: 'writable',
+        IntervalComposer: 'writable',
         PhraseArcManager: 'writable',
         ComposerFactory: 'writable',
         HarmonicContext: 'writable',

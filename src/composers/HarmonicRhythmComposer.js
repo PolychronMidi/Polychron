@@ -76,7 +76,11 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       return [{ note: 60 }];
     }
     this.noteSet();
-    return super.getNotes(octaveRange);
+    const notes = super.getNotes(octaveRange);
+    if (!Array.isArray(notes) || notes.length === 0) {
+      throw new Error('HarmonicRhythmComposer.getNotes: expected super.getNotes() to return a non-empty array');
+    }
+    return notes;
   }
 
   x() {
