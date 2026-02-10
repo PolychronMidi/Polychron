@@ -57,11 +57,11 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   // Pick next motif entry for this beat and cycle on each call
-  const cursor = layer._beatBucketCursor.get(beatIndex) || 0;
+  const cursor = layer._beatBucketCursor.get(beatIndex) ?? 0;
   const bucketEntry = bucket[cursor % bucket.length];
   layer._beatBucketCursor.set(beatIndex, cursor + 1);
-  if (!bucketEntry || typeof bucketEntry.note === 'undefined') {
-    throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor}`);
+  if (!bucketEntry || !Number.isFinite(Number(bucketEntry.note))) {
+    throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
   }
 
   // Extract valid PCs from active composer
@@ -141,9 +141,15 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   // Pass voicing options from composer for voice spacing constraints
-  const voicingOptions = layer.measureComposer?.voicingOptions || {};
-  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext, ...voicingOptions });
-  const picks = rawPicks.map(note => ({ note }));
+  const voicingOptions = (layer.measureComposer && typeof layer.measureComposer.voicingOptions === 'object') ? layer.measureComposer.voicingOptions : {};
+  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, Object.assign({ phraseContext }, voicingOptions));
+  if (!Array.isArray(rawPicks)) {
+    throw new Error(`${unit}.playMotifs: VoiceManager.pickNotesForBeat returned non-array value`);
+  }
+  const picks = rawPicks.map((note, idx) => {
+    if (!Number.isFinite(Number(note))) throw new Error(`${unit}.playMotifs: VoiceManager returned invalid pick at index ${idx}: ${JSON.stringify(note)}`);
+    return { note: Number(note) };
+  });
 
   // VALIDATE all picks before proceeding - catch VoiceManager returning invalid notes
   if (composerValidPCs.size > 0) {

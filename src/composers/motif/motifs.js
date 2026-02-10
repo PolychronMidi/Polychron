@@ -17,14 +17,16 @@ const clampMotifNote = (val, min = 0, max = 127) => m.min(max, m.max(min, val));
  */
 const normalizeEvent = (evt, defaultDuration = 1) => {
   if (evt === null || evt === undefined) {
-    return { note: 0, duration: defaultDuration };
+    throw new Error('normalizeEvent: evt must be a number or an object {note:number[,duration:number]}');
   }
   if (typeof evt === 'number') {
     return { note: evt, duration: defaultDuration };
   }
-  const note = typeof evt.note === 'number' ? evt.note : 0;
-  const duration = typeof evt.duration === 'number' && evt.duration > 0 ? evt.duration : defaultDuration;
-  return { note, duration };
+  if (typeof evt === 'object' && typeof evt.note === 'number' && Number.isFinite(evt.note)) {
+    const duration = (typeof evt.duration === 'number' && evt.duration > 0) ? evt.duration : defaultDuration;
+    return { note: evt.note, duration };
+  }
+  throw new Error(`normalizeEvent: invalid event shape ${JSON.stringify(evt)}; expected number or {note:number,duration?:number}`);
 };
 
 Motif = class Motif {
@@ -154,14 +156,21 @@ Motif = class Motif {
    * @throws {Error} if motif sequence PCs don't match input note PCs
    */
   applyToNotes(notes = [], options = {}) {
-    if (!Array.isArray(notes) || notes.length === 0 || this.sequence.length === 0) {
+    if (!Array.isArray(notes)) {
+      throw new Error('Motif.applyToNotes: notes must be an array');
+    }
+    if (notes.length === 0 || this.sequence.length === 0) {
       return Array.isArray(notes) ? [...notes] : [];
     }
 
     const { clampMin = 0, clampMax = 127 } = options;
 
-    // Extract pitch classes from input notes (multiset with octave info)
-    const inputNotes = notes.map(n => n.note ?? 0);
+    // Extract pitch numbers from input notes (allow plain numbers or {note:number}) and validate
+    const inputNotes = notes.map((n, idx) => {
+      if (typeof n === 'number') return n;
+      if (n && typeof n.note === 'number' && Number.isFinite(n.note)) return n.note;
+      throw new Error(`Motif.applyToNotes: invalid input note at index ${idx}; expected number or {note:number} - got ${JSON.stringify(n)}`);
+    });
     const inputPCs = inputNotes.map(note => ((note % 12) + 12) % 12);
 
     // Extract pitch classes from motif sequence
@@ -224,7 +233,8 @@ Motif = class Motif {
 }
 
 applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
-  if (!motif || typeof motif.applyToNotes !== 'function') return Array.isArray(notes) ? [...notes] : [];
+  if (!motif) return Array.isArray(notes) ? [...notes] : [];
+  if (typeof motif.applyToNotes !== 'function') throw new Error('applyMotifToNotes: motif provided does not implement applyToNotes()');
   return motif.applyToNotes(notes, options);
 };
 
@@ -242,7 +252,9 @@ getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max =
   // Allow a small slack so events that start slightly before the micro-unit
   // (e.g., due to jitter) are still considered. Slack is based on the
   // subdiv/subsubdiv tick lengths (use .1 as reasonable tolerance).
-  const slack = m.max(1, m.round((Number(tpSubdiv) || 0) * 0.1), m.round((Number(tpSubsubdiv) || 0) * 0.1));
+  const tpSubdivNum = Number.isFinite(Number(tpSubdiv)) ? Number(tpSubdiv) : 0;
+  const tpSubsubdivNum = Number.isFinite(Number(tpSubsubdiv)) ? Number(tpSubsubdiv) : 0;
+  const slack = m.max(1, m.round(tpSubdivNum * 0.1), m.round(tpSubsubdivNum * 0.1));
   const hits = schedule.filter(s => Number.isFinite(Number(s.startTick)) && s.startTick >= (windowStart - slack) && s.startTick < windowEnd);
   hits.sort((a, b) => a.startTick - b.startTick);
   return hits.slice(0, m.max(0, m.min(max, hits.length))).map(s => ({ ...s }));
