@@ -48,7 +48,6 @@ HarmonicContext = (() => {
       state.chords = chords;
     }
 
-    state.modifiedAt = Date.now();
   }
 
   /**
@@ -93,7 +92,6 @@ HarmonicContext = (() => {
       state.scale = scaleNotes;
       state.key = key;
       state.mode = mode;
-      state.modifiedAt = Date.now();
     } catch (e) {
       throw new Error(`HarmonicContext.updateScaleFromMode: failed to generate scale "${scaleName}": ${e && e.message ? e.message : e}`);
     }

@@ -109,7 +109,6 @@ PhaseLockedRhythmGenerator = (() => {
       patternName,
       length,
       offset,
-      timestamp: Date.now()
     });
 
     return rotated;

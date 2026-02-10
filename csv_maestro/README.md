@@ -4,6 +4,7 @@ Improvements in this fork include:
 - Ability to use the actual denominator when setting meter, rather than the confusing MIDI formatted denomintor. (this is the only change in this fork, vs. orginal repo that might require users to update how they format their data)
 - Users can now use the actual tempo (BPM) value, rather than the confusing MIDI formatted tempo. (backwards compatible by also still accepting MIDI formatted tempo)
 - Midi time values (ticks), and velocity automatically rounded. (MIDI requirement)
+- Support a `t`-prefixed time syntax (e.g., `t1.5`) to indicate absolute seconds; seconds are converted to ticks using the current BPM and PPQ. Non‑power‑of‑two time signature denominators are silently normalized to a MIDI-friendly denominator and a tempo adjustment (sync factor) is inserted so playback stays aligned.
 - Velocity not needed for note off events. For note on events, defaults is 99 if no value given.
 - All event identifiers are now case-insensitive.
 - A max PPQ (30,000) check and warning message.

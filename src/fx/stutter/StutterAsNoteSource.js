@@ -90,7 +90,6 @@ StutterAsNoteSource = (() => {
       density,
       duration,
       generatedCount: notes.length,
-      timestamp: Date.now()
     });
 
     if (generationHistory.length > MAX_HISTORY) {

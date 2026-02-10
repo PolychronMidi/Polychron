@@ -129,7 +129,7 @@ ComposerFactory = class ComposerFactory {
 
     // Fail-fast: COMPOSERS array must be defined and non-empty
     if (typeof COMPOSERS === 'undefined' || !Array.isArray(COMPOSERS) || COMPOSERS.length === 0) {
-      throw new Error('ComposerFactory.createRandom: COMPOSERS array is undefined or empty—fail-fast');
+      throw new Error('ComposerFactory.createRandom: COMPOSERS array is undefined or empty');
     }
 
     // Try up to N composers from COMPOSERS; fail-fast if all attempts exhaust

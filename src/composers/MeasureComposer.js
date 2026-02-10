@@ -48,23 +48,13 @@ MeasureComposer = class MeasureComposer {
     const METER_RATIO_MAX = 4;
     const MIN_LOG_STEPS = 0.5;
     const FALLBACK_METER = [4, 4];
-
     let iterations=0;
     const maxLogSteps=polyMeter ? 4 : 2; // Log2 steps: 2 = ~4x ratio, 4 = ~16x ratio
-    const startTs=Date.now();
-    const _mStart = process.hrtime.bigint();
 
-    while (++iterations <= maxIterations && (Date.now() - startTs) <= timeLimitMs) {
+    while (++iterations <= maxIterations) {
       let newNumerator=this.getNumerator();
       let newDenominator=this.getDenominator();
-
-      // Validate numerator and denominator are positive integers
-      if (!Number.isInteger(newNumerator) || !Number.isInteger(newDenominator) || newNumerator <= 0 || newDenominator <= 0) {
-        continue;
-      }
-
       let newMeterRatio=newNumerator / newDenominator;
-
       // Check if new meter ratio is within acceptable range
       const ratioValid = ignoreRatioCheck || (newMeterRatio >= METER_RATIO_MIN && newMeterRatio <= METER_RATIO_MAX);
 
@@ -81,7 +71,6 @@ MeasureComposer = class MeasureComposer {
           }
         } else {
           this.lastMeter=[newNumerator,newDenominator];
-          try { const _durMs = Number(process.hrtime.bigint() - _mStart) / 1e6; if (_durMs > 5) console.warn(`perf: getMeter slow ${_durMs.toFixed(2)}ms iterations=${iterations}`); } catch (e) { console.warn('MeasureComposer: perf diagnostic failed:', e && e.stack ? e.stack : e); }
           return this.lastMeter;
         }
       }
@@ -185,7 +174,9 @@ MeasureComposer = class MeasureComposer {
    */
   selectNoteWithLeading(availableNotes, config = {}) {
     if (!this.VoiceLeadingScore || !availableNotes || availableNotes.length === 0) {
-      return availableNotes?.[ri(availableNotes.length - 1)] ?? 60;
+      if (!availableNotes || availableNotes.length === 0) {
+        throw new Error('MeasureComposer.selectNoteWithLeading: availableNotes must be a non-empty array when voice leading is disabled');
+      }
     }
 
     const selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory, availableNotes, config);

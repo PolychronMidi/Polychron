@@ -437,7 +437,6 @@ VoiceLeadingScore = class VoiceLeadingScore {
       note,
       register,
       interval: note - lastNote,
-      timestamp: Date.now(),
     });
 
     // Trim history to max depth

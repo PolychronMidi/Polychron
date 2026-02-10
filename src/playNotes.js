@@ -7,7 +7,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     enableStutter = false,
     playProb = 0,
     stutterProb = 0
-  } = opts || {};
+  } = opts;
 
   // Compute on and sustain
   const on = unitStart + (tpUnit * rv(rf(.2), [-.1, .07], .3));

@@ -42,7 +42,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
         return;
       }
     }
-    if (!this.progression || this.progression.length === 0) { console.warn('HarmonicRhythmComposer.noteSet: no progression defined — skipping'); return; }
+    if (!this.progression || this.progression.length === 0) { throw new Error('HarmonicRhythmComposer.noteSet: no progression defined — skipping'); }
     const currentChord = this.getCurrentChord();
 
     // Detect chord change
@@ -73,7 +73,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
 
   getNotes(octaveRange) {
     if (!this.progression || this.progression.length === 0) {
-      return [{ note: 60 }];
+      throw new Error('HarmonicRhythmComposer.getNotes: no progression defined');
     }
     this.noteSet();
     const notes = super.getNotes(octaveRange);
@@ -89,7 +89,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   }
 
   getVoicingIntent(candidateNotes) {
-    if (!candidateNotes || candidateNotes.length === 0) return {};
+    if (!candidateNotes || candidateNotes.length === 0) throw new Error('HarmonicRhythmComposer.getVoicingIntent: candidateNotes must be a non-empty array');
 
     // Check phrase boundary if manager is available
     const atPhraseBoundary = this.phraseArcManager ? this.phraseArcManager.isAtBoundary() : false;
@@ -122,12 +122,19 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
 
     // Get chord tones from parent class voicing intent
     const parentIntent = super.getVoicingIntent ? super.getVoicingIntent(candidateNotes) : {};
-    const candidateWeights = parentIntent.candidateWeights || {};
+    // Ensure candidateWeights is available and well-formed
+    const candidateWeights = parentIntent && parentIntent.candidateWeights;
+    if (!candidateWeights || typeof candidateWeights !== 'object') {
+      throw new Error('HarmonicRhythmComposer.getVoicingIntent: expected parent getVoicingIntent to return object with candidateWeights');
+    }
 
     // Apply harmonic rhythm emphasis to all notes
     const emphasizedWeights = {};
     for (const note of candidateNotes) {
-      const baseWeight = candidateWeights[note] || 1.0;
+      if (candidateWeights[note] === undefined) {
+        throw new Error(`HarmonicRhythmComposer.getVoicingIntent: candidate note ${note} missing from parent candidateWeights`);
+      }
+      const baseWeight = candidateWeights[note];
       emphasizedWeights[note] = baseWeight * emphasisFactor;
     }
 
