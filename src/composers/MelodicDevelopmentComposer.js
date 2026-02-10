@@ -46,7 +46,9 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
   getNotes(octaveRange) {
     const baseNotes = super.getNotes(octaveRange);
-    if (baseNotes.length === 0) return baseNotes;
+    if (!Array.isArray(baseNotes) || baseNotes.length === 0) {
+      throw new Error('MelodicDevelopmentComposer.getNotes: expected super.getNotes() to return a non-empty array');
+    }
     this.measureCount++;
     this.currentPhase = m.floor((this.measureCount - 1) / 2) % 4;
     let developedNotes = [...baseNotes];

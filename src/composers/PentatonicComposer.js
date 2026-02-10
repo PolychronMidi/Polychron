@@ -20,11 +20,22 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
     if (!this.notes || this.notes.length === 0) {
       throw new Error(`PentatonicComposer.noteSet: unable to create pentatonic scale for root=${root} type=${type}`);
     }
+    this.intervalOptions = {
+      style: 'sparse',
+      density: 0.4,
+      minNotes: m.min(3, this.notes.length),
+      maxNotes: this.notes.length,
+      jitter: true,
+    };
   }
 
   getNotes(octaveRange = null) {
     // Return full note pool for centralized voice selection
-    return super.getNotes(octaveRange);
+    const notes = super.getNotes(octaveRange);
+    if (!Array.isArray(notes) || notes.length === 0) {
+      throw new Error('PentatonicComposer.getNotes: expected super.getNotes() to return a non-empty array');
+    }
+    return notes;
   }
 
   x = () => this.getNotes();

@@ -26,6 +26,13 @@ ModeComposer = class ModeComposer extends MeasureComposer {
     if (!Array.isArray(this.notes) || this.notes.length === 0) {
       throw new Error(`ModeComposer.noteSet produced empty notes for mode=${modeName} root=${root}`);
     }
+    this.intervalOptions = {
+      style: 'rising',
+      density: 0.55,
+      minNotes: m.min(3, this.notes.length),
+      maxNotes: this.notes.length,
+      jitter: true,
+    };
   }
   /** @returns {{note: number}[]} Mode notes */
   x=()=>this.getNotes();

@@ -110,22 +110,18 @@ MeasureComposer = class MeasureComposer {
     const minOctave = Math.min(o1, o2);
     const maxOctave = Math.max(o1, o2);
     const rootNote=self.notes[ri(self.notes.length - 1)];
-    let intervals=[],fallback=false;
-    try {  const shift=ri();
-      switch (ri(2)) {
-        case 0:intervals=[0,2,3+shift,6-shift].map(interval=>clamp(interval*m.round(self.notes.length / 7),0,self.notes.length-1));  break;
-        case 1:intervals=[0,1,3+shift,5+shift].map(interval=>clamp(interval*m.round(self.notes.length / 7),0,self.notes.length-1));  break;
-        default:intervals=Array.from({length:self.notes.length},(_,i)=>i);  fallback=true;  }
-      // Validate that all intervals are within scale bounds and produce valid scale degrees
-      intervals = intervals.map(interval => {
-        // Ensure interval is within valid range for the scale
-        const validatedInterval = clamp(interval, 0, self.notes.length - 1);
-        // Calculate the actual note index to verify it's within the scale
-        const rootIndex = self.notes.indexOf(rootNote);
-        const noteIndex = (rootIndex + validatedInterval) % self.notes.length;
-        // Return the validated interval that produces a proper scale degree
-        return validatedInterval;
-      });
+
+    // Delegate interval selection to universal strategy
+    let intervals = [];
+    try {
+      const intervalOptions = self.intervalOptions || undefined;
+      intervals = IntervalComposer.selectIntervals(self.notes.length, intervalOptions);
+    } catch (e) {
+      console.error('MeasureComposer.getNotes: IntervalComposer.selectIntervals failed:', e);
+      throw e;
+    }
+
+    try {
       // Build full note pool across octave range
       const notesOut = [];
       for (const interval of intervals) {
@@ -149,11 +145,9 @@ MeasureComposer = class MeasureComposer {
         throw new Error(`MeasureComposer.getNotes produced empty result: no valid notes generated for intervals [${intervals}], octaveRange ${JSON.stringify(octaveRange)}, rootNote ${rootNote}`);
       }
 
-      this.recursionDepth--;
       return notesOut;
-    } catch (e) {
+    } finally {
       this.recursionDepth--;
-      throw e;
     }
   }
 

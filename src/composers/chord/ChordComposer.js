@@ -99,6 +99,20 @@ ChordComposer = class ChordComposer extends MeasureComposer {
       this.currentChordIndex+= progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
       this.notes=this.progression[this.currentChordIndex].notes;
+      const preferIndices = [];
+      if (this.notes.length >= 1) preferIndices.push(0);
+      if (this.notes.length >= 3) preferIndices.push(2);
+      if (this.notes.length >= 4) preferIndices.push(3);
+      if (this.notes.length >= 5) preferIndices.push(4);
+
+      this.intervalOptions = {
+        style: 'even',
+        density: 0.85,
+        minNotes: m.min(3, this.notes.length),
+        maxNotes: this.notes.length,
+        preferIndices,
+        jitter: false,
+      };
 
       if (typeof HarmonicContext !== 'undefined') {
         const currentChord = this.progression[this.currentChordIndex];

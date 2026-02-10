@@ -213,6 +213,7 @@ declare var Motif: any;
 declare var playMotifs: any;
 declare var PentatonicComposer: any;
 declare var RandomPentatonicComposer: any;
+declare var IntervalComposer: any;
 declare var PhraseArcManager: any;
 declare var ComposerFactory: any;
 declare var HarmonicContext: any;
