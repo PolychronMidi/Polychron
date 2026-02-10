@@ -105,7 +105,6 @@ MeasureComposer = class MeasureComposer {
     if (++self.recursionDepth > self.MAX_RECURSION) {
       throw new Error('MeasureComposer.getNotes() exceeded max recursion depth');
     }
-    const uniqueNotes=new Set();
     const [o1, o2]=octaveRange || self.getOctaveRange();
     const minOctave = Math.min(o1, o2);
     const maxOctave = Math.max(o1, o2);
@@ -122,24 +121,7 @@ MeasureComposer = class MeasureComposer {
     }
 
     try {
-      // Build full note pool across octave range
-      const notesOut = [];
-      for (const interval of intervals) {
-        const rootIndex = self.notes.indexOf(rootNote);
-        if (rootIndex === -1) continue; // Skip if root note not found
-        const noteIndex = (rootIndex + interval) % self.notes.length;
-        const noteName = self.notes[noteIndex];
-        if (!noteName) continue; // Skip if note name undefined
-        const chroma = t.Note.chroma(noteName);
-        if (typeof chroma !== 'number' || !Number.isFinite(chroma)) continue; // Skip invalid chroma
-        for (let octave = minOctave; octave <= maxOctave; octave++) {
-          const note = chroma + 12 * octave;
-          if (!uniqueNotes.has(note)) {
-            uniqueNotes.add(note);
-            notesOut.push({ note });
-          }
-        }
-      }
+      const notesOut = MeasureNotePool.buildNotePool(self.notes, intervals, [minOctave, maxOctave], rootNote);
 
       if (!Array.isArray(notesOut) || notesOut.length === 0) {
         throw new Error(`MeasureComposer.getNotes produced empty result: no valid notes generated for intervals [${intervals}], octaveRange ${JSON.stringify(octaveRange)}, rootNote ${rootNote}`);
