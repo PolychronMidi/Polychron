@@ -136,7 +136,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       // Register bias: higher during changes, lower at phrase end (cadence resolution)
       registerBias: this._isChordChange ? 'higher' : (atPhraseEnd ? 'lower' : undefined),
       // Voice count: increased during changes, potentially reduced at phrase end for clarity
-      voiceCountMultiplier: this._isChordChange ? 1.5 : (atPhraseEnd ? 0.9 : 1.0)
+      voiceCountMultiplier: this._isChordChange ? 1.2 : (atPhraseEnd ? 0.9 : 1.0)
     };
   }
 }
