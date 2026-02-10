@@ -12,16 +12,79 @@
  */
 MotifComposer = class MotifComposer {
   constructor(options = {}) {
-    this.length = options.length || 4;
-    this.defaultDuration = options.defaultDuration || 1; // multiplier of chosen unit
-    this.octaveRange = options.octaveRange || [3, 5]; // inclusive
-    this.useVoiceLeading = Boolean(options.useVoiceLeading);
-    this.VoiceLeadingScore = options.VoiceLeadingScore || (this.useVoiceLeading ? new VoiceLeadingScore() : null);
-    this.durationUnit = options.durationUnit || 'subdiv';
-    this.durationScale = options.durationScale || 1;
-    this.developFromComposer = options.developFromComposer || null; // composer with getNotes()
-    this.measureComposer = options.measureComposer || null; // optional MeasureComposer to use selectNoteWithLeading
-    this._motifInstanceId = options.motifInstanceId || ('motif-' + Math.floor(Math.random() * 1e9));
+    const opts = options || {};
+
+    // length
+    if (opts.length !== undefined) {
+      if (!Number.isFinite(Number(opts.length)) || Number(opts.length) <= 0) throw new Error('MotifComposer: options.length must be a positive number');
+      this.length = Math.max(1, Math.round(Number(opts.length)));
+    } else {
+      this.length = 4;
+    }
+
+    // default duration multiplier
+    if (opts.defaultDuration !== undefined) {
+      if (!Number.isFinite(Number(opts.defaultDuration)) || Number(opts.defaultDuration) <= 0) throw new Error('MotifComposer: options.defaultDuration must be a positive number');
+      this.defaultDuration = Number(opts.defaultDuration);
+    } else {
+      this.defaultDuration = 1;
+    }
+
+    // octave range
+    if (opts.octaveRange !== undefined) {
+      if (!Array.isArray(opts.octaveRange) || opts.octaveRange.length < 2 || !Number.isFinite(Number(opts.octaveRange[0])) || !Number.isFinite(Number(opts.octaveRange[1]))) {
+        throw new Error('MotifComposer: options.octaveRange must be an array [min,max] of numbers');
+      }
+      this.octaveRange = [Math.round(Number(opts.octaveRange[0])), Math.round(Number(opts.octaveRange[1]))];
+      if (this.octaveRange[0] > this.octaveRange[1]) throw new Error('MotifComposer: octaveRange min must be <= max');
+    } else {
+      this.octaveRange = [3, 5];
+    }
+
+    this.useVoiceLeading = Boolean(opts.useVoiceLeading);
+
+    if (opts.VoiceLeadingScore !== undefined) {
+      if (!opts.VoiceLeadingScore || typeof opts.VoiceLeadingScore.selectNextNote !== 'function') {
+        throw new Error('MotifComposer: options.VoiceLeadingScore provided but invalid');
+      }
+      this.VoiceLeadingScore = opts.VoiceLeadingScore;
+    } else {
+      this.VoiceLeadingScore = this.useVoiceLeading ? new VoiceLeadingScore() : null;
+    }
+
+    // duration unit
+    const validUnits = ['measure', 'beat', 'div', 'subdiv', 'subsubdiv'];
+    if (opts.durationUnit !== undefined) {
+      if (typeof opts.durationUnit !== 'string' || !validUnits.includes(opts.durationUnit)) throw new Error('MotifComposer: durationUnit must be one of ' + validUnits.join(', '));
+      this.durationUnit = opts.durationUnit;
+    } else {
+      this.durationUnit = 'subdiv';
+    }
+
+    if (opts.durationScale !== undefined) {
+      if (!Number.isFinite(Number(opts.durationScale)) || Number(opts.durationScale) <= 0) throw new Error('MotifComposer: durationScale must be a positive number');
+      this.durationScale = Number(opts.durationScale);
+    } else {
+      this.durationScale = 1;
+    }
+
+    if (opts.developFromComposer !== undefined) {
+      if (!opts.developFromComposer || typeof opts.developFromComposer.getNotes !== 'function') throw new Error('MotifComposer: developFromComposer must implement getNotes()');
+      this.developFromComposer = opts.developFromComposer;
+    } else {
+      this.developFromComposer = null;
+    }
+
+    if (opts.measureComposer !== undefined) {
+      if (!opts.measureComposer || (typeof opts.measureComposer.getVoicingIntent !== 'function' && typeof opts.measureComposer.selectNoteWithLeading !== 'function')) {
+        throw new Error('MotifComposer: measureComposer must implement getVoicingIntent() or selectNoteWithLeading()');
+      }
+      this.measureComposer = opts.measureComposer;
+    } else {
+      this.measureComposer = null;
+    }
+
+    this._motifInstanceId = (typeof opts.motifInstanceId === 'string' && opts.motifInstanceId) ? opts.motifInstanceId : ('motif-' + Math.floor(Math.random() * 1e9));
     this._motifSequenceId = 0;
   }
 
@@ -49,13 +112,42 @@ MotifComposer = class MotifComposer {
    */
   generate(opts = {}) {
     const optsAny = /** @type {any} */ (opts);
-    const length = optsAny.length || this.length;
-    const durationMult = optsAny.defaultDuration || this.defaultDuration;
-    const durationUnit = optsAny.durationUnit || this.durationUnit;
-    const durationScale = typeof optsAny.durationScale === 'number' ? optsAny.durationScale : this.durationScale;
+    // Resolve/validate overridable options (fail-fast on invalid types)
+    let length;
+    if (optsAny.length !== undefined) {
+      if (!Number.isFinite(Number(optsAny.length)) || Number(optsAny.length) <= 0) throw new Error('MotifComposer.generate: invalid length option');
+      length = Math.max(1, Math.round(Number(optsAny.length)));
+    } else {
+      length = this.length;
+    }
+
+    let durationMult;
+    if (optsAny.defaultDuration !== undefined) {
+      if (!Number.isFinite(Number(optsAny.defaultDuration)) || Number(optsAny.defaultDuration) <= 0) throw new Error('MotifComposer.generate: invalid defaultDuration option');
+      durationMult = Number(optsAny.defaultDuration);
+    } else {
+      durationMult = this.defaultDuration;
+    }
+
+    let durationUnit;
+    if (optsAny.durationUnit !== undefined) {
+      const validUnits = ['measure', 'beat', 'div', 'subdiv', 'subsubdiv'];
+      if (typeof optsAny.durationUnit !== 'string' || !validUnits.includes(optsAny.durationUnit)) throw new Error('MotifComposer.generate: invalid durationUnit option');
+      durationUnit = optsAny.durationUnit;
+    } else {
+      durationUnit = this.durationUnit;
+    }
+
+    const durationScale = (optsAny.durationScale !== undefined) ? (Number.isFinite(Number(optsAny.durationScale)) ? Number(optsAny.durationScale) : (() => { throw new Error('MotifComposer.generate: invalid durationScale option'); })()) : this.durationScale;
 
     // Prefer developFromComposer if provided in call, else fall back to instance-level composer
-    const developer = optsAny.developFromComposer || this.developFromComposer || null;
+    let developer = null;
+    if (optsAny.developFromComposer !== undefined) {
+      if (!optsAny.developFromComposer || typeof optsAny.developFromComposer.getNotes !== 'function') throw new Error('MotifComposer.generate: developFromComposer option must implement getNotes()');
+      developer = optsAny.developFromComposer;
+    } else if (this.developFromComposer !== null) {
+      developer = this.developFromComposer;
+    }
 
     // Resolve scale notes - must have explicit scale source
     let scaleNotes = [];
@@ -122,6 +214,16 @@ MotifComposer = class MotifComposer {
       }
     }
 
+    // Validate developer note feed items if present (fail-fast on malformed entries)
+    if (devNotes && Array.isArray(devNotes)) {
+      for (let i = 0; i < devNotes.length; i++) {
+        const n = devNotes[i];
+        if (!(typeof n === 'number' || (n && typeof n.note === 'number'))) {
+          throw new Error(`MotifComposer.generate: developer note at index ${i} must be number or {note:number} - got ${JSON.stringify(n)}`);
+        }
+      }
+    }
+
     // compute default duration in ticks
     const unitTicks = this._unitTicks(durationUnit);
     const defaultDurationTicks = Math.max(1, Math.round(unitTicks * durationMult * durationScale));
@@ -184,7 +286,7 @@ MotifComposer = class MotifComposer {
         dur = Math.max(1, Math.round(targetDurations[i]));
       } else {
         // Add a small timing variance (±10%) to make motifs feel less rigid
-        const jitter = Number.isFinite(Number(rv)) ? rv(0.9, 1.1) : (0.9 + Math.random() * 0.2);
+        const jitter = (typeof rv === 'function') ? rv(0.9, 1.1) : (0.9 + Math.random() * 0.2);
         dur = Math.max(1, Math.round(defaultDurationTicks * jitter));
       }
 
