@@ -1,14 +1,18 @@
 
 ProgressionGenerator = class ProgressionGenerator {
   constructor(key, quality = 'major') {
+    if (typeof key !== 'string' || key === '') throw new Error('ProgressionGenerator: key must be non-empty string');
+    if (typeof quality !== 'string' || quality === '') throw new Error('ProgressionGenerator: quality must be non-empty string');
     this.key = key;
     this.quality = quality.toLowerCase();
-    this.scale = t.Scale.get(`${key} ${quality}`);
 
     const modeToQuality = {
       'ionian': 'major', 'dorian': 'minor', 'phrygian': 'minor', 'lydian': 'major', 'mixolydian': 'major', 'aeolian': 'minor', 'locrian': 'minor', 'major': 'major', 'minor': 'minor'
     };
-    this.romanQuality = modeToQuality[this.quality] || 'major';
+    if (!Object.prototype.hasOwnProperty.call(modeToQuality, this.quality)) {
+      throw new Error(`ProgressionGenerator: unknown quality or mode "${quality}"`);
+    }
+    this.romanQuality = modeToQuality[this.quality];
 
     const keyApi = this.romanQuality === 'minor' ? t.Key.minorKey : t.Key.majorKey;
     const keyData = keyApi(key);

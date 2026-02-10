@@ -21,9 +21,15 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    * @param {string} scaleName
    * @param {string} root
    */
-  noteSet(scaleName,root) {
-    const name = scaleName || '';
-    const rt = root || '';
+  noteSet(scaleName, root) {
+    if (scaleName !== undefined && typeof scaleName !== 'string') {
+      throw new Error('ScaleComposer.noteSet: scaleName must be a string if provided');
+    }
+    if (root !== undefined && typeof root !== 'string') {
+      throw new Error('ScaleComposer.noteSet: root must be a string if provided');
+    }
+    const name = scaleName ?? '';
+    const rt = root ?? '';
     const scaleKey = `${rt} ${name}`.trim();
     try {
       this.scale = t.Scale.get(scaleKey);

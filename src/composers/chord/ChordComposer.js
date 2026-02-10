@@ -53,6 +53,12 @@ ChordComposer = class ChordComposer extends MeasureComposer {
    * @param {string} [direction='R'] - 'R' (right), 'L' (left), 'E' (either), '?' (random)
    */
   noteSet(progression,direction='R') {
+    if (progression !== undefined && !Array.isArray(progression)) {
+      throw new Error('ChordComposer.noteSet: progression must be an array if provided');
+    }
+    if (typeof direction !== 'string' || !direction) {
+      throw new Error('ChordComposer.noteSet: direction must be a non-empty string');
+    }
     const arr = Array.isArray(progression) ? progression : [];
     const validatedProgression = arr.map(raw => {
       const asRaw = String(raw);
