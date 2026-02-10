@@ -28,7 +28,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'measure':
-      try { setRhythm('beat', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
+      setRhythm('beat', LM.layers[LM.activeLayer]);
       measureStart = phraseStart + measureIndex * tpMeasure;
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
       unitIndex = measureIndex;
@@ -37,15 +37,20 @@ setUnitTiming = (unitType) => {
       parentStart = phraseStart;
       tpParent = tpPhrase;
       unitsPerParent = measuresPerPhrase;
-      try {
-        const layer = LM.layers[LM.activeLayer];
-        MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
-      } catch (_e) { console.warn('main.js: MotifSpreader.spreadMeasure failed while planning measure (continuing):', _e && _e.stack ? _e.stack : _e); }
+      if (!Number.isFinite(Number(numerator)) || Number(numerator) <= 0) {
+        throw new Error(`setUnitTiming(measure): invalid numerator=${numerator} - cannot compute tpBeat`);
+      }
+      tpBeat = tpMeasure / Number(numerator);
+      if (!Number.isFinite(Number(tpBeat)) || Number(tpBeat) <= 0) {
+        throw new Error(`setUnitTiming(measure): invalid tpBeat=${tpBeat} - cannot plan motifs`);
+      }
+      const layer = LM.layers[LM.activeLayer];
+      MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
       break;
 
     case 'beat':
       // Ensure the active layer has a beat rhythm generated before tracking it
-      try { setRhythm('div', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
+      setRhythm('div', LM.layers[LM.activeLayer]);
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -69,7 +74,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'div':
-      try { setRhythm('subdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
+      setRhythm('subdiv', LM.layers[LM.activeLayer]);
       tpDiv = tpBeat / divsPerBeat;
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
@@ -86,7 +91,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdiv':
-      try { setRhythm('subsubdiv', LM.layers[LM.activeLayer]); } catch (e) { console.warn('setRhythm(beat) failed', e); }
+      setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
       tpSubdiv = tpDiv / subdivsPerDiv;
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
