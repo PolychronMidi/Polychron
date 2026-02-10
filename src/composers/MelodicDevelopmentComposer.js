@@ -59,20 +59,28 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
     switch (this.currentPhase) {
       case 0:
+        // Transpose by chromatic semitones - THIS CHANGES PITCH CLASSES!
+        // Need to either constrain to scale or accept that transposition creates new PCs
         this.transpositionOffset = intensity > 0.5 ? ri(-2, 2) : 0;
         this.transpositionOffset = applyMelodicTranspositionNoise(this.transpositionOffset, noiseContext);
-        developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
-        break;
+        // FAIL FAST: transposition by offset creates new pitch classes
+        throw new Error(`MelodicDevelopmentComposer.getNotes phase 0: chromatic transposition (+${this.transpositionOffset}) would create pitch classes outside the scale. Need scale-degree transposition instead.`);
+        // developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
       case 1:
+        // Transpose by chromatic semitones - THIS CHANGES PITCH CLASSES!
         this.transpositionOffset = m.round(intensity * 7);
         this.transpositionOffset = applyMelodicTranspositionNoise(this.transpositionOffset, noiseContext);
-        developedNotes = baseNotes.map(n => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
-        break;
+        // FAIL FAST: transposition by offset creates new pitch classes
+        throw new Error(`MelodicDevelopmentComposer.getNotes phase 1: chromatic transposition (+${this.transpositionOffset}) would create pitch classes outside the scale. Need scale-degree transposition instead.`);
+        // developedNotes = baseNotes.map(n => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
       case 2:
         if (intensity > 0.3) {
+          // Inversion by chromatic reflection - THIS CHANGES PITCH CLASSES!
           const pivot = baseNotes[0]?.note || 60;
           const noisyPivot = applyMelodicPivotNoise(pivot, noiseContext);
-          developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(2 * noisyPivot - n.note, 0, 127) }));
+          // FAIL FAST: chromatic inversion creates new pitch classes
+          throw new Error(`MelodicDevelopmentComposer.getNotes phase 2: chromatic inversion (pivot=${noisyPivot}) would create pitch classes outside the scale. Need scale-degree inversion instead.`);
+          // developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(2 * noisyPivot - n.note, 0, 127) }));
         }
         break;
       case 3:
@@ -82,10 +90,12 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     if (rf() < 0.3) {
       this.responseMode = !this.responseMode;
       if (this.responseMode) {
-        developedNotes = developedNotes.map((n, i) => {
-          const baseDuration = (n.duration || 480) * (intensity + 0.5);
-          return { ...n, duration: applyMelodicDurationNoise(baseDuration, noiseContext) };
-        });
+        // REMOVED: getNotes() should NOT add duration properties - violates contract
+        // Duration is the responsibility of the caller (MotifComposer, playNotes, etc.)
+        // developedNotes = developedNotes.map((n, i) => {
+        //   const baseDuration = (n.duration || 480) * (intensity + 0.5);
+        //   return { ...n, duration: applyMelodicDurationNoise(baseDuration, noiseContext) };
+        // });
       }
     }
     if (typeof HarmonicContext !== 'undefined') {

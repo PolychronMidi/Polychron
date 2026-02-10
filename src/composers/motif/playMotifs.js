@@ -66,12 +66,49 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     return note;
   });
 
+  // Extract valid PCs from active composer
+  const composerValidPCs = new Set();
+  if (typeof composer === 'object' && composer !== null && Array.isArray(composer.notes)) {
+    for (const noteName of composer.notes) {
+      if (typeof noteName === 'string') {
+        const pc = t.Note.chroma(noteName);
+        if (typeof pc === 'number' && Number.isFinite(pc)) {
+          composerValidPCs.add(((pc % 12) + 12) % 12);
+        }
+      }
+    }
+  }
+
+  // CRITICAL: Filter out stale notes from older composers that don't belong in current composer
+  if (composerValidPCs.size > 0) {
+    const beforeLen = candidateNotes.length;
+    candidateNotes = candidateNotes.filter(note => {
+      const pc = ((note % 12) + 12) % 12;
+      return composerValidPCs.has(pc);
+    });
+    if (candidateNotes.length === 0 && beforeLen > 0) {
+      throw new Error(`${unit}.playMotifs: All bucket notes were filtered out - bucket contains stale notes from previous composer (beforeLen=${beforeLen}, composerValidPCs=[${Array.from(composerValidPCs).sort((a,b)=>a-b).join(',')}])`);
+    }
+  }
+
   if (typeof HarmonicContext !== 'undefined') {
     const scale = HarmonicContext.getField('scale');
     if (Array.isArray(scale) && scale.length > 0) {
       const filtered = candidateNotes.filter(note => HarmonicContext.isNoteInScale(note));
       if (filtered.length > 0) {
-        candidateNotes = filtered;
+        // Only use HarmonicContext filter if it preserves composer's PCs
+        const filteredPCs = new Set(filtered.map(n => ((n % 12) + 12) % 12));
+        let allValid = true;
+        for (const pc of filteredPCs) {
+          if (composerValidPCs.size > 0 && !composerValidPCs.has(pc)) {
+            allValid = false;
+            break;
+          }
+        }
+        if (allValid) {
+          candidateNotes = filtered;
+        }
+        // If HarmonicContext filter would introduce invalid PCs, skip it
       }
     }
   }
@@ -89,6 +126,16 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   const picks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext }).map(note => ({ note }));
+
+  // VALIDATE all picks before proceeding - catch VoiceManager returning invalid notes
+  if (composerValidPCs.size > 0) {
+    for (let pi = 0; pi < picks.length; pi++) {
+      const pickPC = ((picks[pi].note % 12) + 12) % 12;
+      if (!composerValidPCs.has(pickPC)) {
+        throw new Error(`${unit}.playMotifs: VoiceManager returned invalid pick note ${picks[pi].note} (PC ${pickPC}) not in composer PCs [${Array.from(composerValidPCs).sort((a,b)=>a-b).join(',')}]`);
+      }
+    }
+  }
 
   // Track which motif indices are being played this beat
   const playedGroupIndices = new Map();
@@ -120,50 +167,63 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
           // No transformation - use entries as-is
         } else {
           try {
-            // Create Motif from group notes
-            if (typeof Motif !== 'undefined' && typeof MotifChain !== 'undefined') {
-              const notes = groupEntries.map(e => e.note);
-              const motif = new Motif(notes, { defaultDuration: 1 });
-              MotifChain.setActive(motif);
+            // Apply pure permutations to groupEntries array (no MotifChain dependency)
+            const len = groupEntries.length;
 
-              // Queue transformations probabilistically
-              if (rf() > 0.5) MotifChain.addTransform('invert');
-              if (rf() > 0.5) MotifChain.addTransform('transpose', ri(-12, 12));
-              if (rf() > 0.5) MotifChain.addTransform('reverse');
-              if (rf() > 0.5) MotifChain.addTransform('augment');
+            // Collect transformations to apply
+            const transforms = [];
+            if (rf() > 0.5) transforms.push('reverse');
+            if (rf() > 0.5) transforms.push({ type: 'rotate', amount: ri(-len, len) });
+            if (rf() > 0.5) transforms.push({ type: 'invert', pivot: 0 });
+            if (rf() > 0.5) transforms.push('augmentDuration');
 
-              // Ensure at least one transformation queued
-              if (MotifChain.getTransforms().length === 0) {
-                MotifChain.addTransform(['invert', 'transpose', 'reverse', 'augment'][ri(0, 3)]);
-              }
+            // Ensure at least one transformation
+            if (transforms.length === 0) {
+              transforms.push(['reverse', { type: 'rotate', amount: 1 }, { type: 'invert', pivot: 0 }, 'augmentDuration'][ri(0, 3)]);
+            }
 
-              // Apply the chain and extract transformed notes
-              const transformedMotif = MotifChain.apply();
-              const transformedNotes = transformedMotif.applyToNotes(notes);
-
-              // Update groupEntries with transformed notes, clamped to MIDI range
-              transformedNotes.forEach((note, i) => {
-                if (groupEntries[i]) {
-                  groupEntries[i].note = modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            // Apply permutation transformations to groupEntries
+            for (const transform of transforms) {
+              if (transform === 'reverse') {
+                // Reverse array in-place
+                for (let i = 0; i < Math.floor(len / 2); i++) {
+                  const j = len - 1 - i;
+                  const temp = groupEntries[i];
+                  groupEntries[i] = groupEntries[j];
+                  groupEntries[j] = temp;
                 }
-              });
-
-              // Clear transforms for next cycle
-              MotifChain.clearTransforms();
-            } else {
-              // Fallback: simple transformations if MotifChain unavailable
-              const avgPitch = groupEntries.reduce((sum, e) => sum + e.note, 0) / groupEntries.length;
-              groupEntries.forEach(e => {
-                const inverted = Math.round(2 * avgPitch - e.note);
-                e.note = modClamp(inverted, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-              });
+              } else if (typeof transform === 'object' && transform !== null && (transform).type === 'rotate') {
+                // Rotate array: shift positions
+                const shift = (((transform).amount % len) + len) % len;
+                if (shift > 0) {
+                  const rotated = groupEntries.slice(-shift).concat(groupEntries.slice(0, len - shift));
+                  for (let i = 0; i < len; i++) groupEntries[i] = rotated[i];
+                }
+              } else if (typeof transform === 'object' && transform !== null && (transform).type === 'invert') {
+                // Invert (mirror) around pivot
+                const pivotIdx = (transform).pivot ?? 0;
+                const inverted = new Array(len);
+                for (let i = 0; i < len; i++) {
+                  const srcIdx = ((2 * pivotIdx - i) % len + len) % len;
+                  inverted[i] = groupEntries[srcIdx];
+                }
+                for (let i = 0; i < len; i++) groupEntries[i] = inverted[i];
+              } else if (transform === 'augmentDuration') {
+                // Scale durations (doesn't change note order)
+                const factor = rf(1.1, 2.0);
+                groupEntries.forEach(e => {
+                  if (e.duration && typeof e.duration === 'number') {
+                    e.duration = Math.max(1, Math.round(e.duration * factor));
+                  }
+                });
+              }
             }
           } catch (e) {
-            console.warn(`playMotifs: MotifChain transformation failed, skipping for groupId ${groupId}:`, e && e.message ? e.message : e);
+            throw new Error(`playMotifs: transformation failed for groupId ${groupId}: ${e && e.message ? e.message : e}`);
           }
         }
 
-        // Apply transformed notes back to bucket (update in-place)
+        // Apply transformed entries back to bucket (update in-place)
         for (let i = 0; i < groupEntries.length; i++) {
           const orig = bucket.filter(e => e.groupId === groupId)[i];
           if (orig) orig.note = groupEntries[i].note;
