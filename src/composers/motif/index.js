@@ -18,6 +18,10 @@ require('./MotifChain');
 // @ts-ignore: load side-effect module with globals
 require('./motifSpreader');
 // @ts-ignore: load side-effect module with globals
+require('./MotifTransforms');
+// @ts-ignore: load side-effect module with globals
+require('./CandidateExpansion');
+// @ts-ignore: load side-effect module with globals
 require('./playMotifs');
 
 // Register default generator wrapper

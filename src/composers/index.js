@@ -32,6 +32,7 @@ require('./PhraseArcManager');
 // @ts-ignore: load side-effect module with globals
 require('./ComposerFactory');
 
+
 // Normalize chord progressions coming from the configuration so entries
 // defined in `src/config.js` are sanitized at parse/load time. This centralizes
 // normalization so any external config source will be normalized consistently.

@@ -8,14 +8,14 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     process.exit(1);
   }
 
-  // Cache picks per beatIndex to avoid re-selecting from bucket 40+ times per beat
-  if (!layer._beatPicksCache) layer._beatPicksCache = { beatIndex: -1, picks: [] };
-  const cache = layer._beatPicksCache;
-
-  // If we already have picks for this beatIndex, return them (same beat, different timing unit)
-  if (cache.beatIndex === beatIndex && cache.picks && cache.picks.length > 0) {
-    return cache.picks;
+  // Initialize per-beat cursor so we can cycle through bucket notes on each call
+  if (typeof layer._lastBeatIndex !== 'number' || beatIndex < layer._lastBeatIndex) {
+    // New measure or reset; clear cursors
+    layer._beatBucketCursor = new Map();
   }
+  layer._lastBeatIndex = beatIndex;
+  if (!layer._beatBucketCursor) layer._beatBucketCursor = new Map();
+  if (!layer._beatBucketCursor.has(beatIndex)) layer._beatBucketCursor.set(beatIndex, 0);
 
   const bucketIsArray = (layer && layer.beatMotifs && Array.isArray(layer.beatMotifs[beatIndex]));
   const bucket = bucketIsArray ? layer.beatMotifs[beatIndex] : null;
@@ -56,15 +56,13 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     }
   }
 
-  // Get candidate notes from bucket and select via centralized voice coordination
-  let candidateNotes = bucket.map(s => {
-    const note = Number(s.note);
-    // Validate MIDI range and clamp if needed
-    if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
-      return modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-    }
-    return note;
-  });
+  // Pick next motif entry for this beat and cycle on each call
+  const cursor = layer._beatBucketCursor.get(beatIndex) || 0;
+  const bucketEntry = bucket[cursor % bucket.length];
+  layer._beatBucketCursor.set(beatIndex, cursor + 1);
+  if (!bucketEntry || typeof bucketEntry.note === 'undefined') {
+    throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor}`);
+  }
 
   // Extract valid PCs from active composer
   const composerValidPCs = new Set();
@@ -77,6 +75,23 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
         }
       }
     }
+  }
+
+  // Get candidate notes from bucket entry and select via centralized voice coordination
+  let candidateNotes = (() => {
+    const note = Number(bucketEntry.note);
+    // Validate MIDI range and clamp if needed
+    if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
+      return [modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)];
+    }
+    return [note];
+  })();
+
+  // If we have fewer candidates than typical voice count, expand pool using scale-aware neighbors
+  if (candidateNotes.length < 3) {
+    const minNote = m.max(0, OCTAVE.min * 12 - 1);
+    const maxNote = OCTAVE.max * 12 - 1;
+    candidateNotes = CandidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6);
   }
 
   // CRITICAL: Filter out stale notes from older composers that don't belong in current composer
@@ -127,7 +142,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 
   // Pass voicing options from composer for voice spacing constraints
   const voicingOptions = layer.measureComposer?.voicingOptions || {};
-  const picks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext, ...voicingOptions }).map(note => ({ note }));
+  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext, ...voicingOptions });
+  const picks = rawPicks.map(note => ({ note }));
 
   // VALIDATE all picks before proceeding - catch VoiceManager returning invalid notes
   if (composerValidPCs.size > 0) {
@@ -141,13 +157,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 
   // Track which motif indices are being played this beat
   const playedGroupIndices = new Map();
-  for (let pi = 0; pi < picks.length; pi++) {
-    const pickNote = picks[pi].note;
-    const matchingEntry = bucket.find(e => e.note === pickNote);
-    if (matchingEntry && matchingEntry.groupId && Number.isFinite(matchingEntry.seqIndex)) {
-      if (!playedGroupIndices.has(matchingEntry.groupId)) playedGroupIndices.set(matchingEntry.groupId, []);
-      playedGroupIndices.get(matchingEntry.groupId).push(matchingEntry.seqIndex);
-    }
+  if (bucketEntry && bucketEntry.groupId && Number.isFinite(bucketEntry.seqIndex)) {
+    playedGroupIndices.set(bucketEntry.groupId, [bucketEntry.seqIndex]);
   }
 
   // Update cycle tracking and apply transformations when cycles complete
@@ -169,57 +180,9 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
           // No transformation - use entries as-is
         } else {
           try {
-            // Apply pure permutations to groupEntries array (no MotifChain dependency)
-            const len = groupEntries.length;
-
-            // Collect transformations to apply
-            const transforms = [];
-            if (rf() > 0.5) transforms.push('reverse');
-            if (rf() > 0.5) transforms.push({ type: 'rotate', amount: ri(-len, len) });
-            if (rf() > 0.5) transforms.push({ type: 'invert', pivot: 0 });
-            if (rf() > 0.5) transforms.push('augmentDuration');
-
-            // Ensure at least one transformation
-            if (transforms.length === 0) {
-              transforms.push(['reverse', { type: 'rotate', amount: 1 }, { type: 'invert', pivot: 0 }, 'augmentDuration'][ri(0, 3)]);
-            }
-
-            // Apply permutation transformations to groupEntries
-            for (const transform of transforms) {
-              if (transform === 'reverse') {
-                // Reverse array in-place
-                for (let i = 0; i < Math.floor(len / 2); i++) {
-                  const j = len - 1 - i;
-                  const temp = groupEntries[i];
-                  groupEntries[i] = groupEntries[j];
-                  groupEntries[j] = temp;
-                }
-              } else if (typeof transform === 'object' && transform !== null && (transform).type === 'rotate') {
-                // Rotate array: shift positions
-                const shift = (((transform).amount % len) + len) % len;
-                if (shift > 0) {
-                  const rotated = groupEntries.slice(-shift).concat(groupEntries.slice(0, len - shift));
-                  for (let i = 0; i < len; i++) groupEntries[i] = rotated[i];
-                }
-              } else if (typeof transform === 'object' && transform !== null && (transform).type === 'invert') {
-                // Invert (mirror) around pivot
-                const pivotIdx = (transform).pivot ?? 0;
-                const inverted = new Array(len);
-                for (let i = 0; i < len; i++) {
-                  const srcIdx = ((2 * pivotIdx - i) % len + len) % len;
-                  inverted[i] = groupEntries[srcIdx];
-                }
-                for (let i = 0; i < len; i++) groupEntries[i] = inverted[i];
-              } else if (transform === 'augmentDuration') {
-                // Scale durations (doesn't change note order)
-                const factor = rf(1.1, 2.0);
-                groupEntries.forEach(e => {
-                  if (e.duration && typeof e.duration === 'number') {
-                    e.duration = Math.max(1, Math.round(e.duration * factor));
-                  }
-                });
-              }
-            }
+            // Select and apply random transformations using MotifTransforms
+            const transforms = MotifTransforms.selectRandom(groupEntries.length);
+            MotifTransforms.applyAll(groupEntries, transforms);
           } catch (e) {
             throw new Error(`playMotifs: transformation failed for groupId ${groupId}: ${e && e.message ? e.message : e}`);
           }
@@ -240,10 +203,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     if (beatNoteSet) beatNoteSet.add(s.note);
     return true;
   });
-
-  // Cache the picks for this beatIndex so subsequent unit calls within the same beat reuse them
-  cache.beatIndex = beatIndex;
-  cache.picks = filteredPicks;
 
   return filteredPicks;
 });

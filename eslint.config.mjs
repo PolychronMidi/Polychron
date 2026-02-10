@@ -187,6 +187,8 @@ export default [
         VoiceLeadingComposer: 'writable',
         MotifComposer: 'writable',
         Motif: 'writable',
+        MotifTransforms: 'writable',
+        CandidateExpansion: 'writable',
         PentatonicComposer: 'writable',
         RandomPentatonicComposer: 'writable',
         IntervalComposer: 'writable',
