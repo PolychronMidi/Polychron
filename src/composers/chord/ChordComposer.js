@@ -113,6 +113,9 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         preferIndices,
         jitter: false,
       };
+      this.voicingOptions = {
+        minSemitones: 3,
+      };
 
       if (typeof HarmonicContext !== 'undefined') {
         const currentChord = this.progression[this.currentChordIndex];

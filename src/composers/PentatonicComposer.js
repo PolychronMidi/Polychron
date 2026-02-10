@@ -27,6 +27,9 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
       maxNotes: this.notes.length,
       jitter: true,
     };
+    this.voicingOptions = {
+      minSemitones: 4,
+    };
   }
 
   getNotes(octaveRange = null) {
