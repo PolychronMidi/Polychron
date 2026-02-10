@@ -30,7 +30,8 @@ LM = layerManager ={
       measureStartTime: 0,
       tpMeasure: 0,
       spMeasure: 0,
-      bufferName: ''
+      bufferName: '',
+      beatMotifs: {}
     };
 
     // Build the flattened timing object from defaults + any provided initialState
@@ -55,7 +56,10 @@ LM = layerManager ={
     try {
       c = buf;
       if (typeof setupFn === 'function') setupFn(LM.layers[name], buf);
-    } catch (e) { console.warn('LayerManager.register: layer setup function threw, continuing:', e && e.stack ? e.stack : e); }
+    } catch (e) {
+      console.error('LayerManager.register: layer setup function threw:', e && e.stack ? e.stack : e);
+      throw e;
+    }
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
     // return the layer object

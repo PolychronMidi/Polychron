@@ -60,10 +60,12 @@ MotifComposer = class MotifComposer {
     // Resolve scale notes - must have explicit scale source
     let scaleNotes = [];
     if (optsAny.scaleComposer && typeof optsAny.scaleComposer.getNotes === 'function') {
-      scaleNotes = optsAny.scaleComposer.getNotes() || [];
+      scaleNotes = optsAny.scaleComposer.getNotes();
+      if (!scaleNotes) throw new Error('MotifComposer.generate: scaleComposer.getNotes() returned null/undefined - fail-fast');
     } else if (developer && typeof developer.getNotes === 'function') {
       // If developer provided, seed scale notes from it
-      scaleNotes = developer.getNotes() || [];
+      scaleNotes = developer.getNotes();
+      if (!scaleNotes) throw new Error('MotifComposer.generate: developFromComposer.getNotes() returned null/undefined - fail-fast');
     } else {
       throw new Error('MotifComposer.generate: must provide scaleComposer or developFromComposer - no default fallback');
     }
@@ -97,8 +99,12 @@ MotifComposer = class MotifComposer {
       }
     }
 
-    // Build candidates from scaleNotes
-    const candidates = scaleNotes.map(s => (typeof s.note === 'number' ? s.note : (typeof s === 'number' ? s : 60)));
+    // Build candidates from scaleNotes (fail-fast on malformed data)
+    const candidates = scaleNotes.map((s, idx) => {
+      if (typeof s.note === 'number') return s.note;
+      if (typeof s === 'number') return s;
+      throw new Error(`MotifComposer.generate: scaleNotes[${idx}] is neither {note:number} nor number - got ${JSON.stringify(s)} - fail-fast`);
+    });
 
     if (candidates.length === 0) {
       throw new Error('MotifComposer.generate: candidates empty after building from scaleNotes—fail-fast (no emergency C4 fallback)');
@@ -108,7 +114,13 @@ MotifComposer = class MotifComposer {
     const lastNotes = [];
 
     // If developer provides a note feed, cycle through its notes with octave normalization
-    const devNotes = developer && typeof developer.getNotes === 'function' ? (developer.getNotes() || []) : null;
+    let devNotes = null;
+    if (developer && typeof developer.getNotes === 'function') {
+      devNotes = developer.getNotes();
+      if (devNotes && !Array.isArray(devNotes)) {
+        throw new Error('MotifComposer.generate: developer.getNotes() returned non-array - fail-fast');
+      }
+    }
 
     // compute default duration in ticks
     const unitTicks = this._unitTicks(durationUnit);

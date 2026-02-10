@@ -39,7 +39,10 @@ if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS)) {
     if (cfg && cfg.type === 'chords' && Array.isArray(cfg.progression)) {
       try {
         cfg.progression = cfg.progression.map(normalizeChordSymbol);
-      } catch (e) { /* swallow to avoid failing startup */ }
+      } catch (e) {
+        console.error(`Failed to normalize chord progression in COMPOSERS[${i}]:`, e);
+        throw e;
+      }
     }
   }
 }

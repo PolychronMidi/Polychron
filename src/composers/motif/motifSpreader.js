@@ -4,8 +4,9 @@
 MotifSpreader = {
   spreadMeasure({ layer, measureStart, measureBeats, composer }) {
     try {
-      if (!layer) { console.warn('MotifSpreader.spreadMeasure: no layer provided — skipping'); return; }
-      const measureB = Number.isFinite(Number(measureBeats)) ? Number(measureBeats) : 0;
+      if (!layer) throw new Error('MotifSpreader.spreadMeasure: no layer provided - fail-fast');
+      if (!Number.isFinite(Number(measureBeats))) throw new Error(`MotifSpreader.spreadMeasure: invalid measureBeats=${measureBeats} - fail-fast`);
+      const measureB = Number(measureBeats);
       let remaining = measureB;
       const groups = [];
       const min = 1; const max = 3;
@@ -29,7 +30,10 @@ MotifSpreader = {
 
       let beatOffset = 0;
       let added = 0;
-      const beatLen = (typeof tpBeat !== 'undefined' && Number.isFinite(Number(tpBeat)) && Number(tpBeat) > 0) ? Number(tpBeat) : 1;
+      if (typeof tpBeat === 'undefined' || !Number.isFinite(Number(tpBeat)) || Number(tpBeat) <= 0) {
+        throw new Error(`MotifSpreader.spreadMeasure: invalid tpBeat=${tpBeat} - fail-fast`);
+      }
+      const beatLen = Number(tpBeat);
 
       // Add group's steps as candidates on every beat of the group's span;
       // Use LOCAL beat indices (0..numerator-1) to match how main.js indexes beats
@@ -38,10 +42,14 @@ MotifSpreader = {
         const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
         const length = ri(min, Math.max(1, Math.min(8, gLen * min)));
         const motifGroup = mcGroup.generate({ length, fitToTotalTicks: true, totalTicks: gLen * beatLen, developFromComposer: composer, measureComposer: composer });
-        const seq = motifGroup.sequence || motifGroup.events || [];
-        const totalEvents = seq.length || 0;
+        if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) {
+          throw new Error('MotifSpreader.spreadMeasure: MotifComposer.generate() returned invalid structure - fail-fast');
+        }
+        const seq = motifGroup.sequence || motifGroup.events;
+        if (!Array.isArray(seq)) throw new Error('MotifSpreader.spreadMeasure: motif sequence is not an array - fail-fast');
+        const totalEvents = seq.length;
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
-        layer.beatMotifs = layer.beatMotifs || {};
+        if (!layer.beatMotifs) throw new Error('MotifSpreader.spreadMeasure: layer.beatMotifs not initialized - fail-fast');
 
         // Extract valid pitch classes from composer for validation
         const validPCs = new Set();
@@ -88,7 +96,10 @@ MotifSpreader = {
         beatOffset += gLen;
       });
 
-    } catch (e) { console.warn('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ' (continuing):', e && e.stack ? e.stack : e); }
+    } catch (e) {
+      console.error('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ':', e && e.stack ? e.stack : e);
+      throw e;
+    }
   },
 
 };
