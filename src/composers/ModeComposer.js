@@ -33,6 +33,9 @@ ModeComposer = class ModeComposer extends MeasureComposer {
       maxNotes: this.notes.length,
       jitter: true,
     };
+    this.voicingOptions = {
+      minSemitones: 4,
+    };
   }
   /** @returns {{note: number}[]} Mode notes */
   x=()=>this.getNotes();

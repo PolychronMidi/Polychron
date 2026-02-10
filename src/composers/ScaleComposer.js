@@ -43,6 +43,9 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
       maxNotes: this.notes.length,
       jitter: true,
     };
+    this.voicingOptions = {
+      minSemitones: 5,
+    };
   }
   /** @returns {{note: number}[]} Scale notes */
   x=()=>this.getNotes();

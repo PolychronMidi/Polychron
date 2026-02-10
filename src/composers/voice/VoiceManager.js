@@ -159,7 +159,8 @@ VoiceManager = class VoiceManager {
       // Call VoiceRegistry for joint optimization with voiceIndependence hint
       const scorerOpts = Object.assign({}, opts, {
         candidateWeights: weightMap,
-        voiceIndependence: voiceIndependence // Pass to scorer for contrapuntal vs homophonic tendency
+        voiceIndependence: voiceIndependence, // Pass to scorer for contrapuntal vs homophonic tendency
+        minSemitones: opts.minSemitones  // Pass voice spacing constraint
       });
       const selected = VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
       // Update history

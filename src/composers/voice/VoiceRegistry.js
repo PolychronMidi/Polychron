@@ -10,6 +10,17 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
     return ['soprano', 'alto', 'tenor', 'bass'][idx] || 'soprano';
   };
 
+  // Voice spacing constraint: ensure minimum semitone distance between simultaneous notes
+  const minSemitones = Number.isFinite(Number(opts.minSemitones)) ? Math.max(0, Number(opts.minSemitones)) : 3;
+
+  const isTooCloseToChosen = (candidate) => {
+    for (const chosen of chosenSet) {
+      const interval = Math.abs(candidate - chosen);
+      if (interval < minSemitones && interval > 0) return true;
+    }
+    return false;
+  };
+
   for (let i = 0; i < voices; i++) {
     const candidates = candidatesPerVoice[i];
     const register = registerForIndex(i);
@@ -25,6 +36,7 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
 
     for (const candidate of candidates) {
       if (chosenSet.has(candidate)) continue;
+      if (isTooCloseToChosen(candidate)) continue;
       const candidateWeight = opts.candidateWeights ? Number(opts.candidateWeights[candidate]) || 0 : 0;
       // Base single-voice cost from VoiceLeadingScore
       const baseCost = scorer._scoreCandidate(

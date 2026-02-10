@@ -125,7 +125,9 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
   }
 
-  const picks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext }).map(note => ({ note }));
+  // Pass voicing options from composer for voice spacing constraints
+  const voicingOptions = layer.measureComposer?.voicingOptions || {};
+  const picks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, { phraseContext, ...voicingOptions }).map(note => ({ note }));
 
   // VALIDATE all picks before proceeding - catch VoiceManager returning invalid notes
   if (composerValidPCs.size > 0) {
