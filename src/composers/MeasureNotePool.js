@@ -13,9 +13,15 @@ MeasureNotePool = {
    * @returns {{note: number}[]} Array of note objects
    */
   buildNotePool(notes, intervals, octaveRange, rootNote) {
-    if (!Array.isArray(notes) || notes.length === 0) return [];
-    if (!Array.isArray(intervals) || intervals.length === 0) return [];
-    if (!Array.isArray(octaveRange) || octaveRange.length < 2) return [];
+    if (!Array.isArray(notes) || notes.length === 0) {
+      throw new TypeError('notes must be a non-empty array');
+    }
+    if (!Array.isArray(intervals) || intervals.length === 0) {
+      throw new TypeError('intervals must be a non-empty array');
+    }
+    if (!Array.isArray(octaveRange) || octaveRange.length < 2) {
+      throw new TypeError('octaveRange must be an array with two elements: [minOctave, maxOctave]');
+    }
 
     const minOctave = Math.min(octaveRange[0], octaveRange[1]);
     const maxOctave = Math.max(octaveRange[0], octaveRange[1]);

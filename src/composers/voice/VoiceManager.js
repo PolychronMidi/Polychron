@@ -42,10 +42,8 @@ VoiceManager = class VoiceManager {
 
   _weightedPick(notes, weights) {
     if (!Array.isArray(notes) || notes.length === 0) {
-      console.error('_weightedPick called with empty or invalid notes array! - notes:', notes, 'weights:', weights);
-      throw new Error('_weightedPick received empty notes array');
+      throw new Error('_weightedPick called with empty or invalid notes array! - notes: ' + JSON.stringify(notes) + ' - weights: ' + JSON.stringify(weights));
     }
-
     if (!weights) return notes[ri(notes.length - 1)];
 
     let total = 0;
@@ -107,8 +105,7 @@ VoiceManager = class VoiceManager {
 
     // SAFETY CHECK: If notePool is empty after all processing, this is a critical error
     if (notePool.length === 0) {
-      console.error(`pickNotesForBeat has empty notePool after filtering! - candidateNotes length: ${candidateNotes.length} - normalizedNotes length: ${normalized.notes.length} - registerBias: ${finalRegisterBias} - maxVoices: ${maxVoices}`);
-      throw new Error('pickNotesForBeat produced empty notePool - check register bias filtering');
+      throw new Error(`pickNotesForBeat has empty notePool after filtering! - candidateNotes length: ${candidateNotes.length} - normalizedNotes length: ${normalized.notes.length} - registerBias: ${finalRegisterBias} - maxVoices: ${maxVoices}`);
     }
 
     if (!this.voiceHistoryByLayer.has(layerId)) {
