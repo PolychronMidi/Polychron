@@ -31,7 +31,7 @@ IntervalComposer = {
     }
 
     const len = Number(scaleLength);
-    const options = opts || {};
+    const options = opts;
     const allIndices = Array.from({ length: len }, (_, i) => i);
 
     const densityRaw = options.density;
@@ -80,7 +80,10 @@ IntervalComposer = {
     };
 
     const pickFromPool = (pool, targetCount, seedSet) => {
-      const result = new Set(seedSet || []);
+      if (!seedSet) {
+        throw new Error('IntervalComposer.selectIntervals.pickFromPool: seedSet must be provided');
+      }
+      const result = new Set(seedSet);
       const src = Array.isArray(pool) && pool.length > 0 ? pool : allIndices;
       let guard = len * 4;
       while (result.size < targetCount && guard-- > 0) {

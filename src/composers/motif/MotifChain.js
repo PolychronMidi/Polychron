@@ -71,7 +71,6 @@ MotifChain = (() => {
       baseMotif: activeMotif,
       transforms: appliedTransforms,
       resultLength: result.sequence ? result.sequence.length : 0,
-      timestamp: Date.now()
     });
 
     // Emit event for feedback loops
