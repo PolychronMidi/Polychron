@@ -88,22 +88,7 @@ MotifComposer = class MotifComposer {
     this._motifSequenceId = 0;
   }
 
-  /** Resolve global ticks for a unit. */
-  _unitTicks(unit) {
-    let value;
-    switch ((unit || '').toLowerCase()) {
-      case 'measure': value = tpMeasure; break;
-      case 'beat': value = tpBeat; break;
-      case 'div': value = tpDiv; break;
-      case 'subdiv': value = tpSubdiv; break;
-      case 'subsubdiv': value = tpSubsubdiv; break;
-      default: value = tpSubdiv;
-    }
-    if (!Number.isFinite(Number(value))) {
-      throw new Error(`MotifComposer._unitTicks: invalid or undefined tick value for unit "${unit}"`);
-    }
-    return Number(value);
-  }
+  // NOTE: unit tick resolution moved to MotifUnit.unitTicks (src/composers/motif/MotifUnit.js)
 
   /**
    * Generate a Motif instance.
@@ -166,30 +151,7 @@ MotifComposer = class MotifComposer {
     }
 
     // Validate scaleNotes against developer.notes if available (strict pitch class check)
-    if (developer && Array.isArray(developer.notes) && developer.notes.length > 0) {
-      const expectedPCs = new Set();
-      for (const noteName of developer.notes) {
-        if (typeof noteName === 'string') {
-          const pc = t.Note.chroma(noteName);
-          if (typeof pc === 'number' && Number.isFinite(pc)) {
-            expectedPCs.add(((pc % 12) + 12) % 12);
-          }
-        }
-      }
-
-      const scalePCs = new Set();
-      for (const s of scaleNotes) {
-        const pc = (typeof s.note === 'number') ? s.note : (typeof s === 'number' ? s : 0);
-        scalePCs.add(((pc % 12) + 12) % 12);
-      }
-
-      // Fail fast if scaleNotes contains unexpected pitch classes
-      for (const pc of scalePCs) {
-        if (!expectedPCs.has(pc)) {
-          throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. This indicates getNotes() is performing chromatic transposition/inversion instead of scale-degree permutation.`);
-        }
-      }
-    }
+    MotifValidators.assertScaleMatchesDeveloper(scaleNotes, developer);
 
     // Build candidates from scaleNotes (fail-fast on malformed data)
     const candidates = scaleNotes.map((s, idx) => {
@@ -225,7 +187,7 @@ MotifComposer = class MotifComposer {
     }
 
     // compute default duration in ticks
-    const unitTicks = this._unitTicks(durationUnit);
+    const unitTicks = MotifUnit.unitTicks(durationUnit);
     const defaultDurationTicks = Math.max(1, Math.round(unitTicks * durationMult * durationScale));
 
     // If caller asks to fit the motif into a total tick budget, compute durations accordingly

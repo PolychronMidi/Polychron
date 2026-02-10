@@ -213,6 +213,8 @@ declare var Motif: any;
 declare var MotifTransforms: any;
 declare var MeasureNotePool: any;
 declare var MotifDurationPlanner: any;
+declare var MotifUnit: any;
+declare var MotifValidators: any;
 declare var RegisterBiasing: any;
 declare var CandidateExpansion: any;
 declare var playMotifs: any;
