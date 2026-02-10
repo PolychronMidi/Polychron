@@ -190,6 +190,8 @@ export default [
         MotifTransforms: 'writable',
         CandidateExpansion: 'writable',
         MotifDurationPlanner: 'writable',
+        MotifUnit: 'writable',
+        MotifValidators: 'writable',
         MeasureNotePool: 'writable',
         RegisterBiasing: 'writable',
         PentatonicComposer: 'writable',
