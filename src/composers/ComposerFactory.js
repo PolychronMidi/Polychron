@@ -111,6 +111,9 @@ ComposerFactory = class ComposerFactory {
   };
 
   static create(config = {}, ctx = null) {
+    if (config !== undefined && (typeof config !== 'object' || config === null)) {
+      throw new Error('ComposerFactory.create: config must be an object if provided');
+    }
     const type = config.type || 'scale';
     const factory = this.constructors[type];
     if (!factory) {

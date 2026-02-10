@@ -69,6 +69,9 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     let selectedNote;
     try {
       if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
+        if (typeof this.voiceHistory !== 'undefined' && !Array.isArray(this.voiceHistory)) {
+          throw new Error('ScaleComposer.selectNoteWithLeading: voiceHistory must be an array if provided');
+        }
         selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
     } catch (e) { console.warn('ScaleComposer.selectNoteWithLeading failed, falling back to default choice:', e && e.stack ? e.stack : e); }

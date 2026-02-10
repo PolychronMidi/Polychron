@@ -34,6 +34,10 @@ LM = layerManager ={
       beatMotifs: {}
     };
 
+    // Validate initialState if provided
+    if (initialState !== undefined && (typeof initialState !== 'object' || initialState === null)) {
+      throw new Error('LayerManager.register: initialState must be an object');
+    }
     // Build the flattened timing object from defaults + any provided initialState
     const layer = Object.assign({}, defaults, initialState || {});
     let buf;

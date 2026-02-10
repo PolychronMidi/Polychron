@@ -9,7 +9,12 @@ motifModulator = (function() {
 
     // Apply motif pattern to notes (simple mapping by index)
     return notes.map((note, i) => {
-      const pat = motifPattern[i % motifPattern.length] || {};
+      let pat = motifPattern[i % motifPattern.length];
+      if (typeof pat === 'undefined') {
+        pat = {};
+      } else if (pat !== null && typeof pat !== 'object') {
+        throw new Error('motifModulator.apply: motifPattern entries must be objects');
+      }
       const out = Object.assign({}, note);
       if (pat.velocity !== undefined) out.velocity = Math.max(1, Math.min(127, Math.round((typeof out.velocity === 'number' ? out.velocity : 100) * (pat.velocity * opts.velocityScale))));
       if (pat.time !== undefined) out.time = (typeof out.time === 'number' ? out.time : 0) + pat.time + opts.timingOffset;

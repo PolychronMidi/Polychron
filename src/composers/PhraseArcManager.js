@@ -18,11 +18,23 @@ PhraseArcManager = class PhraseArcManager {
    * @param {Object} [opts.densityRange] - Voice count multiplier range (default: {min: 0.85, max: 1.3})
    */
   constructor(opts = {}) {
-    this.arcType = opts.arcType || 'arch';
-    this.registerRange = opts.registerRange || 12;
-    this.densityRange = (opts.densityRange && typeof opts.densityRange === 'object' && 'min' in opts.densityRange)
-      ? opts.densityRange
-      : { min: 0.85, max: 1.3 };
+    const validArcTypes = ['arch', 'rise-fall', 'build-resolve', 'wave'];
+    if (opts.arcType === undefined) {
+      this.arcType = 'arch';
+    } else if (typeof opts.arcType !== 'string' || !validArcTypes.includes(opts.arcType)) {
+      throw new Error('PhraseArcManager: invalid arcType');
+    } else {
+      this.arcType = opts.arcType;
+    }
+    this.registerRange = Number.isFinite(Number(opts.registerRange)) ? Number(opts.registerRange) : 12;
+    if (opts.densityRange !== undefined) {
+      if (!opts.densityRange || typeof opts.densityRange !== 'object' || !('min' in opts.densityRange && 'max' in opts.densityRange)) {
+        throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');
+      }
+      this.densityRange = opts.densityRange;
+    } else {
+      this.densityRange = { min: 0.85, max: 1.3 };
+    }
 
     // Arc profiles cache
     this._arcProfiles = this._generateArcProfiles();

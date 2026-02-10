@@ -67,6 +67,10 @@ class StutterManager {
   stutterNotes(opts = {}) {
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
+    // Validate provided.config if present
+    if (provided.config !== undefined && (typeof provided.config !== 'object' || provided.config === null)) {
+      throw new Error('StutterManager.stutterNotes: provided.config must be an object if provided');
+    }
     // propagate manager config into helper options so tests/runtime can tune behavior
     provided.config = Object.assign({}, this.config, provided.config || {});
     const helper = (SC && typeof SC.getHelper === 'function') ? SC.getHelper() : undefined;
@@ -82,6 +86,9 @@ class StutterManager {
   scheduleStutterForUnit(opts = {}) {
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
+    if (provided.config !== undefined && (typeof provided.config !== 'object' || provided.config === null)) {
+      throw new Error('StutterManager.scheduleStutterForUnit: provided.config must be an object if provided');
+    }
     provided.config = Object.assign({}, this.config, provided.config || {});
     provided.emit = false;
 

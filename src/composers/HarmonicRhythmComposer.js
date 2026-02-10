@@ -21,7 +21,14 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.anticipation = opts.anticipation ?? false; // Pre-change activity boost
     this.settling = opts.settling ?? true; // Post-change gradual reduction
     // Phrase-level coordination
-    this.phraseArcManager = opts.phraseArcManager || null; // Optional PhraseArcManager reference
+    if (opts.phraseArcManager !== undefined) {
+      if (!opts.phraseArcManager || (typeof opts.phraseArcManager.isAtBoundary !== 'function' && typeof opts.phraseArcManager.getPhraseContext !== 'function')) {
+        throw new Error('HarmonicRhythmComposer: opts.phraseArcManager must implement isAtBoundary() or getPhraseContext()');
+      }
+      this.phraseArcManager = opts.phraseArcManager;
+    } else {
+      this.phraseArcManager = null;
+    }
     this.phraseBoundaryEmphasis = opts.phraseBoundaryEmphasis ?? 1.3; // Extra emphasis at phrase boundaries
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('HarmonicRhythmComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
   }

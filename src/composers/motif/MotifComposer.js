@@ -12,6 +12,9 @@
  */
 MotifComposer = class MotifComposer {
   constructor(options = {}) {
+    if (options !== undefined && (typeof options !== 'object' || options === null)) {
+      throw new Error('MotifComposer: constructor options must be an object if provided');
+    }
     const opts = options || {};
 
     // length
@@ -225,8 +228,19 @@ MotifComposer = class MotifComposer {
         if (VC && typeof VC.pickNotesForBeat === 'function') {
           const scorer = mc && mc.VoiceLeadingScore ? mc.VoiceLeadingScore : null;
           const intent = mc && typeof mc.getVoicingIntent === 'function' ? mc.getVoicingIntent(avail) : null;
+          if (intent !== null && (typeof intent !== 'object' || Array.isArray(intent))) {
+            throw new Error('MotifComposer.generate: measureComposer.getVoicingIntent() must return an object or null');
+          }
           const voiceOpts = Object.assign({ register: 'soprano' }, intent || {});
-          const targetLayer = motifLayer || mc || {};
+          // targetLayer should be an object (motifLayer preferred, otherwise measureComposer)
+          let targetLayer;
+          if (motifLayer && typeof motifLayer === 'object') {
+            targetLayer = motifLayer;
+          } else if (mc && typeof mc === 'object') {
+            targetLayer = mc;
+          } else {
+            throw new Error('MotifComposer.generate: no valid target layer or measureComposer available for voice selection');
+          }
           const selected = VC.pickNotesForBeat(targetLayer, avail, 1, scorer, voiceOpts);
           chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[(typeof ri === 'function') ? ri(avail.length - 1) : Math.floor(Math.random() * avail.length)];
         } else {
