@@ -33,7 +33,7 @@ OCTAVE={
 VOICES={
   min: 1,
   max: 7,
-  weights: [15,30,25,7,1,1,1,1]
+  weights: [15,30,25,7,.5,.5,.1,.1]
 };
 SECTION_TYPES=[
   { type: 'intro', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: .9, dynamics: 'pp', motif: [0,2,4,7] },

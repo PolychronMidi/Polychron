@@ -88,7 +88,6 @@ VoiceManager = class VoiceManager {
 
     // Extract phrase context for arc-driven biases
     const phraseContext = opts.phraseContext || {};
-    const arcRegisterBias = phraseContext.registerBias || 0; // Semitones to shift register
     const arcDensityMultiplier = phraseContext.densityMultiplier || 1.0;
     const voiceIndependence = phraseContext.voiceIndependence || VOICE_Manager.voiceIndependenceDefault;
 
@@ -101,37 +100,10 @@ VoiceManager = class VoiceManager {
     const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * combinedMultiplier));
     const maxVoices = Math.min(adjustedVoiceCount, notePool.length);
 
-    // Apply register bias: combine intent-based (higher/lower) with arc-based preference
-    // Make arc-based bias less aggressive and only apply probabilistically
-    let finalRegisterBias = opts.registerBias; // 'higher', 'lower', or undefined
-
-    // Arc-based register bias: if arc suggests upward/downward trajectory, apply as preference
-    // Positive arcRegisterBias (+semitones) suggests higher register, negative suggests lower
-    // Only apply arc bias probabilistically with threshold to preserve variety
-    if (!finalRegisterBias && Math.abs(arcRegisterBias) > VOICE_Manager.arcRegisterBiasThreshold && rf() < VOICE_Manager.arcRegisterBiasChance) {
-      finalRegisterBias = arcRegisterBias > 0 ? 'higher' : 'lower';
-    }
-
-    // Register filtering based on final bias (from intent or arc)
-    // But only if it won't result in an empty pool
-    if (finalRegisterBias === 'higher' && notePool.length > maxVoices * 1.5) { // Only filter if pool is large enough
-      // Sort pool by pitch and favor upper portion
-      const sorted = [...notePool].sort((a, b) => b - a); // Descending
-      const upperBias = Math.ceil(sorted.length * 0.7); // Top 70% (less aggressive)
-      const filtered = sorted.slice(0, upperBias);
-      // Only apply if filter result is non-empty and substantial
-      if (filtered.length >= maxVoices) {
-        notePool = filtered;
-      }
-    } else if (finalRegisterBias === 'lower' && notePool.length > maxVoices * 1.5) { // Only filter if pool is large enough
-      const sorted = [...notePool].sort((a, b) => a - b); // Ascending
-      const lowerBias = Math.ceil(sorted.length * 0.7); // Bottom 70% (less aggressive)
-      const filtered = sorted.slice(0, lowerBias);
-      // Only apply if filter result is non-empty and substantial
-      if (filtered.length >= maxVoices) {
-        notePool = filtered;
-      }
-    }
+    // Apply register bias using centralized helper
+    const registerBiasResult = RegisterBiasing.apply(notePool, maxVoices, opts, phraseContext);
+    notePool = registerBiasResult.notePool;
+    const finalRegisterBias = registerBiasResult.finalRegisterBias;
 
     // SAFETY CHECK: If notePool is empty after all processing, this is a critical error
     if (notePool.length === 0) {

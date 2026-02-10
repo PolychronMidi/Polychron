@@ -1,6 +1,8 @@
 // @ts-ignore: load side-effect module with globals
 require('./IntervalComposer');
 // @ts-ignore: load side-effect module with globals
+require('./MeasureNotePool');
+// @ts-ignore: load side-effect module with globals
 require('./MeasureComposer');
 // @ts-ignore: load side-effect module with globals
 require('./HarmonicContext');

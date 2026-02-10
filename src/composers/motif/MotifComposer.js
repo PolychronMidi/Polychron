@@ -135,29 +135,7 @@ MotifComposer = class MotifComposer {
 
     let targetDurations = null;
     if (inferredTotalTicks) {
-      // Evenly distribute ticks across motif length; shuffle remainder for variety
-      const base = Math.floor(inferredTotalTicks / length);
-      const remainder = inferredTotalTicks - base * length;
-      targetDurations = Array.from({ length }, (_, i) => base + (i < remainder ? 1 : 0));
-      // Randomize distribution slightly while preserving sum: swap some units
-      for (let k = 0; k < Math.min(3, length); k++) {
-        const i = Math.floor(Math.random() * length);
-        const j = Math.floor(Math.random() * length);
-        if (i !== j && targetDurations[i] > 1) {
-          const delta = Math.round((Math.random() - 0.5) * Math.min(2, Math.floor(targetDurations[i] * 0.1)));
-          targetDurations[i] = Math.max(1, targetDurations[i] - delta);
-          targetDurations[j] = Math.max(1, targetDurations[j] + delta);
-        }
-      }
-      // Ensure sum unchanged (small numeric safety pass)
-      let sum = targetDurations.reduce((a,b)=>a+b,0);
-      let idx = 0;
-      while (sum !== inferredTotalTicks) {
-        if (sum < inferredTotalTicks) { targetDurations[idx % length]++; sum++; }
-        else { if (targetDurations[idx % length] > 1) { targetDurations[idx % length]--; sum--; } }
-        idx++;
-        if (idx > length * 3) break;
-      }
+      targetDurations = MotifDurationPlanner.buildTargetDurations(length, inferredTotalTicks);
     }
 
     const VC = (typeof VoiceManager !== 'undefined' && VoiceManager)

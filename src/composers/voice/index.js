@@ -9,6 +9,8 @@ require('./voiceConfig');
 require('./VoiceStrategyRegistry');
 // @ts-ignore: load side-effect module with globals
 require('./VoiceRegistry');
+// @ts-ignore: load side-effect module with globals
+require('./RegisterBiasing');
 
 // Core components
 // @ts-ignore: load side-effect module with globals
