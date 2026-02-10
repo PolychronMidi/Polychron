@@ -210,6 +210,8 @@ declare var MelodicDevelopmentComposer: any;
 declare var VoiceLeadingComposer: any;
 declare var MotifComposer: any;
 declare var Motif: any;
+declare var MotifTransforms: any;
+declare var CandidateExpansion: any;
 declare var playMotifs: any;
 declare var PentatonicComposer: any;
 declare var RandomPentatonicComposer: any;
