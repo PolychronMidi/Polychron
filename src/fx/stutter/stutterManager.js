@@ -29,21 +29,27 @@ class StutterManager {
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-    if (!channels) throw new Error('StutterManager.stutterFade: called with no channels');
+    if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFade: called with no channels');
+    if (!Number.isFinite(Number(numStutters)) || numStutters <= 0) throw new Error('StutterManager.stutterFade: numStutters must be a positive number');
+    if (!Number.isFinite(Number(duration)) || duration <= 0) throw new Error('StutterManager.stutterFade: duration must be positive');
     if (typeof this._stutterFade !== 'function') throw new Error('StutterManager.stutterFade: implementation not available');
-    return this._stutterFade.call(this, channels, numStutters, duration);
+    return this._stutterFade.call(this, channels, Number(numStutters), Number(duration));
   }
 
   stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-    if (!channels) throw new Error('StutterManager.stutterPan: called with no channels');
+    if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterPan: called with no channels');
+    if (!Number.isFinite(Number(numStutters)) || numStutters <= 0) throw new Error('StutterManager.stutterPan: numStutters must be a positive number');
+    if (!Number.isFinite(Number(duration)) || duration <= 0) throw new Error('StutterManager.stutterPan: duration must be positive');
     if (typeof this._stutterPan !== 'function') throw new Error('StutterManager.stutterPan: implementation not available');
-    return this._stutterPan.call(this, channels, numStutters, duration);
+    return this._stutterPan.call(this, channels, Number(numStutters), Number(duration));
   }
 
   stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-    if (!channels) throw new Error('StutterManager.stutterFX: called with no channels');
+    if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFX: called with no channels');
+    if (!Number.isFinite(Number(numStutters)) || numStutters <= 0) throw new Error('StutterManager.stutterFX: numStutters must be a positive number');
+    if (!Number.isFinite(Number(duration)) || duration <= 0) throw new Error('StutterManager.stutterFX: duration must be positive');
     if (typeof this._stutterFX !== 'function') throw new Error('StutterManager.stutterFX: implementation not available');
-    return this._stutterFX.call(this, channels, numStutters, duration);
+    return this._stutterFX.call(this, channels, Number(numStutters), Number(duration));
   }
 
   /**
@@ -89,6 +95,10 @@ class StutterManager {
     let added = 0;
     for (const ev of events) {
       ev._profile = provided.profile || 'unknown';
+      if (!Number.isFinite(Number(ev.tick))) {
+        if (SC && SC.logDebug) SC.logDebug('scheduleStutterForUnit: skipping event with invalid tick', ev);
+        continue;
+      }
       const key = Math.round(ev.tick);
       if (!this.pending.has(key)) this.pending.set(key, []);
       this.pending.get(key).push(ev);

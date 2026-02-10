@@ -2,6 +2,7 @@
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
+  const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
   let fxAccumulator = 0;      // Cumulative FX intensity
   let decayRate = 0.9;        // Decay per cycle
   let initialized = false;
@@ -19,8 +20,11 @@ FXFeedbackListener = (() => {
     // Listen to beat FX emission and accumulate intensity
     EventBus.on('beat-fx-applied', (data) => {
       try {
-        const intensity = (data.stereoPan || 0) * (data.velocityShift || 0);
-        if (typeof intensity !== 'number' || !Number.isFinite(intensity)) {
+        if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: event payload must be an object');
+        const stereoPan = Number.isFinite(Number(data.stereoPan)) ? Number(data.stereoPan) : 0;
+        const velocityShift = Number.isFinite(Number(data.velocityShift)) ? Number(data.velocityShift) : 0;
+        const intensity = stereoPan * velocityShift;
+        if (!Number.isFinite(intensity)) {
           throw new Error(`FXFeedbackListener: invalid intensity ${intensity}`);
         }
         fxAccumulator = fxAccumulator * decayRate + intensity * (1 - decayRate);
@@ -63,6 +67,10 @@ FXFeedbackListener = (() => {
     const biased = {};
 
     for (const [name, method] of Object.entries(rhythmMethodsObj)) {
+      if (typeof method !== 'function') {
+        if (SC && SC.logDebug) SC.logDebug('FXFeedbackListener.biasRhythmMethods: skipping non-function method', name);
+        continue;
+      }
       biased[name] = method; // Strategy functions are kept as-is (weightings are in rhythms config, not here)
     }
 
@@ -90,9 +98,10 @@ FXFeedbackListener = (() => {
 
       // Boost complex patterns at higher intensities
       const newWeights = spec.weights.map((w, idx) => {
+        const wN = Number.isFinite(Number(w)) ? Number(w) : 0.1;
         const complexity = idx / spec.weights.length; // 0=simple, 1=complex
         const boost = (complexity - 0.5) * intensity * 0.4; // Up to 40% swing
-        return Math.max(0.1, w + boost);
+        return Math.max(0.1, wN + boost);
       });
 
       modified[key] = { ...spec, weights: newWeights };
