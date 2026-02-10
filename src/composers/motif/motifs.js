@@ -50,30 +50,36 @@ Motif = class Motif {
   }
 
   /**
-   * Transpose motif by semitones.
+   * Reorder motif by rotating sequence (no pitch changes).
    * @param {number} semitones
    * @returns {this}
    */
   transpose(semitones = 0) {
-    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
-      note: clampMotifNote(note + semitones),
-      duration
-    })), { defaultDuration: this.defaultDuration }));
+    const len = this.sequence.length;
+    if (len <= 1) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
+    const shift = ((Math.round(semitones) % len) + len) % len;
+    if (shift === 0) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
+    const rotated = this.sequence.slice(-shift).concat(this.sequence.slice(0, len - shift));
+    return /** @type {this} */ (new Motif(rotated, { defaultDuration: this.defaultDuration }));
   }
 
   /**
-   * Invert motif around a pivot (default: first note).
+   * Invert motif order around a pivot index (default: 0).
    * @param {number|null} [pivot]
    * @returns {this}
    */
   invert(pivot = null) {
-    const pivotNote = pivot === null
-      ? (this.sequence[0]?.note ?? 0)
-      : pivot;
-    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
-      note: clampMotifNote(pivotNote - (note - pivotNote)),
-      duration
-    })), { defaultDuration: this.defaultDuration }));
+    const len = this.sequence.length;
+    if (len <= 1) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
+    const pivotIdx = pivot === null
+      ? 0
+      : m.max(0, m.min(len - 1, m.round(pivot)));
+    const reordered = new Array(len);
+    for (let i = 0; i < len; i++) {
+      const srcIdx = ((2 * pivotIdx - i) % len + len) % len;
+      reordered[i] = this.sequence[srcIdx];
+    }
+    return /** @type {this} */ (new Motif(reordered, { defaultDuration: this.defaultDuration }));
   }
 
   /**
@@ -139,24 +145,81 @@ Motif = class Motif {
   }
 
   /**
-   * Apply motif offsets to an array of note objects (non-mutating).
-   * Calculates interval offset from motif's first note and applies to each input note.
-   * @param {{note:number}[]} notes
+   * Apply motif as a permutation: reorder input notes according to motif sequence order.
+   * Matches input notes to motif events by pitch class, preserving octaves.
+   * Strictly enforces that motif and input have same pitch class multiset.
+   * @param {{note:number}[]} notes - Input notes to permute
    * @param {{clampMin?:number,clampMax?:number}} [options]
    * @returns {{note:number}[]}
+   * @throws {Error} if motif sequence PCs don't match input note PCs
    */
   applyToNotes(notes = [], options = {}) {
     if (!Array.isArray(notes) || notes.length === 0 || this.sequence.length === 0) {
       return Array.isArray(notes) ? [...notes] : [];
     }
+
     const { clampMin = 0, clampMax = 127 } = options;
-    const baseNote = this.sequence[0].note;
-    return notes.map((noteObj, idx) => {
-      const motifEvent = this.sequence[idx % this.sequence.length];
-      const offset = motifEvent.note - baseNote;
-      const newNote = clampMotifNote((noteObj?.note ?? 0) + offset, clampMin, clampMax);
-      return { ...noteObj, note: newNote };
-    });
+
+    // Extract pitch classes from input notes (multiset with octave info)
+    const inputNotes = notes.map(n => n.note ?? 0);
+    const inputPCs = inputNotes.map(note => ((note % 12) + 12) % 12);
+
+    // Extract pitch classes from motif sequence
+    const motifPCs = this.sequence.map(evt => ((evt.note % 12) + 12) % 12);
+
+    // Validate that motif and input have same pitch class multiset
+    const inputPCCounts = new Map();
+    for (const pc of inputPCs) {
+      inputPCCounts.set(pc, (inputPCCounts.get(pc) ?? 0) + 1);
+    }
+
+    const motifPCCounts = new Map();
+    for (const pc of motifPCs) {
+      motifPCCounts.set(pc, (motifPCCounts.get(pc) ?? 0) + 1);
+    }
+
+    // Check counts match
+    if (inputPCCounts.size !== motifPCCounts.size) {
+      const inputPCList = Array.from(inputPCCounts.keys()).sort((a, b) => a - b);
+      const motifPCList = Array.from(motifPCCounts.keys()).sort((a, b) => a - b);
+      throw new Error(`Motif.applyToNotes: pitch class mismatch. Input PCs: ${inputPCList.join(',')}, motif PCs: ${motifPCList.join(',')}`);
+    }
+    for (const [pc, count] of motifPCCounts) {
+      if ((inputPCCounts.get(pc) ?? 0) !== count) {
+        throw new Error(`Motif.applyToNotes: PC ${pc} count mismatch. Input has ${inputPCCounts.get(pc) ?? 0}, motif requires ${count}`);
+      }
+    }
+
+    // Build pool of input notes by PC (allows reuse per motif cycle)
+    const notesByPC = new Map();
+    for (let i = 0; i < inputNotes.length; i++) {
+      const pc = inputPCs[i];
+      if (!notesByPC.has(pc)) notesByPC.set(pc, []);
+      notesByPC.get(pc).push(i);
+    }
+
+    // For each motif event, consume a note with matching PC
+    const result = [];
+    const consumedIndices = new Set();
+
+    for (let motifIdx = 0; motifIdx < this.sequence.length; motifIdx++) {
+      const motifPC = motifPCs[motifIdx];
+      const availableIndices = (notesByPC.get(motifPC) ?? []).filter(idx => !consumedIndices.has(idx));
+
+      if (availableIndices.length === 0) {
+        throw new Error(`Motif.applyToNotes: no available input note with PC ${motifPC} for motif position ${motifIdx}`);
+      }
+
+      // Use first available note with matching PC (try to preserve order when possible)
+      const inputIdx = availableIndices[0];
+      consumedIndices.add(inputIdx);
+
+      const inputNote = inputNotes[inputIdx];
+      const outputNote = clampMotifNote(inputNote, clampMin, clampMax);
+      result.push({ note: outputNote });
+    }
+
+    return result;
   }
 }
 

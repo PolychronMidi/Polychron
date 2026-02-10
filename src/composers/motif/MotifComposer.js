@@ -60,7 +60,7 @@ MotifComposer = class MotifComposer {
     // Resolve scale notes - must have explicit scale source
     let scaleNotes = [];
     if (optsAny.scaleComposer && typeof optsAny.scaleComposer.getNotes === 'function') {
-      scaleNotes = opts.scaleComposer.getNotes() || [];
+      scaleNotes = optsAny.scaleComposer.getNotes() || [];
     } else if (developer && typeof developer.getNotes === 'function') {
       // If developer provided, seed scale notes from it
       scaleNotes = developer.getNotes() || [];
@@ -71,15 +71,34 @@ MotifComposer = class MotifComposer {
       throw new Error(`MotifComposer.generate: scaleComposer/developFromComposer returned empty or invalid scale notes`);
     }
 
-    // Build candidate pitches across octave range
-    const [minOct, maxOct] = this.octaveRange;
-    const candidates = [];
-    for (const s of scaleNotes) {
-      const base = typeof s.note === 'number' ? s.note % 12 : (Number(s) % 12);
-      for (let oct = minOct; oct <= maxOct; oct++) {
-        candidates.push(base + oct * 12);
+    // Validate scaleNotes against developer.notes if available (strict pitch class check)
+    if (developer && Array.isArray(developer.notes) && developer.notes.length > 0) {
+      const expectedPCs = new Set();
+      for (const noteName of developer.notes) {
+        if (typeof noteName === 'string') {
+          const pc = t.Note.chroma(noteName);
+          if (typeof pc === 'number' && Number.isFinite(pc)) {
+            expectedPCs.add(((pc % 12) + 12) % 12);
+          }
+        }
+      }
+
+      const scalePCs = new Set();
+      for (const s of scaleNotes) {
+        const pc = (typeof s.note === 'number') ? s.note : (typeof s === 'number' ? s : 0);
+        scalePCs.add(((pc % 12) + 12) % 12);
+      }
+
+      // Fail fast if scaleNotes contains unexpected pitch classes
+      for (const pc of scalePCs) {
+        if (!expectedPCs.has(pc)) {
+          throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. This indicates getNotes() is performing chromatic transposition/inversion instead of scale-degree permutation.`);
+        }
       }
     }
+
+    // Build candidates from scaleNotes
+    const candidates = scaleNotes.map(s => (typeof s.note === 'number' ? s.note : (typeof s === 'number' ? s : 60)));
 
     if (candidates.length === 0) {
       throw new Error('MotifComposer.generate: candidates empty after building from scaleNotes—fail-fast (no emergency C4 fallback)');
@@ -177,6 +196,11 @@ MotifComposer = class MotifComposer {
         // Add a small timing variance (±10%) to make motifs feel less rigid
         const jitter = Number.isFinite(Number(rv)) ? rv(0.9, 1.1) : (0.9 + Math.random() * 0.2);
         dur = Math.max(1, Math.round(defaultDurationTicks * jitter));
+      }
+
+      // Validate chosen note is in candidates (valid pitch class from composer)
+      if (!candidates.includes(chosen)) {
+        throw new Error(`MotifComposer.generate: chosen note ${chosen} (PC ${((chosen % 12) + 12) % 12}) not in valid candidates. Valid PCs: ${Array.from(new Set(candidates.map(c => ((c % 12) + 12) % 12))).sort((a,b)=>a-b).join(',')}`);
       }
       seq.push({ note: chosen, duration: dur });
     }

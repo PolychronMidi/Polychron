@@ -26,15 +26,37 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const noiseProfile = getNoiseProfile('subtle');
   const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
   const voiceIdSeed = beatStart * 73 + layer.id * 43; // Deterministic voice ID from context
-  try {
-    // Gate play invocation with playProb and crossModulation
-    if (typeof playProb === 'number' && (rf() > playProb) && (crossModulation < rv(rf(2, 4), [-.2, -.3], .05))) {
-      return trackRhythm(unit, layer, false);
+
+  // Gate play invocation with playProb and crossModulation
+  if (typeof playProb === 'number' && (rf() > playProb) && (crossModulation < rv(rf(2, 4), [-.2, -.3], .05))) {
+    return trackRhythm(unit, layer, false);
+  }
+
+  // Delegate motif selection and transformation to playMotifs
+  const picks = playMotifs(unit, layer);
+
+  // Validate notes belong to active composer's pitch class set (before try-catch so errors propagate)
+  if (typeof composer === 'object' && composer !== null && Array.isArray(composer.notes)) {
+    const validPCs = new Set();
+    for (let ni = 0; ni < composer.notes.length; ni++) {
+      const noteName = composer.notes[ni];
+      if (typeof noteName === 'string') {
+        const pc = t.Note.chroma(noteName);
+        if (typeof pc === 'number' && Number.isFinite(pc)) {
+          validPCs.add(((pc % 12) + 12) % 12);
+        }
+      }
     }
+    for (let pi = 0; pi < picks.length; pi++) {
+      const pickNote = picks[pi].note;
+      const pickPC = ((pickNote % 12) + 12) % 12;
+      if (!validPCs.has(pickPC)) {
+        throw new Error(`${unit}.playNotes(MARKER20250210): note ${pickNote} (PC ${pickPC}) not in active composer - valid PCs: ${Array.from(validPCs).sort((a,b)=>a-b).join(',')}`);
+      }
+    }
+  }
 
-    // Delegate motif selection and transformation to playMotifs
-    const picks = playMotifs(unit, layer);
-
+  try {
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];
       if (!s || typeof s.note === 'undefined') throw new Error(`${unit}.playNotes: invalid note object in motif picks`);

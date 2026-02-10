@@ -43,11 +43,25 @@ MotifSpreader = {
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
         layer.beatMotifs = layer.beatMotifs || {};
 
+        // Extract valid pitch classes from composer for validation
+        const validPCs = new Set();
+        if (composer && Array.isArray(composer.notes)) {
+          for (const noteName of composer.notes) {
+            if (typeof noteName === 'string') {
+              const pc = t.Note.chroma(noteName);
+              if (typeof pc === 'number' && Number.isFinite(pc)) {
+                validPCs.add(((pc % 12) + 12) % 12);
+              }
+            }
+          }
+        }
+
         // ALWAYS create beat bucket entries for this group's beats, using LOCAL beat indices
         // playMotifs expects every beat to have a key in layer.beatMotifs
         for (let b = 0; b < gLen; b++) {
           const bKey = beatOffset + b;  // LOCAL beat index, not absolute
-          layer.beatMotifs[bKey] = layer.beatMotifs[bKey] || [];
+          // CLEAR previous bucket for this beat to prevent stale notes from old composer
+          layer.beatMotifs[bKey] = [];
 
           // Populate with motif notes if generation succeeded; otherwise empty array is correct
           if (totalEvents > 0) {
@@ -56,6 +70,15 @@ MotifSpreader = {
               const noteValue = Number(evt.note);
               // Clamp to valid MIDI range 0-127 before adding to bucket
               const clampedNote = modClamp(noteValue, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+
+              // Fail-fast if bucket note has invalid pitch class
+              if (validPCs.size > 0) {
+                const notePC = ((clampedNote % 12) + 12) % 12;
+                if (!validPCs.has(notePC)) {
+                  throw new Error(`MotifSpreader: motif event ${i} produced note ${clampedNote} (PC ${notePC}) not in composer scale - valid PCs: ${Array.from(validPCs).sort((a,b)=>a-b).join(',')}`);
+                }
+              }
+
               layer.beatMotifs[bKey].push({ note: clampedNote, groupId, seqIndex: i, seqLen: totalEvents });
               added++;
             }
