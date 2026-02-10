@@ -48,16 +48,16 @@ VoiceManager = class VoiceManager {
 
     let total = 0;
     for (const note of notes) {
-      const weight = Math.max(0, Number(weights[note]) || 0);
-      total += weight;
+      const w = (weights && Number.isFinite(Number(weights[note]))) ? Math.max(0, Number(weights[note])) : 0;
+      total += w;
     }
 
     if (total <= 0) return notes[ri(notes.length - 1)];
 
     let roll = rf() * total;
     for (const note of notes) {
-      const weight = Math.max(0, Number(weights[note]) || 0);
-      roll -= weight;
+      const w = (weights && Number.isFinite(Number(weights[note]))) ? Math.max(0, Number(weights[note])) : 0;
+      roll -= w;
       if (roll <= 0) return note;
     }
 
@@ -74,25 +74,33 @@ VoiceManager = class VoiceManager {
    * @returns {number[]} Selected notes (length = voiceCount)
    */
   pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, opts = {}) {
-    const normalized = this._normalizeCandidates(candidateNotes);
-    let notePool = normalized.notes;
-    const weightMap = opts.candidateWeights || normalized.weights;
+    if (!layer || typeof layer !== 'object') throw new Error('VoiceManager.pickNotesForBeat: missing or invalid layer');
+    if (!Array.isArray(candidateNotes)) throw new Error('VoiceManager.pickNotesForBeat: candidateNotes must be an array');
 
-    if (!Array.isArray(notePool) || notePool.length === 0 || !Number.isFinite(voiceCount) || voiceCount <= 0) {
+    const normalized = this._normalizeCandidates(candidateNotes);
+    let notePool = Array.isArray(normalized.notes) ? normalized.notes : [];
+    const weightMap = (opts && opts.candidateWeights !== undefined) ? opts.candidateWeights : normalized.weights;
+
+    if (notePool.length === 0) {
+      // No candidates available for this beat - normal runtime condition
       return [];
     }
 
-    const layerId = layer.id || 'default';
+    if (!Number.isFinite(voiceCount) || voiceCount <= 0) {
+      throw new Error('VoiceManager.pickNotesForBeat: voiceCount must be a positive finite number');
+    }
+
+    const layerId = (layer && typeof layer.id === 'string' && layer.id.length > 0) ? layer.id : 'default';
 
     // Extract phrase context for arc-driven biases
-    const phraseContext = opts.phraseContext || {};
-    const arcDensityMultiplier = phraseContext.densityMultiplier || 1.0;
-    const voiceIndependence = phraseContext.voiceIndependence || VOICE_Manager.voiceIndependenceDefault;
+    const phraseContext = (opts && opts.phraseContext && typeof opts.phraseContext === 'object') ? opts.phraseContext : {};
+    const arcDensityMultiplier = Number.isFinite(Number(phraseContext.densityMultiplier)) ? phraseContext.densityMultiplier : 1.0;
+    const voiceIndependence = Number.isFinite(Number(phraseContext.voiceIndependence)) ? phraseContext.voiceIndependence : VOICE_Manager.voiceIndependenceDefault;
 
     // Apply voice count multiplier: stack chord change emphasis with phrase arc density
     // But only apply arc density influence probabilistically to maintain variety
-    const voiceCountMultiplier = opts.voiceCountMultiplier ?? 1.0;
-    const shouldApplyArcDensity = rf() < VOICE_Manager.arcDensityChance;
+    const voiceCountMultiplier = Number.isFinite(Number(opts.voiceCountMultiplier)) ? opts.voiceCountMultiplier : 1.0;
+    const shouldApplyArcDensity = rf() < (VOICE_Manager.arcDensityChance ?? 0.5);
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
     const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * combinedMultiplier));
@@ -132,10 +140,14 @@ VoiceManager = class VoiceManager {
         minSemitones: opts.minSemitones  // Pass voice spacing constraint
       });
       const selected = VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
-      // Update history
+      if (!Array.isArray(selected) || selected.length !== maxVoices) {
+        throw new Error(`VoiceManager.pickNotesForBeat: VoiceRegistry returned invalid selection for layer ${layerId}`);
+      }
+      // Update history (validate entries)
       for (let i = 0; i < selected.length; i++) {
+        if (!Number.isFinite(Number(selected[i]))) throw new Error(`VoiceManager.pickNotesForBeat: VoiceRegistry returned non-finite note at index ${i}`);
         if (!voiceHistory[i]) voiceHistory[i] = [];
-        voiceHistory[i].unshift(selected[i]);
+        voiceHistory[i].unshift(Number(selected[i]));
         if (voiceHistory[i].length > 8) voiceHistory[i].pop();
       }
 

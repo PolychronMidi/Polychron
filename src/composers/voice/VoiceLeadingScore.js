@@ -57,22 +57,43 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Best scoring note
    */
   selectNextNote(lastNotes, availableNotes, config = {}) {
-    if (!availableNotes || availableNotes.length === 0) {
-      throw new Error(`VoiceLeadingScore.selectNextNote: availableNotes is empty - check scale or candidate filtering`);
+    // Validate inputs
+    if (!Array.isArray(lastNotes) || lastNotes.length === 0) {
+      throw new Error('VoiceLeadingScore.selectNextNote: lastNotes must be a non-empty array of previous MIDI notes');
+    }
+    for (let i = 0; i < lastNotes.length; i++) {
+      if (!Number.isFinite(Number(lastNotes[i]))) throw new Error(`VoiceLeadingScore.selectNextNote: lastNotes[${i}] is not a finite number`);
     }
 
-    const register = config.register || 'soprano';
-    const constraints = config.constraints || [];
-    const registerRange = this.registers[register] || this.registers.soprano;
+    if (!Array.isArray(availableNotes) || availableNotes.length === 0) {
+      throw new Error('VoiceLeadingScore.selectNextNote: availableNotes must be a non-empty array of candidate MIDI notes');
+    }
+    for (let i = 0; i < availableNotes.length; i++) {
+      if (!Number.isFinite(Number(availableNotes[i]))) throw new Error(`VoiceLeadingScore.selectNextNote: availableNotes[${i}] is not a finite number`);
+    }
+
+    // Validate register if provided
+    let register = 'soprano';
+    if (config.register !== undefined) {
+      if (typeof config.register !== 'string') throw new Error('VoiceLeadingScore.selectNextNote: config.register must be a string');
+      if (!this.registers[config.register]) throw new Error(`VoiceLeadingScore.selectNextNote: unknown register "${config.register}"`);
+      register = config.register;
+    }
+
+    const constraints = config.constraints === undefined ? [] : (Array.isArray(config.constraints) ? config.constraints : (() => { throw new Error('VoiceLeadingScore.selectNextNote: config.constraints must be an array'); })());
+    const registerRange = this.registers[register];
 
     // Score each candidate
-    const scores = availableNotes.map((note) => ({
-      note,
-      score: this._scoreCandidate(note, lastNotes, registerRange, constraints, {
-        commonToneWeight: config.commonToneWeight,
-        weight: config.candidateWeights ? Number(config.candidateWeights[note]) || 0 : 0
-      }),
-    }));
+    const scores = availableNotes.map((note) => {
+      const weight = (config.candidateWeights && Number.isFinite(Number(config.candidateWeights[note]))) ? Number(config.candidateWeights[note]) : 0;
+      return {
+        note,
+        score: this._scoreCandidate(note, lastNotes, registerRange, constraints, {
+          commonToneWeight: config.commonToneWeight,
+          weight,
+        }),
+      };
+    });
 
     // Sort by score (lower is better) and return best
     scores.sort((a, b) => a.score - b.score);
@@ -96,13 +117,30 @@ VoiceLeadingScore = class VoiceLeadingScore {
   _scoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {
     let totalCost = 0;
 
-    // Voice motion smoothness (stepwise vs leap)
-    if (!lastNotes || lastNotes.length === 0) {
-      throw new Error('VoiceLeadingScore._scoreCandidate: lastNotes is empty - voice history corrupted or not initialized');
+    // Validate inputs
+    if (!Array.isArray(lastNotes) || lastNotes.length === 0) {
+      throw new Error('VoiceLeadingScore._scoreCandidate: lastNotes must be a non-empty array');
     }
-    const lastNote = lastNotes[0];
+    if (!Number.isFinite(Number(candidate))) {
+      throw new Error('VoiceLeadingScore._scoreCandidate: candidate must be a finite number');
+    }
+    for (let i = 0; i < lastNotes.length; i++) {
+      if (!Number.isFinite(Number(lastNotes[i]))) throw new Error(`VoiceLeadingScore._scoreCandidate: lastNotes[${i}] is not a finite number`);
+    }
+
+    const lastNote = Number(lastNotes[0]);
     const interval = Math.abs(candidate - lastNote);
-    const currentRegister = opts.register || 'soprano';
+
+    // Validate register in opts if provided
+    let currentRegister = 'soprano';
+    if (opts && opts.register !== undefined) {
+      if (typeof opts.register !== 'string' || !this.registers[opts.register]) {
+        throw new Error('VoiceLeadingScore._scoreCandidate: opts.register, if provided, must be a valid register name');
+      }
+      currentRegister = opts.register;
+    }
+
+    constraints = Array.isArray(constraints) ? constraints : [];
 
     // Build context for noise helper
     const currentTime = (typeof beatStart !== 'undefined' ? beatStart : 0);
@@ -452,8 +490,12 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {{ smoothness: number, avgRange: number, leapRecoveries: number }}
    */
   analyzeQuality(noteSequence) {
+    if (!Array.isArray(noteSequence)) throw new Error('VoiceLeadingScore.analyzeQuality: expected an array of notes');
     if (noteSequence.length < 2) {
       return { smoothness: 0, avgRange: 0, leapRecoveries: 0 };
+    }
+    for (let i = 0; i < noteSequence.length; i++) {
+      if (!Number.isFinite(Number(noteSequence[i]))) throw new Error(`VoiceLeadingScore.analyzeQuality: noteSequence[${i}] is not a finite number`);
     }
 
     let totalCost = 0;
