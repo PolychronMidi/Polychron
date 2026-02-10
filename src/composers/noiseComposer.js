@@ -13,8 +13,8 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
   }
 
   const noiseProfile = getNoiseProfile('dramatic');
-  const currentTime = context.callCount ? context.callCount * 0.1 : 0;
-  const voiceId = context.voiceId || 60;
+  const currentTime = (typeof context.callCount === 'number') ? (context.callCount * 0.1) : (typeof context.currentTime === 'number' ? context.currentTime : 0);
+  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
   const mod = getParameterModulation(voiceId, 'pitch', currentTime);
   const pitchVariation = m.round((mod.y - 0.5) * 2 * 4 * noiseProfile.influenceY); // ±2 semitones
@@ -31,9 +31,9 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
  */
 applyMelodicTranspositionNoise = function(baseOffset, context = {}) {
   const noiseProfile = getNoiseProfile('moderate');
-  const currentTime = context.currentTime || 0;
-  const voiceId = context.voiceId || 60;
-  const phase = context.phase || 0;
+  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
+  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
+  const phase = (typeof context.phase === 'number') ? context.phase : 0;
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
 
@@ -59,8 +59,8 @@ applyMelodicTranspositionNoise = function(baseOffset, context = {}) {
  */
 applyMelodicPivotNoise = function(pivot, context = {}) {
   const noiseProfile = getNoiseProfile('moderate');
-  const currentTime = context.currentTime || 0;
-  const voiceId = context.voiceId || 60;
+  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
+  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
   const pivotNoise = m.round((mod.y - 0.5) * 2 * 2 * noiseProfile.influenceY); // ±1 semitone
@@ -76,8 +76,8 @@ applyMelodicPivotNoise = function(pivot, context = {}) {
  */
 applyMelodicDurationNoise = function(baseDuration, context = {}) {
   const noiseProfile = getNoiseProfile('moderate');
-  const currentTime = context.currentTime || 0;
-  const voiceId = context.voiceId || 60;
+  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
+  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
   const durationMod = 0.9 + (mod.y * 0.2 * noiseProfile.influenceY); // 0.9-1.1x multiplier
@@ -94,8 +94,8 @@ applyMelodicDurationNoise = function(baseDuration, context = {}) {
  */
 applyVoiceLeadingWeightNoise = function(baseWeight, weightType, context = {}) {
   const noiseProfile = getNoiseProfile('subtle');
-  const currentTime = context.currentTime || 0;
-  const voiceId = context.voiceId || 60;
+  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
+  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
   const mod = getParameterModulation(voiceId, 'voicelead', currentTime);
 

@@ -17,7 +17,14 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this._lastBaseNotes = [];
     this._lastDevelopedNotes = [];
     // Phrase-level coordination
-    this.phraseArcManager = opts.phraseArcManager || null; // Optional PhraseArcManager reference
+    if (opts.phraseArcManager !== undefined) {
+      if (!opts.phraseArcManager || typeof opts.phraseArcManager.getPhraseContext !== 'function') {
+        throw new Error('MelodicDevelopmentComposer: invalid phraseArcManager provided (must implement getPhraseContext())');
+      }
+      this.phraseArcManager = opts.phraseArcManager;
+    } else {
+      this.phraseArcManager = null;
+    }
     this.arcScaling = opts.arcScaling !== false; // Whether to scale intensity with phrase arc (default: true)
     // enable lightweight voice-leading scorer for selection delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('MelodicDevelopmentComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
@@ -78,7 +85,15 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
       case 2:
         if (intensity > 0.3) {
           // Inversion by chromatic reflection - THIS CHANGES PITCH CLASSES!
-          const pivot = baseNotes[0]?.note || 60;
+          const firstBase = baseNotes[0];
+          let pivot;
+          if (typeof firstBase === 'number') {
+            pivot = firstBase;
+          } else if (firstBase && typeof firstBase.note === 'number') {
+            pivot = firstBase.note;
+          } else {
+            throw new Error('MelodicDevelopmentComposer.getNotes: invalid baseNotes[0] - expected number or {note:number}');
+          }
           const noisyPivot = applyMelodicPivotNoise(pivot, noiseContext);
           // FAIL FAST: chromatic inversion creates new pitch classes
           throw new Error(`MelodicDevelopmentComposer.getNotes phase 2: chromatic inversion (pivot=${noisyPivot}) would create pitch classes outside the scale. Need scale-degree inversion instead.`);
@@ -104,9 +119,16 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
       const scale = HarmonicContext.getField('scale');
       if (Array.isArray(scale) && scale.length > 0) {
         for (const n of developedNotes) {
-          const note = typeof n.note === 'number' ? n.note : n;
-          if (!HarmonicContext.isNoteInScale(note)) {
-            throw new Error(`MelodicDevelopmentComposer.getNotes: note ${note} not in HarmonicContext scale`);
+          let noteVal;
+          if (typeof n === 'number') {
+            noteVal = n;
+          } else if (n && typeof n.note === 'number') {
+            noteVal = n.note;
+          } else {
+            throw new Error('MelodicDevelopmentComposer.getNotes: developed note has invalid shape; expected number or {note:number}');
+          }
+          if (!HarmonicContext.isNoteInScale(noteVal)) {
+            throw new Error(`MelodicDevelopmentComposer.getNotes: note ${noteVal} not in HarmonicContext scale`);
           }
         }
       }
@@ -159,7 +181,14 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
     // Assign weights based on whether candidate is a base note, developed note, or both
     for (const candidate of candidateNotes) {
-      const note = typeof candidate === 'number' ? candidate : (candidate.note || 0);
+      let note;
+      if (typeof candidate === 'number') {
+        note = candidate;
+      } else if (candidate && typeof candidate.note === 'number') {
+        note = candidate.note;
+      } else {
+        throw new Error('MelodicDevelopmentComposer.getVoicingIntent: candidate must be a number or {note:number}');
+      }
       const isBase = baseNoteSet.has(note);
       const isDeveloped = developedNoteSet.has(note);
 

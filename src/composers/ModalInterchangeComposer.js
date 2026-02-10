@@ -19,7 +19,8 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     const modeIndex = ri(this.borrowModes.length - 1);
     const borrowMode = this.borrowModes[modeIndex];
     const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
-    if (!borrowScale.notes || borrowScale.notes.length === 0) {
+    if (!borrowScale || !Array.isArray(borrowScale.notes) || borrowScale.notes.length === 0) {
+      console.warn(`ModalInterchangeComposer.borrowChord: borrow scale ${borrowMode} has no notes; falling back to current chord`);
       return this.progression[this.currentChordIndex].symbol;
     }
     const borrowPatterns = {
@@ -27,11 +28,18 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
       minor: { major: ['IV', 'V', 'I'], dorian: ['IV', 'vi'], phrygian: ['bII'], locrian: ['v'] }
     };
     const patterns = borrowPatterns[this.primaryMode]?.[borrowMode];
-    if (!patterns || patterns.length === 0) return this.progression[this.currentChordIndex].symbol;
+    if (!patterns || patterns.length === 0) {
+      console.warn(`ModalInterchangeComposer.borrowChord: no borrow patterns for mode ${borrowMode}; falling back to current chord`);
+      return this.progression[this.currentChordIndex].symbol;
+    }
     const borrowGenerator = new ProgressionGenerator(this.key, borrowMode);
     const romanNumeral = patterns[ri(patterns.length - 1)];
     const borrowedChord = borrowGenerator.romanToChord(romanNumeral);
-    return borrowedChord || this.progression[this.currentChordIndex].symbol;
+    if (!borrowedChord) {
+      console.warn(`ModalInterchangeComposer.borrowChord: romanToChord returned null for ${romanNumeral}; falling back to current chord`);
+      return this.progression[this.currentChordIndex].symbol;
+    }
+    return borrowedChord;
   }
 
   noteSet(progression, direction = 'R') {
