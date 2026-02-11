@@ -4,7 +4,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   const availableCHs = channels.filter(ch => !this.lastUsedCHs.has(ch));
 
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
+    const ch = availableCHs[ri(availableCHs.length - 1)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }

@@ -30,8 +30,6 @@ const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, oth
  * @param {number} opts.binVel
  * @param {boolean} [opts.isPrimary=false]
  * @param {StutterShared|any} [opts.shared]
- * @param {function} [opts.rf] - optional RNG float generator overriding global `rf`
- * @param {function} [opts.ri] - optional RNG int generator overriding global `ri`
  * @param {boolean} [opts.emit=true] - if false, do not call `p()`; instead return planned events
  * @returns {StutterShared|{shared:StutterShared,events:any[]}}
  */
