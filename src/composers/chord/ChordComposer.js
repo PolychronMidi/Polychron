@@ -24,27 +24,23 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     }
   }
 
+  /**
+   * Returns voicing intent: weights chord tones (PCs in current chord) higher than non-chord tones.
+   * @param {number[]} candidateNotes - Available MIDI notes
+   * @returns {{ candidateWeights: { [note: number]: number } } | null}
+   */
   getVoicingIntent(candidateNotes = []) {
     if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) return null;
     if (!this.notes || this.notes.length === 0) return null;
 
-    const chordPCs = new Set();
-    for (const noteName of this.notes) {
-      const chroma = t.Note.chroma(noteName);
-      if (typeof chroma === 'number' && Number.isFinite(chroma)) {
-        chordPCs.add(((chroma % 12) + 12) % 12);
-      }
+    // Delegate to centralized helper (chord tones = weight 1, non-chord tones = weight 0)
+    if (typeof VoiceLeadingCore !== 'undefined' && typeof VoiceLeadingCore.buildPCWeights === 'function') {
+      const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, this.notes, 1, 0);
+      return { candidateWeights };
     }
 
-    if (chordPCs.size === 0) return null;
-
-    const candidateWeights = {};
-    for (const note of candidateNotes) {
-      const pc = ((note % 12) + 12) % 12;
-      candidateWeights[note] = chordPCs.has(pc) ? 1 : 0;
-    }
-
-    return { candidateWeights };
+    // Fallback to base implementation
+    return super.getVoicingIntent(candidateNotes);
   }
 
   /**

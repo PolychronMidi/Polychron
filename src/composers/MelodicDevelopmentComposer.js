@@ -104,17 +104,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         if (intensity > 0.5) developedNotes = [...baseNotes].reverse();
         break;
     }
-    if (rf() < 0.3) {
-      this.responseMode = !this.responseMode;
-      if (this.responseMode) {
-        // REMOVED: getNotes() should NOT add duration properties - violates contract
-        // Duration is the responsibility of the caller (MotifComposer, playNotes, etc.)
-        // developedNotes = developedNotes.map((n, i) => {
-        //   const baseDuration = (n.duration || 480) * (intensity + 0.5);
-        //   return { ...n, duration: applyMelodicDurationNoise(baseDuration, noiseContext) };
-        // });
-      }
-    }
+
     if (typeof HarmonicContext !== 'undefined') {
       const scale = HarmonicContext.getField('scale');
       if (Array.isArray(scale) && scale.length > 0) {
@@ -153,67 +143,75 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this._lastDevelopedNotes = [];
   }
 
+  /**
+   * Returns voicing intent that weights base notes and development transformations differently.
+   * @param {number[]} candidateNotes - Available MIDI notes
+   * @returns {{ candidateWeights: { [note: number]: number } } | null}
+   */
   getVoicingIntent(candidateNotes = []) {
     if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) return null;
     if (this._lastBaseNotes.length === 0 || this._lastDevelopedNotes.length === 0) return null;
 
-    const candidateWeights = {};
     const baseWeight = 1.0;
     const transformWeight = this.developmentBias * this.intensity;
 
-    // Build sets of base notes and developed notes for fast lookup
-    const baseNoteSet = new Set();
-    const developedNoteSet = new Set();
-
-    for (const n of this._lastBaseNotes) {
-      const note = typeof n.note === 'number' ? n.note : n;
-      if (typeof note === 'number' && Number.isFinite(note)) {
-        baseNoteSet.add(note);
-      }
+    // Extract note values from base and developed arrays
+    const baseNotesSet = new Set();
+    for (const item of this._lastBaseNotes) {
+      const n = typeof item === 'number' ? item : (item && typeof item === 'object' && typeof item.note === 'number' ? item.note : null);
+      if (typeof n === 'number' && Number.isFinite(n)) baseNotesSet.add(n);
     }
 
-    for (const n of this._lastDevelopedNotes) {
-      const note = typeof n.note === 'number' ? n.note : n;
-      if (typeof note === 'number' && Number.isFinite(note)) {
-        developedNoteSet.add(note);
-      }
+    const developedNotesSet = new Set();
+    for (const item of this._lastDevelopedNotes) {
+      const n = typeof item === 'number' ? item : (item && typeof item === 'object' && typeof item.note === 'number' ? item.note : null);
+      if (typeof n === 'number' && Number.isFinite(n)) developedNotesSet.add(n);
     }
 
-    // Assign weights based on whether candidate is a base note, developed note, or both
+    // Phase-based weight scaling
+    const phaseScale = this.currentPhase === 0 ? 0.8 :
+                      this.currentPhase === 1 ? 1.2 :
+                      this.currentPhase === 2 ? 1.5 :
+                      this.currentPhase === 3 ? 1.0 : 1.0;
+
+    // Assign weights based on category
+    /** @type {{ [note: number]: number }} */
+    const candidateWeights = {};
     for (const candidate of candidateNotes) {
       let note;
       if (typeof candidate === 'number') {
         note = candidate;
-      } else if (candidate && typeof candidate.note === 'number') {
-        note = candidate.note;
       } else {
-        throw new Error('MelodicDevelopmentComposer.getVoicingIntent: candidate must be a number or {note:number}');
+        const candidateObj = /** @type {any} */ (candidate);
+        if (candidateObj && typeof candidateObj === 'object' && typeof candidateObj.note === 'number') {
+          note = candidateObj.note;
+        } else {
+          throw new Error('MelodicDevelopmentComposer.getVoicingIntent: candidate must be a number or {note:number}');
+        }
       }
-      const isBase = baseNoteSet.has(note);
-      const isDeveloped = developedNoteSet.has(note);
 
-      let weight = 0;
+      if (!Number.isFinite(note)) {
+        throw new Error('MelodicDevelopmentComposer.getVoicingIntent: candidate note must be finite');
+      }
+
+      const isBase = baseNotesSet.has(note);
+      const isDeveloped = developedNotesSet.has(note);
 
       if (isBase && isDeveloped) {
-        // Note appears in both base and developed (common tone)
-        weight = baseWeight + transformWeight * 0.5;
+        // Common tone (appears in both base and developed)
+        candidateWeights[note] = baseWeight + transformWeight * 0.5;
       } else if (isDeveloped) {
-        // Note is a development transformation
-        // Scale by phase: more extreme phases get higher emphasis
-        const phaseScale = this.currentPhase === 0 ? 0.8 :
-                          this.currentPhase === 1 ? 1.2 :
-                          this.currentPhase === 2 ? 1.5 :
-                          this.currentPhase === 3 ? 1.0 : 1.0;
-        weight = baseWeight * 0.3 + transformWeight * phaseScale;
+        // Development transformation (scaled by phase intensity)
+        candidateWeights[note] = baseWeight * 0.3 + transformWeight * phaseScale;
       } else if (isBase) {
-        // Note is a base note but not developed (voice leading fell back)
-        weight = baseWeight;
+        // Base note (not transformed)
+        candidateWeights[note] = baseWeight;
       } else {
-        // Note is neither base nor developed (chromatic passing tone)
-        weight = baseWeight * 0.2;
+        // Chromatic passing tone (neither base nor developed)
+        candidateWeights[note] = baseWeight * 0.2;
       }
 
-      candidateWeights[note] = Math.max(0, weight);
+      candidateWeights[note] = Math.max(0, candidateWeights[note]);
     }
 
     return { candidateWeights };
