@@ -59,7 +59,8 @@ scheduleStutterNotesFromDensity = function scheduleStutterNotesFromDensity(
     throw new Error('scheduleStutterNotesFromDensity: sustain must be positive number');
   }
 
-  const chance = typeof chanceOverride === 'number' ? chanceOverride : config.chance;
+  const chanceRaw = typeof chanceOverride === 'number' ? chanceOverride : config.chance;
+  const chance = clamp(chanceRaw, 0, 1);
   if (rf() >= chance) return;
 
   const baseDensity = typeof stutterProb === 'number' ? stutterProb : config.defaultDensity;

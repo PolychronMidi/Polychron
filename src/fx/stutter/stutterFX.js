@@ -4,7 +4,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
   const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
 
   while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[m.floor(m.random() * availableCHs.length)];
+    const ch = availableCHs[ri(availableCHs.length - 1)];
     channelsToStutter.add(ch);
     availableCHs.splice(availableCHs.indexOf(ch), 1);
   }
