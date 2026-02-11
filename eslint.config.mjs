@@ -182,6 +182,7 @@ export default [
         RandomModeComposer: 'writable',
         TensionReleaseComposer: 'writable',
         ModalInterchangeComposer: 'writable',
+        MODAL_BORROWING: 'readonly',
         HarmonicRhythmComposer: 'writable',
         MelodicDevelopmentComposer: 'writable',
         VoiceLeadingComposer: 'writable',

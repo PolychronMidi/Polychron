@@ -1,7 +1,15 @@
 // Dependencies are required via `src/composers/index.js`
 
 /**
- * Composes notes from a specific mode.
+ * Composes notes from a specific mode (single static mode selection).
+ *
+ * DISTINCTION FROM ModalInterchangeComposer:
+ * - ModeComposer: selects ONE mode and extracts its scale notes (melodic/scale-based)
+ * - ModalInterchangeComposer: generates chord progressions that BORROW from parallel modes (harmonic/chord-based)
+ *
+ * Use ModeComposer for modal melodies (e.g., "play in dorian").
+ * Use ModalInterchangeComposer for harmonic modal borrowing (e.g., "I-iv-V where iv is borrowed from parallel minor").
+ *
  * @extends MeasureComposer
  */
 ModeComposer = class ModeComposer extends MeasureComposer {
@@ -17,14 +25,25 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   }
   /**
    * Sets mode and extracts notes.
-   * @param {string} modeName
-   * @param {string} root
+   * @param {string} modeName - Mode name (e.g., 'ionian', 'dorian', 'mixolydian')
+   * @param {string} root - Root note (e.g., 'C', 'D#')
    */
   noteSet(modeName,root) {
+    if (typeof modeName !== 'string' || !modeName) {
+      throw new Error(`ModeComposer.noteSet: modeName must be non-empty string, got ${typeof modeName}`);
+    }
+    if (typeof root !== 'string' || !root) {
+      throw new Error(`ModeComposer.noteSet: root must be non-empty string, got ${typeof root}`);
+    }
+
     this.mode = t.Mode.get(modeName);
+    if (!this.mode) {
+      throw new Error(`ModeComposer.noteSet: t.Mode.get returned invalid mode for "${modeName}"`);
+    }
+
     this.notes = t.Mode.notes(this.mode, root);
     if (!Array.isArray(this.notes) || this.notes.length === 0) {
-      throw new Error(`ModeComposer.noteSet produced empty notes for mode=${modeName} root=${root}`);
+      throw new Error(`ModeComposer.noteSet: mode="${modeName}" root="${root}" produced empty notes`);
     }
     this.intervalOptions = {
       style: 'rising',

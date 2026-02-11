@@ -1,5 +1,17 @@
 // Dependencies are required via `src/composers/index.js` (aggregated side-effect requires)
 
+/**
+ * Generates chord progressions with modal borrowing from parallel modes.
+ *
+ * DISTINCTION FROM ModeComposer:
+ * - ModalInterchangeComposer: generates chord progressions that BORROW from parallel modes (harmonic/chord-based)
+ * - ModeComposer: selects ONE mode and extracts its scale notes (melodic/scale-based)
+ *
+ * Use ModalInterchangeComposer for harmonic modal color (e.g., borrowing iv from parallel minor in a major key).
+ * Use ModeComposer for modal melodies (e.g., playing in dorian mode).
+ *
+ * @extends ChordComposer
+ */
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
     const generator = new ProgressionGenerator(key, primaryMode);
@@ -11,7 +23,12 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     this.primaryMode = primaryMode;
     this.borrowProbability = clamp(borrowProbability, 0, 1);
     this.generator = generator;
-    this.borrowModes = primaryMode === 'major' ? ['minor', 'dorian', 'mixolydian', 'lydian'] : ['major', 'dorian', 'phrygian', 'locrian'];
+
+    // Use centralized borrow mode configuration
+    const borrowConfig = (typeof MODAL_BORROWING !== 'undefined' && MODAL_BORROWING[primaryMode])
+      ? MODAL_BORROWING[primaryMode]
+      : (primaryMode === 'major' ? ['minor', 'dorian', 'mixolydian', 'lydian'] : ['major', 'dorian', 'phrygian', 'locrian']);
+    this.borrowModes = borrowConfig;
     this._lastBorrowed = null;
   }
 
