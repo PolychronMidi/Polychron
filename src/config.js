@@ -121,6 +121,12 @@ VOICE_Manager = {
   arcRegisterBiasThreshold: 5    // Minimum semitone shift to trigger arc bias
 };
 
+// Modal borrowing options for ModalInterchangeComposer (parallel mode relationships)
+MODAL_BORROWING = {
+  major: ['minor', 'dorian', 'mixolydian', 'lydian'],
+  minor: ['major', 'dorian', 'phrygian', 'locrian']
+};
+
 // Centralized profile definitions (authoritative config; modules should delegate here)
 VOICE_PROFILES = {
   default: { baseVelocity: 90 },
