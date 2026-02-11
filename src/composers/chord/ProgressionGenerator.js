@@ -21,19 +21,28 @@ ProgressionGenerator = class ProgressionGenerator {
   }
 
   romanToChord(roman) {
+    if (typeof roman !== 'string' || roman === '') {
+      throw new Error('ProgressionGenerator.romanToChord: roman must be a non-empty string');
+    }
     const degreeMatch = roman.match(/^([b#]?[IiVv]+)/);
-    if (!degreeMatch) { console.warn('ProgressionGenerator.romanToChord: could not parse roman numeral:', roman); return null; }
+    if (!degreeMatch) {
+      throw new Error(`ProgressionGenerator.romanToChord: could not parse roman numeral "${roman}"`);
+    }
 
     const degree = degreeMatch[1];
     const isFlat = degree.startsWith('b');
     const isSharp = degree.startsWith('#');
     const romanNumeral = degree.replace(/^[b#]/, '');
     const degreeIndex = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].findIndex(r => romanNumeral.toUpperCase() === r);
-    if (degreeIndex === -1) { console.warn('ProgressionGenerator.romanToChord: unrecognized roman numeral:', roman); return null; }
+    if (degreeIndex === -1) {
+      throw new Error(`ProgressionGenerator.romanToChord: unrecognized roman numeral "${roman}"`);
+    }
 
     const diatonicChord = this.diatonicChords?.[degreeIndex];
     const diatonicRoot = this.scaleNotes?.[degreeIndex];
-    if (!diatonicChord || !diatonicRoot) { console.warn(`ProgressionGenerator.romanToChord: missing diatonic data for degreeIndex=${degreeIndex}`); return null; }
+    if (!diatonicChord || !diatonicRoot) {
+      throw new Error(`ProgressionGenerator.romanToChord: missing diatonic data for degreeIndex=${degreeIndex}`);
+    }
 
     const chordParts = diatonicChord.match(/^([A-G][b#]?)(.*)$/);
     const baseRoot = chordParts?.[1] || diatonicRoot;
@@ -47,6 +56,9 @@ ProgressionGenerator = class ProgressionGenerator {
     let rootNote = baseRoot;
     if (isFlat || isSharp) {
       const chromaticNote = t.Note.chroma(rootNote);
+      if (typeof chromaticNote !== 'number') {
+        throw new Error(`ProgressionGenerator.romanToChord: invalid chroma for root "${rootNote}"`);
+      }
       const alteredChroma = isFlat ? chromaticNote - 1 : chromaticNote + 1;
       const pc = t.Note.fromMidi(alteredChroma);
       rootNote = t.Note.pitchClass(pc);
@@ -77,11 +89,10 @@ ProgressionGenerator = class ProgressionGenerator {
 
     const pattern = patterns[this.romanQuality || this.quality]?.[type];
     if (!pattern) {
-      console.warn(`ProgressionGenerator.generate: unknown progression type "${type}", defaulting to "I-IV-V".`);
-      return this.generate('I-IV-V');
+      throw new Error(`ProgressionGenerator.generate: unknown progression type "${type}"`);
     }
 
-    return pattern.map(roman => this.romanToChord(roman)).filter(c => c !== null);
+    return pattern.map(roman => this.romanToChord(roman));
   }
 
   random() {
