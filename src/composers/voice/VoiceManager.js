@@ -3,6 +3,26 @@
 /**
  * Coordinates voice selection using VOICES config, composer note pools, and voice leading.
  * Manages per-voice history and calls VoiceRegistry for joint optimization.
+ *
+ * **Voicing Intent Pattern:**
+ * VoiceManager accepts optional voicing intent from composers via the `opts` parameter.
+ * Composers implement `getVoicingIntent(candidateNotes)` to express their domain-specific
+ * preferences (e.g., chord tones, tension curves, melodic development phases).
+ *
+ * Expected return shape:
+ * ```
+ * {
+ *   candidateWeights: { [note: number]: number },  // weight per candidate (0-1+ scale)
+ *   registerBias?: 'higher' | 'lower',             // optional register preference
+ *   voiceCountMultiplier?: number                  // optional voice count scaling (default 1.0)
+ * }
+ * ```
+ *
+ * The voicing intent is passed through to VoiceLeadingScore and VoiceRegistry, which combine
+ * it with voice leading cost functions (smooth motion, leap recovery, etc.) to make the final
+ * selection. This separation allows composers to define *what* notes fit their harmonic/melodic
+ * logic while the voice module handles *how* to select voices smoothly.
+ *
  * @class
  */
 VoiceManager = class VoiceManager {

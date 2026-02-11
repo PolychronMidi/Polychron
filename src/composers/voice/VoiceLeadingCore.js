@@ -97,5 +97,52 @@ VoiceLeadingCore = {
     }
 
     return totalCost;
+  },
+
+  /**
+   * Build candidate weight map based on pitch-class membership.
+   * @param {number[]} candidateNotes - MIDI notes to weight
+   * @param {(string|number)[]} referenceNotes - Note names (e.g., 'C4') or MIDI notes defining valid PCs
+   * @param {number} [matchWeight=1] - Weight for matching PCs
+   * @param {number} [nonMatchWeight=0] - Weight for non-matching PCs
+   * @returns {{ [note: number]: number }} Candidate weight map
+   */
+  buildPCWeights(candidateNotes, referenceNotes, matchWeight = 1, nonMatchWeight = 0) {
+    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) {
+      throw new Error('VoiceLeadingCore.buildPCWeights: candidateNotes must be a non-empty array');
+    }
+    if (!Array.isArray(referenceNotes) || referenceNotes.length === 0) {
+      throw new Error('VoiceLeadingCore.buildPCWeights: referenceNotes must be a non-empty array');
+    }
+
+    const referencePCs = new Set();
+    for (const item of referenceNotes) {
+      let pc;
+      if (typeof item === 'string') {
+        const chroma = t.Note.chroma(item);
+        if (typeof chroma === 'number' && Number.isFinite(chroma)) {
+          pc = ((chroma % 12) + 12) % 12;
+        }
+      } else if (typeof item === 'number' && Number.isFinite(item)) {
+        pc = ((item % 12) + 12) % 12;
+      }
+      if (typeof pc === 'number') referencePCs.add(pc);
+    }
+
+    if (referencePCs.size === 0) {
+      throw new Error('VoiceLeadingCore.buildPCWeights: no valid pitch classes extracted from referenceNotes');
+    }
+
+    /** @type {{ [note: number]: number }} */
+    const weights = {};
+    for (const note of candidateNotes) {
+      if (!Number.isFinite(Number(note))) {
+        throw new Error(`VoiceLeadingCore.buildPCWeights: candidate note ${note} is not finite`);
+      }
+      const pc = ((Number(note) % 12) + 12) % 12;
+      weights[note] = referencePCs.has(pc) ? matchWeight : nonMatchWeight;
+    }
+
+    return weights;
   }
 };

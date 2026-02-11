@@ -200,4 +200,30 @@ MeasureComposer = class MeasureComposer {
       this.VoiceLeadingScore.reset();
     }
   }
+
+  /**
+   * Returns voicing intent for candidate notes based on this composer's pitch-class set.
+   * Subclasses can override to add domain-specific logic (tension curves, development phases, etc.).
+   * @param {number[]} candidateNotes - Available MIDI notes to weight
+   * @returns {{ candidateWeights: { [note: number]: number }, registerBias?: string, voiceCountMultiplier?: number } | null}
+   *   - candidateWeights: map of note → weight (higher = more preferred)
+   *   - registerBias: optional 'higher' | 'lower' register hint
+   *   - voiceCountMultiplier: optional voice count scaling factor
+   */
+  getVoicingIntent(candidateNotes = []) {
+    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) return null;
+
+    // Cast to any to access notes property (set by subclasses)
+    const self = /** @type {any} */ (this);
+    if (!Array.isArray(self.notes) || self.notes.length === 0) return null;
+
+    // Use centralized PC-matching helper
+    if (typeof VoiceLeadingCore !== 'undefined' && typeof VoiceLeadingCore.buildPCWeights === 'function') {
+      const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, self.notes, 1, 0);
+      return { candidateWeights };
+    }
+
+    // Fallback if helper not available
+    return null;
+  }
 }
