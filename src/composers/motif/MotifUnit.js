@@ -15,7 +15,8 @@ MotifUnit = {
       case 'div': value = tpDiv; break;
       case 'subdiv': value = tpSubdiv; break;
       case 'subsubdiv': value = tpSubsubdiv; break;
-      default: value = tpSubdiv;
+      default:
+        throw new Error(`MotifUnit.unitTicks: unknown unit "${unit}"`);
     }
     if (!Number.isFinite(Number(value))) {
       throw new Error(`MotifUnit.unitTicks: invalid or undefined tick value for unit "${unit}"`);

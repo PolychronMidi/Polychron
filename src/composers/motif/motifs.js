@@ -52,17 +52,26 @@ Motif = class Motif {
   }
 
   /**
-   * Reorder motif by rotating sequence (no pitch changes).
-   * @param {number} semitones
+   * Reorder motif by rotating sequence (no pitch changes). Legacy name for rotation.
+   * @param {number} steps
    * @returns {this}
    */
-  transpose(semitones = 0) {
+  transpose(steps = 0) {
     const len = this.sequence.length;
     if (len <= 1) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
-    const shift = ((Math.round(semitones) % len) + len) % len;
+    const shift = ((Math.round(steps) % len) + len) % len;
     if (shift === 0) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
     const rotated = this.sequence.slice(-shift).concat(this.sequence.slice(0, len - shift));
     return /** @type {this} */ (new Motif(rotated, { defaultDuration: this.defaultDuration }));
+  }
+
+  /**
+   * Rotate motif order (alias for transpose).
+   * @param {number} steps
+   * @returns {this}
+   */
+  rotate(steps = 0) {
+    return this.transpose(steps);
   }
 
   /**
