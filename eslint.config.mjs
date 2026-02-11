@@ -406,6 +406,8 @@ export default [
         // Exposed helpers / classes
         TimingCalculator: 'writable',
         VoiceLeadingScore: 'writable',
+        VoiceLeadingScorers: 'writable',
+        VoiceLeadingCore: 'writable',
         VoiceManager: 'writable',
         VoiceRegistry: 'writable',
         VoiceStrategyRegistry: 'writable',

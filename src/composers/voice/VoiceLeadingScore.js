@@ -115,98 +115,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Total weighted cost (lower is better)
    */
   _scoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {
-    let totalCost = 0;
-
-    // Validate inputs
-    if (!Array.isArray(lastNotes) || lastNotes.length === 0) {
-      throw new Error('VoiceLeadingScore._scoreCandidate: lastNotes must be a non-empty array');
-    }
-    if (!Number.isFinite(Number(candidate))) {
-      throw new Error('VoiceLeadingScore._scoreCandidate: candidate must be a finite number');
-    }
-    for (let i = 0; i < lastNotes.length; i++) {
-      if (!Number.isFinite(Number(lastNotes[i]))) throw new Error(`VoiceLeadingScore._scoreCandidate: lastNotes[${i}] is not a finite number`);
-    }
-
-    const lastNote = Number(lastNotes[0]);
-    const interval = Math.abs(candidate - lastNote);
-
-    // Validate register in opts if provided
-    let currentRegister = 'soprano';
-    if (opts && opts.register !== undefined) {
-      if (typeof opts.register !== 'string' || !this.registers[opts.register]) {
-        throw new Error('VoiceLeadingScore._scoreCandidate: opts.register, if provided, must be a valid register name');
-      }
-      currentRegister = opts.register;
-    }
-
-    constraints = Array.isArray(constraints) ? constraints : [];
-
-    // Build context for noise helper
-    const currentTime = (typeof beatStart !== 'undefined' ? beatStart : 0);
-    const voiceId = candidate + (lastNote * 17);
-    const noiseContext = { currentTime, voiceId };
-
-    // Apply noise-modulated weight multipliers via helper
-    const smoothMotionMod = applyVoiceLeadingWeightNoise(1.0, 'smoothMotion', noiseContext);
-    totalCost += this._scoreVoiceMotion(interval, lastNote, candidate) * this.weights.smoothMotion * smoothMotionMod;
-
-    const intervalQualityMod = applyVoiceLeadingWeightNoise(1.0, 'intervalQuality', noiseContext);
-    totalCost += this._scoreIntervalQuality(interval, lastNote, candidate) * this.weights.intervalQuality * intervalQualityMod;
-
-    // Consecutive leap prevention (with dynamism allowing occasional runs)
-    totalCost += this._scoreConsecutiveLeaps(interval, lastNotes) * this.weights.consecutiveLeaps;
-
-    // Directional bias per register
-    totalCost += this._scoreDirectionalBias(candidate, lastNote, currentRegister) * this.weights.directionalBias;
-
-    // Max leap constraint (soft penalty)
-    totalCost += this._scoreMaxLeap(interval, currentRegister) * this.weights.maxLeap;
-
-    // Register boundaries (prefer middle, penalize extremes)
-    totalCost += this._scoreVoiceRange(candidate, registerRange) * this.weights.voiceRange;
-
-    // Leap recovery: if previous motion was a leap, prefer stepwise recovery (scaled by leap size)
-    if (lastNotes.length >= 2) {
-      const prevInterval = Math.abs(lastNotes[0] - lastNotes[1]);
-      totalCost += this._scoreLeapRecovery(interval, prevInterval, lastNotes, candidate) * this.weights.leapRecovery;
-    }
-
-    // Voice crossing detection (soft constraint for multi-voice context)
-    if (lastNotes.length > 1) {
-      totalCost += this._scoreVoiceCrossing(candidate, lastNotes) * this.weights.voiceCrossing;
-    }
-
-    // Parallel motion avoidance (soft constraint)
-    if (this.history.length > 0) {
-      const lastHistory = this.history[this.history.length - 1];
-      const lastMotion = (lastHistory && typeof lastHistory.interval === 'number') ? lastHistory.interval : 0;
-      totalCost += this._scoreParallelMotion(candidate - lastNote, lastMotion) * this.weights.parallelMotion;
-    }
-
-    // Small preference for common-tone (same pitch-class); prefers per-call opts first, then scorer default
-    const baseCtWeight = (opts && typeof opts.commonToneWeight === 'number') ? opts.commonToneWeight : this.commonToneWeight;
-    const ctWeightMod = applyVoiceLeadingWeightNoise(1.0, 'commonTone', noiseContext);
-    const ctWeight = baseCtWeight * ctWeightMod;
-    if (typeof ctWeight === 'number' && ctWeight > 0) {
-      const samePC = ((candidate % 12) + 12) % 12 === ((lastNote % 12) + 12) % 12;
-      if (samePC) totalCost -= Math.min(8, ctWeight * 4); // reduce cost to favor common tones
-    }
-
-    // Candidate weight bias (lower cost is preferred)
-    if (opts && typeof opts.weight === 'number' && opts.weight > 0) {
-      totalCost -= Math.min(8, opts.weight * 4);
-    }
-
-    // Apply hard constraints if provided
-    if (constraints.includes('avoidsStrident') && interval > 7) {
-      totalCost += 5; // Penalize large leaps
-    }
-    if (constraints.includes('stepsOnly') && interval > 2) {
-      totalCost += 10; // Force stepwise motion
-    }
-
-    return totalCost;
+    return VoiceLeadingCore.computeCandidateScore(this, candidate, lastNotes, registerRange, constraints, opts);
   }
 
   /**
@@ -218,12 +127,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Motion cost (0-10)
    */
   _scoreVoiceMotion(interval, fromNote, toNote) {
-    // Stepwise motion (1-2 semitones) is preferred
-    if (interval === 0) return 0;    // Unison
-    if (interval <= 2) return 1;     // Step
-    if (interval <= 5) return 3;     // Small leap
-    if (interval <= 7) return 5;     // Tritone or sixth
-    return 10;                       // Large leap
+    return VoiceLeadingScorers.scoreVoiceMotion(interval, fromNote, toNote);
   }
 
   /**
@@ -234,23 +138,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Range cost (0-8)
    */
   _scoreVoiceRange(note, range) {
-    const [min, max] = range;
-    const mid = (min + max) / 2;
-    const width = max - min;
-
-    // Ideal zone: middle half of range
-    if (note >= min + width / 4 && note <= max - width / 4) {
-      return 0;
-    }
-
-    // Acceptable zone: within range
-    if (note >= min && note <= max) {
-      return 2;
-    }
-
-    // Outside range: linear penalty based on distance
-    const distance = note < min ? min - note : note - max;
-    return Math.min(8, 2 + distance * 0.5);
+    return VoiceLeadingScorers.scoreVoiceRange(note, range);
   }
 
   /**
@@ -262,34 +150,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Recovery cost (0-5)
    */
   _scoreLeapRecovery(currentInterval, prevInterval, lastNotes, candidate) {
-    // Only apply if previous motion was a leap (>2 semitones)
-    if (prevInterval <= 2) return 0;
-
-    // Scale recovery pressure by leap size (larger leaps demand stronger recovery)
-    const leapScale = Math.min(2.5, prevInterval / 5.0);
-
-    // Dynamism allows occasional leap chains
-    const dynamismReduction = this.dynamism * 0.4;
-
-    // Current motion should be stepwise (1-2 semitones)
-    if (currentInterval > 2) {
-      return Math.max(0, (5 * leapScale) - dynamismReduction); // Penalize: large leap not followed by step
-    }
-
-    // Check if direction reversal is present (preferred recovery)
-    if (lastNotes.length >= 2) {
-      const prevDirection = lastNotes[0] - lastNotes[1];
-      const currentDirection = candidate - lastNotes[0];
-      const sameDirection = (prevDirection > 0 && currentDirection > 0) || (prevDirection < 0 && currentDirection < 0);
-
-      if (sameDirection) {
-        // Penalty scaled by contraryMotionPreference and leap size
-        const basePenalty = 2 * (this.contraryMotionPreference ?? 0.4) * leapScale;
-        return Math.max(0, basePenalty - dynamismReduction);
-      }
-    }
-
-    return 0; // Good: leap followed by step in opposite direction
+    return VoiceLeadingScorers.scoreLeapRecovery(this, currentInterval, prevInterval, lastNotes, candidate);
   }
 
   /**
@@ -300,24 +161,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Crossing cost (0-6)
    */
   _scoreVoiceCrossing(candidate, lastNotes) {
-    if (lastNotes.length < 2) return 0;
-
-    const alto = lastNotes[1] ?? 60;
-    // Soprano should stay above or at alto line
-    if (candidate < alto) {
-      return 6;
-    }
-
-    if (lastNotes.length >= 4) {
-      const tenor = lastNotes[2];
-      const bass = lastNotes[3];
-      // Check full voice crossing
-      if ((candidate < alto && alto < tenor) || (tenor < alto && alto < candidate)) {
-        return 4;
-      }
-    }
-
-    return 0;
+    return VoiceLeadingScorers.scoreVoiceCrossing(candidate, lastNotes);
   }
 
   /**
@@ -328,12 +172,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Parallel motion cost (0-3)
    */
   _scoreParallelMotion(currentMotion, lastMotion) {
-    // Same direction motion
-    if ((currentMotion > 0 && lastMotion > 0) || (currentMotion < 0 && lastMotion < 0)) {
-      // Parallel motion is mildly discouraged in voice leading
-      return 3;
-    }
-    return 0;
+    return VoiceLeadingScorers.scoreParallelMotion(currentMotion, lastMotion);
   }
 
   /**
@@ -345,34 +184,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Interval quality cost (0-6)
    */
   _scoreIntervalQuality(interval, fromNote, toNote) {
-    if (interval <= 2) return 0; // Steps are always good
-
-    // Classify interval class (normalize to within octave)
-    const intervalClass = interval % 12;
-
-    // Dynamism allows occasional harsh intervals
-    const dynamismBonus = this.dynamism * 2;
-
-    // Consonant leaps (preferred) - minor penalty
-    if ([3, 4, 5, 7, 9].includes(intervalClass)) {
-      // m3, M3, P4, P5, M6
-      return Math.max(0, 1 - dynamismBonus * 0.5);
-    }
-
-    // Mildly dissonant but usable
-    if ([2, 10].includes(intervalClass)) {
-      // M2, m7
-      return Math.max(0, 3 - dynamismBonus);
-    }
-
-    // Harsh intervals (occasional color tones)
-    if ([1, 6, 11].includes(intervalClass)) {
-      // m2, tritone, M7
-      return Math.max(0, 5 - dynamismBonus * 1.5);
-    }
-
-    // Very large intervals
-    return Math.max(0, 4 - dynamismBonus);
+    return VoiceLeadingScorers.scoreIntervalQuality(interval, fromNote, toNote, this.dynamism);
   }
 
   /**
@@ -383,32 +195,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Consecutive leap cost (0-8)
    */
   _scoreConsecutiveLeaps(currentInterval, lastNotes) {
-    if (currentInterval <= 2) return 0; // Not a leap
-
-    let consecutiveLeaps = 1; // Current one counts
-
-    // Count consecutive leaps in history
-    for (let i = 0; i < Math.min(lastNotes.length - 1, 3); i++) {
-      const histInterval = Math.abs(lastNotes[i] - lastNotes[i + 1]);
-      if (histInterval > 2) {
-        consecutiveLeaps++;
-      } else {
-        break; // Step breaks the sequence
-      }
-    }
-
-    // Dynamism allows occasional leap sequences
-    const dynamismReduction = this.dynamism * 3;
-
-    if (consecutiveLeaps === 2) {
-      return Math.max(0, 3 - dynamismReduction * 0.6); // Mild penalty
-    } else if (consecutiveLeaps === 3) {
-      return Math.max(0, 6 - dynamismReduction); // Strong penalty
-    } else if (consecutiveLeaps >= 4) {
-      return Math.max(0, 8 - dynamismReduction); // Very strong penalty
-    }
-
-    return 0;
+    return VoiceLeadingScorers.scoreConsecutiveLeaps(currentInterval, lastNotes, this.dynamism);
   }
 
   /**
@@ -420,25 +207,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Directional bias cost (0-2)
    */
   _scoreDirectionalBias(candidate, lastNote, register) {
-    const direction = candidate - lastNote;
-    if (direction === 0) return 0; // No motion
-
-    const ascending = direction > 0;
-
-    // Apply subtle bias based on register
-    switch (register) {
-      case 'soprano':
-        // Slight ascending bias (vocal brightness)
-        return ascending ? 0 : 0.5;
-      case 'bass':
-        // Slight descending bias (harmonic foundation)
-        return ascending ? 0.5 : 0;
-      case 'alto':
-      case 'tenor':
-      default:
-        // Neutral
-        return 0;
-    }
+    return VoiceLeadingScorers.scoreDirectionalBias(candidate, lastNote, register);
   }
 
   /**
@@ -449,15 +218,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Max leap cost (0-10)
    */
   _scoreMaxLeap(interval, register) {
-    const maxLeap = this.maxLeapSize[register] || 12;
-
-    if (interval <= maxLeap) return 0;
-
-    // Soft exponential penalty beyond max
-    const excess = interval - maxLeap;
-    const dynamismReduction = this.dynamism * 4;
-
-    return Math.max(0, Math.min(10, excess * 1.5) - dynamismReduction);
+    return VoiceLeadingScorers.scoreMaxLeap(interval, register, this.maxLeapSize, this.dynamism);
   }
 
   /**
