@@ -7,8 +7,7 @@ chordModulator = (function() {
     const opts = Object.assign({ velocityScale: 1, inversion: 0, voices: 4, baseVelocity: 100 }, options);
 
     // Convert to midi numbers
-    let midiNotes = chordNotes.map(n => (typeof n === 'number' ? n : (getMidiValue ? getMidiValue(n) : null)));
-    if (midiNotes.some(n => n === null || n === undefined)) throw new Error('chordModulator.apply: failed to resolve some MIDI notes');
+    let midiNotes = ChordValues.chordToMidi(chordNotes);
 
     // Apply inversion
     midiNotes = ChordValues.invert(midiNotes, opts.inversion || 0);

@@ -27,15 +27,33 @@ ChordManager = (function() {
     const profile = profileName ? config.getProfile(profileName) : {};
     const opts = Object.assign({}, profile, options);
 
-    const chordNames = Array.isArray(chordSymbolOrArray) ? chordSymbolOrArray : (typeof chordSymbolOrArray === 'string' ? [chordSymbolOrArray] : []);
+    if (typeof chordSymbolOrArray !== 'string' && !Array.isArray(chordSymbolOrArray)) {
+      throw new Error('ChordManager.applyVoicing: chordSymbolOrArray must be a string or array');
+    }
+
+    const chordNames = Array.isArray(chordSymbolOrArray) ? chordSymbolOrArray : [chordSymbolOrArray];
+    if (chordNames.length === 0) throw new Error('ChordManager.applyVoicing: chord list is empty');
+    if (!t || !t.Chord || typeof t.Chord.get !== 'function') {
+      throw new Error('ChordManager.applyVoicing: tonal chord API not available');
+    }
 
     // Resolve to MIDI if needed and apply modulator
     const midiNotes = chordNames.map(sym => {
       if (typeof sym === 'number') return sym;
-      const ch = t.Chord.get(sym);
-      if (!ch || !Array.isArray(ch.notes) || ch.notes.length === 0) throw new Error(`ChordManager.applyVoicing: invalid chord symbol ${sym}`);
-      return ch.notes.map(n => getMidiValue ? getMidiValue(n) : null).flat();
+
+      const normalized = (typeof normalizeChordSymbol === 'function') ? normalizeChordSymbol(sym) : sym;
+      if (typeof normalized !== 'string' || !normalized) {
+        throw new Error(`ChordManager.applyVoicing: invalid chord symbol ${String(sym)}`);
+      }
+
+      const ch = t.Chord.get(normalized);
+      if (!ch || !Array.isArray(ch.notes) || ch.notes.length === 0) {
+        throw new Error(`ChordManager.applyVoicing: invalid chord symbol ${normalized}`);
+      }
+      return values.chordToMidi(ch.notes);
     }).flat();
+
+    if (midiNotes.length === 0) throw new Error('ChordManager.applyVoicing: no MIDI notes resolved');
 
     return mod.apply(midiNotes, opts);
   }
