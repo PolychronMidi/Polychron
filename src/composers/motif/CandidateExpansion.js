@@ -3,6 +3,13 @@
 /**
  * Expands candidate note pools while respecting scale pitch classes and MIDI bounds.
  * Used when initial candidate set is too small for multi-voice selection.
+ *
+ * DESIGN RATIONALE:
+ * VoiceManager requires sufficient candidates for effective voice-leading optimization.
+ * When motif buckets provide single notes, this helper expands the pool by adding
+ * scale-aware neighbors (±12 semitones) that match the composer's pitch-class set.
+ * This preserves harmonic coherence while giving the voice module enough options
+ * to apply smooth motion, leap recovery, and voice spacing constraints.
  */
 CandidateExpansion = {
   /**

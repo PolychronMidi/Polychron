@@ -67,10 +67,17 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     }
   }
 
+  /**
+   * Boosts chord-tone weights when a borrowed chord is active.
+   * Emphasizes modal interchange tones by 1.5x to make color changes audible.
+   * @param {number[]} candidateNotes - Available MIDI notes
+   * @returns {{ candidateWeights: { [note: number]: number } } | null}
+   */
   getVoicingIntent(candidateNotes = []) {
     const base = super.getVoicingIntent(candidateNotes);
     if (!base || !base.candidateWeights) return base;
 
+    // Emphasize borrowed chord tones (modal color)
     if (this._lastBorrowed) {
       for (const note of candidateNotes) {
         const key = String(note);
