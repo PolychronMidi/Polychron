@@ -13,8 +13,11 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
     return RhythmRegistry.execute(method, ...args);
   } else {
+    const rhythmSource = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.biasRhythmWeights === 'function')
+      ? FXFeedbackListener.biasRhythmWeights(rhythms)
+      : rhythms;
     const filteredRhythms=Object.fromEntries(
-      Object.entries(rhythms).filter(([_,{ weights }])=>weights[levelIndex] > 0)
+      Object.entries(rhythmSource).filter(([_,{ weights }])=>weights[levelIndex] > 0)
     );
     if (!Object.keys(filteredRhythms).length) {
       throw new Error(`getRhythm: no candidate rhythms for level "${level}"`);

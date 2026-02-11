@@ -56,7 +56,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         for (let i = 0; i < numStutters; i++) {
           // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
           // const tickVal = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 0);
-          const tickVal = beatStart + useOffset + i * stutterDuration * tpBeat;
+          const tickVal = beatStart + (useOffset + i * stutterDuration) * tpBeat;
           const tick = m.round(tickVal);
           let currentVelocity;
           if (isFadeIn) {
