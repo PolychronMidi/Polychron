@@ -1,7 +1,4 @@
-// Dependencies are required via `src/composers/index.js`
-
 const _warnedInvalidChordSymbols = new Set();
-
 ChordComposer = class ChordComposer extends MeasureComposer {
   /**
    * @param {string[]} progression - Array of chord symbols, e.g., ['CM', 'Dm', 'Em']
@@ -76,7 +73,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
 
       // Case C: both raw and normalized are invalid -> real warning (not labeled acceptable)
       if (!_warnedInvalidChordSymbols.has(asRaw)) {
-        try { console.warn(`ChordComposer.noteSet: invalid chord symbol "${asRaw}" (normalized -> "${normalized}")`); } catch (e) { /* swallow */ }
+        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch (e) { /* swallow */ }
         _warnedInvalidChordSymbols.add(asRaw);
       }
       try { if (typeof writeDebugFile === 'function') writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol: asRaw }); } catch (e) { /* swallow */ }

@@ -1,5 +1,3 @@
-// Dependencies are required via `src/composers/index.js` (aggregated side-effect requires)
-
 /**
  * Generates chord progressions with modal borrowing from parallel modes.
  *

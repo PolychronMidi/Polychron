@@ -107,8 +107,7 @@ class StutterManager {
     for (const ev of events) {
       ev._profile = provided.profile || 'unknown';
       if (!Number.isFinite(Number(ev.tick))) {
-        if (SC && SC.logDebug) SC.logDebug('scheduleStutterForUnit: skipping event with invalid tick', ev);
-        continue;
+        throw new Error(`scheduleStutterForUnit: skipping event with invalid tick: ${JSON.stringify(ev)}`);
       }
       const key = Math.round(ev.tick);
       if (!this.pending.has(key)) this.pending.set(key, []);
@@ -140,11 +139,10 @@ class StutterManager {
     this.pending.delete(key);
     // adjust pendingByTick
     if (SC && SC.decPendingForTick) SC.decPendingForTick(key, arr.length);
-    if (SC && SC.logDebug) SC.logDebug('playPendingForTick: emitted', key, arr.length);
     return arr.length;
   }
 
-  // Expose metrics accessors for tests and tuning
+  // Metrics accessors for tests and tuning (explicit accessor methods below)
   getMetrics() {
     return (SC && SC.getMetrics) ? SC.getMetrics() : { scheduledCount: 0, emittedCount: 0, scheduledByProfile: {}, emittedByProfile: {}, pendingByTick: new Map() };
   }
@@ -176,11 +174,8 @@ class StutterManager {
     // Full reset - always clear internal state first
     const prev1 = this.lastUsedCHs.size;
     const prev2 = this.lastUsedCHs2.size;
-    // DEBUG
-    if (SC && SC.logDebug) SC.logDebug('resetChannelTracking/full', { prev1, prev2, _resetHook: Boolean(this._resetChannelTracking) });
     this.lastUsedCHs.clear();
     this.lastUsedCHs2.clear();
-
     // Also clear shared stutter state and pending events
     try { this.shared.stutters.clear(); this.shared.shifts.clear(); this.shared.global = {}; } catch (e) { /* ignore errors clearing shared state */ }
     this.pending.clear();

@@ -1,5 +1,4 @@
 // src/events.js - Lightweight event dispatcher for feedback loops
-// Exposed as naked global: EventBus
 
 EventBus = (() => {
   const _listeners = {}; // { eventName: [handlers] }

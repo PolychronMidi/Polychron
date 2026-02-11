@@ -4,7 +4,7 @@ module.exports = {
       meta: {
         type: 'problem',
         docs: {
-          description: 'Disallow early returns without a preceding console log or explicit handling',
+          description: 'Disallow early returns without explicit handling (prefer throwing an Error or explicit handling)',
           recommended: false
         },
         schema: [{
@@ -56,11 +56,12 @@ module.exports = {
 
             if (allowed) return;
 
-            context.report({ node, message: 'Silent early return detected. Add logging (e.g., console.warn) or explicit handling before returning.' });
+            context.report({ node, message: 'Silent early return detected. Add explicit handling or throw an Error before returning.' });
           }
         };
       }
     },
+
     'no-requires-outside-index': {
       meta: {
         type: 'suggestion',
@@ -120,6 +121,136 @@ module.exports = {
           }
         };
       }
+    },
+
+    /* New project-wide rules */
+
+    'no-console-acceptable-warning': {
+      meta: {
+        type: 'problem',
+        docs: { description: 'Disallow console.* except when the first argument starts with "Acceptable warning:"', recommended: false },
+        schema: []
+      },
+      create(context) {
+        const source = context.getSourceCode();
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            if (!callee || callee.type !== 'MemberExpression') return;
+            const obj = callee.object; const prop = callee.property;
+            if (!obj || obj.type !== 'Identifier' || obj.name !== 'console') return;
+
+            const args = node.arguments || [];
+            if (args.length === 0) {
+              context.report({ node, message: 'Console calls are only allowed for acceptable warnings: console.warn("Acceptable warning: ...")' });
+              return;
+            }
+
+            const first = args[0];
+            let ok = false;
+            if (first.type === 'Literal' && typeof first.value === 'string') {
+              ok = first.value.startsWith('Acceptable warning:');
+            } else if (first.type === 'TemplateLiteral' && Array.isArray(first.quasis) && first.quasis.length > 0) {
+              ok = typeof first.quasis[0].value.raw === 'string' && first.quasis[0].value.raw.startsWith('Acceptable warning:');
+            }
+
+            if (!ok) {
+              context.report({ node, message: 'Fail-fast violation - always throw descriptive error for unexpected value/behavior. (throw instead of console statements)' });
+            }
+          }
+        };
+      }
+    },
+
+    'no-math-random': {
+      meta: {
+        type: 'problem',
+        docs: { description: 'Disallow Math.random; use project RNG helpers rf/ri instead', recommended: false },
+        schema: []
+      },
+      create(context) {
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            if (!callee || callee.type !== 'MemberExpression') return;
+            const obj = callee.object; const prop = callee.property;
+            if (obj && obj.type === 'Identifier' && obj.name === 'Math' && ((prop && prop.type === 'Identifier' && prop.name === 'random') || (prop && prop.type === 'Literal' && prop.value === 'random'))) {
+              context.report({ node, message: 'Use project RNG helpers rf/ri instead of Math.random()' });
+            }
+          }
+        };
+      }
+    },
+
+    'no-useless-expose-dependencies-comments': {
+      meta: {
+        type: 'suggestion',
+        docs: { description: 'Ban comments starting with Expose or Dependencies (these are considered useless)', recommended: false },
+        schema: []
+      },
+      create(context) {
+        return {
+          'Program:exit'() {
+            const source = context.getSourceCode();
+            const comments = source.getAllComments ? source.getAllComments() : [];
+            for (const c of comments) {
+              if (!c || !c.value) continue;
+              const txt = c.value.trim();
+              if (!txt) continue;
+              const lower = txt.toLowerCase();
+              if (txt.startsWith('Expose') || txt.startsWith('Dependencies') || lower.startsWith('expose') || lower.startsWith('dependencies')) {
+                context.report({ loc: c.loc, message: 'Useless comment banned: comments starting with "Expose" or "Dependencies" are not allowed.' });
+              }
+            }
+          }
+        };
+      }
+    },
+
+    'only-error-throws': {
+      meta: {
+        type: 'problem',
+        docs: { description: 'Disallow throwing non-Error literals; prefer throw new Error(...) or rethrow error variables', recommended: false },
+        schema: []
+      },
+      create(context) {
+        return {
+          ThrowStatement(node) {
+            const arg = node.argument;
+            if (!arg) return; // nothing to check
+
+            // Disallow throwing literals and template literals directly
+            if (arg.type === 'Literal' || arg.type === 'TemplateLiteral') {
+              context.report({ node: arg, message: 'Throwing literals is forbidden. Throw an Error object instead (e.g., throw new Error("message")).' });
+              return;
+            }
+
+            // Allow re-throwing identifiers or member expressions (caught errors)
+            if (arg.type === 'Identifier' || arg.type === 'MemberExpression') {
+              return;
+            }
+
+            // Allow calling/constructing Error subclasses (callee name ending in "Error"), otherwise report
+            if (arg.type === 'NewExpression' || arg.type === 'CallExpression') {
+              const callee = arg.callee;
+              let name = null;
+              if (callee && callee.type === 'Identifier') name = callee.name;
+              else if (callee && callee.type === 'MemberExpression' && callee.property && callee.property.type === 'Identifier') name = callee.property.name;
+
+              if (typeof name !== 'string' || !name.match(/Error$/)) {
+                context.report({ node: arg, message: 'Throwing non-Error values is disallowed. Use Error instances (e.g., throw new Error(...)) or rethrow existing errors.' });
+                return;
+              }
+
+              return;
+            }
+
+            // Any other throw forms are disallowed
+            context.report({ node: arg, message: 'Only Error objects or existing error variables may be thrown.' });
+          }
+        };
+      }
     }
+
   }
 };

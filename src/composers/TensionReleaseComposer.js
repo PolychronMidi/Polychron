@@ -1,5 +1,3 @@
-// Dependencies are required via `src/composers/index.js`
-
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5, opts = {}) {
     const generator = new ProgressionGenerator(key, quality);

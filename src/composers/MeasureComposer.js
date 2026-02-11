@@ -105,7 +105,6 @@ MeasureComposer = class MeasureComposer {
       const intervalOptions = self.intervalOptions || undefined;
       intervals = IntervalComposer.selectIntervals(self.notes.length, intervalOptions);
     } catch (e) {
-      console.error('MeasureComposer.getNotes: IntervalComposer.selectIntervals failed:', e);
       throw e;
     }
 
