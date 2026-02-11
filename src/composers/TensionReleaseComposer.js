@@ -99,6 +99,12 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     super.noteSet(selectedChords, 'R');
   }
 
+  /**
+   * Modifies parent chord-tone weights based on tension curve.
+   * High-tension chords boost non-chord tones; low-tension emphasizes chord tones.
+   * @param {number[]} candidateNotes - Available MIDI notes
+   * @returns {{ candidateWeights: { [note: number]: number } }}
+   */
   getVoicingIntent(candidateNotes = []) {
     const base = super.getVoicingIntent(candidateNotes);
     if (!base || typeof base !== 'object' || !base.candidateWeights || typeof base.candidateWeights !== 'object') {
@@ -109,6 +115,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     const symbol = current && current.symbol ? current.symbol : null;
     const tension = symbol ? this.calculateTension(symbol) : 0.5;
 
+    // Apply tension curve: reduce chord-tone emphasis during high tension
     for (const note of candidateNotes) {
       const key = String(note);
       const existing = typeof weights[key] === 'number' ? weights[key] : 0;
