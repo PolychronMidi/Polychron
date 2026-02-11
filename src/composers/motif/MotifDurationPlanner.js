@@ -17,6 +17,8 @@ MotifDurationPlanner = {
 
     const len = Number(length);
     const total = Number(totalTicks);
+    const rand = (typeof rf === 'function') ? rf : ((min = 0, max = 1) => min + Math.random() * (max - min));
+    const randInt = (typeof ri === 'function') ? ri : ((max) => Math.floor(Math.random() * (max + 1)));
 
     // Evenly distribute ticks across motif length; shuffle remainder for variety
     const base = Math.floor(total / len);
@@ -25,10 +27,10 @@ MotifDurationPlanner = {
 
     // Randomize distribution slightly while preserving sum: swap some units
     for (let k = 0; k < Math.min(3, len); k++) {
-      const i = Math.floor(Math.random() * len);
-      const j = Math.floor(Math.random() * len);
+      const i = randInt(len - 1);
+      const j = randInt(len - 1);
       if (i !== j && targetDurations[i] > 1) {
-        const delta = Math.round((Math.random() - 0.5) * Math.min(2, Math.floor(targetDurations[i] * 0.1)));
+        const delta = Math.round(rand(-0.5, 0.5) * Math.min(2, Math.floor(targetDurations[i] * 0.1)));
         targetDurations[i] = Math.max(1, targetDurations[i] - delta);
         targetDurations[j] = Math.max(1, targetDurations[j] + delta);
       }

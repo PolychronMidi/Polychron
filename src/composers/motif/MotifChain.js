@@ -29,12 +29,12 @@ MotifChain = (() => {
 
   /**
    * Add a transformation to the chain
-   * @param {string} type - Transform type: 'transpose', 'invert', 'augment', 'diminish', 'reverse', 'develop'
+  * @param {string} type - Transform type: 'transpose', 'rotate', 'invert', 'augment', 'diminish', 'reverse', 'develop'
    * @param {Array} args - Arguments for the transform method
    * @throws {Error} if type is invalid
    */
   function addTransform(type, ...args) {
-    const validTypes = ['transpose', 'invert', 'augment', 'diminish', 'reverse', 'develop'];
+    const validTypes = ['transpose', 'rotate', 'invert', 'augment', 'diminish', 'reverse', 'develop'];
     if (!validTypes.includes(type)) {
       throw new Error(`MotifChain.addTransform: unknown transform type "${type}". Valid: ${validTypes.join(', ')}`);
     }

@@ -108,9 +108,13 @@ MotifTransforms = {
           this.rotate(entries, t.amount ?? 1);
         } else if (t.type === 'invert') {
           this.invert(entries, t.pivot ?? 0);
+        } else {
+          throw new Error(`MotifTransforms.applyAll: unknown transform type "${t.type}"`);
         }
       } else if (transform === 'augmentDuration') {
         this.augmentDuration(entries);
+      } else {
+        throw new Error(`MotifTransforms.applyAll: unknown transform ${JSON.stringify(transform)}`);
       }
     }
   }

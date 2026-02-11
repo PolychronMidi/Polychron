@@ -16,6 +16,15 @@ motifModulator = (function() {
         throw new Error('motifModulator.apply: motifPattern entries must be objects');
       }
       const out = Object.assign({}, note);
+      if (pat.velocity !== undefined && (typeof pat.velocity !== 'number' || !Number.isFinite(pat.velocity))) {
+        throw new Error(`motifModulator.apply: invalid velocity at index ${i}`);
+      }
+      if (pat.time !== undefined && (typeof pat.time !== 'number' || !Number.isFinite(pat.time))) {
+        throw new Error(`motifModulator.apply: invalid time at index ${i}`);
+      }
+      if (pat.duration !== undefined && (typeof pat.duration !== 'number' || !Number.isFinite(pat.duration) || pat.duration <= 0)) {
+        throw new Error(`motifModulator.apply: invalid duration at index ${i}`);
+      }
       if (pat.velocity !== undefined) out.velocity = Math.max(1, Math.min(127, Math.round((typeof out.velocity === 'number' ? out.velocity : 100) * (pat.velocity * opts.velocityScale))));
       if (pat.time !== undefined) out.time = (typeof out.time === 'number' ? out.time : 0) + pat.time + opts.timingOffset;
       if (pat.duration !== undefined) out.duration = pat.duration;
