@@ -1,5 +1,3 @@
-// Dependencies are required via `src/composers/index.js`
-
 /**
  * Composes notes from a specific mode (single static mode selection).
  *

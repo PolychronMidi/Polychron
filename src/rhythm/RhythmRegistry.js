@@ -1,6 +1,5 @@
 // RhythmRegistry.js - simple registry for rhythm generators (fail-fast)
 
-// Expose as naked global: RhythmRegistry
 RhythmRegistry = (function() {
   const _map = {};
 

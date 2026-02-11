@@ -1,5 +1,3 @@
-// Dependencies are required via `src/composers/index.js`
-
 VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', commonToneWeight = 0.7, contraryMotionPreference = 0.4) {
     if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('VoiceLeadingComposer: allNotes not available');

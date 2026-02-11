@@ -68,8 +68,7 @@ FXFeedbackListener = (() => {
 
     for (const [name, method] of Object.entries(rhythmMethodsObj)) {
       if (typeof method !== 'function') {
-        if (SC && SC.logDebug) SC.logDebug('FXFeedbackListener.biasRhythmMethods: skipping non-function method', name);
-        continue;
+        throw new Error(`FXFeedbackListener.biasRhythmMethods: method "${name}" is not a function`);
       }
       biased[name] = method; // Strategy functions are kept as-is (weightings are in rhythms config, not here)
     }

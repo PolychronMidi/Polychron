@@ -1,6 +1,3 @@
-// MotifComposer - thin adapter to produce Motif objects from scale/meter/voice-leading
-// Dependencies are required via `src/composers/index.js` (aggregated side-effect requires)
-
 /**
  * MotifComposer: factory for short motifs that fit a scale/meter and optionally use voice-leading.
  * Features:

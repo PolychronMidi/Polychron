@@ -33,8 +33,13 @@ export default [
       'no-implicit-coercion': ['warn', { 'boolean': true, 'number': true, 'string': true, 'allow': [] }],
       'no-undef': 'error',
       'local/no-silent-early-return': ['error', { allowInTests: false }],
-      'local/no-requires-outside-index': ['error']
-    }
+      'local/no-requires-outside-index': ['error'],
+      'local/no-console-acceptable-warning': 'error',
+      'local/no-math-random': 'error',
+      'local/no-useless-expose-dependencies-comments': 'error',
+      'local/only-error-throws': 'error'
+    },
+
   },
   // Tests are intentionally excluded from linting to avoid enforcing project naked-global rules
   // which are not applicable to test scaffolding and helper usage.
@@ -404,7 +409,7 @@ export default [
         acquireLock: 'writable',
         releaseLock: 'writable',
         main: 'writable',
-        // Exposed helpers / classes
+        // Public helper/class exports
         TimingCalculator: 'writable',
         VoiceLeadingScore: 'writable',
         VoiceLeadingScorers: 'writable',
