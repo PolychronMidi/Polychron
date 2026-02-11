@@ -81,6 +81,20 @@ PhaseLockedRhythmGenerator = (() => {
       offset = phaseOffset;
     } else if (phases.has(phaseKey)) {
       offset = phases.get(phaseKey);
+    } else if (activeLayer) {
+      for (const [key, meta] of phases.entries()) {
+        if (typeof key !== 'string' || !key.startsWith('_coupling:')) continue;
+        const parts = key.split(':');
+        const layer1 = parts[1];
+        const layer2 = parts[2];
+        if (activeLayer !== layer2) continue;
+        const ratio1 = meta && Number.isFinite(Number(meta.ratio1)) ? Number(meta.ratio1) : null;
+        const ratio2 = meta && Number.isFinite(Number(meta.ratio2)) ? Number(meta.ratio2) : null;
+        if (ratio1 && ratio2) {
+          offset = Math.round((ratio1 / (ratio1 + ratio2)) * length);
+          break;
+        }
+      }
     }
 
     offset = ((offset % length) + length) % length; // Normalize to [0, length)

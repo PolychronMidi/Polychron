@@ -6,7 +6,7 @@ setRhythm = function setRhythm(level, ctx = null) {
     case 'beat': {
       const res = beatRhythm < 1 ? random(numerator) : getRhythm('beat', numerator, beatRhythm);
       if (!Array.isArray(res)) {
-        console.error('[setRhythm] Beat rhythm could not be generated', { level: 'beat', numerator, beatRhythm });
+        throw new Error(`[setRhythm] Beat rhythm could not be generated (level=beat, numerator=${numerator}, beatRhythm=${beatRhythm})`);
       }
       if (ctx && typeof ctx === 'object') ctx.beatRhythm = res;
       return res;
@@ -14,7 +14,7 @@ setRhythm = function setRhythm(level, ctx = null) {
     case 'div': {
       const res = divRhythm < 1 ? random(divsPerBeat, .4) : getRhythm('div', divsPerBeat, divRhythm);
       if (!Array.isArray(res)) {
-        console.error('[setRhythm] Div rhythm could not be generated', { level: 'div', divsPerBeat, divRhythm });
+        throw new Error(`[setRhythm] Div rhythm could not be generated (level=div, divsPerBeat=${divsPerBeat}, divRhythm=${divRhythm})`);
       }
       if (ctx && typeof ctx === 'object') ctx.divRhythm = res;
       return res;
@@ -22,7 +22,7 @@ setRhythm = function setRhythm(level, ctx = null) {
     case 'subdiv': {
       const res = subdivRhythm < 1 ? random(subdivsPerDiv, .3) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm);
       if (!Array.isArray(res)) {
-        console.error('[setRhythm] Subdiv rhythm could not be generated', { level: 'subdiv', subdivsPerDiv, subdivRhythm });
+        throw new Error(`[setRhythm] Subdiv rhythm could not be generated (level=subdiv, subdivsPerDiv=${subdivsPerDiv}, subdivRhythm=${subdivRhythm})`);
       }
       if (ctx && typeof ctx === 'object') ctx.subdivRhythm = res;
       return res;
@@ -30,7 +30,7 @@ setRhythm = function setRhythm(level, ctx = null) {
     case 'subsubdiv': {
       const res = subsubdivRhythm < 1 ? random(subsubsPerSub, .3) : getRhythm('subsubdiv', subsubsPerSub, subsubdivRhythm);
       if (!Array.isArray(res)) {
-        console.error('[setRhythm] Subsubdiv rhythm could not be generated', { level: 'subsubdiv', subsubsPerSub, subsubdivRhythm });
+        throw new Error(`[setRhythm] Subsubdiv rhythm could not be generated (level=subsubdiv, subsubsPerSub=${subsubsPerSub}, subsubdivRhythm=${subsubdivRhythm})`);
       }
       if (ctx && typeof ctx === 'object') ctx.subsubdivRhythm = res;
       return res;
