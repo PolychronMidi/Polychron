@@ -1,7 +1,4 @@
-#!/usr/bin/env node
-// report-src-loc.js
 // Walks the `src` directory and prints files sorted by lines of code (descending).
-// Usage: node script/report-src-loc.js [path/to/src]
 
 const fs = require('fs');
 const path = require('path');

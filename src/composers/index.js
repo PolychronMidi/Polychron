@@ -9,6 +9,8 @@ require('./HarmonicContext');
 // @ts-ignore: load side-effect module with globals
 require('./noiseComposer');
 // @ts-ignore: load side-effect module with globals
+require('./scaleDegreeTranspose');
+// @ts-ignore: load side-effect module with globals
 require('./ScaleComposer');
 // Grouped submodules: chord, motif, voice (each has an index to load its files)
 // @ts-ignore: load side-effect module with globals
