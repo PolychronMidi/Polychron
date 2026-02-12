@@ -181,17 +181,20 @@ ComposerFactory = class ComposerFactory {
     const composerCtx = ctx || this.sharedComposerCtx;
     if (composerCtx) this.setComposerContext(composerCtx);
 
-    // Fail-fast: COMPOSERS array must be defined and non-empty
-    if (typeof COMPOSERS === 'undefined' || !Array.isArray(COMPOSERS) || COMPOSERS.length === 0) {
-      throw new Error('ComposerFactory.createRandom: COMPOSERS array is undefined or empty');
+    if (typeof getDefaultComposerPoolOrFail !== 'function') {
+      throw new Error('ComposerFactory.createRandom: getDefaultComposerPoolOrFail() is not available');
+    }
+    const composerPool = getDefaultComposerPoolOrFail();
+    if (!Array.isArray(composerPool) || composerPool.length === 0) {
+      throw new Error('ComposerFactory.createRandom: default composer profile pool is empty');
     }
 
-    // Try up to N composers from COMPOSERS; fail-fast if all attempts exhaust
-    const maxAttempts = m.min(8, COMPOSERS.length);
+    // Try up to N composers from default pool; fail-fast if all attempts exhaust
+    const maxAttempts = m.min(8, composerPool.length);
     let lastError = null;
 
     for (let i = 0; i < maxAttempts; i++) {
-      const cfg = COMPOSERS[ri(COMPOSERS.length - 1)];
+      const cfg = composerPool[ri(composerPool.length - 1)];
       try {
         const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
 
