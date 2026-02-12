@@ -375,6 +375,7 @@ declare var getNoiseProfileOrFail: any;
 declare const NOISE_PROFILES: any;
 declare var applyComposerPitchNoise: any;
 declare var applyMelodicTranspositionNoise: any;
+declare var scaleDegreeTranspose: any;
 declare var applyMelodicPivotNoise: any;
 declare var applyMelodicDurationNoise: any;
 declare var applyVoiceLeadingWeightNoise: any;

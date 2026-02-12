@@ -68,36 +68,84 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
     switch (this.currentPhase) {
       case 0:
-        // Transpose by chromatic semitones - THIS CHANGES PITCH CLASSES!
-        // Need to either constrain to scale or accept that transposition creates new PCs
-        this.transpositionOffset = intensity > 0.5 ? ri(-2, 2) : 0;
-        this.transpositionOffset = applyMelodicTranspositionNoise(this.transpositionOffset, noiseContext);
-        // FAIL FAST: transposition by offset creates new pitch classes
-        throw new Error(`MelodicDevelopmentComposer.getNotes phase 0: chromatic transposition (+${this.transpositionOffset}) would create pitch classes outside the scale. Need scale-degree transposition instead.`);
-        // developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
+        // Scale-degree transposition (preserve scale membership)
+        const degreeOffset0 = intensity > 0.5 ? ri(-2, 2) : 0;
+        if (degreeOffset0 !== 0) {
+          developedNotes = baseNotes.map((n) => {
+            const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
+            if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note');
+            const transposed = scaleDegreeTranspose(midi, this.notes || (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null), degreeOffset0);
+            return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
+          });
+        }
+        break;
       case 1:
-        // Transpose by chromatic semitones - THIS CHANGES PITCH CLASSES!
-        this.transpositionOffset = m.round(intensity * 7);
-        this.transpositionOffset = applyMelodicTranspositionNoise(this.transpositionOffset, noiseContext);
-        // FAIL FAST: transposition by offset creates new pitch classes
-        throw new Error(`MelodicDevelopmentComposer.getNotes phase 1: chromatic transposition (+${this.transpositionOffset}) would create pitch classes outside the scale. Need scale-degree transposition instead.`);
-        // developedNotes = baseNotes.map(n => ({ ...n, note: clamp(n.note + this.transpositionOffset, 0, 127) }));
+        // Scale-degree transposition scaled by intensity (larger steps than phase 0)
+        const degreeOffset1 = m.round(intensity * 3);
+        if (degreeOffset1 !== 0) {
+          developedNotes = baseNotes.map((n) => {
+            const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
+            if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note');
+            const transposed = scaleDegreeTranspose(midi, this.notes || (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null), degreeOffset1);
+            return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
+          });
+        }
+        break;
       case 2:
         if (intensity > 0.3) {
-          // Inversion by chromatic reflection - THIS CHANGES PITCH CLASSES!
+          // Diatonic (scale-degree) inversion around a pivot degree.
           const firstBase = baseNotes[0];
-          let pivot;
+          let pivotMidi;
           if (typeof firstBase === 'number') {
-            pivot = firstBase;
+            pivotMidi = firstBase;
           } else if (firstBase && typeof firstBase.note === 'number') {
-            pivot = firstBase.note;
+            pivotMidi = firstBase.note;
           } else {
             throw new Error('MelodicDevelopmentComposer.getNotes: invalid baseNotes[0] - expected number or {note:number}');
           }
-          const noisyPivot = applyMelodicPivotNoise(pivot, noiseContext);
-          // FAIL FAST: chromatic inversion creates new pitch classes
-          throw new Error(`MelodicDevelopmentComposer.getNotes phase 2: chromatic inversion (pivot=${noisyPivot}) would create pitch classes outside the scale. Need scale-degree inversion instead.`);
-          // developedNotes = baseNotes.map((n, i) => ({ ...n, note: clamp(2 * noisyPivot - n.note, 0, 127) }));
+
+          // Apply pivot noise then quantize the pivot into the current scale
+          const noisyPivot = applyMelodicPivotNoise(pivotMidi, noiseContext);
+          const theScale = Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null);
+          if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: no scale available for diatonic inversion');
+
+          const pivotQuantized = scaleDegreeTranspose(noisyPivot, theScale, 0, { quantize: true });
+
+          // Map scale to pitch-classes
+          const scalePC = theScale.map((s) => (typeof s === 'number' ? ((s % 12) + 12) % 12 : (t && t.Note ? t.Note.chroma(s) : (function(){ throw new Error('MelodicDevelopmentComposer: tonal.js missing'); })())));
+          const scaleLen = scalePC.length;
+
+          const pivotPC = ((pivotQuantized % 12) + 12) % 12;
+          const pivotDeg = scalePC.indexOf(pivotPC);
+          if (pivotDeg === -1) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: pivot could not be mapped to scale degree');
+          const pivotOct = Math.floor(pivotQuantized / 12);
+          const pivotAbs = pivotOct * scaleLen + pivotDeg;
+
+          // Perform diatonic inversion for each base note
+          developedNotes = baseNotes.map((item) => {
+            const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : null);
+            if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note value');
+
+            const pc = ((midi % 12) + 12) % 12;
+            let deg = scalePC.indexOf(pc);
+            let oct = Math.floor(midi / 12);
+
+            if (deg === -1) {
+              // closest-degree fallback (quantize)
+              const q = scaleDegreeTranspose(midi, theScale, 0, { quantize: true });
+              deg = scalePC.indexOf(((q % 12) + 12) % 12);
+              oct = Math.floor(q / 12);
+              if (deg === -1) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: unable to quantize base note to scale');
+            }
+
+            const absIndex = oct * scaleLen + deg;
+            const invAbs = 2 * pivotAbs - absIndex;
+            const invOct = Math.floor(invAbs / scaleLen);
+            const invDeg = ((invAbs % scaleLen) + scaleLen) % scaleLen;
+            const invMidi = clamp(invOct * 12 + scalePC[invDeg], 0, 127);
+
+            return (typeof item === 'number') ? invMidi : Object.assign({}, item, { note: invMidi });
+          });
         }
         break;
       case 3:
@@ -105,6 +153,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         break;
     }
 
+    // Validate against HarmonicContext scale (if available)
     if (typeof HarmonicContext !== 'undefined') {
       const scale = HarmonicContext.getField('scale');
       if (Array.isArray(scale) && scale.length > 0) {
@@ -122,6 +171,23 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
           }
         }
       }
+    }
+
+    // Final normalization: ensure returned notes' pitch-classes belong to this composer's declared `notes`.
+    // Quantize any out-of-scale items back to the nearest scale degree to prevent chromatic leakage.
+    const theScale = Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null);
+    if (Array.isArray(theScale) && theScale.length > 0) {
+      const scalePC = theScale.map(s => (typeof s === 'number' ? ((s % 12) + 12) % 12 : (t && t.Note ? t.Note.chroma(s) : (function(){ throw new Error('MelodicDevelopmentComposer: tonal.js missing'); })())));
+      developedNotes = developedNotes.map((item) => {
+        const val = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+        if (!Number.isFinite(val)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid developed note');
+        const pc = ((val % 12) + 12) % 12;
+        if (!scalePC.includes(pc)) {
+          const quant = scaleDegreeTranspose(val, theScale, 0, { quantize: true });
+          return (typeof item === 'number') ? quant : Object.assign({}, item, { note: quant });
+        }
+        return item;
+      });
     }
 
     this._lastBaseNotes = baseNotes;

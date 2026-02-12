@@ -180,6 +180,7 @@ export default [
         composers: 'writable',
         MeasureComposer: 'writable',
         ScaleComposer: 'writable',
+        scaleDegreeTranspose: 'writable',
         RandomScaleComposer: 'writable',
         ChordComposer: 'writable',
         RandomChordComposer: 'writable',
