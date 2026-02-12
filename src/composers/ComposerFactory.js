@@ -36,16 +36,18 @@ ComposerFactory = class ComposerFactory {
   }
 
   static capabilityProfiles = {
+    // mutatesPitchClasses means the composer can change its active pitch-class set over time.
+    // preservesScale means generated notes should remain inside the currently active scale/chord context.
     measure: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
     scale: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
-    chords: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
     mode: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
     pentatonic: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
-    tensionRelease: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
-    modalInterchange: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
-    harmonicRhythm: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
-    melodicDevelopment: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
     voiceLeading: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    chords: { preservesScale: true, mutatesPitchClasses: true, deterministic: false },
+    harmonicRhythm: { preservesScale: true, mutatesPitchClasses: true, deterministic: false },
+    tensionRelease: { preservesScale: true, mutatesPitchClasses: true, deterministic: false },
+    modalInterchange: { preservesScale: true, mutatesPitchClasses: true, deterministic: false },
+    melodicDevelopment: { preservesScale: true, mutatesPitchClasses: true, deterministic: false },
   };
 
   static applyCapabilityContract(composer, type, config = {}) {
@@ -64,9 +66,6 @@ ComposerFactory = class ComposerFactory {
         if (typeof merged[key] !== 'boolean') {
           throw new Error(`ComposerFactory.applyCapabilityContract: capability ${key} must be boolean`);
         }
-      }
-      if (merged.preservesScale && merged.mutatesPitchClasses) {
-        throw new Error('ComposerFactory.applyCapabilityContract: preservesScale=true conflicts with mutatesPitchClasses=true');
       }
       composer.capabilities = merged;
     }

@@ -38,9 +38,6 @@ MeasureComposer = class MeasureComposer {
     for (const k of keys) {
       if (typeof merged[k] !== 'boolean') throw new Error(`MeasureComposer.setCapabilities: ${k} must be boolean`);
     }
-    if (merged.preservesScale && merged.mutatesPitchClasses) {
-      throw new Error('MeasureComposer.setCapabilities: preservesScale=true conflicts with mutatesPitchClasses=true');
-    }
     // Ensure a strict object with required boolean fields for TypeScript/JSDoc compatibility
     this.capabilities = {
       preservesScale: Boolean(merged.preservesScale),

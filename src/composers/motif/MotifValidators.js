@@ -30,9 +30,6 @@ MotifValidators = {
         throw new Error(`MotifValidators.getCapabilities: ${key} must be boolean`);
       }
     }
-    if (merged.preservesScale && merged.mutatesPitchClasses) {
-      throw new Error('MotifValidators.getCapabilities: invalid contract (preservesScale=true and mutatesPitchClasses=true)');
-    }
     return merged;
   },
 
