@@ -42,9 +42,11 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     // enable lightweight voice-leading scorer for selection delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
 
-    const mutatesPitchClasses = this.inversionMode === 'chromatic' && this.normalizeToScale === false;
+    const preservesScale = !(this.inversionMode === 'chromatic' && this.normalizeToScale === false);
+    // MelodicDevelopment intentionally mutates pitch classes over time (within scale when preservesScale=true).
+    const mutatesPitchClasses = true;
     this.setCapabilities({
-      preservesScale: !mutatesPitchClasses,
+      preservesScale,
       mutatesPitchClasses,
       deterministic: false
     });
