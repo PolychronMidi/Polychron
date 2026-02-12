@@ -97,7 +97,6 @@ MotifSpreader = {
       });
 
     } catch (e) {
-      console.error('MotifSpreader.spreadMeasure failed for measureStart ' + measureStart + ':', e && e.stack ? e.stack : e);
       throw e;
     }
   },

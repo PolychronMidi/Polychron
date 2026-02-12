@@ -39,10 +39,9 @@ try {
     try {
       return _origWriteFileSync.apply(fs, args);
     } catch (err) {
-      console.error('Failed to write', args[0] || '', err);
-      throw err;
+      throw new Error('Failed to write ' + (args[0] || '') + ': ' + (err && err.stack ? err.stack : String(err)));
     }
   };
 } catch (err) {
-  console.error('Failed to wrap fs.writeFileSync:', err);
+  throw new Error('Failed to wrap fs.writeFileSync: ' + (err && err.stack ? err.stack : String(err)));
 }

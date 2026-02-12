@@ -6,8 +6,7 @@
  */
 getPolyrhythm = () => {
   if (!composer){
-    console.warn('getPolyrhythm() called without valid composer');
-    return false;
+    throw new Error('getPolyrhythm: composer required');
   }
 
   const MAX_ATTEMPTS = 100;

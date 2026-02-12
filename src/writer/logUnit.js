@@ -35,8 +35,7 @@ logUnit = (type) => {
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
   if (typeof shouldLog === 'undefined') {
-    console.warn('logUnit: shouldLog is undefined, defaulting to true');
-    shouldLog = true;
+    throw new Error('logUnit: LOG configuration invalid - shouldLog is undefined');
   } else if (!shouldLog) return null;
 
   // Use buffer for this layer

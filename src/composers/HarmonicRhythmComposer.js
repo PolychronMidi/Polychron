@@ -1,4 +1,4 @@
-// Dependencies are required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
+// Required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', opts = {}) {
@@ -30,7 +30,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       this.phraseArcManager = null;
     }
     this.phraseBoundaryEmphasis = opts.phraseBoundaryEmphasis ?? 1.3; // Extra emphasis at phrase boundaries
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('HarmonicRhythmComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
   }
 
   getCurrentChord() {
@@ -41,7 +41,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   noteSet(progression, direction = 'R') {
     if (progression && Array.isArray(progression) && progression.length > 0) {
       const firstItem = progression[0];
-      if (firstItem === null) { console.warn('HarmonicRhythmComposer.noteSet: progression first item is null — skipping'); return; }
+      if (firstItem === null) { throw new Error('HarmonicRhythmComposer.noteSet: progression first item is null'); }
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {

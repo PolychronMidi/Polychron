@@ -4,7 +4,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     const progressionChords = generator.random();
     super(progressionChords);
     // enable voice-leading delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('TensionReleaseComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
     this.generator = generator;
     this.tensionCurve = clamp(tensionCurve, 0, 1);
     this.key = key;
@@ -80,7 +80,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   noteSet(progression, direction = 'tension') {
     if (progression && Array.isArray(progression) && progression.length > 0) {
       const firstItem = progression[0];
-      if (firstItem === null) { console.warn('TensionReleaseComposer.noteSet: progression first item is null — skipping'); return; }
+      if (firstItem === null) { throw new Error('TensionReleaseComposer.noteSet: progression first item is null'); }
       const isStringArray = typeof firstItem === 'string';
       const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
@@ -89,7 +89,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
       }
     }
 
-    if (!this.progression || this.progression.length === 0) { console.warn('TensionReleaseComposer.noteSet: no progression defined — skipping'); return; }
+    if (!this.progression || this.progression.length === 0) { throw new Error('TensionReleaseComposer.noteSet: no progression defined'); }
     if (direction !== 'tension') { super.noteSet(this.progression.map(c => c.symbol), direction); return; }
     this.measureInSection = (this.measureInSection || 0) + 1;
     const position = (this.measureInSection % 16) / 16;

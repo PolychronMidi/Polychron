@@ -1,6 +1,7 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 grandFinale = () => {
+  try {
 
   const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
   // Collect all layer data
@@ -11,7 +12,7 @@ grandFinale = () => {
       buffer: layer.buffer
     };
   });
-  // Expose flag for per-layer checks via a local variable in closure
+  // Flag for per-layer checks via a local variable in closure
   layerData.forEach(({ name, layer: layerState, buffer }) => {
     // Set naked global buffer `c` to this layer's buffer
     c = buffer;
@@ -38,7 +39,9 @@ grandFinale = () => {
                 const seg = String(unitHash).split('|');
                 hasSecOrPhr = seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
                 hasTickRange = seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
-              } catch (_e) { console.warn('grandFinale parsing failed:', _e && _e.stack ? _e.stack : _e); }
+              } catch (_e) {
+                throw new Error('grandFinale parsing failed: ' + (_e && _e.stack ? _e.stack : String(_e)));
+              }
             }
           } else if (Number.isFinite(rawTick)) {
             tickNum = Number(rawTick);
@@ -67,19 +70,10 @@ grandFinale = () => {
         if (Array.isArray(_.vals)) {
           // For note_on_c/note_off_c, pitch is at index 1
           if ((type === 'note_on_c' || type === 'note_off_c') && (_.vals[1] === undefined || _.vals[1] === null)) {
-            console.error('CRITICAL ERROR: Event with undefined pitch detected!');
-            console.error(`  Type: ${type}`);
-            console.error(`  Tick: ${tickInt}`);
-            console.error(`  Full event:`, JSON.stringify(_));
-            console.error(`  Values array:`, JSON.stringify(_.vals));
-            throw new Error(`${type} event has undefined pitch at tick ${tickInt}`);
+            throw new Error(`${type} event has undefined pitch at tick ${tickInt}: event=${JSON.stringify(_)}; vals=${JSON.stringify(_.vals)}`);
           }
         } else {
-          console.error('CRITICAL ERROR: Event vals is not an array!');
-          console.error(`  Type: ${type}`);
-          console.error(`  Tick: ${tickInt}`);
-          console.error(`  Full event:`, JSON.stringify(_));
-          throw new Error(`${type} event has invalid vals format at tick ${tickInt}`);
+          throw new Error(`${type} event has invalid vals format at tick ${tickInt}: event=${JSON.stringify(_)}`);
         }
 
         // Clamp velocity for Note_on events to a max (rounded)
@@ -99,4 +93,7 @@ grandFinale = () => {
     console.log(`Wrote file: ${outputFilename}`);
 
   });
+  } catch (err) {
+    throw new Error('grandFinale: ' + (err && err.message ? err.message : String(err)));
+  }
 };

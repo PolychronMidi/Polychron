@@ -61,8 +61,7 @@ LM = layerManager ={
       c = buf;
       if (typeof setupFn === 'function') setupFn(LM.layers[name], buf);
     } catch (e) {
-      console.error('LayerManager.register: layer setup function threw:', e && e.stack ? e.stack : e);
-      throw e;
+      throw new Error('LayerManager.register: layer setup function threw: ' + (e && e.stack ? e.stack : String(e)));
     }
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
@@ -101,7 +100,7 @@ LM = layerManager ={
    */
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
-    if (!layer) { console.warn(`LayerManager.advance: layer "${name}" not found — skipping advance`); return; }
+    if (!layer) { throw new Error(`LayerManager.advance: layer "${name}" not found`); }
     c = layer.buffer;
 
     // Advance using the layer's timing values
@@ -135,7 +134,7 @@ LM = layerManager ={
   // Minimal helpers to initialize section origin for layers (keeps it tiny and explicit).
   setSectionStartFor: (name) => {
     const layer = LM.layers[name];
-    if (!layer) { console.warn(`LayerManager.setSectionStartFor: layer "${name}" not found`); return; }
+    if (!layer) { throw new Error(`LayerManager.setSectionStartFor: layer "${name}" not found`); }
     layer.sectionStart = phraseStart;
     layer.sectionStartTime = phraseStartTime;
   },
@@ -149,7 +148,7 @@ LM = layerManager ={
  * Restore timing into naked globals without using banned globals.
  */
 function loadLayerToGlobals(layer) {
-  if (!layer) { console.warn('loadLayerToGlobals: no layer provided — skipping'); return; }
+  if (!layer) { throw new Error('loadLayerToGlobals: no layer provided'); }
   tpSection = layer.tpSection;
   spSection = layer.spSection;
   sectionStart = layer.sectionStart;

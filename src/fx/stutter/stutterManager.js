@@ -134,7 +134,7 @@ class StutterManager {
         // per-profile metrics
         const prof = ev._profile || 'unknown';
         if (SC && SC.incEmitted) SC.incEmitted(1, prof);
-      } catch (e) { console.warn('StutterManager.playPendingForTick: emit failed', e && e.stack ? e.stack : e); }
+      } catch (e) { throw e; }
     }
     this.pending.delete(key);
     // adjust pendingByTick

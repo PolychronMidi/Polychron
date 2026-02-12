@@ -176,7 +176,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 // Run main only when invoked as the entry script
 if (require.main === module) {
   main().catch((err) => {
-    console.error('main.js failed:', err && err.stack ? err.stack : err);
+    process.stderr.write('main.js failed: ' + (err && err.stack ? err.stack : err) + '\n');
     process.exit(1);
   });
 }

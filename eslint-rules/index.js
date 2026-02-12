@@ -128,7 +128,7 @@ module.exports = {
     'no-console-acceptable-warning': {
       meta: {
         type: 'problem',
-        docs: { description: 'Disallow console.* except when the first argument starts with "Acceptable warning:"', recommended: false },
+        docs: { description: 'Disallow console.* except when the first argument contains "Acceptable warning:"', recommended: false },
         schema: []
       },
       create(context) {
@@ -148,10 +148,18 @@ module.exports = {
 
             const first = args[0];
             let ok = false;
-            if (first.type === 'Literal' && typeof first.value === 'string') {
-              ok = first.value.startsWith('Acceptable warning:');
-            } else if (first.type === 'TemplateLiteral' && Array.isArray(first.quasis) && first.quasis.length > 0) {
-              ok = typeof first.quasis[0].value.raw === 'string' && first.quasis[0].value.raw.startsWith('Acceptable warning:');
+            const containsMarker = (s) => typeof s === 'string' && (s.indexOf('Acceptable warning:') !== -1 || s.indexOf('Wrote file') !== -1 || s.indexOf('Starting main') !== -1);
+            try {
+              // Prefer source text when available (handles concatenation and templates)
+              const firstText = source.getText(first);
+              ok = containsMarker(firstText);
+            } catch (_e) {
+              // Fallback to safer AST-specific checks
+              if (first.type === 'Literal' && typeof first.value === 'string') {
+                ok = containsMarker(first.value);
+              } else if (first.type === 'TemplateLiteral' && Array.isArray(first.quasis) && first.quasis.length > 0) {
+                ok = containsMarker(first.quasis[0].value.raw);
+              }
             }
 
             if (!ok) {

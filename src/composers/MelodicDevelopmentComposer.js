@@ -27,7 +27,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     }
     this.arcScaling = opts.arcScaling !== false; // Whether to scale intensity with phrase arc (default: true)
     // enable lightweight voice-leading scorer for selection delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('MelodicDevelopmentComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
   }
 
   /**
