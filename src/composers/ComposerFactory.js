@@ -124,9 +124,35 @@ ComposerFactory = class ComposerFactory {
       }
     }
 
+    if (chord && Number.isFinite(Number(chord.velocityScale))) {
+      composer.chordVelocityScale = Number(chord.velocityScale);
+    }
+    if (chord && Number.isFinite(Number(chord.inversion))) {
+      composer.chordInversionPreference = Number(chord.inversion);
+    }
+    if (chord && Number.isFinite(Number(chord.baseVelocity))) {
+      composer.baseVelocity = Number(chord.baseVelocity);
+    }
+
     const voice = runtimeProfiles.voice;
     if (voice && Number.isFinite(Number(voice.baseVelocity))) {
       composer.baseVelocity = Number(voice.baseVelocity);
+    }
+
+    const motif = runtimeProfiles.motif;
+    if (motif && Number.isFinite(Number(motif.velocityScale))) {
+      composer.motifVelocityScale = Number(motif.velocityScale);
+    }
+    if (motif && Number.isFinite(Number(motif.timingOffset))) {
+      composer.motifTimingOffset = Number(motif.timingOffset);
+    }
+
+    const rhythm = runtimeProfiles.rhythm;
+    if (rhythm && Number.isFinite(Number(rhythm.swing))) {
+      composer.rhythmSwing = Number(rhythm.swing);
+    }
+    if (rhythm && Number.isFinite(Number(rhythm.velocityScale))) {
+      composer.rhythmVelocityScale = Number(rhythm.velocityScale);
     }
 
     return composer;
