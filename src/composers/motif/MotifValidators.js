@@ -1,13 +1,35 @@
 // MotifValidators.js - validation helpers for motif generation
 
 MotifValidators = {
+  _toPCSet(scaleLike, label = 'scale') {
+    if (!Array.isArray(scaleLike) || scaleLike.length === 0) {
+      throw new Error(`MotifValidators._toPCSet: ${label} must be a non-empty array`);
+    }
+
+    let pcs;
+    if (typeof resolveScalePC === 'function') {
+      pcs = resolveScalePC(scaleLike);
+    } else {
+      pcs = scaleLike.map((entry) => {
+        if (typeof entry === 'number') return ((entry % 12) + 12) % 12;
+        if (typeof entry === 'string') {
+          const pc = t.Note.chroma(entry);
+          if (!Number.isFinite(pc)) throw new Error(`MotifValidators._toPCSet: invalid note in ${label}: ${entry}`);
+          return ((pc % 12) + 12) % 12;
+        }
+        throw new Error(`MotifValidators._toPCSet: unsupported entry in ${label}`);
+      });
+    }
+    return new Set(pcs.map((pc) => ((pc % 12) + 12) % 12));
+  },
+
   /**
    * Resolve capability contract from a composer/developer object.
    * @param {Object} developer
-   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}}
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean, timeVaryingScaleContext:boolean}}
    */
   getCapabilities(developer) {
-    const fallback = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false };
+    const fallback = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false };
     if (!developer || typeof developer !== 'object') return fallback;
 
     let caps = null;
@@ -19,7 +41,9 @@ MotifValidators = {
       caps = {
         preservesScale: developer.preservesScale,
         mutatesPitchClasses: developer.mutatesPitchClasses,
-        deterministic: developer.deterministic
+        deterministic: developer.deterministic,
+        notesReflectOutputSet: developer.notesReflectOutputSet,
+        timeVaryingScaleContext: developer.timeVaryingScaleContext
       };
     }
 
@@ -33,18 +57,48 @@ MotifValidators = {
    * Throws a descriptive error on mismatch (keeps original MotifComposer error message for compatibility).
    * @param {Array} scaleNotes
    * @param {Object} developer
+   * @param {{ mode?: 'auto'|'strict-global'|'local-window', windowScale?: Array<string|number>|null, context?: Object }} [opts]
    */
-  assertScaleMatchesDeveloper(scaleNotes, developer) {
-    if (!developer || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
-    const caps = this.getCapabilities(developer);
-    if (!caps.preservesScale || !caps.notesReflectOutputSet) return;
+  assertScaleMatchesDeveloper(scaleNotes, developer, opts = {}) {
+    if (!Array.isArray(scaleNotes) || scaleNotes.length === 0) {
+      throw new Error('MotifValidators.assertScaleMatchesDeveloper: scaleNotes must be a non-empty array');
+    }
+    if (!developer || typeof developer !== 'object') return;
 
-    const expectedPCs = new Set();
-    for (const noteName of developer.notes) {
-      if (typeof noteName === 'string') {
-        const pc = t.Note.chroma(noteName);
-        if (typeof pc === 'number' && Number.isFinite(pc)) expectedPCs.add(((pc % 12) + 12) % 12);
+    const caps = this.getCapabilities(developer);
+    if (!caps.preservesScale) return;
+
+    const modeInput = (opts && typeof opts.mode === 'string') ? opts.mode : 'auto';
+    const validModes = ['auto', 'strict-global', 'local-window'];
+    if (!validModes.includes(modeInput)) {
+      throw new Error(`MotifValidators.assertScaleMatchesDeveloper: invalid mode "${modeInput}"`);
+    }
+    const mode = modeInput === 'auto'
+      ? (caps.timeVaryingScaleContext ? 'local-window' : 'strict-global')
+      : modeInput;
+
+    let expectedPCs = null;
+    if (mode === 'strict-global') {
+      if (!caps.notesReflectOutputSet || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
+      expectedPCs = this._toPCSet(developer.notes, 'developer.notes');
+    } else {
+      let windowScale = Array.isArray(opts && opts.windowScale) && opts.windowScale.length > 0 ? opts.windowScale : null;
+      if (!windowScale && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+        try {
+          const hcScale = HarmonicContext.getField('scale');
+          if (Array.isArray(hcScale) && hcScale.length > 0) windowScale = hcScale;
+        } catch (err) {
+          throw new Error(`MotifValidators.assertScaleMatchesDeveloper: failed to read HarmonicContext.scale — ${err && err.message ? err.message : String(err)}`);
+        }
       }
+      if (!windowScale && caps.notesReflectOutputSet && Array.isArray(developer.notes) && developer.notes.length > 0) {
+        windowScale = developer.notes;
+      }
+      if (!windowScale) {
+        const context = opts && opts.context ? JSON.stringify(opts.context) : '{}';
+        throw new Error(`MotifValidators.assertScaleMatchesDeveloper: local-window mode requires window scale context (context=${context})`);
+      }
+      expectedPCs = this._toPCSet(windowScale, 'windowScale');
     }
 
     const scalePCs = new Set();
@@ -55,7 +109,7 @@ MotifValidators = {
 
     for (const pc of scalePCs) {
       if (!expectedPCs.has(pc)) {
-        throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. Composer capabilities: preservesScale=${caps.preservesScale}, mutatesPitchClasses=${caps.mutatesPitchClasses}, deterministic=${caps.deterministic}, notesReflectOutputSet=${caps.notesReflectOutputSet}. This indicates getNotes() violated preservesScale contract.`);
+        throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Expected PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Mode=${mode}. Composer class: ${developer?.constructor?.name}. Composer capabilities: preservesScale=${caps.preservesScale}, mutatesPitchClasses=${caps.mutatesPitchClasses}, deterministic=${caps.deterministic}, notesReflectOutputSet=${caps.notesReflectOutputSet}, timeVaryingScaleContext=${caps.timeVaryingScaleContext}. This indicates getNotes() violated preservesScale contract.`);
       }
     }
   }
