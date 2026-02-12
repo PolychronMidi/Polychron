@@ -25,7 +25,7 @@ motifModulator = (function() {
       if (pat.duration !== undefined && (typeof pat.duration !== 'number' || !Number.isFinite(pat.duration) || pat.duration <= 0)) {
         throw new Error(`motifModulator.apply: invalid duration at index ${i}`);
       }
-      if (pat.velocity !== undefined) out.velocity = Math.max(1, Math.min(127, Math.round((typeof out.velocity === 'number' ? out.velocity : 100) * (pat.velocity * opts.velocityScale))));
+      if (pat.velocity !== undefined) out.velocity = m.max(1, m.min(127, m.round((typeof out.velocity === 'number' ? out.velocity : 100) * (pat.velocity * opts.velocityScale))));
       if (pat.time !== undefined) out.time = (typeof out.time === 'number' ? out.time : 0) + pat.time + opts.timingOffset;
       if (pat.duration !== undefined) out.duration = pat.duration;
       return out;

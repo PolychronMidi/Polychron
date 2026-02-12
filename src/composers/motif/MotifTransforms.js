@@ -12,7 +12,7 @@ MotifTransforms = {
    */
   reverse(entries) {
     const len = entries.length;
-    for (let i = 0; i < Math.floor(len / 2); i++) {
+    for (let i = 0; i < m.floor(len / 2); i++) {
       const j = len - 1 - i;
       const temp = entries[i];
       entries[i] = entries[j];
@@ -57,7 +57,7 @@ MotifTransforms = {
     const factor = rf(1.1, 2.0);
     entries.forEach(e => {
       if (e.duration && typeof e.duration === 'number') {
-        e.duration = Math.max(1, Math.round(e.duration * factor));
+        e.duration = m.max(1, m.round(e.duration * factor));
       }
     });
   },

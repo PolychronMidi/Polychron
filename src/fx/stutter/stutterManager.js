@@ -109,7 +109,7 @@ class StutterManager {
       if (!Number.isFinite(Number(ev.tick))) {
         throw new Error(`scheduleStutterForUnit: skipping event with invalid tick: ${JSON.stringify(ev)}`);
       }
-      const key = Math.round(ev.tick);
+      const key = m.round(ev.tick);
       if (!this.pending.has(key)) this.pending.set(key, []);
       this.pending.get(key).push(ev);
       if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.incPendingForTick === 'function') StutterConfig.incPendingForTick(key, 1);
@@ -125,7 +125,7 @@ class StutterManager {
    * @returns {number} number of events emitted
    */
   playPendingForTick(tick) {
-    const key = Math.round(tick);
+    const key = m.round(tick);
     const arr = this.pending.get(key);
     if (!arr || !arr.length) return 0;
     // update metrics and emit

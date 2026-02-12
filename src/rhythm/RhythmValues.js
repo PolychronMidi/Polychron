@@ -3,7 +3,7 @@
 RhythmValues = (function() {
   function quantizeTime(time, resolution) {
     if (typeof time !== 'number' || typeof resolution !== 'number') throw new Error('RhythmValues.quantizeTime: numeric args required');
-    return Math.round(time * resolution) / resolution;
+    return m.round(time * resolution) / resolution;
   }
 
   function swingOffset(beatIndex, amount) {

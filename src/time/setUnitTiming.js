@@ -62,7 +62,7 @@ setUnitTiming = (unitType) => {
       beatStart = measureStart + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
       // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
-      // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? Math.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
+      // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? m.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
       divsPerBeat = composer.getDivisions();
       divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
       unitIndex = beatIndex;

@@ -11,7 +11,7 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<
   // a limited delta relative to the global baseline rather than instance baseline
   const prevGlobalBal = (typeof balOffset !== 'undefined' && Number.isFinite(Number(balOffset))) ? Number(balOffset) : prevBal;
   const candidateBal = rl(prevGlobalBal, -4, 4, 0, 45);
-  balOffset = clamp(candidateBal, Math.max(0, prevGlobalBal - 4), Math.min(45, prevGlobalBal + 4));
+  balOffset = clamp(candidateBal, m.max(0, prevGlobalBal - 4), m.min(45, prevGlobalBal + 4));
   sideBias=rl(sideBias,-2,2,-20,20);
   lBal=m.max(0,m.min(54,balOffset + ri(3) + sideBias));
   rBal=m.min(127,m.max(74,127 - balOffset - ri(3) + sideBias));

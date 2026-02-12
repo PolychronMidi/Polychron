@@ -136,7 +136,7 @@ ComposerFactory = class ComposerFactory {
     }
 
     // Try up to N composers from COMPOSERS; fail-fast if all attempts exhaust
-    const maxAttempts = Math.min(8, COMPOSERS.length);
+    const maxAttempts = m.min(8, COMPOSERS.length);
     let lastError = null;
 
     for (let i = 0; i < maxAttempts; i++) {

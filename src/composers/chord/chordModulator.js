@@ -13,7 +13,7 @@ chordModulator = (function() {
     midiNotes = ChordValues.invert(midiNotes, opts.inversion || 0);
 
     // Apply velocity scaling by mapping to objects
-    const out = midiNotes.map(n => ({ note: n, velocity: Math.max(1, Math.min(127, Math.round((typeof opts.baseVelocity === 'number' ? opts.baseVelocity : 100) * opts.velocityScale))) }));
+    const out = midiNotes.map(n => ({ note: n, velocity: m.max(1, m.min(127, m.round((typeof opts.baseVelocity === 'number' ? opts.baseVelocity : 100) * opts.velocityScale))) }));
 
     // Optionally distribute across voices
     if (opts.voices && opts.voices > 0) {

@@ -11,7 +11,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Compute on and sustain
   const on = unitStart + (tpUnit * rv(rf(.2), [-.1, .07], .3));
-  const shortSustain = rv(rf(Math.max(tpUnit * .5, tpUnit / unitsPerParent), (tpUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+  const shortSustain = rv(rf(m.max(tpUnit * .5, tpUnit / unitsPerParent), (tpUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
   const longSustain = rv(rf(tpUnit * .8, (tpParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
   const useShort = subdivsPerMinute > ri(400, 650);
   const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));

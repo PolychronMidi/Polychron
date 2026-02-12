@@ -14,7 +14,7 @@ const stutterConfigStore = {
 
 function _clamp01(n) {
   if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(1, n));
+  return m.max(0, m.min(1, n));
 }
 
 function validateConfig() {

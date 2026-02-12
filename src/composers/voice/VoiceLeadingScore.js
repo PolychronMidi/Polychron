@@ -264,12 +264,12 @@ VoiceLeadingScore = class VoiceLeadingScore {
     let recoveryCount = 0;
 
     for (let i = 1; i < noteSequence.length; i++) {
-      const interval = Math.abs(noteSequence[i] - noteSequence[i - 1]);
+      const interval = m.abs(noteSequence[i] - noteSequence[i - 1]);
       const motionCost = this._scoreVoiceMotion(interval, noteSequence[i - 1], noteSequence[i]);
       totalCost += motionCost;
 
       if (interval > 2) leapCount++;
-      if (i >= 2 && interval <= 2 && Math.abs(noteSequence[i - 1] - noteSequence[i - 2]) > 2) {
+      if (i >= 2 && interval <= 2 && m.abs(noteSequence[i - 1] - noteSequence[i - 2]) > 2) {
         recoveryCount++;
       }
     }

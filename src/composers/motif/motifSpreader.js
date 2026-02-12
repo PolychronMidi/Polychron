@@ -40,7 +40,7 @@ MotifSpreader = {
       // beatIndex in playback is a local index within the measure, not an absolute tick-based index
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
-        const length = ri(min, Math.max(1, Math.min(8, gLen * min)));
+        const length = ri(min, m.max(1, m.min(8, gLen * min)));
         const motifGroup = mcGroup.generate({ length, fitToTotalTicks: true, totalTicks: gLen * beatLen, developFromComposer: composer, measureComposer: composer });
         if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) {
           throw new Error('MotifSpreader.spreadMeasure: MotifComposer.generate() returned invalid structure - fail-fast');

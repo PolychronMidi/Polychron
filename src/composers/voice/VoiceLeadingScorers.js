@@ -25,15 +25,15 @@ VoiceLeadingScorers = {
       return 2;
     }
     const distance = note < min ? min - note : note - max;
-    return Math.min(8, 2 + distance * 0.5);
+    return m.min(8, 2 + distance * 0.5);
   },
 
   scoreLeapRecovery(scorer, currentInterval, prevInterval, lastNotes, candidate) {
     if (prevInterval <= 2) return 0;
-    const leapScale = Math.min(2.5, prevInterval / 5.0);
+    const leapScale = m.min(2.5, prevInterval / 5.0);
     const dynamismReduction = (scorer && typeof scorer.dynamism === 'number') ? (scorer.dynamism * 0.4) : 0.0;
     if (currentInterval > 2) {
-      return Math.max(0, (5 * leapScale) - dynamismReduction);
+      return m.max(0, (5 * leapScale) - dynamismReduction);
     }
     if (lastNotes && lastNotes.length >= 2) {
       const prevDirection = lastNotes[0] - lastNotes[1];
@@ -42,7 +42,7 @@ VoiceLeadingScorers = {
       if (sameDirection) {
         const cmp = (scorer && typeof scorer.contraryMotionPreference === 'number') ? scorer.contraryMotionPreference : 0.4;
         const basePenalty = 2 * cmp * leapScale;
-        return Math.max(0, basePenalty - dynamismReduction);
+        return m.max(0, basePenalty - dynamismReduction);
       }
     }
     return 0;
@@ -69,23 +69,23 @@ VoiceLeadingScorers = {
     if (interval <= 2) return 0;
     const intervalClass = interval % 12;
     const dynamismBonus = dynamism * 2;
-    if ([3, 4, 5, 7, 9].includes(intervalClass)) return Math.max(0, 1 - dynamismBonus * 0.5);
-    if ([2, 10].includes(intervalClass)) return Math.max(0, 3 - dynamismBonus);
-    if ([1, 6, 11].includes(intervalClass)) return Math.max(0, 5 - dynamismBonus * 1.5);
-    return Math.max(0, 4 - dynamismBonus);
+    if ([3, 4, 5, 7, 9].includes(intervalClass)) return m.max(0, 1 - dynamismBonus * 0.5);
+    if ([2, 10].includes(intervalClass)) return m.max(0, 3 - dynamismBonus);
+    if ([1, 6, 11].includes(intervalClass)) return m.max(0, 5 - dynamismBonus * 1.5);
+    return m.max(0, 4 - dynamismBonus);
   },
 
   scoreConsecutiveLeaps(currentInterval, lastNotes, dynamism = 0) {
     if (currentInterval <= 2) return 0;
     let consecutiveLeaps = 1;
-    for (let i = 0; i < Math.min(lastNotes.length - 1, 3); i++) {
-      const histInterval = Math.abs(lastNotes[i] - lastNotes[i + 1]);
+    for (let i = 0; i < m.min(lastNotes.length - 1, 3); i++) {
+      const histInterval = m.abs(lastNotes[i] - lastNotes[i + 1]);
       if (histInterval > 2) consecutiveLeaps++; else break;
     }
     const dynamismReduction = dynamism * 3;
-    if (consecutiveLeaps === 2) return Math.max(0, 3 - dynamismReduction * 0.6);
-    if (consecutiveLeaps === 3) return Math.max(0, 6 - dynamismReduction);
-    if (consecutiveLeaps >= 4) return Math.max(0, 8 - dynamismReduction);
+    if (consecutiveLeaps === 2) return m.max(0, 3 - dynamismReduction * 0.6);
+    if (consecutiveLeaps === 3) return m.max(0, 6 - dynamismReduction);
+    if (consecutiveLeaps >= 4) return m.max(0, 8 - dynamismReduction);
     return 0;
   },
 
@@ -107,6 +107,6 @@ VoiceLeadingScorers = {
     if (interval <= maxLeap) return 0;
     const excess = interval - maxLeap;
     const dynamismReduction = dynamism * 4;
-    return Math.max(0, Math.min(10, excess * 1.5) - dynamismReduction);
+    return m.max(0, m.min(10, excess * 1.5) - dynamismReduction);
   }
 };

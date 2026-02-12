@@ -45,7 +45,7 @@ StutterAsNoteSource = (() => {
     if (!Number.isFinite(Number(minNoteDuration)) || !Number.isFinite(Number(maxNoteDuration)) || minNoteDuration <= 0 || maxNoteDuration <= 0 || minNoteDuration > maxNoteDuration) throw new Error('StutterAsNoteSource.generate: invalid min/max note durations');
     if (!Number.isFinite(Number(octaveShiftProb)) || octaveShiftProb < 0 || octaveShiftProb > 1) throw new Error('StutterAsNoteSource.generate: octaveShiftProb must be 0-1');
 
-    const numNotes = Math.max(1, Math.floor(density * 8 + rf(-2, 2))); // Density → note count (min 1)
+    const numNotes = m.max(1, m.floor(density * 8 + rf(-2, 2))); // Density → note count (min 1)
     const notes = [];
     let currentTick = 0;
     const ticksPerNote = duration / numNotes;
@@ -55,7 +55,7 @@ StutterAsNoteSource = (() => {
 
     for (let i = 0; i < numNotes; i++) {
       // Pitch variation: map density to interval spread
-      const pitchOffset = Math.floor(rf(-pitchVariation * density, pitchVariation * density));
+      const pitchOffset = m.floor(rf(-pitchVariation * density, pitchVariation * density));
       let newNote = Number(baseNote.note) + pitchOffset;
 
       // Occasional octave shifts at high density
@@ -68,28 +68,28 @@ StutterAsNoteSource = (() => {
       // Velocity variation: stutter intensity → velocity scaling
       const velocityScale = rf(Number(velocityRange[0]), Number(velocityRange[1]));
       const newVelocity = clamp(
-        Math.floor(baseVelocity * velocityScale * (0.5 + density * 0.5)),
+        m.floor(baseVelocity * velocityScale * (0.5 + density * 0.5)),
         1,
         127
       );
 
       // Duration: higher density → shorter notes
       const noteDuration = clamp(
-        Math.floor(rf(Number(minNoteDuration), Number(maxNoteDuration)) / (1 + density)),
+        m.floor(rf(Number(minNoteDuration), Number(maxNoteDuration)) / (1 + density)),
         Number(minNoteDuration),
         Number(maxNoteDuration)
       );
 
       // Timing: rhythmic jitter based on density
       const jitter = rf(-rhythmicJitter * ticksPerNote, rhythmicJitter * ticksPerNote);
-      const startTick = Math.max(0, Math.floor(currentTick + jitter));
+      const startTick = m.max(0, m.floor(currentTick + jitter));
 
       if (!Number.isFinite(startTick)) throw new Error('StutterAsNoteSource.generate: computed startTick is invalid');
 
       notes.push({
-        note: Math.floor(newNote),
-        velocity: Math.floor(newVelocity),
-        duration: Math.floor(noteDuration),
+        note: m.floor(newNote),
+        velocity: m.floor(newVelocity),
+        duration: m.floor(noteDuration),
         startTick
       });
 
@@ -186,7 +186,7 @@ StutterAsNoteSource = (() => {
    * @returns {Array}
    */
   function getHistory(limit = 50) {
-    return generationHistory.slice(-Math.min(limit, MAX_HISTORY));
+    return generationHistory.slice(-m.min(limit, MAX_HISTORY));
   }
 
   /**

@@ -48,9 +48,9 @@ grandFinale = () => {
           } else if (typeof rawTick === 'string') {
             tickNum = Number(rawTick);
           }
-        let tickVal = Number.isFinite(tickNum) ? tickNum : Math.abs(Number(rawTick) || 0) * rf(.1, .3);
+        let tickVal = Number.isFinite(tickNum) ? tickNum : m.abs(Number(rawTick) || 0) * rf(.1, .3);
         if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
-        tickVal = Math.round(tickVal);
+        tickVal = m.round(tickVal);
         const preservedFinal = unitHash || (i && i._unitHash) || null;
         return { ...i, tick: tickVal, _tickSortKey: tickVal, _unitHash: preservedFinal, _tickRaw: rawTick };
       })
@@ -64,7 +64,7 @@ grandFinale = () => {
       if (!isNaN(_.tick)) {
         let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
         const tickNum = _.tick || 0;
-        const tickInt = Math.round(Number(tickNum) || 0);
+        const tickInt = m.round(Number(tickNum) || 0);
 
         // Event with undefined pitch is a serious bug in note generation
         if (Array.isArray(_.vals)) {
@@ -79,11 +79,11 @@ grandFinale = () => {
         // Clamp velocity for Note_on events to a max (rounded)
         if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
           const vel = Number(_.vals[2]) || 0;
-          _.vals[2] = Math.min(127, Math.round(vel));
+          _.vals[2] = m.min(127, m.round(vel));
         }
 
         composition += `1,${tickInt},${type},${_.vals.join(',')}\n`;
-        finalTick = Math.max(finalTick, tickNum, tickInt);
+        finalTick = m.max(finalTick, tickNum, tickInt);
       }
     });
 

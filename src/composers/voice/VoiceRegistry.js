@@ -15,12 +15,12 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
   };
 
   // Voice spacing constraint: ensure minimum semitone distance between simultaneous notes
-  const minSemitones = Number.isFinite(Number(opts.minSemitones)) ? Math.max(0, Number(opts.minSemitones)) : 3;
+  const minSemitones = Number.isFinite(Number(opts.minSemitones)) ? m.max(0, Number(opts.minSemitones)) : 3;
 
   const isTooCloseToChosen = (candidate) => {
     if (!Number.isFinite(Number(candidate))) throw new Error('VoiceRegistry: candidate must be a finite number');
     for (const chosenNote of chosenSet) {
-      const interval = Math.abs(candidate - chosenNote);
+      const interval = m.abs(candidate - chosenNote);
       if (interval < minSemitones && interval > 0) return true;
     }
     return false;

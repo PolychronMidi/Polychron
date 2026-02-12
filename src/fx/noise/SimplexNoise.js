@@ -88,7 +88,7 @@ turbulence = function(simplexInstance, x, y, octaves = 4) {
   let freqX = x;
   let freqY = y;
   for (let i = 0; i < octaves; i++) {
-    value += amplitude * Math.abs(simplexInstance.noise(freqX, freqY));
+    value += amplitude * m.abs(simplexInstance.noise(freqX, freqY));
     freqX *= 2;
     freqY *= 2;
     amplitude *= 0.5;

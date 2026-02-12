@@ -211,7 +211,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         candidateWeights[note] = baseWeight * 0.2;
       }
 
-      candidateWeights[note] = Math.max(0, candidateWeights[note]);
+      candidateWeights[note] = m.max(0, candidateWeights[note]);
     }
 
     return { candidateWeights };

@@ -74,7 +74,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     } catch (e) { throw e; }
 
     if (typeof selectedNote === 'undefined') {
-      selectedNote = candidates[Math.floor(candidates.length / 2)];
+      selectedNote = candidates[m.floor(candidates.length / 2)];
     }
 
     // Apply noise-based pitch variation via helper

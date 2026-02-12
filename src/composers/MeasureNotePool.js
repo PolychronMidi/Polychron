@@ -23,8 +23,8 @@ MeasureNotePool = {
       throw new TypeError('octaveRange must be an array with two elements: [minOctave, maxOctave]');
     }
 
-    const minOctave = Math.min(octaveRange[0], octaveRange[1]);
-    const maxOctave = Math.max(octaveRange[0], octaveRange[1]);
+    const minOctave = m.min(octaveRange[0], octaveRange[1]);
+    const maxOctave = m.max(octaveRange[0], octaveRange[1]);
     const rootIndex = notes.indexOf(rootNote);
     if (rootIndex === -1) return [];
 
