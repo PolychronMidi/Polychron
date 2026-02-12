@@ -2,6 +2,41 @@
 
 MotifValidators = {
   /**
+   * Resolve capability contract from a composer/developer object.
+   * @param {Object} developer
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}}
+   */
+  getCapabilities(developer) {
+    const fallback = { preservesScale: true, mutatesPitchClasses: false, deterministic: false };
+    if (!developer || typeof developer !== 'object') return fallback;
+
+    let caps = null;
+    if (typeof developer.getCapabilities === 'function') {
+      caps = developer.getCapabilities();
+    } else if (developer.capabilities && typeof developer.capabilities === 'object') {
+      caps = developer.capabilities;
+    } else {
+      caps = {
+        preservesScale: developer.preservesScale,
+        mutatesPitchClasses: developer.mutatesPitchClasses,
+        deterministic: developer.deterministic
+      };
+    }
+
+    const merged = Object.assign({}, fallback, caps || {});
+    const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic'];
+    for (const key of keys) {
+      if (typeof merged[key] !== 'boolean') {
+        throw new Error(`MotifValidators.getCapabilities: ${key} must be boolean`);
+      }
+    }
+    if (merged.preservesScale && merged.mutatesPitchClasses) {
+      throw new Error('MotifValidators.getCapabilities: invalid contract (preservesScale=true and mutatesPitchClasses=true)');
+    }
+    return merged;
+  },
+
+  /**
    * Ensure that scaleNotes' pitch classes are compatible with a developer's note feed.
    * Throws a descriptive error on mismatch (keeps original MotifComposer error message for compatibility).
    * @param {Array} scaleNotes
@@ -9,6 +44,8 @@ MotifValidators = {
    */
   assertScaleMatchesDeveloper(scaleNotes, developer) {
     if (!developer || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
+    const caps = this.getCapabilities(developer);
+    if (!caps.preservesScale) return;
 
     const expectedPCs = new Set();
     for (const noteName of developer.notes) {
@@ -26,7 +63,7 @@ MotifValidators = {
 
     for (const pc of scalePCs) {
       if (!expectedPCs.has(pc)) {
-        throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. This indicates getNotes() is performing chromatic transposition/inversion instead of scale-degree permutation.`);
+        throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. Composer capabilities: preservesScale=${caps.preservesScale}, mutatesPitchClasses=${caps.mutatesPitchClasses}, deterministic=${caps.deterministic}. This indicates getNotes() violated preservesScale contract.`);
       }
     }
   }

@@ -16,6 +16,60 @@ MeasureComposer = class MeasureComposer {
     this.VoiceLeadingScore=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
+    /** @type {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}} */
+    this.capabilities = {
+      preservesScale: true,
+      mutatesPitchClasses: false,
+      deterministic: false
+    };
+  }
+
+  /**
+   * Set/merge composer capability flags.
+   * @param {{preservesScale?:boolean, mutatesPitchClasses?:boolean, deterministic?:boolean}} next
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}}
+   */
+  setCapabilities(next = {}) {
+    if (next !== undefined && (typeof next !== 'object' || next === null)) {
+      throw new Error('MeasureComposer.setCapabilities: next must be an object if provided');
+    }
+    const merged = Object.assign({}, this.capabilities || {}, next || {});
+    const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic'];
+    for (const k of keys) {
+      if (typeof merged[k] !== 'boolean') throw new Error(`MeasureComposer.setCapabilities: ${k} must be boolean`);
+    }
+    if (merged.preservesScale && merged.mutatesPitchClasses) {
+      throw new Error('MeasureComposer.setCapabilities: preservesScale=true conflicts with mutatesPitchClasses=true');
+    }
+    // Ensure a strict object with required boolean fields for TypeScript/JSDoc compatibility
+    this.capabilities = {
+      preservesScale: Boolean(merged.preservesScale),
+      mutatesPitchClasses: Boolean(merged.mutatesPitchClasses),
+      deterministic: Boolean(merged.deterministic)
+    };
+    return this.capabilities;
+  }
+
+  /**
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}}
+   */
+  getCapabilities() {
+    if (!this.capabilities) {
+      this.capabilities = { preservesScale: true, mutatesPitchClasses: false, deterministic: false };
+    }
+    return Object.assign({}, this.capabilities);
+  }
+
+  /**
+   * @param {'preservesScale'|'mutatesPitchClasses'|'deterministic'} name
+   * @returns {boolean}
+   */
+  hasCapability(name) {
+    const caps = this.getCapabilities();
+    if (!Object.prototype.hasOwnProperty.call(caps, name)) {
+      throw new Error(`MeasureComposer.hasCapability: unknown capability "${name}"`);
+    }
+    return Boolean(caps[name]);
   }
   /** @returns {number} Random numerator from NUMERATOR config */
   getNumerator(){const{min,max,weights}=NUMERATOR;return rw(min,max,weights);}

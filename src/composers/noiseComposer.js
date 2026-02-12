@@ -27,19 +27,29 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
  * Apply noise variation to melodic development transposition
  * @param {number} baseOffset - Base transposition offset
  * @param {Object} context - Context for noise calculation
+ * @param {{degree?: boolean}} [options] - when degree=true, output is in scale-degree steps
  * @returns {number} Modified transposition offset
  */
-applyMelodicTranspositionNoise = function(baseOffset, context = {}) {
+applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}) {
   const noiseProfile = getNoiseProfile('moderate');
   const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
   const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
   const phase = (typeof context.phase === 'number') ? context.phase : 0;
+  const degreeMode = Boolean(options && options.degree === true);
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
 
   // Phase-specific variation ranges
   let variationRange;
-  if (phase === 0) {
+  if (degreeMode) {
+    if (phase === 0) {
+      variationRange = 1; // ±1 degree
+    } else if (phase === 1) {
+      variationRange = 2; // ±2 degrees
+    } else {
+      variationRange = 1; // ±1 degree
+    }
+  } else if (phase === 0) {
     variationRange = 3; // ±1-2 semitones
   } else if (phase === 1) {
     variationRange = 5; // ±2-3 semitones
