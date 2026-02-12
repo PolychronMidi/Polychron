@@ -49,7 +49,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
       preservesScale,
       mutatesPitchClasses,
       deterministic: false,
-      notesReflectOutputSet: preservesScale
+      notesReflectOutputSet: preservesScale,
+      timeVaryingScaleContext: true
     });
   }
 

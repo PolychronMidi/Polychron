@@ -38,22 +38,38 @@ ComposerFactory = class ComposerFactory {
   static capabilityProfiles = {
     // mutatesPitchClasses means the composer can change its active pitch-class set over time.
     // preservesScale means generated notes should remain inside the currently active scale/chord context.
-    measure: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false },
-    scale: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true },
-    mode: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true },
-    pentatonic: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true },
-    voiceLeading: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true },
-    chords: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true },
-    harmonicRhythm: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true },
-    tensionRelease: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true },
-    modalInterchange: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true },
-    melodicDevelopment: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true },
+    measure: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false },
+    scale: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: false },
+    mode: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: false },
+    pentatonic: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: false },
+    voiceLeading: { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: false },
+    chords: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: true },
+    harmonicRhythm: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: true },
+    tensionRelease: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: true },
+    modalInterchange: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: true },
+    melodicDevelopment: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: true },
   };
+
+  static validateCapabilityProfiles() {
+    if (typeof assertComposerCapabilities !== 'function') throw new Error('ComposerFactory.validateCapabilityProfiles: assertComposerCapabilities() not available');
+    const entries = Object.entries(this.capabilityProfiles || {});
+    /** @type {any} */
+    const normalized = {};
+    for (const [type, profile] of entries) {
+      try {
+        normalized[type] = assertComposerCapabilities(profile);
+      } catch (e) {
+        throw new Error(`ComposerFactory.validateCapabilityProfiles: invalid profile for type "${type}": ${e && e.message ? e.message : e}`);
+      }
+    }
+    this.capabilityProfiles = normalized;
+    return this.capabilityProfiles;
+  }
 
   static applyCapabilityContract(composer, type, config = {}) {
     if (!composer || typeof composer !== 'object') throw new Error('ComposerFactory.applyCapabilityContract: composer must be an object');
 
-    const profile = this.capabilityProfiles[type] || { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false };
+    const profile = this.capabilityProfiles[type] || { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false };
     const fromComposer = (typeof composer.getCapabilities === 'function') ? composer.getCapabilities() : (composer.capabilities && typeof composer.capabilities === 'object' ? composer.capabilities : {});
     const fromConfig = (config && typeof config.capabilities === 'object' && config.capabilities !== null) ? config.capabilities : {};
     const merged = Object.assign({}, profile, fromComposer, fromConfig);
@@ -201,3 +217,5 @@ ComposerFactory = class ComposerFactory {
     throw new Error(`ComposerFactory.createRandom: failed to create valid composer after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
   }
 }
+
+ComposerFactory.validateCapabilityProfiles();

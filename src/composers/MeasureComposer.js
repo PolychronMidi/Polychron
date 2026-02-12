@@ -16,51 +16,58 @@ MeasureComposer = class MeasureComposer {
     this.VoiceLeadingScore=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
-    /** @type {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}} */
+    /** @type {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean, timeVaryingScaleContext:boolean}} */
     this.capabilities = {
       preservesScale: true,
       mutatesPitchClasses: false,
       deterministic: false,
-      notesReflectOutputSet: false
+      notesReflectOutputSet: false,
+      timeVaryingScaleContext: false
     };
   }
 
   /**
    * Set/merge composer capability flags.
-  * @param {{preservesScale?:boolean, mutatesPitchClasses?:boolean, deterministic?:boolean, notesReflectOutputSet?:boolean}} next
-  * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}}
+  * @param {{preservesScale?:boolean, mutatesPitchClasses?:boolean, deterministic?:boolean, notesReflectOutputSet?:boolean, timeVaryingScaleContext?:boolean}} next
+  * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean, timeVaryingScaleContext:boolean}}
    */
   setCapabilities(next = {}) {
     if (next !== undefined && (typeof next !== 'object' || next === null)) {
       throw new Error('MeasureComposer.setCapabilities: next must be an object if provided');
     }
     const merged = Object.assign({}, this.capabilities || {}, next || {});
-    const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic', 'notesReflectOutputSet'];
-    for (const k of keys) {
-      if (typeof merged[k] !== 'boolean') throw new Error(`MeasureComposer.setCapabilities: ${k} must be boolean`);
+    let validated;
+    if (typeof assertComposerCapabilities === 'function') {
+      validated = assertComposerCapabilities(merged);
+    } else {
+      const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic', 'notesReflectOutputSet', 'timeVaryingScaleContext'];
+      for (const k of keys) {
+        if (typeof merged[k] !== 'boolean') throw new Error(`MeasureComposer.setCapabilities: ${k} must be boolean`);
+      }
+      validated = {
+        preservesScale: Boolean(merged.preservesScale),
+        mutatesPitchClasses: Boolean(merged.mutatesPitchClasses),
+        deterministic: Boolean(merged.deterministic),
+        notesReflectOutputSet: Boolean(merged.notesReflectOutputSet),
+        timeVaryingScaleContext: Boolean(merged.timeVaryingScaleContext)
+      };
     }
-    // Ensure a strict object with required boolean fields for TypeScript/JSDoc compatibility
-    this.capabilities = {
-      preservesScale: Boolean(merged.preservesScale),
-      mutatesPitchClasses: Boolean(merged.mutatesPitchClasses),
-      deterministic: Boolean(merged.deterministic),
-      notesReflectOutputSet: Boolean(merged.notesReflectOutputSet)
-    };
+    this.capabilities = validated;
     return this.capabilities;
   }
 
   /**
-   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}}
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean, timeVaryingScaleContext:boolean}}
    */
   getCapabilities() {
     if (!this.capabilities) {
-      this.capabilities = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false };
+      this.capabilities = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false };
     }
     return Object.assign({}, this.capabilities);
   }
 
   /**
-   * @param {'preservesScale'|'mutatesPitchClasses'|'deterministic'|'notesReflectOutputSet'} name
+   * @param {'preservesScale'|'mutatesPitchClasses'|'deterministic'|'notesReflectOutputSet'|'timeVaryingScaleContext'} name
    * @returns {boolean}
    */
   hasCapability(name) {

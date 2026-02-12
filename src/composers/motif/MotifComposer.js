@@ -150,8 +150,19 @@ MotifComposer = class MotifComposer {
       throw new Error(`MotifComposer.generate: scaleComposer/developFromComposer returned empty or invalid scale notes`);
     }
 
-    // Validate scaleNotes against developer.notes if available (strict pitch class check)
-    MotifValidators.assertScaleMatchesDeveloper(scaleNotes, developer);
+    // Validate scale notes against developer contract.
+    const windowScale = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      ? HarmonicContext.getField('scale')
+      : null;
+    MotifValidators.assertScaleMatchesDeveloper(scaleNotes, developer, {
+      mode: 'auto',
+      windowScale,
+      context: {
+        sectionIndex: (typeof sectionIndex === 'number') ? sectionIndex : null,
+        phraseIndex: (typeof phraseIndex === 'number') ? phraseIndex : null,
+        measureIndex: (typeof measureIndex === 'number') ? measureIndex : null
+      }
+    });
 
     // Build candidates from scaleNotes (fail-fast on malformed data)
     const candidates = scaleNotes.map((s, idx) => {
