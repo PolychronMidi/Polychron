@@ -1,0 +1,13 @@
+if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
+  throw new Error('melodicDevelopmentProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
+}
+
+COMPOSER_TYPE_PROFILE_SOURCES.melodicDevelopment = {
+  default: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.6, developmentBias: 0.7, inversionMode: 'diatonic', inversionPivotMode: 'first-note', inversionFixedDegree: 0, normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, voiceProfile: 'default', motifProfile: 'default', rhythmProfile: 'straight' }],
+  lyric: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.35, developmentBias: 0.45, inversionMode: 'diatonic', inversionPivotMode: 'median', normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, voiceProfile: 'soft', motifProfile: 'sparse', rhythmProfile: 'laidBack' }],
+  volatile: [{ type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.85, developmentBias: 0.9, inversionMode: 'diatonic', inversionPivotMode: 'fixed-degree', inversionFixedDegree: 2, normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, voiceProfile: 'loud', motifProfile: 'dense', rhythmProfile: 'swung' }],
+  mirroredChromatic: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.7, developmentBias: 0.75, inversionMode: 'chromatic', inversionPivotMode: 'median', normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, voiceProfile: 'default', motifProfile: 'dense', rhythmProfile: 'straight' }],
+  rawChromatic: [{ type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.9, developmentBias: 0.95, inversionMode: 'chromatic', inversionPivotMode: 'fixed-degree', inversionFixedDegree: 3, normalizeToScale: false, useDegreeNoise: false, enablePhraseArcs: false, voiceProfile: 'loud', motifProfile: 'dense', rhythmProfile: 'swung' }],
+  minimalist: [{ type: 'melodicDevelopment', name: 'major', root: 'C', intensity: 0.2, developmentBias: 0.2, inversionMode: 'diatonic', inversionPivotMode: 'first-note', inversionFixedDegree: 0, normalizeToScale: true, useDegreeNoise: false, enablePhraseArcs: false, voiceProfile: 'soft', motifProfile: 'sparse', rhythmProfile: 'laidBack' }],
+  cadential: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.5, developmentBias: 0.65, inversionMode: 'diatonic', inversionPivotMode: 'fixed-degree', inversionFixedDegree: 0, normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, voiceProfile: 'default', motifProfile: 'default', rhythmProfile: 'straight' }]
+};

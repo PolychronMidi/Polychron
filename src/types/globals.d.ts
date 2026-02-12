@@ -488,6 +488,7 @@ declare var _origRi: any;
 
 declare var subdivStart: any;
 declare var allNotesOff: any;
+declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
 declare var COMPOSER_TYPE_PROFILES: any;
 declare var COMPOSER_PROFILE_POOLS: any;
 declare var getComposerTypeProfilesOrFail: any;
