@@ -47,7 +47,7 @@ PhraseArcManager = class PhraseArcManager {
   getPhraseContext() {
     // Read directly from globals set in main.js loops
     if (typeof measureIndex === 'undefined' || typeof measuresPerPhrase === 'undefined' || typeof phraseIndex === 'undefined') {
-      console.warn('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
+      throw new Error('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
     }
 
     const pos = measuresPerPhrase > 0 ? measureIndex / measuresPerPhrase : 0;

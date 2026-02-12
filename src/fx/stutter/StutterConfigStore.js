@@ -2,8 +2,7 @@
 
 // Default tuning configuration (sourced from config.js globals)
 if (typeof STUTTER_PROBABILITIES === 'undefined' || typeof STUTTER_PROFILES === 'undefined') {
-  console.error('StutterConfigStore.js: missing STUTTER_PROBABILITIES or STUTTER_PROFILES globals');
-  process.exit(1);
+  throw new Error('StutterConfigStore.js: missing STUTTER_PROBABILITIES or STUTTER_PROFILES globals');
 }
 const DEFAULT_PROBABILITIES = STUTTER_PROBABILITIES;
 const DEFAULT_PROFILES = STUTTER_PROFILES;
@@ -53,8 +52,7 @@ function getProfileConfig(profile = 'source') {
 
 function getVelocityRange(profile = 'source', isPrimary = true) {
   if (!STUTTER_VELOCITY_RANGES) {
-    console.error('[StutterConfigStore] STUTTER_VELOCITY_RANGES global not found.');
-    process.exit(1);
+    throw new Error('[StutterConfigStore] STUTTER_VELOCITY_RANGES global not found.');
   }
   const ranges = STUTTER_VELOCITY_RANGES[profile] || STUTTER_VELOCITY_RANGES.source;
   return isPrimary ? ranges.primary : ranges.secondary;

@@ -11,7 +11,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     super();
     this.root=root;
     // enable voice-leading by default for selection delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ScaleComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
     this.noteSet(scaleName,root);
   }
   /**
@@ -32,8 +32,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     try {
       this.scale = t.Scale.get(scaleKey);
     } catch (e) {
-      console.warn('ScaleComposer.noteSet: t.Scale.get threw for', scaleKey, e && e.stack ? e.stack : e);
-      this.scale = null;
+      throw new Error(`ScaleComposer.noteSet: t.Scale.get threw for ${scaleKey}: ${e && e.stack ? e.stack : e}`);
     }
 
     if (!this.scale || !Array.isArray(this.scale.notes) || this.scale.notes.length === 0) {
@@ -72,7 +71,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
         }
         selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
       }
-    } catch (e) { console.warn('ScaleComposer.selectNoteWithLeading failed, falling back to default choice:', e && e.stack ? e.stack : e); }
+    } catch (e) { throw e; }
 
     if (typeof selectedNote === 'undefined') {
       selectedNote = candidates[Math.floor(candidates.length / 2)];

@@ -17,8 +17,8 @@ MotifDurationPlanner = {
 
     const len = Number(length);
     const total = Number(totalTicks);
-    const rand = (typeof rf === 'function') ? rf : ((min = 0, max = 1) => min + Math.random() * (max - min));
-    const randInt = (typeof ri === 'function') ? ri : ((max) => Math.floor(Math.random() * (max + 1)));
+    const rand = (typeof rf === 'function') ? rf : (() => { throw new Error('Random generator rf() not available'); });
+    const randInt = (typeof ri === 'function') ? ri : (() => { throw new Error('Random integer generator ri() not available'); });
 
     // Evenly distribute ticks across motif length; shuffle remainder for variety
     const base = Math.floor(total / len);

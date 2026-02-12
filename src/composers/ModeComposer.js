@@ -18,7 +18,7 @@ ModeComposer = class ModeComposer extends MeasureComposer {
   constructor(modeName,root) {
     super();
     this.root=root;
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { console.warn('ModeComposer: failed to enable VoiceLeadingScore, continuing without it:', e && e.stack ? e.stack : e); }
+    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
     this.noteSet(modeName,root);
   }
   /**

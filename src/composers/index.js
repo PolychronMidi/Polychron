@@ -45,8 +45,7 @@ if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS)) {
       try {
         cfg.progression = cfg.progression.map(normalizeChordSymbol);
       } catch (e) {
-        console.error(`Failed to normalize chord progression in COMPOSERS[${i}]:`, e);
-        throw e;
+        throw new Error(`Failed to normalize chord progression in COMPOSERS[${i}]: ${e && e.message ? e.message : e}`);
       }
     }
   }

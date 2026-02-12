@@ -5,8 +5,7 @@ trackRhythm = (unit, layer, played) => {
     const key = (unit || '').toString().toLowerCase();
     const unitNames = ['beat', 'div', 'subdiv', 'subsubdiv'];
     if (!unitNames.includes(key)) {
-      console.warn(`trackRhythm: unknown unit "${unit}"`);
-      return false;
+      throw new Error(`trackRhythm: unknown unit "${unit}"`);
     }
 
     // If caller explicitly tells us whether a play occurred, respect that
@@ -48,16 +47,13 @@ trackRhythm = (unit, layer, played) => {
           if (typeof idxFinal === 'undefined' && typeof subsubdivIndex !== 'undefined') idxFinal = subsubdivIndex;
           break;
         default:
-          console.warn(`trackRhythm: unknown unit "${unit}"`);
-          break;
-      }
+          throw new Error(`trackRhythm: unknown unit "${unit}"`);
     }
-
+  }
     // If still missing or invalid, this is a critical invariance violation — fail fast.
     if (!Array.isArray(rhythmFinal) || typeof idxFinal === 'undefined' || typeof rhythmFinal[idxFinal] === 'undefined') {
       const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: typeof idx !== 'undefined', globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: typeof idxFinal !== 'undefined' };
-      console.error(`trackRhythm: CRITICAL missing rhythm/index for unit "${unit}"`, details);
-      throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}"`);
+      throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}" - details: ${JSON.stringify(details)}`);
     }
     const val = rhythmFinal[idxFinal];
 
@@ -68,7 +64,7 @@ trackRhythm = (unit, layer, played) => {
       layer[`${key}sOn`] = 0;
       layer[`${key}sOff`] = (layer[`${key}sOff`] || 0) + 1;
     }
-  } catch (e) { console.warn('trackRhythm error:', e); throw e; }
+  } catch (e) { throw new Error('trackRhythm: ' + (e && e.message ? e.message : String(e))); }
   // Normalize return to boolean for consistent-return rule
   return true;
 }

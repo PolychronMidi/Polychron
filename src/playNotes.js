@@ -124,8 +124,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     }
     trackRhythm(unit, layer, true);
   } catch (e) {
-    console.warn(`${unit}.playNotes: non-fatal error while playing notes:`, e && e.stack ? e.stack : e);
     trackRhythm(unit, layer, false);
+    throw new Error(`${unit}.playNotes: non-fatal error while playing notes: ${e && e.stack ? e.stack : String(e)}`);
   }
 
   return scheduled;

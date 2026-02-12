@@ -151,8 +151,7 @@ rv=randomVariation=(value,boostRange=[.05,.10],frequency=.05,deboostRange=boostR
 normalizeWeights = (weights, min, max, variationLow=.7, variationHigh=1.3) => {
   // Validate weights are non-negative
   if (!weights.every(w => w >= 0)) {
-    console.warn('normalizeWeights: negative weights detected, using absolute values');
-    weights = weights.map(w => m.abs(w));
+    throw new Error('normalizeWeights: negative weights detected - weights must be non-negative');
   }
   const range = max - min + 1;
   let w = weights.map(weight => weight * rf(variationLow, variationHigh));

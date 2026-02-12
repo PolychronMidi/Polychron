@@ -122,8 +122,7 @@ setUnitTiming = (unitType) => {
       break;
 
     default:
-      console.warn(`Unknown unit type: ${unitType}`);
-      return;
+      throw new Error(`setUnitTiming: Unknown unit type: ${unitType}`);
   }
 
   // Log the unit after calculating timing

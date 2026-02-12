@@ -289,7 +289,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * - registers
    */
   updateConfig(cfg = {}) {
-    if (typeof cfg !== 'object' || cfg === null) { console.warn('VoiceLeadingScore.updateConfig: invalid config provided — expected object'); return; }
+    if (typeof cfg !== 'object' || cfg === null) { throw new Error('VoiceLeadingScore.updateConfig: invalid config provided — expected object'); }
     const cfgAny = /** @type {any} */ (cfg);
     if (cfgAny.weights && typeof cfgAny.weights === 'object') {
       Object.assign(this.weights, cfgAny.weights);

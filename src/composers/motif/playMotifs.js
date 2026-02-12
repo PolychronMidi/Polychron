@@ -18,8 +18,7 @@
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer and beatMotifs bucket
   if (!layer || !layer.beatMotifs) {
-    console.error(`${unit}.playMotifs missing layer or beatMotifs`);
-    process.exit(1);
+    throw new Error(`${unit}.playMotifs missing layer or beatMotifs`);
   }
 
   // Initialize per-beat cursor so we can cycle through bucket notes on each call
@@ -36,14 +35,12 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 
   // If there is no bucket (undefined), this is a critical bug - gating happens BEFORE playMotifs is called
   if (!bucketIsArray || !bucket) {
-    console.error(`${unit}.playMotifs missing beatMotifs bucket for beatIndex ${beatIndex} - gating should have prevented this call`);
-    process.exit(1);
+    throw new Error(`${unit}.playMotifs missing beatMotifs bucket for beatIndex ${beatIndex} - gating should have prevented this call`);
   }
 
   // If we have an explicit bucket but it's empty, this is a critical generation bug
   if (!bucket.length) {
-    console.error(`${unit}.playMotifs empty beatMotifs bucket at beatIndex ${beatIndex} - generation failed to populate`);
-    process.exit(1);
+    throw new Error(`${unit}.playMotifs empty beatMotifs bucket at beatIndex ${beatIndex} - generation failed to populate`);
   }
 
   // Initialize beatNoteHistory tracking per beat
