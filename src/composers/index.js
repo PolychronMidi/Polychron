@@ -38,21 +38,45 @@ require('./voice');
 // @ts-ignore: load side-effect module with globals
 require('./PhraseArcManager');
 // @ts-ignore: load side-effect module with globals
+require('./profiles');
+// @ts-ignore: load side-effect module with globals
 require('./ComposerFactory');
 
 
-// Normalize chord progressions coming from the configuration so entries
-// defined in `src/config.js` are sanitized at parse/load time. This centralizes
-// normalization so any external config source will be normalized consistently.
-if (typeof COMPOSERS !== 'undefined' && Array.isArray(COMPOSERS)) {
-  for (let i = 0; i < COMPOSERS.length; i++) {
-    const cfg = COMPOSERS[i];
-    if (cfg && cfg.type === 'chords' && Array.isArray(cfg.progression)) {
+const normalizeComposerEntriesOrFail = (entries, label) => {
+  if (!Array.isArray(entries)) {
+    throw new Error(`Composer profiles normalization: ${label} must be an array`);
+  }
+  for (let i = 0; i < entries.length; i++) {
+    const cfg = entries[i];
+    if (!cfg || typeof cfg !== 'object') {
+      throw new Error(`Composer profiles normalization: ${label}[${i}] must be an object`);
+    }
+    if (cfg.type === 'chords' && Array.isArray(cfg.progression)) {
       try {
         cfg.progression = cfg.progression.map(normalizeChordSymbol);
       } catch (e) {
-        throw new Error(`Failed to normalize chord progression in COMPOSERS[${i}]: ${e && e.message ? e.message : e}`);
+        throw new Error(`Failed to normalize chord progression in ${label}[${i}]: ${e && e.message ? e.message : e}`);
       }
     }
   }
+};
+
+if (typeof COMPOSER_TYPE_PROFILES === 'undefined' || !COMPOSER_TYPE_PROFILES || typeof COMPOSER_TYPE_PROFILES !== 'object') {
+  throw new Error('Composer profiles normalization: COMPOSER_TYPE_PROFILES is undefined or invalid');
+}
+for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILES)) {
+  if (!profiles || typeof profiles !== 'object') {
+    throw new Error(`Composer profiles normalization: COMPOSER_TYPE_PROFILES.${type} must be an object`);
+  }
+  for (const [profileName, entries] of Object.entries(profiles)) {
+    normalizeComposerEntriesOrFail(entries, `COMPOSER_TYPE_PROFILES.${type}.${profileName}`);
+  }
+}
+
+if (typeof COMPOSER_PROFILE_POOLS === 'undefined' || !COMPOSER_PROFILE_POOLS || typeof COMPOSER_PROFILE_POOLS !== 'object') {
+  throw new Error('Composer profiles normalization: COMPOSER_PROFILE_POOLS is undefined or invalid');
+}
+for (const [poolName, entries] of Object.entries(COMPOSER_PROFILE_POOLS)) {
+  normalizeComposerEntriesOrFail(entries, `COMPOSER_PROFILE_POOLS.${poolName}`);
 }
