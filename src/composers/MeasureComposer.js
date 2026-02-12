@@ -16,25 +16,26 @@ MeasureComposer = class MeasureComposer {
     this.VoiceLeadingScore=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
-    /** @type {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}} */
+    /** @type {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}} */
     this.capabilities = {
       preservesScale: true,
       mutatesPitchClasses: false,
-      deterministic: false
+      deterministic: false,
+      notesReflectOutputSet: false
     };
   }
 
   /**
    * Set/merge composer capability flags.
-   * @param {{preservesScale?:boolean, mutatesPitchClasses?:boolean, deterministic?:boolean}} next
-   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}}
+  * @param {{preservesScale?:boolean, mutatesPitchClasses?:boolean, deterministic?:boolean, notesReflectOutputSet?:boolean}} next
+  * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}}
    */
   setCapabilities(next = {}) {
     if (next !== undefined && (typeof next !== 'object' || next === null)) {
       throw new Error('MeasureComposer.setCapabilities: next must be an object if provided');
     }
     const merged = Object.assign({}, this.capabilities || {}, next || {});
-    const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic'];
+    const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic', 'notesReflectOutputSet'];
     for (const k of keys) {
       if (typeof merged[k] !== 'boolean') throw new Error(`MeasureComposer.setCapabilities: ${k} must be boolean`);
     }
@@ -42,23 +43,24 @@ MeasureComposer = class MeasureComposer {
     this.capabilities = {
       preservesScale: Boolean(merged.preservesScale),
       mutatesPitchClasses: Boolean(merged.mutatesPitchClasses),
-      deterministic: Boolean(merged.deterministic)
+      deterministic: Boolean(merged.deterministic),
+      notesReflectOutputSet: Boolean(merged.notesReflectOutputSet)
     };
     return this.capabilities;
   }
 
   /**
-   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}}
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}}
    */
   getCapabilities() {
     if (!this.capabilities) {
-      this.capabilities = { preservesScale: true, mutatesPitchClasses: false, deterministic: false };
+      this.capabilities = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false };
     }
     return Object.assign({}, this.capabilities);
   }
 
   /**
-   * @param {'preservesScale'|'mutatesPitchClasses'|'deterministic'} name
+   * @param {'preservesScale'|'mutatesPitchClasses'|'deterministic'|'notesReflectOutputSet'} name
    * @returns {boolean}
    */
   hasCapability(name) {

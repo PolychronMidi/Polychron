@@ -1,4 +1,29 @@
 /**
+ * Resolve a scale to ordered pitch classes (0-11).
+ * Accepts note names or numeric pitch classes and falls back to HarmonicContext when omitted.
+ * @param {Array<string|number>|null} scale
+ * @returns {number[]}
+ */
+resolveScalePC = function(scale = null) {
+  let theScale = scale;
+  if (!Array.isArray(theScale) || theScale.length === 0) {
+    if (typeof HarmonicContext !== 'undefined') theScale = HarmonicContext.getField('scale');
+  }
+  if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('resolveScalePC: scale must be provided or available via HarmonicContext');
+
+  return theScale.map((s) => {
+    if (typeof s === 'number') return ((s % 12) + 12) % 12;
+    if (typeof s === 'string') {
+      if (typeof t === 'undefined' || !t.Note || typeof t.Note.chroma !== 'function') throw new Error('resolveScalePC: tonal.js not available');
+      const c = t.Note.chroma(s);
+      if (!Number.isFinite(c) || c < 0) throw new Error('resolveScalePC: invalid scale note "' + s + '"');
+      return c;
+    }
+    throw new Error('resolveScalePC: unsupported scale entry type');
+  });
+};
+
+/**
  * Convert a note to degree-space coordinates for a given scale.
  * @param {number|{note:number}} noteOrMidi
  * @param {Array<string|number>} scale
@@ -8,23 +33,7 @@
 midiToDegree = function(noteOrMidi, scale = null, opts = {}) {
   const midi = (typeof noteOrMidi === 'number') ? noteOrMidi : (noteOrMidi && typeof noteOrMidi.note === 'number' ? noteOrMidi.note : NaN);
   if (!Number.isFinite(midi)) throw new Error('midiToDegree: noteOrMidi must be a number or {note:number}');
-
-  let theScale = scale;
-  if (!Array.isArray(theScale) || theScale.length === 0) {
-    if (typeof HarmonicContext !== 'undefined') theScale = HarmonicContext.getField('scale');
-  }
-  if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('midiToDegree: scale must be provided or available via HarmonicContext');
-
-  const scalePC = theScale.map((s) => {
-    if (typeof s === 'number') return ((s % 12) + 12) % 12;
-    if (typeof s === 'string') {
-      if (typeof t === 'undefined' || !t.Note || typeof t.Note.chroma !== 'function') throw new Error('midiToDegree: tonal.js not available');
-      const c = t.Note.chroma(s);
-      if (!Number.isFinite(c) || c < 0) throw new Error('midiToDegree: invalid scale note "' + s + '"');
-      return c;
-    }
-    throw new Error('midiToDegree: unsupported scale entry type');
-  });
+  const scalePC = resolveScalePC(scale);
 
   const pc = ((midi % 12) + 12) % 12;
   let degree = scalePC.indexOf(pc);
@@ -68,15 +77,7 @@ midiToDegree = function(noteOrMidi, scale = null, opts = {}) {
 degreeToMidi = function(degree, scale = null, octave = 4, opts = {}) {
   if (!Number.isFinite(Number(degree))) throw new Error('degreeToMidi: degree must be finite number');
   if (!Number.isFinite(Number(octave))) throw new Error('degreeToMidi: octave must be finite number');
-
-  let theScale = scale;
-  if (!Array.isArray(theScale) || theScale.length === 0) {
-    if (typeof HarmonicContext !== 'undefined') theScale = HarmonicContext.getField('scale');
-  }
-  if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('degreeToMidi: scale must be provided or available via HarmonicContext');
-
-  const mapped = midiToDegree({ note: Number(octave) * 12 }, theScale, { quantize: true });
-  const scalePC = mapped.scalePC;
+  const scalePC = resolveScalePC(scale);
   const len = scalePC.length;
   if (len <= 0) throw new Error('degreeToMidi: resolved empty scale');
 

@@ -48,7 +48,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.setCapabilities({
       preservesScale,
       mutatesPitchClasses,
-      deterministic: false
+      deterministic: false,
+      notesReflectOutputSet: preservesScale
     });
   }
 
@@ -93,7 +94,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         // Scale-degree transposition (preserve scale membership)
         let degreeOffset0 = intensity > 0.5 ? ri(-2, 2) : 0;
         if (this.useDegreeNoise) {
-          degreeOffset0 = applyMelodicTranspositionNoise(degreeOffset0, noiseContext, { degree: true });
+          degreeOffset0 = applyMelodicTranspositionNoise(degreeOffset0, noiseContext, { degree: true, scale: this.notes });
         }
         degreeOffset0 = clamp(m.round(degreeOffset0), -4, 4);
         if (degreeOffset0 !== 0) {
@@ -109,7 +110,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         // Scale-degree transposition scaled by intensity (larger steps than phase 0)
         let degreeOffset1 = m.round(intensity * 3);
         if (this.useDegreeNoise) {
-          degreeOffset1 = applyMelodicTranspositionNoise(degreeOffset1, noiseContext, { degree: true });
+          degreeOffset1 = applyMelodicTranspositionNoise(degreeOffset1, noiseContext, { degree: true, scale: this.notes });
         }
         degreeOffset1 = clamp(m.round(degreeOffset1), -5, 5);
         if (degreeOffset1 !== 0) {
@@ -194,17 +195,17 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     if (this.normalizeToScale) {
       const theScale = Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null);
       if (Array.isArray(theScale) && theScale.length > 0) {
-      const scalePC = theScale.map(s => (typeof s === 'number' ? ((s % 12) + 12) % 12 : (t && t.Note ? t.Note.chroma(s) : (function(){ throw new Error('MelodicDevelopmentComposer: tonal.js missing'); })())));
-      developedNotes = developedNotes.map((item) => {
-        const val = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
-        if (!Number.isFinite(val)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid developed note');
-        const pc = ((val % 12) + 12) % 12;
-        if (!scalePC.includes(pc)) {
-          const quant = transposeByDegree(val, theScale, 0, { quantize: true });
-          return (typeof item === 'number') ? quant : Object.assign({}, item, { note: quant });
-        }
-        return item;
-      });
+        const scalePC = resolveScalePC(theScale);
+        developedNotes = developedNotes.map((item) => {
+          const val = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+          if (!Number.isFinite(val)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid developed note');
+          const pc = ((val % 12) + 12) % 12;
+          if (!scalePC.includes(pc)) {
+            const quant = transposeByDegree(val, theScale, 0, { quantize: true });
+            return (typeof item === 'number') ? quant : Object.assign({}, item, { note: quant });
+          }
+          return item;
+        });
       }
     }
 
