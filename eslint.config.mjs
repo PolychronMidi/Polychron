@@ -320,6 +320,7 @@ export default [
         METER_RATIO_MAX: 'readonly',
         DIVISIONS: 'readonly',
         SUBSUBDIVS: 'readonly',
+        COMPOSER_TYPE_PROFILE_SOURCES: 'readonly',
         COMPOSER_TYPE_PROFILES: 'readonly',
         COMPOSER_PROFILE_POOLS: 'readonly',
         getComposerTypeProfilesOrFail: 'readonly',

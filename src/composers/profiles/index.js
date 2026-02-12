@@ -1,3 +1,72 @@
+// @ts-ignore: load side-effect module with globals
+require('./profileRegistry');
+// @ts-ignore: load side-effect module with globals
+require('./measureProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./scaleProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./chordsProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./modeProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./pentatonicProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./tensionReleaseProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./modalInterchangeProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./melodicDevelopmentProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./voiceLeadingProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./harmonicRhythmProfiles');
+
+const resolveNamedProfilesOrFail = (entry, label) => {
+  const resolvedProfiles = {};
+
+  if (entry.voiceProfile !== undefined) {
+    if (typeof entry.voiceProfile !== 'string' || entry.voiceProfile.length === 0) {
+      throw new Error(`ComposerProfiles: ${label}.voiceProfile must be a non-empty string`);
+    }
+    if (typeof voiceConfig === 'undefined' || !voiceConfig || typeof voiceConfig.getProfile !== 'function') {
+      throw new Error(`ComposerProfiles: ${label} requires voiceConfig.getProfile()`);
+    }
+    resolvedProfiles.voice = voiceConfig.getProfile(entry.voiceProfile);
+  }
+
+  if (entry.chordProfile !== undefined) {
+    if (typeof entry.chordProfile !== 'string' || entry.chordProfile.length === 0) {
+      throw new Error(`ComposerProfiles: ${label}.chordProfile must be a non-empty string`);
+    }
+    if (typeof chordConfig === 'undefined' || !chordConfig || typeof chordConfig.getProfile !== 'function') {
+      throw new Error(`ComposerProfiles: ${label} requires chordConfig.getProfile()`);
+    }
+    resolvedProfiles.chord = chordConfig.getProfile(entry.chordProfile);
+  }
+
+  if (entry.motifProfile !== undefined) {
+    if (typeof entry.motifProfile !== 'string' || entry.motifProfile.length === 0) {
+      throw new Error(`ComposerProfiles: ${label}.motifProfile must be a non-empty string`);
+    }
+    if (typeof motifConfig === 'undefined' || !motifConfig || typeof motifConfig.getProfile !== 'function') {
+      throw new Error(`ComposerProfiles: ${label} requires motifConfig.getProfile()`);
+    }
+    resolvedProfiles.motif = motifConfig.getProfile(entry.motifProfile);
+  }
+
+  if (entry.rhythmProfile !== undefined) {
+    if (typeof entry.rhythmProfile !== 'string' || entry.rhythmProfile.length === 0) {
+      throw new Error(`ComposerProfiles: ${label}.rhythmProfile must be a non-empty string`);
+    }
+    if (typeof rhythmConfig === 'undefined' || !rhythmConfig || typeof rhythmConfig.getProfile !== 'function') {
+      throw new Error(`ComposerProfiles: ${label} requires rhythmConfig.getProfile()`);
+    }
+    resolvedProfiles.rhythm = rhythmConfig.getProfile(entry.rhythmProfile);
+  }
+
+  return resolvedProfiles;
+};
+
 const cloneComposerEntryOrFail = (entry, label) => {
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
     throw new Error(`ComposerProfiles: ${label} entry must be an object`);
@@ -5,7 +74,13 @@ const cloneComposerEntryOrFail = (entry, label) => {
   if (typeof entry.type !== 'string' || entry.type.length === 0) {
     throw new Error(`ComposerProfiles: ${label} entry.type must be a non-empty string`);
   }
-  return Object.assign({}, entry);
+
+  const cloned = Object.assign({}, entry);
+  const resolved = resolveNamedProfilesOrFail(cloned, label);
+  if (Object.keys(resolved).length > 0) {
+    cloned.resolvedProfiles = Object.assign({}, resolved);
+  }
+  return cloned;
 };
 
 const cloneComposerEntriesOrFail = (entries, label) => {
@@ -15,58 +90,11 @@ const cloneComposerEntriesOrFail = (entries, label) => {
   return entries.map((entry, i) => cloneComposerEntryOrFail(entry, `${label}[${i}]`));
 };
 
-const typeProfileTemplates = {
-  measure: {
-    default: [{ type: 'measure' }],
-    sparse: [{ type: 'measure' }],
-    pulse: [{ type: 'measure' }]
-  },
-  scale: {
-    default: [{ type: 'scale', name: 'major', root: 'random' }],
-    diatonicWander: [{ type: 'scale', name: 'random', root: 'random' }],
-    brightCenter: [{ type: 'scale', name: 'major', root: 'C' }]
-  },
-  chords: {
-    default: [{ type: 'chords', progression: 'random' }],
-    lushCycle: [{ type: 'chords', progression: ['Cmaj7', 'Am7', 'Dm7', 'G7'] }],
-    triadicPulse: [{ type: 'chords', progression: ['C', 'F', 'G', 'C'] }]
-  },
-  mode: {
-    default: [{ type: 'mode', name: 'ionian', root: 'random' }],
-    modalDrift: [{ type: 'mode', name: 'random', root: 'random' }],
-    anchoredIonian: [{ type: 'mode', name: 'ionian', root: 'C' }]
-  },
-  pentatonic: {
-    default: [{ type: 'pentatonic', root: 'random', scaleType: 'random' }],
-    majorLift: [{ type: 'pentatonic', root: 'random', scaleType: 'major' }],
-    minorMist: [{ type: 'pentatonic', root: 'random', scaleType: 'minor' }]
-  },
-  tensionRelease: {
-    default: [{ type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 }],
-    arcGentle: [{ type: 'tensionRelease', quality: 'major', tensionCurve: 0.4 }],
-    arcSteep: [{ type: 'tensionRelease', quality: 'major', tensionCurve: 0.8 }]
-  },
-  modalInterchange: {
-    default: [{ type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 }],
-    conservative: [{ type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.2 }],
-    adventurous: [{ type: 'modalInterchange', primaryMode: 'minor', borrowProbability: 0.45 }]
-  },
-  melodicDevelopment: {
-    default: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.6 }],
-    lyric: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.4 }],
-    volatile: [{ type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.7 }]
-  },
-  voiceLeading: {
-    default: [{ type: 'voiceLeading', name: 'major', root: 'random', commonToneWeight: 0.7 }],
-    open: [{ type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.5 }],
-    tight: [{ type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.8 }]
-  },
-  harmonicRhythm: {
-    default: [{ type: 'harmonicRhythm', progression: ['I', 'IV', 'V', 'I'], key: 'random', measuresPerChord: 2, quality: 'major' }],
-    patientGrid: [{ type: 'harmonicRhythm', progression: ['I', 'vi', 'IV', 'V'], key: 'random', measuresPerChord: 3, quality: 'major' }],
-    activeGrid: [{ type: 'harmonicRhythm', progression: ['I', 'V', 'vi', 'IV'], key: 'random', measuresPerChord: 1, quality: 'major' }]
-  }
-};
+if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
+  throw new Error('ComposerProfiles: COMPOSER_TYPE_PROFILE_SOURCES is undefined or invalid');
+}
+
+const typeProfileTemplates = COMPOSER_TYPE_PROFILE_SOURCES;
 
 COMPOSER_TYPE_PROFILES = {};
 for (const [type, profiles] of Object.entries(typeProfileTemplates)) {
@@ -79,29 +107,42 @@ for (const [type, profiles] of Object.entries(typeProfileTemplates)) {
   }
 }
 
-const defaultPoolTemplate = [
-  { type: 'scale', name: 'major', root: 'random' },
-  { type: 'chords', progression: 'random' },
-  { type: 'mode', name: 'ionian', root: 'random' },
-  { type: 'scale', name: 'random', root: 'random' },
-  { type: 'scale', name: 'major', root: 'random' },
-  { type: 'chords', progression: 'random' },
-  { type: 'mode', name: 'ionian', root: 'random' },
-  { type: 'mode', name: 'random', root: 'random' },
-  { type: 'pentatonic', root: 'random', scaleType: 'random' },
-  { type: 'pentatonic', root: 'random', scaleType: 'random' },
-  { type: 'tensionRelease', quality: 'major', tensionCurve: 0.6 },
-  { type: 'modalInterchange', primaryMode: 'major', borrowProbability: 0.3 },
-  { type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.6 },
-  { type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.4 },
-  { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.5 },
-  { type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.7 },
-  { type: 'voiceLeading', name: 'major', root: 'random', commonToneWeight: 0.7 },
-  { type: 'voiceLeading', name: 'major', root: 'random', commonToneWeight: 0.5 },
-  { type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.6 },
-  { type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.8 },
-  { type: 'harmonicRhythm', progression: ['I', 'IV', 'V', 'I'], key: 'random', measuresPerChord: 2, quality: 'major' }
+const pickProfileEntriesOrFail = (type, profileName) => {
+  const typeProfiles = COMPOSER_TYPE_PROFILES[type];
+  if (!typeProfiles || typeof typeProfiles !== 'object') {
+    throw new Error(`ComposerProfiles: unknown type "${type}" while building pools`);
+  }
+  const profileEntries = typeProfiles[profileName];
+  if (!Array.isArray(profileEntries) || profileEntries.length === 0) {
+    throw new Error(`ComposerProfiles: profile "${profileName}" missing for type "${type}" while building pools`);
+  }
+  return cloneComposerEntriesOrFail(profileEntries, `COMPOSER_TYPE_PROFILES.${type}.${profileName}`);
+};
+
+const defaultPoolSelectors = [
+  ['scale', 'default'],
+  ['scale', 'diatonicWander'],
+  ['chords', 'default'],
+  ['chords', 'iiVICycle'],
+  ['mode', 'default'],
+  ['mode', 'modalDrift'],
+  ['pentatonic', 'default'],
+  ['pentatonic', 'majorLift'],
+  ['tensionRelease', 'default'],
+  ['modalInterchange', 'default'],
+  ['melodicDevelopment', 'default'],
+  ['melodicDevelopment', 'lyric'],
+  ['melodicDevelopment', 'volatile'],
+  ['voiceLeading', 'default'],
+  ['voiceLeading', 'balanced'],
+  ['harmonicRhythm', 'default']
 ];
+
+const defaultPoolTemplate = [];
+for (const [type, profileName] of defaultPoolSelectors) {
+  const entries = pickProfileEntriesOrFail(type, profileName);
+  for (const entry of entries) defaultPoolTemplate.push(entry);
+}
 
 const fullSpectrumEclecticTemplate = [];
 for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILES)) {
