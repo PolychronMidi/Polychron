@@ -27,7 +27,7 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
  * Apply noise variation to melodic development transposition
  * @param {number} baseOffset - Base transposition offset
  * @param {Object} context - Context for noise calculation
- * @param {{degree?: boolean}} [options] - when degree=true, output is in scale-degree steps
+ * @param {{degree?: boolean, scale?: Array<string|number>}} [options] - when degree=true, output is in scale-degree steps
  * @returns {number} Modified transposition offset
  */
 applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}) {
@@ -48,6 +48,11 @@ applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}
       variationRange = 2; // ±2 degrees
     } else {
       variationRange = 1; // ±1 degree
+    }
+    if (options && options.scale !== undefined) {
+      if (typeof resolveScalePC !== 'function') throw new Error('applyMelodicTranspositionNoise: resolveScalePC() not available for degree-mode scale-aware bounds');
+      const scalePC = resolveScalePC(options.scale);
+      variationRange = clamp(variationRange, 1, m.max(1, scalePC.length - 1));
     }
   } else if (phase === 0) {
     variationRange = 3; // ±1-2 semitones

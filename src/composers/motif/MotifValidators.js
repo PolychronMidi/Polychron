@@ -4,10 +4,10 @@ MotifValidators = {
   /**
    * Resolve capability contract from a composer/developer object.
    * @param {Object} developer
-   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean}}
+   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean}}
    */
   getCapabilities(developer) {
-    const fallback = { preservesScale: true, mutatesPitchClasses: false, deterministic: false };
+    const fallback = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false };
     if (!developer || typeof developer !== 'object') return fallback;
 
     let caps = null;
@@ -24,13 +24,8 @@ MotifValidators = {
     }
 
     const merged = Object.assign({}, fallback, caps || {});
-    const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic'];
-    for (const key of keys) {
-      if (typeof merged[key] !== 'boolean') {
-        throw new Error(`MotifValidators.getCapabilities: ${key} must be boolean`);
-      }
-    }
-    return merged;
+    if (typeof assertComposerCapabilities !== 'function') throw new Error('MotifValidators.getCapabilities: assertComposerCapabilities() not available');
+    return assertComposerCapabilities(merged);
   },
 
   /**
@@ -42,7 +37,7 @@ MotifValidators = {
   assertScaleMatchesDeveloper(scaleNotes, developer) {
     if (!developer || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
     const caps = this.getCapabilities(developer);
-    if (!caps.preservesScale) return;
+    if (!caps.preservesScale || !caps.notesReflectOutputSet) return;
 
     const expectedPCs = new Set();
     for (const noteName of developer.notes) {
@@ -60,7 +55,7 @@ MotifValidators = {
 
     for (const pc of scalePCs) {
       if (!expectedPCs.has(pc)) {
-        throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. Composer capabilities: preservesScale=${caps.preservesScale}, mutatesPitchClasses=${caps.mutatesPitchClasses}, deterministic=${caps.deterministic}. This indicates getNotes() violated preservesScale contract.`);
+        throw new Error(`MotifComposer.generate: scaleNotes contains unexpected PC ${pc}. Developer.notes PCs: ${Array.from(expectedPCs).sort((a,b)=>a-b).join(',')}, scaleNotes PCs: ${Array.from(scalePCs).sort((a,b)=>a-b).join(',')}. Composer class: ${developer?.constructor?.name}. Composer capabilities: preservesScale=${caps.preservesScale}, mutatesPitchClasses=${caps.mutatesPitchClasses}, deterministic=${caps.deterministic}, notesReflectOutputSet=${caps.notesReflectOutputSet}. This indicates getNotes() violated preservesScale contract.`);
       }
     }
   }

@@ -375,6 +375,8 @@ declare var getNoiseProfileOrFail: any;
 declare const NOISE_PROFILES: any;
 declare var applyComposerPitchNoise: any;
 declare var applyMelodicTranspositionNoise: any;
+declare var assertComposerCapabilities: any;
+declare var resolveScalePC: any;
 declare var midiToDegree: any;
 declare var degreeToMidi: any;
 declare var transposeByDegree: any;
