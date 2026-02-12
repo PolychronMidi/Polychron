@@ -38,14 +38,14 @@ function incEmitted(n = 1, profile = 'unknown') {
 }
 
 function incPendingForTick(tick, n = 1) {
-  const key = Math.round(tick);
+  const key = m.round(tick);
   stutterMetrics.pendingByTick.set(key, (stutterMetrics.pendingByTick.get(key) || 0) + n);
 }
 
 function decPendingForTick(tick, n = 1) {
-  const key = Math.round(tick);
+  const key = m.round(tick);
   const cur = stutterMetrics.pendingByTick.get(key) || 0;
-  const next = Math.max(0, cur - n);
+  const next = m.max(0, cur - n);
   if (next === 0) stutterMetrics.pendingByTick.delete(key); else stutterMetrics.pendingByTick.set(key, next);
 }
 

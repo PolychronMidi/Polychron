@@ -58,7 +58,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
       effectivePosition = clamp(effectivePosition, 0, 1);
     }
 
-    const targetTension = this.tensionCurve * Math.sin(effectivePosition * Math.PI);
+    const targetTension = this.tensionCurve * m.sin(effectivePosition * m.PI);
     if (effectivePosition > 0.85) {
       return this.generator.generate('I-IV-V').slice(-1);
     }
@@ -71,7 +71,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     let bestDiff = Infinity;
     for (const chord of allProgressions) {
       const tension = this.calculateTension(chord);
-      const diff = Math.abs(tension - targetTension);
+      const diff = m.abs(tension - targetTension);
       if (diff < bestDiff) { bestDiff = diff; bestChord = chord; }
     }
     return [bestChord];

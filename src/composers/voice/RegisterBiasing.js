@@ -18,7 +18,7 @@ RegisterBiasing = {
     const arcRegisterBias = phraseContext.registerBias || 0;
 
     // Arc-based bias: apply probabilistically to preserve variety
-    if (!finalRegisterBias && Math.abs(arcRegisterBias) > VOICE_Manager.arcRegisterBiasThreshold && rf() < VOICE_Manager.arcRegisterBiasChance) {
+    if (!finalRegisterBias && m.abs(arcRegisterBias) > VOICE_Manager.arcRegisterBiasThreshold && rf() < VOICE_Manager.arcRegisterBiasChance) {
       finalRegisterBias = arcRegisterBias > 0 ? 'higher' : 'lower';
     }
 
@@ -29,7 +29,7 @@ RegisterBiasing = {
     if (finalRegisterBias === 'higher' && notePool.length > maxVoices * 1.5) {
       // Sort pool by pitch and favor upper portion
       const sorted = [...notePool].sort((a, b) => b - a); // Descending
-      const upperBias = Math.ceil(sorted.length * 0.7); // Top 70% (less aggressive)
+      const upperBias = m.ceil(sorted.length * 0.7); // Top 70% (less aggressive)
       const filtered = sorted.slice(0, upperBias);
       // Only apply if filter result is non-empty and substantial
       if (filtered.length >= maxVoices) {
@@ -37,7 +37,7 @@ RegisterBiasing = {
       }
     } else if (finalRegisterBias === 'lower' && notePool.length > maxVoices * 1.5) {
       const sorted = [...notePool].sort((a, b) => a - b); // Ascending
-      const lowerBias = Math.ceil(sorted.length * 0.7); // Bottom 70% (less aggressive)
+      const lowerBias = m.ceil(sorted.length * 0.7); // Bottom 70% (less aggressive)
       const filtered = sorted.slice(0, lowerBias);
       // Only apply if filter result is non-empty and substantial
       if (filtered.length >= maxVoices) {

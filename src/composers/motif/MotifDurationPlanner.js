@@ -21,18 +21,18 @@ MotifDurationPlanner = {
     const randInt = (typeof ri === 'function') ? ri : (() => { throw new Error('Random integer generator ri() not available'); });
 
     // Evenly distribute ticks across motif length; shuffle remainder for variety
-    const base = Math.floor(total / len);
+    const base = m.floor(total / len);
     const remainder = total - base * len;
     const targetDurations = Array.from({ length: len }, (_, i) => base + (i < remainder ? 1 : 0));
 
     // Randomize distribution slightly while preserving sum: swap some units
-    for (let k = 0; k < Math.min(3, len); k++) {
+    for (let k = 0; k < m.min(3, len); k++) {
       const i = randInt(len - 1);
       const j = randInt(len - 1);
       if (i !== j && targetDurations[i] > 1) {
-        const delta = Math.round(rand(-0.5, 0.5) * Math.min(2, Math.floor(targetDurations[i] * 0.1)));
-        targetDurations[i] = Math.max(1, targetDurations[i] - delta);
-        targetDurations[j] = Math.max(1, targetDurations[j] + delta);
+        const delta = m.round(rand(-0.5, 0.5) * m.min(2, m.floor(targetDurations[i] * 0.1)));
+        targetDurations[i] = m.max(1, targetDurations[i] - delta);
+        targetDurations[j] = m.max(1, targetDurations[j] + delta);
       }
     }
 

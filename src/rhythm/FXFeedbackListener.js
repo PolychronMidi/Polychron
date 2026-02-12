@@ -100,7 +100,7 @@ FXFeedbackListener = (() => {
         const wN = Number.isFinite(Number(w)) ? Number(w) : 0.1;
         const complexity = idx / spec.weights.length; // 0=simple, 1=complex
         const boost = (complexity - 0.5) * intensity * 0.4; // Up to 40% swing
-        return Math.max(0.1, wN + boost);
+        return m.max(0.1, wN + boost);
       });
 
       modified[key] = { ...spec, weights: newWeights };

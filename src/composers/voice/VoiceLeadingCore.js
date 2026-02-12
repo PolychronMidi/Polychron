@@ -18,7 +18,7 @@ VoiceLeadingCore = {
     for (let i = 0; i < lastNotes.length; i++) if (!Number.isFinite(Number(lastNotes[i]))) throw new Error(`VoiceLeadingCore.computeCandidateScore: lastNotes[${i}] must be finite number`);
 
     const lastNote = Number(lastNotes[0]);
-    const interval = Math.abs(candidate - lastNote);
+    const interval = m.abs(candidate - lastNote);
 
     // Determine current register
     let currentRegister = 'soprano';
@@ -58,7 +58,7 @@ VoiceLeadingCore = {
 
     // Leap recovery
     if (lastNotes.length >= 2) {
-      const prevInterval = Math.abs(lastNotes[0] - lastNotes[1]);
+      const prevInterval = m.abs(lastNotes[0] - lastNotes[1]);
       totalCost += VoiceLeadingScorers.scoreLeapRecovery(scorer, interval, prevInterval, lastNotes, candidate) * (scorer.weights?.leapRecovery ?? 0.6);
     }
 
@@ -80,12 +80,12 @@ VoiceLeadingCore = {
     const ctWeight = (typeof baseCtWeight === 'number') ? (baseCtWeight * ctWeightMod) : 0;
     if (typeof ctWeight === 'number' && ctWeight > 0) {
       const samePC = (((candidate % 12) + 12) % 12) === (((lastNote % 12) + 12) % 12);
-      if (samePC) totalCost -= Math.min(8, ctWeight * 4);
+      if (samePC) totalCost -= m.min(8, ctWeight * 4);
     }
 
     // Candidate weight bias
     if (opts && typeof opts.weight === 'number' && opts.weight > 0) {
-      totalCost -= Math.min(8, opts.weight * 4);
+      totalCost -= m.min(8, opts.weight * 4);
     }
 
     // Hard constraints

@@ -59,7 +59,7 @@ Motif = class Motif {
   transpose(steps = 0) {
     const len = this.sequence.length;
     if (len <= 1) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
-    const shift = ((Math.round(steps) % len) + len) % len;
+    const shift = ((m.round(steps) % len) + len) % len;
     if (shift === 0) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
     const rotated = this.sequence.slice(-shift).concat(this.sequence.slice(0, len - shift));
     return /** @type {this} */ (new Motif(rotated, { defaultDuration: this.defaultDuration }));

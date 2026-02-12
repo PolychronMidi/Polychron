@@ -17,7 +17,7 @@ MotifComposer = class MotifComposer {
     // length
     if (opts.length !== undefined) {
       if (!Number.isFinite(Number(opts.length)) || Number(opts.length) <= 0) throw new Error('MotifComposer: options.length must be a positive number');
-      this.length = Math.max(1, Math.round(Number(opts.length)));
+      this.length = m.max(1, m.round(Number(opts.length)));
     } else {
       this.length = 4;
     }
@@ -35,7 +35,7 @@ MotifComposer = class MotifComposer {
       if (!Array.isArray(opts.octaveRange) || opts.octaveRange.length < 2 || !Number.isFinite(Number(opts.octaveRange[0])) || !Number.isFinite(Number(opts.octaveRange[1]))) {
         throw new Error('MotifComposer: options.octaveRange must be an array [min,max] of numbers');
       }
-      this.octaveRange = [Math.round(Number(opts.octaveRange[0])), Math.round(Number(opts.octaveRange[1]))];
+      this.octaveRange = [m.round(Number(opts.octaveRange[0])), m.round(Number(opts.octaveRange[1]))];
       if (this.octaveRange[0] > this.octaveRange[1]) throw new Error('MotifComposer: octaveRange min must be <= max');
     } else {
       this.octaveRange = [3, 5];
@@ -101,7 +101,7 @@ MotifComposer = class MotifComposer {
     let length;
     if (optsAny.length !== undefined) {
       if (!Number.isFinite(Number(optsAny.length)) || Number(optsAny.length) <= 0) throw new Error('MotifComposer.generate: invalid length option');
-      length = Math.max(1, Math.round(Number(optsAny.length)));
+      length = m.max(1, m.round(Number(optsAny.length)));
     } else {
       length = this.length;
     }
@@ -188,7 +188,7 @@ MotifComposer = class MotifComposer {
 
     // compute default duration in ticks
     const unitTicks = MotifUnit.unitTicks(durationUnit);
-    const defaultDurationTicks = Math.max(1, Math.round(unitTicks * durationMult * durationScale));
+    const defaultDurationTicks = m.max(1, m.round(unitTicks * durationMult * durationScale));
 
     // If caller asks to fit the motif into a total tick budget, compute durations accordingly
     const fitToTotal = Boolean(optsAny.fitToTotalTicks || optsAny.fitToPhrase);
@@ -256,11 +256,11 @@ MotifComposer = class MotifComposer {
       let dur;
       if (targetDurations) {
         // use precomputed durations that sum to the target total
-        dur = Math.max(1, Math.round(targetDurations[i]));
+        dur = m.max(1, m.round(targetDurations[i]));
       } else {
         // Add a small timing variance (±10%) to make motifs feel less rigid
         const jitter = (typeof rv === 'function') ? rv(0.9, 1.1) : (()=>{ throw new Error('Random variation function rv() not available'); })();
-        dur = Math.max(1, Math.round(defaultDurationTicks * jitter));
+        dur = m.max(1, m.round(defaultDurationTicks * jitter));
       }
 
       // Validate chosen note is in candidates (valid pitch class from composer)

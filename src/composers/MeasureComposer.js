@@ -95,8 +95,8 @@ MeasureComposer = class MeasureComposer {
       throw new Error('MeasureComposer.getNotes() exceeded max recursion depth');
     }
     const [o1, o2]=octaveRange || self.getOctaveRange();
-    const minOctave = Math.min(o1, o2);
-    const maxOctave = Math.max(o1, o2);
+    const minOctave = m.min(o1, o2);
+    const maxOctave = m.max(o1, o2);
     const rootNote=self.notes[ri(self.notes.length - 1)];
 
     // Delegate interval selection to universal strategy

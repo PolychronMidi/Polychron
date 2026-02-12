@@ -91,7 +91,7 @@ PhaseLockedRhythmGenerator = (() => {
         const ratio1 = meta && Number.isFinite(Number(meta.ratio1)) ? Number(meta.ratio1) : null;
         const ratio2 = meta && Number.isFinite(Number(meta.ratio2)) ? Number(meta.ratio2) : null;
         if (ratio1 && ratio2) {
-          offset = Math.round((ratio1 / (ratio1 + ratio2)) * length);
+          offset = m.round((ratio1 / (ratio1 + ratio2)) * length);
           break;
         }
       }

@@ -68,7 +68,7 @@ VoiceManager = class VoiceManager {
 
     let total = 0;
     for (const note of notes) {
-      const w = (weights && Number.isFinite(Number(weights[note]))) ? Math.max(0, Number(weights[note])) : 0;
+      const w = (weights && Number.isFinite(Number(weights[note]))) ? m.max(0, Number(weights[note])) : 0;
       total += w;
     }
 
@@ -76,7 +76,7 @@ VoiceManager = class VoiceManager {
 
     let roll = rf() * total;
     for (const note of notes) {
-      const w = (weights && Number.isFinite(Number(weights[note]))) ? Math.max(0, Number(weights[note])) : 0;
+      const w = (weights && Number.isFinite(Number(weights[note]))) ? m.max(0, Number(weights[note])) : 0;
       roll -= w;
       if (roll <= 0) return note;
     }
@@ -123,8 +123,8 @@ VoiceManager = class VoiceManager {
     const shouldApplyArcDensity = rf() < (VOICE_Manager.arcDensityChance ?? 0.5);
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
-    const adjustedVoiceCount = Math.max(1, Math.round(voiceCount * combinedMultiplier));
-    const maxVoices = Math.min(adjustedVoiceCount, notePool.length);
+    const adjustedVoiceCount = m.max(1, m.round(voiceCount * combinedMultiplier));
+    const maxVoices = m.min(adjustedVoiceCount, notePool.length);
 
     // Apply register bias using centralized helper
     const registerBiasResult = RegisterBiasing.apply(notePool, maxVoices, opts, phraseContext);

@@ -87,11 +87,11 @@ PhraseArcManager = class PhraseArcManager {
           // Parabolic arc peaking at 0.6
           const centered = (pos - 0.6) * 2;
           const height = 1 - centered * centered;
-          return Math.max(0, height) * this.registerRange - this.registerRange / 2;
+          return m.max(0, height) * this.registerRange - this.registerRange / 2;
         },
         density: (pos) => {
           // Denser toward middle
-          const centered = Math.abs(pos - 0.5) * 2;
+          const centered = m.abs(pos - 0.5) * 2;
           return this.densityRange.min + (1 - centered) * (this.densityRange.max - this.densityRange.min);
         },
         independence: (pos) => {
@@ -100,7 +100,7 @@ PhraseArcManager = class PhraseArcManager {
         },
         dynamism: (pos) => {
           // Higher activity toward climax
-          return 0.5 + Math.sin(pos * Math.PI) * 0.5;
+          return 0.5 + m.sin(pos * m.PI) * 0.5;
         }
       },
 
@@ -111,13 +111,13 @@ PhraseArcManager = class PhraseArcManager {
           return rise * this.registerRange - this.registerRange / 2;
         },
         density: (pos) => {
-          return this.densityRange.min + (1 - Math.abs(pos - 0.5) * 2) * (this.densityRange.max - this.densityRange.min);
+          return this.densityRange.min + (1 - m.abs(pos - 0.5) * 2) * (this.densityRange.max - this.densityRange.min);
         },
         independence: (pos) => {
           return pos > 0.3 && pos < 0.7 ? 0.6 : 0.4;
         },
         dynamism: (pos) => {
-          return 0.4 + (1 - Math.abs(pos - 0.5) * 2) * 0.6;
+          return 0.4 + (1 - m.abs(pos - 0.5) * 2) * 0.6;
         }
       },
 
@@ -142,17 +142,17 @@ PhraseArcManager = class PhraseArcManager {
       // Wave: continuous rise and fall
       'wave': {
         register: (pos) => {
-          return Math.sin(pos * Math.PI * 2) * this.registerRange / 2;
+          return m.sin(pos * m.PI * 2) * this.registerRange / 2;
         },
         density: (pos) => {
-          const wave = (Math.sin(pos * Math.PI * 2) + 1) / 2;
+          const wave = (m.sin(pos * m.PI * 2) + 1) / 2;
           return this.densityRange.min + wave * (this.densityRange.max - this.densityRange.min);
         },
         independence: (pos) => {
-          return 0.4 + Math.abs(Math.sin(pos * Math.PI * 2)) * 0.4;
+          return 0.4 + m.abs(m.sin(pos * m.PI * 2)) * 0.4;
         },
         dynamism: (pos) => {
-          return 0.5 + Math.abs(Math.sin(pos * Math.PI * 2)) * 0.5;
+          return 0.5 + m.abs(m.sin(pos * m.PI * 2)) * 0.5;
         }
       }
     };

@@ -149,7 +149,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         }
 
         const ev1 = { tick: tick + duration * rf(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rf(.3, .7) : currentVelocity * rf(.45, .8)] };
-        const ev2 = { tick: Math.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] };
+        const ev2 = { tick: m.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] };
         if (emit === false) { plannedEvents.push(ev1); plannedEvents.push(ev2); } else { p(c, ev1); p(c, ev2); }
       }
         const evFinal = { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] };
