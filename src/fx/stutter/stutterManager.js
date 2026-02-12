@@ -9,8 +9,6 @@ class StutterManager {
     this.lastUsedCHs = new Set();      // for stutterFade
     this.lastUsedCHs2 = new Set();     // for stutterPan and stutterFX
 
-    // Implementations (stutterFade, stutterPan, stutterFX) are provided by `src/fx/index.js` (aggregated side-effect requires)
-
     // Capture the naked globals (rely on require-side effects to define them)
     this._stutterFade = (typeof stutterFade === 'function') ? stutterFade : null;
     this._stutterPan = (typeof stutterPan === 'function') ? stutterPan : null;

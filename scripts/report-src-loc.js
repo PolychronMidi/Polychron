@@ -76,7 +76,7 @@ async function main() {
   const counts = await countLinesForFiles(files, concurrency);
 
   const report = files.map((f, i) => {
-    const rel = path.relative(srcDir, f).replace(/\\+/g, '/');
+    const rel = path.relative(process.cwd(), f).replace(/\\+/g, '/');
     return { file: rel, lines: counts[i] };
   });
 
