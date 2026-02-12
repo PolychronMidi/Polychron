@@ -35,6 +35,45 @@ ComposerFactory = class ComposerFactory {
     }
   }
 
+  static capabilityProfiles = {
+    measure: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    scale: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    chords: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    mode: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    pentatonic: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    tensionRelease: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    modalInterchange: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    harmonicRhythm: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    melodicDevelopment: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+    voiceLeading: { preservesScale: true, mutatesPitchClasses: false, deterministic: false },
+  };
+
+  static applyCapabilityContract(composer, type, config = {}) {
+    if (!composer || typeof composer !== 'object') throw new Error('ComposerFactory.applyCapabilityContract: composer must be an object');
+
+    const profile = this.capabilityProfiles[type] || { preservesScale: true, mutatesPitchClasses: false, deterministic: false };
+    const fromComposer = (typeof composer.getCapabilities === 'function') ? composer.getCapabilities() : (composer.capabilities && typeof composer.capabilities === 'object' ? composer.capabilities : {});
+    const fromConfig = (config && typeof config.capabilities === 'object' && config.capabilities !== null) ? config.capabilities : {};
+    const merged = Object.assign({}, profile, fromComposer, fromConfig);
+
+    if (typeof composer.setCapabilities === 'function') {
+      composer.setCapabilities(merged);
+    } else {
+      const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic'];
+      for (const key of keys) {
+        if (typeof merged[key] !== 'boolean') {
+          throw new Error(`ComposerFactory.applyCapabilityContract: capability ${key} must be boolean`);
+        }
+      }
+      if (merged.preservesScale && merged.mutatesPitchClasses) {
+        throw new Error('ComposerFactory.applyCapabilityContract: preservesScale=true conflicts with mutatesPitchClasses=true');
+      }
+      composer.capabilities = merged;
+    }
+
+    return composer;
+  }
+
   static constructors = {
     measure: () => new MeasureComposer(),
     scale: ({ name = 'major', root = 'C' } = {}) => {
@@ -103,9 +142,9 @@ ComposerFactory = class ComposerFactory {
       const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
       return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling, phraseArcManager });
     },
-    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, enablePhraseArcs = true, phraseArcOpts = {} } = {}) => {
+    melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, enablePhraseArcs = true, phraseArcOpts = {}, inversionMode = 'diatonic', inversionPivotMode = 'first-note', inversionFixedDegree = 0, normalizeToScale = true, useDegreeNoise = true } = {}) => {
       const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
-      return new MelodicDevelopmentComposer(name, root, intensity, developmentBias, { phraseArcManager });
+      return new MelodicDevelopmentComposer(name, root, intensity, developmentBias, { phraseArcManager, inversionMode, inversionPivotMode, inversionFixedDegree, normalizeToScale, useDegreeNoise });
     },
     voiceLeading: ({ name = 'major', root = 'C', commonToneWeight = 0.7 } = {}) => new VoiceLeadingComposer(name, root, commonToneWeight),
   };
@@ -122,7 +161,8 @@ ComposerFactory = class ComposerFactory {
     // Set context if provided; fall back to shared context
     const composerCtx = ctx || this.sharedComposerCtx;
     if (composerCtx) this.setComposerContext(composerCtx);
-    return factory(config);
+    const composer = factory(config);
+    return this.applyCapabilityContract(composer, type, config);
   }
 
   static createRandom(extraConfig = {}, ctx = null) {
