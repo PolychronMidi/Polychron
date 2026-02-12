@@ -8,5 +8,6 @@ COMPOSER_TYPE_PROFILE_SOURCES.measure = {
   densePulse: [{ type: 'measure', rhythmProfile: 'swung', motifProfile: 'dense', voiceProfile: 'loud' }],
   grooveLocked: [{ type: 'measure', rhythmProfile: 'straight', motifProfile: 'default', voiceProfile: 'default' }],
   exploratoryMeter: [{ type: 'measure', rhythmProfile: 'swung', motifProfile: 'default', voiceProfile: 'default' }],
-  suspendedGrid: [{ type: 'measure', rhythmProfile: 'laidBack', motifProfile: 'sparse', voiceProfile: 'soft' }]
+  suspendedGrid: [{ type: 'measure', rhythmProfile: 'laidBack', motifProfile: 'sparse', voiceProfile: 'soft' }],
+  accentedCells: [{ type: 'measure', rhythmProfile: 'straight', motifProfile: 'dense', voiceProfile: 'loud' }]
 };
