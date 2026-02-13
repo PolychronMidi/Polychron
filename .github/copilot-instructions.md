@@ -33,7 +33,7 @@
 - Prefer files that are small and focused on a single responsibility (target max of roughly 150-200 lines), with clear file names matching the file's main function/class.
 
 ### Design Patterns - FX Subsystems (Noise & Stutter)
-- **Single‑Manager hub**: each FX subsystem exposes one manager (e.g., `NoiseManager`, `StutterManager`) that acts as the single authority (Façade + State/Service Locator). Managers compose lightweight helper modules (registry, value helpers, config store, metrics, registry) and expose a small public surface as project naked globals.
+- **Single‑Manager hub**: each FX subsystem exposes one manager (e.g., `noiseManager`, `StutterManager`) that acts as the single authority (Façade + State/Service Locator). Managers compose lightweight helper modules (registry, value helpers, config store, metrics, registry) and expose a small public surface as project naked globals.
 - **Clear separation of responsibilities**: keep algorithmic implementations (e.g., `SimplexNoise`) as Strategy implementations; configs (e.g., `noiseConfig`) as Factory methods; adapters (e.g., `noiseModulator`) bridge noise → audio parameters; per‑effect implementations (stutterFade/pan/fx) follow the Strategy pattern; registry APIs support runtime extension.
 - **Load order & side‑effects**: helper modules must be required by the subsystem `index.js` (helpers first, then manager) so naked globals are defined predictably. Managers should assume helpers exist and **fail fast** if required helpers are missing.
 - **Naming rule**: prefer a single `*Manager` per subsystem (hub/boss) and only add supporting helpers (not extra managers) to reduce the God‑object anti‑pattern.

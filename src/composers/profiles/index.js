@@ -1,5 +1,4 @@
-// @ts-ignore: load side-effect module with globals
-require('./profileRegistry');
+COMPOSER_TYPE_PROFILE_SOURCES = {};
 // @ts-ignore: load side-effect module with globals
 require('./measureProfiles');
 // @ts-ignore: load side-effect module with globals
