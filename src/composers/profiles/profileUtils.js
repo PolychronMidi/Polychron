@@ -2,7 +2,9 @@ if (typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'undefined' && COMPOSER_TYPE_PROFIL
   throw new Error('ComposerProfiles.profileUtils: COMPOSER_TYPE_PROFILE_SOURCES must be an object when pre-defined');
 }
 
-COMPOSER_TYPE_PROFILE_SOURCES = {};
+if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || COMPOSER_TYPE_PROFILE_SOURCES === null) {
+  COMPOSER_TYPE_PROFILE_SOURCES = {};
+}
 
 // Define the canonical list of composer types as a naked global (match
 // `src/types/globals.d.ts`) instead of re-declaring a block-scoped const to
@@ -196,6 +198,7 @@ ComposerProfileUtils = {
   isPlainObject,
   assertStringOrFail,
   serializeDimensionValue,
+  resolveNamedProfilesOrFail,
   cloneComposerEntryOrFail,
   cloneComposerEntriesOrFail,
   pickProfileEntriesOrFail,
