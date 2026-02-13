@@ -69,8 +69,6 @@ highModClamp=(value,min,max)=>{
  * @returns {number} Clamped value.
  */
 scaleClamp = (value, min, max, factor, maxFactor = factor, base = value) => {
-  const scaledMin = m.max(min * factor, min);
-  const scaledMax = m.min(max * maxFactor, max);
   const lowerBound = m.max(min, m.floor(base * factor));
   const upperBound = m.min(max, m.ceil(base * maxFactor));
   return clamp(value, lowerBound, upperBound);

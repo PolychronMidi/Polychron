@@ -5,19 +5,527 @@
 // Keep one declaration per line in the form:
 //   declare var NAME: any;
 //
-// This file is intentionally hand-edited.
+// This file is intentionally hand-edited and now contains the full set of
+// runtime globals required by both ESLint and TypeScript checkJs.
 
-declare var COMPOSER_POOL_SELECTION_STRATEGY: any;
-declare var COMPOSER_PROFILE_AUDIT: any;
-declare var COMPOSER_PROFILE_POOLS: any;
-declare var COMPOSER_TYPE_PROFILES: any;
-declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
+declare var m: any;
+declare var rf: any;
+declare var ri: any;
+declare var rw: any;
+declare var ra: any;
+declare var rv: any;
+declare var rl: any;
+declare var rd: any;
+declare var rlc: any;
+
+declare var clamp: any;
+declare var modClamp: any;
+declare var lowModClamp: any;
+declare var highModClamp: any;
+declare var scaleClamp: any;
+declare var scaleBoundClamp: any;
+declare var softClamp: any;
+declare var clampSoft: any;
+declare var stepClamp: any;
+declare var clampStep: any;
+declare var logClamp: any;
+declare var clampLog: any;
+declare var expClamp: any;
+declare var clampExp: any;
+
+declare var randomFloat: any;
+declare var randomInt: any;
+declare var randomWeightedInRange: any;
+declare var randomWeightedInArray: any;
+declare var randomWeightedSelection: any;
+declare var randomInRangeOrArray: any;
+declare var randomLimitedChange: any;
+declare var randomVariation: any;
+declare var normalizeWeights: any;
+
+declare var bpmRatio: any;
+declare var bpmRatio2: any;
+declare var bpmRatio3: any;
+declare var BPM: any;
+declare var PPQ: any;
+declare var tpSec: any;
+declare var tpMeasure: any;
+declare var tpBeat: any;
+declare var tpDiv: any;
+declare var tpSubdiv: any;
+declare var tpSubsubdiv: any;
+
+declare var numerator: any;
+declare var denominator: any;
+declare var meterRatio: any;
+
+declare var beatRhythm: any;
+declare var divRhythm: any;
+declare var subdivRhythm: any;
+declare var subsubdivRhythm: any;
+
+declare var sectionIndex: any;
+declare var phraseIndex: any;
+declare var measureIndex: any;
+declare var beatIndex: any;
+declare var divIndex: any;
+declare var subdivIndex: any;
+declare var subsubdivIndex: any;
+
+declare var RhythmRegistry: any;
+declare var RhythmManager: any;
+declare var RhythmValues: any;
+declare var rhythmConfig: any;
+declare var rhythmModulator: any;
+declare var PhaseLockedRhythmGenerator: any;
+declare var FXFeedbackListener: any;
+declare var EventBus: any;
+
+declare var totalSections: any;
+declare var phrasesPerSection: any;
+declare var measureCount: any;
+declare var measuresPerPhrase: any;
+declare var measuresPerPhrase1: any;
+declare var measuresPerPhrase2: any;
+declare var measureStart: any;
+declare var measureStartTime: any;
+declare var beatStart: any;
+declare var beatStartTime: any;
+declare var divStart: any;
+declare var divStartTime: any;
+declare var subdivStart: any;
+declare var subdivStartTime: any;
+declare var subsubdivStart: any;
+declare var subsubdivStartTime: any;
+
+declare var c: any;
+declare var c1: any;
+declare var c2: any;
+declare var CSVBuffer: any;
+declare var LM: any;
+declare var layerManager: any;
+declare var TimingContext: any;
+
+declare var TUNING_FREQ: any;
+declare var LOG: any;
+declare var StutterConfig: any;
+declare var StutterConfigStore: any;
+declare var StutterMetrics: any;
+declare var StutterRegistry: any;
+declare var StutterAsNoteSource: any;
+declare var scheduleStutterNotesFromDensity: any;
+
+declare var noteCascade: any;
+declare var normalizeChordSymbol: any;
+declare var writeDebugFile: any;
+declare var playNotes: any;
+declare var BINAURAL: any;
+declare var SILENT_OUTRO_SECONDS: any;
+declare var SECTIONS: any;
+declare var PHRASES_PER_SECTION: any;
+declare var NUMERATOR: any;
+declare var DENOMINATOR: any;
+declare var MEASURES_PER_PHRASE: any;
+declare var DIVISIONS: any;
+declare var SUBDIVS: any;
+declare var SUBSUBDIVISIONS: any;
+declare var VOICES: any;
+declare var OCTAVE: any;
+
+declare var primaryInstrument: any;
+declare var secondaryInstrument: any;
+declare var otherInstruments: any;
+declare var bassInstrument: any;
+declare var bassInstrument2: any;
+declare var otherBassInstruments: any;
+declare var drumSets: any;
+declare var midiData: any;
+declare var getMidiValue: any;
+declare var allCHs: any;
+declare var allNotes: any;
+declare var allScales: any;
+declare var allChords: any;
+declare var allModes: any;
+
+declare var t: any;
+
+declare var cCH1: any;
+declare var cCH2: any;
+declare var cCH3: any;
+declare var cCH4: any;
+declare var cCH5: any;
+declare var cCH6: any;
+declare var lCH1: any;
+declare var lCH2: any;
+declare var lCH3: any;
+declare var lCH4: any;
+declare var lCH5: any;
+declare var lCH6: any;
+declare var rCH1: any;
+declare var rCH2: any;
+declare var rCH3: any;
+declare var rCH4: any;
+declare var rCH5: any;
+declare var rCH6: any;
+declare var drumCH: any;
+declare var source: any;
+declare var source2: any;
+declare var reflection: any;
+declare var bass: any;
+
+declare var rlFX: any;
+declare var lBal: any;
+declare var rBal: any;
+declare var cBal: any;
+declare var cBal2: any;
+declare var cBal3: any;
+declare var refVar: any;
+declare var bassVar: any;
+declare var balOffset: any;
+
+declare var rl: any;
+
+declare var composer: any;
+declare var composers: any;
+declare var MeasureComposer: any;
+declare var ScaleComposer: any;
+declare var RandomScaleComposer: any;
+declare var ChordComposer: any;
+declare var RandomChordComposer: any;
+declare var ModeComposer: any;
+declare var RandomModeComposer: any;
+declare var TensionReleaseComposer: any;
+declare var ModalInterchangeComposer: any;
+declare var HarmonicRhythmComposer: any;
+declare var MelodicDevelopmentComposer: any;
+declare var VoiceLeadingComposer: any;
+declare var MotifComposer: any;
+declare var Motif: any;
+declare var MotifTransforms: any;
+declare var MeasureNotePool: any;
+declare var MotifDurationPlanner: any;
+declare var MotifUnit: any;
+declare var MotifValidators: any;
+declare var RegisterBiasing: any;
+declare var CandidateExpansion: any;
+declare var playMotifs: any;
+declare var PentatonicComposer: any;
+declare var RandomPentatonicComposer: any;
+declare var IntervalComposer: any;
+declare var PhraseArcManager: any;
+declare var ComposerFactory: any;
+declare var HarmonicContext: any;
+declare var MotifChain: any;
+declare var ProgressionGenerator: any;
+
+declare var ChordRegistry: any;
+declare var ChordManager: any;
+declare var ChordValues: any;
+declare var chordConfig: any;
+declare var chordModulator: any;
+
+declare var MotifRegistry: any;
+declare var StutterConfig: any;
+declare var VOICE_PROFILES: any;
+declare var CHORD_PROFILES: any;
+declare var MOTIF_PROFILES: any;
+declare var RHYTHM_PROFILES: any;
+declare var MODAL_BORROWING: any;
+declare var MotifManager: any;
+declare var MotifValues: any;
+declare var motifConfig: any;
+declare var motifModulator: any;
+
+declare var VoiceRegistry: any;
+declare var VoiceValues: any;
+declare var voiceConfig: any;
+declare var voiceModulator: any;
+
+declare var VoiceLeadingScore: any;
+declare var VoiceLeadingScorers: any;
+declare var VoiceLeadingCore: any;
+declare var VoiceManager: any;
+declare var VoiceRegistry: any;
+declare var VoiceStrategyRegistry: any;
+
+declare var logGate: any;
+declare var getScheduledNotes: any;
+declare var __test_playBeat: any;
+
+declare var getMidiTiming: any;
+declare var setMidiTiming: any;
+declare var getPolyrhythm: any;
+declare var setUnitTiming: any;
+declare var formatTime: any;
+declare var setRhythm: any;
+declare var trackBeatRhythm: any;
+declare var trackDivRhythm: any;
+declare var trackSubdivRhythm: any;
+declare var trackSubsubdivRhythm: any;
+declare var logUnit: any;
+declare var p: any;
+declare var pushMultiple: any;
+declare var grandFinale: any;
+declare var fs: any;
+declare var setTuningAndInstruments: any;
+
+declare var _rp: any;
+declare var _binary: any;
+declare var _hex: any;
+declare var _onsets: any;
+declare var _random: any;
+declare var _probability: any;
+declare var _euclid: any;
+declare var _rotate: any;
+declare var rotate: any;
+
+declare var binaural: any;
+declare var stutter: any;
+declare var note: any;
+declare var stutterFade: any;
+declare var stutterPan: any;
+declare var stutterFX: any;
+declare var stutterNotes: any;
+declare var resetChannelTracking: any;
+declare var stutterFadeCHs: any;
+declare var stutterPanCHs: any;
+
+declare var Stutter: any;
+declare var setBalanceAndFX: any;
+declare var setBinaural: any;
+
+declare var SimplexNoise: any;
+declare var fbm: any;
+declare var turbulence: any;
+declare var ridged: any;
+declare var worley: any;
+declare var easeInOut: any;
+declare var easingFunctions: any;
+declare var noiseFunctions: any;
+declare var metaRecursiveEaseNoise: any;
+declare var metaRecursiveNoise: any;
+declare var metaRecursiveSimplex2D: any;
+declare var metaRecursiveFBM: any;
+declare var permutation: any;
+declare var fade: any;
+declare var lerp: any;
+declare var grad: any;
+declare var perlinNoise: any;
+
+declare var defaultSimplex: any;
+declare var noiseGenerators: any;
+declare var generatorKeys: any;
+declare var getNoiseValue: any;
+declare var layeredNoise: any;
+declare var createNoiseOffset: any;
+declare var randomNoiseGenerator: any;
+declare var noiseInfluenceMap: any;
+declare var createDualAxisNoiseConfig: any;
+declare var applyDualAxisNoise: any;
+declare var safeApplyNoise: any;
+declare var clampNoiseValue: any;
+declare var getParameterModulation: any;
+declare var smoothNoiseValue: any;
+declare var getNoiseProfile: any;
+declare var registerNoiseGenerator: any;
+declare var applyNoiseToVelocity: any;
+declare var applyNoiseToPan: any;
+declare var applyNoiseToSustain: any;
+declare var applyNoiseToParameter: any;
+declare var getNoiseProfileOrFail: any;
+declare var NOISE_PROFILES: any;
+declare var applyComposerPitchNoise: any;
+declare var applyMelodicTranspositionNoise: any;
+declare var assertComposerCapabilities: any;
+declare var resolveScalePC: any;
+declare var midiToDegree: any;
+declare var degreeToMidi: any;
+declare var transposeByDegree: any;
+declare var scaleDegreeTranspose: any;
+declare var applyMelodicPivotNoise: any;
+declare var applyMelodicDurationNoise: any;
+declare var applyVoiceLeadingWeightNoise: any;
+
+declare var OCTAVE: any;
+
+declare var rlFX: any;
+declare var chFX: any;
+declare var flipBin: any;
+declare var flipBinT: any;
+declare var flipBinF: any;
+declare var flipBinT3: any;
+declare var flipBinF3: any;
+declare var flipBinF2: any;
+declare var flipBinT2: any;
+declare var reflection: any;
+declare var reflectionBinaural: any;
+declare var reflect: any;
+declare var reflect2: any;
+declare var source2: any;
+declare var binauralL: any;
+declare var binauralR: any;
+declare var binauralFreqOffset: any;
+declare var binauralOffset: any;
+declare var binauralPlus: any;
+declare var binauralMinus: any;
+declare var bassBinaural: any;
+
+declare var beatsOn: any;
+declare var beatsOff: any;
+declare var divsOn: any;
+declare var divsOff: any;
+declare var subdivsOn: any;
+declare var subdivsOff: any;
+declare var subsubdivsOn: any;
+declare var subsubdivsOff: any;
+
+declare var measureCount: any;
+declare var finalTick: any;
+declare var finalTime: any;
+declare var bestMatch: any;
+declare var tpPhrase1: any;
+declare var tpPhrase2: any;
+declare var subdivsPerBeat: any;
+declare var subsubsPerSub: any;
+declare var beatsUntilBinauralShift: any;
+declare var beatCount: any;
+declare var noteCount: any;
+declare var balOffset: any;
+declare var sideBias: any;
+declare var firstLoop: any;
+declare var lastCrossMod: any;
+declare var activeMotif: any;
+declare var currentSectionType: any;
+declare var currentSectionDynamics: any;
+declare var crossModulation: any;
+declare var lastMeter: any;
+declare var lastUsedCHs: any;
+declare var lastUsedCHs2: any;
+declare var lastUsedCHs3: any;
+declare var velocity: any;
+declare var neutralPitchBend: any;
+declare var semitone: any;
+declare var tuningPitchBend: any;
+declare var FX: any;
+
+declare var LOCK_DIR: any;
+declare var LOCK_PATH: any;
+declare var FIN_PATH: any;
+declare var HEARTBEAT_INTERVAL_MS: any;
+declare var STALE_MS: any;
+declare var GRACE_MS: any;
+declare var isPidAlive: any;
+declare var writeLock: any;
+declare var acquireLock: any;
+declare var releaseLock: any;
+declare var main: any;
+
+// Additional managed globals (added to resolve `no-undef` entries from log/lint.log)
+// Node / runtime helpers
+declare var require: any;
+declare var module: any;
+declare var exports: any;
+declare var __dirname: any;
+declare var __filename: any;
+declare var path: any;
+declare var console: any;
+declare var process: any;
+
+declare var _: any; // lodash-style helper used in a few scripts
+
+// Composer / profile subsystem (runtime helpers & registries)
 declare var ComposerProfileUtils: any;
 declare var ComposerProfileValidation: any;
+declare var COMPOSER_TYPES: any;
 declare var ComposerRuntimeProfileAdapter: any;
-declare var getComposerPoolOrFail: any;
-declare var getComposerProfileAuditOrFail: any;
-declare var getComposerTypeProfileOrFail: any;
-declare var getComposerTypeProfilesOrFail: any;
-declare var getDefaultComposerPoolOrFail: any;
+declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
+declare var COMPOSER_PROFILE_POOLS: any;
+declare var COMPOSER_POOL_SELECTION_STRATEGY: any;
+declare var COMPOSER_PROFILE_AUDIT: any;
+declare var COMPOSER_TYPE_PROFILES: any;
 declare var selectComposerPoolOrFail: any;
+declare var getComposerPoolOrFail: any;
+declare var getDefaultComposerPoolOrFail: any;
+declare var getComposerProfileAuditOrFail: any;
+declare var getComposerTypeProfilesOrFail: any;
+declare var getComposerTypeProfileOrFail: any;
+
+// Motif / voice / helpers
+declare var MotifSpreader: any;
+declare var applyMotifToNotes: any;
+declare var allNotesOff: any;
+declare var muteAll: any;
+declare var VOICE_Manager: any;
+
+declare var SECTION_TYPES: any;
+declare var SUBSUBDIVS: any;
+declare var DYNAMISM: any;
+declare var STUTTER_PROBABILITIES: any;
+declare var STUTTER_PROFILES: any;
+declare var STUTTER_VELOCITY_RANGES: any;
+
+declare var setOtherInstruments: any;
+declare var playDrums: any;
+declare var playDrums2: any;
+
+// Rhythm helpers and exports (both underscored and plain names used in code)
+declare var binary: any;
+declare var hex: any;
+declare var onsets: any;
+declare var random: any;
+declare var prob: any;
+declare var euclid: any;
+declare var morph: any;
+declare var closestDivisor: any;
+declare var rhythmMethods: any;
+declare var makeOnsets: any;
+declare var patternLength: any;
+declare var drumMap: any;
+declare var drummer: any;
+declare var playDrums: any;
+declare var playDrums2: any;
+declare var getRhythm: any;
+declare var rhythms: any;
+declare var trackRhythm: any;
+declare var crossModulateRhythms: any;
+
+// Timing & unit globals
+declare var tpUnit: any;
+declare var unitIndex: any;
+declare var unitStart: any;
+declare var parentStart: any;
+declare var tpParent: any;
+declare var unitsPerParent: any;
+declare var tpPhrase: any;
+declare var spPhrase: any;
+declare var phraseStart: any;
+declare var phraseStartTime: any;
+declare var tpSection: any;
+declare var spSection: any;
+declare var sectionStart: any;
+declare var sectionEnd: any;
+declare var sectionStartTime: any;
+declare var spMeasure: any;
+declare var spBeat: any;
+declare var subdivsPerMinute: any;
+declare var subsubsPerMinute: any;
+declare var subdivFreq: any;
+declare var divsPerBeat: any;
+declare var subdivsPerDiv: any;
+declare var spDiv: any;
+declare var spSubdiv: any;
+declare var spSubsubdiv: any;
+declare var trueBPM: any;
+declare var trueBPM2: any;
+declare var endTime: any;
+
+declare var polyNumerator: any;
+declare var polyDenominator: any;
+declare var polyMeterRatio: any;
+
+declare var isPowerOf2: any;
+
+declare var midiMeter: any;
+declare var midiMeterRatio: any;
+declare var midiBPM: any;
+declare var syncFactor: any;

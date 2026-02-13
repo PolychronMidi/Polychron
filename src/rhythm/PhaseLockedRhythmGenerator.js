@@ -87,11 +87,15 @@ PhaseLockedRhythmGenerator = (() => {
         const parts = key.split(':');
         const layer1 = parts[1];
         const layer2 = parts[2];
-        if (activeLayer !== layer2) continue;
+        // consider couplings where the active layer is either side
+        if (activeLayer !== layer1 && activeLayer !== layer2) continue;
         const ratio1 = meta && Number.isFinite(Number(meta.ratio1)) ? Number(meta.ratio1) : null;
         const ratio2 = meta && Number.isFinite(Number(meta.ratio2)) ? Number(meta.ratio2) : null;
         if (ratio1 && ratio2) {
-          offset = m.round((ratio1 / (ratio1 + ratio2)) * length);
+          // if activeLayer is layer2 use ratio1 contribution; if activeLayer is layer1 invert
+          offset = (activeLayer === layer2)
+            ? m.round((ratio1 / (ratio1 + ratio2)) * length)
+            : m.round((ratio2 / (ratio1 + ratio2)) * length);
           break;
         }
       }

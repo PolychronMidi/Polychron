@@ -22,5 +22,10 @@ MotifManager = (function() {
     return mod.apply(notes, motifPattern, opts);
   }
 
-  return { listGenerators, getGenerator, generate, applyToNotes };
+  // Proxy helpers from MotifValues
+  function repeatPattern(pattern, times) { return (values && typeof values.repeatPattern === 'function') ? values.repeatPattern(pattern, times) : (() => { throw new Error('MotifManager.repeatPattern: MotifValues.repeatPattern not available'); })(); }
+  function offsetPattern(pattern, offsetSteps) { return (values && typeof values.offsetPattern === 'function') ? values.offsetPattern(pattern, offsetSteps) : (() => { throw new Error('MotifManager.offsetPattern: MotifValues.offsetPattern not available'); })(); }
+  function scaleDurations(pattern, scale) { return (values && typeof values.scaleDurations === 'function') ? values.scaleDurations(pattern, scale) : (() => { throw new Error('MotifManager.scaleDurations: MotifValues.scaleDurations not available'); })(); }
+
+  return { listGenerators, getGenerator, generate, applyToNotes, repeatPattern, offsetPattern, scaleDurations };
 })();

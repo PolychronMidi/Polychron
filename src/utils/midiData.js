@@ -303,7 +303,7 @@ allModes=(()=>{
         if (Array.isArray(notes) && notes.length > 0) {
           allModes.add(modeName);
         }
-      } catch (e) {
+      } catch {
         // skip invalid combinations
       }
     });

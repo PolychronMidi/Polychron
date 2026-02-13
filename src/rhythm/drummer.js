@@ -61,10 +61,11 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
           let currentVelocity;
           if (isFadeIn) {
             const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
-            currentVelocity = clamp(m.min(maxVelocity, ri(33) + maxVelocity * fadeInMultiplier), 0, 127);
+            // Anchor stutter velocities to the drum's declared range and scale across [min,max]
+            currentVelocity = clamp(m.min(maxVelocity, minVelocity + (maxVelocity - minVelocity) * fadeInMultiplier), 0, 127);
           } else {
             const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
-            currentVelocity = clamp(m.max(0, ri(33) + maxVelocity * fadeOutMultiplier), 0, 127);
+            currentVelocity = clamp(m.max(0, minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier), 0, 127);
           }
           p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
         }

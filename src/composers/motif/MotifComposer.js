@@ -252,7 +252,7 @@ MotifComposer = class MotifComposer {
           const selected = VC.pickNotesForBeat(targetLayer, avail, 1, scorer, voiceOpts);
           chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()];
         } else {
-          try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()]; } catch (e) { chosen = avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()]; }
+          try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()]; } catch { chosen = avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()]; }
         }
       } else if (this.VoiceLeadingScore && this.useVoiceLeading) {
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);

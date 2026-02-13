@@ -65,7 +65,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
       // Case B: raw invalid but normalization produced a valid chord -> acceptable
       if (chordRaw.empty && !chordNorm.empty) {
         if (!_warnedInvalidChordSymbols.has(asRaw)) {
-          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch (e) { /* swallow logging errors */ }
+          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch { /* swallow logging errors */ }
           _warnedInvalidChordSymbols.add(asRaw);
         }
         return normalized;
@@ -73,10 +73,10 @@ ChordComposer = class ChordComposer extends MeasureComposer {
 
       // Case C: both raw and normalized are invalid -> real warning (not labeled acceptable)
       if (!_warnedInvalidChordSymbols.has(asRaw)) {
-        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch (e) { /* swallow */ }
+        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch { /* swallow */ }
         _warnedInvalidChordSymbols.add(asRaw);
       }
-      try { if (typeof writeDebugFile === 'function') writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol: asRaw }); } catch (e) { /* swallow */ }
+      try { if (typeof writeDebugFile === 'function') writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol: asRaw }); } catch { /* swallow */ }
       return null;
     }).filter(Boolean);
 

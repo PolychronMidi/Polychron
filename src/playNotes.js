@@ -45,8 +45,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   if (!Number.isFinite(Number(tpUnit))) {
     throw new Error(`${unit}.playNotes: tpUnit must be a finite number`);
   }
-  const swingTicks = (Number.isFinite(Number(beatIndex)) && rhythmSwingAmount !== 0 && typeof RhythmValues !== 'undefined' && RhythmValues && typeof RhythmValues.swingOffset === 'function')
-    ? Number(RhythmValues.swingOffset(Number(beatIndex), rhythmSwingAmount))
+  if (!Number.isFinite(Number(beatStart))) {
+    throw new Error(`${unit}.playNotes: beatStart must be a finite number`);
+  }
+  const swingTicks = (Number.isFinite(Number(beatIndex)) && rhythmSwingAmount !== 0 && typeof RhythmManager !== 'undefined' && RhythmManager && typeof RhythmManager.swingOffset === 'function')
+    ? Number(RhythmManager.swingOffset(Number(beatIndex), rhythmSwingAmount))
     : 0;
   const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;
 
@@ -67,9 +70,24 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   crossModulateRhythms();
 
   // Apply subtle noise modulation to base velocity for organic variation
+  if (typeof getNoiseProfile !== 'function') {
+    throw new Error(`${unit}.playNotes: getNoiseProfile not available`);
+  }
   const noiseProfile = getNoiseProfile('subtle');
+  if (!noiseProfile || typeof noiseProfile !== 'object') {
+    throw new Error(`${unit}.playNotes: invalid noise profile returned for "subtle"`);
+  }
+  const influenceX = Number(noiseProfile.influenceX);
+  const influenceY = Number(noiseProfile.influenceY);
+  if (!Number.isFinite(influenceX) || !Number.isFinite(influenceY)) {
+    throw new Error(`${unit}.playNotes: subtle noise profile influence must be finite`);
+  }
+  const noiseInfluence = clamp((influenceX + influenceY) / 2, 0, 1);
   const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
-  const voiceIdSeed = beatStart * 73 + layer.id * 43; // Deterministic voice ID from context
+  const layerIdSeed = Number.isFinite(Number(layer && layer.id))
+    ? Number(layer.id)
+    : (typeof LM.activeLayer === 'string' ? Array.from(LM.activeLayer).reduce((sum, ch) => sum + ch.charCodeAt(0), 0) : 0);
+  const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + (Number.isFinite(Number(measureCount)) ? Number(measureCount) : 0)); // Deterministic voice ID from context
 
   // Gate play invocation with playProb and crossModulation
   if (typeof playProb === 'number' && (rf() > playProb) && (crossModulation < rv(rf(2, 4), [-.2, -.3], .05))) {
@@ -80,22 +98,56 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const picks = playMotifs(unit, layer);
 
   // Validate notes belong to active composer's pitch class set (before try-catch so errors propagate)
-  if (typeof composer === 'object' && composer !== null && Array.isArray(composer.notes)) {
+  // Uses live HarmonicContext scale for composers with timeVaryingScaleContext.
+  if (activeComposer && typeof activeComposer === 'object') {
+    if (typeof modClamp !== 'function') {
+      throw new Error(`${unit}.playNotes: modClamp not available for pitch-class validation`);
+    }
+
     const validPCs = new Set();
-    for (let ni = 0; ni < composer.notes.length; ni++) {
-      const noteName = composer.notes[ni];
-      if (typeof noteName === 'string') {
-        const pc = t.Note.chroma(noteName);
-        if (typeof pc === 'number' && Number.isFinite(pc)) {
-          validPCs.add(((pc % 12) + 12) % 12);
+    const caps = (typeof activeComposer.getCapabilities === 'function')
+      ? activeComposer.getCapabilities()
+      : (activeComposer.capabilities || {});
+
+    if (caps && caps.timeVaryingScaleContext === true && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+      const windowScale = HarmonicContext.getField('scale');
+      if (Array.isArray(windowScale) && windowScale.length > 0) {
+        for (let si = 0; si < windowScale.length; si++) {
+          const entry = windowScale[si];
+          if (typeof entry === 'string') {
+            const pc = t.Note.chroma(entry);
+            if (typeof pc === 'number' && Number.isFinite(pc)) validPCs.add(modClamp(pc, 0, 11));
+          } else if (typeof entry === 'number' && Number.isFinite(entry)) {
+            validPCs.add(modClamp(entry, 0, 11));
+          }
         }
       }
     }
-    for (let pi = 0; pi < picks.length; pi++) {
-      const pickNote = picks[pi].note;
-      const pickPC = ((pickNote % 12) + 12) % 12;
-      if (!validPCs.has(pickPC)) {
-        throw new Error(`${unit}.playNotes(MARKER20250210): note ${pickNote} (PC ${pickPC}) not in active composer - valid PCs: ${Array.from(validPCs).sort((a,b)=>a-b).join(',')}`);
+
+    if (validPCs.size === 0 && Array.isArray(activeComposer.notes)) {
+      for (let ni = 0; ni < activeComposer.notes.length; ni++) {
+        const noteName = activeComposer.notes[ni];
+        if (typeof noteName === 'string') {
+          const pc = t.Note.chroma(noteName);
+          if (typeof pc === 'number' && Number.isFinite(pc)) {
+            validPCs.add(modClamp(pc, 0, 11));
+          }
+        } else if (typeof noteName === 'number' && Number.isFinite(noteName)) {
+          validPCs.add(modClamp(noteName, 0, 11));
+        }
+      }
+    }
+
+    if (validPCs.size > 0) {
+      for (let pi = 0; pi < picks.length; pi++) {
+        const pickNote = Number(picks[pi].note);
+        if (!Number.isFinite(pickNote)) {
+          throw new Error(`${unit}.playNotes: pick note must be finite, got ${picks[pi].note}`);
+        }
+        const pickPC = modClamp(pickNote, 0, 11);
+        if (!validPCs.has(pickPC)) {
+          throw new Error(`${unit}.playNotes(MARKER20250210): note ${pickNote} (PC ${pickPC}) not in active composer - valid PCs: ${Array.from(validPCs).sort((a,b)=>a-b).join(',')}`);
+        }
       }
     }
   }
@@ -112,7 +164,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const isPrimary = sourceCH === cCH1;
         const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
         const baseOnVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03);
-        const onVel = applyNoiseToVelocity(baseOnVel, sourceCH, currentTime, 'subtle');
+        const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
+        const sourceNoiseBase = baseOnVel * (1 - 0.12 * noiseInfluence);
+        const onVel = applyNoiseToVelocity(sourceNoiseBase, sourceVoiceId, currentTime, 'subtle');
         p(c, { tick: onTick, type: 'on', vals: [sourceCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
         p(c, { tick: offTick, vals: [sourceCH, s.note] }); scheduled++;
@@ -133,7 +187,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const isPrimary = reflectionCH === cCH2;
         const onTick = isPrimary ? on + rv(tpUnit * rf(.2), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
         const baseOnVel = isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1);
-        const onVel = applyNoiseToVelocity(baseOnVel, reflectionCH, currentTime, 'subtle');
+        const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
+        const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
+        const onVel = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
         p(c, { tick: onTick, type: 'on', vals: [reflectionCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
@@ -154,7 +210,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const isPrimary = bassCH === cCH3;
           const bassNote = modClamp(s.note, m.max(0, OCTAVE.min * 12 - 1), 59);
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-          const onVel = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
+          const onVelRaw = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
+          const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
+          const bassNoiseBase = onVelRaw * (1 - 0.08 * noiseInfluence);
+          const onVel = applyNoiseToVelocity(bassNoiseBase, bassVoiceId, currentTime, 'subtle');
           p(c, { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] }); scheduled++;
           const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
           p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;

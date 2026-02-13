@@ -19,6 +19,8 @@ require('./stutterFade');
 require('./stutterPan');
 // @ts-ignore: load side-effect module with globals
 require('./stutterFX');
+// @ts-ignore: load side-effect module with globals
+require('./stutterManager');
 
 // Ensure the helper is registered with StutterConfig (defensive explicit registration)
 try {
@@ -27,7 +29,4 @@ try {
     // @ts-ignore: runtime-only naked global registration
     StutterConfig.registerHelper(stutterNotes);
   }
-} catch (e) { /* ignore */ }
-
-// @ts-ignore: load side-effect module with globals
-require('./StutterManager');
+  } catch { /* ignore */ }

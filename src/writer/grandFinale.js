@@ -13,7 +13,7 @@ grandFinale = () => {
     };
   });
   // Flag for per-layer checks via a local variable in closure
-  layerData.forEach(({ name, layer: layerState, buffer }) => {
+  layerData.forEach(({ name, buffer }) => {
     // Set naked global buffer `c` to this layer's buffer
     c = buffer;
 
@@ -34,13 +34,13 @@ grandFinale = () => {
             unitHash = p.slice(1).join('|') || null;
             // Validate canonical unit id suffix: must contain section/phrase tokens and tick range markers
             if (unitHash) {
-              let hasSecOrPhr = false; let hasTickRange = false;
               try {
                 const seg = String(unitHash).split('|');
-                hasSecOrPhr = seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
-                hasTickRange = seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
-              } catch (_e) {
-                throw new Error('grandFinale parsing failed: ' + (_e && _e.stack ? _e.stack : String(_e)));
+                // perform validation checks (results intentionally discarded for now)
+                seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
+                seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
+              } catch (err) {
+                throw new Error('grandFinale parsing failed: ' + (err && err.stack ? err.stack : String(err)));
               }
             }
           } else if (Number.isFinite(rawTick)) {

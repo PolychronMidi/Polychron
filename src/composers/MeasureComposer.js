@@ -98,11 +98,10 @@ MeasureComposer = class MeasureComposer {
    * @param {boolean} [ignoreRatioCheck=false] - Skip ratio validation
    * @param {boolean} [polyMeter=false] - Allow larger ratio jumps for polyrhythm
    * @param {number} [maxIterations=200] - Maximum attempts before fallback
-   * @param {number} [timeLimitMs=100] - Maximum wall-clock time before fallback
    * @returns {number[]} [numerator, denominator]
    * @throws {Error} When max iterations exceeded and no valid meter found
    */
-  getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200, timeLimitMs=100) {
+  getMeter(ignoreRatioCheck=false, polyMeter=false, maxIterations=200) {
     // Constants for ratio validation
     const METER_RATIO_MIN = 0.25;
     const METER_RATIO_MAX = 4;
