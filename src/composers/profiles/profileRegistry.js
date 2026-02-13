@@ -59,7 +59,138 @@ COMPOSER_PROFILE_POOLS = {
   fullSpectrumEclectic: ComposerProfileUtils.cloneComposerEntriesOrFail(fullSpectrumEclecticTemplate, 'COMPOSER_PROFILE_POOLS.fullSpectrumEclectic')
 };
 
+if (typeof COMPOSER_POOL_SELECTION_STRATEGY !== 'undefined' && COMPOSER_POOL_SELECTION_STRATEGY !== null && !ComposerProfileUtils.isPlainObject(COMPOSER_POOL_SELECTION_STRATEGY)) {
+  throw new Error('ComposerProfiles.profileRegistry: COMPOSER_POOL_SELECTION_STRATEGY must be an object when pre-defined');
+}
+if (typeof COMPOSER_POOL_SELECTION_STRATEGY === 'undefined' || COMPOSER_POOL_SELECTION_STRATEGY === null) {
+  COMPOSER_POOL_SELECTION_STRATEGY = {
+    version: 1,
+    name: 'context-strategy-v1',
+    defaultPool: 'default',
+    sectionModuloRules: [],
+    phraseModuloRules: []
+  };
+}
+
+const getAvailablePoolNames = () => Object.keys(COMPOSER_PROFILE_POOLS).sort();
+
+const assertPoolExistsOrFail = (poolName, label) => {
+  ComposerProfileUtils.assertStringOrFail(poolName, label);
+  if (!Object.prototype.hasOwnProperty.call(COMPOSER_PROFILE_POOLS, poolName)) {
+    throw new Error(`ComposerProfiles: ${label} references unknown pool "${poolName}"`);
+  }
+};
+
+const resolveRulePoolOrNull = (rules, index, label) => {
+  if (!Array.isArray(rules) || !Number.isInteger(index)) return null;
+  for (let i = 0; i < rules.length; i++) {
+    const rule = rules[i];
+    const ruleLabel = `${label}[${i}]`;
+    if (!ComposerProfileUtils.isPlainObject(rule)) throw new Error(`ComposerProfiles: ${ruleLabel} must be an object`);
+
+    const mod = Number(rule.mod);
+    const remainder = Number(rule.remainder);
+    const pool = rule.pool;
+
+    if (!Number.isInteger(mod) || mod <= 0) throw new Error(`ComposerProfiles: ${ruleLabel}.mod must be a positive integer`);
+    if (!Number.isInteger(remainder) || remainder < 0 || remainder >= mod) throw new Error(`ComposerProfiles: ${ruleLabel}.remainder must be an integer in [0, mod)`);
+    assertPoolExistsOrFail(pool, `${ruleLabel}.pool`);
+
+    if ((index % mod) === remainder) return pool;
+  }
+  return null;
+};
+
+const normalizeStrategyOrFail = (strategy = COMPOSER_POOL_SELECTION_STRATEGY) => {
+  if (!ComposerProfileUtils.isPlainObject(strategy)) {
+    throw new Error('ComposerProfiles.selectComposerPoolOrFail: strategy must be an object');
+  }
+  const normalized = {
+    version: Number.isFinite(Number(strategy.version)) ? Number(strategy.version) : 1,
+    name: (typeof strategy.name === 'string' && strategy.name.length > 0) ? strategy.name : 'context-strategy-v1',
+    defaultPool: (typeof strategy.defaultPool === 'string' && strategy.defaultPool.length > 0) ? strategy.defaultPool : 'default',
+    sectionModuloRules: Array.isArray(strategy.sectionModuloRules) ? strategy.sectionModuloRules : [],
+    phraseModuloRules: Array.isArray(strategy.phraseModuloRules) ? strategy.phraseModuloRules : []
+  };
+  assertPoolExistsOrFail(normalized.defaultPool, 'ComposerProfiles.selectionStrategy.defaultPool');
+  return normalized;
+};
+
+const resolveContextPoolNameOrNull = (context, strategy) => {
+  if (!ComposerProfileUtils.isPlainObject(context)) return null;
+
+  if (context.composerPool !== undefined) {
+    assertPoolExistsOrFail(context.composerPool, 'ComposerProfiles.context.composerPool');
+    return context.composerPool;
+  }
+
+  if (typeof context.selectComposerPool === 'function') {
+    const selected = context.selectComposerPool({
+      availablePools: getAvailablePoolNames(),
+      defaultPool: strategy.defaultPool,
+      sectionIndex: Number.isInteger(context.sectionIndex) ? context.sectionIndex : null,
+      phraseIndex: Number.isInteger(context.phraseIndex) ? context.phraseIndex : null,
+      measureIndex: Number.isInteger(context.measureIndex) ? context.measureIndex : null,
+      strategy
+    });
+    if (selected !== undefined && selected !== null) {
+      assertPoolExistsOrFail(selected, 'ComposerProfiles.context.selectComposerPool.result');
+      return selected;
+    }
+  }
+
+  const policy = ComposerProfileUtils.isPlainObject(context.composerPoolPolicy) ? context.composerPoolPolicy : null;
+  const sectionRules = policy && Array.isArray(policy.sectionModuloRules)
+    ? policy.sectionModuloRules
+    : strategy.sectionModuloRules;
+  const phraseRules = policy && Array.isArray(policy.phraseModuloRules)
+    ? policy.phraseModuloRules
+    : strategy.phraseModuloRules;
+
+  const fromSection = resolveRulePoolOrNull(sectionRules, Number.isInteger(context.sectionIndex) ? context.sectionIndex : null, 'ComposerProfiles.sectionModuloRules');
+  if (fromSection) return fromSection;
+
+  const fromPhrase = resolveRulePoolOrNull(phraseRules, Number.isInteger(context.phraseIndex) ? context.phraseIndex : null, 'ComposerProfiles.phraseModuloRules');
+  if (fromPhrase) return fromPhrase;
+
+  if (policy && policy.defaultPool !== undefined) {
+    assertPoolExistsOrFail(policy.defaultPool, 'ComposerProfiles.context.composerPoolPolicy.defaultPool');
+    return policy.defaultPool;
+  }
+
+  return null;
+};
+
+selectComposerPoolOrFail = (opts = {}) => {
+  if (!ComposerProfileUtils.isPlainObject(opts)) throw new Error('ComposerProfiles.selectComposerPoolOrFail: opts must be an object');
+  const strategy = normalizeStrategyOrFail(opts.strategy || COMPOSER_POOL_SELECTION_STRATEGY);
+
+  const requestedPool = opts.requestedPoolName !== undefined ? opts.requestedPoolName : opts.poolName;
+  if (requestedPool !== undefined && requestedPool !== null) {
+    assertPoolExistsOrFail(requestedPool, 'ComposerProfiles.selectComposerPoolOrFail.requestedPoolName');
+    return requestedPool;
+  }
+
+  const context = opts.context;
+  if (context !== undefined && context !== null && !ComposerProfileUtils.isPlainObject(context)) {
+    throw new Error('ComposerProfiles.selectComposerPoolOrFail: opts.context must be an object when provided');
+  }
+  const fromContext = resolveContextPoolNameOrNull(context || null, strategy);
+  if (fromContext) return fromContext;
+
+  return strategy.defaultPool;
+};
+
 COMPOSER_PROFILE_AUDIT = ComposerProfileUtils.buildProfileAuditOrFail(COMPOSER_TYPE_PROFILES, COMPOSER_PROFILE_POOLS);
+COMPOSER_PROFILE_AUDIT.poolSelectionStrategy = {
+  version: Number(COMPOSER_POOL_SELECTION_STRATEGY.version || 1),
+  name: String(COMPOSER_POOL_SELECTION_STRATEGY.name || 'context-strategy-v1'),
+  defaultPool: String(COMPOSER_POOL_SELECTION_STRATEGY.defaultPool || 'default'),
+  availablePools: getAvailablePoolNames(),
+  sectionModuloRuleCount: Array.isArray(COMPOSER_POOL_SELECTION_STRATEGY.sectionModuloRules) ? COMPOSER_POOL_SELECTION_STRATEGY.sectionModuloRules.length : 0,
+  phraseModuloRuleCount: Array.isArray(COMPOSER_POOL_SELECTION_STRATEGY.phraseModuloRules) ? COMPOSER_POOL_SELECTION_STRATEGY.phraseModuloRules.length : 0,
+  contextKeys: ['composerPool', 'selectComposerPool', 'composerPoolPolicy', 'sectionIndex', 'phraseIndex', 'measureIndex']
+};
 
 getComposerTypeProfilesOrFail = (type) => {
   ComposerProfileUtils.assertStringOrFail(type, 'ComposerProfiles.getComposerTypeProfilesOrFail.type');

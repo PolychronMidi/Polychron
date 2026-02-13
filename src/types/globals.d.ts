@@ -488,18 +488,6 @@ declare var _origRi: any;
 
 declare var subdivStart: any;
 declare var allNotesOff: any;
-declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
-declare var ComposerProfileUtils: any;
-declare var ComposerProfileValidation: any;
-declare var ComposerRuntimeProfileAdapter: any;
-declare var COMPOSER_TYPE_PROFILES: any;
-declare var COMPOSER_PROFILE_POOLS: any;
-declare var COMPOSER_PROFILE_AUDIT: any;
-declare var getComposerTypeProfilesOrFail: any;
-declare var getComposerTypeProfileOrFail: any;
-declare var getComposerPoolOrFail: any;
-declare var getDefaultComposerPoolOrFail: any;
-declare var getComposerProfileAuditOrFail: any;
 declare var SUBSUBDIVS: any;
 declare var applyMotifToNotes: any;
 declare var MotifSpreader: any;
