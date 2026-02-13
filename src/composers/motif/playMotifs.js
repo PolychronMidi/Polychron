@@ -144,6 +144,15 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const VC = layer._voiceManager;
   const voiceCount = VC.getVoiceCount();
   const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
+  const activeComposer = (layer.measureComposer && typeof layer.measureComposer === 'object')
+    ? layer.measureComposer
+    : ((typeof composer === 'object' && composer !== null) ? composer : null);
+  const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
+    ? activeComposer.runtimeProfile
+    : null;
+  const runtimeVoiceOptions = (runtimeProfile && typeof ComposerRuntimeProfileAdapter !== 'undefined' && ComposerRuntimeProfileAdapter && typeof ComposerRuntimeProfileAdapter.getVoiceSelectionOptions === 'function')
+    ? ComposerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile)
+    : {};
 
   // Get phrase context from PhraseArcManager if available
   let phraseContext = null;
@@ -153,7 +162,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 
   // Pass voicing options from composer for voice spacing constraints
   const voicingOptions = (layer.measureComposer && typeof layer.measureComposer.voicingOptions === 'object') ? layer.measureComposer.voicingOptions : {};
-  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, Object.assign({ phraseContext }, voicingOptions));
+  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, Object.assign({ phraseContext }, voicingOptions, runtimeVoiceOptions, runtimeProfile ? { runtimeProfile } : {}));
   if (!Array.isArray(rawPicks)) {
     throw new Error(`${unit}.playMotifs: VoiceManager.pickNotesForBeat returned non-array value`);
   }

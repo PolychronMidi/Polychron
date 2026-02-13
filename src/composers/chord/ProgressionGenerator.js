@@ -18,6 +18,9 @@ ProgressionGenerator = class ProgressionGenerator {
     const keyData = keyApi(key);
     this.scaleNotes = this.romanQuality === 'minor' ? keyData.natural.scale : keyData.scale;
     this.diatonicChords = this.romanQuality === 'minor' ? keyData.natural.chords : keyData.chords;
+    if (!Array.isArray(this.scaleNotes) || this.scaleNotes.length < 7 || !Array.isArray(this.diatonicChords) || this.diatonicChords.length < 7) {
+      throw new Error(`ProgressionGenerator: invalid key data for key="${key}" quality="${quality}"`);
+    }
   }
 
   romanToChord(roman) {

@@ -116,10 +116,14 @@ VoiceManager = class VoiceManager {
     const phraseContext = (opts && opts.phraseContext && typeof opts.phraseContext === 'object') ? opts.phraseContext : {};
     const arcDensityMultiplier = Number.isFinite(Number(phraseContext.densityMultiplier)) ? phraseContext.densityMultiplier : 1.0;
     const voiceIndependence = Number.isFinite(Number(phraseContext.voiceIndependence)) ? phraseContext.voiceIndependence : VOICE_Manager.voiceIndependenceDefault;
+    const runtimeProfile = (opts && opts.runtimeProfile && typeof opts.runtimeProfile === 'object') ? opts.runtimeProfile : null;
+    const runtimeVoiceCountMultiplier = (runtimeProfile && Number.isFinite(Number(runtimeProfile.voiceCountMultiplier)))
+      ? Number(runtimeProfile.voiceCountMultiplier)
+      : 1.0;
 
     // Apply voice count multiplier: stack chord change emphasis with phrase arc density
     // But only apply arc density influence probabilistically to maintain variety
-    const voiceCountMultiplier = Number.isFinite(Number(opts.voiceCountMultiplier)) ? opts.voiceCountMultiplier : 1.0;
+    const voiceCountMultiplier = Number.isFinite(Number(opts.voiceCountMultiplier)) ? opts.voiceCountMultiplier : runtimeVoiceCountMultiplier;
     const shouldApplyArcDensity = rf() < (VOICE_Manager.arcDensityChance ?? 0.5);
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;

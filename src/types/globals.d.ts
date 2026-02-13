@@ -491,6 +491,7 @@ declare var allNotesOff: any;
 declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
 declare var ComposerProfileUtils: any;
 declare var ComposerProfileValidation: any;
+declare var ComposerRuntimeProfileAdapter: any;
 declare var COMPOSER_TYPE_PROFILES: any;
 declare var COMPOSER_PROFILE_POOLS: any;
 declare var COMPOSER_PROFILE_AUDIT: any;

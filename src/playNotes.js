@@ -14,29 +14,33 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     ? layer.measureComposer
     : ((typeof composer === 'object' && composer !== null) ? composer : null);
 
-  const baseVelocitySeed = (activeComposer && Number.isFinite(Number(activeComposer.baseVelocity)))
-    ? Number(activeComposer.baseVelocity)
+  const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
+    ? activeComposer.runtimeProfile
+    : null;
+
+  const emissionAdjustments = (runtimeProfile && typeof ComposerRuntimeProfileAdapter !== 'undefined' && ComposerRuntimeProfileAdapter && typeof ComposerRuntimeProfileAdapter.getEmissionAdjustments === 'function')
+    ? ComposerRuntimeProfileAdapter.getEmissionAdjustments(runtimeProfile)
+    : {
+      baseVelocity: (activeComposer && Number.isFinite(Number(activeComposer.baseVelocity))) ? Number(activeComposer.baseVelocity) : null,
+      velocityScale: (activeComposer && Number.isFinite(Number(activeComposer.profileVelocityScale))) ? Number(activeComposer.profileVelocityScale) : 1,
+      timingOffsetUnits: (activeComposer && Number.isFinite(Number(activeComposer.profileTimingOffsetUnits))) ? Number(activeComposer.profileTimingOffsetUnits) : 0,
+      swingAmount: (activeComposer && Number.isFinite(Number(activeComposer.profileSwingAmount))) ? Number(activeComposer.profileSwingAmount) : 0
+    };
+
+  const baseVelocitySeed = (Number.isFinite(Number(emissionAdjustments.baseVelocity)))
+    ? Number(emissionAdjustments.baseVelocity)
     : velocity;
 
-  const motifVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.motifVelocityScale)))
-    ? Number(activeComposer.motifVelocityScale)
+  const combinedVelocityScale = Number.isFinite(Number(emissionAdjustments.velocityScale))
+    ? Number(emissionAdjustments.velocityScale)
     : 1;
-  const rhythmVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.rhythmVelocityScale)))
-    ? Number(activeComposer.rhythmVelocityScale)
-    : 1;
-  const chordVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.chordVelocityScale)))
-    ? Number(activeComposer.chordVelocityScale)
-    : 1;
-  const combinedVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.profileVelocityScale)))
-    ? Number(activeComposer.profileVelocityScale)
-    : (motifVelocityScale * rhythmVelocityScale * chordVelocityScale);
 
-  const motifTimingOffsetUnits = (activeComposer && Number.isFinite(Number(activeComposer.profileTimingOffsetUnits)))
-    ? Number(activeComposer.profileTimingOffsetUnits)
-    : ((activeComposer && Number.isFinite(Number(activeComposer.motifTimingOffset))) ? Number(activeComposer.motifTimingOffset) : 0);
-  const rhythmSwingAmount = (activeComposer && Number.isFinite(Number(activeComposer.profileSwingAmount)))
-    ? Number(activeComposer.profileSwingAmount)
-    : ((activeComposer && Number.isFinite(Number(activeComposer.rhythmSwing))) ? Number(activeComposer.rhythmSwing) : 0);
+  const motifTimingOffsetUnits = Number.isFinite(Number(emissionAdjustments.timingOffsetUnits))
+    ? Number(emissionAdjustments.timingOffsetUnits)
+    : 0;
+  const rhythmSwingAmount = Number.isFinite(Number(emissionAdjustments.swingAmount))
+    ? Number(emissionAdjustments.swingAmount)
+    : 0;
 
   if (!Number.isFinite(Number(tpUnit))) {
     throw new Error(`${unit}.playNotes: tpUnit must be a finite number`);

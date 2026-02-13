@@ -192,7 +192,16 @@ const validateDiversityOrFail = (type, profileMap) => {
   }
 };
 
+const getAllowedKeysByTypeOrFail = () => {
+  const out = {};
+  for (const [type, keySet] of Object.entries(ALLOWED_KEYS_BY_TYPE)) {
+    out[type] = Array.from(keySet.values()).sort();
+  }
+  return out;
+};
+
 ComposerProfileValidation = {
   validateEntryForTypeOrFail,
-  validateDiversityOrFail
+  validateDiversityOrFail,
+  getAllowedKeysByTypeOrFail
 };
