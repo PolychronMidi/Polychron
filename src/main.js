@@ -3,7 +3,9 @@ require('./index');
 
 main = async function main() { console.log('Starting main.js ...');
 
+// eslint-disable-next-line no-unused-vars -- false-positive - `c1` buffer used in LM
 const { layer: L1, buffer: c1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
+// eslint-disable-next-line no-unused-vars -- false-positive - `c2` buffer used in LM
 const { layer: L2, buffer: c2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
 
 // Create composer context for explicit dependency passing (fail-fast: throw if managers missing)

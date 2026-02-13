@@ -17,7 +17,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
       ? FXFeedbackListener.biasRhythmWeights(rhythms)
       : rhythms;
     const filteredRhythms=Object.fromEntries(
-      Object.entries(rhythmSource).filter(([_,{ weights }])=>weights[levelIndex] > 0)
+      Object.entries(rhythmSource).filter(([, { weights }]) => weights[levelIndex] > 0)
     );
     if (!Object.keys(filteredRhythms).length) {
       throw new Error(`getRhythm: no candidate rhythms for level "${level}"`);

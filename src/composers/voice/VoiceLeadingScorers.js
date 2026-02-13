@@ -6,6 +6,7 @@
  * relying on `this` in the helpers.
  */
 VoiceLeadingScorers = {
+  // eslint-disable-next-line no-unused-vars -- `fromNote`/`toNote` are part of the helper API and retained for compatibility
   scoreVoiceMotion(interval, fromNote, toNote) {
     if (interval === 0) return 0;
     if (interval <= 2) return 1;
@@ -16,7 +17,6 @@ VoiceLeadingScorers = {
 
   scoreVoiceRange(note, range) {
     const [min, max] = range;
-    const mid = (min + max) / 2;
     const width = max - min;
     if (note >= min + width / 4 && note <= max - width / 4) {
       return 0;
@@ -54,7 +54,6 @@ VoiceLeadingScorers = {
     if (candidate < alto) return 6;
     if (lastNotes.length >= 4) {
       const tenor = lastNotes[2];
-      const bass = lastNotes[3];
       if ((candidate < alto && alto < tenor) || (tenor < alto && alto < candidate)) return 4;
     }
     return 0;
@@ -64,6 +63,7 @@ VoiceLeadingScorers = {
     if ((currentMotion > 0 && lastMotion > 0) || (currentMotion < 0 && lastMotion < 0)) return 3;
     return 0;
   },
+
 
   scoreIntervalQuality(interval, fromNote, toNote, dynamism = 0) {
     if (interval <= 2) return 0;

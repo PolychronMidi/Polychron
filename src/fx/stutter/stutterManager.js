@@ -175,7 +175,7 @@ class StutterManager {
     this.lastUsedCHs.clear();
     this.lastUsedCHs2.clear();
     // Also clear shared stutter state and pending events
-    try { this.shared.stutters.clear(); this.shared.shifts.clear(); this.shared.global = {}; } catch (e) { /* ignore errors clearing shared state */ }
+    try { this.shared.stutters.clear(); this.shared.shifts.clear(); this.shared.global = {}; } catch { /* ignore errors clearing shared state */ }
     this.pending.clear();
 
     // Call external hook for compatibility — allow errors to surface

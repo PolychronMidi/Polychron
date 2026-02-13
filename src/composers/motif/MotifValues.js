@@ -12,7 +12,7 @@ MotifValues = (function() {
   function offsetPattern(pattern, offsetSteps) {
     if (!Array.isArray(pattern)) throw new Error('MotifValues.offsetPattern: pattern array required');
     if (typeof offsetSteps !== 'number') throw new Error('MotifValues.offsetPattern: offsetSteps must be numeric');
-    return pattern.map((v, i) => ({ ...v, time: v.time + offsetSteps }));
+    return pattern.map(v => ({ ...v, time: v.time + offsetSteps }));
   }
 
   function scaleDurations(pattern, scale) {

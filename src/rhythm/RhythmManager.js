@@ -26,6 +26,30 @@ RhythmManager = (function() {
     }
   }
 
+  /**
+   * Rhythm value helpers proxied from `RhythmValues` for centralized access.
+   */
+  function quantizeTime(time, resolution) {
+    if (typeof values !== 'object' || typeof values.quantizeTime !== 'function') {
+      throw new Error('RhythmManager.quantizeTime: RhythmValues.quantizeTime not available');
+    }
+    return values.quantizeTime(time, resolution);
+  }
+
+  function swingOffset(beatIndex, amount) {
+    if (typeof values !== 'object' || typeof values.swingOffset !== 'function') {
+      throw new Error('RhythmManager.swingOffset: RhythmValues.swingOffset not available');
+    }
+    return values.swingOffset(beatIndex, amount);
+  }
+
+  function accentWeight(beatIndex, pattern) {
+    if (typeof values !== 'object' || typeof values.accentWeight !== 'function') {
+      throw new Error('RhythmManager.accentWeight: RhythmValues.accentWeight not available');
+    }
+    return values.accentWeight(beatIndex, pattern);
+  }
+
   function applyToNote(note, hit, profileName, options = {}) {
     const profile = profileName ? config.getProfile(profileName) : null;
     if (options !== undefined && (typeof options !== 'object' || options === null)) throw new Error('RhythmManager.applyToNote: options must be an object if provided');
@@ -37,6 +61,9 @@ RhythmManager = (function() {
     listGenerators,
     getGenerator,
     getPattern,
-    applyToNote
+    applyToNote,
+    quantizeTime,
+    swingOffset,
+    accentWeight
   };
 })();

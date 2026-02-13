@@ -17,7 +17,6 @@ logUnit = (type) => {
   let endTick = null;
   let startTime = null;
   let endTime = null;
-  let spSection = null;
   let spPhrase = null;
   let spMeasure = null;
   let spBeat = null;
@@ -38,8 +37,6 @@ logUnit = (type) => {
     throw new Error('logUnit: LOG configuration invalid - shouldLog is undefined');
   } else if (!shouldLog) return null;
 
-  // Use buffer for this layer
-  const buf = c;
   if (type === 'section') {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
@@ -75,7 +72,7 @@ logUnit = (type) => {
       } else {
         meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
       }
-    } catch (_e) { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
+    } catch { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
   } else if (type === 'measure') {
     unit = measureIndex + 1;
     unitsPerParent = measuresPerPhrase;
@@ -101,7 +98,7 @@ logUnit = (type) => {
       } else {
         meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
       }
-    } catch (_e) { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
+    } catch { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
   } else if (type === 'beat') {
     unit = beatIndex + 1;
     unitsPerParent = numerator;

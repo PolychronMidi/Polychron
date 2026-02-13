@@ -23,6 +23,8 @@ MotifValidators = {
     return new Set(pcs.map((pc) => ((pc % 12) + 12) % 12));
   },
 
+
+
   /**
    * Resolve capability contract from a composer/developer object.
    * @param {Object} developer

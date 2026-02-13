@@ -52,7 +52,7 @@ rotate = (pattern, rotations, direction = "R", length = pattern.length) => {
 
 morph = (pattern, direction = 'both', length = pattern.length, probLow = .1, probHigh) => {
   probHigh = probHigh === undefined ? probLow : probHigh;
-  let morpheus = pattern.map((v, index) => {
+  let morpheus = pattern.map(v => {
     let morphv = probHigh === probLow ? rf(probLow) : rf(probLow, probHigh);
     let _ = ['up', 'down', 'both']; let d = direction === '?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
     let up = v < 1 ? m.min(v + morphv, 1) : v; let down = v > 0 ? m.max(v - morphv, 0) : v;

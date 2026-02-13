@@ -76,10 +76,54 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
   }
 
   getNotes(octaveRange) {
-    const baseNotes = super.getNotes(octaveRange);
+    // Prefer HarmonicContext window scale when composer declares timeVaryingScaleContext
+    const hcHasScale = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function');
+    const hcScale = hcHasScale ? HarmonicContext.getField('scale') : null;
+    const effectiveScale = (this.hasCapability('timeVaryingScaleContext') && Array.isArray(hcScale) && hcScale.length > 0)
+      ? hcScale
+      : (Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : hcScale);
+    if (!Array.isArray(effectiveScale) || effectiveScale.length === 0) {
+      throw new Error('MelodicDevelopmentComposer.getNotes: no effective scale available');
+    }
+    const scalePC = resolveScalePC(effectiveScale);
+
+    const fitToMidiInScale = (midiVal) => {
+      if (!Number.isFinite(Number(midiVal))) throw new Error('MelodicDevelopmentComposer.getNotes: non-finite midi value during normalization');
+      if (typeof modClamp !== 'function') throw new Error('MelodicDevelopmentComposer.getNotes: modClamp() not available');
+      let out = modClamp(Number(midiVal), 0, 127);
+      let outPC = modClamp(out, 0, 11);
+      if (!scalePC.includes(outPC)) {
+        const quantRaw = transposeByDegree(out, effectiveScale, 0, { quantize: true, clampToMidi: false });
+        if (!Number.isFinite(Number(quantRaw))) {
+          throw new Error('MelodicDevelopmentComposer.getNotes: quantization produced non-finite midi');
+        }
+        out = modClamp(Number(quantRaw), 0, 127);
+        outPC = modClamp(out, 0, 11);
+      }
+      if (!scalePC.includes(outPC)) {
+        throw new Error(`MelodicDevelopmentComposer.getNotes: failed to normalize note ${midiVal} to effective scale`);
+      }
+      return m.round(out);
+    };
+
+    // If composer honors time-varying scale context, derive baseNotes from the effectiveScale (fail-fast if not available)
+    let baseNotes;
+    if (this.hasCapability('timeVaryingScaleContext') && Array.isArray(effectiveScale) && effectiveScale.length > 0) {
+      const prevNotes = this.notes;
+      try {
+        this.notes = effectiveScale;
+        baseNotes = super.getNotes(octaveRange);
+      } finally {
+        this.notes = prevNotes;
+      }
+    } else {
+      baseNotes = super.getNotes(octaveRange);
+    }
+
     if (!Array.isArray(baseNotes) || baseNotes.length === 0) {
       throw new Error('MelodicDevelopmentComposer.getNotes: expected super.getNotes() to return a non-empty array');
     }
+
     this.measureCount++;
     this.currentPhase = m.floor((this.measureCount - 1) / 2) % 4;
     let developedNotes = [...baseNotes];
@@ -95,14 +139,15 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         // Scale-degree transposition (preserve scale membership)
         let degreeOffset0 = intensity > 0.5 ? ri(-2, 2) : 0;
         if (this.useDegreeNoise) {
-          degreeOffset0 = applyMelodicTranspositionNoise(degreeOffset0, noiseContext, { degree: true, scale: this.notes });
+          degreeOffset0 = applyMelodicTranspositionNoise(degreeOffset0, noiseContext, { degree: true, scale: effectiveScale });
         }
         degreeOffset0 = clamp(m.round(degreeOffset0), -4, 4);
         if (degreeOffset0 !== 0) {
           developedNotes = baseNotes.map((n) => {
             const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
             if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note');
-            const transposed = transposeByDegree(midi, this.notes || (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null), degreeOffset0);
+            const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset0, { clampToMidi: false });
+            const transposed = fitToMidiInScale(transposedRaw);
             return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
           });
         }
@@ -111,21 +156,22 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         // Scale-degree transposition scaled by intensity (larger steps than phase 0)
         let degreeOffset1 = m.round(intensity * 3);
         if (this.useDegreeNoise) {
-          degreeOffset1 = applyMelodicTranspositionNoise(degreeOffset1, noiseContext, { degree: true, scale: this.notes });
+          degreeOffset1 = applyMelodicTranspositionNoise(degreeOffset1, noiseContext, { degree: true, scale: effectiveScale });
         }
         degreeOffset1 = clamp(m.round(degreeOffset1), -5, 5);
         if (degreeOffset1 !== 0) {
           developedNotes = baseNotes.map((n) => {
             const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
             if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note');
-            const transposed = transposeByDegree(midi, this.notes || (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null), degreeOffset1);
+            const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset1, { clampToMidi: false });
+            const transposed = fitToMidiInScale(transposedRaw);
             return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
           });
         }
         break;
       case 2:
         if (intensity > 0.3) {
-          const theScale = Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null);
+          const theScale = effectiveScale;
           if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: no scale available for inversion');
 
           let pivotSeed;
@@ -143,7 +189,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
           let noisyPivot = applyMelodicPivotNoise(pivotSeed, noiseContext);
           if (this.inversionPivotMode === 'fixed-degree') {
             const pInfo = midiToDegree(noisyPivot, theScale, { quantize: true });
-            noisyPivot = degreeToMidi(this.inversionFixedDegree, theScale, pInfo.octave, { clampToMidi: true });
+            const noisyPivotRaw = degreeToMidi(this.inversionFixedDegree, theScale, pInfo.octave, { clampToMidi: false });
+            noisyPivot = fitToMidiInScale(noisyPivotRaw);
           }
 
           if (this.inversionMode === 'chromatic') {
@@ -161,7 +208,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
               if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: invalid base note for diatonic inversion');
               const info = midiToDegree(midi, theScale, { quantize: true });
               const invAbs = 2 * pivotAbs - info.absDegree;
-              const invMidi = degreeToMidi(invAbs, theScale, 0, { clampToMidi: true });
+              const invMidiRaw = degreeToMidi(invAbs, theScale, 0, { clampToMidi: false });
+              const invMidi = fitToMidiInScale(invMidiRaw);
               return (typeof item === 'number') ? invMidi : Object.assign({}, item, { note: invMidi });
             });
           }
@@ -172,37 +220,17 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         break;
     }
 
-    // Validate against HarmonicContext scale (if available and contract says preservesScale=true)
-    if (this.hasCapability('preservesScale') && typeof HarmonicContext !== 'undefined') {
-      const scale = HarmonicContext.getField('scale');
-      if (Array.isArray(scale) && scale.length > 0) {
-        for (const n of developedNotes) {
-          let noteVal;
-          if (typeof n === 'number') {
-            noteVal = n;
-          } else if (n && typeof n.note === 'number') {
-            noteVal = n.note;
-          } else {
-            throw new Error('MelodicDevelopmentComposer.getNotes: developed note has invalid shape; expected number or {note:number}');
-          }
-          if (!HarmonicContext.isNoteInScale(noteVal)) {
-            throw new Error(`MelodicDevelopmentComposer.getNotes: note ${noteVal} not in HarmonicContext scale`);
-          }
-        }
-      }
-    }
-
-    // Final normalization when enabled: ensure returned notes' pitch-classes belong to this composer's declared `notes`.
+    // Final normalization when enabled: ensure returned notes' pitch-classes belong to effective scale.
     if (this.normalizeToScale) {
-      const theScale = Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : (typeof HarmonicContext !== 'undefined' ? HarmonicContext.getField('scale') : null);
+      const theScale = effectiveScale;
       if (Array.isArray(theScale) && theScale.length > 0) {
-        const scalePC = resolveScalePC(theScale);
         developedNotes = developedNotes.map((item) => {
           const val = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
           if (!Number.isFinite(val)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid developed note');
-          const pc = ((val % 12) + 12) % 12;
+          const pc = modClamp(val, 0, 11);
           if (!scalePC.includes(pc)) {
-            const quant = transposeByDegree(val, theScale, 0, { quantize: true });
+            const quantRaw = transposeByDegree(val, theScale, 0, { quantize: true, clampToMidi: false });
+            const quant = fitToMidiInScale(quantRaw);
             return (typeof item === 'number') ? quant : Object.assign({}, item, { note: quant });
           }
           return item;

@@ -7,7 +7,7 @@ getNoiseValue = function(generatorName, x, y, time) {
     if (!generator) throw new Error(`Unknown noise generator: ${generatorName}`);
     return generator(x, y, time);
   } catch (e) {
-    return defaultSimplex.noise(x, y || x);
+    throw new Error(`getNoiseValue failed for generator "${generatorName}": ${e && e.message ? e.message : e}`);
   }
 };
 

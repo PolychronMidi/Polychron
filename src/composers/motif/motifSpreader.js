@@ -29,7 +29,6 @@ MotifSpreader = {
       }
 
       let beatOffset = 0;
-      let added = 0;
       if (typeof tpBeat === 'undefined' || !Number.isFinite(Number(tpBeat)) || Number(tpBeat) <= 0) {
         throw new Error(`MotifSpreader.spreadMeasure: invalid tpBeat=${tpBeat} - fail-fast`);
       }
@@ -51,14 +50,36 @@ MotifSpreader = {
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
         if (!layer.beatMotifs) throw new Error('MotifSpreader.spreadMeasure: layer.beatMotifs not initialized - fail-fast');
 
-        // Extract valid pitch classes from composer for validation
+        // Extract valid pitch classes from composer for validation.
+        // Use the HarmonicContext window scale when composer declares
+        // timeVaryingScaleContext (safe, no side-effects). Otherwise use
+        // the composer's declared `notes` array. Avoid calling
+        // `composer.getNotes()` here because it may be stateful.
         const validPCs = new Set();
-        if (composer && Array.isArray(composer.notes)) {
-          for (const noteName of composer.notes) {
-            if (typeof noteName === 'string') {
-              const pc = t.Note.chroma(noteName);
-              if (typeof pc === 'number' && Number.isFinite(pc)) {
-                validPCs.add(((pc % 12) + 12) % 12);
+        if (composer) {
+          const caps = (typeof composer.getCapabilities === 'function') ? composer.getCapabilities() : (composer.capabilities || {});
+
+          if (caps && caps.timeVaryingScaleContext) {
+            if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+              try {
+                const hcScale = HarmonicContext.getField('scale');
+                if (Array.isArray(hcScale) && hcScale.length > 0) {
+                  for (const s of hcScale) {
+                    const pc = (typeof s === 'number') ? ((s % 12) + 12) % 12 : t.Note.chroma(String(s));
+                    if (Number.isFinite(pc)) validPCs.add(((pc % 12) + 12) % 12);
+                  }
+                }
+              } catch { /* let fallback below handle it */ }
+            }
+          }
+
+          if (validPCs.size === 0 && Array.isArray(composer.notes)) {
+            for (const noteName of composer.notes) {
+              if (typeof noteName === 'string') {
+                const pc = t.Note.chroma(noteName);
+                if (typeof pc === 'number' && Number.isFinite(pc)) validPCs.add(((pc % 12) + 12) % 12);
+              } else if (typeof noteName === 'number') {
+                validPCs.add(((noteName % 12) + 12) % 12);
               }
             }
           }
@@ -88,7 +109,6 @@ MotifSpreader = {
               }
 
               layer.beatMotifs[bKey].push({ note: clampedNote, groupId, seqIndex: i, seqLen: totalEvents });
-              added++;
             }
           }
         }

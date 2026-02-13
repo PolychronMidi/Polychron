@@ -148,7 +148,11 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
           currentVelocity = clamp(minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier, 0, 127);
         }
 
-        const ev1 = { tick: tick + duration * rf(.15, .6), type: 'on', vals: [channel, stutterNote, isPrimary ? currentVelocity * rf(.3, .7) : currentVelocity * rf(.45, .8)] };
+        const ev1 = {
+          tick: tick + duration * rf(.15, .6),
+          type: 'on',
+          vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, currentVelocity, binVel, [.3, .7], [.45, .8], rf)), 0, 127)]
+        };
         const ev2 = { tick: m.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] };
         if (emit === false) { plannedEvents.push(ev1); plannedEvents.push(ev2); } else { p(c, ev1); p(c, ev2); }
       }
@@ -187,7 +191,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         }
         if (rf() < fireProb) {
           const evA = { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] };
-          const evB = { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, (isPrimary ? velocity : binVel) * rf(velRanges[0], velRanges[1])] };
+          const evB = { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, velocity, binVel, velRanges, velRanges, rf)), 0, 127)] };
           if (emit === false) { plannedEvents.push(evA); plannedEvents.push(evB); } else { p(c, evA); p(c, evB); }
         }
       }
@@ -207,4 +211,4 @@ try {
     // @ts-ignore: runtime-only naked global registration
     StutterConfig.registerHelper(stutterNotes);
   }
-} catch (e) { /* ignore if module not present */ }
+} catch { /* ignore if module not present */ }
