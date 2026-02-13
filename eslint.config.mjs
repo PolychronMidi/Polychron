@@ -1,4 +1,37 @@
 import localRules from './eslint-rules/index.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function loadManagedGlobalsFromDts() {
+  const managedPath = path.resolve(__dirname, 'src', 'types', 'globals.managed.d.ts');
+  let text;
+  try {
+    text = fs.readFileSync(managedPath, 'utf8');
+  } catch (e) {
+    throw new Error(`eslint.config.mjs: failed to read managed globals file at ${managedPath}: ${e && e.message ? e.message : e}`);
+  }
+
+  const globals = {};
+  const lines = String(text).split(/\r?\n/);
+  const declareVarRegex = /^\s*declare\s+var\s+([A-Za-z_$][\w$]*)\s*:/;
+  for (const line of lines) {
+    const match = line.match(declareVarRegex);
+    if (!match) continue;
+    globals[match[1]] = 'readonly';
+  }
+
+  if (Object.keys(globals).length === 0) {
+    throw new Error(`eslint.config.mjs: managed globals file has no declarations: ${managedPath}`);
+  }
+
+  return globals;
+}
+
+const MANAGED_GLOBALS = loadManagedGlobalsFromDts();
 
 const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked globals instead (Example: DONT use: globalThis.variable DO use: variable)';
 
@@ -320,18 +353,7 @@ export default [
         METER_RATIO_MAX: 'readonly',
         DIVISIONS: 'readonly',
         SUBSUBDIVS: 'readonly',
-        COMPOSER_TYPE_PROFILE_SOURCES: 'readonly',
-        ComposerProfileUtils: 'readonly',
-        ComposerProfileValidation: 'readonly',
-        ComposerRuntimeProfileAdapter: 'readonly',
-        COMPOSER_TYPE_PROFILES: 'readonly',
-        COMPOSER_PROFILE_POOLS: 'readonly',
-        COMPOSER_PROFILE_AUDIT: 'readonly',
-        getComposerTypeProfilesOrFail: 'readonly',
-        getComposerTypeProfileOrFail: 'readonly',
-        getComposerPoolOrFail: 'readonly',
-        getDefaultComposerPoolOrFail: 'readonly',
-        getComposerProfileAuditOrFail: 'readonly',
+        ...MANAGED_GLOBALS,
         SECTIONS: 'readonly',
         DYNAMISM: 'readonly',
         STUTTER_PROBABILITIES: 'readonly',

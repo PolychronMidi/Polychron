@@ -349,37 +349,29 @@ ComposerFactory = class ComposerFactory {
       throw new Error('ComposerFactory.resolveComposerPoolName: extraConfig must be an object if provided');
     }
 
-    const fromConfig = extraConfig.composerPool ?? extraConfig.profilePool ?? extraConfig.composerProfilePool;
-    if (fromConfig !== undefined) {
-      if (typeof fromConfig !== 'string' || fromConfig.length === 0) {
+    const requestedPoolName = extraConfig.composerPool ?? extraConfig.profilePool ?? extraConfig.composerProfilePool;
+
+    const context = Object.assign({}, (composerCtx && typeof composerCtx === 'object') ? composerCtx : {});
+    if (!Object.prototype.hasOwnProperty.call(context, 'sectionIndex')) {
+      context.sectionIndex = (typeof sectionIndex === 'number') ? sectionIndex : null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(context, 'phraseIndex')) {
+      context.phraseIndex = (typeof phraseIndex === 'number') ? phraseIndex : null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(context, 'measureIndex')) {
+      context.measureIndex = (typeof measureIndex === 'number') ? measureIndex : null;
+    }
+
+    if (typeof selectComposerPoolOrFail === 'function') {
+      return selectComposerPoolOrFail({ requestedPoolName, context });
+    }
+
+    if (requestedPoolName !== undefined && requestedPoolName !== null) {
+      if (typeof requestedPoolName !== 'string' || requestedPoolName.length === 0) {
         throw new Error('ComposerFactory.resolveComposerPoolName: configured pool name must be a non-empty string');
       }
-      return fromConfig;
+      return requestedPoolName;
     }
-
-    if (composerCtx && typeof composerCtx === 'object') {
-      if (composerCtx.composerPool !== undefined) {
-        if (typeof composerCtx.composerPool !== 'string' || composerCtx.composerPool.length === 0) {
-          throw new Error('ComposerFactory.resolveComposerPoolName: composerCtx.composerPool must be a non-empty string when provided');
-        }
-        return composerCtx.composerPool;
-      }
-
-      if (typeof composerCtx.selectComposerPool === 'function') {
-        const selected = composerCtx.selectComposerPool({
-          defaultPool: 'default',
-          sectionIndex: (typeof sectionIndex === 'number') ? sectionIndex : null,
-          phraseIndex: (typeof phraseIndex === 'number') ? phraseIndex : null,
-          measureIndex: (typeof measureIndex === 'number') ? measureIndex : null
-        });
-        if (selected === undefined || selected === null) return 'default';
-        if (typeof selected !== 'string' || selected.length === 0) {
-          throw new Error('ComposerFactory.resolveComposerPoolName: selectComposerPool() must return a non-empty string when provided');
-        }
-        return selected;
-      }
-    }
-
     return 'default';
   }
 
