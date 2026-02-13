@@ -8,8 +8,6 @@ require('./NoiseRegistry');
 // @ts-ignore: load side-effect module with globals
 require('./NoiseValues');
 // @ts-ignore: load side-effect module with globals
-require('./NoiseManager');
+require('./noiseManager');
 // @ts-ignore: load side-effect module with globals
 require('./noiseConfig');
-// @ts-ignore: load side-effect module with globals
-require('./noiseModulator');

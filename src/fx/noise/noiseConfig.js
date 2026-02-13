@@ -50,10 +50,5 @@ getNoiseProfile = function(profileName = 'moderate') {
     };
   }
 
-  // Fallback to moderate if format unrecognized
-  if (profileName !== 'moderate') {
-    return getNoiseProfile('moderate');
-  }
-
   throw new Error(`Cannot instantiate profile ${profileName}: format not recognized`);
 };
