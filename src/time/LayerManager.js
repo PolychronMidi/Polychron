@@ -5,6 +5,8 @@
 
 LM = layerManager ={
   layers: {},
+  layerComposers: {},
+  activeLayer: null,
 
   /**
    * Register a layer with buffer and initial timing state.
@@ -31,7 +33,8 @@ LM = layerManager ={
       tpMeasure: 0,
       spMeasure: 0,
       bufferName: '',
-      beatMotifs: {}
+      beatMotifs: {},
+      measureComposer: null
     };
 
     // Validate initialState if provided
@@ -39,7 +42,7 @@ LM = layerManager ={
       throw new Error('LayerManager.register: initialState must be an object');
     }
     // Build the flattened timing object from defaults + any provided initialState
-    const layer = Object.assign({}, defaults, initialState || {});
+    const layer = Object.assign({ id: name }, defaults, initialState || {});
     let buf;
 
     if (typeof buffer === 'string') {
@@ -52,6 +55,13 @@ LM = layerManager ={
 
     // Attach buffer and timing props directly to the layer object
     LM.layers[name] = Object.assign({ buffer: buf }, layer);
+    const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
+      ? composer
+      : null;
+    const registeredComposer = (LM.layers[name].measureComposer && typeof LM.layers[name].measureComposer === 'object')
+      ? LM.layers[name].measureComposer
+      : globalComposer;
+    LM.layerComposers[name] = registeredComposer;
 
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
@@ -81,6 +91,17 @@ LM = layerManager ={
     c = layer.buffer;
     LM.activeLayer = name;
     loadLayerToGlobals(layer);
+    const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
+      ? composer
+      : null;
+    const layerComposer = (LM.layerComposers[name] && typeof LM.layerComposers[name] === 'object')
+      ? LM.layerComposers[name]
+      : ((layer.measureComposer && typeof layer.measureComposer === 'object') ? layer.measureComposer : globalComposer);
+    if (layerComposer && typeof layerComposer === 'object') {
+      LM.layerComposers[name] = layerComposer;
+      layer.measureComposer = layerComposer;
+      composer = layerComposer;
+    }
     // Set active layer context in PhaseLockedRhythmGenerator for layer-aware phase tracking
     if (typeof PhaseLockedRhythmGenerator !== 'undefined') {
       PhaseLockedRhythmGenerator.setActiveLayer(name);
@@ -141,6 +162,74 @@ LM = layerManager ={
 
   setSectionStartAll: () => {
     Object.keys(LM.layers).forEach((ln) => LM.setSectionStartFor(ln));
+  },
+
+  setComposerFor: (name, nextComposer) => {
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new Error('LayerManager.setComposerFor: layer name must be a non-empty string');
+    }
+    if (!nextComposer || typeof nextComposer !== 'object') {
+      throw new Error('LayerManager.setComposerFor: composer must be an object');
+    }
+    const layer = LM.layers[name];
+    if (!layer) {
+      throw new Error(`LayerManager.setComposerFor: layer "${name}" not found`);
+    }
+    LM.layerComposers[name] = nextComposer;
+    layer.measureComposer = nextComposer;
+    if (LM.activeLayer === name) {
+      composer = nextComposer;
+    }
+    return nextComposer;
+  },
+
+  setComposerForAll: (nextComposer) => {
+    if (!nextComposer || typeof nextComposer !== 'object') {
+      throw new Error('LayerManager.setComposerForAll: composer must be an object');
+    }
+    const layerNames = Object.keys(LM.layers);
+    if (layerNames.length === 0) {
+      throw new Error('LayerManager.setComposerForAll: no registered layers');
+    }
+    for (let i = 0; i < layerNames.length; i++) {
+      LM.setComposerFor(layerNames[i], nextComposer);
+    }
+    return nextComposer;
+  },
+
+  getComposerFor: (name) => {
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new Error('LayerManager.getComposerFor: layer name must be a non-empty string');
+    }
+    const layer = LM.layers[name];
+    if (!layer) {
+      throw new Error(`LayerManager.getComposerFor: layer "${name}" not found`);
+    }
+    const mappedComposer = LM.layerComposers[name];
+    const layerComposer = layer.measureComposer;
+    const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
+      ? composer
+      : null;
+    const resolvedComposer = (mappedComposer && typeof mappedComposer === 'object')
+      ? mappedComposer
+      : ((layerComposer && typeof layerComposer === 'object') ? layerComposer : globalComposer);
+
+    if (!resolvedComposer) {
+      throw new Error(`LayerManager.getComposerFor: composer for layer "${name}" is not set`);
+    }
+
+    LM.layerComposers[name] = resolvedComposer;
+    layer.measureComposer = resolvedComposer;
+    return resolvedComposer;
+  },
+
+  getActiveComposer: () => {
+    if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
+      throw new Error('LayerManager.getActiveComposer: activeLayer is not set');
+    }
+    const activeComposer = LM.getComposerFor(LM.activeLayer);
+    composer = activeComposer;
+    return activeComposer;
   },
 };
 

@@ -27,6 +27,10 @@ logUnit = (type) => {
   let progressionSymbols = '';
   let actualMeter = null;
   let meterInfo = '';
+  const activeLayerObj = (LM && LM.layers && typeof LM.activeLayer === 'string') ? LM.layers[LM.activeLayer] : null;
+  const composerForLog = (activeLayerObj && activeLayerObj.measureComposer && typeof activeLayerObj.measureComposer === 'object')
+    ? activeLayerObj.measureComposer
+    : composer;
   if (LOG === 'none') shouldLog = false;
   else if (LOG === 'all') shouldLog = true;
   else {
@@ -54,16 +58,16 @@ logUnit = (type) => {
     spPhrase = tpPhrase / tpSec;
     endTime = startTime + spPhrase;
 
-    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
-    if (composer && composer.scale && composer.scale.name) {
-      composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer && composer.progression) {
-      progressionSymbols = composer.progression.map(chord => {
+    composerDetails = composerForLog ? `${composerForLog.constructor.name} ` : 'Unknown Composer ';
+    if (composerForLog && composerForLog.scale && composerForLog.scale.name) {
+      composerDetails += `${composerForLog.root} ${composerForLog.scale.name}`;
+    } else if (composerForLog && composerForLog.progression) {
+      progressionSymbols = composerForLog.progression.map(chord => {
         return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
       }).join(' ');
       composerDetails += `${progressionSymbols}`;
-    } else if (composer && composer.mode && composer.mode.name) {
-      composerDetails += `${composer.root} ${composer.mode.name}`;
+    } else if (composerForLog && composerForLog.mode && composerForLog.mode.name) {
+      composerDetails += `${composerForLog.root} ${composerForLog.mode.name}`;
     }
     actualMeter = [numerator, denominator];
     try {
@@ -80,16 +84,16 @@ logUnit = (type) => {
     endTick = measureStart + tpMeasure;
     startTime = measureStartTime;
     endTime = measureStartTime + spMeasure;
-    composerDetails = composer ? `${composer.constructor.name} ` : 'Unknown Composer ';
-    if (composer && composer.scale && composer.scale.name) {
-      composerDetails += `${composer.root} ${composer.scale.name}`;
-    } else if (composer && composer.progression) {
-      progressionSymbols = composer.progression.map(chord => {
+    composerDetails = composerForLog ? `${composerForLog.constructor.name} ` : 'Unknown Composer ';
+    if (composerForLog && composerForLog.scale && composerForLog.scale.name) {
+      composerDetails += `${composerForLog.root} ${composerForLog.scale.name}`;
+    } else if (composerForLog && composerForLog.progression) {
+      progressionSymbols = composerForLog.progression.map(chord => {
         return chord && chord.symbol ? chord.symbol : '[Unknown Symbol]';
       }).join(' ');
       composerDetails += `${progressionSymbols}`;
-    } else if (composer && composer.mode && composer.mode.name) {
-      composerDetails += `${composer.root} ${composer.mode.name}`;
+    } else if (composerForLog && composerForLog.mode && composerForLog.mode.name) {
+      composerDetails += `${composerForLog.root} ${composerForLog.mode.name}`;
     }
     actualMeter = [numerator, denominator];
     try {

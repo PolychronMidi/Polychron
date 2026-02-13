@@ -47,10 +47,11 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
       if (chosenSet.has(candidate)) continue;
       if (isTooCloseToChosen(candidate)) continue;
       const candidateWeight = (opts && opts.candidateWeights && Number.isFinite(Number(opts.candidateWeights[candidate]))) ? Number(opts.candidateWeights[candidate]) : 0;
+      const scoringLastNotes = lastNotes.length > 0 ? lastNotes : [Number(candidate)];
       // Base single-voice cost from VoiceLeadingScore
       const baseCost = scorer._scoreCandidate(
         Number(candidate),
-        lastNotes,
+        scoringLastNotes,
         registerRange,
         [],
         { commonToneWeight: opts && opts.commonToneWeight, weight: candidateWeight }
