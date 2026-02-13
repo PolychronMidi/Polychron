@@ -1,4 +1,4 @@
-import localRules from './eslint-rules/index.js';
+import localRules from './scripts/eslint-rules.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -87,8 +87,8 @@ export default [
     },
     rules: {
       // Code correctness - errors that break functionality
-      'no-undef': 'error',  // Catch undefined variables like activeMotif
-      'no-restricted-globals': ['error', { name: 'global', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globalThis', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBAL', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALTHIS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'GLOBALS', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }, { name: 'globals', message: 'Global keywords banned project-wide, use naked globals instead(DONT use: globalThis.variable DO use: variable)' }],
+      'no-undef': 'error',
+      'no-restricted-globals': ['error', { name: 'global', message: restrictedGlobalsMessage }, { name: 'globalThis', message: restrictedGlobalsMessage }, { name: 'GLOBAL', message: restrictedGlobalsMessage }, { name: 'GLOBALTHIS', message: restrictedGlobalsMessage }, { name: 'GLOBALS', message: restrictedGlobalsMessage }, { name: 'globals', message: restrictedGlobalsMessage }],
       // Disallow runtime code-gen and common module-export workarounds that subvert naked global policy
       'no-new-func': 'error',
       'no-restricted-syntax': [

@@ -75,14 +75,41 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
   }
 
+  if (!LM || typeof LM.getActiveComposer !== 'function') {
+    throw new Error(`${unit}.playMotifs: LayerManager.getActiveComposer not available`);
+  }
+  const activeComposer = LM.getActiveComposer();
+
   // Extract valid PCs from active composer
   const composerValidPCs = new Set();
-  if (typeof composer === 'object' && composer !== null && Array.isArray(composer.notes)) {
-    for (const noteName of composer.notes) {
-      if (typeof noteName === 'string') {
-        const pc = t.Note.chroma(noteName);
-        if (typeof pc === 'number' && Number.isFinite(pc)) {
-          composerValidPCs.add(((pc % 12) + 12) % 12);
+  if (activeComposer && typeof activeComposer === 'object') {
+    const caps = (typeof activeComposer.getCapabilities === 'function')
+      ? activeComposer.getCapabilities()
+      : (activeComposer.capabilities || {});
+
+    if (caps && caps.timeVaryingScaleContext === true && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+      const windowScale = HarmonicContext.getField('scale');
+      if (Array.isArray(windowScale) && windowScale.length > 0) {
+        for (const entry of windowScale) {
+          if (typeof entry === 'string') {
+            const pc = t.Note.chroma(entry);
+            if (typeof pc === 'number' && Number.isFinite(pc)) composerValidPCs.add(((pc % 12) + 12) % 12);
+          } else if (typeof entry === 'number' && Number.isFinite(entry)) {
+            composerValidPCs.add(((entry % 12) + 12) % 12);
+          }
+        }
+      }
+    }
+
+    if (composerValidPCs.size === 0 && Array.isArray(activeComposer.notes)) {
+      for (const noteName of activeComposer.notes) {
+        if (typeof noteName === 'string') {
+          const pc = t.Note.chroma(noteName);
+          if (typeof pc === 'number' && Number.isFinite(pc)) {
+            composerValidPCs.add(((pc % 12) + 12) % 12);
+          }
+        } else if (typeof noteName === 'number' && Number.isFinite(noteName)) {
+          composerValidPCs.add(((noteName % 12) + 12) % 12);
         }
       }
     }
@@ -143,10 +170,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   if (!layer._voiceManager) layer._voiceManager = new VoiceManager();
   const VC = layer._voiceManager;
   const voiceCount = VC.getVoiceCount();
-  const scorer = layer.measureComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
-  const activeComposer = (layer.measureComposer && typeof layer.measureComposer === 'object')
-    ? layer.measureComposer
-    : ((typeof composer === 'object' && composer !== null) ? composer : null);
+  const scorer = activeComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
     ? activeComposer.runtimeProfile
     : null;
@@ -161,7 +185,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   // Pass voicing options from composer for voice spacing constraints
-  const voicingOptions = (layer.measureComposer && typeof layer.measureComposer.voicingOptions === 'object') ? layer.measureComposer.voicingOptions : {};
+  const voicingOptions = (activeComposer && typeof activeComposer.voicingOptions === 'object') ? activeComposer.voicingOptions : {};
   const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, Object.assign({ phraseContext }, voicingOptions, runtimeVoiceOptions, runtimeProfile ? { runtimeProfile } : {}));
   if (!Array.isArray(rawPicks)) {
     throw new Error(`${unit}.playMotifs: VoiceManager.pickNotesForBeat returned non-array value`);

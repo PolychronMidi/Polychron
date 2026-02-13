@@ -10,9 +10,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   } = opts;
 
   const layer = LM.layers[LM.activeLayer];
-  const activeComposer = (layer && layer.measureComposer && typeof layer.measureComposer === 'object')
-    ? layer.measureComposer
-    : ((typeof composer === 'object' && composer !== null) ? composer : null);
+  if (!LM || typeof LM.getActiveComposer !== 'function') {
+    throw new Error(`${unit}.playNotes: LayerManager.getActiveComposer not available`);
+  }
+  const activeComposer = LM.getActiveComposer();
 
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
     ? activeComposer.runtimeProfile

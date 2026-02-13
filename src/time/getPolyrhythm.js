@@ -5,14 +5,15 @@
  * @returns {void}
  */
 getPolyrhythm = () => {
-  if (!composer){
-    throw new Error('getPolyrhythm: composer required');
+  if (typeof LM === 'undefined' || !LM || typeof LM.getComposerFor !== 'function') {
+    throw new Error('getPolyrhythm: LayerManager.getComposerFor not available');
   }
+  const activeComposer = LM.getComposerFor('L1');
 
   const MAX_ATTEMPTS = 100;
   let attempts = 0;
   while (attempts++ < MAX_ATTEMPTS) {
-    [polyNumerator, polyDenominator] = composer.getMeter(true, true);
+    [polyNumerator, polyDenominator] = activeComposer.getMeter(true, true);
     if (!Number.isFinite(polyNumerator) || !Number.isFinite(polyDenominator) || polyDenominator <= 0) {
       continue;
     }
@@ -53,7 +54,7 @@ getPolyrhythm = () => {
   }
   // Max attempts reached: try new meter on L1 layer with relaxed constraints
   console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new L1 meter...`);
-  [numerator, denominator] = composer.getMeter(true, false);
+  [numerator, denominator] = activeComposer.getMeter(true, false);
   // Recalculate all timing after meter change to prevent sync desync
   getMidiTiming();
   getPolyrhythm();

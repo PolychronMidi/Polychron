@@ -8,6 +8,14 @@
  */
 
 setUnitTiming = (unitType) => {
+  const needsComposer = unitType === 'measure' || unitType === 'beat' || unitType === 'div' || unitType === 'subdiv' || unitType === 'subsubdiv';
+  let activeComposer = null;
+  if (needsComposer) {
+    if (!LM || typeof LM.getActiveComposer !== 'function') {
+      throw new Error('setUnitTiming: LayerManager.getActiveComposer not available');
+    }
+    activeComposer = LM.getActiveComposer();
+  }
 
   // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals in main.js
 
@@ -45,7 +53,7 @@ setUnitTiming = (unitType) => {
         throw new Error(`setUnitTiming(measure): invalid tpBeat=${tpBeat} - cannot plan motifs`);
       }
       const layer = LM.layers[LM.activeLayer];
-      MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer });
+      MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer: activeComposer });
       break;
 
     case 'beat':
@@ -63,7 +71,7 @@ setUnitTiming = (unitType) => {
       beatStartTime = measureStartTime + beatIndex * spBeat;
       // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
       // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? m.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
-      divsPerBeat = composer.getDivisions();
+      divsPerBeat = activeComposer.getDivisions();
       divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
       unitIndex = beatIndex;
       unitStart = beatStart;
@@ -79,7 +87,7 @@ setUnitTiming = (unitType) => {
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
-      subdivsPerDiv = composer.getSubdivs();
+      subdivsPerDiv = activeComposer.getSubdivs();
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv', LM.layers[LM.activeLayer]);
       unitIndex = divIndex;
@@ -97,7 +105,7 @@ setUnitTiming = (unitType) => {
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
-      subsubsPerSub =composer.getSubsubdivs();
+      subsubsPerSub =activeComposer.getSubsubdivs();
       subsubdivRhythm = setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
       unitIndex = subdivIndex;
       unitStart = subdivStart;

@@ -47,6 +47,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     composer = ComposerFactory.createRandom({ root: 'random' }, composerCtx);
+    LM.setComposerForAll(composer);
     [numerator, denominator] = composer.getMeter();
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
     LM.activate('L1', false);
