@@ -50,6 +50,10 @@ ComposerFactory = class ComposerFactory {
     melodicDevelopment: { preservesScale: true, mutatesPitchClasses: true, deterministic: false, notesReflectOutputSet: true, timeVaryingScaleContext: true },
   };
 
+  static runtimeProfilePrecedence = {
+    baseVelocity: ['chord', 'voice']
+  };
+
   static validateCapabilityProfiles() {
     if (typeof assertComposerCapabilities !== 'function') throw new Error('ComposerFactory.validateCapabilityProfiles: assertComposerCapabilities() not available');
     const entries = Object.entries(this.capabilityProfiles || {});
@@ -71,40 +75,11 @@ ComposerFactory = class ComposerFactory {
       throw new Error('ComposerFactory.resolveRuntimeProfiles: config must be an object');
     }
 
-    const resolved = {};
-
-    if (config.resolvedProfiles !== undefined) {
-      if (!config.resolvedProfiles || typeof config.resolvedProfiles !== 'object' || Array.isArray(config.resolvedProfiles)) {
-        throw new Error('ComposerFactory.resolveRuntimeProfiles: resolvedProfiles must be an object when provided');
-      }
-      Object.assign(resolved, config.resolvedProfiles);
+    if (typeof ComposerProfileUtils === 'undefined' || !ComposerProfileUtils || typeof ComposerProfileUtils.resolveNamedProfilesOrFail !== 'function') {
+      throw new Error('ComposerFactory.resolveRuntimeProfiles: ComposerProfileUtils.resolveNamedProfilesOrFail() not available');
     }
 
-    if (config.voiceProfile !== undefined) {
-      if (typeof config.voiceProfile !== 'string' || config.voiceProfile.length === 0) throw new Error('ComposerFactory.resolveRuntimeProfiles: voiceProfile must be a non-empty string');
-      if (typeof voiceConfig === 'undefined' || !voiceConfig || typeof voiceConfig.getProfile !== 'function') throw new Error('ComposerFactory.resolveRuntimeProfiles: voiceConfig.getProfile() not available');
-      resolved.voice = voiceConfig.getProfile(config.voiceProfile);
-    }
-
-    if (config.chordProfile !== undefined) {
-      if (typeof config.chordProfile !== 'string' || config.chordProfile.length === 0) throw new Error('ComposerFactory.resolveRuntimeProfiles: chordProfile must be a non-empty string');
-      if (typeof chordConfig === 'undefined' || !chordConfig || typeof chordConfig.getProfile !== 'function') throw new Error('ComposerFactory.resolveRuntimeProfiles: chordConfig.getProfile() not available');
-      resolved.chord = chordConfig.getProfile(config.chordProfile);
-    }
-
-    if (config.motifProfile !== undefined) {
-      if (typeof config.motifProfile !== 'string' || config.motifProfile.length === 0) throw new Error('ComposerFactory.resolveRuntimeProfiles: motifProfile must be a non-empty string');
-      if (typeof motifConfig === 'undefined' || !motifConfig || typeof motifConfig.getProfile !== 'function') throw new Error('ComposerFactory.resolveRuntimeProfiles: motifConfig.getProfile() not available');
-      resolved.motif = motifConfig.getProfile(config.motifProfile);
-    }
-
-    if (config.rhythmProfile !== undefined) {
-      if (typeof config.rhythmProfile !== 'string' || config.rhythmProfile.length === 0) throw new Error('ComposerFactory.resolveRuntimeProfiles: rhythmProfile must be a non-empty string');
-      if (typeof rhythmConfig === 'undefined' || !rhythmConfig || typeof rhythmConfig.getProfile !== 'function') throw new Error('ComposerFactory.resolveRuntimeProfiles: rhythmConfig.getProfile() not available');
-      resolved.rhythm = rhythmConfig.getProfile(config.rhythmProfile);
-    }
-
-    return resolved;
+    return ComposerProfileUtils.resolveNamedProfilesOrFail(config, 'ComposerFactory.resolveRuntimeProfiles.config');
   }
 
   static applyRuntimeProfileConfig(composer, config = {}) {
@@ -115,6 +90,10 @@ ComposerFactory = class ComposerFactory {
     composer.profileConfigs = Object.assign({}, composer.profileConfigs || {}, runtimeProfiles);
 
     const chord = runtimeProfiles.chord;
+    const voice = runtimeProfiles.voice;
+    const motif = runtimeProfiles.motif;
+    const rhythm = runtimeProfiles.rhythm;
+
     if (chord && composer.intervalOptions && typeof composer.intervalOptions === 'object' && Array.isArray(composer.notes) && composer.notes.length > 0) {
       const voices = Number(chord.voices);
       if (Number.isFinite(voices)) {
@@ -124,22 +103,26 @@ ComposerFactory = class ComposerFactory {
       }
     }
 
+    if (chord && Number.isFinite(Number(chord.inversion))) {
+      composer.chordInversionPreference = Number(chord.inversion);
+      if (composer.intervalOptions && typeof composer.intervalOptions === 'object') {
+        const sourceCount = Array.isArray(composer.notes) ? composer.notes.length : 0;
+        if (sourceCount > 0) {
+          const normalizedInversion = ((m.round(Number(chord.inversion)) % sourceCount) + sourceCount) % sourceCount;
+          const priorPrefer = Array.isArray(composer.intervalOptions.preferIndices) ? composer.intervalOptions.preferIndices.slice() : [];
+          if (!priorPrefer.includes(normalizedInversion)) {
+            composer.intervalOptions.preferIndices = [normalizedInversion, ...priorPrefer];
+          } else {
+            composer.intervalOptions.preferIndices = priorPrefer;
+          }
+        }
+      }
+    }
+
     if (chord && Number.isFinite(Number(chord.velocityScale))) {
       composer.chordVelocityScale = Number(chord.velocityScale);
     }
-    if (chord && Number.isFinite(Number(chord.inversion))) {
-      composer.chordInversionPreference = Number(chord.inversion);
-    }
-    if (chord && Number.isFinite(Number(chord.baseVelocity))) {
-      composer.baseVelocity = Number(chord.baseVelocity);
-    }
 
-    const voice = runtimeProfiles.voice;
-    if (voice && Number.isFinite(Number(voice.baseVelocity))) {
-      composer.baseVelocity = Number(voice.baseVelocity);
-    }
-
-    const motif = runtimeProfiles.motif;
     if (motif && Number.isFinite(Number(motif.velocityScale))) {
       composer.motifVelocityScale = Number(motif.velocityScale);
     }
@@ -147,13 +130,45 @@ ComposerFactory = class ComposerFactory {
       composer.motifTimingOffset = Number(motif.timingOffset);
     }
 
-    const rhythm = runtimeProfiles.rhythm;
     if (rhythm && Number.isFinite(Number(rhythm.swing))) {
       composer.rhythmSwing = Number(rhythm.swing);
     }
     if (rhythm && Number.isFinite(Number(rhythm.velocityScale))) {
       composer.rhythmVelocityScale = Number(rhythm.velocityScale);
     }
+
+    const baseVelocityOrder = Array.isArray(this.runtimeProfilePrecedence.baseVelocity)
+      ? this.runtimeProfilePrecedence.baseVelocity
+      : ['chord', 'voice'];
+    const baseVelocityBySource = {
+      chord: chord && Number.isFinite(Number(chord.baseVelocity)) ? Number(chord.baseVelocity) : null,
+      voice: voice && Number.isFinite(Number(voice.baseVelocity)) ? Number(voice.baseVelocity) : null
+    };
+
+    let selectedBaseVelocity = null;
+    let selectedBaseVelocitySource = null;
+    for (const source of baseVelocityOrder) {
+      const value = baseVelocityBySource[source];
+      if (Number.isFinite(value)) {
+        selectedBaseVelocity = Number(value);
+        selectedBaseVelocitySource = source;
+      }
+    }
+    if (Number.isFinite(selectedBaseVelocity)) {
+      composer.baseVelocity = Number(selectedBaseVelocity);
+      composer.baseVelocitySource = selectedBaseVelocitySource;
+    }
+
+    const velocityScaleFactors = [];
+    if (Number.isFinite(Number(composer.chordVelocityScale))) velocityScaleFactors.push(Number(composer.chordVelocityScale));
+    if (Number.isFinite(Number(composer.motifVelocityScale))) velocityScaleFactors.push(Number(composer.motifVelocityScale));
+    if (Number.isFinite(Number(composer.rhythmVelocityScale))) velocityScaleFactors.push(Number(composer.rhythmVelocityScale));
+    composer.profileVelocityScale = velocityScaleFactors.length > 0
+      ? velocityScaleFactors.reduce((acc, value) => acc * value, 1)
+      : 1;
+
+    composer.profileTimingOffsetUnits = Number.isFinite(Number(composer.motifTimingOffset)) ? Number(composer.motifTimingOffset) : 0;
+    composer.profileSwingAmount = Number.isFinite(Number(composer.rhythmSwing)) ? Number(composer.rhythmSwing) : 0;
 
     return composer;
   }
@@ -274,17 +289,65 @@ ComposerFactory = class ComposerFactory {
     return this.applyCapabilityContract(composer, type, config);
   }
 
+  static resolveComposerPoolName(extraConfig = {}, composerCtx = null) {
+    if (extraConfig !== undefined && (typeof extraConfig !== 'object' || extraConfig === null)) {
+      throw new Error('ComposerFactory.resolveComposerPoolName: extraConfig must be an object if provided');
+    }
+
+    const fromConfig = extraConfig.composerPool ?? extraConfig.profilePool ?? extraConfig.composerProfilePool;
+    if (fromConfig !== undefined) {
+      if (typeof fromConfig !== 'string' || fromConfig.length === 0) {
+        throw new Error('ComposerFactory.resolveComposerPoolName: configured pool name must be a non-empty string');
+      }
+      return fromConfig;
+    }
+
+    if (composerCtx && typeof composerCtx === 'object') {
+      if (composerCtx.composerPool !== undefined) {
+        if (typeof composerCtx.composerPool !== 'string' || composerCtx.composerPool.length === 0) {
+          throw new Error('ComposerFactory.resolveComposerPoolName: composerCtx.composerPool must be a non-empty string when provided');
+        }
+        return composerCtx.composerPool;
+      }
+
+      if (typeof composerCtx.selectComposerPool === 'function') {
+        const selected = composerCtx.selectComposerPool({
+          defaultPool: 'default',
+          sectionIndex: (typeof sectionIndex === 'number') ? sectionIndex : null,
+          phraseIndex: (typeof phraseIndex === 'number') ? phraseIndex : null,
+          measureIndex: (typeof measureIndex === 'number') ? measureIndex : null
+        });
+        if (selected === undefined || selected === null) return 'default';
+        if (typeof selected !== 'string' || selected.length === 0) {
+          throw new Error('ComposerFactory.resolveComposerPoolName: selectComposerPool() must return a non-empty string when provided');
+        }
+        return selected;
+      }
+    }
+
+    return 'default';
+  }
+
   static createRandom(extraConfig = {}, ctx = null) {
     // Set context if provided; fall back to shared context
     const composerCtx = ctx || this.sharedComposerCtx;
     if (composerCtx) this.setComposerContext(composerCtx);
 
-    if (typeof getDefaultComposerPoolOrFail !== 'function') {
-      throw new Error('ComposerFactory.createRandom: getDefaultComposerPoolOrFail() is not available');
+    const poolName = this.resolveComposerPoolName(extraConfig, composerCtx);
+    let composerPool;
+    if (poolName === 'default') {
+      if (typeof getDefaultComposerPoolOrFail !== 'function') {
+        throw new Error('ComposerFactory.createRandom: getDefaultComposerPoolOrFail() is not available');
+      }
+      composerPool = getDefaultComposerPoolOrFail();
+    } else {
+      if (typeof getComposerPoolOrFail !== 'function') {
+        throw new Error('ComposerFactory.createRandom: getComposerPoolOrFail() is not available');
+      }
+      composerPool = getComposerPoolOrFail(poolName);
     }
-    const composerPool = getDefaultComposerPoolOrFail();
     if (!Array.isArray(composerPool) || composerPool.length === 0) {
-      throw new Error('ComposerFactory.createRandom: default composer profile pool is empty');
+      throw new Error(`ComposerFactory.createRandom: composer profile pool "${poolName}" is empty`);
     }
 
     // Try up to N composers from default pool; fail-fast if all attempts exhaust
@@ -315,7 +378,7 @@ ComposerFactory = class ComposerFactory {
     }
 
     // All attempts exhausted
-    throw new Error(`ComposerFactory.createRandom: failed to create valid composer after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
+    throw new Error(`ComposerFactory.createRandom: failed to create valid composer after ${maxAttempts} attempts from pool "${poolName}". Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
   }
 }
 

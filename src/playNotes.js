@@ -9,18 +9,58 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     stutterProb = 0
   } = opts;
 
+  const layer = LM.layers[LM.activeLayer];
+  const activeComposer = (layer && layer.measureComposer && typeof layer.measureComposer === 'object')
+    ? layer.measureComposer
+    : ((typeof composer === 'object' && composer !== null) ? composer : null);
+
+  const baseVelocitySeed = (activeComposer && Number.isFinite(Number(activeComposer.baseVelocity)))
+    ? Number(activeComposer.baseVelocity)
+    : velocity;
+
+  const motifVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.motifVelocityScale)))
+    ? Number(activeComposer.motifVelocityScale)
+    : 1;
+  const rhythmVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.rhythmVelocityScale)))
+    ? Number(activeComposer.rhythmVelocityScale)
+    : 1;
+  const chordVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.chordVelocityScale)))
+    ? Number(activeComposer.chordVelocityScale)
+    : 1;
+  const combinedVelocityScale = (activeComposer && Number.isFinite(Number(activeComposer.profileVelocityScale)))
+    ? Number(activeComposer.profileVelocityScale)
+    : (motifVelocityScale * rhythmVelocityScale * chordVelocityScale);
+
+  const motifTimingOffsetUnits = (activeComposer && Number.isFinite(Number(activeComposer.profileTimingOffsetUnits)))
+    ? Number(activeComposer.profileTimingOffsetUnits)
+    : ((activeComposer && Number.isFinite(Number(activeComposer.motifTimingOffset))) ? Number(activeComposer.motifTimingOffset) : 0);
+  const rhythmSwingAmount = (activeComposer && Number.isFinite(Number(activeComposer.profileSwingAmount)))
+    ? Number(activeComposer.profileSwingAmount)
+    : ((activeComposer && Number.isFinite(Number(activeComposer.rhythmSwing))) ? Number(activeComposer.rhythmSwing) : 0);
+
+  if (!Number.isFinite(Number(tpUnit))) {
+    throw new Error(`${unit}.playNotes: tpUnit must be a finite number`);
+  }
+  const swingTicks = (Number.isFinite(Number(beatIndex)) && rhythmSwingAmount !== 0 && typeof RhythmValues !== 'undefined' && RhythmValues && typeof RhythmValues.swingOffset === 'function')
+    ? Number(RhythmValues.swingOffset(Number(beatIndex), rhythmSwingAmount))
+    : 0;
+  const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;
+
   // Compute on and sustain
-  const on = unitStart + (tpUnit * rv(rf(.2), [-.1, .07], .3));
+  const on = unitStart + timingOffsetTicks + (tpUnit * rv(rf(.2), [-.1, .07], .3));
   const shortSustain = rv(rf(m.max(tpUnit * .5, tpUnit / unitsPerParent), (tpUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
   const longSustain = rv(rf(tpUnit * .8, (tpParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
   const useShort = subdivsPerMinute > ri(400, 650);
   const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));
-  velocity = rl(velocity,-3,3,95,105);
+  velocity = rl(baseVelocitySeed,-3,3,95,105);
+  if (!Number.isFinite(combinedVelocityScale) || combinedVelocityScale <= 0) {
+    throw new Error(`${unit}.playNotes: combined profile velocity scale must be a positive finite number`);
+  }
+  velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
   const binVel = rv(velocity * rf(.4, .9));
 
   let scheduled = 0;
   crossModulateRhythms();
-  const layer = LM.layers[LM.activeLayer];
 
   // Apply subtle noise modulation to base velocity for organic variation
   const noiseProfile = getNoiseProfile('subtle');
