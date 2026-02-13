@@ -323,6 +323,7 @@ export default [
         COMPOSER_TYPE_PROFILE_SOURCES: 'readonly',
         ComposerProfileUtils: 'readonly',
         ComposerProfileValidation: 'readonly',
+        ComposerRuntimeProfileAdapter: 'readonly',
         COMPOSER_TYPE_PROFILES: 'readonly',
         COMPOSER_PROFILE_POOLS: 'readonly',
         COMPOSER_PROFILE_AUDIT: 'readonly',

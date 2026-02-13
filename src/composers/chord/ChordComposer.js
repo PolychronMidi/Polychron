@@ -117,6 +117,24 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         preferIndices,
         jitter: false,
       };
+
+      const runtimeProfile = (this.runtimeProfile && typeof this.runtimeProfile === 'object') ? this.runtimeProfile : null;
+      if (runtimeProfile && Number.isFinite(Number(runtimeProfile.chordVoices))) {
+        const boundedVoices = m.max(1, m.min(this.notes.length, m.round(Number(runtimeProfile.chordVoices))));
+        this.intervalOptions.minNotes = boundedVoices;
+        this.intervalOptions.maxNotes = boundedVoices;
+      }
+      if (runtimeProfile && Number.isFinite(Number(runtimeProfile.inversionPreference))) {
+        const sourceCount = this.notes.length;
+        if (sourceCount > 0) {
+          const inversion = ((m.round(Number(runtimeProfile.inversionPreference)) % sourceCount) + sourceCount) % sourceCount;
+          const nextPrefer = Array.isArray(this.intervalOptions.preferIndices) ? this.intervalOptions.preferIndices.slice() : [];
+          if (!nextPrefer.includes(inversion)) {
+            this.intervalOptions.preferIndices = [inversion, ...nextPrefer];
+          }
+        }
+      }
+
       this.voicingOptions = {
         minSemitones: 3,
       };

@@ -54,6 +54,26 @@ ComposerFactory = class ComposerFactory {
     baseVelocity: ['chord', 'voice']
   };
 
+  static getCommonProfileConfigKeys() {
+    return ['type', 'voiceProfile', 'chordProfile', 'motifProfile', 'rhythmProfile', 'resolvedProfiles'];
+  }
+
+  static getConstructorOptionKeysByType() {
+    const common = this.getCommonProfileConfigKeys();
+    return {
+      measure: [...common],
+      scale: [...common, 'name', 'root'],
+      chords: [...common, 'progression', 'direction'],
+      mode: [...common, 'name', 'root'],
+      pentatonic: [...common, 'root', 'scaleType'],
+      tensionRelease: [...common, 'key', 'quality', 'tensionCurve', 'enablePhraseArcs', 'phraseArcOpts', 'phraseTensionScaling'],
+      modalInterchange: [...common, 'key', 'primaryMode', 'borrowProbability'],
+      melodicDevelopment: [...common, 'name', 'root', 'intensity', 'developmentBias', 'enablePhraseArcs', 'phraseArcOpts', 'inversionMode', 'inversionPivotMode', 'inversionFixedDegree', 'normalizeToScale', 'useDegreeNoise', 'arcScaling'],
+      voiceLeading: [...common, 'name', 'root', 'commonToneWeight', 'contraryMotionPreference'],
+      harmonicRhythm: [...common, 'progression', 'key', 'measuresPerChord', 'quality', 'changeEmphasis', 'anticipation', 'settling', 'enablePhraseArcs', 'phraseArcOpts', 'phraseBoundaryEmphasis']
+    };
+  }
+
   static validateCapabilityProfiles() {
     if (typeof assertComposerCapabilities !== 'function') throw new Error('ComposerFactory.validateCapabilityProfiles: assertComposerCapabilities() not available');
     const entries = Object.entries(this.capabilityProfiles || {});
@@ -70,16 +90,125 @@ ComposerFactory = class ComposerFactory {
     return this.capabilityProfiles;
   }
 
+  static normalizeProgressionKeyOrFail(key, label = 'ComposerFactory.normalizeProgressionKeyOrFail') {
+    if (typeof key !== 'string' || key.length === 0) {
+      throw new Error(`${label}: key must be a non-empty string`);
+    }
+    if (typeof t === 'undefined' || !t || !t.Note || typeof t.Note.pitchClass !== 'function') {
+      throw new Error(`${label}: tonal Note.pitchClass() not available`);
+    }
+    const pc = t.Note.pitchClass(key);
+    if (typeof pc !== 'string' || pc.length === 0) {
+      throw new Error(`${label}: could not normalize key "${key}" to pitch class`);
+    }
+    return pc;
+  }
+
+  static getRomanQualityOrFail(quality, label = 'ComposerFactory.getRomanQualityOrFail') {
+    if (typeof quality !== 'string' || quality.length === 0) {
+      throw new Error(`${label}: quality must be a non-empty string`);
+    }
+    const modeToQuality = {
+      ionian: 'major', dorian: 'minor', phrygian: 'minor', lydian: 'major',
+      mixolydian: 'major', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
+    };
+    const normalized = quality.toLowerCase();
+    const romanQuality = modeToQuality[normalized];
+    if (!romanQuality) {
+      throw new Error(`${label}: unknown quality or mode "${quality}"`);
+    }
+    return romanQuality;
+  }
+
+  static hasDiatonicKeyData(key, quality = 'major') {
+    const romanQuality = this.getRomanQualityOrFail(quality, 'ComposerFactory.hasDiatonicKeyData');
+    const keyApi = romanQuality === 'minor' ? t.Key.minorKey : t.Key.majorKey;
+    const keyData = keyApi(key);
+    const scale = romanQuality === 'minor' ? keyData?.natural?.scale : keyData?.scale;
+    const chords = romanQuality === 'minor' ? keyData?.natural?.chords : keyData?.chords;
+    return Array.isArray(scale) && scale.length >= 7 && Array.isArray(chords) && chords.length >= 7;
+  }
+
+  static getProgressionKeyPoolOrFail(quality = 'major') {
+    if (!Array.isArray(allNotes) || allNotes.length === 0) {
+      throw new Error('ComposerFactory.getProgressionKeyPoolOrFail: allNotes not available');
+    }
+    this.getRomanQualityOrFail(quality, 'ComposerFactory.getProgressionKeyPoolOrFail');
+    const pcs = [];
+    for (const candidate of allNotes) {
+      if (typeof candidate !== 'string' || candidate.length === 0) continue;
+      const pc = (typeof t !== 'undefined' && t && t.Note && typeof t.Note.pitchClass === 'function')
+        ? t.Note.pitchClass(candidate)
+        : null;
+      if (typeof pc === 'string' && pc.length > 0 && this.hasDiatonicKeyData(pc, quality) && !pcs.includes(pc)) {
+        pcs.push(pc);
+      }
+    }
+    if (pcs.length === 0) {
+      throw new Error(`ComposerFactory.getProgressionKeyPoolOrFail: no valid pitch-class keys derived from allNotes for quality "${quality}"`);
+    }
+    return pcs;
+  }
+
+  static resolveProgressionKeyOrFail(key, label = 'ComposerFactory.resolveProgressionKeyOrFail', quality = 'major') {
+    this.getRomanQualityOrFail(quality, `${label}.quality`);
+    let input = key;
+    if (key === 'random') {
+      const keyPool = this.getProgressionKeyPoolOrFail(quality);
+      input = keyPool[ri(keyPool.length - 1)];
+    }
+    const normalized = this.normalizeProgressionKeyOrFail(input, label);
+    if (!this.hasDiatonicKeyData(normalized, quality)) {
+      throw new Error(`${label}: key "${normalized}" does not provide full diatonic data for quality "${quality}"`);
+    }
+    return normalized;
+  }
+
+  static validateProfileSchemaFactoryCompatibility() {
+    if (typeof ComposerProfileValidation === 'undefined' || !ComposerProfileValidation || typeof ComposerProfileValidation.getAllowedKeysByTypeOrFail !== 'function') {
+      throw new Error('ComposerFactory.validateProfileSchemaFactoryCompatibility: ComposerProfileValidation.getAllowedKeysByTypeOrFail() not available');
+    }
+
+    const schemaKeysByType = ComposerProfileValidation.getAllowedKeysByTypeOrFail();
+    if (!schemaKeysByType || typeof schemaKeysByType !== 'object') {
+      throw new Error('ComposerFactory.validateProfileSchemaFactoryCompatibility: schema key map is invalid');
+    }
+
+    const factoryKeysByType = this.getConstructorOptionKeysByType();
+    for (const [type, schemaKeys] of Object.entries(schemaKeysByType)) {
+      const schemaSet = new Set(Array.isArray(schemaKeys) ? schemaKeys : []);
+      const factorySet = new Set(Array.isArray(factoryKeysByType[type]) ? factoryKeysByType[type] : []);
+
+      if (factorySet.size === 0) {
+        throw new Error(`ComposerFactory.validateProfileSchemaFactoryCompatibility: missing factory config key map for type "${type}"`);
+      }
+
+      for (const key of schemaSet) {
+        if (!factorySet.has(key)) {
+          throw new Error(`ComposerFactory.validateProfileSchemaFactoryCompatibility: schema key "${type}.${key}" is not handled by ComposerFactory`);
+        }
+      }
+
+      for (const key of factorySet) {
+        if (!schemaSet.has(key)) {
+          throw new Error(`ComposerFactory.validateProfileSchemaFactoryCompatibility: factory key "${type}.${key}" is missing from profile schema`);
+        }
+      }
+    }
+
+    return true;
+  }
+
   static resolveRuntimeProfiles(config = {}) {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       throw new Error('ComposerFactory.resolveRuntimeProfiles: config must be an object');
     }
 
-    if (typeof ComposerProfileUtils === 'undefined' || !ComposerProfileUtils || typeof ComposerProfileUtils.resolveNamedProfilesOrFail !== 'function') {
-      throw new Error('ComposerFactory.resolveRuntimeProfiles: ComposerProfileUtils.resolveNamedProfilesOrFail() not available');
+    if (typeof ComposerRuntimeProfileAdapter === 'undefined' || !ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail !== 'function') {
+      throw new Error('ComposerFactory.resolveRuntimeProfiles: ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail() not available');
     }
 
-    return ComposerProfileUtils.resolveNamedProfilesOrFail(config, 'ComposerFactory.resolveRuntimeProfiles.config');
+    return ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail(config, 'ComposerFactory.resolveRuntimeProfiles');
   }
 
   static applyRuntimeProfileConfig(composer, config = {}) {
@@ -87,90 +216,14 @@ ComposerFactory = class ComposerFactory {
     const runtimeProfiles = this.resolveRuntimeProfiles(config);
     if (Object.keys(runtimeProfiles).length === 0) return composer;
 
-    composer.profileConfigs = Object.assign({}, composer.profileConfigs || {}, runtimeProfiles);
-
-    const chord = runtimeProfiles.chord;
-    const voice = runtimeProfiles.voice;
-    const motif = runtimeProfiles.motif;
-    const rhythm = runtimeProfiles.rhythm;
-
-    if (chord && composer.intervalOptions && typeof composer.intervalOptions === 'object' && Array.isArray(composer.notes) && composer.notes.length > 0) {
-      const voices = Number(chord.voices);
-      if (Number.isFinite(voices)) {
-        const boundedVoices = m.max(1, m.min(composer.notes.length, m.round(voices)));
-        composer.intervalOptions.minNotes = boundedVoices;
-        composer.intervalOptions.maxNotes = boundedVoices;
-      }
+    if (typeof ComposerRuntimeProfileAdapter === 'undefined' || !ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail !== 'function' || typeof ComposerRuntimeProfileAdapter.applyToComposerOrFail !== 'function') {
+      throw new Error('ComposerFactory.applyRuntimeProfileConfig: ComposerRuntimeProfileAdapter is unavailable');
     }
 
-    if (chord && Number.isFinite(Number(chord.inversion))) {
-      composer.chordInversionPreference = Number(chord.inversion);
-      if (composer.intervalOptions && typeof composer.intervalOptions === 'object') {
-        const sourceCount = Array.isArray(composer.notes) ? composer.notes.length : 0;
-        if (sourceCount > 0) {
-          const normalizedInversion = ((m.round(Number(chord.inversion)) % sourceCount) + sourceCount) % sourceCount;
-          const priorPrefer = Array.isArray(composer.intervalOptions.preferIndices) ? composer.intervalOptions.preferIndices.slice() : [];
-          if (!priorPrefer.includes(normalizedInversion)) {
-            composer.intervalOptions.preferIndices = [normalizedInversion, ...priorPrefer];
-          } else {
-            composer.intervalOptions.preferIndices = priorPrefer;
-          }
-        }
-      }
-    }
-
-    if (chord && Number.isFinite(Number(chord.velocityScale))) {
-      composer.chordVelocityScale = Number(chord.velocityScale);
-    }
-
-    if (motif && Number.isFinite(Number(motif.velocityScale))) {
-      composer.motifVelocityScale = Number(motif.velocityScale);
-    }
-    if (motif && Number.isFinite(Number(motif.timingOffset))) {
-      composer.motifTimingOffset = Number(motif.timingOffset);
-    }
-
-    if (rhythm && Number.isFinite(Number(rhythm.swing))) {
-      composer.rhythmSwing = Number(rhythm.swing);
-    }
-    if (rhythm && Number.isFinite(Number(rhythm.velocityScale))) {
-      composer.rhythmVelocityScale = Number(rhythm.velocityScale);
-    }
-
-    const baseVelocityOrder = Array.isArray(this.runtimeProfilePrecedence.baseVelocity)
-      ? this.runtimeProfilePrecedence.baseVelocity
-      : ['chord', 'voice'];
-    const baseVelocityBySource = {
-      chord: chord && Number.isFinite(Number(chord.baseVelocity)) ? Number(chord.baseVelocity) : null,
-      voice: voice && Number.isFinite(Number(voice.baseVelocity)) ? Number(voice.baseVelocity) : null
-    };
-
-    let selectedBaseVelocity = null;
-    let selectedBaseVelocitySource = null;
-    for (const source of baseVelocityOrder) {
-      const value = baseVelocityBySource[source];
-      if (Number.isFinite(value)) {
-        selectedBaseVelocity = Number(value);
-        selectedBaseVelocitySource = source;
-      }
-    }
-    if (Number.isFinite(selectedBaseVelocity)) {
-      composer.baseVelocity = Number(selectedBaseVelocity);
-      composer.baseVelocitySource = selectedBaseVelocitySource;
-    }
-
-    const velocityScaleFactors = [];
-    if (Number.isFinite(Number(composer.chordVelocityScale))) velocityScaleFactors.push(Number(composer.chordVelocityScale));
-    if (Number.isFinite(Number(composer.motifVelocityScale))) velocityScaleFactors.push(Number(composer.motifVelocityScale));
-    if (Number.isFinite(Number(composer.rhythmVelocityScale))) velocityScaleFactors.push(Number(composer.rhythmVelocityScale));
-    composer.profileVelocityScale = velocityScaleFactors.length > 0
-      ? velocityScaleFactors.reduce((acc, value) => acc * value, 1)
-      : 1;
-
-    composer.profileTimingOffsetUnits = Number.isFinite(Number(composer.motifTimingOffset)) ? Number(composer.motifTimingOffset) : 0;
-    composer.profileSwingAmount = Number.isFinite(Number(composer.rhythmSwing)) ? Number(composer.rhythmSwing) : 0;
-
-    return composer;
+    const runtimeProfile = ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail(runtimeProfiles, {
+      baseVelocityPrecedence: this.runtimeProfilePrecedence.baseVelocity
+    });
+    return ComposerRuntimeProfileAdapter.applyToComposerOrFail(composer, runtimeProfile);
   }
 
   static applyCapabilityContract(composer, type, config = {}) {
@@ -252,16 +305,18 @@ ComposerFactory = class ComposerFactory {
     },
     tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {}, phraseTensionScaling = true } = {}) => {
       if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.tensionRelease: allNotes not available');
+      const k = this.resolveProgressionKeyOrFail(key, 'ComposerFactory.tensionRelease', quality);
       const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
-      return new TensionReleaseComposer(key, quality, tensionCurve, { phraseArcManager, phraseTensionScaling });
+      return new TensionReleaseComposer(k, quality, tensionCurve, { phraseArcManager, phraseTensionScaling });
     },
     modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => {
       if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.modalInterchange: allNotes not available');
-      return new ModalInterchangeComposer(key, primaryMode, borrowProbability);
+      const k = this.resolveProgressionKeyOrFail(key, 'ComposerFactory.modalInterchange', primaryMode);
+      return new ModalInterchangeComposer(k, primaryMode, borrowProbability);
     },
     harmonicRhythm: ({ progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true, enablePhraseArcs = true, phraseArcOpts = {}, phraseBoundaryEmphasis = 1.3 } = {}) => {
       if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.harmonicRhythm: allNotes not available');
-      const k = key === 'random' ? allNotes[ri(allNotes.length - 1)] : key;
+      const k = this.resolveProgressionKeyOrFail(key, 'ComposerFactory.harmonicRhythm', quality);
       const phraseArcManager = enablePhraseArcs ? ComposerFactory.getPhraseArcManager(phraseArcOpts) : null;
       return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling, phraseArcManager, phraseBoundaryEmphasis });
     },
@@ -383,3 +438,4 @@ ComposerFactory = class ComposerFactory {
 }
 
 ComposerFactory.validateCapabilityProfiles();
+ComposerFactory.validateProfileSchemaFactoryCompatibility();

@@ -3,6 +3,8 @@ require('./profileUtils');
 // @ts-ignore: load side-effect module with globals
 require('./validateProfiles');
 // @ts-ignore: load side-effect module with globals
+require('./runtimeProfileAdapter');
+// @ts-ignore: load side-effect module with globals
 require('./measureProfiles');
 // @ts-ignore: load side-effect module with globals
 require('./scaleProfiles');
