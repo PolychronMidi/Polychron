@@ -9,5 +9,7 @@ COMPOSER_TYPE_PROFILE_SOURCES.chords = {
   ambientPads: [{ type: 'chords', progression: ['Cmaj7', 'Am7', 'Fmaj7', 'G7'], direction: 'E', chordProfile: 'ambient', rhythmProfile: 'laidBack' }],
   leftwardFlow: [{ type: 'chords', progression: 'random', direction: 'L', chordProfile: 'pop', rhythmProfile: 'laidBack' }],
   bidirectionalWalk: [{ type: 'chords', progression: 'random', direction: 'E', chordProfile: 'jazz', rhythmProfile: 'swung' }],
-  restlessShuffle: [{ type: 'chords', progression: 'random', direction: '?', chordProfile: 'jazz', rhythmProfile: 'swung' }]
+  restlessShuffle: [{ type: 'chords', progression: 'random', direction: '?', chordProfile: 'jazz', rhythmProfile: 'swung' }],
+  minorDescent: [{ type: 'chords', progression: ['Am', 'G', 'F', 'E'], direction: 'R', chordProfile: 'classical', rhythmProfile: 'laidBack' }],
+  classicalMotion: [{ type: 'chords', progression: ['C', 'Dm', 'G', 'C'], direction: 'R', chordProfile: 'classical', rhythmProfile: 'straight' }]
 };

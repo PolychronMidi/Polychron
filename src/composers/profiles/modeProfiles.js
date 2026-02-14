@@ -9,5 +9,7 @@ COMPOSER_TYPE_PROFILE_SOURCES.mode = {
   dorianPulse: [{ type: 'mode', name: 'dorian', root: 'random', voiceProfile: 'soft', motifProfile: 'sparse' }],
   phrygianEdge: [{ type: 'mode', name: 'phrygian', root: 'random', voiceProfile: 'loud', motifProfile: 'dense' }],
   mixolydianDrive: [{ type: 'mode', name: 'mixolydian', root: 'random', voiceProfile: 'default', motifProfile: 'dense' }],
-  aeolianCore: [{ type: 'mode', name: 'aeolian', root: 'A', voiceProfile: 'soft', motifProfile: 'sparse' }]
+  aeolianCore: [{ type: 'mode', name: 'aeolian', root: 'A', voiceProfile: 'soft', motifProfile: 'sparse' }],
+  lydianFloat: [{ type: 'mode', name: 'lydian', root: 'random', voiceProfile: 'whisper', motifProfile: 'legato' }],
+  locrianTension: [{ type: 'mode', name: 'locrian', root: 'random', voiceProfile: 'expressive', motifProfile: 'percussive' }]
 };
