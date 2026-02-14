@@ -2,9 +2,16 @@
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', opts = {}) {
+    const generator = new ProgressionGenerator(key, quality);
     let chordSymbols = progression;
-    if (progression && progression[0] && progression[0].match(/^[ivIV]/)) {
-      const generator = new ProgressionGenerator(key, quality);
+    if (typeof progression === 'string') {
+      const mode = /** @type {string} */ (progression).toLowerCase();
+      if (mode === 'random' || mode === 'corpus') {
+        chordSymbols = generator.random({ source: 'harmonicRhythm' });
+      } else {
+        chordSymbols = generator.generate(progression, { source: 'harmonicRhythm' });
+      }
+    } else if (Array.isArray(progression) && progression[0] && typeof progression[0] === 'string' && progression[0].match(/^[ivIV]/)) {
       chordSymbols = progression.map(roman => generator.romanToChord(roman)).filter(c => c !== null);
     }
     super(chordSymbols);
@@ -12,7 +19,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.quality = quality;
     this.measuresPerChord = clamp(measuresPerChord, 1, 8);
     this.measureCount = 0;
-    this.generator = new ProgressionGenerator(key, quality);
+    this.generator = generator;
     this._lastChord = null;
     this._isChordChange = false;
     this._measuresSinceChange = 0;

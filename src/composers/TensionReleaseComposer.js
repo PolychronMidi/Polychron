@@ -1,7 +1,7 @@
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5, opts = {}) {
     const generator = new ProgressionGenerator(key, quality);
-    const progressionChords = generator.random();
+    const progressionChords = generator.random({ source: 'tensionRelease' });
     super(progressionChords);
     // enable voice-leading delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
