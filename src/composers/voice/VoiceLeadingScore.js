@@ -21,6 +21,8 @@
  * @property {number} [commonToneWeight] - Weight for common tones
  * @property {boolean} [useCorpusVoiceLeadingPriors] - Whether to apply corpus priors
  * @property {number} [corpusVoiceLeadingStrength] - Strength of corpus priors
+ * @property {boolean} [useCorpusMelodicPriors] - Whether to apply melodic priors
+ * @property {number} [corpusMelodicStrength] - Strength of melodic priors
  * @property {string} [phase] - Phrase phase
  * @property {Object} [phraseContext] - Phrase context object
  * @property {string} [quality] - Harmonic quality
@@ -109,10 +111,33 @@ VoiceLeadingScore = class VoiceLeadingScore {
 
     const constraints = config.constraints === undefined ? [] : (Array.isArray(config.constraints) ? config.constraints : (() => { throw new Error('VoiceLeadingScore.selectNextNote: config.constraints must be an array'); })());
     const registerRange = this.registers[register];
+    const useCorpusMelodicPriors = config.useCorpusMelodicPriors === true;
+    let melodicPriorWeights = null;
+
+    if (useCorpusMelodicPriors) {
+      if (typeof melodicPriors === 'undefined' || !melodicPriors || typeof melodicPriors.getCandidateWeights !== 'function') {
+        throw new Error('VoiceLeadingScore.selectNextNote: melodicPriors.getCandidateWeights() unavailable while corpus melodic priors are enabled');
+      }
+      melodicPriorWeights = melodicPriors.getCandidateWeights({
+        candidates: availableNotes,
+        lastNote: Number(lastNotes[0]),
+        quality: (typeof config.quality === 'string' && config.quality.length > 0) ? config.quality : undefined,
+        tonic: (typeof config.tonic === 'string' && config.tonic.length > 0) ? config.tonic : undefined,
+        phase: (typeof config.phase === 'string' && config.phase.length > 0) ? config.phase : undefined,
+        phraseContext: (config.phraseContext && typeof config.phraseContext === 'object') ? config.phraseContext : undefined,
+        strength: config.corpusMelodicStrength,
+      });
+    }
 
     // Score each candidate
     const scores = availableNotes.map((note) => {
-      const weight = (config.candidateWeights && Number.isFinite(Number(config.candidateWeights[note]))) ? Number(config.candidateWeights[note]) : 0;
+      const baseWeight = (config.candidateWeights && Number.isFinite(Number(config.candidateWeights[note]))) ? Number(config.candidateWeights[note]) : 0;
+      const melodicWeight = (melodicPriorWeights && Number.isFinite(Number(melodicPriorWeights[note]))) ? Number(melodicPriorWeights[note]) : 0;
+      const weight = (baseWeight > 0 && melodicWeight > 0)
+        ? clamp(baseWeight * melodicWeight, 0.01, 12)
+        : (baseWeight > 0)
+          ? baseWeight
+          : melodicWeight;
       return {
         note,
         score: this._scoreCandidate(note, lastNotes, registerRange, constraints, {

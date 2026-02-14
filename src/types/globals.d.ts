@@ -254,6 +254,8 @@ declare var VoiceLeadingScorers: any;
 declare var VoiceLeadingCore: any;
 declare var VOICE_LEADING_PRIOR_TABLES: any;
 declare var voiceLeadingPriors: any;
+declare var MELODIC_PRIOR_TABLES: any;
+declare var melodicPriors: any;
 declare var VoiceManager: any;
 declare var VoiceRegistry: any;
 declare var VoiceStrategyRegistry: any;
