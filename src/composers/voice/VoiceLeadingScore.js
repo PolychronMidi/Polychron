@@ -1,6 +1,33 @@
 // VoiceLeadingScore.js - Voice leading optimization with cost function scoring
 
 /**
+ * @typedef {Object} VoiceLeadingScoreOpts
+ * @property {string} [register] - Register name
+ * @property {number} [commonToneWeight] - Weight for common tones
+ * @property {any} [weight] - Weight configuration
+ * @property {boolean} [useCorpusVoiceLeadingPriors] - Whether to apply corpus priors
+ * @property {number} [corpusVoiceLeadingStrength] - Strength of corpus priors
+ * @property {string} [phase] - Phrase phase
+ * @property {Object} [phraseContext] - Phrase context object
+ * @property {string} [quality] - Harmonic quality
+ * @property {string} [tonic] - Tonic key
+ */
+
+/**
+ * @typedef {Object} VoiceLeadingScoreConfig
+ * @property {string} [register] - Register name
+ * @property {string[]} [constraints] - Applied constraints
+ * @property {Object} [candidateWeights] - Weight bonuses for specific notes
+ * @property {number} [commonToneWeight] - Weight for common tones
+ * @property {boolean} [useCorpusVoiceLeadingPriors] - Whether to apply corpus priors
+ * @property {number} [corpusVoiceLeadingStrength] - Strength of corpus priors
+ * @property {string} [phase] - Phrase phase
+ * @property {Object} [phraseContext] - Phrase context object
+ * @property {string} [quality] - Harmonic quality
+ * @property {string} [tonic] - Tonic key
+ */
+
+/**
  * Voice leading cost function optimizer.
  * Implements soft constraints for smooth voice motion, voice range limits,
  * and leap recovery rules using weighted penalty scoring.
@@ -53,7 +80,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * Scores all available notes and returns the best candidate.
    * @param {number[]} lastNotes - Previous notes [soprano, alto, tenor, bass]
    * @param {number[]} availableNotes - Pool of candidate notes to evaluate
-   * @param {{ register?: string, constraints?: string[], candidateWeights?: Object, commonToneWeight?: number }} [config] - Voice context
+   * @param {VoiceLeadingScoreConfig} [config] - Voice context
    * @returns {number} Best scoring note
    */
   selectNextNote(lastNotes, availableNotes, config = {}) {
@@ -89,8 +116,15 @@ VoiceLeadingScore = class VoiceLeadingScore {
       return {
         note,
         score: this._scoreCandidate(note, lastNotes, registerRange, constraints, {
+          register,
           commonToneWeight: config.commonToneWeight,
           weight,
+          useCorpusVoiceLeadingPriors: config.useCorpusVoiceLeadingPriors === true,
+          corpusVoiceLeadingStrength: config.corpusVoiceLeadingStrength,
+          phase: (typeof config.phase === 'string' && config.phase.length > 0) ? config.phase : undefined,
+          phraseContext: (config.phraseContext && typeof config.phraseContext === 'object') ? config.phraseContext : undefined,
+          quality: (typeof config.quality === 'string' && config.quality.length > 0) ? config.quality : undefined,
+          tonic: (typeof config.tonic === 'string' && config.tonic.length > 0) ? config.tonic : undefined,
         }),
       };
     });
@@ -112,6 +146,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - Previous notes per voice
    * @param {number[]} registerRange - Valid register [min, max]
    * @param {string[]} constraints - Applied constraints
+   * @param {VoiceLeadingScoreOpts} opts - Additional options
    * @returns {number} Total weighted cost (lower is better)
    */
   _scoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {

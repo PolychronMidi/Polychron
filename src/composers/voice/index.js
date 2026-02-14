@@ -14,6 +14,10 @@ require('./RegisterBiasing');
 // @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingScorers');
 // @ts-ignore: load side-effect module with globals
+require('./voiceLeadingPriorsData');
+// @ts-ignore: load side-effect module with globals
+require('./voiceLeadingPriors');
+// @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingCore');
 
 // Core components

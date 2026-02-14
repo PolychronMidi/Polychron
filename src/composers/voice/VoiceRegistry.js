@@ -54,7 +54,17 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
         scoringLastNotes,
         registerRange,
         [],
-        { commonToneWeight: opts && opts.commonToneWeight, weight: candidateWeight }
+        {
+          register,
+          commonToneWeight: opts && opts.commonToneWeight,
+          weight: candidateWeight,
+          useCorpusVoiceLeadingPriors: opts && opts.useCorpusVoiceLeadingPriors === true,
+          corpusVoiceLeadingStrength: opts && opts.corpusVoiceLeadingStrength,
+          phase: (opts && typeof opts.phase === 'string' && opts.phase.length > 0) ? opts.phase : undefined,
+          phraseContext: (opts && opts.phraseContext && typeof opts.phraseContext === 'object') ? opts.phraseContext : undefined,
+          quality: (opts && typeof opts.quality === 'string' && opts.quality.length > 0) ? opts.quality : undefined,
+          tonic: (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0) ? opts.tonic : undefined,
+        }
       );
 
       // Crossing penalty - soprano >= alto >= tenor >= bass
