@@ -71,6 +71,10 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
   const corpusVoiceLeadingStrength = useCorpusVoiceLeadingPriors
     ? clamp(toFiniteOrDefault(voice && voice.corpusVoiceLeadingStrength, 0.8), 0, 2)
     : 0;
+  const useCorpusMelodicPriors = Boolean(voice && voice.useCorpusMelodicPriors === true);
+  const corpusMelodicStrength = useCorpusMelodicPriors
+    ? clamp(toFiniteOrDefault(voice && voice.corpusMelodicStrength, 0.75), 0, 2)
+    : 0;
 
   return {
     namedProfiles: Object.assign({}, resolvedProfiles),
@@ -90,7 +94,9 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
     chordVoices,
     voiceCountMultiplier,
     useCorpusVoiceLeadingPriors,
-    corpusVoiceLeadingStrength
+    corpusVoiceLeadingStrength,
+    useCorpusMelodicPriors,
+    corpusMelodicStrength
   };
 };
 
@@ -146,6 +152,8 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
   composer.profileVoiceCountMultiplier = toFiniteOrDefault(runtimeProfile.voiceCountMultiplier, 1);
   composer.useCorpusVoiceLeadingPriors = runtimeProfile.useCorpusVoiceLeadingPriors === true;
   composer.corpusVoiceLeadingStrength = toFiniteOrDefault(runtimeProfile.corpusVoiceLeadingStrength, 0);
+  composer.useCorpusMelodicPriors = runtimeProfile.useCorpusMelodicPriors === true;
+  composer.corpusMelodicStrength = toFiniteOrDefault(runtimeProfile.corpusMelodicStrength, 0);
 
   if (isFiniteNumber(runtimeProfile.inversionPreference)) {
     composer.chordInversionPreference = Number(runtimeProfile.inversionPreference);
@@ -163,6 +171,10 @@ const getVoiceSelectionOptions = (runtimeProfile = null) => {
   if (runtimeProfile.useCorpusVoiceLeadingPriors === true) {
     options.useCorpusVoiceLeadingPriors = true;
     options.corpusVoiceLeadingStrength = toFiniteOrDefault(runtimeProfile.corpusVoiceLeadingStrength, 0.8);
+  }
+  if (runtimeProfile.useCorpusMelodicPriors === true) {
+    options.useCorpusMelodicPriors = true;
+    options.corpusMelodicStrength = toFiniteOrDefault(runtimeProfile.corpusMelodicStrength, 0.75);
   }
   return options;
 };

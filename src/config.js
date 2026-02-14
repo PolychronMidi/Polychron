@@ -146,7 +146,13 @@ VOICE_PROFILES = {
   default: { baseVelocity: 90 },
   soft: { baseVelocity: 70 },
   loud: { baseVelocity: 110 },
-  corpusAdaptive: { baseVelocity: 88, useCorpusVoiceLeadingPriors: true, corpusVoiceLeadingStrength: 0.9 }
+  corpusAdaptive: {
+    baseVelocity: 88,
+    useCorpusVoiceLeadingPriors: true,
+    corpusVoiceLeadingStrength: 0.9,
+    useCorpusMelodicPriors: true,
+    corpusMelodicStrength: 0.85
+  }
 };
 
 CHORD_PROFILES = {

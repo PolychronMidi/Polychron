@@ -18,6 +18,10 @@ require('./voiceLeadingPriorsData');
 // @ts-ignore: load side-effect module with globals
 require('./voiceLeadingPriors');
 // @ts-ignore: load side-effect module with globals
+require('./melodicPriorsData');
+// @ts-ignore: load side-effect module with globals
+require('./melodicPriors');
+// @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingCore');
 
 // Core components

@@ -41,12 +41,34 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
 
     let bestCandidate = null;
     let bestScore = Infinity;
+    let melodicPriorWeights = null;
+
+    if (opts && opts.useCorpusMelodicPriors === true) {
+      if (typeof melodicPriors === 'undefined' || !melodicPriors || typeof melodicPriors.getCandidateWeights !== 'function') {
+        throw new Error('VoiceRegistry: melodicPriors.getCandidateWeights() unavailable while corpus melodic priors are enabled');
+      }
+      melodicPriorWeights = melodicPriors.getCandidateWeights({
+        candidates,
+        lastNote: (lastNotes.length > 0 && Number.isFinite(Number(lastNotes[0]))) ? Number(lastNotes[0]) : undefined,
+        quality: (opts && typeof opts.quality === 'string' && opts.quality.length > 0) ? opts.quality : undefined,
+        tonic: (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0) ? opts.tonic : undefined,
+        phase: (opts && typeof opts.phase === 'string' && opts.phase.length > 0) ? opts.phase : undefined,
+        phraseContext: (opts && opts.phraseContext && typeof opts.phraseContext === 'object') ? opts.phraseContext : undefined,
+        strength: opts && opts.corpusMelodicStrength,
+      });
+    }
 
     for (const candidate of candidates) {
       if (!Number.isFinite(Number(candidate))) throw new Error(`VoiceRegistry: candidate "${candidate}" for voice ${i} is not a finite number`);
       if (chosenSet.has(candidate)) continue;
       if (isTooCloseToChosen(candidate)) continue;
-      const candidateWeight = (opts && opts.candidateWeights && Number.isFinite(Number(opts.candidateWeights[candidate]))) ? Number(opts.candidateWeights[candidate]) : 0;
+      const baseWeight = (opts && opts.candidateWeights && Number.isFinite(Number(opts.candidateWeights[candidate]))) ? Number(opts.candidateWeights[candidate]) : 0;
+      const melodicWeight = (melodicPriorWeights && Number.isFinite(Number(melodicPriorWeights[candidate]))) ? Number(melodicPriorWeights[candidate]) : 0;
+      const candidateWeight = (baseWeight > 0 && melodicWeight > 0)
+        ? clamp(baseWeight * melodicWeight, 0.01, 12)
+        : (baseWeight > 0)
+          ? baseWeight
+          : melodicWeight;
       const scoringLastNotes = lastNotes.length > 0 ? lastNotes : [Number(candidate)];
       // Base single-voice cost from VoiceLeadingScore
       const baseCost = scorer._scoreCandidate(
