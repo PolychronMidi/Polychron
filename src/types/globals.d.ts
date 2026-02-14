@@ -223,6 +223,7 @@ declare var factoryFamilies: any;
 declare var factoryConstructors: any;
 declare var ComposerFactory: any;
 declare var HarmonicContext: any;
+declare var HarmonicJourney: any;
 declare var MotifChain: any;
 declare var ProgressionGenerator: any;
 declare var HARMONIC_PRIOR_TABLES: any;

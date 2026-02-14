@@ -53,11 +53,22 @@ if (typeof FXFeedbackListener !== 'undefined') {
 }
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
+
+// Plan the harmonic journey across all sections
+if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.planJourney === 'function') {
+  HarmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
+}
+
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 
   // Emit section boundary event to reset FX feedback accumulator
   EventBus.emit('section-boundary', { sectionIndex });
+
+  // Apply harmonic journey stop for this section (sets HarmonicContext for L1)
+  if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
+    HarmonicJourney.applyToContext(sectionIndex);
+  }
 
   // Initialize each layer's section origin so layer-relative ticks are correct and explicit
   LM.setSectionStartAll();
@@ -73,6 +84,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   LM.activate('L1', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
+    // Restore L1 harmonic context (may have been overwritten by L2's complement)
+    if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
+      HarmonicJourney.applyToContext(sectionIndex);
+    }
+
     const phraseFamily = ComposerFactory.resolvePhraseFamilyOrFail({ root: 'random' }, composerCtx);
     if (!LM || typeof LM.setPhraseFamily !== 'function') {
       throw new Error('main: LayerManager.setPhraseFamily not available');
@@ -147,6 +163,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.advance('L1', 'phrase');
 
     LM.activate('L2', true);
+
+    // Apply L2 harmonic complement (complementary key/mode relationship to L1)
+    if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyL2ToContext === 'function') {
+      HarmonicJourney.applyL2ToContext(sectionIndex);
+    }
 
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
