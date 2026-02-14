@@ -9,12 +9,20 @@
 
 setUnitTiming = (unitType) => {
   const needsComposer = unitType === 'measure' || unitType === 'beat' || unitType === 'div' || unitType === 'subdiv' || unitType === 'subsubdiv';
+  let activeLayer = null;
   let activeComposer = null;
   if (needsComposer) {
-    if (!LM || typeof LM.getActiveComposer !== 'function') {
-      throw new Error('setUnitTiming: LayerManager.getActiveComposer not available');
+    if (!LM || typeof LM.getComposerFor !== 'function') {
+      throw new Error('setUnitTiming: LayerManager.getComposerFor not available');
     }
-    activeComposer = LM.getActiveComposer();
+    if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
+      throw new Error('setUnitTiming: LayerManager.activeLayer is not set');
+    }
+    activeLayer = LM.layers[LM.activeLayer];
+    if (!activeLayer || typeof activeLayer !== 'object') {
+      throw new Error(`setUnitTiming: active layer "${LM.activeLayer}" not found`);
+    }
+    activeComposer = LM.getComposerFor(LM.activeLayer);
   }
 
   // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals in main.js
@@ -36,7 +44,7 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'measure':
-      setRhythm('beat', LM.layers[LM.activeLayer]);
+      setRhythm('beat', activeLayer);
       measureStart = phraseStart + measureIndex * tpMeasure;
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
       unitIndex = measureIndex;
@@ -52,13 +60,12 @@ setUnitTiming = (unitType) => {
       if (!Number.isFinite(Number(tpBeat)) || Number(tpBeat) <= 0) {
         throw new Error(`setUnitTiming(measure): invalid tpBeat=${tpBeat} - cannot plan motifs`);
       }
-      const layer = LM.layers[LM.activeLayer];
-      MotifSpreader.spreadMeasure({ layer, measureStart, measureBeats: numerator, composer: activeComposer });
+      MotifSpreader.spreadMeasure({ layer: activeLayer, measureStart, measureBeats: numerator, composer: activeComposer });
       break;
 
     case 'beat':
       // Ensure the active layer has a beat rhythm generated before tracking it
-      setRhythm('div', LM.layers[LM.activeLayer]);
+      setRhythm('div', activeLayer);
       tpBeat = tpMeasure / numerator;
       spBeat = tpBeat / tpSec;
       trueBPM = 60 / spBeat;
@@ -72,7 +79,7 @@ setUnitTiming = (unitType) => {
       // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
       // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? m.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
       divsPerBeat = activeComposer.getDivisions();
-      divRhythm = setRhythm('div', LM.layers[LM.activeLayer]);
+      divRhythm = setRhythm('div', activeLayer);
       unitIndex = beatIndex;
       unitStart = beatStart;
       tpUnit = tpBeat;
@@ -82,14 +89,14 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'div':
-      setRhythm('subdiv', LM.layers[LM.activeLayer]);
+      setRhythm('subdiv', activeLayer);
       tpDiv = tpBeat / divsPerBeat;
       spDiv = tpDiv / tpSec;
       divStart = beatStart + divIndex * tpDiv;
       divStartTime = beatStartTime + divIndex * spDiv;
       subdivsPerDiv = activeComposer.getSubdivs();
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
-      subdivRhythm = setRhythm('subdiv', LM.layers[LM.activeLayer]);
+      subdivRhythm = setRhythm('subdiv', activeLayer);
       unitIndex = divIndex;
       unitStart = divStart;
       tpUnit = tpDiv;
@@ -99,14 +106,14 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subdiv':
-      setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
+      setRhythm('subsubdiv', activeLayer);
       tpSubdiv = tpDiv / subdivsPerDiv;
       spSubdiv = tpSubdiv / tpSec;
       subdivsPerMinute = 60 / spSubdiv;
       subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubsPerSub =activeComposer.getSubsubdivs();
-      subsubdivRhythm = setRhythm('subsubdiv', LM.layers[LM.activeLayer]);
+      subsubdivRhythm = setRhythm('subsubdiv', activeLayer);
       unitIndex = subdivIndex;
       unitStart = subdivStart;
       tpUnit = tpSubdiv;

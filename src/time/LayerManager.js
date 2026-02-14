@@ -239,14 +239,6 @@ LM = layerManager ={
     return resolvedComposer;
   },
 
-  getActiveComposer: () => {
-    if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
-      throw new Error('LayerManager.getActiveComposer: activeLayer is not set');
-    }
-    const activeComposer = LM.getComposerFor(LM.activeLayer);
-    composer = activeComposer;
-    return activeComposer;
-  },
 };
 
 /**

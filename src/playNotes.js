@@ -9,11 +9,17 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     stutterProb = 0
   } = opts;
 
-  const layer = LM.layers[LM.activeLayer];
-  if (!LM || typeof LM.getActiveComposer !== 'function') {
-    throw new Error(`${unit}.playNotes: LayerManager.getActiveComposer not available`);
+  if (!LM || typeof LM.getComposerFor !== 'function') {
+    throw new Error(`${unit}.playNotes: LayerManager.getComposerFor not available`);
   }
-  const activeComposer = LM.getActiveComposer();
+  if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
+    throw new Error(`${unit}.playNotes: LayerManager.activeLayer is not set`);
+  }
+  const layer = LM.layers[LM.activeLayer];
+  if (!layer || typeof layer !== 'object') {
+    throw new Error(`${unit}.playNotes: active layer "${LM.activeLayer}" not found`);
+  }
+  const activeComposer = LM.getComposerFor(LM.activeLayer);
 
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
     ? activeComposer.runtimeProfile
