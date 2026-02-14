@@ -75,10 +75,17 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
   }
 
-  if (!LM || typeof LM.getActiveComposer !== 'function') {
-    throw new Error(`${unit}.playMotifs: LayerManager.getActiveComposer not available`);
+  if (!LM || typeof LM.getComposerFor !== 'function') {
+    throw new Error(`${unit}.playMotifs: LayerManager.getComposerFor not available`);
   }
-  const activeComposer = LM.getActiveComposer();
+  if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
+    throw new Error(`${unit}.playMotifs: LayerManager.activeLayer is not set`);
+  }
+  const activeLayer = LM.layers[LM.activeLayer];
+  if (!activeLayer || typeof activeLayer !== 'object') {
+    throw new Error(`${unit}.playMotifs: active layer "${LM.activeLayer}" not found`);
+  }
+  const activeComposer = LM.getComposerFor(LM.activeLayer);
 
   // Extract valid PCs from active composer
   const composerValidPCs = new Set();
