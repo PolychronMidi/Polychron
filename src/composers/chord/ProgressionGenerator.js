@@ -156,11 +156,20 @@ ProgressionGenerator = class ProgressionGenerator {
   }
 
   random(opts = {}) {
-    const useCorpus = !(opts && opts.useCorpus === false);
+    const hasLegacyToggle = opts && typeof opts.useCorpus === 'boolean';
+    const hasProfileToggle = opts && typeof opts.useCorpusHarmonicPriors === 'boolean';
+    const useCorpus = hasLegacyToggle
+      ? opts.useCorpus === true
+      : hasProfileToggle
+        ? opts.useCorpusHarmonicPriors === true
+        : false;
     if (useCorpus && typeof harmonicPriors !== 'undefined' && harmonicPriors && typeof harmonicPriors.getRomanProgression === 'function') {
-      const selection = harmonicPriors.getRomanProgression(this.romanQuality, Object.assign({}, opts, {
-        phase: this.resolvePhrasePhase(opts)
-      }));
+      const corpusOpts = {
+        ...opts,
+        phase: this.resolvePhrasePhase(opts),
+        ...(Number.isFinite(Number(opts && opts.corpusHarmonicStrength)) ? { cadenceStrength: clamp(Number(opts.corpusHarmonicStrength), 0, 1) } : {})
+      };
+      const selection = harmonicPriors.getRomanProgression(this.romanQuality, corpusOpts);
       return selection.romans.map((roman) => this.romanToChord(roman));
     }
 

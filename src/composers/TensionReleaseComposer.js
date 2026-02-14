@@ -1,7 +1,11 @@
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5, opts = {}) {
     const generator = new ProgressionGenerator(key, quality);
-    const progressionChords = generator.random({ source: 'tensionRelease' });
+    const progressionChords = generator.random({
+      source: 'tensionRelease',
+      useCorpusHarmonicPriors: opts && opts.useCorpusHarmonicPriors === true,
+      corpusHarmonicStrength: opts && opts.corpusHarmonicStrength
+    });
     super(progressionChords);
     // enable voice-leading delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }

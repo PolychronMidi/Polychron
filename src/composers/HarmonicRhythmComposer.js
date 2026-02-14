@@ -4,10 +4,19 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', opts = {}) {
     const generator = new ProgressionGenerator(key, quality);
     let chordSymbols = progression;
+    const harmonicCorpusOpts = {
+      source: 'harmonicRhythm',
+      useCorpusHarmonicPriors: opts && opts.useCorpusHarmonicPriors === true,
+      corpusHarmonicStrength: opts && opts.corpusHarmonicStrength
+    };
     if (typeof progression === 'string') {
       const mode = /** @type {string} */ (progression).toLowerCase();
-      if (mode === 'random' || mode === 'corpus') {
-        chordSymbols = generator.random({ source: 'harmonicRhythm' });
+      if (mode === 'corpus') {
+        chordSymbols = generator.generate('corpus', Object.assign({}, harmonicCorpusOpts, {
+          useCorpus: true
+        }));
+      } else if (mode === 'random') {
+        chordSymbols = generator.random(harmonicCorpusOpts);
       } else {
         chordSymbols = generator.generate(progression, { source: 'harmonicRhythm' });
       }

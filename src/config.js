@@ -156,9 +156,10 @@ VOICE_PROFILES = {
 };
 
 CHORD_PROFILES = {
-  pop: { voices: 4, velocityScale: 1, inversion: 0, baseVelocity: 100 },
-  jazz: { voices: 4, velocityScale: 0.9, inversion: 1, baseVelocity: 90 },
-  ambient: { voices: 3, velocityScale: 0.6, inversion: 0, baseVelocity: 70 }
+  pop: { voices: 4, velocityScale: 1, inversion: 0, baseVelocity: 100, useCorpusHarmonicPriors: false },
+  jazz: { voices: 4, velocityScale: 0.9, inversion: 1, baseVelocity: 90, useCorpusHarmonicPriors: false },
+  ambient: { voices: 3, velocityScale: 0.6, inversion: 0, baseVelocity: 70, useCorpusHarmonicPriors: false },
+  corpusAdaptive: { voices: 4, velocityScale: 0.95, inversion: 1, baseVelocity: 92, useCorpusHarmonicPriors: true, corpusHarmonicStrength: 0.62 }
 };
 
 MOTIF_PROFILES = {
