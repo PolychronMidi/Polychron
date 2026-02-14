@@ -71,6 +71,20 @@ DYNAMISM={
   playProb: { start: 0.15, mid: 0.2 },
   stutterProb: { end: 0.4, mid: 0.2 }
 };
+COMPOSER_FAMILIES={
+  diatonicCore: {
+    weight: 4,
+    types: ['measure', 'scale', 'mode', 'pentatonic', 'voiceLeading']
+  },
+  harmonicMotion: {
+    weight: 3,
+    types: ['chords', 'harmonicRhythm', 'tensionRelease', 'modalInterchange']
+  },
+  development: {
+    weight: 2,
+    types: ['melodicDevelopment', 'mode', 'voiceLeading', 'scale']
+  }
+};
 STUTTER_PROBABILITIES={
   globalApplyProb: 0.2,
   perProb: { source: 0.07, reflection: 0.2, bass: 0.7 },

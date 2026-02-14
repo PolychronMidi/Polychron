@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function loadManagedGlobalsFromDts() {
-  const managedPath = path.resolve(__dirname, 'src', 'types', 'globals.managed.d.ts');
+  const managedPath = path.resolve(__dirname, 'src', 'types', 'globals.d.ts');
   let text;
   try {
     text = fs.readFileSync(managedPath, 'utf8');
@@ -30,7 +30,6 @@ function loadManagedGlobalsFromDts() {
 
   return globals;
 }
-
 const MANAGED_GLOBALS = loadManagedGlobalsFromDts();
 
 const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked globals instead (Example: DONT use: globalThis.variable DO use: variable)';

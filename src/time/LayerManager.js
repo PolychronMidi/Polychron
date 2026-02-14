@@ -6,6 +6,7 @@
 LM = layerManager ={
   layers: {},
   layerComposers: {},
+  phraseFamily: null,
   activeLayer: null,
 
   /**
@@ -162,6 +163,21 @@ LM = layerManager ={
 
   setSectionStartAll: () => {
     Object.keys(LM.layers).forEach((ln) => LM.setSectionStartFor(ln));
+  },
+
+  setPhraseFamily: (familyName) => {
+    if (typeof familyName !== 'string' || familyName.length === 0) {
+      throw new Error('LayerManager.setPhraseFamily: familyName must be a non-empty string');
+    }
+    LM.phraseFamily = familyName;
+    return familyName;
+  },
+
+  getPhraseFamily: () => {
+    if (typeof LM.phraseFamily !== 'string' || LM.phraseFamily.length === 0) {
+      throw new Error('LayerManager.getPhraseFamily: phraseFamily is not set');
+    }
+    return LM.phraseFamily;
   },
 
   setComposerFor: (name, nextComposer) => {

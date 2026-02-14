@@ -375,6 +375,250 @@ ComposerFactory = class ComposerFactory {
     return 'default';
   }
 
+  static getComposerFamiliesOrFail() {
+    const fallback = {
+      default: {
+        weight: 1,
+        types: Object.keys(this.constructors)
+      }
+    };
+    const source = (typeof COMPOSER_FAMILIES !== 'undefined' && COMPOSER_FAMILIES && typeof COMPOSER_FAMILIES === 'object')
+      ? COMPOSER_FAMILIES
+      : fallback;
+
+    const validTypes = new Set(Object.keys(this.constructors));
+    const normalized = {};
+    const familyNames = Object.keys(source);
+    if (familyNames.length === 0) {
+      throw new Error('ComposerFactory.getComposerFamiliesOrFail: no composer families configured');
+    }
+
+    for (const familyName of familyNames) {
+      const family = source[familyName];
+      if (!family || typeof family !== 'object') {
+        throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" must be an object`);
+      }
+      const types = Array.isArray(family.types) ? family.types : null;
+      if (!types || types.length === 0) {
+        throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" must define a non-empty types array`);
+      }
+      const normalizedTypes = [];
+      for (const type of types) {
+        if (typeof type !== 'string' || type.length === 0) {
+          throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" has invalid type entry`);
+        }
+        if (!validTypes.has(type)) {
+          throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" references unknown composer type "${type}"`);
+        }
+        if (!normalizedTypes.includes(type)) normalizedTypes.push(type);
+      }
+      const weight = Number(family.weight);
+      normalized[familyName] = {
+        weight: Number.isFinite(weight) && weight > 0 ? weight : 1,
+        types: normalizedTypes
+      };
+    }
+
+    return normalized;
+  }
+
+  static resolvePhraseFamilyOrFail(extraConfig = {}, composerCtx = null) {
+    if (extraConfig !== undefined && (typeof extraConfig !== 'object' || extraConfig === null)) {
+      throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: extraConfig must be an object');
+    }
+    if (composerCtx !== null && composerCtx !== undefined && (typeof composerCtx !== 'object' || composerCtx === null)) {
+      throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: composerCtx must be an object when provided');
+    }
+    const families = this.getComposerFamiliesOrFail();
+    const context = (composerCtx && typeof composerCtx === 'object')
+      ? composerCtx
+      : ((this.sharedComposerCtx && typeof this.sharedComposerCtx === 'object') ? this.sharedComposerCtx : null);
+
+    let requestedFamily = extraConfig.phraseFamily ?? extraConfig.composerFamily;
+    if ((requestedFamily === undefined || requestedFamily === null) && context && typeof context.phraseFamily === 'string') {
+      requestedFamily = context.phraseFamily;
+    }
+
+    if ((requestedFamily === undefined || requestedFamily === null) && context && typeof context.selectPhraseFamily === 'function') {
+      const selected = context.selectPhraseFamily({
+        availableFamilies: Object.keys(families),
+        sectionIndex: (typeof sectionIndex === 'number') ? sectionIndex : null,
+        phraseIndex: (typeof phraseIndex === 'number') ? phraseIndex : null,
+        measureIndex: (typeof measureIndex === 'number') ? measureIndex : null
+      });
+      if (selected !== undefined && selected !== null) {
+        requestedFamily = selected;
+      }
+    }
+
+    if (requestedFamily !== undefined && requestedFamily !== null) {
+      if (typeof requestedFamily !== 'string' || requestedFamily.length === 0) {
+        throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: requested family must be a non-empty string');
+      }
+      if (!Object.prototype.hasOwnProperty.call(families, requestedFamily)) {
+        throw new Error(`ComposerFactory.resolvePhraseFamilyOrFail: unknown family "${requestedFamily}"`);
+      }
+      return requestedFamily;
+    }
+
+    const familyNames = Object.keys(families);
+    let totalWeight = 0;
+    for (const familyName of familyNames) {
+      totalWeight += Number(families[familyName].weight);
+    }
+    if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+      throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: family weights must sum to a positive finite number');
+    }
+
+    let roll = rf() * totalWeight;
+    for (const familyName of familyNames) {
+      roll -= Number(families[familyName].weight);
+      if (roll <= 0) return familyName;
+    }
+    return familyNames[familyNames.length - 1];
+  }
+
+  static inferComposerType(composerInstance) {
+    if (!composerInstance || typeof composerInstance !== 'object') return null;
+    if (typeof composerInstance._factoryType === 'string' && composerInstance._factoryType.length > 0) {
+      return composerInstance._factoryType;
+    }
+    const ctorName = composerInstance.constructor && composerInstance.constructor.name;
+    const byCtorName = {
+      MeasureComposer: 'measure',
+      ScaleComposer: 'scale',
+      ChordComposer: 'chords',
+      ModeComposer: 'mode',
+      PentatonicComposer: 'pentatonic',
+      TensionReleaseComposer: 'tensionRelease',
+      ModalInterchangeComposer: 'modalInterchange',
+      MelodicDevelopmentComposer: 'melodicDevelopment',
+      VoiceLeadingComposer: 'voiceLeading',
+      HarmonicRhythmComposer: 'harmonicRhythm'
+    };
+    return (typeof ctorName === 'string' && byCtorName[ctorName]) ? byCtorName[ctorName] : null;
+  }
+
+  static scoreFamilyCandidateConfig(candidateConfig, opts = {}) {
+    if (!candidateConfig || typeof candidateConfig !== 'object') {
+      throw new Error('ComposerFactory.scoreFamilyCandidateConfig: candidateConfig must be an object');
+    }
+    if (typeof candidateConfig.type !== 'string' || candidateConfig.type.length === 0) {
+      throw new Error('ComposerFactory.scoreFamilyCandidateConfig: candidateConfig.type must be a non-empty string');
+    }
+
+    const previousType = this.inferComposerType(opts.previousComposer);
+    const peerType = this.inferComposerType(opts.peerComposer);
+
+    let score = 1;
+    if (previousType && candidateConfig.type === previousType) score += 0.45;
+    if (peerType && candidateConfig.type === peerType) score -= 0.35;
+    if (previousType && peerType && previousType !== peerType && candidateConfig.type !== peerType) score += 0.1;
+
+    if (!Number.isFinite(score)) {
+      throw new Error('ComposerFactory.scoreFamilyCandidateConfig: computed score is not finite');
+    }
+    return m.max(0.05, score);
+  }
+
+  static pickWeightedFamilyCandidateOrFail(candidateConfigs, opts = {}) {
+    if (!Array.isArray(candidateConfigs) || candidateConfigs.length === 0) {
+      throw new Error('ComposerFactory.pickWeightedFamilyCandidateOrFail: candidateConfigs must be a non-empty array');
+    }
+
+    const weights = candidateConfigs.map((cfg) => this.scoreFamilyCandidateConfig(cfg, opts));
+    let total = 0;
+    for (const w of weights) total += Number(w);
+    if (!Number.isFinite(total) || total <= 0) {
+      throw new Error('ComposerFactory.pickWeightedFamilyCandidateOrFail: candidate weights sum to non-positive value');
+    }
+
+    let roll = rf() * total;
+    for (let i = 0; i < candidateConfigs.length; i++) {
+      roll -= Number(weights[i]);
+      if (roll <= 0) return candidateConfigs[i];
+    }
+    return candidateConfigs[candidateConfigs.length - 1];
+  }
+
+  static createRandomForLayer(opts = {}, ctx = null) {
+    if (opts !== undefined && (typeof opts !== 'object' || opts === null)) {
+      throw new Error('ComposerFactory.createRandomForLayer: opts must be an object');
+    }
+
+    const familyName = opts.familyName;
+    if (typeof familyName !== 'string' || familyName.length === 0) {
+      throw new Error('ComposerFactory.createRandomForLayer: familyName must be a non-empty string');
+    }
+
+    const layerName = opts.layerName;
+    if (typeof layerName !== 'string' || layerName.length === 0) {
+      throw new Error('ComposerFactory.createRandomForLayer: layerName must be a non-empty string');
+    }
+
+    const extraConfig = (opts.extraConfig && typeof opts.extraConfig === 'object') ? opts.extraConfig : {};
+    const composerCtx = ctx || this.sharedComposerCtx;
+    if (composerCtx) this.setComposerContext(composerCtx);
+
+    const families = this.getComposerFamiliesOrFail();
+    const family = families[familyName];
+    if (!family) {
+      throw new Error(`ComposerFactory.createRandomForLayer: unknown family "${familyName}"`);
+    }
+    const allowedTypes = new Set(family.types);
+
+    const poolName = this.resolveComposerPoolName(extraConfig, composerCtx);
+    let composerPool;
+    if (poolName === 'default') {
+      if (typeof getDefaultComposerPoolOrFail !== 'function') {
+        throw new Error('ComposerFactory.createRandomForLayer: getDefaultComposerPoolOrFail() is not available');
+      }
+      composerPool = getDefaultComposerPoolOrFail();
+    } else {
+      if (typeof getComposerPoolOrFail !== 'function') {
+        throw new Error('ComposerFactory.createRandomForLayer: getComposerPoolOrFail() is not available');
+      }
+      composerPool = getComposerPoolOrFail(poolName);
+    }
+
+    const familyPool = composerPool.filter((cfg) => cfg && typeof cfg.type === 'string' && allowedTypes.has(cfg.type));
+    if (familyPool.length === 0) {
+      throw new Error(`ComposerFactory.createRandomForLayer: no composer profiles in pool "${poolName}" for family "${familyName}"`);
+    }
+
+    const maxAttempts = m.min(12, familyPool.length * 2);
+    let lastError = null;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const cfg = this.pickWeightedFamilyCandidateOrFail(familyPool, {
+        previousComposer: opts.previousComposer,
+        peerComposer: opts.peerComposer,
+        layerName
+      });
+
+      try {
+        const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
+        if (typeof composer.getNotes !== 'function') {
+          throw new Error('created composer missing getNotes() method');
+        }
+        const notes = composer.getNotes();
+        if (!Array.isArray(notes) || notes.length === 0) {
+          throw new Error('composer.getNotes() returned empty or invalid array');
+        }
+
+        composer._factoryType = cfg.type;
+        composer._profileFamily = familyName;
+        composer._profilePool = poolName;
+        composer._layerTarget = layerName;
+        return composer;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    throw new Error(`ComposerFactory.createRandomForLayer: failed for layer "${layerName}" in family "${familyName}" after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
+  }
+
   static createRandom(extraConfig = {}, ctx = null) {
     // Set context if provided; fall back to shared context
     const composerCtx = ctx || this.sharedComposerCtx;

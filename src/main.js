@@ -20,6 +20,33 @@ const composerCtx = {
 };
 ComposerFactory.setComposerContext(composerCtx);
 
+const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
+  if (typeof layerName !== 'string' || layerName.length === 0) {
+    throw new Error('main.selectLayerComposerForMeasure: layerName must be a non-empty string');
+  }
+  if (typeof phraseFamily !== 'string' || phraseFamily.length === 0) {
+    throw new Error('main.selectLayerComposerForMeasure: phraseFamily must be a non-empty string');
+  }
+  const peerLayerName = layerName === 'L1' ? 'L2' : (layerName === 'L2' ? 'L1' : null);
+  const previousComposer = (LM.layerComposers && LM.layerComposers[layerName] && typeof LM.layerComposers[layerName] === 'object')
+    ? LM.layerComposers[layerName]
+    : null;
+  const peerComposer = (peerLayerName && LM.layerComposers && LM.layerComposers[peerLayerName] && typeof LM.layerComposers[peerLayerName] === 'object')
+    ? LM.layerComposers[peerLayerName]
+    : null;
+
+  const nextComposer = ComposerFactory.createRandomForLayer({
+    familyName: phraseFamily,
+    layerName,
+    previousComposer,
+    peerComposer,
+    extraConfig: { root: 'random' }
+  }, composerCtx);
+
+  LM.setComposerFor(layerName, nextComposer);
+  return nextComposer;
+};
+
 // Initialize EventBus feedback loop: FX intensity → rhythm pattern modulation
 if (typeof FXFeedbackListener !== 'undefined') {
   FXFeedbackListener.initialize();
@@ -46,8 +73,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   LM.activate('L1', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
-    composer = ComposerFactory.createRandom({ root: 'random' }, composerCtx);
-    LM.setComposerForAll(composer);
+    const phraseFamily = ComposerFactory.resolvePhraseFamilyOrFail({ root: 'random' }, composerCtx);
+    if (!LM || typeof LM.setPhraseFamily !== 'function') {
+      throw new Error('main: LayerManager.setPhraseFamily not available');
+    }
+    LM.setPhraseFamily(phraseFamily);
+
+    const phraseL1Composer = selectLayerComposerForMeasure('L1', phraseFamily);
+    selectLayerComposerForMeasure('L2', phraseFamily);
+    composer = phraseL1Composer;
     [numerator, denominator] = composer.getMeter();
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
     LM.activate('L1', false);
@@ -61,6 +95,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       measureCount++;
+      selectLayerComposerForMeasure('L1', phraseFamily);
       setUnitTiming('measure');
 
       // Get phrase context for dynamism scaling
@@ -117,6 +152,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
+      selectLayerComposerForMeasure('L2', phraseFamily);
       setUnitTiming('measure');
 
 
