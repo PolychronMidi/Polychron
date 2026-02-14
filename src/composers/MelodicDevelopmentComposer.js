@@ -85,56 +85,10 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     if (!Array.isArray(effectiveScale) || effectiveScale.length === 0) {
       throw new Error('MelodicDevelopmentComposer.getNotes: no effective scale available');
     }
-    const scalePC = resolveScalePC(effectiveScale);
-    const allowedMidi = [];
-    for (let midi = 0; midi <= 127; midi++) {
-      if (scalePC.includes(modClamp(midi, 0, 11))) allowedMidi.push(midi);
+    if (typeof scaleNormalization === 'undefined' || !scaleNormalization || typeof scaleNormalization.createMidiFitter !== 'function') {
+      throw new Error('MelodicDevelopmentComposer.getNotes: scaleNormalization.createMidiFitter() not available');
     }
-    if (allowedMidi.length === 0) {
-      throw new Error('MelodicDevelopmentComposer.getNotes: effective scale produced no in-range MIDI candidates');
-    }
-
-    const nearestAllowedMidi = (raw) => {
-      let best = allowedMidi[0];
-      let bestDist = m.abs(Number(raw) - best);
-      for (let i = 1; i < allowedMidi.length; i++) {
-        const cand = allowedMidi[i];
-        const d = m.abs(Number(raw) - cand);
-        if (d < bestDist) {
-          best = cand;
-          bestDist = d;
-        }
-      }
-      return best;
-    };
-
-    const fitToMidiInScale = (midiVal) => {
-      if (!Number.isFinite(Number(midiVal))) throw new Error('MelodicDevelopmentComposer.getNotes: non-finite midi value during normalization');
-      if (typeof modClamp !== 'function') throw new Error('MelodicDevelopmentComposer.getNotes: modClamp() not available');
-      let out = modClamp(Number(midiVal), 0, 127);
-      let outPC = modClamp(out, 0, 11);
-      if (!scalePC.includes(outPC)) {
-        const quantRaw = transposeByDegree(Number(midiVal), effectiveScale, 0, { quantize: true, clampToMidi: false });
-        if (!Number.isFinite(Number(quantRaw))) {
-          throw new Error('MelodicDevelopmentComposer.getNotes: quantization produced non-finite midi');
-        }
-        const quantWrapped = modClamp(Number(quantRaw), 0, 127);
-        const quantPC = modClamp(quantWrapped, 0, 11);
-        if (scalePC.includes(quantPC)) {
-          out = quantWrapped;
-          outPC = quantPC;
-        } else {
-          out = nearestAllowedMidi(Number(quantRaw));
-          outPC = modClamp(out, 0, 11);
-        }
-      }
-      if (!scalePC.includes(outPC)) {
-        out = nearestAllowedMidi(Number(midiVal));
-        outPC = modClamp(out, 0, 11);
-      }
-      if (!scalePC.includes(outPC)) throw new Error(`MelodicDevelopmentComposer.getNotes: failed to normalize note ${midiVal} to effective scale`);
-      return m.round(out);
-    };
+    const { fitMidi } = scaleNormalization.createMidiFitter(effectiveScale, 'MelodicDevelopmentComposer.getNotes');
 
     // If composer honors time-varying scale context, derive baseNotes from the effectiveScale (fail-fast if not available)
     let baseNotes;
@@ -177,7 +131,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
             const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
             if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note');
             const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset0, { clampToMidi: false });
-            const transposed = fitToMidiInScale(transposedRaw);
+            const transposed = fitMidi(transposedRaw);
             return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
           });
         }
@@ -194,7 +148,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
             const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
             if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid base note');
             const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset1, { clampToMidi: false });
-            const transposed = fitToMidiInScale(transposedRaw);
+            const transposed = fitMidi(transposedRaw);
             return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
           });
         }
@@ -220,7 +174,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
           if (this.inversionPivotMode === 'fixed-degree') {
             const pInfo = midiToDegree(noisyPivot, theScale, { quantize: true });
             const noisyPivotRaw = degreeToMidi(this.inversionFixedDegree, theScale, pInfo.octave, { clampToMidi: false });
-            noisyPivot = fitToMidiInScale(noisyPivotRaw);
+            noisyPivot = fitMidi(noisyPivotRaw);
           }
 
           if (this.inversionMode === 'chromatic') {
@@ -228,7 +182,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
               const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
               if (!Number.isFinite(midi)) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: invalid base note for chromatic inversion');
               const inverted = clamp(m.round(2 * noisyPivot - midi), 0, 127);
-              return (typeof item === 'number') ? inverted : Object.assign({}, item, { note: inverted });
+              const out = this.normalizeToScale ? fitMidi(inverted) : inverted;
+              return (typeof item === 'number') ? out : Object.assign({}, item, { note: out });
             });
           } else {
             const pivotInfo = midiToDegree(noisyPivot, theScale, { quantize: true });
@@ -239,7 +194,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
               const info = midiToDegree(midi, theScale, { quantize: true });
               const invAbs = 2 * pivotAbs - info.absDegree;
               const invMidiRaw = degreeToMidi(invAbs, theScale, 0, { clampToMidi: false });
-              const invMidi = fitToMidiInScale(invMidiRaw);
+              const invMidi = fitMidi(invMidiRaw);
               return (typeof item === 'number') ? invMidi : Object.assign({}, item, { note: invMidi });
             });
           }
@@ -248,24 +203,6 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
       case 3:
         if (intensity > 0.5) developedNotes = [...baseNotes].reverse();
         break;
-    }
-
-    // Final normalization when enabled: ensure returned notes' pitch-classes belong to effective scale.
-    if (this.normalizeToScale) {
-      const theScale = effectiveScale;
-      if (Array.isArray(theScale) && theScale.length > 0) {
-        developedNotes = developedNotes.map((item) => {
-          const val = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
-          if (!Number.isFinite(val)) throw new Error('MelodicDevelopmentComposer.getNotes: invalid developed note');
-          const pc = modClamp(val, 0, 11);
-          if (!scalePC.includes(pc)) {
-            const quantRaw = transposeByDegree(val, theScale, 0, { quantize: true, clampToMidi: false });
-            const quant = fitToMidiInScale(quantRaw);
-            return (typeof item === 'number') ? quant : Object.assign({}, item, { note: quant });
-          }
-          return item;
-        });
-      }
     }
 
     this._lastBaseNotes = baseNotes;

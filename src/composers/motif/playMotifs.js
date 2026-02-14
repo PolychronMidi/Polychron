@@ -87,40 +87,15 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
   const activeComposer = LM.getComposerFor(LM.activeLayer);
 
-  // Extract valid PCs from active composer
-  const composerValidPCs = new Set();
-  if (activeComposer && typeof activeComposer === 'object') {
-    const caps = (typeof activeComposer.getCapabilities === 'function')
-      ? activeComposer.getCapabilities()
-      : (activeComposer.capabilities || {});
-
-    if (caps && caps.timeVaryingScaleContext === true && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-      const windowScale = HarmonicContext.getField('scale');
-      if (Array.isArray(windowScale) && windowScale.length > 0) {
-        for (const entry of windowScale) {
-          if (typeof entry === 'string') {
-            const pc = t.Note.chroma(entry);
-            if (typeof pc === 'number' && Number.isFinite(pc)) composerValidPCs.add(((pc % 12) + 12) % 12);
-          } else if (typeof entry === 'number' && Number.isFinite(entry)) {
-            composerValidPCs.add(((entry % 12) + 12) % 12);
-          }
-        }
-      }
-    }
-
-    if (composerValidPCs.size === 0 && Array.isArray(activeComposer.notes)) {
-      for (const noteName of activeComposer.notes) {
-        if (typeof noteName === 'string') {
-          const pc = t.Note.chroma(noteName);
-          if (typeof pc === 'number' && Number.isFinite(pc)) {
-            composerValidPCs.add(((pc % 12) + 12) % 12);
-          }
-        } else if (typeof noteName === 'number' && Number.isFinite(noteName)) {
-          composerValidPCs.add(((noteName % 12) + 12) % 12);
-        }
-      }
-    }
+  if (typeof scaleNormalization === 'undefined' || !scaleNormalization || typeof scaleNormalization.collectComposerValidPCs !== 'function') {
+    throw new Error(`${unit}.playMotifs: scaleNormalization.collectComposerValidPCs() not available`);
   }
+
+  // Extract valid PCs from active composer
+  const composerValidPCs = scaleNormalization.collectComposerValidPCs(activeComposer, {
+    preferTimeVaryingContext: true,
+    label: `${unit}.playMotifs`
+  });
 
   // Get candidate notes from bucket entry and select via centralized voice coordination
   let candidateNotes = (() => {
