@@ -4,6 +4,17 @@ factoryConstructors = {
       throw new Error('factoryConstructors.build: factoryManager class is required');
     }
 
+    const resolveHarmonicCorpusOptions = (resolvedProfiles = null) => {
+      const chordProfile = (resolvedProfiles && typeof resolvedProfiles === 'object' && resolvedProfiles.chord && typeof resolvedProfiles.chord === 'object')
+        ? resolvedProfiles.chord
+        : null;
+      const useCorpusHarmonicPriors = Boolean(chordProfile && chordProfile.useCorpusHarmonicPriors === true);
+      const corpusHarmonicStrength = useCorpusHarmonicPriors
+        ? clamp(Number.isFinite(Number(chordProfile.corpusHarmonicStrength)) ? Number(chordProfile.corpusHarmonicStrength) : 0.55, 0, 1)
+        : 0;
+      return { useCorpusHarmonicPriors, corpusHarmonicStrength };
+    };
+
     return {
       measure: () => new MeasureComposer(),
 
@@ -63,24 +74,27 @@ factoryConstructors = {
         return new PentatonicComposer(r, type);
       },
 
-      tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {}, phraseTensionScaling = true } = {}) => {
+      tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {}, phraseTensionScaling = true, resolvedProfiles = null } = {}) => {
         if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.tensionRelease: allNotes not available');
         const k = factoryManager.resolveProgressionKeyOrFail(key, 'ComposerFactory.tensionRelease', quality);
         const phraseArcManager = enablePhraseArcs ? factoryManager.getPhraseArcManager(phraseArcOpts) : null;
-        return new TensionReleaseComposer(k, quality, tensionCurve, { phraseArcManager, phraseTensionScaling });
+        const harmonicCorpusOpts = resolveHarmonicCorpusOptions(resolvedProfiles);
+        return new TensionReleaseComposer(k, quality, tensionCurve, Object.assign({ phraseArcManager, phraseTensionScaling }, harmonicCorpusOpts));
       },
 
-      modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25 } = {}) => {
+      modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25, resolvedProfiles = null } = {}) => {
         if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.modalInterchange: allNotes not available');
         const k = factoryManager.resolveProgressionKeyOrFail(key, 'ComposerFactory.modalInterchange', primaryMode);
-        return new ModalInterchangeComposer(k, primaryMode, borrowProbability);
+        const harmonicCorpusOpts = resolveHarmonicCorpusOptions(resolvedProfiles);
+        return new ModalInterchangeComposer(k, primaryMode, borrowProbability, harmonicCorpusOpts);
       },
 
-      harmonicRhythm: ({ progression = ['I', 'IV', 'V', 'I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true, enablePhraseArcs = true, phraseArcOpts = {}, phraseBoundaryEmphasis = 1.3 } = {}) => {
+      harmonicRhythm: ({ progression = ['I', 'IV', 'V', 'I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true, enablePhraseArcs = true, phraseArcOpts = {}, phraseBoundaryEmphasis = 1.3, resolvedProfiles = null } = {}) => {
         if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.harmonicRhythm: allNotes not available');
         const k = factoryManager.resolveProgressionKeyOrFail(key, 'ComposerFactory.harmonicRhythm', quality);
         const phraseArcManager = enablePhraseArcs ? factoryManager.getPhraseArcManager(phraseArcOpts) : null;
-        return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, { changeEmphasis, anticipation, settling, phraseArcManager, phraseBoundaryEmphasis });
+        const harmonicCorpusOpts = resolveHarmonicCorpusOptions(resolvedProfiles);
+        return new HarmonicRhythmComposer(progression, k, measuresPerChord, quality, Object.assign({ changeEmphasis, anticipation, settling, phraseArcManager, phraseBoundaryEmphasis }, harmonicCorpusOpts));
       },
 
       melodicDevelopment: ({ name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, enablePhraseArcs = true, phraseArcOpts = {}, inversionMode = 'diatonic', inversionPivotMode = 'first-note', inversionFixedDegree = 0, normalizeToScale = true, useDegreeNoise = true, arcScaling = true } = {}) => {

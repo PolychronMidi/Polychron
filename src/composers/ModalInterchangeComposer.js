@@ -11,9 +11,13 @@
  * @extends ChordComposer
  */
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
-  constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25) {
+  constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25, opts = {}) {
     const generator = new ProgressionGenerator(key, primaryMode);
-    const progressionChords = generator.random({ source: 'modalInterchange' });
+    const progressionChords = generator.random({
+      source: 'modalInterchange',
+      useCorpusHarmonicPriors: opts && opts.useCorpusHarmonicPriors === true,
+      corpusHarmonicStrength: opts && opts.corpusHarmonicStrength
+    });
     super(progressionChords);
     // enable voice-leading delegation
     try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }

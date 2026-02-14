@@ -44,6 +44,18 @@ pip install music21
 
 ## Runtime usage
 
-- `ProgressionGenerator.random()` consumes `harmonicPriors.getRomanProgression(...)`
+- `ProgressionGenerator.generate('corpus', opts)` always consumes `harmonicPriors.getRomanProgression(...)`
+- `ProgressionGenerator.random(opts)` now uses corpus priors only when explicitly enabled via either:
+	- `opts.useCorpus: true` (legacy explicit toggle), or
+	- `opts.useCorpusHarmonicPriors: true` (profile-driven toggle)
 - `HarmonicRhythmComposer` supports `progression: 'corpus'`
 - `TensionReleaseComposer` and `ModalInterchangeComposer` now initialize from corpus-weighted progression selection
+
+### Profile-driven toggles
+
+`CHORD_PROFILES` can carry harmonic prior controls:
+
+- `useCorpusHarmonicPriors: boolean`
+- `corpusHarmonicStrength: number` (mapped to cadence strength, clamped `0..1`)
+
+The built-in `corpusAdaptive` chord profile enables this path.
