@@ -279,6 +279,17 @@ HarmonicJourney = (() => {
       quality: quality,
       scale: scaleNotes
     });
+
+    // Emit journey-move event for rhythm-harmonic coupling
+    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+      EventBus.emit('journey-move', {
+        move: stop.move,
+        distance: stop.distance,
+        key: stop.key,
+        mode: stop.mode,
+        sectionIndex
+      });
+    }
   }
 
   /**

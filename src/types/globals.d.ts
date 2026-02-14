@@ -81,6 +81,7 @@ declare var RHYTHM_PRIOR_TABLES: any;
 declare var rhythmPriors: any;
 declare var PhaseLockedRhythmGenerator: any;
 declare var FXFeedbackListener: any;
+declare var JourneyRhythmCoupler: any;
 declare var EventBus: any;
 
 declare var totalSections: any;
@@ -226,6 +227,7 @@ declare var HarmonicContext: any;
 declare var HarmonicJourney: any;
 declare var MotifChain: any;
 declare var ProgressionGenerator: any;
+declare var PivotChordBridge: any;
 declare var HARMONIC_PRIOR_TABLES: any;
 declare var harmonicPriors: any;
 
