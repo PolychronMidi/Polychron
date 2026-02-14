@@ -13,6 +13,10 @@ require('./ChordManager');
 // @ts-ignore: load side-effect module with globals
 require('./chordUtils');
 // @ts-ignore: load side-effect module with globals
+require('./harmonicPriorsData');
+// @ts-ignore: load side-effect module with globals
+require('./harmonicPriors');
+// @ts-ignore: load side-effect module with globals
 require('./ChordComposer');
 // @ts-ignore: load side-effect module with globals
 require('./ProgressionGenerator');

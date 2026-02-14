@@ -1,4 +1,3 @@
-
 ProgressionGenerator = class ProgressionGenerator {
   constructor(key, quality = 'major') {
     if (typeof key !== 'string' || key === '') throw new Error('ProgressionGenerator: key must be non-empty string');
@@ -7,7 +6,8 @@ ProgressionGenerator = class ProgressionGenerator {
     this.quality = quality.toLowerCase();
 
     const modeToQuality = {
-      'ionian': 'major', 'dorian': 'minor', 'phrygian': 'minor', 'lydian': 'major', 'mixolydian': 'major', 'aeolian': 'minor', 'locrian': 'minor', 'major': 'major', 'minor': 'minor'
+      ionian: 'major', dorian: 'minor', phrygian: 'minor', lydian: 'major',
+      mixolydian: 'major', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
     };
     if (!Object.prototype.hasOwnProperty.call(modeToQuality, this.quality)) {
       throw new Error(`ProgressionGenerator: unknown quality or mode "${quality}"`);
@@ -21,6 +21,46 @@ ProgressionGenerator = class ProgressionGenerator {
     if (!Array.isArray(this.scaleNotes) || this.scaleNotes.length < 7 || !Array.isArray(this.diatonicChords) || this.diatonicChords.length < 7) {
       throw new Error(`ProgressionGenerator: invalid key data for key="${key}" quality="${quality}"`);
     }
+  }
+
+  getBuiltInPatternMap() {
+    return {
+      major: {
+        'I-IV-V': ['I', 'IV', 'V', 'I'],
+        'I-V-vi-IV': ['I', 'V', 'vi', 'IV'],
+        'ii-V-I': ['ii', 'V', 'I'],
+        'I-vi-IV-V': ['I', 'vi', 'IV', 'V'],
+        circle: ['I', 'IV', 'vii', 'iii', 'vi', 'ii', 'V', 'I'],
+        blues: ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V']
+      },
+      minor: {
+        'i-iv-v': ['i', 'iv', 'v', 'i'],
+        'i-VI-VII': ['i', 'VI', 'VII', 'i'],
+        'i-iv-VII': ['i', 'iv', 'VII', 'i'],
+        'ii-V-i': ['ii', 'V', 'i'],
+        andalusian: ['i', 'VII', 'VI', 'v']
+      }
+    };
+  }
+
+  getCombinedPatternMap() {
+    const quality = this.romanQuality || this.quality;
+    const builtIn = this.getBuiltInPatternMap()[quality];
+    if (!builtIn || typeof builtIn !== 'object') {
+      throw new Error(`ProgressionGenerator.getCombinedPatternMap: missing built-in patterns for quality "${quality}"`);
+    }
+
+    const merged = Object.assign({}, builtIn);
+    if (typeof harmonicPriors !== 'undefined' && harmonicPriors && typeof harmonicPriors.getPatternSet === 'function') {
+      const priorPatterns = harmonicPriors.getPatternSet(quality);
+      for (const [name, romans] of Object.entries(priorPatterns)) {
+        if (!Object.prototype.hasOwnProperty.call(merged, name)) {
+          merged[name] = romans;
+        }
+      }
+    }
+
+    return merged;
   }
 
   romanToChord(roman) {
@@ -68,41 +108,67 @@ ProgressionGenerator = class ProgressionGenerator {
     }
 
     const extensions = roman.replace(/^[b#]?[IiVv]+/, '');
-    return `${rootNote}${quality}${extensions}`;
+    const extensionSuffix = (typeof extensions === 'string') ? extensions : '';
+    const qualitySuffix = (typeof quality === 'string') ? quality : '';
+    const dedupedExtension = (extensionSuffix && qualitySuffix.endsWith(extensionSuffix)) ? '' : extensionSuffix;
+    return `${rootNote}${qualitySuffix}${dedupedExtension}`;
   }
 
-  generate(type) {
-    const patterns = {
-      major: {
-        'I-IV-V': ['I', 'IV', 'V', 'I'],
-        'I-V-vi-IV': ['I', 'V', 'vi', 'IV'],
-        'ii-V-I': ['ii', 'V', 'I'],
-        'I-vi-IV-V': ['I', 'vi', 'IV', 'V'],
-        'circle': ['I', 'IV', 'vii', 'iii', 'vi', 'ii', 'V', 'I'],
-        'blues': ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V']
-      },
-      minor: {
-        'i-iv-v': ['i', 'iv', 'v', 'i'],
-        'i-VI-VII': ['i', 'VI', 'VII', 'i'],
-        'i-iv-VII': ['i', 'iv', 'VII', 'i'],
-        'ii-V-i': ['ii', 'V', 'i'],
-        'andalusian': ['i', 'VII', 'VI', 'v']
+  resolvePhrasePhase(opts = {}) {
+    if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
+      return opts.phase;
+    }
+    if (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+      const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
+      if (typeof phase === 'string' && phase.length > 0) {
+        return phase;
       }
-    };
+    }
+    return 'development';
+  }
 
-    const pattern = patterns[this.romanQuality || this.quality]?.[type];
+  generate(type, opts = {}) {
+    if (typeof type !== 'string' || type.length === 0) {
+      throw new Error('ProgressionGenerator.generate: type must be a non-empty string');
+    }
+
+    const normalizedType = type.toLowerCase();
+    if (normalizedType === 'corpus') {
+      if (typeof harmonicPriors === 'undefined' || !harmonicPriors || typeof harmonicPriors.getRomanProgression !== 'function') {
+        throw new Error('ProgressionGenerator.generate: harmonicPriors.getRomanProgression() not available for corpus mode');
+      }
+      const selection = harmonicPriors.getRomanProgression(this.romanQuality, Object.assign({}, opts, {
+        phase: this.resolvePhrasePhase(opts)
+      }));
+      return selection.romans.map((roman) => this.romanToChord(roman));
+    }
+
+    const patterns = this.getCombinedPatternMap();
+    const pattern = patterns[type];
     if (!pattern) {
       throw new Error(`ProgressionGenerator.generate: unknown progression type "${type}"`);
     }
+    if (!Array.isArray(pattern) || pattern.length === 0) {
+      throw new Error(`ProgressionGenerator.generate: progression pattern "${type}" is empty`);
+    }
 
-    return pattern.map(roman => this.romanToChord(roman));
+    return pattern.map((roman) => this.romanToChord(roman));
   }
 
-  random() {
-    const types = (this.romanQuality || this.quality) === 'major'
+  random(opts = {}) {
+    const useCorpus = !(opts && opts.useCorpus === false);
+    if (useCorpus && typeof harmonicPriors !== 'undefined' && harmonicPriors && typeof harmonicPriors.getRomanProgression === 'function') {
+      const selection = harmonicPriors.getRomanProgression(this.romanQuality, Object.assign({}, opts, {
+        phase: this.resolvePhrasePhase(opts)
+      }));
+      return selection.romans.map((roman) => this.romanToChord(roman));
+    }
+
+    const fallbackTypes = (this.romanQuality === 'major')
       ? ['I-IV-V', 'I-V-vi-IV', 'ii-V-I', 'I-vi-IV-V']
       : ['i-iv-v', 'i-VI-VII', 'i-iv-VII', 'ii-V-i'];
-    const randomType = types[ri(types.length - 1)];
-    return this.generate(randomType);
+
+    const randomType = fallbackTypes[ri(fallbackTypes.length - 1)];
+    return this.generate(randomType, opts);
   }
-}
+};

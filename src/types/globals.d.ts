@@ -223,6 +223,8 @@ declare var ComposerFactory: any;
 declare var HarmonicContext: any;
 declare var MotifChain: any;
 declare var ProgressionGenerator: any;
+declare var HARMONIC_PRIOR_TABLES: any;
+declare var harmonicPriors: any;
 
 declare var ChordRegistry: any;
 declare var ChordManager: any;

@@ -39,8 +39,8 @@ const assertInSetOrFail = (value, allowedSet, label) => {
   if (!allowedSet.has(value)) throw new Error(`ComposerProfiles: ${label} has invalid value "${value}"`);
 };
 const assertProgressionOrFail = (value, label) => {
-  if (value === 'random') return;
-  if (!Array.isArray(value) || value.length === 0) throw new Error(`ComposerProfiles: ${label} must be "random" or a non-empty array`);
+  if (value === 'random' || value === 'corpus') return;
+  if (!Array.isArray(value) || value.length === 0) throw new Error(`ComposerProfiles: ${label} must be "random", "corpus", or a non-empty array`);
   for (let i = 0; i < value.length; i++) {
     if (typeof value[i] !== 'string' || value[i].length === 0) throw new Error(`ComposerProfiles: ${label}[${i}] must be a non-empty string`);
   }
