@@ -13,9 +13,35 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
     return RhythmRegistry.execute(method, ...args);
   } else {
-    const rhythmSource = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.biasRhythmWeights === 'function')
+    const fxBiasedRhythmSource = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.biasRhythmWeights === 'function')
       ? FXFeedbackListener.biasRhythmWeights(rhythms)
       : rhythms;
+
+    let rhythmSource = fxBiasedRhythmSource;
+    const hasLayerContext = typeof LM !== 'undefined' && LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
+    const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
+    const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
+
+    if (useCorpusRhythmPriors) {
+      if (typeof rhythmPriors === 'undefined' || !rhythmPriors || typeof rhythmPriors.getBiasedRhythms !== 'function') {
+        throw new Error('getRhythm: rhythmPriors.getBiasedRhythms() unavailable while corpus rhythm priors are enabled');
+      }
+
+      const phraseContext = (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
+        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
+        : undefined;
+
+      rhythmSource = rhythmPriors.getBiasedRhythms({
+        rhythms: fxBiasedRhythmSource,
+        level,
+        phase: (phraseContext && typeof phraseContext.phase === 'string' && phraseContext.phase.length > 0) ? phraseContext.phase : undefined,
+        phraseContext,
+        atBoundary: Boolean(phraseContext && phraseContext.atBoundary === true),
+        quality: (activeComposer && typeof activeComposer.quality === 'string' && activeComposer.quality.length > 0) ? activeComposer.quality : undefined,
+        strength: activeComposer && activeComposer.corpusRhythmStrength
+      });
+    }
+
     const filteredRhythms=Object.fromEntries(
       Object.entries(rhythmSource).filter(([, { weights }]) => weights[levelIndex] > 0)
     );
@@ -24,11 +50,11 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     }
 
     const rhythmKey=randomWeightedSelection(filteredRhythms);
-    if (!rhythmKey || !rhythms[rhythmKey]) {
+    if (!rhythmKey || !rhythmSource[rhythmKey]) {
       throw new Error(`getRhythm: failed to select valid rhythm pattern for level "${level}"`);
     }
 
-    const { method: rhythmMethodKey, args: rhythmArgs }=rhythms[rhythmKey];
+    const { method: rhythmMethodKey, args: rhythmArgs }=rhythmSource[rhythmKey];
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators
     if (typeof PhaseLockedRhythmGenerator !== 'undefined' && Array.isArray(generatedArgs) && generatedArgs.length === 1 && generatedArgs[0] === length) {

@@ -69,6 +69,54 @@ PhraseArcManager = class PhraseArcManager {
     };
   }
 
+  /**
+   * Get normalized phrase position in [0, 1).
+   * @returns {number}
+   */
+  getPosition() {
+    return this.getPhraseContext().position;
+  }
+
+  /**
+   * Get current phrase phase label.
+   * @returns {string}
+   */
+  getPhase() {
+    return this.getPhraseContext().phase;
+  }
+
+  /**
+   * Whether current measure is at phrase start or end.
+   * @returns {boolean}
+   */
+  isAtBoundary() {
+    return this.getPhraseContext().atBoundary;
+  }
+
+  /**
+   * Whether current measure is phrase end.
+   * @returns {boolean}
+   */
+  isAtEnd() {
+    return this.getPhraseContext().atEnd;
+  }
+
+  /**
+   * Whether current measure is phrase start.
+   * @returns {boolean}
+   */
+  isAtStart() {
+    return this.getPhraseContext().atStart;
+  }
+
+  /**
+   * Reset hook for compatibility with FactoryManager lifecycle.
+   * PhraseArcManager is stateless relative to measure globals.
+   */
+  reset() {
+    return true;
+  }
+
   _getPhase(pos) {
     if (pos < 0.25) return 'opening';
     if (pos < 0.5) return 'development';

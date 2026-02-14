@@ -79,6 +79,10 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
   const corpusHarmonicStrength = useCorpusHarmonicPriors
     ? clamp(toFiniteOrDefault(chord && chord.corpusHarmonicStrength, 0.55), 0, 1)
     : 0;
+  const useCorpusRhythmPriors = Boolean(rhythm && rhythm.useCorpusRhythmPriors === true);
+  const corpusRhythmStrength = useCorpusRhythmPriors
+    ? clamp(toFiniteOrDefault(rhythm && rhythm.corpusRhythmStrength, 0.7), 0, 1.5)
+    : 0;
 
   return {
     namedProfiles: Object.assign({}, resolvedProfiles),
@@ -102,7 +106,9 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
     useCorpusMelodicPriors,
     corpusMelodicStrength,
     useCorpusHarmonicPriors,
-    corpusHarmonicStrength
+    corpusHarmonicStrength,
+    useCorpusRhythmPriors,
+    corpusRhythmStrength
   };
 };
 
@@ -162,6 +168,8 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
   composer.corpusMelodicStrength = toFiniteOrDefault(runtimeProfile.corpusMelodicStrength, 0);
   composer.useCorpusHarmonicPriors = runtimeProfile.useCorpusHarmonicPriors === true;
   composer.corpusHarmonicStrength = toFiniteOrDefault(runtimeProfile.corpusHarmonicStrength, 0);
+  composer.useCorpusRhythmPriors = runtimeProfile.useCorpusRhythmPriors === true;
+  composer.corpusRhythmStrength = toFiniteOrDefault(runtimeProfile.corpusRhythmStrength, 0);
 
   if (isFiniteNumber(runtimeProfile.inversionPreference)) {
     composer.chordInversionPreference = Number(runtimeProfile.inversionPreference);

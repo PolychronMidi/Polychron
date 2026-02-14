@@ -4,7 +4,8 @@ rhythmConfig = (function() {
   const LOCAL = {
     straight: { swing: 0, velocityScale: 1 },
     swung: { swing: 0.2, velocityScale: 1 },
-    laidBack: { swing: 0.15, velocityScale: 0.9 }
+    laidBack: { swing: 0.15, velocityScale: 0.9 },
+    corpusAdaptive: { swing: 0.12, velocityScale: 1, useCorpusRhythmPriors: true, corpusRhythmStrength: 0.72 }
   };
 
   function getProfile(name) {

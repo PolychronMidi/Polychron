@@ -4,6 +4,8 @@ require('./rhythmModulator');
 require('./FXFeedbackListener');
 require('./PhaseLockedRhythmGenerator');
 require('./rhythmConfig');
+require('./rhythmPriorsData');
+require('./rhythmPriors');
 require('./RhythmRegistry');
 require('./RhythmManager');
 
