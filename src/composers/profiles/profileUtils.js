@@ -6,9 +6,6 @@ if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || COMPOSER_TYPE_PROFIL
   COMPOSER_TYPE_PROFILE_SOURCES = {};
 }
 
-// Define the canonical list of composer types as a naked global (match
-// `src/types/globals.d.ts`) instead of re-declaring a block-scoped const to
-// avoid TS2451 redeclaration errors when `checkJs` is enabled.
 COMPOSER_TYPES = [
   'measure',
   'scale',
