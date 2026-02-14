@@ -156,6 +156,11 @@ ProgressionGenerator = class ProgressionGenerator {
   }
 
   random(opts = {}) {
+    // Check for a pending pivot chord bridge (first progression after a key change)
+    if (typeof PivotChordBridge !== 'undefined' && PivotChordBridge && typeof PivotChordBridge.hasBridge === 'function' && PivotChordBridge.hasBridge()) {
+      return PivotChordBridge.consumeBridge();
+    }
+
     const hasLegacyToggle = opts && typeof opts.useCorpus === 'boolean';
     const hasProfileToggle = opts && typeof opts.useCorpusHarmonicPriors === 'boolean';
     const useCorpus = hasLegacyToggle

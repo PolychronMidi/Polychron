@@ -20,6 +20,8 @@ require('./harmonicPriors');
 require('./ChordComposer');
 // @ts-ignore: load side-effect module with globals
 require('./ProgressionGenerator');
+// @ts-ignore: load side-effect module with globals
+require('./PivotChordBridge');
 
 // Register progression generator wrapper
 ChordRegistry.register('progression', (key, quality, type) => {

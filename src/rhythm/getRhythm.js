@@ -17,7 +17,10 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
       ? FXFeedbackListener.biasRhythmWeights(rhythms)
       : rhythms;
 
-    let rhythmSource = fxBiasedRhythmSource;
+    // Chain journey-boldness bias on top of FX bias
+    let rhythmSource = (typeof JourneyRhythmCoupler !== 'undefined' && JourneyRhythmCoupler && typeof JourneyRhythmCoupler.biasRhythmWeights === 'function')
+      ? JourneyRhythmCoupler.biasRhythmWeights(fxBiasedRhythmSource)
+      : fxBiasedRhythmSource;
     const hasLayerContext = typeof LM !== 'undefined' && LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
     const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);

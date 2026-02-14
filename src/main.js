@@ -51,6 +51,10 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
 if (typeof FXFeedbackListener !== 'undefined') {
   FXFeedbackListener.initialize();
 }
+// Initialize journey → rhythm coupling: bold key moves → complex rhythms
+if (typeof JourneyRhythmCoupler !== 'undefined') {
+  JourneyRhythmCoupler.initialize();
+}
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 
@@ -68,6 +72,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // Apply harmonic journey stop for this section (sets HarmonicContext for L1)
   if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
     HarmonicJourney.applyToContext(sectionIndex);
+  }
+
+  // Prepare pivot chord bridge for section transitions with key changes
+  if (typeof PivotChordBridge !== 'undefined' && PivotChordBridge && typeof PivotChordBridge.prepareBridge === 'function') {
+    PivotChordBridge.prepareBridge(sectionIndex);
   }
 
   // Initialize each layer's section origin so layer-relative ticks are correct and explicit
