@@ -65,6 +65,7 @@ const DEFAULT_POOL_SELECTORS = [
   ['melodicDevelopment', 'arcDetached'],
   ['voiceLeading', 'default'],
   ['voiceLeading', 'balanced'],
+  ['voiceLeading', 'corpusAdaptive'],
   ['harmonicRhythm', 'default'],
   ['harmonicRhythm', 'arclessMotorik']
 ];

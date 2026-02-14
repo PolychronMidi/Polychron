@@ -1,5 +1,19 @@
 // VoiceLeadingCore.js - core candidate scoring logic delegated from VoiceLeadingScore
 
+/**
+ * @typedef {Object} VoiceLeadingCoreOpts
+ * @property {string} [register] - Register name
+ * @property {number} [commonToneWeight] - Weight for common tones
+ * @property {number} [weight] - Candidate weight bias
+ * @property {boolean} [useCorpusVoiceLeadingPriors] - Whether to apply corpus priors
+ * @property {number} [corpusVoiceLeadingStrength] - Strength of corpus priors (0-2)
+ * @property {string} [phase] - Phrase phase
+ * @property {Object} [phraseContext] - Phrase context object
+ * @property {string} [phraseContext.phase] - Phase from phrase context
+ * @property {string} [quality] - Harmonic quality
+ * @property {string} [tonic] - Tonic key
+ */
+
 VoiceLeadingCore = {
   /**
    * Compute the total cost for a candidate note, delegating to stateless scorer helpers.
@@ -8,7 +22,7 @@ VoiceLeadingCore = {
    * @param {number[]} lastNotes
    * @param {number[]} registerRange
    * @param {string[]} constraints
-   * @param {object} opts
+   * @param {VoiceLeadingCoreOpts} opts
    */
   computeCandidateScore(scorer, candidate, lastNotes, registerRange, constraints, opts = {}) {
     // Validate inputs
@@ -94,6 +108,44 @@ VoiceLeadingCore = {
     }
     if (Array.isArray(constraints) && constraints.includes('stepsOnly') && interval > 2) {
       totalCost += 10;
+    }
+
+    const useCorpusVoiceLeadingPriors = opts && opts.useCorpusVoiceLeadingPriors === true;
+    if (useCorpusVoiceLeadingPriors) {
+      if (typeof voiceLeadingPriors === 'undefined' || !voiceLeadingPriors || typeof voiceLeadingPriors.getCandidateAdjustment !== 'function') {
+        throw new Error('VoiceLeadingCore.computeCandidateScore: voiceLeadingPriors.getCandidateAdjustment() unavailable while corpus priors are enabled');
+      }
+
+      const phrasePhase = (opts && typeof opts.phase === 'string' && opts.phase.length > 0)
+        ? opts.phase
+        : (opts && opts.phraseContext && typeof opts.phraseContext.phase === 'string' && opts.phraseContext.phase.length > 0)
+          ? opts.phraseContext.phase
+          : undefined;
+
+      const harmonicKey = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
+        ? opts.tonic
+        : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+          ? HarmonicContext.getField('key')
+          : undefined;
+
+      const harmonicQuality = (opts && typeof opts.quality === 'string' && opts.quality.length > 0)
+        ? opts.quality
+        : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+          ? HarmonicContext.getField('quality')
+          : 'major';
+
+      const corpusStrength = Number.isFinite(Number(opts && opts.corpusVoiceLeadingStrength))
+        ? Number(opts.corpusVoiceLeadingStrength)
+        : 0.8;
+
+      totalCost += voiceLeadingPriors.getCandidateAdjustment({
+        quality: harmonicQuality,
+        phase: phrasePhase,
+        tonic: harmonicKey,
+        fromNote: lastNote,
+        toNote: candidate,
+        strength: corpusStrength,
+      });
     }
 
     return totalCost;

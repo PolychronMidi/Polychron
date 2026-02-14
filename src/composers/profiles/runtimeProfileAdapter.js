@@ -67,6 +67,10 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
   const inversionPreference = chord && isFiniteNumber(chord.inversion) ? Number(chord.inversion) : null;
   const chordVoices = chord && isFiniteNumber(chord.voices) ? m.max(1, m.round(Number(chord.voices))) : null;
   const voiceCountMultiplier = chordVoices !== null ? clamp(chordVoices / 4, 0.5, 2) : 1;
+  const useCorpusVoiceLeadingPriors = Boolean(voice && voice.useCorpusVoiceLeadingPriors === true);
+  const corpusVoiceLeadingStrength = useCorpusVoiceLeadingPriors
+    ? clamp(toFiniteOrDefault(voice && voice.corpusVoiceLeadingStrength, 0.8), 0, 2)
+    : 0;
 
   return {
     namedProfiles: Object.assign({}, resolvedProfiles),
@@ -84,7 +88,9 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
     swingAmount,
     inversionPreference,
     chordVoices,
-    voiceCountMultiplier
+    voiceCountMultiplier,
+    useCorpusVoiceLeadingPriors,
+    corpusVoiceLeadingStrength
   };
 };
 
@@ -138,6 +144,8 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
   composer.profileTimingOffsetUnits = toFiniteOrDefault(runtimeProfile.timingOffsetUnits, 0);
   composer.profileSwingAmount = toFiniteOrDefault(runtimeProfile.swingAmount, 0);
   composer.profileVoiceCountMultiplier = toFiniteOrDefault(runtimeProfile.voiceCountMultiplier, 1);
+  composer.useCorpusVoiceLeadingPriors = runtimeProfile.useCorpusVoiceLeadingPriors === true;
+  composer.corpusVoiceLeadingStrength = toFiniteOrDefault(runtimeProfile.corpusVoiceLeadingStrength, 0);
 
   if (isFiniteNumber(runtimeProfile.inversionPreference)) {
     composer.chordInversionPreference = Number(runtimeProfile.inversionPreference);
@@ -151,6 +159,10 @@ const getVoiceSelectionOptions = (runtimeProfile = null) => {
   const options = {};
   if (isFiniteNumber(runtimeProfile.voiceCountMultiplier)) {
     options.voiceCountMultiplier = Number(runtimeProfile.voiceCountMultiplier);
+  }
+  if (runtimeProfile.useCorpusVoiceLeadingPriors === true) {
+    options.useCorpusVoiceLeadingPriors = true;
+    options.corpusVoiceLeadingStrength = toFiniteOrDefault(runtimeProfile.corpusVoiceLeadingStrength, 0.8);
   }
   return options;
 };
