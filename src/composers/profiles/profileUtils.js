@@ -47,6 +47,7 @@ const DIVERSITY_DIMENSIONS_BY_TYPE = {
 
 const DEFAULT_POOL_SELECTORS = [
   ['measure', 'default'],
+  ['measure', 'corpusAdaptive'],
   ['measure', 'accentedCells'],
   ['scale', 'default'],
   ['scale', 'diatonicWander'],
@@ -61,12 +62,14 @@ const DEFAULT_POOL_SELECTORS = [
   ['modalInterchange', 'default'],
   ['modalInterchange', 'adventurous'],
   ['melodicDevelopment', 'default'],
+  ['melodicDevelopment', 'corpusAdaptive'],
   ['melodicDevelopment', 'lyric'],
   ['melodicDevelopment', 'arcDetached'],
   ['voiceLeading', 'default'],
   ['voiceLeading', 'balanced'],
   ['voiceLeading', 'corpusAdaptive'],
   ['harmonicRhythm', 'default'],
+  ['harmonicRhythm', 'corpusAdaptive'],
   ['harmonicRhythm', 'arclessMotorik']
 ];
 
