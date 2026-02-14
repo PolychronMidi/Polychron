@@ -70,7 +70,15 @@ const DEFAULT_POOL_SELECTORS = [
   ['voiceLeading', 'corpusAdaptive'],
   ['harmonicRhythm', 'default'],
   ['harmonicRhythm', 'corpusAdaptive'],
-  ['harmonicRhythm', 'arclessMotorik']
+  ['harmonicRhythm', 'arclessMotorik'],
+  ['measure', 'grooveLocked'],
+  ['measure', 'suspendedGrid'],
+  ['scale', 'harmonicMinorDrift'],
+  ['mode', 'lydianFloat'],
+  ['mode', 'locrianTension'],
+  ['chords', 'minorDescent'],
+  ['tensionRelease', 'minorDramatic'],
+  ['harmonicRhythm', 'minorAnticipatory']
 ];
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);

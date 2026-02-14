@@ -9,5 +9,6 @@ COMPOSER_TYPE_PROFILE_SOURCES.tensionRelease = {
   phraseDetached: [{ type: 'tensionRelease', key: 'random', quality: 'major', tensionCurve: 0.5, enablePhraseArcs: false, phraseTensionScaling: false, chordProfile: 'pop', rhythmProfile: 'straight' }],
   minorRelease: [{ type: 'tensionRelease', key: 'random', quality: 'minor', tensionCurve: 0.55, enablePhraseArcs: true, phraseArcOpts: { arcType: 'rise-fall', registerRange: 10 }, phraseTensionScaling: true, chordProfile: 'ambient', rhythmProfile: 'laidBack' }],
   dramaticContour: [{ type: 'tensionRelease', key: 'random', quality: 'major', tensionCurve: 0.95, enablePhraseArcs: true, phraseArcOpts: { arcType: 'build-resolve', registerRange: 18 }, phraseTensionScaling: true, chordProfile: 'jazz', rhythmProfile: 'swung' }],
-  staticTensionBand: [{ type: 'tensionRelease', key: 'random', quality: 'minor', tensionCurve: 0.75, enablePhraseArcs: false, phraseTensionScaling: false, chordProfile: 'ambient', rhythmProfile: 'laidBack' }]
+  staticTensionBand: [{ type: 'tensionRelease', key: 'random', quality: 'minor', tensionCurve: 0.75, enablePhraseArcs: false, phraseTensionScaling: false, chordProfile: 'ambient', rhythmProfile: 'laidBack' }],
+  minorDramatic: [{ type: 'tensionRelease', key: 'random', quality: 'minor', tensionCurve: 0.88, enablePhraseArcs: true, phraseArcOpts: { arcType: 'build-resolve', registerRange: 15 }, phraseTensionScaling: true, chordProfile: 'classical', rhythmProfile: 'pushed' }]
 };

@@ -9,5 +9,7 @@ COMPOSER_TYPE_PROFILE_SOURCES.scale = {
   minorCenter: [{ type: 'scale', name: 'minor', root: 'A', voiceProfile: 'soft', motifProfile: 'sparse' }],
   mobileMinor: [{ type: 'scale', name: 'minor', root: 'random', voiceProfile: 'soft', motifProfile: 'default' }],
   stableMajor: [{ type: 'scale', name: 'major', root: 'G', voiceProfile: 'default', motifProfile: 'default' }],
-  randomAnchor: [{ type: 'scale', name: 'random', root: 'C', voiceProfile: 'default', motifProfile: 'sparse' }]
+  randomAnchor: [{ type: 'scale', name: 'random', root: 'C', voiceProfile: 'default', motifProfile: 'sparse' }],
+  harmonicMinorDrift: [{ type: 'scale', name: 'harmonic minor', root: 'random', voiceProfile: 'expressive', motifProfile: 'dense' }],
+  wholeToneFloat: [{ type: 'scale', name: 'whole tone', root: 'random', voiceProfile: 'whisper', motifProfile: 'legato' }]
 };

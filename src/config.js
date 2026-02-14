@@ -73,7 +73,7 @@ DYNAMISM={
 };
 COMPOSER_FAMILIES={
   diatonicCore: {
-    weight: 4,
+    weight: 3,
     types: ['measure', 'scale', 'mode', 'pentatonic', 'voiceLeading']
   },
   harmonicMotion: {
@@ -83,6 +83,14 @@ COMPOSER_FAMILIES={
   development: {
     weight: 2,
     types: ['melodicDevelopment', 'mode', 'voiceLeading', 'scale']
+  },
+  tonalExploration: {
+    weight: 2,
+    types: ['mode', 'modalInterchange', 'pentatonic', 'scale']
+  },
+  rhythmicDrive: {
+    weight: 2,
+    types: ['measure', 'harmonicRhythm', 'tensionRelease', 'melodicDevelopment']
   }
 };
 STUTTER_PROBABILITIES={
@@ -146,6 +154,8 @@ VOICE_PROFILES = {
   default: { baseVelocity: 90 },
   soft: { baseVelocity: 70 },
   loud: { baseVelocity: 110 },
+  expressive: { baseVelocity: 100 },
+  whisper: { baseVelocity: 55 },
   corpusAdaptive: {
     baseVelocity: 88,
     useCorpusVoiceLeadingPriors: true,
@@ -159,19 +169,25 @@ CHORD_PROFILES = {
   pop: { voices: 4, velocityScale: 1, inversion: 0, baseVelocity: 100, useCorpusHarmonicPriors: false },
   jazz: { voices: 4, velocityScale: 0.9, inversion: 1, baseVelocity: 90, useCorpusHarmonicPriors: false },
   ambient: { voices: 3, velocityScale: 0.6, inversion: 0, baseVelocity: 70, useCorpusHarmonicPriors: false },
+  classical: { voices: 4, velocityScale: 0.85, inversion: 2, baseVelocity: 85, useCorpusHarmonicPriors: false },
+  power: { voices: 2, velocityScale: 1.15, inversion: 0, baseVelocity: 108, useCorpusHarmonicPriors: false },
   corpusAdaptive: { voices: 4, velocityScale: 0.95, inversion: 1, baseVelocity: 92, useCorpusHarmonicPriors: true, corpusHarmonicStrength: 0.62 }
 };
 
 MOTIF_PROFILES = {
   default: { velocityScale: 1, timingOffset: 0 },
   sparse: { velocityScale: 0.8, timingOffset: 0.1 },
-  dense: { velocityScale: 1.2, timingOffset: -0.05 }
+  dense: { velocityScale: 1.2, timingOffset: -0.05 },
+  percussive: { velocityScale: 1.35, timingOffset: -0.08 },
+  legato: { velocityScale: 0.9, timingOffset: 0.06 }
 };
 
 RHYTHM_PROFILES = {
   straight: { swing: 0, velocityScale: 1 },
   swung: { swing: 0.2, velocityScale: 1 },
   laidBack: { swing: 0.15, velocityScale: 0.9 },
+  pushed: { swing: 0.05, velocityScale: 1.1 },
+  triplet: { swing: 0.3, velocityScale: 0.95 },
   corpusAdaptive: { swing: 0.12, velocityScale: 1, useCorpusRhythmPriors: true, corpusRhythmStrength: 0.72 }
 };
 SILENT_OUTRO_SECONDS=5;
