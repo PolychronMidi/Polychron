@@ -104,61 +104,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
 
-  // Validate notes belong to active composer's pitch class set (before try-catch so errors propagate)
-  // Uses live HarmonicContext scale for composers with timeVaryingScaleContext.
-  if (activeComposer && typeof activeComposer === 'object') {
-    if (typeof modClamp !== 'function') {
-      throw new Error(`${unit}.playNotes: modClamp not available for pitch-class validation`);
-    }
-
-    const validPCs = new Set();
-    const caps = (typeof activeComposer.getCapabilities === 'function')
-      ? activeComposer.getCapabilities()
-      : (activeComposer.capabilities || {});
-
-    if (caps && caps.timeVaryingScaleContext === true && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-      const windowScale = HarmonicContext.getField('scale');
-      if (Array.isArray(windowScale) && windowScale.length > 0) {
-        for (let si = 0; si < windowScale.length; si++) {
-          const entry = windowScale[si];
-          if (typeof entry === 'string') {
-            const pc = t.Note.chroma(entry);
-            if (typeof pc === 'number' && Number.isFinite(pc)) validPCs.add(modClamp(pc, 0, 11));
-          } else if (typeof entry === 'number' && Number.isFinite(entry)) {
-            validPCs.add(modClamp(entry, 0, 11));
-          }
-        }
-      }
-    }
-
-    if (validPCs.size === 0 && Array.isArray(activeComposer.notes)) {
-      for (let ni = 0; ni < activeComposer.notes.length; ni++) {
-        const noteName = activeComposer.notes[ni];
-        if (typeof noteName === 'string') {
-          const pc = t.Note.chroma(noteName);
-          if (typeof pc === 'number' && Number.isFinite(pc)) {
-            validPCs.add(modClamp(pc, 0, 11));
-          }
-        } else if (typeof noteName === 'number' && Number.isFinite(noteName)) {
-          validPCs.add(modClamp(noteName, 0, 11));
-        }
-      }
-    }
-
-    if (validPCs.size > 0) {
-      for (let pi = 0; pi < picks.length; pi++) {
-        const pickNote = Number(picks[pi].note);
-        if (!Number.isFinite(pickNote)) {
-          throw new Error(`${unit}.playNotes: pick note must be finite, got ${picks[pi].note}`);
-        }
-        const pickPC = modClamp(pickNote, 0, 11);
-        if (!validPCs.has(pickPC)) {
-          throw new Error(`${unit}.playNotes(MARKER20250210): note ${pickNote} (PC ${pickPC}) not in active composer - valid PCs: ${Array.from(validPCs).sort((a,b)=>a-b).join(',')}`);
-        }
-      }
-    }
-  }
-
   try {
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];

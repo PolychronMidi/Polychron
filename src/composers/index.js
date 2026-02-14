@@ -9,11 +9,9 @@ require('./HarmonicContext');
 // @ts-ignore: load side-effect module with globals
 require('./composerCapabilities');
 // @ts-ignore: load side-effect module with globals
-require('./degreeUtils');
+require('./utils');
 // @ts-ignore: load side-effect module with globals
 require('./noiseComposer');
-// @ts-ignore: load side-effect module with globals
-require('./scaleDegreeTranspose');
 // @ts-ignore: load side-effect module with globals
 require('./ScaleComposer');
 // Grouped submodules: chord, motif, voice (each has an index to load its files)
@@ -40,7 +38,7 @@ require('./PhraseArcManager');
 // @ts-ignore: load side-effect module with globals
 require('./profiles');
 // @ts-ignore: load side-effect module with globals
-require('./ComposerFactory');
+require('./factory');
 
 
 const normalizeComposerEntriesOrFail = (entries, label) => {
