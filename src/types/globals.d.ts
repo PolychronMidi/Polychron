@@ -113,8 +113,6 @@ declare var TUNING_FREQ: any;
 declare var LOG: any;
 declare var StutterConfig: any;
 declare var StutterConfigStore: any;
-declare var StutterMetrics: any;
-declare var StutterRegistry: any;
 
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;

@@ -39,7 +39,7 @@ const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = n
 
 /**
  * stutterNotes: apply per-note stutter/shift effects.
- * Accepts injected RNG helpers (`rf`, `ri`) and returns the `shared` object for testing convenience.
+ * Always emits events directly via p(c, ...).
  * @param {Object} opts
  * @param {string} [opts.profile='source']
  * @param {string|number} opts.channel
@@ -50,8 +50,7 @@ const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = n
  * @param {number} opts.binVel
  * @param {boolean} [opts.isPrimary=false]
  * @param {StutterShared|any} [opts.shared]
- * @param {boolean} [opts.emit=true] - if false, do not call `p()`; instead return planned events
- * @returns {StutterShared|{shared:StutterShared,events:any[]}}
+ * @returns {StutterShared}
  */
 stutterNotes = (/** @type {any} */ opts = {}) => {
     const {
@@ -64,16 +63,12 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       binVel,
       isPrimary = false,
       shared = null,
-      emit = true // when false, do not call p(); instead return planned events
     } = opts;
 
     if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
     const baseMidiNote = m.round(Number(note));
 
-    // Collect planned events when emit === false
-    const plannedEvents = [];
-
-    // Ensure shared shape exists and is attached to caller when provided
+    // Ensure shared shape exists
     let localShared = shared;
     if (!localShared) {
       localShared = { stutters: new Map(), shifts: new Map(), global: {} };
@@ -106,32 +101,22 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         : (globalState.selectedBassChannels || (globalState.selectedBassChannels = new Set()));
 
       if (!selectedSet.has(channel)) {
-        // First time seeing this channel in this beat - decide if it should be active
-        // Limit to 2 channels max, with 50% probability for each candidate
         if (selectedSet.size < 2 && rf() < 0.5) {
           selectedSet.add(channel);
         }
       }
 
-      // Skip stutter if this channel wasn't selected
       if (!selectedSet.has(channel)) {
-        return emit === false ? { shared: localShared, events: plannedEvents } : localShared;
+        return localShared;
       }
     }
 
     // Get profile-specific config from centralized StutterConfig
     const profileCfg = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
       ? StutterConfig.getProfileConfig(profile)
-      : { perProb: 0.2, shiftProb: 0.5 }; // Fallback if config unavailable
+      : { perProb: 0.2, shiftProb: 0.5 };
 
-    // Local wrapper uses module-scope helper for performance; falls back to injected modClamp if provided
-    const clampStutterNote = (n) => {
-      if (typeof modClamp === 'function') {
-        if (isBass) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);
-        return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-      }
-      return _clampStutterNote(n, isBass);
-    };
+    const clampStutterNote = (n) => _clampStutterNote(n, isBass);
 
     // Source: optional global stutter plan shared across channels
     if (isSource && !globalState.applied && rf() < rv(.2, [.5, 1], .3)) {
@@ -153,7 +138,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = baseMidiNote;
-        // Per-step independent octave shift: high probability for rapid random shifts (excluding 0)
         if (rf() < 0.85) {
           const stepShift = _pickRandomOctaveShift(baseMidiNote, isBass, 3, lastStepShift);
           stutterNote = _clampStutterNote(baseMidiNote + stepShift, isBass);
@@ -170,16 +154,14 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
           currentVelocity = clamp(minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier, 0, 127);
         }
 
-        const ev1 = {
+        p(c, {
           tick: tick + duration * rf(.15, .6),
           type: 'on',
           vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, currentVelocity, binVel, [.3, .7], [.45, .8], rf)), 0, 127)]
-        };
-        const ev2 = { tick: m.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] };
-        if (emit === false) { plannedEvents.push(ev1); plannedEvents.push(ev2); } else { p(c, ev1); p(c, ev2); }
+        });
+        p(c, { tick: m.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] });
       }
-        const evFinal = { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] };
-        if (emit === false) plannedEvents.push(evFinal); else p(c, evFinal);
+      p(c, { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] });
     }
 
     // Per-channel stutter (source/reflection/bass)
@@ -205,7 +187,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
         let stutterNote = baseMidiNote;
-        // Per-step independent octave shift: high probability for rapid random shifts (excluding 0)
         if (rf() < 0.85) {
           const stepShift = _pickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastStepShift);
           stutterNote = clampStutterNote(baseMidiNote + stepShift);
@@ -213,25 +194,13 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         }
         stutterNote = m.round(stutterNote);
         if (rf() < fireProb) {
-          const evA = { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] };
-          const evB = { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, velocity, binVel, velRanges, velRanges, rf)), 0, 127)] };
-          if (emit === false) { plannedEvents.push(evA); plannedEvents.push(evB); } else { p(c, evA); p(c, evB); }
+          p(c, { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] });
+          p(c, { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, velocity, binVel, velRanges, velRanges, rf)), 0, 127)] });
         }
       }
 
-      const evEnd = { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] };
-      if (emit === false) plannedEvents.push(evEnd); else { if (isSource) p(c, evEnd); }
+      if (isSource) p(c, { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] });
     }
 
-    return emit === false ? { shared: localShared, events: plannedEvents } : localShared;
+    return localShared;
 };
-
-var StutterConfig;
-// Register helper with stutterConfig so manager can detect the original implementation
-try {
-  // @ts-ignore: runtime-only naked global registration
-  if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.registerHelper === 'function') {
-    // @ts-ignore: runtime-only naked global registration
-    StutterConfig.registerHelper(stutterNotes);
-  }
-} catch { /* ignore if module not present */ }

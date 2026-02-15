@@ -2,10 +2,6 @@
 // @ts-ignore: load side-effect module with globals
 require('./StutterConfigStore');
 // @ts-ignore: load side-effect module with globals
-require('./StutterMetrics');
-// @ts-ignore: load side-effect module with globals
-require('./StutterRegistry');
-// @ts-ignore: load side-effect module with globals
 require('./stutterConfig');
 // @ts-ignore: load side-effect module with globals
 require('./stutterNotes');
@@ -17,12 +13,3 @@ require('./stutterPan');
 require('./stutterFX');
 // @ts-ignore: load side-effect module with globals
 require('./stutterManager');
-
-// Ensure the helper is registered with StutterConfig (defensive explicit registration)
-try {
-  // @ts-ignore: runtime-only naked global registration
-  if (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.registerHelper === 'function' && typeof stutterNotes === 'function') {
-    // @ts-ignore: runtime-only naked global registration
-    StutterConfig.registerHelper(stutterNotes);
-  }
-  } catch { /* ignore */ }
