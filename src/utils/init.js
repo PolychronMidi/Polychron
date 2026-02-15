@@ -31,6 +31,12 @@ lastUsedCHs3=new Set();
  */
 velocity=99;
 
+// Shared runtime voice-budget tracker (reset per beat)
+// - Tracks how many 'picks' (voices) may still be emitted this beat across all layers
+// - Initialized at runtime when beats start; kept here as a named naked global
+remainingVoiceSlots = 0;
+lastVoiceBudgetKey = null;
+
 /**
  * Toggle for binaural beat channel flip.
  * @type {boolean}

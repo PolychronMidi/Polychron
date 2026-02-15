@@ -104,35 +104,58 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     throw new Error(`${unit}.playNotes: resolved probabilities must be finite`);
   }
 
+  // Reset global per-beat voice budget once per beat (shared across layers)
+  try {
+    const beatBudgetKey = `${Number.isFinite(Number(measureIndex)) ? measureIndex : 'm'}:${Number.isFinite(Number(beatIndex)) ? beatIndex : 'b'}`;
+    if (lastVoiceBudgetKey !== beatBudgetKey) {
+      remainingVoiceSlots = (VOICES && Number.isFinite(Number(VOICES.max))) ? Number(VOICES.max) : 4;
+      lastVoiceBudgetKey = beatBudgetKey;
+    }
+  } catch {
+    /* ignore budget reset failures */
+  }
+
   // Gate play invocation with playProb and crossModulation
-  // if (unit === 'beat') {
-  //   console.warn(`Acceptable warning:${unit}.playNotes: playProb=${resolvedPlayProb.toFixed(3)}, stutterProb=${resolvedStutterProb.toFixed(3)}, composite=${Number(resolved.composite).toFixed(3)}, crossModulation=${crossModulation}`);
-  // }
-  if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb) || (crossModulation < rv(rf(2,3), [-.2, -.3], .05))) {
+  if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb) && (crossModulation < rv(rf(2,3), [-.2, -.3], .05))) {
     return trackRhythm(unit, layer, false);
   }
 
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
 
+  // Enforce remainingVoiceSlots (global per-beat budget) — trim picks if necessary
+  try {
+    if (Array.isArray(picks) && picks.length > 0) {
+      const allowed = Number.isFinite(Number(remainingVoiceSlots)) ? m.max(0, m.min(picks.length, remainingVoiceSlots)) : picks.length;
+      if (allowed <= 0) {
+        // no budget available for this beat — skip emission
+        return trackRhythm(unit, layer, false);
+      }
+      if (allowed < picks.length) picks.length = allowed; // truncate in-place
+      remainingVoiceSlots = m.max(0, remainingVoiceSlots - picks.length);
+    }
+  } catch {
+    /* ignore budget enforcement failures */
+  }
+
   try {
     for (let pi = 0; pi < picks.length; pi++) {
       const s = picks[pi];
       if (!s || typeof s.note === 'undefined') throw new Error(`${unit}.playNotes: invalid note object in motif picks`);
 
-      // Stutter check: ONCE per pick — octave shift only, no additional events
-      let emitNote = s.note;
+      // Stutter check: ONCE per pick — compute octave shift but apply it only to the primary source channel
       const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
+      let selectedShift = 0;
       if (shouldStutter) {
         const minNote = m.max(0, OCTAVE.min * 12 - 1);
         const maxNote = OCTAVE.max * 12 - 1;
         const octaveCandidates = [];
         for (let mag = 1; mag <= 3; mag++) {
-          if (emitNote + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
-          if (emitNote - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
+          if (s.note + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
+          if (s.note - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
         }
         if (octaveCandidates.length > 0) {
-          emitNote = emitNote + octaveCandidates[ri(octaveCandidates.length - 1)];
+          selectedShift = octaveCandidates[ri(octaveCandidates.length - 1)];
         }
       }
 
@@ -146,9 +169,12 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
         const sourceNoiseBase = baseOnVel * (1 - 0.12 * noiseInfluence);
         const onVel = applyNoiseToVelocity(sourceNoiseBase, sourceVoiceId, currentTime, 'subtle');
-        p(c, { tick: onTick, type: 'on', vals: [sourceCH, emitNote, onVel] }); scheduled++;
+        const noteToEmit = (isPrimary && selectedShift !== 0)
+          ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
+          : s.note;
+        p(c, { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
-        p(c, { tick: offTick, vals: [sourceCH, emitNote] }); scheduled++;
+        p(c, { tick: offTick, vals: [sourceCH, noteToEmit] }); scheduled++;
       }
 
       // Reflection channels — stereo mirror of the pick
@@ -161,14 +187,14 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
         const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
         const onVel = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
-        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, emitNote, onVel] }); scheduled++;
+        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, s.note, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
-        p(c, { tick: offTick, vals: [reflectionCH, emitNote] }); scheduled++;
+        p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
       }
 
       // Bass channels — stereo mirror of the pick (clamped to bass range)
       if (rf() < clamp(.75 * bpmRatio3, .2, .7)) {
-        const bassNote = modClamp(emitNote, m.max(0, OCTAVE.min * 12 - 1), 59);
+        const bassNote = modClamp(s.note, m.max(0, OCTAVE.min * 12 - 1), 59);
         const activeBassChannels = bass.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
         for (let bci = 0; bci < activeBassChannels.length; bci++) {
           const bassCH = activeBassChannels[bci];
