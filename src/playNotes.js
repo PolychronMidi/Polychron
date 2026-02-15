@@ -140,7 +140,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const shouldStutterNow = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
           if (shouldStutterNow) {
             Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-            scheduleStutterNotesFromDensity('source', sourceCH, s.note, onVel, onTick, sustain, resolvedStutterProb);
           }
         }
 
@@ -162,7 +161,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const shouldStutterNow_ref = (typeof stutterEnabledByProb_ref === 'boolean') ? stutterEnabledByProb_ref : (enableStutter && rf() > 0.5);
           if (shouldStutterNow_ref) {
             Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-            scheduleStutterNotesFromDensity('reflection', reflectionCH, s.note, onVel, onTick, sustain, resolvedStutterProb);
           }
         }
 
@@ -184,7 +182,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
           if (enableStutter && rf() > 0.5) {
             Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
-            scheduleStutterNotesFromDensity('bass', bassCH, bassNote, onVel, onTick, sustain, resolvedStutterProb);
           }
         }
       }

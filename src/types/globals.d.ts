@@ -115,8 +115,6 @@ declare var StutterConfig: any;
 declare var StutterConfigStore: any;
 declare var StutterMetrics: any;
 declare var StutterRegistry: any;
-declare var StutterAsNoteSource: any;
-declare var scheduleStutterNotesFromDensity: any;
 
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;
@@ -206,8 +204,6 @@ declare var MotifComposer: any;
 declare var Motif: any;
 declare var MotifTransforms: any;
 declare var MeasureNotePool: any;
-declare var MotifDurationPlanner: any;
-declare var MotifUnit: any;
 declare var MotifValidators: any;
 declare var RegisterBiasing: any;
 declare var CandidateExpansion: any;
