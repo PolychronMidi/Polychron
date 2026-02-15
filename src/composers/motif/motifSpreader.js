@@ -29,18 +29,14 @@ MotifSpreader = {
       }
 
       let beatOffset = 0;
-      if (typeof tpBeat === 'undefined' || !Number.isFinite(Number(tpBeat)) || Number(tpBeat) <= 0) {
-        throw new Error(`MotifSpreader.spreadMeasure: invalid tpBeat=${tpBeat} - fail-fast`);
-      }
-      const beatLen = Number(tpBeat);
-
-      // Add group's steps as candidates on every beat of the group's span;
-      // Use LOCAL beat indices (0..numerator-1) to match how main.js indexes beats
-      // beatIndex in playback is a local index within the measure, not an absolute tick-based index
+      // Add group steps to LOCAL beat buckets (0..numerator-1).
+      // Scope: motifSpreader only plans/group-distributes motif entries.
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
-        const length = ri(min, m.max(1, m.min(8, gLen * min)));
-        const motifGroup = mcGroup.generate({ length, fitToTotalTicks: true, totalTicks: gLen * beatLen, developFromComposer: composer, measureComposer: composer });
+        const minEventsPerGroup = m.max(2, gLen * 2);
+        const maxEventsPerGroup = m.max(minEventsPerGroup, m.min(16, gLen * 6));
+        const length = ri(minEventsPerGroup, maxEventsPerGroup);
+        const motifGroup = mcGroup.generate({ length, developFromComposer: composer, measureComposer: composer });
         if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) {
           throw new Error('MotifSpreader.spreadMeasure: MotifComposer.generate() returned invalid structure - fail-fast');
         }
@@ -50,66 +46,41 @@ MotifSpreader = {
         const groupId = `${measureStart}-${beatOffset}-${gLen}-${groupIdx}`;
         if (!layer.beatMotifs) throw new Error('MotifSpreader.spreadMeasure: layer.beatMotifs not initialized - fail-fast');
 
-        // Extract valid pitch classes from composer for validation.
-        // Use the HarmonicContext window scale when composer declares
-        // timeVaryingScaleContext (safe, no side-effects). Otherwise use
-        // the composer's declared `notes` array. Avoid calling
-        // `composer.getNotes()` here because it may be stateful.
-        const validPCs = new Set();
-        if (composer) {
-          const caps = (typeof composer.getCapabilities === 'function') ? composer.getCapabilities() : (composer.capabilities || {});
-
-          if (caps && caps.timeVaryingScaleContext) {
-            if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-              try {
-                const hcScale = HarmonicContext.getField('scale');
-                if (Array.isArray(hcScale) && hcScale.length > 0) {
-                  for (const s of hcScale) {
-                    const pc = (typeof s === 'number') ? ((s % 12) + 12) % 12 : t.Note.chroma(String(s));
-                    if (Number.isFinite(pc)) validPCs.add(((pc % 12) + 12) % 12);
-                  }
-                }
-              } catch { /* let fallback below handle it */ }
-            }
-          }
-
-          if (validPCs.size === 0 && Array.isArray(composer.notes)) {
-            for (const noteName of composer.notes) {
-              if (typeof noteName === 'string') {
-                const pc = t.Note.chroma(noteName);
-                if (typeof pc === 'number' && Number.isFinite(pc)) validPCs.add(((pc % 12) + 12) % 12);
-              } else if (typeof noteName === 'number') {
-                validPCs.add(((noteName % 12) + 12) % 12);
-              }
-            }
-          }
-        }
-
-        // ALWAYS create beat bucket entries for this group's beats, using LOCAL beat indices
-        // playMotifs expects every beat to have a key in layer.beatMotifs
+        // ALWAYS create beat buckets for this group's beats, using LOCAL beat indices.
+        // playMotifs expects every beat to have a key in layer.beatMotifs.
         for (let b = 0; b < gLen; b++) {
           const bKey = beatOffset + b;  // LOCAL beat index, not absolute
-          // CLEAR previous bucket for this beat to prevent stale notes from old composer
+          // CLEAR previous bucket for this beat to prevent stale notes from old composer.
           layer.beatMotifs[bKey] = [];
+        }
 
-          // Populate with motif notes if generation succeeded; otherwise empty array is correct
-          if (totalEvents > 0) {
-            for (let i = 0; i < totalEvents; i++) {
-              const evt = seq[i];
-              const noteValue = Number(evt.note);
-              // Clamp to valid MIDI range 0-127 before adding to bucket
-              const clampedNote = modClamp(noteValue, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-
-              // Fail-fast if bucket note has invalid pitch class
-              if (validPCs.size > 0) {
-                const notePC = ((clampedNote % 12) + 12) % 12;
-                if (!validPCs.has(notePC)) {
-                  throw new Error(`MotifSpreader: motif event ${i} produced note ${clampedNote} (PC ${notePC}) not in composer scale - valid PCs: ${Array.from(validPCs).sort((a,b)=>a-b).join(',')}`);
-                }
-              }
-
-              layer.beatMotifs[bKey].push({ note: clampedNote, groupId, seqIndex: i, seqLen: totalEvents });
+        // Distribute motif events across group beats (round-robin by event index).
+        // Timing conversion is intentionally out-of-scope for MotifSpreader.
+        if (totalEvents > 0) {
+          for (let i = 0; i < totalEvents; i++) {
+            const evt = seq[i];
+            const noteValue = Number(evt.note);
+            if (!Number.isFinite(noteValue)) {
+              throw new Error(`MotifSpreader: motif event ${i} produced non-finite note value`);
             }
+            const localBeat = i % gLen;
+            const bKey = beatOffset + localBeat;
+
+            layer.beatMotifs[bKey].push({ note: noteValue, groupId, seqIndex: i, seqLen: totalEvents });
+          }
+
+          // Safety: if any beat bucket ended up empty, seed it from a neighboring motif step.
+          for (let b = 0; b < gLen; b++) {
+            const bKey = beatOffset + b;
+            if (!Array.isArray(layer.beatMotifs[bKey]) || layer.beatMotifs[bKey].length > 0) continue;
+
+            const seedIdx = m.min(totalEvents - 1, m.floor((b / m.max(1, gLen - 1)) * (totalEvents - 1)));
+            const seedEvt = seq[seedIdx];
+            const seedNote = Number(seedEvt.note);
+            if (!Number.isFinite(seedNote)) {
+              throw new Error(`MotifSpreader: seed motif event produced non-finite note value at index ${seedIdx}`);
+            }
+            layer.beatMotifs[bKey] = [{ note: seedNote, groupId, seqIndex: seedIdx, seqLen: totalEvents }];
           }
         }
         layer.activeMotif = motifGroup;

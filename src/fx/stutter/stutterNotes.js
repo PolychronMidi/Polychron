@@ -17,6 +17,26 @@ const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, oth
   return isPrimaryLocal ? velocityLocal * rf(primaryRange[0], primaryRange[1]) : binVelLocal * rf(otherRange[0], otherRange[1]);
 };
 
+const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = null) => {
+  const minNote = m.max(0, OCTAVE.min * 12 - 1);
+  const maxNote = isBassLocal ? 59 : (OCTAVE.max * 12 - 1);
+  const candidates = [];
+  const maxOct = m.max(1, m.floor(Number(maxOctaves)));
+  for (let octaveMag = 1; octaveMag <= maxOct; octaveMag++) {
+    const upShift = octaveMag * 12;
+    const downShift = -octaveMag * 12;
+    if (baseNote + upShift <= maxNote) candidates.push(upShift);
+    if (baseNote + downShift >= minNote) candidates.push(downShift);
+  }
+
+  if (candidates.length === 0) return 0;
+  const filtered = (lastShift !== null && candidates.length > 1)
+    ? candidates.filter((shift) => shift !== lastShift)
+    : candidates;
+  const use = filtered.length > 0 ? filtered : candidates;
+  return use[ri(use.length - 1)];
+};
+
 /**
  * stutterNotes: apply per-note stutter/shift effects.
  * Accepts injected RNG helpers (`rf`, `ri`) and returns the `shared` object for testing convenience.
@@ -48,6 +68,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     } = opts;
 
     if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
+    const baseMidiNote = m.round(Number(note));
 
     // Collect planned events when emit === false
     const plannedEvents = [];
@@ -128,16 +149,17 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
     if (isSource && globalState.data) {
       const { numStutters, duration, minVelocity, maxVelocity, isFadeIn, decay } = globalState.data;
+      let lastStepShift = null;
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
-        let stutterNote = note;
+        let stutterNote = baseMidiNote;
         // Per-step independent octave shift: high probability for rapid random shifts (excluding 0)
         if (rf() < 0.85) {
-          const shiftDir = rf() < 0.5 ? -1 : 1;
-          const shiftMag = ri(1, 3); // 1-3 octaves
-          const stepShift = shiftDir * shiftMag * 12;
-          stutterNote = _clampStutterNote(note + stepShift, isBass);
+          const stepShift = _pickRandomOctaveShift(baseMidiNote, isBass, 3, lastStepShift);
+          stutterNote = _clampStutterNote(baseMidiNote + stepShift, isBass);
+          lastStepShift = stepShift;
         }
+        stutterNote = m.round(stutterNote);
 
         let currentVelocity;
         if (isFadeIn) {
@@ -156,7 +178,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         const ev2 = { tick: m.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] };
         if (emit === false) { plannedEvents.push(ev1); plannedEvents.push(ev2); } else { p(c, ev1); p(c, ev2); }
       }
-        const evFinal = { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] };
+        const evFinal = { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] };
         if (emit === false) plannedEvents.push(evFinal); else p(c, evFinal);
     }
 
@@ -179,16 +201,17 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
           ? (isPrimary ? [0.3, 0.7] : [0.45, 0.8])
           : (isReflection ? (isPrimary ? [0.25, 0.65] : [0.4, 0.75]) : (isPrimary ? [0.55, 0.85] : [0.75, 1.05])));
 
+      let lastStepShift = null;
       for (let i = 0; i < numStutters; i++) {
         const tick = on + duration * i;
-        let stutterNote = note;
+        let stutterNote = baseMidiNote;
         // Per-step independent octave shift: high probability for rapid random shifts (excluding 0)
         if (rf() < 0.85) {
-          const shiftDir = rf() < 0.5 ? -1 : 1; // Random direction
-          const shiftMag = ri(1, shiftRange); // Random magnitude (1 to shiftRange)
-          const stepShift = shiftDir * shiftMag * 12;
-          stutterNote = clampStutterNote(note + stepShift);
+          const stepShift = _pickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastStepShift);
+          stutterNote = clampStutterNote(baseMidiNote + stepShift);
+          lastStepShift = stepShift;
         }
+        stutterNote = m.round(stutterNote);
         if (rf() < fireProb) {
           const evA = { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] };
           const evB = { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, velocity, binVel, velRanges, velRanges, rf)), 0, 127)] };
@@ -196,7 +219,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
         }
       }
 
-      const evEnd = { tick: on + sustain * rf(.5, 1.5), vals: [channel, note] };
+      const evEnd = { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] };
       if (emit === false) plannedEvents.push(evEnd); else { if (isSource) p(c, evEnd); }
     }
 

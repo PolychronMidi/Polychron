@@ -109,9 +109,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // if (unit === 'beat') {
   //   console.warn(`Acceptable warning:${unit}.playNotes: playProb=${resolvedPlayProb.toFixed(3)}, stutterProb=${resolvedStutterProb.toFixed(3)}, composite=${Number(resolved.composite).toFixed(3)}, crossModulation=${crossModulation}`);
   // }
-  // if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb * rf(10,12)) && (crossModulation < rv(rf(1, 1.3), [-.2, -.3], .05))) {
-  //   return trackRhythm(unit, layer, false);
-  // }
+  if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb) && (crossModulation < rv(rf(2), [-.2, -.3], .05))) {
+    return trackRhythm(unit, layer, false);
+  }
 
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);

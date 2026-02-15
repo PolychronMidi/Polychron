@@ -9,32 +9,51 @@ scheduleStutterNotesFromDensity = function scheduleStutterNotesFromDensity(
   sustain,
   stutterProb,
   densityOverride,
-  chanceOverride
+  chanceOverride,
+  unitName
 ) {
   const profiles = {
     source: {
-      pitchVariation: 5,
+      pitchVariation: 0,
       velocityRange: [0.5, 1.1],
       rhythmicJitter: 0.2,
       velScale: 0.7,
       defaultDensity: 0.5,
-      chance: 0.3
+      chance: 0.3,
+      octaveShiftProb: 0.38,
+      octaveOnly: true,
+      maxOctaveShift: 4,
+      minIntervalSemitones: 12,
+      minGeneratedNotes: 2,
+      maxGeneratedNotes: 4
     },
     reflection: {
-      pitchVariation: 5,
+      pitchVariation: 0,
       velocityRange: [0.5, 1.1],
       rhythmicJitter: 0.2,
       velScale: 0.7,
       defaultDensity: 0.5,
-      chance: 0.3
+      chance: 0.3,
+      octaveShiftProb: 0.34,
+      octaveOnly: true,
+      maxOctaveShift: 4,
+      minIntervalSemitones: 12,
+      minGeneratedNotes: 2,
+      maxGeneratedNotes: 3
     },
     bass: {
-      pitchVariation: 3,
+      pitchVariation: 0,
       velocityRange: [0.6, 1.0],
       rhythmicJitter: 0.15,
       velScale: 0.8,
       defaultDensity: 0.4,
-      chance: 0.3
+      chance: 0.3,
+      octaveShiftProb: 0.42,
+      octaveOnly: true,
+      maxOctaveShift: 3,
+      minIntervalSemitones: 12,
+      minGeneratedNotes: 2,
+      maxGeneratedNotes: 2
     }
   };
 
@@ -59,8 +78,15 @@ scheduleStutterNotesFromDensity = function scheduleStutterNotesFromDensity(
     throw new Error('scheduleStutterNotesFromDensity: sustain must be positive number');
   }
 
+  const unitChanceScale = unitName === 'beat'
+    ? 1
+    : unitName === 'div'
+      ? 0.6
+      : unitName === 'subdiv'
+        ? 0.35
+        : 0.2;
   const chanceRaw = typeof chanceOverride === 'number' ? chanceOverride : config.chance;
-  const chance = clamp(chanceRaw, 0, 1);
+  const chance = clamp(chanceRaw * unitChanceScale, 0, 1);
   if (rf() >= chance) return;
 
   const baseDensity = typeof stutterProb === 'number' ? stutterProb : config.defaultDensity;
@@ -68,6 +94,11 @@ scheduleStutterNotesFromDensity = function scheduleStutterNotesFromDensity(
   const clampedDensity = clamp(finalDensity, 0, 1);
 
   try {
+    const configuredVoiceCap = (typeof VOICES !== 'undefined' && VOICES && Number.isFinite(Number(VOICES.max)))
+      ? Number(VOICES.max)
+      : 4;
+    const maxGeneratedNotes = m.max(1, m.min(Number(config.maxGeneratedNotes || 2), configuredVoiceCap));
+
     const stutterNotes = StutterAsNoteSource.generate(
       { note: baseNote, velocity, duration: sustain },
       clampedDensity,
@@ -75,9 +106,26 @@ scheduleStutterNotesFromDensity = function scheduleStutterNotesFromDensity(
       {
         pitchVariation: config.pitchVariation,
         velocityRange: config.velocityRange,
-        rhythmicJitter: config.rhythmicJitter
+        rhythmicJitter: config.rhythmicJitter,
+        octaveShiftProb: config.octaveShiftProb,
+        octaveOnly: Boolean(config.octaveOnly),
+        maxOctaveShift: Number(config.maxOctaveShift || 2),
+        noteMin: m.max(0, OCTAVE.min * 12 - 1),
+        noteMax: profile === 'bass' ? 59 : (OCTAVE.max * 12 - 1),
+        minIntervalSemitones: config.minIntervalSemitones,
+        minGeneratedNotes: Number(config.minGeneratedNotes || 1),
+        maxGeneratedNotes
       }
     );
+
+    if (config.octaveOnly) {
+      for (const generatedNote of stutterNotes) {
+        const shiftSemitones = m.round(Number(generatedNote.note) - Number(baseNote));
+        if (shiftSemitones !== 0 && m.abs(shiftSemitones % 12) !== 0) {
+          throw new Error(`scheduleStutterNotesFromDensity: non-octave note generated in octaveOnly mode (base=${baseNote}, generated=${generatedNote.note}, shift=${shiftSemitones})`);
+        }
+      }
+    }
 
     stutterNotes.forEach((generatedNote) => {
       const genOnTick = onTick + generatedNote.startTick;
