@@ -414,6 +414,8 @@ declare var lastMeter: any;
 declare var lastUsedCHs: any;
 declare var lastUsedCHs2: any;
 declare var lastUsedCHs3: any;
+declare var remainingVoiceSlots: any;
+declare var lastVoiceBudgetKey: any;
 declare var velocity: any;
 declare var neutralPitchBend: any;
 declare var semitone: any;
