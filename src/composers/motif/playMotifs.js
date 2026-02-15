@@ -43,15 +43,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     throw new Error(`${unit}.playMotifs empty beatMotifs bucket at beatIndex ${beatIndex} - generation failed to populate`);
   }
 
-  // Initialize beatNoteHistory tracking per beat
-  const beatNoteHistory = (layer && layer._beatNoteHistory instanceof Map) ? layer._beatNoteHistory : new Map();
-  if (!layer._beatNoteHistory || layer._beatNoteHistory !== beatNoteHistory) layer._beatNoteHistory = beatNoteHistory;
-  if (!beatNoteHistory.has(beatIndex)) {
-    beatNoteHistory.clear();
-    beatNoteHistory.set(beatIndex, new Set());
-  }
-  const beatNoteSet = beatNoteHistory.get(beatIndex);
-
   // Track motif cycle completion per groupId and apply transformations after each cycle
   if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
   const cycleTracker = layer._motifCycleTracking;
@@ -229,10 +220,11 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     }
   }
 
-  // Filter out duplicate notes already played this beat
+  // Filter duplicate notes only within this unit call (do not gate later subunits in same beat)
+  const seenNotesThisUnit = new Set();
   const filteredPicks = picks.filter(s => {
-    if (beatNoteSet && beatNoteSet.has(s.note)) return false;
-    if (beatNoteSet) beatNoteSet.add(s.note);
+    if (seenNotesThisUnit.has(s.note)) return false;
+    seenNotesThisUnit.add(s.note);
     return true;
   });
 
@@ -258,7 +250,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
  */
 /** @type {any} */ (playMotifs).resetLayerState = function(layer) {
   if (!layer) return;
-  layer._beatNoteHistory = null;
   layer._motifCycleTracking = null;
   layer._emptyBucketCaptured = null;
   // DO NOT reset _voiceManager here; it maintains voice leading continuity within a phrase

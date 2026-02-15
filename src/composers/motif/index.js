@@ -10,10 +10,6 @@ require('./MotifRegistry');
 // @ts-ignore: load side-effect module with globals
 require('./MotifManager');
 // @ts-ignore: load side-effect module with globals
-require('./MotifDurationPlanner');
-// @ts-ignore: load side-effect module with globals
-require('./MotifUnit');
-// @ts-ignore: load side-effect module with globals
 require('./MotifValidators');
 // @ts-ignore: load side-effect module with globals
 require('./MotifComposer');

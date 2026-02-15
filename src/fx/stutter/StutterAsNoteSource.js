@@ -35,7 +35,14 @@ StutterAsNoteSource = (() => {
       rhythmicJitter = 0.15,        // Timing jitter (0-1)
       minNoteDuration = 48,         // Minimum note duration in ticks
       maxNoteDuration = 240,        // Maximum note duration in ticks
-      octaveShiftProb = 0.2         // Probability of octave shift per note
+      octaveShiftProb = 0.2,        // Probability of octave shift per note
+      octaveOnly = false,
+      maxOctaveShift = 2,
+      noteMin = 0,
+      noteMax = 127,
+      minIntervalSemitones = 2,
+      minGeneratedNotes = 1,
+      maxGeneratedNotes = 8
     } = options;
 
     // Validate options
@@ -44,26 +51,82 @@ StutterAsNoteSource = (() => {
     if (!Number.isFinite(Number(rhythmicJitter)) || rhythmicJitter < 0) throw new Error('StutterAsNoteSource.generate: rhythmicJitter must be >= 0');
     if (!Number.isFinite(Number(minNoteDuration)) || !Number.isFinite(Number(maxNoteDuration)) || minNoteDuration <= 0 || maxNoteDuration <= 0 || minNoteDuration > maxNoteDuration) throw new Error('StutterAsNoteSource.generate: invalid min/max note durations');
     if (!Number.isFinite(Number(octaveShiftProb)) || octaveShiftProb < 0 || octaveShiftProb > 1) throw new Error('StutterAsNoteSource.generate: octaveShiftProb must be 0-1');
+    if (typeof octaveOnly !== 'boolean') throw new Error('StutterAsNoteSource.generate: octaveOnly must be boolean');
+    if (!Number.isFinite(Number(maxOctaveShift)) || Number(maxOctaveShift) < 1) throw new Error('StutterAsNoteSource.generate: maxOctaveShift must be >= 1');
+    if (!Number.isFinite(Number(noteMin)) || !Number.isFinite(Number(noteMax)) || Number(noteMin) < 0 || Number(noteMax) > 127 || Number(noteMin) > Number(noteMax)) {
+      throw new Error('StutterAsNoteSource.generate: noteMin/noteMax must define a valid MIDI range within 0..127');
+    }
+    if (!Number.isFinite(Number(minIntervalSemitones)) || minIntervalSemitones < 0) throw new Error('StutterAsNoteSource.generate: minIntervalSemitones must be >= 0');
+    if (!Number.isFinite(Number(minGeneratedNotes)) || Number(minGeneratedNotes) < 1) throw new Error('StutterAsNoteSource.generate: minGeneratedNotes must be >= 1');
+    if (!Number.isFinite(Number(maxGeneratedNotes)) || maxGeneratedNotes < 1) throw new Error('StutterAsNoteSource.generate: maxGeneratedNotes must be >= 1');
 
-    const numNotes = m.max(1, m.floor(density * 8 + rf(-2, 2))); // Density → note count (min 1)
+    const rawCount = m.max(1, m.floor(density * 8 + rf(-2, 2)));
+    const minCount = m.max(1, m.floor(Number(minGeneratedNotes)));
+    const maxCount = m.max(minCount, m.floor(Number(maxGeneratedNotes)));
+    const numNotes = m.min(maxCount, m.max(minCount, rawCount));
     const notes = [];
     let currentTick = 0;
     const ticksPerNote = duration / numNotes;
+    let lastOctaveShift = null;
+    const baseMidi = m.round(Number(baseNote.note));
 
     // Base velocity fallback uses nullish/coercion guard to preserve 0 if intentionally provided
     const baseVelocity = Number.isFinite(Number(baseNote.velocity)) ? Number(baseNote.velocity) : 80;
 
     for (let i = 0; i < numNotes; i++) {
       // Pitch variation: map density to interval spread
-      const pitchOffset = m.floor(rf(-pitchVariation * density, pitchVariation * density));
-      let newNote = Number(baseNote.note) + pitchOffset;
+      let newNote = baseMidi;
+      if (octaveOnly) {
+        const octaveCandidates = [];
+        const maxOct = m.max(1, m.floor(Number(maxOctaveShift)));
+        for (let octaveMag = 1; octaveMag <= maxOct; octaveMag++) {
+          const upShift = octaveMag * 12;
+          const downShift = -octaveMag * 12;
+          if (newNote + upShift <= Number(noteMax)) octaveCandidates.push(upShift);
+          if (newNote + downShift >= Number(noteMin)) octaveCandidates.push(downShift);
+        }
 
-      // Occasional octave shifts at high density
-      if (density > 0.6 && rf() < octaveShiftProb) {
-        newNote += (rf() < 0.5 ? -12 : 12);
+        if (octaveCandidates.length > 0) {
+          const filteredCandidates = (lastOctaveShift !== null && octaveCandidates.length > 1)
+            ? octaveCandidates.filter((shift) => shift !== lastOctaveShift)
+            : octaveCandidates;
+          const useCandidates = filteredCandidates.length > 0 ? filteredCandidates : octaveCandidates;
+          const pickedShift = useCandidates[ri(useCandidates.length - 1)];
+          newNote += pickedShift;
+          lastOctaveShift = pickedShift;
+        } else {
+          lastOctaveShift = 0;
+        }
+
+        const shiftSemitones = m.round(newNote - baseMidi);
+        if (shiftSemitones !== 0 && m.abs(shiftSemitones % 12) !== 0) {
+          throw new Error(`StutterAsNoteSource.generate: octaveOnly produced non-octave shift (${shiftSemitones})`);
+        }
+      } else {
+        const pitchOffset = m.floor(rf(-pitchVariation * density, pitchVariation * density));
+        newNote += pitchOffset;
+        const octaveChance = clamp(Number(octaveShiftProb) + density * 0.15, 0, 1);
+        if (rf() < octaveChance) {
+          newNote += (rf() < 0.5 ? -12 : 12);
+        }
       }
 
-      newNote = clamp(newNote, 0, 127); // MIDI range
+      if (!octaveOnly && notes.length > 0) {
+        const previousNote = notes[notes.length - 1].note;
+        if (m.abs(newNote - previousNote) < Number(minIntervalSemitones)) {
+          const upward = previousNote + Number(minIntervalSemitones);
+          const downward = previousNote - Number(minIntervalSemitones);
+          if (upward <= 127) {
+            newNote = upward;
+          } else if (downward >= 0) {
+            newNote = downward;
+          } else {
+            newNote = previousNote + (previousNote < 64 ? 12 : -12);
+          }
+        }
+      }
+
+      newNote = clamp(newNote, Number(noteMin), Number(noteMax)); // constrained MIDI range
 
       // Velocity variation: stutter intensity → velocity scaling
       const velocityScale = rf(Number(velocityRange[0]), Number(velocityRange[1]));

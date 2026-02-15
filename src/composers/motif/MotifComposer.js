@@ -1,11 +1,9 @@
 /**
- * MotifComposer: factory for short motifs that fit a scale/meter and optionally use voice-leading.
+ * MotifComposer: factory for short motifs that fit a scale and optionally use voice-leading.
  * Features:
- *  - durationUnit: choose 'measure'|'beat'|'div'|'subdiv'|'subsubdiv' (defaults to 'subdiv')
- *  - durationScale: multiplies computed unit length
  *  - developFromComposer: optional composer with getNotes() to seed motif pitches
- *  - measureComposer: optional MeausreComposer to select notes with voice-leading hooks
- * Usage: new MotifComposer(opts).generate({ length, scaleComposer, defaultDuration })
+ *  - measureComposer: optional MeasureComposer to select notes with voice-leading hooks
+ * Usage: new MotifComposer(opts).generate({ length, scaleComposer })
  */
 MotifComposer = class MotifComposer {
   constructor(options = {}) {
@@ -20,14 +18,6 @@ MotifComposer = class MotifComposer {
       this.length = m.max(1, m.round(Number(opts.length)));
     } else {
       this.length = 4;
-    }
-
-    // default duration multiplier
-    if (opts.defaultDuration !== undefined) {
-      if (!Number.isFinite(Number(opts.defaultDuration)) || Number(opts.defaultDuration) <= 0) throw new Error('MotifComposer: options.defaultDuration must be a positive number');
-      this.defaultDuration = Number(opts.defaultDuration);
-    } else {
-      this.defaultDuration = 1;
     }
 
     // octave range
@@ -52,22 +42,6 @@ MotifComposer = class MotifComposer {
       this.VoiceLeadingScore = this.useVoiceLeading ? new VoiceLeadingScore() : null;
     }
 
-    // duration unit
-    const validUnits = ['measure', 'beat', 'div', 'subdiv', 'subsubdiv'];
-    if (opts.durationUnit !== undefined) {
-      if (typeof opts.durationUnit !== 'string' || !validUnits.includes(opts.durationUnit)) throw new Error('MotifComposer: durationUnit must be one of ' + validUnits.join(', '));
-      this.durationUnit = opts.durationUnit;
-    } else {
-      this.durationUnit = 'subdiv';
-    }
-
-    if (opts.durationScale !== undefined) {
-      if (!Number.isFinite(Number(opts.durationScale)) || Number(opts.durationScale) <= 0) throw new Error('MotifComposer: durationScale must be a positive number');
-      this.durationScale = Number(opts.durationScale);
-    } else {
-      this.durationScale = 1;
-    }
-
     if (opts.developFromComposer !== undefined) {
       if (!opts.developFromComposer || typeof opts.developFromComposer.getNotes !== 'function') throw new Error('MotifComposer: developFromComposer must implement getNotes()');
       this.developFromComposer = opts.developFromComposer;
@@ -88,11 +62,9 @@ MotifComposer = class MotifComposer {
     this._motifSequenceId = 0;
   }
 
-  // NOTE: unit tick resolution moved to MotifUnit.unitTicks (src/composers/motif/MotifUnit.js)
-
   /**
    * Generate a Motif instance.
-   * @param {{length?:number, scaleComposer?:ScaleComposer, defaultDuration?:number, durationUnit?:string, durationScale?:number, fitToTotalTicks?:boolean, fitToPhrase?:boolean, totalTicks?:number, developFromComposer?:object, measureComposer?:MeasureComposer}} opts
+   * @param {{length?:number, scaleComposer?:ScaleComposer, developFromComposer?:object, measureComposer?:MeasureComposer}} opts
    * @returns {Motif|object}
    */
   generate(opts = {}) {
@@ -105,25 +77,6 @@ MotifComposer = class MotifComposer {
     } else {
       length = this.length;
     }
-
-    let durationMult;
-    if (optsAny.defaultDuration !== undefined) {
-      if (!Number.isFinite(Number(optsAny.defaultDuration)) || Number(optsAny.defaultDuration) <= 0) throw new Error('MotifComposer.generate: invalid defaultDuration option');
-      durationMult = Number(optsAny.defaultDuration);
-    } else {
-      durationMult = this.defaultDuration;
-    }
-
-    let durationUnit;
-    if (optsAny.durationUnit !== undefined) {
-      const validUnits = ['measure', 'beat', 'div', 'subdiv', 'subsubdiv'];
-      if (typeof optsAny.durationUnit !== 'string' || !validUnits.includes(optsAny.durationUnit)) throw new Error('MotifComposer.generate: invalid durationUnit option');
-      durationUnit = optsAny.durationUnit;
-    } else {
-      durationUnit = this.durationUnit;
-    }
-
-    const durationScale = (optsAny.durationScale !== undefined) ? (Number.isFinite(Number(optsAny.durationScale)) ? Number(optsAny.durationScale) : (() => { throw new Error('MotifComposer.generate: invalid durationScale option'); })()) : this.durationScale;
 
     // Prefer developFromComposer if provided in call, else fall back to instance-level composer
     let developer = null;
@@ -197,22 +150,6 @@ MotifComposer = class MotifComposer {
       }
     }
 
-    // compute default duration in ticks
-    const unitTicks = MotifUnit.unitTicks(durationUnit);
-    const defaultDurationTicks = m.max(1, m.round(unitTicks * durationMult * durationScale));
-
-    // If caller asks to fit the motif into a total tick budget, compute durations accordingly
-    const fitToTotal = Boolean(optsAny.fitToTotalTicks || optsAny.fitToPhrase);
-    const totalTicksProvided = Number.isFinite(Number(optsAny.totalTicks)) ? Number(optsAny.totalTicks) : null;
-    const inferredTotalTicks = (fitToTotal && (totalTicksProvided || (typeof measuresPerPhrase !== 'undefined' && Number.isFinite(Number(tpMeasure)) && Number.isFinite(Number(measuresPerPhrase)))))
-      ? (totalTicksProvided || (measuresPerPhrase * Number(tpMeasure)))
-      : null;
-
-    let targetDurations = null;
-    if (inferredTotalTicks) {
-      targetDurations = MotifDurationPlanner.buildTargetDurations(length, inferredTotalTicks);
-    }
-
     const VC = (typeof VoiceManager !== 'undefined' && VoiceManager)
       ? VoiceManager
       : (() => { throw new Error('MotifComposer.generate: VoiceManager not available'); })();
@@ -264,21 +201,7 @@ MotifComposer = class MotifComposer {
         chosen = candidates[randIdx];
       }
 
-      let dur;
-      if (targetDurations) {
-        // use precomputed durations that sum to the target total
-        dur = m.max(1, m.round(targetDurations[i]));
-      } else {
-        // Add a small timing variance (±10%) to make motifs feel less rigid
-        const jitter = (typeof rv === 'function') ? rv(0.9, 1.1) : (()=>{ throw new Error('Random variation function rv() not available'); })();
-        dur = m.max(1, m.round(defaultDurationTicks * jitter));
-      }
-
-      // Validate chosen note is in candidates (valid pitch class from composer)
-      if (!candidates.includes(chosen)) {
-        throw new Error(`MotifComposer.generate: chosen note ${chosen} (PC ${((chosen % 12) + 12) % 12}) not in valid candidates. Valid PCs: ${Array.from(new Set(candidates.map(c => ((c % 12) + 12) % 12))).sort((a,b)=>a-b).join(',')}`);
-      }
-      seq.push({ note: chosen, duration: dur });
+      seq.push({ note: chosen });
     }
 
     if (VC && motifLayer && typeof VC.resetLayer === 'function') {
@@ -286,7 +209,7 @@ MotifComposer = class MotifComposer {
     }
 
     const MotifCtor = (typeof Motif !== "undefined") ? Motif : null;
-    if (MotifCtor) return new MotifCtor(seq, { defaultDuration: 1 }); // durations are in ticks now
+    if (MotifCtor) return new MotifCtor(seq);
     // Fail-fast: Motif class is required
     throw new Error('MotifComposer.generate: Motif class not available');
   }
