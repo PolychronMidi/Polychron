@@ -96,10 +96,22 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     : (typeof LM.activeLayer === 'string' ? Array.from(LM.activeLayer).reduce((sum, ch) => sum + ch.charCodeAt(0), 0) : 0);
   const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + (Number.isFinite(Number(measureCount)) ? Number(measureCount) : 0)); // Deterministic voice ID from context
 
-  // Gate play invocation with playProb and crossModulation
-  if (typeof playProb === 'number' && (rf() > playProb) && (crossModulation < rv(rf(2, 4), [-.2, -.3], .05))) {
-    return trackRhythm(unit, layer, false);
+  const resolved = (typeof DynamismEngine !== 'undefined' && DynamismEngine && typeof DynamismEngine.resolve === 'function')
+    ? DynamismEngine.resolve(unit, { playProb, stutterProb })
+    : { playProb, stutterProb, composite: 0 };
+  const resolvedPlayProb = Number(resolved.playProb);
+  const resolvedStutterProb = Number(resolved.stutterProb);
+  if (!Number.isFinite(resolvedPlayProb) || !Number.isFinite(resolvedStutterProb)) {
+    throw new Error(`${unit}.playNotes: resolved probabilities must be finite`);
   }
+
+  // Gate play invocation with playProb and crossModulation
+  // if (unit === 'beat') {
+  //   console.warn(`Acceptable warning:${unit}.playNotes: playProb=${resolvedPlayProb.toFixed(3)}, stutterProb=${resolvedStutterProb.toFixed(3)}, composite=${Number(resolved.composite).toFixed(3)}, crossModulation=${crossModulation}`);
+  // }
+  // if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb * rf(10,12)) && (crossModulation < rv(rf(1, 1.3), [-.2, -.3], .05))) {
+  //   return trackRhythm(unit, layer, false);
+  // }
 
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
@@ -124,11 +136,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         p(c, { tick: offTick, vals: [sourceCH, s.note] }); scheduled++;
 
           // Schedule stutter if requested — stutter can be controlled by stutterProb or enableStutter boolean
-          const stutterEnabledByProb = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
+          const stutterEnabledByProb = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : undefined;
           const shouldStutterNow = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
           if (shouldStutterNow) {
             Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-            scheduleStutterNotesFromDensity('source', sourceCH, s.note, onVel, onTick, sustain, stutterProb);
+            scheduleStutterNotesFromDensity('source', sourceCH, s.note, onVel, onTick, sustain, resolvedStutterProb);
           }
         }
 
@@ -146,11 +158,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
 
-          const stutterEnabledByProb_ref = (typeof stutterProb === 'number') ? (stutterProb > rf()) : undefined;
+          const stutterEnabledByProb_ref = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : undefined;
           const shouldStutterNow_ref = (typeof stutterEnabledByProb_ref === 'boolean') ? stutterEnabledByProb_ref : (enableStutter && rf() > 0.5);
           if (shouldStutterNow_ref) {
             Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-            scheduleStutterNotesFromDensity('reflection', reflectionCH, s.note, onVel, onTick, sustain, stutterProb);
+            scheduleStutterNotesFromDensity('reflection', reflectionCH, s.note, onVel, onTick, sustain, resolvedStutterProb);
           }
         }
 
@@ -172,7 +184,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
           if (enableStutter && rf() > 0.5) {
             Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
-            scheduleStutterNotesFromDensity('bass', bassCH, bassNote, onVel, onTick, sustain, stutterProb);
+            scheduleStutterNotesFromDensity('bass', bassCH, bassNote, onVel, onTick, sustain, resolvedStutterProb);
           }
         }
       }

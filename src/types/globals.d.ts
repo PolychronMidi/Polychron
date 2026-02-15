@@ -225,6 +225,7 @@ declare var factoryConstructors: any;
 declare var ComposerFactory: any;
 declare var HarmonicContext: any;
 declare var HarmonicJourney: any;
+declare var DynamismEngine: any;
 declare var MotifChain: any;
 declare var ProgressionGenerator: any;
 declare var PivotChordBridge: any;
