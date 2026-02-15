@@ -4,7 +4,6 @@
 
 playNotes = function(unit = 'subdiv', opts = {}) {
   const {
-    enableStutter = false,
     playProb = 0,
     stutterProb = 0
   } = opts;
@@ -121,7 +120,23 @@ playNotes = function(unit = 'subdiv', opts = {}) {
       const s = picks[pi];
       if (!s || typeof s.note === 'undefined') throw new Error(`${unit}.playNotes: invalid note object in motif picks`);
 
-      // Source channels
+      // Stutter check: ONCE per pick — octave shift only, no additional events
+      let emitNote = s.note;
+      const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
+      if (shouldStutter) {
+        const minNote = m.max(0, OCTAVE.min * 12 - 1);
+        const maxNote = OCTAVE.max * 12 - 1;
+        const octaveCandidates = [];
+        for (let mag = 1; mag <= 3; mag++) {
+          if (emitNote + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
+          if (emitNote - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
+        }
+        if (octaveCandidates.length > 0) {
+          emitNote = emitNote + octaveCandidates[ri(octaveCandidates.length - 1)];
+        }
+      }
+
+      // Source channels — stereo mirror of the pick
       const activeSourceChannels = source.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
       for (let sci = 0; sci < activeSourceChannels.length; sci++) {
         const sourceCH = activeSourceChannels[sci];
@@ -131,19 +146,12 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
         const sourceNoiseBase = baseOnVel * (1 - 0.12 * noiseInfluence);
         const onVel = applyNoiseToVelocity(sourceNoiseBase, sourceVoiceId, currentTime, 'subtle');
-        p(c, { tick: onTick, type: 'on', vals: [sourceCH, s.note, onVel] }); scheduled++;
+        p(c, { tick: onTick, type: 'on', vals: [sourceCH, emitNote, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
-        p(c, { tick: offTick, vals: [sourceCH, s.note] }); scheduled++;
+        p(c, { tick: offTick, vals: [sourceCH, emitNote] }); scheduled++;
+      }
 
-          // Schedule stutter if requested — stutter can be controlled by stutterProb or enableStutter boolean
-          const stutterEnabledByProb = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : undefined;
-          const shouldStutterNow = (typeof stutterEnabledByProb === 'boolean') ? stutterEnabledByProb : (enableStutter && rf() > 0.5);
-          if (shouldStutterNow) {
-            Stutter.scheduleStutterForUnit({ profile: 'source', channel: sourceCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-          }
-        }
-
-      // Reflection channels
+      // Reflection channels — stereo mirror of the pick
       const activeReflectionChannels = reflection.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
       for (let rci = 0; rci < activeReflectionChannels.length; rci++) {
         const reflectionCH = activeReflectionChannels[rci];
@@ -153,24 +161,18 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
         const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
         const onVel = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
-        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, s.note, onVel] }); scheduled++;
+        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, emitNote, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
-        p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
+        p(c, { tick: offTick, vals: [reflectionCH, emitNote] }); scheduled++;
+      }
 
-          const stutterEnabledByProb_ref = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : undefined;
-          const shouldStutterNow_ref = (typeof stutterEnabledByProb_ref === 'boolean') ? stutterEnabledByProb_ref : (enableStutter && rf() > 0.5);
-          if (shouldStutterNow_ref) {
-            Stutter.scheduleStutterForUnit({ profile: 'reflection', channel: reflectionCH, note: s.note, on, sustain, velocity, binVel, isPrimary });
-          }
-        }
-
-      // Bass channels
+      // Bass channels — stereo mirror of the pick (clamped to bass range)
       if (rf() < clamp(.75 * bpmRatio3, .2, .7)) {
+        const bassNote = modClamp(emitNote, m.max(0, OCTAVE.min * 12 - 1), 59);
         const activeBassChannels = bass.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
         for (let bci = 0; bci < activeBassChannels.length; bci++) {
           const bassCH = activeBassChannels[bci];
           const isPrimary = bassCH === cCH3;
-          const bassNote = modClamp(s.note, m.max(0, OCTAVE.min * 12 - 1), 59);
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
           const onVelRaw = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
           const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
@@ -179,10 +181,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           p(c, { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] }); scheduled++;
           const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
           p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;
-
-          if (enableStutter && rf() > 0.5) {
-            Stutter.scheduleStutterForUnit({ profile: 'bass', channel: bassCH, note: bassNote, on, sustain, velocity, binVel, isPrimary });
-          }
         }
       }
     }

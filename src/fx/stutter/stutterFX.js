@@ -1,31 +1,27 @@
+/** @this {any} */
 stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-  const CHsToStutter = ri(1, 2);
-  const channelsToStutter = new Set();
-  const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
+  const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
-  while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[ri(availableCHs.length - 1)];
-    channelsToStutter.add(ch);
-    availableCHs.splice(availableCHs.indexOf(ch), 1);
-  }
-
-  if (channelsToStutter.size < CHsToStutter) {
-    if (this && this.lastUsedCHs2 && typeof (/** @type {any} */ (this.lastUsedCHs2)).clear === 'function') (/** @type {any} */ (this.lastUsedCHs2)).clear();
-  } else {
-    this.lastUsedCHs2 = new Set(channelsToStutter);
-  }
-
-  const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => {
     const startValue = ri(0, 127);
     const endValue = ri(0, 127);
     const ccParam = ra([91, 92, 93, 71, 74]);
+
+    // Use moderate noise for FX curves — aligns with fade's organic treatment
+    const noiseProfile = getNoiseProfile('moderate');
     let tick;
 
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
       tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
       const progress = i / (numStutters - 1);
-      const currentValue = m.floor(startValue + (endValue - startValue) * progress);
+      const baseValue = startValue + (endValue - startValue) * progress;
+
+      // Noise-modulate the FX curve — X axis warps the ramp, Y axis adds flutter
+      const mod = getParameterModulation(channelToStutter, 'fx', tick);
+      const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX;
+      const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY;
+      const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, 127);
+
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
     }
     p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });

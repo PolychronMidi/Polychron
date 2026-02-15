@@ -1,23 +1,19 @@
-// stutterNotes.js - per-note stutter and octave-shift helper
+// stutterNotes.js - single octave-shift stutter per note
+// Emits exactly ONE octave-shifted note-on + note-off per call.
+// Gated externally by stutterProb in playNotes — this function does NOT
+// add its own probability layers or burst multiple events.
+// Cooperates with CC effects via beatContext (pan↔register, fade↔velocity).
 
-/**
- * @typedef {Object} StutterShared
- * @property {Map} stutters
- * @property {Map} shifts
- * @property {Object} global
- */
-
-// Module-scope helpers to avoid hot-path allocations
 const _clampStutterNote = (n, isBassLocal) => {
   if (isBassLocal) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);
   return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
 };
 
-const _velScale = (isPrimaryLocal, velocityLocal, binVelLocal, primaryRange, otherRange, rf) => {
-  return isPrimaryLocal ? velocityLocal * rf(primaryRange[0], primaryRange[1]) : binVelLocal * rf(otherRange[0], otherRange[1]);
-};
-
-const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = null) => {
+/**
+ * Pick a random octave shift with optional pan-position bias.
+ * panBias: -1 (hard left) to +1 (hard right), 0 = no bias.
+ */
+const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = null, panBias = 0) => {
   const minNote = m.max(0, OCTAVE.min * 12 - 1);
   const maxNote = isBassLocal ? 59 : (OCTAVE.max * 12 - 1);
   const candidates = [];
@@ -30,16 +26,33 @@ const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = n
   }
 
   if (candidates.length === 0) return 0;
+
   const filtered = (lastShift !== null && candidates.length > 1)
     ? candidates.filter((shift) => shift !== lastShift)
     : candidates;
-  const use = filtered.length > 0 ? filtered : candidates;
-  return use[ri(use.length - 1)];
+  const pool = filtered.length > 0 ? filtered : candidates;
+
+  // Pan-spatial bias: left→up, right→down
+  if (m.abs(panBias) > 0.15 && pool.length > 1) {
+    const upCandidates = pool.filter(s => s > 0);
+    const downCandidates = pool.filter(s => s < 0);
+    const biasStrength = m.abs(panBias) * 0.6;
+    if (panBias < 0 && upCandidates.length > 0 && rf() < biasStrength) {
+      return upCandidates[ri(upCandidates.length - 1)];
+    }
+    if (panBias > 0 && downCandidates.length > 0 && rf() < biasStrength) {
+      return downCandidates[ri(downCandidates.length - 1)];
+    }
+  }
+
+  return pool[ri(pool.length - 1)];
 };
 
 /**
- * stutterNotes: apply per-note stutter/shift effects.
- * Always emits events directly via p(c, ...).
+ * stutterNotes: emit ONE octave-shifted echo of the given note.
+ * Called only when playNotes has already decided stutter should fire (stutterProb gate).
+ * Does NOT add extra probability layers or emit bursts of notes.
+ *
  * @param {Object} opts
  * @param {string} [opts.profile='source']
  * @param {string|number} opts.channel
@@ -49,158 +62,76 @@ const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = n
  * @param {number} opts.velocity
  * @param {number} opts.binVel
  * @param {boolean} [opts.isPrimary=false]
- * @param {StutterShared|any} [opts.shared]
- * @returns {StutterShared}
+ * @param {Object} [opts.shared]
+ * @param {Object} [opts.beatContext]
+ * @returns {Object} shared state
  */
 stutterNotes = (/** @type {any} */ opts = {}) => {
-    const {
-      profile = 'source',
-      channel,
-      note,
-      on,
-      sustain,
-      velocity,
-      binVel,
-      isPrimary = false,
-      shared = null,
-    } = opts;
+  const {
+    profile = 'source',
+    channel,
+    note,
+    on,
+    sustain,
+    velocity,
+    binVel,
+    isPrimary = false,
+    shared = null,
+    beatContext = null,
+  } = opts;
 
-    if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
-    const baseMidiNote = m.round(Number(note));
+  if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
+  const baseMidiNote = m.round(Number(note));
+  const isBass = profile === 'bass';
 
-    // Ensure shared shape exists
-    let localShared = shared;
-    if (!localShared) {
-      localShared = { stutters: new Map(), shifts: new Map(), global: {} };
-    }
-    if (!localShared.stutters) localShared.stutters = new Map();
-    if (!localShared.shifts) localShared.shifts = new Map();
-    if (!localShared.global) localShared.global = {};
+  // Shared state for per-beat shift tracking (variety across channels)
+  let localShared = shared;
+  if (!localShared) localShared = { shifts: new Map(), global: {} };
+  if (!localShared.shifts) localShared.shifts = new Map();
+  if (!localShared.global) localShared.global = {};
+  const globalState = localShared.global;
 
-    const stutters = localShared.stutters;
-    const shifts = localShared.shifts;
-    const globalState = localShared.global;
+  // Reset shift history at beat boundary for variety
+  const currentBeatIndex = (typeof beatIndex !== 'undefined') ? beatIndex : null;
+  if (globalState._lastBeatIndex !== currentBeatIndex) {
+    localShared.shifts.clear();
+    globalState._lastBeatIndex = currentBeatIndex;
+  }
 
-    // Reset per-channel octave shifts and selected channels when beat index changes
-    const currentBeatIndex = (typeof beatIndex !== 'undefined') ? beatIndex : null;
-    if (globalState._lastBeatIndex !== currentBeatIndex) {
-      shifts.clear();
-      globalState._lastBeatIndex = currentBeatIndex;
-      globalState.selectedReflectionChannels = new Set();
-      globalState.selectedBassChannels = new Set();
-    }
+  // Pan-spatial bias from CC context
+  const panBias = (beatContext && beatContext.panDirections && typeof beatContext.panDirections[channel] === 'number')
+    ? beatContext.panDirections[channel]
+    : 0;
 
-    const isSource = profile === 'source';
-    const isReflection = profile === 'reflection';
-    const isBass = profile === 'bass';
+  // Fade-direction velocity coherence from CC context
+  const fadeDir = (beatContext && beatContext.fadeChannels && beatContext.fadeChannels.has && beatContext.fadeChannels.has(channel))
+    ? (beatContext.fadeDirection || null)
+    : null;
 
-    // Channel selection: for reflection/bass, limit to 1-2 random channels per beat
-    if (isReflection || isBass) {
-      const selectedSet = isReflection
-        ? (globalState.selectedReflectionChannels || (globalState.selectedReflectionChannels = new Set()))
-        : (globalState.selectedBassChannels || (globalState.selectedBassChannels = new Set()));
+  // Pick ONE octave shift (avoid repeating the last shift used on this channel)
+  const lastShift = localShared.shifts.get(channel) || null;
+  const shiftRange = isBass ? 2 : 3;
+  const shift = _pickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastShift, panBias);
+  localShared.shifts.set(channel, shift);
 
-      if (!selectedSet.has(channel)) {
-        if (selectedSet.size < 2 && rf() < 0.5) {
-          selectedSet.add(channel);
-        }
-      }
+  const stutterNote = m.round(_clampStutterNote(baseMidiNote + shift, isBass));
 
-      if (!selectedSet.has(channel)) {
-        return localShared;
-      }
-    }
+  // Velocity: scaled version of the original, with fade-direction coherence
+  const velRanges = (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.getVelocityRange)
+    ? StutterConfig.getVelocityRange(profile, isPrimary)
+    : (isPrimary ? [0.3, 0.7] : [0.45, 0.8]);
+  const rawVel = clamp(m.round(
+    isPrimary ? velocity * rf(velRanges[0], velRanges[1]) : binVel * rf(velRanges[0], velRanges[1])
+  ), 1, 127);
+  const stutterVel = fadeDir === 'in' ? clamp(m.round(rawVel * rf(0.7, 1.0)), 1, 127)
+    : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, 127)
+    : rawVel;
 
-    // Get profile-specific config from centralized StutterConfig
-    const profileCfg = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
-      ? StutterConfig.getProfileConfig(profile)
-      : { perProb: 0.2, shiftProb: 0.5 };
+  // Emit exactly ONE stutter note (octave-shifted echo with slight timing offset)
+  const stutterOn = on + sustain * rf(0.05, 0.3);
+  const stutterOff = stutterOn + sustain * rf(0.2, 0.6);
+  p(c, { tick: stutterOn, type: 'on', vals: [channel, stutterNote, stutterVel] });
+  p(c, { tick: stutterOff, vals: [channel, stutterNote] });
 
-    const clampStutterNote = (n) => _clampStutterNote(n, isBass);
-
-    // Source: optional global stutter plan shared across channels
-    if (isSource && !globalState.applied && rf() < rv(.2, [.5, 1], .3)) {
-      const numStutters = m.round(rv(rv(ri(3, 9), [2, 5], .33), [2, 5], .1));
-      globalState.applied = true;
-      globalState.data = {
-        numStutters,
-        duration: rf(.9, 1.1) * sustain / numStutters,
-        minVelocity: 11,
-        maxVelocity: 100,
-        isFadeIn: rf() < 0.5,
-        decay: rf(.75, 1.25)
-      };
-    }
-
-    if (isSource && globalState.data) {
-      const { numStutters, duration, minVelocity, maxVelocity, isFadeIn, decay } = globalState.data;
-      let lastStepShift = null;
-      for (let i = 0; i < numStutters; i++) {
-        const tick = on + duration * i;
-        let stutterNote = baseMidiNote;
-        if (rf() < 0.85) {
-          const stepShift = _pickRandomOctaveShift(baseMidiNote, isBass, 3, lastStepShift);
-          stutterNote = _clampStutterNote(baseMidiNote + stepShift, isBass);
-          lastStepShift = stepShift;
-        }
-        stutterNote = m.round(stutterNote);
-
-        let currentVelocity;
-        if (isFadeIn) {
-          const fadeInMultiplier = decay * (i / (numStutters * rf(0.4, 2.2) - 1));
-          currentVelocity = clamp(minVelocity + (maxVelocity - minVelocity) * fadeInMultiplier, 0, 127);
-        } else {
-          const fadeOutMultiplier = 1 - (decay * (i / (numStutters * rf(0.4, 2.2) - 1)));
-          currentVelocity = clamp(minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier, 0, 127);
-        }
-
-        p(c, {
-          tick: tick + duration * rf(.15, .6),
-          type: 'on',
-          vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, currentVelocity, binVel, [.3, .7], [.45, .8], rf)), 0, 127)]
-        });
-        p(c, { tick: m.max(tick, tick - duration * rf(.15)), vals: [channel, stutterNote] });
-      }
-      p(c, { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] });
-    }
-
-    // Per-channel stutter (source/reflection/bass)
-    const perProb = isSource ? rv(profileCfg.perProb, [.5, 1], .2) : profileCfg.perProb;
-    if (rf() < perProb) {
-      if (!stutters.has(channel)) {
-        if (isSource) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
-        else if (isReflection) stutters.set(channel, m.round(rv(rv(ri(2, 7), [2, 5], .33), [2, 5], .1)));
-        else stutters.set(channel, m.round(rv(rv(ri(2, 5), [2, 3], .33), [2, 10], .1)));
-      }
-
-      const numStutters = stutters.get(channel);
-      const duration = .25 * ri(1, isSource ? 5 : 8) * sustain / numStutters;
-      const shiftRange = isBass ? 2 : 3;
-      const fireProb = isSource ? .6 : (isReflection ? .5 : .3);
-      const velRanges = (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.getVelocityRange)
-        ? StutterConfig.getVelocityRange(profile, isPrimary)
-        : (isSource
-          ? (isPrimary ? [0.3, 0.7] : [0.45, 0.8])
-          : (isReflection ? (isPrimary ? [0.25, 0.65] : [0.4, 0.75]) : (isPrimary ? [0.55, 0.85] : [0.75, 1.05])));
-
-      let lastStepShift = null;
-      for (let i = 0; i < numStutters; i++) {
-        const tick = on + duration * i;
-        let stutterNote = baseMidiNote;
-        if (rf() < 0.85) {
-          const stepShift = _pickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastStepShift);
-          stutterNote = clampStutterNote(baseMidiNote + stepShift);
-          lastStepShift = stepShift;
-        }
-        stutterNote = m.round(stutterNote);
-        if (rf() < fireProb) {
-          p(c, { tick: tick - duration * rf(.15, .3), vals: [channel, stutterNote] });
-          p(c, { tick: tick + duration * rf(.15, .7), type: 'on', vals: [channel, stutterNote, clamp(m.round(_velScale(isPrimary, velocity, binVel, velRanges, velRanges, rf)), 0, 127)] });
-        }
-      }
-
-      if (isSource) p(c, { tick: on + sustain * rf(.5, 1.5), vals: [channel, baseMidiNote] });
-    }
-
-    return localShared;
+  return localShared;
 };

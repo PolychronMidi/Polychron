@@ -154,10 +154,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         playNotes('beat', { playProb, stutterProb });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('div');
-          playNotes('div', { playProb, stutterProb });
+          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotes('subdiv', { playProb, stutterProb });
+            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
               if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
@@ -213,11 +213,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
           setUnitTiming('div');
-          playNotes('div', { playProb, stutterProb });
+          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
 
           for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
-            playNotes('subdiv', { playProb, stutterProb });
+            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
 
             for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');

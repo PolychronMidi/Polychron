@@ -1,24 +1,16 @@
+/** @this {any} */
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-  const CHsToStutter = ri(1, 5);
-  const channelsToStutter = new Set();
-  const availableCHs = channels.filter(ch => !this.lastUsedCHs.has(ch));
+  const channelsArray = pickStutterChannels(channels, ri(1, 5), this.lastUsedCHs);
 
-  while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[ri(availableCHs.length - 1)];
-    channelsToStutter.add(ch);
-    availableCHs.splice(availableCHs.indexOf(ch), 1);
-  }
+  // Write beat-level fade context for note-velocity coherence (task 8)
+  const isFadeInGlobal = rf() < 0.5;
+  if (!this.beatContext) this.beatContext = {};
+  this.beatContext.fadeDirection = isFadeInGlobal ? 'in' : 'out';
+  this.beatContext.fadeChannels = new Set(channelsArray);
 
-  if (channelsToStutter.size < CHsToStutter) {
-    if (this && this.lastUsedCHs && typeof (/** @type {any} */ (this.lastUsedCHs)).clear === 'function') (/** @type {any} */ (this.lastUsedCHs)).clear();
-  } else {
-    this.lastUsedCHs = new Set(channelsToStutter);
-  }
-
-  const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => {
     const maxVol = ri(90, 120);
-    const isFadeIn = rf() < 0.5;
+    const isFadeIn = isFadeInGlobal;
 
     // Use moderate noise profile for stutter fades (more interesting than subtle)
     const noiseProfile = getNoiseProfile('moderate');
