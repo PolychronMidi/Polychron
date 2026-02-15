@@ -38,6 +38,8 @@ require('./voice');
 // @ts-ignore: load side-effect module with globals
 require('./PhraseArcManager');
 // @ts-ignore: load side-effect module with globals
+require('./DynamismEngine');
+// @ts-ignore: load side-effect module with globals
 require('./profiles');
 // @ts-ignore: load side-effect module with globals
 require('./factory');
