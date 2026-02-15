@@ -1,21 +1,12 @@
+/** @this {any} */
 stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-  const CHsToStutter = ri(1, 2);
-  const channelsToStutter = new Set();
-  const availableCHs = channels.filter(ch => !this.lastUsedCHs2.has(ch));
+  const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
-  while (channelsToStutter.size < CHsToStutter && availableCHs.length > 0) {
-    const ch = availableCHs[ri(availableCHs.length - 1)];
-    channelsToStutter.add(ch);
-    availableCHs.splice(availableCHs.indexOf(ch), 1);
-  }
+  // Write beat-level pan context for spatial-aware octave shifts (task 7)
+  if (!this.beatContext) this.beatContext = {};
+  this.beatContext.panChannels = new Set(channelsArray);
+  this.beatContext.panDirections = {};
 
-  if (channelsToStutter.size < CHsToStutter) {
-    if (this && this.lastUsedCHs2 && typeof (/** @type {any} */ (this.lastUsedCHs2)).clear === 'function') (/** @type {any} */ (this.lastUsedCHs2)).clear();
-  } else {
-    this.lastUsedCHs2 = new Set(channelsToStutter);
-  }
-
-  const channelsArray = Array.from(channelsToStutter);
   channelsArray.forEach(channelToStutter => {
     const edgeMargin = ri(7, 25);
     const fullRange = 127 - edgeMargin;
@@ -48,6 +39,11 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }
+
+    // Record final pan position for note cooperation —
+    // negative = left-biased, positive = right-biased, 0 = center
+    this.beatContext.panDirections[channelToStutter] = (currentPan - 64) / 64;
+
     p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
   });
 };

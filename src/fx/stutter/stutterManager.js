@@ -1,23 +1,26 @@
 // fx/StutterManager.js - Audio effects manager
 
-// Use centralized stutterConfig for config
 const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
 
 class StutterManager {
   constructor() {
-    // Channel tracking state for fade/pan/FX stutters
+    // Channel tracking — one pool per effect type (no collision)
     this.lastUsedCHs = new Set();      // for stutterFade
-    this.lastUsedCHs2 = new Set();     // for stutterPan and stutterFX
+    this.lastUsedCHs2 = new Set();     // for stutterPan
+    this.lastUsedCHs3 = new Set();     // for stutterFX
 
     // Capture the naked globals (rely on require-side effects to define them)
     this._stutterFade = (typeof stutterFade === 'function') ? stutterFade : null;
     this._stutterPan = (typeof stutterPan === 'function') ? stutterPan : null;
     this._stutterFX = (typeof stutterFX === 'function') ? stutterFX : null;
-    // Shared state for stutterNotes (stutters/shifts/global) — shared across manager usage
-    this.shared = { stutters: new Map(), shifts: new Map(), global: {} };
+    // Shared state for stutterNotes shift tracking — shared across manager usage
+    this.shared = { shifts: new Map(), global: {} };
 
-    // Use central config object from stutterConfig (read-only reference)
-    this.config = (SC && SC.getConfig ? SC.getConfig() : { probabilities: {} });
+    // Beat-level context written by CC effects, read by stutterNotes for cooperation
+    // { fadeDirection: 'in'|'out', fadeChannels: Set, panChannels: Set, panDirections: {} }
+    this.beatContext = {};
+
+    this.config = (SC && SC.getConfig ? SC.getConfig() : { profiles: {} });
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
@@ -46,7 +49,7 @@ class StutterManager {
 
   /**
    * Schedule stutter effects for a given unit-level note.
-   * Calls stutterNotes directly with emit=true so events are emitted immediately.
+   * Passes beatContext so stutterNotes can cooperate with CC effects.
    * @param {any} opts
    * @returns {any} shared state from stutterNotes
    */
@@ -54,7 +57,7 @@ class StutterManager {
     if (typeof stutterNotes !== 'function') throw new Error('StutterManager.scheduleStutterForUnit: stutterNotes helper not available');
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
-    provided.emit = true;
+    provided.beatContext = this.beatContext;
     return stutterNotes(provided);
   }
 
@@ -63,17 +66,21 @@ class StutterManager {
       for (const ch of channels) {
         this.lastUsedCHs.delete(ch);
         this.lastUsedCHs2.delete(ch);
+        this.lastUsedCHs3.delete(ch);
       }
       return { cleared: channels.length };
     }
 
     const prev1 = this.lastUsedCHs.size;
     const prev2 = this.lastUsedCHs2.size;
+    const prev3 = this.lastUsedCHs3.size;
     this.lastUsedCHs.clear();
     this.lastUsedCHs2.clear();
-    try { this.shared.stutters.clear(); this.shared.shifts.clear(); this.shared.global = {}; } catch { /* ignore errors clearing shared state */ }
+    this.lastUsedCHs3.clear();
+    this.beatContext = {};
+    try { this.shared.shifts.clear(); this.shared.global = {}; } catch { /* ignore errors clearing shared state */ }
 
-    return { cleared: prev1 + prev2, lastUsedCHs: prev1, lastUsedCHs2: prev2 };
+    return { cleared: prev1 + prev2 + prev3, lastUsedCHs: prev1, lastUsedCHs2: prev2, lastUsedCHs3: prev3 };
   }
 }
 

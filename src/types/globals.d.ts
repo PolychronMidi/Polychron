@@ -112,7 +112,6 @@ declare var TimingContext: any;
 declare var TUNING_FREQ: any;
 declare var LOG: any;
 declare var StutterConfig: any;
-declare var StutterConfigStore: any;
 
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;
@@ -233,7 +232,6 @@ declare var chordConfig: any;
 declare var chordModulator: any;
 
 declare var MotifRegistry: any;
-declare var StutterConfig: any;
 declare var VOICE_PROFILES: any;
 declare var CHORD_PROFILES: any;
 declare var MOTIF_PROFILES: any;
@@ -298,6 +296,7 @@ declare var stutterFade: any;
 declare var stutterPan: any;
 declare var stutterFX: any;
 declare var stutterNotes: any;
+declare var pickStutterChannels: any;
 declare var resetChannelTracking: any;
 declare var stutterFadeCHs: any;
 declare var stutterPanCHs: any;
@@ -474,7 +473,6 @@ declare var VOICE_Manager: any;
 declare var SECTION_TYPES: any;
 declare var SUBSUBDIVS: any;
 declare var DYNAMISM: any;
-declare var STUTTER_PROBABILITIES: any;
 declare var STUTTER_PROFILES: any;
 declare var STUTTER_VELOCITY_RANGES: any;
 

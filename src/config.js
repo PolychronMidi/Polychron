@@ -32,7 +32,7 @@ OCTAVE={
 };
 VOICES={
   min: 1,
-  max: 7,
+  max: 3,
   weights: [15,30,25,7,.5,.5,.1,.1]
 };
 SECTION_TYPES=[
@@ -93,15 +93,10 @@ COMPOSER_FAMILIES={
     types: ['measure', 'harmonicRhythm', 'tensionRelease', 'melodicDevelopment']
   }
 };
-STUTTER_PROBABILITIES={
-  globalApplyProb: 0.2,
-  perProb: { source: 0.07, reflection: 0.2, bass: 0.7 },
-  shiftProb: { source: 0.15, reflection: 0.7, bass: 0.5 }
-};
 STUTTER_PROFILES={
-  source: { perProb: 0.07, shiftProb: 0.15 },
-  reflection: { perProb: 0.2, shiftProb: 0.7 },
-  bass: { perProb: 0.7, shiftProb: 0.5 }
+  source: { perProb: 0.07 },
+  reflection: { perProb: 0.2 },
+  bass: { perProb: 0.7 }
 };
 STUTTER_VELOCITY_RANGES = {
   source: { primary: [0.3, 0.7], secondary: [0.45, 0.8] },
