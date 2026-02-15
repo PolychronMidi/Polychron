@@ -58,6 +58,7 @@ class StutterManager {
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
     provided.beatContext = this.beatContext;
+    try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, provided.profile || 'unknown'); } catch { /* ignore */ }
     return stutterNotes(provided);
   }
 

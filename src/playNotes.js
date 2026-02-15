@@ -187,18 +187,30 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
         const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
         const onVel = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
-        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, s.note, onVel] }); scheduled++;
+
+        // Apply stutter to a *subset* of reflection channels when selected by Stutter's beatContext
+        const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
+        const reflectionEmitNote = (reflectSelected && selectedShift !== 0)
+          ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
+          : s.note;
+
+        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
-        p(c, { tick: offTick, vals: [reflectionCH, s.note] }); scheduled++;
+        p(c, { tick: offTick, vals: [reflectionCH, reflectionEmitNote] }); scheduled++;
       }
 
       // Bass channels — stereo mirror of the pick (clamped to bass range)
       if (rf() < clamp(.75 * bpmRatio3, .2, .7)) {
-        const bassNote = modClamp(s.note, m.max(0, OCTAVE.min * 12 - 1), 59);
         const activeBassChannels = bass.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
         for (let bci = 0; bci < activeBassChannels.length; bci++) {
           const bassCH = activeBassChannels[bci];
           const isPrimary = bassCH === cCH3;
+
+          // Apply stutter octave shift to a small subset of bass channels when selected
+          const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
+          const bassEmitBase = (bassSelected && selectedShift !== 0) ? s.note + selectedShift : s.note;
+          const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
+
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
           const onVelRaw = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
           const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
