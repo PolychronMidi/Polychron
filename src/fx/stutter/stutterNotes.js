@@ -78,24 +78,46 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     isPrimary = false,
     shared = null,
     beatContext = null,
+    emit = true // when false, return planned events instead of calling p()
   } = opts;
 
   if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
   const baseMidiNote = m.round(Number(note));
   const isBass = profile === 'bass';
 
-  // Shared state for per-beat shift tracking (variety across channels)
+  // Shared state for per-beat shift tracking (variety across channels) + optional selected-channel sets
   let localShared = shared;
   if (!localShared) localShared = { shifts: new Map(), global: {} };
   if (!localShared.shifts) localShared.shifts = new Map();
   if (!localShared.global) localShared.global = {};
   const globalState = localShared.global;
 
-  // Reset shift history at beat boundary for variety
+  // Reset shift history and selection sets at beat boundary for variety
   const currentBeatIndex = (typeof beatIndex !== 'undefined') ? beatIndex : null;
   if (globalState._lastBeatIndex !== currentBeatIndex) {
     localShared.shifts.clear();
     globalState._lastBeatIndex = currentBeatIndex;
+    // selection sets (reflection/bass) — limit stutter to a small random subset of mirror channels
+    globalState.selectedReflectionChannels = new Set();
+    globalState.selectedBassChannels = new Set();
+  }
+
+  // If mirror-selection not yet populated for this beat, lazily choose up to 2 channels
+  if (!globalState.selectedReflectionChannels || globalState.selectedReflectionChannels.size === 0) {
+    try {
+      const candidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
+      for (const ch of candidates) {
+        if (globalState.selectedReflectionChannels.size < 2 && rf() < 0.5) globalState.selectedReflectionChannels.add(ch);
+      }
+    } catch { /* ignore */ }
+  }
+  if (!globalState.selectedBassChannels || globalState.selectedBassChannels.size === 0) {
+    try {
+      const candidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
+      for (const ch of candidates) {
+        if (globalState.selectedBassChannels.size < 2 && rf() < 0.5) globalState.selectedBassChannels.add(ch);
+      }
+    } catch { /* ignore */ }
   }
 
   // Pan-spatial bias from CC context
@@ -127,11 +149,28 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, 127)
     : rawVel;
 
-  // Emit exactly ONE stutter note (octave-shifted echo with slight timing offset)
+  // Build planned events (single on/off pair)
   const stutterOn = on + sustain * rf(0.05, 0.3);
   const stutterOff = stutterOn + sustain * rf(0.2, 0.6);
-  p(c, { tick: stutterOn, type: 'on', vals: [channel, stutterNote, stutterVel] });
-  p(c, { tick: stutterOff, vals: [channel, stutterNote] });
+  const evOn = { tick: stutterOn, type: 'on', vals: [channel, stutterNote, stutterVel] };
+  const evOff = { tick: stutterOff, vals: [channel, stutterNote] };
+
+  if (!emit) {
+    // Return planned events for testing/preview
+    return { shared: localShared, events: [evOn, evOff] };
+  }
+
+  // Emit and metrics
+  p(c, evOn);
+  p(c, evOff);
+  try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(1, profile); } catch { /* ignore */ }
 
   return localShared;
 };
+
+// Register this helper with StutterRegistry if present so tests/plugins can swap implementations.
+try {
+  if (typeof StutterRegistry !== 'undefined' && StutterRegistry && typeof StutterRegistry.registerHelper === 'function') {
+    StutterRegistry.registerHelper(stutterNotes);
+  }
+} catch { /* ignore */ }

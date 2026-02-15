@@ -301,6 +301,9 @@ declare var resetChannelTracking: any;
 declare var stutterFadeCHs: any;
 declare var stutterPanCHs: any;
 
+declare var StutterRegistry: any;
+declare var StutterMetrics: any;
+
 declare var Stutter: any;
 declare var setBalanceAndFX: any;
 declare var setBinaural: any;

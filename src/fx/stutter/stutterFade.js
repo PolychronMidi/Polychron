@@ -8,6 +8,26 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   this.beatContext.fadeDirection = isFadeInGlobal ? 'in' : 'out';
   this.beatContext.fadeChannels = new Set(channelsArray);
 
+  // Populate beat-scoped reflection/bass selection sets (up to 2 channels each).
+  // These are consulted by `playNotes` so mirrored channels only stutter when selected.
+  if (this.beatContext._lastBeatIndex !== beatIndex) {
+    this.beatContext._lastBeatIndex = beatIndex;
+    this.beatContext.selectedReflectionChannels = new Set();
+    this.beatContext.selectedBassChannels = new Set();
+    try {
+      const reflCandidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
+      for (const ch of reflCandidates) {
+        if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < 0.5) this.beatContext.selectedReflectionChannels.add(ch);
+      }
+    } catch { /* ignore */ }
+    try {
+      const bassCandidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
+      for (const ch of bassCandidates) {
+        if (this.beatContext.selectedBassChannels.size < 2 && rf() < 0.5) this.beatContext.selectedBassChannels.add(ch);
+      }
+    } catch { /* ignore */ }
+  }
+
   channelsArray.forEach(channelToStutter => {
     const maxVol = ri(90, 120);
     const isFadeIn = isFadeInGlobal;
