@@ -151,6 +151,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
+        // Run any explicit Stutter plans scheduled for this beat
+        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
         playNotes('beat', { playProb, stutterProb });
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('div');
@@ -208,6 +210,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
+        // Run any explicit Stutter plans scheduled for this beat
+        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
         playNotes('beat', { playProb, stutterProb });
 
         for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
