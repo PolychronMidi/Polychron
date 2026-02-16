@@ -28,6 +28,13 @@ class StutterManager {
     this._nextPlanId = 1;
 
     this.config = (SC && SC.getConfig ? SC.getConfig() : { profiles: {} });
+
+    // Default directive applied each beat unless overridden (keeps features active by default)
+    try {
+      this.defaultDirective = (SC && typeof SC.getDirectiveDefaults === 'function') ? SC.getDirectiveDefaults() : { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false } };
+    } catch {
+      this.defaultDirective = { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false } };
+    }
   }
 
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
@@ -90,6 +97,7 @@ class StutterManager {
       arr.push(planId);
       this.scheduledPlans.set(key, arr);
       try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, plan.profile || 'unknown'); } catch { /* ignore */ }
+      try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incPendingForTick === 'function') StutterMetrics.incPendingForTick(key, 1); } catch { /* ignore */ }
       return planId;
     }
 
@@ -130,7 +138,13 @@ class StutterManager {
       const arr = this.scheduledPlans.get(k) || [];
       for (const planId of arr) {
         const plan = this.plans.get(planId);
-        if (plan) this._executePlan(plan);
+        if (plan) {
+          try {
+            // decrement pending metrics before execution
+            if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.decPendingForTick === 'function') StutterMetrics.decPendingForTick(k, 1);
+          } catch { /* ignore */ }
+          this._executePlan(plan);
+        }
       }
       this.scheduledPlans.delete(k);
     }
@@ -298,9 +312,55 @@ class StutterManager {
     if (typeof stutterNotes !== 'function') throw new Error('StutterManager.scheduleStutterForUnit: stutterNotes helper not available');
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
-    provided.beatContext = this.beatContext;
+
+    // merge default directive into unit-stutter opts when present (coherence only currently)
+    provided.beatContext = this.beatContext || {};
+    if (!provided.beatContext.coherenceKey && this.defaultDirective && this.defaultDirective.coherence && this.defaultDirective.coherence.enabled) {
+      const prefix = this.defaultDirective.coherence.keyPrefix || 'stutter';
+      const seed = provided.coherenceGroup || provided.coherenceKey || 'unit';
+      provided.beatContext.coherenceKey = `${prefix}:${seed}`;
+    }
+
     try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, provided.profile || 'unknown'); } catch { /* ignore */ }
     return stutterNotes(provided);
+  }
+
+  prepareBeat() {
+    // Idempotent per-beat setup: apply default directive (coherenceKey, reset per-beat selectors)
+    if (!this.beatContext) this.beatContext = {};
+    // Reset per-beat selection sets when beatIndex changes
+    const currentBeatIndexLocal = (typeof beatIndex !== 'undefined') ? beatIndex : null;
+    if (this.beatContext._lastBeatIndex !== currentBeatIndexLocal) {
+      this.beatContext._lastBeatIndex = currentBeatIndexLocal;
+      this.beatContext.selectedReflectionChannels = new Set();
+      this.beatContext.selectedBassChannels = new Set();
+      try {
+        const reflCandidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
+        for (const ch of reflCandidates) if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < 0.5) this.beatContext.selectedReflectionChannels.add(ch);
+      } catch { /* ignore */ }
+      try {
+        const bassCandidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
+        for (const ch of bassCandidates) if (this.beatContext.selectedBassChannels.size < 2 && rf() < 0.5) this.beatContext.selectedBassChannels.add(ch);
+      } catch { /* ignore */ }
+    }
+
+    // Apply default coherence key if enabled in defaultDirective
+    try {
+      const def = this.defaultDirective || {};
+      if (def.coherence && def.coherence.enabled) {
+        const prefix = (def.coherence && def.coherence.keyPrefix) ? def.coherence.keyPrefix : 'stutter';
+        const seed = `${typeof measureIndex !== 'undefined' ? measureIndex : 'm'}:${typeof beatIndex !== 'undefined' ? beatIndex : 'b'}`;
+        this.beatContext.coherenceKey = `${prefix}:beat:${seed}`;
+      } else if (this.beatContext && this.beatContext.coherenceKey && !(def.coherence && def.coherence.enabled)) {
+        // clear if defaults say disabled and it was left over
+        delete this.beatContext.coherenceKey;
+      }
+    } catch { /* ignore */ }
+
+    // Ensure modulation bus exists for this beat
+    if (!this.beatContext.mod) this.beatContext.mod = {};
+
+    return this.beatContext;
   }
 
   resetChannelTracking(channels = null) {
