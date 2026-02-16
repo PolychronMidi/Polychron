@@ -107,8 +107,8 @@ STUTTER_VELOCITY_RANGES = {
 // Cross-modulation rules for stutter ↔ CC interactions. Values are multipliers or biases
 // sampled by stutterNotes when beatContext.mod provides per-channel CC intensities.
 STUTTER_CROSSMOD_RULES = {
-  // pan intensity increases chance of octave motion and slightly widens shift range
-  pan: { stutterProbScale: 1.25, shiftRangeBias: 1 },
+  // pan intensity increases chance of octave motion, widens shift range, and can increase stutter rate
+  pan: { stutterProbScale: 1.25, shiftRangeBias: 1, stutterRateScale: 1.25 },
   // fade intensity favors velocity coherence (noisy boost on fade-in)
   fade: { velocityScaleBias: 0.15 },
   // fx intensity increases shift-range sensitivity

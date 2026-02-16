@@ -51,6 +51,10 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
 if (typeof FXFeedbackListener !== 'undefined') {
   FXFeedbackListener.initialize();
 }
+// Initialize stutter → rhythm feedback (new)
+if (typeof StutterFeedbackListener !== 'undefined') {
+  StutterFeedbackListener.initialize();
+}
 // Initialize journey → rhythm coupling: bold key moves → complex rhythms
 if (typeof JourneyRhythmCoupler !== 'undefined') {
   JourneyRhythmCoupler.initialize();
