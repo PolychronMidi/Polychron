@@ -67,9 +67,23 @@ DynamismEngine = (() => {
     const fxEnergy = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.getIntensity === 'function')
       ? clamp(Number(FXFeedbackListener.getIntensity()), 0, 1)
       : 0;
-    const stutterEnergy = (typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.getIntensity === 'function')
+
+    // Use layer-aware stutter intensity (map L1->source, L2->reflection)
+    let stutterLayerIntensity = 0;
+    try {
+      const layerMap = { L1: 'source', L2: 'reflection' };
+      const layerProfile = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? layerMap[LM.activeLayer] : null;
+      if (layerProfile && typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.getIntensity === 'function') {
+        stutterLayerIntensity = clamp(Number(StutterFeedbackListener.getIntensity(layerProfile)), 0, 1);
+      }
+    } catch { stutterLayerIntensity = 0; }
+
+    const stutterOverall = (typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.getIntensity === 'function')
       ? clamp(Number(StutterFeedbackListener.getIntensity()), 0, 1)
       : 0;
+
+    const stutterEnergy = clamp(stutterLayerIntensity * 0.7 + stutterOverall * 0.3, 0, 1);
+
     const journeyRhythmEnergy = (typeof JourneyRhythmCoupler !== 'undefined' && JourneyRhythmCoupler && typeof JourneyRhythmCoupler.getBoldness === 'function')
       ? clamp(Number(JourneyRhythmCoupler.getBoldness()), 0, 1)
       : 0;

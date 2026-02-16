@@ -53,8 +53,11 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
         this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
       } catch { /* ignore */ }
 
-      // emit feedback for stutter cross-mod listeners
-      try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'pan', channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick }); } catch { /* ignore */ }
+      // emit feedback for stutter cross-mod listeners (include inferred profile)
+      try {
+        const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
+        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
+      } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }

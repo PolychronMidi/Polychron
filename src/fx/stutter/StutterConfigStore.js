@@ -41,12 +41,29 @@ function getVelocityRange(profile = 'source', isPrimary = true) {
 function getCrossModRules() {
   if (typeof STUTTER_CROSSMOD_RULES === 'undefined') {
     return {
-      pan: { stutterProbScale: 1.0, shiftRangeBias: 0 },
+      pan: { stutterProbScale: 1.0, shiftRangeBias: 0, stutterRateScale: 1.0 },
       fade: { velocityScaleBias: 0 },
       fx: { shiftRangeScale: 1.0 }
     };
   }
   return STUTTER_CROSSMOD_RULES;
+}
+
+function getPreset(name = 'default') {
+  if (typeof STUTTER_PRESETS === 'undefined') return null;
+  return (STUTTER_PRESETS && STUTTER_PRESETS[name]) ? STUTTER_PRESETS[name] : null;
+}
+
+function getDirectiveDefaults() {
+  return {
+    coherence: { enabled: false, intensity: 0.8, keyPrefix: 'stutter' },
+    phase: { left: 0, right: 0.5, center: 0 },
+    rateCurve: 'linear',
+    phaseCurve: 'linear',
+    crossModOverrides: null,
+    perProfileRouting: { L1: 'source', L2: 'reflection', defaultWeight: 0.6 },
+    metricsAdaptive: { enabled: false, sensitivity: 0.08 }
+  };
 }
 
 StutterConfigStore = {
@@ -55,7 +72,9 @@ StutterConfigStore = {
   validateConfig,
   getProfileConfig,
   getVelocityRange,
-  getCrossModRules
+  getCrossModRules,
+  getPreset,
+  getDirectiveDefaults
 };// Assign directly as StutterConfig (replaces the old StutterConfigStore + stutterConfig double)
 StutterConfig = {
   getConfig,

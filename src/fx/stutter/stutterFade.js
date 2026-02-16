@@ -71,8 +71,11 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
         this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fade: norm });
       } catch { /* ignore */ }
 
-      // Emit a stutter-applied event for feedback loops
-      try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fade', channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick }); } catch { /* ignore */ }
+      // Emit a stutter-applied event for feedback loops (include inferred profile)
+      try {
+        const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
+        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
+      } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
