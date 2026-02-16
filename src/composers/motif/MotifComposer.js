@@ -6,11 +6,22 @@
  * Usage: new MotifComposer(opts).generate({ length, scaleComposer })
  */
 MotifComposer = class MotifComposer {
+  /**
+   * @param {{
+   *   length?: number,
+   *   octaveRange?: number[],
+   *   useVoiceLeading?: boolean,
+   *   VoiceLeadingScore?: Object,
+   *   developFromComposer?: { getNotes: Function },
+   *   measureComposer?: Object,
+   *   motifInstanceId?: string
+   * }} [options]
+   */
   constructor(options = {}) {
     if (options !== undefined && (typeof options !== 'object' || options === null)) {
       throw new Error('MotifComposer: constructor options must be an object if provided');
     }
-    const opts = options || {};
+    const opts = /** @type {any} */ (options || {});
 
     // length
     if (opts.length !== undefined) {

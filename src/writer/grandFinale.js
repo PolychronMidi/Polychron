@@ -62,7 +62,7 @@ grandFinale = () => {
 
     buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
-        let type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
+        const type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
         const tickNum = _.tick || 0;
         const tickInt = m.round(Number(tickNum) || 0);
 

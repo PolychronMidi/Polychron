@@ -100,7 +100,7 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
     getValue: ()=>{
       let effectValue=chFXMap[effectNum];
       let newMin=minValue,newMax=maxValue;
-      let change=(newMax-newMin)*rf(.1,.3);
+      const change=(newMax-newMin)*rf(.1,.3);
       if (condition !== null && typeof condition==='function' && condition(ch)) {
         newMin=conditionMin;
         newMax=conditionMax;
@@ -172,12 +172,12 @@ normalizeWeights = (weights, min, max, variationLow=.7, variationHigh=1.3) => {
       w = Array(range).fill(0).map((_, i) => {
         const startIndex = i * groupSize;
         const endIndex = m.min(startIndex + groupSize, w.length);
-        return w.slice(startIndex, endIndex).reduce((sum, w) => sum + w, 0) / (endIndex - startIndex);
+        return w.slice(startIndex, endIndex).reduce((sum, v) => sum + v, 0) / (endIndex - startIndex);
       });
     }
   }
-  const totalWeight = w.reduce((acc, w) => acc + w, 0);
-  return w.map(w => w / totalWeight);
+  const totalWeight = w.reduce((acc, v) => acc + v, 0);
+  return w.map(v => v / totalWeight);
 };
 
 /**

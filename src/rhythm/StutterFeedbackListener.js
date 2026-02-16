@@ -5,7 +5,7 @@
 StutterFeedbackListener = (() => {
   let stutterAccumulator = 0; // cumulative stutter intensity (global)
   const perProfile = { source: 0, reflection: 0, bass: 0 };
-  let decayRate = 0.9;        // decay per cycle
+  const decayRate = 0.9;        // decay per cycle
   let initialized = false;
 
   function initialize() {

@@ -37,7 +37,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
     if (rf() < .3) {
       return offset;
     } else {
-      let adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
+      const adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
       // keep only the fractional component for sub-beat offsets but avoid returning exactly 0
       const fractional = adjusted - m.floor(adjusted);
       // Never allow jitter to move a fractional offset *earlier* than the original offset — only allow equal or later adjustments

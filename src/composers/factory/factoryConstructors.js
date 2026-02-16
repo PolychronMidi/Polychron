@@ -4,6 +4,11 @@ factoryConstructors = {
       throw new Error('factoryConstructors.build: factoryManager class is required');
     }
 
+    /**
+     * Resolve harmonic corpus options from a resolvedProfiles object.
+     * @param {Object|null} [resolvedProfiles]
+     * @returns {{useCorpusHarmonicPriors:boolean, corpusHarmonicStrength:number}}
+     */
     const resolveHarmonicCorpusOptions = (resolvedProfiles = null) => {
       const chordProfile = (resolvedProfiles && typeof resolvedProfiles === 'object' && resolvedProfiles.chord && typeof resolvedProfiles.chord === 'object')
         ? resolvedProfiles.chord

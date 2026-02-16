@@ -18,11 +18,11 @@ logUnit = (type) => {
   let startTime = null;
   let endTime = null;
   let spPhrase = null;
-  let spMeasure = null;
-  let spBeat = null;
-  let spDiv = null;
-  let spSubdiv = null;
-  let spSubsubdiv = null;
+  const spMeasure = null;
+  const spBeat = null;
+  const spDiv = null;
+  const spSubdiv = null;
+  const spSubsubdiv = null;
   let composerDetails = '';
   let progressionSymbols = '';
   let actualMeter = null;

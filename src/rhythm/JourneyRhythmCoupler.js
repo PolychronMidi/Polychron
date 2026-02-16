@@ -3,7 +3,7 @@
 
 JourneyRhythmCoupler = (() => {
   let _boldness = 0;
-  let _decayRate = 0.85;
+  const _decayRate = 0.85;
   let _initialized = false;
 
   /**

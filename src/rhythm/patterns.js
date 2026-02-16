@@ -52,10 +52,10 @@ rotate = (pattern, rotations, direction = "R", length = pattern.length) => {
 
 morph = (pattern, direction = 'both', length = pattern.length, probLow = .1, probHigh) => {
   probHigh = probHigh === undefined ? probLow : probHigh;
-  let morpheus = pattern.map(v => {
-    let morphv = probHigh === probLow ? rf(probLow) : rf(probLow, probHigh);
-    let _ = ['up', 'down', 'both']; let d = direction === '?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
-    let up = v < 1 ? m.min(v + morphv, 1) : v; let down = v > 0 ? m.max(v - morphv, 0) : v;
+  const morpheus = pattern.map(v => {
+    const morphv = probHigh === probLow ? rf(probLow) : rf(probLow, probHigh);
+    const _ = ['up', 'down', 'both']; const d = direction === '?' ? (_[ri(_.length - 1)]) : direction.toLowerCase();
+    const up = v < 1 ? m.min(v + morphv, 1) : v; const down = v > 0 ? m.max(v - morphv, 0) : v;
     return (d === 'up' ? up : d === 'down' ? down : d === 'both' ? (v < 1 ? up : down) : v);
   });
   return prob(patternLength(morpheus, length));
@@ -67,7 +67,7 @@ closestDivisor = (x, target = 2) => {
   for (let i = 1; i <= m.sqrt(x); i++) {
     if (x % i === 0) {
       [i, x / i].forEach(divisor => {
-        if (divisor !== closest) { let diff = m.abs(divisor - target);
+        if (divisor !== closest) { const diff = m.abs(divisor - target);
           if (diff < smallestDiff) { smallestDiff = diff; closest = divisor; }
         }
       });

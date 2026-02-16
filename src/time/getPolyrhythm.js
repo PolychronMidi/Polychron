@@ -18,7 +18,7 @@ getPolyrhythm = () => {
       continue;
     }
     polyMeterRatio = polyNumerator / polyDenominator;
-    let allMatches = [];
+    const allMatches = [];
     let bestMatch = {
       primaryMeasures: Infinity,
       polyMeasures: Infinity,
@@ -30,7 +30,7 @@ getPolyrhythm = () => {
     for (let primaryMeasures = 1; primaryMeasures < 7; primaryMeasures++) {
       for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
         if (m.abs(primaryMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
-          let currentMatch = {
+          const currentMatch = {
             primaryMeasures: primaryMeasures,
             polyMeasures: polyMeasures,
             totalMeasures: primaryMeasures + polyMeasures,

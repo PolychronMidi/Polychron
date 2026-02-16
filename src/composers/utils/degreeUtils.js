@@ -11,7 +11,9 @@ resolveScalePC = function(scale = null) {
   }
   if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('resolveScalePC: scale must be provided or available via HarmonicContext');
 
-  return theScale.map((s) => {
+  // Narrow type for TypeScript/checkJs
+  const finalScale = /** @type {(string|number)[]} */ (theScale);
+  return finalScale.map((s) => {
     if (typeof s === 'number') return ((s % 12) + 12) % 12;
     if (typeof s === 'string') {
       if (typeof t === 'undefined' || !t.Note || typeof t.Note.chroma !== 'function') throw new Error('resolveScalePC: tonal.js not available');
@@ -26,7 +28,7 @@ resolveScalePC = function(scale = null) {
 /**
  * Convert a note to degree-space coordinates for a given scale.
  * @param {number|{note:number}} noteOrMidi
- * @param {Array<string|number>} scale
+ * @param {Array<string|number>|null} scale
  * @param {{ quantize?: boolean }} [opts]
  * @returns {{ degree:number, octave:number, absDegree:number, midi:number, scalePC:number[] }}
  */
@@ -69,7 +71,7 @@ midiToDegree = function(noteOrMidi, scale = null, opts = {}) {
 /**
  * Convert a degree index back to MIDI for a given scale and octave.
  * @param {number} degree
- * @param {Array<string|number>} scale
+ * @param {Array<string|number>|null} scale
  * @param {number} octave
  * @param {{ clampToMidi?: boolean }} [opts]
  * @returns {number}
@@ -91,7 +93,7 @@ degreeToMidi = function(degree, scale = null, octave = 4, opts = {}) {
 /**
  * Transpose note(s) by diatonic scale degree offset.
  * @param {number|{note:number}|Array<number|{note:number}>} noteOrMidi
- * @param {Array<string|number>} scale
+ * @param {Array<string|number>|null} scale
  * @param {number} degreeOffset
  * @param {{ quantize?: boolean, clampToMidi?: boolean }} [opts]
  * @returns {number|{note:number}|Array<number|{note:number}>}

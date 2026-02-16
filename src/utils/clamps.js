@@ -86,7 +86,7 @@ scaleClamp = (value, min, max, factor, maxFactor = factor, base = value) => {
  */
 scaleBoundClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
   let lowerBound=m.max(minBound,m.floor(base * lowerScale));
-  let upperBound=m.min(maxBound,m.ceil(base * upperScale));
+  const upperBound=m.min(maxBound,m.ceil(base * upperScale));
   // Ensure lowerBound doesn't exceed upperBound, prioritizing maxBound
   if(lowerBound>upperBound) lowerBound=upperBound;
   return clamp(value,lowerBound,upperBound);

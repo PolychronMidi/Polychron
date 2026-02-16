@@ -3,7 +3,7 @@
 
 FXFeedbackListener = (() => {
   let fxAccumulator = 0;      // Cumulative FX intensity
-  let decayRate = 0.9;        // Decay per cycle
+  const decayRate = 0.9;        // Decay per cycle
   let initialized = false;
 
   /**
@@ -126,7 +126,7 @@ FXFeedbackListener = (() => {
     const modified = {};
 
     // Build a small map of method -> _fxIntensityScore (defaults to 0.5 neutral)
-    let methodScores = {};
+    const methodScores = {};
     const allMethods = (typeof RhythmRegistry !== 'undefined' && RhythmRegistry && typeof RhythmRegistry.getAll === 'function')
       ? RhythmRegistry.getAll()
       : {};
