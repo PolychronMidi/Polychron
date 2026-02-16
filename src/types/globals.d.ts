@@ -81,6 +81,7 @@ declare var RHYTHM_PRIOR_TABLES: any;
 declare var rhythmPriors: any;
 declare var PhaseLockedRhythmGenerator: any;
 declare var FXFeedbackListener: any;
+declare var StutterFeedbackListener: any;
 declare var JourneyRhythmCoupler: any;
 declare var EventBus: any;
 

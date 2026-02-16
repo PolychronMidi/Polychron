@@ -67,11 +67,15 @@ DynamismEngine = (() => {
     const fxEnergy = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.getIntensity === 'function')
       ? clamp(Number(FXFeedbackListener.getIntensity()), 0, 1)
       : 0;
+    const stutterEnergy = (typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.getIntensity === 'function')
+      ? clamp(Number(StutterFeedbackListener.getIntensity()), 0, 1)
+      : 0;
     const journeyRhythmEnergy = (typeof JourneyRhythmCoupler !== 'undefined' && JourneyRhythmCoupler && typeof JourneyRhythmCoupler.getBoldness === 'function')
       ? clamp(Number(JourneyRhythmCoupler.getBoldness()), 0, 1)
       : 0;
 
-    return clamp(fxEnergy * 0.55 + journeyRhythmEnergy * 0.45, 0, 1);
+    // Mix FX + Stutter + Journey energy (conservative weighting)
+    return clamp(fxEnergy * 0.45 + stutterEnergy * 0.20 + journeyRhythmEnergy * 0.35, 0, 1);
   }
 
   /**

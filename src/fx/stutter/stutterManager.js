@@ -158,14 +158,65 @@ class StutterManager {
       else channels = (typeof source !== 'undefined' ? source.slice() : []);
     }
 
-    // Execute: for each step, call stutterNotes for each target channel (uses manager.shared for continuity)
+    // support plan-level coherenceKey/coherenceGroup (shared/ correlated noise)
+    const prevCoherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
+    if (cfg.coherenceKey) {
+      if (!this.beatContext) this.beatContext = {};
+      this.beatContext.coherenceKey = String(cfg.coherenceKey);
+    } else if (cfg.coherenceGroup) {
+      if (!this.beatContext) this.beatContext = {};
+      this.beatContext.coherenceKey = `stutter:${String(cfg.coherenceGroup)}`;
+    } else if (cfg.coherent === true) {
+      if (!this.beatContext) this.beatContext = {};
+      this.beatContext.coherenceKey = `stutter:${cfg.id || 'auto'}`;
+    }
+
+    const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
+      ? StutterConfig.getCrossModRules()
+      : { pan: { stutterProbScale: 1, shiftRangeBias: 0, stutterRateScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+
+    // derive obvious L/R channel sets for phase mapping
+    const leftCHs = (typeof lCH1 !== 'undefined') ? [lCH1, lCH2, lCH3, lCH4, lCH5, lCH6].filter(Number.isFinite) : [];
+    const rightCHs = (typeof rCH1 !== 'undefined') ? [rCH1, rCH2, rCH3, rCH4, rCH5, rCH6].filter(Number.isFinite) : [];
+
+    // Execute: for each step, call stutterNotes for each target channel (supports phase L/R and per-channel cross-modulated rate)
+    const baseStepPeriod = duration / m.max(1, Number(numStutters));
     for (let i = 0; i < numStutters; i++) {
-      const stepTick = on + i * (duration) * rf(.9, 1.1);
       for (const ch of channels) {
         try {
+          const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');
+
+          // compute phase fraction (planCfg.phase can be number or {left,right,center})
+          let phaseFraction = 0;
+          if (cfg.phase !== undefined && cfg.phase !== null) {
+            if (Number.isFinite(Number(cfg.phase))) phaseFraction = clamp(Number(cfg.phase), 0, 1);
+            else if (typeof cfg.phase === 'object') {
+              if (side === 'left' && Number.isFinite(Number(cfg.phase.left))) phaseFraction = clamp(Number(cfg.phase.left), 0, 1);
+              else if (side === 'right' && Number.isFinite(Number(cfg.phase.right))) phaseFraction = clamp(Number(cfg.phase.right), 0, 1);
+              else if (Number.isFinite(Number(cfg.phase.center))) phaseFraction = clamp(Number(cfg.phase.center), 0, 1);
+              else if (Number.isFinite(Number(cfg.phase.left)) && Number.isFinite(Number(cfg.phase.right))) phaseFraction = clamp((Number(cfg.phase.left) + Number(cfg.phase.right)) / 2, 0, 1);
+            }
+          }
+
+          // per-channel modulation (pan → stutterRate)
+          const chMod = (this.beatContext && this.beatContext.mod && this.beatContext.mod[ch]) ? this.beatContext.mod[ch] : null;
+          const panAbs = (chMod && typeof chMod.pan === 'number') ? m.abs(chMod.pan) : 0;
+          const rateScale = 1 + panAbs * ((crossRules.pan && Number.isFinite(Number(crossRules.pan.stutterRateScale))) ? (Number(crossRules.pan.stutterRateScale) - 1) : 0);
+
+          // jitter + per-channel step period
+          const jitter = rf(.9, 1.1);
+          const stepTick = on + i * (baseStepPeriod * jitter) / rateScale + (phaseFraction * baseStepPeriod) / rateScale;
+
           stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity || 100, binVel: cfg.maxVelocity || 100, isPrimary: false, shared: this.shared, beatContext: this.beatContext });
         } catch { /* ignore per-channel errors */ }
       }
+    }
+
+    // restore prior coherenceKey if any (avoid leaking plan-scoped coherence)
+    if (prevCoherenceKey !== null) {
+      this.beatContext.coherenceKey = prevCoherenceKey;
+    } else if (this.beatContext && this.beatContext.coherenceKey && (cfg.coherenceKey || cfg.coherenceGroup || cfg.coherent)) {
+      delete this.beatContext.coherenceKey;
     }
 
     try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * channels.length, profile); } catch { /* ignore */ }

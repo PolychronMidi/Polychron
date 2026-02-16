@@ -202,6 +202,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Emit and metrics
   p(c, evOn);
+  try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'note', channel, shift, intensity: clamp(stutterVel / 127, 0, 1), tick: stutterOn }); } catch { /* ignore */ }
   p(c, evOff);
   try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(1, profile); } catch { /* ignore */ }
 
