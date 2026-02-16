@@ -28,13 +28,35 @@ DENOMINATOR={
 OCTAVE={
   min: 0,
   max: 9,
-  weights: [11,27,33,35,33,35,30,7,3]
+  weights: [11,27,33,35,33,35,30,5,2]
 };
-VOICES={
+BEAT_VOICES = {
+  min: 1,
+  max: 5,
+  weights: [15,30,25,7,0.5,0.5,0.1,0.1]
+};
+
+// Per-unit voice limits (child units independent of parent unit counts)
+DIV_VOICES = {
   min: 1,
   max: 3,
-  weights: [15,30,25,7,.5,.5,.1,.1]
+  weights: [60,30,10]
 };
+
+SUBDIV_VOICES = {
+  min: 1,
+  max: 2,
+  weights: [8,2]
+};
+
+SUBSUBDIV_VOICES = {
+  min: 1,
+  max: 2,
+  weights: [9,1]
+};
+
+// Backwards-compatibility alias for older code that still references VOICES
+VOICES = BEAT_VOICES;
 SECTION_TYPES=[
   { type: 'intro', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: .9, dynamics: 'pp', motif: [0,2,4,7] },
   { type: 'exposition', weight: 3, phrases: { min: 2, max: 3 }, bpmScale: 1, dynamics: 'mf', motif: [0,4,7,12] },

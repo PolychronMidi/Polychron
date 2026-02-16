@@ -34,8 +34,25 @@ VoiceManager = class VoiceManager {
    * Get voice count from VOICES config
    * @returns {number} Number of simultaneous voices to select
    */
-  getVoiceCount() {
-    const { min, max, weights } = VOICES;
+  /**
+   * Get voice count for the provided unit (beat/div/subdiv/subsubdiv).
+   * Defaults to `beat` when unit is not provided or unrecognized.
+   * @param {string} [unit='beat']
+   * @returns {number}
+   */
+  getVoiceCount(unit = 'beat') {
+    let cfg = null;
+    switch ((unit || 'beat')) {
+      case 'div': cfg = (typeof DIV_VOICES !== 'undefined') ? DIV_VOICES : null; break;
+      case 'subdiv': cfg = (typeof SUBDIV_VOICES !== 'undefined') ? SUBDIV_VOICES : null; break;
+      case 'subsubdiv': cfg = (typeof SUBSUBDIV_VOICES !== 'undefined') ? SUBSUBDIV_VOICES : null; break;
+      case 'beat':
+      default:
+        cfg = (typeof BEAT_VOICES !== 'undefined') ? BEAT_VOICES : ((typeof VOICES !== 'undefined') ? VOICES : null);
+        break;
+    }
+
+    const { min, max, weights } = cfg || { min: 1, max: 1, weights: [1] };
     return rw(min, max, weights);
   }
 
