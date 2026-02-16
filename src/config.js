@@ -104,6 +104,16 @@ STUTTER_VELOCITY_RANGES = {
   bass: { primary: [0.55, 0.85], secondary: [0.75, 1.05] }
 };
 
+// Cross-modulation rules for stutter ↔ CC interactions. Values are multipliers or biases
+// sampled by stutterNotes when beatContext.mod provides per-channel CC intensities.
+STUTTER_CROSSMOD_RULES = {
+  // pan intensity increases chance of octave motion and slightly widens shift range
+  pan: { stutterProbScale: 1.25, shiftRangeBias: 1 },
+  // fade intensity favors velocity coherence (noisy boost on fade-in)
+  fade: { velocityScaleBias: 0.15 },
+  // fx intensity increases shift-range sensitivity
+  fx: { shiftRangeScale: 1.2 }
+};
 NOISE_PROFILES = {
   subtle: {
     generatorX: 'simplex',

@@ -38,8 +38,25 @@ function getVelocityRange(profile = 'source', isPrimary = true) {
   const ranges = STUTTER_VELOCITY_RANGES[profile] || STUTTER_VELOCITY_RANGES.source;
   return isPrimary ? ranges.primary : ranges.secondary;
 }
+function getCrossModRules() {
+  if (typeof STUTTER_CROSSMOD_RULES === 'undefined') {
+    return {
+      pan: { stutterProbScale: 1.0, shiftRangeBias: 0 },
+      fade: { velocityScaleBias: 0 },
+      fx: { shiftRangeScale: 1.0 }
+    };
+  }
+  return STUTTER_CROSSMOD_RULES;
+}
 
-// Assign directly as StutterConfig (replaces the old StutterConfigStore + stutterConfig double)
+StutterConfigStore = {
+  getConfig,
+  setConfig,
+  validateConfig,
+  getProfileConfig,
+  getVelocityRange,
+  getCrossModRules
+};// Assign directly as StutterConfig (replaces the old StutterConfigStore + stutterConfig double)
 StutterConfig = {
   getConfig,
   setConfig,

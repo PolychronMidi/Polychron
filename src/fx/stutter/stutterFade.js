@@ -8,6 +8,9 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   this.beatContext.fadeDirection = isFadeInGlobal ? 'in' : 'out';
   this.beatContext.fadeChannels = new Set(channelsArray);
 
+  // Ensure modulation bus exists for cross-mod sampling by stutterNotes
+  if (!this.beatContext.mod) this.beatContext.mod = {};
+
   // Populate beat-scoped reflection/bass selection sets (up to 2 channels each).
   // These are consulted by `playNotes` so mirrored channels only stutter when selected.
   if (this.beatContext._lastBeatIndex !== beatIndex) {
@@ -50,10 +53,26 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
 
       // Apply noise modulation to fade curve
       const mod = getParameterModulation(channelToStutter, 'fade', tick);
-      // Modulate volume by noise influence
-      // Use X axis for volume variation, scale by profile influence
-      const noiseVariation = (mod.x - 0.5) * 2 * maxVol * noiseProfile.influenceX;
+      // If a plan coherenceKey is present, overlay correlated noise
+      const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
+      let coh = { x: 0.5, y: 0.5 };
+      if (coherenceKey) {
+        try { coh = getParameterModulation(channelToStutter, coherenceKey, tick); } catch { coh = { x: 0.5, y: 0.5 }; }
+      }
+
+      // Modulate volume by noise influence (combine local + coherence)
+      const noiseVariation = (mod.x - 0.5) * 2 * maxVol * noiseProfile.influenceX + (coh.x - 0.5) * maxVol * 0.25;
       volume = modClamp(m.floor(baseVolume + noiseVariation), 25, maxVol);
+
+      // Publish modulation bus entry for cross-mod sampling (0..1 normalized)
+      try {
+        const norm = clamp(volume / (maxVol || 127), 0, 1);
+        if (!this.beatContext.mod) this.beatContext.mod = {};
+        this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fade: norm });
+      } catch { /* ignore */ }
+
+      // Emit a stutter-applied event for feedback loops
+      try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fade', channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick }); } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });

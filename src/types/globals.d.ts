@@ -303,6 +303,7 @@ declare var stutterPanCHs: any;
 
 declare var StutterRegistry: any;
 declare var StutterMetrics: any;
+declare var StutterConfigStore: any;
 
 declare var Stutter: any;
 declare var setBalanceAndFX: any;
@@ -480,6 +481,7 @@ declare var SUBSUBDIVS: any;
 declare var DYNAMISM: any;
 declare var STUTTER_PROFILES: any;
 declare var STUTTER_VELOCITY_RANGES: any;
+declare var STUTTER_CROSSMOD_RULES: any;
 
 declare var setOtherInstruments: any;
 declare var playDrums: any;

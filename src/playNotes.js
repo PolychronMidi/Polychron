@@ -166,12 +166,45 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const isPrimary = sourceCH === cCH1;
         const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
         const baseOnVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03);
-        const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
+          const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
         const sourceNoiseBase = baseOnVel * (1 - 0.12 * noiseInfluence);
-        const onVel = applyNoiseToVelocity(sourceNoiseBase, sourceVoiceId, currentTime, 'subtle');
-        const noteToEmit = (isPrimary && selectedShift !== 0)
+
+        // per-channel stutter/coherence adjustments (from beatContext.mod via Stutter)
+        const chMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.mod && Stutter.beatContext.mod[sourceCH])
+          ? Stutter.beatContext.mod[sourceCH]
+          : null;
+        const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
+          ? StutterConfig.getCrossModRules()
+          : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+        let perProbScale = 1;
+        let velocityScaleBias = 0;
+        if (chMod) {
+          if (typeof chMod.pan === 'number') {
+            const panAbs = m.abs(chMod.pan);
+            perProbScale *= (1 + (crossRules.pan.stutterProbScale - 1) * panAbs);
+          }
+          if (typeof chMod.fade === 'number') {
+            velocityScaleBias += (crossRules.fade.velocityScaleBias || 0) * chMod.fade;
+          }
+          if (typeof chMod.fx === 'number') {
+            // fx currently only influences shift-range in stutterNotes; leave perProbScale unchanged for now
+            perProbScale *= (crossRules.fx && crossRules.fx.shiftRangeScale) ? 1 : 1;
+          }
+        }
+
+        const profileCfgSrc = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
+          ? StutterConfig.getProfileConfig('source')
+          : { perProb: 1 };
+        const perProbScaledSrc = clamp((profileCfgSrc.perProb || 0) * perProbScale, 0, 1);
+
+        const onVelBase = applyNoiseToVelocity(sourceNoiseBase, sourceVoiceId, currentTime, 'subtle');
+        const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, 127);
+
+        const applySelectedShiftToSource = isPrimary && selectedShift !== 0 && rf() < perProbScaledSrc;
+        const noteToEmit = applySelectedShiftToSource
           ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
           : s.note;
+
         p(c, { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, onVel] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
         p(c, { tick: offTick, vals: [sourceCH, noteToEmit] }); scheduled++;
@@ -186,15 +219,45 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const baseOnVel = isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1);
         const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
         const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
-        const onVel = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
+
+        // per-channel coherence adjustments (use Stutter.beatContext.mod when available)
+        const reflMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.mod && Stutter.beatContext.mod[reflectionCH])
+          ? Stutter.beatContext.mod[reflectionCH]
+          : null;
+        const crossRulesRefl = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
+          ? StutterConfig.getCrossModRules()
+          : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+        let perProbScaleRefl = 1;
+        let velocityScaleBiasRefl = 0;
+        if (reflMod) {
+          if (typeof reflMod.pan === 'number') {
+            const panAbs = m.abs(reflMod.pan);
+            perProbScaleRefl *= (1 + (crossRulesRefl.pan.stutterProbScale - 1) * panAbs);
+          }
+          if (typeof reflMod.fade === 'number') {
+            velocityScaleBiasRefl += (crossRulesRefl.fade.velocityScaleBias || 0) * reflMod.fade;
+          }
+          if (typeof reflMod.fx === 'number') {
+            perProbScaleRefl *= (crossRulesRefl.fx && crossRulesRefl.fx.shiftRangeScale) ? 1 : 1;
+          }
+        }
+
+        const profileCfgRefl = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
+          ? StutterConfig.getProfileConfig('reflection')
+          : { perProb: 1 };
+        const perProbScaledRefl = clamp((profileCfgRefl.perProb || 0) * perProbScaleRefl, 0, 1);
+
+        const onVelBaseRefl = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
+        const onVelRefl = clamp(m.round(onVelBaseRefl * (1 + velocityScaleBiasRefl)), 1, 127);
 
         // Apply stutter to a *subset* of reflection channels when selected by Stutter's beatContext
         const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
-        const reflectionEmitNote = (reflectSelected && selectedShift !== 0)
+        const reflectApplyShift = reflectSelected && selectedShift !== 0 && rf() < perProbScaledRefl;
+        const reflectionEmitNote = reflectApplyShift
           ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
           : s.note;
 
-        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVel] }); scheduled++;
+        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] }); scheduled++;
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         p(c, { tick: offTick, vals: [reflectionCH, reflectionEmitNote] }); scheduled++;
       }
@@ -206,16 +269,48 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const bassCH = activeBassChannels[bci];
           const isPrimary = bassCH === cCH3;
 
-          // Apply stutter octave shift to a small subset of bass channels when selected
-          const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
-          const bassEmitBase = (bassSelected && selectedShift !== 0) ? s.note + selectedShift : s.note;
-          const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
 
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
           const onVelRaw = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
           const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
           const bassNoiseBase = onVelRaw * (1 - 0.08 * noiseInfluence);
-          const onVel = applyNoiseToVelocity(bassNoiseBase, bassVoiceId, currentTime, 'subtle');
+
+          // per-channel coherence adjustments for bass
+          const bassMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.mod && Stutter.beatContext.mod[bassCH])
+            ? Stutter.beatContext.mod[bassCH]
+            : null;
+          const crossRulesBass = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
+            ? StutterConfig.getCrossModRules()
+            : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+          let perProbScaleBass = 1;
+          let velocityScaleBiasBass = 0;
+          if (bassMod) {
+            if (typeof bassMod.pan === 'number') {
+              const panAbs = m.abs(bassMod.pan);
+              perProbScaleBass *= (1 + (crossRulesBass.pan.stutterProbScale - 1) * panAbs);
+            }
+            if (typeof bassMod.fade === 'number') {
+              velocityScaleBiasBass += (crossRulesBass.fade.velocityScaleBias || 0) * bassMod.fade;
+            }
+            if (typeof bassMod.fx === 'number') {
+              perProbScaleBass *= (crossRulesBass.fx && crossRulesBass.fx.shiftRangeScale) ? 1 : 1;
+            }
+          }
+
+          const profileCfgBass = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
+            ? StutterConfig.getProfileConfig('bass')
+            : { perProb: 1 };
+          const perProbScaledBass = clamp((profileCfgBass.perProb || 0) * perProbScaleBass, 0, 1);
+
+          const onVelBaseBass = applyNoiseToVelocity(bassNoiseBase, bassVoiceId, currentTime, 'subtle');
+          const onVel = clamp(m.round(onVelBaseBass * (1 + velocityScaleBiasBass)), 1, 127);
+
+          // Apply stutter octave shift to a small subset of bass channels when selected
+          const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
+          const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
+          const bassEmitBase = bassApplyShift ? s.note + selectedShift : s.note;
+          const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
+
           p(c, { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] }); scheduled++;
           const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
           p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;
