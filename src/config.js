@@ -114,6 +114,28 @@ STUTTER_CROSSMOD_RULES = {
   // fx intensity increases shift-range sensitivity
   fx: { shiftRangeScale: 1.2 }
 };
+
+// Presets and directive-friendly defaults for higher-level coherence directives
+STUTTER_PRESETS = {
+  default: {
+    crossMod: { pan: { stutterRateScale: 1.25, stutterProbScale: 1.2, shiftRangeBias: 1 }, fade: { velocityScaleBias: 0.12 }, fx: { shiftRangeScale: 1.1 } },
+    rateCurve: 'linear',
+    phaseCurve: 'linear',
+    coherence: { enabled: false }
+  },
+  stereoWide: {
+    crossMod: { pan: { stutterRateScale: 1.6, stutterProbScale: 1.4, shiftRangeBias: 2 }, fade: { velocityScaleBias: 0.18 }, fx: { shiftRangeScale: 1.25 } },
+    rateCurve: 'sine',
+    phaseCurve: 'pingpong',
+    coherence: { enabled: true, intensity: 0.9 }
+  },
+  subtle: {
+    crossMod: { pan: { stutterRateScale: 1.05, stutterProbScale: 1.05, shiftRangeBias: 0 }, fade: { velocityScaleBias: 0.06 }, fx: { shiftRangeScale: 1.02 } },
+    rateCurve: 'linear',
+    phaseCurve: 'linear',
+    coherence: { enabled: true, intensity: 0.5 }
+  }
+};
 NOISE_PROFILES = {
   subtle: {
     generatorX: 'simplex',

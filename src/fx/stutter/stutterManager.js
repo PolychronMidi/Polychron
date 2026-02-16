@@ -158,54 +158,119 @@ class StutterManager {
       else channels = (typeof source !== 'undefined' ? source.slice() : []);
     }
 
-    // support plan-level coherenceKey/coherenceGroup (shared/ correlated noise)
-    const prevCoherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
-    if (cfg.coherenceKey) {
-      if (!this.beatContext) this.beatContext = {};
-      this.beatContext.coherenceKey = String(cfg.coherenceKey);
-    } else if (cfg.coherenceGroup) {
-      if (!this.beatContext) this.beatContext = {};
-      this.beatContext.coherenceKey = `stutter:${String(cfg.coherenceGroup)}`;
-    } else if (cfg.coherent === true) {
-      if (!this.beatContext) this.beatContext = {};
-      this.beatContext.coherenceKey = `stutter:${cfg.id || 'auto'}`;
-    }
-
+    // Cross-mod rules from config (used as base; may be adaptively tuned below)
     const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
       ? StutterConfig.getCrossModRules()
       : { pan: { stutterProbScale: 1, shiftRangeBias: 0, stutterRateScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+
+    // Merge plan directives with config defaults and optional preset
+    const directiveDefaults = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getDirectiveDefaults === 'function')
+      ? StutterConfig.getDirectiveDefaults()
+      : { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false }, metricsAdaptive: { enabled: false, sensitivity: 0.08 } };
+    const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
+    if (cfg.preset && typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getPreset === 'function') {
+      const preset = StutterConfig.getPreset(cfg.preset);
+      if (preset && typeof preset === 'object') Object.assign(directive, preset);
+    }
+
+    // optional metrics-adaptive cross-mod tuning (conservative)
+    let adaptiveCrossRules = null;
+    if (directive.metricsAdaptive && directive.metricsAdaptive.enabled && typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.getMetrics === 'function') {
+      try {
+        const metrics = StutterMetrics.getMetrics();
+        const sens = Number.isFinite(Number(directive.metricsAdaptive.sensitivity)) ? Number(directive.metricsAdaptive.sensitivity) : 0.08;
+        const adj = Object.assign({}, crossRules);
+        ['source','reflection','bass'].forEach((p) => {
+          const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
+          const scheduled = metrics.scheduledByProfile && metrics.scheduledByProfile[p] ? metrics.scheduledByProfile[p] : 1;
+          const ratio = emitted / Math.max(1, scheduled);
+          if (ratio > 0.8 && adj.pan) {
+            adj.pan.stutterRateScale = clamp(adj.pan.stutterRateScale + (ratio - 0.8) * sens, 0.8, 3);
+          }
+        });
+        adaptiveCrossRules = adj;
+      } catch { adaptiveCrossRules = null; }
+    }
+
+    // Apply coherence directive (plan-scoped key)
+    const prevCoherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
+    if (directive.coherence && directive.coherence.enabled) {
+      if (!this.beatContext) this.beatContext = {};
+      const prefix = directive.coherence.keyPrefix || 'stutter';
+      const seedPart = cfg.coherenceGroup || cfg.coherenceKey || cfg.id || 'plan';
+      this.beatContext.coherenceKey = `${prefix}:${seedPart}`;
+    }
 
     // derive obvious L/R channel sets for phase mapping
     const leftCHs = (typeof lCH1 !== 'undefined') ? [lCH1, lCH2, lCH3, lCH4, lCH5, lCH6].filter(Number.isFinite) : [];
     const rightCHs = (typeof rCH1 !== 'undefined') ? [rCH1, rCH2, rCH3, rCH4, rCH5, rCH6].filter(Number.isFinite) : [];
 
-    // Execute: for each step, call stutterNotes for each target channel (supports phase L/R and per-channel cross-modulated rate)
+    // helper: evaluate a curve (string name | array | function)
+    const _evalCurve = (curve, t) => {
+      if (!curve) return undefined;
+      if (typeof curve === 'function') return Number(curve(t));
+      if (Array.isArray(curve) && curve.length > 0) {
+        const n = curve.length;
+        const pos = clamp(t * (n - 1), 0, n - 1);
+        const idx = m.floor(pos);
+        const frac = pos - idx;
+        const a = Number(curve[idx]) || 0;
+        const b = Number(curve[m.min(idx + 1, n - 1)]) || a;
+        return lerp(a, b, frac);
+      }
+      if (typeof curve === 'string') {
+        switch (curve) {
+          case 'linear': return 1;
+          case 'accelerando': return 1 + t * 1.0;
+          case 'decelerando': return 1 + (1 - t) * 1.0;
+          case 'sine': return 1 + Math.sin(2 * Math.PI * t) * 0.25;
+          case 'pingpong': return Math.abs(((t * 2) % 2) - 1); // useful for phaseCurve
+          case 'oscillate': return 0.5 + 0.5 * Math.sin(2 * Math.PI * t);
+          default: return Number(curve) || 1;
+        }
+      }
+      return undefined;
+    };
+
+    // Execute: per-step rate/phase curves + optional adaptive cross-mod overrides
+    const effectiveCrossRules = adaptiveCrossRules || crossRules;
     const baseStepPeriod = duration / m.max(1, Number(numStutters));
     for (let i = 0; i < numStutters; i++) {
+      const tNorm = numStutters > 1 ? i / (numStutters - 1) : 0;
+      const rateCurveVal = _evalCurve(directive.rateCurve || cfg.rateCurve, tNorm) || 1;
+      const phaseCurveVal = _evalCurve(directive.phaseCurve || cfg.phaseCurve, tNorm) || undefined;
+
       for (const ch of channels) {
         try {
           const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');
 
-          // compute phase fraction (planCfg.phase can be number or {left,right,center})
-          let phaseFraction = 0;
-          if (cfg.phase !== undefined && cfg.phase !== null) {
-            if (Number.isFinite(Number(cfg.phase))) phaseFraction = clamp(Number(cfg.phase), 0, 1);
-            else if (typeof cfg.phase === 'object') {
-              if (side === 'left' && Number.isFinite(Number(cfg.phase.left))) phaseFraction = clamp(Number(cfg.phase.left), 0, 1);
-              else if (side === 'right' && Number.isFinite(Number(cfg.phase.right))) phaseFraction = clamp(Number(cfg.phase.right), 0, 1);
-              else if (Number.isFinite(Number(cfg.phase.center))) phaseFraction = clamp(Number(cfg.phase.center), 0, 1);
-              else if (Number.isFinite(Number(cfg.phase.left)) && Number.isFinite(Number(cfg.phase.right))) phaseFraction = clamp((Number(cfg.phase.left) + Number(cfg.phase.right)) / 2, 0, 1);
+          // base static phaseFraction fallback (directive.phase or cfg.phase)
+          let basePhaseFraction = 0;
+          const srcPhase = (directive.phase || cfg.phase);
+          if (srcPhase !== undefined && srcPhase !== null) {
+            if (Number.isFinite(Number(srcPhase))) basePhaseFraction = clamp(Number(srcPhase), 0, 1);
+            else if (typeof srcPhase === 'object') {
+              if (side === 'left' && Number.isFinite(Number(srcPhase.left))) basePhaseFraction = clamp(Number(srcPhase.left), 0, 1);
+              else if (side === 'right' && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp(Number(srcPhase.right), 0, 1);
+              else if (Number.isFinite(Number(srcPhase.center))) basePhaseFraction = clamp(Number(srcPhase.center), 0, 1);
+              else if (Number.isFinite(Number(srcPhase.left)) && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp((Number(srcPhase.left) + Number(srcPhase.right)) / 2, 0, 1);
             }
           }
 
-          // per-channel modulation (pan → stutterRate)
+          // per-step phase fraction: phaseCurveVal may be 0..1 (if named returns pingpong/oscillate)
+          const phaseFraction = Number.isFinite(Number(phaseCurveVal)) ? clamp(phaseCurveVal, 0, 1) * basePhaseFraction : basePhaseFraction;
+
+          // per-channel modulation (pan → stutterRate) using effectiveCrossRules
           const chMod = (this.beatContext && this.beatContext.mod && this.beatContext.mod[ch]) ? this.beatContext.mod[ch] : null;
           const panAbs = (chMod && typeof chMod.pan === 'number') ? m.abs(chMod.pan) : 0;
-          const rateScale = 1 + panAbs * ((crossRules.pan && Number.isFinite(Number(crossRules.pan.stutterRateScale))) ? (Number(crossRules.pan.stutterRateScale) - 1) : 0);
+          const rateScale = (effectiveCrossRules && effectiveCrossRules.pan && Number.isFinite(Number(effectiveCrossRules.pan.stutterRateScale)))
+            ? (1 + panAbs * (Number(effectiveCrossRules.pan.stutterRateScale) - 1))
+            : 1;
 
-          // jitter + per-channel step period
-          const jitter = rf(.9, 1.1);
-          const stepTick = on + i * (baseStepPeriod * jitter) / rateScale + (phaseFraction * baseStepPeriod) / rateScale;
+          // jitter + curve-scaled per-channel step period
+          const jitter = rf(.92, 1.08);
+          const stepPeriodScaled = (baseStepPeriod / Math.max(0.01, Number(rateCurveVal))) / Math.max(0.01, rateScale);
+          const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
 
           stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity || 100, binVel: cfg.maxVelocity || 100, isPrimary: false, shared: this.shared, beatContext: this.beatContext });
         } catch { /* ignore per-channel errors */ }

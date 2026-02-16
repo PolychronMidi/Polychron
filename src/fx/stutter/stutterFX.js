@@ -37,8 +37,11 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
         this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });
       } catch { /* ignore */ }
 
-      // feedback event
-      try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fx', channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick }); } catch { /* ignore */ }
+      // feedback event (include inferred profile)
+      try {
+        const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
+        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
+      } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
     }

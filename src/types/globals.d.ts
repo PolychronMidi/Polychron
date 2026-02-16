@@ -483,6 +483,7 @@ declare var DYNAMISM: any;
 declare var STUTTER_PROFILES: any;
 declare var STUTTER_VELOCITY_RANGES: any;
 declare var STUTTER_CROSSMOD_RULES: any;
+declare var STUTTER_PRESETS: any;
 
 declare var setOtherInstruments: any;
 declare var playDrums: any;
