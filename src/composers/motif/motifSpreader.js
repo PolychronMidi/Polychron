@@ -33,9 +33,7 @@ MotifSpreader = {
       // Scope: motifSpreader only plans/group-distributes motif entries.
       groups.forEach((gLen, groupIdx) => {
         const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
-        const minEventsPerGroup = m.max(2, gLen * 2);
-        const maxEventsPerGroup = m.max(minEventsPerGroup, m.min(16, gLen * 6));
-        const length = ri(minEventsPerGroup, maxEventsPerGroup);
+        const length = gLen * ri(7, 11);
         const motifGroup = mcGroup.generate({ length, developFromComposer: composer, measureComposer: composer });
         if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) {
           throw new Error('MotifSpreader.spreadMeasure: MotifComposer.generate() returned invalid structure - fail-fast');
