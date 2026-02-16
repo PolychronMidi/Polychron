@@ -40,19 +40,19 @@ BEAT_VOICES = {
 DIV_VOICES = {
   min: 1,
   max: 3,
-  weights: [60,30,10]
+  weights: [60,10,1]
 };
 
 SUBDIV_VOICES = {
   min: 1,
   max: 2,
-  weights: [8,2]
+  weights: [50,1]
 };
 
 SUBSUBDIV_VOICES = {
   min: 1,
   max: 2,
-  weights: [9,1]
+  weights: [70,1]
 };
 
 // Backwards-compatibility alias for older code that still references VOICES
