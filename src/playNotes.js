@@ -104,35 +104,57 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     throw new Error(`${unit}.playNotes: resolved probabilities must be finite`);
   }
 
-  // Reset global per-beat voice budget once per beat (shared across layers)
+  // Per-layer + per-unit voice budget (prevents first-invocation dominance)
   try {
-    const beatBudgetKey = `${Number.isFinite(Number(measureIndex)) ? measureIndex : 'm'}:${Number.isFinite(Number(beatIndex)) ? beatIndex : 'b'}`;
-    if (lastVoiceBudgetKey !== beatBudgetKey) {
-      remainingVoiceSlots = (VOICES && Number.isFinite(Number(VOICES.max))) ? Number(VOICES.max) : 4;
-      lastVoiceBudgetKey = beatBudgetKey;
+    const layerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+    const unitBudgetKey = `${layerName}:${unit}:${Number.isFinite(Number(unitStart)) ? unitStart : 'u'}`;
+
+    // Ensure per-layer budget maps exist (init.js defines these globals)
+    if (!remainingVoiceSlotsByLayer || typeof remainingVoiceSlotsByLayer !== 'object') remainingVoiceSlotsByLayer = {};
+    if (!lastVoiceBudgetKeyByLayer || typeof lastVoiceBudgetKeyByLayer !== 'object') lastVoiceBudgetKeyByLayer = {};
+
+    if (lastVoiceBudgetKeyByLayer[layerName] !== unitBudgetKey) {
+      const unitCfg = (unit === 'div') ? (typeof DIV_VOICES !== 'undefined' ? DIV_VOICES : BEAT_VOICES)
+        : (unit === 'subdiv') ? (typeof SUBDIV_VOICES !== 'undefined' ? SUBDIV_VOICES : BEAT_VOICES)
+        : (unit === 'subsubdiv') ? (typeof SUBSUBDIV_VOICES !== 'undefined' ? SUBSUBDIV_VOICES : BEAT_VOICES)
+        : (typeof BEAT_VOICES !== 'undefined' ? BEAT_VOICES : VOICES);
+      remainingVoiceSlotsByLayer[layerName] = (unitCfg && Number.isFinite(Number(unitCfg.max))) ? Number(unitCfg.max) : 4;
+      lastVoiceBudgetKeyByLayer[layerName] = unitBudgetKey;
     }
+
+    // Keep legacy globals in sync for backward compatibility
+    remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
+    lastVoiceBudgetKey = `${layerName}:${lastVoiceBudgetKeyByLayer[layerName] || ''}`;
   } catch {
     /* ignore budget reset failures */
   }
 
   // Gate play invocation with playProb and crossModulation
-  if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb) && (crossModulation < rv(rf(2,3), [-.2, -.3], .05))) {
+  if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
     return trackRhythm(unit, layer, false);
   }
 
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
 
-  // Enforce remainingVoiceSlots (global per-beat budget) — trim picks if necessary
+  // Enforce per-layer, per-unit remaining voice slots — trim picks if necessary
   try {
     if (Array.isArray(picks) && picks.length > 0) {
-      const allowed = Number.isFinite(Number(remainingVoiceSlots)) ? m.max(0, m.min(picks.length, remainingVoiceSlots)) : picks.length;
+      const layerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+      const available = Number.isFinite(Number(remainingVoiceSlotsByLayer && remainingVoiceSlotsByLayer[layerName] ? remainingVoiceSlotsByLayer[layerName] : remainingVoiceSlots))
+        ? m.max(0, Number(remainingVoiceSlotsByLayer[layerName] ?? remainingVoiceSlots))
+        : picks.length;
+      const allowed = Number.isFinite(available) ? m.max(0, m.min(picks.length, available)) : picks.length;
       if (allowed <= 0) {
-        // no budget available for this beat — skip emission
+        // no budget available for this layer/unit — skip emission
         return trackRhythm(unit, layer, false);
       }
       if (allowed < picks.length) picks.length = allowed; // truncate in-place
-      remainingVoiceSlots = m.max(0, remainingVoiceSlots - picks.length);
+
+      // Decrement per-layer budget and keep legacy global in sync
+      if (!remainingVoiceSlotsByLayer) remainingVoiceSlotsByLayer = {};
+      remainingVoiceSlotsByLayer[layerName] = m.max(0, (remainingVoiceSlotsByLayer[layerName] ?? remainingVoiceSlots) - picks.length);
+      remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
     }
   } catch {
     /* ignore budget enforcement failures */

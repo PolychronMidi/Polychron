@@ -142,7 +142,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Preserve voice Manager instance per layer to maintain voice history across beats within a phrase
   if (!layer._voiceManager) layer._voiceManager = new VoiceManager();
   const VC = layer._voiceManager;
-  const voiceCount = VC.getVoiceCount();
+  const voiceCount = VC.getVoiceCount(unit);
   const scorer = activeComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
     ? activeComposer.runtimeProfile

@@ -31,9 +31,12 @@ lastUsedCHs3=new Set();
  */
 velocity=99;
 
-// Shared runtime voice-budget tracker (reset per beat)
-// - Tracks how many 'picks' (voices) may still be emitted this beat across all layers
-// - Initialized at runtime when beats start; kept here as a named naked global
+// Shared runtime voice-budget tracker (reset per-layer per-unit)
+// - Tracks how many 'picks' (voices) may still be emitted this unit for each layer
+// - Stored per-layer to prevent first-layer / first-unit dominance; legacy globals kept for compatibility
+remainingVoiceSlotsByLayer = {};
+lastVoiceBudgetKeyByLayer = {};
+// Backwards-compatible globals (kept for any remaining call sites)
 remainingVoiceSlots = 0;
 lastVoiceBudgetKey = null;
 
