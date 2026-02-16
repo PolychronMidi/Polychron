@@ -18,9 +18,27 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
 
       // Noise-modulate the FX curve — X axis warps the ramp, Y axis adds flutter
       const mod = getParameterModulation(channelToStutter, 'fx', tick);
-      const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX;
-      const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY;
+
+      // If a coherence key exists, overlay correlated noise
+      const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
+      let coh = { x: 0.5, y: 0.5 };
+      if (coherenceKey) {
+        try { coh = getParameterModulation(channelToStutter, coherenceKey, tick); } catch { coh = { x: 0.5, y: 0.5 }; }
+      }
+
+      const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX + (coh.x - 0.5) * 10;
+      const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY + (coh.y - 0.5) * 6;
       const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, 127);
+
+      // publish modulation bus entry for cross‑mod sampling
+      try {
+        const norm = clamp(currentValue / 127, 0, 1);
+        if (!this.beatContext.mod) this.beatContext.mod = {};
+        this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });
+      } catch { /* ignore */ }
+
+      // feedback event
+      try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fx', channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick }); } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
     }

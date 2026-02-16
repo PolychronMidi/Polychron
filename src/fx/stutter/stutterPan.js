@@ -31,12 +31,31 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
       const mod = getParameterModulation(channelToStutter, 'pan', tick);
+
+      // If coherence key exists, overlay correlated modulation
+      const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
+      let coh = { x: 0.5, y: 0.5 };
+      if (coherenceKey) {
+        try { coh = getParameterModulation(channelToStutter, coherenceKey, tick); } catch { coh = { x: 0.5, y: 0.5 }; }
+      }
+
       // Y axis controls pan flutter - add oscillation on top of movement
-      const flutterAmount = (mod.y - 0.5) * 2 * fullRange * 0.3 * noiseProfile.influenceY;
+      const flutterAmount = (mod.y - 0.5) * 2 * fullRange * 0.3 * noiseProfile.influenceY + (coh.y - 0.5) * fullRange * 0.08;
       basePanDelta += flutterAmount;
 
       currentPan += basePanDelta;
       currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
+
+      // publish modulation bus pan intensity (-1..1 normalized to 0..1 for convenience)
+      try {
+        const norm = (currentPan - 64) / 63; // -1..1
+        if (!this.beatContext.mod) this.beatContext.mod = {};
+        this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
+      } catch { /* ignore */ }
+
+      // emit feedback for stutter cross-mod listeners
+      try { if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'pan', channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick }); } catch { /* ignore */ }
+
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }
 

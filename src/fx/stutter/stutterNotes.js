@@ -130,9 +130,38 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     ? (beatContext.fadeDirection || null)
     : null;
 
+  // Modulation bus (fade/pan/fx) published by CC stutters — used for cross-modulation
+  const modBus = (beatContext && beatContext.mod && beatContext.mod[channel]) ? beatContext.mod[channel] : null;
+
+  // Cross-mod rules from config (pan/fade/fx influence on stutter behavior)
+  const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
+    ? StutterConfig.getCrossModRules()
+    : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+
+  // Apply cross-mod adjustments
+  let shiftRangeBias = 0;
+  let velocityScaleBias = 0;
+  if (modBus) {
+    if (typeof modBus.pan === 'number') {
+      const panAbs = Math.abs(modBus.pan);
+      shiftRangeBias += Math.round((crossRules.pan.shiftRangeBias || 0) * panAbs);
+    }
+    if (typeof modBus.fade === 'number') {
+      velocityScaleBias += (crossRules.fade.velocityScaleBias || 0) * modBus.fade;
+    }
+    if (typeof modBus.fx === 'number') {
+      shiftRangeBias += Math.round((crossRules.fx.shiftRangeScale - 1) * modBus.fx);
+    }
+  }
+
+  // Per-channel coherence overlay (shared noise key) — can bias shifts/decision
+  const coherenceKey = (beatContext && beatContext.coherenceKey) ? beatContext.coherenceKey : null;
+  const cohMod = coherenceKey ? (getParameterModulation(channel, coherenceKey, on) || { x: 0.5, y: 0.5 }) : null;
+
   // Pick ONE octave shift (avoid repeating the last shift used on this channel)
   const lastShift = localShared.shifts.get(channel) || null;
-  const shiftRange = isBass ? 2 : 3;
+  const baseShiftRange = isBass ? 2 : 3;
+  const shiftRange = m.max(1, baseShiftRange + shiftRangeBias);
   const shift = _pickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastShift, panBias);
   localShared.shifts.set(channel, shift);
 
@@ -145,9 +174,20 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const rawVel = clamp(m.round(
     isPrimary ? velocity * rf(velRanges[0], velRanges[1]) : binVel * rf(velRanges[0], velRanges[1])
   ), 1, 127);
-  const stutterVel = fadeDir === 'in' ? clamp(m.round(rawVel * rf(0.7, 1.0)), 1, 127)
+  let stutterVel = fadeDir === 'in' ? clamp(m.round(rawVel * rf(0.7, 1.0)), 1, 127)
     : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, 127)
     : rawVel;
+
+  // apply cross-mod velocity bias (from beatContext.mod → stutterConfig.fade.velocityScaleBias)
+  if (velocityScaleBias && Number.isFinite(Number(velocityScaleBias))) {
+    stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, 127);
+  }
+
+  // coherence overlay: small velocity boost when coherence X is high
+  if (cohMod && Number.isFinite(cohMod.x) && cohMod.x > 0.6) {
+    const boost = m.round((cohMod.x - 0.6) * 8); // modest additive boost
+    stutterVel = clamp(stutterVel + boost, 1, 127);
+  }
 
   // Build planned events (single on/off pair)
   const stutterOn = on + sustain * rf(0.05, 0.3);
