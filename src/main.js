@@ -146,6 +146,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         setBinaural();
         EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex });
         setBalanceAndFX();
+        // Apply Stutter default directive for this beat (coherence key, etc.)
+        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
         // Capture FX intensity from balance and variation globals (normalized 0-1)
         const fxStereoPan = typeof balOffset === 'number' ? m.abs(balOffset) / 45 : 0;
         const fxVelocityShift = (typeof refVar === 'number' && typeof bassVar === 'number')

@@ -63,7 +63,7 @@ export default [
       'no-warning-comments': ['error', { terms: ['global'], location: 'start' }],
       'consistent-return': 'error',
       'no-unsafe-optional-chaining': 'error',
-      'no-implicit-coercion': ['warn', { 'boolean': true, 'number': true, 'string': true, 'allow': [] }],
+      'no-implicit-coercion': ['error', { 'boolean': true, 'number': true, 'string': true, 'allow': [] }],
       'no-undef': 'error',
       'local/no-silent-early-return': ['error', { allowInTests: false }],
       'local/no-requires-outside-index': ['error'],
