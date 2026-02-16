@@ -84,7 +84,8 @@ MotifValidators = {
       if (!caps.notesReflectOutputSet || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
       expectedPCs = this._toPCSet(developer.notes, 'developer.notes');
     } else {
-      let windowScale = Array.isArray(opts && opts.windowScale) && opts.windowScale.length > 0 ? opts.windowScale : null;
+      const maybeWindowScale = opts && /** @type {any} */ (opts).windowScale;
+      let windowScale = Array.isArray(maybeWindowScale) && maybeWindowScale.length > 0 ? /** @type {(string|number)[]} */ (maybeWindowScale) : null;
       if (!windowScale && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
         try {
           const hcScale = HarmonicContext.getField('scale');

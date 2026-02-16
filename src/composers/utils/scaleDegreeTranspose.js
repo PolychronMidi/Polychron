@@ -13,7 +13,7 @@
  * This is the canonical, composer-side implementation (loaded as a naked global).
  *
  * @param {number|object|Array<number|object>} noteOrMidi
- * @param {Array<string|number>} [scale]
+ * @param {Array<string|number>|null} [scale]
  * @param {number} [degreeOffset=0]
  * @param {Object} [opts]
  * @param {boolean} [opts.quantize=false]

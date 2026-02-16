@@ -1,10 +1,14 @@
 factoryPoolResolver = {
+  /**
+   * @param {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} [extraConfig]
+   * @param {Object} [composerCtx]
+   */
   resolveComposerPoolName(extraConfig = {}, composerCtx = null) {
     if (extraConfig !== undefined && (typeof extraConfig !== 'object' || extraConfig === null)) {
       throw new Error('ComposerFactory.resolveComposerPoolName: extraConfig must be an object if provided');
     }
 
-    const requestedPoolName = extraConfig.composerPool ?? extraConfig.profilePool ?? extraConfig.composerProfilePool;
+    const requestedPoolName = /** @type {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} */ (extraConfig).composerPool ?? /** @type {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} */ (extraConfig).profilePool ?? /** @type {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} */ (extraConfig).composerProfilePool;
 
     const context = Object.assign({}, (composerCtx && typeof composerCtx === 'object') ? composerCtx : {});
     if (!Object.prototype.hasOwnProperty.call(context, 'sectionIndex')) {

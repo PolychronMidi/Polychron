@@ -178,32 +178,56 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
   return composer;
 };
 
+/**
+ * @typedef {{
+ *   voiceCountMultiplier?: number,
+ *   useCorpusVoiceLeadingPriors?: boolean,
+ *   corpusVoiceLeadingStrength?: number,
+ *   useCorpusMelodicPriors?: boolean,
+ *   corpusMelodicStrength?: number,
+ *   baseVelocity?: number,
+ *   velocityScale?: number,
+ *   timingOffsetUnits?: number,
+ *   swingAmount?: number,
+ *   inversionPreference?: number,
+ *   chordVoices?: number
+ * }} RuntimeProfile
+ */
+
+/**
+ * @param {RuntimeProfile|null} runtimeProfile
+ * @returns {Object}
+ */
 const getVoiceSelectionOptions = (runtimeProfile = null) => {
   if (!runtimeProfile || typeof runtimeProfile !== 'object') return {};
   const options = {};
-  if (isFiniteNumber(runtimeProfile.voiceCountMultiplier)) {
-    options.voiceCountMultiplier = Number(runtimeProfile.voiceCountMultiplier);
+  if (isFiniteNumber(/** @type {any} */ (runtimeProfile).voiceCountMultiplier)) {
+    options.voiceCountMultiplier = Number(/** @type {any} */ (runtimeProfile).voiceCountMultiplier);
   }
-  if (runtimeProfile.useCorpusVoiceLeadingPriors === true) {
+  if ((/** @type {any} */ (runtimeProfile)).useCorpusVoiceLeadingPriors === true) {
     options.useCorpusVoiceLeadingPriors = true;
-    options.corpusVoiceLeadingStrength = toFiniteOrDefault(runtimeProfile.corpusVoiceLeadingStrength, 0.8);
+    options.corpusVoiceLeadingStrength = toFiniteOrDefault((/** @type {any} */ (runtimeProfile)).corpusVoiceLeadingStrength, 0.8);
   }
-  if (runtimeProfile.useCorpusMelodicPriors === true) {
+  if ((/** @type {any} */ (runtimeProfile)).useCorpusMelodicPriors === true) {
     options.useCorpusMelodicPriors = true;
-    options.corpusMelodicStrength = toFiniteOrDefault(runtimeProfile.corpusMelodicStrength, 0.75);
+    options.corpusMelodicStrength = toFiniteOrDefault((/** @type {any} */ (runtimeProfile)).corpusMelodicStrength, 0.75);
   }
   return options;
 };
 
+/**
+ * @param {RuntimeProfile|null} runtimeProfile
+ * @returns {{ baseVelocity: number|null, velocityScale: number, timingOffsetUnits: number, swingAmount: number }}
+ */
 const getEmissionAdjustments = (runtimeProfile = null) => {
   if (!runtimeProfile || typeof runtimeProfile !== 'object') {
     return { baseVelocity: null, velocityScale: 1, timingOffsetUnits: 0, swingAmount: 0 };
   }
   return {
-    baseVelocity: isFiniteNumber(runtimeProfile.baseVelocity) ? Number(runtimeProfile.baseVelocity) : null,
-    velocityScale: toFiniteOrDefault(runtimeProfile.velocityScale, 1),
-    timingOffsetUnits: toFiniteOrDefault(runtimeProfile.timingOffsetUnits, 0),
-    swingAmount: toFiniteOrDefault(runtimeProfile.swingAmount, 0)
+    baseVelocity: isFiniteNumber((/** @type {any} */ (runtimeProfile)).baseVelocity) ? Number((/** @type {any} */ (runtimeProfile)).baseVelocity) : null,
+    velocityScale: toFiniteOrDefault((/** @type {any} */ (runtimeProfile)).velocityScale, 1),
+    timingOffsetUnits: toFiniteOrDefault((/** @type {any} */ (runtimeProfile)).timingOffsetUnits, 0),
+    swingAmount: toFiniteOrDefault((/** @type {any} */ (runtimeProfile)).swingAmount, 0)
   };
 };
 

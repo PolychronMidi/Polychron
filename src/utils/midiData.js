@@ -215,7 +215,7 @@ const midiData={
  */
 const getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
   if (!midiData[category]) { throw new Error(`Invalid MIDI category: ${category}`); }
-  const item=midiData[category].find(item=>item.name.toLowerCase()===name);
+  const item = midiData[category].find(entry => entry.name.toLowerCase() === name);
   if (!item) { throw new Error(`MIDI ${category} '${name}' not found`); }
   return item.number;
 };

@@ -3,7 +3,7 @@
 // Helper to generate rhythm array given length and either an array of possible
 // onset distances or a [min,max] range for random selection of onset distances.
 makeOnsets = (length, valuesOrRange) => {
-  let onsets = []; let total = 0;
+  const onsets = []; let total = 0;
   let iterations = 0;
   while (total < length) {
     let v = ra(valuesOrRange);
@@ -25,8 +25,8 @@ makeOnsets = (length, valuesOrRange) => {
       break;
     }
   }
-  let rhythm = [];
-  for (let onset of onsets) { rhythm.push(1); for (let i = 0; i < onset; i++) { rhythm.push(0); } }
+  const rhythm = [];
+  for (const onset of onsets) { rhythm.push(1); for (let i = 0; i < onset; i++) { rhythm.push(0); } }
   while (rhythm.length < length) { rhythm.push(0); }
   return rhythm;
 };

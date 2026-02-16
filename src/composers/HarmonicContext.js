@@ -1,13 +1,23 @@
 // src/composers/HarmonicContext.js - Shared harmonic state for composer coherence
 // Enables harmonically-aware composition across multiple composer types
 
+/**
+ * @typedef {Object} HarmonicState
+ * @property {string} key
+ * @property {string} mode
+ * @property {string} quality
+ * @property {(string|number)[]} scale
+ * @property {Array<*>} chords
+ * @property {number} modifiedAt
+ */
 HarmonicContext = (() => {
+  /** @type {HarmonicState} */
   let state = {
     key: 'C',           // Root note
     mode: 'major',      // Primary mode/scale mode
     quality: 'major',   // Triad quality (major, minor, diminished, etc.)
-    scale: [],          // Pitch class set (MIDI note numbers modulo 12)
-    chords: [],         // Active harmonic set (chord symbols or note arrays)
+    scale: /** @type {(string|number)[]} */ ([]),          // Pitch class set (MIDI note numbers modulo 12)
+    chords: /** @type {Array<*>} */ ([]),         // Active harmonic set (chord symbols or note arrays)
     modifiedAt: 0       // Timestamp of last update
   };
 

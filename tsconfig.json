@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    // "noImplicitAny": true,
+    "strictNullChecks": true,
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,

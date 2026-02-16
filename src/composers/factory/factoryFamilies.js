@@ -51,6 +51,14 @@ factoryFamilies = {
     return normalized;
   },
 
+  /**
+   * Resolve a phrase family name using extraConfig and optional composer context.
+   * @param {Object} [extraConfig]
+   * @param {Object|null} [composerCtx]
+   * @param {Object|null} [sharedComposerCtx]
+   * @param {Object} [constructors]
+   * @returns {string}
+   */
   resolvePhraseFamilyOrFail(extraConfig = {}, composerCtx = null, sharedComposerCtx = null, constructors = {}) {
     if (extraConfig !== undefined && (typeof extraConfig !== 'object' || extraConfig === null)) {
       throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: extraConfig must be an object');

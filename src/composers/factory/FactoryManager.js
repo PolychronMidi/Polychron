@@ -1,5 +1,7 @@
 FactoryManager = class FactoryManager {
+  /** @type {any|null} */
   static sharedPhraseArcManager = null;
+  /** @type {Object<string, any>|null} */
   static sharedComposerCtx = null;
 
   static capabilityProfiles = factoryProfiles.getCapabilityProfilesDefault();
@@ -74,11 +76,15 @@ FactoryManager = class FactoryManager {
     return factoryProgression.resolveProgressionKeyOrFail(key, label, quality);
   }
 
+  /**
+   * @param {Object} [config]
+   * @param {Object} [ctx]
+   */
   static create(config = {}, ctx = null) {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       throw new Error('ComposerFactory.create: config must be an object if provided');
     }
-    const type = config.type || 'scale';
+    const type = /** @type {any} */ (config).type || 'scale';
     const constructorFn = this.constructors[type];
     if (!constructorFn) {
       throw new Error(`ComposerFactory.create: unknown composer type "${type}"—fail-fast`);
@@ -100,6 +106,10 @@ FactoryManager = class FactoryManager {
     return factoryFamilies.getComposerFamiliesOrFail(this.constructors);
   }
 
+  /**
+   * @param {Object} [extraConfig]
+   * @param {Object} [composerCtx]
+   */
   static resolvePhraseFamilyOrFail(extraConfig = {}, composerCtx = null) {
     return factoryFamilies.resolvePhraseFamilyOrFail(extraConfig, composerCtx, this.sharedComposerCtx, this.constructors);
   }
@@ -112,25 +122,30 @@ FactoryManager = class FactoryManager {
     return factoryFamilies.scoreFamilyCandidateConfig(candidateConfig, opts);
   }
 
+  /** @param {any} [opts] */
   static pickWeightedFamilyCandidateOrFail(candidateConfigs, opts = {}) {
     return factoryFamilies.pickWeightedFamilyCandidateOrFail(candidateConfigs, opts);
   }
 
+  /**
+   * @param {{familyName?: string, layerName?: string, extraConfig?: Object, previousComposer?: Object, peerComposer?: Object}} [opts]
+   * @param {Object} [ctx]
+   */
   static createRandomForLayer(opts = {}, ctx = null) {
     if (opts !== undefined && (typeof opts !== 'object' || opts === null)) {
       throw new Error('ComposerFactory.createRandomForLayer: opts must be an object');
     }
 
-    const familyName = opts.familyName;
+    const familyName = /** @type {any} */ (opts).familyName;
     if (typeof familyName !== 'string' || familyName.length === 0) {
       throw new Error('ComposerFactory.createRandomForLayer: familyName must be a non-empty string');
     }
-    const layerName = opts.layerName;
+    const layerName = /** @type {any} */ (opts).layerName;
     if (typeof layerName !== 'string' || layerName.length === 0) {
       throw new Error('ComposerFactory.createRandomForLayer: layerName must be a non-empty string');
     }
 
-    const extraConfig = (opts.extraConfig && typeof opts.extraConfig === 'object') ? opts.extraConfig : {};
+    const extraConfig = (/** @type {any} */ (opts).extraConfig && typeof /** @type {any} */ (opts).extraConfig === 'object') ? /** @type {any} */ (opts).extraConfig : {};
     const composerCtx = ctx || this.sharedComposerCtx;
     if (composerCtx) this.setComposerContext(composerCtx);
 
@@ -164,11 +179,12 @@ FactoryManager = class FactoryManager {
     let lastError = null;
 
     for (let i = 0; i < maxAttempts; i++) {
-      const cfg = this.pickWeightedFamilyCandidateOrFail(familyPool, {
-        previousComposer: opts.previousComposer,
-        peerComposer: opts.peerComposer,
+      const pickOpts = /** @type {{previousComposer?: any, peerComposer?: any, layerName?: string}} */ ({
+        previousComposer: /** @type {any} */ (opts).previousComposer,
+        peerComposer: /** @type {any} */ (opts).peerComposer,
         layerName
       });
+      const cfg = this.pickWeightedFamilyCandidateOrFail(familyPool, pickOpts);
 
       try {
         const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
@@ -193,6 +209,10 @@ FactoryManager = class FactoryManager {
     throw new Error(`ComposerFactory.createRandomForLayer: failed for layer "${layerName}" in family "${familyName}" after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
   }
 
+  /**
+   * @param {Object} [extraConfig]
+   * @param {Object} [ctx]
+   */
   static createRandom(extraConfig = {}, ctx = null) {
     const composerCtx = ctx || this.sharedComposerCtx;
     if (composerCtx) this.setComposerContext(composerCtx);
@@ -220,7 +240,7 @@ FactoryManager = class FactoryManager {
     for (let i = 0; i < maxAttempts; i++) {
       const cfg = composerPool[ri(composerPool.length - 1)];
       try {
-        const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
+        const composer = this.create(Object.assign({}, cfg, /** @type {any} */ (extraConfig)), composerCtx);
         if (typeof composer.getNotes !== 'function') {
           throw new Error('ComposerFactory.createRandom: created composer missing getNotes() method');
         }

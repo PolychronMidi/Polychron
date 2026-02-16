@@ -60,6 +60,15 @@ export default [
     // silent early returns (must log or explicitly handle before returning).
     plugins: { local: localRules },
     rules: {
+      'eqeqeq': 'error',
+      'no-var': 'error',
+      'prefer-const': ['error', { destructuring: 'all' }],
+      'no-return-await': 'error',
+      'no-async-promise-executor': 'error',
+      'no-duplicate-imports': 'error',
+      'require-atomic-updates': 'error',
+      'no-await-in-loop': 'error',
+      'no-shadow': 'error',
       'no-warning-comments': ['error', { terms: ['global'], location: 'start' }],
       'consistent-return': 'error',
       'no-unsafe-optional-chaining': 'error',

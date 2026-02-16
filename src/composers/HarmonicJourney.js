@@ -214,7 +214,7 @@ HarmonicJourney = (() => {
       const result = moveFn(currentKey, currentMode);
 
       // Normalize key to pitch class
-      let nextKey = t.Note.pitchClass(result.key);
+      const nextKey = t.Note.pitchClass(result.key);
       if (!nextKey) {
         // Fallback: stay put
         plan.push({ key: currentKey, mode: currentMode, move: 'hold', distance: 0 });

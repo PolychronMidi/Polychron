@@ -165,13 +165,16 @@ class StutterManager {
     const duration = Number.isFinite(Number(cfg.duration)) ? Number(cfg.duration) : Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1));
 
     // target channels - default to profile channel groups
-    let channels = Array.isArray(cfg.channels) && cfg.channels.length > 0 ? cfg.channels.slice() : null;
-    if (!channels) {
-      if (profile === 'reflection') channels = (typeof reflection !== 'undefined' ? reflection.slice() : []);
-      else if (profile === 'bass') channels = (typeof bass !== 'undefined' ? bass.slice() : []);
-      else channels = (typeof source !== 'undefined' ? source.slice() : []);
+    const finalChannels = /** @type {number[]} */ ([]);
+    if (Array.isArray(cfg.channels) && cfg.channels.length > 0) {
+      finalChannels.push(.../** @type {number[]} */ (cfg.channels.slice()));
+    } else if (profile === 'reflection') {
+      finalChannels.push(...(typeof reflection !== 'undefined' ? /** @type {number[]} */ (reflection.slice()) : /** @type {number[]} */ ([])));
+    } else if (profile === 'bass') {
+      finalChannels.push(...(typeof bass !== 'undefined' ? /** @type {number[]} */ (bass.slice()) : /** @type {number[]} */ ([])));
+    } else {
+      finalChannels.push(...(typeof source !== 'undefined' ? /** @type {number[]} */ (source.slice()) : /** @type {number[]} */ ([])));
     }
-
     // Cross-mod rules from config (used as base; may be adaptively tuned below)
     const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
       ? StutterConfig.getCrossModRules()
@@ -222,10 +225,11 @@ class StutterManager {
     // helper: evaluate a curve (string name | array | function)
     const _evalCurve = (curve, t) => {
       if (!curve) return undefined;
-      if (typeof curve === 'function') return Number(curve(t));
+      const tn = Number(t);
+      if (typeof curve === 'function') return Number(curve(tn));
       if (Array.isArray(curve) && curve.length > 0) {
         const n = curve.length;
-        const pos = clamp(t * (n - 1), 0, n - 1);
+        const pos = clamp(tn * (n - 1), 0, n - 1);
         const idx = m.floor(pos);
         const frac = pos - idx;
         const a = Number(curve[idx]) || 0;
@@ -235,11 +239,14 @@ class StutterManager {
       if (typeof curve === 'string') {
         switch (curve) {
           case 'linear': return 1;
-          case 'accelerando': return 1 + t * 1.0;
-          case 'decelerando': return 1 + (1 - t) * 1.0;
-          case 'sine': return 1 + Math.sin(2 * Math.PI * t) * 0.25;
-          case 'pingpong': return Math.abs(((t * 2) % 2) - 1); // useful for phaseCurve
-          case 'oscillate': return 0.5 + 0.5 * Math.sin(2 * Math.PI * t);
+          case 'accelerando': return 1 + Number(tn);
+          case 'decelerando': return 1 + (1 - Number(tn));
+          case 'sine': return 1 + Math.sin(2 * Math.PI * Number(tn)) * 0.25;
+          case 'pingpong': {
+            const frac = Number(tn) - m.floor(Number(tn));
+            return Math.abs((2 * frac) - 1);
+          } // useful for phaseCurve
+          case 'oscillate': return 0.5 + 0.5 * Math.sin(2 * Math.PI * Number(tn));
           default: return Number(curve) || 1;
         }
       }
@@ -254,7 +261,7 @@ class StutterManager {
       const rateCurveVal = _evalCurve(directive.rateCurve || cfg.rateCurve, tNorm) || 1;
       const phaseCurveVal = _evalCurve(directive.phaseCurve || cfg.phaseCurve, tNorm) || undefined;
 
-      for (const ch of channels) {
+      for (const ch of /** @type {any[]} */ (finalChannels)) {
         try {
           const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');
 
@@ -298,7 +305,7 @@ class StutterManager {
       delete this.beatContext.coherenceKey;
     }
 
-    try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * channels.length, profile); } catch { /* ignore */ }
+    try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile); } catch { /* ignore */ }
     return cfg;
   }
 
@@ -363,14 +370,18 @@ class StutterManager {
     return this.beatContext;
   }
 
+  /**
+   * Reset channel tracking for the given channels or all.
+   * @param {number[]|null} [channels]
+   */
   resetChannelTracking(channels = null) {
     if (Array.isArray(channels) && channels.length > 0) {
-      for (const ch of channels) {
+      for (const ch of /** @type {number[]} */ (channels)) {
         this.lastUsedCHs.delete(ch);
         this.lastUsedCHs2.delete(ch);
         this.lastUsedCHs3.delete(ch);
       }
-      return { cleared: channels.length };
+      return { cleared: /** @type {number} */ (channels.length) };
     }
 
     const prev1 = this.lastUsedCHs.size;
