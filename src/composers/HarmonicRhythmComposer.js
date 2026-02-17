@@ -80,6 +80,25 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     }
 
     this._lastChord = currentSymbol;
+
+    // Calculate and push harmonic tension based on chord quality
+    if (typeof HarmonicContext !== 'undefined' && typeof HarmonicContext.set === 'function') {
+      let tension = 0.3; // Default low-medium
+      const quality = (typeof t !== 'undefined' && t.Chord) ? t.Chord.get(currentSymbol).quality : 'Major';
+
+      if (quality === 'Major') tension = 0.2;
+      else if (quality === 'Minor') tension = 0.4;
+      else if (quality === 'Dominant' || quality === 'Augmented') tension = 0.8;
+      else if (quality === 'Diminished') tension = 0.9;
+
+      // Add some random drift for variety
+      tension = clamp(tension + rf(-0.1, 0.1), 0, 1);
+
+      // Update HarmonicContext without overwriting other fields
+      // (We don't know the full state here, just updating tension)
+      try { HarmonicContext.set({ tension }); } catch { /* ignore if tension update fails */ }
+    }
+
     super.noteSet([currentChord], 'R');
     this.measureCount++;
   }

@@ -37,6 +37,17 @@ class StutterManager {
     }
   }
 
+  /**
+   * Update the default directive used for spontaneous stutters.
+   * @param {Object} directive
+   */
+  setDefaultDirective(directive) {
+    if (directive && typeof directive === 'object') {
+      this.defaultDirective = Object.assign({}, this.defaultDirective, directive);
+    }
+    return this.defaultDirective;
+  }
+
   stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
     if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFade: called with no channels');
     if (!Number.isFinite(Number(numStutters)) || numStutters <= 0) throw new Error('StutterManager.stutterFade: numStutters must be a positive number');

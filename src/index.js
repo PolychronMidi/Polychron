@@ -6,6 +6,7 @@ require('./time');
 require('./composers');
 require('./fx');
 require('./channelCoherence');
+require('./GlobalConductor');
 require('./playNotes');
 require('./microUnitAttenuator');
 require('./writer');

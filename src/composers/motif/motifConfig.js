@@ -19,6 +19,9 @@ motifConfig = (function() {
     subsubdiv:  { density: 0.3, style: 'random', intervalDensity: 0.3, velocityScale: 0.8 }
   };
 
+  // Dynamic overrides store (cleared on section boundary if needed, but Conductor manages it)
+  const OVERRIDES = {};
+
   function getProfile(name) {
     if (!name || typeof name !== 'string') throw new Error('motifConfig.getProfile: invalid name');
     const source = (typeof MOTIF_PROFILES !== 'undefined' && MOTIF_PROFILES) ? MOTIF_PROFILES : (console.warn('Acceptable warning: motifConfig: using local defaults. For project-wide settings, define MOTIF_PROFILES in src/config.js.'), LOCAL);
@@ -29,10 +32,21 @@ motifConfig = (function() {
 
   function getUnitProfile(unit) {
     if (!unit || typeof unit !== 'string') throw new Error('motifConfig.getUnitProfile: invalid unit');
-    const p = UNIT_PROFILES[unit];
-    if (!p) throw new Error(`motifConfig.getUnitProfile: unknown unit "${unit}"`);
-    return Object.assign({}, p);
+    const base = UNIT_PROFILES[unit];
+    if (!base) throw new Error(`motifConfig.getUnitProfile: unknown unit "${unit}"`);
+    const override = OVERRIDES[unit] || {};
+    return Object.assign({}, base, override);
   }
 
-  return { getProfile, getUnitProfile };
+  /**
+   * Set runtime overrides for a unit profile (e.g. modulate density)
+   * @param {string} unit - 'measure'|'beat'|'div'|'subdiv'|'subsubdiv'
+   * @param {Object} props - properties to override (e.g. { intervalDensity: 0.8 })
+   */
+  function setUnitProfileOverride(unit, props) {
+    if (!unit || !UNIT_PROFILES[unit]) return;
+    OVERRIDES[unit] = Object.assign({}, OVERRIDES[unit] || {}, props);
+  }
+
+  return { getProfile, getUnitProfile, setUnitProfileOverride };
 })();

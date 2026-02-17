@@ -127,19 +127,22 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       selectLayerComposerForMeasure('L1', phraseFamily);
       setUnitTiming('measure');
 
-      // Get phrase context for dynamism scaling
-      const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)
-        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
-        : { dynamism: 0.7, atStart: false, atEnd: false };
+      // main.js - using GlobalConductor for dynamic probabilities
+      const conductorCtx = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
+        ? GlobalConductor.update(measureIndex, -1) // Update measure-scope context
+        : { playProb: 0.5, stutterProb: 0.3 };
 
-      // Scale play/stutter probabilities by dynamism
-      const dynScale = DYNAMISM.scaleBase + phraseCtx.dynamism * DYNAMISM.scaleRange;
-      const basePlayProb = phraseCtx.atStart ? DYNAMISM.playProb.start : DYNAMISM.playProb.mid;
-      const baseStutterProb = phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid;
-      const playProb = basePlayProb * dynScale;
-      const stutterProb = baseStutterProb * dynScale;
+      let playProb = conductorCtx.playProb;
+      let stutterProb = conductorCtx.stutterProb;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
+        // Refine context per beat for maximum dynamicism
+        if (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function') {
+           const beatCtx = GlobalConductor.update(measureIndex, beatIndex);
+           playProb = beatCtx.playProb;
+           stutterProb = beatCtx.stutterProb;
+        }
+
         beatCount++;
         setUnitTiming('beat');
         setOtherInstruments();
