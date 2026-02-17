@@ -57,10 +57,7 @@ setUnitTiming = (unitType) => {
         throw new Error(`setUnitTiming(measure): invalid numerator=${numerator} - cannot compute tpBeat`);
       }
       tpBeat = tpMeasure / Number(numerator);
-      if (!Number.isFinite(Number(tpBeat)) || Number(tpBeat) <= 0) {
-        throw new Error(`setUnitTiming(measure): invalid tpBeat=${tpBeat} - cannot plan motifs`);
-      }
-      MotifSpreader.spreadMeasure({ layer: activeLayer, measureStart, measureBeats: numerator, composer: activeComposer });
+
       break;
 
     case 'beat':
@@ -86,6 +83,16 @@ setUnitTiming = (unitType) => {
       parentStart = measureStart;
       tpParent = tpMeasure;
       unitsPerParent = numerator;
+
+      // DIVS-only planner invocation (use DIV API and run once per measure)
+      const plannedDivCount = Number(divsPerBeat) * Number(numerator);
+      if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer._plannedDivCount !== plannedDivCount) {
+        MotifSpreader.spreadDivs({ layer: activeLayer, divsPerBeat: Number(divsPerBeat), beats: Number(numerator), composer: activeComposer });
+      }
+      if (!Array.isArray(activeLayer.divMotifs) || activeLayer.divMotifs.length < plannedDivCount) {
+        throw new Error(`setUnitTiming(beat): MotifSpreader failed to populate divMotifs (${activeLayer.divMotifs ? activeLayer.divMotifs.length : 0} / ${plannedDivCount})`);
+      }
+
       break;
 
     case 'div':
