@@ -22,76 +22,20 @@
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer
   if (!layer) throw new Error(`${unit}.playMotifs missing layer`);
-
-  // ---------------------------------------------------------------------------
-  // Resolve target bucket based on unit type
-  // ---------------------------------------------------------------------------
-  const plannedDivsPerBeat = (layer && Number.isFinite(layer._plannedDivsPerBeat)) ? Number(layer._plannedDivsPerBeat) : Number(divsPerBeat);
-  const absBeatIdx = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
-  const absDivOff = Number.isFinite(Number(divIndex)) ? Number(divIndex) : 0;
-  const absDivIdx = m.max(0, absBeatIdx * plannedDivsPerBeat + absDivOff);
-  const absSubOff = Number.isFinite(Number(subdivIndex)) ? Number(subdivIndex) : 0;
-  const absSubIdx = absDivIdx * (Number.isFinite(Number(subdivsPerDiv)) ? Number(subdivsPerDiv) : 1) + absSubOff;
-  const absSSbOff = Number.isFinite(Number(subsubdivIndex)) ? Number(subsubdivIndex) : 0;
-  const absSSbIdx = absSubIdx * (Number.isFinite(Number(subsubsPerSub)) ? Number(subsubsPerSub) : 1) + absSSbOff;
-
-  let targetIndex, bucket, bucketLabel;
-  switch (unit) {
-    case 'beat':
-      targetIndex = absBeatIdx;
-      bucket = layer.beatMotifs && layer.beatMotifs[targetIndex];
-      bucketLabel = 'beatMotifs';
-      // Fallback to divMotifs[first-div-of-beat] for backward compat
-      if (!Array.isArray(bucket) || bucket.length === 0) {
-        targetIndex = absBeatIdx * plannedDivsPerBeat;
-        bucket = layer.divMotifs && layer.divMotifs[targetIndex];
-        bucketLabel = 'divMotifs(fallback)';
-      }
-      break;
-    case 'subdiv':
-      targetIndex = absSubIdx;
-      bucket = layer.subdivMotifs && layer.subdivMotifs[targetIndex];
-      bucketLabel = 'subdivMotifs';
-      // Fallback to divMotifs
-      if (!Array.isArray(bucket) || bucket.length === 0) {
-        targetIndex = absDivIdx;
-        bucket = layer.divMotifs && layer.divMotifs[targetIndex];
-        bucketLabel = 'divMotifs(fallback)';
-      }
-      break;
-    case 'subsubdiv':
-      targetIndex = absSSbIdx;
-      bucket = layer.subsubdivMotifs && layer.subsubdivMotifs[targetIndex];
-      bucketLabel = 'subsubdivMotifs';
-      // Fallback to subdivMotifs then divMotifs
-      if (!Array.isArray(bucket) || bucket.length === 0) {
-        targetIndex = absSubIdx;
-        bucket = layer.subdivMotifs && layer.subdivMotifs[targetIndex];
-        bucketLabel = 'subdivMotifs(fallback)';
-      }
-      if (!Array.isArray(bucket) || bucket.length === 0) {
-        targetIndex = absDivIdx;
-        bucket = layer.divMotifs && layer.divMotifs[targetIndex];
-        bucketLabel = 'divMotifs(fallback)';
-      }
-      break;
-    default: // 'div' and any unrecognized unit
-      targetIndex = absDivIdx;
-      bucket = layer.divMotifs && layer.divMotifs[targetIndex];
-      bucketLabel = 'divMotifs';
-      break;
+  if (typeof playMotifsResolveBucket !== 'function') {
+    throw new Error(`${unit}.playMotifs: playMotifsResolveBucket helper not available`);
+  }
+  if (typeof playMotifsBuildCandidateNotes !== 'function') {
+    throw new Error(`${unit}.playMotifs: playMotifsBuildCandidateNotes helper not available`);
+  }
+  if (typeof playMotifsApplyCycleTransforms !== 'function') {
+    throw new Error(`${unit}.playMotifs: playMotifsApplyCycleTransforms helper not available`);
   }
 
-  if (!Array.isArray(bucket) || bucket.length === 0) {
-    throw new Error(`${unit}.playMotifs: empty ${bucketLabel} bucket at index ${targetIndex} - fail-fast`);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Per-bucket cursor: cycle through bucket notes on repeated calls
-  // ---------------------------------------------------------------------------
-  if (!layer._bucketCursors) layer._bucketCursors = {};
-  if (!layer._bucketCursors[unit]) layer._bucketCursors[unit] = new Map();
-  const cursorMap = layer._bucketCursors[unit];
+  const resolvedBucket = playMotifsResolveBucket(unit, layer);
+  const targetIndex = resolvedBucket.targetIndex;
+  const bucket = resolvedBucket.bucket;
+  const cursorMap = resolvedBucket.cursorMap;
 
   // Track motif cycle completion per groupId and apply transformations after each cycle
   if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
@@ -143,56 +87,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     label: `${unit}.playMotifs`
   });
 
-  // Get candidate notes from bucket entry and select via centralized voice coordination
-  let candidateNotes = (() => {
-    const note = Number(resolvedNote);
-    // Validate MIDI range and clamp if needed
-    if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
-      return [modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)];
-    }
-    return [note];
-  })();
-
-  // If we have fewer candidates than typical voice count, expand pool using scale-aware neighbors
-  if (candidateNotes.length < 3) {
-    const minNote = m.max(0, OCTAVE.min * 12 - 1);
-    const maxNote = OCTAVE.max * 12 - 1;
-    candidateNotes = CandidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6, unit);
-  }
-
-  // CRITICAL: Filter out stale notes from older composers that don't belong in current composer
-  if (composerValidPCs.size > 0) {
-    const beforeLen = candidateNotes.length;
-    candidateNotes = candidateNotes.filter(note => {
-      const pc = ((note % 12) + 12) % 12;
-      return composerValidPCs.has(pc);
-    });
-    if (candidateNotes.length === 0 && beforeLen > 0) {
-      throw new Error(`${unit}.playMotifs: All bucket notes were filtered out - bucket contains stale notes from previous composer (beforeLen=${beforeLen}, composerValidPCs=[${Array.from(composerValidPCs).sort((a,b)=>a-b).join(',')}])`);
-    }
-  }
-
-  if (typeof HarmonicContext !== 'undefined') {
-    const scale = HarmonicContext.getField('scale');
-    if (Array.isArray(scale) && scale.length > 0) {
-      const filtered = candidateNotes.filter(note => HarmonicContext.isNoteInScale(note));
-      if (filtered.length > 0) {
-        // Only use HarmonicContext filter if it preserves composer's PCs
-        const filteredPCs = new Set(filtered.map(n => ((n % 12) + 12) % 12));
-        let allValid = true;
-        for (const pc of filteredPCs) {
-          if (composerValidPCs.size > 0 && !composerValidPCs.has(pc)) {
-            allValid = false;
-            break;
-          }
-        }
-        if (allValid) {
-          candidateNotes = filtered;
-        }
-        // If HarmonicContext filter would introduce invalid PCs, skip it
-      }
-    }
-  }
+  const candidateNotes = playMotifsBuildCandidateNotes(unit, resolvedNote, composerValidPCs);
 
   // Per-unit VoiceManager: maintain separate voice histories per unit level
   // so subdiv voice-leading doesn't pollute beat-level motion.
@@ -254,44 +149,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     playedGroupIndices.set(bucketEntry.groupId, [bucketEntry.seqIndex]);
   }
 
-  // Update cycle tracking and apply transformations when cycles complete
-  for (const [groupId, indices] of playedGroupIndices) {
-    const tracking = cycleTracker.get(groupId);
-    if (!tracking) continue;
-
-    for (const idx of indices) tracking.playedIndices.add(idx);
-
-    // Check if cycle completed (all indices 0..seqLen-1 have been played)
-    if (tracking.playedIndices.size >= tracking.seqLen) {
-      tracking.cycleCount++;
-      tracking.playedIndices.clear();
-
-      // Apply transformations to cloned copies of group entries (preserve originals in bucket)
-      const groupEntries = bucket.filter(e => e.groupId === groupId).map(e => /** @type {any} */ (playMotifs)._cloneBucketEntry(e));
-      if (groupEntries.length > 0) {
-        if (rf() < 0.05) {
-          // No transformation - use entries as-is
-        } else {
-          try {
-            // Select and apply random transformations using MotifTransforms
-            const transforms = MotifTransforms.selectRandom(groupEntries.length);
-            MotifTransforms.applyAll(groupEntries, transforms);
-          } catch (e) {
-            throw new Error(`playMotifs: transformation failed for groupId ${groupId}: ${e && e.message ? e.message : e}`);
-          }
-        }
-
-        // Non-destructive: preserve originals, write transforms to working copy
-        // The bucket entries stay pristine; a _workingOverrides map stores
-        // transformed values keyed by `${groupId}:${seqIndex}`.
-        if (!layer._workingOverrides) layer._workingOverrides = new Map();
-        for (let i = 0; i < groupEntries.length; i++) {
-          const ge = groupEntries[i];
-          layer._workingOverrides.set(`${ge.groupId}:${ge.seqIndex}`, ge.note);
-        }
-      }
-    }
-  }
+  playMotifsApplyCycleTransforms(layer, bucket, playedGroupIndices, cycleTracker, /** @type {any} */ (playMotifs)._cloneBucketEntry);
 
   // Filter duplicate notes only within this unit call (do not gate later subunits in same beat)
   const seenNotesThisUnit = new Set();

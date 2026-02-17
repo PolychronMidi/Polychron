@@ -1,0 +1,118 @@
+// harmonicJourneyHelpers.js - shared theory helpers for HarmonicJourney
+
+harmonicJourneyHelpers = (() => {
+  const CLOSE_MOVES = [
+    (key, mode) => ({ key: t.Note.transpose(key, 'P5'), mode, move: 'fifth-up' }),
+    (key, mode) => ({ key: t.Note.transpose(key, 'P4'), mode, move: 'fourth-up' }),
+    (key, mode) => {
+      if (mode === 'major' || mode === 'ionian') {
+        return { key: t.Note.transpose(key, 'm3').replace(/\d+$/, ''), mode: 'minor', move: 'relative-minor' };
+      }
+      return { key: t.Note.transpose(key, 'M3').replace(/\d+$/, ''), mode: 'major', move: 'relative-major' };
+    },
+  ];
+
+  const MODERATE_MOVES = [
+    (key, mode) => {
+      const parallelModes = {
+        major: ['dorian', 'mixolydian', 'lydian'],
+        minor: ['dorian', 'phrygian', 'aeolian'],
+        dorian: ['major', 'minor', 'mixolydian'],
+        mixolydian: ['major', 'dorian', 'lydian'],
+        lydian: ['major', 'mixolydian', 'ionian'],
+        phrygian: ['minor', 'dorian', 'aeolian'],
+        aeolian: ['minor', 'dorian', 'phrygian'],
+        locrian: ['minor', 'phrygian', 'aeolian'],
+        ionian: ['dorian', 'mixolydian', 'lydian'],
+      };
+      const options = parallelModes[mode] || ['major', 'minor'];
+      const newMode = options[ri(options.length - 1)];
+      return { key, mode: newMode, move: `parallel-${newMode}` };
+    },
+    (key, mode) => ({ key: t.Note.transpose(key, 'M2'), mode, move: 'step-up' }),
+    (key, mode) => ({ key: t.Note.transpose(key, 'M2').replace(/\d+$/, ''), mode, move: 'step-down' }),
+  ];
+
+  const BOLD_MOVES = [
+    (key, mode) => ({ key: t.Note.transpose(key, 'M3'), mode, move: 'chromatic-mediant-up' }),
+    (key, mode) => ({ key: t.Note.transpose(key, 'm3'), mode, move: 'chromatic-mediant-down' }),
+    (key, mode) => ({ key: t.Note.transpose(key, 'A4'), mode, move: 'tritone-sub' }),
+    (key, mode) => {
+      const flipped = (mode === 'major' || mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian') ? 'minor' : 'major';
+      return { key: t.Note.transpose(key, 'm3'), mode: flipped, move: 'mediant-flip' };
+    },
+  ];
+
+  const L2_RELATIONSHIPS = [
+    (key, mode) => ({ key, mode, relationship: 'unison' }),
+    (key, mode) => {
+      const alt = (mode === 'major' || mode === 'ionian') ? 'minor' : 'major';
+      return { key, mode: alt, relationship: 'parallel' };
+    },
+    (key, mode) => {
+      if (mode === 'major' || mode === 'ionian') {
+        return { key: t.Note.transpose(key, 'm3'), mode: 'minor', relationship: 'relative' };
+      }
+      return { key: t.Note.transpose(key, 'M3'), mode: 'major', relationship: 'relative' };
+    },
+    (key, mode) => ({ key: t.Note.transpose(key, 'P5'), mode, relationship: 'dominant' }),
+    (key, mode) => ({ key: t.Note.transpose(key, 'P4'), mode, relationship: 'subdominant' }),
+  ];
+
+  const modeToQuality = {
+    major: 'major', ionian: 'major', lydian: 'major', mixolydian: 'major',
+    minor: 'minor', aeolian: 'minor', dorian: 'minor', phrygian: 'minor', locrian: 'minor'
+  };
+
+  const harmonicDistance = (from, to) => {
+    const noteA = t.Note.get(from);
+    const noteB = t.Note.get(to);
+    if (noteA.empty || noteB.empty || !noteA.coord || !noteB.coord) return 0;
+    const diff = Math.abs(noteA.coord[0] - noteB.coord[0]);
+    const circleDist = diff % 12;
+    return Math.min(circleDist, 12 - circleDist);
+  };
+
+  const getSectionPhase = (sectionIndex, totalSections) => {
+    if (totalSections <= 0) return 'development';
+    const pos = sectionIndex / totalSections;
+    if (pos < 0.2) return 'opening';
+    if (pos < 0.55) return 'development';
+    if (pos < 0.8) return 'climax';
+    return 'resolution';
+  };
+
+  const getMovePoolForPhase = (phase) => {
+    switch (phase) {
+      case 'opening':    return CLOSE_MOVES;
+      case 'resolution': return [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)];
+      case 'development': return [...CLOSE_MOVES, ...MODERATE_MOVES];
+      case 'climax':     return [...MODERATE_MOVES, ...BOLD_MOVES];
+      default:           return CLOSE_MOVES;
+    }
+  };
+
+  const resolveScaleAndQuality = (key, mode) => {
+    const scaleName = `${key} ${mode}`;
+    const scaleData = t.Scale.get(scaleName);
+    const scaleNotes = (scaleData && Array.isArray(scaleData.notes) && scaleData.notes.length > 0)
+      ? scaleData.notes
+      : t.Scale.get(`${key} major`).notes;
+    return {
+      scaleNotes,
+      quality: modeToQuality[mode] || 'major'
+    };
+  };
+
+  const api = {
+    harmonicDistance,
+    getSectionPhase,
+    getMovePoolForPhase,
+    getL2Relationships: () => L2_RELATIONSHIPS,
+    resolveScaleAndQuality
+  };
+
+  return function harmonicJourneyHelpers() {
+    return api;
+  };
+})();

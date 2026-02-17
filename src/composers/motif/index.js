@@ -24,6 +24,12 @@ require('./MotifTransforms');
 // @ts-ignore: load side-effect module with globals
 require('./CandidateExpansion');
 // @ts-ignore: load side-effect module with globals
+require('./playMotifsResolveBucket');
+// @ts-ignore: load side-effect module with globals
+require('./playMotifsBuildCandidateNotes');
+// @ts-ignore: load side-effect module with globals
+require('./playMotifsApplyCycleTransforms');
+// @ts-ignore: load side-effect module with globals
 require('./playMotifs');
 
 // Register default generator wrapper

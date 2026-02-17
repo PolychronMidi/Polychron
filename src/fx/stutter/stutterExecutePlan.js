@@ -1,0 +1,145 @@
+// stutterExecutePlan.js - shared executor for StutterManager plan objects
+
+stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
+  if (!stutterMgr || typeof stutterMgr !== 'object') throw new Error('stutterExecutePlan: stutterMgr is required');
+  const cfg = /** @type {any} */ (Object.assign({}, plan));
+  const profile = cfg.profile || 'source';
+  const baseNote = Number.isFinite(Number(cfg.note)) ? Number(cfg.note) : null;
+  if (!Number.isFinite(baseNote)) throw new Error('stutterExecutePlan: plan.note (base MIDI note) is required');
+  const on = Number.isFinite(Number(cfg.on)) ? Number(cfg.on) : (typeof beatStart !== 'undefined' ? Number(beatStart) : 0);
+  const sustain = Number.isFinite(Number(cfg.sustain)) ? Number(cfg.sustain) : tpSec * 0.25;
+  const numStutters = Number.isFinite(Number(cfg.numStutters)) ? Number(cfg.numStutters) : m.max(1, ri(2, 6));
+  const duration = Number.isFinite(Number(cfg.duration)) ? Number(cfg.duration) : Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1));
+
+  const finalChannels = /** @type {number[]} */ ([]);
+  if (Array.isArray(cfg.channels) && cfg.channels.length > 0) {
+    finalChannels.push(.../** @type {number[]} */ (cfg.channels.slice()));
+  } else if (profile === 'reflection') {
+    finalChannels.push(...(typeof reflection !== 'undefined' ? /** @type {number[]} */ (reflection.slice()) : /** @type {number[]} */ ([])));
+  } else if (profile === 'bass') {
+    finalChannels.push(...(typeof bass !== 'undefined' ? /** @type {number[]} */ (bass.slice()) : /** @type {number[]} */ ([])));
+  } else {
+    finalChannels.push(...(typeof source !== 'undefined' ? /** @type {number[]} */ (source.slice()) : /** @type {number[]} */ ([])));
+  }
+
+  const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
+    ? StutterConfig.getCrossModRules()
+    : { pan: { stutterProbScale: 1, shiftRangeBias: 0, stutterRateScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+
+  const directiveDefaults = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getDirectiveDefaults === 'function')
+    ? StutterConfig.getDirectiveDefaults()
+    : { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false }, metricsAdaptive: { enabled: false, sensitivity: 0.08 } };
+  const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
+  if (cfg.preset && typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getPreset === 'function') {
+    const preset = StutterConfig.getPreset(cfg.preset);
+    if (preset && typeof preset === 'object') Object.assign(directive, preset);
+  }
+
+  let adaptiveCrossRules = null;
+  if (directive.metricsAdaptive && directive.metricsAdaptive.enabled && typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.getMetrics === 'function') {
+    try {
+      const metrics = StutterMetrics.getMetrics();
+      const sens = Number.isFinite(Number(directive.metricsAdaptive.sensitivity)) ? Number(directive.metricsAdaptive.sensitivity) : 0.08;
+      const adj = Object.assign({}, crossRules);
+      ['source', 'reflection', 'bass'].forEach((p) => {
+        const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
+        const scheduled = metrics.scheduledByProfile && metrics.scheduledByProfile[p] ? metrics.scheduledByProfile[p] : 1;
+        const ratio = emitted / Math.max(1, scheduled);
+        if (ratio > 0.8 && adj.pan) {
+          adj.pan.stutterRateScale = clamp(adj.pan.stutterRateScale + (ratio - 0.8) * sens, 0.8, 3);
+        }
+      });
+      adaptiveCrossRules = adj;
+    } catch { adaptiveCrossRules = null; }
+  }
+
+  const prevCoherenceKey = (stutterMgr.beatContext && stutterMgr.beatContext.coherenceKey) ? stutterMgr.beatContext.coherenceKey : null;
+  if (directive.coherence && directive.coherence.enabled) {
+    if (!stutterMgr.beatContext) stutterMgr.beatContext = {};
+    const prefix = directive.coherence.keyPrefix || 'stutter';
+    const seedPart = cfg.coherenceGroup || cfg.coherenceKey || cfg.id || 'plan';
+    stutterMgr.beatContext.coherenceKey = `${prefix}:${seedPart}`;
+  }
+
+  const leftCHs = (typeof lCH1 !== 'undefined') ? [lCH1, lCH2, lCH3, lCH4, lCH5, lCH6].filter(Number.isFinite) : [];
+  const rightCHs = (typeof rCH1 !== 'undefined') ? [rCH1, rCH2, rCH3, rCH4, rCH5, rCH6].filter(Number.isFinite) : [];
+
+  const evalCurve = (curve, t) => {
+    if (!curve) return undefined;
+    const tn = Number(t);
+    if (typeof curve === 'function') return Number(curve(tn));
+    if (Array.isArray(curve) && curve.length > 0) {
+      const n = curve.length;
+      const pos = clamp(tn * (n - 1), 0, n - 1);
+      const idx = m.floor(pos);
+      const frac = pos - idx;
+      const a = Number(curve[idx]) || 0;
+      const b = Number(curve[m.min(idx + 1, n - 1)]) || a;
+      return lerp(a, b, frac);
+    }
+    if (typeof curve === 'string') {
+      switch (curve) {
+        case 'linear': return 1;
+        case 'accelerando': return 1 + Number(tn);
+        case 'decelerando': return 1 + (1 - Number(tn));
+        case 'sine': return 1 + Math.sin(2 * Math.PI * Number(tn)) * 0.25;
+        case 'pingpong': {
+          const frac = Number(tn) - m.floor(Number(tn));
+          return Math.abs((2 * frac) - 1);
+        }
+        case 'oscillate': return 0.5 + 0.5 * Math.sin(2 * Math.PI * Number(tn));
+        default: return Number(curve) || 1;
+      }
+    }
+    return undefined;
+  };
+
+  const effectiveCrossRules = adaptiveCrossRules || crossRules;
+  const baseStepPeriod = duration / m.max(1, Number(numStutters));
+  for (let i = 0; i < numStutters; i++) {
+    const tNorm = numStutters > 1 ? i / (numStutters - 1) : 0;
+    const rateCurveVal = evalCurve(directive.rateCurve || cfg.rateCurve, tNorm) || 1;
+    const phaseCurveVal = evalCurve(directive.phaseCurve || cfg.phaseCurve, tNorm) || undefined;
+
+    for (const ch of /** @type {any[]} */ (finalChannels)) {
+      try {
+        const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');
+
+        let basePhaseFraction = 0;
+        const srcPhase = (directive.phase || cfg.phase);
+        if (srcPhase !== undefined && srcPhase !== null) {
+          if (Number.isFinite(Number(srcPhase))) basePhaseFraction = clamp(Number(srcPhase), 0, 1);
+          else if (typeof srcPhase === 'object') {
+            if (side === 'left' && Number.isFinite(Number(srcPhase.left))) basePhaseFraction = clamp(Number(srcPhase.left), 0, 1);
+            else if (side === 'right' && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp(Number(srcPhase.right), 0, 1);
+            else if (Number.isFinite(Number(srcPhase.center))) basePhaseFraction = clamp(Number(srcPhase.center), 0, 1);
+            else if (Number.isFinite(Number(srcPhase.left)) && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp((Number(srcPhase.left) + Number(srcPhase.right)) / 2, 0, 1);
+          }
+        }
+
+        const phaseFraction = Number.isFinite(Number(phaseCurveVal)) ? clamp(phaseCurveVal, 0, 1) * basePhaseFraction : basePhaseFraction;
+
+        const chMod = (stutterMgr.beatContext && stutterMgr.beatContext.mod && stutterMgr.beatContext.mod[ch]) ? stutterMgr.beatContext.mod[ch] : null;
+        const panAbs = (chMod && typeof chMod.pan === 'number') ? m.abs(chMod.pan) : 0;
+        const rateScale = (effectiveCrossRules && effectiveCrossRules.pan && Number.isFinite(Number(effectiveCrossRules.pan.stutterRateScale)))
+          ? (1 + panAbs * (Number(effectiveCrossRules.pan.stutterRateScale) - 1))
+          : 1;
+
+        const jitter = rf(.92, 1.08);
+        const stepPeriodScaled = (baseStepPeriod / Math.max(0.01, Number(rateCurveVal))) / Math.max(0.01, rateScale);
+        const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
+
+        stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity || 100, binVel: cfg.maxVelocity || 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
+      } catch { /* ignore per-channel errors */ }
+    }
+  }
+
+  if (prevCoherenceKey !== null) {
+    stutterMgr.beatContext.coherenceKey = prevCoherenceKey;
+  } else if (stutterMgr.beatContext && stutterMgr.beatContext.coherenceKey && (cfg.coherenceKey || cfg.coherenceGroup || cfg.coherent)) {
+    delete stutterMgr.beatContext.coherenceKey;
+  }
+
+  try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile); } catch { /* ignore */ }
+  return cfg;
+};

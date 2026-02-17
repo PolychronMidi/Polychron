@@ -22,6 +22,10 @@ require('./melodicPriorsData');
 require('./melodicPriors');
 // @ts-ignore: load side-effect module with globals
 require('./VoiceLeadingCore');
+// @ts-ignore: load side-effect module with globals
+require('./voiceLeadingSelectNextNote');
+// @ts-ignore: load side-effect module with globals
+require('./voiceLeadingAnalyzeQuality');
 
 // Core components
 // @ts-ignore: load side-effect module with globals
