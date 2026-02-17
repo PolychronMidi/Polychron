@@ -44,6 +44,16 @@ MotifManager = (function() {
   }
 
   /**
+   * Invalidate a child unit's VoiceManager so it re-seeds from parent on next use.
+   * Called at parent boundaries to ensure child voice-leading stays coherent.
+   */
+  function _resetChildVM(layer, childUnit) {
+    if (layer._voiceManagers && layer._voiceManagers[childUnit]) {
+      delete layer._voiceManagers[childUnit];
+    }
+  }
+
+  /**
    * Plan div-level motifs for the current measure.
    * Derives from beat motifs when available, delegating to MotifSpreader.spreadDivs.
    * Call once per beat-cycle from setUnitTiming('beat').
@@ -52,6 +62,8 @@ MotifManager = (function() {
     const absBeat = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
     const parentBucket = (layer.beatMotifs && Array.isArray(layer.beatMotifs[absBeat]))
       ? layer.beatMotifs[absBeat] : null;
+    // Reset child VM so it re-seeds from beat-level history
+    _resetChildVM(layer, 'div');
     MotifSpreader.spreadDivs({ layer, divsPerBeat: dpb, beats, composer, parentBucket });
   }
 
@@ -62,6 +74,7 @@ MotifManager = (function() {
    */
   function planSubdivs(layer, absDivIdx, sPerDiv) {
     if (!Number.isFinite(Number(sPerDiv)) || Number(sPerDiv) <= 0) return;
+    _resetChildVM(layer, 'subdiv');
     const profile = config.getUnitProfile('subdiv');
     MotifSpreader.spreadSubunits({ layer, unit: 'subdiv', parentIndex: absDivIdx, count: Number(sPerDiv), bucketKey: 'subdivMotifs', parentBucketKey: 'divMotifs', profile });
   }
@@ -73,6 +86,7 @@ MotifManager = (function() {
    */
   function planSubsubdivs(layer, absSubdivIdx, ssPerSub) {
     if (!Number.isFinite(Number(ssPerSub)) || Number(ssPerSub) <= 0) return;
+    _resetChildVM(layer, 'subsubdiv');
     const profile = config.getUnitProfile('subsubdiv');
     MotifSpreader.spreadSubunits({ layer, unit: 'subsubdiv', parentIndex: absSubdivIdx, count: Number(ssPerSub), bucketKey: 'subsubdivMotifs', parentBucketKey: 'subdivMotifs', profile });
   }

@@ -70,6 +70,27 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     throw new Error(`${unit}.playNotes: combined profile velocity scale must be a positive finite number`);
   }
   velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
+
+  // Apply unit-level velocity scaling from motifConfig hierarchy
+  // (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 — finer units play softer)
+  if (typeof motifConfig !== 'undefined' && motifConfig && typeof motifConfig.getUnitProfile === 'function') {
+    const unitProfile = motifConfig.getUnitProfile(unit);
+    if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
+      velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
+    }
+  }
+
+  // Apply voiceConfig profile for additional velocity shaping
+  if (typeof voiceConfig !== 'undefined' && voiceConfig && typeof voiceConfig.getProfile === 'function') {
+    try {
+      const vcProfile = voiceConfig.getProfile('default');
+      if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
+        // Blend configured base with computed velocity (30% config influence)
+        velocity = m.max(1, m.min(127, m.round(velocity * 0.7 + vcProfile.baseVelocity * 0.3)));
+      }
+    } catch { /* no profile available — use velocity as-is */ }
+  }
+
   const binVel = rv(velocity * rf(.4, .9));
 
   let scheduled = 0;
@@ -137,6 +158,15 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
 
+  // Apply voiceModulator to get per-pick velocity distribution
+  // This gives each voice a slightly different velocity for natural ensemble feel
+  if (typeof voiceModulator !== 'undefined' && voiceModulator && typeof voiceModulator.distribute === 'function' && Array.isArray(picks) && picks.length > 0) {
+    const distributed = voiceModulator.distribute(picks.map(p => p.note), { baseVelocity: velocity });
+    for (let di = 0; di < m.min(distributed.length, picks.length); di++) {
+      if (Number.isFinite(distributed[di].velocity)) picks[di]._distributedVelocity = distributed[di].velocity;
+    }
+  }
+
   // Enforce per-layer, per-unit remaining voice slots — trim picks if necessary
   try {
     if (Array.isArray(picks) && picks.length > 0) {
@@ -181,46 +211,21 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         }
       }
 
+      // Per-pick velocity modifier from voiceModulator distribution (ensemble feel)
+      const pickVelScale = (s._distributedVelocity && Number.isFinite(s._distributedVelocity))
+        ? clamp(s._distributedVelocity / m.max(1, velocity), 0.5, 1.5)
+        : 1;
+
       // Source channels — stereo mirror of the pick
       const activeSourceChannels = source.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
       for (let sci = 0; sci < activeSourceChannels.length; sci++) {
         const sourceCH = activeSourceChannels[sci];
         const isPrimary = sourceCH === cCH1;
         const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
-        const baseOnVel = isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03);
+        const baseOnVel = (isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03)) * pickVelScale;
           const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
         const sourceNoiseBase = baseOnVel * (1 - 0.12 * noiseInfluence);
-
-        // per-channel stutter/coherence adjustments (from beatContext.mod via Stutter)
-        const chMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.mod && Stutter.beatContext.mod[sourceCH])
-          ? Stutter.beatContext.mod[sourceCH]
-          : null;
-        const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
-          ? StutterConfig.getCrossModRules()
-          : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
-        let perProbScale = 1;
-        let velocityScaleBias = 0;
-        if (chMod) {
-          if (typeof chMod.pan === 'number') {
-            const panAbs = m.abs(chMod.pan);
-            perProbScale *= (1 + (crossRules.pan.stutterProbScale - 1) * panAbs);
-          }
-          if (typeof chMod.fade === 'number') {
-            velocityScaleBias += (crossRules.fade.velocityScaleBias || 0) * chMod.fade;
-          }
-          if (typeof chMod.fx === 'number') {
-            // fx currently only influences shift-range in stutterNotes; leave perProbScale unchanged for now
-            perProbScale *= (crossRules.fx && crossRules.fx.shiftRangeScale) ? 1 : 1;
-          }
-        }
-
-        const profileCfgSrc = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
-          ? StutterConfig.getProfileConfig('source')
-          : { perProb: 1 };
-        const perProbScaledSrc = clamp((profileCfgSrc.perProb || 0) * perProbScale, 0, 1);
-
-        const onVelBase = applyNoiseToVelocity(sourceNoiseBase, sourceVoiceId, currentTime, 'subtle');
-        const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, 127);
+        const { perProbScaled: perProbScaledSrc, onVel } = getChannelCoherence(sourceCH, 'source', sourceNoiseBase, sourceVoiceId, currentTime);
 
         const applySelectedShiftToSource = isPrimary && selectedShift !== 0 && rf() < perProbScaledSrc;
         const noteToEmit = applySelectedShiftToSource
@@ -239,39 +244,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const reflectionCH = activeReflectionChannels[rci];
         const isPrimary = reflectionCH === cCH2;
         const onTick = isPrimary ? on + rv(tpUnit * rf(.2), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-        const baseOnVel = isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1);
+        const baseOnVel = (isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1)) * pickVelScale;
         const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
         const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
-
-        // per-channel coherence adjustments (use Stutter.beatContext.mod when available)
-        const reflMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.mod && Stutter.beatContext.mod[reflectionCH])
-          ? Stutter.beatContext.mod[reflectionCH]
-          : null;
-        const crossRulesRefl = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
-          ? StutterConfig.getCrossModRules()
-          : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
-        let perProbScaleRefl = 1;
-        let velocityScaleBiasRefl = 0;
-        if (reflMod) {
-          if (typeof reflMod.pan === 'number') {
-            const panAbs = m.abs(reflMod.pan);
-            perProbScaleRefl *= (1 + (crossRulesRefl.pan.stutterProbScale - 1) * panAbs);
-          }
-          if (typeof reflMod.fade === 'number') {
-            velocityScaleBiasRefl += (crossRulesRefl.fade.velocityScaleBias || 0) * reflMod.fade;
-          }
-          if (typeof reflMod.fx === 'number') {
-            perProbScaleRefl *= (crossRulesRefl.fx && crossRulesRefl.fx.shiftRangeScale) ? 1 : 1;
-          }
-        }
-
-        const profileCfgRefl = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
-          ? StutterConfig.getProfileConfig('reflection')
-          : { perProb: 1 };
-        const perProbScaledRefl = clamp((profileCfgRefl.perProb || 0) * perProbScaleRefl, 0, 1);
-
-        const onVelBaseRefl = applyNoiseToVelocity(reflectionNoiseBase, reflectionVoiceId, currentTime, 'subtle');
-        const onVelRefl = clamp(m.round(onVelBaseRefl * (1 + velocityScaleBiasRefl)), 1, 127);
+        const { perProbScaled: perProbScaledRefl, onVel: onVelRefl } = getChannelCoherence(reflectionCH, 'reflection', reflectionNoiseBase, reflectionVoiceId, currentTime);
 
         // Apply stutter to a *subset* of reflection channels when selected by Stutter's beatContext
         const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
@@ -295,39 +271,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
 
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-          const onVelRaw = isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5);
+          const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
           const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
           const bassNoiseBase = onVelRaw * (1 - 0.08 * noiseInfluence);
-
-          // per-channel coherence adjustments for bass
-          const bassMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.mod && Stutter.beatContext.mod[bassCH])
-            ? Stutter.beatContext.mod[bassCH]
-            : null;
-          const crossRulesBass = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
-            ? StutterConfig.getCrossModRules()
-            : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
-          let perProbScaleBass = 1;
-          let velocityScaleBiasBass = 0;
-          if (bassMod) {
-            if (typeof bassMod.pan === 'number') {
-              const panAbs = m.abs(bassMod.pan);
-              perProbScaleBass *= (1 + (crossRulesBass.pan.stutterProbScale - 1) * panAbs);
-            }
-            if (typeof bassMod.fade === 'number') {
-              velocityScaleBiasBass += (crossRulesBass.fade.velocityScaleBias || 0) * bassMod.fade;
-            }
-            if (typeof bassMod.fx === 'number') {
-              perProbScaleBass *= (crossRulesBass.fx && crossRulesBass.fx.shiftRangeScale) ? 1 : 1;
-            }
-          }
-
-          const profileCfgBass = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getProfileConfig === 'function')
-            ? StutterConfig.getProfileConfig('bass')
-            : { perProb: 1 };
-          const perProbScaledBass = clamp((profileCfgBass.perProb || 0) * perProbScaleBass, 0, 1);
-
-          const onVelBaseBass = applyNoiseToVelocity(bassNoiseBase, bassVoiceId, currentTime, 'subtle');
-          const onVel = clamp(m.round(onVelBaseBass * (1 + velocityScaleBiasBass)), 1, 127);
+          const { perProbScaled: perProbScaledBass, onVel } = getChannelCoherence(bassCH, 'bass', bassNoiseBase, bassVoiceId, currentTime);
 
           // Apply stutter octave shift to a small subset of bass channels when selected
           const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));

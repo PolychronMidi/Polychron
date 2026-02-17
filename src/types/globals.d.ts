@@ -117,6 +117,7 @@ declare var StutterConfig: any;
 declare var noteCascade: any;
 declare var normalizeChordSymbol: any;
 declare var writeDebugFile: any;
+declare var getChannelCoherence: any;
 declare var playNotes: any;
 declare var microUnitAttenuator: any;
 declare var BINAURAL: any;

@@ -12,7 +12,7 @@ MotifChain = (() => {
    * @throws {Error} if motif is invalid
    */
   function setActive(motif) {
-    if (!motif || typeof motif.transpose !== 'function') {
+    if (!motif || typeof motif.rotate !== 'function') {
       throw new Error('MotifChain.setActive: motif must be a Motif instance with transform methods');
     }
     activeMotif = motif;
@@ -125,6 +125,7 @@ MotifChain = (() => {
     // Pick random mutation type
     const mutations = [];
     mutations.push(() => addTransform('transpose', ri(...transposeRange)));
+    mutations.push(() => addTransform('rotate', ri(...transposeRange)));
     if (allowInvert) mutations.push(() => addTransform('invert'));
     if (allowReverse) mutations.push(() => addTransform('reverse'));
     if (allowAugment) mutations.push(() => addTransform('augment', rf(...augmentRange)));

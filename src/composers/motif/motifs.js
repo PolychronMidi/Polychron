@@ -52,26 +52,31 @@ Motif = class Motif {
   }
 
   /**
-   * Reorder motif by rotating sequence (no pitch changes). Legacy name for rotation.
-   * @param {number} steps
+   * Transpose all note pitches by the given number of semitones.
+   * @param {number} semitones - Semitones to shift (positive = up, negative = down)
    * @returns {this}
    */
-  transpose(steps = 0) {
+  transpose(semitones = 0) {
+    const shift = m.round(semitones);
+    if (shift === 0) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
+    return /** @type {this} */ (new Motif(this.sequence.map(({ note, duration }) => ({
+      note: clampMotifNote(note + shift),
+      duration
+    })), { defaultDuration: this.defaultDuration }));
+  }
+
+  /**
+   * Rotate motif order by shifting sequence positions (no pitch changes).
+   * @param {number} steps - Positions to rotate (wraps around)
+   * @returns {this}
+   */
+  rotate(steps = 0) {
     const len = this.sequence.length;
     if (len <= 1) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
     const shift = ((m.round(steps) % len) + len) % len;
     if (shift === 0) return /** @type {this} */ (new Motif(this.sequence, { defaultDuration: this.defaultDuration }));
     const rotated = this.sequence.slice(-shift).concat(this.sequence.slice(0, len - shift));
     return /** @type {this} */ (new Motif(rotated, { defaultDuration: this.defaultDuration }));
-  }
-
-  /**
-   * Rotate motif order (alias for transpose).
-   * @param {number} steps
-   * @returns {this}
-   */
-  rotate(steps = 0) {
-    return this.transpose(steps);
   }
 
   /**
@@ -141,7 +146,7 @@ Motif = class Motif {
     } = options;
     let next = this;
     if (transposeBy !== 0) {
-      next = next.transpose(transposeBy);
+      next = next.rotate(transposeBy);
     }
     if (invertPivot !== false) {
       next = next.invert(invertPivot);
@@ -158,11 +163,11 @@ Motif = class Motif {
   /**
    * Apply motif as a permutation: reorder input notes according to motif sequence order.
    * Matches input notes to motif events by pitch class, preserving octaves.
-   * Strictly enforces that motif and input have same pitch class multiset.
+   * When exact PC matches aren't available, falls back to nearest available PC
+   * (by chromatic distance) to maximise applicability across composer changes.
    * @param {{note:number}[]} notes - Input notes to permute
    * @param {{clampMin?:number,clampMax?:number}} [options]
    * @returns {{note:number}[]}
-   * @throws {Error} if motif sequence PCs don't match input note PCs
    */
   applyToNotes(notes = [], options = {}) {
     if (!Array.isArray(notes)) {
@@ -174,67 +179,54 @@ Motif = class Motif {
 
     const { clampMin = 0, clampMax = 127 } = options;
 
-    // Extract pitch numbers from input notes (allow plain numbers or {note:number}) and validate
+    // Extract pitch numbers from input notes (allow plain numbers or {note:number})
     const inputNotes = notes.map((n, idx) => {
       if (typeof n === 'number') return n;
       if (n && typeof n.note === 'number' && Number.isFinite(n.note)) return n.note;
       throw new Error(`Motif.applyToNotes: invalid input note at index ${idx}; expected number or {note:number} - got ${JSON.stringify(n)}`);
     });
-    const inputPCs = inputNotes.map(note => ((note % 12) + 12) % 12);
 
-    // Extract pitch classes from motif sequence
-    const motifPCs = this.sequence.map(evt => ((evt.note % 12) + 12) % 12);
-
-    // Validate that motif and input have same pitch class multiset
-    const inputPCCounts = new Map();
-    for (const pc of inputPCs) {
-      inputPCCounts.set(pc, (inputPCCounts.get(pc) ?? 0) + 1);
-    }
-
-    const motifPCCounts = new Map();
-    for (const pc of motifPCs) {
-      motifPCCounts.set(pc, (motifPCCounts.get(pc) ?? 0) + 1);
-    }
-
-    // Check counts match
-    if (inputPCCounts.size !== motifPCCounts.size) {
-      const inputPCList = Array.from(inputPCCounts.keys()).sort((a, b) => a - b);
-      const motifPCList = Array.from(motifPCCounts.keys()).sort((a, b) => a - b);
-      throw new Error(`Motif.applyToNotes: pitch class mismatch. Input PCs: ${inputPCList.join(',')}, motif PCs: ${motifPCList.join(',')}`);
-    }
-    for (const [pc, count] of motifPCCounts) {
-      if ((inputPCCounts.get(pc) ?? 0) !== count) {
-        throw new Error(`Motif.applyToNotes: PC ${pc} count mismatch. Input has ${inputPCCounts.get(pc) ?? 0}, motif requires ${count}`);
-      }
-    }
-
-    // Build pool of input notes by PC (allows reuse per motif cycle)
+    // Build pool of available input notes indexed by PC
     const notesByPC = new Map();
     for (let i = 0; i < inputNotes.length; i++) {
-      const pc = inputPCs[i];
+      const pc = ((inputNotes[i] % 12) + 12) % 12;
       if (!notesByPC.has(pc)) notesByPC.set(pc, []);
       notesByPC.get(pc).push(i);
     }
 
-    // For each motif event, consume a note with matching PC
-    const result = [];
     const consumedIndices = new Set();
+    const result = [];
 
     for (let motifIdx = 0; motifIdx < this.sequence.length; motifIdx++) {
-      const motifPC = motifPCs[motifIdx];
-      const availableIndices = (notesByPC.get(motifPC) ?? []).filter(idx => !consumedIndices.has(idx));
+      const motifPC = ((this.sequence[motifIdx].note % 12) + 12) % 12;
 
+      // Try exact PC match first
+      let availableIndices = (notesByPC.get(motifPC) || []).filter(idx => !consumedIndices.has(idx));
+
+      // Fallback: find nearest available PC by chromatic distance
       if (availableIndices.length === 0) {
-        throw new Error(`Motif.applyToNotes: no available input note with PC ${motifPC} for motif position ${motifIdx}`);
+        let bestDist = 13;
+        let bestPC = -1;
+        for (const [pc, indices] of notesByPC) {
+          if (indices.some(idx => !consumedIndices.has(idx))) {
+            const d = m.min(m.abs(pc - motifPC), 12 - m.abs(pc - motifPC));
+            if (d < bestDist) { bestDist = d; bestPC = pc; }
+          }
+        }
+        if (bestPC >= 0) availableIndices = notesByPC.get(bestPC).filter(idx => !consumedIndices.has(idx));
       }
 
-      // Use first available note with matching PC (try to preserve order when possible)
+      // Last resort: reuse any unconsumed note (or first note)
+      if (availableIndices.length === 0) {
+        const anyIdx = inputNotes.findIndex((_, i) => !consumedIndices.has(i));
+        const fallbackIdx = anyIdx >= 0 ? anyIdx : 0;
+        result.push({ note: clampMotifNote(inputNotes[fallbackIdx], clampMin, clampMax) });
+        continue;
+      }
+
       const inputIdx = availableIndices[0];
       consumedIndices.add(inputIdx);
-
-      const inputNote = inputNotes[inputIdx];
-      const outputNote = clampMotifNote(inputNote, clampMin, clampMax);
-      result.push({ note: outputNote });
+      result.push({ note: clampMotifNote(inputNotes[inputIdx], clampMin, clampMax) });
     }
 
     return result;

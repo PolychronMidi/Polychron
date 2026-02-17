@@ -7,34 +7,39 @@
  * DESIGN RATIONALE:
  * VoiceManager requires sufficient candidates for effective voice-leading optimization.
  * When motif buckets provide single notes, this helper expands the pool by adding
- * scale-aware neighbors (±12 semitones) that match the composer's pitch-class set.
- * This preserves harmonic coherence while giving the voice module enough options
- * to apply smooth motion, leap recovery, and voice spacing constraints.
+ * scale-aware neighbors that match the composer's pitch-class set.
+ * Expansion radius adapts per unit level: beats expand wider (±24) for open voicings,
+ * while subsubdivs stay narrow (±6) for cluster textures.
  */
 CandidateExpansion = {
+  /** Expansion radius (semitones) per unit level */
+  _UNIT_RADIUS: { beat: 24, div: 18, subdiv: 12, subsubdiv: 6 },
+
   /**
-   * Expand single note to scale-aware neighbors within ±12 semitones
+   * Expand single note to scale-aware neighbors within adaptive radius
    * @param {number|number[]} baseNotes - MIDI note(s) to expand from
    * @param {Set<number>} validPCs - Pitch classes (0-11) to match, empty Set = no restriction
    * @param {number} minNote - Lower MIDI bound (typically OCTAVE.min * 12 - 1)
    * @param {number} maxNote - Upper MIDI bound (typically OCTAVE.max * 12 - 1)
    * @param {number} [maxCandidates=6] - Limit expansion size
+   * @param {string} [unit='div'] - Unit level for adaptive radius
    * @returns {number[]} Expanded candidate pool
    */
-  expandScaleAware(baseNotes, validPCs, minNote, maxNote, maxCandidates = 6) {
+  expandScaleAware(baseNotes, validPCs, minNote, maxNote, maxCandidates = 6, unit = 'div') {
     if (!Number.isFinite(minNote) || !Number.isFinite(maxNote) || minNote > maxNote) {
       throw new Error(`CandidateExpansion: invalid bounds minNote=${minNote} maxNote=${maxNote}`);
     }
 
+    const radius = this._UNIT_RADIUS[unit] || 12;
     const bases = Array.isArray(baseNotes) ? baseNotes : [baseNotes];
     const expanded = new Set(bases);
 
     for (const baseNote of bases) {
       if (!Number.isFinite(baseNote)) continue;
 
-      // Search ±12 semitones (one octave each direction)
-      for (let delta = -12; delta <= 12; delta++) {
-        if (delta === 0) continue; // Skip base note (already in set)
+      // Search ±radius semitones (adaptive per unit level)
+      for (let delta = -radius; delta <= radius; delta++) {
+        if (delta === 0) continue;
 
         const note = baseNote + delta;
 
