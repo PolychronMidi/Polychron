@@ -279,7 +279,8 @@ def build_profile(counter: Counter, top_n: int = 10) -> Dict:
 
 def to_js_assignment(data: Dict) -> str:
     pretty = json.dumps(data, indent=2)
-    return f"HARMONIC_PRIOR_TABLES = {pretty};\n"
+    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_harmonic_priors.py\n"
+    return f"{header}HARMONIC_PRIOR_TABLES = {pretty};\n"
 
 
 def main() -> None:
@@ -319,12 +320,48 @@ def main() -> None:
         counters["minor"] = seed_fallback_counter("minor")
 
     data = {
-        "version": 1,
+        "version": 2,
         "source": "music21-derived offline harmonic priors",
         "generatedAt": "auto",
         "major": build_profile(counters["major"], top_n=args.top),
         "minor": build_profile(counters["minor"], top_n=args.top),
     }
+
+    # Merge/scale pattern pools for dorian & mixolydian (pattern-based merge, not numeric interp)
+    def _scale_patterns(profile, factor):
+        out = {}
+        for k, pat in profile["patterns"].items():
+            p = dict(pat)
+            if isinstance(p.get("romans"), list):
+                p["romans"] = list(p["romans"])
+            p["baseWeight"] = round(float(p["baseWeight"]) * factor, 3)
+            out[k] = p
+        return out
+
+    def _scale_phase_weights(profile, factor):
+        out = {phase: {} for phase in PHASES}
+        for phase in PHASES:
+            for k, w in profile["phaseWeights"].get(phase, {}).items():
+                out[phase][k] = round(float(w) * factor, 3)
+        return out
+
+    maj = data["major"]
+    minp = data["minor"]
+
+    dorian_patterns = _scale_patterns(minp, 0.6)
+    dorian_patterns.update(_scale_patterns(maj, 0.4))
+    dorian_phase_weights = {}
+    for phase in PHASES:
+        dorian_phase_weights[phase] = {**_scale_phase_weights(minp, 0.6)[phase], **_scale_phase_weights(maj, 0.4)[phase]}
+
+    mixo_patterns = _scale_patterns(maj, 0.6)
+    mixo_patterns.update(_scale_patterns(minp, 0.4))
+    mixo_phase_weights = {}
+    for phase in PHASES:
+        mixo_phase_weights[phase] = {**_scale_phase_weights(maj, 0.6)[phase], **_scale_phase_weights(minp, 0.4)[phase]}
+
+    data["dorian"] = {"patterns": dorian_patterns, "phaseWeights": dorian_phase_weights}
+    data["mixolydian"] = {"patterns": mixo_patterns, "phaseWeights": mixo_phase_weights}
 
     out_path = pathlib.Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)

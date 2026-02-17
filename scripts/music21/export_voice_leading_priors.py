@@ -17,7 +17,7 @@ import argparse
 import json
 import pathlib
 from collections import Counter
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List
 
 from music21 import corpus, note
 
@@ -162,7 +162,8 @@ def build_tendency_weights(tendency_counter: Counter, top_n: int = 28) -> Dict[s
 
 def to_js_assignment(data: Dict) -> str:
     pretty = json.dumps(data, indent=2)
-    return f"VOICE_LEADING_PRIOR_TABLES = {pretty};\n"
+    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_voice_leading_priors.py\n"
+    return f"{header}VOICE_LEADING_PRIOR_TABLES = {pretty};\n"
 
 
 def main() -> None:
@@ -175,6 +176,12 @@ def main() -> None:
     parser.add_argument("--top-tendencies", type=int, default=28, help="Max tendency transitions per quality")
     parser.add_argument("--verbose-every", type=int, default=25, help="Progress print cadence")
     args = parser.parse_args()
+
+    print(
+        f"[music21-vl-export] source={args.source} limit={args.limit} "
+        f"part_limit={args.part_limit} max_notes={args.max_notes_per_part} top={args.top_tendencies}",
+        flush=True,
+    )
 
     counters = {
         "major": {
@@ -258,6 +265,38 @@ def main() -> None:
             "phaseDirectionWeights": build_phase_direction_weights(counters["minor"]["phase_direction"]),
             "tendencyWeights": build_tendency_weights(counters["minor"]["tendency"], top_n=args.top_tendencies),
         },
+    }
+
+    # interpolate/merge to produce dorian & mixolydian tables (60/40 mixes)
+    def _interpolate_nested(a, b, t):
+        out = {}
+        for k in a.keys():
+            av = a[k]
+            bv = b.get(k, av)
+            if isinstance(av, dict) and isinstance(bv, dict):
+                out[k] = _interpolate_nested(av, bv, t)
+            else:
+                out[k] = round(float(av) * (1.0 - t) + float(bv) * t, 3)
+        return out
+
+    def _merge_tendency_weights(a, b, t):
+        out = {}
+        for key in set(list(a.keys()) + list(b.keys())):
+            va = float(a.get(key, 1.0))
+            vb = float(b.get(key, 1.0))
+            out[key] = round(va * (1.0 - t) + vb * t, 3)
+        return out
+
+    data["version"] = 2
+    data["dorian"] = {
+        "phaseIntervalWeights": _interpolate_nested(data["minor"]["phaseIntervalWeights"], data["major"]["phaseIntervalWeights"], 0.4),
+        "phaseDirectionWeights": _interpolate_nested(data["minor"]["phaseDirectionWeights"], data["major"]["phaseDirectionWeights"], 0.4),
+        "tendencyWeights": _merge_tendency_weights(data["minor"]["tendencyWeights"], data["major"]["tendencyWeights"], 0.4),
+    }
+    data["mixolydian"] = {
+        "phaseIntervalWeights": _interpolate_nested(data["major"]["phaseIntervalWeights"], data["minor"]["phaseIntervalWeights"], 0.4),
+        "phaseDirectionWeights": _interpolate_nested(data["major"]["phaseDirectionWeights"], data["minor"]["phaseDirectionWeights"], 0.4),
+        "tendencyWeights": _merge_tendency_weights(data["major"]["tendencyWeights"], data["minor"]["tendencyWeights"], 0.4),
     }
 
     out_path = pathlib.Path(args.output)

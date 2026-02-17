@@ -10,8 +10,8 @@ voiceLeadingPriors = (function() {
    */
 
   const modeToQuality = {
-    ionian: 'major', dorian: 'minor', phrygian: 'minor', lydian: 'major',
-    mixolydian: 'major', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
+    ionian: 'major', dorian: 'dorian', phrygian: 'minor', lydian: 'major',
+    mixolydian: 'mixolydian', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
   };
 
   function normalizeQualityOrNull(input) {

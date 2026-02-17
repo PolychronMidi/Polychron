@@ -89,25 +89,25 @@ GlobalConductor = (() => {
       }
     }
 
-    // 5. Calculate Return Probs (for main.js loop control)
-    const dynScale = DYNAMISM.scaleBase + phraseCtx.dynamism * DYNAMISM.scaleRange;
-    const basePlayProb = phraseCtx.atStart ? DYNAMISM.playProb.start : DYNAMISM.playProb.mid;
+    // 5. Delegate probability calculation to DynamismEngine (single authority)
+    // GlobalConductor provides macro context (motif density, stutter directives above);
+    // DynamismEngine is the sole probability calculator to avoid double-modulation.
+    if (typeof DynamismEngine === 'undefined' || !DynamismEngine || typeof DynamismEngine.resolve !== 'function') {
+      throw new Error('GlobalConductor.update: DynamismEngine.resolve is not available');
+    }
+    const resolved = DynamismEngine.resolve('beat');
 
-    // Stutter prob increases significantly with tension AND excursion
-    const tensionBonus = (harmonicTension * 0.3) + (excursion * 0.05);
-    const baseStutterProb = (phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid) + tensionBonus;
-
+    // Apply climax boost on top of DynamismEngine's output
     if (sectionPhase === 'climax') {
-        // Boost stutter and play probability just slightly in climax to highlight intensity
-        return {
-            playProb: clamp(basePlayProb * dynScale * 1.1, 0, 1),
-            stutterProb: clamp(baseStutterProb * dynScale * 1.2, 0, 1)
-        };
+      return {
+        playProb: clamp(resolved.playProb * 1.1, 0, 1),
+        stutterProb: clamp(resolved.stutterProb * 1.2, 0, 1)
+      };
     }
 
     return {
-      playProb: clamp(basePlayProb * dynScale, 0, 1),
-      stutterProb: clamp(baseStutterProb * dynScale, 0, 1)
+      playProb: resolved.playProb,
+      stutterProb: resolved.stutterProb
     };
   }
 

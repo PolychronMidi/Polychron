@@ -116,7 +116,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     : (typeof LM.activeLayer === 'string' ? Array.from(LM.activeLayer).reduce((sum, ch) => sum + ch.charCodeAt(0), 0) : 0);
   const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + (Number.isFinite(Number(measureCount)) ? Number(measureCount) : 0)); // Deterministic voice ID from context
 
-  const resolved = (typeof DynamismEngine !== 'undefined' && DynamismEngine && typeof DynamismEngine.resolve === 'function')
+  // DynamismEngine is the single probability authority. When probs arrive from
+  // GlobalConductor they are already DynamismEngine-resolved; pass them through
+  // without re-modulating to prevent double-application of the same signals.
+  // Only invoke DynamismEngine directly for sub-beat units (div/subdiv/subsubdiv)
+  // that need per-unit pulse refinement.
+  const needsPerUnitResolve = (unit !== 'beat');
+  const resolved = (needsPerUnitResolve && typeof DynamismEngine !== 'undefined' && DynamismEngine && typeof DynamismEngine.resolve === 'function')
     ? DynamismEngine.resolve(unit, { playProb, stutterProb })
     : { playProb, stutterProb, composite: 0 };
   const resolvedPlayProb = Number(resolved.playProb);

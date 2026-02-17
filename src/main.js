@@ -16,7 +16,37 @@ const composerCtx = {
   stutterMgr: typeof Stutter !== 'undefined' ? Stutter : (() => { throw new Error('main: Stutter not available'); })(),
   eventBus: typeof EventBus !== 'undefined' ? EventBus : (() => { throw new Error('main: EventBus not available'); })(),
   harmonicCtx: typeof HarmonicContext !== 'undefined' ? HarmonicContext : (() => { throw new Error('main: HarmonicContext not available'); })(),
-  motifChain: typeof MotifChain !== 'undefined' ? MotifChain : (() => { throw new Error('main: MotifChain not available'); })()
+  motifChain: typeof MotifChain !== 'undefined' ? MotifChain : (() => { throw new Error('main: MotifChain not available'); })(),
+
+  /**
+   * Context-aware family selection hook: biases family weights by structural phase.
+   * Called from factoryFamilies.resolvePhraseFamilyOrFail when no explicit family is requested.
+   * @param {{availableFamilies: string[], sectionIndex: number|null, phraseIndex: number|null}} info
+   * @returns {string|null} family name or null for default weighted random
+   */
+  selectPhraseFamily({ availableFamilies }) {
+    if (!Array.isArray(availableFamilies) || availableFamilies.length === 0) return null;
+    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      ? (HarmonicContext.getField('sectionPhase') || 'development')
+      : 'development';
+
+    // Phase-based family affinity — return a preferred family when structurally appropriate
+    const phaseAffinity = {
+      intro: 'diatonicCore',
+      opening: 'diatonicCore',
+      development: 'development',
+      climax: 'rhythmicDrive',
+      resolution: 'harmonicMotion',
+      conclusion: 'tonalExploration'
+    };
+    const preferred = phaseAffinity[phase];
+    // Only bias if the preferred family exists; otherwise fall through to weighted random
+    if (preferred && availableFamilies.includes(preferred)) {
+      // 50% chance to lock onto the phase-preferred family; 50% to let weighted random decide
+      if (rf() < 0.5) return preferred;
+    }
+    return null;
+  }
 };
 ComposerFactory.setComposerContext(composerCtx);
 
@@ -199,28 +229,38 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
+      measureCount++;
       selectLayerComposerForMeasure('L2', phraseFamily);
       setUnitTiming('measure');
 
+      // L2 uses GlobalConductor for dynamic probabilities — symmetric with L1
+      const conductorCtxL2 = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
+        ? GlobalConductor.update(measureIndex, -1)
+        : { playProb: 0.5, stutterProb: 0.3 };
 
-      // Get phrase context for L2 dynamism scaling
-      const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)
-        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
-        : { dynamism: 0.7, atStart: false, atEnd: false };
-
-      const dynScale = DYNAMISM.scaleBase + phraseCtx.dynamism * DYNAMISM.scaleRange;
-      const basePlayProb = phraseCtx.atStart ? DYNAMISM.playProb.start : DYNAMISM.playProb.mid;
-      const baseStutterProb = phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid;
-      const playProb = basePlayProb * dynScale;
-      const stutterProb = baseStutterProb * dynScale;
+      let playProb = conductorCtxL2.playProb;
+      let stutterProb = conductorCtxL2.stutterProb;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
+        // Refine context per beat for maximum dynamicism (symmetric with L1)
+        if (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function') {
+          const beatCtxL2 = GlobalConductor.update(measureIndex, beatIndex);
+          playProb = beatCtxL2.playProb;
+          stutterProb = beatCtxL2.stutterProb;
+        }
+
         setUnitTiming('beat');
         setOtherInstruments();
         setBinaural();
         EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2' });
         setBalanceAndFX();
-        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2' });
+        // Apply Stutter default directive for this beat (symmetric with L1)
+        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
+        // Capture FX intensity with full payload (symmetric with L1)
+        const fxStereoPanL2 = typeof balOffset === 'number' ? m.abs(balOffset) / 45 : 0;
+        const fxVelocityShiftL2 = (typeof refVar === 'number' && typeof bassVar === 'number')
+          ? m.abs(refVar + bassVar) / 20 : 0;
+        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2', stereoPan: fxStereoPanL2, velocityShift: fxVelocityShiftL2 });
         playDrums2();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
