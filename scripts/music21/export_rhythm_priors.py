@@ -14,12 +14,12 @@ Requires:
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 from collections import defaultdict
 from typing import Dict, Iterable, List
 
 from music21 import corpus, note
+from export_utils import interpolate_nested, to_js_assignment
 
 
 PHASES = ("opening", "development", "climax", "resolution")
@@ -182,10 +182,8 @@ def seed_fallback_profiles() -> Dict[str, Dict]:
     }
 
 
-def to_js_assignment(data: Dict) -> str:
-    pretty = json.dumps(data, indent=2)
-    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_rhythm_priors.py\n"
-    return f"{header}RHYTHM_PRIOR_TABLES = {pretty};\n"
+def to_js_assignment_for_rhythm(data: Dict) -> str:
+    return to_js_assignment("RHYTHM_PRIOR_TABLES", data, "scripts/music21/export_rhythm_priors.py")
 
 
 def main() -> None:
@@ -313,23 +311,12 @@ def main() -> None:
     }
 
     # derive dorian / mixolydian profiles by interpolating numeric leaves (60/40 mixes)
-    def _interpolate_nested(a, b, t):
-        out = {}
-        for k in a.keys():
-            av = a[k]
-            bv = b.get(k, av)
-            if isinstance(av, dict) and isinstance(bv, dict):
-                out[k] = _interpolate_nested(av, bv, t)
-            else:
-                out[k] = round(float(av) * (1.0 - t) + float(bv) * t, 3)
-        return out
-
-    data["dorian"] = _interpolate_nested(out_profiles["minor"], out_profiles["major"], 0.4)
-    data["mixolydian"] = _interpolate_nested(out_profiles["major"], out_profiles["minor"], 0.4)
+    data["dorian"] = interpolate_nested(out_profiles["minor"], out_profiles["major"], 0.4)
+    data["mixolydian"] = interpolate_nested(out_profiles["major"], out_profiles["minor"], 0.4)
 
     out_path = pathlib.Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(to_js_assignment(data), encoding="utf-8")
+    out_path.write_text(to_js_assignment_for_rhythm(data), encoding="utf-8")
     print(f"[music21-rhythm-export] wrote rhythm priors to {out_path}", flush=True)
 
 

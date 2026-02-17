@@ -16,6 +16,7 @@
   },
   "scripts": {
     "main": "npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/main.js",
+    "music21-data": "node scripts/run-with-log.js music21.log python scripts/music21/run_music21_data.py",
     "lint:raw": "eslint . --ext .js --fix",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
     "tc": "node scripts/run-with-log.js tc.log tsc -p . --noEmit",

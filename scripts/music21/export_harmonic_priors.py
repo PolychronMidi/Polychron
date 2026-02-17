@@ -14,13 +14,13 @@ Requires:
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 import re
 from collections import Counter
 from typing import Dict, List, Optional
 
 from music21 import chord, corpus, roman
+from export_utils import scale_harmonic_patterns, scale_harmonic_phase_weights, to_js_assignment
 
 
 PHASES = ("opening", "development", "climax", "resolution")
@@ -277,10 +277,8 @@ def build_profile(counter: Counter, top_n: int = 10) -> Dict:
     }
 
 
-def to_js_assignment(data: Dict) -> str:
-    pretty = json.dumps(data, indent=2)
-    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_harmonic_priors.py\n"
-    return f"{header}HARMONIC_PRIOR_TABLES = {pretty};\n"
+def to_js_assignment_for_harmonic(data: Dict) -> str:
+    return to_js_assignment("HARMONIC_PRIOR_TABLES", data, "scripts/music21/export_harmonic_priors.py")
 
 
 def main() -> None:
@@ -328,44 +326,31 @@ def main() -> None:
     }
 
     # Merge/scale pattern pools for dorian & mixolydian (pattern-based merge, not numeric interp)
-    def _scale_patterns(profile, factor):
-        out = {}
-        for k, pat in profile["patterns"].items():
-            p = dict(pat)
-            if isinstance(p.get("romans"), list):
-                p["romans"] = list(p["romans"])
-            p["baseWeight"] = round(float(p["baseWeight"]) * factor, 3)
-            out[k] = p
-        return out
-
-    def _scale_phase_weights(profile, factor):
-        out = {phase: {} for phase in PHASES}
-        for phase in PHASES:
-            for k, w in profile["phaseWeights"].get(phase, {}).items():
-                out[phase][k] = round(float(w) * factor, 3)
-        return out
-
     maj = data["major"]
     minp = data["minor"]
 
-    dorian_patterns = _scale_patterns(minp, 0.6)
-    dorian_patterns.update(_scale_patterns(maj, 0.4))
+    dorian_patterns = scale_harmonic_patterns(minp, 0.6)
+    dorian_patterns.update(scale_harmonic_patterns(maj, 0.4))
+    min_phase_weights = scale_harmonic_phase_weights(minp, PHASES, 0.6)
+    maj_phase_weights = scale_harmonic_phase_weights(maj, PHASES, 0.4)
     dorian_phase_weights = {}
     for phase in PHASES:
-        dorian_phase_weights[phase] = {**_scale_phase_weights(minp, 0.6)[phase], **_scale_phase_weights(maj, 0.4)[phase]}
+        dorian_phase_weights[phase] = {**min_phase_weights[phase], **maj_phase_weights[phase]}
 
-    mixo_patterns = _scale_patterns(maj, 0.6)
-    mixo_patterns.update(_scale_patterns(minp, 0.4))
+    mixo_patterns = scale_harmonic_patterns(maj, 0.6)
+    mixo_patterns.update(scale_harmonic_patterns(minp, 0.4))
+    maj_phase_weights = scale_harmonic_phase_weights(maj, PHASES, 0.6)
+    min_phase_weights = scale_harmonic_phase_weights(minp, PHASES, 0.4)
     mixo_phase_weights = {}
     for phase in PHASES:
-        mixo_phase_weights[phase] = {**_scale_phase_weights(maj, 0.6)[phase], **_scale_phase_weights(minp, 0.4)[phase]}
+        mixo_phase_weights[phase] = {**maj_phase_weights[phase], **min_phase_weights[phase]}
 
     data["dorian"] = {"patterns": dorian_patterns, "phaseWeights": dorian_phase_weights}
     data["mixolydian"] = {"patterns": mixo_patterns, "phaseWeights": mixo_phase_weights}
 
     out_path = pathlib.Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(to_js_assignment(data), encoding="utf-8")
+    out_path.write_text(to_js_assignment_for_harmonic(data), encoding="utf-8")
 
     print(f"[music21-export] wrote harmonic priors to {out_path}", flush=True)
 

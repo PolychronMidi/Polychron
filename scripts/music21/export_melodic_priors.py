@@ -14,12 +14,12 @@ Requires:
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 from collections import Counter
 from typing import Dict, Iterable, List
 
 from music21 import corpus, note
+from export_utils import interpolate_nested, merge_numeric_maps, to_js_assignment
 
 
 PHASES = ("opening", "development", "climax", "resolution")
@@ -149,10 +149,8 @@ def build_tendency_weights(tendency_counter: Counter, top_n: int = 24) -> Dict[s
     return out
 
 
-def to_js_assignment(data: Dict) -> str:
-    pretty = json.dumps(data, indent=2)
-    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_melodic_priors.py\n"
-    return f"{header}MELODIC_PRIOR_TABLES = {pretty};\n"
+def to_js_assignment_for_melodic(data: Dict) -> str:
+    return to_js_assignment("MELODIC_PRIOR_TABLES", data, "scripts/music21/export_melodic_priors.py")
 
 
 def main() -> None:
@@ -235,8 +233,8 @@ def main() -> None:
             print(f"[music21-melodic-export] {quality} counters empty; seeded fallback profile", flush=True)
 
     data = {
-        "version": 1,
-        "source": "music21-derived offline melodic priors",
+        "version": 2,
+        "source": "music21-derived offline melodic priors (v2: mode-specific dorian/mixolydian)",
         "generatedAt": "auto",
         "major": {
             "phaseDegreeWeights": build_phase_degree_weights(counters["major"]["phase_degree"]),
@@ -248,40 +246,19 @@ def main() -> None:
         },
     }
 
-    # -- add mode-specific dorian / mixolydian (60/40 mix) so JS output is self-contained
-    def _interpolate_nested(a, b, t):
-        out = {}
-        for k in a.keys():
-            av = a[k]
-            bv = b.get(k, av)
-            if isinstance(av, dict) and isinstance(bv, dict):
-                out[k] = _interpolate_nested(av, bv, t)
-            else:
-                out[k] = round(float(av) * (1.0 - t) + float(bv) * t, 3)
-        return out
-
-    def _merge_tendency_weights(a, b, t):
-        out = {}
-        for key in set(list(a.keys()) + list(b.keys())):
-            va = float(a.get(key, 1.0))
-            vb = float(b.get(key, 1.0))
-            out[key] = round(va * (1.0 - t) + vb * t, 3)
-        return out
-
-    # bump version and attach derived modes
-    data["version"] = 2
+    # add mode-specific dorian / mixolydian (60/40 mix)
     data["dorian"] = {
-        "phaseDegreeWeights": _interpolate_nested(data["minor"]["phaseDegreeWeights"], data["major"]["phaseDegreeWeights"], 0.4),
-        "tendencyWeights": _merge_tendency_weights(data["minor"]["tendencyWeights"], data["major"]["tendencyWeights"], 0.4),
+        "phaseDegreeWeights": interpolate_nested(data["minor"]["phaseDegreeWeights"], data["major"]["phaseDegreeWeights"], 0.4),
+        "tendencyWeights": merge_numeric_maps(data["minor"]["tendencyWeights"], data["major"]["tendencyWeights"], 0.4),
     }
     data["mixolydian"] = {
-        "phaseDegreeWeights": _interpolate_nested(data["major"]["phaseDegreeWeights"], data["minor"]["phaseDegreeWeights"], 0.4),
-        "tendencyWeights": _merge_tendency_weights(data["major"]["tendencyWeights"], data["minor"]["tendencyWeights"], 0.4),
+        "phaseDegreeWeights": interpolate_nested(data["major"]["phaseDegreeWeights"], data["minor"]["phaseDegreeWeights"], 0.4),
+        "tendencyWeights": merge_numeric_maps(data["major"]["tendencyWeights"], data["minor"]["tendencyWeights"], 0.4),
     }
 
     out_path = pathlib.Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(to_js_assignment(data), encoding="utf-8")
+    out_path.write_text(to_js_assignment_for_melodic(data), encoding="utf-8")
     print(f"[music21-melodic-export] wrote melodic priors to {out_path}", flush=True)
 
 if __name__ == "__main__":
