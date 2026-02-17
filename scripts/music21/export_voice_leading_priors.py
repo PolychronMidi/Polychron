@@ -14,12 +14,12 @@ Requires:
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 from collections import Counter
 from typing import Dict, Iterable, List
 
 from music21 import corpus, note
+from export_utils import interpolate_nested, merge_numeric_maps, to_js_assignment
 
 
 PHASES = ("opening", "development", "climax", "resolution")
@@ -160,10 +160,8 @@ def build_tendency_weights(tendency_counter: Counter, top_n: int = 28) -> Dict[s
     return out
 
 
-def to_js_assignment(data: Dict) -> str:
-    pretty = json.dumps(data, indent=2)
-    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_voice_leading_priors.py\n"
-    return f"{header}VOICE_LEADING_PRIOR_TABLES = {pretty};\n"
+def to_js_assignment_for_voice_leading(data: Dict) -> str:
+    return to_js_assignment("VOICE_LEADING_PRIOR_TABLES", data, "scripts/music21/export_voice_leading_priors.py")
 
 
 def main() -> None:
@@ -252,8 +250,8 @@ def main() -> None:
             print(f"[music21-vl-export] {quality} counters empty; seeded fallback profile", flush=True)
 
     data = {
-        "version": 1,
-        "source": "music21-derived offline voice-leading priors",
+        "version": 2,
+        "source": "music21-derived offline voice-leading priors (v2: mode-specific dorian/mixolydian)",
         "generatedAt": "auto",
         "major": {
             "phaseIntervalWeights": build_phase_interval_weights(counters["major"]["phase_interval"]),
@@ -268,40 +266,20 @@ def main() -> None:
     }
 
     # interpolate/merge to produce dorian & mixolydian tables (60/40 mixes)
-    def _interpolate_nested(a, b, t):
-        out = {}
-        for k in a.keys():
-            av = a[k]
-            bv = b.get(k, av)
-            if isinstance(av, dict) and isinstance(bv, dict):
-                out[k] = _interpolate_nested(av, bv, t)
-            else:
-                out[k] = round(float(av) * (1.0 - t) + float(bv) * t, 3)
-        return out
-
-    def _merge_tendency_weights(a, b, t):
-        out = {}
-        for key in set(list(a.keys()) + list(b.keys())):
-            va = float(a.get(key, 1.0))
-            vb = float(b.get(key, 1.0))
-            out[key] = round(va * (1.0 - t) + vb * t, 3)
-        return out
-
-    data["version"] = 2
     data["dorian"] = {
-        "phaseIntervalWeights": _interpolate_nested(data["minor"]["phaseIntervalWeights"], data["major"]["phaseIntervalWeights"], 0.4),
-        "phaseDirectionWeights": _interpolate_nested(data["minor"]["phaseDirectionWeights"], data["major"]["phaseDirectionWeights"], 0.4),
-        "tendencyWeights": _merge_tendency_weights(data["minor"]["tendencyWeights"], data["major"]["tendencyWeights"], 0.4),
+        "phaseIntervalWeights": interpolate_nested(data["minor"]["phaseIntervalWeights"], data["major"]["phaseIntervalWeights"], 0.4),
+        "phaseDirectionWeights": interpolate_nested(data["minor"]["phaseDirectionWeights"], data["major"]["phaseDirectionWeights"], 0.4),
+        "tendencyWeights": merge_numeric_maps(data["minor"]["tendencyWeights"], data["major"]["tendencyWeights"], 0.4),
     }
     data["mixolydian"] = {
-        "phaseIntervalWeights": _interpolate_nested(data["major"]["phaseIntervalWeights"], data["minor"]["phaseIntervalWeights"], 0.4),
-        "phaseDirectionWeights": _interpolate_nested(data["major"]["phaseDirectionWeights"], data["minor"]["phaseDirectionWeights"], 0.4),
-        "tendencyWeights": _merge_tendency_weights(data["major"]["tendencyWeights"], data["minor"]["tendencyWeights"], 0.4),
+        "phaseIntervalWeights": interpolate_nested(data["major"]["phaseIntervalWeights"], data["minor"]["phaseIntervalWeights"], 0.4),
+        "phaseDirectionWeights": interpolate_nested(data["major"]["phaseDirectionWeights"], data["minor"]["phaseDirectionWeights"], 0.4),
+        "tendencyWeights": merge_numeric_maps(data["major"]["tendencyWeights"], data["minor"]["tendencyWeights"], 0.4),
     }
 
     out_path = pathlib.Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(to_js_assignment(data), encoding="utf-8")
+    out_path.write_text(to_js_assignment_for_voice_leading(data), encoding="utf-8")
     print(f"[music21-vl-export] wrote voice-leading priors to {out_path}", flush=True)
 
 
