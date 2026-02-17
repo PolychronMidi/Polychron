@@ -20,142 +20,12 @@
  * @property {number} distance - Semitone distance from previous stop (0 for origin)
  */
 
-/**
- * Movement strategies — pure music theory relationships.
- * Each returns { key, mode, move } given a current key and mode.
- * Strategies are grouped by "boldness" so arc phases can pick appropriately.
- */
-const CLOSE_MOVES = [
-  // Circle of fifths up (dominant direction)
-  (key, mode) => ({ key: t.Note.transpose(key, 'P5'), mode, move: 'fifth-up' }),
-  // Circle of fifths down (subdominant direction)
-  (key, mode) => ({ key: t.Note.transpose(key, 'P4'), mode, move: 'fourth-up' }),
-  // Relative major/minor
-  (key, mode) => {
-    if (mode === 'major' || mode === 'ionian') {
-      return { key: t.Note.transpose(key, 'm3').replace(/\d+$/, ''), mode: 'minor', move: 'relative-minor' };
-    }
-    return { key: t.Note.transpose(key, 'M3').replace(/\d+$/, ''), mode: 'major', move: 'relative-major' };
-  },
-];
-
-const MODERATE_MOVES = [
-  // Parallel mode shift (same root, different mode)
-  (key, mode) => {
-    const parallelModes = {
-      major: ['dorian', 'mixolydian', 'lydian'],
-      minor: ['dorian', 'phrygian', 'aeolian'],
-      dorian: ['major', 'minor', 'mixolydian'],
-      mixolydian: ['major', 'dorian', 'lydian'],
-      lydian: ['major', 'mixolydian', 'ionian'],
-      phrygian: ['minor', 'dorian', 'aeolian'],
-      aeolian: ['minor', 'dorian', 'phrygian'],
-      locrian: ['minor', 'phrygian', 'aeolian'],
-      ionian: ['dorian', 'mixolydian', 'lydian'],
-    };
-    const options = parallelModes[mode] || ['major', 'minor'];
-    const newMode = options[ri(options.length - 1)];
-    return { key, mode: newMode, move: `parallel-${newMode}` };
-  },
-  // Whole step up
-  (key, mode) => ({ key: t.Note.transpose(key, 'M2'), mode, move: 'step-up' }),
-  // Whole step down
-  (key, mode) => ({ key: t.Note.transpose(key, 'M2').replace(/\d+$/, ''), mode, move: 'step-down' }),
-];
-
-const BOLD_MOVES = [
-  // Chromatic mediant (major third up, keep quality)
-  (key, mode) => ({ key: t.Note.transpose(key, 'M3'), mode, move: 'chromatic-mediant-up' }),
-  // Chromatic mediant (major third down)
-  (key, mode) => ({ key: t.Note.transpose(key, 'm3'), mode, move: 'chromatic-mediant-down' }),
-  // Tritone substitution
-  (key, mode) => ({ key: t.Note.transpose(key, 'A4'), mode, move: 'tritone-sub' }),
-  // Minor third up with mode flip
-  (key, mode) => {
-    const flipped = (mode === 'major' || mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian') ? 'minor' : 'major';
-    return { key: t.Note.transpose(key, 'm3'), mode: flipped, move: 'mediant-flip' };
-  },
-];
-
-/**
- * Computes circle-of-fifths distance between two pitch classes.
- * C to G = 1, C to D = 2, ..., C to F# = 6.
- * @param {string} from - Pitch class
- * @param {string} to   - Pitch class
- * @returns {number} Distance in fifths (0-6)
- */
-const harmonicDistance = (from, to) => {
-  const noteA = t.Note.get(from);
-  const noteB = t.Note.get(to);
-
-  // Safety check
-  if (noteA.empty || noteB.empty || !noteA.coord || !noteB.coord) return 0;
-
-  //coord[0] is the circle of fifths coordinate
-  const diff = Math.abs(noteA.coord[0] - noteB.coord[0]);
-
-  // Wrap to 12-tone circle
-  const circleDist = diff % 12;
-  return Math.min(circleDist, 12 - circleDist);
-};
-
-/**
- * Resolves arc phase name for a section position.
- * @param {number} sectionIndex
- * @param {number} totalSections
- * @returns {'opening'|'development'|'climax'|'resolution'}
- */
-const getSectionPhase = (sectionIndex, totalSections) => {
-  if (totalSections <= 0) return 'development';
-  const pos = sectionIndex / totalSections;
-  if (pos < 0.2) return 'opening';
-  if (pos < 0.55) return 'development';
-  if (pos < 0.8) return 'climax';
-  return 'resolution';
-};
-
-/**
- * Selects a move pool based on the structural phase.
- * Opening/resolution = close moves; development = moderate; climax = bold.
- * @param {'opening'|'development'|'climax'|'resolution'} phase
- * @returns {Function[]}
- */
-const getMovePoolForPhase = (phase) => {
-  switch (phase) {
-    case 'opening':    return CLOSE_MOVES;
-    case 'resolution': return [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)];
-    case 'development': return [...CLOSE_MOVES, ...MODERATE_MOVES];
-    case 'climax':     return [...MODERATE_MOVES, ...BOLD_MOVES];
-    default:           return CLOSE_MOVES;
-  }
-};
-
-/**
- * L2 relationship strategies — how L2 relates to L1's current key.
- * Returns { key, mode, relationship }.
- */
-const L2_RELATIONSHIPS = [
-  // Same key, same mode (unison)
-  (key, mode) => ({ key, mode, relationship: 'unison' }),
-  // Same key, parallel mode
-  (key, mode) => {
-    const alt = (mode === 'major' || mode === 'ionian') ? 'minor' : 'major';
-    return { key, mode: alt, relationship: 'parallel' };
-  },
-  // Relative key
-  (key, mode) => {
-    if (mode === 'major' || mode === 'ionian') {
-      return { key: t.Note.transpose(key, 'm3'), mode: 'minor', relationship: 'relative' };
-    }
-    return { key: t.Note.transpose(key, 'M3'), mode: 'major', relationship: 'relative' };
-  },
-  // Dominant key (fifth up)
-  (key, mode) => ({ key: t.Note.transpose(key, 'P5'), mode, relationship: 'dominant' }),
-  // Subdominant key (fourth up)
-  (key, mode) => ({ key: t.Note.transpose(key, 'P4'), mode, relationship: 'subdominant' }),
-];
-
 HarmonicJourney = (() => {
+  if (typeof harmonicJourneyHelpers !== 'function') {
+    throw new Error('HarmonicJourney: harmonicJourneyHelpers() not available');
+  }
+  const HJ = harmonicJourneyHelpers();
+
   /** @type {JourneyStop[]} */
   let plan = [];
   let originKey = 'C';
@@ -204,12 +74,12 @@ HarmonicJourney = (() => {
     let currentMode = startMode;
 
     for (let s = 1; s < totalSections; s++) {
-      const phase = getSectionPhase(s, totalSections);
-      const movePool = getMovePoolForPhase(phase);
+      const phase = HJ.getSectionPhase(s, totalSections);
+      const movePool = HJ.getMovePoolForPhase(phase);
 
       // Resolution sections bias toward returning home
       if (phase === 'resolution' && rf() < 0.5) {
-        const dist = harmonicDistance(currentKey, originKey);
+        const dist = HJ.harmonicDistance(currentKey, originKey);
         if (dist > 0) {
           currentKey = originKey;
           currentMode = originMode;
@@ -230,7 +100,7 @@ HarmonicJourney = (() => {
         continue;
       }
 
-      const dist = harmonicDistance(currentKey, nextKey);
+      const dist = HJ.harmonicDistance(currentKey, nextKey);
       currentKey = nextKey;
       currentMode = result.mode;
 
@@ -269,32 +139,21 @@ HarmonicJourney = (() => {
     currentStopIndex = sectionIndex;
 
     // Use Tonal.js to derive scale from key+mode
-    const scaleName = `${stop.key} ${stop.mode}`;
-    const scaleData = t.Scale.get(scaleName);
-    const scaleNotes = (scaleData && Array.isArray(scaleData.notes) && scaleData.notes.length > 0)
-      ? scaleData.notes
-      : t.Scale.get(`${stop.key} major`).notes;
-
-    // Derive quality from mode
-    const modeToQuality = {
-      major: 'major', ionian: 'major', lydian: 'major', mixolydian: 'major',
-      minor: 'minor', aeolian: 'minor', dorian: 'minor', phrygian: 'minor', locrian: 'minor'
-    };
-    const quality = modeToQuality[stop.mode] || 'major';
+    const resolved = HJ.resolveScaleAndQuality(stop.key, stop.mode);
 
     // Calculate dynamic structural parameters
     const totalSections = plan.length;
-    const currentPhase = getSectionPhase(sectionIndex, totalSections);
+    const currentPhase = HJ.getSectionPhase(sectionIndex, totalSections);
 
     // Calculate excursion (distance from origin)
     // Note: stop.distance is the step distance; we want total distance from start
-    const excursion = harmonicDistance(stop.key, originKey);
+    const excursion = HJ.harmonicDistance(stop.key, originKey);
 
     HarmonicContext.set({
       key: stop.key,
       mode: stop.mode,
-      quality: quality,
-      scale: scaleNotes,
+      quality: resolved.quality,
+      scale: resolved.scaleNotes,
       excursion: excursion,
       sectionPhase: currentPhase
     });
@@ -318,7 +177,8 @@ HarmonicJourney = (() => {
    */
   function getL2Complement(sectionIndex) {
     const l1Stop = getStop(sectionIndex);
-    const relFn = L2_RELATIONSHIPS[ri(L2_RELATIONSHIPS.length - 1)];
+    const relationships = HJ.getL2Relationships();
+    const relFn = relationships[ri(relationships.length - 1)];
     const result = relFn(l1Stop.key, l1Stop.mode);
 
     // Normalize key
@@ -340,23 +200,13 @@ HarmonicJourney = (() => {
     }
 
     const comp = getL2Complement(sectionIndex);
-    const scaleName = `${comp.key} ${comp.mode}`;
-    const scaleData = t.Scale.get(scaleName);
-    const scaleNotes = (scaleData && Array.isArray(scaleData.notes) && scaleData.notes.length > 0)
-      ? scaleData.notes
-      : t.Scale.get(`${comp.key} major`).notes;
-
-    const modeToQuality = {
-      major: 'major', ionian: 'major', lydian: 'major', mixolydian: 'major',
-      minor: 'minor', aeolian: 'minor', dorian: 'minor', phrygian: 'minor', locrian: 'minor'
-    };
-    const quality = modeToQuality[comp.mode] || 'major';
+    const resolved = HJ.resolveScaleAndQuality(comp.key, comp.mode);
 
     HarmonicContext.set({
       key: comp.key,
       mode: comp.mode,
-      quality: quality,
-      scale: scaleNotes
+      quality: resolved.quality,
+      scale: resolved.scaleNotes
     });
   }
 
