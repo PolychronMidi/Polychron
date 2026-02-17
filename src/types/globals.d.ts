@@ -267,7 +267,6 @@ declare var MELODIC_PRIOR_TABLES: any;
 declare var melodicPriors: any;
 declare var VoiceManager: any;
 declare var VoiceRegistry: any;
-declare var VoiceStrategyRegistry: any;
 
 declare var logGate: any;
 declare var getScheduledNotes: any;
@@ -473,12 +472,10 @@ declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
 declare var COMPOSER_PROFILE_POOLS: any;
 declare var COMPOSER_FAMILIES: any;
 declare var COMPOSER_POOL_SELECTION_STRATEGY: any;
-declare var COMPOSER_PROFILE_AUDIT: any;
 declare var COMPOSER_TYPE_PROFILES: any;
 declare var selectComposerPoolOrFail: any;
 declare var getComposerPoolOrFail: any;
 declare var getDefaultComposerPoolOrFail: any;
-declare var getComposerProfileAuditOrFail: any;
 declare var getComposerTypeProfilesOrFail: any;
 declare var getComposerTypeProfileOrFail: any;
 

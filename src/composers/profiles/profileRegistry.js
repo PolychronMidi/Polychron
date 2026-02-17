@@ -67,8 +67,14 @@ if (typeof COMPOSER_POOL_SELECTION_STRATEGY === 'undefined' || COMPOSER_POOL_SEL
     version: 1,
     name: 'context-strategy-v1',
     defaultPool: 'default',
-    sectionModuloRules: [],
-    phraseModuloRules: []
+    // Deploy fullSpectrumEclectic on every 3rd section (remainder 2 = typically development/climax territory)
+    sectionModuloRules: [
+      { mod: 3, remainder: 2, pool: 'fullSpectrumEclectic' }
+    ],
+    // Deploy fullSpectrumEclectic on every 4th phrase within a section for variety
+    phraseModuloRules: [
+      { mod: 4, remainder: 3, pool: 'fullSpectrumEclectic' }
+    ]
   };
 }
 
@@ -181,16 +187,8 @@ selectComposerPoolOrFail = (opts = {}) => {
   return strategy.defaultPool;
 };
 
-COMPOSER_PROFILE_AUDIT = ComposerProfileUtils.buildProfileAuditOrFail(COMPOSER_TYPE_PROFILES, COMPOSER_PROFILE_POOLS);
-COMPOSER_PROFILE_AUDIT.poolSelectionStrategy = {
-  version: Number(COMPOSER_POOL_SELECTION_STRATEGY.version || 1),
-  name: String(COMPOSER_POOL_SELECTION_STRATEGY.name || 'context-strategy-v1'),
-  defaultPool: String(COMPOSER_POOL_SELECTION_STRATEGY.defaultPool || 'default'),
-  availablePools: getAvailablePoolNames(),
-  sectionModuloRuleCount: Array.isArray(COMPOSER_POOL_SELECTION_STRATEGY.sectionModuloRules) ? COMPOSER_POOL_SELECTION_STRATEGY.sectionModuloRules.length : 0,
-  phraseModuloRuleCount: Array.isArray(COMPOSER_POOL_SELECTION_STRATEGY.phraseModuloRules) ? COMPOSER_POOL_SELECTION_STRATEGY.phraseModuloRules.length : 0,
-  contextKeys: ['composerPool', 'selectComposerPool', 'composerPoolPolicy', 'sectionIndex', 'phraseIndex', 'measureIndex']
-};
+// COMPOSER_PROFILE_AUDIT removed (definition-only, never consumed at runtime)
+// getComposerProfileAuditOrFail removed (never called outside profileRegistry.js)
 
 getComposerTypeProfilesOrFail = (type) => {
   ComposerProfileUtils.assertStringOrFail(type, 'ComposerProfiles.getComposerTypeProfilesOrFail.type');
@@ -233,5 +231,3 @@ getComposerPoolOrFail = (poolName = 'default') => {
 };
 
 getDefaultComposerPoolOrFail = () => getComposerPoolOrFail('default');
-
-getComposerProfileAuditOrFail = () => JSON.parse(JSON.stringify(COMPOSER_PROFILE_AUDIT));

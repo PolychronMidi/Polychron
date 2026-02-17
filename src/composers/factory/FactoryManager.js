@@ -209,53 +209,7 @@ FactoryManager = class FactoryManager {
     throw new Error(`ComposerFactory.createRandomForLayer: failed for layer "${layerName}" in family "${familyName}" after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
   }
 
-  /**
-   * @param {Object} [extraConfig]
-   * @param {Object} [ctx]
-   */
-  static createRandom(extraConfig = {}, ctx = null) {
-    const composerCtx = ctx || this.sharedComposerCtx;
-    if (composerCtx) this.setComposerContext(composerCtx);
-
-    const poolName = this.resolveComposerPoolName(extraConfig, composerCtx);
-    let composerPool;
-    if (poolName === 'default') {
-      if (typeof getDefaultComposerPoolOrFail !== 'function') {
-        throw new Error('ComposerFactory.createRandom: getDefaultComposerPoolOrFail() is not available');
-      }
-      composerPool = getDefaultComposerPoolOrFail();
-    } else {
-      if (typeof getComposerPoolOrFail !== 'function') {
-        throw new Error('ComposerFactory.createRandom: getComposerPoolOrFail() is not available');
-      }
-      composerPool = getComposerPoolOrFail(poolName);
-    }
-    if (!Array.isArray(composerPool) || composerPool.length === 0) {
-      throw new Error(`ComposerFactory.createRandom: composer profile pool "${poolName}" is empty`);
-    }
-
-    const maxAttempts = m.min(8, composerPool.length);
-    let lastError = null;
-
-    for (let i = 0; i < maxAttempts; i++) {
-      const cfg = composerPool[ri(composerPool.length - 1)];
-      try {
-        const composer = this.create(Object.assign({}, cfg, /** @type {any} */ (extraConfig)), composerCtx);
-        if (typeof composer.getNotes !== 'function') {
-          throw new Error('ComposerFactory.createRandom: created composer missing getNotes() method');
-        }
-        const notes = composer.getNotes();
-        if (!Array.isArray(notes) || notes.length === 0) {
-          throw new Error('ComposerFactory.createRandom: composer.getNotes() returned empty or invalid array');
-        }
-        return composer;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-
-    throw new Error(`ComposerFactory.createRandom: failed to create valid composer after ${maxAttempts} attempts from pool "${poolName}". Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
-  }
+  // createRandom removed (unused — only createRandomForLayer is called from main.js)
 };
 
 FactoryManager.validateCapabilityProfiles();

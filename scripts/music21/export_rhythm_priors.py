@@ -184,7 +184,8 @@ def seed_fallback_profiles() -> Dict[str, Dict]:
 
 def to_js_assignment(data: Dict) -> str:
     pretty = json.dumps(data, indent=2)
-    return f"RHYTHM_PRIOR_TABLES = {pretty};\n"
+    header = "// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_rhythm_priors.py\n"
+    return f"{header}RHYTHM_PRIOR_TABLES = {pretty};\n"
 
 
 def main() -> None:
@@ -304,12 +305,27 @@ def main() -> None:
         out_profiles[quality] = build_profile(phase_data, cadence_complexity=cadence_complexity)
 
     data = {
-        "version": 1,
+        "version": 2,
         "source": "music21-derived offline rhythm priors",
         "generatedAt": "auto",
         "major": out_profiles["major"],
         "minor": out_profiles["minor"],
     }
+
+    # derive dorian / mixolydian profiles by interpolating numeric leaves (60/40 mixes)
+    def _interpolate_nested(a, b, t):
+        out = {}
+        for k in a.keys():
+            av = a[k]
+            bv = b.get(k, av)
+            if isinstance(av, dict) and isinstance(bv, dict):
+                out[k] = _interpolate_nested(av, bv, t)
+            else:
+                out[k] = round(float(av) * (1.0 - t) + float(bv) * t, 3)
+        return out
+
+    data["dorian"] = _interpolate_nested(out_profiles["minor"], out_profiles["major"], 0.4)
+    data["mixolydian"] = _interpolate_nested(out_profiles["major"], out_profiles["minor"], 0.4)
 
     out_path = pathlib.Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
