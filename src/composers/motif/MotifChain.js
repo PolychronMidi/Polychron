@@ -116,16 +116,20 @@ MotifChain = (() => {
 
     const {
       transposeRange = [-7, 7],
+      rotateRange = null,
       allowInvert = true,
       allowReverse = true,
       allowAugment = true,
       augmentRange = [1.5, 3]
     } = options;
+    // rotateRange uses transposeRange as fallback for backward compat,
+    // but callers can now separate pitch vs sequence ranges.
+    const effectiveRotateRange = rotateRange || transposeRange;
 
     // Pick random mutation type
     const mutations = [];
     mutations.push(() => addTransform('transpose', ri(...transposeRange)));
-    mutations.push(() => addTransform('rotate', ri(...transposeRange)));
+    mutations.push(() => addTransform('rotate', ri(...effectiveRotateRange)));
     if (allowInvert) mutations.push(() => addTransform('invert'));
     if (allowReverse) mutations.push(() => addTransform('reverse'));
     if (allowAugment) mutations.push(() => addTransform('augment', rf(...augmentRange)));
