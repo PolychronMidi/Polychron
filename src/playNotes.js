@@ -131,6 +131,14 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     throw new Error(`${unit}.playNotes: resolved probabilities must be finite`);
   }
 
+  // ── TextureBlender: per-unit contrast-blend mode ──────────────────
+  // Decides whether this unit emits normally, fires a percussive chord
+  // stab, or injects a rapid scalar flurry.  Oscillation-driven so the
+  // texture switching never settles into a predictable pattern.
+  const textureMode = (typeof TextureBlender !== 'undefined' && TextureBlender && typeof TextureBlender.resolve === 'function')
+    ? TextureBlender.resolve(unit, Number(resolved.composite) || 0)
+    : { mode: 'single', velocityScale: 1, sustainScale: 1 };
+
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
   try {
     const layerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
@@ -238,10 +246,46 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
           : s.note;
 
-        const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, onVel] };
-        const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
+        // Apply TextureBlender velocity and sustain scaling
+        const texVel = m.max(1, m.min(127, m.round(onVel * textureMode.velocityScale)));
+        const texSustain = sustain * textureMode.sustainScale;
+
+        const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
+        const offTick = on + texSustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
         const srcOffEvt = { tick: offTick, vals: [sourceCH, noteToEmit] };
         microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation); scheduled += 2;
+
+        // ── Chord burst: extra simultaneous chord-tone notes ──────
+        if (textureMode.mode === 'chordBurst' && isPrimary) {
+          const burstIntervals = [3, 4, 7]; // minor 3rd, major 3rd, 5th
+          const burstCount = ri(2, 3);
+          for (let bi = 0; bi < burstCount; bi++) {
+            const interval = burstIntervals[bi % burstIntervals.length] * (rf() < 0.3 ? -1 : 1);
+            const burstNote = modClamp(noteToEmit + interval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            const burstVel = m.max(1, m.min(127, m.round(texVel * rf(0.8, 1.0))));
+            const burstStagger = tpUnit * rf(0.002, 0.01) * (bi + 1);
+            const burstOnEvt = { tick: onTick + burstStagger, type: 'on', vals: [sourceCH, burstNote, burstVel] };
+            const burstOffEvt = { tick: onTick + burstStagger + texSustain * rf(0.8, 1.1), vals: [sourceCH, burstNote] };
+            microUnitAttenuator.record(burstOnEvt, burstOffEvt, crossModulation); scheduled += 2;
+          }
+        }
+
+        // ── Flurry: rapid sequential scalar notes ─────────────────
+        if (textureMode.mode === 'flurry' && isPrimary) {
+          const flurryCount = ri(3, 5);
+          const flurryDir = rf() < 0.5 ? 1 : -1;
+          let flurryNote = noteToEmit;
+          const flurryGap = tpUnit * rf(0.04, 0.09);
+          for (let fi = 0; fi < flurryCount; fi++) {
+            flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            const flurryVel = m.max(1, m.min(127, m.round(texVel * rf(0.65, 0.95) * (1 - fi * 0.05))));
+            const flurrySus = tpUnit * rf(0.08, 0.2) * textureMode.sustainScale;
+            const flurryOnTick = onTick + flurryGap * (fi + 1);
+            const flurryOnEvt = { tick: flurryOnTick, type: 'on', vals: [sourceCH, flurryNote, flurryVel] };
+            const flurryOffEvt = { tick: flurryOnTick + flurrySus, vals: [sourceCH, flurryNote] };
+            microUnitAttenuator.record(flurryOnEvt, flurryOffEvt, crossModulation); scheduled += 2;
+          }
+        }
       }
 
       // Reflection channels — stereo mirror of the pick

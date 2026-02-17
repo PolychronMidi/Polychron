@@ -234,6 +234,7 @@ declare var HarmonicContext: any;
 declare var HarmonicJourney: any;
 declare var harmonicJourneyHelpers: any;
 declare var DynamismEngine: any;
+declare var TextureBlender: any;
 declare var MotifChain: any;
 declare var ProgressionGenerator: any;
 declare var PivotChordBridge: any;

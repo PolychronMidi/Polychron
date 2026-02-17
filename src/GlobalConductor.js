@@ -51,15 +51,26 @@ GlobalConductor = (() => {
     const compositeIntensity = clamp(arcIntensity * 0.6 + tensionIntensity * 0.4, 0, 1);
 
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
-    // Smoothly interpolate towards target density
+    // Smoothly interpolate towards target density, then apply micro-hyper
+    // flicker so density itself oscillates within a beat (Step 4)
     const targetDensity = 0.3 + 0.5 * compositeIntensity; // range 0.3 - 0.8
     currentDensity = currentDensity * 0.8 + targetDensity * 0.2; // simple low-pass filter
 
+    // Micro-hyper density flicker: density oscillates per-beat so some
+    // subsubdivs get many note options (dense run territory) while others
+    // get very few (sparse, exposed).  Amplitude scales with compositeIntensity
+    // so calm sections stay stable and intense sections shimmer.
+    const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
+    const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * compositeIntensity
+                         + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * compositeIntensity
+                         + rf(-0.03, 0.03) * compositeIntensity;
+    const flickeredDensity = clamp(currentDensity + densityFlicker, 0.15, 0.95);
+
     if (typeof motifConfig !== 'undefined' && typeof motifConfig.setUnitProfileOverride === 'function') {
-      // Apply density to deeper units for texture buildup
-      motifConfig.setUnitProfileOverride('div', { intervalDensity: currentDensity });
-      motifConfig.setUnitProfileOverride('subdiv', { intervalDensity: currentDensity * 0.9 });
-      motifConfig.setUnitProfileOverride('subsubdiv', { intervalDensity: currentDensity * 0.8 });
+      // Apply flickered density to deeper units for texture buildup
+      motifConfig.setUnitProfileOverride('div', { intervalDensity: flickeredDensity });
+      motifConfig.setUnitProfileOverride('subdiv', { intervalDensity: flickeredDensity * 0.9 });
+      motifConfig.setUnitProfileOverride('subsubdiv', { intervalDensity: flickeredDensity * 0.8 });
     }
 
     // 4. Drive Stutter Behavior (Dynamicism: High intensity -> faster, more chaotic stutters)
