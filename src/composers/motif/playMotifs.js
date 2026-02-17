@@ -115,6 +115,11 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   if (!bucketEntry || !Number.isFinite(Number(bucketEntry.note))) {
     throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
   }
+  // Apply working overrides (non-destructive cycle transforms) if available
+  const overrideKey = bucketEntry.groupId && Number.isFinite(bucketEntry.seqIndex) ? `${bucketEntry.groupId}:${bucketEntry.seqIndex}` : null;
+  const resolvedNote = (overrideKey && layer._workingOverrides && layer._workingOverrides.has(overrideKey))
+    ? layer._workingOverrides.get(overrideKey)
+    : bucketEntry.note;
 
   if (!LM || typeof LM.getComposerFor !== 'function') {
     throw new Error(`${unit}.playMotifs: LayerManager.getComposerFor not available`);
@@ -140,7 +145,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 
   // Get candidate notes from bucket entry and select via centralized voice coordination
   let candidateNotes = (() => {
-    const note = Number(bucketEntry.note);
+    const note = Number(resolvedNote);
     // Validate MIDI range and clamp if needed
     if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
       return [modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)];
@@ -152,7 +157,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   if (candidateNotes.length < 3) {
     const minNote = m.max(0, OCTAVE.min * 12 - 1);
     const maxNote = OCTAVE.max * 12 - 1;
-    candidateNotes = CandidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6);
+    candidateNotes = CandidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6, unit);
   }
 
   // CRITICAL: Filter out stale notes from older composers that don't belong in current composer
@@ -189,9 +194,24 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     }
   }
 
-  // Preserve voice Manager instance per layer to maintain voice history across beats within a phrase
-  if (!layer._voiceManager) layer._voiceManager = new VoiceManager();
-  const VC = layer._voiceManager;
+  // Per-unit VoiceManager: maintain separate voice histories per unit level
+  // so subdiv voice-leading doesn't pollute beat-level motion.
+  // Parent histories seed children for coherence at each new parent boundary.
+  if (!layer._voiceManagers) layer._voiceManagers = {};
+  if (!layer._voiceManagers[unit]) {
+    layer._voiceManagers[unit] = new VoiceManager();
+    // Seed from parent unit's history for coherence
+    const parentUnit = unit === 'subsubdiv' ? 'subdiv' : unit === 'subdiv' ? 'div' : unit === 'div' ? 'beat' : null;
+    if (parentUnit && layer._voiceManagers[parentUnit]) {
+      const parentVM = layer._voiceManagers[parentUnit];
+      const layerId = (layer && typeof layer.id === 'string' && layer.id.length > 0) ? layer.id : 'default';
+      const parentHistory = parentVM.voiceHistoryByLayer.get(layerId);
+      if (Array.isArray(parentHistory) && parentHistory.length > 0) {
+        layer._voiceManagers[unit].voiceHistoryByLayer.set(layerId, parentHistory.map(h => Array.isArray(h) ? [...h] : []));
+      }
+    }
+  }
+  const VC = layer._voiceManagers[unit];
   const voiceCount = VC.getVoiceCount(unit);
   const scorer = activeComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
@@ -261,10 +281,13 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
           }
         }
 
-        // Apply transformed entries back to bucket (update in-place)
+        // Non-destructive: preserve originals, write transforms to working copy
+        // The bucket entries stay pristine; a _workingOverrides map stores
+        // transformed values keyed by `${groupId}:${seqIndex}`.
+        if (!layer._workingOverrides) layer._workingOverrides = new Map();
         for (let i = 0; i < groupEntries.length; i++) {
-          const orig = bucket.filter(e => e.groupId === groupId)[i];
-          if (orig) orig.note = groupEntries[i].note;
+          const ge = groupEntries[i];
+          layer._workingOverrides.set(`${ge.groupId}:${ge.seqIndex}`, ge.note);
         }
       }
     }
@@ -303,6 +326,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   layer._motifCycleTracking = null;
   layer._emptyBucketCaptured = null;
   layer._bucketCursors = null;
+  layer._workingOverrides = null;
   // Clear all hierarchical motif buckets to avoid stale notes across phrases
   layer.measureMotifs = null;
   layer.beatMotifs = [];
@@ -312,5 +336,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Clear sibling voice tracking
   layer._siblingVoicePCs = null;
   layer._siblingVoiceLimits = null;
-  // DO NOT reset _voiceManager here; it maintains voice leading continuity within a phrase
+  // DO NOT reset _voiceManagers here; they maintain voice leading continuity within a phrase
+  // Sub-unit VMs are re-seeded from parent at each parent boundary automatically
 };
