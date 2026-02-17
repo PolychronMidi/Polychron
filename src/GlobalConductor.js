@@ -24,11 +24,30 @@ GlobalConductor = (() => {
       ? (HarmonicContext.getField('tension') || 0)
       : 0;
 
+    // READ NEW CONTEXT: Structural Phase & Excursion
+    // These drive macro-dynamics (long-term arcs) vs phraseCtx (mid-term)
+    const sectionPhase = (typeof HarmonicContext !== 'undefined' && HarmonicContext.getField && HarmonicContext.getField('sectionPhase'))
+      || 'development';
+    const excursion = (typeof HarmonicContext !== 'undefined' && HarmonicContext.getField && HarmonicContext.getField('excursion'))
+      || 0;
+
     // 2. derive composite intensity (0-1)
-    // Intensity rises with phrase position and harmonic tension
+    // Intensity rises with phrase position, harmonic tension, and structural drama
     const arcIntensity = phraseCtx.dynamism * (0.5 + 0.5 * phraseCtx.position);
-    const tensionIntensity = harmonicTension;
-    const compositeIntensity = clamp(arcIntensity * 0.6 + tensionIntensity * 0.4, 0, 1);
+
+    // Calculate Phase Multiplier
+    // climax -> 1.3x, resolution -> 0.7x, etc.
+    let phaseMult = 1.0;
+    if (sectionPhase === 'climax') phaseMult = 1.3;
+    else if (sectionPhase === 'resolution') phaseMult = 0.7;
+    else if (sectionPhase === 'intro') phaseMult = 0.8;
+
+    // Calculate Excursion Tension (0-6 semitones -> 0-0.3)
+    // Further from home = more unstable/intense
+    const excursionTension = Math.min(excursion, 6) * 0.05;
+
+    const tensionIntensity = harmonicTension + excursionTension;
+    const compositeIntensity = clamp((arcIntensity * 0.6 + tensionIntensity * 0.4) * phaseMult, 0, 1);
 
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density
@@ -45,7 +64,10 @@ GlobalConductor = (() => {
     // 4. Drive Stutter Behavior (Dynamicism: High intensity -> faster, more chaotic stutters)
     if (typeof Stutter !== 'undefined') {
       // Modulate rate based on tension
-      const rateBase = compositeIntensity > 0.7 ? 32 : (compositeIntensity > 0.4 ? 16 : 8); // 8n, 16n, 32n
+      let rateBase = 8;
+      if (compositeIntensity > 0.8 || sectionPhase === 'climax') rateBase = 32;
+      else if (compositeIntensity > 0.5) rateBase = 16;
+
       const rateCurve = compositeIntensity > 0.6 ? 'exp' : 'linear';
 
       // Update default directive for spontaneous stutters
@@ -70,9 +92,17 @@ GlobalConductor = (() => {
     const dynScale = DYNAMISM.scaleBase + phraseCtx.dynamism * DYNAMISM.scaleRange;
     const basePlayProb = phraseCtx.atStart ? DYNAMISM.playProb.start : DYNAMISM.playProb.mid;
 
-    // Stutter prob increases significantly with tension
-    const tensionBonus = harmonicTension * 0.3;
+    // Stutter prob increases significantly with tension AND excursion
+    const tensionBonus = (harmonicTension * 0.3) + (excursion * 0.05);
     const baseStutterProb = (phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid) + tensionBonus;
+
+    if (sectionPhase === 'climax') {
+        // Boost stutter and play probability in climax
+        return {
+            playProb: clamp(basePlayProb * dynScale * 1.2, 0, 1),
+            stutterProb: clamp(baseStutterProb * dynScale * 1.5, 0, 1)
+        };
+    }
 
     return {
       playProb: clamp(basePlayProb * dynScale, 0, 1),
