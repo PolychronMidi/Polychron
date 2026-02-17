@@ -58,6 +58,9 @@ setUnitTiming = (unitType) => {
       }
       tpBeat = tpMeasure / Number(numerator);
 
+      // Plan measure-level + beat-level hierarchical motifs
+      MotifManager.planMeasure(activeLayer, activeComposer);
+
       break;
 
     case 'beat':
@@ -87,7 +90,7 @@ setUnitTiming = (unitType) => {
       // DIVS-only planner invocation (use DIV API and run once per measure)
       const plannedDivCount = Number(divsPerBeat) * Number(numerator);
       if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer._plannedDivCount !== plannedDivCount) {
-        MotifSpreader.spreadDivs({ layer: activeLayer, divsPerBeat: Number(divsPerBeat), beats: Number(numerator), composer: activeComposer });
+        MotifManager.planDivs(activeLayer, Number(divsPerBeat), Number(numerator), activeComposer);
       }
       if (!Array.isArray(activeLayer.divMotifs) || activeLayer.divMotifs.length < plannedDivCount) {
         throw new Error(`setUnitTiming(beat): MotifSpreader failed to populate divMotifs (${activeLayer.divMotifs ? activeLayer.divMotifs.length : 0} / ${plannedDivCount})`);
@@ -110,6 +113,11 @@ setUnitTiming = (unitType) => {
       parentStart = beatStart;
       tpParent = tpBeat;
       unitsPerParent = divsPerBeat;
+
+      // Plan subdiv-level motifs derived from the current div's divMotifs bucket
+      { const _absDivIdx = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
+        MotifManager.planSubdivs(activeLayer, _absDivIdx, Number(subdivsPerDiv)); }
+
       break;
 
     case 'subdiv':
@@ -127,6 +135,12 @@ setUnitTiming = (unitType) => {
       parentStart = divStart;
       tpParent = tpDiv;
       unitsPerParent = subdivsPerDiv;
+
+      // Plan subsubdiv-level motifs derived from the current subdiv's subdivMotifs bucket
+      { const _absDivIdx2 = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
+        const _absSubIdx = _absDivIdx2 * Number(subdivsPerDiv) + Number(subdivIndex);
+        MotifManager.planSubsubdivs(activeLayer, _absSubIdx, Number(subsubsPerSub)); }
+
       break;
 
     case 'subsubdiv':

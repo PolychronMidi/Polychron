@@ -1,10 +1,22 @@
-// motifConfig.js - named motif profiles (delegates authoritative profiles to src/config.js)
+// motifConfig.js - named motif profiles + per-unit hierarchical profiles
+// Delegates authoritative profiles to src/config.js, adds unit-level controls
+// for hierarchical motif spreading (group sizing, IntervalComposer density/style).
 
 motifConfig = (function() {
   const LOCAL = {
     default: { velocityScale: 1, timingOffset: 0 },
     sparse: { velocityScale: 0.8, timingOffset: 0.1 },
     dense: { velocityScale: 1.2, timingOffset: -0.05 }
+  };
+
+  // Per-unit hierarchical profiles control IntervalComposer density/style and
+  // motifModulator velocity scaling at each level of the hierarchy.
+  const UNIT_PROFILES = {
+    measure:    { density: 0.7, style: 'random', intervalDensity: 0.7, velocityScale: 1.0 },
+    beat:       { density: 0.6, style: 'random', intervalDensity: 0.6, velocityScale: 0.95 },
+    div:        { density: 0.5, style: 'random', intervalDensity: 0.5, velocityScale: 0.9 },
+    subdiv:     { density: 0.4, style: 'random', intervalDensity: 0.4, velocityScale: 0.85 },
+    subsubdiv:  { density: 0.3, style: 'random', intervalDensity: 0.3, velocityScale: 0.8 }
   };
 
   function getProfile(name) {
@@ -15,5 +27,12 @@ motifConfig = (function() {
     return Object.assign({}, p);
   }
 
-  return { getProfile };
+  function getUnitProfile(unit) {
+    if (!unit || typeof unit !== 'string') throw new Error('motifConfig.getUnitProfile: invalid unit');
+    const p = UNIT_PROFILES[unit];
+    if (!p) throw new Error(`motifConfig.getUnitProfile: unknown unit "${unit}"`);
+    return Object.assign({}, p);
+  }
+
+  return { getProfile, getUnitProfile };
 })();

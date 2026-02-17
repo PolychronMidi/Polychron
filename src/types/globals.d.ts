@@ -118,6 +118,7 @@ declare var noteCascade: any;
 declare var normalizeChordSymbol: any;
 declare var writeDebugFile: any;
 declare var playNotes: any;
+declare var microUnitAttenuator: any;
 declare var BINAURAL: any;
 declare var SILENT_OUTRO_SECONDS: any;
 declare var SECTIONS: any;
@@ -133,6 +134,10 @@ declare var BEAT_VOICES: any;
 declare var DIV_VOICES: any;
 declare var SUBDIV_VOICES: any;
 declare var SUBSUBDIV_VOICES: any;
+declare var BEAT_SIBLING_VOICES: any;
+declare var DIV_SIBLING_VOICES: any;
+declare var SUBDIV_SIBLING_VOICES: any;
+declare var SUBSUBDIV_SIBLING_VOICES: any;
 declare var OCTAVE: any;
 
 declare var primaryInstrument: any;

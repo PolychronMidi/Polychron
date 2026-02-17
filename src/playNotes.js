@@ -227,9 +227,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
           : s.note;
 
-        p(c, { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, onVel] }); scheduled++;
+        const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, onVel] };
         const offTick = on + sustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
-        p(c, { tick: offTick, vals: [sourceCH, noteToEmit] }); scheduled++;
+        const srcOffEvt = { tick: offTick, vals: [sourceCH, noteToEmit] };
+        microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation); scheduled += 2;
       }
 
       // Reflection channels — stereo mirror of the pick
@@ -279,9 +280,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
           : s.note;
 
-        p(c, { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] }); scheduled++;
+        const reflOnEvt = { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] };
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
-        p(c, { tick: offTick, vals: [reflectionCH, reflectionEmitNote] }); scheduled++;
+        const reflOffEvt = { tick: offTick, vals: [reflectionCH, reflectionEmitNote] };
+        microUnitAttenuator.record(reflOnEvt, reflOffEvt, crossModulation); scheduled += 2;
       }
 
       // Bass channels — stereo mirror of the pick (clamped to bass range)
@@ -333,9 +335,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const bassEmitBase = bassApplyShift ? s.note + selectedShift : s.note;
           const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
 
-          p(c, { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] }); scheduled++;
+          const bassOnEvt = { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] };
           const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
-          p(c, { tick: offTick, vals: [bassCH, bassNote] }); scheduled++;
+          const bassOffEvt = { tick: offTick, vals: [bassCH, bassNote] };
+          microUnitAttenuator.record(bassOnEvt, bassOffEvt, crossModulation); scheduled += 2;
         }
       }
     }
