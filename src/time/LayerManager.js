@@ -34,7 +34,7 @@ LM = layerManager ={
       tpMeasure: 0,
       spMeasure: 0,
       bufferName: '',
-      beatMotifs: {},
+      divMotifs: [],
       measureComposer: null
     };
 
