@@ -405,6 +405,8 @@ declare var bassBinaural: any;
 
 declare var beatsOn: any;
 declare var beatsOff: any;
+
+declare var shred: any;
 declare var divsOn: any;
 declare var divsOff: any;
 declare var subdivsOn: any;
