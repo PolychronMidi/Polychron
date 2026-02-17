@@ -78,16 +78,25 @@ const BOLD_MOVES = [
 ];
 
 /**
- * Computes semitone distance between two pitch classes.
+ * Computes circle-of-fifths distance between two pitch classes.
+ * C to G = 1, C to D = 2, ..., C to F# = 6.
  * @param {string} from - Pitch class
  * @param {string} to   - Pitch class
- * @returns {number} Distance in semitones (0-11)
+ * @returns {number} Distance in fifths (0-6)
  */
-const chromaticDistance = (from, to) => {
-  const a = t.Note.chroma(from);
-  const b = t.Note.chroma(to);
-  if (typeof a !== 'number' || typeof b !== 'number' || a < 0 || b < 0) return 0;
-  return ((b - a) + 12) % 12;
+const harmonicDistance = (from, to) => {
+  const noteA = t.Note.get(from);
+  const noteB = t.Note.get(to);
+
+  // Safety check
+  if (noteA.empty || noteB.empty || !noteA.coord || !noteB.coord) return 0;
+
+  //coord[0] is the circle of fifths coordinate
+  const diff = Math.abs(noteA.coord[0] - noteB.coord[0]);
+
+  // Wrap to 12-tone circle
+  const circleDist = diff % 12;
+  return Math.min(circleDist, 12 - circleDist);
 };
 
 /**
@@ -200,7 +209,7 @@ HarmonicJourney = (() => {
 
       // Resolution sections bias toward returning home
       if (phase === 'resolution' && rf() < 0.5) {
-        const dist = chromaticDistance(currentKey, originKey);
+        const dist = harmonicDistance(currentKey, originKey);
         if (dist > 0) {
           currentKey = originKey;
           currentMode = originMode;
@@ -221,7 +230,7 @@ HarmonicJourney = (() => {
         continue;
       }
 
-      const dist = chromaticDistance(currentKey, nextKey);
+      const dist = harmonicDistance(currentKey, nextKey);
       currentKey = nextKey;
       currentMode = result.mode;
 
@@ -273,11 +282,21 @@ HarmonicJourney = (() => {
     };
     const quality = modeToQuality[stop.mode] || 'major';
 
+    // Calculate dynamic structural parameters
+    const totalSections = plan.length;
+    const currentPhase = getSectionPhase(sectionIndex, totalSections);
+
+    // Calculate excursion (distance from origin)
+    // Note: stop.distance is the step distance; we want total distance from start
+    const excursion = harmonicDistance(stop.key, originKey);
+
     HarmonicContext.set({
       key: stop.key,
       mode: stop.mode,
       quality: quality,
-      scale: scaleNotes
+      scale: scaleNotes,
+      excursion: excursion,
+      sectionPhase: currentPhase
     });
 
     // Emit journey-move event for rhythm-harmonic coupling

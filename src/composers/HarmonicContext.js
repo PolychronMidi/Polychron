@@ -9,6 +9,8 @@
  * @property {(string|number)[]} scale
  * @property {Array<*>} chords
  * @property {number} tension
+ * @property {number} excursion
+ * @property {string} sectionPhase
  * @property {number} modifiedAt
  */
 HarmonicContext = (() => {
@@ -20,6 +22,8 @@ HarmonicContext = (() => {
     scale: /** @type {(string|number)[]} */ ([]),          // Pitch class set (MIDI note numbers modulo 12)
     chords: /** @type {Array<*>} */ ([]),         // Active harmonic set (chord symbols or note arrays)
     tension: 0,         // Harmonic tension (0-1)
+    excursion: 0,       // Harmonic distance from home key (0-6)
+    sectionPhase: 'development', // Structural phase (opening, development, climax, resolution)
     modifiedAt: 0       // Timestamp of last update
   };
 
@@ -33,7 +37,7 @@ HarmonicContext = (() => {
       throw new Error('HarmonicContext.set: updates must be an object');
     }
 
-    const { key, mode, quality, scale, chords, tension } = updates;
+    const { key, mode, quality, scale, chords, tension, excursion, sectionPhase } = updates;
 
     if (key !== undefined) {
       if (typeof key !== 'string' || !key) throw new Error('HarmonicContext.set: key must be non-empty string');
@@ -64,6 +68,17 @@ HarmonicContext = (() => {
       const t = Number(tension);
       if (!Number.isFinite(t) || t < 0 || t > 1) throw new Error('HarmonicContext.set: tension must be number 0-1');
       state.tension = t;
+    }
+
+    if (excursion !== undefined) {
+      const e = Number(excursion);
+      if(!Number.isFinite(e) || e < 0) throw new Error('HarmonicContext.set: excursion must be non-negative number');
+      state.excursion = e;
+    }
+
+    if (sectionPhase !== undefined) {
+      if (typeof sectionPhase !== 'string' || !sectionPhase) throw new Error('HarmonicContext.set: sectionPhase must be non-empty string');
+      state.sectionPhase = sectionPhase;
     }
 
     state.modifiedAt = Date.now();
@@ -139,6 +154,8 @@ HarmonicContext = (() => {
       scale: [],
       chords: [],
       tension: 0,
+      excursion: 0,
+      sectionPhase: 'development',
       modifiedAt: 0
     };
   }
