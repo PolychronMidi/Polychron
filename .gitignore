@@ -12,3 +12,4 @@ deepwiki.config.json
 .depcheckrc
 /log
 /tmp
+*.pyc
