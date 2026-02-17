@@ -160,18 +160,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         // Run any explicit Stutter plans scheduled for this beat
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
         playNotes('beat', { playProb, stutterProb });
-        for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+        microUnitAttenuator.begin('div', divsPerBeat);
+        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('div');
           if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
-          for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+          microUnitAttenuator.begin('subdiv', subdivsPerDiv);
+          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
             if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
-            for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+            microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
+            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
               if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
             }
+            microUnitAttenuator.flush();
           }
+          microUnitAttenuator.flush();
         }
+        microUnitAttenuator.flush();
       }
     }
 
@@ -220,21 +226,27 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
         playNotes('beat', { playProb, stutterProb });
 
-        for (let divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+        microUnitAttenuator.begin('div', divsPerBeat);
+        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
 
           setUnitTiming('div');
           if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
 
-          for (let subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+          microUnitAttenuator.begin('subdiv', subdivsPerDiv);
+          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
             if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
 
-            for (let subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+            microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
+            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
               if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
             }
+            microUnitAttenuator.flush();
           }
+          microUnitAttenuator.flush();
         }
+        microUnitAttenuator.flush();
       }
     }
 
