@@ -562,3 +562,5 @@ declare var midiMeter: any;
 declare var midiMeterRatio: any;
 declare var midiBPM: any;
 declare var syncFactor: any;
+declare var GlobalConductor: any;
+declare var DYNAMISM: any;
