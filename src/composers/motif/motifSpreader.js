@@ -156,7 +156,8 @@ MotifSpreader = {
       const idx = baseIndex + i;
       MotifChain.clearTransforms();
       MotifChain.setActive(parentMotif);
-      if (rf() > 0.15) MotifChain.mutate({ transposeRange: [-m.max(1, count), m.max(1, count)] });
+      // Separate ranges: rotate uses small position offsets; transpose uses wider pitch shifts
+      if (rf() > 0.15) MotifChain.mutate({ transposeRange: [-m.max(3, count * 2), m.max(3, count * 2)], rotateRange: [-m.max(1, count), m.max(1, count)] });
       let derived;
       try { derived = MotifChain.apply(); } catch { derived = parentMotif; }
       const dSeq = derived.sequence || derived.events;

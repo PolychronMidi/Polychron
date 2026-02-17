@@ -24,9 +24,13 @@ microUnitAttenuator = (() => {
     begin(unit, unitsPerParent) {
       const n = Number(unitsPerParent);
       if (!Number.isFinite(n) || n <= 0) throw new Error(`microUnitAttenuator.begin: invalid unitsPerParent=${unitsPerParent}`);
+      // Unit-aware caps: deeper units get tighter limits to prevent texture overload
+      const unitMultiplier = unit === 'subsubdiv' ? rf(1.5, 3)
+        : unit === 'subdiv' ? rf(2, 4)
+        : rf(2, 5); // div or beat — widest allowance
       _stack.push({
         unit,
-        limit: m.round(rf(2, 5) * n),
+        limit: m.round(unitMultiplier * n),
         pairs: []
       });
     },
