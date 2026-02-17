@@ -63,5 +63,5 @@ def scale_harmonic_phase_weights(
 
 def to_js_assignment(var_name: str, data: Dict[str, Any], generator_script: str) -> str:
     pretty = json.dumps(data, indent=2)
-    header = f"// GENERATED FILE - DO NOT EDIT. Run: {generator_script}\\n"
-    return f"{header}{var_name} = {pretty};\\n"
+    header = f"// GENERATED FILE - DO NOT EDIT. Run: {generator_script}\n"
+    return f"{header}{var_name} = {pretty};\n"
