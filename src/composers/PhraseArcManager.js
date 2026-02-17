@@ -52,7 +52,37 @@ PhraseArcManager = class PhraseArcManager {
 
     const pos = measuresPerPhrase > 0 ? measureIndex / measuresPerPhrase : 0;
     const phase = this._getPhase(pos);
-    const profile = this._arcProfiles[this.arcType];
+
+    // Dynamic arc selection based on HarmonicContext.sectionPhase
+    // Note: Intensity scaling (loudness/density) is now handled by GlobalConductor.
+    // PhraseArcManager focuses on SHAPE (arc type) selection.
+    let currentArcType = this.arcType;
+
+    if (typeof HarmonicContext !== 'undefined' && HarmonicContext.getField) {
+      const sectionPhase = HarmonicContext.getField('sectionPhase');
+      if (sectionPhase) {
+        // Map section phases to suitable arc profiles
+        switch (sectionPhase) {
+          case 'opening':
+          case 'intro': // Handle both common terms
+            currentArcType = 'arch'; // Gentle, symmetric
+            break;
+          case 'development':
+            currentArcType = 'wave'; // Varying, exploring
+            break;
+          case 'climax':
+            currentArcType = 'build-resolve'; // Strong directional movement
+            break;
+          case 'resolution':
+          case 'conclusion':
+            currentArcType = 'rise-fall'; // Settling down
+            break;
+        }
+      }
+    }
+
+    // Fallback to configured arcType if mapped one is missing (though defaults cover it)
+    const profile = this._arcProfiles[currentArcType] || this._arcProfiles[this.arcType];
 
     return {
       position: pos,

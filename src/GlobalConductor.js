@@ -33,21 +33,22 @@ GlobalConductor = (() => {
 
     // 2. derive composite intensity (0-1)
     // Intensity rises with phrase position, harmonic tension, and structural drama
-    const arcIntensity = phraseCtx.dynamism * (0.5 + 0.5 * phraseCtx.position);
 
-    // Calculate Phase Multiplier
-    // climax -> 1.3x, resolution -> 0.7x, etc.
+    // Calculate Phase Multiplier (Macro-dynamics)
     let phaseMult = 1.0;
     if (sectionPhase === 'climax') phaseMult = 1.3;
-    else if (sectionPhase === 'resolution') phaseMult = 0.7;
-    else if (sectionPhase === 'intro') phaseMult = 0.8;
+    else if (sectionPhase === 'resolution' || sectionPhase === 'conclusion') phaseMult = 0.7;
+    else if (sectionPhase === 'intro' || sectionPhase === 'opening') phaseMult = 0.8;
+
+    // Apply multiplier to the raw arc dynamism from PhraseArcManager
+    const arcIntensity = phraseCtx.dynamism * phaseMult;
 
     // Calculate Excursion Tension (0-6 semitones -> 0-0.3)
     // Further from home = more unstable/intense
     const excursionTension = Math.min(excursion, 6) * 0.05;
 
     const tensionIntensity = harmonicTension + excursionTension;
-    const compositeIntensity = clamp((arcIntensity * 0.6 + tensionIntensity * 0.4) * phaseMult, 0, 1);
+    const compositeIntensity = clamp(arcIntensity * 0.6 + tensionIntensity * 0.4, 0, 1);
 
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density
@@ -97,10 +98,10 @@ GlobalConductor = (() => {
     const baseStutterProb = (phraseCtx.atEnd ? DYNAMISM.stutterProb.end : DYNAMISM.stutterProb.mid) + tensionBonus;
 
     if (sectionPhase === 'climax') {
-        // Boost stutter and play probability in climax
+        // Boost stutter and play probability just slightly in climax to highlight intensity
         return {
-            playProb: clamp(basePlayProb * dynScale * 1.2, 0, 1),
-            stutterProb: clamp(baseStutterProb * dynScale * 1.5, 0, 1)
+            playProb: clamp(basePlayProb * dynScale * 1.1, 0, 1),
+            stutterProb: clamp(baseStutterProb * dynScale * 1.2, 0, 1)
         };
     }
 
