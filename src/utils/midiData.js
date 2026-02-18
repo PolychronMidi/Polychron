@@ -1,6 +1,6 @@
 // midiData.js - MIDI data definitions with program changes, controls, and music theory.
 
-const midiData={
+midiData={
   /** @type {Array<{number: number, name: string}>} */
   program:[
     { number:0,name:'Acoustic Grand Piano' },
@@ -213,7 +213,7 @@ const midiData={
  * getMidiValue('program', 'Acoustic Grand Piano'); // returns 0
  * getMidiValue('control', 'Volume (coarse)'); // returns 7
  */
-const getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
+getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toLowerCase();
   if (!midiData[category]) { throw new Error(`Invalid MIDI category: ${category}`); }
   const item = midiData[category].find(entry => entry.name.toLowerCase() === name);
   if (!item) { throw new Error(`MIDI ${category} '${name}' not found`); }

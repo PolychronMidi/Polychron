@@ -9,9 +9,9 @@ noiseGenerators = {
   // Core 2D noise
   simplex: (x, y, time) => defaultSimplex.noise(x + time * 0.1, y + time * 0.1),
 
-  // 1D variants (y param ignored)
-  perlin: (x, y, time) => perlinNoise(x + time),
-  metaRecursive: (x, y, time) => metaRecursiveNoise(x + time, 0, ri(33, 111), noiseFunctions[ri(0, noiseFunctions.length - 1)]),
+  // 1D variants (y param ignored) — keep `y` referenced for TS no-unused-params
+  perlin: (x, y, time) => { void y; return perlinNoise(x + time); },
+  metaRecursive: (x, y, time) => { void y; return metaRecursiveNoise(x + time, 0, ri(33, 111), noiseFunctions[ri(0, noiseFunctions.length - 1)]); },
 
   // Multi-octave variants
   fbm: (x, y, time, octaves = ri(3, 6)) => fbm(defaultSimplex, x + time * 0.05, y + time * 0.05, octaves),
@@ -22,8 +22,8 @@ noiseGenerators = {
   worley: (x, y, time, cells = ri(3, 8)) => worley(x + time * 0.05, y + time * 0.05, cells),
 
   // Mathematical noise functions
-  sine: (x, y, time) => m.sin(x * 10 + time) * 0.5 + 0.5,
-  gaussian: (x, y, time) => m.exp(-m.pow((x + time * 0.1) % 1 - 0.5, 2) / 0.05),
+  sine: (x, y, time) => { void y; return m.sin(x * 10 + time) * 0.5 + 0.5; },
+  gaussian: (x, y, time) => { void y; return m.exp(-m.pow((x + time * 0.1) % 1 - 0.5, 2) / 0.05); },
 
   // Meta-recursive 2D variants
   metaSimplex2D: (x, y, time) => metaRecursiveSimplex2D(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(20, 80)),
