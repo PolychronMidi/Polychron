@@ -25,9 +25,13 @@ microUnitAttenuator = (() => {
       const n = Number(unitsPerParent);
       if (!Number.isFinite(n) || n <= 0) throw new Error(`microUnitAttenuator.begin: invalid unitsPerParent=${unitsPerParent}`);
       // Unit-aware caps: deeper units get tighter limits to prevent texture overload
-      const unitMultiplier = unit === 'subsubdiv' ? rf(1.5, 3)
-        : unit === 'subdiv' ? rf(2, 4)
-        : rf(2, 5); // div or beat — widest allowance
+      // Ranges driven by ConductorConfig profile for per-profile density shaping
+      const attCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getAttenuationScaling === 'function')
+        ? ConductorConfig.getAttenuationScaling()
+        : { subsubdivRange: [1.5, 3], subdivRange: [2, 4], divRange: [2, 5] };
+      const unitMultiplier = unit === 'subsubdiv' ? rf(attCfg.subsubdivRange[0], attCfg.subsubdivRange[1])
+        : unit === 'subdiv' ? rf(attCfg.subdivRange[0], attCfg.subdivRange[1])
+        : rf(attCfg.divRange[0], attCfg.divRange[1]); // div or beat — widest allowance
       _stack.push({
         unit,
         limit: m.round(unitMultiplier * n),

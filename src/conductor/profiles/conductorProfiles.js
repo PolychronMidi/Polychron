@@ -64,6 +64,38 @@ CONDUCTOR_PROFILE_SOURCES = {
       filterOpenness: 1.0,    // multiplier on CC74 filter cutoff range above baseline
       delayScale: 1.0,        // multiplier on CC94 delay send ranges
       textureBoostScale: 1.0  // multiplier on texture-reactive FX boost amounts
+    },
+    texture: {
+      burstBaseScale: 1.0,    // multiplier on per-unit chord burst base probability
+      flurryBaseScale: 1.0,   // multiplier on per-unit flurry base probability
+      burstCap: 0.18,         // absolute max chord burst probability
+      flurryCap: 0.15         // absolute max flurry probability
+    },
+    attenuation: {
+      subsubdivRange: [1.5, 3],  // rf() range for subsubdiv multiplier cap
+      subdivRange: [2, 4],       // rf() range for subdiv multiplier cap
+      divRange: [2, 5]           // rf() range for div/beat multiplier cap
+    },
+    voiceSpread: {
+      spread: 0.15,              // base voice-position divergence
+      chordBurstInnerBoost: 1.0, // inner-voice accent multiplier in chord bursts
+      flurryDecayRate: 1.8,      // decrescendo steepness for flurry mode
+      jitterAmount: 0.1          // random humanization ±range
+    },
+    familyWeights: {
+      diatonicCore: 1.0,
+      harmonicMotion: 1.0,
+      development: 1.0,
+      tonalExploration: 1.0,
+      rhythmicDrive: 1.0
+    },
+    journeyBoldness: 1.0,        // 0-2 scalar shifting move pool composition
+    emission: {
+      noiseProfile: 'subtle',          // noise profile name for velocity shaping
+      sourceNoiseInfluence: 0.12,      // noise influence factor for source channels
+      reflectionNoiseInfluence: 0.10,  // noise influence factor for reflection channels
+      bassNoiseInfluence: 0.08,        // noise influence factor for bass channels
+      voiceConfigBlend: 0.3            // blend factor for voiceConfig velocity
     }
   },
 
@@ -119,6 +151,38 @@ CONDUCTOR_PROFILE_SOURCES = {
       filterOpenness: 0.7,    // darker, more filtered
       delayScale: 0.4,        // very little delay
       textureBoostScale: 0.4  // subtle texture FX
+    },
+    texture: {
+      burstBaseScale: 0.5,
+      flurryBaseScale: 0.4,
+      burstCap: 0.10,
+      flurryCap: 0.08
+    },
+    attenuation: {
+      subsubdivRange: [1, 2],
+      subdivRange: [1.5, 3],
+      divRange: [1.5, 3.5]
+    },
+    voiceSpread: {
+      spread: 0.08,
+      chordBurstInnerBoost: 0.6,
+      flurryDecayRate: 1.2,
+      jitterAmount: 0.05
+    },
+    familyWeights: {
+      diatonicCore: 1.3,
+      harmonicMotion: 1.0,
+      development: 0.6,
+      tonalExploration: 1.2,
+      rhythmicDrive: 0.5
+    },
+    journeyBoldness: 0.4,
+    emission: {
+      noiseProfile: 'subtle',
+      sourceNoiseInfluence: 0.06,
+      reflectionNoiseInfluence: 0.05,
+      bassNoiseInfluence: 0.04,
+      voiceConfigBlend: 0.4
     }
   },
 
@@ -174,6 +238,38 @@ CONDUCTOR_PROFILE_SOURCES = {
       filterOpenness: 1.4,    // bright, open filter
       delayScale: 1.8,        // heavy delay washes
       textureBoostScale: 2.0  // dramatic texture FX spikes
+    },
+    texture: {
+      burstBaseScale: 1.8,
+      flurryBaseScale: 1.6,
+      burstCap: 0.28,
+      flurryCap: 0.25
+    },
+    attenuation: {
+      subsubdivRange: [2, 4],
+      subdivRange: [3, 6],
+      divRange: [3, 7]
+    },
+    voiceSpread: {
+      spread: 0.25,
+      chordBurstInnerBoost: 1.6,
+      flurryDecayRate: 2.5,
+      jitterAmount: 0.18
+    },
+    familyWeights: {
+      diatonicCore: 0.7,
+      harmonicMotion: 1.3,
+      development: 1.5,
+      tonalExploration: 0.8,
+      rhythmicDrive: 1.6
+    },
+    journeyBoldness: 1.8,
+    emission: {
+      noiseProfile: 'dramatic',
+      sourceNoiseInfluence: 0.20,
+      reflectionNoiseInfluence: 0.16,
+      bassNoiseInfluence: 0.14,
+      voiceConfigBlend: 0.2
     }
   },
 
@@ -229,6 +325,38 @@ CONDUCTOR_PROFILE_SOURCES = {
       filterOpenness: 0.8,    // slightly darker — moody
       delayScale: 1.5,        // lush delay tails
       textureBoostScale: 1.2  // some texture breathing
+    },
+    texture: {
+      burstBaseScale: 0.6,
+      flurryBaseScale: 1.2,
+      burstCap: 0.12,
+      flurryCap: 0.18
+    },
+    attenuation: {
+      subsubdivRange: [1.2, 2.5],
+      subdivRange: [1.5, 3],
+      divRange: [2, 4]
+    },
+    voiceSpread: {
+      spread: 0.12,
+      chordBurstInnerBoost: 0.8,
+      flurryDecayRate: 1.5,
+      jitterAmount: 0.08
+    },
+    familyWeights: {
+      diatonicCore: 1.2,
+      harmonicMotion: 0.8,
+      development: 0.7,
+      tonalExploration: 1.5,
+      rhythmicDrive: 0.4
+    },
+    journeyBoldness: 0.6,
+    emission: {
+      noiseProfile: 'micro',
+      sourceNoiseInfluence: 0.14,
+      reflectionNoiseInfluence: 0.12,
+      bassNoiseInfluence: 0.10,
+      voiceConfigBlend: 0.35
     }
   },
 
@@ -284,6 +412,38 @@ CONDUCTOR_PROFILE_SOURCES = {
       filterOpenness: 1.2,    // open and bright
       delayScale: 0.6,        // minimal delay — keep it tight
       textureBoostScale: 1.0  // normal texture FX
+    },
+    texture: {
+      burstBaseScale: 1.4,
+      flurryBaseScale: 0.8,
+      burstCap: 0.22,
+      flurryCap: 0.10
+    },
+    attenuation: {
+      subsubdivRange: [2, 3.5],
+      subdivRange: [2.5, 5],
+      divRange: [2.5, 6]
+    },
+    voiceSpread: {
+      spread: 0.20,
+      chordBurstInnerBoost: 1.3,
+      flurryDecayRate: 2.0,
+      jitterAmount: 0.14
+    },
+    familyWeights: {
+      diatonicCore: 0.8,
+      harmonicMotion: 1.2,
+      development: 1.0,
+      tonalExploration: 0.6,
+      rhythmicDrive: 1.8
+    },
+    journeyBoldness: 1.3,
+    emission: {
+      noiseProfile: 'subtle',
+      sourceNoiseInfluence: 0.16,
+      reflectionNoiseInfluence: 0.12,
+      bassNoiseInfluence: 0.10,
+      voiceConfigBlend: 0.25
     }
   },
 
@@ -339,6 +499,38 @@ CONDUCTOR_PROFILE_SOURCES = {
       filterOpenness: 0.6,    // muted, dark
       delayScale: 0.3,        // barely any delay
       textureBoostScale: 0.2  // nearly silent texture FX
+    },
+    texture: {
+      burstBaseScale: 0.3,
+      flurryBaseScale: 0.2,
+      burstCap: 0.06,
+      flurryCap: 0.05
+    },
+    attenuation: {
+      subsubdivRange: [1, 1.8],
+      subdivRange: [1, 2.5],
+      divRange: [1.5, 3]
+    },
+    voiceSpread: {
+      spread: 0.06,
+      chordBurstInnerBoost: 0.4,
+      flurryDecayRate: 1.0,
+      jitterAmount: 0.04
+    },
+    familyWeights: {
+      diatonicCore: 1.6,
+      harmonicMotion: 0.7,
+      development: 0.5,
+      tonalExploration: 0.8,
+      rhythmicDrive: 0.4
+    },
+    journeyBoldness: 0.2,
+    emission: {
+      noiseProfile: 'micro',
+      sourceNoiseInfluence: 0.04,
+      reflectionNoiseInfluence: 0.03,
+      bassNoiseInfluence: 0.02,
+      voiceConfigBlend: 0.5
     }
   }
 };

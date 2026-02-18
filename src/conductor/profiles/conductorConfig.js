@@ -19,7 +19,12 @@ ConductorConfig = (() => {
   const REQUIRED_CLIMAX_KEYS = ['playScale', 'stutterScale'];
   const REQUIRED_CROSSMOD_KEYS = ['rangeScale', 'penaltyScale', 'textureBoostScale'];
   const REQUIRED_FXMIX_KEYS = ['reverbScale', 'filterOpenness', 'delayScale', 'textureBoostScale'];
-  const REQUIRED_TOP_KEYS = ['density', 'phaseMultipliers', 'stutter', 'energyWeights', 'flicker', 'climaxBoost', 'crossMod', 'fxMix'];
+  const REQUIRED_TEXTURE_KEYS = ['burstBaseScale', 'flurryBaseScale', 'burstCap', 'flurryCap'];
+  const REQUIRED_ATTENUATION_KEYS = ['subsubdivRange', 'subdivRange', 'divRange'];
+  const REQUIRED_VOICESPREAD_KEYS = ['spread', 'chordBurstInnerBoost', 'flurryDecayRate', 'jitterAmount'];
+  const REQUIRED_FAMILYWEIGHTS_KEYS = ['diatonicCore', 'harmonicMotion', 'development', 'tonalExploration', 'rhythmicDrive'];
+  const REQUIRED_EMISSION_KEYS = ['noiseProfile', 'sourceNoiseInfluence', 'reflectionNoiseInfluence', 'bassNoiseInfluence', 'voiceConfigBlend'];
+  const REQUIRED_TOP_KEYS = ['density', 'phaseMultipliers', 'stutter', 'energyWeights', 'flicker', 'climaxBoost', 'crossMod', 'fxMix', 'texture', 'attenuation', 'voiceSpread', 'familyWeights', 'emission'];
 
   /**
    * Validate a single conductor profile object.
@@ -32,6 +37,7 @@ ConductorConfig = (() => {
     }
 
     for (const key of REQUIRED_TOP_KEYS) {
+      if (key === 'journeyBoldness') continue; // scalar, not object
       if (!profile[key] || typeof profile[key] !== 'object') {
         throw new Error(`ConductorConfig.validateProfileOrFail: ${label}.${key} must be an object`);
       }
@@ -112,6 +118,49 @@ ConductorConfig = (() => {
     for (const k of REQUIRED_FXMIX_KEYS) {
       if (profile.fxMix[k] === undefined) throw new Error(`ConductorConfig: ${label}.fxMix.${k} is required`);
       assertFiniteRange(profile.fxMix[k], 0, 5, `${label}.fxMix.${k}`);
+    }
+
+    // texture
+    for (const k of REQUIRED_TEXTURE_KEYS) {
+      if (profile.texture[k] === undefined) throw new Error(`ConductorConfig: ${label}.texture.${k} is required`);
+      assertFiniteRange(profile.texture[k], 0, 5, `${label}.texture.${k}`);
+    }
+
+    // attenuation
+    for (const k of REQUIRED_ATTENUATION_KEYS) {
+      if (!Array.isArray(profile.attenuation[k]) || profile.attenuation[k].length !== 2) {
+        throw new Error(`ConductorConfig: ${label}.attenuation.${k} must be [min, max]`);
+      }
+      assertFiniteRange(profile.attenuation[k][0], 0, 20, `${label}.attenuation.${k}[0]`);
+      assertFiniteRange(profile.attenuation[k][1], 0, 20, `${label}.attenuation.${k}[1]`);
+    }
+
+    // voiceSpread
+    for (const k of REQUIRED_VOICESPREAD_KEYS) {
+      if (profile.voiceSpread[k] === undefined) throw new Error(`ConductorConfig: ${label}.voiceSpread.${k} is required`);
+      assertFiniteRange(profile.voiceSpread[k], 0, 5, `${label}.voiceSpread.${k}`);
+    }
+
+    // familyWeights
+    for (const k of REQUIRED_FAMILYWEIGHTS_KEYS) {
+      if (profile.familyWeights[k] === undefined) throw new Error(`ConductorConfig: ${label}.familyWeights.${k} is required`);
+      assertFiniteRange(profile.familyWeights[k], 0, 5, `${label}.familyWeights.${k}`);
+    }
+
+    // journeyBoldness
+    if (profile.journeyBoldness === undefined) throw new Error(`ConductorConfig: ${label}.journeyBoldness is required`);
+    assertFiniteRange(profile.journeyBoldness, 0, 2, `${label}.journeyBoldness`);
+
+    // emission
+    for (const k of REQUIRED_EMISSION_KEYS) {
+      if (profile.emission[k] === undefined) throw new Error(`ConductorConfig: ${label}.emission.${k} is required`);
+      if (k === 'noiseProfile') {
+        if (typeof profile.emission[k] !== 'string' || profile.emission[k].length === 0) {
+          throw new Error(`ConductorConfig: ${label}.emission.noiseProfile must be a non-empty string`);
+        }
+      } else {
+        assertFiniteRange(profile.emission[k], 0, 1, `${label}.emission.${k}`);
+      }
     }
   }
 
@@ -288,6 +337,55 @@ ConductorConfig = (() => {
     return resolveField('fxMix');
   }
 
+  /**
+   * Get texture scaling parameters for TextureBlender.
+   * @returns {{ burstBaseScale: number, flurryBaseScale: number, burstCap: number, flurryCap: number }}
+   */
+  function getTextureScaling() {
+    return resolveField('texture');
+  }
+
+  /**
+   * Get attenuation range parameters for microUnitAttenuator.
+   * @returns {{ subsubdivRange: number[], subdivRange: number[], divRange: number[] }}
+   */
+  function getAttenuationScaling() {
+    return resolveField('attenuation');
+  }
+
+  /**
+   * Get voice spread parameters for voiceModulator.
+   * @returns {{ spread: number, chordBurstInnerBoost: number, flurryDecayRate: number, jitterAmount: number }}
+   */
+  function getVoiceSpreadScaling() {
+    return resolveField('voiceSpread');
+  }
+
+  /**
+   * Get composer family weight multipliers.
+   * @returns {{ diatonicCore: number, harmonicMotion: number, development: number, tonalExploration: number, rhythmicDrive: number }}
+   */
+  function getFamilyWeights() {
+    return resolveField('familyWeights');
+  }
+
+  /**
+   * Get journey boldness scalar (0-2).
+   * @returns {number}
+   */
+  function getJourneyBoldness() {
+    const val = resolveField('journeyBoldness');
+    return Number.isFinite(val) ? val : 1.0;
+  }
+
+  /**
+   * Get emission parameters for playNotes/channelCoherence.
+   * @returns {{ noiseProfile: string, sourceNoiseInfluence: number, reflectionNoiseInfluence: number, bassNoiseInfluence: number, voiceConfigBlend: number }}
+   */
+  function getEmissionScaling() {
+    return resolveField('emission');
+  }
+
   // ── Profile crossfading ───────────────────────────────────────────
   // When transitioning between sections, the conductor smoothly
   // interpolates between outgoing and incoming profiles over a
@@ -316,6 +414,12 @@ ConductorConfig = (() => {
     if (t >= 1) return target; // crossfade complete
 
     const fromVal = _crossfade.from[field];
+
+    // Scalar numeric fields (e.g. journeyBoldness): direct lerp
+    if (typeof fromVal === 'number' && typeof target === 'number') {
+      return fromVal + (target - fromVal) * t;
+    }
+
     if (!fromVal || typeof fromVal !== 'object') return target;
 
     return lerpObject(fromVal, target, t);
@@ -434,6 +538,16 @@ ConductorConfig = (() => {
       _regulation.densityBias *= 0.9;
       _regulation.crossModBias = 1 + (_regulation.crossModBias - 1) * 0.9;
     }
+
+    // Emit regulation state for downstream listeners
+    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+      EventBus.emit('conductor-regulation', {
+        avg,
+        densityBias: _regulation.densityBias,
+        crossModBias: _regulation.crossModBias,
+        profile: activeProfileName
+      });
+    }
   }
 
   /**
@@ -536,6 +650,12 @@ ConductorConfig = (() => {
     getClimaxBoost,
     getCrossModScaling,
     getFxMixScaling,
+    getTextureScaling,
+    getAttenuationScaling,
+    getVoiceSpreadScaling,
+    getFamilyWeights,
+    getJourneyBoldness,
+    getEmissionScaling,
     applyPhaseProfile,
     tickCrossfade,
     regulationTick,

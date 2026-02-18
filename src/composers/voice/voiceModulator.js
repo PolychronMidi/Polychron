@@ -18,7 +18,11 @@ voiceModulator = (function() {
   function distribute(selectedNotes, options = {}) {
     if (!Array.isArray(selectedNotes)) throw new Error('voiceModulator.distribute: selectedNotes array required');
     const base = Number.isFinite(Number(options && options.baseVelocity)) ? Number(options.baseVelocity) : 90;
-    const spread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : 0.15;
+    // Voice spread params from ConductorConfig (profile-driven)
+    const vsCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getVoiceSpreadScaling === 'function')
+      ? ConductorConfig.getVoiceSpreadScaling()
+      : { spread: 0.15, chordBurstInnerBoost: 1.0, flurryDecayRate: 1.8, jitterAmount: 0.1 };
+    const spread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : vsCfg.spread;
     const texMode = (options && typeof options.textureMode === 'string') ? options.textureMode : 'single';
     const count = selectedNotes.length;
     if (count === 0) return [];
@@ -29,17 +33,17 @@ voiceModulator = (function() {
       if (texMode === 'chordBurst') {
         // Chord burst (#4): accent inner voices for a fat stab, outer voices stay strong
         if (count === 1) {
-          positionScale = 1 + spread * 0.4;
+          positionScale = 1 + spread * 0.4 * vsCfg.chordBurstInnerBoost;
         } else if (i === 0) {
-          positionScale = 1 + spread * 0.3;        // melody still present
+          positionScale = 1 + spread * 0.3 * vsCfg.chordBurstInnerBoost;        // melody still present
         } else if (i === count - 1) {
-          positionScale = 1 + spread * 0.35;       // bass anchor
+          positionScale = 1 + spread * 0.35 * vsCfg.chordBurstInnerBoost;       // bass anchor
         } else {
-          positionScale = 1 + spread * (0.25 + 0.15 * (i / count)); // inner voices boosted (inverted)
+          positionScale = 1 + spread * (0.25 + 0.15 * (i / count)) * vsCfg.chordBurstInnerBoost; // inner voices boosted (inverted)
         }
       } else if (texMode === 'flurry') {
         // Flurry (#4): decrescendo cascade — each successive note slightly softer
-        positionScale = 1 - (i / m.max(1, count)) * spread * 1.8;
+        positionScale = 1 - (i / m.max(1, count)) * spread * vsCfg.flurryDecayRate;
       } else {
         // Default: melody accent, inner recede
         if (count === 1) {
@@ -52,8 +56,8 @@ voiceModulator = (function() {
           positionScale = 1 - spread * (0.2 + 0.1 * (i / count)); // inner voices recede
         }
       }
-      // Random humanization jitter (±5% of base)
-      const jitter = 1 + (rf() - 0.5) * 0.1;
+      // Random humanization jitter (±half of jitterAmount)
+      const jitter = 1 + (rf() - 0.5) * vsCfg.jitterAmount;
       const vel = m.max(1, m.min(127, m.round(base * positionScale * jitter)));
       return { note: n, channel: i, velocity: vel };
     });

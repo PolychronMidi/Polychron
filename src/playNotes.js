@@ -85,8 +85,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     try {
       const vcProfile = voiceConfig.getProfile('default');
       if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
-        // Blend configured base with computed velocity (30% config influence)
-        velocity = m.max(1, m.min(127, m.round(velocity * 0.7 + vcProfile.baseVelocity * 0.3)));
+        // Blend configured base with computed velocity (profile-driven config influence)
+        velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
       }
     } catch { /* no profile available — use velocity as-is */ }
   }
@@ -100,9 +100,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   if (typeof getNoiseProfile !== 'function') {
     throw new Error(`${unit}.playNotes: getNoiseProfile not available`);
   }
-  const noiseProfile = getNoiseProfile('subtle');
+  // Conductor profile drives noise profile name and per-channel influence factors
+  const emissionCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionScaling === 'function')
+    ? ConductorConfig.getEmissionScaling()
+    : { noiseProfile: 'subtle', sourceNoiseInfluence: 0.12, reflectionNoiseInfluence: 0.10, bassNoiseInfluence: 0.08, voiceConfigBlend: 0.3 };
+  const noiseProfile = getNoiseProfile(emissionCfg.noiseProfile);
   if (!noiseProfile || typeof noiseProfile !== 'object') {
-    throw new Error(`${unit}.playNotes: invalid noise profile returned for "subtle"`);
+    throw new Error(`${unit}.playNotes: invalid noise profile returned for "${emissionCfg.noiseProfile}"`);
   }
   const influenceX = Number(noiseProfile.influenceX);
   const influenceY = Number(noiseProfile.influenceY);
@@ -243,7 +247,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
         const baseOnVel = (isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03)) * pickVelScale;
           const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
-        const sourceNoiseBase = baseOnVel * (1 - 0.12 * noiseInfluence);
+        const sourceNoiseBase = baseOnVel * (1 - emissionCfg.sourceNoiseInfluence * noiseInfluence);
         const { perProbScaled: perProbScaledSrc, onVel } = getChannelCoherence(sourceCH, 'source', sourceNoiseBase, sourceVoiceId, currentTime);
 
         const applySelectedShiftToSource = isPrimary && selectedShift !== 0 && rf() < perProbScaledSrc;
@@ -349,7 +353,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const onTick = isPrimary ? on + rv(tpUnit * rf(.2), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
         const baseOnVel = (isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1)) * pickVelScale;
         const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
-        const reflectionNoiseBase = baseOnVel * (1 - 0.10 * noiseInfluence);
+        const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
         const { perProbScaled: perProbScaledRefl, onVel: onVelRefl } = getChannelCoherence(reflectionCH, 'reflection', reflectionNoiseBase, reflectionVoiceId, currentTime);
 
         // Apply stutter to a *subset* of reflection channels when selected by Stutter's beatContext
@@ -402,7 +406,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
           const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
           const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
-          const bassNoiseBase = onVelRaw * (1 - 0.08 * noiseInfluence);
+          const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
           const { perProbScaled: perProbScaledBass, onVel } = getChannelCoherence(bassCH, 'bass', bassNoiseBase, bassVoiceId, currentTime);
 
           // Apply stutter octave shift to a small subset of bass channels when selected
