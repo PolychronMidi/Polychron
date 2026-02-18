@@ -114,15 +114,17 @@ DynamismEngine = (() => {
 
     const basePulse = measureProgress * 0.35 + beatProgress * 0.35 + osc * 0.3;
 
-    // ── Micro-hyper flicker (depth-scaled) ──────────────────────────
+    // ── Micro-hyper flicker (depth-scaled, profile-driven) ─────────
     // Amplitude increases for finer units: beat=0, div=small, subdiv=med, subsubdiv=large
-    const depthAmp = unit === 'beat' ? 0 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.14 : 0.22;
+    const baseDepthAmp = unit === 'beat' ? 0 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.14 : 0.22;
+    const flickerProfile = ConductorConfig.getFlickerParams();
+    const depthAmp = baseDepthAmp * flickerProfile.depthScale;
 
     // Scale flicker amplitude with crossModulation feedback (Step 5):
     // dense rhythmic activity → wider flicker → more textural contrast
     const crossModAmp = (typeof crossModulation === 'number' && Number.isFinite(crossModulation))
       ? clamp(crossModulation / 6, 0, 1) // crossMod typically ranges ~0–6
-      : 0.5;
+      : flickerProfile.crossModWeight;
     const flickerScale = depthAmp * (0.5 + 0.5 * crossModAmp);
 
     // Two incommensurate noise samples for organic non-repeating flicker (#6)
@@ -160,11 +162,12 @@ DynamismEngine = (() => {
     const feedbackEnergy = getFeedbackEnergy();
     const pulseEnergy = getUnitPulse(unit);
 
+    const weights = ConductorConfig.getEnergyWeights();
     const composite = clamp(
-      phraseEnergy * 0.4 +
-      journeyEnergy * 0.25 +
-      feedbackEnergy * 0.2 +
-      pulseEnergy * 0.15,
+      phraseEnergy * weights.phrase +
+      journeyEnergy * weights.journey +
+      feedbackEnergy * weights.feedback +
+      pulseEnergy * weights.pulse,
       0,
       1
     );
