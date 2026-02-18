@@ -15,7 +15,7 @@ LM = layerManager ={
    * @param {object} [initialState]
    * @param {Function} [setupFn]
    */
-  register: (name, buffer, initialState = {}, setupFn = null) => {
+  register: (name, buffer, initialState = {}, setupFn = undefined) => {
     // Create a plain timing object (flattened, no TimingContext class)
     const defaults = {
       phraseStart: 0,

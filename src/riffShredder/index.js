@@ -11,6 +11,7 @@
 //   Designed for rapid rhythm/cross-modulation/variation experiments.
 
 require('../index');
+// @ts-ignore: side-effect module load
 require('./shred');
 
 if (require.main === module) {

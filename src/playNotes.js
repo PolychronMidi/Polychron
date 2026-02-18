@@ -41,6 +41,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     ? Number(emissionAdjustments.velocityScale)
     : 1;
 
+  // Conductor profile drives emission noise and voice velocity blend
+  const emissionCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionScaling === 'function')
+    ? ConductorConfig.getEmissionScaling()
+    : { noiseProfile: 'subtle', sourceNoiseInfluence: 0.12, reflectionNoiseInfluence: 0.10, bassNoiseInfluence: 0.08, voiceConfigBlend: 0.3 };
+
   const motifTimingOffsetUnits = Number.isFinite(Number(emissionAdjustments.timingOffsetUnits))
     ? Number(emissionAdjustments.timingOffsetUnits)
     : 0;
@@ -100,10 +105,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   if (typeof getNoiseProfile !== 'function') {
     throw new Error(`${unit}.playNotes: getNoiseProfile not available`);
   }
-  // Conductor profile drives noise profile name and per-channel influence factors
-  const emissionCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionScaling === 'function')
-    ? ConductorConfig.getEmissionScaling()
-    : { noiseProfile: 'subtle', sourceNoiseInfluence: 0.12, reflectionNoiseInfluence: 0.10, bassNoiseInfluence: 0.08, voiceConfigBlend: 0.3 };
   const noiseProfile = getNoiseProfile(emissionCfg.noiseProfile);
   if (!noiseProfile || typeof noiseProfile !== 'object') {
     throw new Error(`${unit}.playNotes: invalid noise profile returned for "${emissionCfg.noiseProfile}"`);

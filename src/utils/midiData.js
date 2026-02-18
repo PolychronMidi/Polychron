@@ -269,7 +269,7 @@ allChords=(function() {
     if (!chord.empty && chord.symbol) {
       return { symbol: chord.symbol,notes: chord.notes };
     }
-    return null;
+    return undefined;
   }
   const allChords=new Set();
   t.ChordType.all().forEach(chordType=>{

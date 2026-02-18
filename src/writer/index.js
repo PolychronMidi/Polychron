@@ -1,5 +1,8 @@
+// @ts-ignore: side-effect module load
 require('./formatTime');
+// @ts-ignore: side-effect module load
 require('./logUnit');
+// @ts-ignore: side-effect module load
 require('./grandFinale');
 fs = require('fs');
 path = require('path');
