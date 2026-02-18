@@ -164,6 +164,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       selectLayerComposerForMeasure('L1', phraseFamily);
       setUnitTiming('measure');
 
+      // Advance conductor crossfade and self-regulation once per measure
+      ConductorConfig.tickCrossfade();
+      ConductorConfig.regulationTick();
+
       // main.js - using GlobalConductor for dynamic probabilities
       const conductorCtx = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
         ? GlobalConductor.update(measureIndex, -1) // Update measure-scope context

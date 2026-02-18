@@ -79,10 +79,15 @@ return [
     ...bass.map(ch=>rlFX(ch,94,0,64,(c)=>c===cCH3,0,11)),
     ...bass.map(ch=>rlFX(ch,95,0,99,(c)=>c===cCH3,0,64)),
   ];  })  );
-  // ── Texture-reactive FX modulation (#5) ──────────────────────────
+  // ── Texture-reactive FX modulation (#5) — conductor-driven ────────
   // When texture contrast intensity is high, boost reverb send (CC91),
   // open filter cutoff (CC74), and spike delay send (CC94) so the spatial
   // environment breathes with the texture system.
+  // FX depth and texture boost amplitude are scaled by the active conductor profile.
+  const fxScale = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getFxMixScaling === 'function')
+    ? ConductorConfig.getFxMixScaling()
+    : { reverbScale: 1, filterOpenness: 1, delayScale: 1, textureBoostScale: 1 };
+
   if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function') {
     const texInt = DrumTextureCoupler.getIntensity();
     if (Number.isFinite(texInt) && texInt > 0.1) {
@@ -91,9 +96,9 @@ return [
         ...(Array.isArray(reflection) ? reflection : []),
         ...(Array.isArray(bass) ? bass : [])
       ];
-      const reverbBoost = m.round(texInt * rf(8, 20));
-      const filterBoost = m.round(texInt * rf(5, 15));
-      const delaySpike = m.round(texInt * rf(4, 12));
+      const reverbBoost = m.round(texInt * rf(8, 20) * fxScale.reverbScale * fxScale.textureBoostScale);
+      const filterBoost = m.round(texInt * rf(5, 15) * fxScale.filterOpenness * fxScale.textureBoostScale);
+      const delaySpike = m.round(texInt * rf(4, 12) * fxScale.delayScale * fxScale.textureBoostScale);
       const texTick = (typeof beatStart !== 'undefined' && Number.isFinite(Number(beatStart))) ? Number(beatStart) : 0;
       for (let ti = 0; ti < allChs.length; ti++) {
         const tCh = allChs[ti];
