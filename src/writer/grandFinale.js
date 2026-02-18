@@ -24,7 +24,7 @@ grandFinale = () => {
     buffer = buffer.filter(i => i !== null)
       .map(i => {
         const rawTick = i && i.tick;
-        let tickNum = null;
+        let tickNum = 0;
         let unitHash = null;
           // Keep original behavior: parse rawTick field first (may include appended '|<unitId>')
           if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {

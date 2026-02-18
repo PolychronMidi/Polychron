@@ -89,7 +89,7 @@ rl=randomLimitedChange=(currentValue,minChange,maxChange,minValue,maxValue,type=
  * @param {number} [conditionMax] - Max value when condition met.
  * @returns {Object} FX object with channel, effect number, and value.
  */
-rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionMax=null)=>{
+rlFX=(ch,effectNum,minValue,maxValue,condition=undefined,conditionMin=undefined,conditionMax=undefined)=>{
   chFX=new Map();
   if (!chFX.has(ch)) { chFX.set(ch,{}); }
   const chFXMap=chFX.get(ch);
@@ -101,7 +101,7 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=null,conditionMin=null,conditionM
       let effectValue=chFXMap[effectNum];
       let newMin=minValue,newMax=maxValue;
       const change=(newMax-newMin)*rf(.1,.3);
-      if (condition !== null && typeof condition==='function' && condition(ch)) {
+      if (typeof condition==='function' && condition(ch)) {
         newMin=conditionMin;
         newMax=conditionMax;
         effectValue=clamp(rl(effectValue,m.floor(-change),m.ceil(change),newMin,newMax),newMin,newMax);

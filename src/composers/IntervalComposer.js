@@ -42,13 +42,14 @@ IntervalComposer = {
     const minNotes = clamp(Number.isFinite(Number(options.minNotes)) ? Number(options.minNotes) : minNotesDefault, 1, len);
     const maxNotes = clamp(Number.isFinite(Number(options.maxNotes)) ? Number(options.maxNotes) : len, minNotes, len);
 
-    let count = Number.isFinite(Number(options.count)) ? m.round(Number(options.count)) : null;
-    if (count === null) {
+    let count;
+    if (Number.isFinite(Number(options.count))) {
+      count = m.round(Number(options.count));
+    } else {
       const target = m.round(len * (0.25 + density * 0.75));
       count = clamp(target, minNotes, maxNotes);
-    } else {
-      count = clamp(count, minNotes, maxNotes);
     }
+    count = clamp(count, minNotes, maxNotes);
 
     const preferRaw = Array.isArray(options.preferIndices) ? options.preferIndices : [];
     const preferIndices = preferRaw
@@ -59,7 +60,7 @@ IntervalComposer = {
     if (preferIndices.length > maxNotes) {
       throw new Error(`IntervalComposer.selectIntervals: preferIndices length ${preferIndices.length} exceeds maxNotes ${maxNotes}`);
     }
-    count = m.max(count, preferIndices.length);
+    count = m.max(Number(count), preferIndices.length);
 
     const styles = ['sparse', 'rising', 'even', 'cluster', 'skip', 'full'];
     let style = typeof options.style === 'string' ? options.style : 'random';

@@ -1,5 +1,11 @@
 _random = require('@tonaljs/rhythm-pattern').random;
 
+/**
+ * Resolve and cache rhythm arrays per level.
+ * @param {'beat'|'div'|'subdiv'|'subsubdiv'} level
+ * @param {{ beatRhythm?: number[], divRhythm?: number[], subdivRhythm?: number[], subsubdivRhythm?: number[] }|null} [ctx=null]
+ * @returns {number[]}
+ */
 setRhythm = function setRhythm(level, ctx = null) {
   const random = (length, probOn) => { return _random(length, 1 - probOn); };
   // ── Texture-modulated onset density (#8) ──────────────────────────

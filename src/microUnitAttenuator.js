@@ -69,6 +69,7 @@ microUnitAttenuator = (() => {
     flush() {
       if (_stack.length === 0) return 0;
       const frame = _stack.pop();
+      if (!frame) return 0;
       const { limit, pairs } = frame;
 
       if (pairs.length === 0) return 0;

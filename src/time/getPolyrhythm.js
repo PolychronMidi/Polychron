@@ -49,7 +49,7 @@ getPolyrhythm = () => {
          (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1))) {
       measuresPerPhrase1 = bestMatch.primaryMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
-      return true;
+      return;
     }
   }
   // Max attempts reached: try new meter on L1 layer with relaxed constraints
@@ -58,5 +58,5 @@ getPolyrhythm = () => {
   // Recalculate all timing after meter change to prevent sync desync
   getMidiTiming();
   getPolyrhythm();
-  return true;
+  return;
 };

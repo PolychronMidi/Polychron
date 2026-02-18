@@ -87,7 +87,9 @@ MotifTransforms = {
   pitchInvert(entries, axis) {
     const notes = entries.filter(e => typeof e.note === 'number' && Number.isFinite(e.note)).map(e => e.note);
     if (notes.length === 0) return;
-    const mirrorAxis = Number.isFinite(axis) ? axis : m.round((m.min(...notes) + m.max(...notes)) / 2);
+    const mirrorAxis = (typeof axis === 'number' && Number.isFinite(axis))
+      ? axis
+      : m.round((m.min(...notes) + m.max(...notes)) / 2);
     entries.forEach(e => {
       if (typeof e.note === 'number' && Number.isFinite(e.note)) {
         e.note = m.max(0, m.min(127, 2 * mirrorAxis - e.note));
