@@ -11,5 +11,6 @@ COMPOSER_TYPE_PROFILE_SOURCES.chords = {
   bidirectionalWalk: [{ type: 'chords', progression: 'random', direction: 'E', chordProfile: 'jazz', rhythmProfile: 'swung' }],
   restlessShuffle: [{ type: 'chords', progression: 'random', direction: '?', chordProfile: 'jazz', rhythmProfile: 'swung' }],
   minorDescent: [{ type: 'chords', progression: ['Am', 'G', 'F', 'E'], direction: 'R', chordProfile: 'classical', rhythmProfile: 'laidBack' }],
-  classicalMotion: [{ type: 'chords', progression: ['C', 'Dm', 'G', 'C'], direction: 'R', chordProfile: 'classical', rhythmProfile: 'straight' }]
+  classicalMotion: [{ type: 'chords', progression: ['C', 'Dm', 'G', 'C'], direction: 'R', chordProfile: 'classical', rhythmProfile: 'straight' }],
+  corpusHarmonic: [{ type: 'chords', progression: 'corpus', direction: 'R', chordProfile: 'jazz', rhythmProfile: 'swung' }]
 };

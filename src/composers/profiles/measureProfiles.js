@@ -10,5 +10,6 @@ COMPOSER_TYPE_PROFILE_SOURCES.measure = {
   grooveLocked: [{ type: 'measure', rhythmProfile: 'pushed', motifProfile: 'percussive', voiceProfile: 'expressive' }],
   exploratoryMeter: [{ type: 'measure', rhythmProfile: 'swung', motifProfile: 'default', voiceProfile: 'default' }],
   suspendedGrid: [{ type: 'measure', rhythmProfile: 'triplet', motifProfile: 'legato', voiceProfile: 'whisper' }],
-  accentedCells: [{ type: 'measure', rhythmProfile: 'straight', motifProfile: 'dense', voiceProfile: 'loud' }]
+  accentedCells: [{ type: 'measure', rhythmProfile: 'straight', motifProfile: 'dense', voiceProfile: 'loud' }],
+  expressiveLegato: [{ type: 'measure', rhythmProfile: 'laidBack', motifProfile: 'legato', voiceProfile: 'expressive' }]
 };

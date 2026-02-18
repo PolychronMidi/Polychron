@@ -9,5 +9,6 @@ COMPOSER_TYPE_PROFILE_SOURCES.pentatonic = {
   rootedMajor: [{ type: 'pentatonic', root: 'C', scaleType: 'major', voiceProfile: 'default', motifProfile: 'default' }],
   rootedMinor: [{ type: 'pentatonic', root: 'A', scaleType: 'minor', voiceProfile: 'soft', motifProfile: 'sparse' }],
   brightRandom: [{ type: 'pentatonic', root: 'random', scaleType: 'major', voiceProfile: 'loud', motifProfile: 'default' }],
-  darkRandom: [{ type: 'pentatonic', root: 'random', scaleType: 'minor', voiceProfile: 'soft', motifProfile: 'dense' }]
+  darkRandom: [{ type: 'pentatonic', root: 'random', scaleType: 'minor', voiceProfile: 'soft', motifProfile: 'dense' }],
+  wanderingRandom: [{ type: 'pentatonic', root: 'random', scaleType: 'random', voiceProfile: 'expressive', motifProfile: 'legato' }]
 };
