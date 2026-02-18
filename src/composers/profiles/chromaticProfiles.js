@@ -9,5 +9,8 @@ COMPOSER_TYPE_PROFILE_SOURCES.chromatic = {
   minorEnclosure: [{ type: 'chromatic', targetScaleName: 'minor', root: 'random', chromaticDensity: 0.5, voiceProfile: 'soft', motifProfile: 'default' }],
   jazzApproach: [{ type: 'chromatic', targetScaleName: 'dorian', root: 'random', chromaticDensity: 0.55, voiceProfile: 'loud', motifProfile: 'dense' }],
   rootedMajor: [{ type: 'chromatic', targetScaleName: 'major', root: 'C', chromaticDensity: 0.3, voiceProfile: 'default', motifProfile: 'sparse' }],
-  wideSpectrum: [{ type: 'chromatic', targetScaleName: 'random', root: 'random', chromaticDensity: 0.6, voiceProfile: 'expressive', motifProfile: 'percussive' }]
+  wideSpectrum: [{ type: 'chromatic', targetScaleName: 'random', root: 'random', chromaticDensity: 0.6, voiceProfile: 'expressive', motifProfile: 'percussive' }],
+  nearDiatonic: [{ type: 'chromatic', targetScaleName: 'major', root: 'random', chromaticDensity: 0.08, voiceProfile: 'soft', motifProfile: 'sparse' }],
+  lydianShimmer: [{ type: 'chromatic', targetScaleName: 'lydian', root: 'random', chromaticDensity: 0.45, voiceProfile: 'whisper', motifProfile: 'legato' }],
+  phrygianDark: [{ type: 'chromatic', targetScaleName: 'phrygian', root: 'random', chromaticDensity: 0.5, voiceProfile: 'loud', motifProfile: 'dense' }]
 };

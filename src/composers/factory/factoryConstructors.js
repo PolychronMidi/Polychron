@@ -98,7 +98,7 @@ factoryConstructors = {
         if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.quartal: allNotes not available');
         const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
         const s = scaleName === 'random' ? allScales[ri(allScales.length - 1)] : scaleName;
-        const vt = voicingType === 'random' ? (['quartal', 'quintal', 'mixed'])[ri(2)] : voicingType;
+        const vt = voicingType === 'random' ? (['quartal', 'quintal', 'mixed'])[ri(3)] : voicingType;
         return new QuartalComposer(s, r, vt, stackSize);
       },
 

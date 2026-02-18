@@ -109,7 +109,7 @@ const validateByType = {
   blues: (entry, label) => {
     ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
     ComposerProfileUtils.assertStringOrFail(entry.bluesType, `${label}.bluesType`);
-    if (!['major', 'minor'].includes(String(entry.bluesType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.bluesType must be major|minor`);
+    if (!['major', 'minor', 'random'].includes(String(entry.bluesType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.bluesType must be major|minor|random`);
     assertFiniteRangeOrFail(entry.blueNoteProb, 0, 1, `${label}.blueNoteProb`);
   },
   chromatic: (entry, label) => {
@@ -121,7 +121,7 @@ const validateByType = {
     ComposerProfileUtils.assertStringOrFail(entry.scaleName, `${label}.scaleName`);
     ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
     ComposerProfileUtils.assertStringOrFail(entry.voicingType, `${label}.voicingType`);
-    if (!['quartal', 'quintal', 'mixed'].includes(String(entry.voicingType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.voicingType must be quartal|quintal|mixed`);
+    if (!['quartal', 'quintal', 'mixed', 'random'].includes(String(entry.voicingType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.voicingType must be quartal|quintal|mixed|random`);
     assertIntegerRangeOrFail(entry.stackSize, 2, 6, `${label}.stackSize`);
   },
   tensionRelease: (entry, label) => {
