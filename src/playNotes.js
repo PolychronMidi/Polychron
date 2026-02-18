@@ -180,7 +180,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Apply voiceModulator to get per-pick velocity distribution
   // This gives each voice a slightly different velocity for natural ensemble feel
   if (typeof voiceModulator !== 'undefined' && voiceModulator && typeof voiceModulator.distribute === 'function' && Array.isArray(picks) && picks.length > 0) {
-    const distributed = voiceModulator.distribute(picks.map(p => p.note), { baseVelocity: velocity });
+    const distributed = voiceModulator.distribute(picks.map(p => p.note), { baseVelocity: velocity, textureMode: textureMode.mode });
     for (let di = 0; di < m.min(distributed.length, picks.length); di++) {
       if (Number.isFinite(distributed[di].velocity)) picks[di]._distributedVelocity = distributed[di].velocity;
     }
@@ -290,14 +290,47 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           }
         }
 
-        // ── Flurry: rapid sequential scalar notes ─────────────────
+        // ── Flurry: rapid sequential scale-locked notes (#3) ──────
         if (textureMode.mode === 'flurry' && isPrimary) {
           const flurryCount = ri(3, 5);
           const flurryDir = rf() < 0.5 ? 1 : -1;
           let flurryNote = noteToEmit;
           const flurryGap = tpUnit * rf(0.04, 0.09);
+
+          // Build scale-sorted pitch set for scalar motion (#3)
+          let scalePitches = null;
+          if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+            const sPCs = HarmonicContext.getField('scale');
+            if (Array.isArray(sPCs) && sPCs.length > 1) {
+              // Expand scale PCs into concrete MIDI notes within range
+              const lo = m.max(0, OCTAVE.min * 12 - 1);
+              const hi = OCTAVE.max * 12 - 1;
+              const pitches = [];
+              for (let oct = m.floor(lo / 12); oct <= m.ceil(hi / 12); oct++) {
+                for (let si = 0; si < sPCs.length; si++) {
+                  const pc = typeof sPCs[si] === 'number' ? sPCs[si] % 12 : -1;
+                  if (pc < 0) continue;
+                  const midi = oct * 12 + pc;
+                  if (midi >= lo && midi <= hi) pitches.push(midi);
+                }
+              }
+              if (pitches.length > 2) scalePitches = pitches.sort((a, b) => a - b);
+            }
+          }
+
           for (let fi = 0; fi < flurryCount; fi++) {
-            flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            if (scalePitches) {
+              // Find nearest scale tone in the chosen direction
+              let bestIdx = -1;
+              let bestDist = Infinity;
+              for (let si = 0; si < scalePitches.length; si++) {
+                const diff = (scalePitches[si] - flurryNote) * flurryDir;
+                if (diff > 0 && diff < bestDist) { bestDist = diff; bestIdx = si; }
+              }
+              flurryNote = bestIdx >= 0 ? scalePitches[bestIdx] : modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            } else {
+              flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            }
             const flurryVel = m.max(1, m.min(127, m.round(texVel * rf(0.65, 0.95) * (1 - fi * 0.05))));
             const flurrySus = tpUnit * rf(0.08, 0.2) * textureMode.sustainScale;
             const flurryOnTick = onTick + flurryGap * (fi + 1);
