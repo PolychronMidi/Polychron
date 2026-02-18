@@ -18,15 +18,28 @@
  * rf(10, 20, 30)
  */
 rf=randomFloat=(min1=1,max1,min2,max2)=>{
-  if (max1===undefined) { max1=min1; min1=0; }
-  [min1,max1]=[m.min(min1,max1),m.max(min1,max1)];
-  if (min2 !== undefined && max2 !== undefined) {
-    [min2,max2]=[m.min(min2,max2),m.max(min2,max2)];
-    const range1=max1-min1; const range2=max2-min2;
-    const totalRange=range1+range2; const rand=m.random()*totalRange;
-    if (rand < range1) { return m.random()*(range1+Number.EPSILON)+min1;
-    } else { return m.random()*(range2+Number.EPSILON)+min2; }
-  } else { return m.random()*(max1-min1+Number.EPSILON)+min1; }
+  let lo1 = Number(min1);
+  let hi1 = (max1 === undefined) ? Number(min1) : Number(max1);
+  if (max1 === undefined) lo1 = 0;
+  [lo1,hi1]=[m.min(lo1,hi1),m.max(lo1,hi1)];
+
+  const hasSecondRange = Number.isFinite(Number(min2)) && Number.isFinite(Number(max2));
+  if (hasSecondRange) {
+    const lo2Raw = Number(min2);
+    const hi2Raw = Number(max2);
+    const lo2 = m.min(lo2Raw, hi2Raw);
+    const hi2 = m.max(lo2Raw, hi2Raw);
+    const range1 = hi1 - lo1;
+    const range2 = hi2 - lo2;
+    const totalRange = range1 + range2;
+    const rand = m.random() * totalRange;
+    if (rand < range1) {
+      return m.random() * (range1 + Number.EPSILON) + lo1;
+    }
+    return m.random() * (range2 + Number.EPSILON) + lo2;
+  }
+
+  return m.random() * (hi1 - lo1 + Number.EPSILON) + lo1;
 };
 
 /**
@@ -44,20 +57,28 @@ rf=randomFloat=(min1=1,max1,min2,max2)=>{
  * ri(5, 15)
  */
 ri=randomInt=(min1=1,max1,min2,max2)=>{
-  if (max1===undefined) { max1=min1; min1=0; }
-  [min1,max1]=[m.min(min1,max1),m.max(min1,max1)];
-  if (min2 !== undefined && max2 !== undefined) {
-    [min2,max2]=[m.min(min2,max2),m.max(min2,max2)];
-    const range1=max1-min1; const range2=max2-min2;
-    const totalRange=range1+range2; const rand=rf()*totalRange;
+  let lo1 = Number(min1);
+  let hi1 = (max1 === undefined) ? Number(min1) : Number(max1);
+  if (max1 === undefined) lo1 = 0;
+  [lo1,hi1]=[m.min(lo1,hi1),m.max(lo1,hi1)];
+
+  const hasSecondRange = Number.isFinite(Number(min2)) && Number.isFinite(Number(max2));
+  if (hasSecondRange) {
+    const lo2Raw = Number(min2);
+    const hi2Raw = Number(max2);
+    const lo2 = m.min(lo2Raw, hi2Raw);
+    const hi2 = m.max(lo2Raw, hi2Raw);
+    const range1 = hi1 - lo1;
+    const range2 = hi2 - lo2;
+    const totalRange = range1 + range2;
+    const rand = rf() * totalRange;
     if (rand < range1) {
-      return clamp(m.round(rf() * range1 + min1),m.ceil(min1),m.floor(max1));
-    } else {
-      return clamp(m.round(rand - range1 + min2),m.ceil(min2),m.floor(max2));
+      return clamp(m.round(rf() * range1 + lo1), m.ceil(lo1), m.floor(hi1));
     }
-  } else {
-    return clamp(m.round(rf() * (max1 - min1) + min1),m.ceil(min1),m.floor(max1));
+    return clamp(m.round(rand - range1 + lo2), m.ceil(lo2), m.floor(hi2));
   }
+
+  return clamp(m.round(rf() * (hi1 - lo1) + lo1), m.ceil(lo1), m.floor(hi1));
 };
 
 /**
@@ -101,9 +122,9 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=undefined,conditionMin=undefined,
       let effectValue=chFXMap[effectNum];
       let newMin=minValue,newMax=maxValue;
       const change=(newMax-newMin)*rf(.1,.3);
-      if (typeof condition==='function' && condition(ch)) {
-        newMin=conditionMin;
-        newMax=conditionMax;
+      if (typeof condition==='function' && condition(ch) && Number.isFinite(Number(conditionMin)) && Number.isFinite(Number(conditionMax))) {
+        newMin=Number(conditionMin);
+        newMax=Number(conditionMax);
         effectValue=clamp(rl(effectValue,m.floor(-change),m.ceil(change),newMin,newMax),newMin,newMax);
       } else {
         effectValue=clamp(rl(effectValue,m.floor(-change),m.ceil(change),newMin,newMax),newMin,newMax);
