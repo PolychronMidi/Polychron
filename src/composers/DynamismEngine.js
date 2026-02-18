@@ -125,9 +125,15 @@ DynamismEngine = (() => {
       : 0.5;
     const flickerScale = depthAmp * (0.5 + 0.5 * crossModAmp);
 
-    // Two incommensurate sine layers for organic non-repeating flicker
-    const flicker1 = m.sin(unitSeed * 0.0037 + unitPhase * 2.7) * flickerScale;
-    const flicker2 = m.sin(unitSeed * 0.0071 - unitPhase * 4.1) * flickerScale * 0.7;
+    // Two incommensurate noise samples for organic non-repeating flicker (#6)
+    // Uses defaultSimplex (noise subsystem) when available; falls back to sine
+    const useNoise = typeof defaultSimplex !== 'undefined' && defaultSimplex && typeof defaultSimplex.noise === 'function';
+    const flicker1 = useNoise
+      ? defaultSimplex.noise(unitSeed * 0.0037, unitPhase * 2.7) * flickerScale
+      : m.sin(unitSeed * 0.0037 + unitPhase * 2.7) * flickerScale;
+    const flicker2 = useNoise
+      ? defaultSimplex.noise(unitSeed * 0.0071, -unitPhase * 4.1) * flickerScale * 0.7
+      : m.sin(unitSeed * 0.0071 - unitPhase * 4.1) * flickerScale * 0.7;
     const spike = rf(-1, 1) * flickerScale * 0.4;
 
     return clamp(basePulse + flicker1 + flicker2 + spike, 0, 1);

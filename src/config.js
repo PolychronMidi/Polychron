@@ -167,6 +167,12 @@ STUTTER_PRESETS = {
   }
 };
 NOISE_PROFILES = {
+  micro: {
+    generatorX: 'simplex',
+    generatorY: 'simplex',
+    influenceX: 0.08,
+    influenceY: 0.06
+  },
   subtle: {
     generatorX: 'simplex',
     generatorY: 'perlin',

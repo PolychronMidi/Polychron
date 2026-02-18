@@ -3,8 +3,74 @@
 // chord stab ('chordBurst'), or inject a rapid scalar flurry ('flurry').
 // Probabilities oscillate using micro-hyper technique so texture switching
 // never settles into a predictable pattern.
+// Integrations: Stutter coupling (#1), Phrase arc fatigue tracking (#3).
 
 TextureBlender = (() => {
+  // ── Fatigue tracking: rolling window of recent decisions (#3) ──
+  const FATIGUE_WINDOW = 12;
+  const recentModes = [];
+
+  /**
+   * Return a fatigue multiplier for a given mode (1 = fresh, 0.2 = heavily fatigued).
+   * Repeated use of the same mode within the rolling window decays probability.
+   * @param {string} mode
+   * @returns {number}
+   */
+  function getFatigue(mode) {
+    let count = 0;
+    for (let i = 0; i < recentModes.length; i++) {
+      if (recentModes[i] === mode) count++;
+    }
+    return m.max(0.2, 1 - count * 0.15);
+  }
+
+  /** Push a mode into the rolling window, evicting oldest if full. */
+  function recordMode(mode) {
+    recentModes.push(mode);
+    if (recentModes.length > FATIGUE_WINDOW) recentModes.shift();
+  }
+
+  /**
+   * Get phrase-position influence on texture probabilities (#3).
+   * Openings favour 'single' to let melody establish; climaxes boost textures;
+   * resolutions allow bursts but suppress flurries.
+   * @returns {{ burstBias: number, flurryBias: number }}
+   */
+  function getPhraseTextureInfluence() {
+    if (typeof ComposerFactory !== 'undefined' && ComposerFactory &&
+        ComposerFactory.sharedPhraseArcManager &&
+        typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function') {
+      const ctx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
+      const pos = Number(ctx.position) || 0;
+      const phase = ctx.phase || '';
+
+      if (ctx.atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };
+      if (phase === 'climax' || phase === 'peak')  return { burstBias: 1.6, flurryBias: 1.4 };
+      if (ctx.atEnd || phase === 'resolution')     return { burstBias: 1.2, flurryBias: 0.5 };
+      // Development: scale with position in phrase
+      return { burstBias: 0.7 + pos * 0.8, flurryBias: 0.8 + (1 - pos) * 0.6 };
+    }
+    return { burstBias: 1, flurryBias: 1 };
+  }
+
+  /**
+   * Stutter coupling (#1): if stutter has selected channels, suppress chord
+   * bursts (they rhythmically clash with stutter octave jumps) and bias toward
+   * flurry for complementary melodic dialogue.
+   * @returns {{ burstSuppression: number, flurryBoost: number }}
+   */
+  function getStutterCoupling() {
+    if (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext) {
+      const bc = Stutter.beatContext;
+      const hasReflection = bc.selectedReflectionChannels && bc.selectedReflectionChannels.size > 0;
+      const hasBass = bc.selectedBassChannels && bc.selectedBassChannels.size > 0;
+      if (hasReflection || hasBass) {
+        return { burstSuppression: 0.35, flurryBoost: 1.3 };
+      }
+    }
+    return { burstSuppression: 1, flurryBoost: 1 };
+  }
+
   /**
    * Resolve the texture mode for a given unit invocation.
    * @param {'beat'|'div'|'subdiv'|'subsubdiv'} unit
@@ -20,39 +86,40 @@ TextureBlender = (() => {
     }
 
     // ── Oscillating probability seeds ──────────────────────────────
-    // Use unitStart (tick position) to create non-repeating oscillation
     const seed = (typeof unitStart === 'number' && Number.isFinite(unitStart))
       ? unitStart
       : (typeof beatStart === 'number' && Number.isFinite(beatStart) ? beatStart : 0);
     const unitDepth = unit === 'beat' ? 0 : unit === 'div' ? 1 : unit === 'subdiv' ? 2 : 3;
 
-    // Two incommensurate oscillations for chaotic probability modulation
-    const oscA = (m.sin(seed * 0.0023 + unitDepth * 3.7) + 1) * 0.5; // 0-1
-    const oscB = (m.sin(seed * 0.0059 - unitDepth * 5.3) + 1) * 0.5; // 0-1
+    const oscA = (m.sin(seed * 0.0023 + unitDepth * 3.7) + 1) * 0.5;
+    const oscB = (m.sin(seed * 0.0059 - unitDepth * 5.3) + 1) * 0.5;
     const oscBlend = oscA * 0.6 + oscB * 0.4;
 
-    // Scale flicker with crossModulation for self-reinforcing texture feedback
     const crossModFactor = (typeof crossModulation === 'number' && Number.isFinite(crossModulation))
       ? clamp(crossModulation / 6, 0, 1)
       : 0.5;
 
+    // ── Context-aware modulation (#1 + #3) ─────────────────────────
+    const phraseInfluence = getPhraseTextureInfluence();
+    const stutterCoupling = getStutterCoupling();
+    const burstFatigue = getFatigue('chordBurst');
+    const flurryFatigue = getFatigue('flurry');
+
     // ── Chord burst probability ────────────────────────────────────
-    // Higher when composite is high (shredding territory) — stabs interrupting runs
-    // Deeper units get higher chord burst chance for dramatic contrast
     const burstBase = unit === 'beat' ? 0.02 : unit === 'div' ? 0.06 : unit === 'subdiv' ? 0.10 : 0.08;
     const burstProb = clamp(
-      burstBase * (0.3 + composite * 1.5) * (0.6 + oscBlend * 0.8) * (0.7 + crossModFactor * 0.6),
+      burstBase * (0.3 + composite * 1.5) * (0.6 + oscBlend * 0.8) * (0.7 + crossModFactor * 0.6)
+        * phraseInfluence.burstBias * stutterCoupling.burstSuppression * burstFatigue,
       0,
-      0.18 // cap to avoid overwhelming
+      0.18
     );
 
     // ── Flurry probability ─────────────────────────────────────────
-    // Higher when composite is low (pad territory) — runs interrupting chords
-    // Also possible at moderate intensity for contrast
     const flurryBase = unit === 'beat' ? 0.03 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.06 : 0.04;
     const invertedComposite = 1 - composite;
     const flurryProb = clamp(
-      flurryBase * (0.3 + invertedComposite * 1.5) * (0.5 + (1 - oscBlend) * 1.0) * (0.7 + crossModFactor * 0.6),
+      flurryBase * (0.3 + invertedComposite * 1.5) * (0.5 + (1 - oscBlend) * 1.0) * (0.7 + crossModFactor * 0.6)
+        * phraseInfluence.flurryBias * stutterCoupling.flurryBoost * flurryFatigue,
       0,
       0.15
     );
@@ -60,21 +127,29 @@ TextureBlender = (() => {
     // ── Roll the dice ──────────────────────────────────────────────
     const roll = rf();
     if (roll < burstProb) {
-      return {
+      /** @type {{ mode: 'chordBurst'|'flurry'|'single', velocityScale: number, sustainScale: number }} */
+      const result = {
         mode: 'chordBurst',
         velocityScale: clamp(0.75 + composite * 0.3 + rf(-0.05, 0.05), 0.5, 1.2),
-        sustainScale: clamp(0.15 + (1 - composite) * 0.25, 0.1, 0.5) // short stab
+        sustainScale: clamp(0.15 + (1 - composite) * 0.25, 0.1, 0.5)
       };
-    }
-    if (roll < burstProb + flurryProb) {
-      return {
+      recordMode(result.mode);
+      return result;
+    } else if (roll < burstProb + flurryProb) {
+      /** @type {{ mode: 'chordBurst'|'flurry'|'single', velocityScale: number, sustainScale: number }} */
+      const result = {
         mode: 'flurry',
         velocityScale: clamp(0.65 + invertedComposite * 0.25 + rf(-0.05, 0.05), 0.4, 1.0),
-        sustainScale: clamp(0.1 + composite * 0.15, 0.08, 0.3) // rapid notes
+        sustainScale: clamp(0.1 + composite * 0.15, 0.08, 0.3)
       };
+      recordMode(result.mode);
+      return result;
+    } else {
+      /** @type {{ mode: 'chordBurst'|'flurry'|'single', velocityScale: number, sustainScale: number }} */
+      const result = { mode: 'single', velocityScale: 1, sustainScale: 1 };
+      recordMode(result.mode);
+      return result;
     }
-
-    return { mode: 'single', velocityScale: 1, sustainScale: 1 };
   }
 
   return { resolve };

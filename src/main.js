@@ -89,6 +89,10 @@ if (typeof StutterFeedbackListener !== 'undefined') {
 if (typeof JourneyRhythmCoupler !== 'undefined') {
   JourneyRhythmCoupler.initialize();
 }
+// Initialize texture contrast → drum accent coupling (#5)
+if (typeof DrumTextureCoupler !== 'undefined') {
+  DrumTextureCoupler.initialize();
+}
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 
