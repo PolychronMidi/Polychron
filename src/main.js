@@ -112,6 +112,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     HarmonicJourney.applyToContext(sectionIndex);
   }
 
+  // Phase-driven conductor profile: match the conductor's character to the structural moment
+  ConductorConfig.applyPhaseProfile();
+
   // Prepare pivot chord bridge for section transitions with key changes
   if (typeof PivotChordBridge !== 'undefined' && PivotChordBridge && typeof PivotChordBridge.prepareBridge === 'function') {
     PivotChordBridge.prepareBridge(sectionIndex);
