@@ -101,6 +101,20 @@ PhaseLockedRhythmGenerator = (() => {
       }
     }
 
+    // ── Texture-driven phase drift (#9) ──────────────────────────
+    // Chord bursts → advance phase (layers drift apart → polyrhythmic tension)
+    // Flurries → negative drift (layers re-align → convergence)
+    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+      const texMetrics = DrumTextureCoupler.getMetrics();
+      if (texMetrics.intensity > 0.2) {
+        const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
+        const drift = burstDom
+          ? m.round(texMetrics.intensity * rf(0.5, 1.5))    // divergence
+          : -m.round(texMetrics.intensity * rf(0.3, 1.0));   // convergence
+        offset += drift;
+      }
+    }
+
     offset = ((offset % length) + length) % length; // Normalize to [0, length)
 
     // Rotate pattern by offset

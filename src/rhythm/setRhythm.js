@@ -2,6 +2,18 @@ _random = require('@tonaljs/rhythm-pattern').random;
 
 setRhythm = function setRhythm(level, ctx = null) {
   const random = (length, probOn) => { return _random(length, 1 - probOn); };
+  // ── Texture-modulated onset density (#8) ──────────────────────────
+  // Flurry activity → denser onsets (more notes), burst activity → sparser (give chords room)
+  const texProbScale = (() => {
+    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+      const metrics = DrumTextureCoupler.getMetrics();
+      if (metrics.intensity > 0.15) {
+        const burstDom = metrics.burstCount > metrics.flurryCount;
+        return burstDom ? (1 - metrics.intensity * 0.4) : (1 + metrics.intensity * 0.5);
+      }
+    }
+    return 1;
+  })();
   switch (level) {
     case 'beat': {
       const res = beatRhythm < 1 ? random(numerator) : getRhythm('beat', numerator, beatRhythm);
@@ -12,7 +24,7 @@ setRhythm = function setRhythm(level, ctx = null) {
       return res;
     }
     case 'div': {
-      const res = divRhythm < 1 ? random(divsPerBeat, .4) : getRhythm('div', divsPerBeat, divRhythm);
+      const res = divRhythm < 1 ? random(divsPerBeat, clamp(.4 * texProbScale, 0.1, 0.9)) : getRhythm('div', divsPerBeat, divRhythm);
       if (!Array.isArray(res)) {
         throw new Error(`[setRhythm] Div rhythm could not be generated (level=div, divsPerBeat=${divsPerBeat}, divRhythm=${divRhythm})`);
       }
@@ -20,7 +32,7 @@ setRhythm = function setRhythm(level, ctx = null) {
       return res;
     }
     case 'subdiv': {
-      const res = subdivRhythm < 1 ? random(subdivsPerDiv, .3) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm);
+      const res = subdivRhythm < 1 ? random(subdivsPerDiv, clamp(.3 * texProbScale, 0.1, 0.9)) : getRhythm('subdiv', subdivsPerDiv, subdivRhythm);
       if (!Array.isArray(res)) {
         throw new Error(`[setRhythm] Subdiv rhythm could not be generated (level=subdiv, subdivsPerDiv=${subdivsPerDiv}, subdivRhythm=${subdivRhythm})`);
       }
@@ -28,7 +40,7 @@ setRhythm = function setRhythm(level, ctx = null) {
       return res;
     }
     case 'subsubdiv': {
-      const res = subsubdivRhythm < 1 ? random(subsubsPerSub, .3) : getRhythm('subsubdiv', subsubsPerSub, subsubdivRhythm);
+      const res = subsubdivRhythm < 1 ? random(subsubsPerSub, clamp(.3 * texProbScale, 0.1, 0.9)) : getRhythm('subsubdiv', subsubsPerSub, subsubdivRhythm);
       if (!Array.isArray(res)) {
         throw new Error(`[setRhythm] Subsubdiv rhythm could not be generated (level=subsubdiv, subsubsPerSub=${subsubsPerSub}, subsubdivRhythm=${subsubdivRhythm})`);
       }

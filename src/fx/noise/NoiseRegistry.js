@@ -33,8 +33,23 @@ noiseGenerators = {
 // Cache generator keys to avoid repeated Object.keys() calls
 generatorKeys = Object.keys(noiseGenerators);
 
-// Get random generator name from registry (optimized with cached keys)
+// Get random generator name from registry — texture-biased (#6)
+// During chord bursts → smooth generators (simplex, sine, fbm, gaussian)
+// During flurries → chaotic generators (turbulence, ridged, worley, metaRecursive)
 randomNoiseGenerator = function() {
+  if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+    const texMetrics = DrumTextureCoupler.getMetrics();
+    if (texMetrics.intensity > 0.2) {
+      const smoothKeys = ['simplex', 'sine', 'fbm', 'gaussian', 'metaSimplex2D'];
+      const chaoticKeys = ['turbulence', 'ridged', 'worley', 'metaRecursive', 'metaFBM'];
+      const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
+      const preferred = burstDom ? smoothKeys : chaoticKeys;
+      if (rf() < 0.7) {
+        const available = preferred.filter(k => noiseGenerators[k]);
+        if (available.length > 0) return available[ri(0, available.length - 1)];
+      }
+    }
+  }
   return generatorKeys[ri(0, generatorKeys.length - 1)];
 };
 

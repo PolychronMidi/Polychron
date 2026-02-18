@@ -109,7 +109,28 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     }
 
     this.measureCount++;
-    this.currentPhase = m.floor((this.measureCount - 1) / 2) % 4;
+    // ── Texture-phase coupling (#4) ──────────────────────────
+    // Texture state biases development technique: chord bursts → transposition
+    // (phases 0,1), flurries → inversion (phase 2), sustained single → retrograde (phase 3)
+    const basePhase = m.floor((this.measureCount - 1) / 2) % 4;
+    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+      const texMetrics = DrumTextureCoupler.getMetrics();
+      if (texMetrics.intensity > 0.3) {
+        const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
+        const flurryDom = texMetrics.flurryCount > texMetrics.burstCount;
+        if (burstDom) {
+          this.currentPhase = rf() < 0.6 ? 0 : 1;
+        } else if (flurryDom) {
+          this.currentPhase = 2;
+        } else {
+          this.currentPhase = 3;
+        }
+      } else {
+        this.currentPhase = basePhase;
+      }
+    } else {
+      this.currentPhase = basePhase;
+    }
     let developedNotes = [...baseNotes];
     const intensity = this.intensity;
 

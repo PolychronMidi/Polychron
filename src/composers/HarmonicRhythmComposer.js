@@ -50,7 +50,23 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   }
 
   getCurrentChord() {
-    const chordIndex = m.floor(this.measureCount / this.measuresPerChord) % this.progression.length;
+    // ── Texture-responsive harmonic pacing (#5) ──────────────────────────
+    // Sustained chord-burst activity → faster harmonic rhythm (reduce measuresPerChord)
+    // Sustained flurry activity → slower harmonic rhythm (hold chords longer)
+    let effectiveMPC = this.measuresPerChord;
+    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+      const texMetrics = DrumTextureCoupler.getMetrics();
+      if (texMetrics.intensity > 0.3) {
+        const burstDominant = texMetrics.burstCount > texMetrics.flurryCount;
+        if (burstDominant) {
+          effectiveMPC = m.max(1, m.round(effectiveMPC - texMetrics.intensity));
+        } else {
+          effectiveMPC = m.min(8, m.round(effectiveMPC + texMetrics.intensity * 0.5));
+        }
+      }
+    }
+    effectiveMPC = clamp(effectiveMPC, 1, 8);
+    const chordIndex = m.floor(this.measureCount / effectiveMPC) % this.progression.length;
     return this.progression[chordIndex].symbol || this.progression[chordIndex];
   }
 
