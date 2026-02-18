@@ -3,6 +3,16 @@
  * @returns {void}
  */
 setBalanceAndFX = () => {
+const spatialCanvas = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getSpatialCanvasParams === 'function')
+  ? ConductorConfig.getSpatialCanvasParams()
+  : {
+      balOffset: [0, 45],
+      balStep: 4,
+      sideBias: [-20, 20],
+      sideBiasStep: 2,
+      lBalMax: 54,
+      ccGroupScale: { source: 1, reflection: 1, bass: 1 }
+    };
 // Respect both instance state and legacy naked global `firstLoop` set by tests
 if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 || (typeof firstLoop !== 'undefined' && firstLoop < 1)) { firstLoop=1; firstLoop = 1;
   // Apply a limited change to balance offset: use rl() but cap per-iteration change to +/-4 ticks for stability
@@ -10,10 +20,18 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<
   // Use global previous balOffset when available so tests observing global changes see
   // a limited delta relative to the global baseline rather than instance baseline
   const prevGlobalBal = (typeof balOffset !== 'undefined' && Number.isFinite(Number(balOffset))) ? Number(balOffset) : prevBal;
-  const candidateBal = rl(prevGlobalBal, -4, 4, 0, 45);
-  balOffset = clamp(candidateBal, m.max(0, prevGlobalBal - 4), m.min(45, prevGlobalBal + 4));
-  sideBias=rl(sideBias,-2,2,-20,20);
-  lBal=m.max(0,m.min(54,balOffset + ri(3) + sideBias));
+  const balMin = Number(spatialCanvas.balOffset[0]);
+  const balMax = Number(spatialCanvas.balOffset[1]);
+  const balStep = Number.isFinite(Number(spatialCanvas.balStep)) ? Number(spatialCanvas.balStep) : 4;
+  const sideBiasMin = Number(spatialCanvas.sideBias[0]);
+  const sideBiasMax = Number(spatialCanvas.sideBias[1]);
+  const sideBiasStep = Number.isFinite(Number(spatialCanvas.sideBiasStep)) ? Number(spatialCanvas.sideBiasStep) : 2;
+  const lBalMax = Number.isFinite(Number(spatialCanvas.lBalMax)) ? Number(spatialCanvas.lBalMax) : 54;
+
+  const candidateBal = rl(prevGlobalBal, -balStep, balStep, balMin, balMax);
+  balOffset = clamp(candidateBal, m.max(balMin, prevGlobalBal - balStep), m.min(balMax, prevGlobalBal + balStep));
+  sideBias=rl(sideBias,-sideBiasStep,sideBiasStep,sideBiasMin,sideBiasMax);
+  lBal=m.max(0,m.min(lBalMax,balOffset + ri(3) + sideBias));
   rBal=m.min(127,m.max(74,127 - balOffset - ri(3) + sideBias));
   cBal=m.min(96,(m.max(32,64 + m.round(rv(balOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
   refVar=ri(1,10); cBal2=rf()<.5?cBal+m.round(refVar*.5) : cBal+m.round(refVar*-.5);
@@ -79,6 +97,29 @@ return [
     ...bass.map(ch=>rlFX(ch,94,0,64,(c)=>c===cCH3,0,11)),
     ...bass.map(ch=>rlFX(ch,95,0,99,(c)=>c===cCH3,0,64)),
   ];  })  );
+
+  const ccGroupScale = spatialCanvas.ccGroupScale || { source: 1, reflection: 1, bass: 1 };
+  const scalableCCs = new Set([1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95]);
+  const sourceSet = new Set(Array.isArray(source2) ? source2 : []);
+  const reflectionSet = new Set(Array.isArray(reflection) ? reflection : []);
+  const bassSet = new Set(Array.isArray(bass) ? bass : []);
+  const targetTick = Number(beatStart - 1);
+  for (let i = 0; i < c.length; i++) {
+    const evt = c[i];
+    if (!evt || evt.type !== 'control_c' || !evt.vals || evt.vals.length < 3) continue;
+    if (Number(evt.tick) !== targetTick) continue;
+    const ccNum = Number(evt.vals[1]);
+    if (!scalableCCs.has(ccNum)) continue;
+    const chNum = evt.vals[0];
+    const groupScale = sourceSet.has(chNum)
+      ? Number(ccGroupScale.source)
+      : reflectionSet.has(chNum)
+        ? Number(ccGroupScale.reflection)
+        : bassSet.has(chNum)
+          ? Number(ccGroupScale.bass)
+          : 1;
+    evt.vals[2] = clamp(m.round(Number(evt.vals[2]) * groupScale), 0, 127);
+  }
   // ── Texture-reactive FX modulation (#5) — conductor-driven ────────
   // When texture contrast intensity is high, boost reverb send (CC91),
   // open filter cutoff (CC74), and spike delay send (CC94) so the spatial

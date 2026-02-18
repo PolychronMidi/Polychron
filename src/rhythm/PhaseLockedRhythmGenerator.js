@@ -107,10 +107,13 @@ PhaseLockedRhythmGenerator = (() => {
     if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
       const texMetrics = DrumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.2) {
+        const driftParams = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getRhythmDriftParams === 'function')
+          ? ConductorConfig.getRhythmDriftParams()
+          : { burst: [0.5, 1.5], flurry: [0.3, 1.0] };
         const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
         const drift = burstDom
-          ? m.round(texMetrics.intensity * rf(0.5, 1.5))    // divergence
-          : -m.round(texMetrics.intensity * rf(0.3, 1.0));   // convergence
+          ? m.round(texMetrics.intensity * rf(driftParams.burst[0], driftParams.burst[1]))    // divergence
+          : -m.round(texMetrics.intensity * rf(driftParams.flurry[0], driftParams.flurry[1])); // convergence
         offset += drift;
       }
     }

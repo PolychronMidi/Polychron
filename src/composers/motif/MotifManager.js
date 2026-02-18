@@ -44,10 +44,30 @@ MotifManager = (function() {
     if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
       const texMetrics = DrumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.2) {
+        const clampParams = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getMotifTextureClampParams === 'function')
+          ? ConductorConfig.getMotifTextureClampParams()
+          : {
+              burstDensity: [0.7, 1.0],
+              sparseDensity: [0.3, 0.7],
+              burstIntervalDensity: [0.7, 0.95],
+              sparseIntervalDensity: [0.4, 0.7]
+            };
         const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
+        const burstDensityMin = clampParams.burstDensity[0];
+        const burstDensityMax = clampParams.burstDensity[1];
+        const sparseDensityMin = clampParams.sparseDensity[0];
+        const sparseDensityMax = clampParams.sparseDensity[1];
+        const burstIntervalMin = clampParams.burstIntervalDensity[0];
+        const burstIntervalMax = clampParams.burstIntervalDensity[1];
+        const sparseIntervalMin = clampParams.sparseIntervalDensity[0];
+        const sparseIntervalMax = clampParams.sparseIntervalDensity[1];
         config.setUnitProfileOverride('measure', {
-          density: burstDom ? clamp(0.7 + texMetrics.intensity * 0.3, 0.7, 1.0) : clamp(0.7 - texMetrics.intensity * 0.3, 0.3, 0.7),
-          intervalDensity: burstDom ? clamp(0.7 + texMetrics.intensity * 0.25, 0.7, 0.95) : clamp(0.7 - texMetrics.intensity * 0.2, 0.4, 0.7)
+          density: burstDom
+            ? clamp(burstDensityMin + texMetrics.intensity * (burstDensityMax - burstDensityMin), burstDensityMin, burstDensityMax)
+            : clamp(sparseDensityMax - texMetrics.intensity * (sparseDensityMax - sparseDensityMin), sparseDensityMin, sparseDensityMax),
+          intervalDensity: burstDom
+            ? clamp(burstIntervalMin + texMetrics.intensity * (burstIntervalMax - burstIntervalMin), burstIntervalMin, burstIntervalMax)
+            : clamp(sparseIntervalMax - texMetrics.intensity * (sparseIntervalMax - sparseIntervalMin), sparseIntervalMin, sparseIntervalMax)
         });
       }
     }
