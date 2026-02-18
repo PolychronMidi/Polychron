@@ -139,6 +139,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     ? TextureBlender.resolve(unit, Number(resolved.composite) || 0)
     : { mode: 'single', velocityScale: 1, sustainScale: 1 };
 
+  // ── Emit texture-contrast event for drum coupling (#5) ─────────
+  if (textureMode.mode !== 'single' && typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+    EventBus.emit('texture-contrast', { mode: textureMode.mode, unit, composite: Number(resolved.composite) || 0 });
+  }
+
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
   try {
     const layerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
@@ -257,7 +262,22 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
         // ── Chord burst: extra simultaneous chord-tone notes ──────
         if (textureMode.mode === 'chordBurst' && isPrimary) {
-          const burstIntervals = [3, 4, 7]; // minor 3rd, major 3rd, 5th
+          // Derive intervals from current harmonic context scale (#4)
+          let burstIntervals = [3, 4, 7]; // fallback: minor 3rd, major 3rd, 5th
+          if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+            const scalePCs = HarmonicContext.getField('scale');
+            if (Array.isArray(scalePCs) && scalePCs.length > 1) {
+              const rootPC = noteToEmit % 12;
+              const derived = [];
+              for (let si = 0; si < scalePCs.length; si++) {
+                const pc = typeof scalePCs[si] === 'number' ? scalePCs[si] % 12 : -1;
+                if (pc < 0) continue;
+                const interval = (pc - rootPC + 12) % 12;
+                if (interval > 0) derived.push(interval);
+              }
+              if (derived.length >= 2) burstIntervals = derived;
+            }
+          }
           const burstCount = ri(2, 3);
           for (let bi = 0; bi < burstCount; bi++) {
             const interval = burstIntervals[bi % burstIntervals.length] * (rf() < 0.3 ? -1 : 1);
@@ -310,6 +330,32 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
         const reflOffEvt = { tick: offTick, vals: [reflectionCH, reflectionEmitNote] };
         microUnitAttenuator.record(reflOnEvt, reflOffEvt, crossModulation); scheduled += 2;
+
+        // ── Texture spillover: softer echo of burst tones on reflection (#2) ──
+        if (textureMode.mode === 'chordBurst' && isPrimary) {
+          const reflBurstCount = ri(1, 2);
+          const echoIntervals = [3, 4, 7]; // tertian echoes (minor 3rd, major 3rd, 5th)
+          for (let rbi = 0; rbi < reflBurstCount; rbi++) {
+            const echoInterval = echoIntervals[rbi % echoIntervals.length] * (rf() < 0.3 ? -1 : 1);
+            const echoNote = modClamp(reflectionEmitNote + echoInterval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            const echoVel = m.max(1, m.min(127, m.round(onVelRefl * rf(0.45, 0.65) * textureMode.velocityScale)));
+            const echoStagger = tpUnit * rf(0.01, 0.04) * (rbi + 1);
+            const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [reflectionCH, echoNote, echoVel] };
+            const echoOffEvt = { tick: onTick + echoStagger + sustain * textureMode.sustainScale * rf(0.6, 0.9), vals: [reflectionCH, echoNote] };
+            microUnitAttenuator.record(echoOnEvt, echoOffEvt, crossModulation); scheduled += 2;
+          }
+        }
+        // Flurry spillover: single trailing scalar note on reflection (ghost note)
+        if (textureMode.mode === 'flurry' && isPrimary) {
+          const ghostDir = rf() < 0.5 ? 1 : -1;
+          const ghostNote = modClamp(reflectionEmitNote + ghostDir * ri(1, 3), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+          const ghostVel = m.max(1, m.min(127, m.round(onVelRefl * rf(0.35, 0.55))));
+          const ghostDelay = tpUnit * rf(0.06, 0.14);
+          const ghostSus = tpUnit * rf(0.1, 0.25) * textureMode.sustainScale;
+          const ghostOnEvt = { tick: onTick + ghostDelay, type: 'on', vals: [reflectionCH, ghostNote, ghostVel] };
+          const ghostOffEvt = { tick: onTick + ghostDelay + ghostSus, vals: [reflectionCH, ghostNote] };
+          microUnitAttenuator.record(ghostOnEvt, ghostOffEvt, crossModulation); scheduled += 2;
+        }
       }
 
       // Bass channels — stereo mirror of the pick (clamped to bass range)
@@ -333,7 +379,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
           const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
 
           const bassOnEvt = { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] };
-          const offTick = on + sustain * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
+          // Bass sustain responds to texture mode (#2): bursts → short anchor, flurry → extended root
+          const bassSustainScale = textureMode.mode === 'chordBurst' ? textureMode.sustainScale * rf(1.2, 1.6)
+            : textureMode.mode === 'flurry' ? rf(1.3, 1.8)
+            : 1;
+          const offTick = on + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
           const bassOffEvt = { tick: offTick, vals: [bassCH, bassNote] };
           microUnitAttenuator.record(bassOnEvt, bassOffEvt, crossModulation); scheduled += 2;
         }

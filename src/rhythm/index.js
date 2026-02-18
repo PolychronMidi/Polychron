@@ -3,6 +3,7 @@ require('./RhythmValues');
 require('./rhythmModulator');
 require('./FXFeedbackListener');
 require('./JourneyRhythmCoupler');
+require('./DrumTextureCoupler');
 require('./PhaseLockedRhythmGenerator');
 require('./rhythmConfig');
 require('./rhythmPriorsData');
