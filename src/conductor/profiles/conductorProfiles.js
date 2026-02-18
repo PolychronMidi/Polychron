@@ -53,6 +53,17 @@ CONDUCTOR_PROFILE_SOURCES = {
     climaxBoost: {
       playScale: 1.1,
       stutterScale: 1.2
+    },
+    crossMod: {
+      rangeScale: 1.0,        // multiplier on crossMod active/inactive rf() ranges
+      penaltyScale: 1.0,      // multiplier on penalty/reward thresholds
+      textureBoostScale: 1.0  // multiplier on texture-reactive crossMod inflation
+    },
+    fxMix: {
+      reverbScale: 1.0,       // multiplier on reverb CC91/92/93 ranges
+      filterOpenness: 1.0,    // multiplier on CC74 filter cutoff range above baseline
+      delayScale: 1.0,        // multiplier on CC94 delay send ranges
+      textureBoostScale: 1.0  // multiplier on texture-reactive FX boost amounts
     }
   },
 
@@ -97,6 +108,17 @@ CONDUCTOR_PROFILE_SOURCES = {
     climaxBoost: {
       playScale: 1.05,
       stutterScale: 1.05
+    },
+    crossMod: {
+      rangeScale: 0.6,        // tighter coupling — narrower crossMod swings
+      penaltyScale: 0.7,      // lower thresholds to penalize density earlier
+      textureBoostScale: 0.5  // muted texture feedback
+    },
+    fxMix: {
+      reverbScale: 0.6,       // intimate, dry mix
+      filterOpenness: 0.7,    // darker, more filtered
+      delayScale: 0.4,        // very little delay
+      textureBoostScale: 0.4  // subtle texture FX
     }
   },
 
@@ -141,6 +163,17 @@ CONDUCTOR_PROFILE_SOURCES = {
     climaxBoost: {
       playScale: 1.2,
       stutterScale: 1.4
+    },
+    crossMod: {
+      rangeScale: 1.6,        // wide swings — chaotic density oscillation
+      penaltyScale: 1.4,      // higher threshold before penalties kick in
+      textureBoostScale: 1.8  // aggressive texture→crossMod amplification
+    },
+    fxMix: {
+      reverbScale: 1.6,       // cavernous reverb
+      filterOpenness: 1.4,    // bright, open filter
+      delayScale: 1.8,        // heavy delay washes
+      textureBoostScale: 2.0  // dramatic texture FX spikes
     }
   },
 
@@ -185,6 +218,17 @@ CONDUCTOR_PROFILE_SOURCES = {
     climaxBoost: {
       playScale: 1.05,
       stutterScale: 1.0
+    },
+    crossMod: {
+      rangeScale: 0.8,        // moderate coupling
+      penaltyScale: 0.8,      // slightly lower thresholds
+      textureBoostScale: 0.6  // gentle texture feedback
+    },
+    fxMix: {
+      reverbScale: 1.4,       // spacious reverb depth
+      filterOpenness: 0.8,    // slightly darker — moody
+      delayScale: 1.5,        // lush delay tails
+      textureBoostScale: 1.2  // some texture breathing
     }
   },
 
@@ -229,6 +273,17 @@ CONDUCTOR_PROFILE_SOURCES = {
     climaxBoost: {
       playScale: 1.15,
       stutterScale: 1.3
+    },
+    crossMod: {
+      rangeScale: 1.3,        // wide crossMod for rhythmic energy
+      penaltyScale: 1.5,      // high tolerance — let density build
+      textureBoostScale: 1.5  // strong texture→rhythm feedback
+    },
+    fxMix: {
+      reverbScale: 0.8,       // tighter, punchier mix
+      filterOpenness: 1.2,    // open and bright
+      delayScale: 0.6,        // minimal delay — keep it tight
+      textureBoostScale: 1.0  // normal texture FX
     }
   },
 
@@ -273,6 +328,17 @@ CONDUCTOR_PROFILE_SOURCES = {
     climaxBoost: {
       playScale: 1.02,
       stutterScale: 1.0
+    },
+    crossMod: {
+      rangeScale: 0.4,        // very tight — almost static density
+      penaltyScale: 0.5,      // aggressive penalties to suppress build-up
+      textureBoostScale: 0.2  // near-zero texture inflation
+    },
+    fxMix: {
+      reverbScale: 0.5,       // bone-dry
+      filterOpenness: 0.6,    // muted, dark
+      delayScale: 0.3,        // barely any delay
+      textureBoostScale: 0.2  // nearly silent texture FX
     }
   }
 };
