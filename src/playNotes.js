@@ -215,217 +215,27 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   try {
+    if (typeof playNotesEmitPick !== 'function') {
+      throw new Error(`${unit}.playNotes: playNotesEmitPick helper is not available`);
+    }
+
     for (let pi = 0; pi < picks.length; pi++) {
-      const s = picks[pi];
-      if (!s || typeof s.note === 'undefined') throw new Error(`${unit}.playNotes: invalid note object in motif picks`);
-
-      // Stutter check: ONCE per pick — compute octave shift but apply it only to the primary source channel
-      const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
-      let selectedShift = 0;
-      if (shouldStutter) {
-        const minNote = m.max(0, OCTAVE.min * 12 - 1);
-        const maxNote = OCTAVE.max * 12 - 1;
-        const octaveCandidates = [];
-        for (let mag = 1; mag <= 3; mag++) {
-          if (s.note + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
-          if (s.note - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
-        }
-        if (octaveCandidates.length > 0) {
-          selectedShift = octaveCandidates[ri(octaveCandidates.length - 1)];
-        }
-      }
-
-      // Per-pick velocity modifier from voiceModulator distribution (ensemble feel)
-      const pickVelScale = (s._distributedVelocity && Number.isFinite(s._distributedVelocity))
-        ? clamp(s._distributedVelocity / m.max(1, velocity), 0.5, 1.5)
-        : 1;
-
-      // Source channels — stereo mirror of the pick
-      const activeSourceChannels = source.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
-      for (let sci = 0; sci < activeSourceChannels.length; sci++) {
-        const sourceCH = activeSourceChannels[sci];
-        const isPrimary = sourceCH === cCH1;
-        const onTick = isPrimary ? on + rv(tpUnit * rf(1/9), [-.1, .1], .3) : on + rv(tpUnit * rf(1/3), [-.1, .1], .3);
-        const baseOnVel = (isPrimary ? velocity * rf(.95, 1.15) : binVel * rf(.75, 1.03)) * pickVelScale;
-          const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pi * 101 + sci;
-        const sourceNoiseBase = baseOnVel * (1 - emissionCfg.sourceNoiseInfluence * noiseInfluence);
-        const { perProbScaled: perProbScaledSrc, onVel } = getChannelCoherence(sourceCH, 'source', sourceNoiseBase, sourceVoiceId, currentTime);
-
-        const applySelectedShiftToSource = isPrimary && selectedShift !== 0 && rf() < perProbScaledSrc;
-        const noteToEmit = applySelectedShiftToSource
-          ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
-          : s.note;
-
-        // Apply TextureBlender velocity and sustain scaling
-        const texVel = m.max(1, m.min(127, m.round(onVel * textureMode.velocityScale)));
-        const texSustain = sustain * textureMode.sustainScale;
-
-        const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
-        const offTick = on + texSustain * (isPrimary ? 1 : rv(rf(.92, 1.03)));
-        const srcOffEvt = { tick: offTick, vals: [sourceCH, noteToEmit] };
-        microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation); scheduled += 2;
-
-        // ── Chord burst: extra simultaneous chord-tone notes ──────
-        if (textureMode.mode === 'chordBurst' && isPrimary) {
-          // Derive intervals from current harmonic context scale (#4)
-          let burstIntervals = [3, 4, 7]; // fallback: minor 3rd, major 3rd, 5th
-          if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-            const scalePCs = HarmonicContext.getField('scale');
-            if (Array.isArray(scalePCs) && scalePCs.length > 1) {
-              const rootPC = noteToEmit % 12;
-              const derived = [];
-              for (let si = 0; si < scalePCs.length; si++) {
-                const pc = typeof scalePCs[si] === 'number' ? scalePCs[si] % 12 : -1;
-                if (pc < 0) continue;
-                const interval = (pc - rootPC + 12) % 12;
-                if (interval > 0) derived.push(interval);
-              }
-              if (derived.length >= 2) burstIntervals = derived;
-            }
-          }
-          const burstCount = ri(2, 3);
-          for (let bi = 0; bi < burstCount; bi++) {
-            const interval = burstIntervals[bi % burstIntervals.length] * (rf() < 0.3 ? -1 : 1);
-            const burstNote = modClamp(noteToEmit + interval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            const burstVel = m.max(1, m.min(127, m.round(texVel * rf(0.8, 1.0))));
-            const burstStagger = tpUnit * rf(0.002, 0.01) * (bi + 1);
-            const burstOnEvt = { tick: onTick + burstStagger, type: 'on', vals: [sourceCH, burstNote, burstVel] };
-            const burstOffEvt = { tick: onTick + burstStagger + texSustain * rf(0.8, 1.1), vals: [sourceCH, burstNote] };
-            microUnitAttenuator.record(burstOnEvt, burstOffEvt, crossModulation); scheduled += 2;
-          }
-        }
-
-        // ── Flurry: rapid sequential scale-locked notes (#3) ──────
-        if (textureMode.mode === 'flurry' && isPrimary) {
-          const flurryCount = ri(3, 5);
-          const flurryDir = rf() < 0.5 ? 1 : -1;
-          let flurryNote = noteToEmit;
-          const flurryGap = tpUnit * rf(0.04, 0.09);
-
-          // Build scale-sorted pitch set for scalar motion (#3)
-          let scalePitches = null;
-          if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-            const sPCs = HarmonicContext.getField('scale');
-            if (Array.isArray(sPCs) && sPCs.length > 1) {
-              // Expand scale PCs into concrete MIDI notes within range
-              const lo = m.max(0, OCTAVE.min * 12 - 1);
-              const hi = OCTAVE.max * 12 - 1;
-              const pitches = [];
-              for (let oct = m.floor(lo / 12); oct <= m.ceil(hi / 12); oct++) {
-                for (let si = 0; si < sPCs.length; si++) {
-                  const pc = typeof sPCs[si] === 'number' ? sPCs[si] % 12 : -1;
-                  if (pc < 0) continue;
-                  const midi = oct * 12 + pc;
-                  if (midi >= lo && midi <= hi) pitches.push(midi);
-                }
-              }
-              if (pitches.length > 2) scalePitches = pitches.sort((a, b) => a - b);
-            }
-          }
-
-          for (let fi = 0; fi < flurryCount; fi++) {
-            if (scalePitches) {
-              // Find nearest scale tone in the chosen direction
-              let bestIdx = -1;
-              let bestDist = Infinity;
-              for (let si = 0; si < scalePitches.length; si++) {
-                const diff = (scalePitches[si] - flurryNote) * flurryDir;
-                if (diff > 0 && diff < bestDist) { bestDist = diff; bestIdx = si; }
-              }
-              flurryNote = bestIdx >= 0 ? scalePitches[bestIdx] : modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            } else {
-              flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            }
-            const flurryVel = m.max(1, m.min(127, m.round(texVel * rf(0.65, 0.95) * (1 - fi * 0.05))));
-            const flurrySus = tpUnit * rf(0.08, 0.2) * textureMode.sustainScale;
-            const flurryOnTick = onTick + flurryGap * (fi + 1);
-            const flurryOnEvt = { tick: flurryOnTick, type: 'on', vals: [sourceCH, flurryNote, flurryVel] };
-            const flurryOffEvt = { tick: flurryOnTick + flurrySus, vals: [sourceCH, flurryNote] };
-            microUnitAttenuator.record(flurryOnEvt, flurryOffEvt, crossModulation); scheduled += 2;
-          }
-        }
-      }
-
-      // Reflection channels — stereo mirror of the pick
-      const activeReflectionChannels = reflection.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
-      for (let rci = 0; rci < activeReflectionChannels.length; rci++) {
-        const reflectionCH = activeReflectionChannels[rci];
-        const isPrimary = reflectionCH === cCH2;
-        const onTick = isPrimary ? on + rv(tpUnit * rf(.2), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-        const baseOnVel = (isPrimary ? velocity * rf(.7, 1.2) : binVel * rf(.55, 1.1)) * pickVelScale;
-        const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pi * 131 + rci;
-        const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
-        const { perProbScaled: perProbScaledRefl, onVel: onVelRefl } = getChannelCoherence(reflectionCH, 'reflection', reflectionNoiseBase, reflectionVoiceId, currentTime);
-
-        // Apply stutter to a *subset* of reflection channels when selected by Stutter's beatContext
-        const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
-        const reflectApplyShift = reflectSelected && selectedShift !== 0 && rf() < perProbScaledRefl;
-        const reflectionEmitNote = reflectApplyShift
-          ? modClamp(s.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
-          : s.note;
-
-        const reflOnEvt = { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] };
-        const offTick = on + sustain * (isPrimary ? rf(.7, 1.2) : rv(rf(.65, 1.3)));
-        const reflOffEvt = { tick: offTick, vals: [reflectionCH, reflectionEmitNote] };
-        microUnitAttenuator.record(reflOnEvt, reflOffEvt, crossModulation); scheduled += 2;
-
-        // ── Texture spillover: softer echo of burst tones on reflection (#2) ──
-        if (textureMode.mode === 'chordBurst' && isPrimary) {
-          const reflBurstCount = ri(1, 2);
-          const echoIntervals = [3, 4, 7]; // tertian echoes (minor 3rd, major 3rd, 5th)
-          for (let rbi = 0; rbi < reflBurstCount; rbi++) {
-            const echoInterval = echoIntervals[rbi % echoIntervals.length] * (rf() < 0.3 ? -1 : 1);
-            const echoNote = modClamp(reflectionEmitNote + echoInterval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-            const echoVel = m.max(1, m.min(127, m.round(onVelRefl * rf(0.45, 0.65) * textureMode.velocityScale)));
-            const echoStagger = tpUnit * rf(0.01, 0.04) * (rbi + 1);
-            const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [reflectionCH, echoNote, echoVel] };
-            const echoOffEvt = { tick: onTick + echoStagger + sustain * textureMode.sustainScale * rf(0.6, 0.9), vals: [reflectionCH, echoNote] };
-            microUnitAttenuator.record(echoOnEvt, echoOffEvt, crossModulation); scheduled += 2;
-          }
-        }
-        // Flurry spillover: single trailing scalar note on reflection (ghost note)
-        if (textureMode.mode === 'flurry' && isPrimary) {
-          const ghostDir = rf() < 0.5 ? 1 : -1;
-          const ghostNote = modClamp(reflectionEmitNote + ghostDir * ri(1, 3), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-          const ghostVel = m.max(1, m.min(127, m.round(onVelRefl * rf(0.35, 0.55))));
-          const ghostDelay = tpUnit * rf(0.06, 0.14);
-          const ghostSus = tpUnit * rf(0.1, 0.25) * textureMode.sustainScale;
-          const ghostOnEvt = { tick: onTick + ghostDelay, type: 'on', vals: [reflectionCH, ghostNote, ghostVel] };
-          const ghostOffEvt = { tick: onTick + ghostDelay + ghostSus, vals: [reflectionCH, ghostNote] };
-          microUnitAttenuator.record(ghostOnEvt, ghostOffEvt, crossModulation); scheduled += 2;
-        }
-      }
-
-      // Bass channels — stereo mirror of the pick (clamped to bass range)
-      if (rf() < clamp(.75 * bpmRatio3, .2, .7)) {
-        const activeBassChannels = bass.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
-        for (let bci = 0; bci < activeBassChannels.length; bci++) {
-          const bassCH = activeBassChannels[bci];
-          const isPrimary = bassCH === cCH3;
-
-
-          const onTick = isPrimary ? on + rv(tpUnit * rf(.1), [-.01, .1], .5) : on + rv(tpUnit * rf(1/3), [-.01, .1], .5);
-          const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
-          const bassVoiceId = voiceIdSeed + bassCH * 23 + pi * 151 + bci;
-          const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
-          const { perProbScaled: perProbScaledBass, onVel } = getChannelCoherence(bassCH, 'bass', bassNoiseBase, bassVoiceId, currentTime);
-
-          // Apply stutter octave shift to a small subset of bass channels when selected
-          const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
-          const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
-          const bassEmitBase = bassApplyShift ? s.note + selectedShift : s.note;
-          const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
-
-          const bassOnEvt = { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] };
-          // Bass sustain responds to texture mode (#2): bursts → short anchor, flurry → extended root
-          const bassSustainScale = textureMode.mode === 'chordBurst' ? textureMode.sustainScale * rf(1.2, 1.6)
-            : textureMode.mode === 'flurry' ? rf(1.3, 1.8)
-            : 1;
-          const offTick = on + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(.8, 3.5)));
-          const bassOffEvt = { tick: offTick, vals: [bassCH, bassNote] };
-          microUnitAttenuator.record(bassOnEvt, bassOffEvt, crossModulation); scheduled += 2;
-        }
-      }
+      scheduled += playNotesEmitPick({
+        unit,
+        pick: picks[pi],
+        pickIndex: pi,
+        resolvedStutterProb,
+        on,
+        tpUnit,
+        sustain,
+        textureMode,
+        velocity,
+        binVel,
+        emissionCfg,
+        noiseInfluence,
+        currentTime,
+        voiceIdSeed
+      });
     }
     trackRhythm(unit, layer, true);
   } catch (e) {
