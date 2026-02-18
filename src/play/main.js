@@ -1,5 +1,5 @@
 // main.js - Main composition engine orchestrating section, phrase, measure hierarchy.
-require('./index');
+require('../index');
 
 main = async function main() { console.log('Starting main.js ...');
 
