@@ -17,4 +17,14 @@ crossModulateRhythms = () => {
   (beatsOn > ri(3) ? rf(-.2,-.3) : rf(.1)) + (beatsOff < ri(3) ? rf(-.1,-.3) : rf(.1)) +
   (subdivsPerMinute > ri(400,600) ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) +
   (beatRhythm[beatIndex]<1?rf(.4,.5):0) + (divRhythm[divIndex]<1?rf(.3,.4):0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3):0);
+
+  // Texture feedback (#2): texture contrast events inflate crossMod →
+  // wider DynamismEngine flicker → shifted TextureBlender probabilities →
+  // self-modulating density wave that no single system controls
+  if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function') {
+    const texIntensity = DrumTextureCoupler.getIntensity();
+    if (Number.isFinite(texIntensity) && texIntensity > 0) {
+      crossModulation += texIntensity * rf(0.3, 0.8);
+    }
+  }
 }

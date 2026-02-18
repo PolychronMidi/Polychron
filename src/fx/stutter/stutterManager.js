@@ -21,6 +21,11 @@ class StutterManager {
     // { fadeDirection: 'in'|'out', fadeChannels: Set, panChannels: Set, panDirections: {} }
     this.beatContext = {};
 
+    // Texture coupling state: updated by EventBus 'texture-contrast' listener (#1)
+    this._textureIntensity = 0;
+    this._lastTextureMode = 'single';
+    this._textureDecay = 0.85;
+
     // Plan scheduling: explicit plan objects (opt-in global stutter phrases)
     // plans: Map<planId, planCfg>
     this.plans = new Map();
@@ -35,6 +40,34 @@ class StutterManager {
     } catch {
       this.defaultDirective = { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false } };
     }
+
+    // ── Texture-contrast EventBus listener (#1 bidirectional dialogue) ──
+    // Chord bursts → trigger micro-stutters with tight rate + wide stereo phase
+    // Flurries → suppress spontaneous stutters (let the runs breathe)
+    try {
+      if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.on === 'function') {
+        EventBus.on('texture-contrast', (data) => {
+          if (!data || typeof data !== 'object') return;
+          const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
+          const mode = data.mode || 'single';
+          const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
+          this._textureIntensity = this._textureIntensity * this._textureDecay + weight * (1 - this._textureDecay);
+          this._lastTextureMode = mode;
+
+          // Chord burst → immediate micro-stutter response on reflection channels
+          if (mode === 'chordBurst' && composite > 0.3) {
+            try {
+              const reflChs = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice(0, 2) : [];
+              if (reflChs.length > 0 && typeof this._stutterPan === 'function') {
+                const microRate = clamp(m.round(24 + composite * 16), 24, 48);
+                const microDuration = (typeof tpUnit === 'number' && Number.isFinite(tpUnit)) ? tpUnit * rf(0.3, 0.6) : 100;
+                this._stutterPan.call(this, reflChs, microRate, microDuration);
+              }
+            } catch { /* ignore micro-stutter failures */ }
+          }
+        });
+      }
+    } catch { /* EventBus not ready yet — prepareBeat will handle later */ }
   }
 
   /**
@@ -204,13 +237,20 @@ class StutterManager {
       this.beatContext._lastBeatIndex = currentBeatIndexLocal;
       this.beatContext.selectedReflectionChannels = new Set();
       this.beatContext.selectedBassChannels = new Set();
+
+      // Texture coupling (#1): when recent flurry activity is high, suppress
+      // stutter channel selection so flurry runs breathe without fragmentation
+      const textureSuppression = (this._lastTextureMode === 'flurry' && this._textureIntensity > 0.15)
+        ? clamp(1 - this._textureIntensity * 1.5, 0.1, 0.5) // lower selection chance
+        : 0.5;
+
       try {
         const reflCandidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
-        for (const ch of reflCandidates) if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < 0.5) this.beatContext.selectedReflectionChannels.add(ch);
+        for (const ch of reflCandidates) if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedReflectionChannels.add(ch);
       } catch { /* ignore */ }
       try {
         const bassCandidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
-        for (const ch of bassCandidates) if (this.beatContext.selectedBassChannels.size < 2 && rf() < 0.5) this.beatContext.selectedBassChannels.add(ch);
+        for (const ch of bassCandidates) if (this.beatContext.selectedBassChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedBassChannels.add(ch);
       } catch { /* ignore */ }
     }
 

@@ -60,10 +60,16 @@ GlobalConductor = (() => {
     // subsubdivs get many note options (dense run territory) while others
     // get very few (sparse, exposed).  Amplitude scales with compositeIntensity
     // so calm sections stay stable and intense sections shimmer.
+    // Texture intensity (#7): high texture activity → wider flicker amplitude
+    // so motifConfig density oscillates more dramatically during texture-rich passages.
+    const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
+      ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
+      : 0;
+    const flickerAmplitude = compositeIntensity + textureDensityBoost;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
-    const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * compositeIntensity
-                         + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * compositeIntensity
-                         + rf(-0.03, 0.03) * compositeIntensity;
+    const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
+                         + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
+                         + rf(-0.03, 0.03) * flickerAmplitude;
     const flickeredDensity = clamp(currentDensity + densityFlicker, 0.15, 0.95);
 
     if (typeof motifConfig !== 'undefined' && typeof motifConfig.setUnitProfileOverride === 'function') {
