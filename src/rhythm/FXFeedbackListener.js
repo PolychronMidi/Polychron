@@ -32,6 +32,26 @@ FXFeedbackListener = (() => {
       }
     });
 
+    // ── Texture → FX accumulator injection (#3) ──────────────────────────
+    // Texture-contrast events feed into fxAccumulator with mode-dependent
+    // weights, creating a texture → rhythm → FX → texture feedback loop.
+    EventBus.on('texture-contrast', (data) => {
+      try {
+        if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: texture-contrast payload must be an object');
+        const mode = data.mode || 'single';
+        const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0.5;
+        // Chord bursts have stronger rhythmic impulse; flurries are scalar wash
+        const modeWeight = mode === 'chordBurst' ? 0.5 : mode === 'flurry' ? 0.3 : 0.1;
+        const textureIntensity = modeWeight * composite;
+        if (!Number.isFinite(textureIntensity)) {
+          throw new Error(`FXFeedbackListener: invalid texture intensity ${textureIntensity}`);
+        }
+        fxAccumulator = fxAccumulator * decayRate + textureIntensity * (1 - decayRate);
+      } catch (e) {
+        throw new Error(`FXFeedbackListener texture event error: ${e && e.message ? e.message : e}`);
+      }
+    });
+
     // Reset accumulator at section boundary
     EventBus.on('section-boundary', () => {
       fxAccumulator = 0;

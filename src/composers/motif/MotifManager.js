@@ -39,6 +39,18 @@ MotifManager = (function() {
   function planMeasure(layer, composer) {
     if (!layer) throw new Error('MotifManager.planMeasure: no layer');
     if (!composer) throw new Error('MotifManager.planMeasure: no composer');
+    // ── Texture-guided motif variation (#10) ──────────────────────────
+    // Bursts → higher density (harmonic motifs), flurries → lower density (scalar)
+    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+      const texMetrics = DrumTextureCoupler.getMetrics();
+      if (texMetrics.intensity > 0.2) {
+        const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
+        config.setUnitProfileOverride('measure', {
+          density: burstDom ? clamp(0.7 + texMetrics.intensity * 0.3, 0.7, 1.0) : clamp(0.7 - texMetrics.intensity * 0.3, 0.3, 0.7),
+          intervalDensity: burstDom ? clamp(0.7 + texMetrics.intensity * 0.25, 0.7, 0.95) : clamp(0.7 - texMetrics.intensity * 0.2, 0.4, 0.7)
+        });
+      }
+    }
     const profile = config.getUnitProfile('measure');
     MotifSpreader.spreadMeasure({ layer, beats: Number(numerator), composer, profile });
   }
@@ -62,9 +74,19 @@ MotifManager = (function() {
     const absBeat = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
     const parentBucket = (layer.beatMotifs && Array.isArray(layer.beatMotifs[absBeat]))
       ? layer.beatMotifs[absBeat] : null;
+    // ── Texture-guided div motif variation (#10) ──────────────────────────
+    // During bursts: derive from parent (coherent harmonic content)
+    // During flurries: weaken parent derivation (independent scalar motion)
+    let effectiveParentBucket = parentBucket;
+    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+      const texMetrics = DrumTextureCoupler.getMetrics();
+      if (texMetrics.intensity > 0.25 && texMetrics.flurryCount > texMetrics.burstCount && rf() < texMetrics.intensity * 0.6) {
+        effectiveParentBucket = null;
+      }
+    }
     // Reset child VM so it re-seeds from beat-level history
     _resetChildVM(layer, 'div');
-    MotifSpreader.spreadDivs({ layer, divsPerBeat: dpb, beats, composer, parentBucket });
+    MotifSpreader.spreadDivs({ layer, divsPerBeat: dpb, beats, composer, parentBucket: effectiveParentBucket });
   }
 
   /**
