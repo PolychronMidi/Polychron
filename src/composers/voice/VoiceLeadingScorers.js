@@ -6,14 +6,17 @@
  * relying on `this` in the helpers.
  */
 VoiceLeadingScorers = {
-  // eslint-disable-next-line no-unused-vars -- `fromNote`/`toNote` are part of the helper API and retained for compatibility
+
   scoreVoiceMotion(interval, fromNote, toNote) {
+    // mark API parameters as used for TypeScript/noUnusedParameters checks
+    void fromNote; void toNote;
     if (interval === 0) return 0;
     if (interval <= 2) return 1;
     if (interval <= 5) return 3;
     if (interval <= 7) return 5;
     return 10;
   },
+
 
   scoreVoiceRange(note, range) {
     const [min, max] = range;
@@ -66,6 +69,8 @@ VoiceLeadingScorers = {
 
 
   scoreIntervalQuality(interval, fromNote, toNote, dynamism = 0) {
+    // keep parameter names for compatibility/signature; mark as used for TS
+    void fromNote; void toNote;
     if (interval <= 2) return 0;
     const intervalClass = interval % 12;
     const dynamismBonus = dynamism * 2;

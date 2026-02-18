@@ -120,6 +120,10 @@ export default [
       ],
       'no-unreachable': 'error',  // Dead code after return/throw
       'no-constant-condition': 'error',  // Conditions always true/false (can be intentional)
+      'no-redeclare': 'error',
+      'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
+      'radix': ['error', 'always'],
+      'default-case-last': 'error',
       'no-dupe-keys': 'error',  // Duplicate object keys
       'no-dupe-args': 'error',  // Duplicate function parameters
       'no-duplicate-case': 'error',  // Duplicate switch cases
