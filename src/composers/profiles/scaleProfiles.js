@@ -11,5 +11,8 @@ COMPOSER_TYPE_PROFILE_SOURCES.scale = {
   stableMajor: [{ type: 'scale', name: 'major', root: 'G', voiceProfile: 'default', motifProfile: 'default' }],
   randomAnchor: [{ type: 'scale', name: 'random', root: 'C', voiceProfile: 'default', motifProfile: 'sparse' }],
   harmonicMinorDrift: [{ type: 'scale', name: 'harmonic minor', root: 'random', voiceProfile: 'expressive', motifProfile: 'dense' }],
-  wholeToneFloat: [{ type: 'scale', name: 'whole tone', root: 'random', voiceProfile: 'whisper', motifProfile: 'legato' }]
+  wholeToneFloat: [{ type: 'scale', name: 'whole tone', root: 'random', voiceProfile: 'whisper', motifProfile: 'legato' }],
+  wholeToneBright: [{ type: 'scale', name: 'whole tone', root: 'C', voiceProfile: 'loud', motifProfile: 'dense' }],
+  octatonicHW: [{ type: 'scale', name: 'diminished', root: 'random', voiceProfile: 'expressive', motifProfile: 'dense' }],
+  octatonicWH: [{ type: 'scale', name: 'whole-half diminished', root: 'random', voiceProfile: 'soft', motifProfile: 'sparse' }]
 };

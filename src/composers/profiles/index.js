@@ -15,6 +15,12 @@ require('./modeProfiles');
 // @ts-ignore: load side-effect module with globals
 require('./pentatonicProfiles');
 // @ts-ignore: load side-effect module with globals
+require('./bluesProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./chromaticProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./quartalProfiles');
+// @ts-ignore: load side-effect module with globals
 require('./tensionReleaseProfiles');
 // @ts-ignore: load side-effect module with globals
 require('./modalInterchangeProfiles');
