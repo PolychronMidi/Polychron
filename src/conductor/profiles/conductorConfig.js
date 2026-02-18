@@ -269,6 +269,39 @@ ConductorConfig = (() => {
     return getActiveProfile().climaxBoost;
   }
 
+  // ── Phase-driven profile selection ────────────────────────────────
+
+  /**
+   * Mapping from structural phase → conductor profile name.
+   * Each phase picks the profile whose character best serves the musical moment.
+   */
+  const PHASE_PROFILE_MAP = {
+    intro:       'restrained',
+    opening:     'restrained',
+    exposition:  'default',
+    development: 'default',
+    climax:      'explosive',
+    resolution:  'atmospheric',
+    conclusion:  'atmospheric',
+    coda:        'minimal'
+  };
+
+  /**
+   * Select and activate the conductor profile that matches the current
+   * structural phase read from HarmonicContext.
+   * Call once at the top of each section (after HarmonicJourney.applyToContext).
+   * @returns {string} the profile name that was activated
+   */
+  function applyPhaseProfile() {
+    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      ? (HarmonicContext.getField('sectionPhase') || 'development')
+      : 'development';
+
+    const profileName = PHASE_PROFILE_MAP[phase] || 'default';
+    setActiveProfile(profileName);
+    return profileName;
+  }
+
   // ── Public API ────────────────────────────────────────────────────
 
   return {
@@ -285,6 +318,7 @@ ConductorConfig = (() => {
     getFlickerParams,
     getEnergyWeights,
     getClimaxBoost,
+    applyPhaseProfile,
     validateProfileOrFail
   };
 })();
