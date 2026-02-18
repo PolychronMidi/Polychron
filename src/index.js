@@ -9,6 +9,8 @@ require('./fx');
 // @ts-ignore: side-effect module load
 require('./channelCoherence');
 // @ts-ignore: side-effect module load
+require('./playNotesEmitPick');
+// @ts-ignore: side-effect module load
 require('./playNotes');
 // @ts-ignore: side-effect module load
 require('./microUnitAttenuator');
