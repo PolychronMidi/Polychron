@@ -44,8 +44,11 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
     : { perProb: 1 };
   const perProbScaled = clamp((profileCfg.perProb || 0) * perProbScale, 0, 1);
 
-  // 5. Noise-shaped velocity with bias
-  const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, 'subtle');
+  // 5. Noise-shaped velocity with bias (noise profile from conductor)
+  const emissionNoiseProfile = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionScaling === 'function')
+    ? (ConductorConfig.getEmissionScaling().noiseProfile || 'subtle')
+    : 'subtle';
+  const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, emissionNoiseProfile);
   const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, 127);
 
   return { perProbScaled, onVel, velocityScaleBias };

@@ -106,22 +106,27 @@ TextureBlender = (() => {
     const flurryFatigue = getFatigue('flurry');
 
     // ── Chord burst probability ────────────────────────────────────
-    const burstBase = unit === 'beat' ? 0.02 : unit === 'div' ? 0.06 : unit === 'subdiv' ? 0.10 : 0.08;
+    const texCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getTextureScaling === 'function')
+      ? ConductorConfig.getTextureScaling()
+      : { burstBaseScale: 1, flurryBaseScale: 1, burstCap: 0.18, flurryCap: 0.15 };
+    const burstBaseRaw = unit === 'beat' ? 0.02 : unit === 'div' ? 0.06 : unit === 'subdiv' ? 0.10 : 0.08;
+    const burstBase = burstBaseRaw * texCfg.burstBaseScale;
     const burstProb = clamp(
       burstBase * (0.3 + composite * 1.5) * (0.6 + oscBlend * 0.8) * (0.7 + crossModFactor * 0.6)
         * phraseInfluence.burstBias * stutterCoupling.burstSuppression * burstFatigue,
       0,
-      0.18
+      texCfg.burstCap
     );
 
-    // ── Flurry probability ─────────────────────────────────────────
-    const flurryBase = unit === 'beat' ? 0.03 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.06 : 0.04;
+    // ── Flurry probability ─────────────────────────────────────────────
+    const flurryBaseRaw = unit === 'beat' ? 0.03 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.06 : 0.04;
+    const flurryBase = flurryBaseRaw * texCfg.flurryBaseScale;
     const invertedComposite = 1 - composite;
     const flurryProb = clamp(
       flurryBase * (0.3 + invertedComposite * 1.5) * (0.5 + (1 - oscBlend) * 1.0) * (0.7 + crossModFactor * 0.6)
         * phraseInfluence.flurryBias * stutterCoupling.flurryBoost * flurryFatigue,
       0,
-      0.15
+      texCfg.flurryCap
     );
 
     // ── Roll the dice ──────────────────────────────────────────────

@@ -83,13 +83,44 @@ harmonicJourneyHelpers = (() => {
   };
 
   const getMovePoolForPhase = (phase) => {
+    // Conductor profile boldness shifts move pool composition:
+    // < 1 = more conservative (suppress bold moves), > 1 = more adventurous (inject bold moves)
+    const boldness = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getJourneyBoldness === 'function')
+      ? ConductorConfig.getJourneyBoldness()
+      : 1.0;
+
+    let pool;
     switch (phase) {
-      case 'opening':    return CLOSE_MOVES;
-      case 'resolution': return [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)];
-      case 'development': return [...CLOSE_MOVES, ...MODERATE_MOVES];
-      case 'climax':     return [...MODERATE_MOVES, ...BOLD_MOVES];
-      default:           return CLOSE_MOVES;
+      case 'opening':    pool = [...CLOSE_MOVES]; break;
+      case 'resolution': pool = [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)]; break;
+      case 'development': pool = [...CLOSE_MOVES, ...MODERATE_MOVES]; break;
+      case 'climax':     pool = [...MODERATE_MOVES, ...BOLD_MOVES]; break;
+      default:           pool = [...CLOSE_MOVES]; break;
     }
+
+    // Boldness > 1: inject bold moves into any phase proportional to excess
+    if (boldness > 1) {
+      const extraBoldCount = m.round((boldness - 1) * BOLD_MOVES.length);
+      for (let i = 0; i < extraBoldCount && i < BOLD_MOVES.length; i++) {
+        pool.push(BOLD_MOVES[i]);
+      }
+    }
+    // Boldness < 1: strip bold moves and moderate moves proportionally
+    if (boldness < 1) {
+      const keepRatio = m.max(0, boldness);
+      // Remove bold moves beyond the keep ratio
+      const boldInPool = pool.filter(fn => BOLD_MOVES.includes(fn));
+      const boldToRemove = m.round(boldInPool.length * (1 - keepRatio));
+      let removed = 0;
+      for (let i = pool.length - 1; i >= 0 && removed < boldToRemove; i--) {
+        if (BOLD_MOVES.includes(pool[i])) {
+          pool.splice(i, 1);
+          removed++;
+        }
+      }
+    }
+
+    return pool;
   };
 
   const resolveScaleAndQuality = (key, mode) => {

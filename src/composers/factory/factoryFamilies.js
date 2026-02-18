@@ -42,8 +42,12 @@ factoryFamilies = {
       }
 
       const weight = Number(family.weight);
+      // Apply conductor profile family weight multiplier if available
+      const profileMultiplier = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getFamilyWeights === 'function')
+        ? (Number(ConductorConfig.getFamilyWeights()[familyName]) || 1)
+        : 1;
       normalized[familyName] = {
-        weight: Number.isFinite(weight) && weight > 0 ? weight : 1,
+        weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
         types: normalizedTypes
       };
     }
