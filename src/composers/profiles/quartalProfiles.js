@@ -1,0 +1,13 @@
+if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
+  throw new Error('quartalProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
+}
+
+COMPOSER_TYPE_PROFILE_SOURCES.quartal = {
+  default: [{ type: 'quartal', scaleName: 'major', root: 'random', voicingType: 'quartal', stackSize: 4, voiceProfile: 'default', motifProfile: 'default' }],
+  openFourths: [{ type: 'quartal', scaleName: 'dorian', root: 'random', voicingType: 'quartal', stackSize: 5, voiceProfile: 'whisper', motifProfile: 'legato' }],
+  quintalWide: [{ type: 'quartal', scaleName: 'major', root: 'random', voicingType: 'quintal', stackSize: 4, voiceProfile: 'loud', motifProfile: 'sparse' }],
+  mixedModern: [{ type: 'quartal', scaleName: 'mixolydian', root: 'random', voicingType: 'mixed', stackSize: 4, voiceProfile: 'expressive', motifProfile: 'dense' }],
+  minimalStack: [{ type: 'quartal', scaleName: 'minor', root: 'random', voicingType: 'quartal', stackSize: 3, voiceProfile: 'soft', motifProfile: 'sparse' }],
+  deepStack: [{ type: 'quartal', scaleName: 'dorian', root: 'random', voicingType: 'quartal', stackSize: 6, voiceProfile: 'loud', motifProfile: 'dense' }],
+  rootedMixed: [{ type: 'quartal', scaleName: 'major', root: 'C', voicingType: 'mixed', stackSize: 4, voiceProfile: 'default', motifProfile: 'percussive' }]
+};

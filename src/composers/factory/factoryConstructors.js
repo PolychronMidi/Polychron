@@ -79,6 +79,29 @@ factoryConstructors = {
         return new PentatonicComposer(r, type);
       },
 
+      blues: ({ root = 'C', bluesType = 'minor', blueNoteProb = 0.35 } = {}) => {
+        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.blues: allNotes not available');
+        const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+        const type = bluesType === 'random' ? (['major', 'minor'])[ri(2)] : bluesType;
+        return new BluesComposer(r, type, blueNoteProb);
+      },
+
+      chromatic: ({ targetScaleName = 'major', root = 'C', chromaticDensity = 0.4 } = {}) => {
+        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.chromatic: allNotes not available');
+        if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('ComposerFactory.chromatic: allScales not available');
+        const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+        const s = targetScaleName === 'random' ? allScales[ri(allScales.length - 1)] : targetScaleName;
+        return new ChromaticComposer(s, r, chromaticDensity);
+      },
+
+      quartal: ({ scaleName = 'major', root = 'C', voicingType = 'quartal', stackSize = 4 } = {}) => {
+        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.quartal: allNotes not available');
+        const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+        const s = scaleName === 'random' ? allScales[ri(allScales.length - 1)] : scaleName;
+        const vt = voicingType === 'random' ? (['quartal', 'quintal', 'mixed'])[ri(2)] : voicingType;
+        return new QuartalComposer(s, r, vt, stackSize);
+      },
+
       tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {}, phraseTensionScaling = true, resolvedProfiles = null } = {}) => {
         if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('ComposerFactory.tensionRelease: allNotes not available');
         const k = factoryManager.resolveProgressionKeyOrFail(key, 'ComposerFactory.tensionRelease', quality);

@@ -12,6 +12,9 @@ COMPOSER_TYPES = [
   'chords',
   'mode',
   'pentatonic',
+  'blues',
+  'chromatic',
+  'quartal',
   'tensionRelease',
   'modalInterchange',
   'melodicDevelopment',
@@ -25,6 +28,9 @@ const MIN_PROFILE_COUNT_BY_TYPE = {
   chords: 6,
   mode: 6,
   pentatonic: 6,
+  blues: 6,
+  chromatic: 6,
+  quartal: 6,
   tensionRelease: 6,
   modalInterchange: 6,
   melodicDevelopment: 6,
@@ -38,6 +44,9 @@ const DIVERSITY_DIMENSIONS_BY_TYPE = {
   chords: ['progression', 'direction', 'chordProfile', 'rhythmProfile'],
   mode: ['name', 'root', 'voiceProfile', 'motifProfile'],
   pentatonic: ['scaleType', 'root', 'voiceProfile', 'motifProfile'],
+  blues: ['bluesType', 'root', 'blueNoteProb', 'voiceProfile', 'motifProfile'],
+  chromatic: ['targetScaleName', 'root', 'chromaticDensity', 'voiceProfile', 'motifProfile'],
+  quartal: ['scaleName', 'root', 'voicingType', 'stackSize', 'voiceProfile', 'motifProfile'],
   tensionRelease: ['quality', 'tensionCurve', 'enablePhraseArcs', 'phraseTensionScaling', 'chordProfile', 'rhythmProfile'],
   modalInterchange: ['primaryMode', 'borrowProbability', 'chordProfile', 'rhythmProfile'],
   melodicDevelopment: ['inversionMode', 'inversionPivotMode', 'normalizeToScale', 'useDegreeNoise', 'enablePhraseArcs', 'arcScaling', 'voiceProfile', 'motifProfile', 'rhythmProfile'],
@@ -78,7 +87,13 @@ const DEFAULT_POOL_SELECTORS = [
   ['mode', 'locrianTension'],
   ['chords', 'minorDescent'],
   ['tensionRelease', 'minorDramatic'],
-  ['harmonicRhythm', 'minorAnticipatory']
+  ['harmonicRhythm', 'minorAnticipatory'],
+  ['blues', 'default'],
+  ['blues', 'minorGrit'],
+  ['chromatic', 'default'],
+  ['chromatic', 'jazzApproach'],
+  ['quartal', 'default'],
+  ['quartal', 'openFourths']
 ];
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);

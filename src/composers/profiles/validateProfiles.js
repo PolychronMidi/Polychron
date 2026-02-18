@@ -13,6 +13,9 @@ const ALLOWED_KEYS_BY_TYPE = {
   chords: new Set([...COMMON_ENTRY_KEYS, 'progression', 'direction']),
   mode: new Set([...COMMON_ENTRY_KEYS, 'name', 'root']),
   pentatonic: new Set([...COMMON_ENTRY_KEYS, 'root', 'scaleType']),
+  blues: new Set([...COMMON_ENTRY_KEYS, 'root', 'bluesType', 'blueNoteProb']),
+  chromatic: new Set([...COMMON_ENTRY_KEYS, 'targetScaleName', 'root', 'chromaticDensity']),
+  quartal: new Set([...COMMON_ENTRY_KEYS, 'scaleName', 'root', 'voicingType', 'stackSize']),
   tensionRelease: new Set([...COMMON_ENTRY_KEYS, 'key', 'quality', 'tensionCurve', 'enablePhraseArcs', 'phraseArcOpts', 'phraseTensionScaling']),
   modalInterchange: new Set([...COMMON_ENTRY_KEYS, 'key', 'primaryMode', 'borrowProbability']),
   melodicDevelopment: new Set([...COMMON_ENTRY_KEYS, 'name', 'root', 'intensity', 'developmentBias', 'inversionMode', 'inversionPivotMode', 'inversionFixedDegree', 'normalizeToScale', 'useDegreeNoise', 'enablePhraseArcs', 'phraseArcOpts', 'arcScaling']),
@@ -102,6 +105,24 @@ const validateByType = {
     ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
     ComposerProfileUtils.assertStringOrFail(entry.scaleType, `${label}.scaleType`);
     if (!['major', 'minor', 'random'].includes(String(entry.scaleType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.scaleType must be major|minor|random`);
+  },
+  blues: (entry, label) => {
+    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    ComposerProfileUtils.assertStringOrFail(entry.bluesType, `${label}.bluesType`);
+    if (!['major', 'minor'].includes(String(entry.bluesType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.bluesType must be major|minor`);
+    assertFiniteRangeOrFail(entry.blueNoteProb, 0, 1, `${label}.blueNoteProb`);
+  },
+  chromatic: (entry, label) => {
+    ComposerProfileUtils.assertStringOrFail(entry.targetScaleName, `${label}.targetScaleName`);
+    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    assertFiniteRangeOrFail(entry.chromaticDensity, 0, 1, `${label}.chromaticDensity`);
+  },
+  quartal: (entry, label) => {
+    ComposerProfileUtils.assertStringOrFail(entry.scaleName, `${label}.scaleName`);
+    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    ComposerProfileUtils.assertStringOrFail(entry.voicingType, `${label}.voicingType`);
+    if (!['quartal', 'quintal', 'mixed'].includes(String(entry.voicingType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.voicingType must be quartal|quintal|mixed`);
+    assertIntegerRangeOrFail(entry.stackSize, 2, 6, `${label}.stackSize`);
   },
   tensionRelease: (entry, label) => {
     ComposerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);

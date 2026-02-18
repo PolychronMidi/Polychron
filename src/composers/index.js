@@ -26,6 +26,12 @@ require('./ModeComposer');
 // @ts-ignore: load side-effect module with globals
 require('./PentatonicComposer');
 // @ts-ignore: load side-effect module with globals
+require('./BluesComposer');
+// @ts-ignore: load side-effect module with globals
+require('./ChromaticComposer');
+// @ts-ignore: load side-effect module with globals
+require('./QuartalComposer');
+// @ts-ignore: load side-effect module with globals
 require('./TensionReleaseComposer');
 // @ts-ignore: load side-effect module with globals
 require('./ModalInterchangeComposer');
