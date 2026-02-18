@@ -11,8 +11,64 @@ const spatialCanvas = (typeof ConductorConfig !== 'undefined' && ConductorConfig
       sideBias: [-20, 20],
       sideBiasStep: 2,
       lBalMax: 54,
-      ccGroupScale: { source: 1, reflection: 1, bass: 1 }
+      ccGroupScale: { source: 1, reflection: 1, bass: 1 },
+      ccRangeScale: {
+        source: { default: 1 },
+        reflection: { default: 1 },
+        bass: { default: 1 }
+      }
     };
+
+const ccGroupScale = spatialCanvas.ccGroupScale || { source: 1, reflection: 1, bass: 1 };
+const ccRangeScale = spatialCanvas.ccRangeScale || {
+  source: { default: 1 },
+  reflection: { default: 1 },
+  bass: { default: 1 }
+};
+
+const resolveRangeScale = (groupName, effectNum) => {
+  const groupBase = Number(ccGroupScale[groupName]);
+  const groupMul = Number.isFinite(groupBase) ? groupBase : 1;
+  const groupMap = ccRangeScale[groupName] || { default: 1 };
+  const specific = Number(groupMap[String(effectNum)]);
+  const fallback = Number(groupMap.default);
+  const ccMul = Number.isFinite(specific) ? specific : (Number.isFinite(fallback) ? fallback : 1);
+  return clamp(groupMul * ccMul, 0.1, 4);
+};
+
+const scaleFxRange = (minValue, maxValue, rangeScale) => {
+  const lo = Number(minValue);
+  const hi = Number(maxValue);
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+    return [minValue, maxValue];
+  }
+  const floor = m.min(lo, hi);
+  const ceiling = m.max(lo, hi);
+  const center = (floor + ceiling) * 0.5;
+  const halfSpan = (ceiling - floor) * 0.5 * rangeScale;
+  const scaledMin = clamp(m.round(center - halfSpan), 0, 127);
+  const scaledMax = clamp(m.round(center + halfSpan), 0, 127);
+  return scaledMin <= scaledMax ? [scaledMin, scaledMax] : [scaledMax, scaledMin];
+};
+/**
+ * @param {string} groupName
+ * @param {any} ch
+ * @param {number} effectNum
+ * @param {number} minValue
+ * @param {number} maxValue
+ * @param {(c: any) => boolean} [condition]
+ * @param {number} [conditionMin]
+ * @param {number} [conditionMax]
+ */const rfx = (groupName, ch, effectNum, minValue, maxValue, condition = undefined, conditionMin = undefined, conditionMax = undefined) => {
+  const scale = resolveRangeScale(groupName, effectNum);
+  const [scaledMin, scaledMax] = scaleFxRange(minValue, maxValue, scale);
+  let scaledConditionMin = conditionMin;
+  let scaledConditionMax = conditionMax;
+  if (Number.isFinite(Number(conditionMin)) && Number.isFinite(Number(conditionMax))) {
+    [scaledConditionMin, scaledConditionMax] = scaleFxRange(Number(conditionMin), Number(conditionMax), scale);
+  }
+  return rlFX(ch, effectNum, scaledMin, scaledMax, condition, scaledConditionMin, scaledConditionMax);
+};
 // Respect both instance state and legacy naked global `firstLoop` set by tests
 if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 || (typeof firstLoop !== 'undefined' && firstLoop < 1)) { firstLoop=1; firstLoop = 1;
   // Apply a limited change to balance offset: use rl() but cap per-iteration change to +/-4 ticks for stability
@@ -45,81 +101,59 @@ return [
     ...source2.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal : rBal) : ch.toString().startsWith('rCH') ? (flipBin ? rBal : lBal) : ch===drumCH ? cBal3+m.round((rf(-.5,.5)*bassVar)) : cBal]})),
     ...reflection.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? (rf()<.1 ? lBal+refVar*2 : lBal+refVar) : (rf()<.1 ? rBal-refVar*2 : rBal-refVar)) : ch.toString().startsWith('rCH') ? (flipBin ? (rf()<.1 ? rBal-refVar*2 : rBal-refVar) : (rf()<.1 ? lBal+refVar*2 : lBal+refVar)) : cBal2+m.round((rf(-.5,.5)*refVar)) ]})),
     ...bass.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal+bassVar : rBal-bassVar) : ch.toString().startsWith('rCH') ? (flipBin ? rBal-bassVar : lBal+bassVar) : cBal3+m.round((rf(-.5,.5)*bassVar)) ]})),
-    ...source2.map(ch=>rlFX(ch,1,0,60,(c)=>c===cCH1,0,10)),
-    ...source2.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH1,126,127)),
-    ...source2.map(ch=>rlFX(ch,11,64,127,(c)=>c===cCH1||c===drumCH,115,127)),
-    ...source2.map(ch=>rlFX(ch,65,45,64,(c)=>c===cCH1,35,64)),
-    ...source2.map(ch=>rlFX(ch,67,63,64)),
-    ...source2.map(ch=>rlFX(ch,68,63,64)),
-    ...source2.map(ch=>rlFX(ch,69,63,64)),
-    ...source2.map(ch=>rlFX(ch,70,0,127)),
-    ...source2.map(ch=>rlFX(ch,71,0,127)),
-    ...source2.map(ch=>rlFX(ch,72,64,127)),
-    ...source2.map(ch=>rlFX(ch,73,0,64)),
-    ...source2.map(ch=>rlFX(ch,74,80,127)),
-    ...source2.map(ch=>rlFX(ch,91,0,33)),
-    ...source2.map(ch=>rlFX(ch,92,0,33)),
-    ...source2.map(ch=>rlFX(ch,93,0,33)),
-    ...source2.map(ch=>rlFX(ch,94,0,5,(c)=>c===drumCH,0,64)),
-    ...source2.map(ch=>rlFX(ch,95,0,33)),
-    ...reflection.map(ch=>rlFX(ch,1,0,90,(c)=>c===cCH2,0,15)),
-    ...reflection.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH2,126,127)),
-    ...reflection.map(ch=>rlFX(ch,11,77,111,(c)=>c===cCH2,66,99)),
-    ...reflection.map(ch=>rlFX(ch,65,45,64,(c)=>c===cCH2,35,64)),
-    ...reflection.map(ch=>rlFX(ch,67,63,64)),
-    ...reflection.map(ch=>rlFX(ch,68,63,64)),
-    ...reflection.map(ch=>rlFX(ch,69,63,64)),
-    ...reflection.map(ch=>rlFX(ch,70,0,127)),
-    ...reflection.map(ch=>rlFX(ch,71,0,127)),
-    ...reflection.map(ch=>rlFX(ch,72,64,127)),
-    ...reflection.map(ch=>rlFX(ch,73,0,64)),
-    ...reflection.map(ch=>rlFX(ch,74,80,127)),
-    ...reflection.map(ch=>rlFX(ch,91,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rlFX(ch,92,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rlFX(ch,93,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rlFX(ch,94,0,64,(c)=>c===cCH2,0,11)),
-    ...reflection.map(ch=>rlFX(ch,95,0,77,(c)=>c===cCH2,0,32)),
-    ...bass.map(ch=>rlFX(ch,1,0,60,(c)=>c===cCH3,0,10)),
-    ...bass.map(ch=>rlFX(ch,5,125,127,(c)=>c===cCH3,126,127)),
-    ...bass.map(ch=>rlFX(ch,11,88,127,(c)=>c===cCH3,115,127)),
-    ...bass.map(ch=>rlFX(ch,65,45,64,(c)=>c===cCH3,35,64)),
-    ...bass.map(ch=>rlFX(ch,67,63,64)),
-    ...bass.map(ch=>rlFX(ch,68,63,64)),
-    ...bass.map(ch=>rlFX(ch,69,63,64)),
-    ...bass.map(ch=>rlFX(ch,70,0,127)),
-    ...bass.map(ch=>rlFX(ch,71,0,127)),
-    ...bass.map(ch=>rlFX(ch,72,64,127)),
-    ...bass.map(ch=>rlFX(ch,73,0,64)),
-    ...bass.map(ch=>rlFX(ch,74,80,127)),
-    ...bass.map(ch=>rlFX(ch,91,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rlFX(ch,92,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rlFX(ch,93,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rlFX(ch,94,0,64,(c)=>c===cCH3,0,11)),
-    ...bass.map(ch=>rlFX(ch,95,0,99,(c)=>c===cCH3,0,64)),
+    ...source2.map(ch=>rfx('source',ch,1,0,60,(c)=>c===cCH1,0,10)),
+    ...source2.map(ch=>rfx('source',ch,5,125,127,(c)=>c===cCH1,126,127)),
+    ...source2.map(ch=>rfx('source',ch,11,64,127,(c)=>c===cCH1||c===drumCH,115,127)),
+    ...source2.map(ch=>rfx('source',ch,65,45,64,(c)=>c===cCH1,35,64)),
+    ...source2.map(ch=>rfx('source',ch,67,63,64)),
+    ...source2.map(ch=>rfx('source',ch,68,63,64)),
+    ...source2.map(ch=>rfx('source',ch,69,63,64)),
+    ...source2.map(ch=>rfx('source',ch,70,0,127)),
+    ...source2.map(ch=>rfx('source',ch,71,0,127)),
+    ...source2.map(ch=>rfx('source',ch,72,64,127)),
+    ...source2.map(ch=>rfx('source',ch,73,0,64)),
+    ...source2.map(ch=>rfx('source',ch,74,80,127)),
+    ...source2.map(ch=>rfx('source',ch,91,0,33)),
+    ...source2.map(ch=>rfx('source',ch,92,0,33)),
+    ...source2.map(ch=>rfx('source',ch,93,0,33)),
+    ...source2.map(ch=>rfx('source',ch,94,0,5,(c)=>c===drumCH,0,64)),
+    ...source2.map(ch=>rfx('source',ch,95,0,33)),
+    ...reflection.map(ch=>rfx('reflection',ch,1,0,90,(c)=>c===cCH2,0,15)),
+    ...reflection.map(ch=>rfx('reflection',ch,5,125,127,(c)=>c===cCH2,126,127)),
+    ...reflection.map(ch=>rfx('reflection',ch,11,77,111,(c)=>c===cCH2,66,99)),
+    ...reflection.map(ch=>rfx('reflection',ch,65,45,64,(c)=>c===cCH2,35,64)),
+    ...reflection.map(ch=>rfx('reflection',ch,67,63,64)),
+    ...reflection.map(ch=>rfx('reflection',ch,68,63,64)),
+    ...reflection.map(ch=>rfx('reflection',ch,69,63,64)),
+    ...reflection.map(ch=>rfx('reflection',ch,70,0,127)),
+    ...reflection.map(ch=>rfx('reflection',ch,71,0,127)),
+    ...reflection.map(ch=>rfx('reflection',ch,72,64,127)),
+    ...reflection.map(ch=>rfx('reflection',ch,73,0,64)),
+    ...reflection.map(ch=>rfx('reflection',ch,74,80,127)),
+    ...reflection.map(ch=>rfx('reflection',ch,91,0,77,(c)=>c===cCH2,0,32)),
+    ...reflection.map(ch=>rfx('reflection',ch,92,0,77,(c)=>c===cCH2,0,32)),
+    ...reflection.map(ch=>rfx('reflection',ch,93,0,77,(c)=>c===cCH2,0,32)),
+    ...reflection.map(ch=>rfx('reflection',ch,94,0,64,(c)=>c===cCH2,0,11)),
+    ...reflection.map(ch=>rfx('reflection',ch,95,0,77,(c)=>c===cCH2,0,32)),
+    ...bass.map(ch=>rfx('bass',ch,1,0,60,(c)=>c===cCH3,0,10)),
+    ...bass.map(ch=>rfx('bass',ch,5,125,127,(c)=>c===cCH3,126,127)),
+    ...bass.map(ch=>rfx('bass',ch,11,88,127,(c)=>c===cCH3,115,127)),
+    ...bass.map(ch=>rfx('bass',ch,65,45,64,(c)=>c===cCH3,35,64)),
+    ...bass.map(ch=>rfx('bass',ch,67,63,64)),
+    ...bass.map(ch=>rfx('bass',ch,68,63,64)),
+    ...bass.map(ch=>rfx('bass',ch,69,63,64)),
+    ...bass.map(ch=>rfx('bass',ch,70,0,127)),
+    ...bass.map(ch=>rfx('bass',ch,71,0,127)),
+    ...bass.map(ch=>rfx('bass',ch,72,64,127)),
+    ...bass.map(ch=>rfx('bass',ch,73,0,64)),
+    ...bass.map(ch=>rfx('bass',ch,74,80,127)),
+    ...bass.map(ch=>rfx('bass',ch,91,0,99,(c)=>c===cCH3,0,64)),
+    ...bass.map(ch=>rfx('bass',ch,92,0,99,(c)=>c===cCH3,0,64)),
+    ...bass.map(ch=>rfx('bass',ch,93,0,99,(c)=>c===cCH3,0,64)),
+    ...bass.map(ch=>rfx('bass',ch,94,0,64,(c)=>c===cCH3,0,11)),
+    ...bass.map(ch=>rfx('bass',ch,95,0,99,(c)=>c===cCH3,0,64)),
   ];  })  );
 
-  const ccGroupScale = spatialCanvas.ccGroupScale || { source: 1, reflection: 1, bass: 1 };
-  const scalableCCs = new Set([1, 5, 11, 65, 67, 68, 69, 70, 71, 72, 73, 74, 91, 92, 93, 94, 95]);
-  const sourceSet = new Set(Array.isArray(source2) ? source2 : []);
-  const reflectionSet = new Set(Array.isArray(reflection) ? reflection : []);
-  const bassSet = new Set(Array.isArray(bass) ? bass : []);
-  const targetTick = Number(beatStart - 1);
-  for (let i = 0; i < c.length; i++) {
-    const evt = c[i];
-    if (!evt || evt.type !== 'control_c' || !evt.vals || evt.vals.length < 3) continue;
-    if (Number(evt.tick) !== targetTick) continue;
-    const ccNum = Number(evt.vals[1]);
-    if (!scalableCCs.has(ccNum)) continue;
-    const chNum = evt.vals[0];
-    const groupScale = sourceSet.has(chNum)
-      ? Number(ccGroupScale.source)
-      : reflectionSet.has(chNum)
-        ? Number(ccGroupScale.reflection)
-        : bassSet.has(chNum)
-          ? Number(ccGroupScale.bass)
-          : 1;
-    evt.vals[2] = clamp(m.round(Number(evt.vals[2]) * groupScale), 0, 127);
-  }
   // ── Texture-reactive FX modulation (#5) — conductor-driven ────────
   // When texture contrast intensity is high, boost reverb send (CC91),
   // open filter cutoff (CC74), and spike delay send (CC94) so the spatial

@@ -5,7 +5,6 @@ require('./VoiceValues');
 require('./voiceModulator');
 // @ts-ignore: load side-effect module with globals
 require('./voiceConfig');
-// VoiceStrategyRegistry removed (orphaned — register/get never called)
 // @ts-ignore: load side-effect module with globals
 require('./VoiceRegistry');
 // @ts-ignore: load side-effect module with globals
