@@ -26,15 +26,19 @@ PhraseArcManager = class PhraseArcManager {
     } else {
       this.arcType = opts.arcType;
     }
-    this.registerRange = Number.isFinite(Number(opts.registerRange)) ? Number(opts.registerRange) : 12;
+    this._registerRangeOverride = Number.isFinite(Number(opts.registerRange)) ? Number(opts.registerRange) : null;
     if (opts.densityRange !== undefined) {
       if (!opts.densityRange || typeof opts.densityRange !== 'object' || !('min' in opts.densityRange && 'max' in opts.densityRange)) {
         throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');
       }
-      this.densityRange = opts.densityRange;
+      this._densityRangeOverride = opts.densityRange;
     } else {
-      this.densityRange = { min: 0.85, max: 1.3 };
+      this._densityRangeOverride = null;
     }
+
+    const breath = this._getBreathProfile();
+    this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
+    this.densityRange = this._densityRangeOverride || breath.densityRange;
 
     // Arc profiles cache
     this._arcProfiles = this._generateArcProfiles();
@@ -49,6 +53,10 @@ PhraseArcManager = class PhraseArcManager {
     if (typeof measureIndex === 'undefined' || typeof measuresPerPhrase === 'undefined' || typeof phraseIndex === 'undefined') {
       throw new Error('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
     }
+
+    const breath = this._getBreathProfile();
+    this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
+    this.densityRange = this._densityRangeOverride || breath.densityRange;
 
     const pos = measuresPerPhrase > 0 ? measureIndex / measuresPerPhrase : 0;
     const phase = this._getPhase(pos);
@@ -147,6 +155,40 @@ PhraseArcManager = class PhraseArcManager {
     return true;
   }
 
+  _getBreathProfile() {
+    if (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getPhraseBreathParams === 'function') {
+      const p = ConductorConfig.getPhraseBreathParams();
+      if (p && typeof p === 'object') {
+        return p;
+      }
+    }
+    return {
+      registerRange: 12,
+      densityRange: { min: 0.85, max: 1.3 },
+      independence: {
+        archInner: 0.7,
+        archOuter: 0.3,
+        riseFallInner: 0.6,
+        riseFallOuter: 0.4,
+        buildResolveInner: 0.8,
+        buildResolveOuter: 0.3,
+        waveBase: 0.4,
+        waveAmplitude: 0.4
+      },
+      dynamism: {
+        archBase: 0.5,
+        archAmplitude: 0.5,
+        riseFallBase: 0.4,
+        riseFallAmplitude: 0.6,
+        buildResolveBase: 0.3,
+        buildResolveSlope: 0.7,
+        buildResolveEnd: 0.2,
+        waveBase: 0.5,
+        waveAmplitude: 0.5
+      }
+    };
+  }
+
   _getPhase(pos) {
     if (pos < 0.25) return 'opening';
     if (pos < 0.5) return 'development';
@@ -174,11 +216,13 @@ PhraseArcManager = class PhraseArcManager {
         },
         independence: (pos) => {
           // More independent voices in development
-          return pos > 0.25 && pos < 0.75 ? 0.7 : 0.3;
+          const p = this._getBreathProfile().independence;
+          return pos > 0.25 && pos < 0.75 ? p.archInner : p.archOuter;
         },
         dynamism: (pos) => {
           // Higher activity toward climax
-          return 0.5 + m.sin(pos * m.PI) * 0.5;
+          const p = this._getBreathProfile().dynamism;
+          return p.archBase + m.sin(pos * m.PI) * p.archAmplitude;
         }
       },
 
@@ -192,10 +236,12 @@ PhraseArcManager = class PhraseArcManager {
           return this.densityRange.min + (1 - m.abs(pos - 0.5) * 2) * (this.densityRange.max - this.densityRange.min);
         },
         independence: (pos) => {
-          return pos > 0.3 && pos < 0.7 ? 0.6 : 0.4;
+          const p = this._getBreathProfile().independence;
+          return pos > 0.3 && pos < 0.7 ? p.riseFallInner : p.riseFallOuter;
         },
         dynamism: (pos) => {
-          return 0.4 + (1 - m.abs(pos - 0.5) * 2) * 0.6;
+          const p = this._getBreathProfile().dynamism;
+          return p.riseFallBase + (1 - m.abs(pos - 0.5) * 2) * p.riseFallAmplitude;
         }
       },
 
@@ -210,10 +256,12 @@ PhraseArcManager = class PhraseArcManager {
           return this.densityRange.min + build * (this.densityRange.max - this.densityRange.min);
         },
         independence: (pos) => {
-          return pos > 0.4 && pos < 0.75 ? 0.8 : 0.3;
+          const p = this._getBreathProfile().independence;
+          return pos > 0.4 && pos < 0.75 ? p.buildResolveInner : p.buildResolveOuter;
         },
         dynamism: (pos) => {
-          return pos < 0.75 ? 0.3 + pos * 0.7 : 0.2;
+          const p = this._getBreathProfile().dynamism;
+          return pos < 0.75 ? p.buildResolveBase + pos * p.buildResolveSlope : p.buildResolveEnd;
         }
       },
 
@@ -227,10 +275,12 @@ PhraseArcManager = class PhraseArcManager {
           return this.densityRange.min + wave * (this.densityRange.max - this.densityRange.min);
         },
         independence: (pos) => {
-          return 0.4 + m.abs(m.sin(pos * m.PI * 2)) * 0.4;
+          const p = this._getBreathProfile().independence;
+          return p.waveBase + m.abs(m.sin(pos * m.PI * 2)) * p.waveAmplitude;
         },
         dynamism: (pos) => {
-          return 0.5 + m.abs(m.sin(pos * m.PI * 2)) * 0.5;
+          const p = this._getBreathProfile().dynamism;
+          return p.waveBase + m.abs(m.sin(pos * m.PI * 2)) * p.waveAmplitude;
         }
       }
     };

@@ -26,6 +26,240 @@ ConductorConfig = (() => {
   const REQUIRED_EMISSION_KEYS = ['noiseProfile', 'sourceNoiseInfluence', 'reflectionNoiseInfluence', 'bassNoiseInfluence', 'voiceConfigBlend'];
   const REQUIRED_TOP_KEYS = ['density', 'phaseMultipliers', 'stutter', 'energyWeights', 'flicker', 'climaxBoost', 'crossMod', 'fxMix', 'texture', 'attenuation', 'voiceSpread', 'familyWeights', 'emission'];
 
+  const PROFILE_TUNING_DEFAULTS = {
+    emissionGate: {
+      playBase: 0.72,
+      playScale: 0.9,
+      stutterBase: 0.6,
+      stutterScale: 1.15,
+      journeyBoost: 0.08,
+      feedbackBoost: 0.08,
+      layerBiasScale: 1.0
+    },
+    feedbackMix: {
+      fx: 0.45,
+      stutter: 0.2,
+      journey: 0.35
+    },
+    intensityBlend: {
+      arc: 0.6,
+      tension: 0.4
+    },
+    stutterGrain: {
+      fadeCount: [10, 70],
+      fadeDuration: [0.2, 1.5],
+      panCount: [30, 90],
+      panDuration: [0.1, 1.2],
+      fxCount: [30, 100],
+      fxDuration: [0.1, 2.0]
+    },
+    phraseBreath: {
+      registerRange: 12,
+      densityRange: { min: 0.85, max: 1.3 },
+      independence: {
+        archInner: 0.7,
+        archOuter: 0.3,
+        riseFallInner: 0.6,
+        riseFallOuter: 0.4,
+        buildResolveInner: 0.8,
+        buildResolveOuter: 0.3,
+        waveBase: 0.4,
+        waveAmplitude: 0.4
+      },
+      dynamism: {
+        archBase: 0.5,
+        archAmplitude: 0.5,
+        riseFallBase: 0.4,
+        riseFallAmplitude: 0.6,
+        buildResolveBase: 0.3,
+        buildResolveSlope: 0.7,
+        buildResolveEnd: 0.2,
+        waveBase: 0.5,
+        waveAmplitude: 0.5
+      }
+    },
+    motifTexture: {
+      burstDensity: [0.7, 1.0],
+      sparseDensity: [0.3, 0.7],
+      burstIntervalDensity: [0.7, 0.95],
+      sparseIntervalDensity: [0.4, 0.7]
+    },
+    motifMutation: {
+      transposeRange: [-7, 7]
+    },
+    spatialCanvas: {
+      balOffset: [0, 45],
+      balStep: 4,
+      sideBias: [-20, 20],
+      sideBiasStep: 2,
+      lBalMax: 54,
+      ccGroupScale: {
+        source: 1.0,
+        reflection: 1.0,
+        bass: 1.0
+      }
+    },
+    noiseCanvas: {
+      panRange: 60,
+      sustainRange: [0.8, 1.2]
+    },
+    rhythmDrift: {
+      burst: [0.5, 1.5],
+      flurry: [0.3, 1.0]
+    }
+  };
+
+  const PROFILE_TUNING_OVERRIDES = {
+    restrained: {
+      emissionGate: { playBase: 0.66, playScale: 0.75, stutterBase: 0.52, stutterScale: 0.95, journeyBoost: 0.06, feedbackBoost: 0.05 },
+      feedbackMix: { fx: 0.35, stutter: 0.15, journey: 0.5 },
+      intensityBlend: { arc: 0.45, tension: 0.55 },
+      stutterGrain: { fadeCount: [8, 45], panCount: [18, 60], fxCount: [20, 70] },
+      phraseBreath: {
+        registerRange: 9,
+        densityRange: { min: 0.8, max: 1.1 },
+        independence: { archInner: 0.6, archOuter: 0.25, buildResolveInner: 0.7, waveAmplitude: 0.25 },
+        dynamism: { archBase: 0.35, archAmplitude: 0.35, waveAmplitude: 0.35 }
+      },
+      motifTexture: { burstDensity: [0.65, 0.9], sparseDensity: [0.35, 0.65] },
+      motifMutation: { transposeRange: [-5, 5] },
+      spatialCanvas: {
+        balOffset: [0, 35],
+        balStep: 3,
+        sideBias: [-14, 14],
+        lBalMax: 46,
+        ccGroupScale: { source: 0.85, reflection: 0.9, bass: 0.85 }
+      },
+      noiseCanvas: { panRange: 45, sustainRange: [0.9, 1.1] },
+      rhythmDrift: { burst: [0.3, 0.9], flurry: [0.2, 0.6] }
+    },
+    explosive: {
+      emissionGate: { playBase: 0.82, playScale: 1.05, stutterBase: 0.72, stutterScale: 1.35, journeyBoost: 0.1, feedbackBoost: 0.12 },
+      feedbackMix: { fx: 0.5, stutter: 0.3, journey: 0.2 },
+      intensityBlend: { arc: 0.68, tension: 0.32 },
+      stutterGrain: {
+        fadeCount: [24, 110],
+        fadeDuration: [0.15, 1.1],
+        panCount: [45, 130],
+        panDuration: [0.08, 0.9],
+        fxCount: [50, 145],
+        fxDuration: [0.08, 1.5]
+      },
+      phraseBreath: {
+        registerRange: 18,
+        densityRange: { min: 0.95, max: 1.5 },
+        independence: { archInner: 0.82, archOuter: 0.4, buildResolveInner: 0.92, waveAmplitude: 0.55 },
+        dynamism: { archBase: 0.6, archAmplitude: 0.55, buildResolveBase: 0.45, buildResolveSlope: 0.9, waveAmplitude: 0.7 }
+      },
+      motifTexture: { burstDensity: [0.8, 1.0], sparseDensity: [0.25, 0.65], burstIntervalDensity: [0.8, 1.0], sparseIntervalDensity: [0.35, 0.65] },
+      motifMutation: { transposeRange: [-12, 12] },
+      spatialCanvas: {
+        balOffset: [0, 58],
+        balStep: 6,
+        sideBias: [-30, 30],
+        sideBiasStep: 3,
+        lBalMax: 70,
+        ccGroupScale: { source: 1.2, reflection: 1.35, bass: 1.15 }
+      },
+      noiseCanvas: { panRange: 80, sustainRange: [0.7, 1.35] },
+      rhythmDrift: { burst: [0.9, 2.3], flurry: [0.5, 1.4] }
+    },
+    atmospheric: {
+      emissionGate: { playBase: 0.64, playScale: 0.78, stutterBase: 0.48, stutterScale: 0.88, journeyBoost: 0.1, feedbackBoost: 0.05 },
+      feedbackMix: { fx: 0.35, stutter: 0.15, journey: 0.5 },
+      intensityBlend: { arc: 0.72, tension: 0.28 },
+      stutterGrain: {
+        fadeCount: [8, 55],
+        fadeDuration: [0.5, 2.2],
+        panCount: [16, 64],
+        panDuration: [0.3, 1.8],
+        fxCount: [18, 72],
+        fxDuration: [0.3, 2.4]
+      },
+      phraseBreath: {
+        registerRange: 10,
+        densityRange: { min: 0.7, max: 1.15 },
+        independence: { archInner: 0.62, archOuter: 0.28, waveAmplitude: 0.3 },
+        dynamism: { archBase: 0.35, archAmplitude: 0.35, riseFallBase: 0.3, riseFallAmplitude: 0.45, waveAmplitude: 0.4 }
+      },
+      motifTexture: { burstDensity: [0.65, 0.9], sparseDensity: [0.25, 0.65], burstIntervalDensity: [0.65, 0.85], sparseIntervalDensity: [0.35, 0.65] },
+      motifMutation: { transposeRange: [-5, 5] },
+      spatialCanvas: {
+        balOffset: [0, 40],
+        balStep: 3,
+        sideBias: [-18, 18],
+        lBalMax: 50,
+        ccGroupScale: { source: 0.85, reflection: 1.2, bass: 0.8 }
+      },
+      noiseCanvas: { panRange: 50, sustainRange: [0.85, 1.3] },
+      rhythmDrift: { burst: [0.4, 1.1], flurry: [0.2, 0.8] }
+    },
+    rhythmicDrive: {
+      emissionGate: { playBase: 0.78, playScale: 0.98, stutterBase: 0.7, stutterScale: 1.4, journeyBoost: 0.07, feedbackBoost: 0.11 },
+      feedbackMix: { fx: 0.35, stutter: 0.4, journey: 0.25 },
+      intensityBlend: { arc: 0.52, tension: 0.48 },
+      stutterGrain: {
+        fadeCount: [18, 95],
+        fadeDuration: [0.15, 1.0],
+        panCount: [40, 125],
+        panDuration: [0.08, 0.8],
+        fxCount: [45, 140],
+        fxDuration: [0.08, 1.3]
+      },
+      phraseBreath: {
+        registerRange: 14,
+        densityRange: { min: 0.95, max: 1.45 },
+        independence: { archInner: 0.78, archOuter: 0.35, buildResolveInner: 0.9, waveAmplitude: 0.5 },
+        dynamism: { archBase: 0.55, archAmplitude: 0.5, riseFallBase: 0.5, riseFallAmplitude: 0.55, buildResolveBase: 0.45, buildResolveSlope: 0.85, waveAmplitude: 0.65 }
+      },
+      motifTexture: { burstDensity: [0.75, 1.0], sparseDensity: [0.3, 0.75], burstIntervalDensity: [0.75, 1.0], sparseIntervalDensity: [0.4, 0.75] },
+      motifMutation: { transposeRange: [-9, 9] },
+      spatialCanvas: {
+        balOffset: [0, 52],
+        balStep: 5,
+        sideBias: [-24, 24],
+        lBalMax: 62,
+        ccGroupScale: { source: 1.15, reflection: 0.95, bass: 1.25 }
+      },
+      noiseCanvas: { panRange: 70, sustainRange: [0.75, 1.15] },
+      rhythmDrift: { burst: [0.7, 1.8], flurry: [0.4, 1.2] }
+    },
+    minimal: {
+      emissionGate: { playBase: 0.54, playScale: 0.62, stutterBase: 0.32, stutterScale: 0.55, journeyBoost: 0.04, feedbackBoost: 0.03 },
+      feedbackMix: { fx: 0.3, stutter: 0.1, journey: 0.6 },
+      intensityBlend: { arc: 0.4, tension: 0.6 },
+      stutterGrain: {
+        fadeCount: [6, 30],
+        fadeDuration: [0.6, 2.6],
+        panCount: [10, 40],
+        panDuration: [0.5, 2.2],
+        fxCount: [12, 45],
+        fxDuration: [0.5, 2.8]
+      },
+      phraseBreath: {
+        registerRange: 7,
+        densityRange: { min: 0.75, max: 1.05 },
+        independence: { archInner: 0.45, archOuter: 0.2, riseFallInner: 0.5, riseFallOuter: 0.3, buildResolveInner: 0.55, buildResolveOuter: 0.2, waveBase: 0.25, waveAmplitude: 0.2 },
+        dynamism: { archBase: 0.22, archAmplitude: 0.22, riseFallBase: 0.2, riseFallAmplitude: 0.28, buildResolveBase: 0.18, buildResolveSlope: 0.35, buildResolveEnd: 0.12, waveBase: 0.25, waveAmplitude: 0.2 }
+      },
+      motifTexture: { burstDensity: [0.6, 0.8], sparseDensity: [0.25, 0.55], burstIntervalDensity: [0.6, 0.8], sparseIntervalDensity: [0.3, 0.55] },
+      motifMutation: { transposeRange: [-3, 3] },
+      spatialCanvas: {
+        balOffset: [0, 28],
+        balStep: 2,
+        sideBias: [-10, 10],
+        sideBiasStep: 1,
+        lBalMax: 40,
+        ccGroupScale: { source: 0.7, reflection: 0.75, bass: 0.7 }
+      },
+      noiseCanvas: { panRange: 32, sustainRange: [0.95, 1.05] },
+      rhythmDrift: { burst: [0.2, 0.6], flurry: [0.1, 0.4] }
+    },
+    harmonic: {
+      intensityBlend: { arc: 0.35, tension: 0.65 }
+    }
+  };
+
   /**
    * Validate a single conductor profile object.
    * @param {Object} profile
@@ -175,6 +409,42 @@ ConductorConfig = (() => {
     if (!Number.isFinite(num) || num < min || num > max) {
       throw new Error(`ConductorConfig: ${label} must be finite in [${min}, ${max}]`);
     }
+  }
+
+  function mergeProfileTuning(base, override) {
+    if (Array.isArray(base)) {
+      return Array.isArray(override) ? override.slice() : base.slice();
+    }
+    if (!base || typeof base !== 'object') {
+      return override === undefined ? base : override;
+    }
+
+    const result = {};
+    const keys = new Set([...Object.keys(base), ...Object.keys(override || {})]);
+    for (const key of keys) {
+      const baseValue = base[key];
+      const overrideValue = override ? override[key] : undefined;
+      if (overrideValue === undefined) {
+        result[key] = Array.isArray(baseValue)
+          ? baseValue.slice()
+          : (baseValue && typeof baseValue === 'object' ? mergeProfileTuning(baseValue, {}) : baseValue);
+      } else if (Array.isArray(baseValue) || Array.isArray(overrideValue)) {
+        result[key] = Array.isArray(overrideValue)
+          ? overrideValue.slice()
+          : (Array.isArray(baseValue) ? baseValue.slice() : overrideValue);
+      } else if (baseValue && typeof baseValue === 'object' && overrideValue && typeof overrideValue === 'object') {
+        result[key] = mergeProfileTuning(baseValue, overrideValue);
+      } else {
+        result[key] = overrideValue;
+      }
+    }
+    return result;
+  }
+
+  function getProfileTuning() {
+    const profileName = getActiveProfileName();
+    const override = PROFILE_TUNING_OVERRIDES[profileName] || {};
+    return mergeProfileTuning(PROFILE_TUNING_DEFAULTS, override);
   }
 
   // ── Profile resolution ────────────────────────────────────────────
@@ -384,6 +654,63 @@ ConductorConfig = (() => {
    */
   function getEmissionScaling() {
     return resolveField('emission');
+  }
+
+  function getEmissionGateParams() {
+    return getProfileTuning().emissionGate;
+  }
+
+  function getFeedbackMixWeights() {
+    const weights = getProfileTuning().feedbackMix;
+    const sum = Number(weights.fx) + Number(weights.stutter) + Number(weights.journey);
+    if (!Number.isFinite(sum) || sum <= 0) {
+      return PROFILE_TUNING_DEFAULTS.feedbackMix;
+    }
+    return {
+      fx: Number(weights.fx) / sum,
+      stutter: Number(weights.stutter) / sum,
+      journey: Number(weights.journey) / sum
+    };
+  }
+
+  function getGlobalIntensityBlend() {
+    const blend = getProfileTuning().intensityBlend;
+    const sum = Number(blend.arc) + Number(blend.tension);
+    if (!Number.isFinite(sum) || sum <= 0) {
+      return PROFILE_TUNING_DEFAULTS.intensityBlend;
+    }
+    return {
+      arc: Number(blend.arc) / sum,
+      tension: Number(blend.tension) / sum
+    };
+  }
+
+  function getStutterGrainParams() {
+    return getProfileTuning().stutterGrain;
+  }
+
+  function getPhraseBreathParams() {
+    return getProfileTuning().phraseBreath;
+  }
+
+  function getMotifTextureClampParams() {
+    return getProfileTuning().motifTexture;
+  }
+
+  function getMotifMutationParams() {
+    return getProfileTuning().motifMutation;
+  }
+
+  function getSpatialCanvasParams() {
+    return getProfileTuning().spatialCanvas;
+  }
+
+  function getNoiseCanvasParams() {
+    return getProfileTuning().noiseCanvas;
+  }
+
+  function getRhythmDriftParams() {
+    return getProfileTuning().rhythmDrift;
   }
 
   // ── Profile crossfading ───────────────────────────────────────────
@@ -656,6 +983,16 @@ ConductorConfig = (() => {
     getFamilyWeights,
     getJourneyBoldness,
     getEmissionScaling,
+    getEmissionGateParams,
+    getFeedbackMixWeights,
+    getGlobalIntensityBlend,
+    getStutterGrainParams,
+    getPhraseBreathParams,
+    getMotifTextureClampParams,
+    getMotifMutationParams,
+    getSpatialCanvasParams,
+    getNoiseCanvasParams,
+    getRhythmDriftParams,
     applyPhaseProfile,
     tickCrossfade,
     regulationTick,

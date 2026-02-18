@@ -45,7 +45,14 @@ GlobalConductor = (() => {
     const excursionTension = Math.min(excursion, 6) * 0.05;
 
     const tensionIntensity = harmonicTension + excursionTension;
-    const compositeIntensity = clamp(arcIntensity * 0.6 + tensionIntensity * 0.4, 0, 1);
+    const intensityBlend = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getGlobalIntensityBlend === 'function')
+      ? ConductorConfig.getGlobalIntensityBlend()
+      : { arc: 0.6, tension: 0.4 };
+    const compositeIntensity = clamp(
+      arcIntensity * intensityBlend.arc + tensionIntensity * intensityBlend.tension,
+      0,
+      1
+    );
 
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper

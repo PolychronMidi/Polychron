@@ -41,7 +41,10 @@ applyNoiseToPan = function(basePan, voiceId, currentTime, profileName = 'subtle'
 
   // X modulation affects pan position directly
   // Map from [0, 1] noise to [-64, +64] pan offset from center
-  const panRange = 60; // Max deviation from center
+  const noiseCanvas = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
+    ? ConductorConfig.getNoiseCanvasParams()
+    : { panRange: 60, sustainRange: [0.8, 1.2] };
+  const panRange = Number.isFinite(Number(noiseCanvas.panRange)) ? Number(noiseCanvas.panRange) : 60; // Max deviation from center
   const xOffset = (mod.x - 0.5) * 2 * panRange * profile.influenceX;
 
   const modifiedPan = basePan + xOffset;
@@ -60,10 +63,18 @@ applyNoiseToSustain = function(baseSustain, voiceId, currentTime, profileName = 
 
   const mod = getParameterModulation(voiceId, 'sustain', currentTime);
   const profile = getNoiseProfile(profileName);
+  const noiseCanvas = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
+    ? ConductorConfig.getNoiseCanvasParams()
+    : { panRange: 60, sustainRange: [0.8, 1.2] };
+  const sustainRange = Array.isArray(noiseCanvas.sustainRange) && noiseCanvas.sustainRange.length === 2
+    ? noiseCanvas.sustainRange
+    : [0.8, 1.2];
+  const sustainMin = Number(sustainRange[0]);
+  const sustainMax = Number(sustainRange[1]);
 
   // Y modulation affects sustain duration
-  // Map from [0, 1] noise to [0.8x, 1.2x] sustain multiplier
-  const sustainMultiplier = 0.8 + mod.y * 0.4; // Range: 0.8 to 1.2
+  // Map from [0, 1] noise to profile-defined sustain multiplier range
+  const sustainMultiplier = sustainMin + mod.y * (sustainMax - sustainMin);
   const sustainInfluence = profile.influenceY;
 
   // Apply influence as partial blend toward the multiplier

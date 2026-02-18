@@ -88,8 +88,18 @@ DynamismEngine = (() => {
       ? clamp(Number(JourneyRhythmCoupler.getBoldness()), 0, 1)
       : 0;
 
-    // Mix FX + Stutter + Journey energy (conservative weighting)
-    return clamp(fxEnergy * 0.45 + stutterEnergy * 0.20 + journeyRhythmEnergy * 0.35, 0, 1);
+    const mixWeights = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getFeedbackMixWeights === 'function')
+      ? ConductorConfig.getFeedbackMixWeights()
+      : { fx: 0.45, stutter: 0.2, journey: 0.35 };
+
+    // Mix FX + Stutter + Journey energy (profile-driven weighting)
+    return clamp(
+      fxEnergy * mixWeights.fx +
+      stutterEnergy * mixWeights.stutter +
+      journeyRhythmEnergy * mixWeights.journey,
+      0,
+      1
+    );
   }
 
   /**
@@ -172,13 +182,30 @@ DynamismEngine = (() => {
       1
     );
 
+    const emissionGate = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionGateParams === 'function')
+      ? ConductorConfig.getEmissionGateParams()
+      : {
+          playBase: 0.72,
+          playScale: 0.9,
+          stutterBase: 0.6,
+          stutterScale: 1.15,
+          journeyBoost: 0.08,
+          feedbackBoost: 0.08,
+          layerBiasScale: 1
+        };
+
     const layerBias = (typeof LM !== 'undefined' && LM && LM.activeLayer === 'L2') ? 0.04 : 0;
-    const playOut = clamp(inputPlay * (0.72 + composite * 0.9) + layerBias * 0.5, 0.02, 0.98);
+    const playOut = clamp(
+      inputPlay * (emissionGate.playBase + composite * emissionGate.playScale) +
+      layerBias * 0.5 * emissionGate.layerBiasScale,
+      0.02,
+      0.98
+    );
     const stutterOut = clamp(
-      inputStutter * (0.6 + composite * 1.15) +
-      journeyEnergy * 0.08 +
-      feedbackEnergy * 0.08 +
-      layerBias,
+      inputStutter * (emissionGate.stutterBase + composite * emissionGate.stutterScale) +
+      journeyEnergy * emissionGate.journeyBoost +
+      feedbackEnergy * emissionGate.feedbackBoost +
+      layerBias * emissionGate.layerBiasScale,
       0.01,
       0.98
     );
