@@ -34,11 +34,8 @@ GlobalConductor = (() => {
     // 2. derive composite intensity (0-1)
     // Intensity rises with phrase position, harmonic tension, and structural drama
 
-    // Calculate Phase Multiplier (Macro-dynamics)
-    let phaseMult = 1.0;
-    if (sectionPhase === 'climax') phaseMult = 1.3;
-    else if (sectionPhase === 'resolution' || sectionPhase === 'conclusion') phaseMult = 0.7;
-    else if (sectionPhase === 'intro' || sectionPhase === 'opening') phaseMult = 0.8;
+    // Calculate Phase Multiplier (Macro-dynamics) — profile-driven
+    const phaseMult = ConductorConfig.getPhaseMultiplier(sectionPhase);
 
     // Apply multiplier to the raw arc dynamism from PhraseArcManager
     const arcIntensity = phraseCtx.dynamism * phaseMult;
@@ -53,8 +50,9 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = 0.3 + 0.5 * compositeIntensity; // range 0.3 - 0.8
-    currentDensity = currentDensity * 0.8 + targetDensity * 0.2; // simple low-pass filter
+    const targetDensity = ConductorConfig.getTargetDensity(compositeIntensity);
+    const smooth = ConductorConfig.getDensitySmoothing();
+    currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
     // Micro-hyper density flicker: density oscillates per-beat so some
     // subsubdivs get many note options (dense run territory) while others
@@ -70,7 +68,8 @@ GlobalConductor = (() => {
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
                          + rf(-0.03, 0.03) * flickerAmplitude;
-    const flickeredDensity = clamp(currentDensity + densityFlicker, 0.15, 0.95);
+    const densityBounds = ConductorConfig.getDensityBounds();
+    const flickeredDensity = clamp(currentDensity + densityFlicker, densityBounds.floor, densityBounds.ceiling);
 
     if (typeof motifConfig !== 'undefined' && typeof motifConfig.setUnitProfileOverride === 'function') {
       // Apply flickered density to deeper units for texture buildup
@@ -81,26 +80,22 @@ GlobalConductor = (() => {
 
     // 4. Drive Stutter Behavior (Dynamicism: High intensity -> faster, more chaotic stutters)
     if (typeof Stutter !== 'undefined') {
-      // Modulate rate based on tension
-      let rateBase = 8;
-      if (compositeIntensity > 0.8 || sectionPhase === 'climax') rateBase = 32;
-      else if (compositeIntensity > 0.5) rateBase = 16;
-
-      const rateCurve = compositeIntensity > 0.6 ? 'exp' : 'linear';
+      // Profile-driven stutter params
+      const stutterParams = ConductorConfig.getStutterParams(compositeIntensity);
 
       // Update default directive for spontaneous stutters
       if (typeof Stutter.setDefaultDirective === 'function') {
         Stutter.setDefaultDirective({
-          rate: rateBase,
-          rateCurve: rateCurve,
+          rate: stutterParams.rate,
+          rateCurve: stutterParams.rateCurve,
           phase: {
             left: 0,
-            right: 0.5 + 0.2 * compositeIntensity, // winder stereo width with intensity
+            right: 0.5 + 0.2 * compositeIntensity, // wider stereo width with intensity
             center: 0
           },
           coherence: {
             enabled: true, // Always enable coherence for musicality
-            mode: compositeIntensity > 0.8 ? 'loose' : 'tight'
+            mode: stutterParams.coherenceMode
           }
         });
       }
@@ -114,11 +109,12 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    // Apply climax boost on top of DynamismEngine's output
+    // Apply climax boost on top of DynamismEngine's output (profile-driven)
     if (sectionPhase === 'climax') {
+      const boost = ConductorConfig.getClimaxBoost();
       return {
-        playProb: clamp(resolved.playProb * 1.1, 0, 1),
-        stutterProb: clamp(resolved.stutterProb * 1.2, 0, 1)
+        playProb: clamp(resolved.playProb * boost.playScale, 0, 1),
+        stutterProb: clamp(resolved.stutterProb * boost.stutterScale, 0, 1)
       };
     }
 

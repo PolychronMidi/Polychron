@@ -5,12 +5,6 @@ require('./MeasureNotePool');
 // @ts-ignore: load side-effect module with globals
 require('./MeasureComposer');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicContext');
-// @ts-ignore: load side-effect module with globals
-require('./harmonicJourneyHelpers');
-// @ts-ignore: load side-effect module with globals
-require('./HarmonicJourney');
-// @ts-ignore: load side-effect module with globals
 require('./composerCapabilities');
 // @ts-ignore: load side-effect module with globals
 require('./utils');
@@ -43,12 +37,6 @@ require('./MelodicDevelopmentComposer');
 require('./motif');
 // @ts-ignore: load side-effect module with globals
 require('./voice');
-// @ts-ignore: load side-effect module with globals
-require('./PhraseArcManager');
-// @ts-ignore: load side-effect module with globals
-require('./DynamismEngine');
-// @ts-ignore: load side-effect module with globals
-require('./TextureBlender');
 // @ts-ignore: load side-effect module with globals
 require('./profiles');
 // @ts-ignore: load side-effect module with globals
