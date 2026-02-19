@@ -3,45 +3,60 @@
 // rhythm/dynamism systems can respond to stutter intensity.
 
 StutterFeedbackListener = (() => {
-  let stutterAccumulator = 0; // cumulative stutter intensity (global)
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : { STUTTER_APPLIED: 'stutter-applied' };
+
+  let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
-  const decayRate = 0.9;        // decay per cycle
+  const decayRate = 0.9;
   let initialized = false;
 
-  function initialize() {
-    if (initialized) return;
-    if (typeof EventBus === 'undefined') {
-      throw new Error('StutterFeedbackListener.initialize: EventBus not available');
+  function ensureAccumulator() {
+    if (accumulator) return accumulator;
+    if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
+      throw new Error('StutterFeedbackListener: FeedbackAccumulator.create is required');
     }
 
-    EventBus.on('stutter-applied', (data) => {
-      try {
-        if (!data || typeof data !== 'object') throw new Error('StutterFeedbackListener: event payload must be an object');
-        const intensity = Number.isFinite(Number(data.intensity)) ? Number(data.intensity) : 0;
-        const profile = (data && typeof data.profile === 'string') ? data.profile : 'unknown';
-        // give note stutters slightly more weight than CC-only events
-        const weight = (data && data.type === 'note') ? 1.0 : 0.8;
-        const contrib = clamp(intensity * weight, 0, 1);
-        stutterAccumulator = stutterAccumulator * decayRate + contrib * (1 - decayRate);
-        if (profile && perProfile[profile] !== undefined) {
-          perProfile[profile] = perProfile[profile] * decayRate + contrib * (1 - decayRate);
+    accumulator = FeedbackAccumulator.create({
+      name: 'stutter-feedback',
+      decayRate,
+      inputs: [
+        {
+          eventName: EVENTS.STUTTER_APPLIED,
+          project(data) {
+            if (!data || typeof data !== 'object') throw new Error('StutterFeedbackListener: event payload must be an object');
+            const intensity = Number.isFinite(Number(data.intensity)) ? Number(data.intensity) : 0;
+            const weight = (data && data.type === 'note') ? 1.0 : 0.8;
+            return clamp(intensity * weight, 0, 1);
+          }
         }
-      } catch (e) {
-        throw new Error(`StutterFeedbackListener event error: ${e && e.message ? e.message : e}`);
+      ],
+      onInput(data, contribution) {
+        const profile = (data && typeof data.profile === 'string') ? data.profile : 'unknown';
+        if (profile && perProfile[profile] !== undefined) {
+          perProfile[profile] = perProfile[profile] * decayRate + contribution * (1 - decayRate);
+        }
+      },
+      onReset() {
+        Object.keys(perProfile).forEach(k => perProfile[k] = 0);
       }
     });
 
-    EventBus.on('section-boundary', () => {
-      stutterAccumulator = 0;
-      Object.keys(perProfile).forEach(k => perProfile[k] = 0);
-    });
+    return accumulator;
+  }
+
+  function initialize() {
+    if (initialized) return;
+    ensureAccumulator().initialize();
 
     initialized = true;
   }
 
   function getIntensity(profile = null) {
     if (profile && perProfile[profile] !== undefined) return clamp(perProfile[profile], 0, 1);
-    return clamp(stutterAccumulator, 0, 1);
+    if (!accumulator) return 0;
+    return accumulator.getIntensity();
   }
 
   // Small, conservative rhythm-weight bias based on stutter intensity
@@ -76,8 +91,17 @@ StutterFeedbackListener = (() => {
     return modified;
   }
 
-  function decay() { stutterAccumulator *= decayRate; Object.keys(perProfile).forEach(k => perProfile[k] *= decayRate); }
-  function reset() { stutterAccumulator = 0; Object.keys(perProfile).forEach(k => perProfile[k] = 0); }
+  function decay() {
+    if (!accumulator) return;
+    accumulator.decay();
+    Object.keys(perProfile).forEach(k => perProfile[k] *= decayRate);
+  }
+
+  function reset() {
+    if (!accumulator) return;
+    accumulator.reset();
+    Object.keys(perProfile).forEach(k => perProfile[k] = 0);
+  }
 
   return {
     initialize,

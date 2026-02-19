@@ -1,6 +1,16 @@
 // noiseComposer.js - Centralized noise application for composer classes
 // Keeps composer classes focused on their core responsibilities
 
+const resolveConductorNoiseProfile = (fallbackProfile) => {
+  if (typeof fallbackProfile !== 'string' || fallbackProfile.length === 0) {
+    throw new Error('resolveConductorNoiseProfile: fallbackProfile must be a non-empty string');
+  }
+  if (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getNoiseProfileForSection === 'function') {
+    return ConductorConfig.getNoiseProfileForSection();
+  }
+  return fallbackProfile;
+};
+
 /**
  * Apply noise-based pitch variation to a selected note
  * @param {number} selectedNote - The note to vary
@@ -12,7 +22,7 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
     throw new Error('applyComposerPitchNoise: selectedNote must be a number');
   }
 
-  const noiseProfile = getNoiseProfile('dramatic');
+  const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('dramatic'));
   const currentTime = (typeof context.callCount === 'number') ? (context.callCount * 0.1) : (typeof context.currentTime === 'number' ? context.currentTime : 0);
   const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
@@ -31,7 +41,7 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
  * @returns {number} Modified transposition offset
  */
 applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}) {
-  const noiseProfile = getNoiseProfile('moderate');
+  const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('moderate'));
   const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
   const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
   const phase = (typeof context.phase === 'number') ? context.phase : 0;
@@ -73,7 +83,7 @@ applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}
  * @returns {number} Modified pivot note
  */
 applyMelodicPivotNoise = function(pivot, context = {}) {
-  const noiseProfile = getNoiseProfile('moderate');
+  const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('moderate'));
   const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
   const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
@@ -90,7 +100,7 @@ applyMelodicPivotNoise = function(pivot, context = {}) {
  * @returns {number} Modified duration
  */
 applyMelodicDurationNoise = function(baseDuration, context = {}) {
-  const noiseProfile = getNoiseProfile('moderate');
+  const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('moderate'));
   const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
   const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 
@@ -108,7 +118,7 @@ applyMelodicDurationNoise = function(baseDuration, context = {}) {
  * @returns {number} Modified weight
  */
 applyVoiceLeadingWeightNoise = function(baseWeight, weightType, context = {}) {
-  const noiseProfile = getNoiseProfile('subtle');
+  const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('subtle'));
   const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
   const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
 

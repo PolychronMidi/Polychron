@@ -1,4 +1,8 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : { CONDUCTOR_REGULATION: 'conductor-regulation' };
+
   const controls = (typeof CONDUCTOR_DYNAMICS_CONTROLS !== 'undefined' && CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
     ? CONDUCTOR_DYNAMICS_CONTROLS
     : {
@@ -146,7 +150,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     }
 
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      EventBus.emit('conductor-regulation', {
+      EventBus.emit(EVENTS.CONDUCTOR_REGULATION, {
         avg,
         densityBias: regulation.densityBias,
         crossModBias: regulation.crossModBias,

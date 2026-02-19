@@ -3,28 +3,56 @@
  * @returns {void}
  */
 setBinaural = () => {
-  if (beatCount===beatsUntilBinauralShift || firstLoop<1 ) {
-  beatCount=0; flipBin=!flipBin; allNotesOff(beatStart);
-  beatsUntilBinauralShift = ri(numerator, numerator * 2 * bpmRatio3);
-  binauralFreqOffset=rl(binauralFreqOffset,-1,1,BINAURAL.min,BINAURAL.max);
+  const phraseBoundary = Number.isFinite(Number(beatIndex)) && Number(beatIndex) === 0 && Number.isFinite(Number(measureIndex)) && Number(measureIndex) === 0;
+  const statePhraseBoundary = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function')
+    ? (() => {
+        const state = ConductorState.getSnapshot();
+        return state && Number.isFinite(Number(state.phrasePosition)) && Number(state.phrasePosition) <= 0.001 && Number(beatIndex) === 0;
+      })()
+    : false;
+  const shouldShift = firstLoop < 1 || phraseBoundary || statePhraseBoundary;
 
-  p(c,...binauralL.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===lCH1 || ch===lCH3 || ch===lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)]})),
-  ...binauralR.map(ch=>({tick:beatStart,type:'pitch_bend_c',vals:[ch,ch===rCH1 || ch===rCH3 || ch===rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)]})),
-  );
-  // flipBin (flip binaural) volume transition
-  const startTick=beatStart - tpSec/4; const endTick=beatStart + tpSec/4;
-  const steps=10; const tickIncrement=(endTick - startTick) / steps;
-  for (let i=steps/2-1; i <= steps; i++) {
-    const tick=startTick + (tickIncrement * i);
-    const currentVolumeF2=flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
-    const currentVolumeT2=flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
-    const maxVol=rf(.9,1.2);
-    flipBinF2.forEach(ch => {
-      p(c,{tick:tick,type:'control_c',vals:[ch,7,m.round(currentVolumeF2*maxVol)]});
-    });
-    flipBinT2.forEach(ch => {
-      p(c,{tick:tick,type:'control_c',vals:[ch,7,m.round(currentVolumeT2*maxVol)]});
-    });
+  if (shouldShift) {
+    beatCount = 0;
+    flipBin = !flipBin;
+    allNotesOff(beatStart);
+
+    beatsUntilBinauralShift = (Number.isFinite(Number(numerator)) && Number.isFinite(Number(measuresPerPhrase)))
+      ? m.max(1, Number(numerator) * Number(measuresPerPhrase))
+      : m.max(1, Number(numerator) || 1);
+
+    let targetOffset = Number.isFinite(Number(binauralFreqOffset)) ? Number(binauralFreqOffset) : Number(BINAURAL.min || 0);
+    if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function' && typeof t !== 'undefined' && t && t.Note && typeof t.Note.chroma === 'function') {
+      const key = HarmonicContext.getField('key') || 'C';
+      const chroma = Number(t.Note.chroma(key));
+      if (Number.isFinite(chroma) && chroma >= 0) {
+        const minOffset = Number(BINAURAL.min);
+        const maxOffset = Number(BINAURAL.max);
+        targetOffset = minOffset + (clamp(chroma, 0, 11) / 11) * (maxOffset - minOffset);
+      }
+    }
+    binauralFreqOffset = rl(targetOffset, -0.4, 0.4, BINAURAL.min, BINAURAL.max);
+
+    p(c,
+      ...binauralL.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),
+      ...binauralR.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
+    );
+
+    const startTick = beatStart - tpSec / 4;
+    const endTick = beatStart + tpSec / 4;
+    const steps = 10;
+    const tickIncrement = (endTick - startTick) / steps;
+    for (let i = steps / 2 - 1; i <= steps; i++) {
+      const tick = startTick + (tickIncrement * i);
+      const currentVolumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
+      const currentVolumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
+      const maxVol = rf(.9, 1.2);
+      flipBinF2.forEach(ch => {
+        p(c, { tick: tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeF2 * maxVol)] });
+      });
+      flipBinT2.forEach(ch => {
+        p(c, { tick: tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeT2 * maxVol)] });
+      });
+    }
   }
-}
-}
+};

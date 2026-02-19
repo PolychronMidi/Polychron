@@ -1,6 +1,9 @@
 // fx/StutterManager.js - Audio effects manager
 
 const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
+const STUTTER_EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+  ? EventCatalog.names
+  : { TEXTURE_CONTRAST: 'texture-contrast' };
 
 class StutterManager {
   constructor() {
@@ -46,7 +49,7 @@ class StutterManager {
     // Flurries → suppress spontaneous stutters (let the runs breathe)
     try {
       if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.on === 'function') {
-        EventBus.on('texture-contrast', (data) => {
+        EventBus.on(STUTTER_EVENTS.TEXTURE_CONTRAST, (data) => {
           if (!data || typeof data !== 'object') return;
           const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
           const mode = data.mode || 'single';

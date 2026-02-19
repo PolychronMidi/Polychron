@@ -1,6 +1,8 @@
 // @ts-ignore: load side-effect module with globals
 require('./HarmonicContext');
 // @ts-ignore: load side-effect module with globals
+require('./HarmonicRhythmTracker');
+// @ts-ignore: load side-effect module with globals
 require('./harmonicJourneyHelpers');
 // @ts-ignore: load side-effect module with globals
 require('./HarmonicJourney');

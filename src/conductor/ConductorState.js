@@ -1,4 +1,15 @@
 ConductorState = (() => {
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : {
+        TEXTURE_CONTRAST: 'texture-contrast',
+        JOURNEY_MOVE: 'journey-move',
+        CONDUCTOR_REGULATION: 'conductor-regulation',
+        SECTION_BOUNDARY: 'section-boundary',
+        HARMONIC_CHANGE: 'harmonic-change',
+        BEAT_BINAURAL_APPLIED: 'beat-binaural-applied'
+      };
+
   let initialized = false;
 
   const snapshot = {
@@ -6,6 +17,8 @@ ConductorState = (() => {
     mode: 'major',
     quality: 'major',
     tension: 0,
+    harmonicRhythm: 0,
+    harmonicMutationCount: 0,
     excursion: 0,
     sectionPhase: 'development',
     phrasePosition: 0,
@@ -21,11 +34,14 @@ ConductorState = (() => {
     textureFatigue: 0,
     densityBias: 0,
     crossModBias: 1,
+    emissionRatio: 1,
     activeProfile: 'default',
     journeyMove: 'origin',
     journeyDistance: 0,
     journeyKey: 'C',
     journeyMode: 'major',
+    binauralFreqOffset: 0,
+    binauralFlip: false,
     tick: 0,
     updatedAt: 0
   };
@@ -39,6 +55,7 @@ ConductorState = (() => {
     if (typeof state.mode === 'string' && state.mode.length > 0) snapshot.mode = state.mode;
     if (typeof state.quality === 'string' && state.quality.length > 0) snapshot.quality = state.quality;
     if (Number.isFinite(Number(state.tension))) snapshot.tension = clamp(Number(state.tension), 0, 1);
+    if (Number.isFinite(Number(state.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(state.mutationCount));
     if (Number.isFinite(Number(state.excursion))) snapshot.excursion = m.max(0, Number(state.excursion));
     if (typeof state.sectionPhase === 'string' && state.sectionPhase.length > 0) snapshot.sectionPhase = state.sectionPhase;
   }
@@ -89,6 +106,8 @@ ConductorState = (() => {
     }
 
     if (Number.isFinite(Number(_data.compositeIntensity))) snapshot.compositeIntensity = clamp(Number(_data.compositeIntensity), 0, 1);
+    if (Number.isFinite(Number(_data.harmonicRhythm))) snapshot.harmonicRhythm = clamp(Number(_data.harmonicRhythm), 0, 1);
+    if (Number.isFinite(Number(_data.emissionRatio))) snapshot.emissionRatio = clamp(Number(_data.emissionRatio), 0, 2);
     if (Number.isFinite(Number(_data.playProb))) snapshot.playProb = clamp(Number(_data.playProb), 0, 1);
     if (Number.isFinite(Number(_data.stutterProb))) snapshot.stutterProb = clamp(Number(_data.stutterProb), 0, 1);
 
@@ -104,7 +123,7 @@ ConductorState = (() => {
     if (initialized) return true;
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') return false;
 
-    EventBus.on('texture-contrast', (data) => {
+    EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       if (!data || typeof data !== 'object') return;
       if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.textureMode = data.mode;
       if (Number.isFinite(Number(data.composite))) snapshot.compositeIntensity = clamp(Number(data.composite), 0, 1);
@@ -114,7 +133,7 @@ ConductorState = (() => {
       snapshot.updatedAt = Date.now();
     });
 
-    EventBus.on('journey-move', (data) => {
+    EventBus.on(EVENTS.JOURNEY_MOVE, (data) => {
       if (!data || typeof data !== 'object') return;
       if (typeof data.move === 'string' && data.move.length > 0) snapshot.journeyMove = data.move;
       if (Number.isFinite(Number(data.distance))) snapshot.journeyDistance = m.max(0, Number(data.distance));
@@ -123,7 +142,7 @@ ConductorState = (() => {
       snapshot.updatedAt = Date.now();
     });
 
-    EventBus.on('conductor-regulation', (data) => {
+    EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       if (!data || typeof data !== 'object') return;
       if (Number.isFinite(Number(data.densityBias))) snapshot.densityBias = Number(data.densityBias);
       if (Number.isFinite(Number(data.crossModBias))) snapshot.crossModBias = Number(data.crossModBias);
@@ -131,7 +150,23 @@ ConductorState = (() => {
       snapshot.updatedAt = Date.now();
     });
 
-    EventBus.on('section-boundary', () => {
+    EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
+      if (!data || typeof data !== 'object') return;
+      if (Number.isFinite(Number(data.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(data.mutationCount));
+      if (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function') {
+        snapshot.harmonicRhythm = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
+      }
+      snapshot.updatedAt = Date.now();
+    });
+
+    EventBus.on(EVENTS.BEAT_BINAURAL_APPLIED, (data) => {
+      if (!data || typeof data !== 'object') return;
+      if (Number.isFinite(Number(data.freqOffset))) snapshot.binauralFreqOffset = Number(data.freqOffset);
+      if (typeof data.flipBin === 'boolean') snapshot.binauralFlip = data.flipBin;
+      snapshot.updatedAt = Date.now();
+    });
+
+    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
       snapshot.textureMode = 'single';
       snapshot.textureFatigue = 0;
       snapshot.updatedAt = Date.now();
@@ -149,6 +184,11 @@ ConductorState = (() => {
     snapshot.textureMode = 'single';
     snapshot.textureFatigue = 0;
     snapshot.compositeIntensity = 0;
+    snapshot.harmonicRhythm = 0;
+    snapshot.harmonicMutationCount = 0;
+    snapshot.emissionRatio = 1;
+    snapshot.binauralFreqOffset = 0;
+    snapshot.binauralFlip = false;
     snapshot.playProb = 0.5;
     snapshot.stutterProb = 0.3;
     snapshot.tick = 0;

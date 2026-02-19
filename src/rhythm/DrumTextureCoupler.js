@@ -3,11 +3,54 @@
 // intensity and exposes it so drum patterns can accent in sympathy.
 
 DrumTextureCoupler = (() => {
-  let accumulator = 0;
-  const decayRate = 0.88;       // Faster decay than FX feedback — texture events are transient
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : { TEXTURE_CONTRAST: 'texture-contrast' };
+
+  let feedback = null;
+  const decayRate = 0.88;
   let burstCount = 0;
   let flurryCount = 0;
   let initialized = false;
+
+  function ensureFeedback() {
+    if (feedback) return feedback;
+    if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
+      throw new Error('DrumTextureCoupler: FeedbackAccumulator.create is required');
+    }
+
+    feedback = FeedbackAccumulator.create({
+      name: 'drum-texture-coupler',
+      decayRate,
+      inputs: [
+        {
+          eventName: EVENTS.TEXTURE_CONTRAST,
+          project(data) {
+            if (!data || typeof data !== 'object') throw new Error('DrumTextureCoupler: event payload must be an object');
+            const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
+            const mode = data.mode || 'single';
+            const weight = mode === 'chordBurst' ? 0.7 : mode === 'flurry' ? 0.4 : 0;
+            const intensity = weight * (0.5 + composite * 0.5);
+            if (!Number.isFinite(intensity)) {
+              throw new Error(`DrumTextureCoupler: invalid intensity ${intensity}`);
+            }
+            return clamp(intensity, 0, 1);
+          }
+        }
+      ],
+      onInput(data) {
+        const mode = (data && typeof data.mode === 'string') ? data.mode : 'single';
+        if (mode === 'chordBurst') burstCount++;
+        if (mode === 'flurry') flurryCount++;
+      },
+      onReset() {
+        burstCount = 0;
+        flurryCount = 0;
+      }
+    });
+
+    return feedback;
+  }
 
   /**
    * Initialize: wire EventBus to listen for texture-contrast events.
@@ -15,37 +58,7 @@ DrumTextureCoupler = (() => {
    */
   function initialize() {
     if (initialized) return;
-    if (typeof EventBus === 'undefined') {
-      throw new Error('DrumTextureCoupler.initialize: EventBus not available');
-    }
-
-    EventBus.on('texture-contrast', (data) => {
-      try {
-        if (!data || typeof data !== 'object') throw new Error('DrumTextureCoupler: event payload must be an object');
-        const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
-        const mode = data.mode || 'single';
-
-        // Weight by mode: bursts are percussive → stronger drum response
-        const weight = mode === 'chordBurst' ? 0.7 : mode === 'flurry' ? 0.4 : 0;
-        const intensity = weight * (0.5 + composite * 0.5);
-        if (!Number.isFinite(intensity)) {
-          throw new Error(`DrumTextureCoupler: invalid intensity ${intensity}`);
-        }
-
-        accumulator = accumulator * decayRate + intensity * (1 - decayRate);
-        if (mode === 'chordBurst') burstCount++;
-        if (mode === 'flurry') flurryCount++;
-      } catch (e) {
-        throw new Error(`DrumTextureCoupler event error: ${e && e.message ? e.message : e}`);
-      }
-    });
-
-    // Reset at section boundary (matches FXFeedbackListener pattern)
-    EventBus.on('section-boundary', () => {
-      accumulator = 0;
-      burstCount = 0;
-      flurryCount = 0;
-    });
+    ensureFeedback().initialize();
 
     initialized = true;
   }
@@ -56,7 +69,8 @@ DrumTextureCoupler = (() => {
    * @returns {number}
    */
   function getIntensity() {
-    return clamp(accumulator, 0, 1);
+    if (!feedback) return 0;
+    return feedback.getIntensity();
   }
 
   /**
@@ -65,7 +79,8 @@ DrumTextureCoupler = (() => {
    * @returns {boolean}
    */
   function shouldAccent() {
-    return accumulator > rf(0.15, 0.35);
+    const intensity = getIntensity();
+    return intensity > rf(0.15, 0.35);
   }
 
   /**
@@ -73,7 +88,7 @@ DrumTextureCoupler = (() => {
    * @returns {{ burstCount: number, flurryCount: number, intensity: number }}
    */
   function getMetrics() {
-    return { burstCount, flurryCount, intensity: clamp(accumulator, 0, 1) };
+    return { burstCount, flurryCount, intensity: getIntensity() };
   }
 
   return {

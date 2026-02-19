@@ -18,6 +18,9 @@ EventBus = (() => {
 
   function emit(name, data) {
     if (typeof name !== 'string' || !name) throw new Error('EventBus.emit: invalid event name');
+    if (typeof EventCatalog !== 'undefined' && EventCatalog && typeof EventCatalog.validateEmit === 'function') {
+      EventCatalog.validateEmit(name, data);
+    }
     if (!_listeners[name]) return;
     // Fail-fast: let any listener exception bubble
     for (const handler of _listeners[name]) {

@@ -11,9 +11,14 @@
  * @property {number} tension
  * @property {number} excursion
  * @property {string} sectionPhase
+ * @property {number} mutationCount
  * @property {number} modifiedAt
  */
 HarmonicContext = (() => {
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : { HARMONIC_CHANGE: 'harmonic-change' };
+
   /** @type {HarmonicState} */
   let state = {
     key: 'C',           // Root note
@@ -24,6 +29,7 @@ HarmonicContext = (() => {
     tension: 0,         // Harmonic tension (0-1)
     excursion: 0,       // Harmonic distance from home key (0-6)
     sectionPhase: 'development', // Structural phase (opening, development, climax, resolution)
+    mutationCount: 0,   // Count of harmonic mutations for rhythm-rate tracking
     modifiedAt: 0       // Timestamp of last update
   };
 
@@ -38,50 +44,77 @@ HarmonicContext = (() => {
     }
 
     const { key, mode, quality, scale, chords, tension, excursion, sectionPhase } = updates;
+    const changedFields = [];
 
     if (key !== undefined) {
       if (typeof key !== 'string' || !key) throw new Error('HarmonicContext.set: key must be non-empty string');
+      if (state.key !== key) changedFields.push('key');
       state.key = key;
     }
 
     if (mode !== undefined) {
       if (typeof mode !== 'string' || !mode) throw new Error('HarmonicContext.set: mode must be non-empty string');
+      if (state.mode !== mode) changedFields.push('mode');
       state.mode = mode;
     }
 
     if (quality !== undefined) {
       if (typeof quality !== 'string' || !quality) throw new Error('HarmonicContext.set: quality must be non-empty string');
+      if (state.quality !== quality) changedFields.push('quality');
       state.quality = quality;
     }
 
     if (scale !== undefined) {
       if (!Array.isArray(scale) || scale.length === 0) throw new Error('HarmonicContext.set: scale must be non-empty array');
+      if (JSON.stringify(state.scale) !== JSON.stringify(scale)) changedFields.push('scale');
       state.scale = scale;
     }
 
     if (chords !== undefined) {
       if (!Array.isArray(chords)) throw new Error('HarmonicContext.set: chords must be an array');
+      if (JSON.stringify(state.chords) !== JSON.stringify(chords)) changedFields.push('chords');
       state.chords = chords;
     }
 
     if (tension !== undefined) {
       const t = Number(tension);
       if (!Number.isFinite(t) || t < 0 || t > 1) throw new Error('HarmonicContext.set: tension must be number 0-1');
+      if (state.tension !== t) changedFields.push('tension');
       state.tension = t;
     }
 
     if (excursion !== undefined) {
       const e = Number(excursion);
       if(!Number.isFinite(e) || e < 0) throw new Error('HarmonicContext.set: excursion must be non-negative number');
+      if (state.excursion !== e) changedFields.push('excursion');
       state.excursion = e;
     }
 
     if (sectionPhase !== undefined) {
       if (typeof sectionPhase !== 'string' || !sectionPhase) throw new Error('HarmonicContext.set: sectionPhase must be non-empty string');
+      if (state.sectionPhase !== sectionPhase) changedFields.push('sectionPhase');
       state.sectionPhase = sectionPhase;
     }
 
+    if (changedFields.length > 0) {
+      state.mutationCount += 1;
+    }
     state.modifiedAt = Date.now();
+
+    if (changedFields.length > 0 && typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+      EventBus.emit(EVENTS.HARMONIC_CHANGE, {
+        changedFields,
+        key: state.key,
+        mode: state.mode,
+        quality: state.quality,
+        sectionPhase: state.sectionPhase,
+        excursion: state.excursion,
+        tension: state.tension,
+        mutationCount: state.mutationCount,
+        tick: Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0,
+        timestamp: state.modifiedAt
+      });
+    }
 
   }
 
@@ -156,6 +189,7 @@ HarmonicContext = (() => {
       tension: 0,
       excursion: 0,
       sectionPhase: 'development',
+      mutationCount: 0,
       modifiedAt: 0
     };
   }

@@ -1,4 +1,11 @@
 ConductorRegulationListener = (() => {
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : {
+        CONDUCTOR_REGULATION: 'conductor-regulation',
+        SECTION_BOUNDARY: 'section-boundary'
+      };
+
   let initialized = false;
 
   const state = {
@@ -25,7 +32,7 @@ ConductorRegulationListener = (() => {
       throw new Error('ConductorRegulationListener.initialize: EventBus not available');
     }
 
-    EventBus.on('conductor-regulation', (data) => {
+    EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       if (!data || typeof data !== 'object') {
         throw new Error('ConductorRegulationListener: invalid conductor-regulation payload');
       }
@@ -43,7 +50,7 @@ ConductorRegulationListener = (() => {
       applyJourneyBias(state.crossModBias);
     });
 
-    EventBus.on('section-boundary', () => {
+    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
       state.avg = 0;
       state.densityBias = 0;
       state.crossModBias = 1;

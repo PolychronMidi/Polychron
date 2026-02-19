@@ -282,6 +282,56 @@ ConductorConfig = (() => {
     return getProfileTuning().noiseCanvas;
   }
 
+  function getHarmonicRhythmParams() {
+    const defaults = { blendWeight: 0.15, feedbackWeight: 0.2 };
+    const cfg = getProfileTuning().harmonicRhythm;
+    if (!cfg || typeof cfg !== 'object') return defaults;
+    return {
+      blendWeight: Number.isFinite(Number(cfg.blendWeight)) ? clamp(Number(cfg.blendWeight), 0, 0.5) : defaults.blendWeight,
+      feedbackWeight: Number.isFinite(Number(cfg.feedbackWeight)) ? clamp(Number(cfg.feedbackWeight), 0, 0.5) : defaults.feedbackWeight
+    };
+  }
+
+  /**
+   * Resolve noise profile by section phase for conductor-coherent timbral movement.
+   * @param {string|undefined} [sectionPhaseOverride]
+   * @returns {string}
+   */
+  function getNoiseProfileForSection(sectionPhaseOverride) {
+    const defaultMapping = {
+      intro: 'micro',
+      opening: 'subtle',
+      exposition: 'subtle',
+      development: 'moderate',
+      climax: 'dramatic',
+      resolution: 'subtle',
+      conclusion: 'micro',
+      coda: 'micro',
+      default: 'subtle'
+    };
+
+    const tuning = getProfileTuning();
+    const mapping = (tuning.noiseProfileByPhase && typeof tuning.noiseProfileByPhase === 'object')
+      ? tuning.noiseProfileByPhase
+      : (typeof CONDUCTOR_NOISE_PROFILE_BY_PHASE !== 'undefined' && CONDUCTOR_NOISE_PROFILE_BY_PHASE && typeof CONDUCTOR_NOISE_PROFILE_BY_PHASE === 'object')
+        ? CONDUCTOR_NOISE_PROFILE_BY_PHASE
+        : defaultMapping;
+
+    const sectionPhase = (typeof sectionPhaseOverride === 'string' && sectionPhaseOverride.length > 0)
+      ? sectionPhaseOverride
+      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        ? (HarmonicContext.getField('sectionPhase') || 'development')
+        : 'development';
+
+    const selected = mapping[sectionPhase] || mapping.default || defaultMapping.default;
+    if (typeof NOISE_PROFILES !== 'undefined' && NOISE_PROFILES && typeof NOISE_PROFILES === 'object') {
+      if (!Object.prototype.hasOwnProperty.call(NOISE_PROFILES, selected)) {
+        throw new Error(`ConductorConfig.getNoiseProfileForSection: unknown noise profile "${selected}"`);
+      }
+    }
+    return selected;
+  }
+
   function getRhythmDriftParams() {
     return getProfileTuning().rhythmDrift;
   }
@@ -319,6 +369,8 @@ ConductorConfig = (() => {
     getMotifMutationParams,
     getSpatialCanvasParams,
     getNoiseCanvasParams,
+    getHarmonicRhythmParams,
+    getNoiseProfileForSection,
     getRhythmDriftParams,
     applyPhaseProfile: dynamics.applyPhaseProfile,
     tickCrossfade: dynamics.tickCrossfade,

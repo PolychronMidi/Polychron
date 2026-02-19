@@ -2,7 +2,33 @@
 // Implements a focused subset of stage.js note emission logic and delegates
 // stutter scheduling to the naked global `noteCascade` when available.
 
+let _playNotesDepsValidated = false;
+const PLAY_EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+  ? EventCatalog.names
+  : {
+      TEXTURE_CONTRAST: 'texture-contrast',
+      NOTES_EMITTED: 'notes-emitted'
+    };
+
+function assertPlayNotesDeps() {
+  if (_playNotesDepsValidated) return;
+  if (typeof motifConfig === 'undefined' || !motifConfig || typeof motifConfig.getUnitProfile !== 'function') {
+    throw new Error('playNotes: motifConfig.getUnitProfile is required');
+  }
+  if (typeof voiceConfig === 'undefined' || !voiceConfig || typeof voiceConfig.getProfile !== 'function') {
+    throw new Error('playNotes: voiceConfig.getProfile is required');
+  }
+  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+    throw new Error('playNotes: EventBus.emit is required');
+  }
+  if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getEmissionScaling !== 'function') {
+    throw new Error('playNotes: ConductorConfig.getEmissionScaling is required');
+  }
+  _playNotesDepsValidated = true;
+}
+
 playNotes = function(unit = 'subdiv', opts = {}) {
+  assertPlayNotesDeps();
   const {
     playProb = 0,
     stutterProb = 0
@@ -41,9 +67,30 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     ? Number(emissionAdjustments.velocityScale)
     : 1;
 
+  const emitNotesEmitted = (actual, intended, reason = 'unknown') => {
+    EventBus.emit(PLAY_EVENTS.NOTES_EMITTED, {
+      unit,
+      layer: LM.activeLayer,
+      actual: Number.isFinite(Number(actual)) ? Number(actual) : 0,
+      intended: Number.isFinite(Number(intended)) ? Number(intended) : 0,
+      playProb: Number.isFinite(Number(playProb)) ? Number(playProb) : 0,
+      stutterProb: Number.isFinite(Number(stutterProb)) ? Number(stutterProb) : 0,
+      reason,
+      tick: Number.isFinite(Number(unitStart)) ? Number(unitStart) : 0
+    });
+  };
+
   // Conductor profile drives emission noise and voice velocity blend
-  const emissionCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionScaling === 'function')
-    ? ConductorConfig.getEmissionScaling()
+  const emissionScaling = ConductorConfig.getEmissionScaling();
+  const phaseNoiseProfile = (typeof ConductorConfig.getNoiseProfileForSection === 'function')
+    ? ConductorConfig.getNoiseProfileForSection()
+    : null;
+  const emissionCfg = (emissionScaling && typeof emissionScaling === 'object')
+    ? Object.assign({}, emissionScaling, {
+        noiseProfile: (typeof phaseNoiseProfile === 'string' && phaseNoiseProfile.length > 0)
+          ? phaseNoiseProfile
+          : emissionScaling.noiseProfile
+      })
     : { noiseProfile: 'subtle', sourceNoiseInfluence: 0.12, reflectionNoiseInfluence: 0.10, bassNoiseInfluence: 0.08, voiceConfigBlend: 0.3 };
 
   const motifTimingOffsetUnits = Number.isFinite(Number(emissionAdjustments.timingOffsetUnits))
@@ -78,27 +125,21 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Apply unit-level velocity scaling from motifConfig hierarchy
   // (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 — finer units play softer)
-  if (typeof motifConfig !== 'undefined' && motifConfig && typeof motifConfig.getUnitProfile === 'function') {
-    const unitProfile = motifConfig.getUnitProfile(unit);
-    if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
-      velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
-    }
+  const unitProfile = motifConfig.getUnitProfile(unit);
+  if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
+    velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
   }
 
   // Apply voiceConfig profile for additional velocity shaping
-  if (typeof voiceConfig !== 'undefined' && voiceConfig && typeof voiceConfig.getProfile === 'function') {
-    try {
-      const vcProfile = voiceConfig.getProfile('default');
-      if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
-        // Blend configured base with computed velocity (profile-driven config influence)
-        velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
-      }
-    } catch { /* no profile available — use velocity as-is */ }
+  const vcProfile = voiceConfig.getProfile('default');
+  if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
+    velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
   }
 
   const binVel = rv(velocity * rf(.4, .9));
 
   let scheduled = 0;
+  let intendedCount = 1;
   crossModulateRhythms();
 
   // Apply subtle noise modulation to base velocity for organic variation
@@ -145,8 +186,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     : { mode: 'single', velocityScale: 1, sustainScale: 1 };
 
   // ── Emit texture-contrast event for drum coupling (#5) ─────────
-  if (textureMode.mode !== 'single' && typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-    EventBus.emit('texture-contrast', { mode: textureMode.mode, unit, composite: Number(resolved.composite) || 0 });
+  if (textureMode.mode !== 'single') {
+    EventBus.emit(PLAY_EVENTS.TEXTURE_CONTRAST, { mode: textureMode.mode, unit, composite: Number(resolved.composite) || 0 });
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
@@ -176,11 +217,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Gate play invocation with playProb and crossModulation
   if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
+    emitNotesEmitted(0, intendedCount, 'probability-gate');
     return trackRhythm(unit, layer, false);
   }
 
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
+  intendedCount = Array.isArray(picks) ? picks.length : 0;
 
   // Apply voiceModulator to get per-pick velocity distribution
   // This gives each voice a slightly different velocity for natural ensemble feel
@@ -201,6 +244,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
       const allowed = Number.isFinite(available) ? m.max(0, m.min(picks.length, available)) : picks.length;
       if (allowed <= 0) {
         // no budget available for this layer/unit — skip emission
+        emitNotesEmitted(0, intendedCount, 'voice-budget');
         return trackRhythm(unit, layer, false);
       }
       if (allowed < picks.length) picks.length = allowed; // truncate in-place
@@ -237,8 +281,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         voiceIdSeed
       });
     }
+    emitNotesEmitted(scheduled, intendedCount, 'scheduled');
     trackRhythm(unit, layer, true);
   } catch (e) {
+    emitNotesEmitted(0, intendedCount, 'emit-error');
     trackRhythm(unit, layer, false);
     throw new Error(`${unit}.playNotes: non-fatal error while playing notes: ${e && e.stack ? e.stack : String(e)}`);
   }
