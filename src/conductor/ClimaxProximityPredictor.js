@@ -1,0 +1,94 @@
+// src/conductor/ClimaxProximityPredictor.js - Multi-signal climax prediction.
+// Combines energy momentum, register pressure, density, and tension trends
+// to predict when a climax is approaching, occurring, or spent.
+// Pure query API — prepares density/register/dynamics ramp before peaks.
+
+ClimaxProximityPredictor = (() => {
+  /**
+   * Predict climax proximity from multiple conductor signals.
+   * @returns {{ proximity: number, phase: string, premature: boolean, density: number, tension: number }}
+   */
+  function predict() {
+    // Gather signals with safe fallbacks
+    const energyMomentum = (typeof EnergyMomentumTracker !== 'undefined' && EnergyMomentumTracker && typeof EnergyMomentumTracker.getMomentum === 'function')
+      ? EnergyMomentumTracker.getMomentum()
+      : { momentum: 0, trend: 'insufficient', plateauDuration: 0, stale: false };
+
+    const registerProfile = (typeof RegisterPressureMonitor !== 'undefined' && RegisterPressureMonitor && typeof RegisterPressureMonitor.getPressure === 'function')
+      ? RegisterPressureMonitor.getPressure()
+      : { highPressure: false, lowPressure: false };
+
+    const onsetProfile = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')
+      ? OnsetDensityProfiler.getDensityBias()
+      : 1;
+
+    const currentTension = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      ? (Number(HarmonicContext.getField('tension')) || 0)
+      : 0;
+
+    // Compute composite climax proximity (0-1)
+    let climaxSignal = 0;
+
+    // Rising energy momentum contributes strongly
+    if (energyMomentum.trend === 'rising') climaxSignal += 0.3 + clamp(energyMomentum.momentum * 2, 0, 0.2);
+    // High register pressure = nearing ceiling
+    if (registerProfile.highPressure) climaxSignal += 0.15;
+    // High density = buildup
+    if (onsetProfile > 1.1) climaxSignal += 0.1;
+    // High tension
+    climaxSignal += currentTension * 0.25;
+
+    const proximity = clamp(climaxSignal, 0, 1);
+
+    // Determine phase
+    let phase = 'normal';
+    if (proximity > 0.75) phase = 'climax';
+    else if (proximity > 0.5) phase = 'approaching';
+    else if (proximity > 0.3) phase = 'building';
+    else if (energyMomentum.trend === 'falling') phase = 'receding';
+
+    // Premature climax: high proximity early in energy arc without sustained build
+    const premature = phase === 'climax' && energyMomentum.plateauDuration < 2;
+
+    return {
+      proximity,
+      phase,
+      premature,
+      density: clamp(onsetProfile, 0, 2),
+      tension: currentTension
+    };
+  }
+
+  /**
+   * Get a density ramp bias based on climax proximity.
+   * Approaching → boost density for buildup; climax → sustain; receding → pull back.
+   * @returns {number} - 0.85 to 1.25
+   */
+  function getDensityRampBias() {
+    const pred = predict();
+    if (pred.phase === 'approaching') return 1.15;
+    if (pred.phase === 'building') return 1.08;
+    if (pred.phase === 'climax') return 1.2;
+    if (pred.phase === 'receding') return 0.88;
+    if (pred.premature) return 0.9; // Pull back if premature
+    return 1.0;
+  }
+
+  /**
+   * Get a tension modifier to prevent premature climax.
+   * @returns {number} - 0.8 to 1.2
+   */
+  function getTensionModifier() {
+    const pred = predict();
+    if (pred.premature) return 0.8; // Suppress premature peak
+    if (pred.phase === 'approaching') return 1.1;
+    if (pred.phase === 'climax') return 1.15;
+    return 1.0;
+  }
+
+  return {
+    predict,
+    getDensityRampBias,
+    getTensionModifier
+  };
+})();
