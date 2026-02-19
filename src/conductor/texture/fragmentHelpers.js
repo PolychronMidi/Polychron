@@ -1,5 +1,5 @@
 // src/conductor/texture/fragmentHelpers.js - Shared pitch-class fragment extraction.
-// Used by MotivicDensityTracker, RepetitionFatigueMonitor.
+// Used by MotivicDensityTracker.
 // Pure query — reads AbsoluteTimeWindow.
 
 fragmentHelpers = (() => {
@@ -8,12 +8,19 @@ fragmentHelpers = (() => {
    * Each fragment is a string key of consecutive PC intervals (e.g., "3,7").
    * @param {number} [length=3] - fragment note count
    * @param {number} [windowSeconds=6] - lookback window
+   * @param {Object} [opts]
+   * @param {string} [opts.layer] - optional layer filter
+   * @param {boolean} [opts.signed] - if true, use signed intervals (-11 to +11) instead of unsigned mod-12 (0-11)
    * @returns {string[]} - array of fragment keys
    */
-  function getPCFragments(length, windowSeconds) {
+  function getPCFragments(length, windowSeconds, opts) {
     const fragLen = (typeof length === 'number' && length >= 2) ? length : 3;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 6;
-    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: ws });
+    const { layer, signed } = opts || {};
+    /** @type {any} */
+    const query = { windowSeconds: ws };
+    if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
+    const notes = AbsoluteTimeWindow.getNotes(query);
     if (notes.length < fragLen) return [];
 
     /** @type {string[]} */
@@ -28,10 +35,10 @@ fragmentHelpers = (() => {
       }
       if (!valid) continue;
 
-      // Build interval key
+      // Build interval key — signed preserves direction, unsigned wraps mod-12
       const intervals = [];
       for (let j = 1; j < pcs.length; j++) {
-        intervals.push(((pcs[j] - pcs[j - 1]) + 12) % 12);
+        intervals.push(signed ? pcs[j] - pcs[j - 1] : ((pcs[j] - pcs[j - 1]) + 12) % 12);
       }
       fragments.push(intervals.join(','));
     }

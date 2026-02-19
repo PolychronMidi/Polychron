@@ -16,30 +16,18 @@ MotivicDensityTracker = (() => {
   function getMotivicProfile(opts) {
     const { layer, windowSeconds } = opts || {};
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
-    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
-    if (notes.length < FRAGMENT_LENGTH + 1) {
+
+    const fragments = fragmentHelpers.getPCFragments(FRAGMENT_LENGTH, ws, { layer, signed: true });
+    if (fragments.length === 0) {
       return { distinctFragments: 0, totalFragments: 0, density: 0, overcrowded: false, sparse: true };
     }
 
     const seen = /** @type {Object.<string, boolean>} */ ({});
-    let totalFragments = 0;
-
-    for (let i = 0; i <= notes.length - FRAGMENT_LENGTH; i++) {
-      const fragment = [];
-      for (let j = 0; j < FRAGMENT_LENGTH; j++) {
-        const pc = (typeof notes[i + j].midi === 'number') ? ((notes[i + j].midi % 12) + 12) % 12 : 0;
-        fragment.push(pc);
-      }
-      // Use interval pattern (direction-agnostic) as the fragment key
-      const intervals = [];
-      for (let j = 1; j < fragment.length; j++) {
-        intervals.push(fragment[j] - fragment[j - 1]);
-      }
-      const key = intervals.join(',');
-      seen[key] = true;
-      totalFragments++;
+    for (let i = 0; i < fragments.length; i++) {
+      seen[fragments[i]] = true;
     }
 
+    const totalFragments = fragments.length;
     const distinctFragments = Object.keys(seen).length;
     const density = totalFragments > 0 ? distinctFragments / totalFragments : 0;
 

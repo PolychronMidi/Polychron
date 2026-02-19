@@ -1,6 +1,11 @@
 // src/conductor/PedalPointDetector.js - Sustained/repeated bass note detection.
-// Detects harmonic anchoring from bass pedal points.
-// Pure query API — signals when bass needs movement or when pedal is effective.
+// Detects harmonic anchoring from bass pedal points (MIDI <= 55).
+// Stateless — queries ATW per call; returns dominant bass PC and staleness.
+//
+// Complementary to HarmonicPedalFieldTracker (harmonic/) which is stateful and
+// tracks bass PC streak duration for derivedTension bias. This detector feeds
+// pedalSuggestion for compositional guidance (move-bass / pedal-effective / anchor).
+// Both are consumed by GlobalConductor for different product chains.
 
 PedalPointDetector = (() => {
   const WINDOW_SECONDS = 6;
