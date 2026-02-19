@@ -1,10 +1,10 @@
 HarmonicRhythmTracker = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : {
-        HARMONIC_CHANGE: 'harmonic-change',
-        SECTION_BOUNDARY: 'section-boundary'
-      };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('HarmonicRhythmTracker: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let initialized = false;
   let lastTick = null;
@@ -30,6 +30,7 @@ HarmonicRhythmTracker = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('HarmonicRhythmTracker.initialize: EventBus not available');
     }
+    const EVENTS = getEventsOrThrow();
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
       if (!data || typeof data !== 'object') {

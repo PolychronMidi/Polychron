@@ -1,7 +1,10 @@
 FeedbackAccumulator = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : { SECTION_BOUNDARY: 'section-boundary' };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('FeedbackAccumulator: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   /**
    * @param {{
@@ -38,6 +41,7 @@ FeedbackAccumulator = (() => {
       if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
         throw new Error(`FeedbackAccumulator.initialize(${options.name}): EventBus not available`);
       }
+      const EVENTS = getEventsOrThrow();
 
       for (const input of options.inputs) {
         if (!input || typeof input !== 'object') {

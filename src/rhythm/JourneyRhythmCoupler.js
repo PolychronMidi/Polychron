@@ -2,12 +2,12 @@
 // Bold key moves trigger higher rhythm complexity via EventBus journey-move events
 
 JourneyRhythmCoupler = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : {
-        JOURNEY_MOVE: 'journey-move',
-        SECTION_BOUNDARY: 'section-boundary'
-      };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('JourneyRhythmCoupler: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let _boldness = 0;
   let _externalBias = 1;
@@ -44,13 +44,20 @@ JourneyRhythmCoupler = (() => {
     if (typeof EventBus === 'undefined') {
       throw new Error('JourneyRhythmCoupler.initialize: EventBus not available');
     }
+    const EVENTS = getEventsOrThrow();
 
     EventBus.on(EVENTS.JOURNEY_MOVE, (data) => {
       if (!data || typeof data !== 'object') {
         throw new Error('JourneyRhythmCoupler: invalid journey-move payload');
       }
-      const distance = typeof data.distance === 'number' ? data.distance : 0;
-      const move = typeof data.move === 'string' ? data.move : 'hold';
+      const distance = Number(data.distance);
+      if (!Number.isFinite(distance)) {
+        throw new Error('JourneyRhythmCoupler: journey-move.distance must be finite');
+      }
+      if (typeof data.move !== 'string' || data.move.length === 0) {
+        throw new Error('JourneyRhythmCoupler: journey-move.move must be a non-empty string');
+      }
+      const move = data.move;
       _boldness = moveToBoldness(distance, move);
     });
 

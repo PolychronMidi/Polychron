@@ -8,12 +8,40 @@ ConductorConfig = (() => {
   /** @type {Object|null} */
   let activeProfileCache = null;
 
+  if (typeof Validator === 'undefined' || !Validator) {
+    throw new Error('ConductorConfig: Validator utility is required');
+  }
+
   if (typeof conductorConfigValidateProfile !== 'function' || typeof conductorConfigMergeProfileTuning !== 'function' || typeof conductorConfigTuningDefaults !== 'function' || typeof conductorConfigTuningOverrides !== 'function' || typeof conductorConfigDynamics !== 'function') {
     throw new Error('ConductorConfig: required helper globals are missing');
   }
 
   const PROFILE_TUNING_DEFAULTS = conductorConfigTuningDefaults();
   const PROFILE_TUNING_OVERRIDES = conductorConfigTuningOverrides();
+
+  function assertProfileTuningOrFail(tuning, profileName) {
+    Validator.assertPlainObject(tuning, `ConductorConfig.profileTuning.${profileName}`);
+    Validator.assertPlainObject(tuning.journeyFx, `ConductorConfig.profileTuning.${profileName}.journeyFx`);
+    Validator.assertPlainObject(tuning.feedbackMix, `ConductorConfig.profileTuning.${profileName}.feedbackMix`);
+    Validator.assertPlainObject(tuning.intensityBlend, `ConductorConfig.profileTuning.${profileName}.intensityBlend`);
+    Validator.assertPlainObject(tuning.harmonicRhythm, `ConductorConfig.profileTuning.${profileName}.harmonicRhythm`);
+    Validator.assertPlainObject(tuning.noiseProfileByPhase, `ConductorConfig.profileTuning.${profileName}.noiseProfileByPhase`);
+
+    Validator.assertRange(tuning.journeyFx.distanceDivisor, 0.1, 64, `ConductorConfig.profileTuning.${profileName}.journeyFx.distanceDivisor`);
+    Validator.assertRange(tuning.journeyFx.reverbMaxBoost, 0, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.reverbMaxBoost`);
+    Validator.assertRange(tuning.journeyFx.filterMaxBoost, 0, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.filterMaxBoost`);
+    Validator.assertRange(tuning.journeyFx.returnHomePortamentoBoost, 0, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.returnHomePortamentoBoost`);
+    Validator.assertRange(tuning.journeyFx.returnHomeReverbDamp, 0.1, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.returnHomeReverbDamp`);
+
+    Validator.assertRange(tuning.feedbackMix.fx, 0, 10, `ConductorConfig.profileTuning.${profileName}.feedbackMix.fx`);
+    Validator.assertRange(tuning.feedbackMix.stutter, 0, 10, `ConductorConfig.profileTuning.${profileName}.feedbackMix.stutter`);
+    Validator.assertRange(tuning.feedbackMix.journey, 0, 10, `ConductorConfig.profileTuning.${profileName}.feedbackMix.journey`);
+    Validator.assertRange(tuning.intensityBlend.arc, 0, 10, `ConductorConfig.profileTuning.${profileName}.intensityBlend.arc`);
+    Validator.assertRange(tuning.intensityBlend.tension, 0, 10, `ConductorConfig.profileTuning.${profileName}.intensityBlend.tension`);
+    Validator.assertRange(tuning.harmonicRhythm.blendWeight, 0, 0.5, `ConductorConfig.profileTuning.${profileName}.harmonicRhythm.blendWeight`);
+    Validator.assertRange(tuning.harmonicRhythm.feedbackWeight, 0, 0.5, `ConductorConfig.profileTuning.${profileName}.harmonicRhythm.feedbackWeight`);
+    Validator.assertNonEmptyString(tuning.noiseProfileByPhase.default, `ConductorConfig.profileTuning.${profileName}.noiseProfileByPhase.default`);
+  }
 
   function validateProfileOrFail(profile, label) {
     conductorConfigValidateProfile(profile, label);
@@ -66,14 +94,23 @@ ConductorConfig = (() => {
 
   function getProfileTuning() {
     const profileName = getActiveProfileName();
-    const override = PROFILE_TUNING_OVERRIDES[profileName] || {};
-    return conductorConfigMergeProfileTuning(PROFILE_TUNING_DEFAULTS, override);
+    const override = PROFILE_TUNING_OVERRIDES[profileName];
+    const tuning = conductorConfigMergeProfileTuning(PROFILE_TUNING_DEFAULTS, override);
+    assertProfileTuningOrFail(tuning, profileName);
+    return tuning;
   }
 
   function getPhaseMultiplier(sectionPhase) {
     const profile = dynamics.resolveField('phaseMultipliers');
+    Validator.assertPlainObject(profile, 'ConductorConfig.getPhaseMultiplier.phaseMultipliers');
+    if (typeof sectionPhase !== 'string' || sectionPhase.length === 0) {
+      throw new Error('ConductorConfig.getPhaseMultiplier: sectionPhase must be a non-empty string');
+    }
+    if (!Object.prototype.hasOwnProperty.call(profile, sectionPhase)) {
+      throw new Error(`ConductorConfig.getPhaseMultiplier: unknown sectionPhase "${sectionPhase}"`);
+    }
     const mult = profile[sectionPhase];
-    return Number.isFinite(Number(mult)) ? Number(mult) : 1.0;
+    return Validator.assertRange(mult, 0, 3, `ConductorConfig.phaseMultipliers.${sectionPhase}`);
   }
 
   function getStutterParams(compositeIntensity) {
@@ -143,7 +180,7 @@ ConductorConfig = (() => {
 
   function getJourneyBoldness() {
     const val = Number(dynamics.resolveField('journeyBoldness'));
-    return Number.isFinite(val) ? val : 1.0;
+    return Validator.assertRange(val, 0, 2, 'ConductorConfig.journeyBoldness');
   }
 
   /**
@@ -152,23 +189,15 @@ ConductorConfig = (() => {
    * @returns {Object|string}
    */
   function getArcMapping(sectionPhase) {
-    const fallback = {
-      intro: 'arch',
-      opening: 'arch',
-      exposition: 'rise-fall',
-      development: 'wave',
-      climax: 'build-resolve',
-      resolution: 'rise-fall',
-      conclusion: 'rise-fall',
-      coda: 'arch'
-    };
     const arcMapping = dynamics.resolveField('arcMapping');
-    const mapping = (arcMapping && typeof arcMapping === 'object') ? arcMapping : fallback;
+    Validator.assertPlainObject(arcMapping, 'ConductorConfig.getArcMapping.arcMapping');
     if (typeof sectionPhase === 'string' && sectionPhase.length > 0) {
-      const selected = mapping[sectionPhase] || fallback[sectionPhase] || fallback.development;
-      return typeof selected === 'string' ? selected : fallback.development;
+      if (!Object.prototype.hasOwnProperty.call(arcMapping, sectionPhase)) {
+        throw new Error(`ConductorConfig.getArcMapping: unknown sectionPhase "${sectionPhase}"`);
+      }
+      return Validator.assertNonEmptyString(arcMapping[sectionPhase], `ConductorConfig.arcMapping.${sectionPhase}`);
     }
-    return Object.assign({}, fallback, mapping);
+    return Object.assign({}, arcMapping);
   }
 
   /**
@@ -178,9 +207,6 @@ ConductorConfig = (() => {
    */
   function getJourneyFxModulation(stopOverride) {
     const profileTuning = getProfileTuning();
-    if (!profileTuning || typeof profileTuning !== 'object' || !profileTuning.journeyFx || typeof profileTuning.journeyFx !== 'object') {
-      throw new Error('ConductorConfig.getJourneyFxModulation: missing journeyFx tuning in active profile');
-    }
     const tuning = profileTuning.journeyFx;
 
     /** @type {{distance?:number,move?:string}|null} */
@@ -199,15 +225,15 @@ ConductorConfig = (() => {
       stop = maybe;
     }
 
-    const distanceDivisor = Number.isFinite(Number(tuning.distanceDivisor)) ? m.max(0.1, Number(tuning.distanceDivisor)) : 6;
-    const reverbMaxBoost = Number.isFinite(Number(tuning.reverbMaxBoost)) ? Number(tuning.reverbMaxBoost) : 0.4;
-    const filterMaxBoost = Number.isFinite(Number(tuning.filterMaxBoost)) ? Number(tuning.filterMaxBoost) : 0.2;
-    const returnHomePortamentoBoost = Number.isFinite(Number(tuning.returnHomePortamentoBoost)) ? Number(tuning.returnHomePortamentoBoost) : 0.5;
-    const returnHomeReverbDamp = Number.isFinite(Number(tuning.returnHomeReverbDamp)) ? Number(tuning.returnHomeReverbDamp) : 0.8;
+    const distanceDivisor = Validator.assertRange(tuning.distanceDivisor, 0.1, 64, 'ConductorConfig.journeyFx.distanceDivisor');
+    const reverbMaxBoost = Validator.assertRange(tuning.reverbMaxBoost, 0, 2, 'ConductorConfig.journeyFx.reverbMaxBoost');
+    const filterMaxBoost = Validator.assertRange(tuning.filterMaxBoost, 0, 2, 'ConductorConfig.journeyFx.filterMaxBoost');
+    const returnHomePortamentoBoost = Validator.assertRange(tuning.returnHomePortamentoBoost, 0, 2, 'ConductorConfig.journeyFx.returnHomePortamentoBoost');
+    const returnHomeReverbDamp = Validator.assertRange(tuning.returnHomeReverbDamp, 0.1, 2, 'ConductorConfig.journeyFx.returnHomeReverbDamp');
 
     const s = /** @type {{distance?:number,move?:string}} */ (stop);
-    const distance = Number.isFinite(Number(s.distance)) ? Number(s.distance) : 0;
-    const move = (typeof s.move === 'string' && s.move.length > 0) ? s.move : 'hold';
+    const distance = Validator.assertRange(Number(s.distance), 0, 64, 'ConductorConfig.getJourneyFxModulation.stop.distance');
+    const move = Validator.assertNonEmptyString(s.move, 'ConductorConfig.getJourneyFxModulation.stop.move');
     const distanceFactor = clamp(distance / distanceDivisor, 0, 1);
 
     const baseReverbScale = 1 + distanceFactor * reverbMaxBoost;
@@ -234,9 +260,10 @@ ConductorConfig = (() => {
 
   function getFeedbackMixWeights() {
     const weights = getProfileTuning().feedbackMix;
+    Validator.assertPlainObject(weights, 'ConductorConfig.getFeedbackMixWeights.feedbackMix');
     const sum = Number(weights.fx) + Number(weights.stutter) + Number(weights.journey);
     if (!Number.isFinite(sum) || sum <= 0) {
-      return PROFILE_TUNING_DEFAULTS.feedbackMix;
+      throw new Error(`ConductorConfig.getFeedbackMixWeights: invalid weight sum ${sum}`);
     }
     return {
       fx: Number(weights.fx) / sum,
@@ -247,9 +274,10 @@ ConductorConfig = (() => {
 
   function getGlobalIntensityBlend() {
     const blend = getProfileTuning().intensityBlend;
+    Validator.assertPlainObject(blend, 'ConductorConfig.getGlobalIntensityBlend.intensityBlend');
     const sum = Number(blend.arc) + Number(blend.tension);
     if (!Number.isFinite(sum) || sum <= 0) {
-      return PROFILE_TUNING_DEFAULTS.intensityBlend;
+      throw new Error(`ConductorConfig.getGlobalIntensityBlend: invalid blend sum ${sum}`);
     }
     return {
       arc: Number(blend.arc) / sum,
@@ -282,12 +310,11 @@ ConductorConfig = (() => {
   }
 
   function getHarmonicRhythmParams() {
-    const defaults = { blendWeight: 0.15, feedbackWeight: 0.2 };
     const cfg = getProfileTuning().harmonicRhythm;
-    if (!cfg || typeof cfg !== 'object') return defaults;
+    Validator.assertPlainObject(cfg, 'ConductorConfig.getHarmonicRhythmParams.harmonicRhythm');
     return {
-      blendWeight: Number.isFinite(Number(cfg.blendWeight)) ? clamp(Number(cfg.blendWeight), 0, 0.5) : defaults.blendWeight,
-      feedbackWeight: Number.isFinite(Number(cfg.feedbackWeight)) ? clamp(Number(cfg.feedbackWeight), 0, 0.5) : defaults.feedbackWeight
+      blendWeight: Validator.assertRange(cfg.blendWeight, 0, 0.5, 'ConductorConfig.harmonicRhythm.blendWeight'),
+      feedbackWeight: Validator.assertRange(cfg.feedbackWeight, 0, 0.5, 'ConductorConfig.harmonicRhythm.feedbackWeight')
     };
   }
 
@@ -297,24 +324,10 @@ ConductorConfig = (() => {
    * @returns {string}
    */
   function getNoiseProfileForSection(sectionPhaseOverride) {
-    const defaultMapping = {
-      intro: 'micro',
-      opening: 'subtle',
-      exposition: 'subtle',
-      development: 'moderate',
-      climax: 'dramatic',
-      resolution: 'subtle',
-      conclusion: 'micro',
-      coda: 'micro',
-      default: 'subtle'
-    };
-
     const tuning = getProfileTuning();
-    const mapping = (tuning.noiseProfileByPhase && typeof tuning.noiseProfileByPhase === 'object')
-      ? tuning.noiseProfileByPhase
-      : (typeof CONDUCTOR_NOISE_PROFILE_BY_PHASE !== 'undefined' && CONDUCTOR_NOISE_PROFILE_BY_PHASE && typeof CONDUCTOR_NOISE_PROFILE_BY_PHASE === 'object')
-        ? CONDUCTOR_NOISE_PROFILE_BY_PHASE
-        : defaultMapping;
+    const mapping = tuning.noiseProfileByPhase;
+    Validator.assertPlainObject(mapping, 'ConductorConfig.noiseProfileByPhase');
+    const defaultProfile = Validator.assertNonEmptyString(mapping.default, 'ConductorConfig.noiseProfileByPhase.default');
 
     const sectionPhase = (typeof sectionPhaseOverride === 'string' && sectionPhaseOverride.length > 0)
       ? sectionPhaseOverride
@@ -322,7 +335,9 @@ ConductorConfig = (() => {
         ? (HarmonicContext.getField('sectionPhase') || 'development')
         : 'development';
 
-    const selected = mapping[sectionPhase] || mapping.default || defaultMapping.default;
+    const selected = Object.prototype.hasOwnProperty.call(mapping, sectionPhase)
+      ? Validator.assertNonEmptyString(mapping[sectionPhase], `ConductorConfig.noiseProfileByPhase.${sectionPhase}`)
+      : defaultProfile;
     if (typeof NOISE_PROFILES !== 'undefined' && NOISE_PROFILES && typeof NOISE_PROFILES === 'object') {
       if (!Object.prototype.hasOwnProperty.call(NOISE_PROFILES, selected)) {
         throw new Error(`ConductorConfig.getNoiseProfileForSection: unknown noise profile "${selected}"`);

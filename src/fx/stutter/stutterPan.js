@@ -1,12 +1,10 @@
 /** @this {any} */
 stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-    throw new Error('stutterPan: EventCatalog.names is not available');
+  if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
+    throw new Error('stutterPan: StutterFailFast helper is not available');
   }
-  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
-    throw new Error('stutterPan: EventBus.emit is not available');
-  }
-  const eventName = EventCatalog.names.STUTTER_APPLIED;
+  const { eventName, eventBus } = StutterFailFast.requireEventInfra('stutterPan');
+  const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterPan');
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
   // Write beat-level pan context for spatial-aware octave shifts (task 7)
@@ -37,19 +35,13 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
-      const mod = getParameterModulation(channelToStutter, 'pan', tick);
-      if (!mod || !Number.isFinite(Number(mod.x)) || !Number.isFinite(Number(mod.y))) {
-        throw new Error(`stutterPan: invalid pan modulation for channel=${channelToStutter} tick=${tick}`);
-      }
+      const mod = StutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', tick), `stutterPan channel=${channelToStutter} tick=${tick}`);
 
       // If coherence key exists, overlay correlated modulation
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = getParameterModulation(channelToStutter, coherenceKey, tick);
-        if (!coh || !Number.isFinite(Number(coh.x)) || !Number.isFinite(Number(coh.y))) {
-          throw new Error(`stutterPan: invalid coherence modulation for key="${coherenceKey}" channel=${channelToStutter}`);
-        }
+        coh = StutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterPan coherence key=${coherenceKey} channel=${channelToStutter}`);
       }
 
       // Y axis controls pan flutter - add oscillation on top of movement
@@ -68,8 +60,8 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
 
       // emit feedback for stutter cross-mod listeners (include inferred profile)
-      const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-      EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
+      const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
+      eventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }

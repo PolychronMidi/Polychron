@@ -1,10 +1,10 @@
 EmissionFeedbackListener = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : {
-        NOTES_EMITTED: 'notes-emitted',
-        SECTION_BOUNDARY: 'section-boundary'
-      };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('EmissionFeedbackListener: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let initialized = false;
   let ratio = 1;
@@ -17,6 +17,7 @@ EmissionFeedbackListener = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('EmissionFeedbackListener.initialize: EventBus not available');
     }
+    const EVENTS = getEventsOrThrow();
 
     EventBus.on(EVENTS.NOTES_EMITTED, (data) => {
       if (!data || typeof data !== 'object') {

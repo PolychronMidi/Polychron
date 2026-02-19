@@ -1,10 +1,10 @@
 ConductorRegulationListener = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : {
-        CONDUCTOR_REGULATION: 'conductor-regulation',
-        SECTION_BOUNDARY: 'section-boundary'
-      };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('ConductorRegulationListener: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let initialized = false;
 
@@ -28,6 +28,7 @@ ConductorRegulationListener = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('ConductorRegulationListener.initialize: EventBus not available');
     }
+    const EVENTS = getEventsOrThrow();
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       if (!data || typeof data !== 'object') {
@@ -39,10 +40,17 @@ ConductorRegulationListener = (() => {
       const crossModBias = Number(data.crossModBias);
       const profile = data.profile;
 
-      state.avg = Number.isFinite(avg) ? clamp(avg, 0, 1) : state.avg;
-      state.densityBias = Number.isFinite(densityBias) ? densityBias : state.densityBias;
-      state.crossModBias = Number.isFinite(crossModBias) ? clamp(crossModBias, 0.5, 1.5) : state.crossModBias;
-      state.profile = (typeof profile === 'string' && profile.length > 0) ? profile : state.profile;
+      if (!Number.isFinite(avg) || !Number.isFinite(densityBias) || !Number.isFinite(crossModBias)) {
+        throw new Error('ConductorRegulationListener: avg/densityBias/crossModBias must be finite numbers');
+      }
+      if (typeof profile !== 'string' || profile.length === 0) {
+        throw new Error('ConductorRegulationListener: profile must be a non-empty string');
+      }
+
+      state.avg = clamp(avg, 0, 1);
+      state.densityBias = densityBias;
+      state.crossModBias = clamp(crossModBias, 0.5, 1.5);
+      state.profile = profile;
 
       applyJourneyBias(state.crossModBias);
     });
