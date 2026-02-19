@@ -21,12 +21,8 @@ FXFeedbackListener = (() => {
         {
           eventName: EVENTS.BEAT_FX_APPLIED,
           project(data) {
-            if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: beat-fx-applied payload must be an object');
-            const stereoPan = Number(data.stereoPan);
-            const velocityShift = Number(data.velocityShift);
-            if (!Number.isFinite(stereoPan) || !Number.isFinite(velocityShift)) {
-              throw new Error('FXFeedbackListener: beat-fx-applied.stereoPan and velocityShift must be finite');
-            }
+            const stereoPan = V.requireFinite(data.stereoPan, 'beat-fx-applied.stereoPan');
+            const velocityShift = V.requireFinite(data.velocityShift, 'beat-fx-applied.velocityShift');
             const intensity = stereoPan * velocityShift;
             if (!Number.isFinite(intensity)) {
               throw new Error(`FXFeedbackListener: invalid intensity ${intensity}`);

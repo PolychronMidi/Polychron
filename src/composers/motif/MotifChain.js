@@ -2,6 +2,8 @@
 // Enables experimental motif feedback: transformations stack and mutate over time
 
 MotifChain = (() => {
+  const V = Validator.create('MotifChain');
+
   let activeMotif = null;           // Current base motif
   let transforms = [];              // Array of transform specs: [{type, args}, ...]
   let chainHistory = [];            // Track applied chains for analysis
@@ -76,7 +78,8 @@ MotifChain = (() => {
     // Emit event for feedback loops
     if (typeof EventBus !== 'undefined') {
       try {
-        EventBus.emit('motif-chain-applied', {
+        const EVENTS = V.getEventsOrThrow();
+        EventBus.emit(EVENTS.MOTIF_CHAIN_APPLIED, {
           transformCount: appliedTransforms.length,
           resultNoteCount: result.sequence ? result.sequence.length : 0
         });

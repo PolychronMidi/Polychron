@@ -21,9 +21,11 @@ TempoFeelEngine = (() => {
     const position = (phraseCtx && Number.isFinite(phraseCtx.position)) ? phraseCtx.position : 0.5;
 
     // Read section phase for structural feel
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('sectionPhase') || 'development')
-      : 'development';
+    const phase = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? (ConductorState.getField('sectionPhase') || 'development')
+      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        ? (HarmonicContext.getField('sectionPhase') || 'development')
+        : 'development';
 
     // Compute feel factor based on phase and phrase arc position
     let feel = 0;
@@ -65,9 +67,11 @@ TempoFeelEngine = (() => {
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
       : null;
     const position = (phraseCtx && Number.isFinite(phraseCtx.position)) ? phraseCtx.position : 0.5;
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('sectionPhase') || 'development')
-      : 'development';
+    const phase = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? (ConductorState.getField('sectionPhase') || 'development')
+      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        ? (HarmonicContext.getField('sectionPhase') || 'development')
+        : 'development';
 
     return { feel: getTickOffset(), phase, position };
   }

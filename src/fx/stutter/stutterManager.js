@@ -1,6 +1,7 @@
 // fx/StutterManager.js - Audio effects manager
 
 const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
+const V = Validator.create('StutterManager');
 
 class StutterManager {
   constructor() {
@@ -58,21 +59,15 @@ class StutterManager {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('StutterManager._attachTextureListener: EventBus.on is not available');
     }
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('StutterManager._attachTextureListener: EventCatalog.names is not available');
-    }
-    const eventName = EventCatalog.names.TEXTURE_CONTRAST;
-    if (typeof eventName !== 'string' || eventName.length === 0) {
-      throw new Error('StutterManager._attachTextureListener: invalid TEXTURE_CONTRAST event name');
-    }
+    const EVENTS = V.getEventsOrThrow();
+    const eventName = EVENTS.TEXTURE_CONTRAST;
 
     // ── Texture-contrast EventBus listener (#1 bidirectional dialogue) ──
     // Chord bursts → trigger micro-stutters with tight rate + wide stereo phase
     // Flurries → suppress spontaneous stutters (let the runs breathe)
     EventBus.on(eventName, (data) => {
-      if (!data || typeof data !== 'object') return;
-      const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
-      const mode = data.mode || 'single';
+      const composite = Number(data.composite);
+      const mode = data.mode;
       const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
       this._textureIntensity = this._textureIntensity * this._textureDecay + weight * (1 - this._textureDecay);
       this._lastTextureMode = mode;

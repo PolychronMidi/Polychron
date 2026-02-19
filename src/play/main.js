@@ -58,13 +58,66 @@ const fallbackPlayProb = Number.isFinite(Number(conductorFallback.playProb))
 const fallbackStutterProb = Number.isFinite(Number(conductorFallback.stutterProb))
   ? clamp(Number(conductorFallback.stutterProb), 0, 1)
   : 0.3;
-const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-  ? EventCatalog.names
-  : {
-      SECTION_BOUNDARY: 'section-boundary',
-      BEAT_BINAURAL_APPLIED: 'beat-binaural-applied',
-      BEAT_FX_APPLIED: 'beat-fx-applied'
-    };
+
+function assertMainBootstrapGlobals() {
+  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+    throw new Error('main.bootstrap: EventCatalog.names is not available');
+  }
+
+  const requiredEvents = [
+    'SECTION_BOUNDARY',
+    'JOURNEY_MOVE',
+    'TEXTURE_CONTRAST',
+    'BEAT_FX_APPLIED',
+    'STUTTER_APPLIED',
+    'CONDUCTOR_REGULATION',
+    'BEAT_BINAURAL_APPLIED',
+    'HARMONIC_CHANGE',
+    'NOTES_EMITTED',
+    'MOTIF_CHAIN_APPLIED'
+  ];
+  requiredEvents.forEach((name) => {
+    const eventName = EventCatalog.names[name];
+    if (typeof eventName !== 'string' || eventName.length === 0) {
+      throw new Error(`main.bootstrap: EventCatalog.names.${name} is invalid`);
+    }
+  });
+
+  const requiredModules = [
+    ['EventBus', (typeof EventBus !== 'undefined') ? EventBus : null, 'emit'],
+    ['LayerManager', (typeof LM !== 'undefined') ? LM : null, 'register'],
+    ['ComposerFactory', (typeof ComposerFactory !== 'undefined') ? ComposerFactory : null, 'getPhraseArcManager'],
+    ['ConductorConfig', (typeof ConductorConfig !== 'undefined') ? ConductorConfig : null, 'applyPhaseProfile'],
+    ['Stutter', (typeof Stutter !== 'undefined') ? Stutter : null, 'prepareBeat'],
+    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'initialize'],
+    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'getField']
+  ];
+  requiredModules.forEach(([name, obj, method]) => {
+    if (!obj || typeof obj[method] !== 'function') {
+      throw new Error(`main.bootstrap: ${name}.${method} is not available`);
+    }
+  });
+
+  const requiredInitializers = [
+    ['FXFeedbackListener', (typeof FXFeedbackListener !== 'undefined') ? FXFeedbackListener : null],
+    ['StutterFeedbackListener', (typeof StutterFeedbackListener !== 'undefined') ? StutterFeedbackListener : null],
+    ['JourneyRhythmCoupler', (typeof JourneyRhythmCoupler !== 'undefined') ? JourneyRhythmCoupler : null],
+    ['ConductorRegulationListener', (typeof ConductorRegulationListener !== 'undefined') ? ConductorRegulationListener : null],
+    ['DrumTextureCoupler', (typeof DrumTextureCoupler !== 'undefined') ? DrumTextureCoupler : null],
+    ['EmissionFeedbackListener', (typeof EmissionFeedbackListener !== 'undefined') ? EmissionFeedbackListener : null],
+    ['HarmonicRhythmTracker', (typeof HarmonicRhythmTracker !== 'undefined') ? HarmonicRhythmTracker : null],
+    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null],
+    ['CadenceAdvisor', (typeof CadenceAdvisor !== 'undefined') ? CadenceAdvisor : null]
+  ];
+  requiredInitializers.forEach(([name, obj]) => {
+    if (!obj || typeof obj.initialize !== 'function') {
+      throw new Error(`main.bootstrap: ${name}.initialize is not available`);
+    }
+  });
+}
+
+assertMainBootstrapGlobals();
+const EVENTS = EventCatalog.names;
 
 const { layer: L1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
 const { layer: L2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
@@ -87,9 +140,11 @@ const composerCtx = {
    */
   selectPhraseFamily({ availableFamilies }) {
     if (!Array.isArray(availableFamilies) || availableFamilies.length === 0) return null;
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('sectionPhase') || 'development')
-      : 'development';
+    const phase = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? (ConductorState.getField('sectionPhase') || 'development')
+      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        ? (HarmonicContext.getField('sectionPhase') || 'development')
+        : 'development';
 
     // Phase-based family affinity — centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
     const preferred = phaseAffinity[phase];
@@ -135,49 +190,14 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
   return nextComposer;
 };
 
-if (typeof FXFeedbackListener === 'undefined' || !FXFeedbackListener || typeof FXFeedbackListener.initialize !== 'function') {
-  throw new Error('main: FXFeedbackListener.initialize not available');
-}
 FXFeedbackListener.initialize();
-
-if (typeof StutterFeedbackListener === 'undefined' || !StutterFeedbackListener || typeof StutterFeedbackListener.initialize !== 'function') {
-  throw new Error('main: StutterFeedbackListener.initialize not available');
-}
 StutterFeedbackListener.initialize();
-
-if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.initialize !== 'function') {
-  throw new Error('main: JourneyRhythmCoupler.initialize not available');
-}
 JourneyRhythmCoupler.initialize();
-
-if (typeof ConductorRegulationListener === 'undefined' || !ConductorRegulationListener || typeof ConductorRegulationListener.initialize !== 'function') {
-  throw new Error('main: ConductorRegulationListener.initialize not available');
-}
 ConductorRegulationListener.initialize();
-
-if (typeof DrumTextureCoupler === 'undefined' || !DrumTextureCoupler || typeof DrumTextureCoupler.initialize !== 'function') {
-  throw new Error('main: DrumTextureCoupler.initialize not available');
-}
 DrumTextureCoupler.initialize();
-
-if (typeof EmissionFeedbackListener === 'undefined' || !EmissionFeedbackListener || typeof EmissionFeedbackListener.initialize !== 'function') {
-  throw new Error('main: EmissionFeedbackListener.initialize not available');
-}
 EmissionFeedbackListener.initialize();
-
-if (typeof HarmonicRhythmTracker === 'undefined' || !HarmonicRhythmTracker || typeof HarmonicRhythmTracker.initialize !== 'function') {
-  throw new Error('main: HarmonicRhythmTracker.initialize not available');
-}
 HarmonicRhythmTracker.initialize();
-
-if (typeof ConductorState === 'undefined' || !ConductorState || typeof ConductorState.initialize !== 'function') {
-  throw new Error('main: ConductorState.initialize not available');
-}
 ConductorState.initialize();
-
-if (typeof CadenceAdvisor === 'undefined' || !CadenceAdvisor || typeof CadenceAdvisor.initialize !== 'function') {
-  throw new Error('main: CadenceAdvisor.initialize not available');
-}
 CadenceAdvisor.initialize();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
@@ -430,14 +450,21 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   // Record section in StructuralFormTracker for form-level awareness
   if (typeof StructuralFormTracker !== 'undefined' && StructuralFormTracker && typeof StructuralFormTracker.recordSection === 'function') {
-    const sKey = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('key') || 'C') : 'C';
-    const sMode = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('mode') || 'ionian') : 'ionian';
+    const sKey = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? (ConductorState.getField('key') || 'C')
+      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        ? (HarmonicContext.getField('key') || 'C')
+        : 'C';
+    const sMode = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? (ConductorState.getField('mode') || 'ionian')
+      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        ? (HarmonicContext.getField('mode') || 'ionian')
+        : 'ionian';
     const sFamily = (typeof ComposerFactory !== 'undefined' && ComposerFactory && typeof ComposerFactory.getActiveFamily === 'function')
       ? (ComposerFactory.getActiveFamily() || 'default') : 'default';
-    const sEnergy = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.get === 'function')
-      ? (Number(ConductorState.get('compositeIntensity')) || 0) : 0;
+    const sEnergy = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? (Number(ConductorState.getField('compositeIntensity')) || 0)
+      : 0;
     StructuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
   }
 

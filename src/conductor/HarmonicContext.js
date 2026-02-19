@@ -106,6 +106,8 @@ HarmonicContext = (() => {
         key: state.key,
         mode: state.mode,
         quality: state.quality,
+        scale: state.scale,
+        chords: state.chords,
         sectionPhase: state.sectionPhase,
         excursion: state.excursion,
         tension: state.tension,
@@ -132,7 +134,14 @@ HarmonicContext = (() => {
    * @throws {Error} if field unknown
    */
   function getField(field) {
-    if (!state.hasOwnProperty(field)) {
+    if (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function') {
+      const snapshot = ConductorState.getSnapshot();
+      if (snapshot && Object.prototype.hasOwnProperty.call(snapshot, field)) {
+        return snapshot[field];
+      }
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(state, field)) {
       throw new Error(`HarmonicContext.getField: unknown field "${field}"`);
     }
     return state[field];
