@@ -58,7 +58,7 @@ voiceModulator = (function() {
       }
       // Random humanization jitter (±half of jitterAmount)
       const jitter = 1 + (rf() - 0.5) * vsCfg.jitterAmount;
-      const vel = m.max(1, m.min(127, m.round(base * positionScale * jitter)));
+      const vel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(base * positionScale * jitter)));
       return { note: n, channel: i, velocity: vel };
     });
   }

@@ -25,7 +25,6 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
 
   if (method) {
-    if (!method) throw new Error('getRhythm: empty method key requested');
     // Phase-locked path: length-only patterns can be generated with phase cohesion
     if (args && args.length === 1 && args[0] === length) {
       return PhaseLockedRhythmGenerator.generate(length, method);

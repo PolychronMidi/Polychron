@@ -42,6 +42,8 @@ require('./TextureBlender');
 // @ts-ignore: load side-effect module with globals
 require('./ConductorState');
 // @ts-ignore: load side-effect module with globals
+require('./GlobalConductorUpdate');
+// @ts-ignore: load side-effect module with globals
 require('./GlobalConductor');
 
 // @ts-ignore: load side-effect module with globals (cross-domain analysis helpers)

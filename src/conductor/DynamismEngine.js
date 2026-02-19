@@ -2,6 +2,7 @@
 // Combines phrase arc, harmonic journey tension, and feedback intensity into per-unit play/stutter probabilities.
 
 DynamismEngine = (() => {
+  const V = Validator.create('DynamismEngine');
   let dependenciesValidated = false;
 
   const moveBias = {
@@ -31,9 +32,8 @@ DynamismEngine = (() => {
     if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
       throw new Error('DynamismEngine: HarmonicJourney.getStop is required');
     }
-    if (typeof LM === 'undefined' || !LM || typeof LM !== 'object') {
-      throw new Error('DynamismEngine: LM global is required');
-    }
+    V.requireDefined(LM, 'LM');
+    V.assertObject(LM, 'LM');
 
     dependenciesValidated = true;
   }
@@ -75,9 +75,7 @@ DynamismEngine = (() => {
     }
 
     const stop = HarmonicJourney.getStop(Number(sectionIndex));
-    if (!stop || typeof stop !== 'object') {
-      throw new Error('DynamismEngine.getJourneyEnergy: invalid HarmonicJourney stop');
-    }
+    V.assertObject(stop, 'HarmonicJourney stop');
 
     const distanceEnergy = clamp(Number(stop.distance) / 6, 0, 1);
     const moveEnergy = Object.prototype.hasOwnProperty.call(moveBias, stop.move)
@@ -189,9 +187,7 @@ DynamismEngine = (() => {
    */
   function resolve(unit, opts = {}) {
     assertDependencies();
-    if (typeof unit !== 'string' || unit.length === 0) {
-      throw new Error('DynamismEngine.resolve: unit must be a non-empty string');
-    }
+    V.assertNonEmptyString(unit, 'unit');
 
     const phraseCtx = getPhraseContext();
     const base = getBaseProbs(phraseCtx);

@@ -180,20 +180,20 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   }
   const rawVel = clamp(m.round(
     isPrimary ? velocity * rf(velRanges[0], velRanges[1]) : binVel * rf(velRanges[0], velRanges[1])
-  ), 1, 127);
-  let stutterVel = fadeDir === 'in' ? clamp(m.round(rawVel * rf(0.7, 1.0)), 1, 127)
-    : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, 127)
+  ), 1, MIDI_MAX_VALUE);
+  let stutterVel = fadeDir === 'in' ? clamp(m.round(rawVel * rf(0.7, 1.0)), 1, MIDI_MAX_VALUE)
+    : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, MIDI_MAX_VALUE)
     : rawVel;
 
   // apply cross-mod velocity bias (from beatContext.mod → stutterConfig.fade.velocityScaleBias)
   if (velocityScaleBias && Number.isFinite(Number(velocityScaleBias))) {
-    stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, 127);
+    stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
   }
 
   // coherence overlay: small velocity boost when coherence X is high
   if (cohMod && Number.isFinite(cohMod.x) && cohMod.x > 0.6) {
     const boost = m.round((cohMod.x - 0.6) * 8); // modest additive boost
-    stutterVel = clamp(stutterVel + boost, 1, 127);
+    stutterVel = clamp(stutterVel + boost, 1, MIDI_MAX_VALUE);
   }
 
   // Build planned events (single on/off pair)
@@ -210,7 +210,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   // Emit and metrics
   p(c, evOn);
   const eventName = EventCatalog.names.STUTTER_APPLIED;
-  EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / 127, 0, 1), tick: stutterOn });
+  EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), tick: stutterOn });
   p(c, evOff);
   if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') {
     StutterMetrics.incEmitted(1, profile);

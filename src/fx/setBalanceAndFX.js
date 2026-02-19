@@ -26,10 +26,10 @@ const scaleFxDefaultObject = (fxDefault, scale) => {
   const maxValue = Number(fxDefault.max);
   const scaled = { ...fxDefault };
   if (Number.isFinite(minValue)) {
-    scaled.min = clamp(m.round(minValue * scale), 0, 127);
+    scaled.min = clamp(m.round(minValue * scale), 0, MIDI_MAX_VALUE);
   }
   if (Number.isFinite(maxValue)) {
-    scaled.max = clamp(m.round(maxValue * scale), 0, 127);
+    scaled.max = clamp(m.round(maxValue * scale), 0, MIDI_MAX_VALUE);
   }
   if (Number.isFinite(Number(scaled.min)) && Number.isFinite(Number(scaled.max)) && scaled.min > scaled.max) {
     const swap = scaled.min;
@@ -37,10 +37,10 @@ const scaleFxDefaultObject = (fxDefault, scale) => {
     scaled.max = swap;
   }
   if (Number.isFinite(Number(fxDefault.conditionMin))) {
-    scaled.conditionMin = clamp(m.round(Number(fxDefault.conditionMin) * scale), 0, 127);
+    scaled.conditionMin = clamp(m.round(Number(fxDefault.conditionMin) * scale), 0, MIDI_MAX_VALUE);
   }
   if (Number.isFinite(Number(fxDefault.conditionMax))) {
-    scaled.conditionMax = clamp(m.round(Number(fxDefault.conditionMax) * scale), 0, 127);
+    scaled.conditionMax = clamp(m.round(Number(fxDefault.conditionMax) * scale), 0, MIDI_MAX_VALUE);
   }
   if (Number.isFinite(Number(scaled.conditionMin)) && Number.isFinite(Number(scaled.conditionMax)) && scaled.conditionMin > scaled.conditionMax) {
     const swap = scaled.conditionMin;
@@ -73,8 +73,8 @@ const scaleFxRange = (minValue, maxValue, rangeScale) => {
   const ceiling = m.max(lo, hi);
   const center = (floor + ceiling) * 0.5;
   const halfSpan = (ceiling - floor) * 0.5 * rangeScale;
-  const scaledMin = clamp(m.round(center - halfSpan), 0, 127);
-  const scaledMax = clamp(m.round(center + halfSpan), 0, 127);
+  const scaledMin = clamp(m.round(center - halfSpan), 0, MIDI_MAX_VALUE);
+  const scaledMax = clamp(m.round(center + halfSpan), 0, MIDI_MAX_VALUE);
   return scaledMin <= scaledMax ? [scaledMin, scaledMax] : [scaledMax, scaledMin];
 };
 const requireFiniteScale = (value, name) => {
@@ -158,7 +158,7 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<
   balOffset = clamp(candidateBal, m.max(balMin, prevGlobalBal - balStep), m.min(balMax, prevGlobalBal + balStep));
   sideBias=rl(sideBias,-sideBiasStep,sideBiasStep,sideBiasMin,sideBiasMax);
   lBal=m.max(0,m.min(lBalMax,balOffset + ri(3) + sideBias));
-  rBal=m.min(127,m.max(74,127 - balOffset - ri(3) + sideBias));
+  rBal=m.min(MIDI_MAX_VALUE,m.max(74,MIDI_MAX_VALUE - balOffset - ri(3) + sideBias));
   cBal=m.min(96,(m.max(32,64 + m.round(rv(balOffset / ri(2,3))) * (rf() < .5 ? -1 : 1) + sideBias)));
   refVar=ri(1,10); cBal2=rf()<.5?cBal+m.round(refVar*.5) : cBal+m.round(refVar*-.5);
   bassVar=refVar*rf(-2,2); cBal3=rf()<.5?cBal2+m.round(bassVar*.5) : cBal2+m.round(bassVar*-.5);
@@ -258,7 +258,7 @@ return [
           const v = m.round(m.max(def.min, m.min(def.max, Number(value))));
           return v;
         }
-        return clamp(Number(value), 0, 127);
+        return clamp(Number(value), 0, MIDI_MAX_VALUE);
       };
 
       for (let ti = 0; ti < allChs.length; ti++) {

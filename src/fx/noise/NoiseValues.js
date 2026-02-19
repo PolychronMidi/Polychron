@@ -2,13 +2,9 @@
 
 // Get noise with fallback to simplex
 getNoiseValue = function(generatorName, x, y, time) {
-  try {
-    const generator = noiseGenerators[generatorName];
-    if (!generator) throw new Error(`Unknown noise generator: ${generatorName}`);
-    return generator(x, y, time);
-  } catch (e) {
-    throw new Error(`getNoiseValue failed for generator "${generatorName}": ${e && e.message ? e.message : e}`);
-  }
+  const generator = noiseGenerators[generatorName];
+  if (!generator) throw new Error(`Unknown noise generator: ${generatorName}`);
+  return generator(x, y, time);
 };
 
 // Multi-frequency layered noise (combines broad movement with fine detail)

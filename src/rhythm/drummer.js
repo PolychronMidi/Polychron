@@ -66,8 +66,8 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         const numStutters = ri(...stutterRange);
         const stutterDuration = .25 * ri(1, 8) / numStutters;
         const [baseMinVelocity, baseMaxVelocity] = drumInfo.velocityRange;
-        const minVelocity = clamp(m.round(baseMinVelocity * velocityScale), 1, 127);
-        const maxVelocity = clamp(m.round(baseMaxVelocity * velocityScale), minVelocity, 127);
+        const minVelocity = clamp(m.round(baseMinVelocity * velocityScale), 1, MIDI_MAX_VALUE);
+        const maxVelocity = clamp(m.round(baseMaxVelocity * velocityScale), minVelocity, MIDI_MAX_VALUE);
         const isFadeIn = rf() < 0.7;
         for (let i = 0; i < numStutters; i++) {
           // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
@@ -78,10 +78,10 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
           if (isFadeIn) {
             const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
             // Anchor stutter velocities to the drum's declared range and scale across [min,max]
-            currentVelocity = clamp(m.min(maxVelocity, minVelocity + (maxVelocity - minVelocity) * fadeInMultiplier), 0, 127);
+            currentVelocity = clamp(m.min(maxVelocity, minVelocity + (maxVelocity - minVelocity) * fadeInMultiplier), 0, MIDI_MAX_VALUE);
           } else {
             const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
-            currentVelocity = clamp(m.max(0, minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier), 0, 127);
+            currentVelocity = clamp(m.max(0, minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier), 0, MIDI_MAX_VALUE);
           }
           p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
         }
@@ -90,8 +90,8 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         const tick = m.round(tickVal);
         const baseMin = Number(drumInfo.velocityRange[0]);
         const baseMax = Number(drumInfo.velocityRange[1]);
-        const scaledMin = clamp(m.round(baseMin * velocityScale), 1, 127);
-        const scaledMax = clamp(m.round(baseMax * velocityScale), scaledMin, 127);
+        const scaledMin = clamp(m.round(baseMin * velocityScale), 1, MIDI_MAX_VALUE);
+        const scaledMax = clamp(m.round(baseMax * velocityScale), scaledMin, MIDI_MAX_VALUE);
         p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, ri(scaledMin, scaledMax)] });
       }
     }

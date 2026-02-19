@@ -5,7 +5,6 @@
 
 IntervalBalanceTracker = (() => {
   const WINDOW_SECONDS = 5;
-  // const LEAP_THRESHOLD = 3; // intervals >= 3 semitones are leaps - removed unused
 
   /**
    * Analyze interval distribution from recent notes.

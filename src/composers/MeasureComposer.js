@@ -160,12 +160,8 @@ MeasureComposer = class MeasureComposer {
 
     // Delegate interval selection to universal strategy
     let intervals = [];
-    try {
-      const intervalOptions = self.intervalOptions || undefined;
-      intervals = IntervalComposer.selectIntervals(self.notes.length, intervalOptions);
-    } catch (e) {
-      throw e;
-    }
+    const intervalOptions = self.intervalOptions || undefined;
+    intervals = IntervalComposer.selectIntervals(self.notes.length, intervalOptions);
 
     try {
       const notesOut = MeasureNotePool.buildNotePool(self.notes, intervals, [minOctave, maxOctave], rootNote);

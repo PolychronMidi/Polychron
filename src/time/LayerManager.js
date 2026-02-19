@@ -3,6 +3,8 @@
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
  */
 
+V = Validator.create('LayerManager');
+
 LM = layerManager ={
   layers: {},
   layerComposers: {},
@@ -39,9 +41,7 @@ LM = layerManager ={
     };
 
     // Validate initialState if provided
-    if (initialState !== undefined && (typeof initialState !== 'object' || initialState === null)) {
-      throw new Error('LayerManager.register: initialState must be an object');
-    }
+    if (initialState !== undefined) V.assertObject(initialState, 'initialState');
     // Build the flattened timing object from defaults + any provided initialState
     const layer = Object.assign({ id: name }, defaults, initialState || {});
     let buf;
@@ -122,7 +122,7 @@ LM = layerManager ={
    */
   advance: (name, advancementType = 'phrase') => {
     const layer = LM.layers[name];
-    if (!layer) { throw new Error(`LayerManager.advance: layer "${name}" not found`); }
+    V.requireDefined(layer, `layer "${name}"`);
     c = layer.buffer;
 
     // Advance using the layer's timing values
@@ -156,7 +156,7 @@ LM = layerManager ={
   // Minimal helpers to initialize section origin for layers (keeps it tiny and explicit).
   setSectionStartFor: (name) => {
     const layer = LM.layers[name];
-    if (!layer) { throw new Error(`LayerManager.setSectionStartFor: layer "${name}" not found`); }
+    V.requireDefined(layer, `layer "${name}"`);
     layer.sectionStart = phraseStart;
     layer.sectionStartTime = phraseStartTime;
   },
@@ -166,31 +166,21 @@ LM = layerManager ={
   },
 
   setPhraseFamily: (familyName) => {
-    if (typeof familyName !== 'string' || familyName.length === 0) {
-      throw new Error('LayerManager.setPhraseFamily: familyName must be a non-empty string');
-    }
+    V.assertNonEmptyString(familyName, 'familyName');
     LM.phraseFamily = familyName;
     return familyName;
   },
 
   getPhraseFamily: () => {
-    if (typeof LM.phraseFamily !== 'string' || LM.phraseFamily.length === 0) {
-      throw new Error('LayerManager.getPhraseFamily: phraseFamily is not set');
-    }
+    V.assertNonEmptyString(LM.phraseFamily, 'phraseFamily');
     return LM.phraseFamily;
   },
 
   setComposerFor: (name, nextComposer) => {
-    if (typeof name !== 'string' || name.length === 0) {
-      throw new Error('LayerManager.setComposerFor: layer name must be a non-empty string');
-    }
-    if (!nextComposer || typeof nextComposer !== 'object') {
-      throw new Error('LayerManager.setComposerFor: composer must be an object');
-    }
+    V.assertNonEmptyString(name, 'layer name');
+    V.assertObject(nextComposer, 'composer');
     const layer = LM.layers[name];
-    if (!layer) {
-      throw new Error(`LayerManager.setComposerFor: layer "${name}" not found`);
-    }
+    V.requireDefined(layer, `layer "${name}"`);
     LM.layerComposers[name] = nextComposer;
     layer.measureComposer = nextComposer;
     if (LM.activeLayer === name) {
@@ -200,9 +190,7 @@ LM = layerManager ={
   },
 
   setComposerForAll: (nextComposer) => {
-    if (!nextComposer || typeof nextComposer !== 'object') {
-      throw new Error('LayerManager.setComposerForAll: composer must be an object');
-    }
+    V.assertObject(nextComposer, 'composer');
     const layerNames = Object.keys(LM.layers);
     if (layerNames.length === 0) {
       throw new Error('LayerManager.setComposerForAll: no registered layers');
@@ -214,13 +202,9 @@ LM = layerManager ={
   },
 
   getComposerFor: (name) => {
-    if (typeof name !== 'string' || name.length === 0) {
-      throw new Error('LayerManager.getComposerFor: layer name must be a non-empty string');
-    }
+    V.assertNonEmptyString(name, 'layer name');
     const layer = LM.layers[name];
-    if (!layer) {
-      throw new Error(`LayerManager.getComposerFor: layer "${name}" not found`);
-    }
+    V.requireDefined(layer, `layer "${name}"`);
     const mappedComposer = LM.layerComposers[name];
     const layerComposer = layer.measureComposer;
     const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
@@ -231,7 +215,7 @@ LM = layerManager ={
       : ((layerComposer && typeof layerComposer === 'object') ? layerComposer : globalComposer);
 
     if (!resolvedComposer) {
-      throw new Error(`LayerManager.getComposerFor: composer for layer "${name}" is not set`);
+      V.requireDefined(resolvedComposer, `composer for layer "${name}"`);
     }
 
     LM.layerComposers[name] = resolvedComposer;
@@ -245,7 +229,7 @@ LM = layerManager ={
  * Restore timing into naked globals without using banned globals.
  */
 function loadLayerToGlobals(layer) {
-  if (!layer) { throw new Error('loadLayerToGlobals: no layer provided'); }
+  V.requireDefined(layer, 'layer');
   tpSection = layer.tpSection;
   spSection = layer.spSection;
   sectionStart = layer.sectionStart;

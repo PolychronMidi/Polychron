@@ -42,7 +42,7 @@ scaleNormalization = {
         if (!Number.isFinite(Number(quantRaw))) {
           throw new Error(`${label}: quantization produced non-finite midi`);
         }
-        const quantWrapped = modClamp(Number(quantRaw), 0, 127);
+        const quantWrapped = modClamp(Number(quantRaw), 0, MIDI_MAX_VALUE);
         const quantPC = modClamp(quantWrapped, 0, 11);
         if (scalePC.includes(quantPC)) {
           out = quantWrapped;

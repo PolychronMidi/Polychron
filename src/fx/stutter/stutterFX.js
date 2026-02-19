@@ -8,8 +8,8 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
   channelsArray.forEach(channelToStutter => {
-    const startValue = ri(0, 127);
-    const endValue = ri(0, 127);
+    const startValue = ri(0, MIDI_MAX_VALUE);
+    const endValue = ri(0, MIDI_MAX_VALUE);
     const ccParam = ra([91, 92, 93, 71, 74]);
 
     // Use moderate noise for FX curves — aligns with fade's organic treatment
@@ -33,16 +33,16 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
 
       const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX + (coh.x - 0.5) * 10;
       const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY + (coh.y - 0.5) * 6;
-      const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, 127);
+      const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, MIDI_MAX_VALUE);
 
       // publish modulation bus entry for cross‑mod sampling
-      const norm = clamp(currentValue / 127, 0, 1);
+      const norm = clamp(currentValue / MIDI_MAX_VALUE, 0, 1);
       if (!this.beatContext.mod) this.beatContext.mod = {};
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });
 
       // feedback event (include inferred profile)
       const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
+      EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / MIDI_MAX_VALUE, 0, 1), tick });
 
       // Map raw `currentValue` into the hub FX ranges for this channel/CC
       const mapToFxRange = (ch, cc, raw) => {

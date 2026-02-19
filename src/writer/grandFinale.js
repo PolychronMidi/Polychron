@@ -1,7 +1,6 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 grandFinale = () => {
-  try {
 
   const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
   // Collect all layer data
@@ -79,7 +78,7 @@ grandFinale = () => {
         // Clamp velocity for Note_on events to a max (rounded)
         if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
           const vel = Number(_.vals[2]) || 0;
-          _.vals[2] = m.min(127, m.round(vel));
+          _.vals[2] = m.min(MIDI_MAX_VALUE, m.round(vel));
         }
 
         composition += `1,${tickInt},${type},${_.vals.join(',')}\n`;
@@ -93,7 +92,4 @@ grandFinale = () => {
     console.log(`Wrote file: ${outputFilename}`);
 
   });
-  } catch (err) {
-    throw new Error('grandFinale: ' + (err && err.message ? err.message : String(err)));
-  }
 };

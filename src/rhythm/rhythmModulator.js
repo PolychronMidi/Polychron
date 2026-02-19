@@ -17,7 +17,7 @@ rhythmModulator = (function() {
     // Apply velocity scaling if provided
     if (options.velocityScale !== undefined) {
       if (typeof note.velocity !== 'number') throw new Error('rhythmModulator.apply: note.velocity missing for velocityScale');
-      note.velocity = m.max(0, m.min(127, m.round(note.velocity * options.velocityScale)));
+      note.velocity = m.max(0, m.min(MIDI_MAX_VALUE, m.round(note.velocity * options.velocityScale)));
     }
 
     // Apply timing offset (signed seconds or fraction of beat)
