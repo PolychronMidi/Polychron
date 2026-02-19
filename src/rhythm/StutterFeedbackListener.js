@@ -3,12 +3,7 @@
 // rhythm/dynamism systems can respond to stutter intensity.
 
 StutterFeedbackListener = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('StutterFeedbackListener: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
@@ -20,7 +15,7 @@ StutterFeedbackListener = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('StutterFeedbackListener: FeedbackAccumulator.create is required');
     }
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('StutterFeedbackListener');
 
     accumulator = FeedbackAccumulator.create({
       name: 'stutter-feedback',

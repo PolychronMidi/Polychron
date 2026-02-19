@@ -7,12 +7,7 @@ CadenceAdvisor = (() => {
   const recentChanges = [];
   const MAX_HISTORY = 12;
 
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('CadenceAdvisor: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   /**
    * Wire up EventBus listener for harmonic-change events.
@@ -22,7 +17,7 @@ CadenceAdvisor = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('CadenceAdvisor.initialize: EventBus.on not available');
     }
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('CadenceAdvisor');
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
       recentChanges.push({

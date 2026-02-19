@@ -1,10 +1,5 @@
 FeedbackAccumulator = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('FeedbackAccumulator: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   /**
    * @param {{
@@ -41,7 +36,7 @@ FeedbackAccumulator = (() => {
       if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
         throw new Error(`FeedbackAccumulator.initialize(${options.name}): EventBus not available`);
       }
-      const EVENTS = getEventsOrThrow();
+      const EVENTS = getEventsOrThrow('FeedbackAccumulator');
 
       for (const input of options.inputs) {
         if (!input || typeof input !== 'object') {

@@ -1,10 +1,5 @@
 ConductorState = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('ConductorState: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   let initialized = false;
 
@@ -118,7 +113,7 @@ ConductorState = (() => {
   function initialize() {
     if (initialized) return true;
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') return false;
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('ConductorState');
 
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       if (!data || typeof data !== 'object') return;
