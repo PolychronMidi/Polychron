@@ -86,4 +86,20 @@ require('./RepetitionFatigueMonitor');
 // @ts-ignore: load side-effect module with globals
 require('./EnergyMomentumTracker');
 // @ts-ignore: load side-effect module with globals
+require('./ArticulationProfiler');
+// @ts-ignore: load side-effect module with globals
+require('./RegisterMigrationTracker');
+// @ts-ignore: load side-effect module with globals
+require('./RhythmicComplexityGradient');
+// @ts-ignore: load side-effect module with globals
+require('./IntervalVarietyTracker');
+// @ts-ignore: load side-effect module with globals
+require('./ClimaxProximityPredictor');
+// @ts-ignore: load side-effect module with globals
+require('./OnsetRegularityMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./DurationalContourTracker');
+// @ts-ignore: load side-effect module with globals
+require('./HarmonicSurpriseIndex');
+// @ts-ignore: load side-effect module with globals
 require('./config');

@@ -136,6 +136,50 @@ GlobalConductor = (() => {
       EnergyMomentumTracker.recordEnergy(compositeIntensity, absTime);
     }
 
+    // --- Batch 6 intelligence module reads ---
+    // ArticulationProfiler: duration selection biases (consumed via ConductorState)
+    const articulationBias = (typeof ArticulationProfiler !== 'undefined' && ArticulationProfiler && typeof ArticulationProfiler.getDurationBias === 'function')
+      ? ArticulationProfiler.getDurationBias()
+      : { legatoBias: 1, staccatoBias: 1 };
+    // RegisterMigrationTracker: register drift correction
+    const registerMigrationBias = (typeof RegisterMigrationTracker !== 'undefined' && RegisterMigrationTracker && typeof RegisterMigrationTracker.getRegisterBias === 'function')
+      ? RegisterMigrationTracker.getRegisterBias()
+      : { registerBias: 0, suggestion: 'maintain' };
+    // RhythmicComplexityGradient: subdivision depth bias
+    const subdivisionBias = (typeof RhythmicComplexityGradient !== 'undefined' && RhythmicComplexityGradient && typeof RhythmicComplexityGradient.getSubdivisionBias === 'function')
+      ? clamp(RhythmicComplexityGradient.getSubdivisionBias(), 0.8, 1.3)
+      : 1;
+    // IntervalVarietyTracker: interval selection biases (consumed via ConductorState)
+    const intervalBias = (typeof IntervalVarietyTracker !== 'undefined' && IntervalVarietyTracker && typeof IntervalVarietyTracker.getIntervalBias === 'function')
+      ? IntervalVarietyTracker.getIntervalBias()
+      : { stepBias: 1, leapBias: 1 };
+    // ClimaxProximityPredictor: density ramp + tension modifier
+    const climaxDensityBias = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getDensityRampBias === 'function')
+      ? clamp(ClimaxProximityPredictor.getDensityRampBias(), 0.85, 1.25)
+      : 1;
+    const climaxTensionMod = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getTensionModifier === 'function')
+      ? clamp(ClimaxProximityPredictor.getTensionModifier(), 0.8, 1.2)
+      : 1;
+    // OnsetRegularityMonitor: rhythm variety bias
+    const onsetRegularityBias = (typeof OnsetRegularityMonitor !== 'undefined' && OnsetRegularityMonitor && typeof OnsetRegularityMonitor.getRhythmVarietyBias === 'function')
+      ? clamp(OnsetRegularityMonitor.getRhythmVarietyBias(), 0.85, 1.25)
+      : 1;
+    // DurationalContourTracker: duration envelope + flicker modifier
+    const durContourBias = (typeof DurationalContourTracker !== 'undefined' && DurationalContourTracker && typeof DurationalContourTracker.getDurationBias === 'function')
+      ? DurationalContourTracker.getDurationBias()
+      : { durationBias: 1, flickerMod: 1 };
+    // HarmonicSurpriseIndex: tension bias from harmonic predictability
+    const harmonicSurpriseBias = (typeof HarmonicSurpriseIndex !== 'undefined' && HarmonicSurpriseIndex && typeof HarmonicSurpriseIndex.getTensionBias === 'function')
+      ? clamp(HarmonicSurpriseIndex.getTensionBias(), 0.9, 1.25)
+      : 1;
+
+    // Record rhythmic complexity for gradient tracking
+    if (typeof RhythmicComplexityGradient !== 'undefined' && RhythmicComplexityGradient && typeof RhythmicComplexityGradient.recordComplexity === 'function') {
+      const absTime2 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      // Use current density as a proxy for rhythmic complexity
+      RhythmicComplexityGradient.recordComplexity(currentDensity, absTime2);
+    }
+
     // Apply coherence-based density bias: low coherence → thinner density
     const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
       ? LayerCoherenceScorer.getDensityBias()
@@ -149,7 +193,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -162,7 +206,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -208,7 +252,7 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty, 0, 1);
+    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias, 0, 1);
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -238,6 +282,13 @@ GlobalConductor = (() => {
         accentOffbeatBias: accentBias.offbeatBias,
         modalColorBias: modalColorBias.colorBias,
         modalStabilityBias: modalColorBias.stabilityBias,
+        articulationLegatoBias: articulationBias.legatoBias,
+        articulationStaccatoBias: articulationBias.staccatoBias,
+        registerMigrationBias: registerMigrationBias.registerBias,
+        registerSuggestion: registerMigrationBias.suggestion,
+        intervalStepBias: intervalBias.stepBias,
+        intervalLeapBias: intervalBias.leapBias,
+        durationalContourBias: durContourBias.durationBias,
         playProb: playOut,
         stutterProb: stutterOut
       });
