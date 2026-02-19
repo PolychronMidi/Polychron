@@ -3,7 +3,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
     throw new Error('stutterFade: StutterFailFast helper is not available');
   }
-  const { eventName, eventBus } = StutterFailFast.requireEventInfra('stutterFade');
+  const { eventName } = StutterFailFast.requireEventInfra();
   const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterFade');
   const channelsArray = pickStutterChannels(channels, ri(1, 5), this.lastUsedCHs);
 
@@ -72,7 +72,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
 
       // Emit a stutter-applied event for feedback loops (include inferred profile)
       const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      eventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
+      EventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });

@@ -20,7 +20,7 @@ EventCatalog = (() => {
     V.assertObject(data, `${name} payload`);
     switch (name) {
       case names.SECTION_BOUNDARY:
-        V.assertFinite(data.sectionIndex, 'section-boundary.sectionIndex');
+        V.assertRange(data.sectionIndex, 0, Number.MAX_SAFE_INTEGER, 'section-boundary.sectionIndex');
         return true;
 
       case names.JOURNEY_MOVE:
@@ -33,10 +33,16 @@ EventCatalog = (() => {
 
       case names.TEXTURE_CONTRAST:
         V.assertNonEmptyString(data.mode, 'texture-contrast.mode');
+        V.assertNonEmptyString(data.unit, 'texture-contrast.unit');
         V.assertFinite(data.composite, 'texture-contrast.composite');
         return true;
 
       case names.BEAT_FX_APPLIED:
+        V.assertRange(data.beatIndex, 0, Number.MAX_SAFE_INTEGER, 'beat-fx-applied.beatIndex');
+        V.assertRange(data.sectionIndex, 0, Number.MAX_SAFE_INTEGER, 'beat-fx-applied.sectionIndex');
+        V.assertRange(data.phraseIndex, 0, Number.MAX_SAFE_INTEGER, 'beat-fx-applied.phraseIndex');
+        V.assertRange(data.measureIndex, 0, Number.MAX_SAFE_INTEGER, 'beat-fx-applied.measureIndex');
+        V.assertNonEmptyString(data.layer, 'beat-fx-applied.layer');
         V.assertFinite(data.stereoPan, 'beat-fx-applied.stereoPan');
         V.assertFinite(data.velocityShift, 'beat-fx-applied.velocityShift');
         return true;
@@ -45,8 +51,8 @@ EventCatalog = (() => {
         V.assertNonEmptyString(data.type, 'stutter-applied.type');
         V.assertNonEmptyString(data.profile, 'stutter-applied.profile');
         V.assertFinite(data.channel, 'stutter-applied.channel');
-        V.assertFinite(data.intensity, 'stutter-applied.intensity');
-        V.assertFinite(data.tick, 'stutter-applied.tick');
+        V.assertRange(data.intensity, 0, 1, 'stutter-applied.intensity');
+        V.assertRange(data.tick, 0, Number.MAX_SAFE_INTEGER, 'stutter-applied.tick');
         if (data.subtype !== undefined) {
           V.assertNonEmptyString(data.subtype, 'stutter-applied.subtype');
         }
@@ -61,7 +67,7 @@ EventCatalog = (() => {
 
       case names.BEAT_BINAURAL_APPLIED:
         V.assertFinite(data.beatIndex, 'beat-binaural-applied.beatIndex');
-        V.assertFinite(data.freqOffset, 'beat-binaural-applied.freqOffset');
+        V.assertRange(data.freqOffset, -50, 50, 'beat-binaural-applied.freqOffset');
         V.assertBoolean(data.flipBin, 'beat-binaural-applied.flipBin');
         return true;
 
@@ -85,8 +91,11 @@ EventCatalog = (() => {
         return true;
 
       case names.NOTES_EMITTED:
-        V.assertFinite(data.actual, 'notes-emitted.actual');
-        V.assertFinite(data.intended, 'notes-emitted.intended');
+        V.assertRange(data.actual, 0, Number.MAX_SAFE_INTEGER, 'notes-emitted.actual');
+        V.assertRange(data.intended, 0, Number.MAX_SAFE_INTEGER, 'notes-emitted.intended');
+        if (data.noteCount !== undefined) {
+          V.assertRange(data.noteCount, 0, Number.MAX_SAFE_INTEGER, 'notes-emitted.noteCount');
+        }
         return true;
 
       case names.MOTIF_CHAIN_APPLIED:

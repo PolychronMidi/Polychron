@@ -18,12 +18,6 @@ function assertPlayNotesDeps() {
   if (typeof voiceConfig === 'undefined' || !voiceConfig || typeof voiceConfig.getProfile !== 'function') {
     throw new Error('playNotes: voiceConfig.getProfile is required');
   }
-  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
-    throw new Error('playNotes: EventBus.emit is required');
-  }
-  if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getEmissionScaling !== 'function') {
-    throw new Error('playNotes: ConductorConfig.getEmissionScaling is required');
-  }
   _playNotesDepsValidated = true;
 }
 
@@ -196,7 +190,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
-  if (typeof LM === 'undefined' || !LM || typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
+  if (!LM || typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
     throw new Error(`${unit}.playNotes: LM.activeLayer must be available for voice budgeting`);
   }
   const layerName = LM.activeLayer;

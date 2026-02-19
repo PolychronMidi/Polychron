@@ -3,7 +3,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
   if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
     throw new Error('stutterFX: StutterFailFast helper is not available');
   }
-  const { eventName, eventBus } = StutterFailFast.requireEventInfra('stutterFX');
+  const { eventName } = StutterFailFast.requireEventInfra();
   const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterFX');
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
@@ -42,7 +42,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
 
       // feedback event (include inferred profile)
       const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      eventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
+      EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
 
       // Map raw `currentValue` into the hub FX ranges for this channel/CC
       const mapToFxRange = (ch, cc, raw) => {

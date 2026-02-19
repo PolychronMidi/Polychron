@@ -56,9 +56,6 @@ class StutterManager {
 
   _attachTextureListener() {
     if (this._textureListenerAttached) return true;
-    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
-      throw new Error('StutterManager._attachTextureListener: EventBus.on is not available');
-    }
     const EVENTS = V.getEventsOrThrow();
     const eventName = EVENTS.TEXTURE_CONTRAST;
 
@@ -104,9 +101,6 @@ class StutterManager {
   }
 
   _getStutterGrainParams() {
-    if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getStutterGrainParams !== 'function') {
-      throw new Error('StutterManager._getStutterGrainParams: ConductorConfig.getStutterGrainParams is not available');
-    }
     const grain = ConductorConfig.getStutterGrainParams();
     if (!grain || typeof grain !== 'object') {
       throw new Error('StutterManager._getStutterGrainParams: invalid grain params');

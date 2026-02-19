@@ -46,7 +46,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       this.phraseArcManager = null;
     }
     this.phraseBoundaryEmphasis = opts.phraseBoundaryEmphasis ?? 1.3; // Extra emphasis at phrase boundaries
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
   }
 
   getCurrentChord() {

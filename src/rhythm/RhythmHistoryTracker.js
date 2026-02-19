@@ -3,6 +3,7 @@
 // Integrates into getRhythm() as an additional bias stage.
 
 RhythmHistoryTracker = (() => {
+  const V = Validator.create('RhythmHistoryTracker');
   const WINDOW = 12; // track last 12 rhythm selections
   /** @type {Array<{ method: string, length: number, layer: string }>} */
   const history = [];
@@ -14,7 +15,10 @@ RhythmHistoryTracker = (() => {
    * @param {string} layer - layer identifier
    */
   function record(method, length, layer) {
-    history.push({ method, length, layer });
+    V.assertNonEmptyString(method, 'record.method');
+    V.assertFinite(length, 'record.length');
+    V.assertNonEmptyString(layer, 'record.layer');
+    history.push({ method, length: Number(length), layer });
     if (history.length > WINDOW * 3) history.splice(0, history.length - WINDOW);
   }
 
@@ -25,6 +29,7 @@ RhythmHistoryTracker = (() => {
    * @returns {Object} - same structure with adjusted weights
    */
   function penalizeRepetition(candidates) {
+    V.assertObject(candidates, 'penalizeRepetition.candidates');
     const recent = history.slice(-WINDOW);
     if (recent.length === 0) return candidates;
 

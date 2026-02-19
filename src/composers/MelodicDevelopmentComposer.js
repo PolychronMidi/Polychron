@@ -40,7 +40,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     }
     this.arcScaling = opts.arcScaling !== false; // Whether to scale intensity with phrase arc (default: true)
     // enable lightweight voice-leading scorer for selection delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
 
     const preservesScale = !(this.inversionMode === 'chromatic' && this.normalizeToScale === false);
     // MelodicDevelopment intentionally mutates pitch classes over time (within scale when preservesScale=true).

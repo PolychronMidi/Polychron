@@ -6,7 +6,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
     const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
     super(resolvedName, resolvedRoot);
     // enable voice-leading scorer for pick delegation with composer-provided tunables
-    try { this.enableVoiceLeading(new VoiceLeadingScore({ commonToneWeight: clamp(commonToneWeight, 0, 1), contraryMotionPreference: clamp(contraryMotionPreference, 0, 1) })); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore({ commonToneWeight: clamp(commonToneWeight, 0, 1), contraryMotionPreference: clamp(contraryMotionPreference, 0, 1) }));
   }
 
   getNotes(octaveRange) {
