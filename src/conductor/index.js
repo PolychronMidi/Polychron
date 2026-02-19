@@ -134,4 +134,20 @@ require('./DynamicContrastMemory');
 // @ts-ignore: load side-effect module with globals
 require('./LayerIndependenceScorer');
 // @ts-ignore: load side-effect module with globals
+require('./TemporalProportionTracker');
+// @ts-ignore: load side-effect module with globals
+require('./ChromaticSaturationMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./LeapStepBalancer');
+// @ts-ignore: load side-effect module with globals
+require('./RhythmicSymmetryDetector');
+// @ts-ignore: load side-effect module with globals
+require('./TexturalGradientTracker');
+// @ts-ignore: load side-effect module with globals
+require('./CadentialPreparationAdvisor');
+// @ts-ignore: load side-effect module with globals
+require('./AmbitusMigrationTracker');
+// @ts-ignore: load side-effect module with globals
+require('./SilenceDistributionTracker');
+// @ts-ignore: load side-effect module with globals
 require('./config');

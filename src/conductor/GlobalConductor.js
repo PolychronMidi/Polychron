@@ -248,6 +248,46 @@ GlobalConductor = (() => {
       ? clamp(LayerIndependenceScorer.getDensityBias(), 0.9, 1.15)
       : 1;
 
+    // --- Batch 9 intelligence module reads ---
+    // ChromaticSaturationMonitor: density bias from pitch-class coverage
+    const chromaticDensityBias = (typeof ChromaticSaturationMonitor !== 'undefined' && ChromaticSaturationMonitor && typeof ChromaticSaturationMonitor.getDensityBias === 'function')
+      ? clamp(ChromaticSaturationMonitor.getDensityBias(), 0.9, 1.1)
+      : 1;
+    // LeapStepBalancer: density bias + interval correction (consumed via ConductorState)
+    const leapStepDensityBias = (typeof LeapStepBalancer !== 'undefined' && LeapStepBalancer && typeof LeapStepBalancer.getDensityBias === 'function')
+      ? clamp(LeapStepBalancer.getDensityBias(), 0.9, 1.1)
+      : 1;
+    const leapStepCorrection = (typeof LeapStepBalancer !== 'undefined' && LeapStepBalancer && typeof LeapStepBalancer.getIntervalCorrection === 'function')
+      ? LeapStepBalancer.getIntervalCorrection()
+      : { leapBias: 1, stepBias: 1 };
+    // TexturalGradientTracker: flicker modifier from texture rate-of-change
+    const texturalGradientFlicker = (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.getFlickerModifier === 'function')
+      ? clamp(TexturalGradientTracker.getFlickerModifier(), 0.9, 1.25)
+      : 1;
+    // CadentialPreparationAdvisor: tension bias near cadence points
+    const cadentialTensionBias = (typeof CadentialPreparationAdvisor !== 'undefined' && CadentialPreparationAdvisor && typeof CadentialPreparationAdvisor.getTensionBias === 'function')
+      ? clamp(CadentialPreparationAdvisor.getTensionBias(), 1, 1.2)
+      : 1;
+    // AmbitusMigrationTracker: density + register signals
+    const ambitusDensityBias = (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.getDensityBias === 'function')
+      ? clamp(AmbitusMigrationTracker.getDensityBias(), 0.9, 1.1)
+      : 1;
+    const ambitusSignal = (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.getAmbitusSignal === 'function')
+      ? AmbitusMigrationTracker.getAmbitusSignal()
+      : { range: 24, trend: 'stable', registerSuggestion: 'maintain' };
+    // TemporalProportionTracker: proportion quality signal (consumed via ConductorState)
+    const proportionSignal = (typeof TemporalProportionTracker !== 'undefined' && TemporalProportionTracker && typeof TemporalProportionTracker.getProportionSignal === 'function')
+      ? TemporalProportionTracker.getProportionSignal()
+      : { suggestion: 'maintain', idealBeats: 8, quality: 0.5 };
+    // RhythmicSymmetryDetector: symmetry signal (consumed via ConductorState)
+    const symmetrySignal = (typeof RhythmicSymmetryDetector !== 'undefined' && RhythmicSymmetryDetector && typeof RhythmicSymmetryDetector.getSymmetrySignal === 'function')
+      ? RhythmicSymmetryDetector.getSymmetrySignal()
+      : { symmetryScore: 0, type: 'none', suggestion: 'maintain' };
+    // SilenceDistributionTracker: silence distribution signal (consumed via ConductorState)
+    const silenceSignal = (typeof SilenceDistributionTracker !== 'undefined' && SilenceDistributionTracker && typeof SilenceDistributionTracker.getSilenceSignal === 'function')
+      ? SilenceDistributionTracker.getSilenceSignal()
+      : { clusterScore: 0, staggerScore: 0, silenceRatio: 0.3, suggestion: 'maintain' };
+
     // Record density for wave analysis
     if (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.recordDensity === 'function') {
       const absTime3 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
@@ -257,6 +297,16 @@ GlobalConductor = (() => {
     if (typeof DynamicContrastMemory !== 'undefined' && DynamicContrastMemory && typeof DynamicContrastMemory.recordExtremes === 'function') {
       const absTime4 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       DynamicContrastMemory.recordExtremes(absTime4);
+    }
+    // Record textural gradient snapshot
+    if (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.recordDensity === 'function') {
+      const absTime5 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      TexturalGradientTracker.recordDensity(currentDensity, absTime5);
+    }
+    // Record ambitus snapshot
+    if (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.recordSnapshot === 'function') {
+      const absTime6 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      AmbitusMigrationTracker.recordSnapshot(absTime6);
     }
 
     // Apply coherence-based density bias: low coherence → thinner density
@@ -272,7 +322,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias * chromaticDensityBias * leapStepDensityBias * ambitusDensityBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -285,7 +335,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -331,7 +381,7 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias, 0, 1);
+    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias * cadentialTensionBias, 0, 1);
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -381,6 +431,19 @@ GlobalConductor = (() => {
         timbreSuggestion: timbreSignal.suggestion,
         thematicStatus: thematicSignal.thematicStatus,
         thematicRecallSection: thematicSignal.recallSection,
+        leapStepLeapBias: leapStepCorrection.leapBias,
+        leapStepStepBias: leapStepCorrection.stepBias,
+        proportionSuggestion: proportionSignal.suggestion,
+        proportionIdealBeats: proportionSignal.idealBeats,
+        proportionQuality: proportionSignal.quality,
+        symmetryType: symmetrySignal.type,
+        symmetrySuggestion: symmetrySignal.suggestion,
+        ambitusRange: ambitusSignal.range,
+        ambitusTrend: ambitusSignal.trend,
+        ambitusRegisterSuggestion: ambitusSignal.registerSuggestion,
+        silenceSuggestion: silenceSignal.suggestion,
+        silenceRatio: silenceSignal.silenceRatio,
+        cadentialPreparationActive: (typeof CadentialPreparationAdvisor !== 'undefined' && CadentialPreparationAdvisor && typeof CadentialPreparationAdvisor.getCadentialSignal === 'function') ? CadentialPreparationAdvisor.getCadentialSignal().preparationActive : false,
         playProb: playOut,
         stutterProb: stutterOut
       });
