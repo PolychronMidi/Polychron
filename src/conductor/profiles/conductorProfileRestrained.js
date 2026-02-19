@@ -16,6 +16,16 @@ conductorProfileRestrained = () => ({
     conclusion: 0.8,
     coda: 0.75
   },
+  arcMapping: {
+    intro: 'arch',
+    opening: 'arch',
+    exposition: 'arch',
+    development: 'rise-fall',
+    climax: 'rise-fall',
+    resolution: 'arch',
+    conclusion: 'arch',
+    coda: 'arch'
+  },
   stutter: {
     rateTiers: [
       { threshold: 0, rate: 4 },

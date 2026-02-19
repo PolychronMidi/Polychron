@@ -30,6 +30,15 @@ TextureBlender = (() => {
     if (recentModes.length > FATIGUE_WINDOW) recentModes.shift();
   }
 
+  function getRecentDensity() {
+    if (recentModes.length === 0) return 0;
+    let weighted = 0;
+    for (let i = 0; i < recentModes.length; i++) {
+      weighted += recentModes[i] === 'chordBurst' ? 1 : recentModes[i] === 'flurry' ? 0.7 : 0;
+    }
+    return clamp(weighted / recentModes.length, 0, 1);
+  }
+
   /**
    * Get phrase-position influence on texture probabilities (#3).
    * Openings favour 'single' to let melody establish; climaxes boost textures;
@@ -37,6 +46,20 @@ TextureBlender = (() => {
    * @returns {{ burstBias: number, flurryBias: number }}
    */
   function getPhraseTextureInfluence() {
+    if (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function') {
+      const state = ConductorState.getSnapshot();
+      if (state && typeof state === 'object') {
+        const pos = Number.isFinite(Number(state.phrasePosition)) ? Number(state.phrasePosition) : 0;
+        const phase = (typeof state.phrasePhase === 'string') ? state.phrasePhase : '';
+        const atStart = pos <= 0.001;
+        const atEnd = pos >= 0.999;
+        if (atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };
+        if (phase === 'climax' || phase === 'peak') return { burstBias: 1.6, flurryBias: 1.4 };
+        if (atEnd || phase === 'resolution') return { burstBias: 1.2, flurryBias: 0.5 };
+        return { burstBias: 0.7 + pos * 0.8, flurryBias: 0.8 + (1 - pos) * 0.6 };
+      }
+    }
+
     if (typeof ComposerFactory !== 'undefined' && ComposerFactory &&
         ComposerFactory.sharedPhraseArcManager &&
         typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function') {
@@ -157,5 +180,8 @@ TextureBlender = (() => {
     }
   }
 
-  return { resolve };
+  return {
+    resolve,
+    getRecentDensity
+  };
 })();

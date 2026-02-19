@@ -16,6 +16,16 @@ conductorProfileDefault = () => ({
     conclusion: 0.7,
     coda: 0.7
   },
+  arcMapping: {
+    intro: 'arch',
+    opening: 'arch',
+    exposition: 'rise-fall',
+    development: 'wave',
+    climax: 'build-resolve',
+    resolution: 'rise-fall',
+    conclusion: 'rise-fall',
+    coda: 'arch'
+  },
   stutter: {
     rateTiers: [
       { threshold: 0, rate: 8 },

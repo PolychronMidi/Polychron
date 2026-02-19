@@ -3,6 +3,7 @@
 
 JourneyRhythmCoupler = (() => {
   let _boldness = 0;
+  let _externalBias = 1;
   const _decayRate = 0.85;
   let _initialized = false;
 
@@ -59,7 +60,15 @@ JourneyRhythmCoupler = (() => {
    * @returns {number}
    */
   function getBoldness() {
-    return clamp(_boldness, 0, 1);
+    return clamp(_boldness * _externalBias, 0, 1);
+  }
+
+  function setExternalBias(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      throw new Error('JourneyRhythmCoupler.setExternalBias: value must be finite');
+    }
+    _externalBias = clamp(num, 0.5, 1.5);
   }
 
   /**
@@ -110,12 +119,14 @@ JourneyRhythmCoupler = (() => {
    */
   function reset() {
     _boldness = 0;
+    _externalBias = 1;
     _initialized = false;
   }
 
   return {
     initialize,
     getBoldness,
+    setExternalBias,
     biasRhythmWeights,
     decay,
     reset

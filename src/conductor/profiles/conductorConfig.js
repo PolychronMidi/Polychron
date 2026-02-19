@@ -146,6 +146,85 @@ ConductorConfig = (() => {
     return Number.isFinite(val) ? val : 1.0;
   }
 
+  /**
+   * Return arc mapping for a profile or a specific phase.
+   * @param {string} [sectionPhase]
+   * @returns {Object|string}
+   */
+  function getArcMapping(sectionPhase) {
+    const fallback = {
+      intro: 'arch',
+      opening: 'arch',
+      exposition: 'rise-fall',
+      development: 'wave',
+      climax: 'build-resolve',
+      resolution: 'rise-fall',
+      conclusion: 'rise-fall',
+      coda: 'arch'
+    };
+    const arcMapping = dynamics.resolveField('arcMapping');
+    const mapping = (arcMapping && typeof arcMapping === 'object') ? arcMapping : fallback;
+    if (typeof sectionPhase === 'string' && sectionPhase.length > 0) {
+      const selected = mapping[sectionPhase] || fallback[sectionPhase] || fallback.development;
+      return typeof selected === 'string' ? selected : fallback.development;
+    }
+    return Object.assign({}, fallback, mapping);
+  }
+
+  /**
+   * Compute FX modulation scalars based on current journey stop (or an override).
+   * @param {{distance?:number,move?:string}|undefined} [stopOverride]
+   * @returns {{reverbScale:number,filterScale:number,portamentoScale:number}}
+   */
+  function getJourneyFxModulation(stopOverride) {
+    const tuning = getProfileTuning().journeyFx || {
+      distanceDivisor: 6,
+      reverbMaxBoost: 0.4,
+      filterMaxBoost: 0.2,
+      returnHomePortamentoBoost: 0.5,
+      returnHomeReverbDamp: 0.8
+    };
+
+    /** @type {{distance?:number,move?:string}|null} */
+    let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
+    if (!stop) {
+      if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.getStop === 'function' && Number.isFinite(Number(sectionIndex))) {
+        try {
+          const maybe = HarmonicJourney.getStop(Number(sectionIndex));
+          stop = (maybe && typeof maybe === 'object') ? maybe : { distance: 0, move: 'hold' };
+        } catch {
+          stop = { distance: 0, move: 'hold' };
+        }
+      } else {
+        stop = { distance: 0, move: 'hold' };
+      }
+    }
+
+    const distanceDivisor = Number.isFinite(Number(tuning.distanceDivisor)) ? m.max(0.1, Number(tuning.distanceDivisor)) : 6;
+    const reverbMaxBoost = Number.isFinite(Number(tuning.reverbMaxBoost)) ? Number(tuning.reverbMaxBoost) : 0.4;
+    const filterMaxBoost = Number.isFinite(Number(tuning.filterMaxBoost)) ? Number(tuning.filterMaxBoost) : 0.2;
+    const returnHomePortamentoBoost = Number.isFinite(Number(tuning.returnHomePortamentoBoost)) ? Number(tuning.returnHomePortamentoBoost) : 0.5;
+    const returnHomeReverbDamp = Number.isFinite(Number(tuning.returnHomeReverbDamp)) ? Number(tuning.returnHomeReverbDamp) : 0.8;
+
+    const s = /** @type {{distance?:number,move?:string}} */ (stop || { distance: 0, move: 'hold' });
+    const distance = Number.isFinite(Number(s.distance)) ? Number(s.distance) : 0;
+    const move = (typeof s.move === 'string' && s.move.length > 0) ? s.move : 'hold';
+    const distanceFactor = clamp(distance / distanceDivisor, 0, 1);
+
+    const baseReverbScale = 1 + distanceFactor * reverbMaxBoost;
+    const reverbScale = move === 'return-home'
+      ? clamp(baseReverbScale * returnHomeReverbDamp, 0.4, 2)
+      : clamp(baseReverbScale, 0.4, 2);
+
+    return {
+      reverbScale,
+      filterScale: clamp(1 + distanceFactor * filterMaxBoost, 0.4, 2),
+      portamentoScale: move === 'return-home'
+        ? clamp(1 + returnHomePortamentoBoost, 0.4, 2)
+        : 1
+    };
+  }
+
   function getEmissionScaling() {
     return dynamics.resolveField('emission');
   }
@@ -228,6 +307,8 @@ ConductorConfig = (() => {
     getVoiceSpreadScaling,
     getFamilyWeights,
     getJourneyBoldness,
+    getArcMapping,
+    getJourneyFxModulation,
     getEmissionScaling,
     getEmissionGateParams,
     getFeedbackMixWeights,

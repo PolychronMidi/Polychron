@@ -83,5 +83,12 @@ conductorConfigTuningDefaults = () => ({
   rhythmDrift: {
     burst: [0.5, 1.5],
     flurry: [0.3, 1.0]
+  },
+  journeyFx: {
+    distanceDivisor: 6,
+    reverbMaxBoost: 0.4,
+    filterMaxBoost: 0.2,
+    returnHomePortamentoBoost: 0.5,
+    returnHomeReverbDamp: 0.8
   }
 });

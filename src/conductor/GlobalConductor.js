@@ -116,18 +116,36 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
+    const derivedTension = clamp(Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3, 0, 1);
+    if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
+      HarmonicContext.set({ tension: derivedTension });
+    }
+
+    let playOut = resolved.playProb;
+    let stutterOut = resolved.stutterProb;
+
     // Apply climax boost on top of DynamismEngine's output (profile-driven)
     if (sectionPhase === 'climax') {
       const boost = ConductorConfig.getClimaxBoost();
-      return {
-        playProb: clamp(resolved.playProb * boost.playScale, 0, 1),
-        stutterProb: clamp(resolved.stutterProb * boost.stutterScale, 0, 1)
-      };
+      playOut = clamp(resolved.playProb * boost.playScale, 0, 1);
+      stutterOut = clamp(resolved.stutterProb * boost.stutterScale, 0, 1);
+    }
+
+    if (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.updateFromConductor === 'function') {
+      ConductorState.updateFromConductor({
+        phraseCtx,
+        sectionPhase,
+        tension: derivedTension,
+        excursion,
+        compositeIntensity: resolved.composite,
+        playProb: playOut,
+        stutterProb: stutterOut
+      });
     }
 
     return {
-      playProb: resolved.playProb,
-      stutterProb: resolved.stutterProb
+      playProb: playOut,
+      stutterProb: stutterOut
     };
   }
 

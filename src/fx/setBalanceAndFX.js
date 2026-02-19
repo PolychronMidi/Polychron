@@ -26,6 +26,39 @@ const ccRangeScale = spatialCanvas.ccRangeScale || {
   bass: { default: 1 }
 };
 
+const journeyFxModulation = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getJourneyFxModulation === 'function')
+  ? ConductorConfig.getJourneyFxModulation()
+  : { reverbScale: 1, filterScale: 1, portamentoScale: 1 };
+
+const scaleFxDefaultObject = (fxDefault, scale) => {
+  const minValue = Number(fxDefault.min);
+  const maxValue = Number(fxDefault.max);
+  const scaled = { ...fxDefault };
+  if (Number.isFinite(minValue)) {
+    scaled.min = clamp(m.round(minValue * scale), 0, 127);
+  }
+  if (Number.isFinite(maxValue)) {
+    scaled.max = clamp(m.round(maxValue * scale), 0, 127);
+  }
+  if (Number.isFinite(Number(scaled.min)) && Number.isFinite(Number(scaled.max)) && scaled.min > scaled.max) {
+    const swap = scaled.min;
+    scaled.min = scaled.max;
+    scaled.max = swap;
+  }
+  if (Number.isFinite(Number(fxDefault.conditionMin))) {
+    scaled.conditionMin = clamp(m.round(Number(fxDefault.conditionMin) * scale), 0, 127);
+  }
+  if (Number.isFinite(Number(fxDefault.conditionMax))) {
+    scaled.conditionMax = clamp(m.round(Number(fxDefault.conditionMax) * scale), 0, 127);
+  }
+  if (Number.isFinite(Number(scaled.conditionMin)) && Number.isFinite(Number(scaled.conditionMax)) && scaled.conditionMin > scaled.conditionMax) {
+    const swap = scaled.conditionMin;
+    scaled.conditionMin = scaled.conditionMax;
+    scaled.conditionMax = swap;
+  }
+  return scaled;
+};
+
 const resolveRangeScale = (groupName, effectNum) => {
   const groupBase = Number(ccGroupScale[groupName]);
   const groupMul = Number.isFinite(groupBase) ? groupBase : 1;
@@ -55,13 +88,25 @@ const resolveFxDefaults = (groupName, effectNum) => {
     throw new Error('setBalanceAndFX.resolveFxDefaults: FX_CC_DEFAULTS is not defined');
   }
   const byGroup = FX_CC_DEFAULTS[groupName];
+  let resolved;
   if (byGroup && typeof byGroup === 'object' && byGroup[effectNum]) {
-    return byGroup[effectNum];
+    resolved = byGroup[effectNum];
+  } else if (FX_CC_DEFAULTS[effectNum]) {
+    resolved = FX_CC_DEFAULTS[effectNum];
+  } else {
+    throw new Error(`setBalanceAndFX.resolveFxDefaults: no FX defaults for group="${groupName}" cc=${effectNum}`);
   }
-  if (FX_CC_DEFAULTS[effectNum]) {
-    return FX_CC_DEFAULTS[effectNum];
+
+  if (effectNum === 65) {
+    return scaleFxDefaultObject(resolved, Number(journeyFxModulation.portamentoScale) || 1);
   }
-  throw new Error(`setBalanceAndFX.resolveFxDefaults: no FX defaults for group="${groupName}" cc=${effectNum}`);
+  if (effectNum === 74) {
+    return scaleFxDefaultObject(resolved, Number(journeyFxModulation.filterScale) || 1);
+  }
+  if (effectNum === 91 || effectNum === 92 || effectNum === 93 || effectNum === 95) {
+    return scaleFxDefaultObject(resolved, Number(journeyFxModulation.reverbScale) || 1);
+  }
+  return resolved;
 };
 
 /**

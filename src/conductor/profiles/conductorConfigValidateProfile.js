@@ -11,7 +11,9 @@ conductorConfigValidateProfile = (profile, label) => {
   const REQUIRED_VOICESPREAD_KEYS = ['spread', 'chordBurstInnerBoost', 'flurryDecayRate', 'jitterAmount'];
   const REQUIRED_FAMILYWEIGHTS_KEYS = ['diatonicCore', 'harmonicMotion', 'development', 'tonalExploration', 'rhythmicDrive'];
   const REQUIRED_EMISSION_KEYS = ['noiseProfile', 'sourceNoiseInfluence', 'reflectionNoiseInfluence', 'bassNoiseInfluence', 'voiceConfigBlend'];
-  const REQUIRED_TOP_KEYS = ['density', 'phaseMultipliers', 'stutter', 'energyWeights', 'flicker', 'climaxBoost', 'crossMod', 'fxMix', 'texture', 'attenuation', 'voiceSpread', 'familyWeights', 'emission'];
+  const REQUIRED_ARCMAPPING_KEYS = ['intro', 'opening', 'exposition', 'development', 'climax', 'resolution', 'conclusion', 'coda'];
+  const VALID_ARC_TYPES = ['arch', 'rise-fall', 'build-resolve', 'wave'];
+  const REQUIRED_TOP_KEYS = ['density', 'phaseMultipliers', 'arcMapping', 'stutter', 'energyWeights', 'flicker', 'climaxBoost', 'crossMod', 'fxMix', 'texture', 'attenuation', 'voiceSpread', 'familyWeights', 'emission'];
 
   const assertFiniteRange = (value, min, max, path) => {
     const num = Number(value);
@@ -47,6 +49,12 @@ conductorConfigValidateProfile = (profile, label) => {
     const num = Number(mult);
     if (!Number.isFinite(num) || num < 0 || num > 3) {
       throw new Error(`ConductorConfig: ${label}.phaseMultipliers.${phase} must be finite in [0, 3]`);
+    }
+  }
+
+  for (const key of REQUIRED_ARCMAPPING_KEYS) {
+    if (typeof profile.arcMapping[key] !== 'string' || !VALID_ARC_TYPES.includes(profile.arcMapping[key])) {
+      throw new Error(`ConductorConfig: ${label}.arcMapping.${key} must be one of ${VALID_ARC_TYPES.join(', ')}`);
     }
   }
 

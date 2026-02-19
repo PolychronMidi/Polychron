@@ -38,6 +38,8 @@ require('./DynamismEngine');
 // @ts-ignore: load side-effect module with globals
 require('./TextureBlender');
 // @ts-ignore: load side-effect module with globals
+require('./ConductorState');
+// @ts-ignore: load side-effect module with globals
 require('./GlobalConductor');
 // @ts-ignore: load side-effect module with globals
 require('./config');
