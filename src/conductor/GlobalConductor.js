@@ -77,6 +77,29 @@ GlobalConductor = (() => {
       SectionLengthAdvisor.recordEnergy(compositeIntensity);
     }
 
+    // Update Batch 4 intelligence modules
+    // DynamicRangeAdvisor & IntervalTensionProfiler are pure-query (no update needed)
+    // OnsetDensityProfiler provides ground-truth density correction
+    const onsetDensityBias = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')
+      ? clamp(OnsetDensityProfiler.getDensityBias(), 0.6, 1.4)
+      : 1;
+    const onsetCrossModBias = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getCrossModBias === 'function')
+      ? clamp(OnsetDensityProfiler.getCrossModBias(), 0.8, 1.2)
+      : 1;
+    // RestDensityTracker biases onset probability
+    const restOnsetBias = (typeof RestDensityTracker !== 'undefined' && RestDensityTracker && typeof RestDensityTracker.getOnsetBias === 'function')
+      ? clamp(RestDensityTracker.getOnsetBias(), 0.7, 1.3)
+      : 1;
+    // PitchGravityCenter tracks tonal drift (informational — consumed by composers)
+    // HarmonicVelocityMonitor checks harmonic pacing vs energy
+    const harmonicChangeBias = (typeof HarmonicVelocityMonitor !== 'undefined' && HarmonicVelocityMonitor && typeof HarmonicVelocityMonitor.getChangeThresholdBias === 'function')
+      ? clamp(HarmonicVelocityMonitor.getChangeThresholdBias(), 0.7, 1.4)
+      : 1;
+    // DynamicRangeAdvisor velocity spread bias
+    const velocitySpreadBias = (typeof DynamicRangeAdvisor !== 'undefined' && DynamicRangeAdvisor && typeof DynamicRangeAdvisor.getSpreadBias === 'function')
+      ? clamp(DynamicRangeAdvisor.getSpreadBias(), 0.8, 1.3)
+      : 1;
+
     // Apply coherence-based density bias: low coherence → thinner density
     const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
       ? LayerCoherenceScorer.getDensityBias()
@@ -90,7 +113,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -103,7 +126,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = compositeIntensity + textureDensityBoost;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -149,7 +172,7 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp(Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3, 0, 1);
+    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias, 0, 1);
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -173,6 +196,7 @@ GlobalConductor = (() => {
         harmonicRhythm,
         emissionRatio,
         compositeIntensity: resolved.composite,
+        onsetCrossModBias,
         playProb: playOut,
         stutterProb: stutterOut
       });
