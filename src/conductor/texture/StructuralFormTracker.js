@@ -68,14 +68,11 @@ StructuralFormTracker = (() => {
     const values = formMap.map(s => s.energy);
     if (values.length < 2) return { values, trend: 'insufficient' };
 
-    const firstHalf = values.slice(0, m.ceil(values.length / 2));
-    const secondHalf = values.slice(m.ceil(values.length / 2));
-    const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-    const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    const { slope } = analysisHelpers.halfSplitSlope(values);
 
     let trend = 'flat';
-    if (avgSecond > avgFirst + 0.1) trend = 'building';
-    else if (avgSecond < avgFirst - 0.1) trend = 'winding-down';
+    if (slope > 0.1) trend = 'building';
+    else if (slope < -0.1) trend = 'winding-down';
 
     return { values, trend };
   }
