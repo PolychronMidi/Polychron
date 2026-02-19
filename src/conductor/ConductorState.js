@@ -7,6 +7,8 @@ ConductorState = (() => {
     key: 'C',
     mode: 'major',
     quality: 'major',
+    scale: [],
+    chords: [],
     tension: 0,
     harmonicRhythm: 0,
     harmonicMutationCount: 0,
@@ -45,6 +47,8 @@ ConductorState = (() => {
     if (typeof state.key === 'string' && state.key.length > 0) snapshot.key = state.key;
     if (typeof state.mode === 'string' && state.mode.length > 0) snapshot.mode = state.mode;
     if (typeof state.quality === 'string' && state.quality.length > 0) snapshot.quality = state.quality;
+    if (Array.isArray(state.scale)) snapshot.scale = state.scale.slice();
+    if (Array.isArray(state.chords)) snapshot.chords = state.chords.slice();
     if (Number.isFinite(Number(state.tension))) snapshot.tension = clamp(Number(state.tension), 0, 1);
     if (Number.isFinite(Number(state.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(state.mutationCount));
     if (Number.isFinite(Number(state.excursion))) snapshot.excursion = m.max(0, Number(state.excursion));
@@ -116,7 +120,6 @@ ConductorState = (() => {
     const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
-      if (!data || typeof data !== 'object') return;
       if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.textureMode = data.mode;
       if (Number.isFinite(Number(data.composite))) snapshot.compositeIntensity = clamp(Number(data.composite), 0, 1);
       if (typeof TextureBlender !== 'undefined' && TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
@@ -126,7 +129,6 @@ ConductorState = (() => {
     });
 
     EventBus.on(EVENTS.JOURNEY_MOVE, (data) => {
-      if (!data || typeof data !== 'object') return;
       if (typeof data.move === 'string' && data.move.length > 0) snapshot.journeyMove = data.move;
       if (Number.isFinite(Number(data.distance))) snapshot.journeyDistance = m.max(0, Number(data.distance));
       if (typeof data.key === 'string' && data.key.length > 0) snapshot.journeyKey = data.key;
@@ -135,7 +137,6 @@ ConductorState = (() => {
     });
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
-      if (!data || typeof data !== 'object') return;
       if (Number.isFinite(Number(data.densityBias))) snapshot.densityBias = Number(data.densityBias);
       if (Number.isFinite(Number(data.crossModBias))) snapshot.crossModBias = Number(data.crossModBias);
       if (typeof data.profile === 'string' && data.profile.length > 0) snapshot.activeProfile = data.profile;
@@ -143,7 +144,14 @@ ConductorState = (() => {
     });
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
-      if (!data || typeof data !== 'object') return;
+      if (typeof data.key === 'string' && data.key.length > 0) snapshot.key = data.key;
+      if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.mode = data.mode;
+      if (typeof data.quality === 'string' && data.quality.length > 0) snapshot.quality = data.quality;
+      if (Array.isArray(data.scale)) snapshot.scale = data.scale.slice();
+      if (Array.isArray(data.chords)) snapshot.chords = data.chords.slice();
+      if (typeof data.sectionPhase === 'string' && data.sectionPhase.length > 0) snapshot.sectionPhase = data.sectionPhase;
+      if (Number.isFinite(Number(data.excursion))) snapshot.excursion = m.max(0, Number(data.excursion));
+      if (Number.isFinite(Number(data.tension))) snapshot.tension = clamp(Number(data.tension), 0, 1);
       if (Number.isFinite(Number(data.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(data.mutationCount));
       if (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function') {
         snapshot.harmonicRhythm = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
@@ -152,7 +160,6 @@ ConductorState = (() => {
     });
 
     EventBus.on(EVENTS.BEAT_BINAURAL_APPLIED, (data) => {
-      if (!data || typeof data !== 'object') return;
       if (Number.isFinite(Number(data.freqOffset))) snapshot.binauralFreqOffset = Number(data.freqOffset);
       if (typeof data.flipBin === 'boolean') snapshot.binauralFlip = data.flipBin;
       snapshot.updatedAt = Date.now();
@@ -172,9 +179,22 @@ ConductorState = (() => {
     return Object.assign({}, snapshot);
   }
 
+  function getField(field) {
+    if (!Object.prototype.hasOwnProperty.call(snapshot, field)) {
+      throw new Error(`ConductorState.getField: unknown field "${field}"`);
+    }
+    return snapshot[field];
+  }
+
+  function get(field) {
+    return getField(field);
+  }
+
   function reset() {
     snapshot.textureMode = 'single';
     snapshot.textureFatigue = 0;
+    snapshot.scale = [];
+    snapshot.chords = [];
     snapshot.compositeIntensity = 0;
     snapshot.harmonicRhythm = 0;
     snapshot.harmonicMutationCount = 0;
@@ -191,6 +211,8 @@ ConductorState = (() => {
     initialize,
     updateFromConductor,
     getSnapshot,
+    getField,
+    get,
     reset
   };
 })();

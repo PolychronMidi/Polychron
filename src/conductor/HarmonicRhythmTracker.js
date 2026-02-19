@@ -28,13 +28,9 @@ HarmonicRhythmTracker = (() => {
     const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
-      if (!data || typeof data !== 'object') {
-        throw new Error('HarmonicRhythmTracker: invalid harmonic-change payload');
-      }
-
       const tick = normalizeTick(data.tick);
       const instant = tickDistanceToRate(tick);
-      const changedFields = Array.isArray(data.changedFields) ? data.changedFields : [];
+      const changedFields = data.changedFields;
       const chordBonus = changedFields.includes('chords') ? 0.08 : 0;
 
       harmonicRhythm = clamp(harmonicRhythm * 0.74 + (instant + chordBonus) * 0.26, 0, 1);

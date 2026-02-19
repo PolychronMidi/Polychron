@@ -1,7 +1,7 @@
 // StutterConfigStore.js - config storage and validation
 // Exports the StutterConfig global directly (no wrapper needed).
 
-const V = Validator.create('StutterConfigStore');
+const VC = Validator.create('StutterConfigStore');
 
 if (typeof STUTTER_PROFILES === 'undefined') {
   throw new Error('StutterConfigStore.js: missing STUTTER_PROFILES global');
@@ -14,14 +14,14 @@ const _stutterStore = {
 };
 
 function assertProfileOrFail(profileName, profileObj) {
-  V.assertPlainObject(profileObj, `StutterConfig.profiles.${profileName}`);
-  V.assertRange(profileObj.perProb, 0, 1, `StutterConfig.profiles.${profileName}.perProb`);
+  VC.assertPlainObject(profileObj, `StutterConfig.profiles.${profileName}`);
+  VC.assertRange(profileObj.perProb, 0, 1, `StutterConfig.profiles.${profileName}.perProb`);
 }
 
 function assertVelocityPairOrFail(value, label) {
-  const pair = V.assertArrayLength(value, 2, label);
-  const min = V.assertRange(pair[0], 0, 1, `${label}[0]`);
-  const max = V.assertRange(pair[1], 0, 1, `${label}[1]`);
+  const pair = VC.assertArrayLength(value, 2, label);
+  const min = VC.assertRange(pair[0], 0, 1, `${label}[0]`);
+  const max = VC.assertRange(pair[1], 0, 1, `${label}[1]`);
   if (max < min) {
     throw new Error(`${label}[1] must be >= ${label}[0]`);
   }
@@ -29,48 +29,48 @@ function assertVelocityPairOrFail(value, label) {
 }
 
 function assertCrossModRulesOrFail(value) {
-  V.assertPlainObject(value, 'StutterConfig.crossModRules');
-  V.assertPlainObject(value.pan, 'StutterConfig.crossModRules.pan');
-  V.assertPlainObject(value.fade, 'StutterConfig.crossModRules.fade');
-  V.assertPlainObject(value.fx, 'StutterConfig.crossModRules.fx');
+  VC.assertPlainObject(value, 'StutterConfig.crossModRules');
+  VC.assertPlainObject(value.pan, 'StutterConfig.crossModRules.pan');
+  VC.assertPlainObject(value.fade, 'StutterConfig.crossModRules.fade');
+  VC.assertPlainObject(value.fx, 'StutterConfig.crossModRules.fx');
 
-  V.assertRange(value.pan.stutterProbScale, 0, 5, 'StutterConfig.crossModRules.pan.stutterProbScale');
-  V.assertRange(value.pan.shiftRangeBias, -12, 12, 'StutterConfig.crossModRules.pan.shiftRangeBias');
-  V.assertRange(value.pan.stutterRateScale, 0.1, 5, 'StutterConfig.crossModRules.pan.stutterRateScale');
-  V.assertRange(value.fade.velocityScaleBias, -1, 2, 'StutterConfig.crossModRules.fade.velocityScaleBias');
-  V.assertRange(value.fx.shiftRangeScale, 0.1, 4, 'StutterConfig.crossModRules.fx.shiftRangeScale');
+  VC.assertRange(value.pan.stutterProbScale, 0, 5, 'StutterConfig.crossModRules.pan.stutterProbScale');
+  VC.assertRange(value.pan.shiftRangeBias, -12, 12, 'StutterConfig.crossModRules.pan.shiftRangeBias');
+  VC.assertRange(value.pan.stutterRateScale, 0.1, 5, 'StutterConfig.crossModRules.pan.stutterRateScale');
+  VC.assertRange(value.fade.velocityScaleBias, -1, 2, 'StutterConfig.crossModRules.fade.velocityScaleBias');
+  VC.assertRange(value.fx.shiftRangeScale, 0.1, 4, 'StutterConfig.crossModRules.fx.shiftRangeScale');
   return value;
 }
 
 function assertDirectiveDefaultsOrFail(value) {
-  V.assertPlainObject(value, 'StutterConfig.directiveDefaults');
-  V.assertPlainObject(value.coherence, 'StutterConfig.directiveDefaults.coherence');
-  V.assertBoolean(value.coherence.enabled, 'StutterConfig.directiveDefaults.coherence.enabled');
-  V.assertRange(value.coherence.intensity, 0, 1, 'StutterConfig.directiveDefaults.coherence.intensity');
-  V.assertNonEmptyString(value.coherence.keyPrefix, 'StutterConfig.directiveDefaults.coherence.keyPrefix');
+  VC.assertPlainObject(value, 'StutterConfig.directiveDefaults');
+  VC.assertPlainObject(value.coherence, 'StutterConfig.directiveDefaults.coherence');
+  VC.assertBoolean(value.coherence.enabled, 'StutterConfig.directiveDefaults.coherence.enabled');
+  VC.assertRange(value.coherence.intensity, 0, 1, 'StutterConfig.directiveDefaults.coherence.intensity');
+  VC.assertNonEmptyString(value.coherence.keyPrefix, 'StutterConfig.directiveDefaults.coherence.keyPrefix');
 
-  V.assertPlainObject(value.phase, 'StutterConfig.directiveDefaults.phase');
-  V.assertRange(value.phase.left, 0, 1, 'StutterConfig.directiveDefaults.phase.left');
-  V.assertRange(value.phase.right, 0, 1, 'StutterConfig.directiveDefaults.phase.right');
-  V.assertRange(value.phase.center, 0, 1, 'StutterConfig.directiveDefaults.phase.center');
+  VC.assertPlainObject(value.phase, 'StutterConfig.directiveDefaults.phase');
+  VC.assertRange(value.phase.left, 0, 1, 'StutterConfig.directiveDefaults.phase.left');
+  VC.assertRange(value.phase.right, 0, 1, 'StutterConfig.directiveDefaults.phase.right');
+  VC.assertRange(value.phase.center, 0, 1, 'StutterConfig.directiveDefaults.phase.center');
 
-  V.assertNonEmptyString(value.rateCurve, 'StutterConfig.directiveDefaults.rateCurve');
-  V.assertNonEmptyString(value.phaseCurve, 'StutterConfig.directiveDefaults.phaseCurve');
+  VC.assertNonEmptyString(value.rateCurve, 'StutterConfig.directiveDefaults.rateCurve');
+  VC.assertNonEmptyString(value.phaseCurve, 'StutterConfig.directiveDefaults.phaseCurve');
 
-  V.assertPlainObject(value.perProfileRouting, 'StutterConfig.directiveDefaults.perProfileRouting');
-  V.assertNonEmptyString(value.perProfileRouting.L1, 'StutterConfig.directiveDefaults.perProfileRouting.L1');
-  V.assertNonEmptyString(value.perProfileRouting.L2, 'StutterConfig.directiveDefaults.perProfileRouting.L2');
-  V.assertRange(value.perProfileRouting.defaultWeight, 0, 1, 'StutterConfig.directiveDefaults.perProfileRouting.defaultWeight');
+  VC.assertPlainObject(value.perProfileRouting, 'StutterConfig.directiveDefaults.perProfileRouting');
+  VC.assertNonEmptyString(value.perProfileRouting.L1, 'StutterConfig.directiveDefaults.perProfileRouting.L1');
+  VC.assertNonEmptyString(value.perProfileRouting.L2, 'StutterConfig.directiveDefaults.perProfileRouting.L2');
+  VC.assertRange(value.perProfileRouting.defaultWeight, 0, 1, 'StutterConfig.directiveDefaults.perProfileRouting.defaultWeight');
 
-  V.assertPlainObject(value.metricsAdaptive, 'StutterConfig.directiveDefaults.metricsAdaptive');
-  V.assertBoolean(value.metricsAdaptive.enabled, 'StutterConfig.directiveDefaults.metricsAdaptive.enabled');
-  V.assertRange(value.metricsAdaptive.sensitivity, 0, 1, 'StutterConfig.directiveDefaults.metricsAdaptive.sensitivity');
+  VC.assertPlainObject(value.metricsAdaptive, 'StutterConfig.directiveDefaults.metricsAdaptive');
+  VC.assertBoolean(value.metricsAdaptive.enabled, 'StutterConfig.directiveDefaults.metricsAdaptive.enabled');
+  VC.assertRange(value.metricsAdaptive.sensitivity, 0, 1, 'StutterConfig.directiveDefaults.metricsAdaptive.sensitivity');
   return value;
 }
 
 function validateConfig() {
-  V.assertPlainObject(_stutterStore, 'StutterConfigStore');
-  V.assertPlainObject(_stutterStore.profiles, 'StutterConfigStore.profiles');
+  VC.assertPlainObject(_stutterStore, 'StutterConfigStore');
+  VC.assertPlainObject(_stutterStore.profiles, 'StutterConfigStore.profiles');
   for (const prof of STUTTER_REQUIRED_PROFILES) {
     if (!_stutterStore.profiles[prof]) {
       throw new Error(`StutterConfigStore.validateConfig: missing required profile "${prof}"`);
@@ -82,7 +82,7 @@ function validateConfig() {
 
 function getConfig() { return validateConfig(); }
 function setConfig(partial = {}) {
-  V.assertPlainObject(partial, 'StutterConfigStore.setConfig.partial');
+  VC.assertPlainObject(partial, 'StutterConfigStore.setConfig.partial');
   Object.assign(_stutterStore, partial);
   return validateConfig();
 }

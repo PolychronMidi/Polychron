@@ -27,21 +27,11 @@ ConductorRegulationListener = (() => {
     const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
-      if (!data || typeof data !== 'object') {
-        throw new Error('ConductorRegulationListener: invalid conductor-regulation payload');
-      }
-
-      const avg = Number(data.avg);
-      const densityBias = Number(data.densityBias);
-      const crossModBias = Number(data.crossModBias);
+      const avg = V.requireFinite(data.avg, 'conductor-regulation.avg');
+      const densityBias = V.requireFinite(data.densityBias, 'conductor-regulation.densityBias');
+      const crossModBias = V.requireFinite(data.crossModBias, 'conductor-regulation.crossModBias');
       const profile = data.profile;
-
-      if (!Number.isFinite(avg) || !Number.isFinite(densityBias) || !Number.isFinite(crossModBias)) {
-        throw new Error('ConductorRegulationListener: avg/densityBias/crossModBias must be finite numbers');
-      }
-      if (typeof profile !== 'string' || profile.length === 0) {
-        throw new Error('ConductorRegulationListener: profile must be a non-empty string');
-      }
+      V.assertNonEmptyString(profile, 'conductor-regulation.profile');
 
       state.avg = clamp(avg, 0, 1);
       state.densityBias = densityBias;

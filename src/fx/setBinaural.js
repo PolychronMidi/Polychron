@@ -23,8 +23,12 @@ setBinaural = () => {
       : m.max(1, Number(numerator) || 1);
 
     let targetOffset = Number.isFinite(Number(binauralFreqOffset)) ? Number(binauralFreqOffset) : Number(BINAURAL.min || 0);
-    if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function' && typeof t !== 'undefined' && t && t.Note && typeof t.Note.chroma === 'function') {
-      const key = HarmonicContext.getField('key') || 'C';
+    if (typeof t !== 'undefined' && t && t.Note && typeof t.Note.chroma === 'function') {
+      const key = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+        ? (ConductorState.getField('key') || 'C')
+        : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+          ? (HarmonicContext.getField('key') || 'C')
+          : 'C';
       const chroma = Number(t.Note.chroma(key));
       if (Number.isFinite(chroma) && chroma >= 0) {
         const minOffset = Number(BINAURAL.min);

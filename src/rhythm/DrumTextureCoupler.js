@@ -26,14 +26,8 @@ DrumTextureCoupler = (() => {
         {
           eventName: EVENTS.TEXTURE_CONTRAST,
           project(data) {
-            if (!data || typeof data !== 'object') throw new Error('DrumTextureCoupler: event payload must be an object');
-            const composite = Number(data.composite);
-            if (!Number.isFinite(composite)) {
-              throw new Error('DrumTextureCoupler: texture-contrast.composite must be finite');
-            }
-            if (typeof data.mode !== 'string' || data.mode.length === 0) {
-              throw new Error('DrumTextureCoupler: texture-contrast.mode must be a non-empty string');
-            }
+            const composite = V.requireFinite(data.composite, 'texture-contrast.composite');
+            V.assertNonEmptyString(data.mode, 'texture-contrast.mode');
             const mode = data.mode;
             const weight = mode === 'chordBurst' ? 0.7 : mode === 'flurry' ? 0.4 : 0;
             const intensity = weight * (0.5 + composite * 0.5);
@@ -45,12 +39,7 @@ DrumTextureCoupler = (() => {
         }
       ],
       onInput(data) {
-        if (!data || typeof data !== 'object') {
-          throw new Error('DrumTextureCoupler: onInput payload must be an object');
-        }
-        if (typeof data.mode !== 'string' || data.mode.length === 0) {
-          throw new Error('DrumTextureCoupler: texture-contrast.mode must be a non-empty string');
-        }
+        V.assertNonEmptyString(data.mode, 'texture-contrast.mode');
         const mode = data.mode;
         if (mode === 'chordBurst') burstCount++;
         if (mode === 'flurry') flurryCount++;

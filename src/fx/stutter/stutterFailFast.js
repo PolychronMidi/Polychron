@@ -1,17 +1,13 @@
 // stutterFailFast.js - shared dependency and payload checks for stutter modules
 
 StutterFailFast = (() => {
+  const V = Validator.create('StutterFailFast');
+
   function requireEventInfra(caller) {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error(`${caller}: EventCatalog.names is not available`);
-    }
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
       throw new Error(`${caller}: EventBus.emit is not available`);
     }
-    const eventName = EventCatalog.names.STUTTER_APPLIED;
-    if (typeof eventName !== 'string' || eventName.length === 0) {
-      throw new Error(`${caller}: STUTTER_APPLIED event name is invalid`);
-    }
+    const eventName = V.getEventsOrThrow().STUTTER_APPLIED;
     return { eventName, eventBus: EventBus };
   }
 
