@@ -260,6 +260,8 @@ declare var CHORD_PROFILES: any;
 declare var MOTIF_PROFILES: any;
 declare var RHYTHM_PROFILES: any;
 declare var RHYTHM_PATTERNS: any;
+declare var RHYTHM_PATTERN_POOLS: any;
+declare var DRUM_MAP: any;
 declare var FX_CC_DEFAULTS: any;
 declare var NOISE_GENERATOR_REGISTRY: any;
 declare var PHRASES_ARC_CURVES: any;
