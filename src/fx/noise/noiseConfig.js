@@ -1,8 +1,8 @@
 // noiseConfig.js - Noise profile instantiation and configuration lookup
 
-// Validate that NOISE_PROFILES global is available from config.js
+// Validate that NOISE_PROFILES global is available from src/conductor/config.js
 if (typeof NOISE_PROFILES === 'undefined') {
-  throw new Error('noiseConfig.js: NOISE_PROFILES global not found (must be loaded from config.js)');
+  throw new Error('noiseConfig.js: NOISE_PROFILES global not found (must be loaded from src/conductor/config.js)');
 }
 
 // Instantiate a noise profile with factory functions applied

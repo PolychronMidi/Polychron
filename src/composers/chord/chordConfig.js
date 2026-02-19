@@ -1,4 +1,4 @@
-// chordConfig.js - named voicing/progression profiles (delegates to central config.js)
+// chordConfig.js - named voicing/progression profiles (delegates to src/conductor/config.js)
 
 chordConfig = (function() {
   const LOCAL = {
@@ -9,7 +9,7 @@ chordConfig = (function() {
 
   function getProfile(name) {
     if (!name || typeof name !== 'string') throw new Error('chordConfig.getProfile: invalid name');
-    const source = (typeof CHORD_PROFILES !== 'undefined' && CHORD_PROFILES) ? CHORD_PROFILES : (console.warn('Acceptable warning: chordConfig: using local defaults. For project-wide settings, define CHORD_PROFILES in src/config.js.'), LOCAL);
+    const source = (typeof CHORD_PROFILES !== 'undefined' && CHORD_PROFILES) ? CHORD_PROFILES : (console.warn('Acceptable warning: chordConfig: using local defaults. For project-wide settings, define CHORD_PROFILES in src/conductor/config.js.'), LOCAL);
     const p = source[name];
     if (!p) throw new Error(`chordConfig.getProfile: unknown profile "${name}"`);
     return Object.assign({}, p);

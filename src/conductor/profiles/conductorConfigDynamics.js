@@ -1,34 +1,65 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
+  const controls = (typeof CONDUCTOR_DYNAMICS_CONTROLS !== 'undefined' && CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
+    ? CONDUCTOR_DYNAMICS_CONTROLS
+    : {
+        phaseProfileMap: {
+          intro: 'restrained',
+          opening: 'restrained',
+          exposition: 'default',
+          development: 'default',
+          climax: 'explosive',
+          resolution: 'atmospheric',
+          conclusion: 'atmospheric',
+          coda: 'minimal'
+        },
+        crossfadeMeasuresDefault: 4,
+        regulation: {
+          windowSize: 16,
+          highThreshold: 0.78,
+          lowThreshold: 0.25,
+          maxDensityBias: 0.12,
+          maxCrossModBias: 0.3,
+          adjustRate: 0.02,
+          settleDecay: 0.9,
+          crossModSampleDivisor: 6
+        }
+      };
+  const regulationCfg = (controls.regulation && typeof controls.regulation === 'object') ? controls.regulation : {};
+
   const crossfade = {
     from: null,
     to: null,
-    measuresTotal: 4,
+    measuresTotal: Number.isFinite(Number(controls.crossfadeMeasuresDefault)) ? m.max(1, Number(controls.crossfadeMeasuresDefault)) : 4,
     measuresCurrent: 0,
     active: false
   };
 
   const regulation = {
     window: /** @type {number[]} */ ([]),
-    windowSize: 16,
-    highThreshold: 0.78,
-    lowThreshold: 0.25,
+    windowSize: Number.isFinite(Number(regulationCfg.windowSize)) ? m.max(2, Number(regulationCfg.windowSize)) : 16,
+    highThreshold: Number.isFinite(Number(regulationCfg.highThreshold)) ? Number(regulationCfg.highThreshold) : 0.78,
+    lowThreshold: Number.isFinite(Number(regulationCfg.lowThreshold)) ? Number(regulationCfg.lowThreshold) : 0.25,
     densityBias: 0,
     crossModBias: 1.0,
-    maxDensityBias: 0.12,
-    maxCrossModBias: 0.3,
-    adjustRate: 0.02
+    maxDensityBias: Number.isFinite(Number(regulationCfg.maxDensityBias)) ? m.max(0, Number(regulationCfg.maxDensityBias)) : 0.12,
+    maxCrossModBias: Number.isFinite(Number(regulationCfg.maxCrossModBias)) ? m.max(0, Number(regulationCfg.maxCrossModBias)) : 0.3,
+    adjustRate: Number.isFinite(Number(regulationCfg.adjustRate)) ? m.max(0, Number(regulationCfg.adjustRate)) : 0.02,
+    settleDecay: Number.isFinite(Number(regulationCfg.settleDecay)) ? clamp(Number(regulationCfg.settleDecay), 0, 1) : 0.9,
+    crossModSampleDivisor: Number.isFinite(Number(regulationCfg.crossModSampleDivisor)) ? m.max(0.1, Number(regulationCfg.crossModSampleDivisor)) : 6
   };
 
-  const PHASE_PROFILE_MAP = {
-    intro: 'restrained',
-    opening: 'restrained',
-    exposition: 'default',
-    development: 'default',
-    climax: 'explosive',
-    resolution: 'atmospheric',
-    conclusion: 'atmospheric',
-    coda: 'minimal'
-  };
+  const PHASE_PROFILE_MAP = (controls.phaseProfileMap && typeof controls.phaseProfileMap === 'object')
+    ? controls.phaseProfileMap
+    : {
+        intro: 'restrained',
+        opening: 'restrained',
+        exposition: 'default',
+        development: 'default',
+        climax: 'explosive',
+        resolution: 'atmospheric',
+        conclusion: 'atmospheric',
+        coda: 'minimal'
+      };
 
   const lerpObject = (a, b, t) => {
     const result = {};
@@ -75,7 +106,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
 
   const regulationTick = () => {
     const crossModSample = (typeof crossModulation === 'number' && Number.isFinite(crossModulation))
-      ? clamp(crossModulation / 6, 0, 1)
+      ? clamp(crossModulation / regulation.crossModSampleDivisor, 0, 1)
       : 0.5;
 
     regulation.window.push(crossModSample);
@@ -110,8 +141,8 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
         1 + regulation.maxCrossModBias
       );
     } else {
-      regulation.densityBias *= 0.9;
-      regulation.crossModBias = 1 + (regulation.crossModBias - 1) * 0.9;
+      regulation.densityBias *= regulation.settleDecay;
+      regulation.crossModBias = 1 + (regulation.crossModBias - 1) * regulation.settleDecay;
     }
 
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
@@ -152,7 +183,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
       crossfade.to = getActiveProfile();
       crossfade.measuresTotal = (Number.isFinite(Number(opts.crossfadeMeasures)))
         ? m.max(1, Number(opts.crossfadeMeasures))
-        : 4;
+        : (Number.isFinite(Number(controls.crossfadeMeasuresDefault)) ? m.max(1, Number(controls.crossfadeMeasuresDefault)) : 4);
       crossfade.measuresCurrent = 0;
       crossfade.active = true;
     }

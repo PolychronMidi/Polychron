@@ -54,7 +54,7 @@ neutralPitchBend=8192;
  * @type {number}
  */
 semitone=neutralPitchBend / 2;
-
+TUNING_FREQ=432; // Reference tuning frequency (can be overridden by conductor profile)
 /**
  * Convert cents to tuning frequency offset.
  * @type {number}
@@ -67,6 +67,7 @@ const centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
  */
 tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
 
+BINAURAL={min:0.5,max:3}; // Binaural beat frequency range in Hz (can be overridden by conductor profile)
 /**
  * Generate binaural frequency offset.
  * @type {number}

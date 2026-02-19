@@ -1,10 +1,10 @@
-// config.js - Configuration system with musical parameters and structural settings.
+// config.js - Central hub of tunable controls and profile tables.
 
-primaryInstrument='glockenspiel';
-secondaryInstrument='music box';
+primaryInstrument = getMidiValue('program', 'glockenspiel');
+secondaryInstrument = getMidiValue('program', 'music box');
 otherInstruments=[9,10,11,12,13,14,79,89,97,98,98,98,104,112,114,119,120,121];
-bassInstrument='Acoustic Bass';
-bassInstrument2='Synth Bass 2';
+bassInstrument = getMidiValue('program', 'Acoustic Bass');
+bassInstrument2 = getMidiValue('program', 'Synth Bass 2');
 otherBassInstruments=[32,33,34,35,36,37,38,39,40,41,43,44,45,46,48,49,50,51,89,98,98,98,98,98,98,98,98,98,98];
 drumSets=[0,8,16,24,25,32,40,48,127];
 LOG='section,phrase,measure';
@@ -245,6 +245,14 @@ MOTIF_PROFILES = {
   legato: { velocityScale: 0.9, timingOffset: 0.06 }
 };
 
+MOTIF_UNIT_PROFILES = {
+  measure: { density: 0.7, style: 'random', intervalDensity: 0.7, velocityScale: 1.0 },
+  beat: { density: 0.6, style: 'random', intervalDensity: 0.6, velocityScale: 0.95 },
+  div: { density: 0.5, style: 'random', intervalDensity: 0.5, velocityScale: 0.9 },
+  subdiv: { density: 0.4, style: 'random', intervalDensity: 0.4, velocityScale: 0.85 },
+  subsubdiv: { density: 0.3, style: 'random', intervalDensity: 0.3, velocityScale: 0.8 }
+};
+
 RHYTHM_PROFILES = {
   straight: { swing: 0, velocityScale: 1 },
   swung: { swing: 0.2, velocityScale: 1 },
@@ -252,5 +260,68 @@ RHYTHM_PROFILES = {
   pushed: { swing: 0.05, velocityScale: 1.1 },
   triplet: { swing: 0.3, velocityScale: 0.95 },
   corpusAdaptive: { swing: 0.12, velocityScale: 1, useCorpusRhythmPriors: true, corpusRhythmStrength: 0.72 }
+};
+
+STUTTER_CROSSMOD_RULES_FALLBACK = {
+  pan: { stutterProbScale: 1.0, shiftRangeBias: 0, stutterRateScale: 1.0 },
+  fade: { velocityScaleBias: 0 },
+  fx: { shiftRangeScale: 1.0 }
+};
+
+STUTTER_DIRECTIVE_DEFAULTS = {
+  coherence: { enabled: false, intensity: 0.8, keyPrefix: 'stutter' },
+  phase: { left: 0, right: 0.5, center: 0 },
+  rateCurve: 'linear',
+  phaseCurve: 'linear',
+  crossModOverrides: null,
+  perProfileRouting: { L1: 'source', L2: 'reflection', defaultWeight: 0.6 },
+  metricsAdaptive: { enabled: false, sensitivity: 0.08 }
+};
+
+CONDUCTOR_DYNAMICS_CONTROLS = {
+  phaseProfileMap: {
+    intro: 'restrained',
+    opening: 'restrained',
+    exposition: 'default',
+    development: 'default',
+    climax: 'explosive',
+    resolution: 'atmospheric',
+    conclusion: 'atmospheric',
+    coda: 'minimal'
+  },
+  crossfadeMeasuresDefault: 4,
+  regulation: {
+    windowSize: 16,
+    highThreshold: 0.78,
+    lowThreshold: 0.25,
+    maxDensityBias: 0.12,
+    maxCrossModBias: 0.3,
+    adjustRate: 0.02,
+    settleDecay: 0.9,
+    crossModSampleDivisor: 6
+  }
+};
+
+MAIN_LOOP_CONTROLS = {
+  phraseFamilyBias: {
+    phaseAffinity: {
+      intro: 'diatonicCore',
+      opening: 'diatonicCore',
+      development: 'development',
+      climax: 'rhythmicDrive',
+      resolution: 'harmonicMotion',
+      conclusion: 'tonalExploration'
+    },
+    lockProbability: 0.5
+  },
+  stutterPanJitterChance: 0.05,
+  fxIntensityNormalization: {
+    stereoPanDenominator: 45,
+    velocityShiftDenominator: 20
+  },
+  conductorFallback: {
+    playProb: 0.5,
+    stutterProb: 0.3
+  }
 };
 SILENT_OUTRO_SECONDS=5;

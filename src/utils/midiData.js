@@ -219,10 +219,11 @@ getMidiValue=(category,name)=>{  category=category.toLowerCase();  name=name.toL
   if (!item) { throw new Error(`MIDI ${category} '${name}' not found`); }
   return item.number;
 };
-primaryInstrument = getMidiValue('program', primaryInstrument);
-secondaryInstrument = getMidiValue('program', secondaryInstrument);
-bassInstrument = getMidiValue('program', bassInstrument);
-bassInstrument2 = getMidiValue('program', bassInstrument2);
+primaryInstrument = secondaryInstrument = bassInstrument = bassInstrument2 = 'Acoustic Grand Piano'; // default instruments (can be overridden by conductor profile)
+if (typeof primaryInstrument === 'string') primaryInstrument = getMidiValue('program', primaryInstrument);
+if (typeof secondaryInstrument === 'string') secondaryInstrument = getMidiValue('program', secondaryInstrument);
+if (typeof bassInstrument === 'string') bassInstrument = getMidiValue('program', bassInstrument);
+if (typeof bassInstrument2 === 'string') bassInstrument2 = getMidiValue('program', bassInstrument2);
 
 /** Tonal.js library for music theory operations */
 t=require('tonal');
