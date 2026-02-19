@@ -96,6 +96,53 @@ Validator = (() => {
     return value;
   }
 
+  /* --- convenience `require*` helpers requested by the team --- */
+  function requireDefined(value, name, from) {
+    if (value === undefined || value === null) {
+      throw new Error(`${_fromLabel(from)}: ${name} is required`);
+    }
+    return value;
+  }
+
+  function requireFinite(value, name, from) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+      throw new Error(`${_fromLabel(from)}: ${name} must be a finite number`);
+    }
+    return n;
+  }
+
+  function requireType(value, type, name, from) {
+    if (type === 'array') {
+      if (!Array.isArray(value)) {
+        throw new Error(`${_fromLabel(from)}: ${name} must be an array`);
+      }
+      return value;
+    }
+
+    if (typeof value !== type) {
+      throw new Error(`${_fromLabel(from)}: ${name} must be of type ${type}`);
+    }
+    return value;
+  }
+
+  function requireEnum(value, allowedValues, name, from) {
+    if (!allowedValues) {
+      throw new Error(`${_fromLabel(from)}: allowedValues must be provided for ${name}`);
+    }
+
+    let ok = false;
+    if (Array.isArray(allowedValues)) ok = allowedValues.includes(value);
+    else if (allowedValues instanceof Set) ok = allowedValues.has(value);
+    else if (allowedValues && typeof allowedValues === 'object') ok = Object.prototype.hasOwnProperty.call(allowedValues, value);
+    else throw new Error(`${_fromLabel(from)}: allowedValues must be Array|Set|Object for ${name}`);
+
+    if (!ok) {
+      throw new Error(`${_fromLabel(from)}: ${name} has invalid value "${value}"`);
+    }
+    return value;
+  }
+
   function _fromLabel(from) {
     if (from && String(from).length) return String(from);
 
@@ -156,7 +203,11 @@ Validator = (() => {
       assertArrayLength: _wrapWithFrom(assertArrayLength, from),
       assertKeysPresent: _wrapWithFrom(assertKeysPresent, from),
       assertAllowedKeys: _wrapWithFrom(assertAllowedKeys, from),
-      assertInSet: _wrapWithFrom(assertInSet, from),
+        assertInSet: _wrapWithFrom(assertInSet, from),
+      requireDefined: _wrapWithFrom(requireDefined, from),
+      requireFinite: _wrapWithFrom(requireFinite, from),
+      requireType: _wrapWithFrom(requireType, from),
+      requireEnum: _wrapWithFrom(requireEnum, from),
       getEventsOrThrow: (/*optional*/ ) => getEventsOrThrow(from)
     };
   }
@@ -174,6 +225,10 @@ Validator = (() => {
     assertKeysPresent,
     assertAllowedKeys,
     assertInSet,
+    requireDefined,
+    requireFinite,
+    requireType,
+    requireEnum,
     getEventsOrThrow,
     create
   };

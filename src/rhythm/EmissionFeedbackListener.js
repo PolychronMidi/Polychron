@@ -1,5 +1,5 @@
 EmissionFeedbackListener = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('EmissionFeedbackListener');
 
   let initialized = false;
   let ratio = 1;
@@ -9,19 +9,15 @@ EmissionFeedbackListener = (() => {
 
   function initialize() {
     if (initialized) return;
-    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
-      throw new Error('EmissionFeedbackListener.initialize: EventBus not available');
-    }
-    const EVENTS = getEventsOrThrow('EmissionFeedbackListener');
+    V.requireDefined(EventBus, 'EventBus');
+    const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.NOTES_EMITTED, (data) => {
-      if (!data || typeof data !== 'object') {
-        throw new Error('EmissionFeedbackListener: invalid notes-emitted payload');
-      }
-      const actual = Number(data.actual);
-      const intended = Number(data.intended);
-      if (!Number.isFinite(actual) || !Number.isFinite(intended) || intended < 0 || actual < 0) {
-        throw new Error('EmissionFeedbackListener: actual/intended must be finite non-negative numbers');
+      V.assertObject(data, 'notes-emitted payload');
+      const actual = V.requireFinite(data.actual, 'notes-emitted.actual');
+      const intended = V.requireFinite(data.intended, 'notes-emitted.intended');
+      if (intended < 0 || actual < 0) {
+        throw new Error('EmissionFeedbackListener: actual/intended must be non-negative numbers');
       }
 
       const safeIntended = m.max(1, intended);

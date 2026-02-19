@@ -2,7 +2,7 @@
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('FXFeedbackListener');
 
   let accumulator = null;
   let initialized = false;
@@ -12,7 +12,7 @@ FXFeedbackListener = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('FXFeedbackListener: FeedbackAccumulator.create is required');
     }
-    const EVENTS = getEventsOrThrow('FXFeedbackListener');
+    const EVENTS = V.getEventsOrThrow();
 
     accumulator = FeedbackAccumulator.create({
       name: 'fx-feedback',
@@ -37,20 +37,13 @@ FXFeedbackListener = (() => {
         {
           eventName: EVENTS.TEXTURE_CONTRAST,
           project(data) {
-            if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: texture-contrast payload must be an object');
-            if (typeof data.mode !== 'string' || data.mode.length === 0) {
-              throw new Error('FXFeedbackListener: texture-contrast.mode must be a non-empty string');
-            }
+            V.assertObject(data, 'texture-contrast payload');
+            V.assertNonEmptyString(data.mode, 'texture-contrast.mode');
             const mode = data.mode;
-            const composite = Number(data.composite);
-            if (!Number.isFinite(composite)) {
-              throw new Error('FXFeedbackListener: texture-contrast.composite must be finite');
-            }
+            const composite = V.requireFinite(data.composite, 'texture-contrast.composite');
             const modeWeight = mode === 'chordBurst' ? 0.5 : mode === 'flurry' ? 0.3 : 0.1;
             const textureIntensity = modeWeight * composite;
-            if (!Number.isFinite(textureIntensity)) {
-              throw new Error(`FXFeedbackListener: invalid texture intensity ${textureIntensity}`);
-            }
+            V.requireFinite(textureIntensity, 'texture-contrast.intensity');
             return clamp(textureIntensity, 0, 1);
           }
         }
