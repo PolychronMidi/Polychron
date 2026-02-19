@@ -16,6 +16,16 @@ conductorProfileExplosive = () => ({
     conclusion: 0.5,
     coda: 0.4
   },
+  arcMapping: {
+    intro: 'rise-fall',
+    opening: 'wave',
+    exposition: 'wave',
+    development: 'build-resolve',
+    climax: 'build-resolve',
+    resolution: 'rise-fall',
+    conclusion: 'rise-fall',
+    coda: 'arch'
+  },
   stutter: {
     rateTiers: [
       { threshold: 0, rate: 16 },

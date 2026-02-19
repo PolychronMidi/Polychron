@@ -16,6 +16,16 @@ conductorProfileRhythmicDrive = () => ({
     conclusion: 0.6,
     coda: 0.55
   },
+  arcMapping: {
+    intro: 'rise-fall',
+    opening: 'rise-fall',
+    exposition: 'build-resolve',
+    development: 'build-resolve',
+    climax: 'build-resolve',
+    resolution: 'rise-fall',
+    conclusion: 'arch',
+    coda: 'arch'
+  },
   stutter: {
     rateTiers: [
       { threshold: 0, rate: 16 },

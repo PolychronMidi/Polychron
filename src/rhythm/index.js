@@ -8,6 +8,8 @@ require('./FXFeedbackListener');
 // @ts-ignore: side-effect module load
 require('./JourneyRhythmCoupler');
 // @ts-ignore: side-effect module load
+require('./ConductorRegulationListener');
+// @ts-ignore: side-effect module load
 require('./DrumTextureCoupler');
 // @ts-ignore: side-effect module load
 require('./PhaseLockedRhythmGenerator');

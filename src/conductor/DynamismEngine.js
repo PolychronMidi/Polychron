@@ -88,6 +88,10 @@ DynamismEngine = (() => {
       ? clamp(Number(JourneyRhythmCoupler.getBoldness()), 0, 1)
       : 0;
 
+    const textureEnergy = (typeof TextureBlender !== 'undefined' && TextureBlender && typeof TextureBlender.getRecentDensity === 'function')
+      ? clamp(Number(TextureBlender.getRecentDensity()), 0, 1) * 0.15
+      : 0;
+
     const mixWeights = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getFeedbackMixWeights === 'function')
       ? ConductorConfig.getFeedbackMixWeights()
       : { fx: 0.45, stutter: 0.2, journey: 0.35 };
@@ -96,7 +100,8 @@ DynamismEngine = (() => {
     return clamp(
       fxEnergy * mixWeights.fx +
       stutterEnergy * mixWeights.stutter +
-      journeyRhythmEnergy * mixWeights.journey,
+      journeyRhythmEnergy * mixWeights.journey +
+      textureEnergy,
       0,
       1
     );

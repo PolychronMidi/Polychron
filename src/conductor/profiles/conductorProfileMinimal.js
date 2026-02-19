@@ -16,6 +16,16 @@ conductorProfileMinimal = () => ({
     conclusion: 0.95,
     coda: 0.9
   },
+  arcMapping: {
+    intro: 'arch',
+    opening: 'arch',
+    exposition: 'arch',
+    development: 'arch',
+    climax: 'rise-fall',
+    resolution: 'arch',
+    conclusion: 'arch',
+    coda: 'arch'
+  },
   stutter: {
     rateTiers: [
       { threshold: 0, rate: 4 },

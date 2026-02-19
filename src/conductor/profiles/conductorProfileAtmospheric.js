@@ -16,6 +16,16 @@ conductorProfileAtmospheric = () => ({
     conclusion: 0.85,
     coda: 0.8
   },
+  arcMapping: {
+    intro: 'arch',
+    opening: 'arch',
+    exposition: 'wave',
+    development: 'wave',
+    climax: 'rise-fall',
+    resolution: 'rise-fall',
+    conclusion: 'arch',
+    coda: 'arch'
+  },
   stutter: {
     rateTiers: [
       { threshold: 0, rate: 4 },

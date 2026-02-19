@@ -130,9 +130,15 @@ if (typeof FXFeedbackListener !== 'undefined') {
 if (typeof StutterFeedbackListener !== 'undefined') {
   StutterFeedbackListener.initialize();
 }
+if (typeof ConductorState !== 'undefined') {
+  ConductorState.initialize();
+}
 // Initialize journey → rhythm coupling: bold key moves → complex rhythms
 if (typeof JourneyRhythmCoupler !== 'undefined') {
   JourneyRhythmCoupler.initialize();
+}
+if (typeof ConductorRegulationListener !== 'undefined') {
+  ConductorRegulationListener.initialize();
 }
 // Initialize texture contrast → drum accent coupling (#5)
 if (typeof DrumTextureCoupler !== 'undefined') {
