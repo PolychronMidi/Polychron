@@ -21,9 +21,6 @@ ConductorRegulationListener = (() => {
 
   function initialize() {
     if (initialized) return;
-    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
-      throw new Error('ConductorRegulationListener.initialize: EventBus not available');
-    }
     const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {

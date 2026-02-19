@@ -209,12 +209,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Emit and metrics
   p(c, evOn);
-  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-    throw new Error('stutterNotes: EventCatalog.names is not available');
-  }
-  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
-    throw new Error('stutterNotes: EventBus.emit is not available');
-  }
   const eventName = EventCatalog.names.STUTTER_APPLIED;
   EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / 127, 0, 1), tick: stutterOn });
   p(c, evOff);

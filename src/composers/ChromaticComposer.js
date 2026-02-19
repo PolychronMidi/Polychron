@@ -18,7 +18,7 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
     this._targetPCs = new Set();
     /** @type {string[]} */
     this._targetNotes = [];
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(targetScaleName, root);
   }
 

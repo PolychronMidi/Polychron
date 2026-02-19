@@ -20,7 +20,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     });
     super(progressionChords);
     // enable voice-leading delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.key = key;
     this.primaryMode = primaryMode;
     this.borrowProbability = clamp(borrowProbability, 0, 1);

@@ -3,12 +3,9 @@
 StutterFailFast = (() => {
   const V = Validator.create('StutterFailFast');
 
-  function requireEventInfra(caller) {
-    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
-      throw new Error(`${caller}: EventBus.emit is not available`);
-    }
+  function requireEventInfra() {
     const eventName = V.getEventsOrThrow().STUTTER_APPLIED;
-    return { eventName, eventBus: EventBus };
+    return { eventName };
   }
 
   function requireChannelArrays(caller) {

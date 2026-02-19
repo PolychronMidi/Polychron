@@ -15,7 +15,7 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
     this.root = root;
     this.voicingType = ['quartal', 'quintal', 'mixed'].includes(voicingType) ? voicingType : 'quartal';
     this.stackSize = clamp(m.round(stackSize), 2, 6);
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(scaleName, root);
   }
 

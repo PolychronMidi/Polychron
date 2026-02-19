@@ -8,7 +8,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     });
     super(progressionChords);
     // enable voice-leading delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.generator = generator;
     this.tensionCurve = clamp(tensionCurve, 0, 1);
     this.key = key;

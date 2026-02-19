@@ -14,9 +14,6 @@ CadenceAdvisor = (() => {
    * Must be called after EventBus and EVENTS are available.
    */
   function initialize() {
-    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
-      throw new Error('CadenceAdvisor.initialize: EventBus.on not available');
-    }
     const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {

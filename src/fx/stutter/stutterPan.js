@@ -3,7 +3,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
   if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
     throw new Error('stutterPan: StutterFailFast helper is not available');
   }
-  const { eventName, eventBus } = StutterFailFast.requireEventInfra('stutterPan');
+  const { eventName } = StutterFailFast.requireEventInfra();
   const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterPan');
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
@@ -61,7 +61,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       // emit feedback for stutter cross-mod listeners (include inferred profile)
       const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      eventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
+      EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }

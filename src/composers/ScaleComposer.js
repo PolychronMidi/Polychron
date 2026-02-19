@@ -11,7 +11,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     super();
     this.root=root;
     // enable voice-leading by default for selection delegation
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(scaleName,root);
   }
   /**
@@ -64,14 +64,12 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     }
 
     let selectedNote;
-    try {
-      if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
-        if (typeof this.voiceHistory !== 'undefined' && !Array.isArray(this.voiceHistory)) {
-          throw new Error('ScaleComposer.selectNoteWithLeading: voiceHistory must be an array if provided');
-        }
-        selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
+    if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
+      if (typeof this.voiceHistory !== 'undefined' && !Array.isArray(this.voiceHistory)) {
+        throw new Error('ScaleComposer.selectNoteWithLeading: voiceHistory must be an array if provided');
       }
-    } catch (e) { throw e; }
+      selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
+    }
 
     if (typeof selectedNote === 'undefined') {
       selectedNote = candidates[m.floor(candidates.length / 2)];

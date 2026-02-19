@@ -14,7 +14,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     this.type = type;
     this.blueNoteProb = clamp(blueNoteProb, 0, 1);
     this._phraseCount = 0;
-    try { this.enableVoiceLeading(new VoiceLeadingScore()); } catch (e) { throw e; }
+    this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(root, type);
   }
 

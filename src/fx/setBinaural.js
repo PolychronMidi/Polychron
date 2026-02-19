@@ -4,9 +4,6 @@
  */
 setBinaural = () => {
   const phraseBoundary = Number.isFinite(Number(beatIndex)) && Number(beatIndex) === 0 && Number.isFinite(Number(measureIndex)) && Number(measureIndex) === 0;
-  if (typeof ConductorState === 'undefined' || !ConductorState || typeof ConductorState.getSnapshot !== 'function') {
-    throw new Error('setBinaural: ConductorState.getSnapshot is not available — conductor must load before fx');
-  }
   const statePhraseBoundary = (() => {
     const state = ConductorState.getSnapshot();
     return state && Number.isFinite(Number(state.phrasePosition)) && Number(state.phrasePosition) <= 0.001 && Number(beatIndex) === 0;
