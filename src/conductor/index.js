@@ -118,4 +118,20 @@ require('./PedalPointDetector');
 // @ts-ignore: load side-effect module with globals
 require('./PhraseLengthMomentumTracker');
 // @ts-ignore: load side-effect module with globals
+require('./TensionResolutionTracker');
+// @ts-ignore: load side-effect module with globals
+require('./MetricDisplacementDetector');
+// @ts-ignore: load side-effect module with globals
+require('./DensityWaveAnalyzer');
+// @ts-ignore: load side-effect module with globals
+require('./TimbreBalanceTracker');
+// @ts-ignore: load side-effect module with globals
+require('./HarmonicRhythmDensityRatio');
+// @ts-ignore: load side-effect module with globals
+require('./ThematicRecallDetector');
+// @ts-ignore: load side-effect module with globals
+require('./DynamicContrastMemory');
+// @ts-ignore: load side-effect module with globals
+require('./LayerIndependenceScorer');
+// @ts-ignore: load side-effect module with globals
 require('./config');
