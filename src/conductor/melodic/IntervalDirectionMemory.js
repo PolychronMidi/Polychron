@@ -11,9 +11,7 @@ IntervalDirectionMemory = (() => {
    * @returns {{ overusedIntervals: string[], freshness: number, suggestion: string }}
    */
   function getFreshnessSignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 5) {
       return { overusedIntervals: [], freshness: 1, suggestion: 'maintain' };

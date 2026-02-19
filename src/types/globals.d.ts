@@ -662,6 +662,7 @@ declare var LayerIndependenceScorer: any;
 declare var TemporalProportionTracker: any;
 declare var ChromaticSaturationMonitor: any;
 declare var fragmentHelpers: any;
+declare var analysisHelpers: any;
 declare var RhythmicSymmetryDetector: any;
 declare var TexturalGradientTracker: any;
 declare var CadentialPreparationAdvisor: any;

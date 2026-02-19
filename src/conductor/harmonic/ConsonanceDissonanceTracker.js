@@ -4,8 +4,8 @@
 
 ConsonanceDissonanceTracker = (() => {
   const WINDOW_SECONDS = 4;
-  // Perfect consonances (unison, P5, octave) and imperfect (m3, M3, m6, M6)
-  const CONSONANT_INTERVALS = new Set([0, 3, 4, 5, 7, 8, 9, 12]);
+  // Shared consonant intervals from pitchClassHelpers
+  const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
 
   /**
    * Analyze consonance/dissonance ratio in recent simultaneous notes.

@@ -11,35 +11,13 @@ RhythmicGroupingAnalyzer = (() => {
    * @returns {{ groupingType: string, binaryScore: number, ternaryScore: number, inTransition: boolean }}
    */
   function getGroupingSignal() {
-    const entries = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getEntries === 'function')
-      ? AbsoluteTimeWindow.getEntries(WINDOW_SECONDS)
-      : [];
+    const entries = AbsoluteTimeWindow.getEntries(WINDOW_SECONDS);
 
     if (entries.length < 6) {
       return { groupingType: 'ambiguous', binaryScore: 0.5, ternaryScore: 0.5, inTransition: false };
     }
 
-    // Extract onset times
-    /** @type {number[]} */
-    const onsets = [];
-    for (let i = 0; i < entries.length; i++) {
-      if (entries[i] && typeof entries[i].time === 'number') {
-        onsets.push(entries[i].time);
-      }
-    }
-    onsets.sort((a, b) => a - b);
-
-    if (onsets.length < 6) {
-      return { groupingType: 'ambiguous', binaryScore: 0.5, ternaryScore: 0.5, inTransition: false };
-    }
-
-    // Compute inter-onset intervals
-    /** @type {number[]} */
-    const iois = [];
-    for (let i = 1; i < onsets.length; i++) {
-      const gap = onsets[i] - onsets[i - 1];
-      if (gap > 0) iois.push(gap);
-    }
+    const iois = beatGridHelpers.getRecentIOIs(entries);
 
     if (iois.length < 4) {
       return { groupingType: 'ambiguous', binaryScore: 0.5, ternaryScore: 0.5, inTransition: false };

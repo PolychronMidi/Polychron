@@ -16,9 +16,7 @@ IntervalExpansionContractor = (() => {
   function recordSnapshot(absTime) {
     if (!Number.isFinite(absTime)) return;
 
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: 4 })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: 4 });
 
     if (notes.length < 3) return;
 

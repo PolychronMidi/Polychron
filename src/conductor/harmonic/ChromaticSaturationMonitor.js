@@ -11,9 +11,7 @@ ChromaticSaturationMonitor = (() => {
    * @returns {{ pitchClassCount: number, saturation: number, densityBias: number }}
    */
   function getSaturationSignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length === 0) {
       return { pitchClassCount: 0, saturation: 0, densityBias: 1 };

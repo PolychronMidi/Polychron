@@ -34,19 +34,10 @@ EnergyMomentumTracker = (() => {
       return { momentum: 0, trend: 'insufficient', plateauDuration: 0, stale: false };
     }
 
-    const half = m.floor(samples.length / 2);
-    const firstHalf = samples.slice(0, half);
-    const secondHalf = samples.slice(half);
-
-    let avgFirst = 0;
-    for (let i = 0; i < firstHalf.length; i++) avgFirst += firstHalf[i].energy;
-    avgFirst /= firstHalf.length;
-
-    let avgSecond = 0;
-    for (let i = 0; i < secondHalf.length; i++) avgSecond += secondHalf[i].energy;
-    avgSecond /= secondHalf.length;
-
-    const momentum = avgSecond - avgFirst;
+    /** @type {number[]} */
+    const energies = [];
+    for (let i = 0; i < samples.length; i++) energies.push(samples[i].energy);
+    const { slope: momentum } = analysisHelpers.halfSplitSlope(energies);
 
     // Detect plateau: count consecutive samples with minimal change
     let plateauStart = samples.length - 1;

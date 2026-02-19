@@ -16,9 +16,7 @@ HarmonicPedalFieldTracker = (() => {
   function recordBass(absTime) {
     if (!Number.isFinite(absTime)) return;
 
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: 2 })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: 2 });
 
     // Find lowest recent note as "bass"
     let lowestMidi = 127;

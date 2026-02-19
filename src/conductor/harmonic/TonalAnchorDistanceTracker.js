@@ -12,9 +12,7 @@ TonalAnchorDistanceTracker = (() => {
    * @returns {{ distance: number, tensionBias: number, adventureLevel: string }}
    */
   function getDistanceSignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 5) {
       return { distance: 0, tensionBias: 1, adventureLevel: 'home' };

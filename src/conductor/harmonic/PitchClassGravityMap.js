@@ -11,9 +11,7 @@ PitchClassGravityMap = (() => {
    * @returns {{ center: number, stability: number, driftFromCenter: number, suggestion: string }}
    */
   function getGravitySignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 4) {
       return { center: 0, stability: 0.5, driftFromCenter: 0, suggestion: 'maintain' };

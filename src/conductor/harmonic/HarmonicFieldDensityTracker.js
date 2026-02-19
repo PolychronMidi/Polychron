@@ -12,9 +12,7 @@ HarmonicFieldDensityTracker = (() => {
    * @returns {{ avgSimultaneous: number, maxSimultaneous: number, densityBias: number }}
    */
   function getFieldDensitySignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 3) {
       return { avgSimultaneous: 1, maxSimultaneous: 1, densityBias: 1 };

@@ -26,29 +26,14 @@ DurationalContourTracker = (() => {
       ? tpBeat / tpSec
       : 0.5;
 
-    const half = m.ceil(notes.length / 2);
-    let sumFirst = 0;
-    let sumSecond = 0;
-    let countFirst = 0;
-    let countSecond = 0;
-
-    for (let i = 0; i < half; i++) {
-      const dur = (typeof notes[i].duration === 'number' && Number.isFinite(notes[i].duration))
-        ? notes[i].duration : beatDur * 0.5;
-      sumFirst += dur;
-      countFirst++;
+    /** @type {number[]} */
+    const durations = [];
+    for (let i = 0; i < notes.length; i++) {
+      durations.push((typeof notes[i].duration === 'number' && Number.isFinite(notes[i].duration))
+        ? notes[i].duration : beatDur * 0.5);
     }
-    for (let i = half; i < notes.length; i++) {
-      const dur = (typeof notes[i].duration === 'number' && Number.isFinite(notes[i].duration))
-        ? notes[i].duration : beatDur * 0.5;
-      sumSecond += dur;
-      countSecond++;
-    }
-
-    const avgFirst = countFirst > 0 ? sumFirst / countFirst : 0;
-    const avgSecond = countSecond > 0 ? sumSecond / countSecond : 0;
+    const { slope, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(durations);
     const avgDuration = (avgFirst + avgSecond) / 2;
-    const slope = avgSecond - avgFirst;
 
     // Normalize slope relative to beat duration for threshold comparison
     const normalizedSlope = beatDur > 0 ? slope / beatDur : 0;

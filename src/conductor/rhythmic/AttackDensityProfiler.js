@@ -12,9 +12,7 @@ AttackDensityProfiler = (() => {
    * @returns {{ attackRatio: number, sustainRatio: number, densityBias: number, suggestion: string }}
    */
   function getAttackSignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 4) {
       return { attackRatio: 0.5, sustainRatio: 0.5, densityBias: 1, suggestion: 'balanced' };

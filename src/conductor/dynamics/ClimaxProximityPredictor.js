@@ -75,10 +75,10 @@ ClimaxProximityPredictor = (() => {
   }
 
   /**
-   * Get a tension modifier to prevent premature climax.
+   * Get a tension bias to prevent premature climax.
    * @returns {number} - 0.8 to 1.2
    */
-  function getTensionModifier() {
+  function getTensionBias() {
     const pred = predict();
     if (pred.premature) return 0.8; // Suppress premature peak
     if (pred.phase === 'approaching') return 1.1;
@@ -89,6 +89,6 @@ ClimaxProximityPredictor = (() => {
   return {
     predict,
     getDensityRampBias,
-    getTensionModifier
+    getTensionBias
   };
 })();

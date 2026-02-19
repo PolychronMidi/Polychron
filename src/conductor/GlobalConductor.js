@@ -157,8 +157,8 @@ GlobalConductor = (() => {
     const climaxDensityBias = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getDensityRampBias === 'function')
       ? clamp(ClimaxProximityPredictor.getDensityRampBias(), 0.85, 1.25)
       : 1;
-    const climaxTensionMod = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getTensionModifier === 'function')
-      ? clamp(ClimaxProximityPredictor.getTensionModifier(), 0.8, 1.2)
+    const climaxTensionMod = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getTensionBias === 'function')
+      ? clamp(ClimaxProximityPredictor.getTensionBias(), 0.8, 1.2)
       : 1;
     // OnsetRegularityMonitor: rhythm variety bias
     const onsetRegularityBias = (typeof OnsetRegularityMonitor !== 'undefined' && OnsetRegularityMonitor && typeof OnsetRegularityMonitor.getRhythmVarietyBias === 'function')
@@ -216,8 +216,8 @@ GlobalConductor = (() => {
 
     // --- Batch 8 intelligence module reads ---
     // TensionResolutionTracker: penalize dangling unresolved dissonance
-    const tensionResolBias = (typeof TensionResolutionTracker !== 'undefined' && TensionResolutionTracker && typeof TensionResolutionTracker.getTensionModifier === 'function')
-      ? clamp(TensionResolutionTracker.getTensionModifier(), 0.9, 1.25)
+    const tensionResolBias = (typeof TensionResolutionTracker !== 'undefined' && TensionResolutionTracker && typeof TensionResolutionTracker.getTensionBias === 'function')
+      ? clamp(TensionResolutionTracker.getTensionBias(), 0.9, 1.25)
       : 1;
     // InterLayerRhythmAnalyzer: displacement signal (consumed via ConductorState)
     const displacementSignal = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getDisplacementSignal === 'function')
@@ -344,6 +344,10 @@ GlobalConductor = (() => {
     const timingDriftSignal = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getDriftSignal === 'function')
       ? InterLayerRhythmAnalyzer.getDriftSignal()
       : { avgDrift: 0, tightness: 0.5, suggestion: 'maintain' };
+    // InterLayerRhythmAnalyzer: cross-layer phase relationship (consumed via ConductorState)
+    const phaseRelationship = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getPhaseRelationship === 'function')
+      ? InterLayerRhythmAnalyzer.getPhaseRelationship()
+      : { phase: 'unknown', coincidence: 0, complementarity: 0 };
     // RegistralVelocityCorrelator: flicker modifier from register-velocity correlation
     const regVelFlickerMod = (typeof RegistralVelocityCorrelator !== 'undefined' && RegistralVelocityCorrelator && typeof RegistralVelocityCorrelator.getFlickerModifier === 'function')
       ? clamp(RegistralVelocityCorrelator.getFlickerModifier(), 0.9, 1.15)
@@ -589,6 +593,9 @@ GlobalConductor = (() => {
         intervalFreshnessSuggestion: intervalFreshness.suggestion,
         timingTightness: timingDriftSignal.tightness,
         timingDriftSuggestion: timingDriftSignal.suggestion,
+        rhythmPhase: phaseRelationship.phase,
+        rhythmCoincidence: phaseRelationship.coincidence,
+        rhythmComplementarity: phaseRelationship.complementarity,
         rhythmicInertiaSuggestion: (typeof RhythmicInertiaTracker !== 'undefined' && RhythmicInertiaTracker && typeof RhythmicInertiaTracker.getInertiaSignal === 'function') ? RhythmicInertiaTracker.getInertiaSignal().suggestion : 'maintain',
         envelopeShape: (typeof VelocityShapeAnalyzer !== 'undefined' && VelocityShapeAnalyzer && typeof VelocityShapeAnalyzer.getVelocityShape === 'function') ? VelocityShapeAnalyzer.getVelocityShape().shape : 'neutral',
         crossLayerImbalance: (typeof CrossLayerDensityBalancer !== 'undefined' && CrossLayerDensityBalancer && typeof CrossLayerDensityBalancer.getBalanceSignal === 'function') ? CrossLayerDensityBalancer.getBalanceSignal().imbalance : 0,

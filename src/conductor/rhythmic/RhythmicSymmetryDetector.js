@@ -13,28 +13,12 @@ RhythmicSymmetryDetector = (() => {
    * @returns {number[]}
    */
   function getRecentIOIs() {
-    const entries = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getEntries === 'function')
-      ? AbsoluteTimeWindow.getEntries(WINDOW_SECONDS)
-      : [];
-
-    /** @type {number[]} */
-    const onsets = [];
-    for (let i = 0; i < entries.length; i++) {
-      if (entries[i] && typeof entries[i].time === 'number') {
-        onsets.push(entries[i].time);
-      }
-    }
-
-    if (onsets.length < MIN_ONSETS) return [];
-
-    // Sort and deduplicate
-    onsets.sort((a, b) => a - b);
-    /** @type {number[]} */
+    const entries = AbsoluteTimeWindow.getEntries(WINDOW_SECONDS);
+    if (entries.length < MIN_ONSETS) return [];
+    const rawIOIs = beatGridHelpers.getRecentIOIs(entries);
+    // Quantize to hundredths for symmetry comparison
     const iois = [];
-    for (let i = 1; i < onsets.length; i++) {
-      const gap = onsets[i] - onsets[i - 1];
-      if (gap > 0) iois.push(m.round(gap * 100) / 100); // quantize to hundredths
-    }
+    for (let i = 0; i < rawIOIs.length; i++) iois.push(m.round(rawIOIs[i] * 100) / 100);
     return iois;
   }
 

@@ -20,12 +20,7 @@ OnsetRegularityMonitor = (() => {
       return { avgIOI: 0, ioiCV: 0, regularity: 0.5, uniform: false, chaotic: false };
     }
 
-    // Compute inter-onset intervals
-    const iois = [];
-    for (let i = 1; i < notes.length; i++) {
-      const ioi = notes[i].time - notes[i - 1].time;
-      if (ioi > 0) iois.push(ioi);
-    }
+    const iois = beatGridHelpers.getRecentIOIs(notes);
 
     if (iois.length < 2) {
       return { avgIOI: 0, ioiCV: 0, regularity: 0.5, uniform: false, chaotic: false };

@@ -25,5 +25,27 @@ beatGridHelpers = (() => {
     return (time % dur) / dur;
   }
 
-  return { getBeatDuration, getBeatPosition };
+  /**
+   * Extract inter-onset intervals from an array of entries/notes with .time.
+   * Sorts by time, filters positive gaps.
+   * @param {Array<{ time: number }>} entries
+   * @returns {number[]} - array of positive IOI durations
+   */
+  function getRecentIOIs(entries) {
+    const onsets = [];
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i] && typeof entries[i].time === 'number') {
+        onsets.push(entries[i].time);
+      }
+    }
+    onsets.sort((a, b) => a - b);
+    const iois = [];
+    for (let i = 1; i < onsets.length; i++) {
+      const gap = onsets[i] - onsets[i - 1];
+      if (gap > 0) iois.push(gap);
+    }
+    return iois;
+  }
+
+  return { getBeatDuration, getBeatPosition, getRecentIOIs };
 })();
