@@ -22,13 +22,18 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     finalChannels.push(...(typeof source !== 'undefined' ? /** @type {number[]} */ (source.slice()) : /** @type {number[]} */ ([])));
   }
 
-  const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
-    ? StutterConfig.getCrossModRules()
-    : { pan: { stutterProbScale: 1, shiftRangeBias: 0, stutterRateScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+  if (typeof StutterConfig === 'undefined' || !StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getDirectiveDefaults !== 'function') {
+    throw new Error('stutterExecutePlan: StutterConfig methods getCrossModRules/getDirectiveDefaults are required');
+  }
+  const crossRules = StutterConfig.getCrossModRules();
+  if (!crossRules || typeof crossRules !== 'object') {
+    throw new Error('stutterExecutePlan: invalid crossRules from StutterConfig.getCrossModRules');
+  }
 
-  const directiveDefaults = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getDirectiveDefaults === 'function')
-    ? StutterConfig.getDirectiveDefaults()
-    : { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false }, metricsAdaptive: { enabled: false, sensitivity: 0.08 } };
+  const directiveDefaults = StutterConfig.getDirectiveDefaults();
+  if (!directiveDefaults || typeof directiveDefaults !== 'object') {
+    throw new Error('stutterExecutePlan: invalid directive defaults from StutterConfig.getDirectiveDefaults');
+  }
   const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
   if (cfg.preset && typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getPreset === 'function') {
     const preset = StutterConfig.getPreset(cfg.preset);
@@ -37,20 +42,18 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
 
   let adaptiveCrossRules = null;
   if (directive.metricsAdaptive && directive.metricsAdaptive.enabled && typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.getMetrics === 'function') {
-    try {
-      const metrics = StutterMetrics.getMetrics();
-      const sens = Number.isFinite(Number(directive.metricsAdaptive.sensitivity)) ? Number(directive.metricsAdaptive.sensitivity) : 0.08;
-      const adj = Object.assign({}, crossRules);
-      ['source', 'reflection', 'bass'].forEach((p) => {
-        const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
-        const scheduled = metrics.scheduledByProfile && metrics.scheduledByProfile[p] ? metrics.scheduledByProfile[p] : 1;
-        const ratio = emitted / Math.max(1, scheduled);
-        if (ratio > 0.8 && adj.pan) {
-          adj.pan.stutterRateScale = clamp(adj.pan.stutterRateScale + (ratio - 0.8) * sens, 0.8, 3);
-        }
-      });
-      adaptiveCrossRules = adj;
-    } catch { adaptiveCrossRules = null; }
+    const metrics = StutterMetrics.getMetrics();
+    const sens = Number.isFinite(Number(directive.metricsAdaptive.sensitivity)) ? Number(directive.metricsAdaptive.sensitivity) : 0.08;
+    const adj = Object.assign({}, crossRules);
+    ['source', 'reflection', 'bass'].forEach((p) => {
+      const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
+      const scheduled = metrics.scheduledByProfile && metrics.scheduledByProfile[p] ? metrics.scheduledByProfile[p] : 1;
+      const ratio = emitted / Math.max(1, scheduled);
+      if (ratio > 0.8 && adj.pan) {
+        adj.pan.stutterRateScale = clamp(adj.pan.stutterRateScale + (ratio - 0.8) * sens, 0.8, 3);
+      }
+    });
+    adaptiveCrossRules = adj;
   }
 
   const prevCoherenceKey = (stutterMgr.beatContext && stutterMgr.beatContext.coherenceKey) ? stutterMgr.beatContext.coherenceKey : null;
@@ -88,7 +91,13 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
           return Math.abs((2 * frac) - 1);
         }
         case 'oscillate': return 0.5 + 0.5 * Math.sin(2 * Math.PI * Number(tn));
-        default: return Number(curve) || 1;
+        default: {
+          const numericCurve = Number(curve);
+          if (!Number.isFinite(numericCurve)) {
+            throw new Error(`stutterExecutePlan.evalCurve: unsupported curve value ${String(curve)}`);
+          }
+          return numericCurve;
+        }
       }
     }
     return undefined;
@@ -102,35 +111,33 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     const phaseCurveVal = evalCurve(directive.phaseCurve || cfg.phaseCurve, tNorm) || undefined;
 
     for (const ch of /** @type {any[]} */ (finalChannels)) {
-      try {
-        const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');
+      const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');
 
-        let basePhaseFraction = 0;
-        const srcPhase = (directive.phase || cfg.phase);
-        if (srcPhase !== undefined && srcPhase !== null) {
-          if (Number.isFinite(Number(srcPhase))) basePhaseFraction = clamp(Number(srcPhase), 0, 1);
-          else if (typeof srcPhase === 'object') {
-            if (side === 'left' && Number.isFinite(Number(srcPhase.left))) basePhaseFraction = clamp(Number(srcPhase.left), 0, 1);
-            else if (side === 'right' && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp(Number(srcPhase.right), 0, 1);
-            else if (Number.isFinite(Number(srcPhase.center))) basePhaseFraction = clamp(Number(srcPhase.center), 0, 1);
-            else if (Number.isFinite(Number(srcPhase.left)) && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp((Number(srcPhase.left) + Number(srcPhase.right)) / 2, 0, 1);
-          }
+      let basePhaseFraction = 0;
+      const srcPhase = (directive.phase || cfg.phase);
+      if (srcPhase !== undefined && srcPhase !== null) {
+        if (Number.isFinite(Number(srcPhase))) basePhaseFraction = clamp(Number(srcPhase), 0, 1);
+        else if (typeof srcPhase === 'object') {
+          if (side === 'left' && Number.isFinite(Number(srcPhase.left))) basePhaseFraction = clamp(Number(srcPhase.left), 0, 1);
+          else if (side === 'right' && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp(Number(srcPhase.right), 0, 1);
+          else if (Number.isFinite(Number(srcPhase.center))) basePhaseFraction = clamp(Number(srcPhase.center), 0, 1);
+          else if (Number.isFinite(Number(srcPhase.left)) && Number.isFinite(Number(srcPhase.right))) basePhaseFraction = clamp((Number(srcPhase.left) + Number(srcPhase.right)) / 2, 0, 1);
         }
+      }
 
-        const phaseFraction = Number.isFinite(Number(phaseCurveVal)) ? clamp(phaseCurveVal, 0, 1) * basePhaseFraction : basePhaseFraction;
+      const phaseFraction = Number.isFinite(Number(phaseCurveVal)) ? clamp(phaseCurveVal, 0, 1) * basePhaseFraction : basePhaseFraction;
 
-        const chMod = (stutterMgr.beatContext && stutterMgr.beatContext.mod && stutterMgr.beatContext.mod[ch]) ? stutterMgr.beatContext.mod[ch] : null;
-        const panAbs = (chMod && typeof chMod.pan === 'number') ? m.abs(chMod.pan) : 0;
-        const rateScale = (effectiveCrossRules && effectiveCrossRules.pan && Number.isFinite(Number(effectiveCrossRules.pan.stutterRateScale)))
-          ? (1 + panAbs * (Number(effectiveCrossRules.pan.stutterRateScale) - 1))
-          : 1;
+      const chMod = (stutterMgr.beatContext && stutterMgr.beatContext.mod && stutterMgr.beatContext.mod[ch]) ? stutterMgr.beatContext.mod[ch] : null;
+      const panAbs = (chMod && typeof chMod.pan === 'number') ? m.abs(chMod.pan) : 0;
+      const rateScale = (effectiveCrossRules && effectiveCrossRules.pan && Number.isFinite(Number(effectiveCrossRules.pan.stutterRateScale)))
+        ? (1 + panAbs * (Number(effectiveCrossRules.pan.stutterRateScale) - 1))
+        : 1;
 
-        const jitter = rf(.92, 1.08);
-        const stepPeriodScaled = (baseStepPeriod / Math.max(0.01, Number(rateCurveVal))) / Math.max(0.01, rateScale);
-        const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
+      const jitter = rf(.92, 1.08);
+      const stepPeriodScaled = (baseStepPeriod / Math.max(0.01, Number(rateCurveVal))) / Math.max(0.01, rateScale);
+      const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
 
-        stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity || 100, binVel: cfg.maxVelocity || 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
-      } catch { /* ignore per-channel errors */ }
+      stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity || 100, binVel: cfg.maxVelocity || 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
     }
   }
 
@@ -140,6 +147,6 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     delete stutterMgr.beatContext.coherenceKey;
   }
 
-  try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile); } catch { /* ignore */ }
+  if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile);
   return cfg;
 };

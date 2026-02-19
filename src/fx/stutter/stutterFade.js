@@ -1,8 +1,15 @@
 /** @this {any} */
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-  const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names.STUTTER_APPLIED
-    : 'stutter-applied';
+  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+    throw new Error('stutterFade: EventCatalog.names is not available');
+  }
+  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+    throw new Error('stutterFade: EventBus.emit is not available');
+  }
+  if (typeof reflection === 'undefined' || !Array.isArray(reflection) || typeof bass === 'undefined' || !Array.isArray(bass)) {
+    throw new Error('stutterFade: reflection and bass channel arrays must be defined');
+  }
+  const eventName = EventCatalog.names.STUTTER_APPLIED;
   const channelsArray = pickStutterChannels(channels, ri(1, 5), this.lastUsedCHs);
 
   // Write beat-level fade context for note-velocity coherence (task 8)
@@ -20,18 +27,14 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
     this.beatContext._lastBeatIndex = beatIndex;
     this.beatContext.selectedReflectionChannels = new Set();
     this.beatContext.selectedBassChannels = new Set();
-    try {
-      const reflCandidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
-      for (const ch of reflCandidates) {
-        if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < 0.5) this.beatContext.selectedReflectionChannels.add(ch);
-      }
-    } catch { /* ignore */ }
-    try {
-      const bassCandidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
-      for (const ch of bassCandidates) {
-        if (this.beatContext.selectedBassChannels.size < 2 && rf() < 0.5) this.beatContext.selectedBassChannels.add(ch);
-      }
-    } catch { /* ignore */ }
+    const reflCandidates = reflection.slice();
+    for (const ch of reflCandidates) {
+      if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < 0.5) this.beatContext.selectedReflectionChannels.add(ch);
+    }
+    const bassCandidates = bass.slice();
+    for (const ch of bassCandidates) {
+      if (this.beatContext.selectedBassChannels.size < 2 && rf() < 0.5) this.beatContext.selectedBassChannels.add(ch);
+    }
   }
 
   channelsArray.forEach(channelToStutter => {
@@ -56,11 +59,17 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
 
       // Apply noise modulation to fade curve
       const mod = getParameterModulation(channelToStutter, 'fade', tick);
+      if (!mod || !Number.isFinite(Number(mod.x)) || !Number.isFinite(Number(mod.y))) {
+        throw new Error(`stutterFade: invalid fade modulation for channel=${channelToStutter} tick=${tick}`);
+      }
       // If a plan coherenceKey is present, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        try { coh = getParameterModulation(channelToStutter, coherenceKey, tick); } catch { coh = { x: 0.5, y: 0.5 }; }
+        coh = getParameterModulation(channelToStutter, coherenceKey, tick);
+        if (!coh || !Number.isFinite(Number(coh.x)) || !Number.isFinite(Number(coh.y))) {
+          throw new Error(`stutterFade: invalid coherence modulation for key="${coherenceKey}" channel=${channelToStutter}`);
+        }
       }
 
       // Modulate volume by noise influence (combine local + coherence)
@@ -68,17 +77,13 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       volume = modClamp(m.floor(baseVolume + noiseVariation), 25, maxVol);
 
       // Publish modulation bus entry for cross-mod sampling (0..1 normalized)
-      try {
-        const norm = clamp(volume / (maxVol || 127), 0, 1);
-        if (!this.beatContext.mod) this.beatContext.mod = {};
-        this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fade: norm });
-      } catch { /* ignore */ }
+      const norm = clamp(volume / (maxVol || 127), 0, 1);
+      if (!this.beatContext.mod) this.beatContext.mod = {};
+      this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fade: norm });
 
       // Emit a stutter-applied event for feedback loops (include inferred profile)
-      try {
-        const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
-      } catch { /* ignore */ }
+      const profile = reflection.includes(channelToStutter) ? 'reflection' : bass.includes(channelToStutter) ? 'bass' : 'source';
+      EventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });

@@ -53,7 +53,10 @@ const scaleFxDefaultObject = (fxDefault, scale) => {
 const resolveRangeScale = (groupName, effectNum) => {
   const groupBase = Number(ccGroupScale[groupName]);
   const groupMul = Number.isFinite(groupBase) ? groupBase : 1;
-  const groupMap = ccRangeScale[groupName] || { default: 1 };
+  const groupMap = ccRangeScale[groupName];
+  if (!groupMap || typeof groupMap !== 'object') {
+    throw new Error(`setBalanceAndFX.resolveRangeScale: missing ccRangeScale group "${groupName}"`);
+  }
   const specific = Number(groupMap[String(effectNum)]);
   const fallback = Number(groupMap.default);
   const ccMul = Number.isFinite(specific) ? specific : (Number.isFinite(fallback) ? fallback : 1);
@@ -74,6 +77,13 @@ const scaleFxRange = (minValue, maxValue, rangeScale) => {
   const scaledMax = clamp(m.round(center + halfSpan), 0, 127);
   return scaledMin <= scaledMax ? [scaledMin, scaledMax] : [scaledMax, scaledMin];
 };
+const requireFiniteScale = (value, name) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    throw new Error(`setBalanceAndFX: invalid ${name} scale (${value})`);
+  }
+  return n;
+};
 const resolveFxDefaults = (groupName, effectNum) => {
   if (typeof FX_CC_DEFAULTS === 'undefined' || !FX_CC_DEFAULTS || typeof FX_CC_DEFAULTS !== 'object') {
     throw new Error('setBalanceAndFX.resolveFxDefaults: FX_CC_DEFAULTS is not defined');
@@ -89,13 +99,13 @@ const resolveFxDefaults = (groupName, effectNum) => {
   }
 
   if (effectNum === 65) {
-    return scaleFxDefaultObject(resolved, Number(journeyFxModulation.portamentoScale) || 1);
+    return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.portamentoScale, 'portamento'));
   }
   if (effectNum === 74) {
-    return scaleFxDefaultObject(resolved, Number(journeyFxModulation.filterScale) || 1);
+    return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.filterScale, 'filter'));
   }
   if (effectNum === 91 || effectNum === 92 || effectNum === 93 || effectNum === 95) {
-    return scaleFxDefaultObject(resolved, Number(journeyFxModulation.reverbScale) || 1);
+    return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.reverbScale, 'reverb'));
   }
   return resolved;
 };

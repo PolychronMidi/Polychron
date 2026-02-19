@@ -118,16 +118,12 @@ FXFeedbackListener = (() => {
       const score = clamp(baseComplexity * intensity + (1 - baseComplexity) * (1 - intensity), 0, 1);
 
       // Attach non-enumerable metadata so callers can inspect bias without changing method behavior.
-      try {
-        Object.defineProperty(method, '_fxIntensityScore', {
-          value: score,
-          writable: true,
-          configurable: true,
-          enumerable: false
-        });
-      } catch {
-        /* ignore environments that forbid property definition */
-      }
+      Object.defineProperty(method, '_fxIntensityScore', {
+        value: score,
+        writable: true,
+        configurable: true,
+        enumerable: false
+      });
 
       biased[name] = method;
     }

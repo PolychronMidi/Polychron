@@ -196,29 +196,35 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
-  try {
-    const layerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-    const unitBudgetKey = `${layerName}:${unit}:${Number.isFinite(Number(unitStart)) ? unitStart : 'u'}`;
-
-    // Ensure per-layer budget maps exist (init.js defines these globals)
-    if (!remainingVoiceSlotsByLayer || typeof remainingVoiceSlotsByLayer !== 'object') remainingVoiceSlotsByLayer = {};
-    if (!lastVoiceBudgetKeyByLayer || typeof lastVoiceBudgetKeyByLayer !== 'object') lastVoiceBudgetKeyByLayer = {};
-
-    if (lastVoiceBudgetKeyByLayer[layerName] !== unitBudgetKey) {
-      const unitCfg = (unit === 'div') ? (typeof DIV_VOICES !== 'undefined' ? DIV_VOICES : BEAT_VOICES)
-        : (unit === 'subdiv') ? (typeof SUBDIV_VOICES !== 'undefined' ? SUBDIV_VOICES : BEAT_VOICES)
-        : (unit === 'subsubdiv') ? (typeof SUBSUBDIV_VOICES !== 'undefined' ? SUBSUBDIV_VOICES : BEAT_VOICES)
-        : (typeof BEAT_VOICES !== 'undefined' ? BEAT_VOICES : VOICES);
-      remainingVoiceSlotsByLayer[layerName] = (unitCfg && Number.isFinite(Number(unitCfg.max))) ? Number(unitCfg.max) : 4;
-      lastVoiceBudgetKeyByLayer[layerName] = unitBudgetKey;
-    }
-
-    // Keep legacy globals in sync for backward compatibility
-    remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
-    lastVoiceBudgetKey = `${layerName}:${lastVoiceBudgetKeyByLayer[layerName] || ''}`;
-  } catch {
-    /* ignore budget reset failures */
+  if (typeof LM === 'undefined' || !LM || typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
+    throw new Error(`${unit}.playNotes: LM.activeLayer must be available for voice budgeting`);
   }
+  const layerName = LM.activeLayer;
+  const unitBudgetKey = `${layerName}:${unit}:${Number.isFinite(Number(unitStart)) ? unitStart : 'u'}`;
+
+  // Ensure per-layer budget maps exist (init.js defines these globals)
+  if (!remainingVoiceSlotsByLayer || typeof remainingVoiceSlotsByLayer !== 'object') {
+    throw new Error(`${unit}.playNotes: remainingVoiceSlotsByLayer global is not initialized`);
+  }
+  if (!lastVoiceBudgetKeyByLayer || typeof lastVoiceBudgetKeyByLayer !== 'object') {
+    throw new Error(`${unit}.playNotes: lastVoiceBudgetKeyByLayer global is not initialized`);
+  }
+
+  if (lastVoiceBudgetKeyByLayer[layerName] !== unitBudgetKey) {
+    const unitCfg = (unit === 'div') ? (typeof DIV_VOICES !== 'undefined' ? DIV_VOICES : BEAT_VOICES)
+      : (unit === 'subdiv') ? (typeof SUBDIV_VOICES !== 'undefined' ? SUBDIV_VOICES : BEAT_VOICES)
+      : (unit === 'subsubdiv') ? (typeof SUBSUBDIV_VOICES !== 'undefined' ? SUBSUBDIV_VOICES : BEAT_VOICES)
+      : (typeof BEAT_VOICES !== 'undefined' ? BEAT_VOICES : VOICES);
+    if (!unitCfg || !Number.isFinite(Number(unitCfg.max))) {
+      throw new Error(`${unit}.playNotes: invalid voice unit configuration`);
+    }
+    remainingVoiceSlotsByLayer[layerName] = Number(unitCfg.max);
+    lastVoiceBudgetKeyByLayer[layerName] = unitBudgetKey;
+  }
+
+  // Keep legacy globals in sync for backward compatibility
+  remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
+  lastVoiceBudgetKey = `${layerName}:${lastVoiceBudgetKeyByLayer[layerName] || ''}`;
 
   // Gate play invocation with playProb and crossModulation
   if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
@@ -240,27 +246,24 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   // Enforce per-layer, per-unit remaining voice slots — trim picks if necessary
-  try {
-    if (Array.isArray(picks) && picks.length > 0) {
-      const layerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-      const available = Number.isFinite(Number(remainingVoiceSlotsByLayer && remainingVoiceSlotsByLayer[layerName] ? remainingVoiceSlotsByLayer[layerName] : remainingVoiceSlots))
-        ? m.max(0, Number(remainingVoiceSlotsByLayer[layerName] ?? remainingVoiceSlots))
-        : picks.length;
-      const allowed = Number.isFinite(available) ? m.max(0, m.min(picks.length, available)) : picks.length;
-      if (allowed <= 0) {
-        // no budget available for this layer/unit — skip emission
-        emitNotesEmitted(0, intendedCount, 'voice-budget');
-        return trackRhythm(unit, layer, false);
-      }
-      if (allowed < picks.length) picks.length = allowed; // truncate in-place
-
-      // Decrement per-layer budget and keep legacy global in sync
-      if (!remainingVoiceSlotsByLayer) remainingVoiceSlotsByLayer = {};
-      remainingVoiceSlotsByLayer[layerName] = m.max(0, (remainingVoiceSlotsByLayer[layerName] ?? remainingVoiceSlots) - picks.length);
-      remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
+  if (Array.isArray(picks) && picks.length > 0) {
+    const available = Number.isFinite(Number(remainingVoiceSlotsByLayer[layerName]))
+      ? m.max(0, Number(remainingVoiceSlotsByLayer[layerName]))
+      : Number(remainingVoiceSlots);
+    if (!Number.isFinite(available)) {
+      throw new Error(`${unit}.playNotes: invalid available voice budget for layer ${layerName}`);
     }
-  } catch {
-    /* ignore budget enforcement failures */
+    const allowed = m.max(0, m.min(picks.length, available));
+    if (allowed <= 0) {
+      // no budget available for this layer/unit — skip emission
+      emitNotesEmitted(0, intendedCount, 'voice-budget');
+      return trackRhythm(unit, layer, false);
+    }
+    if (allowed < picks.length) picks.length = allowed; // truncate in-place
+
+    // Decrement per-layer budget and keep legacy global in sync
+    remainingVoiceSlotsByLayer[layerName] = m.max(0, available - picks.length);
+    remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
   }
 
   try {

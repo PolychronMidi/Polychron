@@ -290,7 +290,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         });
         setBalanceAndFX();
         // Apply Stutter default directive for this beat (coherence key, etc.)
-        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
+        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.prepareBeat !== 'function') {
+          throw new Error('main: Stutter.prepareBeat is not available');
+        }
+        Stutter.prepareBeat(beatStart);
         // Capture FX intensity from balance and variation globals (normalized 0-1)
         const fxStereoPan = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
         const fxVelocityShift = (typeof refVar === 'number' && typeof bassVar === 'number')
@@ -301,7 +304,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Run any explicit Stutter plans scheduled for this beat
-        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
+        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.runDuePlans !== 'function') {
+          throw new Error('main: Stutter.runDuePlans is not available');
+        }
+        Stutter.runDuePlans(beatStart);
         playNotes('beat', { playProb, stutterProb });
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
@@ -373,7 +379,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         });
         setBalanceAndFX();
         // Apply Stutter default directive for this beat (symmetric with L1)
-        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
+        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.prepareBeat !== 'function') {
+          throw new Error('main: Stutter.prepareBeat is not available');
+        }
+        Stutter.prepareBeat(beatStart);
         // Capture FX intensity with full payload (symmetric with L1)
         const fxStereoPanL2 = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
         const fxVelocityShiftL2 = (typeof refVar === 'number' && typeof bassVar === 'number')
@@ -384,7 +393,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Run any explicit Stutter plans scheduled for this beat
-        try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
+        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.runDuePlans !== 'function') {
+          throw new Error('main: Stutter.runDuePlans is not available');
+        }
+        Stutter.runDuePlans(beatStart);
         playNotes('beat', { playProb, stutterProb });
 
         microUnitAttenuator.begin('div', divsPerBeat);

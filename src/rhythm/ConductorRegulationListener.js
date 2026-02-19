@@ -17,10 +17,7 @@ ConductorRegulationListener = (() => {
 
   function applyJourneyBias(crossModBias) {
     if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.setExternalBias !== 'function') {
-      // Be explicit when the coupling target is unavailable so lint rules and
-      // callers can observe an obvious handling path instead of a silent return.
-      try { console.warn('Acceptable warning: ConductorRegulationListener.applyJourneyBias: JourneyRhythmCoupler not available; skipping bias'); } catch { /* swallow logging errors */ }
-      return false;
+      throw new Error('ConductorRegulationListener.applyJourneyBias: JourneyRhythmCoupler.setExternalBias is not available');
     }
     JourneyRhythmCoupler.setExternalBias(crossModBias);
     return true;

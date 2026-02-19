@@ -85,8 +85,13 @@ metaRecursiveSimplex2D = function(x, y, simplexInstance, depth = 0, maxDepth = r
   const randomEase = easingFunctions[ri(0, easingFunctions.length - 1)];
   const noiseScale = rf(0.5, 2.5);
   const amplitude = rf(0.3, 0.7);
-  const easedX = randomEase((x * noiseScale) % 1);
-  const easedY = randomEase((y * noiseScale) % 1);
+  const xPhase = ((x * noiseScale) % 1 + 1) % 1;
+  const yPhase = ((y * noiseScale) % 1 + 1) % 1;
+  const easedX = randomEase(xPhase);
+  const easedY = randomEase(yPhase);
+  if (!Number.isFinite(easedX) || !Number.isFinite(easedY)) {
+    throw new Error(`metaRecursiveSimplex2D: non-finite eased values at depth=${depth}, xPhase=${xPhase}, yPhase=${yPhase}`);
+  }
   return simplexInstance.noise(easedX, easedY) * (1 - amplitude) +
          metaRecursiveSimplex2D(x * noiseScale, y * noiseScale, simplexInstance, depth + 1, maxDepth) * amplitude;
 };

@@ -5,7 +5,7 @@ let _registeredHelper = null;
 function registerHelper(fn) {
   if (typeof fn === 'function') {
     _registeredHelper = fn;
-    try { _registeredHelper._isStutterNotesHelper = true; } catch { /* ignore */ }
+    _registeredHelper._isStutterNotesHelper = true;
     return true;
   }
   _registeredHelper = null;
