@@ -14,6 +14,9 @@ GlobalConductor = (() => {
    * @returns {{ playProb: number, stutterProb: number }}
    */
   function update() {
+    // Compute absolute time once for all recorder calls
+    const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+
     // 1. gather context
     const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
@@ -132,7 +135,6 @@ GlobalConductor = (() => {
 
     // Record current energy for momentum tracking
     if (typeof EnergyMomentumTracker !== 'undefined' && EnergyMomentumTracker && typeof EnergyMomentumTracker.recordEnergy === 'function') {
-      const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       EnergyMomentumTracker.recordEnergy(compositeIntensity, absTime);
     }
 
@@ -175,9 +177,8 @@ GlobalConductor = (() => {
 
     // Record rhythmic complexity for gradient tracking
     if (typeof RhythmicComplexityGradient !== 'undefined' && RhythmicComplexityGradient && typeof RhythmicComplexityGradient.recordComplexity === 'function') {
-      const absTime2 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       // Use current density as a proxy for rhythmic complexity
-      RhythmicComplexityGradient.recordComplexity(currentDensity, absTime2);
+      RhythmicComplexityGradient.recordComplexity(currentDensity, absTime);
     }
 
     // --- Batch 7 intelligence module reads ---
@@ -387,54 +388,44 @@ GlobalConductor = (() => {
 
     // Record density for wave analysis
     if (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.recordDensity === 'function') {
-      const absTime3 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      DensityWaveAnalyzer.recordDensity(currentDensity, absTime3);
+      DensityWaveAnalyzer.recordDensity(currentDensity, absTime);
     }
     // Record dynamic extremes for range tracking
     if (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.recordExtremes === 'function') {
-      const absTime4 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      DynamicRangeTracker.recordExtremes(absTime4);
+      DynamicRangeTracker.recordExtremes(absTime);
     }
     // Record textural gradient snapshot
     if (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.recordDensity === 'function') {
-      const absTime5 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      TexturalGradientTracker.recordDensity(currentDensity, absTime5);
+      TexturalGradientTracker.recordDensity(currentDensity, absTime);
     }
     // Record ambitus snapshot
     if (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.recordSnapshot === 'function') {
-      const absTime6 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      AmbitusMigrationTracker.recordSnapshot(absTime6);
+      AmbitusMigrationTracker.recordSnapshot(absTime);
     }
     // Record intensity for macro dynamic architecture
     if (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.recordIntensity === 'function') {
-      const absTime7 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      DynamicArchitectPlanner.recordIntensity(compositeIntensity, absTime7);
+      DynamicArchitectPlanner.recordIntensity(compositeIntensity, absTime);
     }
     // Record bass for pedal field tracking
     if (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.recordBass === 'function') {
-      const absTime8 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      HarmonicPedalFieldTracker.recordBass(absTime8);
+      HarmonicPedalFieldTracker.recordBass(absTime);
     }
     // Record harmonic change rate for oscillation analysis
     if (typeof HarmonicDensityOscillator !== 'undefined' && HarmonicDensityOscillator && typeof HarmonicDensityOscillator.recordChangeRate === 'function') {
-      const absTime9 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       const hrChangeRate = (typeof harmonicRhythm === 'number' && Number.isFinite(harmonicRhythm)) ? clamp(harmonicRhythm, 0, 1) : 0.5;
-      HarmonicDensityOscillator.recordChangeRate(hrChangeRate, absTime9);
+      HarmonicDensityOscillator.recordChangeRate(hrChangeRate, absTime);
     }
     // Record layer entry/exit snapshot
     if (typeof LayerEntryExitTracker !== 'undefined' && LayerEntryExitTracker && typeof LayerEntryExitTracker.recordSnapshot === 'function') {
-      const absTime10 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      LayerEntryExitTracker.recordSnapshot(absTime10);
+      LayerEntryExitTracker.recordSnapshot(absTime);
     }
     // Record interval expansion/contraction snapshot
     if (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.recordSnapshot === 'function') {
-      const absTime11 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      IntervalExpansionContractor.recordSnapshot(absTime11);
+      IntervalExpansionContractor.recordSnapshot(absTime);
     }
     // Record intensity for dynamic peak memory
     if (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.recordIntensity === 'function') {
-      const absTime12 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      DynamicPeakMemory.recordIntensity(compositeIntensity, absTime12);
+      DynamicPeakMemory.recordIntensity(compositeIntensity, absTime);
     }
     // Record rhythmic density for contrast tracking
     if (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.recordDensity === 'function') {

@@ -18,15 +18,9 @@ ModalColorTracker = (() => {
   function getModalProfile(opts) {
     const { layer, windowSeconds } = opts || {};
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
-    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const { counts: pcCounts, total } = pitchClassHelpers.getPitchClassHistogram(ws, layer);
 
-    const pcCounts = new Array(12).fill(0);
-    for (let i = 0; i < notes.length; i++) {
-      const pc = (typeof notes[i].midi === 'number') ? ((notes[i].midi % 12) + 12) % 12 : 0;
-      pcCounts[pc]++;
-    }
-
-    if (notes.length < 3) {
+    if (total < 3) {
       return { pcDistribution: pcCounts, chordToneRatio: 0, colorToneRatio: 0, vanilla: false, colorful: false };
     }
 
@@ -37,9 +31,9 @@ ModalColorTracker = (() => {
       if (COLOR_TONES.has(i)) colorToneCount += pcCounts[i];
     }
 
-    const total = chordToneCount + colorToneCount;
-    const chordToneRatio = total > 0 ? chordToneCount / total : 0;
-    const colorToneRatio = total > 0 ? colorToneCount / total : 0;
+    const toneTotal = chordToneCount + colorToneCount;
+    const chordToneRatio = toneTotal > 0 ? chordToneCount / toneTotal : 0;
+    const colorToneRatio = toneTotal > 0 ? colorToneCount / toneTotal : 0;
 
     return {
       pcDistribution: pcCounts,

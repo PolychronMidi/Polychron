@@ -30,17 +30,11 @@ PhraseLengthMomentumTracker = (() => {
       return { momentum: 0, trend: 'insufficient', avgLength: 4, accelerating: false, expanding: false };
     }
 
-    const half = m.floor(history.length / 2);
-    let sumFirst = 0;
-    let sumSecond = 0;
-
-    for (let i = 0; i < half; i++) sumFirst += history[i].measures;
-    for (let i = half; i < history.length; i++) sumSecond += history[i].measures;
-
-    const avgFirst = sumFirst / half;
-    const avgSecond = sumSecond / (history.length - half);
+    /** @type {number[]} */
+    const measures = [];
+    for (let i = 0; i < history.length; i++) measures.push(history[i].measures);
+    const { slope: momentum, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(measures);
     const avgLength = (avgFirst + avgSecond) / 2;
-    const momentum = avgSecond - avgFirst;
 
     let trend = 'stable';
     if (momentum < -0.5) trend = 'accelerating';

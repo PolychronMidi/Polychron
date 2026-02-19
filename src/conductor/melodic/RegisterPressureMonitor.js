@@ -79,9 +79,32 @@ RegisterPressureMonitor = (() => {
     return { octaveBias, crowdedBands, emptyBands };
   }
 
+  /**
+   * Get a high/low register pressure signal.
+   * High pressure = notes crowded at extremes of playable range.
+   * @param {Object} [opts]
+   * @param {number} [opts.windowSeconds]
+   * @returns {{ highPressure: boolean, lowPressure: boolean }}
+   */
+  function getPressureSignal(opts) {
+    const bands = getRegisterPressure(opts);
+    const total = bands.reduce((a, b) => a + b, 0);
+    if (total < 4) return { highPressure: false, lowPressure: false };
+    // High bands (7-9) vs mid bands (4-6)
+    const highCount = bands[7] + bands[8] + bands[9];
+    const lowCount = bands[0] + bands[1] + bands[2] + bands[3];
+    const midCount = bands[4] + bands[5] + bands[6];
+    const threshold = midCount * 1.5;
+    return {
+      highPressure: highCount > threshold,
+      lowPressure: lowCount > threshold
+    };
+  }
+
   return {
     getRegisterPressure,
     getCrossLayerOverlap,
-    getRegisterBias
+    getRegisterBias,
+    getPressureSignal
   };
 })();

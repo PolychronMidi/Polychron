@@ -191,10 +191,7 @@ InterLayerRhythmAnalyzer = (() => {
       return { displacementRatio: 0, hemiola: false, phaseOffset: 0, intentional: false };
     }
 
-    const beatDur = (typeof tpSec !== 'undefined' && typeof tpBeat !== 'undefined'
-      && Number.isFinite(tpSec) && Number.isFinite(tpBeat) && tpSec > 0)
-      ? tpBeat / tpSec
-      : 0.5;
+    const beatDur = beatGridHelpers.getBeatDuration();
 
     // IOI ratios per layer
     const l1IOIs = [];

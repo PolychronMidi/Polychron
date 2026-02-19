@@ -11,24 +11,9 @@ PitchClassGravityMap = (() => {
    * @returns {{ center: number, stability: number, driftFromCenter: number, suggestion: string }}
    */
   function getGravitySignal() {
-    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const { counts: pcCounts, total: totalValid } = pitchClassHelpers.getPitchClassHistogram(WINDOW_SECONDS);
 
-    if (notes.length < 4) {
-      return { center: 0, stability: 0.5, driftFromCenter: 0, suggestion: 'maintain' };
-    }
-
-    // Count pitch classes
-    const pcCounts = new Array(12).fill(0);
-    let totalValid = 0;
-
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi < 0) continue;
-      pcCounts[midi % 12]++;
-      totalValid++;
-    }
-
-    if (totalValid === 0) {
+    if (totalValid < 4) {
       return { center: 0, stability: 0.5, driftFromCenter: 0, suggestion: 'maintain' };
     }
 
@@ -48,6 +33,7 @@ PitchClassGravityMap = (() => {
     const stability = clamp(centerWeight * 3, 0, 1);
 
     // Drift: check if recent notes (last quarter) shift away from center
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
     const recentStart = m.floor(notes.length * 0.75);
     let recentCenterCount = 0;
     let recentTotal = 0;
