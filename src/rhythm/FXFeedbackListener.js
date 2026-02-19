@@ -2,12 +2,12 @@
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : {
-        BEAT_FX_APPLIED: 'beat-fx-applied',
-        TEXTURE_CONTRAST: 'texture-contrast'
-      };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('FXFeedbackListener: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let accumulator = null;
   let initialized = false;
@@ -17,6 +17,7 @@ FXFeedbackListener = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('FXFeedbackListener: FeedbackAccumulator.create is required');
     }
+    const EVENTS = getEventsOrThrow();
 
     accumulator = FeedbackAccumulator.create({
       name: 'fx-feedback',
@@ -26,8 +27,11 @@ FXFeedbackListener = (() => {
           eventName: EVENTS.BEAT_FX_APPLIED,
           project(data) {
             if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: beat-fx-applied payload must be an object');
-            const stereoPan = Number.isFinite(Number(data.stereoPan)) ? Number(data.stereoPan) : 0;
-            const velocityShift = Number.isFinite(Number(data.velocityShift)) ? Number(data.velocityShift) : 0;
+            const stereoPan = Number(data.stereoPan);
+            const velocityShift = Number(data.velocityShift);
+            if (!Number.isFinite(stereoPan) || !Number.isFinite(velocityShift)) {
+              throw new Error('FXFeedbackListener: beat-fx-applied.stereoPan and velocityShift must be finite');
+            }
             const intensity = stereoPan * velocityShift;
             if (!Number.isFinite(intensity)) {
               throw new Error(`FXFeedbackListener: invalid intensity ${intensity}`);
@@ -39,8 +43,14 @@ FXFeedbackListener = (() => {
           eventName: EVENTS.TEXTURE_CONTRAST,
           project(data) {
             if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: texture-contrast payload must be an object');
-            const mode = data.mode || 'single';
-            const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0.5;
+            if (typeof data.mode !== 'string' || data.mode.length === 0) {
+              throw new Error('FXFeedbackListener: texture-contrast.mode must be a non-empty string');
+            }
+            const mode = data.mode;
+            const composite = Number(data.composite);
+            if (!Number.isFinite(composite)) {
+              throw new Error('FXFeedbackListener: texture-contrast.composite must be finite');
+            }
             const modeWeight = mode === 'chordBurst' ? 0.5 : mode === 'flurry' ? 0.3 : 0.1;
             const textureIntensity = modeWeight * composite;
             if (!Number.isFinite(textureIntensity)) {
@@ -72,7 +82,9 @@ FXFeedbackListener = (() => {
    * @returns {number}
    */
   function getIntensity() {
-    if (!accumulator) return 0;
+    if (!initialized || !accumulator) {
+      throw new Error('FXFeedbackListener.getIntensity: listener not initialized');
+    }
     return accumulator.getIntensity();
   }
 

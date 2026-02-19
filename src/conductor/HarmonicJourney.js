@@ -21,9 +21,12 @@
  */
 
 HarmonicJourney = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : { JOURNEY_MOVE: 'journey-move' };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('HarmonicJourney: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   if (typeof harmonicJourneyHelpers !== 'function') {
     throw new Error('HarmonicJourney: harmonicJourneyHelpers() not available');
@@ -99,9 +102,7 @@ HarmonicJourney = (() => {
       // Normalize key to pitch class
       const nextKey = t.Note.pitchClass(result.key);
       if (!nextKey) {
-        // Fallback: stay put
-        plan.push({ key: currentKey, mode: currentMode, move: 'hold', distance: 0 });
-        continue;
+        throw new Error(`HarmonicJourney.planJourney: move produced invalid key "${result.key}"`);
       }
 
       const dist = HJ.harmonicDistance(currentKey, nextKey);
@@ -164,6 +165,7 @@ HarmonicJourney = (() => {
 
     // Emit journey-move event for rhythm-harmonic coupling
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+      const EVENTS = getEventsOrThrow();
       EventBus.emit(EVENTS.JOURNEY_MOVE, {
         move: stop.move,
         distance: stop.distance,
@@ -188,7 +190,7 @@ HarmonicJourney = (() => {
     // Normalize key
     const normalized = t.Note.pitchClass(result.key);
     if (!normalized) {
-      return { key: l1Stop.key, mode: l1Stop.mode, relationship: 'fallback-unison' };
+      throw new Error(`HarmonicJourney.getL2Complement: relationship produced invalid key "${result.key}"`);
     }
 
     return { key: normalized, mode: result.mode, relationship: result.relationship };

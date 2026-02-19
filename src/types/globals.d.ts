@@ -608,6 +608,8 @@ declare var conductorConfigValidateProfile: any;
 declare var conductorConfigDynamics: any;
 declare var ConductorConfig: any;
 declare var GlobalConductor: any;
+declare var Validator: any;
+declare var StutterFailFast: any;
 declare var playNotesEmitPick: any;
 
 declare var AbsoluteTimeWindow: any;

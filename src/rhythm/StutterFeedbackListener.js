@@ -3,9 +3,12 @@
 // rhythm/dynamism systems can respond to stutter intensity.
 
 StutterFeedbackListener = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : { STUTTER_APPLIED: 'stutter-applied' };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('StutterFeedbackListener: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
@@ -17,6 +20,7 @@ StutterFeedbackListener = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('StutterFeedbackListener: FeedbackAccumulator.create is required');
     }
+    const EVENTS = getEventsOrThrow();
 
     accumulator = FeedbackAccumulator.create({
       name: 'stutter-feedback',
@@ -26,14 +30,23 @@ StutterFeedbackListener = (() => {
           eventName: EVENTS.STUTTER_APPLIED,
           project(data) {
             if (!data || typeof data !== 'object') throw new Error('StutterFeedbackListener: event payload must be an object');
-            const intensity = Number.isFinite(Number(data.intensity)) ? Number(data.intensity) : 0;
-            const weight = (data && data.type === 'note') ? 1.0 : 0.8;
+            const intensity = Number(data.intensity);
+            if (!Number.isFinite(intensity)) {
+              throw new Error('StutterFeedbackListener: stutter-applied.intensity must be finite');
+            }
+            if (typeof data.type !== 'string' || data.type.length === 0) {
+              throw new Error('StutterFeedbackListener: stutter-applied.type must be a non-empty string');
+            }
+            const weight = data.type === 'note' ? 1.0 : 0.8;
             return clamp(intensity * weight, 0, 1);
           }
         }
       ],
       onInput(data, contribution) {
-        const profile = (data && typeof data.profile === 'string') ? data.profile : 'unknown';
+        const profile = data.profile;
+        if (typeof profile !== 'string' || profile.length === 0) {
+          throw new Error('StutterFeedbackListener: stutter-applied.profile must be a non-empty string');
+        }
         if (profile && perProfile[profile] !== undefined) {
           perProfile[profile] = perProfile[profile] * decayRate + contribution * (1 - decayRate);
         }
@@ -55,7 +68,9 @@ StutterFeedbackListener = (() => {
 
   function getIntensity(profile = null) {
     if (profile && perProfile[profile] !== undefined) return clamp(perProfile[profile], 0, 1);
-    if (!accumulator) return 0;
+    if (!initialized || !accumulator) {
+      throw new Error('StutterFeedbackListener.getIntensity: listener not initialized');
+    }
     return accumulator.getIntensity();
   }
 

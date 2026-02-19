@@ -15,9 +15,12 @@
  * @property {number} modifiedAt
  */
 HarmonicContext = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : { HARMONIC_CHANGE: 'harmonic-change' };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('HarmonicContext: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   /** @type {HarmonicState} */
   let state = {
@@ -102,6 +105,7 @@ HarmonicContext = (() => {
     state.modifiedAt = Date.now();
 
     if (changedFields.length > 0 && typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+      const EVENTS = getEventsOrThrow();
       EventBus.emit(EVENTS.HARMONIC_CHANGE, {
         changedFields,
         key: state.key,

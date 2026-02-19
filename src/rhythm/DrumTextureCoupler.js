@@ -3,9 +3,12 @@
 // intensity and exposes it so drum patterns can accent in sympathy.
 
 DrumTextureCoupler = (() => {
-  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names
-    : { TEXTURE_CONTRAST: 'texture-contrast' };
+  function getEventsOrThrow() {
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('DrumTextureCoupler: EventCatalog.names is required');
+    }
+    return EventCatalog.names;
+  }
 
   let feedback = null;
   const decayRate = 0.88;
@@ -18,6 +21,7 @@ DrumTextureCoupler = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('DrumTextureCoupler: FeedbackAccumulator.create is required');
     }
+    const EVENTS = getEventsOrThrow();
 
     feedback = FeedbackAccumulator.create({
       name: 'drum-texture-coupler',
@@ -27,8 +31,14 @@ DrumTextureCoupler = (() => {
           eventName: EVENTS.TEXTURE_CONTRAST,
           project(data) {
             if (!data || typeof data !== 'object') throw new Error('DrumTextureCoupler: event payload must be an object');
-            const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
-            const mode = data.mode || 'single';
+            const composite = Number(data.composite);
+            if (!Number.isFinite(composite)) {
+              throw new Error('DrumTextureCoupler: texture-contrast.composite must be finite');
+            }
+            if (typeof data.mode !== 'string' || data.mode.length === 0) {
+              throw new Error('DrumTextureCoupler: texture-contrast.mode must be a non-empty string');
+            }
+            const mode = data.mode;
             const weight = mode === 'chordBurst' ? 0.7 : mode === 'flurry' ? 0.4 : 0;
             const intensity = weight * (0.5 + composite * 0.5);
             if (!Number.isFinite(intensity)) {
@@ -39,7 +49,13 @@ DrumTextureCoupler = (() => {
         }
       ],
       onInput(data) {
-        const mode = (data && typeof data.mode === 'string') ? data.mode : 'single';
+        if (!data || typeof data !== 'object') {
+          throw new Error('DrumTextureCoupler: onInput payload must be an object');
+        }
+        if (typeof data.mode !== 'string' || data.mode.length === 0) {
+          throw new Error('DrumTextureCoupler: texture-contrast.mode must be a non-empty string');
+        }
+        const mode = data.mode;
         if (mode === 'chordBurst') burstCount++;
         if (mode === 'flurry') flurryCount++;
       },
@@ -69,7 +85,9 @@ DrumTextureCoupler = (() => {
    * @returns {number}
    */
   function getIntensity() {
-    if (!feedback) return 0;
+    if (!initialized || !feedback) {
+      throw new Error('DrumTextureCoupler.getIntensity: listener not initialized');
+    }
     return feedback.getIntensity();
   }
 
