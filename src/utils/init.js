@@ -31,6 +31,12 @@ lastUsedCHs3=new Set();
  */
 velocity=99;
 
+/**
+ * MIDI velocity range maximum (0-127).
+ * @type {number}
+ */
+MIDI_MAX_VALUE=127;
+
 // Shared runtime voice-budget tracker (reset per-layer per-unit)
 // - Tracks how many 'picks' (voices) may still be emitted this unit for each layer
 // - Stored per-layer to prevent first-layer / first-unit dominance; legacy globals kept for compatibility

@@ -10,6 +10,7 @@
     "allowUnusedLabels": false,
     "allowJs": true,
     "checkJs": true,
+    "isolatedModules": true,
     "noEmit": true,
     "target": "ES2022",
     "module": "ESNext",

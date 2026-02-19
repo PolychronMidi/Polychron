@@ -105,7 +105,7 @@ transposeByDegree = function(noteOrMidi, scale = null, degreeOffset = 0, opts = 
     const targetOct = Math.floor(targetAbs / info.scalePC.length);
     const targetDeg = ((targetAbs % info.scalePC.length) + info.scalePC.length) % info.scalePC.length;
     const outMidiRaw = targetOct * 12 + info.scalePC[targetDeg];
-    const outMidi = (opts && opts.clampToMidi === false) ? outMidiRaw : clamp(outMidiRaw, 0, 127);
+    const outMidi = (opts && opts.clampToMidi === false) ? outMidiRaw : clamp(outMidiRaw, 0, MIDI_MAX_VALUE);
     if (typeof input === 'number') return outMidi;
     const copy = Object.assign({}, input);
     copy.note = outMidi;

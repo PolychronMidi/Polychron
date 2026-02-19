@@ -56,7 +56,7 @@ playNotesEmitPick = function(opts = {}) {
       ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
       : pick.note;
 
-    const texVel = m.max(1, m.min(127, m.round(onVel * textureMode.velocityScale)));
+    const texVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
     const texSustain = sustain * textureMode.sustainScale;
 
     const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
@@ -92,7 +92,7 @@ playNotesEmitPick = function(opts = {}) {
       for (let burstIndex = 0; burstIndex < burstCount; burstIndex++) {
         const interval = burstIntervals[burstIndex % burstIntervals.length] * (rf() < 0.3 ? -1 : 1);
         const burstNote = modClamp(noteToEmit + interval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-        const burstVel = m.max(1, m.min(127, m.round(texVel * rf(0.8, 1.0))));
+        const burstVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.8, 1.0))));
         const burstStagger = tpUnit * rf(0.002, 0.01) * (burstIndex + 1);
         const burstOnEvt = { tick: onTick + burstStagger, type: 'on', vals: [sourceCH, burstNote, burstVel] };
         const burstOffEvt = { tick: onTick + burstStagger + texSustain * rf(0.8, 1.1), vals: [sourceCH, burstNote] };
@@ -144,7 +144,7 @@ playNotesEmitPick = function(opts = {}) {
           flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
         }
 
-        const flurryVel = m.max(1, m.min(127, m.round(texVel * rf(0.65, 0.95) * (1 - flurryIndex * 0.05))));
+        const flurryVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95) * (1 - flurryIndex * 0.05))));
         const flurrySus = tpUnit * rf(0.08, 0.2) * textureMode.sustainScale;
         const flurryOnTick = onTick + flurryGap * (flurryIndex + 1);
         const flurryOnEvt = { tick: flurryOnTick, type: 'on', vals: [sourceCH, flurryNote, flurryVel] };
@@ -183,7 +183,7 @@ playNotesEmitPick = function(opts = {}) {
       for (let burstIndex = 0; burstIndex < reflBurstCount; burstIndex++) {
         const echoInterval = echoIntervals[burstIndex % echoIntervals.length] * (rf() < 0.3 ? -1 : 1);
         const echoNote = modClamp(reflectionEmitNote + echoInterval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-        const echoVel = m.max(1, m.min(127, m.round(onVelRefl * rf(0.45, 0.65) * textureMode.velocityScale)));
+        const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVelRefl * rf(0.45, 0.65) * textureMode.velocityScale)));
         const echoStagger = tpUnit * rf(0.01, 0.04) * (burstIndex + 1);
         const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [reflectionCH, echoNote, echoVel] };
         const echoOffEvt = { tick: onTick + echoStagger + sustain * textureMode.sustainScale * rf(0.6, 0.9), vals: [reflectionCH, echoNote] };
@@ -195,7 +195,7 @@ playNotesEmitPick = function(opts = {}) {
     if (textureMode.mode === 'flurry' && isPrimary) {
       const ghostDir = rf() < 0.5 ? 1 : -1;
       const ghostNote = modClamp(reflectionEmitNote + ghostDir * ri(1, 3), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
-      const ghostVel = m.max(1, m.min(127, m.round(onVelRefl * rf(0.35, 0.55))));
+      const ghostVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVelRefl * rf(0.35, 0.55))));
       const ghostDelay = tpUnit * rf(0.06, 0.14);
       const ghostSus = tpUnit * rf(0.1, 0.25) * textureMode.sustainScale;
       const ghostOnEvt = { tick: onTick + ghostDelay, type: 'on', vals: [reflectionCH, ghostNote, ghostVel] };

@@ -49,7 +49,7 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
     ? (ConductorConfig.getEmissionScaling().noiseProfile || 'subtle')
     : 'subtle';
   const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, emissionNoiseProfile);
-  const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, 127);
+  const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
 
   return { perProbScaled, onVel, velocityScaleBias };
 };

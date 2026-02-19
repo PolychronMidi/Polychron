@@ -209,7 +209,6 @@ FactoryManager = class FactoryManager {
     throw new Error(`ComposerFactory.createRandomForLayer: failed for layer "${layerName}" in family "${familyName}" after ${maxAttempts} attempts. Last error: ${lastError && lastError.message ? lastError.message : lastError}`);
   }
 
-  // createRandom removed (unused — only createRandomForLayer is called from main.js)
 };
 
 FactoryManager.validateCapabilityProfiles();
