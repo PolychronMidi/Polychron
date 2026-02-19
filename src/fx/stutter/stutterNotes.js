@@ -82,6 +82,12 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   } = opts;
 
   if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
+  if (typeof StutterConfig === 'undefined' || !StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getVelocityRange !== 'function') {
+    throw new Error('stutterNotes: StutterConfig methods getCrossModRules/getVelocityRange are required');
+  }
+  if (typeof reflection === 'undefined' || !Array.isArray(reflection) || typeof bass === 'undefined' || !Array.isArray(bass)) {
+    throw new Error('stutterNotes: reflection and bass channel arrays must be defined');
+  }
   const baseMidiNote = m.round(Number(note));
   const isBass = profile === 'bass';
 
@@ -104,20 +110,16 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // If mirror-selection not yet populated for this beat, lazily choose up to 2 channels
   if (!globalState.selectedReflectionChannels || globalState.selectedReflectionChannels.size === 0) {
-    try {
-      const candidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
-      for (const ch of candidates) {
-        if (globalState.selectedReflectionChannels.size < 2 && rf() < 0.5) globalState.selectedReflectionChannels.add(ch);
-      }
-    } catch { /* ignore */ }
+    const candidates = reflection.slice();
+    for (const ch of candidates) {
+      if (globalState.selectedReflectionChannels.size < 2 && rf() < 0.5) globalState.selectedReflectionChannels.add(ch);
+    }
   }
   if (!globalState.selectedBassChannels || globalState.selectedBassChannels.size === 0) {
-    try {
-      const candidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
-      for (const ch of candidates) {
-        if (globalState.selectedBassChannels.size < 2 && rf() < 0.5) globalState.selectedBassChannels.add(ch);
-      }
-    } catch { /* ignore */ }
+    const candidates = bass.slice();
+    for (const ch of candidates) {
+      if (globalState.selectedBassChannels.size < 2 && rf() < 0.5) globalState.selectedBassChannels.add(ch);
+    }
   }
 
   // Pan-spatial bias from CC context
@@ -134,9 +136,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const modBus = (beatContext && beatContext.mod && beatContext.mod[channel]) ? beatContext.mod[channel] : null;
 
   // Cross-mod rules from config (pan/fade/fx influence on stutter behavior)
-  const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getCrossModRules === 'function')
-    ? StutterConfig.getCrossModRules()
-    : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+  const crossRules = StutterConfig.getCrossModRules();
+  if (!crossRules || typeof crossRules !== 'object' || !crossRules.pan || !crossRules.fade || !crossRules.fx) {
+    throw new Error('stutterNotes: StutterConfig.getCrossModRules returned invalid shape');
+  }
 
   // Apply cross-mod adjustments
   let shiftRangeBias = 0;
@@ -156,7 +159,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Per-channel coherence overlay (shared noise key) — can bias shifts/decision
   const coherenceKey = (beatContext && beatContext.coherenceKey) ? beatContext.coherenceKey : null;
-  const cohMod = coherenceKey ? (getParameterModulation(channel, coherenceKey, on) || { x: 0.5, y: 0.5 }) : null;
+  const cohMod = coherenceKey ? getParameterModulation(channel, coherenceKey, on) : null;
+  if (coherenceKey && (!cohMod || !Number.isFinite(Number(cohMod.x)) || !Number.isFinite(Number(cohMod.y)))) {
+    throw new Error(`stutterNotes: invalid coherence modulation for key="${coherenceKey}" channel=${channel}`);
+  }
 
   // Pick ONE octave shift (avoid repeating the last shift used on this channel)
   const lastShift = localShared.shifts.get(channel) || null;
@@ -168,9 +174,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const stutterNote = m.round(_clampStutterNote(baseMidiNote + shift, isBass));
 
   // Velocity: scaled version of the original, with fade-direction coherence
-  const velRanges = (typeof StutterConfig !== 'undefined' && StutterConfig && StutterConfig.getVelocityRange)
-    ? StutterConfig.getVelocityRange(profile, isPrimary)
-    : (isPrimary ? [0.3, 0.7] : [0.45, 0.8]);
+  const velRanges = StutterConfig.getVelocityRange(profile, isPrimary);
+  if (!Array.isArray(velRanges) || velRanges.length < 2 || !Number.isFinite(Number(velRanges[0])) || !Number.isFinite(Number(velRanges[1]))) {
+    throw new Error(`stutterNotes: invalid velocity range for profile="${profile}"`);
+  }
   const rawVel = clamp(m.round(
     isPrimary ? velocity * rf(velRanges[0], velRanges[1]) : binVel * rf(velRanges[0], velRanges[1])
   ), 1, 127);
@@ -202,21 +209,24 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Emit and metrics
   p(c, evOn);
-  try {
-    const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-      ? EventCatalog.names.STUTTER_APPLIED
-      : 'stutter-applied';
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / 127, 0, 1), tick: stutterOn });
-  } catch { /* ignore */ }
+  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+    throw new Error('stutterNotes: EventCatalog.names is not available');
+  }
+  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+    throw new Error('stutterNotes: EventBus.emit is not available');
+  }
+  const eventName = EventCatalog.names.STUTTER_APPLIED;
+  EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / 127, 0, 1), tick: stutterOn });
   p(c, evOff);
-  try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(1, profile); } catch { /* ignore */ }
+  if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') {
+    StutterMetrics.incEmitted(1, profile);
+  }
 
   return localShared;
 };
 
 // Register this helper with StutterRegistry if present so tests/plugins can swap implementations.
-try {
-  if (typeof StutterRegistry !== 'undefined' && StutterRegistry && typeof StutterRegistry.registerHelper === 'function') {
-    StutterRegistry.registerHelper(stutterNotes);
-  }
-} catch { /* ignore */ }
+if (typeof StutterRegistry === 'undefined' || !StutterRegistry || typeof StutterRegistry.registerHelper !== 'function') {
+  throw new Error('stutterNotes: StutterRegistry.registerHelper is not available');
+}
+StutterRegistry.registerHelper(stutterNotes);

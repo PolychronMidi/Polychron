@@ -1,9 +1,6 @@
 // fx/StutterManager.js - Audio effects manager
 
 const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
-const STUTTER_EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-  ? EventCatalog.names
-  : { TEXTURE_CONTRAST: 'texture-contrast' };
 
 class StutterManager {
   constructor() {
@@ -28,6 +25,7 @@ class StutterManager {
     this._textureIntensity = 0;
     this._lastTextureMode = 'single';
     this._textureDecay = 0.85;
+    this._textureListenerAttached = false;
 
     // Plan scheduling: explicit plan objects (opt-in global stutter phrases)
     // plans: Map<planId, planCfg>
@@ -35,42 +33,68 @@ class StutterManager {
     this.scheduledPlans = new Map(); // tickKey -> [planId,...]
     this._nextPlanId = 1;
 
-    this.config = (SC && SC.getConfig ? SC.getConfig() : { profiles: {} });
+    if (!SC || typeof SC.getConfig !== 'function') {
+      throw new Error('StutterManager: StutterConfig.getConfig is not available');
+    }
+    this.config = SC.getConfig();
+    if (!this.config || typeof this.config !== 'object') {
+      throw new Error('StutterManager: StutterConfig.getConfig returned invalid config');
+    }
 
     // Default directive applied each beat unless overridden (keeps features active by default)
-    try {
-      this.defaultDirective = (SC && typeof SC.getDirectiveDefaults === 'function') ? SC.getDirectiveDefaults() : { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false } };
-    } catch {
-      this.defaultDirective = { phase: { left: 0, right: 0.5, center: 0 }, rateCurve: 'linear', phaseCurve: 'linear', coherence: { enabled: false } };
+    if (!SC || typeof SC.getDirectiveDefaults !== 'function') {
+      throw new Error('StutterManager: StutterConfig.getDirectiveDefaults is not available');
+    }
+    this.defaultDirective = SC.getDirectiveDefaults();
+    if (!this.defaultDirective || typeof this.defaultDirective !== 'object') {
+      throw new Error('StutterManager: invalid default directive from StutterConfig.getDirectiveDefaults');
+    }
+
+    // fx loads before play/EventBus; listener is attached lazily from prepareBeat().
+  }
+
+  _attachTextureListener() {
+    if (this._textureListenerAttached) return true;
+    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
+      throw new Error('StutterManager._attachTextureListener: EventBus.on is not available');
+    }
+    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+      throw new Error('StutterManager._attachTextureListener: EventCatalog.names is not available');
+    }
+    const eventName = EventCatalog.names.TEXTURE_CONTRAST;
+    if (typeof eventName !== 'string' || eventName.length === 0) {
+      throw new Error('StutterManager._attachTextureListener: invalid TEXTURE_CONTRAST event name');
     }
 
     // ── Texture-contrast EventBus listener (#1 bidirectional dialogue) ──
     // Chord bursts → trigger micro-stutters with tight rate + wide stereo phase
     // Flurries → suppress spontaneous stutters (let the runs breathe)
-    try {
-      if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.on === 'function') {
-        EventBus.on(STUTTER_EVENTS.TEXTURE_CONTRAST, (data) => {
-          if (!data || typeof data !== 'object') return;
-          const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
-          const mode = data.mode || 'single';
-          const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
-          this._textureIntensity = this._textureIntensity * this._textureDecay + weight * (1 - this._textureDecay);
-          this._lastTextureMode = mode;
+    EventBus.on(eventName, (data) => {
+      if (!data || typeof data !== 'object') return;
+      const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0;
+      const mode = data.mode || 'single';
+      const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
+      this._textureIntensity = this._textureIntensity * this._textureDecay + weight * (1 - this._textureDecay);
+      this._lastTextureMode = mode;
 
-          // Chord burst → immediate micro-stutter response on reflection channels
-          if (mode === 'chordBurst' && composite > 0.3) {
-            try {
-              const reflChs = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice(0, 2) : [];
-              if (reflChs.length > 0 && typeof this._stutterPan === 'function') {
-                const microRate = clamp(m.round(24 + composite * 16), 24, 48);
-                const microDuration = (typeof tpUnit === 'number' && Number.isFinite(tpUnit)) ? tpUnit * rf(0.3, 0.6) : 100;
-                this._stutterPan.call(this, reflChs, microRate, microDuration);
-              }
-            } catch { /* ignore micro-stutter failures */ }
-          }
-        });
+      // Chord burst → immediate micro-stutter response on reflection channels
+      if (mode === 'chordBurst' && composite > 0.3) {
+        if (typeof reflection === 'undefined' || !Array.isArray(reflection)) {
+          throw new Error('StutterManager._attachTextureListener: reflection channels array is not available');
+        }
+        if (typeof this._stutterPan !== 'function') {
+          throw new Error('StutterManager._attachTextureListener: stutterPan implementation not available');
+        }
+        const reflChs = reflection.slice(0, 2);
+        if (reflChs.length > 0) {
+          const microRate = clamp(m.round(24 + composite * 16), 24, 48);
+          const microDuration = (typeof tpUnit === 'number' && Number.isFinite(tpUnit)) ? tpUnit * rf(0.3, 0.6) : 100;
+          this._stutterPan.call(this, reflChs, microRate, microDuration);
+        }
       }
-    } catch { /* EventBus not ready yet — prepareBeat will handle later */ }
+    });
+    this._textureListenerAttached = true;
+    return true;
   }
 
   /**
@@ -85,17 +109,14 @@ class StutterManager {
   }
 
   _getStutterGrainParams() {
-    if (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getStutterGrainParams === 'function') {
-      return ConductorConfig.getStutterGrainParams();
+    if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getStutterGrainParams !== 'function') {
+      throw new Error('StutterManager._getStutterGrainParams: ConductorConfig.getStutterGrainParams is not available');
     }
-    return {
-      fadeCount: [10, 70],
-      fadeDuration: [0.2, 1.5],
-      panCount: [30, 90],
-      panDuration: [0.1, 1.2],
-      fxCount: [30, 100],
-      fxDuration: [0.1, 2]
-    };
+    const grain = ConductorConfig.getStutterGrainParams();
+    if (!grain || typeof grain !== 'object') {
+      throw new Error('StutterManager._getStutterGrainParams: invalid grain params');
+    }
+    return grain;
   }
 
   stutterFade(channels, numStutters = undefined, duration = undefined) {
@@ -166,8 +187,8 @@ class StutterManager {
       const arr = this.scheduledPlans.get(key) || [];
       arr.push(planId);
       this.scheduledPlans.set(key, arr);
-      try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, plan.profile || 'unknown'); } catch { /* ignore */ }
-      try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incPendingForTick === 'function') StutterMetrics.incPendingForTick(key, 1); } catch { /* ignore */ }
+      if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, plan.profile || 'unknown');
+      if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incPendingForTick === 'function') StutterMetrics.incPendingForTick(key, 1);
       return planId;
     }
 
@@ -209,10 +230,7 @@ class StutterManager {
       for (const planId of arr) {
         const plan = this.plans.get(planId);
         if (plan) {
-          try {
-            // decrement pending metrics before execution
-            if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.decPendingForTick === 'function') StutterMetrics.decPendingForTick(k, 1);
-          } catch { /* ignore */ }
+          if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.decPendingForTick === 'function') StutterMetrics.decPendingForTick(k, 1);
           this._executePlan(plan);
         }
       }
@@ -250,11 +268,12 @@ class StutterManager {
       provided.beatContext.coherenceKey = `${prefix}:${seed}`;
     }
 
-    try { if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, provided.profile || 'unknown'); } catch { /* ignore */ }
+    if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, provided.profile || 'unknown');
     return stutterNotes(provided);
   }
 
   prepareBeat() {
+    this._attachTextureListener();
     // Idempotent per-beat setup: apply default directive (coherenceKey, reset per-beat selectors)
     if (!this.beatContext) this.beatContext = {};
     // Reset per-beat selection sets when beatIndex changes
@@ -270,28 +289,31 @@ class StutterManager {
         ? clamp(1 - this._textureIntensity * 1.5, 0.1, 0.5) // lower selection chance
         : 0.5;
 
-      try {
-        const reflCandidates = (typeof reflection !== 'undefined' && Array.isArray(reflection)) ? reflection.slice() : [];
-        for (const ch of reflCandidates) if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedReflectionChannels.add(ch);
-      } catch { /* ignore */ }
-      try {
-        const bassCandidates = (typeof bass !== 'undefined' && Array.isArray(bass)) ? bass.slice() : [];
-        for (const ch of bassCandidates) if (this.beatContext.selectedBassChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedBassChannels.add(ch);
-      } catch { /* ignore */ }
+      if (typeof reflection === 'undefined' || !Array.isArray(reflection)) {
+        throw new Error('StutterManager.prepareBeat: reflection channels array is not available');
+      }
+      if (typeof bass === 'undefined' || !Array.isArray(bass)) {
+        throw new Error('StutterManager.prepareBeat: bass channels array is not available');
+      }
+      const reflCandidates = reflection.slice();
+      for (const ch of reflCandidates) if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedReflectionChannels.add(ch);
+      const bassCandidates = bass.slice();
+      for (const ch of bassCandidates) if (this.beatContext.selectedBassChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedBassChannels.add(ch);
     }
 
     // Apply default coherence key if enabled in defaultDirective
-    try {
-      const def = this.defaultDirective || {};
-      if (def.coherence && def.coherence.enabled) {
-        const prefix = (def.coherence && def.coherence.keyPrefix) ? def.coherence.keyPrefix : 'stutter';
-        const seed = `${typeof measureIndex !== 'undefined' ? measureIndex : 'm'}:${typeof beatIndex !== 'undefined' ? beatIndex : 'b'}`;
-        this.beatContext.coherenceKey = `${prefix}:beat:${seed}`;
-      } else if (this.beatContext && this.beatContext.coherenceKey && !(def.coherence && def.coherence.enabled)) {
-        // clear if defaults say disabled and it was left over
-        delete this.beatContext.coherenceKey;
-      }
-    } catch { /* ignore */ }
+    const def = this.defaultDirective;
+    if (!def || typeof def !== 'object') {
+      throw new Error('StutterManager.prepareBeat: defaultDirective is not initialized');
+    }
+    if (def.coherence && def.coherence.enabled) {
+      const prefix = (def.coherence && typeof def.coherence.keyPrefix === 'string' && def.coherence.keyPrefix.length > 0) ? def.coherence.keyPrefix : 'stutter';
+      const seed = `${typeof measureIndex !== 'undefined' ? measureIndex : 'm'}:${typeof beatIndex !== 'undefined' ? beatIndex : 'b'}`;
+      this.beatContext.coherenceKey = `${prefix}:beat:${seed}`;
+    } else if (this.beatContext && this.beatContext.coherenceKey && !(def.coherence && def.coherence.enabled)) {
+      // clear if defaults say disabled and it was left over
+      delete this.beatContext.coherenceKey;
+    }
 
     // Ensure modulation bus exists for this beat
     if (!this.beatContext.mod) this.beatContext.mod = {};
@@ -320,7 +342,8 @@ class StutterManager {
     this.lastUsedCHs2.clear();
     this.lastUsedCHs3.clear();
     this.beatContext = {};
-    try { this.shared.shifts.clear(); this.shared.global = {}; } catch { /* ignore errors clearing shared state */ }
+    this.shared.shifts.clear();
+    this.shared.global = {};
 
     return { cleared: prev1 + prev2 + prev3, lastUsedCHs: prev1, lastUsedCHs2: prev2, lastUsedCHs3: prev3 };
   }

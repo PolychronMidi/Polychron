@@ -80,12 +80,31 @@ safeApplyNoise = function(config, x, y, time) {
 // One-shot unified modulation call (typical integration pattern)
 // Returns {x, y} values 0-1 for parameter modulation
 getParameterModulation = function(voiceId, paramKey, time, generatorName = randomNoiseGenerator()) {
-  const seed = voiceId * 73 + paramKey.length * 43; // deterministic seed from voice+param
+  const voiceIdNum = Number(voiceId);
+  if (!Number.isFinite(voiceIdNum)) {
+    throw new Error(`getParameterModulation: voiceId must be finite, got ${voiceId}`);
+  }
+  if (typeof paramKey !== 'string' || paramKey.length === 0) {
+    throw new Error('getParameterModulation: paramKey must be a non-empty string');
+  }
+  if (!Number.isFinite(Number(time))) {
+    throw new Error(`getParameterModulation: time must be finite, got ${time}`);
+  }
+  if (typeof generatorName !== 'string' || generatorName.length === 0) {
+    throw new Error(`getParameterModulation: generatorName must be a non-empty string, got ${generatorName}`);
+  }
+
+  const seed = voiceIdNum * 73 + paramKey.length * 43; // deterministic seed from voice+param
   const offsetX = rf(-1000, 1000) + seed;
   const offsetY = rf(-1000, 1000) + seed * 2;
+  const x = clampNoiseValue(layeredNoise(generatorName, offsetX, offsetY, Number(time), 0.01, 0.1));
+  const y = clampNoiseValue(layeredNoise(generatorName, offsetY, offsetX, Number(time), 0.01, 0.1));
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    throw new Error(`getParameterModulation: non-finite modulation output for generator="${generatorName}" voiceId=${voiceIdNum} param="${paramKey}" time=${time}`);
+  }
   return {
-    x: clampNoiseValue(layeredNoise(generatorName, offsetX, offsetY, time, 0.01, 0.1)),
-    y: clampNoiseValue(layeredNoise(generatorName, offsetY, offsetX, time, 0.01, 0.1)),
+    x,
+    y,
     generator: generatorName
   };
 };

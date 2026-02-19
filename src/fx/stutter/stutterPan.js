@@ -1,8 +1,12 @@
 /** @this {any} */
 stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-  const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names.STUTTER_APPLIED
-    : 'stutter-applied';
+  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+    throw new Error('stutterPan: EventCatalog.names is not available');
+  }
+  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+    throw new Error('stutterPan: EventBus.emit is not available');
+  }
+  const eventName = EventCatalog.names.STUTTER_APPLIED;
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
   // Write beat-level pan context for spatial-aware octave shifts (task 7)
@@ -34,12 +38,18 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
       const mod = getParameterModulation(channelToStutter, 'pan', tick);
+      if (!mod || !Number.isFinite(Number(mod.x)) || !Number.isFinite(Number(mod.y))) {
+        throw new Error(`stutterPan: invalid pan modulation for channel=${channelToStutter} tick=${tick}`);
+      }
 
       // If coherence key exists, overlay correlated modulation
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        try { coh = getParameterModulation(channelToStutter, coherenceKey, tick); } catch { coh = { x: 0.5, y: 0.5 }; }
+        coh = getParameterModulation(channelToStutter, coherenceKey, tick);
+        if (!coh || !Number.isFinite(Number(coh.x)) || !Number.isFinite(Number(coh.y))) {
+          throw new Error(`stutterPan: invalid coherence modulation for key="${coherenceKey}" channel=${channelToStutter}`);
+        }
       }
 
       // Y axis controls pan flutter - add oscillation on top of movement
@@ -48,19 +58,18 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       currentPan += basePanDelta;
       currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
+      if (!Number.isFinite(Number(currentPan))) {
+        throw new Error(`stutterPan: computed non-finite currentPan for channel=${channelToStutter} tick=${tick}`);
+      }
 
       // publish modulation bus pan intensity (-1..1 normalized to 0..1 for convenience)
-      try {
-        const norm = (currentPan - 64) / 63; // -1..1
-        if (!this.beatContext.mod) this.beatContext.mod = {};
-        this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
-      } catch { /* ignore */ }
+      const norm = (currentPan - 64) / 63; // -1..1
+      if (!this.beatContext.mod) this.beatContext.mod = {};
+      this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
 
       // emit feedback for stutter cross-mod listeners (include inferred profile)
-      try {
-        const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
-      } catch { /* ignore */ }
+      const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
+      EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }

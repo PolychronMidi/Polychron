@@ -1,8 +1,15 @@
 /** @this {any} */
 stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-  const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
-    ? EventCatalog.names.STUTTER_APPLIED
-    : 'stutter-applied';
+  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+    throw new Error('stutterFX: EventCatalog.names is not available');
+  }
+  if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+    throw new Error('stutterFX: EventBus.emit is not available');
+  }
+  if (typeof reflection === 'undefined' || !Array.isArray(reflection) || typeof bass === 'undefined' || !Array.isArray(bass)) {
+    throw new Error('stutterFX: reflection and bass channel arrays must be defined');
+  }
+  const eventName = EventCatalog.names.STUTTER_APPLIED;
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
   channelsArray.forEach(channelToStutter => {
@@ -21,12 +28,18 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
 
       // Noise-modulate the FX curve — X axis warps the ramp, Y axis adds flutter
       const mod = getParameterModulation(channelToStutter, 'fx', tick);
+      if (!mod || !Number.isFinite(Number(mod.x)) || !Number.isFinite(Number(mod.y))) {
+        throw new Error(`stutterFX: invalid fx modulation for channel=${channelToStutter} tick=${tick}`);
+      }
 
       // If a coherence key exists, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        try { coh = getParameterModulation(channelToStutter, coherenceKey, tick); } catch { coh = { x: 0.5, y: 0.5 }; }
+        coh = getParameterModulation(channelToStutter, coherenceKey, tick);
+        if (!coh || !Number.isFinite(Number(coh.x)) || !Number.isFinite(Number(coh.y))) {
+          throw new Error(`stutterFX: invalid coherence modulation for key="${coherenceKey}" channel=${channelToStutter}`);
+        }
       }
 
       const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX + (coh.x - 0.5) * 10;
@@ -34,21 +47,17 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, 127);
 
       // publish modulation bus entry for cross‑mod sampling
-      try {
-        const norm = clamp(currentValue / 127, 0, 1);
-        if (!this.beatContext.mod) this.beatContext.mod = {};
-        this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });
-      } catch { /* ignore */ }
+      const norm = clamp(currentValue / 127, 0, 1);
+      if (!this.beatContext.mod) this.beatContext.mod = {};
+      this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });
 
       // feedback event (include inferred profile)
-      try {
-        const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
-      } catch { /* ignore */ }
+      const profile = reflection.includes(channelToStutter) ? 'reflection' : bass.includes(channelToStutter) ? 'bass' : 'source';
+      EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
 
       // Map raw `currentValue` into the hub FX ranges for this channel/CC
       const mapToFxRange = (ch, cc, raw) => {
-        const group = (typeof reflection !== 'undefined' && reflection.includes(ch)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(ch)) ? 'bass' : 'source';
+        const group = reflection.includes(ch) ? 'reflection' : bass.includes(ch) ? 'bass' : 'source';
         let def = null;
         if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
           if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
@@ -66,7 +75,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
     const defaultReset = (ch, cc) => {
       let def = null;
       if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
-        const group = (typeof reflection !== 'undefined' && reflection.includes(ch)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(ch)) ? 'bass' : 'source';
+        const group = reflection.includes(ch) ? 'reflection' : bass.includes(ch) ? 'bass' : 'source';
         if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
         else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
       }

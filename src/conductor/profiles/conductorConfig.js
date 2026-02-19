@@ -177,27 +177,26 @@ ConductorConfig = (() => {
    * @returns {{reverbScale:number,filterScale:number,portamentoScale:number}}
    */
   function getJourneyFxModulation(stopOverride) {
-    const tuning = getProfileTuning().journeyFx || {
-      distanceDivisor: 6,
-      reverbMaxBoost: 0.4,
-      filterMaxBoost: 0.2,
-      returnHomePortamentoBoost: 0.5,
-      returnHomeReverbDamp: 0.8
-    };
+    const profileTuning = getProfileTuning();
+    if (!profileTuning || typeof profileTuning !== 'object' || !profileTuning.journeyFx || typeof profileTuning.journeyFx !== 'object') {
+      throw new Error('ConductorConfig.getJourneyFxModulation: missing journeyFx tuning in active profile');
+    }
+    const tuning = profileTuning.journeyFx;
 
     /** @type {{distance?:number,move?:string}|null} */
     let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
     if (!stop) {
-      if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.getStop === 'function' && Number.isFinite(Number(sectionIndex))) {
-        try {
-          const maybe = HarmonicJourney.getStop(Number(sectionIndex));
-          stop = (maybe && typeof maybe === 'object') ? maybe : { distance: 0, move: 'hold' };
-        } catch {
-          stop = { distance: 0, move: 'hold' };
-        }
-      } else {
-        stop = { distance: 0, move: 'hold' };
+      if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
+        throw new Error('ConductorConfig.getJourneyFxModulation: HarmonicJourney.getStop is not available');
       }
+      if (!Number.isFinite(Number(sectionIndex))) {
+        throw new Error(`ConductorConfig.getJourneyFxModulation: sectionIndex must be finite, got ${sectionIndex}`);
+      }
+      const maybe = HarmonicJourney.getStop(Number(sectionIndex));
+      if (!maybe || typeof maybe !== 'object') {
+        throw new Error('ConductorConfig.getJourneyFxModulation: HarmonicJourney.getStop returned invalid stop object');
+      }
+      stop = maybe;
     }
 
     const distanceDivisor = Number.isFinite(Number(tuning.distanceDivisor)) ? m.max(0.1, Number(tuning.distanceDivisor)) : 6;
@@ -206,7 +205,7 @@ ConductorConfig = (() => {
     const returnHomePortamentoBoost = Number.isFinite(Number(tuning.returnHomePortamentoBoost)) ? Number(tuning.returnHomePortamentoBoost) : 0.5;
     const returnHomeReverbDamp = Number.isFinite(Number(tuning.returnHomeReverbDamp)) ? Number(tuning.returnHomeReverbDamp) : 0.8;
 
-    const s = /** @type {{distance?:number,move?:string}} */ (stop || { distance: 0, move: 'hold' });
+    const s = /** @type {{distance?:number,move?:string}} */ (stop);
     const distance = Number.isFinite(Number(s.distance)) ? Number(s.distance) : 0;
     const move = (typeof s.move === 'string' && s.move.length > 0) ? s.move : 'hold';
     const distanceFactor = clamp(distance / distanceDivisor, 0, 1);
