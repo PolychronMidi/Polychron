@@ -43,8 +43,33 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
         if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
       } catch { /* ignore */ }
 
-      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, currentValue] });
+      // Map raw `currentValue` into the hub FX ranges for this channel/CC
+      const mapToFxRange = (ch, cc, raw) => {
+        const group = (typeof reflection !== 'undefined' && reflection.includes(ch)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(ch)) ? 'bass' : 'source';
+        let def = null;
+        if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
+          if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
+          else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
+        }
+        if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) {
+          return m.round(def.min + (def.max - def.min) * clamp(raw / 127, 0, 1));
+        }
+        return clamp(raw, 0, 127);
+      };
+
+      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, mapToFxRange(channelToStutter, ccParam, currentValue)] });
     }
-    p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, 64] });
+    // restore to mid-point of configured range (falls back to 64)
+    const defaultReset = (ch, cc) => {
+      let def = null;
+      if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
+        const group = (typeof reflection !== 'undefined' && reflection.includes(ch)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(ch)) ? 'bass' : 'source';
+        if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
+        else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
+      }
+      if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) return m.round((Number(def.min) + Number(def.max)) / 2);
+      return 64;
+    };
+    p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, defaultReset(channelToStutter, ccParam)] });
   });
 };
