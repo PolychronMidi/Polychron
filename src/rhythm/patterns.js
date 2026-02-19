@@ -1,10 +1,7 @@
 // src/rhythm/patterns.js - pattern utilities and rhythm methods
 
-/**
- * Rhythm patterns library with weighted selection.
- * @type {Object}
- */
-rhythms={
+// Local default pattern table
+const LOCAL_RHYTHMS = {
   'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
   'hex':{weights:[2,3,1],method:'hex',args:(length)=>[length]},
   'onsets':{weights:[5,0,0],method:'onsets',args:(length)=>[{make:[length,()=>[1,2]]}]},
@@ -17,6 +14,13 @@ rhythms={
   'rotate':{weights:[2,2,2],method:'rotate',args:(length,pattern)=>[pattern,ri(2),'?',length]},
   'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
 };
+
+// Populate the naked-global `rhythms` by mutating rather than conditionally reassigning it
+rhythms = {};
+Object.assign(rhythms, LOCAL_RHYTHMS);
+if (typeof RHYTHM_PATTERNS !== 'undefined' && RHYTHM_PATTERNS) {
+  Object.assign(rhythms, RHYTHM_PATTERNS);
+}
 
 _rp = require('@tonaljs/rhythm-pattern');
 _binary = _rp.binary; _hex = _rp.hex; _onsets = _rp.onsets; _random = _rp.random; _probability = _rp.probability; _euclid = _rp.euclid; _rotate = _rp.rotate;

@@ -198,8 +198,23 @@ PhraseArcManager = class PhraseArcManager {
 
   /**
    * Generate arc profile functions for different arc types
+   * Uses PHRASES_ARC_CURVES from config if available, otherwise falls back to internal defaults.
    */
   _generateArcProfiles() {
+    // If centralized curves are defined, use them (adapted to local instance ranges where applicable)
+    if (typeof PHRASES_ARC_CURVES !== 'undefined') {
+      const adapted = {};
+      for (const [key, curve] of Object.entries(PHRASES_ARC_CURVES)) {
+        adapted[key] = {
+          register: (pos) => (curve.register ? curve.register(pos) : 0),
+          density: (pos) => (curve.density ? curve.density(pos) : 1),
+          independence: (pos) => (curve.independence ? curve.independence(pos) : 0.5),
+          dynamism: (pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0)
+        };
+      }
+      return adapted;
+    }
+
     return {
       // Classic arch: rise to peak at 0.6, then fall
       arch: {
