@@ -60,6 +60,18 @@ const scaleFxRange = (minValue, maxValue, rangeScale) => {
  * @param {number} [conditionMin]
  * @param {number} [conditionMax]
  */const rfx = (groupName, ch, effectNum, minValue, maxValue, condition = undefined, conditionMin = undefined, conditionMax = undefined) => {
+  // Use centralized FX defaults if logic arguments are missing
+  if ((typeof minValue === 'undefined' || minValue === null) && typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS[effectNum]) {
+    const def = FX_CC_DEFAULTS[effectNum];
+    minValue = def.min;
+    maxValue = def.max;
+    // Also pull condition defaults if not provided
+    if (typeof conditionMin === 'undefined' && typeof def.conditionMin !== 'undefined') {
+      conditionMin = def.conditionMin;
+      conditionMax = def.conditionMax;
+    }
+  }
+
   const scale = resolveRangeScale(groupName, effectNum);
   const [scaledMin, scaledMax] = scaleFxRange(minValue, maxValue, scale);
   let scaledConditionMin = conditionMin;

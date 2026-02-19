@@ -3,9 +3,8 @@
 // Initialize default simplex instance for shared use
 defaultSimplex = new SimplexNoise(rf());
 
-// Noise generator registry with named generators
-// Each returns values in range appropriate for audio modulation
-noiseGenerators = {
+// Noise generator implementations
+const implementations = {
   // Core 2D noise
   simplex: (x, y, time) => defaultSimplex.noise(x + time * 0.1, y + time * 0.1),
 
@@ -29,6 +28,17 @@ noiseGenerators = {
   metaSimplex2D: (x, y, time) => metaRecursiveSimplex2D(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(20, 80)),
   metaFBM: (x, y, time) => metaRecursiveFBM(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(15, 45))
 };
+
+// Populate the naked-global `noiseGenerators` by mutating rather than conditionally reassigning
+noiseGenerators = {};
+Object.assign(noiseGenerators, implementations);
+if (typeof NOISE_GENERATOR_REGISTRY !== 'undefined' && NOISE_GENERATOR_REGISTRY) {
+  Object.keys(NOISE_GENERATOR_REGISTRY).forEach(key => {
+    const target = NOISE_GENERATOR_REGISTRY[key];
+    const impl = implementations[target] || implementations[key];
+    if (impl) noiseGenerators[key] = impl;
+  });
+}
 
 // Cache generator keys to avoid repeated Object.keys() calls
 generatorKeys = Object.keys(noiseGenerators);

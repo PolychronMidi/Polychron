@@ -324,4 +324,82 @@ MAIN_LOOP_CONTROLS = {
     stutterProb: 0.3
   }
 };
+
+// 1. Centralized FX CC Defaults: Defines the safe ranges and mappings for all CC effects.
+// Keys match the 'effectNum' used in setBalanceAndFX.js
+FX_CC_DEFAULTS = {
+  1: { min: 0, max: 60, conditionMin: 0, conditionMax: 10, label: 'Modulation' },
+  5: { min: 125, max: 127, conditionMin: 126, conditionMax: 127, label: 'Portamento' },
+  11: { min: 64, max: 127, conditionMin: 115, conditionMax: 127, label: 'Expression' },
+  65: { min: 45, max: 64, conditionMin: 35, conditionMax: 64, label: 'Portamento On/Off' },
+  67: { min: 63, max: 64, label: 'Soft Pedal' },
+  68: { min: 63, max: 64, label: 'Legato Pedal' },
+  69: { min: 63, max: 64, label: 'Hold 2 Pedal' },
+  70: { min: 0, max: 127, label: 'Sound Variation' },
+  71: { min: 0, max: 127, label: 'Resonance' },
+  72: { min: 64, max: 127, label: 'Release Time' },
+  73: { min: 0, max: 64, label: 'Attack Time' },
+  74: { min: 80, max: 127, label: 'Brightness' },
+  91: { min: 0, max: 33, label: 'Reverb' },
+  92: { min: 0, max: 33, label: 'Tremolo' },
+  93: { min: 0, max: 33, label: 'Chorus' },
+  94: { min: 0, max: 5, conditionMin: 0, conditionMax: 64, label: 'Detune' },
+  95: { min: 0, max: 33, label: 'Phaser' }
+};
+
+// 2. Centralized Noise Generator Registry: Defines available noise types and their implementation keys.
+NOISE_GENERATOR_REGISTRY = {
+  simplex: 'simplex',
+  perlin: 'perlin',
+  fbm: 'fbm',
+  turbulence: 'turbulence',
+  metaSimplex2D: 'metaSimplex2D',
+  metaFBM: 'metaFBM',
+  worley: 'worley',
+  ridged: 'ridged'
+};
+
+// 4. Centralized Rhythm Patterns: Defines standard patterns and their weights/generation methods.
+RHYTHM_PATTERNS = {
+  binary: { weights: [2, 3, 1], method: 'binary', args: (length) => [length] },
+  hex: { weights: [2, 3, 1], method: 'hex', args: (length) => [length] },
+  onsets: { weights: [5, 0, 0], method: 'onsets', args: (length) => [{ make: [length, () => [1, 2]] }] },
+  onsets2: { weights: [0, 2, 0], method: 'onsets', args: (length) => [{ make: [length, [2, 3, 4]] }] },
+  onsets3: { weights: [0, 0, 7], method: 'onsets', args: (length) => [{ make: [length, () => [3, 7]] }] },
+  random: { weights: [7, 0, 0], method: 'random', args: (length) => [length, 0.2] }, // simplified prob arg
+  random2: { weights: [0, 3, 0], method: 'random', args: (length) => [length, 0.3] },
+  random3: { weights: [0, 0, 1], method: 'random', args: (length) => [length, 0.3] },
+  euclid: { weights: [3, 3, 3], method: 'euclid', args: (length) => {
+      // Logic from patterns.js moved here conceptually, but functions like closestDivisor need to be available scope-side or passed in.
+      // Keeping simple config args here for now, logic remains in patterns.js to interpret.
+      return [length, 'dynamic'];
+  }},
+  rotate: { weights: [2, 2, 2], method: 'rotate', args: (length, pattern) => [pattern, 2, '?', length] },
+  morph: { weights: [2, 3, 3], method: 'morph', args: (length, pattern) => [pattern, '?', length] }
+};
+
+// 5. Centralized Phrase Arc Curves: Defines the shape functions for intensity/register over a phrase.
+PHRASES_ARC_CURVES = {
+  'arch': {
+    register: (p) => Math.sin(Number(p) * Math.PI) * 12 - 6,
+    density: (p) => Math.sin(Number(p) * Math.PI) * 0.4 + 0.8,
+    dynamism: () => 1.0
+  },
+  'wave': {
+    register: (p) => Math.sin(Number(p) * Math.PI * 2) * 8,
+    density: (p) => Math.cos(Number(p) * Math.PI) * 0.3 + 0.9,
+    dynamism: (p) => 0.8 + Number(p) * 0.4
+  },
+  'rise-fall': {
+    register: (p) => (Number(p) < 0.7 ? Number(p) * 15 : (1 - Number(p)) * 30) - 5,
+    density: (p) => Number(p) * 0.5 + 0.5,
+    dynamism: (p) => 1.0 + Number(p) * 0.2
+  },
+  'build-resolve': {
+    register: (p) => Number(p) * 24 - 12,
+    density: (p) => Number(p) * 0.8 + 0.4,
+    dynamism: (p) => 0.5 + Number(p) * 1.0
+  }
+};
+
 SILENT_OUTRO_SECONDS=5;
