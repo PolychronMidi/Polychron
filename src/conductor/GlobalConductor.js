@@ -288,6 +288,40 @@ GlobalConductor = (() => {
       ? SilenceDistributionTracker.getSilenceSignal()
       : { clusterScore: 0, staggerScore: 0, silenceRatio: 0.3, suggestion: 'maintain' };
 
+    // --- Batch 10 intelligence module reads ---
+    // VoiceLeadingEfficiencyTracker: density bias from voice-leading smoothness
+    const voiceLeadDensityBias = (typeof VoiceLeadingEfficiencyTracker !== 'undefined' && VoiceLeadingEfficiencyTracker && typeof VoiceLeadingEfficiencyTracker.getDensityBias === 'function')
+      ? clamp(VoiceLeadingEfficiencyTracker.getDensityBias(), 0.9, 1.1)
+      : 1;
+    // RhythmicGroupingAnalyzer: grouping signal (consumed via ConductorState)
+    const groupingSignal = (typeof RhythmicGroupingAnalyzer !== 'undefined' && RhythmicGroupingAnalyzer && typeof RhythmicGroupingAnalyzer.getGroupingSignal === 'function')
+      ? RhythmicGroupingAnalyzer.getGroupingSignal()
+      : { groupingType: 'ambiguous', binaryScore: 0.5, ternaryScore: 0.5, inTransition: false };
+    // DynamicArchitectPlanner: tension bias from macro dynamic plan
+    const dynamicPlanTensionBias = (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.getTensionBias === 'function')
+      ? clamp(DynamicArchitectPlanner.getTensionBias(), 0.9, 1.15)
+      : 1;
+    // TessituraPressureMonitor: density bias from extreme register pressure
+    const tessituraDensityBias = (typeof TessituraPressureMonitor !== 'undefined' && TessituraPressureMonitor && typeof TessituraPressureMonitor.getDensityBias === 'function')
+      ? clamp(TessituraPressureMonitor.getDensityBias(), 0.85, 1.1)
+      : 1;
+    // PolyrhythmicAlignmentTracker: flicker modifier at convergence points
+    const polyAlignFlicker = (typeof PolyrhythmicAlignmentTracker !== 'undefined' && PolyrhythmicAlignmentTracker && typeof PolyrhythmicAlignmentTracker.getFlickerModifier === 'function')
+      ? clamp(PolyrhythmicAlignmentTracker.getFlickerModifier(), 0.9, 1.2)
+      : 1;
+    // MelodicDirectionalityTracker: density bias from directional monotony
+    const melodicDirDensityBias = (typeof MelodicDirectionalityTracker !== 'undefined' && MelodicDirectionalityTracker && typeof MelodicDirectionalityTracker.getDensityBias === 'function')
+      ? clamp(MelodicDirectionalityTracker.getDensityBias(), 0.9, 1.05)
+      : 1;
+    // HarmonicFieldDensityTracker: density bias from vertical harmonic thickness
+    const harmFieldDensityBias = (typeof HarmonicFieldDensityTracker !== 'undefined' && HarmonicFieldDensityTracker && typeof HarmonicFieldDensityTracker.getDensityBias === 'function')
+      ? clamp(HarmonicFieldDensityTracker.getDensityBias(), 0.9, 1.1)
+      : 1;
+    // OrchestrationWeightTracker: register weight signal (consumed via ConductorState)
+    const orchestrationSignal = (typeof OrchestrationWeightTracker !== 'undefined' && OrchestrationWeightTracker && typeof OrchestrationWeightTracker.getWeightSignal === 'function')
+      ? OrchestrationWeightTracker.getWeightSignal()
+      : { bassWeight: 0.33, midWeight: 0.34, trebleWeight: 0.33, suggestion: 'balanced', dominantBand: 'none' };
+
     // Record density for wave analysis
     if (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.recordDensity === 'function') {
       const absTime3 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
@@ -308,6 +342,11 @@ GlobalConductor = (() => {
       const absTime6 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       AmbitusMigrationTracker.recordSnapshot(absTime6);
     }
+    // Record intensity for macro dynamic architecture
+    if (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.recordIntensity === 'function') {
+      const absTime7 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      DynamicArchitectPlanner.recordIntensity(compositeIntensity, absTime7);
+    }
 
     // Apply coherence-based density bias: low coherence → thinner density
     const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
@@ -322,7 +361,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias * chromaticDensityBias * leapStepDensityBias * ambitusDensityBias, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias * chromaticDensityBias * leapStepDensityBias * ambitusDensityBias * voiceLeadDensityBias * tessituraDensityBias * melodicDirDensityBias * harmFieldDensityBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -335,7 +374,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker * polyAlignFlicker;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -381,7 +420,7 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias * cadentialTensionBias, 0, 1);
+    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias * cadentialTensionBias * dynamicPlanTensionBias, 0, 1);
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -444,6 +483,16 @@ GlobalConductor = (() => {
         silenceSuggestion: silenceSignal.suggestion,
         silenceRatio: silenceSignal.silenceRatio,
         cadentialPreparationActive: (typeof CadentialPreparationAdvisor !== 'undefined' && CadentialPreparationAdvisor && typeof CadentialPreparationAdvisor.getCadentialSignal === 'function') ? CadentialPreparationAdvisor.getCadentialSignal().preparationActive : false,
+        voiceLeadingEfficiency: (typeof VoiceLeadingEfficiencyTracker !== 'undefined' && VoiceLeadingEfficiencyTracker && typeof VoiceLeadingEfficiencyTracker.getEfficiencySignal === 'function') ? VoiceLeadingEfficiencyTracker.getEfficiencySignal().efficiency : 0.5,
+        rhythmicGroupingType: groupingSignal.groupingType,
+        rhythmicGroupingInTransition: groupingSignal.inTransition,
+        dynamicPlanMacroPosition: (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.getDynamicPlanSignal === 'function') ? DynamicArchitectPlanner.getDynamicPlanSignal().macroPosition : 0,
+        tessituraRegion: (typeof TessituraPressureMonitor !== 'undefined' && TessituraPressureMonitor && typeof TessituraPressureMonitor.getPressureSignal === 'function') ? TessituraPressureMonitor.getPressureSignal().region : 'comfortable',
+        polyrhythmConvergence: (typeof PolyrhythmicAlignmentTracker !== 'undefined' && PolyrhythmicAlignmentTracker && typeof PolyrhythmicAlignmentTracker.getAlignmentSignal === 'function') ? PolyrhythmicAlignmentTracker.getAlignmentSignal().convergencePoint : false,
+        melodicDirection: (typeof MelodicDirectionalityTracker !== 'undefined' && MelodicDirectionalityTracker && typeof MelodicDirectionalityTracker.getDirectionalitySignal === 'function') ? MelodicDirectionalityTracker.getDirectionalitySignal().direction : 'undulating',
+        harmonicFieldAvgSimultaneous: (typeof HarmonicFieldDensityTracker !== 'undefined' && HarmonicFieldDensityTracker && typeof HarmonicFieldDensityTracker.getFieldDensitySignal === 'function') ? HarmonicFieldDensityTracker.getFieldDensitySignal().avgSimultaneous : 1,
+        orchestrationSuggestion: orchestrationSignal.suggestion,
+        orchestrationDominantBand: orchestrationSignal.dominantBand,
         playProb: playOut,
         stutterProb: stutterOut
       });
