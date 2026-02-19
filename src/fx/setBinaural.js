@@ -4,12 +4,13 @@
  */
 setBinaural = () => {
   const phraseBoundary = Number.isFinite(Number(beatIndex)) && Number(beatIndex) === 0 && Number.isFinite(Number(measureIndex)) && Number(measureIndex) === 0;
-  const statePhraseBoundary = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function')
-    ? (() => {
-        const state = ConductorState.getSnapshot();
-        return state && Number.isFinite(Number(state.phrasePosition)) && Number(state.phrasePosition) <= 0.001 && Number(beatIndex) === 0;
-      })()
-    : false;
+  if (typeof ConductorState === 'undefined' || !ConductorState || typeof ConductorState.getSnapshot !== 'function') {
+    throw new Error('setBinaural: ConductorState.getSnapshot is not available — conductor must load before fx');
+  }
+  const statePhraseBoundary = (() => {
+    const state = ConductorState.getSnapshot();
+    return state && Number.isFinite(Number(state.phrasePosition)) && Number(state.phrasePosition) <= 0.001 && Number(beatIndex) === 0;
+  })();
   const shouldShift = firstLoop < 1 || phraseBoundary || statePhraseBoundary;
 
   if (shouldShift) {
@@ -33,6 +34,15 @@ setBinaural = () => {
     }
     binauralFreqOffset = rl(targetOffset, -0.4, 0.4, BINAURAL.min, BINAURAL.max);
 
+    // Recompute pitch bend values from updated offset — stale values cause audible detune
+    if (typeof binauralOffset !== 'function') {
+      throw new Error('setBinaural: binauralOffset function is not defined — instrumentation.js must load first');
+    }
+    [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
+    if (!Number.isFinite(binauralPlus) || !Number.isFinite(binauralMinus)) {
+      throw new Error(`setBinaural: binauralOffset produced non-finite pitch bends: plus=${binauralPlus}, minus=${binauralMinus}`);
+    }
+
     p(c,
       ...binauralL.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),
       ...binauralR.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
@@ -42,7 +52,7 @@ setBinaural = () => {
     const endTick = beatStart + tpSec / 4;
     const steps = 10;
     const tickIncrement = (endTick - startTick) / steps;
-    for (let i = steps / 2 - 1; i <= steps; i++) {
+    for (let i = 0; i <= steps; i++) {
       const tick = startTick + (tickIncrement * i);
       const currentVolumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
       const currentVolumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
