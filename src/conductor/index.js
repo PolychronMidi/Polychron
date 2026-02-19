@@ -182,4 +182,20 @@ require('./MicroTimingDriftDetector');
 // @ts-ignore: load side-effect module with globals
 require('./RegistralVelocityCorrelator');
 // @ts-ignore: load side-effect module with globals
+require('./PhraseContourArchetypeDetector');
+// @ts-ignore: load side-effect module with globals
+require('./HarmonicDensityOscillator');
+// @ts-ignore: load side-effect module with globals
+require('./AttackDensityProfiler');
+// @ts-ignore: load side-effect module with globals
+require('./LayerEntryExitTracker');
+// @ts-ignore: load side-effect module with globals
+require('./IntervalExpansionContractor');
+// @ts-ignore: load side-effect module with globals
+require('./DynamicPeakMemory');
+// @ts-ignore: load side-effect module with globals
+require('./RhythmicDensityContrastTracker');
+// @ts-ignore: load side-effect module with globals
+require('./TonalAnchorDistanceTracker');
+// @ts-ignore: load side-effect module with globals
 require('./config');
