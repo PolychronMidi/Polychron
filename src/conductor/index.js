@@ -102,4 +102,20 @@ require('./DurationalContourTracker');
 // @ts-ignore: load side-effect module with globals
 require('./HarmonicSurpriseIndex');
 // @ts-ignore: load side-effect module with globals
+require('./CounterpointMotionTracker');
+// @ts-ignore: load side-effect module with globals
+require('./ConsonanceDissonanceTracker');
+// @ts-ignore: load side-effect module with globals
+require('./VelocityContourTracker');
+// @ts-ignore: load side-effect module with globals
+require('./PhraseBreathingAdvisor');
+// @ts-ignore: load side-effect module with globals
+require('./OctaveSpreadMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./MotivicDensityTracker');
+// @ts-ignore: load side-effect module with globals
+require('./PedalPointDetector');
+// @ts-ignore: load side-effect module with globals
+require('./PhraseLengthMomentumTracker');
+// @ts-ignore: load side-effect module with globals
 require('./config');

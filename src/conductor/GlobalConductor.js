@@ -180,6 +180,40 @@ GlobalConductor = (() => {
       RhythmicComplexityGradient.recordComplexity(currentDensity, absTime2);
     }
 
+    // --- Batch 7 intelligence module reads ---
+    // CounterpointMotionTracker: inter-layer motion biases (consumed via ConductorState)
+    const counterpointBias = (typeof CounterpointMotionTracker !== 'undefined' && CounterpointMotionTracker && typeof CounterpointMotionTracker.getMotionBias === 'function')
+      ? CounterpointMotionTracker.getMotionBias()
+      : { parallelBias: 1, contraryBias: 1 };
+    // ConsonanceDissonanceTracker: tension modifier from interval quality
+    const consonanceTensionBias = (typeof ConsonanceDissonanceTracker !== 'undefined' && ConsonanceDissonanceTracker && typeof ConsonanceDissonanceTracker.getTensionBias === 'function')
+      ? clamp(ConsonanceDissonanceTracker.getTensionBias(), 0.85, 1.25)
+      : 1;
+    // VelocityContourTracker: flicker modifier from dynamics shape
+    const velocityFlickerMod = (typeof VelocityContourTracker !== 'undefined' && VelocityContourTracker && typeof VelocityContourTracker.getFlickerModifier === 'function')
+      ? clamp(VelocityContourTracker.getFlickerModifier(), 0.85, 1.2)
+      : 1;
+    // PhraseBreathingAdvisor: density bias for breathing room
+    const breathingDensityBias = (typeof PhraseBreathingAdvisor !== 'undefined' && PhraseBreathingAdvisor && typeof PhraseBreathingAdvisor.getDensityBias === 'function')
+      ? clamp(PhraseBreathingAdvisor.getDensityBias(), 0.8, 1.2)
+      : 1;
+    // OctaveSpreadMonitor: register spread bias (consumed via ConductorState)
+    const octaveSpreadBias = (typeof OctaveSpreadMonitor !== 'undefined' && OctaveSpreadMonitor && typeof OctaveSpreadMonitor.getSpreadBias === 'function')
+      ? OctaveSpreadMonitor.getSpreadBias()
+      : 0;
+    // MotivicDensityTracker: motivic overcrowding bias
+    const motivicDensityBias = (typeof MotivicDensityTracker !== 'undefined' && MotivicDensityTracker && typeof MotivicDensityTracker.getDensityBias === 'function')
+      ? clamp(MotivicDensityTracker.getDensityBias(), 0.8, 1.2)
+      : 1;
+    // PedalPointDetector: bass movement suggestion (consumed via ConductorState)
+    const pedalSuggestion = (typeof PedalPointDetector !== 'undefined' && PedalPointDetector && typeof PedalPointDetector.getBassSuggestion === 'function')
+      ? PedalPointDetector.getBassSuggestion()
+      : { suggestion: 'consider-anchor', urgency: 0 };
+    // PhraseLengthMomentumTracker: phrase adjustment (consumed via ConductorState)
+    const phraseLengthAdj = (typeof PhraseLengthMomentumTracker !== 'undefined' && PhraseLengthMomentumTracker && typeof PhraseLengthMomentumTracker.suggestAdjustment === 'function')
+      ? PhraseLengthMomentumTracker.suggestAdjustment()
+      : { adjustment: 0, suggestion: 'maintain' };
+
     // Apply coherence-based density bias: low coherence → thinner density
     const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
       ? LayerCoherenceScorer.getDensityBias()
@@ -193,7 +227,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -206,7 +240,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -252,7 +286,7 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias, 0, 1);
+    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias, 0, 1);
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -289,6 +323,13 @@ GlobalConductor = (() => {
         intervalStepBias: intervalBias.stepBias,
         intervalLeapBias: intervalBias.leapBias,
         durationalContourBias: durContourBias.durationBias,
+        counterpointParallelBias: counterpointBias.parallelBias,
+        counterpointContraryBias: counterpointBias.contraryBias,
+        octaveSpreadBias,
+        pedalSuggestion: pedalSuggestion.suggestion,
+        pedalUrgency: pedalSuggestion.urgency,
+        phraseLengthAdjustment: phraseLengthAdj.adjustment,
+        phraseLengthSuggestion: phraseLengthAdj.suggestion,
         playProb: playOut,
         stutterProb: stutterOut
       });
