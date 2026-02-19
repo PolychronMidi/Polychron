@@ -10,13 +10,13 @@ require('./LayerEntryExitTracker');
 // @ts-ignore: load side-effect module with globals
 require('./LayerIndependenceScorer');
 // @ts-ignore: load side-effect module with globals
+require('./fragmentHelpers');
+// @ts-ignore: load side-effect module with globals
 require('./MotivicDensityTracker');
 // @ts-ignore: load side-effect module with globals
 require('./OrchestrationWeightTracker');
 // @ts-ignore: load side-effect module with globals
 require('./PedalPointDetector');
-// @ts-ignore: load side-effect module with globals
-require('./PhraseBreathingAdvisor');
 // @ts-ignore: load side-effect module with globals
 require('./PhraseLengthMomentumTracker');
 // @ts-ignore: load side-effect module with globals

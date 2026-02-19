@@ -1,5 +1,7 @@
-// src/conductor/MelodicContourTracker.js - Tracks pitch trajectory across recent notes.
+// src/conductor/melodic/MelodicContourTracker.js - Tracks pitch trajectory across recent notes.
 // Reads AbsoluteTimeWindow to compute phrase-scale contour shape (rising/falling/arching/static).
+// Also provides melodic directionality analysis (ascending/descending bias) — merged from
+// MelodicDirectionalityTracker.
 // Pure query API — no events emitted; polled by GlobalConductor and MotifTransformAdvisor.
 
 MelodicContourTracker = (() => {
@@ -85,6 +87,60 @@ MelodicContourTracker = (() => {
     return { shape, direction, range, avgPitch };
   }
 
+  // --- Directionality analysis (merged from MelodicDirectionalityTracker) ---
+
+  /**
+   * Analyze predominant melodic direction from recent notes.
+   * @returns {{ direction: string, ascendRatio: number, descendRatio: number, densityBias: number }}
+   */
+  function getDirectionalitySignal() {
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: 8 });
+    if (notes.length < 4) {
+      return { direction: 'undulating', ascendRatio: 0.5, descendRatio: 0.5, densityBias: 1 };
+    }
+
+    let ascends = 0;
+    let descends = 0;
+    let total = 0;
+
+    for (let i = 1; i < notes.length; i++) {
+      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : -1;
+      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+      if (prev < 0 || curr < 0) continue;
+      const diff = curr - prev;
+      if (diff > 0) ascends++;
+      else if (diff < 0) descends++;
+      total++;
+    }
+
+    if (total === 0) {
+      return { direction: 'static', ascendRatio: 0.5, descendRatio: 0.5, densityBias: 1 };
+    }
+
+    const ascendRatio = ascends / total;
+    const descendRatio = descends / total;
+
+    let direction = 'undulating';
+    if (ascendRatio > 0.65) direction = 'ascending';
+    else if (descendRatio > 0.65) direction = 'descending';
+    else if (ascendRatio < 0.2 && descendRatio < 0.2) direction = 'static';
+
+    const imbalance = m.abs(ascendRatio - descendRatio);
+    let densityBias = 1;
+    if (imbalance > 0.5) densityBias = 0.95;
+    else if (imbalance < 0.1) densityBias = 1.02;
+
+    return { direction, ascendRatio, descendRatio, densityBias };
+  }
+
+  /**
+   * Get density multiplier for the targetDensity chain (directionality).
+   * @returns {number}
+   */
+  function getDirectionalityDensityBias() {
+    return getDirectionalitySignal().densityBias;
+  }
+
   /** Reset contour state. */
   function reset() {
     currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
@@ -95,6 +151,8 @@ MelodicContourTracker = (() => {
     getContour,
     getContrastingSuggestion,
     getLayerContour,
+    getDirectionalitySignal,
+    getDirectionalityDensityBias,
     reset
   };
 })();
