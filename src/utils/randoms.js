@@ -110,8 +110,10 @@ rl=randomLimitedChange=(currentValue,minChange,maxChange,minValue,maxValue,type=
  * @param {number} [conditionMax] - Max value when condition met.
  * @returns {Object} FX object with channel, effect number, and value.
  */
+chFX = new Map();
+/** @type {(ch: any, effectNum: number, minValue: number, maxValue: number, condition?: function(any): boolean, conditionMin?: number, conditionMax?: number) => any} */
 rlFX=(ch,effectNum,minValue,maxValue,condition=undefined,conditionMin=undefined,conditionMax=undefined)=>{
-  chFX=new Map();
+  if (!(chFX instanceof Map)) chFX = new Map();
   if (!chFX.has(ch)) { chFX.set(ch,{}); }
   const chFXMap=chFX.get(ch);
   if (!(effectNum in chFXMap)) {
@@ -120,6 +122,9 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=undefined,conditionMin=undefined,
   const midiEffect={
     getValue: ()=>{
       let effectValue=chFXMap[effectNum];
+      if (!Number.isFinite(effectValue)) {
+        throw new Error(`rlFX: stale/corrupt FX state for ch=${ch} cc=${effectNum}, got ${effectValue}`);
+      }
       let newMin=minValue,newMax=maxValue;
       const change=(newMax-newMin)*rf(.1,.3);
       if (typeof condition==='function' && condition(ch) && Number.isFinite(Number(conditionMin)) && Number.isFinite(Number(conditionMax))) {
