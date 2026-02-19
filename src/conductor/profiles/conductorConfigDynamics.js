@@ -1,10 +1,5 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
-  const getEventsOrThrow = () => {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('conductorConfigDynamics: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  };
+  const { getEventsOrThrow } = Validator;
 
   const controls = (typeof CONDUCTOR_DYNAMICS_CONTROLS !== 'undefined' && CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
     ? CONDUCTOR_DYNAMICS_CONTROLS
@@ -153,7 +148,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     }
 
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      const EVENTS = getEventsOrThrow();
+      const EVENTS = getEventsOrThrow('conductorConfigDynamics');
       EventBus.emit(EVENTS.CONDUCTOR_REGULATION, {
         avg,
         densityBias: regulation.densityBias,

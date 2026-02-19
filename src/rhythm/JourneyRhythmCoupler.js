@@ -2,12 +2,7 @@
 // Bold key moves trigger higher rhythm complexity via EventBus journey-move events
 
 JourneyRhythmCoupler = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('JourneyRhythmCoupler: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   let _boldness = 0;
   let _externalBias = 1;
@@ -44,7 +39,7 @@ JourneyRhythmCoupler = (() => {
     if (typeof EventBus === 'undefined') {
       throw new Error('JourneyRhythmCoupler.initialize: EventBus not available');
     }
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('JourneyRhythmCoupler');
 
     EventBus.on(EVENTS.JOURNEY_MOVE, (data) => {
       if (!data || typeof data !== 'object') {

@@ -1,10 +1,5 @@
 ConductorRegulationListener = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('ConductorRegulationListener: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   let initialized = false;
 
@@ -28,7 +23,7 @@ ConductorRegulationListener = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('ConductorRegulationListener.initialize: EventBus not available');
     }
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('ConductorRegulationListener');
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       if (!data || typeof data !== 'object') {

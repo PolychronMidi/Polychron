@@ -1,7 +1,5 @@
 conductorConfigValidateProfile = (profile, label) => {
-  if (typeof Validator === 'undefined' || !Validator) {
-    throw new Error('conductorConfigValidateProfile: Validator utility is required');
-  }
+  const V = Validator.create('ConductorConfig');
   const REQUIRED_DENSITY_KEYS = ['floor', 'ceiling', 'range', 'smoothing'];
   const REQUIRED_STUTTER_KEYS = ['rateTiers', 'coherenceFlip', 'rateCurveFlip'];
   const REQUIRED_ENERGY_KEYS = ['phrase', 'journey', 'feedback', 'pulse'];
@@ -19,10 +17,10 @@ conductorConfigValidateProfile = (profile, label) => {
   const REQUIRED_TOP_KEYS = ['density', 'phaseMultipliers', 'arcMapping', 'stutter', 'energyWeights', 'flicker', 'climaxBoost', 'crossMod', 'fxMix', 'texture', 'attenuation', 'voiceSpread', 'familyWeights', 'emission'];
 
   const assertFiniteRange = (value, min, max, path) => {
-    Validator.assertRange(value, min, max, `ConductorConfig.${path}`);
+    V.assertRange(value, min, max, `ConductorConfig.${path}`);
   };
 
-  Validator.assertPlainObject(profile, `ConductorConfig.validateProfileOrFail ${label}`);
+  V.assertPlainObject(profile, `ConductorConfig.validateProfileOrFail ${label}`);
 
   for (const key of REQUIRED_TOP_KEYS) {
     if (key === 'journeyBoldness') continue;

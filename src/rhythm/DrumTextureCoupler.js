@@ -3,12 +3,7 @@
 // intensity and exposes it so drum patterns can accent in sympathy.
 
 DrumTextureCoupler = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('DrumTextureCoupler: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   let feedback = null;
   const decayRate = 0.88;
@@ -21,7 +16,7 @@ DrumTextureCoupler = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('DrumTextureCoupler: FeedbackAccumulator.create is required');
     }
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('DrumTextureCoupler');
 
     feedback = FeedbackAccumulator.create({
       name: 'drum-texture-coupler',

@@ -21,12 +21,7 @@
  */
 
 HarmonicJourney = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('HarmonicJourney: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   if (typeof harmonicJourneyHelpers !== 'function') {
     throw new Error('HarmonicJourney: harmonicJourneyHelpers() not available');
@@ -165,7 +160,7 @@ HarmonicJourney = (() => {
 
     // Emit journey-move event for rhythm-harmonic coupling
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      const EVENTS = getEventsOrThrow();
+      const EVENTS = getEventsOrThrow('HarmonicJourney');
       EventBus.emit(EVENTS.JOURNEY_MOVE, {
         move: stop.move,
         distance: stop.distance,

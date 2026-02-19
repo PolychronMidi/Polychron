@@ -2,12 +2,7 @@
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
-  function getEventsOrThrow() {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-      throw new Error('FXFeedbackListener: EventCatalog.names is required');
-    }
-    return EventCatalog.names;
-  }
+  const { getEventsOrThrow } = Validator;
 
   let accumulator = null;
   let initialized = false;
@@ -17,7 +12,7 @@ FXFeedbackListener = (() => {
     if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('FXFeedbackListener: FeedbackAccumulator.create is required');
     }
-    const EVENTS = getEventsOrThrow();
+    const EVENTS = getEventsOrThrow('FXFeedbackListener');
 
     accumulator = FeedbackAccumulator.create({
       name: 'fx-feedback',
