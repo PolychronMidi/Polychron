@@ -166,4 +166,20 @@ require('./HarmonicFieldDensityTracker');
 // @ts-ignore: load side-effect module with globals
 require('./OrchestrationWeightTracker');
 // @ts-ignore: load side-effect module with globals
+require('./RhythmicInertiaTracker');
+// @ts-ignore: load side-effect module with globals
+require('./PitchClassGravityMap');
+// @ts-ignore: load side-effect module with globals
+require('./DynamicEnvelopeShaper');
+// @ts-ignore: load side-effect module with globals
+require('./IntervalDirectionMemory');
+// @ts-ignore: load side-effect module with globals
+require('./CrossLayerDensityBalancer');
+// @ts-ignore: load side-effect module with globals
+require('./HarmonicPedalFieldTracker');
+// @ts-ignore: load side-effect module with globals
+require('./MicroTimingDriftDetector');
+// @ts-ignore: load side-effect module with globals
+require('./RegistralVelocityCorrelator');
+// @ts-ignore: load side-effect module with globals
 require('./config');
