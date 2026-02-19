@@ -3,7 +3,7 @@
 // rhythm/dynamism systems can respond to stutter intensity.
 
 StutterFeedbackListener = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('StutterFeedbackListener');
 
   let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
@@ -12,10 +12,11 @@ StutterFeedbackListener = (() => {
 
   function ensureAccumulator() {
     if (accumulator) return accumulator;
-    if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
+    V.requireDefined(FeedbackAccumulator, 'FeedbackAccumulator');
+    if (typeof FeedbackAccumulator.create !== 'function') {
       throw new Error('StutterFeedbackListener: FeedbackAccumulator.create is required');
     }
-    const EVENTS = getEventsOrThrow('StutterFeedbackListener');
+    const EVENTS = V.getEventsOrThrow();
 
     accumulator = FeedbackAccumulator.create({
       name: 'stutter-feedback',
@@ -24,14 +25,9 @@ StutterFeedbackListener = (() => {
         {
           eventName: EVENTS.STUTTER_APPLIED,
           project(data) {
-            if (!data || typeof data !== 'object') throw new Error('StutterFeedbackListener: event payload must be an object');
-            const intensity = Number(data.intensity);
-            if (!Number.isFinite(intensity)) {
-              throw new Error('StutterFeedbackListener: stutter-applied.intensity must be finite');
-            }
-            if (typeof data.type !== 'string' || data.type.length === 0) {
-              throw new Error('StutterFeedbackListener: stutter-applied.type must be a non-empty string');
-            }
+            V.assertObject(data, 'stutter-applied payload');
+            const intensity = V.requireFinite(data.intensity, 'stutter-applied.intensity');
+            V.assertNonEmptyString(data.type, 'stutter-applied.type');
             const weight = data.type === 'note' ? 1.0 : 0.8;
             return clamp(intensity * weight, 0, 1);
           }

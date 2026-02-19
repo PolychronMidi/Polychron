@@ -7,7 +7,7 @@ CadenceAdvisor = (() => {
   const recentChanges = [];
   const MAX_HISTORY = 12;
 
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('CadenceAdvisor');
 
   /**
    * Wire up EventBus listener for harmonic-change events.
@@ -17,7 +17,7 @@ CadenceAdvisor = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('CadenceAdvisor.initialize: EventBus.on not available');
     }
-    const EVENTS = getEventsOrThrow('CadenceAdvisor');
+    const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
       recentChanges.push({

@@ -15,7 +15,7 @@
  * @property {number} modifiedAt
  */
 HarmonicContext = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('HarmonicContext');
 
   /** @type {HarmonicState} */
   let state = {
@@ -100,7 +100,7 @@ HarmonicContext = (() => {
     state.modifiedAt = Date.now();
 
     if (changedFields.length > 0 && typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      const EVENTS = getEventsOrThrow('HarmonicContext');
+      const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.HARMONIC_CHANGE, {
         changedFields,
         key: state.key,

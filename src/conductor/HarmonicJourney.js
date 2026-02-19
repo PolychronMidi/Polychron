@@ -21,7 +21,7 @@
  */
 
 HarmonicJourney = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('HarmonicJourney');
 
   if (typeof harmonicJourneyHelpers !== 'function') {
     throw new Error('HarmonicJourney: harmonicJourneyHelpers() not available');
@@ -160,7 +160,7 @@ HarmonicJourney = (() => {
 
     // Emit journey-move event for rhythm-harmonic coupling
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      const EVENTS = getEventsOrThrow('HarmonicJourney');
+      const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.JOURNEY_MOVE, {
         move: stop.move,
         distance: stop.distance,

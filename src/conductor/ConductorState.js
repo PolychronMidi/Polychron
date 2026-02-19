@@ -1,5 +1,5 @@
 ConductorState = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('ConductorState');
 
   let initialized = false;
 
@@ -113,7 +113,7 @@ ConductorState = (() => {
   function initialize() {
     if (initialized) return true;
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') return false;
-    const EVENTS = getEventsOrThrow('ConductorState');
+    const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       if (!data || typeof data !== 'object') return;

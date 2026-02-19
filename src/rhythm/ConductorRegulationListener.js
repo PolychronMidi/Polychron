@@ -1,5 +1,5 @@
 ConductorRegulationListener = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('ConductorRegulationListener');
 
   let initialized = false;
 
@@ -11,7 +11,8 @@ ConductorRegulationListener = (() => {
   };
 
   function applyJourneyBias(crossModBias) {
-    if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.setExternalBias !== 'function') {
+    V.requireDefined(JourneyRhythmCoupler, 'JourneyRhythmCoupler');
+    if (typeof JourneyRhythmCoupler.setExternalBias !== 'function') {
       throw new Error('ConductorRegulationListener.applyJourneyBias: JourneyRhythmCoupler.setExternalBias is not available');
     }
     JourneyRhythmCoupler.setExternalBias(crossModBias);
@@ -23,7 +24,7 @@ ConductorRegulationListener = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('ConductorRegulationListener.initialize: EventBus not available');
     }
-    const EVENTS = getEventsOrThrow('ConductorRegulationListener');
+    const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       if (!data || typeof data !== 'object') {

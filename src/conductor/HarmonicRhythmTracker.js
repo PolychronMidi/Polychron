@@ -1,5 +1,5 @@
 HarmonicRhythmTracker = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('HarmonicRhythmTracker');
 
   let initialized = false;
   let lastTick = null;
@@ -25,7 +25,7 @@ HarmonicRhythmTracker = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
       throw new Error('HarmonicRhythmTracker.initialize: EventBus not available');
     }
-    const EVENTS = getEventsOrThrow('HarmonicRhythmTracker');
+    const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
       if (!data || typeof data !== 'object') {

@@ -1,5 +1,5 @@
 FeedbackAccumulator = (() => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('FeedbackAccumulator');
 
   /**
    * @param {{
@@ -11,15 +11,10 @@ FeedbackAccumulator = (() => {
    * }} options
    */
   function create(options) {
-    if (!options || typeof options !== 'object') {
-      throw new Error('FeedbackAccumulator.create: options must be an object');
-    }
-    if (typeof options.name !== 'string' || options.name.length === 0) {
-      throw new Error('FeedbackAccumulator.create: options.name must be a non-empty string');
-    }
-    if (!Array.isArray(options.inputs) || options.inputs.length === 0) {
-      throw new Error(`FeedbackAccumulator.create(${options.name}): options.inputs must be a non-empty array`);
-    }
+    V.assertObject(options, 'FeedbackAccumulator.create options');
+    V.assertNonEmptyString(options.name, 'FeedbackAccumulator.create options.name');
+    V.assertArray(options.inputs, `FeedbackAccumulator.create(${options.name}): options.inputs must be an array`);
+    if (options.inputs.length === 0) throw new Error(`FeedbackAccumulator.create(${options.name}): options.inputs must be a non-empty array`);
 
     const decayRate = clamp(Number(options.decayRate), 0, 0.9999);
     let value = 0;
@@ -33,10 +28,8 @@ FeedbackAccumulator = (() => {
 
     function initialize() {
       if (initialized) return;
-      if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.on !== 'function') {
-        throw new Error(`FeedbackAccumulator.initialize(${options.name}): EventBus not available`);
-      }
-      const EVENTS = getEventsOrThrow('FeedbackAccumulator');
+      V.requireDefined(EventBus, 'EventBus');
+      const EVENTS = V.getEventsOrThrow();
 
       for (const input of options.inputs) {
         if (!input || typeof input !== 'object') {

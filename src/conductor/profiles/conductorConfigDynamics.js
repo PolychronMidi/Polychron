@@ -1,5 +1,5 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
-  const { getEventsOrThrow } = Validator;
+  const V = Validator.create('conductorConfigDynamics');
 
   const controls = (typeof CONDUCTOR_DYNAMICS_CONTROLS !== 'undefined' && CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
     ? CONDUCTOR_DYNAMICS_CONTROLS
@@ -148,7 +148,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     }
 
     if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      const EVENTS = getEventsOrThrow('conductorConfigDynamics');
+      const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.CONDUCTOR_REGULATION, {
         avg,
         densityBias: regulation.densityBias,
