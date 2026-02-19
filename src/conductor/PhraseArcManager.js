@@ -177,107 +177,23 @@ PhraseArcManager = class PhraseArcManager {
   }
 
   /**
-   * Generate arc profile functions for different arc types
-   * Uses PHRASES_ARC_CURVES from config if available, otherwise falls back to internal defaults.
+   * Generate arc profile functions from PHRASES_ARC_CURVES global (defined in ConductorConfig).
+   * Fail-fast if the global is missing — arc curves must be centralized in config.
    */
   _generateArcProfiles() {
-    // If centralized curves are defined, use them (adapted to local instance ranges where applicable)
-    if (typeof PHRASES_ARC_CURVES !== 'undefined') {
-      const adapted = {};
-      for (const [key, curve] of Object.entries(PHRASES_ARC_CURVES)) {
-        adapted[key] = {
-          register: (pos) => (curve.register ? curve.register(pos) : 0),
-          density: (pos) => (curve.density ? curve.density(pos) : 1),
-          independence: (pos) => (curve.independence ? curve.independence(pos) : 0.5),
-          dynamism: (pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0)
-        };
-      }
-      return adapted;
+    if (typeof PHRASES_ARC_CURVES === 'undefined') {
+      throw new Error('PhraseArcManager: PHRASES_ARC_CURVES global is not defined — ensure ConductorConfig is loaded first');
     }
 
-    return {
-      // Classic arch: rise to peak at 0.6, then fall
-      arch: {
-        register: (pos) => {
-          // Parabolic arc peaking at 0.6
-          const centered = (pos - 0.6) * 2;
-          const height = 1 - centered * centered;
-          return m.max(0, height) * this.registerRange - this.registerRange / 2;
-        },
-        density: (pos) => {
-          // Denser toward middle
-          const centered = m.abs(pos - 0.5) * 2;
-          return this.densityRange.min + (1 - centered) * (this.densityRange.max - this.densityRange.min);
-        },
-        independence: (pos) => {
-          // More independent voices in development
-          const p = this._getBreathProfile().independence;
-          return pos > 0.25 && pos < 0.75 ? p.archInner : p.archOuter;
-        },
-        dynamism: (pos) => {
-          // Higher activity toward climax
-          const p = this._getBreathProfile().dynamism;
-          return p.archBase + m.sin(pos * m.PI) * p.archAmplitude;
-        }
-      },
-
-      // Rise-fall: linear ascent, then descent
-      'rise-fall': {
-        register: (pos) => {
-          const rise = pos < 0.5 ? pos * 2 : 2 - pos * 2;
-          return rise * this.registerRange - this.registerRange / 2;
-        },
-        density: (pos) => {
-          return this.densityRange.min + (1 - m.abs(pos - 0.5) * 2) * (this.densityRange.max - this.densityRange.min);
-        },
-        independence: (pos) => {
-          const p = this._getBreathProfile().independence;
-          return pos > 0.3 && pos < 0.7 ? p.riseFallInner : p.riseFallOuter;
-        },
-        dynamism: (pos) => {
-          const p = this._getBreathProfile().dynamism;
-          return p.riseFallBase + (1 - m.abs(pos - 0.5) * 2) * p.riseFallAmplitude;
-        }
-      },
-
-      // Build-resolve: gradual build to peak, quick resolution
-      'build-resolve': {
-        register: (pos) => {
-          const build = pos < 0.75 ? pos / 0.75 : (1 - pos) / 0.25;
-          return build * this.registerRange - this.registerRange / 2;
-        },
-        density: (pos) => {
-          const build = pos < 0.75 ? pos / 0.75 : 0.5;
-          return this.densityRange.min + build * (this.densityRange.max - this.densityRange.min);
-        },
-        independence: (pos) => {
-          const p = this._getBreathProfile().independence;
-          return pos > 0.4 && pos < 0.75 ? p.buildResolveInner : p.buildResolveOuter;
-        },
-        dynamism: (pos) => {
-          const p = this._getBreathProfile().dynamism;
-          return pos < 0.75 ? p.buildResolveBase + pos * p.buildResolveSlope : p.buildResolveEnd;
-        }
-      },
-
-      // Wave: continuous rise and fall
-      'wave': {
-        register: (pos) => {
-          return m.sin(pos * m.PI * 2) * this.registerRange / 2;
-        },
-        density: (pos) => {
-          const wave = (m.sin(pos * m.PI * 2) + 1) / 2;
-          return this.densityRange.min + wave * (this.densityRange.max - this.densityRange.min);
-        },
-        independence: (pos) => {
-          const p = this._getBreathProfile().independence;
-          return p.waveBase + m.abs(m.sin(pos * m.PI * 2)) * p.waveAmplitude;
-        },
-        dynamism: (pos) => {
-          const p = this._getBreathProfile().dynamism;
-          return p.waveBase + m.abs(m.sin(pos * m.PI * 2)) * p.waveAmplitude;
-        }
-      }
-    };
+    const adapted = {};
+    for (const [key, curve] of Object.entries(PHRASES_ARC_CURVES)) {
+      adapted[key] = {
+        register: (pos) => (curve.register ? curve.register(pos) : 0),
+        density: (pos) => (curve.density ? curve.density(pos) : 1),
+        independence: (pos) => (curve.independence ? curve.independence(pos) : 0.5),
+        dynamism: (pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0)
+      };
+    }
+    return adapted;
   }
 }

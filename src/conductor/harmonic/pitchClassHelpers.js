@@ -32,5 +32,24 @@ pitchClassHelpers = (() => {
     return { counts, total };
   }
 
-  return { CONSONANT_INTERVALS, getPitchClassHistogram };
+  /**
+   * Build a 12-element pitch-class histogram from a pre-fetched notes array.
+   * Avoids re-querying AbsoluteTimeWindow when the caller already has notes.
+   * @param {Array<{midi: number}>} notes
+   * @returns {{ counts: number[], total: number }}
+   */
+  function buildFromNotes(notes) {
+    const counts = new Array(12).fill(0);
+    let total = 0;
+    for (let i = 0; i < notes.length; i++) {
+      const midi = notes[i].midi;
+      if (typeof midi === 'number' && Number.isFinite(midi)) {
+        counts[((midi % 12) + 12) % 12]++;
+        total++;
+      }
+    }
+    return { counts, total };
+  }
+
+  return { CONSONANT_INTERVALS, getPitchClassHistogram, buildFromNotes };
 })();

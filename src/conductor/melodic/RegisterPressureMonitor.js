@@ -14,13 +14,8 @@ RegisterPressureMonitor = (() => {
    */
   function getRegisterPressure(opts) {
     const { layer, windowSeconds } = opts || {};
-    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: windowSeconds || 4 });
-    const bands = new Array(NUM_BANDS).fill(0);
-    for (let i = 0; i < notes.length; i++) {
-      const octave = m.floor(notes[i].midi / 12);
-      if (octave >= 0 && octave < NUM_BANDS) bands[octave]++;
-    }
-    return bands;
+    const { counts } = octaveHelpers.getOctaveHistogram(windowSeconds || 4, NUM_BANDS, layer);
+    return counts;
   }
 
   /**

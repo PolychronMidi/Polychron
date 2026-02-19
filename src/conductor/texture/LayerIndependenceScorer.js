@@ -40,16 +40,8 @@ LayerIndependenceScorer = (() => {
     const rhythmIndependence = minIOILen > 0 ? 1 - (ioiMatchCount / minIOILen) : 0.5;
 
     // Pitch independence: compare pitch-class usage distributions
-    const l1PCs = new Array(12).fill(0);
-    const l2PCs = new Array(12).fill(0);
-    for (let i = 0; i < l1Notes.length; i++) {
-      const pc = (typeof l1Notes[i].midi === 'number') ? ((l1Notes[i].midi % 12) + 12) % 12 : 0;
-      l1PCs[pc]++;
-    }
-    for (let i = 0; i < l2Notes.length; i++) {
-      const pc = (typeof l2Notes[i].midi === 'number') ? ((l2Notes[i].midi % 12) + 12) % 12 : 0;
-      l2PCs[pc]++;
-    }
+    const { counts: l1PCs } = pitchClassHelpers.buildFromNotes(l1Notes);
+    const { counts: l2PCs } = pitchClassHelpers.buildFromNotes(l2Notes);
 
     // Cosine distance of PC distributions
     let dot = 0;
