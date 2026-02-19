@@ -54,4 +54,20 @@ require('./CadenceAdvisor');
 // @ts-ignore: load side-effect module with globals
 require('./SectionLengthAdvisor');
 // @ts-ignore: load side-effect module with globals
+require('./DynamicRangeAdvisor');
+// @ts-ignore: load side-effect module with globals
+require('./RestDensityTracker');
+// @ts-ignore: load side-effect module with globals
+require('./IntervalTensionProfiler');
+// @ts-ignore: load side-effect module with globals
+require('./CrossLayerRhythmPhaseTracker');
+// @ts-ignore: load side-effect module with globals
+require('./HarmonicVelocityMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./TexturalMemoryAdvisor');
+// @ts-ignore: load side-effect module with globals
+require('./PitchGravityCenter');
+// @ts-ignore: load side-effect module with globals
+require('./OnsetDensityProfiler');
+// @ts-ignore: load side-effect module with globals
 require('./config');

@@ -126,6 +126,12 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
   }, composerCtx);
 
   LM.setComposerFor(layerName, nextComposer);
+
+  // Record composer family for TexturalMemoryAdvisor variety tracking
+  if (typeof TexturalMemoryAdvisor !== 'undefined' && TexturalMemoryAdvisor && typeof TexturalMemoryAdvisor.recordUsage === 'function') {
+    TexturalMemoryAdvisor.recordUsage(phraseFamily, (typeof sectionIndex === 'number') ? sectionIndex : 0);
+  }
+
   return nextComposer;
 };
 
