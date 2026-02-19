@@ -22,10 +22,7 @@ SyncopationDensityTracker = (() => {
     }
 
     // Beat duration in seconds; fallback to 0.5s if unavailable
-    const beatDur = (typeof tpSec !== 'undefined' && typeof tpBeat !== 'undefined'
-      && Number.isFinite(tpSec) && Number.isFinite(tpBeat) && tpSec > 0)
-      ? tpBeat / tpSec
-      : 0.5;
+    const beatDur = beatGridHelpers.getBeatDuration();
 
     let onBeat = 0;
     let offBeat = 0;

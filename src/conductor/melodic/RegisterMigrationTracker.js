@@ -20,22 +20,14 @@ RegisterMigrationTracker = (() => {
       return { avgPitch: 60, slope: 0, direction: 'insufficient', static: true };
     }
 
-    // Split into halves and compute average MIDI pitch
-    const half = m.ceil(notes.length / 2);
-    let sumFirst = 0;
-    let sumSecond = 0;
-
-    for (let i = 0; i < half; i++) {
-      sumFirst += (typeof notes[i].midi === 'number' ? notes[i].midi : 60);
+    // Extract MIDI pitches and use shared half-split slope
+    /** @type {number[]} */
+    const midis = [];
+    for (let i = 0; i < notes.length; i++) {
+      midis.push((typeof notes[i].midi === 'number') ? notes[i].midi : 60);
     }
-    for (let i = half; i < notes.length; i++) {
-      sumSecond += (typeof notes[i].midi === 'number' ? notes[i].midi : 60);
-    }
-
-    const avgFirst = sumFirst / half;
-    const avgSecond = sumSecond / (notes.length - half);
+    const { slope, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(midis);
     const avgPitch = (avgFirst + avgSecond) / 2;
-    const slope = avgSecond - avgFirst;
 
     let direction = 'static';
     if (slope > 2) direction = 'ascending';

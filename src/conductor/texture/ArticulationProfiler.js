@@ -24,10 +24,7 @@ ArticulationProfiler = (() => {
     }
 
     // Beat duration in seconds; fallback 0.5s
-    const beatDur = (typeof tpSec !== 'undefined' && typeof tpBeat !== 'undefined'
-      && Number.isFinite(tpSec) && Number.isFinite(tpBeat) && tpSec > 0)
-      ? tpBeat / tpSec
-      : 0.5;
+    const beatDur = beatGridHelpers.getBeatDuration();
 
     let staccatoCount = 0;
     let legatoCount = 0;

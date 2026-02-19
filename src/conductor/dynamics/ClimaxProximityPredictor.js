@@ -14,8 +14,8 @@ ClimaxProximityPredictor = (() => {
       ? EnergyMomentumTracker.getMomentum()
       : { momentum: 0, trend: 'insufficient', plateauDuration: 0, stale: false };
 
-    const registerProfile = (typeof RegisterPressureMonitor !== 'undefined' && RegisterPressureMonitor && typeof RegisterPressureMonitor.getPressure === 'function')
-      ? RegisterPressureMonitor.getPressure()
+    const registerProfile = (typeof RegisterPressureMonitor !== 'undefined' && RegisterPressureMonitor && typeof RegisterPressureMonitor.getPressureSignal === 'function')
+      ? RegisterPressureMonitor.getPressureSignal()
       : { highPressure: false, lowPressure: false };
 
     const onsetProfile = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')

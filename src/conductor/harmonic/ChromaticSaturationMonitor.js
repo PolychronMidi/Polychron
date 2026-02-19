@@ -11,23 +11,15 @@ ChromaticSaturationMonitor = (() => {
    * @returns {{ pitchClassCount: number, saturation: number, densityBias: number }}
    */
   function getSaturationSignal() {
-    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const { counts, total } = pitchClassHelpers.getPitchClassHistogram(WINDOW_SECONDS);
 
-    if (notes.length === 0) {
+    if (total === 0) {
       return { pitchClassCount: 0, saturation: 0, densityBias: 1 };
     }
 
-    /** @type {Object.<number, boolean>} */
-    const seen = {};
     let count = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi < 0) continue;
-      const pc = midi % 12;
-      if (!seen[pc]) {
-        seen[pc] = true;
-        count++;
-      }
+    for (let i = 0; i < 12; i++) {
+      if (counts[i] > 0) count++;
     }
 
     // Saturation: 0-1 (0 = monochrome, 1 = all 12 PCs present)

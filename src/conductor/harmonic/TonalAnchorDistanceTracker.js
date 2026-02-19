@@ -12,23 +12,9 @@ TonalAnchorDistanceTracker = (() => {
    * @returns {{ distance: number, tensionBias: number, adventureLevel: string }}
    */
   function getDistanceSignal() {
-    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const { counts: pcCounts, total } = pitchClassHelpers.getPitchClassHistogram(WINDOW_SECONDS);
 
-    if (notes.length < 5) {
-      return { distance: 0, tensionBias: 1, adventureLevel: 'home' };
-    }
-
-    // Compute current dominant pitch class
-    const pcCounts = new Array(12).fill(0);
-    let total = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi < 0) continue;
-      pcCounts[midi % 12]++;
-      total++;
-    }
-
-    if (total === 0) {
+    if (total < 5) {
       return { distance: 0, tensionBias: 1, adventureLevel: 'home' };
     }
 

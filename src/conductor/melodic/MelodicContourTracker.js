@@ -8,6 +8,43 @@ MelodicContourTracker = (() => {
   /** @type {{ shape: string, direction: number, range: number, avgPitch: number }} */
   let currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
 
+  const DEFAULT_CONTOUR = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
+
+  /**
+   * Compute contour shape from an array of MIDI pitches.
+   * @param {number[]} pitches
+   * @returns {{ shape: string, direction: number, range: number, avgPitch: number }}
+   */
+  function _computeContour(pitches) {
+    const thirdLen = m.max(1, m.ceil(pitches.length / 3));
+    let sumFirst = 0;
+    let sumLast = 0;
+    let sumAll = 0;
+    for (let i = 0; i < thirdLen; i++) sumFirst += pitches[i];
+    for (let i = pitches.length - thirdLen; i < pitches.length; i++) sumLast += pitches[i];
+    for (let i = 0; i < pitches.length; i++) sumAll += pitches[i];
+
+    const avgFirst = sumFirst / thirdLen;
+    const avgLast = sumLast / thirdLen;
+    const direction = clamp((avgLast - avgFirst) / 12, -1, 1);
+
+    let lo = pitches[0];
+    let hi = pitches[0];
+    for (let i = 1; i < pitches.length; i++) {
+      if (pitches[i] < lo) lo = pitches[i];
+      if (pitches[i] > hi) hi = pitches[i];
+    }
+    const range = hi - lo;
+    const avgPitch = sumAll / pitches.length;
+
+    let shape = 'static';
+    if (direction > 0.15) shape = 'rising';
+    else if (direction < -0.15) shape = 'falling';
+    else if (range > 12) shape = 'arching';
+
+    return { shape, direction, range, avgPitch };
+  }
+
   /**
    * Recompute the melodic contour from the recent note window.
    * Called at phrase boundaries or by any consumer needing a fresh read.
@@ -15,28 +52,8 @@ MelodicContourTracker = (() => {
   function update() {
     const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: 4 });
     if (notes.length < 3) return;
-
     const pitches = notes.map(n => n.midi);
-    const thirdLen = m.max(1, m.ceil(pitches.length / 3));
-    const firstThird = pitches.slice(0, thirdLen);
-    const lastThird = pitches.slice(-thirdLen);
-
-    const avgFirst = firstThird.reduce((a, b) => a + b, 0) / firstThird.length;
-    const avgLast = lastThird.reduce((a, b) => a + b, 0) / lastThird.length;
-    const direction = clamp((avgLast - avgFirst) / 12, -1, 1);
-
-    const lo = m.min(...pitches);
-    const hi = m.max(...pitches);
-    const range = hi - lo;
-    const avgPitch = pitches.reduce((a, b) => a + b, 0) / pitches.length;
-
-    // Determine shape from direction and spread
-    let shape = 'static';
-    if (direction > 0.15) shape = 'rising';
-    else if (direction < -0.15) shape = 'falling';
-    else if (range > 12) shape = 'arching';
-
-    currentContour = { shape, direction, range, avgPitch };
+    currentContour = _computeContour(pitches);
   }
 
   /**
@@ -67,24 +84,8 @@ MelodicContourTracker = (() => {
    */
   function getLayerContour(layer) {
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: 4 });
-    if (notes.length < 3) return { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
-
-    const pitches = notes.map(n => n.midi);
-    const thirdLen = m.max(1, m.ceil(pitches.length / 3));
-    const avgFirst = pitches.slice(0, thirdLen).reduce((a, b) => a + b, 0) / thirdLen;
-    const avgLast = pitches.slice(-thirdLen).reduce((a, b) => a + b, 0) / thirdLen;
-    const direction = clamp((avgLast - avgFirst) / 12, -1, 1);
-    const lo = m.min(...pitches);
-    const hi = m.max(...pitches);
-    const range = hi - lo;
-    const avgPitch = pitches.reduce((a, b) => a + b, 0) / pitches.length;
-
-    let shape = 'static';
-    if (direction > 0.15) shape = 'rising';
-    else if (direction < -0.15) shape = 'falling';
-    else if (range > 12) shape = 'arching';
-
-    return { shape, direction, range, avgPitch };
+    if (notes.length < 3) return DEFAULT_CONTOUR;
+    return _computeContour(notes.map(n => n.midi));
   }
 
   // --- Directionality analysis (merged from MelodicDirectionalityTracker) ---

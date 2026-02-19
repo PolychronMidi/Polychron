@@ -33,16 +33,10 @@ RhythmicComplexityGradient = (() => {
       return { gradient: 0, trend: 'insufficient', avgComplexity: 0.5, building: false, simplifying: false };
     }
 
-    const half = m.floor(samples.length / 2);
-    let sumFirst = 0;
-    let sumSecond = 0;
-
-    for (let i = 0; i < half; i++) sumFirst += samples[i].complexity;
-    for (let i = half; i < samples.length; i++) sumSecond += samples[i].complexity;
-
-    const avgFirst = sumFirst / half;
-    const avgSecond = sumSecond / (samples.length - half);
-    const gradient = avgSecond - avgFirst;
+    /** @type {number[]} */
+    const complexities = [];
+    for (let i = 0; i < samples.length; i++) complexities.push(samples[i].complexity);
+    const { slope: gradient, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(complexities);
     const avgComplexity = (avgFirst + avgSecond) / 2;
 
     let trend = 'stable';

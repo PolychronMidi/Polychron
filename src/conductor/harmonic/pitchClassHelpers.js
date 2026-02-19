@@ -1,5 +1,7 @@
-// src/conductor/harmonic/pitchClassHelpers.js - Shared pitch-class histogram utility.
-// Used by ChromaticSaturationMonitor, ModalColorTracker, PitchClassGravityMap, TonalAnchorDistanceTracker.
+// src/conductor/harmonic/pitchClassHelpers.js - Shared pitch-class utilities.
+// Used by ChromaticSaturationMonitor, ModalColorTracker, PitchClassGravityMap,
+// TonalAnchorDistanceTracker, ConsonanceDissonanceTracker, TensionResolutionTracker,
+// LayerCoherenceScorer.
 // Pure query — reads AbsoluteTimeWindow.
 
 pitchClassHelpers = (() => {
@@ -9,19 +11,25 @@ pitchClassHelpers = (() => {
   /**
    * Build a 12-element pitch-class count histogram from recent notes.
    * @param {number} [windowSeconds=8] - lookback window
-   * @returns {number[]} - array of 12 counts, indexed by pitch class (C=0)
+   * @param {string} [layer] - optional layer filter (e.g. 'L1', 'L2')
+   * @returns {{ counts: number[], total: number }} - 12-element count array + note count
    */
-  function getPitchClassHistogram(windowSeconds) {
+  function getPitchClassHistogram(windowSeconds, layer) {
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 8;
-    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: ws });
+    /** @type {any} */
+    const query = { windowSeconds: ws };
+    if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
+    const notes = AbsoluteTimeWindow.getNotes(query);
     const counts = new Array(12).fill(0);
+    let total = 0;
     for (let i = 0; i < notes.length; i++) {
       const midi = notes[i].midi;
       if (typeof midi === 'number' && Number.isFinite(midi)) {
         counts[((midi % 12) + 12) % 12]++;
+        total++;
       }
     }
-    return counts;
+    return { counts, total };
   }
 
   return { CONSONANT_INTERVALS, getPitchClassHistogram };

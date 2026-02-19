@@ -15,18 +15,11 @@ OctaveSpreadMonitor = (() => {
   function getOctaveProfile(opts) {
     const { layer, windowSeconds } = opts || {};
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
-    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
 
-    // 11 octaves (MIDI 0-127 → octaves 0-10)
-    const octaveCounts = new Array(11).fill(0);
+    // Use shared helper — default 11 bands matches our 0-10 octave range
+    const { counts: octaveCounts, total } = octaveHelpers.getOctaveHistogram(ws, 11, layer);
 
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
-      const octave = clamp(m.floor(midi / 12), 0, 10);
-      octaveCounts[octave]++;
-    }
-
-    if (notes.length < 3) {
+    if (total < 3) {
       return { octaveCounts, usedOctaves: 0, spread: 0, clustered: false, wide: false };
     }
 
