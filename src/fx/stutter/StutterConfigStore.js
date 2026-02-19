@@ -40,6 +40,9 @@ function getVelocityRange(profile = 'source', isPrimary = true) {
 }
 function getCrossModRules() {
   if (typeof STUTTER_CROSSMOD_RULES === 'undefined') {
+    if (typeof STUTTER_CROSSMOD_RULES_FALLBACK !== 'undefined' && STUTTER_CROSSMOD_RULES_FALLBACK && typeof STUTTER_CROSSMOD_RULES_FALLBACK === 'object') {
+      return STUTTER_CROSSMOD_RULES_FALLBACK;
+    }
     return {
       pan: { stutterProbScale: 1.0, shiftRangeBias: 0, stutterRateScale: 1.0 },
       fade: { velocityScaleBias: 0 },
@@ -55,7 +58,7 @@ function getPreset(name = 'default') {
 }
 
 function getDirectiveDefaults() {
-  return {
+  const fallback = {
     coherence: { enabled: false, intensity: 0.8, keyPrefix: 'stutter' },
     phase: { left: 0, right: 0.5, center: 0 },
     rateCurve: 'linear',
@@ -63,6 +66,18 @@ function getDirectiveDefaults() {
     crossModOverrides: null,
     perProfileRouting: { L1: 'source', L2: 'reflection', defaultWeight: 0.6 },
     metricsAdaptive: { enabled: false, sensitivity: 0.08 }
+  };
+  const source = (typeof STUTTER_DIRECTIVE_DEFAULTS !== 'undefined' && STUTTER_DIRECTIVE_DEFAULTS && typeof STUTTER_DIRECTIVE_DEFAULTS === 'object')
+    ? STUTTER_DIRECTIVE_DEFAULTS
+    : fallback;
+  return {
+    coherence: Object.assign({}, fallback.coherence, source.coherence || {}),
+    phase: Object.assign({}, fallback.phase, source.phase || {}),
+    rateCurve: typeof source.rateCurve === 'string' ? source.rateCurve : fallback.rateCurve,
+    phaseCurve: typeof source.phaseCurve === 'string' ? source.phaseCurve : fallback.phaseCurve,
+    crossModOverrides: Object.prototype.hasOwnProperty.call(source, 'crossModOverrides') ? source.crossModOverrides : fallback.crossModOverrides,
+    perProfileRouting: Object.assign({}, fallback.perProfileRouting, source.perProfileRouting || {}),
+    metricsAdaptive: Object.assign({}, fallback.metricsAdaptive, source.metricsAdaptive || {})
   };
 }
 
@@ -81,5 +96,8 @@ StutterConfig = {
   setConfig,
   validateConfig,
   getProfileConfig,
-  getVelocityRange
+  getVelocityRange,
+  getCrossModRules,
+  getPreset,
+  getDirectiveDefaults
 };

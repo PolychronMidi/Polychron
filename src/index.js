@@ -1,5 +1,5 @@
-require('./conductor');
 require('./utils');
+require('./conductor');
 require('./rhythm');
 require('./time');
 require('./composers');

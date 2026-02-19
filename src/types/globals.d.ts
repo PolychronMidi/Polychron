@@ -509,7 +509,12 @@ declare var DYNAMISM: any;
 declare var STUTTER_PROFILES: any;
 declare var STUTTER_VELOCITY_RANGES: any;
 declare var STUTTER_CROSSMOD_RULES: any;
+declare var STUTTER_CROSSMOD_RULES_FALLBACK: any;
 declare var STUTTER_PRESETS: any;
+declare var STUTTER_DIRECTIVE_DEFAULTS: any;
+declare var MOTIF_UNIT_PROFILES: any;
+declare var CONDUCTOR_DYNAMICS_CONTROLS: any;
+declare var MAIN_LOOP_CONTROLS: any;
 
 declare var setOtherInstruments: any;
 declare var playDrums: any;

@@ -3,6 +3,62 @@ require('../index');
 
 main = async function main() { console.log('Starting main.js ...');
 
+const mainLoopControls = (typeof MAIN_LOOP_CONTROLS !== 'undefined' && MAIN_LOOP_CONTROLS && typeof MAIN_LOOP_CONTROLS === 'object')
+  ? MAIN_LOOP_CONTROLS
+  : {
+      phraseFamilyBias: {
+        phaseAffinity: {
+          intro: 'diatonicCore',
+          opening: 'diatonicCore',
+          development: 'development',
+          climax: 'rhythmicDrive',
+          resolution: 'harmonicMotion',
+          conclusion: 'tonalExploration'
+        },
+        lockProbability: 0.5
+      },
+      stutterPanJitterChance: 0.05,
+      fxIntensityNormalization: {
+        stereoPanDenominator: 45,
+        velocityShiftDenominator: 20
+      },
+      conductorFallback: {
+        playProb: 0.5,
+        stutterProb: 0.3
+      }
+    };
+
+const phaseFamilyBias = (mainLoopControls.phraseFamilyBias && typeof mainLoopControls.phraseFamilyBias === 'object')
+  ? mainLoopControls.phraseFamilyBias
+  : { phaseAffinity: {}, lockProbability: 0.5 };
+const phaseAffinity = (phaseFamilyBias.phaseAffinity && typeof phaseFamilyBias.phaseAffinity === 'object')
+  ? phaseFamilyBias.phaseAffinity
+  : {};
+const phaseBiasLockProbability = Number.isFinite(Number(phaseFamilyBias.lockProbability))
+  ? clamp(Number(phaseFamilyBias.lockProbability), 0, 1)
+  : 0.5;
+const fxIntensityNormalization = (mainLoopControls.fxIntensityNormalization && typeof mainLoopControls.fxIntensityNormalization === 'object')
+  ? mainLoopControls.fxIntensityNormalization
+  : { stereoPanDenominator: 45, velocityShiftDenominator: 20 };
+const fxStereoPanDenominator = Number.isFinite(Number(fxIntensityNormalization.stereoPanDenominator))
+  ? m.max(1, Number(fxIntensityNormalization.stereoPanDenominator))
+  : 45;
+const fxVelocityShiftDenominator = Number.isFinite(Number(fxIntensityNormalization.velocityShiftDenominator))
+  ? m.max(1, Number(fxIntensityNormalization.velocityShiftDenominator))
+  : 20;
+const stutterPanJitterChance = Number.isFinite(Number(mainLoopControls.stutterPanJitterChance))
+  ? clamp(Number(mainLoopControls.stutterPanJitterChance), 0, 1)
+  : 0.05;
+const conductorFallback = (mainLoopControls.conductorFallback && typeof mainLoopControls.conductorFallback === 'object')
+  ? mainLoopControls.conductorFallback
+  : { playProb: 0.5, stutterProb: 0.3 };
+const fallbackPlayProb = Number.isFinite(Number(conductorFallback.playProb))
+  ? clamp(Number(conductorFallback.playProb), 0, 1)
+  : 0.5;
+const fallbackStutterProb = Number.isFinite(Number(conductorFallback.stutterProb))
+  ? clamp(Number(conductorFallback.stutterProb), 0, 1)
+  : 0.3;
+
 const { layer: L1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
 const { layer: L2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
 
@@ -28,20 +84,11 @@ const composerCtx = {
       ? (HarmonicContext.getField('sectionPhase') || 'development')
       : 'development';
 
-    // Phase-based family affinity — return a preferred family when structurally appropriate
-    const phaseAffinity = {
-      intro: 'diatonicCore',
-      opening: 'diatonicCore',
-      development: 'development',
-      climax: 'rhythmicDrive',
-      resolution: 'harmonicMotion',
-      conclusion: 'tonalExploration'
-    };
+    // Phase-based family affinity — centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
     const preferred = phaseAffinity[phase];
     // Only bias if the preferred family exists; otherwise fall through to weighted random
     if (preferred && availableFamilies.includes(preferred)) {
-      // 50% chance to lock onto the phase-preferred family; 50% to let weighted random decide
-      if (rf() < 0.5) return preferred;
+      if (rf() < phaseBiasLockProbability) return preferred;
     }
     return null;
   }
@@ -169,7 +216,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       // main.js - using GlobalConductor for dynamic probabilities
       const conductorCtx = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
         ? GlobalConductor.update(measureIndex, -1) // Update measure-scope context
-        : { playProb: 0.5, stutterProb: 0.3 };
+        : { playProb: fallbackPlayProb, stutterProb: fallbackStutterProb };
 
       let playProb = conductorCtx.playProb;
       let stutterProb = conductorCtx.stutterProb;
@@ -191,14 +238,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         // Apply Stutter default directive for this beat (coherence key, etc.)
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
         // Capture FX intensity from balance and variation globals (normalized 0-1)
-        const fxStereoPan = typeof balOffset === 'number' ? m.abs(balOffset) / 45 : 0;
+        const fxStereoPan = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
         const fxVelocityShift = (typeof refVar === 'number' && typeof bassVar === 'number')
-          ? m.abs(refVar + bassVar) / 20 : 0;
+          ? m.abs(refVar + bassVar) / fxVelocityShiftDenominator : 0;
         EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
         playDrums();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
-        rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
+        rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Run any explicit Stutter plans scheduled for this beat
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
         playNotes('beat', { playProb, stutterProb });
@@ -245,7 +292,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       // L2 uses GlobalConductor for dynamic probabilities — symmetric with L1
       const conductorCtxL2 = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
         ? GlobalConductor.update(measureIndex, -1)
-        : { playProb: 0.5, stutterProb: 0.3 };
+        : { playProb: fallbackPlayProb, stutterProb: fallbackStutterProb };
 
       let playProb = conductorCtxL2.playProb;
       let stutterProb = conductorCtxL2.stutterProb;
@@ -266,14 +313,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         // Apply Stutter default directive for this beat (symmetric with L1)
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
         // Capture FX intensity with full payload (symmetric with L1)
-        const fxStereoPanL2 = typeof balOffset === 'number' ? m.abs(balOffset) / 45 : 0;
+        const fxStereoPanL2 = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
         const fxVelocityShiftL2 = (typeof refVar === 'number' && typeof bassVar === 'number')
-          ? m.abs(refVar + bassVar) / 20 : 0;
+          ? m.abs(refVar + bassVar) / fxVelocityShiftDenominator : 0;
         EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2', stereoPan: fxStereoPanL2, velocityShift: fxVelocityShiftL2 });
         playDrums2();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
-        rf() < .05 ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
+        rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Run any explicit Stutter plans scheduled for this beat
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.runDuePlans === 'function') Stutter.runDuePlans(beatStart); } catch { /* ignore */ }
         playNotes('beat', { playProb, stutterProb });
