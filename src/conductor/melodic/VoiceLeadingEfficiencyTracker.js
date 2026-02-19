@@ -11,9 +11,7 @@ VoiceLeadingEfficiencyTracker = (() => {
    * @returns {{ efficiency: number, avgDisplacement: number, densityBias: number }}
    */
   function getEfficiencySignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 4) {
       return { efficiency: 0.5, avgDisplacement: 3, densityBias: 1 };

@@ -33,11 +33,9 @@ CadenceAdvisor = (() => {
       if (recentChanges.length > MAX_HISTORY) recentChanges.shift();
 
       // Also feed chord changes into AbsoluteTimeWindow for cross-layer analysis
-      if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordChord === 'function') {
-        const layer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-        const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
-        AbsoluteTimeWindow.recordChord(data.chords || null, data.key || '', data.mode || '', layer, absTime);
-      }
+      const layer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+      const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
+      AbsoluteTimeWindow.recordChord(data.chords || null, data.key || '', data.mode || '', layer, absTime);
     });
   }
 

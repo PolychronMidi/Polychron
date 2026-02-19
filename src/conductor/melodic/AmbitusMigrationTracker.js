@@ -14,9 +14,7 @@ AmbitusMigrationTracker = (() => {
    * @returns {{ low: number, high: number, range: number, center: number }}
    */
   function getCurrentAmbitus() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length === 0) {
       return { low: 60, high: 72, range: 12, center: 66 };

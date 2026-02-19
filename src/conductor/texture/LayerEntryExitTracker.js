@@ -15,9 +15,7 @@ LayerEntryExitTracker = (() => {
   function recordSnapshot(absTime) {
     if (!Number.isFinite(absTime)) return;
 
-    const entries = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getEntries === 'function')
-      ? AbsoluteTimeWindow.getEntries(2)
-      : [];
+    const entries = AbsoluteTimeWindow.getEntries(2);
 
     // Count distinct active layers in recent window
     /** @type {Object.<string, boolean>} */

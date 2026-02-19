@@ -4,7 +4,7 @@
 
 TensionResolutionTracker = (() => {
   const WINDOW_SECONDS = 4;
-  const CONSONANT = new Set([0, 3, 4, 5, 7, 8, 9, 12]);
+  const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;
 
   /**
    * Analyze tension-resolution patterns in recent melodic intervals.
@@ -63,13 +63,13 @@ TensionResolutionTracker = (() => {
   }
 
   /**
-   * Get a tension modifier based on resolution patterns.
+   * Get a tension bias based on resolution patterns.
    * Dangling unresolved → boost tension to signal need for resolution.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.9 to 1.25
    */
-  function getTensionModifier(opts) {
+  function getTensionBias(opts) {
     const profile = getResolutionProfile(opts);
     if (profile.danglingTension) return 1.2;
     if (profile.resolvedRatio < 0.5) return 1.1;
@@ -78,6 +78,6 @@ TensionResolutionTracker = (() => {
 
   return {
     getResolutionProfile,
-    getTensionModifier
+    getTensionBias
   };
 })();

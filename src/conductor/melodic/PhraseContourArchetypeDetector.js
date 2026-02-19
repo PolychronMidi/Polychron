@@ -11,9 +11,7 @@ PhraseContourArchetypeDetector = (() => {
    * @returns {{ archetype: string, confidence: number, suggestion: string }}
    */
   function getContourSignal() {
-    const notes = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function')
-      ? AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS })
-      : [];
+    const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 5) {
       return { archetype: 'undefined', confidence: 0, suggestion: 'maintain' };

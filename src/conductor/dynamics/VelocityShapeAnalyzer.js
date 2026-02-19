@@ -29,15 +29,8 @@ VelocityShapeAnalyzer = (() => {
     }
 
     // Half-split slope
-    const half = m.ceil(velocities.length / 2);
-    let sumFirst = 0;
-    let sumSecond = 0;
-    for (let i = 0; i < half; i++) sumFirst += velocities[i];
-    for (let i = half; i < velocities.length; i++) sumSecond += velocities[i];
-    const avgFirst = sumFirst / half;
-    const avgSecond = sumSecond / (velocities.length - half);
+    const { slope, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(velocities);
     const avgVelocity = (avgFirst + avgSecond) / 2;
-    const slope = avgSecond - avgFirst;
 
     // Punchiness: average absolute consecutive velocity difference
     let absDiffSum = 0;

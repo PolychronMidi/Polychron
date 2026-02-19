@@ -11,9 +11,7 @@ CrossLayerDensityBalancer = (() => {
    * @returns {{ imbalance: number, dominantLayer: string, densityBias: number }}
    */
   function getBalanceSignal() {
-    const entries = (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getEntries === 'function')
-      ? AbsoluteTimeWindow.getEntries(WINDOW_SECONDS)
-      : [];
+    const entries = AbsoluteTimeWindow.getEntries(WINDOW_SECONDS);
 
     if (entries.length < 6) {
       return { imbalance: 0, dominantLayer: 'none', densityBias: 1 };

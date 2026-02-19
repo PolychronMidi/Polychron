@@ -5,9 +5,8 @@
 LayerCoherenceScorer = (() => {
   let lastCoherence = 0.5;
 
-  // Consonant intervals (semitones from root, mod 12)
-  // P1=0, m3=3, M3=4, P4=5, P5=7, m6=8, M6=9
-  const CONSONANT_INTERVALS = new Set([0, 3, 4, 5, 7, 8, 9]);
+  // Shared consonant intervals from pitchClassHelpers
+  const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
 
   /**
    * Recompute consonance between L1 and L2 pitch classes.
