@@ -70,4 +70,20 @@ require('./PitchGravityCenter');
 // @ts-ignore: load side-effect module with globals
 require('./OnsetDensityProfiler');
 // @ts-ignore: load side-effect module with globals
+require('./SyncopationDensityTracker');
+// @ts-ignore: load side-effect module with globals
+require('./GrooveTemplateAdvisor');
+// @ts-ignore: load side-effect module with globals
+require('./StructuralFormTracker');
+// @ts-ignore: load side-effect module with globals
+require('./VoiceDensityBalancer');
+// @ts-ignore: load side-effect module with globals
+require('./AccentPatternTracker');
+// @ts-ignore: load side-effect module with globals
+require('./ModalColorTracker');
+// @ts-ignore: load side-effect module with globals
+require('./RepetitionFatigueMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./EnergyMomentumTracker');
+// @ts-ignore: load side-effect module with globals
 require('./config');

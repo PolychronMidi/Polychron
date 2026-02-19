@@ -416,6 +416,19 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.advance('L2', 'phrase');
   }
 
+  // Record section in StructuralFormTracker for form-level awareness
+  if (typeof StructuralFormTracker !== 'undefined' && StructuralFormTracker && typeof StructuralFormTracker.recordSection === 'function') {
+    const sKey = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      ? (HarmonicContext.getField('key') || 'C') : 'C';
+    const sMode = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      ? (HarmonicContext.getField('mode') || 'ionian') : 'ionian';
+    const sFamily = (typeof ComposerFactory !== 'undefined' && ComposerFactory && typeof ComposerFactory.getActiveFamily === 'function')
+      ? (ComposerFactory.getActiveFamily() || 'default') : 'default';
+    const sEnergy = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.get === 'function')
+      ? (Number(ConductorState.get('compositeIntensity')) || 0) : 0;
+    StructuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
+  }
+
   LM.advance('L1', 'section');
 
   LM.advance('L2', 'section');
