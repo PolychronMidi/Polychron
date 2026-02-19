@@ -355,6 +355,38 @@ GlobalConductor = (() => {
     const regVelFlickerMod = (typeof RegistralVelocityCorrelator !== 'undefined' && RegistralVelocityCorrelator && typeof RegistralVelocityCorrelator.getFlickerModifier === 'function')
       ? clamp(RegistralVelocityCorrelator.getFlickerModifier(), 0.9, 1.15)
       : 1;
+    // PhraseContourArchetypeDetector: contour classification (consumed via ConductorState)
+    const contourSignal = (typeof PhraseContourArchetypeDetector !== 'undefined' && PhraseContourArchetypeDetector && typeof PhraseContourArchetypeDetector.getContourSignal === 'function')
+      ? PhraseContourArchetypeDetector.getContourSignal()
+      : { archetype: 'undefined', confidence: 0, suggestion: 'maintain' };
+    // HarmonicDensityOscillator: tension bias from harmonic rate oscillation
+    const harmDensityOscTensionBias = (typeof HarmonicDensityOscillator !== 'undefined' && HarmonicDensityOscillator && typeof HarmonicDensityOscillator.getTensionBias === 'function')
+      ? clamp(HarmonicDensityOscillator.getTensionBias(), 0.9, 1.1)
+      : 1;
+    // AttackDensityProfiler: density bias from attack/sustain ratio
+    const attackDensityBias = (typeof AttackDensityProfiler !== 'undefined' && AttackDensityProfiler && typeof AttackDensityProfiler.getDensityBias === 'function')
+      ? clamp(AttackDensityProfiler.getDensityBias(), 0.9, 1.1)
+      : 1;
+    // LayerEntryExitTracker: orchestration momentum (consumed via ConductorState)
+    const layerMomentumSignal = (typeof LayerEntryExitTracker !== 'undefined' && LayerEntryExitTracker && typeof LayerEntryExitTracker.getMomentumSignal === 'function')
+      ? LayerEntryExitTracker.getMomentumSignal()
+      : { momentum: 'stable', layerDelta: 0, currentLayers: 0 };
+    // IntervalExpansionContractor: density bias from interval vocabulary trend
+    const intervalExpDensityBias = (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.getDensityBias === 'function')
+      ? clamp(IntervalExpansionContractor.getDensityBias(), 0.9, 1.1)
+      : 1;
+    // DynamicPeakMemory: tension bias from peak spacing
+    const dynamicPeakTensionBias = (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.getTensionBias === 'function')
+      ? clamp(DynamicPeakMemory.getTensionBias(), 0.9, 1.1)
+      : 1;
+    // RhythmicDensityContrastTracker: flicker modifier from dense/sparse contrast
+    const rhythmDensityContrastFlicker = (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.getFlickerModifier === 'function')
+      ? clamp(RhythmicDensityContrastTracker.getFlickerModifier(), 0.9, 1.15)
+      : 1;
+    // TonalAnchorDistanceTracker: tension bias from tonal distance
+    const tonalAnchorTensionBias = (typeof TonalAnchorDistanceTracker !== 'undefined' && TonalAnchorDistanceTracker && typeof TonalAnchorDistanceTracker.getTensionBias === 'function')
+      ? clamp(TonalAnchorDistanceTracker.getTensionBias(), 0.9, 1.12)
+      : 1;
 
     // Record density for wave analysis
     if (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.recordDensity === 'function') {
@@ -386,6 +418,31 @@ GlobalConductor = (() => {
       const absTime8 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       HarmonicPedalFieldTracker.recordBass(absTime8);
     }
+    // Record harmonic change rate for oscillation analysis
+    if (typeof HarmonicDensityOscillator !== 'undefined' && HarmonicDensityOscillator && typeof HarmonicDensityOscillator.recordChangeRate === 'function') {
+      const absTime9 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      const hrChangeRate = (typeof harmonicRhythm === 'number' && Number.isFinite(harmonicRhythm)) ? clamp(harmonicRhythm, 0, 1) : 0.5;
+      HarmonicDensityOscillator.recordChangeRate(hrChangeRate, absTime9);
+    }
+    // Record layer entry/exit snapshot
+    if (typeof LayerEntryExitTracker !== 'undefined' && LayerEntryExitTracker && typeof LayerEntryExitTracker.recordSnapshot === 'function') {
+      const absTime10 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      LayerEntryExitTracker.recordSnapshot(absTime10);
+    }
+    // Record interval expansion/contraction snapshot
+    if (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.recordSnapshot === 'function') {
+      const absTime11 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      IntervalExpansionContractor.recordSnapshot(absTime11);
+    }
+    // Record intensity for dynamic peak memory
+    if (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.recordIntensity === 'function') {
+      const absTime12 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
+      DynamicPeakMemory.recordIntensity(compositeIntensity, absTime12);
+    }
+    // Record rhythmic density for contrast tracking
+    if (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.recordDensity === 'function') {
+      RhythmicDensityContrastTracker.recordDensity(currentDensity);
+    }
 
     // Apply coherence-based density bias: low coherence → thinner density
     const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
@@ -400,7 +457,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias * chromaticDensityBias * leapStepDensityBias * ambitusDensityBias * voiceLeadDensityBias * tessituraDensityBias * melodicDirDensityBias * harmFieldDensityBias * rhythmicInertiaBias * crossLayerDensityBias, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias * chromaticDensityBias * leapStepDensityBias * ambitusDensityBias * voiceLeadDensityBias * tessituraDensityBias * melodicDirDensityBias * harmFieldDensityBias * rhythmicInertiaBias * crossLayerDensityBias * attackDensityBias * intervalExpDensityBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -413,7 +470,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker * polyAlignFlicker * envelopeFlickerMod * regVelFlickerMod;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker * polyAlignFlicker * envelopeFlickerMod * regVelFlickerMod * rhythmDensityContrastFlicker;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -459,7 +516,7 @@ GlobalConductor = (() => {
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias * cadentialTensionBias * dynamicPlanTensionBias * pedalFieldTensionBias, 0, 1);
+    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias * cadentialTensionBias * dynamicPlanTensionBias * pedalFieldTensionBias * harmDensityOscTensionBias * dynamicPeakTensionBias * tonalAnchorTensionBias, 0, 1);
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -543,6 +600,16 @@ GlobalConductor = (() => {
         envelopeShape: (typeof DynamicEnvelopeShaper !== 'undefined' && DynamicEnvelopeShaper && typeof DynamicEnvelopeShaper.getEnvelopeSignal === 'function') ? DynamicEnvelopeShaper.getEnvelopeSignal().shape : 'neutral',
         crossLayerImbalance: (typeof CrossLayerDensityBalancer !== 'undefined' && CrossLayerDensityBalancer && typeof CrossLayerDensityBalancer.getBalanceSignal === 'function') ? CrossLayerDensityBalancer.getBalanceSignal().imbalance : 0,
         pedalFieldStable: (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.getPedalFieldSignal === 'function') ? HarmonicPedalFieldTracker.getPedalFieldSignal().fieldStable : false,
+        contourArchetype: contourSignal.archetype,
+        contourSuggestion: contourSignal.suggestion,
+        harmonicOscillating: harmDensityOscTensionBias !== 1,
+        attackSuggestion: (typeof AttackDensityProfiler !== 'undefined' && AttackDensityProfiler && typeof AttackDensityProfiler.getAttackSignal === 'function') ? AttackDensityProfiler.getAttackSignal().suggestion : 'balanced',
+        layerMomentum: layerMomentumSignal.momentum,
+        layerCount: layerMomentumSignal.currentLayers,
+        intervalExpansionTrend: (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.getExpansionSignal === 'function') ? IntervalExpansionContractor.getExpansionSignal().trend : 'stable',
+        dynamicPeakRecency: (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.getPeakSignal === 'function') ? DynamicPeakMemory.getPeakSignal().peakRecency : 'none',
+        rhythmicContrastSuggestion: (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.getContrastSignal === 'function') ? RhythmicDensityContrastTracker.getContrastSignal().suggestion : 'maintain',
+        tonalAdventureLevel: (typeof TonalAnchorDistanceTracker !== 'undefined' && TonalAnchorDistanceTracker && typeof TonalAnchorDistanceTracker.getDistanceSignal === 'function') ? TonalAnchorDistanceTracker.getDistanceSignal().adventureLevel : 'home',
         playProb: playOut,
         stutterProb: stutterOut
       });
