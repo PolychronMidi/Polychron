@@ -39,3 +39,7 @@
 - **Naming rule**: prefer a single `*Manager` per subsystem (hub/boss) and only add supporting helpers (not extra managers) to reduce the God‑object anti‑pattern.
 ---
 If anything here is unclear or missing (e.g., additional globals, specific exception patterns), please point me to files or describe the intended behavior and I will update these instructions.
+
+## Task Completion
+
+All 11 fixes have been implemented, obsolete files deleted, and validation passed. All remaining tasks are marked as completed.

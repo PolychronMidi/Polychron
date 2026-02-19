@@ -4,19 +4,15 @@ require('./AmbitusMigrationTracker');
 // @ts-ignore: load side-effect module with globals
 require('./CounterpointMotionTracker');
 // @ts-ignore: load side-effect module with globals
+require('./IntervalBalanceTracker');
+// @ts-ignore: load side-effect module with globals
 require('./IntervalDirectionMemory');
 // @ts-ignore: load side-effect module with globals
 require('./IntervalExpansionContractor');
 // @ts-ignore: load side-effect module with globals
-require('./IntervalTensionProfiler');
-// @ts-ignore: load side-effect module with globals
-require('./IntervalVarietyTracker');
-// @ts-ignore: load side-effect module with globals
-require('./LeapStepBalancer');
-// @ts-ignore: load side-effect module with globals
 require('./MelodicContourTracker');
 // @ts-ignore: load side-effect module with globals
-require('./MelodicDirectionalityTracker');
+require('./octaveHelpers');
 // @ts-ignore: load side-effect module with globals
 require('./OctaveSpreadMonitor');
 // @ts-ignore: load side-effect module with globals

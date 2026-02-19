@@ -95,9 +95,9 @@ GlobalConductor = (() => {
     const harmonicChangeBias = (typeof HarmonicVelocityMonitor !== 'undefined' && HarmonicVelocityMonitor && typeof HarmonicVelocityMonitor.getChangeThresholdBias === 'function')
       ? clamp(HarmonicVelocityMonitor.getChangeThresholdBias(), 0.7, 1.4)
       : 1;
-    // DynamicRangeAdvisor velocity spread bias
-    const velocitySpreadBias = (typeof DynamicRangeAdvisor !== 'undefined' && DynamicRangeAdvisor && typeof DynamicRangeAdvisor.getSpreadBias === 'function')
-      ? clamp(DynamicRangeAdvisor.getSpreadBias(), 0.8, 1.3)
+    // DynamicRangeTracker velocity spread bias
+    const velocitySpreadBias = (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.getSpreadBias === 'function')
+      ? clamp(DynamicRangeTracker.getSpreadBias(), 0.8, 1.3)
       : 1;
 
     // --- Batch 5 intelligence module reads ---
@@ -149,9 +149,9 @@ GlobalConductor = (() => {
     const subdivisionBias = (typeof RhythmicComplexityGradient !== 'undefined' && RhythmicComplexityGradient && typeof RhythmicComplexityGradient.getSubdivisionBias === 'function')
       ? clamp(RhythmicComplexityGradient.getSubdivisionBias(), 0.8, 1.3)
       : 1;
-    // IntervalVarietyTracker: interval selection biases (consumed via ConductorState)
-    const intervalBias = (typeof IntervalVarietyTracker !== 'undefined' && IntervalVarietyTracker && typeof IntervalVarietyTracker.getIntervalBias === 'function')
-      ? IntervalVarietyTracker.getIntervalBias()
+    // IntervalBalanceTracker: interval selection biases (consumed via ConductorState)
+    const intervalBias = (typeof IntervalBalanceTracker !== 'undefined' && IntervalBalanceTracker && typeof IntervalBalanceTracker.getIntervalBias === 'function')
+      ? IntervalBalanceTracker.getIntervalBias()
       : { stepBias: 1, leapBias: 1 };
     // ClimaxProximityPredictor: density ramp + tension modifier
     const climaxDensityBias = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getDensityRampBias === 'function')
@@ -189,13 +189,13 @@ GlobalConductor = (() => {
     const consonanceTensionBias = (typeof ConsonanceDissonanceTracker !== 'undefined' && ConsonanceDissonanceTracker && typeof ConsonanceDissonanceTracker.getTensionBias === 'function')
       ? clamp(ConsonanceDissonanceTracker.getTensionBias(), 0.85, 1.25)
       : 1;
-    // VelocityContourTracker: flicker modifier from dynamics shape
-    const velocityFlickerMod = (typeof VelocityContourTracker !== 'undefined' && VelocityContourTracker && typeof VelocityContourTracker.getFlickerModifier === 'function')
-      ? clamp(VelocityContourTracker.getFlickerModifier(), 0.85, 1.2)
+    // VelocityShapeAnalyzer: flicker modifier from velocity shape (merged velocity contour + envelope)
+    const velocityFlickerMod = (typeof VelocityShapeAnalyzer !== 'undefined' && VelocityShapeAnalyzer && typeof VelocityShapeAnalyzer.getFlickerModifier === 'function')
+      ? clamp(VelocityShapeAnalyzer.getFlickerModifier(), 0.85, 1.2)
       : 1;
-    // PhraseBreathingAdvisor: density bias for breathing room
-    const breathingDensityBias = (typeof PhraseBreathingAdvisor !== 'undefined' && PhraseBreathingAdvisor && typeof PhraseBreathingAdvisor.getDensityBias === 'function')
-      ? clamp(PhraseBreathingAdvisor.getDensityBias(), 0.8, 1.2)
+    // RestDensityTracker: density bias for breathing room (merged from PhraseBreathingAdvisor)
+    const breathingDensityBias = (typeof RestDensityTracker !== 'undefined' && RestDensityTracker && typeof RestDensityTracker.getBreathingDensityBias === 'function')
+      ? clamp(RestDensityTracker.getBreathingDensityBias(), 0.8, 1.2)
       : 1;
     // OctaveSpreadMonitor: register spread bias (consumed via ConductorState)
     const octaveSpreadBias = (typeof OctaveSpreadMonitor !== 'undefined' && OctaveSpreadMonitor && typeof OctaveSpreadMonitor.getSpreadBias === 'function')
@@ -219,9 +219,9 @@ GlobalConductor = (() => {
     const tensionResolBias = (typeof TensionResolutionTracker !== 'undefined' && TensionResolutionTracker && typeof TensionResolutionTracker.getTensionModifier === 'function')
       ? clamp(TensionResolutionTracker.getTensionModifier(), 0.9, 1.25)
       : 1;
-    // MetricDisplacementDetector: displacement signal (consumed via ConductorState)
-    const displacementSignal = (typeof MetricDisplacementDetector !== 'undefined' && MetricDisplacementDetector && typeof MetricDisplacementDetector.getDisplacementSignal === 'function')
-      ? MetricDisplacementDetector.getDisplacementSignal()
+    // InterLayerRhythmAnalyzer: displacement signal (consumed via ConductorState)
+    const displacementSignal = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getDisplacementSignal === 'function')
+      ? InterLayerRhythmAnalyzer.getDisplacementSignal()
       : { displacement: 'aligned', hemiolaActive: false };
     // DensityWaveAnalyzer: flicker modifier from density oscillation patterns
     const densityWaveFlicker = (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.getFlickerModifier === 'function')
@@ -239,9 +239,9 @@ GlobalConductor = (() => {
     const thematicSignal = (typeof ThematicRecallDetector !== 'undefined' && ThematicRecallDetector && typeof ThematicRecallDetector.getThematicSignal === 'function')
       ? ThematicRecallDetector.getThematicSignal()
       : { thematicStatus: 'fresh', recallSection: null };
-    // DynamicContrastMemory: flicker modifier from contrast deficit
-    const contrastFlickerMod = (typeof DynamicContrastMemory !== 'undefined' && DynamicContrastMemory && typeof DynamicContrastMemory.getFlickerModifier === 'function')
-      ? clamp(DynamicContrastMemory.getFlickerModifier(), 0.95, 1.2)
+    // DynamicRangeTracker: flicker modifier from contrast deficit
+    const contrastFlickerMod = (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.getContrastFlickerModifier === 'function')
+      ? clamp(DynamicRangeTracker.getContrastFlickerModifier(), 0.95, 1.2)
       : 1;
     // LayerIndependenceScorer: density bias from layer coupling balance
     const layerIndepBias = (typeof LayerIndependenceScorer !== 'undefined' && LayerIndependenceScorer && typeof LayerIndependenceScorer.getDensityBias === 'function')
@@ -253,13 +253,10 @@ GlobalConductor = (() => {
     const chromaticDensityBias = (typeof ChromaticSaturationMonitor !== 'undefined' && ChromaticSaturationMonitor && typeof ChromaticSaturationMonitor.getDensityBias === 'function')
       ? clamp(ChromaticSaturationMonitor.getDensityBias(), 0.9, 1.1)
       : 1;
-    // LeapStepBalancer: density bias + interval correction (consumed via ConductorState)
-    const leapStepDensityBias = (typeof LeapStepBalancer !== 'undefined' && LeapStepBalancer && typeof LeapStepBalancer.getDensityBias === 'function')
-      ? clamp(LeapStepBalancer.getDensityBias(), 0.9, 1.1)
+    // IntervalBalanceTracker: density bias from interval balance
+    const leapStepDensityBias = (typeof IntervalBalanceTracker !== 'undefined' && IntervalBalanceTracker && typeof IntervalBalanceTracker.getDensityBias === 'function')
+      ? clamp(IntervalBalanceTracker.getDensityBias(), 0.9, 1.1)
       : 1;
-    const leapStepCorrection = (typeof LeapStepBalancer !== 'undefined' && LeapStepBalancer && typeof LeapStepBalancer.getIntervalCorrection === 'function')
-      ? LeapStepBalancer.getIntervalCorrection()
-      : { leapBias: 1, stepBias: 1 };
     // TexturalGradientTracker: flicker modifier from texture rate-of-change
     const texturalGradientFlicker = (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.getFlickerModifier === 'function')
       ? clamp(TexturalGradientTracker.getFlickerModifier(), 0.9, 1.25)
@@ -305,13 +302,13 @@ GlobalConductor = (() => {
     const tessituraDensityBias = (typeof TessituraPressureMonitor !== 'undefined' && TessituraPressureMonitor && typeof TessituraPressureMonitor.getDensityBias === 'function')
       ? clamp(TessituraPressureMonitor.getDensityBias(), 0.85, 1.1)
       : 1;
-    // PolyrhythmicAlignmentTracker: flicker modifier at convergence points
-    const polyAlignFlicker = (typeof PolyrhythmicAlignmentTracker !== 'undefined' && PolyrhythmicAlignmentTracker && typeof PolyrhythmicAlignmentTracker.getFlickerModifier === 'function')
-      ? clamp(PolyrhythmicAlignmentTracker.getFlickerModifier(), 0.9, 1.2)
+    // InterLayerRhythmAnalyzer: flicker modifier at convergence points
+    const polyAlignFlicker = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getFlickerModifier === 'function')
+      ? clamp(InterLayerRhythmAnalyzer.getFlickerModifier(), 0.9, 1.2)
       : 1;
-    // MelodicDirectionalityTracker: density bias from directional monotony
-    const melodicDirDensityBias = (typeof MelodicDirectionalityTracker !== 'undefined' && MelodicDirectionalityTracker && typeof MelodicDirectionalityTracker.getDensityBias === 'function')
-      ? clamp(MelodicDirectionalityTracker.getDensityBias(), 0.9, 1.05)
+    // MelodicContourTracker: density bias from directional monotony
+    const melodicDirDensityBias = (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.getDirectionalityDensityBias === 'function')
+      ? clamp(MelodicContourTracker.getDirectionalityDensityBias(), 0.9, 1.05)
       : 1;
     // HarmonicFieldDensityTracker: density bias from vertical harmonic thickness
     const harmFieldDensityBias = (typeof HarmonicFieldDensityTracker !== 'undefined' && HarmonicFieldDensityTracker && typeof HarmonicFieldDensityTracker.getDensityBias === 'function')
@@ -331,10 +328,6 @@ GlobalConductor = (() => {
     const gravitySignal = (typeof PitchClassGravityMap !== 'undefined' && PitchClassGravityMap && typeof PitchClassGravityMap.getGravitySignal === 'function')
       ? PitchClassGravityMap.getGravitySignal()
       : { center: 0, stability: 0.5, driftFromCenter: 0, suggestion: 'maintain' };
-    // DynamicEnvelopeShaper: flicker modifier from envelope punchiness
-    const envelopeFlickerMod = (typeof DynamicEnvelopeShaper !== 'undefined' && DynamicEnvelopeShaper && typeof DynamicEnvelopeShaper.getFlickerModifier === 'function')
-      ? clamp(DynamicEnvelopeShaper.getFlickerModifier(), 0.9, 1.15)
-      : 1;
     // IntervalDirectionMemory: interval freshness signal (consumed via ConductorState)
     const intervalFreshness = (typeof IntervalDirectionMemory !== 'undefined' && IntervalDirectionMemory && typeof IntervalDirectionMemory.getFreshnessSignal === 'function')
       ? IntervalDirectionMemory.getFreshnessSignal()
@@ -347,9 +340,9 @@ GlobalConductor = (() => {
     const pedalFieldTensionBias = (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.getTensionBias === 'function')
       ? clamp(HarmonicPedalFieldTracker.getTensionBias(), 0.9, 1.15)
       : 1;
-    // MicroTimingDriftDetector: timing drift signal (consumed via ConductorState)
-    const timingDriftSignal = (typeof MicroTimingDriftDetector !== 'undefined' && MicroTimingDriftDetector && typeof MicroTimingDriftDetector.getDriftSignal === 'function')
-      ? MicroTimingDriftDetector.getDriftSignal()
+    // InterLayerRhythmAnalyzer: timing drift signal (consumed via ConductorState)
+    const timingDriftSignal = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getDriftSignal === 'function')
+      ? InterLayerRhythmAnalyzer.getDriftSignal()
       : { avgDrift: 0, tightness: 0.5, suggestion: 'maintain' };
     // RegistralVelocityCorrelator: flicker modifier from register-velocity correlation
     const regVelFlickerMod = (typeof RegistralVelocityCorrelator !== 'undefined' && RegistralVelocityCorrelator && typeof RegistralVelocityCorrelator.getFlickerModifier === 'function')
@@ -393,10 +386,10 @@ GlobalConductor = (() => {
       const absTime3 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
       DensityWaveAnalyzer.recordDensity(currentDensity, absTime3);
     }
-    // Record dynamic extremes for contrast memory
-    if (typeof DynamicContrastMemory !== 'undefined' && DynamicContrastMemory && typeof DynamicContrastMemory.recordExtremes === 'function') {
+    // Record dynamic extremes for range tracking
+    if (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.recordExtremes === 'function') {
       const absTime4 = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : 0;
-      DynamicContrastMemory.recordExtremes(absTime4);
+      DynamicRangeTracker.recordExtremes(absTime4);
     }
     // Record textural gradient snapshot
     if (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.recordDensity === 'function') {
@@ -470,7 +463,7 @@ GlobalConductor = (() => {
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker * polyAlignFlicker * envelopeFlickerMod * regVelFlickerMod * rhythmDensityContrastFlicker;
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker * polyAlignFlicker * regVelFlickerMod * rhythmDensityContrastFlicker;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -566,8 +559,8 @@ GlobalConductor = (() => {
         timbreSuggestion: timbreSignal.suggestion,
         thematicStatus: thematicSignal.thematicStatus,
         thematicRecallSection: thematicSignal.recallSection,
-        leapStepLeapBias: leapStepCorrection.leapBias,
-        leapStepStepBias: leapStepCorrection.stepBias,
+        leapStepLeapBias: intervalBias.leapBias,
+        leapStepStepBias: intervalBias.stepBias,
         proportionSuggestion: proportionSignal.suggestion,
         proportionIdealBeats: proportionSignal.idealBeats,
         proportionQuality: proportionSignal.quality,
@@ -584,8 +577,8 @@ GlobalConductor = (() => {
         rhythmicGroupingInTransition: groupingSignal.inTransition,
         dynamicPlanMacroPosition: (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.getDynamicPlanSignal === 'function') ? DynamicArchitectPlanner.getDynamicPlanSignal().macroPosition : 0,
         tessituraRegion: (typeof TessituraPressureMonitor !== 'undefined' && TessituraPressureMonitor && typeof TessituraPressureMonitor.getPressureSignal === 'function') ? TessituraPressureMonitor.getPressureSignal().region : 'comfortable',
-        polyrhythmConvergence: (typeof PolyrhythmicAlignmentTracker !== 'undefined' && PolyrhythmicAlignmentTracker && typeof PolyrhythmicAlignmentTracker.getAlignmentSignal === 'function') ? PolyrhythmicAlignmentTracker.getAlignmentSignal().convergencePoint : false,
-        melodicDirection: (typeof MelodicDirectionalityTracker !== 'undefined' && MelodicDirectionalityTracker && typeof MelodicDirectionalityTracker.getDirectionalitySignal === 'function') ? MelodicDirectionalityTracker.getDirectionalitySignal().direction : 'undulating',
+        polyrhythmConvergence: (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getAlignmentSignal === 'function') ? InterLayerRhythmAnalyzer.getAlignmentSignal().convergencePoint : false,
+        melodicDirection: (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.getDirectionalitySignal === 'function') ? MelodicContourTracker.getDirectionalitySignal().direction : 'undulating',
         harmonicFieldAvgSimultaneous: (typeof HarmonicFieldDensityTracker !== 'undefined' && HarmonicFieldDensityTracker && typeof HarmonicFieldDensityTracker.getFieldDensitySignal === 'function') ? HarmonicFieldDensityTracker.getFieldDensitySignal().avgSimultaneous : 1,
         orchestrationSuggestion: orchestrationSignal.suggestion,
         orchestrationDominantBand: orchestrationSignal.dominantBand,
@@ -597,7 +590,7 @@ GlobalConductor = (() => {
         timingTightness: timingDriftSignal.tightness,
         timingDriftSuggestion: timingDriftSignal.suggestion,
         rhythmicInertiaSuggestion: (typeof RhythmicInertiaTracker !== 'undefined' && RhythmicInertiaTracker && typeof RhythmicInertiaTracker.getInertiaSignal === 'function') ? RhythmicInertiaTracker.getInertiaSignal().suggestion : 'maintain',
-        envelopeShape: (typeof DynamicEnvelopeShaper !== 'undefined' && DynamicEnvelopeShaper && typeof DynamicEnvelopeShaper.getEnvelopeSignal === 'function') ? DynamicEnvelopeShaper.getEnvelopeSignal().shape : 'neutral',
+        envelopeShape: (typeof VelocityShapeAnalyzer !== 'undefined' && VelocityShapeAnalyzer && typeof VelocityShapeAnalyzer.getVelocityShape === 'function') ? VelocityShapeAnalyzer.getVelocityShape().shape : 'neutral',
         crossLayerImbalance: (typeof CrossLayerDensityBalancer !== 'undefined' && CrossLayerDensityBalancer && typeof CrossLayerDensityBalancer.getBalanceSignal === 'function') ? CrossLayerDensityBalancer.getBalanceSignal().imbalance : 0,
         pedalFieldStable: (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.getPedalFieldSignal === 'function') ? HarmonicPedalFieldTracker.getPedalFieldSignal().fieldStable : false,
         contourArchetype: contourSignal.archetype,

@@ -1,5 +1,7 @@
 // src/conductor/harmonic/index.js — Harmony, tonality, chord quality, key distance
 // @ts-ignore: load side-effect module with globals
+require('./pitchClassHelpers');
+// @ts-ignore: load side-effect module with globals
 require('./CadenceAdvisor');
 // @ts-ignore: load side-effect module with globals
 require('./CadentialPreparationAdvisor');
