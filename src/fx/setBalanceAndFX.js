@@ -199,12 +199,28 @@ return [
       const filterBoost = m.round(texInt * rf(5, 15) * fxScale.filterOpenness * fxScale.textureBoostScale);
       const delaySpike = m.round(texInt * rf(4, 12) * fxScale.delayScale * fxScale.textureBoostScale);
       const texTick = (typeof beatStart !== 'undefined' && Number.isFinite(Number(beatStart))) ? Number(beatStart) : 0;
+
+      const clampToFxDefault = (ch, effectNum, value) => {
+        // determine group for the channel
+        const group = (Array.isArray(reflection) && reflection.includes(ch)) ? 'reflection' : (Array.isArray(bass) && bass.includes(ch)) ? 'bass' : 'source';
+        let def = null;
+        if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
+          if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][effectNum]) def = FX_CC_DEFAULTS[group][effectNum];
+          else if (FX_CC_DEFAULTS[effectNum]) def = FX_CC_DEFAULTS[effectNum];
+        }
+        if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) {
+          const v = m.round(m.max(def.min, m.min(def.max, Number(value))));
+          return v;
+        }
+        return clamp(Number(value), 0, 127);
+      };
+
       for (let ti = 0; ti < allChs.length; ti++) {
         const tCh = allChs[ti];
-        p(c, { tick: texTick, type: 'control_c', vals: [tCh, 91, clamp(reverbBoost, 0, 127)] }); // Reverb
-        p(c, { tick: texTick, type: 'control_c', vals: [tCh, 74, clamp(80 + filterBoost, 80, 127)] }); // Filter cutoff
+        p(c, { tick: texTick, type: 'control_c', vals: [tCh, 91, clampToFxDefault(tCh, 91, reverbBoost)] }); // Reverb
+        p(c, { tick: texTick, type: 'control_c', vals: [tCh, 74, clampToFxDefault(tCh, 74, 80 + filterBoost)] }); // Filter cutoff
         if (texInt > 0.25) {
-          p(c, { tick: texTick, type: 'control_c', vals: [tCh, 94, clamp(delaySpike, 0, 64)] }); // Delay
+          p(c, { tick: texTick, type: 'control_c', vals: [tCh, 94, clampToFxDefault(tCh, 94, delaySpike)] }); // Delay
         }
       }
     }
