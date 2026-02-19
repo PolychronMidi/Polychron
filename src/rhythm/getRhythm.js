@@ -40,6 +40,12 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
 
     // Chain journey-boldness bias on top of FX+Stutter bias
     let rhythmSource = JourneyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
+
+    // Apply rhythm history novelty penalty to discourage repetition
+    if (typeof RhythmHistoryTracker !== 'undefined' && RhythmHistoryTracker && typeof RhythmHistoryTracker.penalizeRepetition === 'function') {
+      rhythmSource = RhythmHistoryTracker.penalizeRepetition(rhythmSource);
+    }
+
     const hasLayerContext = typeof LM !== 'undefined' && LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
     const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
@@ -86,6 +92,19 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     }
 
     const { method: rhythmMethodKey, args: rhythmArgs }=rhythmSource[rhythmKey];
+
+    // Record selection for novelty tracking
+    if (typeof RhythmHistoryTracker !== 'undefined' && RhythmHistoryTracker && typeof RhythmHistoryTracker.record === 'function') {
+      const rhtLayer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+      RhythmHistoryTracker.record(rhythmMethodKey, length, rhtLayer);
+
+      // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
+      if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordRhythm === 'function') {
+        const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
+        AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, rhtLayer, absTime);
+      }
+    }
+
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators
     if (Array.isArray(generatedArgs) && generatedArgs.length === 1 && generatedArgs[0] === length) {

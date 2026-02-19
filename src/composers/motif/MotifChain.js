@@ -121,13 +121,18 @@ MotifChain = (() => {
       ? mutationProfile.transposeRange
       : [-7, 7];
 
+    // Overlay context-aware transform advice from MotifTransformAdvisor
+    const advisorOpts = (typeof MotifTransformAdvisor !== 'undefined' && MotifTransformAdvisor && typeof MotifTransformAdvisor.adviseTransform === 'function')
+      ? MotifTransformAdvisor.adviseTransform()
+      : {};
+
     const {
-      transposeRange = defaultTransposeRange,
-      rotateRange = null,
-      allowInvert = true,
-      allowReverse = true,
-      allowAugment = true,
-      augmentRange = [1.5, 3]
+      transposeRange = advisorOpts.transposeRange || defaultTransposeRange,
+      rotateRange = advisorOpts.rotateRange || null,
+      allowInvert = advisorOpts.allowInvert !== undefined ? advisorOpts.allowInvert : true,
+      allowReverse = advisorOpts.allowReverse !== undefined ? advisorOpts.allowReverse : true,
+      allowAugment = advisorOpts.allowAugment !== undefined ? advisorOpts.allowAugment : true,
+      augmentRange = advisorOpts.augmentRange || [1.5, 3]
     } = options;
     // rotateRange uses transposeRange as fallback for backward compat,
     // but callers can now separate pitch vs sequence ranges.

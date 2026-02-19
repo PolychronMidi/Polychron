@@ -18,6 +18,8 @@ require('./ConductorRegulationListener');
 // @ts-ignore: side-effect module load
 require('./DrumTextureCoupler');
 // @ts-ignore: side-effect module load
+require('./RhythmHistoryTracker');
+// @ts-ignore: side-effect module load
 require('./PhaseLockedRhythmGenerator');
 // @ts-ignore: side-effect module load
 require('./rhythmConfig');

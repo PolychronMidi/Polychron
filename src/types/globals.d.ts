@@ -609,3 +609,13 @@ declare var conductorConfigDynamics: any;
 declare var ConductorConfig: any;
 declare var GlobalConductor: any;
 declare var playNotesEmitPick: any;
+
+declare var AbsoluteTimeWindow: any;
+declare var TempoFeelEngine: any;
+declare var MelodicContourTracker: any;
+declare var RegisterPressureMonitor: any;
+declare var LayerCoherenceScorer: any;
+declare var CadenceAdvisor: any;
+declare var SectionLengthAdvisor: any;
+declare var RhythmHistoryTracker: any;
+declare var MotifTransformAdvisor: any;

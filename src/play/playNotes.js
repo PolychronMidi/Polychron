@@ -111,8 +111,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     : 0;
   const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;
 
+  // Apply micro-tempo variation from TempoFeelEngine
+  const tempoFeelOffset = (typeof TempoFeelEngine !== 'undefined' && TempoFeelEngine && typeof TempoFeelEngine.getTickOffset === 'function')
+    ? TempoFeelEngine.getTickOffset()
+    : 0;
+
   // Compute on and sustain
-  const on = unitStart + timingOffsetTicks + (tpUnit * rv(rf(.2), [-.1, .07], .3));
+  const on = unitStart + timingOffsetTicks + tempoFeelOffset + (tpUnit * rv(rf(.2), [-.1, .07], .3));
   const shortSustain = rv(rf(m.max(tpUnit * .5, tpUnit / unitsPerParent), (tpUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
   const longSustain = rv(rf(tpUnit * .8, (tpParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
   const useShort = subdivsPerMinute > ri(400, 650);

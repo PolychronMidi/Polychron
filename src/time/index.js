@@ -8,3 +8,7 @@ require('./midiTiming');
 require('./setUnitTiming');
 // @ts-ignore: side-effect module load
 require('./getPolyrhythm');
+// @ts-ignore: side-effect module load
+require('./AbsoluteTimeWindow');
+// @ts-ignore: side-effect module load
+require('./TempoFeelEngine');

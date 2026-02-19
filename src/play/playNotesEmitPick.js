@@ -65,6 +65,13 @@ playNotesEmitPick = function(opts = {}) {
     microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation);
     scheduled += 2;
 
+    // Record note into AbsoluteTimeWindow for cross-layer analysis
+    if (isPrimary && typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordNote === 'function') {
+      const atwLayer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+      const atwTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
+      AbsoluteTimeWindow.recordNote(noteToEmit, texVel, atwLayer, atwTime, unit);
+    }
+
     if (textureMode.mode === 'chordBurst' && isPrimary) {
       let burstIntervals = [3, 4, 7];
       if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {

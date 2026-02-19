@@ -1,0 +1,87 @@
+// src/conductor/RegisterPressureMonitor.js - Monitors pitch-register density across layers.
+// Queries AbsoluteTimeWindow for pitch distribution across octave bands.
+// Pure query API — guides voice allocation to avoid register crowding.
+
+RegisterPressureMonitor = (() => {
+  const NUM_BANDS = 10; // octave bands 0-9 (MIDI 0-119)
+
+  /**
+   * Get note counts per octave band for a given layer (or all layers).
+   * @param {Object} [opts]
+   * @param {string} [opts.layer] - filter by layer
+   * @param {number} [opts.windowSeconds] - analysis window (default 4s)
+   * @returns {Array<number>} - 10-element array of note counts per octave band
+   */
+  function getRegisterPressure(opts) {
+    const { layer, windowSeconds } = opts || {};
+    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: windowSeconds || 4 });
+    const bands = new Array(NUM_BANDS).fill(0);
+    for (let i = 0; i < notes.length; i++) {
+      const octave = m.floor(notes[i].midi / 12);
+      if (octave >= 0 && octave < NUM_BANDS) bands[octave]++;
+    }
+    return bands;
+  }
+
+  /**
+   * Compute overlap between L1 and L2 register usage.
+   * Returns 0 (no overlap) to 1 (identical distribution).
+   * @param {number} [windowSeconds]
+   * @returns {number}
+   */
+  function getCrossLayerOverlap(windowSeconds) {
+    const l1 = getRegisterPressure({ layer: 'L1', windowSeconds });
+    const l2 = getRegisterPressure({ layer: 'L2', windowSeconds });
+    const l1Total = l1.reduce((a, b) => a + b, 0);
+    const l2Total = l2.reduce((a, b) => a + b, 0);
+    if (l1Total === 0 || l2Total === 0) return 0;
+
+    // Normalize both to probability distributions, compute overlap coefficient
+    let overlap = 0;
+    for (let i = 0; i < NUM_BANDS; i++) {
+      overlap += m.min(l1[i] / l1Total, l2[i] / l2Total);
+    }
+    return clamp(overlap, 0, 1);
+  }
+
+  /**
+   * Suggest a register bias to reduce crowding.
+   * Returns an octave offset suggestion (-2 to +2) for the current layer.
+   * @param {string} layer - current layer
+   * @returns {{ octaveBias: number, crowdedBands: Array<number>, emptyBands: Array<number> }}
+   */
+  function getRegisterBias(layer) {
+    const bands = getRegisterPressure({ layer, windowSeconds: 4 });
+    const total = bands.reduce((a, b) => a + b, 0);
+    if (total < 4) return { octaveBias: 0, crowdedBands: [], emptyBands: [] };
+
+    // Find playable range from OCTAVE globals
+    const minBand = (typeof OCTAVE !== 'undefined' && OCTAVE) ? m.floor(OCTAVE.min) : 3;
+    const maxBand = (typeof OCTAVE !== 'undefined' && OCTAVE) ? m.floor(OCTAVE.max) : 7;
+
+    const crowdedBands = [];
+    const emptyBands = [];
+    const threshold = total / (maxBand - minBand + 1);
+
+    for (let i = minBand; i <= maxBand; i++) {
+      if (bands[i] > threshold * 1.8) crowdedBands.push(i);
+      if (bands[i] < threshold * 0.3) emptyBands.push(i);
+    }
+
+    // Bias toward empty bands, away from crowded bands
+    let octaveBias = 0;
+    if (emptyBands.length > 0 && crowdedBands.length > 0) {
+      const avgEmpty = emptyBands.reduce((a, b) => a + b, 0) / emptyBands.length;
+      const avgCrowded = crowdedBands.reduce((a, b) => a + b, 0) / crowdedBands.length;
+      octaveBias = clamp(m.round(avgEmpty - avgCrowded), -2, 2);
+    }
+
+    return { octaveBias, crowdedBands, emptyBands };
+  }
+
+  return {
+    getRegisterPressure,
+    getCrossLayerOverlap,
+    getRegisterBias
+  };
+})();
