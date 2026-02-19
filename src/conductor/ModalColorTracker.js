@@ -1,0 +1,97 @@
+// src/conductor/ModalColorTracker.js - Tracks which scale degrees are actually sounding.
+// Detects "vanilla" (1-3-5 heavy) vs. colorful (2, 4, 6, 7) pitch usage.
+// Pure query API — biases note selection toward underused color tones.
+
+ModalColorTracker = (() => {
+  const WINDOW_SECONDS = 6;
+  // Scale-degree categories
+  const CHORD_TONES = new Set([0, 4, 7]); // root, major 3rd, perfect 5th (approx)
+  const COLOR_TONES = new Set([1, 2, 3, 5, 6, 8, 9, 10, 11]); // everything else
+
+  /**
+   * Analyze pitch-class distribution in recent notes.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @param {number} [opts.windowSeconds]
+   * @returns {{ pcDistribution: Array<number>, chordToneRatio: number, colorToneRatio: number, vanilla: boolean, colorful: boolean }}
+   */
+  function getModalProfile(opts) {
+    const { layer, windowSeconds } = opts || {};
+    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+
+    const pcCounts = new Array(12).fill(0);
+    for (let i = 0; i < notes.length; i++) {
+      const pc = (typeof notes[i].midi === 'number') ? ((notes[i].midi % 12) + 12) % 12 : 0;
+      pcCounts[pc]++;
+    }
+
+    if (notes.length < 3) {
+      return { pcDistribution: pcCounts, chordToneRatio: 0, colorToneRatio: 0, vanilla: false, colorful: false };
+    }
+
+    let chordToneCount = 0;
+    let colorToneCount = 0;
+    for (let i = 0; i < 12; i++) {
+      if (CHORD_TONES.has(i)) chordToneCount += pcCounts[i];
+      if (COLOR_TONES.has(i)) colorToneCount += pcCounts[i];
+    }
+
+    const total = chordToneCount + colorToneCount;
+    const chordToneRatio = total > 0 ? chordToneCount / total : 0;
+    const colorToneRatio = total > 0 ? colorToneCount / total : 0;
+
+    return {
+      pcDistribution: pcCounts,
+      chordToneRatio,
+      colorToneRatio,
+      vanilla: chordToneRatio > 0.75,
+      colorful: colorToneRatio > 0.6
+    };
+  }
+
+  /**
+   * Get a note-selection bias to encourage modal variety.
+   * Vanilla → boost color tones; overly colorful → stabilize with chord tones.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @returns {{ colorBias: number, stabilityBias: number }}
+   */
+  function getColorBias(opts) {
+    const profile = getModalProfile(opts);
+    if (profile.vanilla) {
+      return { colorBias: 1.3, stabilityBias: 0.85 };
+    }
+    if (profile.colorful) {
+      return { colorBias: 0.8, stabilityBias: 1.2 };
+    }
+    return { colorBias: 1.0, stabilityBias: 1.0 };
+  }
+
+  /**
+   * Get underused pitch classes to suggest to composers.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @returns {Array<number>} - pitch classes (0-11) that are underrepresented
+   */
+  function getUnderusedPitchClasses(opts) {
+    const profile = getModalProfile(opts);
+    const total = profile.pcDistribution.reduce((a, b) => a + b, 0);
+    if (total < 6) return [];
+
+    const expected = total / 12;
+    const underused = [];
+    for (let i = 0; i < 12; i++) {
+      if (profile.pcDistribution[i] < expected * 0.3) {
+        underused.push(i);
+      }
+    }
+    return underused;
+  }
+
+  return {
+    getModalProfile,
+    getColorBias,
+    getUnderusedPitchClasses
+  };
+})();
