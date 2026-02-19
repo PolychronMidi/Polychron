@@ -169,6 +169,11 @@ if (typeof ConductorState === 'undefined' || !ConductorState || typeof Conductor
 }
 ConductorState.initialize();
 
+if (typeof CadenceAdvisor === 'undefined' || !CadenceAdvisor || typeof CadenceAdvisor.initialize !== 'function') {
+  throw new Error('main: CadenceAdvisor.initialize not available');
+}
+CadenceAdvisor.initialize();
+
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 
 // Plan the harmonic journey across all sections
@@ -178,6 +183,11 @@ if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof Harmonic
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+
+  // Let SectionLengthAdvisor adjust phrase count based on energy trajectory
+  if (typeof SectionLengthAdvisor !== 'undefined' && SectionLengthAdvisor && typeof SectionLengthAdvisor.advisePhraseCount === 'function') {
+    phrasesPerSection = SectionLengthAdvisor.advisePhraseCount(phrasesPerSection);
+  }
 
   // Emit section boundary event to reset FX feedback accumulator
   EventBus.emit(EVENTS.SECTION_BOUNDARY, { sectionIndex });

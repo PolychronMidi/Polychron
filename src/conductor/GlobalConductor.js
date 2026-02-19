@@ -66,6 +66,22 @@ GlobalConductor = (() => {
       1
     );
 
+    // Update cross-layer analysis modules (melodic contour, coherence, energy tracking)
+    if (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.update === 'function') {
+      MelodicContourTracker.update();
+    }
+    if (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.computeCoherence === 'function') {
+      LayerCoherenceScorer.computeCoherence();
+    }
+    if (typeof SectionLengthAdvisor !== 'undefined' && SectionLengthAdvisor && typeof SectionLengthAdvisor.recordEnergy === 'function') {
+      SectionLengthAdvisor.recordEnergy(compositeIntensity);
+    }
+
+    // Apply coherence-based density bias: low coherence → thinner density
+    const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
+      ? LayerCoherenceScorer.getDensityBias()
+      : 1;
+
     const emissionRatio = (typeof EmissionFeedbackListener !== 'undefined' && EmissionFeedbackListener && typeof EmissionFeedbackListener.getEmissionRatio === 'function')
       ? clamp(Number(EmissionFeedbackListener.getEmissionRatio()), 0, 2)
       : 1;
@@ -74,7 +90,7 @@ GlobalConductor = (() => {
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection, 0, 1);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 

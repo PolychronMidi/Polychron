@@ -44,4 +44,14 @@ require('./ConductorState');
 // @ts-ignore: load side-effect module with globals
 require('./GlobalConductor');
 // @ts-ignore: load side-effect module with globals
+require('./MelodicContourTracker');
+// @ts-ignore: load side-effect module with globals
+require('./RegisterPressureMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./LayerCoherenceScorer');
+// @ts-ignore: load side-effect module with globals
+require('./CadenceAdvisor');
+// @ts-ignore: load side-effect module with globals
+require('./SectionLengthAdvisor');
+// @ts-ignore: load side-effect module with globals
 require('./config');
