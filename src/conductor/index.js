@@ -150,4 +150,20 @@ require('./AmbitusMigrationTracker');
 // @ts-ignore: load side-effect module with globals
 require('./SilenceDistributionTracker');
 // @ts-ignore: load side-effect module with globals
+require('./VoiceLeadingEfficiencyTracker');
+// @ts-ignore: load side-effect module with globals
+require('./RhythmicGroupingAnalyzer');
+// @ts-ignore: load side-effect module with globals
+require('./DynamicArchitectPlanner');
+// @ts-ignore: load side-effect module with globals
+require('./TessituraPressureMonitor');
+// @ts-ignore: load side-effect module with globals
+require('./PolyrhythmicAlignmentTracker');
+// @ts-ignore: load side-effect module with globals
+require('./MelodicDirectionalityTracker');
+// @ts-ignore: load side-effect module with globals
+require('./HarmonicFieldDensityTracker');
+// @ts-ignore: load side-effect module with globals
+require('./OrchestrationWeightTracker');
+// @ts-ignore: load side-effect module with globals
 require('./config');
