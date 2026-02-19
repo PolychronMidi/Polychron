@@ -1,5 +1,8 @@
 /** @this {any} */
 stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
+  const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names.STUTTER_APPLIED
+    : 'stutter-applied';
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
   // Write beat-level pan context for spatial-aware octave shifts (task 7)
@@ -56,7 +59,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       // emit feedback for stutter cross-mod listeners (include inferred profile)
       try {
         const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
+        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
       } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });

@@ -1,31 +1,45 @@
 // src/rhythm/getRhythm.js - Rhythm pattern retrieval with dynamic method selection.
 
+let _getRhythmDepsValidated = false;
+
+function assertGetRhythmDeps() {
+  if (_getRhythmDepsValidated) return;
+  if (typeof FXFeedbackListener === 'undefined' || !FXFeedbackListener || typeof FXFeedbackListener.biasRhythmWeights !== 'function') {
+    throw new Error('getRhythm: FXFeedbackListener.biasRhythmWeights is required');
+  }
+  if (typeof StutterFeedbackListener === 'undefined' || !StutterFeedbackListener || typeof StutterFeedbackListener.biasRhythmWeights !== 'function') {
+    throw new Error('getRhythm: StutterFeedbackListener.biasRhythmWeights is required');
+  }
+  if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.biasRhythmWeights !== 'function') {
+    throw new Error('getRhythm: JourneyRhythmCoupler.biasRhythmWeights is required');
+  }
+  if (typeof PhaseLockedRhythmGenerator === 'undefined' || !PhaseLockedRhythmGenerator || typeof PhaseLockedRhythmGenerator.generate !== 'function') {
+    throw new Error('getRhythm: PhaseLockedRhythmGenerator.generate is required');
+  }
+  _getRhythmDepsValidated = true;
+}
+
 getRhythm = function getRhythm(level,length,pattern,method,...args){
+  assertGetRhythmDeps();
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
 
   if (method) {
     if (!method) throw new Error('getRhythm: empty method key requested');
     // Phase-locked path: length-only patterns can be generated with phase cohesion
-    if (typeof PhaseLockedRhythmGenerator !== 'undefined' && args && args.length === 1 && args[0] === length) {
+    if (args && args.length === 1 && args[0] === length) {
       return PhaseLockedRhythmGenerator.generate(length, method);
     }
     // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
     return RhythmRegistry.execute(method, ...args);
   } else {
-    const fxBiasedRhythmSource = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.biasRhythmWeights === 'function')
-      ? FXFeedbackListener.biasRhythmWeights(rhythms)
-      : rhythms;
+    const fxBiasedRhythmSource = FXFeedbackListener.biasRhythmWeights(rhythms);
 
     // Also apply stutter-based rhythm bias if available
-    const stutterBiasedRhythmSource = (typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.biasRhythmWeights === 'function')
-      ? StutterFeedbackListener.biasRhythmWeights(fxBiasedRhythmSource)
-      : fxBiasedRhythmSource;
+    const stutterBiasedRhythmSource = StutterFeedbackListener.biasRhythmWeights(fxBiasedRhythmSource);
 
     // Chain journey-boldness bias on top of FX+Stutter bias
-    let rhythmSource = (typeof JourneyRhythmCoupler !== 'undefined' && JourneyRhythmCoupler && typeof JourneyRhythmCoupler.biasRhythmWeights === 'function')
-      ? JourneyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource)
-      : stutterBiasedRhythmSource;
+    let rhythmSource = JourneyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
     const hasLayerContext = typeof LM !== 'undefined' && LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
     const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
@@ -74,7 +88,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const { method: rhythmMethodKey, args: rhythmArgs }=rhythmSource[rhythmKey];
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators
-    if (typeof PhaseLockedRhythmGenerator !== 'undefined' && Array.isArray(generatedArgs) && generatedArgs.length === 1 && generatedArgs[0] === length) {
+    if (Array.isArray(generatedArgs) && generatedArgs.length === 1 && generatedArgs[0] === length) {
       return PhaseLockedRhythmGenerator.generate(length, rhythmMethodKey);
     }
     // Fail-fast: delegate to RhythmRegistry, which will throw if method not found

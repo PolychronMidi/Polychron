@@ -1,5 +1,8 @@
 /** @this {any} */
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
+  const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names.STUTTER_APPLIED
+    : 'stutter-applied';
   const channelsArray = pickStutterChannels(channels, ri(1, 5), this.lastUsedCHs);
 
   // Write beat-level fade context for note-velocity coherence (task 8)
@@ -74,7 +77,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       // Emit a stutter-applied event for feedback loops (include inferred profile)
       try {
         const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
+        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
       } catch { /* ignore */ }
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });

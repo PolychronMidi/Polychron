@@ -83,7 +83,10 @@ declare var PhaseLockedRhythmGenerator: any;
 declare var FXFeedbackListener: any;
 declare var StutterFeedbackListener: any;
 declare var JourneyRhythmCoupler: any;
+declare var EmissionFeedbackListener: any;
+declare var FeedbackAccumulator: any;
 declare var EventBus: any;
+declare var EventCatalog: any;
 
 declare var totalSections: any;
 declare var phrasesPerSection: any;
@@ -238,6 +241,7 @@ declare var factoryConstructors: any;
 declare var ComposerFactory: any;
 declare var HarmonicContext: any;
 declare var HarmonicJourney: any;
+declare var HarmonicRhythmTracker: any;
 declare var harmonicJourneyHelpers: any;
 declare var DynamismEngine: any;
 declare var TextureBlender: any;
@@ -523,6 +527,7 @@ declare var STUTTER_DIRECTIVE_DEFAULTS: any;
 declare var MOTIF_UNIT_PROFILES: any;
 declare var CONDUCTOR_DYNAMICS_CONTROLS: any;
 declare var MAIN_LOOP_CONTROLS: any;
+declare var CONDUCTOR_NOISE_PROFILE_BY_PHASE: any;
 
 declare var setOtherInstruments: any;
 declare var playDrums: any;

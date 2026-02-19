@@ -2,11 +2,41 @@
 // Combines phrase arc, harmonic journey tension, and feedback intensity into per-unit play/stutter probabilities.
 
 DynamismEngine = (() => {
+  let dependenciesValidated = false;
+
   const moveBias = {
     origin: 0,
     hold: 0,
     'return-home': 0.1
   };
+
+  function assertDependencies() {
+    if (dependenciesValidated) return;
+
+    if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getFeedbackMixWeights !== 'function' || typeof ConductorConfig.getEnergyWeights !== 'function') {
+      throw new Error('DynamismEngine: ConductorConfig energy accessors are required');
+    }
+    if (typeof FXFeedbackListener === 'undefined' || !FXFeedbackListener || typeof FXFeedbackListener.getIntensity !== 'function') {
+      throw new Error('DynamismEngine: FXFeedbackListener.getIntensity is required');
+    }
+    if (typeof StutterFeedbackListener === 'undefined' || !StutterFeedbackListener || typeof StutterFeedbackListener.getIntensity !== 'function') {
+      throw new Error('DynamismEngine: StutterFeedbackListener.getIntensity is required');
+    }
+    if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.getBoldness !== 'function') {
+      throw new Error('DynamismEngine: JourneyRhythmCoupler.getBoldness is required');
+    }
+    if (typeof TextureBlender === 'undefined' || !TextureBlender || typeof TextureBlender.getRecentDensity !== 'function') {
+      throw new Error('DynamismEngine: TextureBlender.getRecentDensity is required');
+    }
+    if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
+      throw new Error('DynamismEngine: HarmonicJourney.getStop is required');
+    }
+    if (typeof LM === 'undefined' || !LM || typeof LM !== 'object') {
+      throw new Error('DynamismEngine: LM global is required');
+    }
+
+    dependenciesValidated = true;
+  }
 
   /**
    * Get phrase context from the shared PhraseArcManager or a deterministic fallback.
@@ -39,9 +69,7 @@ DynamismEngine = (() => {
    * @returns {number} 0-1
    */
   function getJourneyEnergy() {
-    if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
-      return 0;
-    }
+    assertDependencies();
     if (!Number.isFinite(Number(sectionIndex))) {
       return 0;
     }
@@ -64,44 +92,41 @@ DynamismEngine = (() => {
    * @returns {number} 0-1
    */
   function getFeedbackEnergy() {
-    const fxEnergy = (typeof FXFeedbackListener !== 'undefined' && FXFeedbackListener && typeof FXFeedbackListener.getIntensity === 'function')
-      ? clamp(Number(FXFeedbackListener.getIntensity()), 0, 1)
-      : 0;
+    assertDependencies();
+    const fxEnergy = clamp(Number(FXFeedbackListener.getIntensity()), 0, 1);
 
     // Use layer-aware stutter intensity (map L1->source, L2->reflection)
-    let stutterLayerIntensity = 0;
-    try {
-      const layerMap = { L1: 'source', L2: 'reflection' };
-      const layerProfile = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? layerMap[LM.activeLayer] : null;
-      if (layerProfile && typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.getIntensity === 'function') {
-        stutterLayerIntensity = clamp(Number(StutterFeedbackListener.getIntensity(layerProfile)), 0, 1);
-      }
-    } catch { stutterLayerIntensity = 0; }
-
-    const stutterOverall = (typeof StutterFeedbackListener !== 'undefined' && StutterFeedbackListener && typeof StutterFeedbackListener.getIntensity === 'function')
-      ? clamp(Number(StutterFeedbackListener.getIntensity()), 0, 1)
+    const layerMap = { L1: 'source', L2: 'reflection' };
+    const layerProfile = (typeof LM.activeLayer === 'string') ? layerMap[LM.activeLayer] : null;
+    const stutterLayerIntensity = layerProfile
+      ? clamp(Number(StutterFeedbackListener.getIntensity(layerProfile)), 0, 1)
       : 0;
+
+    const stutterOverall = clamp(Number(StutterFeedbackListener.getIntensity()), 0, 1);
 
     const stutterEnergy = clamp(stutterLayerIntensity * 0.7 + stutterOverall * 0.3, 0, 1);
 
-    const journeyRhythmEnergy = (typeof JourneyRhythmCoupler !== 'undefined' && JourneyRhythmCoupler && typeof JourneyRhythmCoupler.getBoldness === 'function')
-      ? clamp(Number(JourneyRhythmCoupler.getBoldness()), 0, 1)
+    const journeyRhythmEnergy = clamp(Number(JourneyRhythmCoupler.getBoldness()), 0, 1);
+
+    const textureEnergy = clamp(Number(TextureBlender.getRecentDensity()), 0, 1) * 0.15;
+
+    const harmonicRhythmParams = (typeof ConductorConfig.getHarmonicRhythmParams === 'function')
+      ? ConductorConfig.getHarmonicRhythmParams()
+      : { blendWeight: 0.15, feedbackWeight: 0.2 };
+    const harmonicRhythmWeight = clamp(Number(harmonicRhythmParams.feedbackWeight), 0, 0.5);
+    const harmonicRhythmEnergy = (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
+      ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1) * harmonicRhythmWeight
       : 0;
 
-    const textureEnergy = (typeof TextureBlender !== 'undefined' && TextureBlender && typeof TextureBlender.getRecentDensity === 'function')
-      ? clamp(Number(TextureBlender.getRecentDensity()), 0, 1) * 0.15
-      : 0;
-
-    const mixWeights = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getFeedbackMixWeights === 'function')
-      ? ConductorConfig.getFeedbackMixWeights()
-      : { fx: 0.45, stutter: 0.2, journey: 0.35 };
+    const mixWeights = ConductorConfig.getFeedbackMixWeights();
 
     // Mix FX + Stutter + Journey energy (profile-driven weighting)
     return clamp(
       fxEnergy * mixWeights.fx +
       stutterEnergy * mixWeights.stutter +
       journeyRhythmEnergy * mixWeights.journey +
-      textureEnergy,
+      textureEnergy +
+      harmonicRhythmEnergy,
       0,
       1
     );
@@ -163,6 +188,7 @@ DynamismEngine = (() => {
    * @returns {{playProb:number, stutterProb:number, composite:number}}
    */
   function resolve(unit, opts = {}) {
+    assertDependencies();
     if (typeof unit !== 'string' || unit.length === 0) {
       throw new Error('DynamismEngine.resolve: unit must be a non-empty string');
     }

@@ -2,9 +2,58 @@
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
-  let fxAccumulator = 0;      // Cumulative FX intensity
-  const decayRate = 0.9;        // Decay per cycle
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : {
+        BEAT_FX_APPLIED: 'beat-fx-applied',
+        TEXTURE_CONTRAST: 'texture-contrast'
+      };
+
+  let accumulator = null;
   let initialized = false;
+
+  function ensureAccumulator() {
+    if (accumulator) return accumulator;
+    if (typeof FeedbackAccumulator === 'undefined' || !FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
+      throw new Error('FXFeedbackListener: FeedbackAccumulator.create is required');
+    }
+
+    accumulator = FeedbackAccumulator.create({
+      name: 'fx-feedback',
+      decayRate: 0.9,
+      inputs: [
+        {
+          eventName: EVENTS.BEAT_FX_APPLIED,
+          project(data) {
+            if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: beat-fx-applied payload must be an object');
+            const stereoPan = Number.isFinite(Number(data.stereoPan)) ? Number(data.stereoPan) : 0;
+            const velocityShift = Number.isFinite(Number(data.velocityShift)) ? Number(data.velocityShift) : 0;
+            const intensity = stereoPan * velocityShift;
+            if (!Number.isFinite(intensity)) {
+              throw new Error(`FXFeedbackListener: invalid intensity ${intensity}`);
+            }
+            return clamp(intensity, 0, 1);
+          }
+        },
+        {
+          eventName: EVENTS.TEXTURE_CONTRAST,
+          project(data) {
+            if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: texture-contrast payload must be an object');
+            const mode = data.mode || 'single';
+            const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0.5;
+            const modeWeight = mode === 'chordBurst' ? 0.5 : mode === 'flurry' ? 0.3 : 0.1;
+            const textureIntensity = modeWeight * composite;
+            if (!Number.isFinite(textureIntensity)) {
+              throw new Error(`FXFeedbackListener: invalid texture intensity ${textureIntensity}`);
+            }
+            return clamp(textureIntensity, 0, 1);
+          }
+        }
+      ]
+    });
+
+    return accumulator;
+  }
 
   /**
    * Initialize feedback loop: wire EventBus to listen for FX events
@@ -12,50 +61,7 @@ FXFeedbackListener = (() => {
    */
   function initialize() {
     if (initialized) return;
-    if (typeof EventBus === 'undefined') {
-      throw new Error('FXFeedbackListener.initialize: EventBus not available');
-    }
-
-    // Listen to beat FX emission and accumulate intensity
-    EventBus.on('beat-fx-applied', (data) => {
-      try {
-        if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: event payload must be an object');
-        const stereoPan = Number.isFinite(Number(data.stereoPan)) ? Number(data.stereoPan) : 0;
-        const velocityShift = Number.isFinite(Number(data.velocityShift)) ? Number(data.velocityShift) : 0;
-        const intensity = stereoPan * velocityShift;
-        if (!Number.isFinite(intensity)) {
-          throw new Error(`FXFeedbackListener: invalid intensity ${intensity}`);
-        }
-        fxAccumulator = fxAccumulator * decayRate + intensity * (1 - decayRate);
-      } catch (e) {
-        throw new Error(`FXFeedbackListener event error: ${e && e.message ? e.message : e}`);
-      }
-    });
-
-    // ── Texture → FX accumulator injection (#3) ──────────────────────────
-    // Texture-contrast events feed into fxAccumulator with mode-dependent
-    // weights, creating a texture → rhythm → FX → texture feedback loop.
-    EventBus.on('texture-contrast', (data) => {
-      try {
-        if (!data || typeof data !== 'object') throw new Error('FXFeedbackListener: texture-contrast payload must be an object');
-        const mode = data.mode || 'single';
-        const composite = Number.isFinite(Number(data.composite)) ? Number(data.composite) : 0.5;
-        // Chord bursts have stronger rhythmic impulse; flurries are scalar wash
-        const modeWeight = mode === 'chordBurst' ? 0.5 : mode === 'flurry' ? 0.3 : 0.1;
-        const textureIntensity = modeWeight * composite;
-        if (!Number.isFinite(textureIntensity)) {
-          throw new Error(`FXFeedbackListener: invalid texture intensity ${textureIntensity}`);
-        }
-        fxAccumulator = fxAccumulator * decayRate + textureIntensity * (1 - decayRate);
-      } catch (e) {
-        throw new Error(`FXFeedbackListener texture event error: ${e && e.message ? e.message : e}`);
-      }
-    });
-
-    // Reset accumulator at section boundary
-    EventBus.on('section-boundary', () => {
-      fxAccumulator = 0;
-    });
+    ensureAccumulator().initialize();
 
     initialized = true;
   }
@@ -66,7 +72,8 @@ FXFeedbackListener = (() => {
    * @returns {number}
    */
   function getIntensity() {
-    return clamp(fxAccumulator, 0, 1);
+    if (!accumulator) return 0;
+    return accumulator.getIntensity();
   }
 
   /**
@@ -184,11 +191,13 @@ FXFeedbackListener = (() => {
    * Decay FX influence (call periodically if not using EventBus pulse)
    */
   function decay() {
-    fxAccumulator *= decayRate;
+    if (!accumulator) return;
+    accumulator.decay();
   }
 
   function reset() {
-    fxAccumulator = 0;
+    if (!accumulator) return;
+    accumulator.reset();
   }
 
   return {

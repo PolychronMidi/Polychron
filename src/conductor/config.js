@@ -325,6 +325,18 @@ MAIN_LOOP_CONTROLS = {
   }
 };
 
+CONDUCTOR_NOISE_PROFILE_BY_PHASE = {
+  intro: 'micro',
+  opening: 'subtle',
+  exposition: 'subtle',
+  development: 'moderate',
+  climax: 'dramatic',
+  resolution: 'subtle',
+  conclusion: 'micro',
+  coda: 'micro',
+  default: 'subtle'
+};
+
 // 1. Centralized FX CC defaults by channel group.
 // Keys match the `effectNum` used in setBalanceAndFX.js and can be tuned per group.
 FX_CC_DEFAULTS = {

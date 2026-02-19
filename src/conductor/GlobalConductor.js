@@ -45,19 +45,36 @@ GlobalConductor = (() => {
     const excursionTension = Math.min(excursion, 6) * 0.05;
 
     const tensionIntensity = harmonicTension + excursionTension;
+    const harmonicRhythm = (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
+      ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1)
+      : 0;
+    const harmonicRhythmParams = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getHarmonicRhythmParams === 'function')
+      ? ConductorConfig.getHarmonicRhythmParams()
+      : { blendWeight: 0.15, feedbackWeight: 0.2 };
+    const harmonicRhythmWeight = clamp(Number(harmonicRhythmParams.blendWeight), 0, 0.5);
     const intensityBlend = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getGlobalIntensityBlend === 'function')
       ? ConductorConfig.getGlobalIntensityBlend()
       : { arc: 0.6, tension: 0.4 };
-    const compositeIntensity = clamp(
+    const baseCompositeIntensity = clamp(
       arcIntensity * intensityBlend.arc + tensionIntensity * intensityBlend.tension,
       0,
       1
     );
+    const compositeIntensity = clamp(
+      baseCompositeIntensity * (1 - harmonicRhythmWeight) + harmonicRhythm * harmonicRhythmWeight,
+      0,
+      1
+    );
+
+    const emissionRatio = (typeof EmissionFeedbackListener !== 'undefined' && EmissionFeedbackListener && typeof EmissionFeedbackListener.getEmissionRatio === 'function')
+      ? clamp(Number(EmissionFeedbackListener.getEmissionRatio()), 0, 2)
+      : 1;
+    const densityCorrection = clamp(1 + clamp(1 - emissionRatio, -1, 1) * 0.2, 0.8, 1.25);
 
     // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
     // Smoothly interpolate towards target density, then apply micro-hyper
     // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = ConductorConfig.getTargetDensity(compositeIntensity);
+    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection, 0, 1);
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
@@ -137,6 +154,8 @@ GlobalConductor = (() => {
         sectionPhase,
         tension: derivedTension,
         excursion,
+        harmonicRhythm,
+        emissionRatio,
         compositeIntensity: resolved.composite,
         playProb: playOut,
         stutterProb: stutterOut

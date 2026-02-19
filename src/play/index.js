@@ -1,4 +1,6 @@
 // @ts-ignore: side-effect module load
+require('./EventCatalog');
+// @ts-ignore: side-effect module load
 require('./events');
 // @ts-ignore: side-effect module load
 require('./channelCoherence');

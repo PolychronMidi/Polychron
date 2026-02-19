@@ -1,6 +1,6 @@
 // drummer.js - Generates drum patterns with human-like timing
 
-drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1))=>{
+drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1),conductorContext={})=>{
   if (drumNames === 'random') {
     const allDrums = Object.keys(drumMap);
     drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
@@ -24,6 +24,20 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
+  const contextIntensity = Number.isFinite(Number(conductorContext.compositeIntensity))
+    ? clamp(Number(conductorContext.compositeIntensity), 0, 1)
+    : (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function')
+      ? clamp(Number(ConductorState.getSnapshot().compositeIntensity) || 0, 0, 1)
+      : 0;
+  const phrasePhase = (typeof conductorContext.phrasePhase === 'string' && conductorContext.phrasePhase.length > 0)
+    ? conductorContext.phrasePhase
+    : ((typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function')
+      ? (ConductorState.getSnapshot().phrasePhase || 'development')
+      : 'development');
+  const accentBoost = conductorContext.accent ? 0.12 : 0;
+  const phaseBoost = (phrasePhase === 'climax' || phrasePhase === 'peak') ? 0.12 : (phrasePhase === 'resolution' ? -0.05 : 0);
+  const velocityScale = clamp(0.8 + contextIntensity * 0.45 + accentBoost + phaseBoost, 0.55, 1.4);
+
   const adjustedOffsets = combined.map(({ offset }) => {
     // Preserve large/offbeat integer offsets (e.g., 10 beats) rather than reducing them to
     // their fractional part. For fractional offsets (0..1), allow jitter and wrap into [0,1).
@@ -51,7 +65,9 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       if (rf() < stutterChance) {
         const numStutters = ri(...stutterRange);
         const stutterDuration = .25 * ri(1, 8) / numStutters;
-        const [minVelocity, maxVelocity] = drumInfo.velocityRange;
+        const [baseMinVelocity, baseMaxVelocity] = drumInfo.velocityRange;
+        const minVelocity = clamp(m.round(baseMinVelocity * velocityScale), 1, 127);
+        const maxVelocity = clamp(m.round(baseMaxVelocity * velocityScale), minVelocity, 127);
         const isFadeIn = rf() < 0.7;
         for (let i = 0; i < numStutters; i++) {
           // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
@@ -72,7 +88,11 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       } else {
         const tickVal = beatStart + useOffset * tpBeat;
         const tick = m.round(tickVal);
-        p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, ri(...drumInfo.velocityRange)] });
+        const baseMin = Number(drumInfo.velocityRange[0]);
+        const baseMax = Number(drumInfo.velocityRange[1]);
+        const scaledMin = clamp(m.round(baseMin * velocityScale), 1, 127);
+        const scaledMax = clamp(m.round(baseMax * velocityScale), scaledMin, 127);
+        p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, ri(scaledMin, scaledMax)] });
       }
     }
   });

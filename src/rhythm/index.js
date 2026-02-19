@@ -4,7 +4,13 @@ require('./RhythmValues');
 // @ts-ignore: side-effect module load
 require('./rhythmModulator');
 // @ts-ignore: side-effect module load
+require('./FeedbackAccumulator');
+// @ts-ignore: side-effect module load
 require('./FXFeedbackListener');
+// @ts-ignore: side-effect module load
+require('./StutterFeedbackListener');
+// @ts-ignore: side-effect module load
+require('./EmissionFeedbackListener');
 // @ts-ignore: side-effect module load
 require('./JourneyRhythmCoupler');
 // @ts-ignore: side-effect module load

@@ -58,6 +58,13 @@ const fallbackPlayProb = Number.isFinite(Number(conductorFallback.playProb))
 const fallbackStutterProb = Number.isFinite(Number(conductorFallback.stutterProb))
   ? clamp(Number(conductorFallback.stutterProb), 0, 1)
   : 0.3;
+const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+  ? EventCatalog.names
+  : {
+      SECTION_BOUNDARY: 'section-boundary',
+      BEAT_BINAURAL_APPLIED: 'beat-binaural-applied',
+      BEAT_FX_APPLIED: 'beat-fx-applied'
+    };
 
 const { layer: L1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
 const { layer: L2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
@@ -122,28 +129,45 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
   return nextComposer;
 };
 
-// Initialize EventBus feedback loop: FX intensity → rhythm pattern modulation
-if (typeof FXFeedbackListener !== 'undefined') {
-  FXFeedbackListener.initialize();
+if (typeof FXFeedbackListener === 'undefined' || !FXFeedbackListener || typeof FXFeedbackListener.initialize !== 'function') {
+  throw new Error('main: FXFeedbackListener.initialize not available');
 }
-// Initialize stutter → rhythm feedback (new)
-if (typeof StutterFeedbackListener !== 'undefined') {
-  StutterFeedbackListener.initialize();
+FXFeedbackListener.initialize();
+
+if (typeof StutterFeedbackListener === 'undefined' || !StutterFeedbackListener || typeof StutterFeedbackListener.initialize !== 'function') {
+  throw new Error('main: StutterFeedbackListener.initialize not available');
 }
-if (typeof ConductorState !== 'undefined') {
-  ConductorState.initialize();
+StutterFeedbackListener.initialize();
+
+if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.initialize !== 'function') {
+  throw new Error('main: JourneyRhythmCoupler.initialize not available');
 }
-// Initialize journey → rhythm coupling: bold key moves → complex rhythms
-if (typeof JourneyRhythmCoupler !== 'undefined') {
-  JourneyRhythmCoupler.initialize();
+JourneyRhythmCoupler.initialize();
+
+if (typeof ConductorRegulationListener === 'undefined' || !ConductorRegulationListener || typeof ConductorRegulationListener.initialize !== 'function') {
+  throw new Error('main: ConductorRegulationListener.initialize not available');
 }
-if (typeof ConductorRegulationListener !== 'undefined') {
-  ConductorRegulationListener.initialize();
+ConductorRegulationListener.initialize();
+
+if (typeof DrumTextureCoupler === 'undefined' || !DrumTextureCoupler || typeof DrumTextureCoupler.initialize !== 'function') {
+  throw new Error('main: DrumTextureCoupler.initialize not available');
 }
-// Initialize texture contrast → drum accent coupling (#5)
-if (typeof DrumTextureCoupler !== 'undefined') {
-  DrumTextureCoupler.initialize();
+DrumTextureCoupler.initialize();
+
+if (typeof EmissionFeedbackListener === 'undefined' || !EmissionFeedbackListener || typeof EmissionFeedbackListener.initialize !== 'function') {
+  throw new Error('main: EmissionFeedbackListener.initialize not available');
 }
+EmissionFeedbackListener.initialize();
+
+if (typeof HarmonicRhythmTracker === 'undefined' || !HarmonicRhythmTracker || typeof HarmonicRhythmTracker.initialize !== 'function') {
+  throw new Error('main: HarmonicRhythmTracker.initialize not available');
+}
+HarmonicRhythmTracker.initialize();
+
+if (typeof ConductorState === 'undefined' || !ConductorState || typeof ConductorState.initialize !== 'function') {
+  throw new Error('main: ConductorState.initialize not available');
+}
+ConductorState.initialize();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 
@@ -156,7 +180,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 
   // Emit section boundary event to reset FX feedback accumulator
-  EventBus.emit('section-boundary', { sectionIndex });
+  EventBus.emit(EVENTS.SECTION_BOUNDARY, { sectionIndex });
 
   // Apply harmonic journey stop for this section (sets HarmonicContext for L1)
   if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
@@ -239,7 +263,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
         setBinaural();
-        EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex });
+        EventBus.emit(EVENTS.BEAT_BINAURAL_APPLIED, {
+          beatIndex,
+          sectionIndex,
+          phraseIndex,
+          measureIndex,
+          layer: 'L1',
+          freqOffset: Number.isFinite(Number(binauralFreqOffset)) ? Number(binauralFreqOffset) : 0,
+          flipBin: Boolean(flipBin)
+        });
         setBalanceAndFX();
         // Apply Stutter default directive for this beat (coherence key, etc.)
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
@@ -247,7 +279,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const fxStereoPan = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
         const fxVelocityShift = (typeof refVar === 'number' && typeof bassVar === 'number')
           ? m.abs(refVar + bassVar) / fxVelocityShiftDenominator : 0;
-        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
+        EventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L1', stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
         playDrums();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
@@ -314,7 +346,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         setUnitTiming('beat');
         setOtherInstruments();
         setBinaural();
-        EventBus.emit('beat-binaural-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2' });
+        EventBus.emit(EVENTS.BEAT_BINAURAL_APPLIED, {
+          beatIndex,
+          sectionIndex,
+          phraseIndex,
+          measureIndex,
+          layer: 'L2',
+          freqOffset: Number.isFinite(Number(binauralFreqOffset)) ? Number(binauralFreqOffset) : 0,
+          flipBin: Boolean(flipBin)
+        });
         setBalanceAndFX();
         // Apply Stutter default directive for this beat (symmetric with L1)
         try { if (typeof Stutter !== 'undefined' && Stutter && typeof Stutter.prepareBeat === 'function') Stutter.prepareBeat(beatStart); } catch { /* ignore */ }
@@ -322,7 +362,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const fxStereoPanL2 = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
         const fxVelocityShiftL2 = (typeof refVar === 'number' && typeof bassVar === 'number')
           ? m.abs(refVar + bassVar) / fxVelocityShiftDenominator : 0;
-        EventBus.emit('beat-fx-applied', { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2', stereoPan: fxStereoPanL2, velocityShift: fxVelocityShiftL2 });
+        EventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2', stereoPan: fxStereoPanL2, velocityShift: fxVelocityShiftL2 });
         playDrums2();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);

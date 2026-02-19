@@ -1,5 +1,8 @@
 /** @this {any} */
 stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
+  const eventName = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names.STUTTER_APPLIED
+    : 'stutter-applied';
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
   channelsArray.forEach(channelToStutter => {
@@ -40,7 +43,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       // feedback event (include inferred profile)
       try {
         const profile = (typeof reflection !== 'undefined' && reflection.includes(channelToStutter)) ? 'reflection' : (typeof bass !== 'undefined' && bass.includes(channelToStutter)) ? 'bass' : 'source';
-        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit('stutter-applied', { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
+        if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / 127, 0, 1), tick });
       } catch { /* ignore */ }
 
       // Map raw `currentValue` into the hub FX ranges for this channel/CC

@@ -90,5 +90,20 @@ conductorConfigTuningDefaults = () => ({
     filterMaxBoost: 0.2,
     returnHomePortamentoBoost: 0.5,
     returnHomeReverbDamp: 0.8
+  },
+  harmonicRhythm: {
+    blendWeight: 0.15,
+    feedbackWeight: 0.2
+  },
+  noiseProfileByPhase: {
+    intro: 'micro',
+    opening: 'subtle',
+    exposition: 'subtle',
+    development: 'moderate',
+    climax: 'dramatic',
+    resolution: 'subtle',
+    conclusion: 'micro',
+    coda: 'micro',
+    default: 'subtle'
   }
 });

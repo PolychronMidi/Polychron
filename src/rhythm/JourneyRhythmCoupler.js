@@ -2,6 +2,13 @@
 // Bold key moves trigger higher rhythm complexity via EventBus journey-move events
 
 JourneyRhythmCoupler = (() => {
+  const EVENTS = (typeof EventCatalog !== 'undefined' && EventCatalog && EventCatalog.names)
+    ? EventCatalog.names
+    : {
+        JOURNEY_MOVE: 'journey-move',
+        SECTION_BOUNDARY: 'section-boundary'
+      };
+
   let _boldness = 0;
   let _externalBias = 1;
   const _decayRate = 0.85;
@@ -38,7 +45,7 @@ JourneyRhythmCoupler = (() => {
       throw new Error('JourneyRhythmCoupler.initialize: EventBus not available');
     }
 
-    EventBus.on('journey-move', (data) => {
+    EventBus.on(EVENTS.JOURNEY_MOVE, (data) => {
       if (!data || typeof data !== 'object') {
         throw new Error('JourneyRhythmCoupler: invalid journey-move payload');
       }
@@ -48,7 +55,7 @@ JourneyRhythmCoupler = (() => {
     });
 
     // Partial boldness decay at section boundaries (not full reset — let it linger)
-    EventBus.on('section-boundary', () => {
+    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
       _boldness *= 0.5;
     });
 
