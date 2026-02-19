@@ -50,8 +50,17 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
       });
     }
 
+    const allowedPool = (typeof RHYTHM_PATTERN_POOLS !== 'undefined' && RHYTHM_PATTERN_POOLS && Array.isArray(RHYTHM_PATTERN_POOLS[level]))
+      ? RHYTHM_PATTERN_POOLS[level]
+      : null;
+    const allowedSet = allowedPool ? new Set(allowedPool) : null;
     const filteredRhythms=Object.fromEntries(
-      Object.entries(rhythmSource).filter(([, { weights }]) => weights[levelIndex] > 0)
+      Object.entries(rhythmSource).filter(([key, { weights }]) => {
+        if (!Array.isArray(weights) || weights[levelIndex] <= 0) {
+          return false;
+        }
+        return allowedSet ? allowedSet.has(key) : true;
+      })
     );
     if (!Object.keys(filteredRhythms).length) {
       throw new Error(`getRhythm: no candidate rhythms for level "${level}"`);

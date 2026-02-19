@@ -50,34 +50,46 @@ const scaleFxRange = (minValue, maxValue, rangeScale) => {
   const scaledMax = clamp(m.round(center + halfSpan), 0, 127);
   return scaledMin <= scaledMax ? [scaledMin, scaledMax] : [scaledMax, scaledMin];
 };
+const resolveFxDefaults = (groupName, effectNum) => {
+  if (typeof FX_CC_DEFAULTS === 'undefined' || !FX_CC_DEFAULTS || typeof FX_CC_DEFAULTS !== 'object') {
+    throw new Error('setBalanceAndFX.resolveFxDefaults: FX_CC_DEFAULTS is not defined');
+  }
+  const byGroup = FX_CC_DEFAULTS[groupName];
+  if (byGroup && typeof byGroup === 'object' && byGroup[effectNum]) {
+    return byGroup[effectNum];
+  }
+  if (FX_CC_DEFAULTS[effectNum]) {
+    return FX_CC_DEFAULTS[effectNum];
+  }
+  throw new Error(`setBalanceAndFX.resolveFxDefaults: no FX defaults for group="${groupName}" cc=${effectNum}`);
+};
+
 /**
  * @param {string} groupName
  * @param {any} ch
  * @param {number} effectNum
- * @param {number} minValue
- * @param {number} maxValue
  * @param {(c: any) => boolean} [condition]
- * @param {number} [conditionMin]
- * @param {number} [conditionMax]
- */const rfx = (groupName, ch, effectNum, minValue, maxValue, condition = undefined, conditionMin = undefined, conditionMax = undefined) => {
-  // Use centralized FX defaults if logic arguments are missing
-  if ((typeof minValue === 'undefined' || minValue === null) && typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS[effectNum]) {
-    const def = FX_CC_DEFAULTS[effectNum];
-    minValue = def.min;
-    maxValue = def.max;
-    // Also pull condition defaults if not provided
-    if (typeof conditionMin === 'undefined' && typeof def.conditionMin !== 'undefined') {
-      conditionMin = def.conditionMin;
-      conditionMax = def.conditionMax;
-    }
+ * @param {{min?: number,max?: number,conditionMin?: number,conditionMax?: number}} [overrides]
+ */
+const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefined) => {
+  const defaults = resolveFxDefaults(groupName, effectNum);
+  // Normalize overrides so property access is safe for TS/CheckJS
+  const o = (overrides && typeof overrides === 'object') ? overrides : {};
+  const minValue = Number.isFinite(Number(o.min)) ? Number(o.min) : Number(defaults.min);
+  const maxValue = Number.isFinite(Number(o.max)) ? Number(o.max) : Number(defaults.max);
+  if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
+    throw new Error(`setBalanceAndFX.rfx: invalid min/max for group="${groupName}" cc=${effectNum}`);
   }
+
+  const rawConditionMin = Number.isFinite(Number(o.conditionMin)) ? Number(o.conditionMin) : Number(defaults.conditionMin);
+  const rawConditionMax = Number.isFinite(Number(o.conditionMax)) ? Number(o.conditionMax) : Number(defaults.conditionMax);
 
   const scale = resolveRangeScale(groupName, effectNum);
   const [scaledMin, scaledMax] = scaleFxRange(minValue, maxValue, scale);
-  let scaledConditionMin = conditionMin;
-  let scaledConditionMax = conditionMax;
-  if (Number.isFinite(Number(conditionMin)) && Number.isFinite(Number(conditionMax))) {
-    [scaledConditionMin, scaledConditionMax] = scaleFxRange(Number(conditionMin), Number(conditionMax), scale);
+  let scaledConditionMin;
+  let scaledConditionMax;
+  if (Number.isFinite(rawConditionMin) && Number.isFinite(rawConditionMax)) {
+    [scaledConditionMin, scaledConditionMax] = scaleFxRange(rawConditionMin, rawConditionMax, scale);
   }
   return rlFX(ch, effectNum, scaledMin, scaledMax, condition, scaledConditionMin, scaledConditionMax);
 };
@@ -113,57 +125,57 @@ return [
     ...source2.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal : rBal) : ch.toString().startsWith('rCH') ? (flipBin ? rBal : lBal) : ch===drumCH ? cBal3+m.round((rf(-.5,.5)*bassVar)) : cBal]})),
     ...reflection.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? (rf()<.1 ? lBal+refVar*2 : lBal+refVar) : (rf()<.1 ? rBal-refVar*2 : rBal-refVar)) : ch.toString().startsWith('rCH') ? (flipBin ? (rf()<.1 ? rBal-refVar*2 : rBal-refVar) : (rf()<.1 ? lBal+refVar*2 : lBal+refVar)) : cBal2+m.round((rf(-.5,.5)*refVar)) ]})),
     ...bass.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal+bassVar : rBal-bassVar) : ch.toString().startsWith('rCH') ? (flipBin ? rBal-bassVar : lBal+bassVar) : cBal3+m.round((rf(-.5,.5)*bassVar)) ]})),
-    ...source2.map(ch=>rfx('source',ch,1,0,60,(c)=>c===cCH1,0,10)),
-    ...source2.map(ch=>rfx('source',ch,5,125,127,(c)=>c===cCH1,126,127)),
-    ...source2.map(ch=>rfx('source',ch,11,64,127,(c)=>c===cCH1||c===drumCH,115,127)),
-    ...source2.map(ch=>rfx('source',ch,65,45,64,(c)=>c===cCH1,35,64)),
-    ...source2.map(ch=>rfx('source',ch,67,63,64)),
-    ...source2.map(ch=>rfx('source',ch,68,63,64)),
-    ...source2.map(ch=>rfx('source',ch,69,63,64)),
-    ...source2.map(ch=>rfx('source',ch,70,0,127)),
-    ...source2.map(ch=>rfx('source',ch,71,0,127)),
-    ...source2.map(ch=>rfx('source',ch,72,64,127)),
-    ...source2.map(ch=>rfx('source',ch,73,0,64)),
-    ...source2.map(ch=>rfx('source',ch,74,80,127)),
-    ...source2.map(ch=>rfx('source',ch,91,0,33)),
-    ...source2.map(ch=>rfx('source',ch,92,0,33)),
-    ...source2.map(ch=>rfx('source',ch,93,0,33)),
-    ...source2.map(ch=>rfx('source',ch,94,0,5,(c)=>c===drumCH,0,64)),
-    ...source2.map(ch=>rfx('source',ch,95,0,33)),
-    ...reflection.map(ch=>rfx('reflection',ch,1,0,90,(c)=>c===cCH2,0,15)),
-    ...reflection.map(ch=>rfx('reflection',ch,5,125,127,(c)=>c===cCH2,126,127)),
-    ...reflection.map(ch=>rfx('reflection',ch,11,77,111,(c)=>c===cCH2,66,99)),
-    ...reflection.map(ch=>rfx('reflection',ch,65,45,64,(c)=>c===cCH2,35,64)),
-    ...reflection.map(ch=>rfx('reflection',ch,67,63,64)),
-    ...reflection.map(ch=>rfx('reflection',ch,68,63,64)),
-    ...reflection.map(ch=>rfx('reflection',ch,69,63,64)),
-    ...reflection.map(ch=>rfx('reflection',ch,70,0,127)),
-    ...reflection.map(ch=>rfx('reflection',ch,71,0,127)),
-    ...reflection.map(ch=>rfx('reflection',ch,72,64,127)),
-    ...reflection.map(ch=>rfx('reflection',ch,73,0,64)),
-    ...reflection.map(ch=>rfx('reflection',ch,74,80,127)),
-    ...reflection.map(ch=>rfx('reflection',ch,91,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rfx('reflection',ch,92,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rfx('reflection',ch,93,0,77,(c)=>c===cCH2,0,32)),
-    ...reflection.map(ch=>rfx('reflection',ch,94,0,64,(c)=>c===cCH2,0,11)),
-    ...reflection.map(ch=>rfx('reflection',ch,95,0,77,(c)=>c===cCH2,0,32)),
-    ...bass.map(ch=>rfx('bass',ch,1,0,60,(c)=>c===cCH3,0,10)),
-    ...bass.map(ch=>rfx('bass',ch,5,125,127,(c)=>c===cCH3,126,127)),
-    ...bass.map(ch=>rfx('bass',ch,11,88,127,(c)=>c===cCH3,115,127)),
-    ...bass.map(ch=>rfx('bass',ch,65,45,64,(c)=>c===cCH3,35,64)),
-    ...bass.map(ch=>rfx('bass',ch,67,63,64)),
-    ...bass.map(ch=>rfx('bass',ch,68,63,64)),
-    ...bass.map(ch=>rfx('bass',ch,69,63,64)),
-    ...bass.map(ch=>rfx('bass',ch,70,0,127)),
-    ...bass.map(ch=>rfx('bass',ch,71,0,127)),
-    ...bass.map(ch=>rfx('bass',ch,72,64,127)),
-    ...bass.map(ch=>rfx('bass',ch,73,0,64)),
-    ...bass.map(ch=>rfx('bass',ch,74,80,127)),
-    ...bass.map(ch=>rfx('bass',ch,91,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rfx('bass',ch,92,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rfx('bass',ch,93,0,99,(c)=>c===cCH3,0,64)),
-    ...bass.map(ch=>rfx('bass',ch,94,0,64,(c)=>c===cCH3,0,11)),
-    ...bass.map(ch=>rfx('bass',ch,95,0,99,(c)=>c===cCH3,0,64)),
+    ...source2.map(ch=>rfx('source',ch,1,(c)=>c===cCH1)),
+    ...source2.map(ch=>rfx('source',ch,5,(c)=>c===cCH1)),
+    ...source2.map(ch=>rfx('source',ch,11,(c)=>c===cCH1||c===drumCH)),
+    ...source2.map(ch=>rfx('source',ch,65,(c)=>c===cCH1)),
+    ...source2.map(ch=>rfx('source',ch,67)),
+    ...source2.map(ch=>rfx('source',ch,68)),
+    ...source2.map(ch=>rfx('source',ch,69)),
+    ...source2.map(ch=>rfx('source',ch,70)),
+    ...source2.map(ch=>rfx('source',ch,71)),
+    ...source2.map(ch=>rfx('source',ch,72)),
+    ...source2.map(ch=>rfx('source',ch,73)),
+    ...source2.map(ch=>rfx('source',ch,74)),
+    ...source2.map(ch=>rfx('source',ch,91)),
+    ...source2.map(ch=>rfx('source',ch,92)),
+    ...source2.map(ch=>rfx('source',ch,93)),
+    ...source2.map(ch=>rfx('source',ch,94,(c)=>c===drumCH)),
+    ...source2.map(ch=>rfx('source',ch,95)),
+    ...reflection.map(ch=>rfx('reflection',ch,1,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,5,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,11,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,65,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,67)),
+    ...reflection.map(ch=>rfx('reflection',ch,68)),
+    ...reflection.map(ch=>rfx('reflection',ch,69)),
+    ...reflection.map(ch=>rfx('reflection',ch,70)),
+    ...reflection.map(ch=>rfx('reflection',ch,71)),
+    ...reflection.map(ch=>rfx('reflection',ch,72)),
+    ...reflection.map(ch=>rfx('reflection',ch,73)),
+    ...reflection.map(ch=>rfx('reflection',ch,74)),
+    ...reflection.map(ch=>rfx('reflection',ch,91,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,92,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,93,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,94,(c)=>c===cCH2)),
+    ...reflection.map(ch=>rfx('reflection',ch,95,(c)=>c===cCH2)),
+    ...bass.map(ch=>rfx('bass',ch,1,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,5,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,11,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,65,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,67)),
+    ...bass.map(ch=>rfx('bass',ch,68)),
+    ...bass.map(ch=>rfx('bass',ch,69)),
+    ...bass.map(ch=>rfx('bass',ch,70)),
+    ...bass.map(ch=>rfx('bass',ch,71)),
+    ...bass.map(ch=>rfx('bass',ch,72)),
+    ...bass.map(ch=>rfx('bass',ch,73)),
+    ...bass.map(ch=>rfx('bass',ch,74)),
+    ...bass.map(ch=>rfx('bass',ch,91,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,92,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,93,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,94,(c)=>c===cCH3)),
+    ...bass.map(ch=>rfx('bass',ch,95,(c)=>c===cCH3)),
   ];  })  );
 
   // ── Texture-reactive FX modulation (#5) — conductor-driven ────────

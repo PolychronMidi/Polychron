@@ -325,26 +325,66 @@ MAIN_LOOP_CONTROLS = {
   }
 };
 
-// 1. Centralized FX CC Defaults: Defines the safe ranges and mappings for all CC effects.
-// Keys match the 'effectNum' used in setBalanceAndFX.js
+// 1. Centralized FX CC defaults by channel group.
+// Keys match the `effectNum` used in setBalanceAndFX.js and can be tuned per group.
 FX_CC_DEFAULTS = {
-  1: { min: 0, max: 60, conditionMin: 0, conditionMax: 10, label: 'Modulation' },
-  5: { min: 125, max: 127, conditionMin: 126, conditionMax: 127, label: 'Portamento' },
-  11: { min: 64, max: 127, conditionMin: 115, conditionMax: 127, label: 'Expression' },
-  65: { min: 45, max: 64, conditionMin: 35, conditionMax: 64, label: 'Portamento On/Off' },
-  67: { min: 63, max: 64, label: 'Soft Pedal' },
-  68: { min: 63, max: 64, label: 'Legato Pedal' },
-  69: { min: 63, max: 64, label: 'Hold 2 Pedal' },
-  70: { min: 0, max: 127, label: 'Sound Variation' },
-  71: { min: 0, max: 127, label: 'Resonance' },
-  72: { min: 64, max: 127, label: 'Release Time' },
-  73: { min: 0, max: 64, label: 'Attack Time' },
-  74: { min: 80, max: 127, label: 'Brightness' },
-  91: { min: 0, max: 33, label: 'Reverb' },
-  92: { min: 0, max: 33, label: 'Tremolo' },
-  93: { min: 0, max: 33, label: 'Chorus' },
-  94: { min: 0, max: 5, conditionMin: 0, conditionMax: 64, label: 'Detune' },
-  95: { min: 0, max: 33, label: 'Phaser' }
+  source: {
+    1: { min: 0, max: 60, conditionMin: 0, conditionMax: 10 },
+    5: { min: 125, max: 127, conditionMin: 126, conditionMax: 127 },
+    11: { min: 64, max: 127, conditionMin: 115, conditionMax: 127 },
+    65: { min: 45, max: 64, conditionMin: 35, conditionMax: 64 },
+    67: { min: 63, max: 64 },
+    68: { min: 63, max: 64 },
+    69: { min: 63, max: 64 },
+    70: { min: 0, max: 127 },
+    71: { min: 0, max: 127 },
+    72: { min: 64, max: 127 },
+    73: { min: 0, max: 64 },
+    74: { min: 80, max: 127 },
+    91: { min: 0, max: 33 },
+    92: { min: 0, max: 33 },
+    93: { min: 0, max: 33 },
+    94: { min: 0, max: 5, conditionMin: 0, conditionMax: 64 },
+    95: { min: 0, max: 33 }
+  },
+  reflection: {
+    1: { min: 0, max: 90, conditionMin: 0, conditionMax: 15 },
+    5: { min: 125, max: 127, conditionMin: 126, conditionMax: 127 },
+    11: { min: 77, max: 111, conditionMin: 66, conditionMax: 99 },
+    65: { min: 45, max: 64, conditionMin: 35, conditionMax: 64 },
+    67: { min: 63, max: 64 },
+    68: { min: 63, max: 64 },
+    69: { min: 63, max: 64 },
+    70: { min: 0, max: 127 },
+    71: { min: 0, max: 127 },
+    72: { min: 64, max: 127 },
+    73: { min: 0, max: 64 },
+    74: { min: 80, max: 127 },
+    91: { min: 0, max: 77, conditionMin: 0, conditionMax: 32 },
+    92: { min: 0, max: 77, conditionMin: 0, conditionMax: 32 },
+    93: { min: 0, max: 77, conditionMin: 0, conditionMax: 32 },
+    94: { min: 0, max: 64, conditionMin: 0, conditionMax: 11 },
+    95: { min: 0, max: 77, conditionMin: 0, conditionMax: 32 }
+  },
+  bass: {
+    1: { min: 0, max: 60, conditionMin: 0, conditionMax: 10 },
+    5: { min: 125, max: 127, conditionMin: 126, conditionMax: 127 },
+    11: { min: 88, max: 127, conditionMin: 115, conditionMax: 127 },
+    65: { min: 45, max: 64, conditionMin: 35, conditionMax: 64 },
+    67: { min: 63, max: 64 },
+    68: { min: 63, max: 64 },
+    69: { min: 63, max: 64 },
+    70: { min: 0, max: 127 },
+    71: { min: 0, max: 127 },
+    72: { min: 64, max: 127 },
+    73: { min: 0, max: 64 },
+    74: { min: 80, max: 127 },
+    91: { min: 0, max: 99, conditionMin: 0, conditionMax: 64 },
+    92: { min: 0, max: 99, conditionMin: 0, conditionMax: 64 },
+    93: { min: 0, max: 99, conditionMin: 0, conditionMax: 64 },
+    94: { min: 0, max: 64, conditionMin: 0, conditionMax: 11 },
+    95: { min: 0, max: 99, conditionMin: 0, conditionMax: 64 }
+  }
 };
 
 // 2. Centralized Noise Generator Registry: Defines available noise types and their implementation keys.
@@ -376,6 +416,42 @@ RHYTHM_PATTERNS = {
   }},
   rotate: { weights: [2, 2, 2], method: 'rotate', args: (length, pattern) => [pattern, 2, '?', length] },
   morph: { weights: [2, 3, 3], method: 'morph', args: (length, pattern) => [pattern, '?', length] }
+};
+
+// Centralized per-level rhythm key pools used by getRhythm selection.
+RHYTHM_PATTERN_POOLS = {
+  beat: ['binary', 'hex', 'onsets', 'random', 'euclid', 'rotate', 'morph'],
+  div: ['binary', 'hex', 'onsets', 'onsets2', 'random', 'random2', 'euclid', 'rotate', 'morph'],
+  subdiv: ['binary', 'hex', 'onsets2', 'onsets3', 'random2', 'random3', 'euclid', 'rotate', 'morph'],
+  subsubdiv: ['onsets3', 'random3', 'euclid', 'rotate', 'morph']
+};
+
+// Centralized drum map (note + velocity range) used by rhythm/drummer.
+DRUM_MAP = {
+  snare1: { note: 31, velocityRange: [99, 111] },
+  snare2: { note: 33, velocityRange: [99, 111] },
+  snare3: { note: 124, velocityRange: [77, 88] },
+  snare4: { note: 125, velocityRange: [77, 88] },
+  snare5: { note: 75, velocityRange: [77, 88] },
+  snare6: { note: 85, velocityRange: [77, 88] },
+  snare7: { note: 118, velocityRange: [66, 77] },
+  snare8: { note: 41, velocityRange: [66, 77] },
+  kick1: { note: 12, velocityRange: [111, 127] },
+  kick2: { note: 14, velocityRange: [111, 127] },
+  kick3: { note: 0, velocityRange: [99, 111] },
+  kick4: { note: 2, velocityRange: [99, 111] },
+  kick5: { note: 4, velocityRange: [88, 99] },
+  kick6: { note: 5, velocityRange: [88, 99] },
+  kick7: { note: 6, velocityRange: [88, 99] },
+  cymbal1: { note: 59, velocityRange: [66, 77] },
+  cymbal2: { note: 53, velocityRange: [66, 77] },
+  cymbal3: { note: 80, velocityRange: [66, 77] },
+  cymbal4: { note: 81, velocityRange: [66, 77] },
+  conga1: { note: 60, velocityRange: [66, 77] },
+  conga2: { note: 61, velocityRange: [66, 77] },
+  conga3: { note: 62, velocityRange: [66, 77] },
+  conga4: { note: 63, velocityRange: [66, 77] },
+  conga5: { note: 64, velocityRange: [66, 77] }
 };
 
 // 5. Centralized Phrase Arc Curves: Defines the shape functions for intensity/register over a phrase.
