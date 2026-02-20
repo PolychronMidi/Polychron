@@ -698,3 +698,10 @@ declare var IntervalExpansionContractor: any;
 declare var DynamicPeakMemory: any;
 declare var RhythmicDensityContrastTracker: any;
 declare var TonalAnchorDistanceTracker: any;
+
+declare var StutterContagion: any;
+declare var ConvergenceDetector: any;
+declare var TemporalGravity: any;
+declare var VelocityInterference: any;
+declare var FeedbackOscillator: any;
+declare var CadenceAlignment: any;

@@ -1,0 +1,101 @@
+// src/crossLayer/feedbackOscillator.js — Cross-layer feedback loop oscillation.
+// Layer A posts a reaction → B picks it up and posts its own reaction →
+// A picks up B's reaction → etc. Each round-trip dampens the intensity,
+// creating convergent rhythmic dialogues between layers.
+
+FeedbackOscillator = (() => {
+  const V = Validator.create('FeedbackOscillator');
+  const CHANNEL = 'feedbackLoop';
+  const SYNC_TOLERANCE_MS = 250;
+  const DAMPING = 0.55;
+  const MIN_ENERGY = 0.03;
+  const MAX_ROUND_TRIPS = 6;
+
+  /**
+   * Inject an initial impulse into the feedback loop.
+   * Call this when a noteworthy musical event happens (e.g. accent, convergence).
+   * @param {number} absTimeMs - absolute ms
+   * @param {string} layer - source layer
+   * @param {number} energy - initial energy 0-1
+   * @param {string} [impulseType='accent'] - what triggered the impulse
+   */
+  function inject(absTimeMs, layer, energy, impulseType) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(energy, 'energy');
+    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+      energy: clamp(energy, 0, 1),
+      roundTrip: 0,
+      impulseType: impulseType || 'accent',
+      originLayer: layer
+    });
+  }
+
+  /**
+   * Check for pending feedback from the other layer and react.
+   * Each reaction dampens the energy and increments the round-trip counter.
+   * @param {number} absTimeMs - current absolute ms
+   * @param {string} activeLayer - current layer
+   * @returns {{ energy: number, roundTrip: number, impulseType: string, syncTick: number } | null}
+   */
+  function react(absTimeMs, activeLayer) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+
+    const incoming = AbsoluteTimeGrid.findClosest(
+      CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
+    );
+    if (!incoming) return null;
+    if (!Number.isFinite(incoming.energy) || incoming.energy < MIN_ENERGY) return null;
+    if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
+
+    const dampedEnergy = incoming.energy * DAMPING;
+    if (dampedEnergy < MIN_ENERGY) return null;
+
+    const nextRoundTrip = (incoming.roundTrip || 0) + 1;
+
+    // Convert to this layer's tick space
+    V.requireFinite(measureStart, 'measureStart');
+    V.requireFinite(measureStartTime, 'measureStartTime');
+    V.requireFinite(tpSec, 'tpSec');
+    const syncTick = Math.round(measureStart + ((incoming.timeMs / 1000) - measureStartTime) * tpSec);
+
+    // Post our reaction for the other layer to pick up
+    AbsoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
+      energy: dampedEnergy,
+      roundTrip: nextRoundTrip,
+      impulseType: incoming.impulseType || 'accent',
+      originLayer: incoming.originLayer || activeLayer
+    });
+
+    return {
+      energy: dampedEnergy,
+      roundTrip: nextRoundTrip,
+      impulseType: incoming.impulseType || 'accent',
+      syncTick
+    };
+  }
+
+  /**
+   * Apply feedback oscillation effects based on the reaction.
+   * Modulates velocity and stutter intensity based on feedback energy.
+   * @param {number} absTimeMs - current absolute ms
+   * @param {string} activeLayer - current layer
+   * @returns {{ applied: boolean, energy: number, roundTrip: number } | null}
+   */
+  function applyFeedback(absTimeMs, activeLayer) {
+    const reaction = react(absTimeMs, activeLayer);
+    if (!reaction) return null;
+
+    // Energy decays with each round-trip → subtle micro-accents
+    // The receiving layer can use reaction.energy to modulate:
+    // - note velocity (boost by energy * 15%)
+    // - stutter probability (energy as probability multiplier)
+    // - pan width (wider stereo at higher energy)
+    return {
+      applied: true,
+      energy: reaction.energy,
+      roundTrip: reaction.roundTrip
+    };
+  }
+
+  return { inject, react, applyFeedback };
+})();
