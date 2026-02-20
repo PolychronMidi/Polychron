@@ -65,6 +65,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }
+    if (tick === undefined) throw new Error('stutterPan: for-loop produced no iterations');
 
     // Record final pan position for note cooperation —
     // negative = left-biased, positive = right-biased, 0 = center
