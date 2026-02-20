@@ -8,6 +8,10 @@ VelocityInterference = (() => {
   const CHANNEL = 'velocity';
   const CONTOUR_WINDOW_MS = 400;
   const SYNC_TOLERANCE_MS = 300;
+  const VIZ_CC = 102; // CC 102 = undefined in GM, safe for automation lane
+  const VIZ_REINFORCE = 100; // CC value for reinforcement
+  const VIZ_SEPARATE = 27;   // CC value for separation
+  const VIZ_NEUTRAL = 64;    // CC value for neutral
 
   /**
    * Post a velocity contour sample from the active layer.
@@ -58,6 +62,7 @@ VelocityInterference = (() => {
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!other || !Number.isFinite(other.delta)) {
+      writeVizCC(activeLayer, 'neutral');
       return { velocity: baseVelocity, mode: 'neutral' };
     }
 
@@ -73,6 +78,7 @@ VelocityInterference = (() => {
       const alignment = Math.min(Math.abs(ourDelta), Math.abs(other.delta));
       const boost = clamp(alignment / 30, 0, 0.15); // max 15% boost
       const reinforced = Math.round(clamp(baseVelocity * (1 + boost), 1, MIDI_MAX_VALUE));
+      writeVizCC(activeLayer, 'reinforce');
       return { velocity: reinforced, mode: 'reinforce' };
     }
 
@@ -80,7 +86,21 @@ VelocityInterference = (() => {
     const opposition = Math.min(Math.abs(ourDelta), Math.abs(other.delta));
     const reduction = clamp(opposition / 50, 0, 0.1); // max 10% reduction
     const separated = Math.round(clamp(baseVelocity * (1 - reduction), 1, MIDI_MAX_VALUE));
+    writeVizCC(activeLayer, 'separate');
     return { velocity: separated, mode: 'separate' };
+  }
+
+  /**
+   * Write a MIDI CC event for DAW visualization of interference mode.
+   * @param {string} layer
+   * @param {'reinforce'|'separate'|'neutral'} mode
+   */
+  function writeVizCC(layer, mode) {
+    if (typeof p !== 'function' || typeof c === 'undefined') return;
+    if (!Number.isFinite(beatStart)) return;
+    const ch = (layer === 'L1') ? cCH1 : cCH2;
+    const val = mode === 'reinforce' ? VIZ_REINFORCE : mode === 'separate' ? VIZ_SEPARATE : VIZ_NEUTRAL;
+    p(c, { tick: beatStart, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
   return { postVelocity, measureDelta, applyInterference };

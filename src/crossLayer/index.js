@@ -12,3 +12,17 @@ require('./velocityInterference');
 require('./feedbackOscillator');
 // @ts-ignore: side-effect module load
 require('./cadenceAlignment');
+// @ts-ignore: side-effect module load
+require('./rhythmicPhaseLock');
+// @ts-ignore: side-effect module load
+require('./spectralComplementarity');
+// @ts-ignore: side-effect module load
+require('./dynamicRoleSwap');
+// @ts-ignore: side-effect module load
+require('./motifEcho');
+// @ts-ignore: side-effect module load
+require('./interactionHeatMap');
+// @ts-ignore: side-effect module load
+require('./entropyRegulator');
+// @ts-ignore: side-effect module load
+require('./emergentDownbeat');
