@@ -21,6 +21,7 @@ playNotesEmitPick = function(opts = {}) {
   }
 
   let scheduled = 0;
+  const activeLayerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
 
   const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
   let selectedShift = 0;
@@ -45,16 +46,18 @@ playNotesEmitPick = function(opts = {}) {
   for (let sourceIndex = 0; sourceIndex < activeSourceChannels.length; sourceIndex++) {
     const sourceCH = activeSourceChannels[sourceIndex];
     const isPrimary = sourceCH === cCH1;
-    const onTick = isPrimary ? on + rv(tpUnit * rf(1 / 9), [-0.1, 0.1], 0.3) : on + rv(tpUnit * rf(1 / 3), [-0.1, 0.1], 0.3);
+    let onTick = isPrimary ? on + rv(tpUnit * rf(1 / 9), [-0.1, 0.1], 0.3) : on + rv(tpUnit * rf(1 / 3), [-0.1, 0.1], 0.3);
+    onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
     const baseOnVel = (isPrimary ? velocity * rf(0.95, 1.15) : binVel * rf(0.75, 1.03)) * pickVelScale;
     const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pickIndex * 101 + sourceIndex;
     const sourceNoiseBase = baseOnVel * (1 - emissionCfg.sourceNoiseInfluence * noiseInfluence);
     const { perProbScaled: perProbScaledSrc, onVel } = getChannelCoherence(sourceCH, 'source', sourceNoiseBase, sourceVoiceId, currentTime);
 
     const applySelectedShiftToSource = isPrimary && selectedShift !== 0 && rf() < perProbScaledSrc;
-    const noteToEmit = applySelectedShiftToSource
+    const noteToEmitBase = applySelectedShiftToSource
       ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
       : pick.note;
+    const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteToEmitBase, onTick).midi;
 
     const texVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
     const texSustain = sustain * textureMode.sustainScale;
@@ -64,6 +67,10 @@ playNotesEmitPick = function(opts = {}) {
     const srcOffEvt = { tick: sourceOffTick, vals: [sourceCH, noteToEmit] };
     microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation);
     scheduled += 2;
+    if (isPrimary) {
+      RegisterCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTick);
+      GrooveTransfer.recordTiming(activeLayerName, onTick, unit);
+    }
 
     // Record note into AbsoluteTimeWindow for cross-layer analysis
     if (isPrimary && typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordNote === 'function') {
@@ -81,6 +88,7 @@ playNotesEmitPick = function(opts = {}) {
 
       // #8 Cross-Layer Motif Echo: record note for interval capture
       MotifEcho.recordNote(noteToEmit, atwLayer, absMs);
+      MotifIdentityMemory.recordNote(atwLayer, noteToEmit, absMs);
 
       // #10 Entropy Regulator: record sample for entropy measurement
       EntropyRegulator.recordSample(noteToEmit, texVel, atwLayer);
@@ -173,7 +181,8 @@ playNotesEmitPick = function(opts = {}) {
   for (let reflectionIndex = 0; reflectionIndex < activeReflectionChannels.length; reflectionIndex++) {
     const reflectionCH = activeReflectionChannels[reflectionIndex];
     const isPrimary = reflectionCH === cCH2;
-    const onTick = isPrimary ? on + rv(tpUnit * rf(0.2), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
+    let onTick = isPrimary ? on + rv(tpUnit * rf(0.2), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
+    onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
     const baseOnVel = (isPrimary ? velocity * rf(0.7, 1.2) : binVel * rf(0.55, 1.1)) * pickVelScale;
     const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pickIndex * 131 + reflectionIndex;
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
@@ -181,15 +190,20 @@ playNotesEmitPick = function(opts = {}) {
 
     const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
     const reflectApplyShift = reflectSelected && selectedShift !== 0 && rf() < perProbScaledRefl;
-    const reflectionEmitNote = reflectApplyShift
+    const reflectionEmitNoteBase = reflectApplyShift
       ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
       : pick.note;
+    const reflectionEmitNote = RegisterCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTick).midi;
 
     const reflOnEvt = { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] };
     const reflectionOffTick = on + sustain * (isPrimary ? rf(0.7, 1.2) : rv(rf(0.65, 1.3)));
     const reflOffEvt = { tick: reflectionOffTick, vals: [reflectionCH, reflectionEmitNote] };
     microUnitAttenuator.record(reflOnEvt, reflOffEvt, crossModulation);
     scheduled += 2;
+    if (isPrimary) {
+      RegisterCollisionAvoider.recordNote(activeLayerName, reflectionEmitNote, onTick);
+      GrooveTransfer.recordTiming(activeLayerName, onTick, unit);
+    }
 
     if (textureMode.mode === 'chordBurst' && isPrimary) {
       const reflBurstCount = ri(1, 2);
@@ -224,7 +238,8 @@ playNotesEmitPick = function(opts = {}) {
     for (let bassIndex = 0; bassIndex < activeBassChannels.length; bassIndex++) {
       const bassCH = activeBassChannels[bassIndex];
       const isPrimary = bassCH === cCH3;
-      const onTick = isPrimary ? on + rv(tpUnit * rf(0.1), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
+      let onTick = isPrimary ? on + rv(tpUnit * rf(0.1), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
+      onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
       const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
       const bassVoiceId = voiceIdSeed + bassCH * 23 + pickIndex * 151 + bassIndex;
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
@@ -233,7 +248,8 @@ playNotesEmitPick = function(opts = {}) {
       const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
       const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
       const bassEmitBase = bassApplyShift ? pick.note + selectedShift : pick.note;
-      const bassNote = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
+      const bassNoteBase = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
+      const bassNote = RegisterCollisionAvoider.avoid(activeLayerName, bassNoteBase, onTick).midi;
 
       const bassOnEvt = { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] };
       const bassSustainScale = textureMode.mode === 'chordBurst' ? textureMode.sustainScale * rf(1.2, 1.6)
@@ -243,6 +259,10 @@ playNotesEmitPick = function(opts = {}) {
       const bassOffEvt = { tick: bassOffTick, vals: [bassCH, bassNote] };
       microUnitAttenuator.record(bassOnEvt, bassOffEvt, crossModulation);
       scheduled += 2;
+      if (isPrimary) {
+        RegisterCollisionAvoider.recordNote(activeLayerName, bassNote, onTick);
+        GrooveTransfer.recordTiming(activeLayerName, onTick, unit);
+      }
     }
   }
 
