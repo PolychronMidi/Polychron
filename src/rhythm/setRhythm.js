@@ -1,6 +1,6 @@
 _random = require('@tonaljs/rhythm-pattern').random;
 
-const V = Validator.create('setRhythm');
+const _srV = Validator.create('setRhythm');
 
 /**
  * Resolve and cache rhythm arrays per level.
@@ -9,7 +9,7 @@ const V = Validator.create('setRhythm');
  * @returns {number[]}
  */
 setRhythm = function setRhythm(level, ctx = null) {
-  V.assertNonEmptyString(level, 'level');
+  _srV.assertNonEmptyString(level, 'level');
   const random = (length, probOn) => { return _random(length, 1 - probOn); };
   // ── Texture-modulated onset density (#8) ──────────────────────────
   // Flurry activity → denser onsets (more notes), burst activity → sparser (give chords room)

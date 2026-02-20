@@ -80,7 +80,8 @@ RhythmicComplementEngine = (() => {
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
-      const grooveOffset = (GrooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick) ?? 0;
+      let grooveOffset = GrooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick;
+      if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
       return { tick: onTick + grooveOffset * strength * 0.5, velocityScale: 0.9, modified: grooveOffset !== 0 };
     }
 

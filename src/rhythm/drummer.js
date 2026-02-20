@@ -1,12 +1,12 @@
 // drummer.js - Generates drum patterns with human-like timing
 
-const V = Validator.create('drummer');
+const _drV = Validator.create('drummer');
 
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1),conductorContext={})=>{
-  V.requireDefined(drumNames, 'drumNames');
-  V.requireFinite(stutterChance, 'stutterChance');
-  V.assertArray(stutterRange, 'stutterRange');
-  V.requireFinite(stutterDecayFactor, 'stutterDecayFactor');
+  _drV.requireDefined(drumNames, 'drumNames');
+  _drV.requireFinite(stutterChance, 'stutterChance');
+  _drV.assertArray(stutterRange, 'stutterRange');
+  _drV.requireFinite(stutterDecayFactor, 'stutterDecayFactor');
   if (drumNames === 'random') {
     const allDrums = Object.keys(drumMap);
     drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
