@@ -1,4 +1,5 @@
 MotifIdentityMemory = (() => {
+  const V = Validator.create('MotifIdentityMemory');
   const MAX_NOTES = 24;
   const MAX_IDENTITIES = 16;
 
@@ -29,8 +30,8 @@ MotifIdentityMemory = (() => {
    * @param {number} absTimeMs
    */
   function recordNote(layer, midi, absTimeMs) {
-    if (!Number.isFinite(midi)) throw new Error('MotifIdentityMemory.recordNote: midi must be finite');
-    if (!Number.isFinite(absTimeMs)) throw new Error('MotifIdentityMemory.recordNote: absTimeMs must be finite');
+    V.requireFinite(midi, 'midi');
+    V.requireFinite(absTimeMs, 'absTimeMs');
 
     const notes = ensureNotes(layer);
     notes.push(midi);
@@ -86,3 +87,4 @@ MotifIdentityMemory = (() => {
 
   return { recordNote, getActiveIdentity, chooseEchoTransform, reset };
 })();
+CrossLayerRegistry.register('MotifIdentityMemory', MotifIdentityMemory, ['all', 'phrase']);

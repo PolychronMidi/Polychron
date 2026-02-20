@@ -104,6 +104,12 @@ VelocityShapeAnalyzer = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerFlickerModifier('VelocityShapeAnalyzer', () => VelocityShapeAnalyzer.getFlickerModifier(), 0.85, 1.2);
+  ConductorIntelligence.registerStateProvider('VelocityShapeAnalyzer', () => {
+    const s = VelocityShapeAnalyzer.getVelocityShape();
+    return { envelopeShape: s ? s.shape : 'neutral' };
+  });
+
   return {
     getVelocityShape,
     getFlickerModifier

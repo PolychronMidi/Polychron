@@ -64,6 +64,14 @@ RegisterMigrationTracker = (() => {
     return { registerBias: 0, suggestion: 'maintain' };
   }
 
+  ConductorIntelligence.registerStateProvider('RegisterMigrationTracker', () => {
+    const b = RegisterMigrationTracker.getRegisterBias();
+    return {
+      registerMigrationBias: b ? b.registerBias : 0,
+      registerSuggestion: b ? b.suggestion : 'maintain'
+    };
+  });
+
   return {
     getMigrationProfile,
     getRegisterBias

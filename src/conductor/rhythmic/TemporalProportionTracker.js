@@ -93,6 +93,15 @@ TemporalProportionTracker = (() => {
     phraseDurations.length = 0;
   }
 
+  ConductorIntelligence.registerStateProvider('TemporalProportionTracker', () => {
+    const s = TemporalProportionTracker.getProportionSignal();
+    return {
+      proportionSuggestion: s ? s.suggestion : 'maintain',
+      proportionIdealBeats: s ? s.idealBeats : 8,
+      proportionQuality: s ? s.quality : 0.5
+    };
+  });
+
   return {
     recordSection,
     recordPhrase,

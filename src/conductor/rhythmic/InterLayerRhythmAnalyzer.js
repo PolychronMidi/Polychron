@@ -245,6 +245,24 @@ InterLayerRhythmAnalyzer = (() => {
     return { displacement: 'aligned', hemiolaActive: false };
   }
 
+  ConductorIntelligence.registerFlickerModifier('InterLayerRhythmAnalyzer', () => InterLayerRhythmAnalyzer.getFlickerModifier(), 0.9, 1.2);
+  ConductorIntelligence.registerStateProvider('InterLayerRhythmAnalyzer', () => {
+    const disp = InterLayerRhythmAnalyzer.getDisplacementSignal();
+    const drift = InterLayerRhythmAnalyzer.getDriftSignal();
+    const phase = InterLayerRhythmAnalyzer.getPhaseRelationship();
+    const align = InterLayerRhythmAnalyzer.getAlignmentSignal();
+    return {
+      metricDisplacement: disp.displacement,
+      hemiolaActive: disp.hemiolaActive,
+      timingTightness: drift.tightness,
+      timingDriftSuggestion: drift.suggestion,
+      rhythmPhase: phase.phase,
+      rhythmCoincidence: phase.coincidence,
+      rhythmComplementarity: phase.complementarity,
+      polyrhythmConvergence: align.convergencePoint
+    };
+  });
+
   return {
     getPhaseRelationship,
     suggestPhaseStrategy,

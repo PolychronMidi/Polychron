@@ -76,6 +76,14 @@ OrchestrationWeightTracker = (() => {
     return { bassWeight, midWeight, trebleWeight, suggestion, dominantBand };
   }
 
+  ConductorIntelligence.registerStateProvider('OrchestrationWeightTracker', () => {
+    const s = OrchestrationWeightTracker.getWeightSignal();
+    return {
+      orchestrationSuggestion: s ? s.suggestion : 'balanced',
+      orchestrationDominantBand: s ? s.dominantBand : 'none'
+    };
+  });
+
   return {
     getWeightSignal
   };

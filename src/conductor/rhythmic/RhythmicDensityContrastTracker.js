@@ -70,6 +70,13 @@ RhythmicDensityContrastTracker = (() => {
     densitySamples.length = 0;
   }
 
+  ConductorIntelligence.registerFlickerModifier('RhythmicDensityContrastTracker', () => RhythmicDensityContrastTracker.getFlickerModifier(), 0.9, 1.15);
+  ConductorIntelligence.registerRecorder('RhythmicDensityContrastTracker', (ctx) => { RhythmicDensityContrastTracker.recordDensity(ctx.currentDensity); });
+  ConductorIntelligence.registerStateProvider('RhythmicDensityContrastTracker', () => {
+    const s = RhythmicDensityContrastTracker.getContrastSignal();
+    return { rhythmicContrastSuggestion: s ? s.suggestion : 'maintain' };
+  });
+
   return {
     recordDensity,
     getContrastSignal,

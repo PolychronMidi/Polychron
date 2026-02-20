@@ -76,6 +76,8 @@ TensionResolutionTracker = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerTensionBias('TensionResolutionTracker', () => TensionResolutionTracker.getTensionBias(), 0.9, 1.25);
+
   return {
     getResolutionProfile,
     getTensionBias

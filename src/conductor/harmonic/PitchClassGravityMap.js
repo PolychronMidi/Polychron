@@ -54,6 +54,15 @@ PitchClassGravityMap = (() => {
     return { center, stability, driftFromCenter, suggestion };
   }
 
+  ConductorIntelligence.registerStateProvider('PitchClassGravityMap', () => {
+    const s = PitchClassGravityMap.getGravitySignal();
+    return {
+      tonalGravityCenter: s ? s.center : 0,
+      tonalGravityStability: s ? s.stability : 0.5,
+      tonalGravitySuggestion: s ? s.suggestion : 'maintain'
+    };
+  });
+
   return {
     getGravitySignal
   };

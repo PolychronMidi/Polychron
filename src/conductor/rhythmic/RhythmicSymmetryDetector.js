@@ -99,6 +99,14 @@ RhythmicSymmetryDetector = (() => {
     return { symmetryScore, type, suggestion };
   }
 
+  ConductorIntelligence.registerStateProvider('RhythmicSymmetryDetector', () => {
+    const s = RhythmicSymmetryDetector.getSymmetrySignal();
+    return {
+      symmetryType: s ? s.type : 'none',
+      symmetrySuggestion: s ? s.suggestion : 'maintain'
+    };
+  });
+
   return {
     getSymmetrySignal
   };

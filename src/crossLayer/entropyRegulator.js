@@ -5,6 +5,7 @@
 // Acts as a meta-conductor for the cross-layer systems themselves.
 
 EntropyRegulator = (() => {
+  const V = Validator.create('EntropyRegulator');
   const WINDOW_NOTES = 20;
   const SMOOTHING = 0.3; // exponential smoothing factor
 
@@ -77,9 +78,7 @@ EntropyRegulator = (() => {
   function rhythmicIrregularity(layer) {
     // Use AbsoluteTimeWindow note history if available
     if (typeof AbsoluteTimeWindow === 'undefined' || !AbsoluteTimeWindow) return 0.5;
-    if (!Number.isFinite(beatStartTime)) {
-      throw new Error('EntropyRegulator.rhythmicIrregularity: beatStartTime must be finite');
-    }
+    V.requireFinite(beatStartTime, 'beatStartTime');
     const notes = AbsoluteTimeWindow.getNotes({
       layer,
       since: beatStartTime - 2,
@@ -91,7 +90,7 @@ EntropyRegulator = (() => {
       const currentTime = Number(notes[i].time);
       const previousTime = Number(notes[i - 1].time);
       if (!Number.isFinite(currentTime) || !Number.isFinite(previousTime)) {
-        throw new Error('EntropyRegulator.rhythmicIrregularity: note time entries must be finite');
+        throw new Error('EntropyRegulator: note time entries must be finite');
       }
       const dt = currentTime - previousTime;
       if (dt > 0) iois.push(dt);
@@ -188,3 +187,4 @@ EntropyRegulator = (() => {
     getRegulation, regulate, setRegulationStrength, reset
   };
 })();
+CrossLayerRegistry.register('EntropyRegulator', EntropyRegulator, ['all', 'section']);

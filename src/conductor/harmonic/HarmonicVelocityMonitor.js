@@ -71,6 +71,8 @@ HarmonicVelocityMonitor = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerTensionBias('HarmonicVelocityMonitor', () => HarmonicVelocityMonitor.getChangeThresholdBias(), 0.7, 1.4);
+
   return {
     getHarmonicVelocity,
     diagnoseEnergyMatch,

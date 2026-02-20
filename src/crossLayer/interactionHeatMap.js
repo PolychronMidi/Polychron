@@ -5,6 +5,7 @@
 // Provides diagnostic visibility into cross-layer system effectiveness.
 
 InteractionHeatMap = (() => {
+  const V = Validator.create('InteractionHeatMap');
   const WINDOW_SIZE = 64; // rolling window of beats to track
   const HIGH_DENSITY_THRESHOLD = 0.7;
   const LOW_DENSITY_THRESHOLD = 0.2;
@@ -53,9 +54,7 @@ InteractionHeatMap = (() => {
    * @param {string} beatKey
    */
   function deferBeat(beatKey) {
-    if (typeof beatKey !== 'string' || beatKey.length === 0) {
-      throw new Error('InteractionHeatMap.deferBeat: beatKey must be a non-empty string');
-    }
+    V.assertNonEmptyString(beatKey, 'beatKey');
     const systems = { ...currentBeat };
     const totalFirings = Object.values(systems).reduce((s, v) => s + v, 0);
     deferredByKey.set(beatKey, { systems, totalFirings });
@@ -68,9 +67,7 @@ InteractionHeatMap = (() => {
    * @param {string} beatKey
    */
   function flushBeatPair(absTimeMs, beatKey) {
-    if (typeof beatKey !== 'string' || beatKey.length === 0) {
-      throw new Error('InteractionHeatMap.flushBeatPair: beatKey must be a non-empty string');
-    }
+    V.assertNonEmptyString(beatKey, 'beatKey');
     const deferred = deferredByKey.get(beatKey);
     const merged = /** @type {Record<string, number>} */ ({});
 
@@ -183,3 +180,4 @@ InteractionHeatMap = (() => {
     reset
   };
 })();
+CrossLayerRegistry.register('InteractionHeatMap', InteractionHeatMap, ['all', 'section']);

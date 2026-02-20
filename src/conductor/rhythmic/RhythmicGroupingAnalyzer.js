@@ -81,6 +81,14 @@ RhythmicGroupingAnalyzer = (() => {
     return { groupingType, binaryScore, ternaryScore, inTransition };
   }
 
+  ConductorIntelligence.registerStateProvider('RhythmicGroupingAnalyzer', () => {
+    const s = RhythmicGroupingAnalyzer.getGroupingSignal();
+    return {
+      rhythmicGroupingType: s ? s.groupingType : 'ambiguous',
+      rhythmicGroupingInTransition: s ? s.inTransition : false
+    };
+  });
+
   return {
     getGroupingSignal
   };

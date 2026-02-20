@@ -61,6 +61,12 @@ LayerEntryExitTracker = (() => {
     snapshots.length = 0;
   }
 
+  ConductorIntelligence.registerRecorder('LayerEntryExitTracker', (ctx) => { LayerEntryExitTracker.recordSnapshot(ctx.absTime); });
+  ConductorIntelligence.registerStateProvider('LayerEntryExitTracker', () => {
+    const s = LayerEntryExitTracker.getMomentumSignal();
+    return { layerMomentum: s ? s.momentum : 'stable', layerCount: s ? s.currentLayers : 0 };
+  });
+
   return {
     recordSnapshot,
     getMomentumSignal,

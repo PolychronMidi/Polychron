@@ -97,6 +97,14 @@ AccentPatternTracker = (() => {
     return { downbeatBias: 1.0, offbeatBias: 1.0 };
   }
 
+  ConductorIntelligence.registerStateProvider('AccentPatternTracker', () => {
+    const b = AccentPatternTracker.getAccentBias();
+    return {
+      accentDownbeatBias: b ? b.downbeatBias : 1,
+      accentOffbeatBias: b ? b.offbeatBias : 1
+    };
+  });
+
   return {
     getAccentProfile,
     getAccentBias

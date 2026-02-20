@@ -68,6 +68,12 @@ TessituraPressureMonitor = (() => {
     return getPressureSignal().densityBias;
   }
 
+  ConductorIntelligence.registerDensityBias('TessituraPressureMonitor', () => TessituraPressureMonitor.getDensityBias(), 0.85, 1.1);
+  ConductorIntelligence.registerStateProvider('TessituraPressureMonitor', () => {
+    const s = TessituraPressureMonitor.getPressureSignal();
+    return { tessituraRegion: s ? s.region : 'comfortable' };
+  });
+
   return {
     getPressureSignal,
     getDensityBias

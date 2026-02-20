@@ -141,6 +141,17 @@ IntervalBalanceTracker = (() => {
     return { suggestion: 'maintain', targetAvgInterval: profile.avgInterval };
   }
 
+  ConductorIntelligence.registerDensityBias('IntervalBalanceTracker', () => IntervalBalanceTracker.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerStateProvider('IntervalBalanceTracker', () => {
+    const b = IntervalBalanceTracker.getIntervalBias();
+    return {
+      intervalStepBias: b ? b.stepBias : 1,
+      intervalLeapBias: b ? b.leapBias : 1,
+      leapStepLeapBias: b ? b.leapBias : 1,
+      leapStepStepBias: b ? b.stepBias : 1
+    };
+  });
+
   return {
     getIntervalProfile,
     getIntervalBias,

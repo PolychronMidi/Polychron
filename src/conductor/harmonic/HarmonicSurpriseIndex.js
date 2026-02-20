@@ -74,6 +74,8 @@ HarmonicSurpriseIndex = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerTensionBias('HarmonicSurpriseIndex', () => HarmonicSurpriseIndex.getTensionBias(), 0.9, 1.25);
+
   return {
     getSurpriseProfile,
     getTensionBias

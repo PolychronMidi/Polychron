@@ -85,6 +85,13 @@ DynamicPeakMemory = (() => {
     peakCooldown = 0;
   }
 
+  ConductorIntelligence.registerTensionBias('DynamicPeakMemory', () => DynamicPeakMemory.getTensionBias(), 0.9, 1.1);
+  ConductorIntelligence.registerRecorder('DynamicPeakMemory', (ctx) => { DynamicPeakMemory.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
+  ConductorIntelligence.registerStateProvider('DynamicPeakMemory', () => {
+    const s = DynamicPeakMemory.getPeakSignal();
+    return { dynamicPeakRecency: s ? s.peakRecency : 'none' };
+  });
+
   return {
     recordIntensity,
     getPeakSignal,

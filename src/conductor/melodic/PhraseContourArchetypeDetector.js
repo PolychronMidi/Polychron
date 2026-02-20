@@ -94,6 +94,14 @@ PhraseContourArchetypeDetector = (() => {
     return { archetype, confidence, suggestion };
   }
 
+  ConductorIntelligence.registerStateProvider('PhraseContourArchetypeDetector', () => {
+    const s = PhraseContourArchetypeDetector.getContourSignal();
+    return {
+      contourArchetype: s ? s.archetype : 'undefined',
+      contourSuggestion: s ? s.suggestion : 'maintain'
+    };
+  });
+
   return {
     getContourSignal
   };

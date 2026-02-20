@@ -82,6 +82,9 @@ TexturalGradientTracker = (() => {
     densitySamples.length = 0;
   }
 
+  ConductorIntelligence.registerFlickerModifier('TexturalGradientTracker', () => TexturalGradientTracker.getFlickerModifier(), 0.9, 1.25);
+  ConductorIntelligence.registerRecorder('TexturalGradientTracker', (ctx) => { TexturalGradientTracker.recordDensity(ctx.currentDensity, ctx.absTime); });
+
   return {
     recordDensity,
     getGradientSignal,

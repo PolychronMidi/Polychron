@@ -66,6 +66,15 @@ DurationalContourTracker = (() => {
     return { durationBias: 1.0, flickerMod: 1.0 };
   }
 
+  ConductorIntelligence.registerFlickerModifier('DurationalContourTracker', () => {
+    const b = DurationalContourTracker.getDurationBias();
+    return b ? b.flickerMod : 1;
+  }, 0.8, 1.3);
+  ConductorIntelligence.registerStateProvider('DurationalContourTracker', () => {
+    const b = DurationalContourTracker.getDurationBias();
+    return { durationalContourBias: b ? b.durationBias : 1 };
+  });
+
   return {
     getDurationContour,
     getDurationBias

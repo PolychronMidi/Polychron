@@ -147,6 +147,13 @@ MelodicContourTracker = (() => {
     currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
   }
 
+  ConductorIntelligence.registerDensityBias('MelodicContourTracker', () => MelodicContourTracker.getDirectionalityDensityBias(), 0.9, 1.05);
+  ConductorIntelligence.registerRecorder('MelodicContourTracker', () => { MelodicContourTracker.update(); });
+  ConductorIntelligence.registerStateProvider('MelodicContourTracker', () => {
+    const s = MelodicContourTracker.getDirectionalitySignal();
+    return { melodicDirection: s ? s.direction : 'undulating' };
+  });
+
   return {
     update,
     getContour,

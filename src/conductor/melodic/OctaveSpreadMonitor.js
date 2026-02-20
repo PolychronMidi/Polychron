@@ -81,6 +81,10 @@ OctaveSpreadMonitor = (() => {
     return 0;
   }
 
+  ConductorIntelligence.registerStateProvider('OctaveSpreadMonitor', () => ({
+    octaveSpreadBias: OctaveSpreadMonitor.getSpreadBias() || 0
+  }));
+
   return {
     getOctaveProfile,
     getUnderusedOctaves,

@@ -126,3 +126,4 @@ SpectralComplementarity = (() => {
 
   return { recordNote, getHistogram, analyzeComplement, nudgeToFillGap, postSpectralState, reset };
 })();
+CrossLayerRegistry.register('SpectralComplementarity', SpectralComplementarity, ['all']);

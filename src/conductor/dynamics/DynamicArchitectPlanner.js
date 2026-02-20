@@ -104,6 +104,13 @@ DynamicArchitectPlanner = (() => {
     estimatedPieceDuration = 180;
   }
 
+  ConductorIntelligence.registerTensionBias('DynamicArchitectPlanner', () => DynamicArchitectPlanner.getTensionBias(), 0.9, 1.15);
+  ConductorIntelligence.registerRecorder('DynamicArchitectPlanner', (ctx) => { DynamicArchitectPlanner.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
+  ConductorIntelligence.registerStateProvider('DynamicArchitectPlanner', () => {
+    const s = DynamicArchitectPlanner.getDynamicPlanSignal();
+    return { dynamicPlanMacroPosition: s ? s.macroPosition : 0 };
+  });
+
   return {
     recordIntensity,
     getDynamicPlanSignal,

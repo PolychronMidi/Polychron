@@ -88,6 +88,13 @@ HarmonicPedalFieldTracker = (() => {
     bassSamples.length = 0;
   }
 
+  ConductorIntelligence.registerTensionBias('HarmonicPedalFieldTracker', () => HarmonicPedalFieldTracker.getTensionBias(), 0.9, 1.15);
+  ConductorIntelligence.registerRecorder('HarmonicPedalFieldTracker', (ctx) => { HarmonicPedalFieldTracker.recordBass(ctx.absTime); });
+  ConductorIntelligence.registerStateProvider('HarmonicPedalFieldTracker', () => {
+    const s = HarmonicPedalFieldTracker.getPedalFieldSignal();
+    return { pedalFieldStable: s ? s.fieldStable : false };
+  });
+
   return {
     recordBass,
     getPedalFieldSignal,

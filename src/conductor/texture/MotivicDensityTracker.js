@@ -54,6 +54,8 @@ MotivicDensityTracker = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerDensityBias('MotivicDensityTracker', () => MotivicDensityTracker.getDensityBias(), 0.8, 1.2);
+
   return {
     getMotivicProfile,
     getDensityBias

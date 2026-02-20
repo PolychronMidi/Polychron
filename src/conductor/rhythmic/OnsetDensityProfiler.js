@@ -87,6 +87,11 @@ OnsetDensityProfiler = (() => {
     return { combined: all.nps, l1: l1.nps, l2: l2.nps };
   }
 
+  ConductorIntelligence.registerDensityBias('OnsetDensityProfiler', () => OnsetDensityProfiler.getDensityBias(), 0.6, 1.4);
+  ConductorIntelligence.registerStateProvider('OnsetDensityProfiler', () => ({
+    onsetCrossModBias: clamp(OnsetDensityProfiler.getCrossModBias(), 0.8, 1.2)
+  }));
+
   return {
     getDensity,
     getDensityBias,

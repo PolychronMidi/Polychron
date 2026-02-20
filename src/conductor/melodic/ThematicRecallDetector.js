@@ -103,6 +103,14 @@ ThematicRecallDetector = (() => {
     sectionFingerprints.length = 0;
   }
 
+  ConductorIntelligence.registerStateProvider('ThematicRecallDetector', () => {
+    const s = ThematicRecallDetector.getThematicSignal();
+    return {
+      thematicStatus: s ? s.thematicStatus : 'fresh',
+      thematicRecallSection: s ? s.recallSection : null
+    };
+  });
+
   return {
     recordSectionFingerprint,
     checkRecallOpportunity,

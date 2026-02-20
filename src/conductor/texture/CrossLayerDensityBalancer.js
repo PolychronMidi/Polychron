@@ -70,6 +70,12 @@ CrossLayerDensityBalancer = (() => {
     return getBalanceSignal().densityBias;
   }
 
+  ConductorIntelligence.registerDensityBias('CrossLayerDensityBalancer', () => CrossLayerDensityBalancer.getDensityBias(), 0.9, 1.05);
+  ConductorIntelligence.registerStateProvider('CrossLayerDensityBalancer', () => {
+    const s = CrossLayerDensityBalancer.getBalanceSignal();
+    return { crossLayerImbalance: s ? s.imbalance : 0 };
+  });
+
   return {
     getBalanceSignal,
     getDensityBias

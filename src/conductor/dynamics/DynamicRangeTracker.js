@@ -138,6 +138,10 @@ DynamicRangeTracker = (() => {
     snapshots.length = 0;
   }
 
+  ConductorIntelligence.registerFlickerModifier('DynamicRangeTracker:spread', () => DynamicRangeTracker.getSpreadBias(), 0.8, 1.3);
+  ConductorIntelligence.registerFlickerModifier('DynamicRangeTracker:contrast', () => DynamicRangeTracker.getContrastFlickerModifier(), 0.95, 1.2);
+  ConductorIntelligence.registerRecorder('DynamicRangeTracker', (ctx) => { DynamicRangeTracker.recordExtremes(ctx.absTime); });
+
   return {
     getVelocityProfile,
     getSpreadBias,

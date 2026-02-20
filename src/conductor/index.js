@@ -41,6 +41,8 @@ require('./DynamismEngine');
 require('./TextureBlender');
 // @ts-ignore: load side-effect module with globals
 require('./ConductorState');
+// @ts-ignore: intelligence registry (must precede GlobalConductorUpdate & intelligence subdirectories)
+require('./ConductorIntelligence');
 // @ts-ignore: load side-effect module with globals
 require('./GlobalConductorUpdate');
 // @ts-ignore: load side-effect module with globals

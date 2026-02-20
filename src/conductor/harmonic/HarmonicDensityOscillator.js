@@ -76,6 +76,15 @@ HarmonicDensityOscillator = (() => {
     changeSamples.length = 0;
   }
 
+  ConductorIntelligence.registerTensionBias('HarmonicDensityOscillator', () => HarmonicDensityOscillator.getTensionBias(), 0.9, 1.1);
+  ConductorIntelligence.registerRecorder('HarmonicDensityOscillator', (ctx) => {
+    const hr = (typeof ctx.harmonicRhythm === 'number' && Number.isFinite(ctx.harmonicRhythm)) ? clamp(ctx.harmonicRhythm, 0, 1) : 0.5;
+    HarmonicDensityOscillator.recordChangeRate(hr, ctx.absTime);
+  });
+  ConductorIntelligence.registerStateProvider('HarmonicDensityOscillator', () => ({
+    harmonicOscillating: HarmonicDensityOscillator.getTensionBias() !== 1
+  }));
+
   return {
     recordChangeRate,
     getOscillationSignal,

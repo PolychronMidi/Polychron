@@ -82,6 +82,9 @@ DensityWaveAnalyzer = (() => {
     samples.length = 0;
   }
 
+  ConductorIntelligence.registerFlickerModifier('DensityWaveAnalyzer', () => DensityWaveAnalyzer.getFlickerModifier(), 0.9, 1.2);
+  ConductorIntelligence.registerRecorder('DensityWaveAnalyzer', (ctx) => { DensityWaveAnalyzer.recordDensity(ctx.currentDensity, ctx.absTime); });
+
   return {
     recordDensity,
     getWaveProfile,

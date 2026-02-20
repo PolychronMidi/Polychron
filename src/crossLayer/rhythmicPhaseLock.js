@@ -108,3 +108,4 @@ RhythmicPhaseLock = (() => {
 
   return { postBeat, measurePhase, applyPhaseLock, getMode, getLockCount, reset };
 })();
+CrossLayerRegistry.register('RhythmicPhaseLock', RhythmicPhaseLock, ['all']);

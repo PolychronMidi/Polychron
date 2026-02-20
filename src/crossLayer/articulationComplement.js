@@ -102,3 +102,4 @@ ArticulationComplement = (() => {
 
   return { recordSustain, getArticulationProfile, getSustainModifier, reset };
 })();
+CrossLayerRegistry.register('ArticulationComplement', ArticulationComplement, ['all', 'section']);

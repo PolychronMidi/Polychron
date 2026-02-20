@@ -71,6 +71,8 @@ RepetitionFatigueMonitor = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerTensionBias('RepetitionFatigueMonitor', () => RepetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.5);
+
   return {
     getRepetitionProfile,
     getRepetitionPenalty

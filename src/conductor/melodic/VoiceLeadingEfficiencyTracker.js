@@ -87,6 +87,12 @@ VoiceLeadingEfficiencyTracker = (() => {
     return getEfficiencySignal().densityBias;
   }
 
+  ConductorIntelligence.registerDensityBias('VoiceLeadingEfficiencyTracker', () => VoiceLeadingEfficiencyTracker.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerStateProvider('VoiceLeadingEfficiencyTracker', () => {
+    const s = VoiceLeadingEfficiencyTracker.getEfficiencySignal();
+    return { voiceLeadingEfficiency: s ? s.efficiency : 0.5 };
+  });
+
   return {
     getEfficiencySignal,
     getDensityBias

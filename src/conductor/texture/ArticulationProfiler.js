@@ -72,6 +72,14 @@ ArticulationProfiler = (() => {
     return { legatoBias: 1.0, staccatoBias: 1.0 };
   }
 
+  ConductorIntelligence.registerStateProvider('ArticulationProfiler', () => {
+    const b = ArticulationProfiler.getDurationBias();
+    return {
+      articulationLegatoBias: b ? b.legatoBias : 1,
+      articulationStaccatoBias: b ? b.staccatoBias : 1
+    };
+  });
+
   return {
     getArticulationProfile,
     getDurationBias
