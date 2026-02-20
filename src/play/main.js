@@ -338,6 +338,31 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clEntropy = EntropyRegulator.getRegulation();
         const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, 'L1');
 
+        // Climax engine: coordinate multi-parameter climax
+        CrossLayerClimaxEngine.tick(clAbsMs, sectionProgress);
+        const clClimaxMods = CrossLayerClimaxEngine.getModifiers('L1');
+
+        // Dynamic envelope: phrase-level velocity arc
+        const phraseProgressL1 = measuresPerPhrase > 0 ? (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator) : 0.5;
+        CrossLayerDynamicEnvelope.tick(clAbsMs, 'L1', sectionProgress, phraseProgressL1);
+        CrossLayerDynamicEnvelope.autoSelectArcType();
+
+        // Silhouette: holistic combined-output conductor
+        CrossLayerSilhouette.tick(clAbsMs, sectionProgress);
+        const clSilhouetteCorrections = CrossLayerSilhouette.getCorrections();
+
+        // Rest synchronizer: coordinated silence
+        const clRestSignals = {
+          heatLevel: (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap && typeof InteractionHeatMap.getDensity === 'function') ? InteractionHeatMap.getDensity() : 0.5,
+          densityTarget: clIntent.densityTarget,
+          phaseMode: (typeof RhythmicPhaseLock !== 'undefined' && RhythmicPhaseLock && typeof RhythmicPhaseLock.getMode === 'function') ? RhythmicPhaseLock.getMode() : 'free'
+        };
+        const clRest = RestSynchronizer.evaluateSharedRest(clAbsMs, 'L1', clRestSignals);
+        const clComplementRest = RestSynchronizer.evaluateComplementaryRest(clAbsMs, 'L1');
+
+        // Rhythmic complement: auto-select mode each beat
+        RhythmicComplementEngine.autoSelectMode(clAbsMs);
+
         const clTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
           ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
         const clCadence = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
@@ -362,7 +387,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         playProb = EntropyRegulator.regulate(playProb);
         stutterProb = EntropyRegulator.regulate(stutterProb);
 
+        // Apply climax scaling
+        if (clClimaxMods.playProbScale !== 1.0) {
+          playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);
+        }
+        // Apply silhouette density correction
+        playProb = clamp(playProb + clSilhouetteCorrections.densityBias, 0, 1);
+        // Apply shared rest: gate play probability to zero during shared rests
+        if (clRest.shouldRest) {
+          playProb = 0;
+          stutterProb = 0;
+        }
+        // Apply complementary rest: boost fill when other layer is resting
+        if (clComplementRest.shouldFill) {
+          playProb = clamp(playProb * (1 + clComplementRest.fillUrgency * 0.3), 0, 1);
+        }
+
         playNotes('beat', { playProb, stutterProb });
+        if (clRest.shouldRest) RestSynchronizer.postRest(clAbsMs, 'L1');
 
         StutterContagion.postStutter(clAbsMs, 'L1', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
         StutterContagion.apply(clAbsMs, 'L1');
@@ -395,6 +437,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
         const clConvergenceIntensity = ConvergenceDetector.wasRecent(clAbsMs, 'L1', 300) ? 1 : 0;
         InteractionHeatMap.record('convergence', clConvergenceIntensity);
+        // Seed ConvergenceHarmonicTrigger from convergence events
+        if (clConvergenceIntensity > 0) {
+          ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer: 'L1' });
+        }
+        InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
+        InteractionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
 
         const edSignals = {
           convergence: clConvergenceIntensity > 0,
@@ -549,6 +597,30 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clEntropyL2 = EntropyRegulator.getRegulation();
         const clPhaseL2 = PhaseAwareCadenceWindow.update(clAbsMsL2, 'L2');
 
+        // Climax engine: coordinate multi-parameter climax (shared state with L1)
+        CrossLayerClimaxEngine.tick(clAbsMsL2, sectionProgressL2);
+        const clClimaxModsL2 = CrossLayerClimaxEngine.getModifiers('L2');
+
+        // Dynamic envelope: phrase-level velocity arc
+        const phraseProgressL2 = measuresPerPhrase > 0 ? (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator) : 0.5;
+        CrossLayerDynamicEnvelope.tick(clAbsMsL2, 'L2', sectionProgressL2, phraseProgressL2);
+
+        // Silhouette: holistic combined-output conductor
+        CrossLayerSilhouette.tick(clAbsMsL2, sectionProgressL2);
+        const clSilhouetteCorrectionsL2 = CrossLayerSilhouette.getCorrections();
+
+        // Rest synchronizer: coordinated silence
+        const clRestSignalsL2 = {
+          heatLevel: (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap && typeof InteractionHeatMap.getDensity === 'function') ? InteractionHeatMap.getDensity() : 0.5,
+          densityTarget: clIntentL2.densityTarget,
+          phaseMode: (typeof RhythmicPhaseLock !== 'undefined' && RhythmicPhaseLock && typeof RhythmicPhaseLock.getMode === 'function') ? RhythmicPhaseLock.getMode() : 'free'
+        };
+        const clRestL2 = RestSynchronizer.evaluateSharedRest(clAbsMsL2, 'L2', clRestSignalsL2);
+        const clComplementRestL2 = RestSynchronizer.evaluateComplementaryRest(clAbsMsL2, 'L2');
+
+        // Rhythmic complement: auto-select mode each beat
+        RhythmicComplementEngine.autoSelectMode(clAbsMsL2);
+
         const clTensionL2 = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
           ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
         const clCadenceL2 = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
@@ -573,7 +645,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         playProb = EntropyRegulator.regulate(playProb);
         stutterProb = EntropyRegulator.regulate(stutterProb);
 
+        // Apply climax scaling
+        if (clClimaxModsL2.playProbScale !== 1.0) {
+          playProb = clamp(playProb * clClimaxModsL2.playProbScale, 0, 1);
+        }
+        // Apply silhouette density correction
+        playProb = clamp(playProb + clSilhouetteCorrectionsL2.densityBias, 0, 1);
+        // Apply shared rest: gate play probability to zero during shared rests
+        if (clRestL2.shouldRest) {
+          playProb = 0;
+          stutterProb = 0;
+        }
+        // Apply complementary rest: boost fill when other layer is resting
+        if (clComplementRestL2.shouldFill) {
+          playProb = clamp(playProb * (1 + clComplementRestL2.fillUrgency * 0.3), 0, 1);
+        }
+
         playNotes('beat', { playProb, stutterProb });
+        if (clRestL2.shouldRest) RestSynchronizer.postRest(clAbsMsL2, 'L2');
 
         StutterContagion.postStutter(clAbsMsL2, 'L2', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
         StutterContagion.apply(clAbsMsL2, 'L2');
@@ -606,6 +695,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
         const clConvergenceIntensityL2 = ConvergenceDetector.wasRecent(clAbsMsL2, 'L2', 300) ? 1 : 0;
         InteractionHeatMap.record('convergence', clConvergenceIntensityL2);
+        // Seed ConvergenceHarmonicTrigger from convergence events
+        if (clConvergenceIntensityL2 > 0) {
+          ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMsL2, layer: 'L2' });
+        }
+        InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
+        InteractionHeatMap.record('restSync', clRestL2.shouldRest ? 0.9 : 0);
 
         const edSignalsL2 = {
           convergence: clConvergenceIntensityL2 > 0,
@@ -656,7 +751,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
             intent: SectionIntentCurves.getLastIntent(),
             heat: InteractionHeatMap.getSystemHeat(),
             trend: InteractionHeatMap.getTrend(),
-            trust: AdaptiveTrustScores.getSnapshot()
+            trust: AdaptiveTrustScores.getSnapshot(),
+            silhouette: CrossLayerSilhouette.getSilhouette(),
+            climaxLevel: CrossLayerClimaxEngine.getClimaxLevel(),
+            rhythmicMode: RhythmicComplementEngine.getMode(),
+            textureDistance: TexturalMirror.getTextureDistance(),
+            pitchMemories: PitchMemoryRecall.getMemoryCount()
           }, clAbsMsL2);
         }
 

@@ -56,6 +56,9 @@ playNotesEmitPick = function(opts = {}) {
     const isPrimary = sourceCH === cCH1;
     let onTick = isPrimary ? on + rv(tpUnit * rf(1 / 9), [-0.1, 0.1], 0.3) : on + rv(tpUnit * rf(1 / 3), [-0.1, 0.1], 0.3);
     onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
+    // Rhythmic complement: shift timing for hocket/antiphony/canon
+    const rhythmComplement = RhythmicComplementEngine.suggestComplement(activeLayerName, onTick, tickToAbsMs(onTick));
+    onTick = rhythmComplement.tick;
     const preSyncMs = tickToAbsMs(onTick);
     onTick = RhythmicPhaseLock.applyPhaseLock(preSyncMs, activeLayerName, onTick).tick;
     onTick = TemporalGravity.applyGravity(preSyncMs, activeLayerName, onTick);
@@ -70,12 +73,19 @@ playNotesEmitPick = function(opts = {}) {
       ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
       : pick.note;
     const noteAfterSpectral = SpectralComplementarity.nudgeToFillGap(noteToEmitBase, activeLayerName).midi;
-    const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteAfterSpectral, onTick).midi;
+    const noteAfterHarmonic = HarmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTick).midi;
+    const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTick).midi;
 
     const texVelBase = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
     const texVelRole = DynamicRoleSwap.modifyVelocity(activeLayerName, texVelBase);
-    const texVel = VelocityInterference.applyInterference(absMsAtOnTick, activeLayerName, texVelRole).velocity;
-    const texSustain = sustain * textureMode.sustainScale;
+    const texVelInterference = VelocityInterference.applyInterference(absMsAtOnTick, activeLayerName, texVelRole).velocity;
+    // Apply dynamic envelope and climax velocity scaling
+    const envelopeScale = CrossLayerDynamicEnvelope.getVelocityScale(activeLayerName);
+    const climaxMods = CrossLayerClimaxEngine.getModifiers(activeLayerName);
+    const texVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * climaxMods.velocityScale)));
+    // Apply articulation complement sustain modifier
+    const articulationMod = ArticulationComplement.getSustainModifier(activeLayerName);
+    const texSustain = sustain * textureMode.sustainScale * articulationMod.sustainScale;
 
     const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
     const sourceOffTick = on + texSustain * (isPrimary ? 1 : rv(rf(0.92, 1.03)));
@@ -85,6 +95,10 @@ playNotesEmitPick = function(opts = {}) {
     if (isPrimary) {
       RegisterCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTick);
       GrooveTransfer.recordTiming(activeLayerName, onTick, unit);
+      // Record articulation for cross-layer contrast tracking
+      ArticulationComplement.recordSustain(activeLayerName, texSustain, absMsAtOnTick);
+      // Record texture mode for TexturalMirror
+      TexturalMirror.recordTexture(activeLayerName, textureMode.mode || 'normal', absMsAtOnTick);
     }
 
     // Record note into AbsoluteTimeWindow for cross-layer analysis
@@ -126,6 +140,35 @@ playNotesEmitPick = function(opts = {}) {
 
       // #10 Entropy Regulator: record sample for entropy measurement
       EntropyRegulator.recordSample(noteToEmit, texVel, atwLayer);
+
+      // Record cross-layer interval for harmonic guard tracking
+      const otherLayerForGuard = atwLayer === 'L1' ? 'L2' : 'L1';
+      if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function') {
+        const otherRecent = AbsoluteTimeWindow.getNotes({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+        if (otherRecent.length > 0) {
+          const otherMidi = otherRecent[otherRecent.length - 1].midi || otherRecent[otherRecent.length - 1].note || 0;
+          if (Number.isFinite(otherMidi) && otherMidi > 0) {
+            HarmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidi, absMs);
+          }
+        }
+      }
+
+      // Pitch Memory Recall: memorize significant patterns via MotifIdentityMemory
+      const memIdentity = (typeof MotifIdentityMemory !== 'undefined' && MotifIdentityMemory && typeof MotifIdentityMemory.getActiveIdentity === 'function')
+        ? MotifIdentityMemory.getActiveIdentity(atwLayer) : null;
+      if (memIdentity && typeof memIdentity.intervalDna === 'string' && memIdentity.intervalDna.length > 0) {
+        const memIntervals = memIdentity.intervalDna.split(',').map(Number).filter(Number.isFinite);
+        if (memIntervals.length >= 2) {
+          const memConvergence = (typeof ConvergenceDetector !== 'undefined' && ConvergenceDetector && typeof ConvergenceDetector.wasRecent === 'function')
+            ? ConvergenceDetector.wasRecent(absMs, atwLayer, 500) : false;
+          PitchMemoryRecall.memorize(
+            memIntervals,
+            [noteToEmit % 12],
+            { convergence: memConvergence, cadence: false, downbeat: false },
+            typeof sectionIndex === 'number' ? sectionIndex : 0
+          );
+        }
+      }
     }
 
     if (textureMode.mode === 'chordBurst' && isPrimary) {

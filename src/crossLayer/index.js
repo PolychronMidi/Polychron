@@ -17,6 +17,26 @@ require('./registerCollisionAvoider');
 // @ts-ignore: side-effect module load
 require('./motifIdentityMemory');
 // @ts-ignore: side-effect module load
+require('./harmonicIntervalGuard');
+// @ts-ignore: side-effect module load
+require('./restSynchronizer');
+// @ts-ignore: side-effect module load
+require('./crossLayerClimaxEngine');
+// @ts-ignore: side-effect module load
+require('./rhythmicComplementEngine');
+// @ts-ignore: side-effect module load
+require('./pitchMemoryRecall');
+// @ts-ignore: side-effect module load
+require('./articulationComplement');
+// @ts-ignore: side-effect module load
+require('./crossLayerDynamicEnvelope');
+// @ts-ignore: side-effect module load
+require('./convergenceHarmonicTrigger');
+// @ts-ignore: side-effect module load
+require('./texturalMirror');
+// @ts-ignore: side-effect module load
+require('./crossLayerSilhouette');
+// @ts-ignore: side-effect module load
 require('./crossLayerLifecycleManager');
 
 // @ts-ignore: side-effect module load

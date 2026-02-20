@@ -11,7 +11,8 @@ InteractionHeatMap = (() => {
   const SYSTEMS = [
     'stutterContagion', 'convergence', 'temporalGravity',
     'velocityInterference', 'feedbackOscillator', 'cadenceAlignment',
-    'phaseLock', 'spectralComplement', 'roleSwap', 'motifEcho', 'emergentDownbeat'
+    'phaseLock', 'spectralComplement', 'roleSwap', 'motifEcho', 'emergentDownbeat',
+    'climaxEngine', 'restSync'
   ];
 
   /**

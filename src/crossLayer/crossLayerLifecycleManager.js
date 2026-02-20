@@ -18,6 +18,16 @@ CrossLayerLifecycleManager = (() => {
     if (typeof AbsoluteTimeGrid !== 'undefined' && AbsoluteTimeGrid && typeof AbsoluteTimeGrid.reset === 'function') {
       AbsoluteTimeGrid.reset();
     }
+    if (typeof HarmonicIntervalGuard !== 'undefined' && HarmonicIntervalGuard && typeof HarmonicIntervalGuard.reset === 'function') HarmonicIntervalGuard.reset();
+    if (typeof RestSynchronizer !== 'undefined' && RestSynchronizer && typeof RestSynchronizer.reset === 'function') RestSynchronizer.reset();
+    if (typeof CrossLayerClimaxEngine !== 'undefined' && CrossLayerClimaxEngine && typeof CrossLayerClimaxEngine.reset === 'function') CrossLayerClimaxEngine.reset();
+    if (typeof RhythmicComplementEngine !== 'undefined' && RhythmicComplementEngine && typeof RhythmicComplementEngine.reset === 'function') RhythmicComplementEngine.reset();
+    // PitchMemoryRecall intentionally NOT reset — long-term thematic memory
+    if (typeof ArticulationComplement !== 'undefined' && ArticulationComplement && typeof ArticulationComplement.reset === 'function') ArticulationComplement.reset();
+    if (typeof CrossLayerDynamicEnvelope !== 'undefined' && CrossLayerDynamicEnvelope && typeof CrossLayerDynamicEnvelope.reset === 'function') CrossLayerDynamicEnvelope.reset();
+    if (typeof ConvergenceHarmonicTrigger !== 'undefined' && ConvergenceHarmonicTrigger && typeof ConvergenceHarmonicTrigger.reset === 'function') ConvergenceHarmonicTrigger.reset();
+    if (typeof TexturalMirror !== 'undefined' && TexturalMirror && typeof TexturalMirror.reset === 'function') TexturalMirror.reset();
+    if (typeof CrossLayerSilhouette !== 'undefined' && CrossLayerSilhouette && typeof CrossLayerSilhouette.reset === 'function') CrossLayerSilhouette.reset();
   }
 
   function resetSection() {
@@ -37,6 +47,15 @@ CrossLayerLifecycleManager = (() => {
     if (typeof AbsoluteTimeGrid !== 'undefined' && AbsoluteTimeGrid && typeof AbsoluteTimeGrid.reset === 'function') {
       AbsoluteTimeGrid.reset();
     }
+    if (typeof HarmonicIntervalGuard !== 'undefined' && HarmonicIntervalGuard && typeof HarmonicIntervalGuard.reset === 'function') HarmonicIntervalGuard.reset();
+    if (typeof RestSynchronizer !== 'undefined' && RestSynchronizer && typeof RestSynchronizer.reset === 'function') RestSynchronizer.reset();
+    if (typeof CrossLayerClimaxEngine !== 'undefined' && CrossLayerClimaxEngine && typeof CrossLayerClimaxEngine.reset === 'function') CrossLayerClimaxEngine.reset();
+    // PitchMemoryRecall NOT reset at section boundaries
+    if (typeof ArticulationComplement !== 'undefined' && ArticulationComplement && typeof ArticulationComplement.reset === 'function') ArticulationComplement.reset();
+    if (typeof CrossLayerDynamicEnvelope !== 'undefined' && CrossLayerDynamicEnvelope && typeof CrossLayerDynamicEnvelope.reset === 'function') CrossLayerDynamicEnvelope.reset();
+    if (typeof ConvergenceHarmonicTrigger !== 'undefined' && ConvergenceHarmonicTrigger && typeof ConvergenceHarmonicTrigger.reset === 'function') ConvergenceHarmonicTrigger.reset();
+    if (typeof TexturalMirror !== 'undefined' && TexturalMirror && typeof TexturalMirror.reset === 'function') TexturalMirror.reset();
+    if (typeof CrossLayerSilhouette !== 'undefined' && CrossLayerSilhouette && typeof CrossLayerSilhouette.reset === 'function') CrossLayerSilhouette.reset();
   }
 
   function resetPhrase() {
@@ -56,6 +75,7 @@ CrossLayerLifecycleManager = (() => {
     if (typeof GrooveTransfer !== 'undefined' && GrooveTransfer && typeof GrooveTransfer.reset === 'function') {
       GrooveTransfer.reset();
     }
+    if (typeof RhythmicComplementEngine !== 'undefined' && RhythmicComplementEngine && typeof RhythmicComplementEngine.reset === 'function') RhythmicComplementEngine.reset();
   }
 
   return { resetAll, resetSection, resetPhrase };

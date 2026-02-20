@@ -1,0 +1,124 @@
+// src/crossLayer/restSynchronizer.js — Coordinated and complementary musical silence.
+// Coordinates shared rests (both layers go quiet together for breathing room)
+// and complementary rests (one layer fills when the other rests, creating hocket).
+// Driven by InteractionHeatMap pressure and SectionIntentCurves density.
+
+RestSynchronizer = (() => {
+  const V = Validator.create('RestSynchronizer');
+  const MIN_REST_INTERVAL_MS = 800;
+  const SHARED_REST_PROBABILITY = 0.15;
+  const COMPLEMENT_FILL_THRESHOLD = 0.6;
+
+  /** @type {Record<string, number>} last rest timestamp per layer */
+  const lastRestMs = { L1: -Infinity, L2: -Infinity };
+  /** @type {Record<string, boolean>} whether layer is currently resting */
+  const isResting = { L1: false, L2: false };
+  let sharedRestCount = 0;
+
+  /**
+   * Evaluate whether both layers should share a rest at this moment.
+   * @param {number} absTimeMs
+   * @param {string} layer
+   * @param {{ heatLevel?: number, densityTarget?: number, phaseMode?: string }} signals
+   * @returns {{ shouldRest: boolean, duration: number }}
+   */
+  function evaluateSharedRest(absTimeMs, layer, signals) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+    const sig = (signals && typeof signals === 'object') ? signals : {};
+
+    // Throttle: don't rest too frequently
+    if (absTimeMs - lastRestMs[layer] < MIN_REST_INTERVAL_MS) {
+      return { shouldRest: false, duration: 0 };
+    }
+
+    // Get heat level from InteractionHeatMap
+    const heatLevel = typeof sig.heatLevel === 'number' && Number.isFinite(sig.heatLevel) ? sig.heatLevel : 0.5;
+
+    // Get density target from SectionIntentCurves
+    const densityTarget = typeof sig.densityTarget === 'number' && Number.isFinite(sig.densityTarget) ? sig.densityTarget : 0.5;
+
+    // Shared rests are more likely when heat is high (need breathing room)
+    // and density target is low
+    const restUrgency = clamp((heatLevel - 0.5) * 2 + (1 - densityTarget) * 0.5, 0, 1);
+    const restProb = SHARED_REST_PROBABILITY * (1 + restUrgency);
+
+    // Phase mode affects rest probability: locked layers rest together more naturally
+    const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';
+    const phaseBonus = phaseMode === 'lock' ? 0.1 : 0;
+
+    if (rf() > restProb + phaseBonus) {
+      return { shouldRest: false, duration: 0 };
+    }
+
+    // Calculate rest duration based on tpBeat
+    const beatMs = (Number.isFinite(tpBeat) && Number.isFinite(tpSec) && tpSec > 0)
+      ? (tpBeat / tpSec) * 1000
+      : 500;
+    const duration = beatMs * rf(0.25, 1.5);
+
+    lastRestMs[layer] = absTimeMs;
+    isResting[layer] = true;
+    sharedRestCount++;
+
+    return { shouldRest: true, duration };
+  }
+
+  /**
+   * Evaluate whether this layer should fill a gap left by the other layer resting.
+   * Creates hocket-like interleaving.
+   * @param {number} absTimeMs
+   * @param {string} activeLayer
+   * @returns {{ shouldFill: boolean, fillUrgency: number }}
+   */
+  function evaluateComplementaryRest(absTimeMs, activeLayer) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+
+    // If other layer is resting, this layer should fill
+    if (isResting[otherLayer]) {
+      const urgency = clamp(rf(0.3, 0.9), 0, 1);
+      return { shouldFill: urgency > COMPLEMENT_FILL_THRESHOLD, fillUrgency: urgency };
+    }
+
+    // Check if other layer is sparse from ATW
+    if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow &&
+        typeof AbsoluteTimeWindow.getNotes === 'function') {
+      const otherNotes = AbsoluteTimeWindow.getNotes({
+        layer: otherLayer,
+        since: (absTimeMs / 1000) - 0.5,
+        windowSeconds: 0.5
+      });
+      if (otherNotes.length === 0) {
+        return { shouldFill: true, fillUrgency: 0.7 };
+      }
+    }
+
+    return { shouldFill: false, fillUrgency: 0 };
+  }
+
+  /**
+   * Signal that a rest period has ended for a layer.
+   * @param {number} absTimeMs
+   * @param {string} layer
+   */
+  function postRest(absTimeMs, layer) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+    isResting[layer] = false;
+  }
+
+  /** @returns {number} */
+  function getSharedRestCount() { return sharedRestCount; }
+
+  /** @returns {boolean} */
+  function isLayerResting(layer) { return Boolean(isResting[layer]); }
+
+  function reset() {
+    lastRestMs.L1 = -Infinity;
+    lastRestMs.L2 = -Infinity;
+    isResting.L1 = false;
+    isResting.L2 = false;
+    sharedRestCount = 0;
+  }
+
+  return { evaluateSharedRest, evaluateComplementaryRest, postRest, getSharedRestCount, isLayerResting, reset };
+})();
