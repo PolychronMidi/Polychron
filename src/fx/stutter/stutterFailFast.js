@@ -9,10 +9,10 @@ StutterFailFast = (() => {
   }
 
   function requireChannelArrays(caller) {
-    if (typeof reflection === 'undefined' || !Array.isArray(reflection)) {
+    if (!Array.isArray(reflection)) {
       throw new Error(`${caller}: reflection channel array is not available`);
     }
-    if (typeof bass === 'undefined' || !Array.isArray(bass)) {
+    if (!Array.isArray(bass)) {
       throw new Error(`${caller}: bass channel array is not available`);
     }
     return { reflectionChannels: reflection, bassChannels: bass };

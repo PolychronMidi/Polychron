@@ -29,7 +29,7 @@ playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, res
     }
   }
 
-  if (typeof HarmonicContext !== 'undefined') {
+  if (HarmonicContext) {
     const scale = HarmonicContext.getField('scale');
     if (Array.isArray(scale) && scale.length > 0) {
       const filtered = candidateNotes.filter(note => HarmonicContext.isNoteInScale(note));

@@ -9,7 +9,7 @@ factoryFamilies = {
         types: Object.keys(constructors)
       }
     };
-    const source = (COMPOSER_FAMILIES && typeof COMPOSER_FAMILIES === 'object')
+    const source = (COMPOSER_FAMILIES)
       ? COMPOSER_FAMILIES
       : fallback;
 

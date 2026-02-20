@@ -7,7 +7,7 @@
 resolveScalePC = function(scale = null) {
   let theScale = scale;
   if (!Array.isArray(theScale) || theScale.length === 0) {
-    if (typeof HarmonicContext !== 'undefined') theScale = HarmonicContext.getField('scale');
+    if (HarmonicContext) theScale = HarmonicContext.getField('scale');
   }
   if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('resolveScalePC: scale must be provided or available via HarmonicContext');
 

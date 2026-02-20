@@ -22,7 +22,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     finalChannels.push(.../** @type {number[]} */ (source.slice()));
   }
 
-  if (typeof StutterConfig === 'undefined' || !StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getDirectiveDefaults !== 'function') {
+  if (!StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getDirectiveDefaults !== 'function') {
     throw new Error('stutterExecutePlan: StutterConfig methods getCrossModRules/getDirectiveDefaults are required');
   }
   const crossRules = StutterConfig.getCrossModRules();

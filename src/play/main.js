@@ -13,12 +13,12 @@ const { layer: L2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments(
 // Create composer context for explicit dependency passing (fail-fast: throw if managers missing)
 const composerCtx = {
   phraseArc: ComposerFactory.getPhraseArcManager(),
-  layerMgr: typeof LM !== 'undefined' ? LM : (() => { throw new Error('main: LayerManager (LM) not available'); })(),
-  rhythmMgr: typeof RhythmRegistry !== 'undefined' ? RhythmRegistry : (() => { throw new Error('main: RhythmRegistry not available'); })(),
-  stutterMgr: typeof Stutter !== 'undefined' ? Stutter : (() => { throw new Error('main: Stutter not available'); })(),
-  eventBus: typeof EventBus !== 'undefined' ? EventBus : (() => { throw new Error('main: EventBus not available'); })(),
-  harmonicCtx: typeof HarmonicContext !== 'undefined' ? HarmonicContext : (() => { throw new Error('main: HarmonicContext not available'); })(),
-  motifChain: typeof MotifChain !== 'undefined' ? MotifChain : (() => { throw new Error('main: MotifChain not available'); })(),
+  layerMgr: LM,
+  rhythmMgr: RhythmRegistry,
+  stutterMgr: Stutter,
+  eventBus: EventBus,
+  harmonicCtx: HarmonicContext,
+  motifChain: MotifChain,
 
   /**
    * Context-aware family selection hook: biases family weights by structural phase.

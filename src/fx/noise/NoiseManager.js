@@ -3,10 +3,10 @@
 // Apply noise modulation to a velocity value
 // Returns velocity modified by noise, clamped to MIDI range [0, 127]
 applyNoiseToVelocity = function(baseVelocity, voiceId, currentTime, profileName = 'subtle') {
-  if (typeof getParameterModulation !== 'function') {
+  if (!getParameterModulation) {
     throw new Error('applyNoiseToVelocity: getParameterModulation not available');
   }
-  if (typeof getNoiseProfile !== 'function') {
+  if (!getNoiseProfile) {
     throw new Error('applyNoiseToVelocity: getNoiseProfile not available');
   }
 
@@ -29,10 +29,10 @@ applyNoiseToVelocity = function(baseVelocity, voiceId, currentTime, profileName 
 // Apply noise modulation to a pan value (0-127, center=64)
 // Returns pan modified by noise, clamped to MIDI range [0, 127]
 applyNoiseToPan = function(basePan, voiceId, currentTime, profileName = 'subtle') {
-  if (typeof getParameterModulation !== 'function') {
+  if (!getParameterModulation) {
     throw new Error('applyNoiseToPan: getParameterModulation not available');
   }
-  if (typeof getNoiseProfile !== 'function') {
+  if (!getNoiseProfile) {
     throw new Error('applyNoiseToPan: getNoiseProfile not available');
   }
 
@@ -41,7 +41,7 @@ applyNoiseToPan = function(basePan, voiceId, currentTime, profileName = 'subtle'
 
   // X modulation affects pan position directly
   // Map from [0, 1] noise to [-64, +64] pan offset from center
-  const noiseCanvas = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
+  const noiseCanvas = (ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
     ? ConductorConfig.getNoiseCanvasParams()
     : { panRange: 60, sustainRange: [0.8, 1.2] };
   const panRange = Number.isFinite(Number(noiseCanvas.panRange)) ? Number(noiseCanvas.panRange) : 60; // Max deviation from center
@@ -54,16 +54,16 @@ applyNoiseToPan = function(basePan, voiceId, currentTime, profileName = 'subtle'
 // Apply noise modulation to sustain/duration
 // Returns sustain duration modified by noise
 applyNoiseToSustain = function(baseSustain, voiceId, currentTime, profileName = 'subtle') {
-  if (typeof getParameterModulation !== 'function') {
+  if (!getParameterModulation) {
     throw new Error('applyNoiseToSustain: getParameterModulation not available');
   }
-  if (typeof getNoiseProfile !== 'function') {
+  if (!getNoiseProfile) {
     throw new Error('applyNoiseToSustain: getNoiseProfile not available');
   }
 
   const mod = getParameterModulation(voiceId, 'sustain', currentTime);
   const profile = getNoiseProfile(profileName);
-  const noiseCanvas = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
+  const noiseCanvas = (ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
     ? ConductorConfig.getNoiseCanvasParams()
     : { panRange: 60, sustainRange: [0.8, 1.2] };
   const sustainRange = Array.isArray(noiseCanvas.sustainRange) && noiseCanvas.sustainRange.length === 2
@@ -84,10 +84,10 @@ applyNoiseToSustain = function(baseSustain, voiceId, currentTime, profileName = 
 
 // Apply noise to a generic parameter within bounds
 applyNoiseToParameter = function(baseValue, voiceId, paramKey, currentTime, minVal, maxVal, profileName = 'subtle') {
-  if (typeof getParameterModulation !== 'function') {
+  if (!getParameterModulation) {
     throw new Error('applyNoiseToParameter: getParameterModulation not available');
   }
-  if (typeof getNoiseProfile !== 'function') {
+  if (!getNoiseProfile) {
     throw new Error('applyNoiseToParameter: getNoiseProfile not available');
   }
 
@@ -104,7 +104,7 @@ applyNoiseToParameter = function(baseValue, voiceId, paramKey, currentTime, minV
 
 // Get a noise profile (removed "Safe" - always fails loudly if profile unavailable)
 getNoiseProfileOrFail = function(profileName = 'subtle') {
-  if (typeof getNoiseProfile !== 'function') {
+  if (!getNoiseProfile) {
     throw new Error('getNoiseProfileOrFail: getNoiseProfile not available');
   }
   return getNoiseProfile(profileName);

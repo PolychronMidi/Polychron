@@ -112,13 +112,13 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
     ? activeComposer.runtimeProfile
     : null;
-  const runtimeVoiceOptions = (runtimeProfile && typeof ComposerRuntimeProfileAdapter !== 'undefined' && ComposerRuntimeProfileAdapter && typeof ComposerRuntimeProfileAdapter.getVoiceSelectionOptions === 'function')
+  const runtimeVoiceOptions = (runtimeProfile && ComposerRuntimeProfileAdapter && typeof ComposerRuntimeProfileAdapter.getVoiceSelectionOptions === 'function')
     ? ComposerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile)
     : {};
 
   // Get phrase context from PhraseArcManager if available
   let phraseContext = null;
-  if (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager) {
+  if (ComposerFactory && ComposerFactory.sharedPhraseArcManager) {
     phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
   }
 

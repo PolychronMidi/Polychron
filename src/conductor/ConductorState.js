@@ -40,7 +40,7 @@ ConductorState = (() => {
   };
 
   function writeHarmonicFromContext() {
-    if (typeof HarmonicContext === 'undefined' || !HarmonicContext || typeof HarmonicContext.get !== 'function') return;
+    if (!HarmonicContext || typeof HarmonicContext.get !== 'function') return;
     const state = HarmonicContext.get();
     if (!state || typeof state !== 'object') return;
 
@@ -85,7 +85,7 @@ ConductorState = (() => {
 
     const phraseCtx = (_data.phraseCtx && typeof _data.phraseCtx === 'object')
       ? _data.phraseCtx
-      : (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
+      : (ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
         ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
         : null;
 
@@ -104,7 +104,7 @@ ConductorState = (() => {
     if (Number.isFinite(Number(_data.playProb))) snapshot.playProb = clamp(Number(_data.playProb), 0, 1);
     if (Number.isFinite(Number(_data.stutterProb))) snapshot.stutterProb = clamp(Number(_data.stutterProb), 0, 1);
 
-    if (typeof TextureBlender !== 'undefined' && TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
+    if (TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
       snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
     }
 
@@ -119,7 +119,7 @@ ConductorState = (() => {
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.textureMode = data.mode;
       if (Number.isFinite(Number(data.composite))) snapshot.compositeIntensity = clamp(Number(data.composite), 0, 1);
-      if (typeof TextureBlender !== 'undefined' && TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
+      if (TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
         snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
       }
       snapshot.updatedAt = Date.now();
@@ -150,7 +150,7 @@ ConductorState = (() => {
       if (Number.isFinite(Number(data.excursion))) snapshot.excursion = m.max(0, Number(data.excursion));
       if (Number.isFinite(Number(data.tension))) snapshot.tension = clamp(Number(data.tension), 0, 1);
       if (Number.isFinite(Number(data.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(data.mutationCount));
-      if (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function') {
+      if (HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function') {
         snapshot.harmonicRhythm = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
       }
       snapshot.updatedAt = Date.now();

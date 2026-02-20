@@ -99,7 +99,7 @@ HarmonicContext = (() => {
     }
     state.modifiedAt = Date.now();
 
-    if (changedFields.length > 0 && typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+    if (changedFields.length > 0 && EventBus && typeof EventBus.emit === 'function') {
       const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.HARMONIC_CHANGE, {
         changedFields,
@@ -134,7 +134,7 @@ HarmonicContext = (() => {
    * @throws {Error} if field unknown
    */
   function getField(field) {
-    if (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function') {
+    if (ConductorState && typeof ConductorState.getSnapshot === 'function') {
       const snapshot = ConductorState.getSnapshot();
       if (snapshot && Object.prototype.hasOwnProperty.call(snapshot, field)) {
         return snapshot[field];
@@ -155,7 +155,7 @@ HarmonicContext = (() => {
    * @throws {Error} if key/mode invalid or Tonal unavailable
    */
   function updateScaleFromMode(key, mode) {
-    if (typeof t === 'undefined' || !t.Scale) {
+    if (!t || !t.Scale) {
       throw new Error('HarmonicContext.updateScaleFromMode: Tonal.js not available');
     }
 
@@ -179,7 +179,7 @@ HarmonicContext = (() => {
    * @returns {boolean}
    */
   function isNoteInScale(note) {
-    const chroma = typeof note === 'number' ? note % 12 : (typeof t !== 'undefined' && t.Note) ? t.Note.chroma(note) : -1;
+    const chroma = typeof note === 'number' ? note % 12 : (t && t.Note) ? t.Note.chroma(note) : -1;
     if (typeof chroma !== 'number' || chroma < 0) return false;
     return state.scale.some(n => (typeof n === 'number' ? n : (t && t.Note) ? t.Note.chroma(n) : -1) === chroma);
   }

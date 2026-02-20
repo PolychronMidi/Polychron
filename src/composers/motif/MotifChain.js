@@ -76,7 +76,7 @@ MotifChain = (() => {
     });
 
     // Emit event for feedback loops
-    if (typeof EventBus !== 'undefined') {
+    if (EventBus) {
       try {
         const EVENTS = V.getEventsOrThrow();
         EventBus.emit(EVENTS.MOTIF_CHAIN_APPLIED, {
@@ -117,7 +117,7 @@ MotifChain = (() => {
       throw new Error('MotifChain.mutate: no active motif to mutate');
     }
 
-    const mutationProfile = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getMotifMutationParams === 'function')
+    const mutationProfile = (ConductorConfig && typeof ConductorConfig.getMotifMutationParams === 'function')
       ? ConductorConfig.getMotifMutationParams()
       : { transposeRange: [-7, 7] };
     const defaultTransposeRange = (Array.isArray(mutationProfile.transposeRange) && mutationProfile.transposeRange.length === 2)

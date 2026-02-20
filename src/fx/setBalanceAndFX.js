@@ -3,7 +3,7 @@
  * @returns {void}
  */
 setBalanceAndFX = () => {
-if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getSpatialCanvasParams !== 'function') {
+if (!ConductorConfig || typeof ConductorConfig.getSpatialCanvasParams !== 'function') {
   throw new Error('setBalanceAndFX: ConductorConfig.getSpatialCanvasParams is not available — conductor must load before fx');
 }
 const spatialCanvas = ConductorConfig.getSpatialCanvasParams();
@@ -85,7 +85,7 @@ const requireFiniteScale = (value, name) => {
   return n;
 };
 const resolveFxDefaults = (groupName, effectNum) => {
-  if (typeof FX_CC_DEFAULTS === 'undefined' || !FX_CC_DEFAULTS || typeof FX_CC_DEFAULTS !== 'object') {
+  if (!FX_CC_DEFAULTS) {
     throw new Error('setBalanceAndFX.resolveFxDefaults: FX_CC_DEFAULTS is not defined');
   }
   const byGroup = FX_CC_DEFAULTS[groupName];
@@ -140,12 +140,12 @@ const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefi
   return rlFX(ch, effectNum, scaledMin, scaledMax, condition, scaledConditionMin, scaledConditionMax);
 };
 // Respect both instance state and legacy naked global `firstLoop` set by tests
-if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 || (typeof firstLoop !== 'undefined' && firstLoop < 1)) { firstLoop=1; firstLoop = 1;
+if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop < 1) { firstLoop = 1; firstLoop = 1;
   // Apply a limited change to balance offset: use rl() but cap per-iteration change to +/-4 ticks for stability
   const prevBal = Number.isFinite(Number(balOffset)) ? Number(balOffset) : 0;
   // Use global previous balOffset when available so tests observing global changes see
   // a limited delta relative to the global baseline rather than instance baseline
-  const prevGlobalBal = (typeof balOffset !== 'undefined' && Number.isFinite(Number(balOffset))) ? Number(balOffset) : prevBal;
+  const prevGlobalBal = Number.isFinite(Number(balOffset)) ? Number(balOffset) : prevBal;
   const balMin = Number(spatialCanvas.balOffset[0]);
   const balMax = Number(spatialCanvas.balOffset[1]);
   const balStep = Number.isFinite(Number(spatialCanvas.balStep)) ? Number(spatialCanvas.balStep) : 4;
@@ -233,7 +233,7 @@ return [
     ? ConductorConfig.getFxMixScaling()
     : (() => { throw new Error('setBalanceAndFX: ConductorConfig.getFxMixScaling is not a function'); })();
 
-  if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function') {
+  if (DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function') {
     const texInt = DrumTextureCoupler.getIntensity();
     if (Number.isFinite(texInt) && texInt > 0.1) {
       const allChs = [
@@ -244,13 +244,13 @@ return [
       const reverbBoost = m.round(texInt * rf(8, 20) * fxScale.reverbScale * fxScale.textureBoostScale);
       const filterBoost = m.round(texInt * rf(5, 15) * fxScale.filterOpenness * fxScale.textureBoostScale);
       const delaySpike = m.round(texInt * rf(4, 12) * fxScale.delayScale * fxScale.textureBoostScale);
-      const texTick = (typeof beatStart !== 'undefined' && Number.isFinite(Number(beatStart))) ? Number(beatStart) : 0;
+      const texTick = Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0;
 
       const clampToFxDefault = (ch, effectNum, value) => {
         // determine group for the channel
         const group = (Array.isArray(reflection) && reflection.includes(ch)) ? 'reflection' : (Array.isArray(bass) && bass.includes(ch)) ? 'bass' : 'source';
         let def = null;
-        if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
+        if (FX_CC_DEFAULTS) {
           if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][effectNum]) def = FX_CC_DEFAULTS[group][effectNum];
           else if (FX_CC_DEFAULTS[effectNum]) def = FX_CC_DEFAULTS[effectNum];
         }

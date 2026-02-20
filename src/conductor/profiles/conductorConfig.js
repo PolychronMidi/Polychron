@@ -42,7 +42,7 @@ ConductorConfig = (() => {
   }
 
   function getProfilesOrFail() {
-    if (!CONDUCTOR_PROFILE_SOURCES || typeof CONDUCTOR_PROFILE_SOURCES !== 'object') {
+    if (!CONDUCTOR_PROFILE_SOURCES) {
       throw new Error('ConductorConfig.getProfilesOrFail: CONDUCTOR_PROFILE_SOURCES is not available');
     }
     const names = Object.keys(CONDUCTOR_PROFILE_SOURCES);
@@ -332,7 +332,7 @@ ConductorConfig = (() => {
     const selected = Object.prototype.hasOwnProperty.call(mapping, sectionPhase)
       ? V.assertNonEmptyString(mapping[sectionPhase], `ConductorConfig.noiseProfileByPhase.${sectionPhase}`)
       : defaultProfile;
-    if (NOISE_PROFILES && typeof NOISE_PROFILES === 'object') {
+    if (NOISE_PROFILES) {
       if (!Object.prototype.hasOwnProperty.call(NOISE_PROFILES, selected)) {
         throw new Error(`ConductorConfig.getNoiseProfileForSection: unknown noise profile "${selected}"`);
       }

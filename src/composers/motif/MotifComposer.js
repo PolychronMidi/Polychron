@@ -114,16 +114,16 @@ MotifComposer = class MotifComposer {
     }
 
     // Validate scale notes against developer contract.
-    const windowScale = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const windowScale = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? HarmonicContext.getField('scale')
       : null;
     MotifValidators.assertScaleMatchesDeveloper(scaleNotes, developer, {
       mode: 'auto',
       windowScale,
       context: {
-        sectionIndex: (typeof sectionIndex === 'number') ? sectionIndex : null,
-        phraseIndex: (typeof phraseIndex === 'number') ? phraseIndex : null,
-        measureIndex: (typeof measureIndex === 'number') ? measureIndex : null
+        sectionIndex: sectionIndex,
+        phraseIndex: phraseIndex,
+        measureIndex: measureIndex
       }
     });
 
@@ -160,7 +160,7 @@ MotifComposer = class MotifComposer {
       }
     }
 
-    const VC = (typeof VoiceManager !== 'undefined' && VoiceManager)
+    const VC = (VoiceManager)
       ? VoiceManager
       : (() => { throw new Error('MotifComposer.generate: VoiceManager not available'); })();
     const motifLayer = VC ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;

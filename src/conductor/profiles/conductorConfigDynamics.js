@@ -1,7 +1,7 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
   const V = Validator.create('conductorConfigDynamics');
 
-  const controls = (CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
+  const controls = (CONDUCTOR_DYNAMICS_CONTROLS)
     ? CONDUCTOR_DYNAMICS_CONTROLS
     : {
         phaseProfileMap: {

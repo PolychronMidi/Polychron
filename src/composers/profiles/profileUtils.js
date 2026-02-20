@@ -1,8 +1,5 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'undefined' && COMPOSER_TYPE_PROFILE_SOURCES !== null && typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('ComposerProfiles.profileUtils: COMPOSER_TYPE_PROFILE_SOURCES must be an object when pre-defined');
-}
 
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || COMPOSER_TYPE_PROFILE_SOURCES === null) {
+if (!COMPOSER_TYPE_PROFILE_SOURCES) {
   COMPOSER_TYPE_PROFILE_SOURCES = {};
 }
 
@@ -121,25 +118,25 @@ const resolveNamedProfilesOrFail = (entry, label) => {
   }
 
   if (entry.voiceProfile !== undefined) {
-    if (typeof voiceConfig === 'undefined' || !voiceConfig || typeof voiceConfig.getProfile !== 'function') {
+    if (!voiceConfig || typeof voiceConfig.getProfile !== 'function') {
       throw new Error(`ComposerProfiles: ${label} requires voiceConfig.getProfile()`);
     }
     resolvedProfiles.voice = voiceConfig.getProfile(entry.voiceProfile);
   }
   if (entry.chordProfile !== undefined) {
-    if (typeof chordConfig === 'undefined' || !chordConfig || typeof chordConfig.getProfile !== 'function') {
+    if (!chordConfig || typeof chordConfig.getProfile !== 'function') {
       throw new Error(`ComposerProfiles: ${label} requires chordConfig.getProfile()`);
     }
     resolvedProfiles.chord = chordConfig.getProfile(entry.chordProfile);
   }
   if (entry.motifProfile !== undefined) {
-    if (typeof motifConfig === 'undefined' || !motifConfig || typeof motifConfig.getProfile !== 'function') {
+    if (!motifConfig || typeof motifConfig.getProfile !== 'function') {
       throw new Error(`ComposerProfiles: ${label} requires motifConfig.getProfile()`);
     }
     resolvedProfiles.motif = motifConfig.getProfile(entry.motifProfile);
   }
   if (entry.rhythmProfile !== undefined) {
-    if (typeof rhythmConfig === 'undefined' || !rhythmConfig || typeof rhythmConfig.getProfile !== 'function') {
+    if (!rhythmConfig || typeof rhythmConfig.getProfile !== 'function') {
       throw new Error(`ComposerProfiles: ${label} requires rhythmConfig.getProfile()`);
     }
     resolvedProfiles.rhythm = rhythmConfig.getProfile(entry.rhythmProfile);
@@ -149,7 +146,7 @@ const resolveNamedProfilesOrFail = (entry, label) => {
 };
 
 const cloneComposerEntryOrFail = (entry, label, expectedType = null) => {
-  if (typeof ComposerProfileValidation === 'undefined' || !ComposerProfileValidation || typeof ComposerProfileValidation.validateEntryForTypeOrFail !== 'function') {
+  if (!ComposerProfileValidation || typeof ComposerProfileValidation.validateEntryForTypeOrFail !== 'function') {
     throw new Error('ComposerProfiles.cloneComposerEntryOrFail: ComposerProfileValidation.validateEntryForTypeOrFail() is not available');
   }
   ComposerProfileValidation.validateEntryForTypeOrFail(entry, label, expectedType);

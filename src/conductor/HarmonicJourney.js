@@ -23,9 +23,7 @@
 HarmonicJourney = (() => {
   const V = Validator.create('HarmonicJourney');
 
-  if (typeof harmonicJourneyHelpers !== 'function') {
-    throw new Error('HarmonicJourney: harmonicJourneyHelpers() not available');
-  }
+  V.assertFunction(harmonicJourneyHelpers, 'harmonicJourneyHelpers');
   const HJ = harmonicJourneyHelpers();
 
   /** @type {JourneyStop[]} */
@@ -47,7 +45,7 @@ HarmonicJourney = (() => {
     if (!Number.isInteger(totalSections) || totalSections <= 0) {
       throw new Error('HarmonicJourney.planJourney: totalSections must be a positive integer');
     }
-    if (typeof t === 'undefined' || !t || !t.Note || !t.Key) {
+    if (!t || !t.Note || !t.Key) {
       throw new Error('HarmonicJourney.planJourney: Tonal.js (t) not available');
     }
 
@@ -131,7 +129,7 @@ HarmonicJourney = (() => {
    * @param {number} sectionIndex
    */
   function applyToContext(sectionIndex) {
-    if (typeof HarmonicContext === 'undefined' || !HarmonicContext || typeof HarmonicContext.set !== 'function') {
+    if (!HarmonicContext || typeof HarmonicContext.set !== 'function') {
       throw new Error('HarmonicJourney.applyToContext: HarmonicContext not available');
     }
 
@@ -159,7 +157,7 @@ HarmonicJourney = (() => {
     });
 
     // Emit journey-move event for rhythm-harmonic coupling
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+    if (EventBus && typeof EventBus.emit === 'function') {
       const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.JOURNEY_MOVE, {
         move: stop.move,
@@ -196,7 +194,7 @@ HarmonicJourney = (() => {
    * @param {number} sectionIndex
    */
   function applyL2ToContext(sectionIndex) {
-    if (typeof HarmonicContext === 'undefined' || !HarmonicContext || typeof HarmonicContext.set !== 'function') {
+    if (!HarmonicContext || typeof HarmonicContext.set !== 'function') {
       throw new Error('HarmonicJourney.applyL2ToContext: HarmonicContext not available');
     }
 

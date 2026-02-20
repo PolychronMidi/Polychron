@@ -53,7 +53,7 @@ PhraseArcManager = class PhraseArcManager {
    */
   getPhraseContext() {
     // Read directly from globals set in main.js loops
-    if (typeof measureIndex === 'undefined' || typeof measuresPerPhrase === 'undefined' || typeof phraseIndex === 'undefined') {
+    if (measureIndex === undefined || measuresPerPhrase === undefined || phraseIndex === undefined) {
       throw new Error('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
     }
 
@@ -65,9 +65,9 @@ PhraseArcManager = class PhraseArcManager {
     const phase = this._getPhase(pos);
 
     let currentArcType = this.arcType;
-    if (typeof HarmonicContext !== 'undefined' && HarmonicContext.getField) {
+    if (HarmonicContext && HarmonicContext.getField) {
       const sectionPhase = HarmonicContext.getField('sectionPhase');
-      if (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getArcMapping === 'function') {
+      if (ConductorConfig && typeof ConductorConfig.getArcMapping === 'function') {
         currentArcType = ConductorConfig.getArcMapping(sectionPhase);
       }
     }
@@ -139,7 +139,7 @@ PhraseArcManager = class PhraseArcManager {
   }
 
   _getBreathProfile() {
-    if (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getPhraseBreathParams === 'function') {
+    if (ConductorConfig && typeof ConductorConfig.getPhraseBreathParams === 'function') {
       const p = ConductorConfig.getPhraseBreathParams();
       if (p && typeof p === 'object') {
         return p;
@@ -184,7 +184,7 @@ PhraseArcManager = class PhraseArcManager {
    * Fail-fast if the global is missing — arc curves must be centralized in config.
    */
   _generateArcProfiles() {
-    if (typeof PHRASES_ARC_CURVES === 'undefined') {
+    if (!PHRASES_ARC_CURVES) {
       throw new Error('PhraseArcManager: PHRASES_ARC_CURVES global is not defined — ensure ConductorConfig is loaded first');
     }
 

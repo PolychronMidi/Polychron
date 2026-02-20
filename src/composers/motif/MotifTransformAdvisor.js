@@ -10,19 +10,19 @@ MotifTransformAdvisor = (() => {
    */
   function adviseTransform() {
     // Gather context from available sources
-    const contour = (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.getContour === 'function')
+    const contour = (MelodicContourTracker && typeof MelodicContourTracker.getContour === 'function')
       ? MelodicContourTracker.getContour()
       : { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
 
-    const coherence = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getCoherence === 'function')
+    const coherence = (LayerCoherenceScorer && typeof LayerCoherenceScorer.getCoherence === 'function')
       ? LayerCoherenceScorer.getCoherence()
       : 0.5;
 
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (HarmonicContext.getField('sectionPhase') || 'development')
       : 'development';
 
-    const excursion = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const excursion = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (HarmonicContext.getField('excursion') || 0)
       : 0;
 
@@ -111,11 +111,11 @@ MotifTransformAdvisor = (() => {
    * @returns {number}
    */
   function getTransformComplexity() {
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (HarmonicContext.getField('sectionPhase') || 'development')
       : 'development';
 
-    const coherence = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getCoherence === 'function')
+    const coherence = (LayerCoherenceScorer && typeof LayerCoherenceScorer.getCoherence === 'function')
       ? LayerCoherenceScorer.getCoherence()
       : 0.5;
 

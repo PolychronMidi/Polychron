@@ -49,7 +49,7 @@ COMPOSER_PROFILE_POOLS = {
   fullSpectrumEclectic: ComposerProfileUtils.cloneComposerEntriesOrFail(fullSpectrumEclecticTemplate, 'COMPOSER_PROFILE_POOLS.fullSpectrumEclectic')
 };
 
-if (typeof COMPOSER_POOL_SELECTION_STRATEGY !== 'undefined' && COMPOSER_POOL_SELECTION_STRATEGY !== null && !ComposerProfileUtils.isPlainObject(COMPOSER_POOL_SELECTION_STRATEGY)) {
+if (COMPOSER_POOL_SELECTION_STRATEGY !== null && !ComposerProfileUtils.isPlainObject(COMPOSER_POOL_SELECTION_STRATEGY)) {
   throw new Error('ComposerProfiles.profileRegistry: COMPOSER_POOL_SELECTION_STRATEGY must be an object when pre-defined');
 }
 if (COMPOSER_POOL_SELECTION_STRATEGY === null) {

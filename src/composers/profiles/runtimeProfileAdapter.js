@@ -1,3 +1,4 @@
+const V = Validator.create('ComposerRuntimeProfileAdapter');
 const isFiniteNumber = (value) => {
   if (typeof value === 'number') return Number.isFinite(value);
   if (typeof value === 'string') {
@@ -106,9 +107,7 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
 };
 
 const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
-  if (!composer || typeof composer !== 'object') {
-    throw new Error('ComposerRuntimeProfileAdapter.applyToComposerOrFail: composer must be an object');
-  }
+  V.assertObject(composer, 'composer');
   if (!ComposerProfileUtils.isPlainObject(runtimeProfile)) {
     throw new Error('ComposerRuntimeProfileAdapter.applyToComposerOrFail: runtimeProfile must be an object');
   }

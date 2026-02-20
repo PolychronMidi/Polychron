@@ -82,10 +82,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   } = opts;
 
   if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
-  if (typeof StutterConfig === 'undefined' || !StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getVelocityRange !== 'function') {
+  if (!StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getVelocityRange !== 'function') {
     throw new Error('stutterNotes: StutterConfig methods getCrossModRules/getVelocityRange are required');
   }
-  if (typeof reflection === 'undefined' || !Array.isArray(reflection) || typeof bass === 'undefined' || !Array.isArray(bass)) {
+  if (!Array.isArray(reflection) || !Array.isArray(bass)) {
     throw new Error('stutterNotes: reflection and bass channel arrays must be defined');
   }
   const baseMidiNote = m.round(Number(note));
@@ -218,7 +218,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 };
 
 // Register this helper with StutterRegistry if present so tests/plugins can swap implementations.
-if (typeof StutterRegistry === 'undefined' || !StutterRegistry || typeof StutterRegistry.registerHelper !== 'function') {
+if (!StutterRegistry || typeof StutterRegistry.registerHelper !== 'function') {
   throw new Error('stutterNotes: StutterRegistry.registerHelper is not available');
 }
 StutterRegistry.registerHelper(stutterNotes);
