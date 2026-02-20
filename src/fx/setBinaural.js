@@ -1,12 +1,12 @@
 /**
  * Manages binaural beat pitch shifts and volume crossfades at beat boundaries,
- * synced across layers via AbsoluteTimeWindow using ms-precision timestamps.
+ * synced across layers via AbsoluteTimeGrid using ms-precision timestamps.
  * @returns {void}
  */
 V = Validator.create('setBinaural');
 
 /** Millisecond tolerance for treating two layer shifts as the same event */
-const BINAURAL_SYNC_WINDOW_MS = 200;
+const BINAURAL_SYNC_TOLERANCE_MS = 200;
 
 setBinaural = () => {
   V.requireFinite(beatIndex, 'beatIndex');
@@ -14,11 +14,10 @@ setBinaural = () => {
   V.requireDefined(ConductorState, 'ConductorState');
   V.requireDefined(BINAURAL, 'BINAURAL');
   V.requireDefined(binauralOffset, 'binauralOffset');
-  V.requireDefined(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
+  V.requireDefined(AbsoluteTimeGrid, 'AbsoluteTimeGrid');
   V.requireFinite(beatStartTime, 'beatStartTime');
 
   const activeLayer = LM.activeLayer || 'L?';
-  const absTimeSec = beatStartTime;
   const absTimeMs = beatStartTime * 1000;
 
   const phraseBoundary = beatIndex === 0 && measureIndex === 0;
@@ -34,14 +33,9 @@ setBinaural = () => {
     beatCount = 0;
     allNotesOff(Math.max(beatStart, 0));
 
-    // Cross-layer sync: check if another layer already shifted within the ms window
-    const windowSec = BINAURAL_SYNC_WINDOW_MS / 1000;
-    const recentShifts = AbsoluteTimeWindow.getBinaural({
-      since: absTimeSec - windowSec,
-      windowSeconds: windowSec * 2
-    });
-    const crossLayerShift = recentShifts.find(
-      e => e.layer !== activeLayer && Math.abs(e.timeMs - absTimeMs) <= BINAURAL_SYNC_WINDOW_MS
+    // Cross-layer ms-precision sync via AbsoluteTimeGrid
+    const crossLayerShift = AbsoluteTimeGrid.findClosest(
+      'binaural', absTimeMs, BINAURAL_SYNC_TOLERANCE_MS, activeLayer
     );
 
     if (crossLayerShift) {
@@ -63,8 +57,11 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    // Record this shift into ATW for cross-layer coordination (ms precision)
-    AbsoluteTimeWindow.recordBinaural(binauralFreqOffset, flipBin, activeLayer, absTimeSec, absTimeMs);
+    // Post this shift to the grid for cross-layer coordination
+    AbsoluteTimeGrid.post('binaural', activeLayer, absTimeMs, {
+      freqOffset: binauralFreqOffset,
+      flip: flipBin
+    });
 
     p(c,
       ...binauralL.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),

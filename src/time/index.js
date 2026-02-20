@@ -11,4 +11,6 @@ require('./getPolyrhythm');
 // @ts-ignore: side-effect module load
 require('./AbsoluteTimeWindow');
 // @ts-ignore: side-effect module load
+require('./absoluteTimeGrid');
+// @ts-ignore: side-effect module load
 require('./TempoFeelEngine');
