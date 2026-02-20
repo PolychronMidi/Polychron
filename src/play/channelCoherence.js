@@ -1,6 +1,8 @@
 // channelCoherence.js — Extracts per-channel Stutter/crossMod coherence adjustments
 // Shared by source, reflection, and bass emission blocks in playNotes.
 
+const VChannelCoherence = Validator.create('channelCoherence');
+
 /**
  * Computes per-channel stutter coherence adjustments and noise-shaped velocity.
  *
@@ -12,6 +14,12 @@
  * @returns {{ perProbScaled: number, onVel: number, velocityScaleBias: number }}
  */
 getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
+  VChannelCoherence.assertObject(StutterConfig, 'StutterConfig');
+  VChannelCoherence.requireType(StutterConfig.getCrossModRules, 'function', 'StutterConfig.getCrossModRules');
+  VChannelCoherence.requireType(StutterConfig.getProfileConfig, 'function', 'StutterConfig.getProfileConfig');
+  VChannelCoherence.assertObject(ConductorConfig, 'ConductorConfig');
+  VChannelCoherence.requireType(ConductorConfig.getEmissionScaling, 'function', 'ConductorConfig.getEmissionScaling');
+
   // 1. Channel mod from Stutter beat-context
   const chMod = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext &&
     Stutter.beatContext.mod && Stutter.beatContext.mod[ch])
@@ -19,10 +27,11 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
     : null;
 
   // 2. Cross-modulation rules from StutterConfig
-  const crossRules = (typeof StutterConfig !== 'undefined' && StutterConfig &&
-    typeof StutterConfig.getCrossModRules === 'function')
-    ? StutterConfig.getCrossModRules()
-    : { pan: { stutterProbScale: 1 }, fade: { velocityScaleBias: 0 }, fx: { shiftRangeScale: 1 } };
+  const crossRules = StutterConfig.getCrossModRules();
+  VChannelCoherence.assertObject(crossRules, 'crossRules');
+  VChannelCoherence.assertObject(crossRules.pan, 'crossRules.pan');
+  VChannelCoherence.assertObject(crossRules.fade, 'crossRules.fade');
+  VChannelCoherence.assertObject(crossRules.fx, 'crossRules.fx');
 
   // 3. Accumulate per-prob scale and velocity bias from pan/fade/fx modifiers
   let perProbScale = 1;
@@ -32,22 +41,20 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
       perProbScale *= (1 + (crossRules.pan.stutterProbScale - 1) * m.abs(chMod.pan));
     }
     if (typeof chMod.fade === 'number') {
-      velocityScaleBias += (crossRules.fade.velocityScaleBias || 0) * chMod.fade;
+      velocityScaleBias += VChannelCoherence.requireFinite(crossRules.fade.velocityScaleBias, 'crossRules.fade.velocityScaleBias') * chMod.fade;
     }
     // fx currently only influences shift-range in stutterNotes; perProbScale unchanged
   }
 
   // 4. Profile-specific per-prob from StutterConfig
-  const profileCfg = (typeof StutterConfig !== 'undefined' && StutterConfig &&
-    typeof StutterConfig.getProfileConfig === 'function')
-    ? StutterConfig.getProfileConfig(profile)
-    : { perProb: 1 };
-  const perProbScaled = clamp((profileCfg.perProb || 0) * perProbScale, 0, 1);
+  const profileCfg = StutterConfig.getProfileConfig(profile);
+  VChannelCoherence.assertObject(profileCfg, `profileCfg.${profile}`);
+  const perProbScaled = clamp(VChannelCoherence.requireFinite(profileCfg.perProb, `profileCfg.${profile}.perProb`) * perProbScale, 0, 1);
 
   // 5. Noise-shaped velocity with bias (noise profile from conductor)
-  const emissionNoiseProfile = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionScaling === 'function')
-    ? (ConductorConfig.getEmissionScaling().noiseProfile || 'subtle')
-    : 'subtle';
+  const emissionScaling = ConductorConfig.getEmissionScaling();
+  VChannelCoherence.assertObject(emissionScaling, 'ConductorConfig.getEmissionScaling()');
+  const emissionNoiseProfile = VChannelCoherence.assertNonEmptyString(emissionScaling.noiseProfile, 'ConductorConfig.getEmissionScaling().noiseProfile');
   const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, emissionNoiseProfile);
   const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
 

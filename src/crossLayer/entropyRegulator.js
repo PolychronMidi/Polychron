@@ -77,15 +77,23 @@ EntropyRegulator = (() => {
   function rhythmicIrregularity(layer) {
     // Use AbsoluteTimeWindow note history if available
     if (typeof AbsoluteTimeWindow === 'undefined' || !AbsoluteTimeWindow) return 0.5;
+    if (!Number.isFinite(beatStartTime)) {
+      throw new Error('EntropyRegulator.rhythmicIrregularity: beatStartTime must be finite');
+    }
     const notes = AbsoluteTimeWindow.getNotes({
       layer,
-      since: (typeof beatStartTime !== 'undefined' ? beatStartTime : 0) - 2,
+      since: beatStartTime - 2,
       windowSeconds: 2
     });
     if (notes.length < 3) return 0;
     const iois = [];
     for (let i = 1; i < notes.length; i++) {
-      const dt = (notes[i].time || 0) - (notes[i - 1].time || 0);
+      const currentTime = Number(notes[i].time);
+      const previousTime = Number(notes[i - 1].time);
+      if (!Number.isFinite(currentTime) || !Number.isFinite(previousTime)) {
+        throw new Error('EntropyRegulator.rhythmicIrregularity: note time entries must be finite');
+      }
+      const dt = currentTime - previousTime;
       if (dt > 0) iois.push(dt);
     }
     if (iois.length < 2) return 0;

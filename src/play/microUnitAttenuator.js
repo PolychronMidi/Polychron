@@ -11,6 +11,7 @@
 // survivors to the next frame (or to `c` if at the outermost level).
 
 microUnitAttenuator = (() => {
+  const VMicroUnitAttenuator = Validator.create('microUnitAttenuator');
   /** @type {Array<{ unit: string, limit: number, pairs: Array<{ on: object, off: object, score: number }> }>} */
   const _stack = [];
 
@@ -26,9 +27,13 @@ microUnitAttenuator = (() => {
       if (!Number.isFinite(n) || n <= 0) throw new Error(`microUnitAttenuator.begin: invalid unitsPerParent=${unitsPerParent}`);
       // Unit-aware caps: deeper units get tighter limits to prevent texture overload
       // Ranges driven by ConductorConfig profile for per-profile density shaping
-      const attCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getAttenuationScaling === 'function')
-        ? ConductorConfig.getAttenuationScaling()
-        : { subsubdivRange: [1.5, 3], subdivRange: [2, 4], divRange: [2, 5] };
+      VMicroUnitAttenuator.assertObject(ConductorConfig, 'ConductorConfig');
+      VMicroUnitAttenuator.requireType(ConductorConfig.getAttenuationScaling, 'function', 'ConductorConfig.getAttenuationScaling');
+      const attCfg = ConductorConfig.getAttenuationScaling();
+      VMicroUnitAttenuator.assertObject(attCfg, 'ConductorConfig.getAttenuationScaling()');
+      VMicroUnitAttenuator.assertArrayLength(attCfg.subsubdivRange, 2, 'attCfg.subsubdivRange');
+      VMicroUnitAttenuator.assertArrayLength(attCfg.subdivRange, 2, 'attCfg.subdivRange');
+      VMicroUnitAttenuator.assertArrayLength(attCfg.divRange, 2, 'attCfg.divRange');
       const unitMultiplier = unit === 'subsubdiv' ? rf(attCfg.subsubdivRange[0], attCfg.subsubdivRange[1])
         : unit === 'subdiv' ? rf(attCfg.subdivRange[0], attCfg.subdivRange[1])
         : rf(attCfg.divRange[0], attCfg.divRange[1]); // div or beat — widest allowance
@@ -51,6 +56,10 @@ microUnitAttenuator = (() => {
      * @param {number} score  - crossModulation value at emission time
      */
     record(onEvt, offEvt, score) {
+      VMicroUnitAttenuator.assertObject(onEvt, 'record.onEvt');
+      VMicroUnitAttenuator.assertObject(offEvt, 'record.offEvt');
+      VMicroUnitAttenuator.requireFinite(onEvt.tick, 'record.onEvt.tick');
+      VMicroUnitAttenuator.requireFinite(offEvt.tick, 'record.offEvt.tick');
       if (_stack.length === 0) {
         // No active attenuation — write through immediately
         p(c, onEvt);
@@ -83,7 +92,11 @@ microUnitAttenuator = (() => {
         pairs.sort((a, b) => b.score - a.score);
         survivors = pairs.slice(0, limit);
         // Re-sort survivors by tick order so MIDI output stays chronological
-        survivors.sort((a, b) => (a.on.tick || 0) - (b.on.tick || 0));
+        survivors.sort((a, b) => {
+          const at = VMicroUnitAttenuator.requireFinite(a && a.on ? a.on.tick : undefined, 'flush.survivorA.on.tick');
+          const bt = VMicroUnitAttenuator.requireFinite(b && b.on ? b.on.tick : undefined, 'flush.survivorB.on.tick');
+          return at - bt;
+        });
       }
 
       // Write survivors to the next outer frame or directly to `c`

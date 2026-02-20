@@ -3,66 +3,80 @@ require('../index');
 
 main = async function main() { console.log('Starting main.js ...');
 
-const mainLoopControls = (typeof MAIN_LOOP_CONTROLS !== 'undefined' && MAIN_LOOP_CONTROLS && typeof MAIN_LOOP_CONTROLS === 'object')
-  ? MAIN_LOOP_CONTROLS
-  : {
-      phraseFamilyBias: {
-        phaseAffinity: {
-          intro: 'diatonicCore',
-          opening: 'diatonicCore',
-          development: 'development',
-          climax: 'rhythmicDrive',
-          resolution: 'harmonicMotion',
-          conclusion: 'tonalExploration'
-        },
-        lockProbability: 0.5
-      },
-      stutterPanJitterChance: 0.05,
-      fxIntensityNormalization: {
-        stereoPanDenominator: 45,
-        velocityShiftDenominator: 20
-      },
-      conductorFallback: {
-        playProb: 0.5,
-        stutterProb: 0.3
-      }
-    };
+if (typeof Validator === 'undefined' || !Validator || typeof Validator.create !== 'function') {
+  throw new Error('main.bootstrap: Validator.create is not available');
+}
+const V = Validator.create('main');
 
-const phaseFamilyBias = (mainLoopControls.phraseFamilyBias && typeof mainLoopControls.phraseFamilyBias === 'object')
-  ? mainLoopControls.phraseFamilyBias
-  : { phaseAffinity: {}, lockProbability: 0.5 };
-const phaseAffinity = (phaseFamilyBias.phaseAffinity && typeof phaseFamilyBias.phaseAffinity === 'object')
-  ? phaseFamilyBias.phaseAffinity
-  : {};
-const phaseBiasLockProbability = Number.isFinite(Number(phaseFamilyBias.lockProbability))
-  ? clamp(Number(phaseFamilyBias.lockProbability), 0, 1)
-  : 0.5;
-const fxIntensityNormalization = (mainLoopControls.fxIntensityNormalization && typeof mainLoopControls.fxIntensityNormalization === 'object')
-  ? mainLoopControls.fxIntensityNormalization
-  : { stereoPanDenominator: 45, velocityShiftDenominator: 20 };
-const fxStereoPanDenominator = Number.isFinite(Number(fxIntensityNormalization.stereoPanDenominator))
-  ? m.max(1, Number(fxIntensityNormalization.stereoPanDenominator))
-  : 45;
-const fxVelocityShiftDenominator = Number.isFinite(Number(fxIntensityNormalization.velocityShiftDenominator))
-  ? m.max(1, Number(fxIntensityNormalization.velocityShiftDenominator))
-  : 20;
-const stutterPanJitterChance = Number.isFinite(Number(mainLoopControls.stutterPanJitterChance))
-  ? clamp(Number(mainLoopControls.stutterPanJitterChance), 0, 1)
-  : 0.05;
-const conductorFallback = (mainLoopControls.conductorFallback && typeof mainLoopControls.conductorFallback === 'object')
-  ? mainLoopControls.conductorFallback
-  : { playProb: 0.5, stutterProb: 0.3 };
-const fallbackPlayProb = Number.isFinite(Number(conductorFallback.playProb))
-  ? clamp(Number(conductorFallback.playProb), 0, 1)
-  : 0.5;
-const fallbackStutterProb = Number.isFinite(Number(conductorFallback.stutterProb))
-  ? clamp(Number(conductorFallback.stutterProb), 0, 1)
-  : 0.3;
+/** @param {string} label @param {unknown} value */
+function requireFiniteNumber(label, value) {
+  return V.requireFinite(value, label);
+}
+
+/** @param {string} label @param {unknown} value */
+function requireUnitInterval(label, value) {
+  const n = requireFiniteNumber(label, value);
+  if (n < 0 || n > 1) {
+    throw new Error(`main: ${label} must be within [0, 1], received ${n}`);
+  }
+  return n;
+}
+
+/** @param {string} label @param {unknown} value */
+function requireNonEmptyString(label, value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`main: ${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+/**
+ * @param {number} measureIndexLocal
+ * @param {number} beatIndexLocal
+ * @returns {{ playProb: number, stutterProb: number }}
+ */
+function getConductorProbabilities(measureIndexLocal, beatIndexLocal) {
+  const ctx = GlobalConductor.update(measureIndexLocal, beatIndexLocal);
+  if (!ctx || typeof ctx !== 'object') {
+    throw new Error('main: GlobalConductor.update must return an object context');
+  }
+  const playProbValue = requireUnitInterval('GlobalConductor.update.playProb', ctx.playProb);
+  const stutterProbValue = requireUnitInterval('GlobalConductor.update.stutterProb', ctx.stutterProb);
+  return { playProb: playProbValue, stutterProb: stutterProbValue };
+}
+
+if (typeof MAIN_LOOP_CONTROLS === 'undefined' || !MAIN_LOOP_CONTROLS || typeof MAIN_LOOP_CONTROLS !== 'object') {
+  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS must be a defined object');
+}
+const mainLoopControls = MAIN_LOOP_CONTROLS;
+
+if (!mainLoopControls.phraseFamilyBias || typeof mainLoopControls.phraseFamilyBias !== 'object') {
+  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.phraseFamilyBias must be an object');
+}
+const phaseFamilyBias = mainLoopControls.phraseFamilyBias;
+
+if (!phaseFamilyBias.phaseAffinity || typeof phaseFamilyBias.phaseAffinity !== 'object') {
+  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity must be an object');
+}
+const phaseAffinity = phaseFamilyBias.phaseAffinity;
+const phaseBiasLockProbability = requireUnitInterval('MAIN_LOOP_CONTROLS.phraseFamilyBias.lockProbability', phaseFamilyBias.lockProbability);
+
+if (!mainLoopControls.fxIntensityNormalization || typeof mainLoopControls.fxIntensityNormalization !== 'object') {
+  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.fxIntensityNormalization must be an object');
+}
+const fxIntensityNormalization = mainLoopControls.fxIntensityNormalization;
+const fxStereoPanDenominator = requireFiniteNumber('MAIN_LOOP_CONTROLS.fxIntensityNormalization.stereoPanDenominator', fxIntensityNormalization.stereoPanDenominator);
+if (fxStereoPanDenominator <= 0) {
+  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.fxIntensityNormalization.stereoPanDenominator must be > 0');
+}
+const fxVelocityShiftDenominator = requireFiniteNumber('MAIN_LOOP_CONTROLS.fxIntensityNormalization.velocityShiftDenominator', fxIntensityNormalization.velocityShiftDenominator);
+if (fxVelocityShiftDenominator <= 0) {
+  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.fxIntensityNormalization.velocityShiftDenominator must be > 0');
+}
+const stutterPanJitterChance = requireUnitInterval('MAIN_LOOP_CONTROLS.stutterPanJitterChance', mainLoopControls.stutterPanJitterChance);
 
 function assertMainBootstrapGlobals() {
-  if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
-    throw new Error('main.bootstrap: EventCatalog.names is not available');
-  }
+  const events = V.getEventsOrThrow();
 
   const requiredEvents = [
     'SECTION_BOUNDARY',
@@ -77,10 +91,7 @@ function assertMainBootstrapGlobals() {
     'MOTIF_CHAIN_APPLIED'
   ];
   requiredEvents.forEach((name) => {
-    const eventName = EventCatalog.names[name];
-    if (typeof eventName !== 'string' || eventName.length === 0) {
-      throw new Error(`main.bootstrap: EventCatalog.names.${name} is invalid`);
-    }
+    requireNonEmptyString(`EventCatalog.names.${name}`, events[name]);
   });
 
   const requiredModules = [
@@ -90,7 +101,23 @@ function assertMainBootstrapGlobals() {
     ['ConductorConfig', (typeof ConductorConfig !== 'undefined') ? ConductorConfig : null, 'applyPhaseProfile'],
     ['Stutter', (typeof Stutter !== 'undefined') ? Stutter : null, 'prepareBeat'],
     ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'initialize'],
-    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'getField']
+    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'getField'],
+    ['GlobalConductor', (typeof GlobalConductor !== 'undefined') ? GlobalConductor : null, 'update'],
+    ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'planJourney'],
+    ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'applyToContext'],
+    ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'applyL2ToContext'],
+    ['SectionLengthAdvisor', (typeof SectionLengthAdvisor !== 'undefined') ? SectionLengthAdvisor : null, 'advisePhraseCount'],
+    ['PivotChordBridge', (typeof PivotChordBridge !== 'undefined') ? PivotChordBridge : null, 'prepareBridge'],
+    ['PhaseLockedRhythmGenerator', (typeof PhaseLockedRhythmGenerator !== 'undefined') ? PhaseLockedRhythmGenerator : null, 'initializePolyrhythmCoupling'],
+    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getDensity'],
+    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getSystemHeat'],
+    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getTrend'],
+    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'flushDeferredOrphans'],
+    ['RhythmicPhaseLock', (typeof RhythmicPhaseLock !== 'undefined') ? RhythmicPhaseLock : null, 'getMode'],
+    ['CadenceAdvisor', (typeof CadenceAdvisor !== 'undefined') ? CadenceAdvisor : null, 'shouldCadence'],
+    ['TexturalMemoryAdvisor', (typeof TexturalMemoryAdvisor !== 'undefined') ? TexturalMemoryAdvisor : null, 'recordUsage'],
+    ['ConvergenceHarmonicTrigger', (typeof ConvergenceHarmonicTrigger !== 'undefined') ? ConvergenceHarmonicTrigger : null, 'onConvergence'],
+    ['StructuralFormTracker', (typeof StructuralFormTracker !== 'undefined') ? StructuralFormTracker : null, 'recordSection']
   ];
   requiredModules.forEach(([name, obj, method]) => {
     if (!obj || typeof obj[method] !== 'function') {
@@ -140,11 +167,7 @@ const composerCtx = {
    */
   selectPhraseFamily({ availableFamilies }) {
     if (!Array.isArray(availableFamilies) || availableFamilies.length === 0) return null;
-    const phase = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-      ? (ConductorState.getField('sectionPhase') || 'development')
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-        ? (HarmonicContext.getField('sectionPhase') || 'development')
-        : 'development';
+    const phase = requireNonEmptyString('ConductorState.sectionPhase', ConductorState.getField('sectionPhase'));
 
     // Phase-based family affinity — centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
     const preferred = phaseAffinity[phase];
@@ -183,9 +206,7 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
   LM.setComposerFor(layerName, nextComposer);
 
   // Record composer family for TexturalMemoryAdvisor variety tracking
-  if (typeof TexturalMemoryAdvisor !== 'undefined' && TexturalMemoryAdvisor && typeof TexturalMemoryAdvisor.recordUsage === 'function') {
-    TexturalMemoryAdvisor.recordUsage(phraseFamily, (typeof sectionIndex === 'number') ? sectionIndex : 0);
-  }
+  TexturalMemoryAdvisor.recordUsage(phraseFamily, requireFiniteNumber('sectionIndex', sectionIndex));
 
   return nextComposer;
 };
@@ -202,36 +223,40 @@ CadenceAdvisor.initialize();
 CrossLayerLifecycleManager.resetAll();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
+V.requireFinite(totalSections, 'totalSections');
+if (totalSections <= 0) {
+  throw new Error('main: totalSections must be > 0');
+}
 
 // Plan the harmonic journey across all sections
-if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.planJourney === 'function') {
-  HarmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
-}
+HarmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   CrossLayerLifecycleManager.resetSection();
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+  V.requireFinite(phrasesPerSection, 'phrasesPerSection');
+  if (phrasesPerSection <= 0) {
+    throw new Error('main: phrasesPerSection must be > 0');
+  }
 
   // Let SectionLengthAdvisor adjust phrase count based on energy trajectory
-  if (typeof SectionLengthAdvisor !== 'undefined' && SectionLengthAdvisor && typeof SectionLengthAdvisor.advisePhraseCount === 'function') {
-    phrasesPerSection = SectionLengthAdvisor.advisePhraseCount(phrasesPerSection);
+  phrasesPerSection = SectionLengthAdvisor.advisePhraseCount(phrasesPerSection);
+  V.requireFinite(phrasesPerSection, 'SectionLengthAdvisor.advisePhraseCount result');
+  if (phrasesPerSection <= 0) {
+    throw new Error('main: SectionLengthAdvisor.advisePhraseCount must return a value > 0');
   }
 
   // Emit section boundary event to reset FX feedback accumulator
   EventBus.emit(EVENTS.SECTION_BOUNDARY, { sectionIndex });
 
   // Apply harmonic journey stop for this section (sets HarmonicContext for L1)
-  if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
-    HarmonicJourney.applyToContext(sectionIndex);
-  }
+  HarmonicJourney.applyToContext(sectionIndex);
 
   // Phase-driven conductor profile: match the conductor's character to the structural moment
   ConductorConfig.applyPhaseProfile();
 
   // Prepare pivot chord bridge for section transitions with key changes
-  if (typeof PivotChordBridge !== 'undefined' && PivotChordBridge && typeof PivotChordBridge.prepareBridge === 'function') {
-    PivotChordBridge.prepareBridge(sectionIndex);
-  }
+  PivotChordBridge.prepareBridge(sectionIndex);
 
   // Initialize each layer's section origin so layer-relative ticks are correct and explicit
   LM.setSectionStartAll();
@@ -249,14 +274,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     CrossLayerLifecycleManager.resetPhrase();
     // Restore L1 harmonic context (may have been overwritten by L2's complement)
-    if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
-      HarmonicJourney.applyToContext(sectionIndex);
-    }
+    HarmonicJourney.applyToContext(sectionIndex);
 
     const phraseFamily = ComposerFactory.resolvePhraseFamilyOrFail({ root: 'random' }, composerCtx);
-    if (!LM || typeof LM.setPhraseFamily !== 'function') {
-      throw new Error('main: LayerManager.setPhraseFamily not available');
-    }
     LM.setPhraseFamily(phraseFamily);
 
     const phraseL1Composer = selectLayerComposerForMeasure('L1', phraseFamily);
@@ -268,9 +288,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getMidiTiming();
     getPolyrhythm();
     // Initialize polyrhythmic phase coupling after alignment is computed
-    if (typeof PhaseLockedRhythmGenerator !== 'undefined') {
-      PhaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
-    }
+    PhaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
@@ -283,20 +301,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       ConductorConfig.regulationTick();
 
       // main.js - using GlobalConductor for dynamic probabilities
-      const conductorCtx = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
-        ? GlobalConductor.update(measureIndex, -1) // Update measure-scope context
-        : { playProb: fallbackPlayProb, stutterProb: fallbackStutterProb };
+      const conductorCtx = getConductorProbabilities(measureIndex, -1); // Update measure-scope context
 
       let playProb = conductorCtx.playProb;
       let stutterProb = conductorCtx.stutterProb;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         // Refine context per beat for maximum dynamicism
-        if (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function') {
-           const beatCtx = GlobalConductor.update(measureIndex, beatIndex);
-           playProb = beatCtx.playProb;
-           stutterProb = beatCtx.stutterProb;
-        }
+        const beatCtx = getConductorProbabilities(measureIndex, beatIndex);
+        playProb = beatCtx.playProb;
+        stutterProb = beatCtx.stutterProb;
 
         beatCount++;
         setUnitTiming('beat');
@@ -308,54 +322,49 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           phraseIndex,
           measureIndex,
           layer: 'L1',
-          freqOffset: Number.isFinite(Number(binauralFreqOffset)) ? Number(binauralFreqOffset) : 0,
+          freqOffset: requireFiniteNumber('binauralFreqOffset', binauralFreqOffset),
           flipBin: Boolean(flipBin)
         });
         setBalanceAndFX();
         // Apply Stutter default directive for this beat (coherence key, etc.)
-        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.prepareBeat !== 'function') {
-          throw new Error('main: Stutter.prepareBeat is not available');
-        }
         Stutter.prepareBeat(beatStart);
         // Capture FX intensity from balance and variation globals (normalized 0-1)
-        const fxStereoPan = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
-        const fxVelocityShift = (typeof refVar === 'number' && typeof bassVar === 'number')
-          ? m.abs(refVar + bassVar) / fxVelocityShiftDenominator : 0;
+        const fxStereoPan = m.abs(requireFiniteNumber('balOffset', balOffset)) / fxStereoPanDenominator;
+        const fxVelocityShift = m.abs(requireFiniteNumber('refVar', refVar) + requireFiniteNumber('bassVar', bassVar)) / fxVelocityShiftDenominator;
         EventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L1', stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
         playDrums();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Run any explicit Stutter plans scheduled for this beat
-        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.runDuePlans !== 'function') {
-          throw new Error('main: Stutter.runDuePlans is not available');
-        }
         Stutter.runDuePlans(beatStart);
         const clAbsMs = beatStartTime * 1000;
-        const sectionProgress = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
-        const clIntent = SectionIntentCurves.getIntent(sectionProgress, sectionIndex, phraseIndex);
+        const sectionProgress = (sectionIndex + phraseIndex / phrasesPerSection) / totalSections;
+        const sectionProgressBounded = requireUnitInterval('sectionProgress', sectionProgress);
+        const clIntent = SectionIntentCurves.getIntent(sectionProgressBounded, sectionIndex, phraseIndex);
         EntropyRegulator.setTarget(clIntent.entropyTarget);
         const clEntropy = EntropyRegulator.getRegulation();
         const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, 'L1');
 
         // Climax engine: coordinate multi-parameter climax
-        CrossLayerClimaxEngine.tick(clAbsMs, sectionProgress);
+        CrossLayerClimaxEngine.tick(clAbsMs, sectionProgressBounded);
         const clClimaxMods = CrossLayerClimaxEngine.getModifiers('L1');
 
         // Dynamic envelope: phrase-level velocity arc
-        const phraseProgressL1 = measuresPerPhrase > 0 ? (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator) : 0.5;
-        CrossLayerDynamicEnvelope.tick(clAbsMs, 'L1', sectionProgress, phraseProgressL1);
+        const phraseProgressL1 = (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator);
+        const phraseProgressL1Bounded = requireUnitInterval('phraseProgressL1', phraseProgressL1);
+        CrossLayerDynamicEnvelope.tick(clAbsMs, 'L1', sectionProgressBounded, phraseProgressL1Bounded);
         CrossLayerDynamicEnvelope.autoSelectArcType();
 
         // Silhouette: holistic combined-output conductor
-        CrossLayerSilhouette.tick(clAbsMs, sectionProgress);
+        CrossLayerSilhouette.tick(clAbsMs, sectionProgressBounded);
         const clSilhouetteCorrections = CrossLayerSilhouette.getCorrections();
 
         // Rest synchronizer: coordinated silence
         const clRestSignals = {
-          heatLevel: (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap && typeof InteractionHeatMap.getDensity === 'function') ? InteractionHeatMap.getDensity() : 0.5,
+          heatLevel: InteractionHeatMap.getDensity(),
           densityTarget: clIntent.densityTarget,
-          phaseMode: (typeof RhythmicPhaseLock !== 'undefined' && RhythmicPhaseLock && typeof RhythmicPhaseLock.getMode === 'function') ? RhythmicPhaseLock.getMode() : 'free'
+          phaseMode: requireNonEmptyString('RhythmicPhaseLock.getMode()', RhythmicPhaseLock.getMode())
         };
         const clRest = RestSynchronizer.evaluateSharedRest(clAbsMs, 'L1', clRestSignals);
         const clComplementRest = RestSynchronizer.evaluateComplementaryRest(clAbsMs, 'L1');
@@ -363,10 +372,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         // Rhythmic complement: auto-select mode each beat
         RhythmicComplementEngine.autoSelectMode(clAbsMs);
 
-        const clTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-          ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
-        const clCadence = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
-          ? CadenceAdvisor.shouldCadence() : { suggest: false };
+        const clTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
+        const clCadence = CadenceAdvisor.shouldCadence();
+        if (!clCadence || typeof clCadence !== 'object' || typeof clCadence.suggest !== 'boolean') {
+          throw new Error('main: CadenceAdvisor.shouldCadence must return an object with boolean suggest');
+        }
         const clPhaseSnapshot = {
           timeMs: clAbsMs,
           phaseDiff: clPhase.phaseDiff,
@@ -411,7 +421,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clDensity = TemporalGravity.measureDensity('L1', beatStartTime);
         TemporalGravity.postDensity(clAbsMs, 'L1', clDensity);
         const clFeedback = FeedbackOscillator.applyFeedback(clAbsMs, 'L1');
-        const clFeedbackEnergy = (clFeedback && Number.isFinite(clFeedback.energy)) ? clamp(clFeedback.energy, 0, 1) : 0;
+        if (!clFeedback || typeof clFeedback !== 'object') {
+          throw new Error('main: FeedbackOscillator.applyFeedback must return an object');
+        }
+        const clFeedbackEnergy = requireUnitInterval('FeedbackOscillator.applyFeedback.energy', clFeedback.energy);
 
         const clCadenceGate = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, 'L1', Boolean(clCadence.suggest), clPhaseSnapshot);
         CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
@@ -422,7 +435,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           FeedbackOscillator.inject(clAbsMs, 'L1', clamp(clTension, 0, 1), 'cadence');
         }
 
-        const beatDurMs = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
+        const tpBeatValue = requireFiniteNumber('tpBeat', tpBeat);
+        const tpSecValue = requireFiniteNumber('tpSec', tpSec);
+        if (tpBeatValue <= 0 || tpSecValue <= 0) {
+          throw new Error(`main: tpBeat and tpSec must be > 0 (tpBeat=${tpBeatValue}, tpSec=${tpSecValue})`);
+        }
+        const beatDurMs = (tpBeatValue / tpSecValue) * 1000;
         RhythmicPhaseLock.postBeat(clAbsMs, 'L1', beatDurMs);
         const clPhaseMode = RhythmicPhaseLock.getMode();
 
@@ -514,8 +532,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.advance('L1', 'phrase');
 
     // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
-    const phraseTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-      ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0.5;
+    const phraseTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
     const roleSwapResult = DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
     AdaptiveTrustScores.registerOutcome('roleSwap', roleSwapResult.swapped ? 0.35 : -0.02);
     if (roleSwapResult.swapped) {
@@ -530,9 +547,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.activate('L2', true);
 
     // Apply L2 harmonic complement (complementary key/mode relationship to L1)
-    if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyL2ToContext === 'function') {
-      HarmonicJourney.applyL2ToContext(sectionIndex);
-    }
+    HarmonicJourney.applyL2ToContext(sectionIndex);
 
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
@@ -543,20 +558,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       setUnitTiming('measure');
 
       // L2 uses GlobalConductor for dynamic probabilities — symmetric with L1
-      const conductorCtxL2 = (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function')
-        ? GlobalConductor.update(measureIndex, -1)
-        : { playProb: fallbackPlayProb, stutterProb: fallbackStutterProb };
+      const conductorCtxL2 = getConductorProbabilities(measureIndex, -1);
 
       let playProb = conductorCtxL2.playProb;
       let stutterProb = conductorCtxL2.stutterProb;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         // Refine context per beat for maximum dynamicism (symmetric with L1)
-        if (typeof GlobalConductor !== 'undefined' && GlobalConductor && typeof GlobalConductor.update === 'function') {
-          const beatCtxL2 = GlobalConductor.update(measureIndex, beatIndex);
-          playProb = beatCtxL2.playProb;
-          stutterProb = beatCtxL2.stutterProb;
-        }
+        const beatCtxL2 = getConductorProbabilities(measureIndex, beatIndex);
+        playProb = beatCtxL2.playProb;
+        stutterProb = beatCtxL2.stutterProb;
 
         setUnitTiming('beat');
         setOtherInstruments();
@@ -567,53 +578,48 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           phraseIndex,
           measureIndex,
           layer: 'L2',
-          freqOffset: Number.isFinite(Number(binauralFreqOffset)) ? Number(binauralFreqOffset) : 0,
+          freqOffset: requireFiniteNumber('binauralFreqOffset', binauralFreqOffset),
           flipBin: Boolean(flipBin)
         });
         setBalanceAndFX();
         // Apply Stutter default directive for this beat (symmetric with L1)
-        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.prepareBeat !== 'function') {
-          throw new Error('main: Stutter.prepareBeat is not available');
-        }
         Stutter.prepareBeat(beatStart);
         // Capture FX intensity with full payload (symmetric with L1)
-        const fxStereoPanL2 = typeof balOffset === 'number' ? m.abs(balOffset) / fxStereoPanDenominator : 0;
-        const fxVelocityShiftL2 = (typeof refVar === 'number' && typeof bassVar === 'number')
-          ? m.abs(refVar + bassVar) / fxVelocityShiftDenominator : 0;
+        const fxStereoPanL2 = m.abs(requireFiniteNumber('balOffset', balOffset)) / fxStereoPanDenominator;
+        const fxVelocityShiftL2 = m.abs(requireFiniteNumber('refVar', refVar) + requireFiniteNumber('bassVar', bassVar)) / fxVelocityShiftDenominator;
         EventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2', stereoPan: fxStereoPanL2, velocityShift: fxVelocityShiftL2 });
         playDrums2();
         stutterFX(flipBin ? flipBinT3 : flipBinF3);
         stutterFade(flipBin ? flipBinT3 : flipBinF3);
         rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
         // Run any explicit Stutter plans scheduled for this beat
-        if (typeof Stutter === 'undefined' || !Stutter || typeof Stutter.runDuePlans !== 'function') {
-          throw new Error('main: Stutter.runDuePlans is not available');
-        }
         Stutter.runDuePlans(beatStart);
         const clAbsMsL2 = beatStartTime * 1000;
-        const sectionProgressL2 = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
-        const clIntentL2 = SectionIntentCurves.getIntent(sectionProgressL2, sectionIndex, phraseIndex);
+        const sectionProgressL2 = (sectionIndex + phraseIndex / phrasesPerSection) / totalSections;
+        const sectionProgressL2Bounded = requireUnitInterval('sectionProgressL2', sectionProgressL2);
+        const clIntentL2 = SectionIntentCurves.getIntent(sectionProgressL2Bounded, sectionIndex, phraseIndex);
         EntropyRegulator.setTarget(clIntentL2.entropyTarget);
         const clEntropyL2 = EntropyRegulator.getRegulation();
         const clPhaseL2 = PhaseAwareCadenceWindow.update(clAbsMsL2, 'L2');
 
         // Climax engine: coordinate multi-parameter climax (shared state with L1)
-        CrossLayerClimaxEngine.tick(clAbsMsL2, sectionProgressL2);
+        CrossLayerClimaxEngine.tick(clAbsMsL2, sectionProgressL2Bounded);
         const clClimaxModsL2 = CrossLayerClimaxEngine.getModifiers('L2');
 
         // Dynamic envelope: phrase-level velocity arc
-        const phraseProgressL2 = measuresPerPhrase > 0 ? (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator) : 0.5;
-        CrossLayerDynamicEnvelope.tick(clAbsMsL2, 'L2', sectionProgressL2, phraseProgressL2);
+        const phraseProgressL2 = (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator);
+        const phraseProgressL2Bounded = requireUnitInterval('phraseProgressL2', phraseProgressL2);
+        CrossLayerDynamicEnvelope.tick(clAbsMsL2, 'L2', sectionProgressL2Bounded, phraseProgressL2Bounded);
 
         // Silhouette: holistic combined-output conductor
-        CrossLayerSilhouette.tick(clAbsMsL2, sectionProgressL2);
+        CrossLayerSilhouette.tick(clAbsMsL2, sectionProgressL2Bounded);
         const clSilhouetteCorrectionsL2 = CrossLayerSilhouette.getCorrections();
 
         // Rest synchronizer: coordinated silence
         const clRestSignalsL2 = {
-          heatLevel: (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap && typeof InteractionHeatMap.getDensity === 'function') ? InteractionHeatMap.getDensity() : 0.5,
+          heatLevel: InteractionHeatMap.getDensity(),
           densityTarget: clIntentL2.densityTarget,
-          phaseMode: (typeof RhythmicPhaseLock !== 'undefined' && RhythmicPhaseLock && typeof RhythmicPhaseLock.getMode === 'function') ? RhythmicPhaseLock.getMode() : 'free'
+          phaseMode: requireNonEmptyString('RhythmicPhaseLock.getMode()', RhythmicPhaseLock.getMode())
         };
         const clRestL2 = RestSynchronizer.evaluateSharedRest(clAbsMsL2, 'L2', clRestSignalsL2);
         const clComplementRestL2 = RestSynchronizer.evaluateComplementaryRest(clAbsMsL2, 'L2');
@@ -621,10 +627,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         // Rhythmic complement: auto-select mode each beat
         RhythmicComplementEngine.autoSelectMode(clAbsMsL2);
 
-        const clTensionL2 = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-          ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
-        const clCadenceL2 = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
-          ? CadenceAdvisor.shouldCadence() : { suggest: false };
+        const clTensionL2 = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
+        const clCadenceL2 = CadenceAdvisor.shouldCadence();
+        if (!clCadenceL2 || typeof clCadenceL2 !== 'object' || typeof clCadenceL2.suggest !== 'boolean') {
+          throw new Error('main: CadenceAdvisor.shouldCadence must return an object with boolean suggest');
+        }
         const clPhaseSnapshotL2 = {
           timeMs: clAbsMsL2,
           phaseDiff: clPhaseL2.phaseDiff,
@@ -669,7 +676,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clDensityL2 = TemporalGravity.measureDensity('L2', beatStartTime);
         TemporalGravity.postDensity(clAbsMsL2, 'L2', clDensityL2);
         const clFeedbackL2 = FeedbackOscillator.applyFeedback(clAbsMsL2, 'L2');
-        const clFeedbackEnergyL2 = (clFeedbackL2 && Number.isFinite(clFeedbackL2.energy)) ? clamp(clFeedbackL2.energy, 0, 1) : 0;
+        if (!clFeedbackL2 || typeof clFeedbackL2 !== 'object') {
+          throw new Error('main: FeedbackOscillator.applyFeedback must return an object');
+        }
+        const clFeedbackEnergyL2 = requireUnitInterval('FeedbackOscillator.applyFeedback.energy', clFeedbackL2.energy);
 
         const clCadenceGateL2 = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMsL2, 'L2', Boolean(clCadenceL2.suggest), clPhaseSnapshotL2);
         CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
@@ -680,7 +690,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           FeedbackOscillator.inject(clAbsMsL2, 'L2', clamp(clTensionL2, 0, 1), 'cadence');
         }
 
-        const beatDurMsL2 = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
+        const tpBeatValueL2 = requireFiniteNumber('tpBeat', tpBeat);
+        const tpSecValueL2 = requireFiniteNumber('tpSec', tpSec);
+        if (tpBeatValueL2 <= 0 || tpSecValueL2 <= 0) {
+          throw new Error(`main: tpBeat and tpSec must be > 0 (tpBeat=${tpBeatValueL2}, tpSec=${tpSecValueL2})`);
+        }
+        const beatDurMsL2 = (tpBeatValueL2 / tpSecValueL2) * 1000;
         RhythmicPhaseLock.postBeat(clAbsMsL2, 'L2', beatDurMsL2);
         const clPhaseModeL2 = RhythmicPhaseLock.getMode();
 
@@ -787,28 +802,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
-    InteractionHeatMap.flushDeferredOrphans(Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0);
+    InteractionHeatMap.flushDeferredOrphans(requireFiniteNumber('beatStartTime', beatStartTime) * 1000);
   }
 
   // Record section in StructuralFormTracker for form-level awareness
-  if (typeof StructuralFormTracker !== 'undefined' && StructuralFormTracker && typeof StructuralFormTracker.recordSection === 'function') {
-    const sKey = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-      ? (ConductorState.getField('key') || 'C')
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-        ? (HarmonicContext.getField('key') || 'C')
-        : 'C';
-    const sMode = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-      ? (ConductorState.getField('mode') || 'ionian')
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
-        ? (HarmonicContext.getField('mode') || 'ionian')
-        : 'ionian';
-    const sFamily = (typeof ComposerFactory !== 'undefined' && ComposerFactory && typeof ComposerFactory.getActiveFamily === 'function')
-      ? (ComposerFactory.getActiveFamily() || 'default') : 'default';
-    const sEnergy = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
-      ? (Number(ConductorState.getField('compositeIntensity')) || 0)
-      : 0;
-    StructuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
-  }
+  const sKey = requireNonEmptyString('ConductorState.key', ConductorState.getField('key'));
+  const sMode = requireNonEmptyString('ConductorState.mode', ConductorState.getField('mode'));
+  const sFamily = requireNonEmptyString('ComposerFactory.getActiveFamily()', ComposerFactory.getActiveFamily());
+  const sEnergy = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
+  StructuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
 
   LM.advance('L1', 'section');
 
