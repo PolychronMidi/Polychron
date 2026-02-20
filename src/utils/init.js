@@ -1,7 +1,12 @@
 // init.js - global initialization & channel mapping.
 
 // Timing and counter variables (documented inline for brevity)
-unitIndex=unitStart=tpUnit=parentStart=tpParent=unitsPerParent=measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=divStart=sectionStart=sectionStartTime=sectionEnd=tpMeasure=tpBeat=tpDiv=tpSubdiv=tpSubsubdiv=subdivStartTime=subsubdivStartTime=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=meterRatio=divsPerBeat=subdivsPerDiv=subsubsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=phrasesPerSection=totalSections=sectionIndex=phraseIndex=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=0;
+// composer profile globals for bootstrap ordering
+// created unconditionally here; profile source modules will populate them later
+COMPOSER_TYPE_PROFILE_SOURCES = {};
+COMPOSER_POOL_SELECTION_STRATEGY = null;
+
+unitIndex=unitStart=tpUnit=parentStart=tpParent=unitsPerParent=measureCount=spMeasure=subsubdivStart=subdivStart=beatStart=beatStartTime=divStart=sectionStart=sectionStartTime=sectionEnd=tpMeasure=tpBeat=tpDiv=tpSubdiv=tpSubsubdiv=subdivStartTime=subsubdivStartTime=tpSection=spSection=finalTick=bestMatch=polyMeterRatio=polyNumerator=tpSec=finalTime=endTime=phraseStart=tpPhrase1=tpPhrase2=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=meterRatio=divsPerBeat=subdivsPerDiv=subsubsPerSub=measureStart=measureStartTime=beatsUntilBinauralShift=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=phrasesPerSection=totalSections=sectionIndex=phraseIndex=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=0;
 
 composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null;
 

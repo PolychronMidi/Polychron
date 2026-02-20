@@ -282,8 +282,7 @@ FullBootstrap = (() => {
     'secondaryInstrument',
     'bassInstrument',
     'bassInstrument2',
-    'shouldLog',
-    'MAIN_LOOP_CONTROLS',
+        'MAIN_LOOP_CONTROLS',
   ]);
 
   /** @type {ReadonlySet<string>} */
