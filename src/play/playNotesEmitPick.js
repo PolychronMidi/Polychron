@@ -19,6 +19,9 @@ playNotesEmitPick = function(opts = {}) {
   if (!pick || typeof pick.note === 'undefined') {
     throw new Error(`${unit}.playNotes: invalid note object in motif picks`);
   }
+  const minMidi = m.max(0, OCTAVE.min * 12);
+  const maxMidi = m.min(MIDI_MAX_VALUE, OCTAVE.max * 12 - 1);
+  const pickNote = modClamp(Number(pick.note), minMidi, maxMidi);
 
   let scheduled = 0;
   const activeLayerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
@@ -34,12 +37,12 @@ playNotesEmitPick = function(opts = {}) {
   const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
   let selectedShift = 0;
   if (shouldStutter) {
-    const minNote = m.max(0, OCTAVE.min * 12 - 1);
-    const maxNote = OCTAVE.max * 12 - 1;
+    const minNote = minMidi;
+    const maxNote = maxMidi;
     const octaveCandidates = [];
     for (let mag = 1; mag <= 3; mag++) {
-      if (pick.note + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
-      if (pick.note - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
+      if (pickNote + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
+      if (pickNote - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
     }
     if (octaveCandidates.length > 0) {
       selectedShift = octaveCandidates[ri(octaveCandidates.length - 1)];
@@ -70,8 +73,8 @@ playNotesEmitPick = function(opts = {}) {
 
     const applySelectedShiftToSource = isPrimary && selectedShift !== 0 && rf() < perProbScaledSrc;
     const noteToEmitBase = applySelectedShiftToSource
-      ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
-      : pick.note;
+      ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
+      : pickNote;
     const noteAfterSpectral = SpectralComplementarity.nudgeToFillGap(noteToEmitBase, activeLayerName).midi;
     const noteAfterHarmonic = HarmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTick).midi;
     const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTick).midi;
@@ -190,7 +193,7 @@ playNotesEmitPick = function(opts = {}) {
       const burstCount = ri(2, 3);
       for (let burstIndex = 0; burstIndex < burstCount; burstIndex++) {
         const interval = burstIntervals[burstIndex % burstIntervals.length] * (rf() < 0.3 ? -1 : 1);
-        const burstNote = modClamp(noteToEmit + interval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+        const burstNote = modClamp(noteToEmit + interval, minMidi, maxMidi);
         const burstVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.8, 1.0))));
         const burstStagger = tpUnit * rf(0.002, 0.01) * (burstIndex + 1);
         const burstOnEvt = { tick: onTick + burstStagger, type: 'on', vals: [sourceCH, burstNote, burstVel] };
@@ -210,8 +213,8 @@ playNotesEmitPick = function(opts = {}) {
       if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
         const scalePCs = HarmonicContext.getField('scale');
         if (Array.isArray(scalePCs) && scalePCs.length > 1) {
-          const lo = m.max(0, OCTAVE.min * 12 - 1);
-          const hi = OCTAVE.max * 12 - 1;
+          const lo = minMidi;
+          const hi = maxMidi;
           const pitches = [];
           for (let oct = m.floor(lo / 12); oct <= m.ceil(hi / 12); oct++) {
             for (let scaleIndex = 0; scaleIndex < scalePCs.length; scaleIndex++) {
@@ -238,9 +241,9 @@ playNotesEmitPick = function(opts = {}) {
           }
           flurryNote = bestIdx >= 0
             ? scalePitches[bestIdx]
-            : modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+            : modClamp(flurryNote + flurryDir * ri(1, 2), minMidi, maxMidi);
         } else {
-          flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+          flurryNote = modClamp(flurryNote + flurryDir * ri(1, 2), minMidi, maxMidi);
         }
 
         const flurryVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95) * (1 - flurryIndex * 0.05))));
@@ -271,8 +274,8 @@ playNotesEmitPick = function(opts = {}) {
     const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
     const reflectApplyShift = reflectSelected && selectedShift !== 0 && rf() < perProbScaledRefl;
     const reflectionEmitNoteBase = reflectApplyShift
-      ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
-      : pick.note;
+      ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
+      : pickNote;
     const reflectionEmitNote = RegisterCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTick).midi;
 
     const reflOnEvt = { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] };
@@ -290,7 +293,7 @@ playNotesEmitPick = function(opts = {}) {
       const echoIntervals = [3, 4, 7];
       for (let burstIndex = 0; burstIndex < reflBurstCount; burstIndex++) {
         const echoInterval = echoIntervals[burstIndex % echoIntervals.length] * (rf() < 0.3 ? -1 : 1);
-        const echoNote = modClamp(reflectionEmitNote + echoInterval, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+        const echoNote = modClamp(reflectionEmitNote + echoInterval, minMidi, maxMidi);
         const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVelRefl * rf(0.45, 0.65) * textureMode.velocityScale)));
         const echoStagger = tpUnit * rf(0.01, 0.04) * (burstIndex + 1);
         const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [reflectionCH, echoNote, echoVel] };
@@ -302,7 +305,7 @@ playNotesEmitPick = function(opts = {}) {
 
     if (textureMode.mode === 'flurry' && isPrimary) {
       const ghostDir = rf() < 0.5 ? 1 : -1;
-      const ghostNote = modClamp(reflectionEmitNote + ghostDir * ri(1, 3), m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+      const ghostNote = modClamp(reflectionEmitNote + ghostDir * ri(1, 3), minMidi, maxMidi);
       const ghostVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVelRefl * rf(0.35, 0.55))));
       const ghostDelay = tpUnit * rf(0.06, 0.14);
       const ghostSus = tpUnit * rf(0.1, 0.25) * textureMode.sustainScale;
@@ -330,8 +333,8 @@ playNotesEmitPick = function(opts = {}) {
 
       const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
       const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
-      const bassEmitBase = bassApplyShift ? pick.note + selectedShift : pick.note;
-      const bassNoteBase = modClamp(bassEmitBase, m.max(0, OCTAVE.min * 12 - 1), 59);
+      const bassEmitBase = bassApplyShift ? pickNote + selectedShift : pickNote;
+      const bassNoteBase = modClamp(bassEmitBase, minMidi, m.min(59, maxMidi));
       const bassNote = RegisterCollisionAvoider.avoid(activeLayerName, bassNoteBase, onTick).midi;
 
       const bassOnEvt = { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] };

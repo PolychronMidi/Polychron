@@ -110,8 +110,8 @@ HarmonicIntervalGuard = (() => {
     // Find best candidate within ±3 semitones
     let bestNote = midi;
     let bestScore = Infinity;
-    const lo = Math.max(OCTAVE.min * 12 - 1, midi - 3);
-    const hi = Math.min(OCTAVE.max * 12 - 1, midi + 3);
+    const lo = Math.max(0, OCTAVE.min * 12, midi - 3);
+    const hi = Math.min(127, OCTAVE.max * 12 - 1, midi + 3);
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;

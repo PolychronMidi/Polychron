@@ -33,18 +33,20 @@ RegisterCollisionAvoider = (() => {
     if (!Number.isFinite(midi)) throw new Error('RegisterCollisionAvoider.avoid: midi must be finite');
     if (!Number.isFinite(tick)) throw new Error('RegisterCollisionAvoider.avoid: tick must be finite');
 
+    const lo = Math.max(0, OCTAVE.min * 12);
+    const hi = Math.min(127, OCTAVE.max * 12 - 1);
+    const boundedMidi = clamp(midi, lo, hi);
+
     const absMs = tickToMs(tick);
     const other = AbsoluteTimeGrid.findClosest(CHANNEL, absMs, TIME_TOLERANCE_MS, layer);
-    if (!other || !Number.isFinite(other.midi)) return { midi, adjusted: false };
-    if (Math.abs(other.midi - midi) >= COLLISION_SEMITONES) return { midi, adjusted: false };
+    if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
+    if (Math.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
-    const lo = Math.max(0, OCTAVE.min * 12 - 1);
-    const hi = OCTAVE.max * 12 - 1;
-    const direction = midi <= other.midi ? -12 : 12;
+    const direction = boundedMidi <= other.midi ? -12 : 12;
 
-    let candidate = clamp(midi + direction, lo, hi);
+    let candidate = clamp(boundedMidi + direction, lo, hi);
     if (Math.abs(candidate - other.midi) < COLLISION_SEMITONES) {
-      candidate = clamp(midi - direction, lo, hi);
+      candidate = clamp(boundedMidi - direction, lo, hi);
     }
 
     const adjusted = candidate !== midi;

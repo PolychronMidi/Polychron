@@ -1,17 +1,20 @@
 // playMotifsBuildCandidateNotes.js - candidate pool generation for playMotifs
 
 playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, resolvedNote, composerValidPCs) {
+  const minMidi = m.max(0, OCTAVE.min * 12);
+  const maxMidi = m.min(127, OCTAVE.max * 12 - 1);
+
   let candidateNotes = (() => {
     const note = Number(resolvedNote);
-    if (!Number.isFinite(note) || note < OCTAVE.min * 12 - 1 || note > OCTAVE.max * 12 - 1) {
-      return [modClamp(note, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)];
+    if (!Number.isFinite(note) || note < minMidi || note > maxMidi) {
+      return [modClamp(note, minMidi, maxMidi)];
     }
     return [note];
   })();
 
   if (candidateNotes.length < 3) {
-    const minNote = m.max(0, OCTAVE.min * 12 - 1);
-    const maxNote = OCTAVE.max * 12 - 1;
+    const minNote = minMidi;
+    const maxNote = maxMidi;
     candidateNotes = CandidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6, unit);
   }
 

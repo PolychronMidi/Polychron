@@ -28,7 +28,12 @@ ConvergenceDetector = (() => {
    */
   function postOnset(absTimeMs, layer, midi, velocity) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { midi, velocity });
+    V.requireFinite(midi, 'midi');
+    V.requireFinite(velocity, 'velocity');
+    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+      midi: clamp(Math.round(midi), 0, 127),
+      velocity: clamp(Math.round(velocity), 1, MIDI_MAX_VALUE)
+    });
   }
 
   /**
@@ -64,8 +69,8 @@ ConvergenceDetector = (() => {
     return {
       syncTick,
       rarity: clamp(rarity, 0, 1),
-      otherMidi: match.midi || 0,
-      otherVelocity: match.velocity || 0
+      otherMidi: clamp(Math.round(Number(match.midi) || 0), 0, 127),
+      otherVelocity: clamp(Math.round(Number(match.velocity) || 0), 1, MIDI_MAX_VALUE)
     };
   }
 
@@ -79,6 +84,8 @@ ConvergenceDetector = (() => {
     * @returns {{ convergence: boolean, rarity: number, burstNotes: number[], totalConvergences: number } | null}
    */
   function applyIfConverged(absTimeMs, activeLayer, currentMidi, currentVelocity) {
+    V.requireFinite(currentMidi, 'currentMidi');
+    V.requireFinite(currentVelocity, 'currentVelocity');
     const conv = detect(absTimeMs, activeLayer);
     if (!conv) return null;
 
@@ -87,7 +94,8 @@ ConvergenceDetector = (() => {
 
     // === BURST EVENT: coordinated unison singularity ===
     // Both notes share a pitch class; emit octave-displaced cluster
-    const burstPC = currentMidi % 12;
+    const boundedCurrentMidi = clamp(Math.round(currentMidi), 0, 127);
+    const burstPC = ((boundedCurrentMidi % 12) + 12) % 12;
     const burstBaseTick = conv.syncTick;
     const burstVel = Math.round(clamp(
       ((currentVelocity + conv.otherVelocity) / 2) * (0.9 + conv.rarity * 0.3),
@@ -96,9 +104,11 @@ ConvergenceDetector = (() => {
     // Pick octave spread based on rarity: rarer = wider spread
     const octaveSpread = conv.rarity > 0.7 ? 3 : conv.rarity > 0.4 ? 2 : 1;
     const burstNotes = [];
+    const lo = Math.max(0, OCTAVE.min * 12);
+    const hi = Math.min(127, OCTAVE.max * 12 - 1);
     for (let oi = -octaveSpread; oi <= octaveSpread; oi++) {
-      const n = burstPC + (Math.round(currentMidi / 12) + oi) * 12;
-      if (n >= (OCTAVE.min * 12 - 1) && n <= (OCTAVE.max * 12 - 1)) burstNotes.push(n);
+      const n = burstPC + (Math.round(boundedCurrentMidi / 12) + oi) * 12;
+      if (n >= lo && n <= hi) burstNotes.push(n);
     }
     // Limit to BURST_VOICES and schedule via p(c,...)
     while (burstNotes.length > BURST_VOICES) burstNotes.splice(ri(burstNotes.length - 1), 1);
