@@ -89,6 +89,14 @@ CounterpointMotionTracker = (() => {
     return { parallelBias: 1.0, contraryBias: 1.0 };
   }
 
+  ConductorIntelligence.registerStateProvider('CounterpointMotionTracker', () => {
+    const b = CounterpointMotionTracker.getMotionBias();
+    return {
+      counterpointParallelBias: b ? b.parallelBias : 1,
+      counterpointContraryBias: b ? b.contraryBias : 1
+    };
+  });
+
   return {
     getMotionProfile,
     getMotionBias

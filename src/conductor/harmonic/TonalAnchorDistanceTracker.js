@@ -70,6 +70,12 @@ TonalAnchorDistanceTracker = (() => {
     homeCenter = -1;
   }
 
+  ConductorIntelligence.registerTensionBias('TonalAnchorDistanceTracker', () => TonalAnchorDistanceTracker.getTensionBias(), 0.9, 1.12);
+  ConductorIntelligence.registerStateProvider('TonalAnchorDistanceTracker', () => {
+    const s = TonalAnchorDistanceTracker.getDistanceSignal();
+    return { tonalAdventureLevel: s ? s.adventureLevel : 'home' };
+  });
+
   return {
     getDistanceSignal,
     getTensionBias,

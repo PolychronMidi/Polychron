@@ -122,3 +122,4 @@ RestSynchronizer = (() => {
 
   return { evaluateSharedRest, evaluateComplementaryRest, postRest, getSharedRestCount, isLayerResting, reset };
 })();
+CrossLayerRegistry.register('RestSynchronizer', RestSynchronizer, ['all', 'section']);

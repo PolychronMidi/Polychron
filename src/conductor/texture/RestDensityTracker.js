@@ -122,6 +122,9 @@ RestDensityTracker = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerDensityBias('RestDensityTracker:onset', () => RestDensityTracker.getOnsetBias(), 0.7, 1.3);
+  ConductorIntelligence.registerDensityBias('RestDensityTracker:breathing', () => RestDensityTracker.getBreathingDensityBias(), 0.8, 1.2);
+
   return {
     getOnsetDensity,
     getOnsetBias,

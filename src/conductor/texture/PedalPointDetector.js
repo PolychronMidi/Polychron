@@ -97,6 +97,14 @@ PedalPointDetector = (() => {
     return { suggestion: 'consider-anchor', urgency: 0.2 };
   }
 
+  ConductorIntelligence.registerStateProvider('PedalPointDetector', () => {
+    const s = PedalPointDetector.getBassSuggestion();
+    return {
+      pedalSuggestion: s ? s.suggestion : 'consider-anchor',
+      pedalUrgency: s ? s.urgency : 0
+    };
+  });
+
   return {
     getPedalProfile,
     getBassSuggestion

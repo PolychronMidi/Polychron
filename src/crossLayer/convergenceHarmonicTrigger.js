@@ -134,3 +134,4 @@ ConvergenceHarmonicTrigger = (() => {
 
   return { onConvergence, shouldTriggerChange, getTriggeredChanges, getTriggerCount, reset };
 })();
+CrossLayerRegistry.register('ConvergenceHarmonicTrigger', ConvergenceHarmonicTrigger, ['all', 'section']);

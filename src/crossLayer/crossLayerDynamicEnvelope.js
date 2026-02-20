@@ -132,3 +132,4 @@ CrossLayerDynamicEnvelope = (() => {
 
   return { tick, getVelocityScale, setArcType, getArcType, autoSelectArcType, reset };
 })();
+CrossLayerRegistry.register('CrossLayerDynamicEnvelope', CrossLayerDynamicEnvelope, ['all', 'section']);

@@ -180,3 +180,4 @@ ConvergenceDetector = (() => {
 
   return { postOnset, detect, applyIfConverged, wasRecent, getLastConvergenceMs, getConvergenceCount, reset };
 })();
+CrossLayerRegistry.register('ConvergenceDetector', ConvergenceDetector, ['all', 'phrase']);

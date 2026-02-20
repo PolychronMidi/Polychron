@@ -43,5 +43,18 @@ The project exposes a single naked global `Validator` (defined in `src/utils/val
 - **Clear separation of responsibilities**: keep algorithmic implementations (e.g., `SimplexNoise`) as Strategy implementations; configs (e.g., `noiseConfig`) as Factory methods; adapters (e.g., `noiseModulator`) bridge noise → audio parameters; per‑effect implementations (stutterFade/pan/fx) follow the Strategy pattern; registry APIs support runtime extension.
 - **Load order & side‑effects**: helper modules must be required by the subsystem `index.js` (helpers first, then manager) so naked globals are defined predictably. Managers should assume helpers exist and **fail fast** if required helpers are missing.
 - **Naming rule**: prefer a single `*Manager` per subsystem (hub/boss) and only add supporting helpers (not extra managers) to reduce the God‑object anti‑pattern.
+
+### Design Patterns - Self-Registration Registries (CrossLayerRegistry & ConductorIntelligence)
+Two subsystems use a **self-registration** pattern to replace epidemic `typeof` guards with centralized iteration:
+- **`CrossLayerRegistry`** (`src/crossLayer/CrossLayerRegistry.js`): cross-layer modules call `CrossLayerRegistry.register(name, module, scopes)` at load time. The lifecycle manager (`crossLayerLifecycleManager.js`) then calls `resetAll()` / `resetSection()` / `resetPhrase()` — no typeof probes needed.
+  - `scopes` is an array from `['all', 'section', 'phrase']`; determines which reset boundaries the module participates in.
+  - `crossLayer/index.js` loads `CrossLayerRegistry` **first** and `crossLayerLifecycleManager` **last** so all modules are registered before lifecycle calls.
+- **`ConductorIntelligence`** (`src/conductor/ConductorIntelligence.js`): intelligence modules (dynamics, harmonic, melodic, rhythmic, texture) self-register their contributions at load time. `GlobalConductorUpdate.js` iterates the registries instead of probing 70+ globals:
+  - `registerDensityBias(name, getter, lo, hi)` → `collectDensityBias()` returns the clamped product.
+  - `registerTensionBias(name, getter, lo, hi)` → `collectTensionBias()` returns the clamped product.
+  - `registerFlickerModifier(name, getter, lo, hi)` → `collectFlickerModifier()` returns the clamped product.
+  - `registerRecorder(name, fn)` → `runRecorders(ctx)` calls all recorders with `{ absTime, compositeIntensity, currentDensity, harmonicRhythm }`.
+  - `registerStateProvider(name, getter)` → `collectStateFields()` merges all provider outputs for `ConductorState.updateFromConductor()`.
+- **When adding a new intelligence module**: create the module file in the appropriate subdirectory, add the self-registration call(s) at the end of the IIFE body (before `})();`), and ensure its `index.js` `require`s it. No changes to `GlobalConductorUpdate.js` are needed.
 ---
 If anything here is unclear, missing, or in contradiction with the codebase, please ask for clarification before proceeding. This document is meant to be a living source of truth for project conventions and should be updated as needed to reflect the current state of the code and best practices.

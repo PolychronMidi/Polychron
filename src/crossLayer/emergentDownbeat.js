@@ -139,3 +139,4 @@ EmergentDownbeat = (() => {
 
   return { detect, accentVelocity, reinforceBass, widenStereo, applyIfDownbeat, getDownbeatCount, reset };
 })();
+CrossLayerRegistry.register('EmergentDownbeat', EmergentDownbeat, ['all']);

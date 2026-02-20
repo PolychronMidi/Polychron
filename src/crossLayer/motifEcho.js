@@ -156,3 +156,4 @@ MotifEcho = (() => {
 
   return { recordNote, captureMotif, applyTransform, deliverEcho, getPendingCount, reset };
 })();
+CrossLayerRegistry.register('MotifEcho', MotifEcho, ['all', 'phrase']);

@@ -59,6 +59,12 @@ AttackDensityProfiler = (() => {
     return getAttackSignal().densityBias;
   }
 
+  ConductorIntelligence.registerDensityBias('AttackDensityProfiler', () => AttackDensityProfiler.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerStateProvider('AttackDensityProfiler', () => {
+    const s = AttackDensityProfiler.getAttackSignal();
+    return { attackSuggestion: s ? s.suggestion : 'balanced' };
+  });
+
   return {
     getAttackSignal,
     getDensityBias

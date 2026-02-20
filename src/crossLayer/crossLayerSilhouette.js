@@ -129,3 +129,4 @@ CrossLayerSilhouette = (() => {
 
   return { tick, getCorrections, getSilhouette, getSilhouetteArc, reset };
 })();
+CrossLayerRegistry.register('CrossLayerSilhouette', CrossLayerSilhouette, ['all', 'section']);

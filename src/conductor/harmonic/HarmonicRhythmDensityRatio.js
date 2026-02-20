@@ -59,6 +59,8 @@ HarmonicRhythmDensityRatio = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerDensityBias('HarmonicRhythmDensityRatio', () => HarmonicRhythmDensityRatio.getDensityBias(), 0.85, 1.2);
+
   return {
     getRatioProfile,
     getDensityBias

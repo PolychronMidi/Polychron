@@ -1,4 +1,5 @@
 PhaseAwareCadenceWindow = (() => {
+  const V = Validator.create('PhaseAwareCadenceWindow');
   const MAX_SAMPLES = 24;
   const MIN_CONFIDENCE = 0.45;
   /** @type {Map<string, Array<{ timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel' }>>} */
@@ -19,7 +20,7 @@ PhaseAwareCadenceWindow = (() => {
    * @param {string} layer
    */
   function update(absTimeMs, layer) {
-    if (!Number.isFinite(absTimeMs)) throw new Error('PhaseAwareCadenceWindow.update: absTimeMs must be finite');
+    V.requireFinite(absTimeMs, 'absTimeMs');
     const row = ensureLayer(layer);
 
     const phase = (typeof RhythmicPhaseLock !== 'undefined' && RhythmicPhaseLock && typeof RhythmicPhaseLock.measurePhase === 'function')
@@ -96,3 +97,4 @@ PhaseAwareCadenceWindow = (() => {
 
   return { update, getLatest, getConfidence, shouldAllowCadence, reset };
 })();
+CrossLayerRegistry.register('PhaseAwareCadenceWindow', PhaseAwareCadenceWindow, ['all', 'section']);

@@ -1,12 +1,11 @@
 AdaptiveTrustScores = (() => {
+  const V = Validator.create('AdaptiveTrustScores');
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
 
   /** @param {string} systemName */
   function ensure(systemName) {
-    if (typeof systemName !== 'string' || systemName.length === 0) {
-      throw new Error('AdaptiveTrustScores: systemName must be a non-empty string');
-    }
+    V.assertNonEmptyString(systemName, 'systemName');
     if (!scoreBySystem.has(systemName)) {
       scoreBySystem.set(systemName, { score: 0, samples: 0, lastMs: 0 });
     }
@@ -20,7 +19,7 @@ AdaptiveTrustScores = (() => {
    * @param {number} payoff - -1..1
    */
   function registerOutcome(systemName, payoff) {
-    if (!Number.isFinite(payoff)) throw new Error('AdaptiveTrustScores.registerOutcome: payoff must be finite');
+    V.requireFinite(payoff, 'payoff');
     const state = ensure(systemName);
     const p = clamp(payoff, -1, 1);
     state.score = clamp(state.score * 0.9 + p * 0.1, -1, 1);
@@ -71,3 +70,4 @@ AdaptiveTrustScores = (() => {
 
   return { registerOutcome, getWeight, decayAll, getSnapshot, reset };
 })();
+CrossLayerRegistry.register('AdaptiveTrustScores', AdaptiveTrustScores, ['all']);

@@ -71,6 +71,9 @@ RhythmicComplexityGradient = (() => {
     samples.length = 0;
   }
 
+  ConductorIntelligence.registerDensityBias('RhythmicComplexityGradient', () => RhythmicComplexityGradient.getSubdivisionBias(), 0.8, 1.3);
+  ConductorIntelligence.registerRecorder('RhythmicComplexityGradient', (ctx) => { RhythmicComplexityGradient.recordComplexity(ctx.currentDensity, ctx.absTime); });
+
   return {
     recordComplexity,
     getGradient,

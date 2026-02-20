@@ -100,3 +100,4 @@ CrossLayerClimaxEngine = (() => {
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };
 })();
+CrossLayerRegistry.register('CrossLayerClimaxEngine', CrossLayerClimaxEngine, ['all', 'section']);

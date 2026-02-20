@@ -142,3 +142,4 @@ HarmonicIntervalGuard = (() => {
 
   return { recordCrossInterval, getDissonanceLevel, nudgePitch, reset };
 })();
+CrossLayerRegistry.register('HarmonicIntervalGuard', HarmonicIntervalGuard, ['all', 'section']);

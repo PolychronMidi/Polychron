@@ -94,6 +94,17 @@ AmbitusMigrationTracker = (() => {
     rangeHistory.length = 0;
   }
 
+  ConductorIntelligence.registerDensityBias('AmbitusMigrationTracker', () => AmbitusMigrationTracker.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerRecorder('AmbitusMigrationTracker', (ctx) => { AmbitusMigrationTracker.recordSnapshot(ctx.absTime); });
+  ConductorIntelligence.registerStateProvider('AmbitusMigrationTracker', () => {
+    const s = AmbitusMigrationTracker.getAmbitusSignal();
+    return {
+      ambitusRange: s ? s.range : 24,
+      ambitusTrend: s ? s.trend : 'stable',
+      ambitusRegisterSuggestion: s ? s.registerSuggestion : 'maintain'
+    };
+  });
+
   return {
     getCurrentAmbitus,
     recordSnapshot,

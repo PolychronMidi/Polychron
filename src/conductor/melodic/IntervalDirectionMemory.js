@@ -62,6 +62,14 @@ IntervalDirectionMemory = (() => {
     return { overusedIntervals: overused, freshness, suggestion };
   }
 
+  ConductorIntelligence.registerStateProvider('IntervalDirectionMemory', () => {
+    const s = IntervalDirectionMemory.getFreshnessSignal();
+    return {
+      intervalFreshness: s ? s.freshness : 1,
+      intervalFreshnessSuggestion: s ? s.suggestion : 'maintain'
+    };
+  });
+
   return {
     getFreshnessSignal
   };

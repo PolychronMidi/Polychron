@@ -79,6 +79,8 @@ LayerIndependenceScorer = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerDensityBias('LayerIndependenceScorer', () => LayerIndependenceScorer.getDensityBias(), 0.9, 1.15);
+
   return {
     getIndependenceProfile,
     getDensityBias

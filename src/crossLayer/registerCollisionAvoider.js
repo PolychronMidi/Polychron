@@ -1,4 +1,5 @@
 RegisterCollisionAvoider = (() => {
+  const V = Validator.create('RegisterCollisionAvoider');
   const CHANNEL = 'registerCollision';
   const TIME_TOLERANCE_MS = 140;
   const COLLISION_SEMITONES = 5;
@@ -17,8 +18,8 @@ RegisterCollisionAvoider = (() => {
    * @param {number} tick
    */
   function recordNote(layer, midi, tick) {
-    if (!Number.isFinite(midi)) throw new Error('RegisterCollisionAvoider.recordNote: midi must be finite');
-    if (!Number.isFinite(tick)) throw new Error('RegisterCollisionAvoider.recordNote: tick must be finite');
+    V.requireFinite(midi, 'midi');
+    V.requireFinite(tick, 'tick');
     const absMs = tickToMs(tick);
     AbsoluteTimeGrid.post(CHANNEL, layer, absMs, { midi, tick });
   }
@@ -30,8 +31,8 @@ RegisterCollisionAvoider = (() => {
    * @returns {{ midi: number, adjusted: boolean }}
    */
   function avoid(layer, midi, tick) {
-    if (!Number.isFinite(midi)) throw new Error('RegisterCollisionAvoider.avoid: midi must be finite');
-    if (!Number.isFinite(tick)) throw new Error('RegisterCollisionAvoider.avoid: tick must be finite');
+    V.requireFinite(midi, 'midi');
+    V.requireFinite(tick, 'tick');
 
     const lo = Math.max(0, OCTAVE.min * 12);
     const hi = Math.min(127, OCTAVE.max * 12 - 1);
@@ -68,3 +69,4 @@ RegisterCollisionAvoider = (() => {
 
   return { recordNote, avoid, reset };
 })();
+CrossLayerRegistry.register('RegisterCollisionAvoider', RegisterCollisionAvoider, ['all', 'phrase']);

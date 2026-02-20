@@ -101,6 +101,13 @@ IntervalExpansionContractor = (() => {
     intervalSnapshots.length = 0;
   }
 
+  ConductorIntelligence.registerDensityBias('IntervalExpansionContractor', () => IntervalExpansionContractor.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerRecorder('IntervalExpansionContractor', (ctx) => { IntervalExpansionContractor.recordSnapshot(ctx.absTime); });
+  ConductorIntelligence.registerStateProvider('IntervalExpansionContractor', () => {
+    const s = IntervalExpansionContractor.getExpansionSignal();
+    return { intervalExpansionTrend: s ? s.trend : 'stable' };
+  });
+
   return {
     recordSnapshot,
     getExpansionSignal,

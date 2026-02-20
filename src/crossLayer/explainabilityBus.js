@@ -1,4 +1,5 @@
 ExplainabilityBus = (() => {
+  const V = Validator.create('ExplainabilityBus');
   const MAX_ENTRIES = 600;
   const CHANNEL = 'explainability';
   /** @type {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>} */
@@ -11,9 +12,7 @@ ExplainabilityBus = (() => {
    * @param {number} [absTimeMs]
    */
   function emit(type, layer, payload, absTimeMs) {
-    if (typeof type !== 'string' || type.length === 0) {
-      throw new Error('ExplainabilityBus.emit: type must be a non-empty string');
-    }
+    V.assertNonEmptyString(type, 'type');
     let t = 0;
     if (Number.isFinite(absTimeMs)) {
       t = Number(absTimeMs);
@@ -45,7 +44,7 @@ ExplainabilityBus = (() => {
 
   /** @param {number} sinceMs */
   function querySince(sinceMs) {
-    if (!Number.isFinite(sinceMs)) throw new Error('ExplainabilityBus.querySince: sinceMs must be finite');
+    V.requireFinite(sinceMs, 'sinceMs');
     return entries.filter(e => e.absTimeMs >= sinceMs);
   }
 
@@ -55,3 +54,4 @@ ExplainabilityBus = (() => {
 
   return { emit, getRecent, querySince, reset };
 })();
+CrossLayerRegistry.register('ExplainabilityBus', ExplainabilityBus, ['all', 'section']);

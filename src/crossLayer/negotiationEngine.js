@@ -1,4 +1,5 @@
 NegotiationEngine = (() => {
+  const V = Validator.create('NegotiationEngine');
   /**
    * @param {string} layer
    * @param {{
@@ -11,9 +12,9 @@ NegotiationEngine = (() => {
    * }} context
    */
   function apply(layer, context) {
-    if (!context || typeof context !== 'object') throw new Error('NegotiationEngine.apply: context is required');
-    if (!Number.isFinite(context.playProb)) throw new Error('NegotiationEngine.apply: playProb must be finite');
-    if (!Number.isFinite(context.stutterProb)) throw new Error('NegotiationEngine.apply: stutterProb must be finite');
+    V.assertObject(context, 'context');
+    V.requireFinite(context.playProb, 'context.playProb');
+    V.requireFinite(context.stutterProb, 'context.stutterProb');
 
     const trustStutter = (typeof AdaptiveTrustScores !== 'undefined' && AdaptiveTrustScores && typeof AdaptiveTrustScores.getWeight === 'function')
       ? AdaptiveTrustScores.getWeight('stutterContagion')
@@ -71,3 +72,4 @@ NegotiationEngine = (() => {
 
   return { apply, reset };
 })();
+CrossLayerRegistry.register('NegotiationEngine', NegotiationEngine, ['all']);

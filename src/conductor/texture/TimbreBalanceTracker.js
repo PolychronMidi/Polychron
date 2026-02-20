@@ -89,6 +89,14 @@ TimbreBalanceTracker = (() => {
     return { balanced: true, suggestion: 'maintain' };
   }
 
+  ConductorIntelligence.registerStateProvider('TimbreBalanceTracker', () => {
+    const s = TimbreBalanceTracker.getTimbreSignal();
+    return {
+      timbreBalanced: s ? s.balanced : true,
+      timbreSuggestion: s ? s.suggestion : 'maintain'
+    };
+  });
+
   return {
     getTimbreProfile,
     getUnderusedChannels,

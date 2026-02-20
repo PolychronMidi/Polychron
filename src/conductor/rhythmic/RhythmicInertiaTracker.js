@@ -83,6 +83,12 @@ RhythmicInertiaTracker = (() => {
     patternFingerprints.length = 0;
   }
 
+  ConductorIntelligence.registerDensityBias('RhythmicInertiaTracker', () => RhythmicInertiaTracker.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerStateProvider('RhythmicInertiaTracker', () => {
+    const s = RhythmicInertiaTracker.getInertiaSignal();
+    return { rhythmicInertiaSuggestion: s ? s.suggestion : 'maintain' };
+  });
+
   return {
     recordPattern,
     getInertiaSignal,

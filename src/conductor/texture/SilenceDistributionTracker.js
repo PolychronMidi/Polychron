@@ -82,6 +82,14 @@ SilenceDistributionTracker = (() => {
     return { clusterScore, staggerScore, silenceRatio, suggestion };
   }
 
+  ConductorIntelligence.registerStateProvider('SilenceDistributionTracker', () => {
+    const s = SilenceDistributionTracker.getSilenceSignal();
+    return {
+      silenceSuggestion: s ? s.suggestion : 'maintain',
+      silenceRatio: s ? s.silenceRatio : 0.3
+    };
+  });
+
   return {
     getSilenceSignal
   };

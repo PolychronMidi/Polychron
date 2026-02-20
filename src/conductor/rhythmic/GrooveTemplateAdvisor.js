@@ -86,6 +86,8 @@ GrooveTemplateAdvisor = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerFlickerModifier('GrooveTemplateAdvisor', () => GrooveTemplateAdvisor.getVelocityHumanizeBias(), 0.8, 1.3);
+
   return {
     getGrooveProfile,
     suggestGrooveFeel,

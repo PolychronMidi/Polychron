@@ -59,6 +59,12 @@ CadentialPreparationAdvisor = (() => {
     return getCadentialSignal().tensionBias;
   }
 
+  ConductorIntelligence.registerTensionBias('CadentialPreparationAdvisor', () => CadentialPreparationAdvisor.getTensionBias(), 1, 1.2);
+  ConductorIntelligence.registerStateProvider('CadentialPreparationAdvisor', () => {
+    const s = CadentialPreparationAdvisor.getCadentialSignal();
+    return { cadentialPreparationActive: s ? s.preparationActive : false };
+  });
+
   return {
     getCadentialSignal,
     getTensionBias

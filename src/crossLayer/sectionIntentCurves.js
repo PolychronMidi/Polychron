@@ -1,4 +1,5 @@
 SectionIntentCurves = (() => {
+  const V = Validator.create('SectionIntentCurves');
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {
     densityTarget: 0.5,
@@ -35,7 +36,7 @@ SectionIntentCurves = (() => {
 
   /** @param {{ densityTarget?: number, dissonanceTarget?: number, interactionTarget?: number, entropyTarget?: number }} intent */
   function setManualIntent(intent) {
-    if (!intent || typeof intent !== 'object') throw new Error('SectionIntentCurves.setManualIntent: intent must be an object');
+    V.assertObject(intent, 'intent');
     lastIntent = {
       densityTarget: clamp(Number(intent.densityTarget ?? lastIntent.densityTarget), 0, 1),
       dissonanceTarget: clamp(Number(intent.dissonanceTarget ?? lastIntent.dissonanceTarget), 0, 1),
@@ -56,3 +57,4 @@ SectionIntentCurves = (() => {
 
   return { getIntent, getLastIntent, setManualIntent, reset };
 })();
+CrossLayerRegistry.register('SectionIntentCurves', SectionIntentCurves, ['all']);

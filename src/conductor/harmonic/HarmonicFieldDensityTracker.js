@@ -78,6 +78,12 @@ HarmonicFieldDensityTracker = (() => {
     return getFieldDensitySignal().densityBias;
   }
 
+  ConductorIntelligence.registerDensityBias('HarmonicFieldDensityTracker', () => HarmonicFieldDensityTracker.getDensityBias(), 0.9, 1.1);
+  ConductorIntelligence.registerStateProvider('HarmonicFieldDensityTracker', () => {
+    const s = HarmonicFieldDensityTracker.getFieldDensitySignal();
+    return { harmonicFieldAvgSimultaneous: s ? s.avgSimultaneous : 1 };
+  });
+
   return {
     getFieldDensitySignal,
     getDensityBias

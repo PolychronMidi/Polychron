@@ -46,6 +46,8 @@ ChromaticSaturationMonitor = (() => {
     return getSaturationSignal().densityBias;
   }
 
+  ConductorIntelligence.registerDensityBias('ChromaticSaturationMonitor', () => ChromaticSaturationMonitor.getDensityBias(), 0.9, 1.1);
+
   return {
     getSaturationSignal,
     getDensityBias

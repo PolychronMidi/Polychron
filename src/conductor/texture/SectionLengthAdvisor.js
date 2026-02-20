@@ -70,6 +70,8 @@ SectionLengthAdvisor = (() => {
     energyHistory.length = 0;
   }
 
+  ConductorIntelligence.registerRecorder('SectionLengthAdvisor', (ctx) => { SectionLengthAdvisor.recordEnergy(ctx.compositeIntensity); });
+
   return {
     recordEnergy,
     advisePhraseCount,

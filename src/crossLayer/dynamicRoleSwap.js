@@ -108,3 +108,4 @@ DynamicRoleSwap = (() => {
 
   return { evaluateSwap, getProfileModifiers, modifyPlayProb, modifyVelocity, getIsSwapped, getSwapCount, reset };
 })();
+CrossLayerRegistry.register('DynamicRoleSwap', DynamicRoleSwap, ['all']);

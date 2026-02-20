@@ -71,6 +71,11 @@ SyncopationDensityTracker = (() => {
     return { syncopationBias: 1.0, straightBias: 1.0 };
   }
 
+  ConductorIntelligence.registerStateProvider('SyncopationDensityTracker', () => {
+    const b = SyncopationDensityTracker.getRhythmBias();
+    return { syncopationBias: b ? b.syncopationBias : 1 };
+  });
+
   return {
     getSyncopationProfile,
     getRhythmBias

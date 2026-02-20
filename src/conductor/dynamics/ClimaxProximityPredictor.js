@@ -86,6 +86,9 @@ ClimaxProximityPredictor = (() => {
     return 1.0;
   }
 
+  ConductorIntelligence.registerDensityBias('ClimaxProximityPredictor', () => ClimaxProximityPredictor.getDensityRampBias(), 0.85, 1.25);
+  ConductorIntelligence.registerTensionBias('ClimaxProximityPredictor', () => ClimaxProximityPredictor.getTensionBias(), 0.8, 1.2);
+
   return {
     predict,
     getDensityRampBias,

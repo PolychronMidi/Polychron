@@ -83,6 +83,11 @@ ModalColorTracker = (() => {
     return underused;
   }
 
+  ConductorIntelligence.registerStateProvider('ModalColorTracker', () => {
+    const b = ModalColorTracker.getColorBias();
+    return { modalColorBias: b ? b.colorBias : 1, modalStabilityBias: b ? b.stabilityBias : 1 };
+  });
+
   return {
     getModalProfile,
     getColorBias,

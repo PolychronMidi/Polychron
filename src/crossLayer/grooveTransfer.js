@@ -112,3 +112,4 @@ GrooveTransfer = (() => {
 
   return { recordTiming, applyOffset, reset };
 })();
+CrossLayerRegistry.register('GrooveTransfer', GrooveTransfer, ['all', 'phrase']);

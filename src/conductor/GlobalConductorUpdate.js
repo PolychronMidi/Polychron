@@ -1,7 +1,8 @@
 /**
  * GlobalConductorUpdate.js
  * Extracted update function from GlobalConductor.js to reduce file size.
- * Handles all dynamic system updates based on musical context.
+ * Uses ConductorIntelligence registry to collect biases/signals from
+ * intelligence modules instead of probing 70+ typeof guards.
  */
 
 (function() {
@@ -20,32 +21,21 @@
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
       : { dynamism: 0.7, position: 0.5, atStart: false, atEnd: false };
 
-    // Safety check for HarmonicContext
     const harmonicTension = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (HarmonicContext.getField('tension') || 0)
       : 0;
 
-    // READ NEW CONTEXT: Structural Phase & Excursion
-    // These drive macro-dynamics (long-term arcs) vs phraseCtx (mid-term)
     const sectionPhase = (typeof HarmonicContext !== 'undefined' && HarmonicContext.getField && HarmonicContext.getField('sectionPhase'))
       || 'development';
     const excursion = (typeof HarmonicContext !== 'undefined' && HarmonicContext.getField && HarmonicContext.getField('excursion'))
       || 0;
 
     // 2. derive composite intensity (0-1)
-    // Intensity rises with phrase position, harmonic tension, and structural drama
-
-    // Calculate Phase Multiplier (Macro-dynamics) — profile-driven
     const phaseMult = ConductorConfig.getPhaseMultiplier(sectionPhase);
-
-    // Apply multiplier to the raw arc dynamism from PhraseArcManager
     const arcIntensity = phraseCtx.dynamism * phaseMult;
-
-    // Calculate Excursion Tension (0-6 semitones -> 0-0.3)
-    // Further from home = more unstable/intense
     const excursionTension = Math.min(excursion, 6) * 0.05;
-
     const tensionIntensity = harmonicTension + excursionTension;
+
     const harmonicRhythm = (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
       ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1)
       : 0;
@@ -67,396 +57,40 @@
       1
     );
 
-    // Update cross-layer analysis modules (melodic contour, coherence, energy tracking)
-    if (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.update === 'function') {
-      MelodicContourTracker.update();
-    }
-    if (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.computeCoherence === 'function') {
-      LayerCoherenceScorer.computeCoherence();
-    }
-    if (typeof SectionLengthAdvisor !== 'undefined' && SectionLengthAdvisor && typeof SectionLengthAdvisor.recordEnergy === 'function') {
-      SectionLengthAdvisor.recordEnergy(compositeIntensity);
-    }
+    // 3. Run all registered recorders (side-effect: update intelligence module state)
+    ConductorIntelligence.runRecorders({
+      absTime,
+      compositeIntensity,
+      currentDensity,
+      harmonicRhythm
+    });
 
-    // Update Batch 4 intelligence modules
-    // DynamicRangeAdvisor & IntervalTensionProfiler are pure-query (no update needed)
-    // OnsetDensityProfiler provides ground-truth density correction
-    const onsetDensityBias = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')
-      ? clamp(OnsetDensityProfiler.getDensityBias(), 0.6, 1.4)
-      : 1;
-    const onsetCrossModBias = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getCrossModBias === 'function')
-      ? clamp(OnsetDensityProfiler.getCrossModBias(), 0.8, 1.2)
-      : 1;
-    // RestDensityTracker biases onset probability
-    const restOnsetBias = (typeof RestDensityTracker !== 'undefined' && RestDensityTracker && typeof RestDensityTracker.getOnsetBias === 'function')
-      ? clamp(RestDensityTracker.getOnsetBias(), 0.7, 1.3)
-      : 1;
-    // PitchGravityCenter tracks tonal drift (informational — consumed by composers)
-    // HarmonicVelocityMonitor checks harmonic pacing vs energy
-    const harmonicChangeBias = (typeof HarmonicVelocityMonitor !== 'undefined' && HarmonicVelocityMonitor && typeof HarmonicVelocityMonitor.getChangeThresholdBias === 'function')
-      ? clamp(HarmonicVelocityMonitor.getChangeThresholdBias(), 0.7, 1.4)
-      : 1;
-    // DynamicRangeTracker velocity spread bias
-    const velocitySpreadBias = (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.getSpreadBias === 'function')
-      ? clamp(DynamicRangeTracker.getSpreadBias(), 0.8, 1.3)
-      : 1;
+    // 4. Collect density bias from registry
+    const registryDensityBias = ConductorIntelligence.collectDensityBias();
 
-    // --- Batch 5 intelligence module reads ---
-    // SyncopationDensityTracker: rhythm weight biases
-    const syncopationBias = (typeof SyncopationDensityTracker !== 'undefined' && SyncopationDensityTracker && typeof SyncopationDensityTracker.getRhythmBias === 'function')
-      ? SyncopationDensityTracker.getRhythmBias()
-      : { syncopationBias: 1, straightBias: 1 };
-    // GrooveTemplateAdvisor: velocity humanization bias
-    const grooveVelBias = (typeof GrooveTemplateAdvisor !== 'undefined' && GrooveTemplateAdvisor && typeof GrooveTemplateAdvisor.getVelocityHumanizeBias === 'function')
-      ? clamp(GrooveTemplateAdvisor.getVelocityHumanizeBias(), 0.8, 1.3)
-      : 1;
-    // VoiceDensityBalancer: voice count bias for motifConfig
-    const voiceCountBias = (typeof VoiceDensityBalancer !== 'undefined' && VoiceDensityBalancer && typeof VoiceDensityBalancer.getVoiceCountBias === 'function')
-      ? clamp(VoiceDensityBalancer.getVoiceCountBias(), 0.7, 1.4)
-      : 1;
-    // AccentPatternTracker: accent velocity biases
-    const accentBias = (typeof AccentPatternTracker !== 'undefined' && AccentPatternTracker && typeof AccentPatternTracker.getAccentBias === 'function')
-      ? AccentPatternTracker.getAccentBias()
-      : { downbeatBias: 1, offbeatBias: 1 };
-    // ModalColorTracker: pitch color vs stability biases
-    const modalColorBias = (typeof ModalColorTracker !== 'undefined' && ModalColorTracker && typeof ModalColorTracker.getColorBias === 'function')
-      ? ModalColorTracker.getColorBias()
-      : { colorBias: 1, stabilityBias: 1 };
-    // RepetitionFatigueMonitor: penalty for repeated patterns
-    const repetitionPenalty = (typeof RepetitionFatigueMonitor !== 'undefined' && RepetitionFatigueMonitor && typeof RepetitionFatigueMonitor.getRepetitionPenalty === 'function')
-      ? clamp(RepetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.5)
-      : 1;
-    // EnergyMomentumTracker: density nudge from momentum tracking
-    const energyDensityNudge = (typeof EnergyMomentumTracker !== 'undefined' && EnergyMomentumTracker && typeof EnergyMomentumTracker.getDensityNudge === 'function')
-      ? clamp(EnergyMomentumTracker.getDensityNudge(), 0.9, 1.3)
-      : 1;
-
-    // Record current energy for momentum tracking
-    if (typeof EnergyMomentumTracker !== 'undefined' && EnergyMomentumTracker && typeof EnergyMomentumTracker.recordEnergy === 'function') {
-      EnergyMomentumTracker.recordEnergy(compositeIntensity, absTime);
-    }
-
-    // --- Batch 6 intelligence module reads ---
-    // ArticulationProfiler: duration selection biases (consumed via ConductorState)
-    const articulationBias = (typeof ArticulationProfiler !== 'undefined' && ArticulationProfiler && typeof ArticulationProfiler.getDurationBias === 'function')
-      ? ArticulationProfiler.getDurationBias()
-      : { legatoBias: 1, staccatoBias: 1 };
-    // RegisterMigrationTracker: register drift correction
-    const registerMigrationBias = (typeof RegisterMigrationTracker !== 'undefined' && RegisterMigrationTracker && typeof RegisterMigrationTracker.getRegisterBias === 'function')
-      ? RegisterMigrationTracker.getRegisterBias()
-      : { registerBias: 0, suggestion: 'maintain' };
-    // RhythmicComplexityGradient: subdivision depth bias
-    const subdivisionBias = (typeof RhythmicComplexityGradient !== 'undefined' && RhythmicComplexityGradient && typeof RhythmicComplexityGradient.getSubdivisionBias === 'function')
-      ? clamp(RhythmicComplexityGradient.getSubdivisionBias(), 0.8, 1.3)
-      : 1;
-    // IntervalBalanceTracker: interval selection biases (consumed via ConductorState)
-    const intervalBias = (typeof IntervalBalanceTracker !== 'undefined' && IntervalBalanceTracker && typeof IntervalBalanceTracker.getIntervalBias === 'function')
-      ? IntervalBalanceTracker.getIntervalBias()
-      : { stepBias: 1, leapBias: 1 };
-    // ClimaxProximityPredictor: density ramp + tension modifier
-    const climaxDensityBias = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getDensityRampBias === 'function')
-      ? clamp(ClimaxProximityPredictor.getDensityRampBias(), 0.85, 1.25)
-      : 1;
-    const climaxTensionMod = (typeof ClimaxProximityPredictor !== 'undefined' && ClimaxProximityPredictor && typeof ClimaxProximityPredictor.getTensionBias === 'function')
-      ? clamp(ClimaxProximityPredictor.getTensionBias(), 0.8, 1.2)
-      : 1;
-    // OnsetRegularityMonitor: rhythm variety bias
-    const onsetRegularityBias = (typeof OnsetRegularityMonitor !== 'undefined' && OnsetRegularityMonitor && typeof OnsetRegularityMonitor.getRhythmVarietyBias === 'function')
-      ? clamp(OnsetRegularityMonitor.getRhythmVarietyBias(), 0.85, 1.25)
-      : 1;
-    // DurationalContourTracker: duration envelope + flicker modifier
-    const durContourBias = (typeof DurationalContourTracker !== 'undefined' && DurationalContourTracker && typeof DurationalContourTracker.getDurationBias === 'function')
-      ? DurationalContourTracker.getDurationBias()
-      : { durationBias: 1, flickerMod: 1 };
-    // HarmonicSurpriseIndex: tension bias from harmonic predictability
-    const harmonicSurpriseBias = (typeof HarmonicSurpriseIndex !== 'undefined' && HarmonicSurpriseIndex && typeof HarmonicSurpriseIndex.getTensionBias === 'function')
-      ? clamp(HarmonicSurpriseIndex.getTensionBias(), 0.9, 1.25)
-      : 1;
-
-    // Record rhythmic complexity for gradient tracking
-    if (typeof RhythmicComplexityGradient !== 'undefined' && RhythmicComplexityGradient && typeof RhythmicComplexityGradient.recordComplexity === 'function') {
-      // Use current density as a proxy for rhythmic complexity
-      RhythmicComplexityGradient.recordComplexity(currentDensity, absTime);
-    }
-
-    // --- Batch 7 intelligence module reads ---
-    // CounterpointMotionTracker: inter-layer motion biases (consumed via ConductorState)
-    const counterpointBias = (typeof CounterpointMotionTracker !== 'undefined' && CounterpointMotionTracker && typeof CounterpointMotionTracker.getMotionBias === 'function')
-      ? CounterpointMotionTracker.getMotionBias()
-      : { parallelBias: 1, contraryBias: 1 };
-    // ConsonanceDissonanceTracker: tension modifier from interval quality
-    const consonanceTensionBias = (typeof ConsonanceDissonanceTracker !== 'undefined' && ConsonanceDissonanceTracker && typeof ConsonanceDissonanceTracker.getTensionBias === 'function')
-      ? clamp(ConsonanceDissonanceTracker.getTensionBias(), 0.85, 1.25)
-      : 1;
-    // VelocityShapeAnalyzer: flicker modifier from velocity shape (merged velocity contour + envelope)
-    const velocityFlickerMod = (typeof VelocityShapeAnalyzer !== 'undefined' && VelocityShapeAnalyzer && typeof VelocityShapeAnalyzer.getFlickerModifier === 'function')
-      ? clamp(VelocityShapeAnalyzer.getFlickerModifier(), 0.85, 1.2)
-      : 1;
-    // RestDensityTracker: density bias for breathing room (merged from PhraseBreathingAdvisor)
-    const breathingDensityBias = (typeof RestDensityTracker !== 'undefined' && RestDensityTracker && typeof RestDensityTracker.getBreathingDensityBias === 'function')
-      ? clamp(RestDensityTracker.getBreathingDensityBias(), 0.8, 1.2)
-      : 1;
-    // OctaveSpreadMonitor: register spread bias (consumed via ConductorState)
-    const octaveSpreadBias = (typeof OctaveSpreadMonitor !== 'undefined' && OctaveSpreadMonitor && typeof OctaveSpreadMonitor.getSpreadBias === 'function')
-      ? OctaveSpreadMonitor.getSpreadBias()
-      : 0;
-    // MotivicDensityTracker: motivic overcrowding bias
-    const motivicDensityBias = (typeof MotivicDensityTracker !== 'undefined' && MotivicDensityTracker && typeof MotivicDensityTracker.getDensityBias === 'function')
-      ? clamp(MotivicDensityTracker.getDensityBias(), 0.8, 1.2)
-      : 1;
-    // PedalPointDetector: bass movement suggestion (consumed via ConductorState)
-    const pedalSuggestion = (typeof PedalPointDetector !== 'undefined' && PedalPointDetector && typeof PedalPointDetector.getBassSuggestion === 'function')
-      ? PedalPointDetector.getBassSuggestion()
-      : { suggestion: 'consider-anchor', urgency: 0 };
-    // PhraseLengthMomentumTracker: phrase adjustment (consumed via ConductorState)
-    const phraseLengthAdj = (typeof PhraseLengthMomentumTracker !== 'undefined' && PhraseLengthMomentumTracker && typeof PhraseLengthMomentumTracker.suggestAdjustment === 'function')
-      ? PhraseLengthMomentumTracker.suggestAdjustment()
-      : { adjustment: 0, suggestion: 'maintain' };
-
-    // --- Batch 8 intelligence module reads ---
-    // TensionResolutionTracker: penalize dangling unresolved dissonance
-    const tensionResolBias = (typeof TensionResolutionTracker !== 'undefined' && TensionResolutionTracker && typeof TensionResolutionTracker.getTensionBias === 'function')
-      ? clamp(TensionResolutionTracker.getTensionBias(), 0.9, 1.25)
-      : 1;
-    // InterLayerRhythmAnalyzer: displacement signal (consumed via ConductorState)
-    const displacementSignal = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getDisplacementSignal === 'function')
-      ? InterLayerRhythmAnalyzer.getDisplacementSignal()
-      : { displacement: 'aligned', hemiolaActive: false };
-    // DensityWaveAnalyzer: flicker modifier from density oscillation patterns
-    const densityWaveFlicker = (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.getFlickerModifier === 'function')
-      ? clamp(DensityWaveAnalyzer.getFlickerModifier(), 0.9, 1.2)
-      : 1;
-    // TimbreBalanceTracker: timbre signal (consumed via ConductorState)
-    const timbreSignal = (typeof TimbreBalanceTracker !== 'undefined' && TimbreBalanceTracker && typeof TimbreBalanceTracker.getTimbreSignal === 'function')
-      ? TimbreBalanceTracker.getTimbreSignal()
-      : { balanced: true, suggestion: 'maintain' };
-    // HarmonicRhythmDensityRatio: density correction from harmonic/melodic imbalance
-    const hrDensityBias = (typeof HarmonicRhythmDensityRatio !== 'undefined' && HarmonicRhythmDensityRatio && typeof HarmonicRhythmDensityRatio.getDensityBias === 'function')
-      ? clamp(HarmonicRhythmDensityRatio.getDensityBias(), 0.85, 1.2)
-      : 1;
-    // ThematicRecallDetector: thematic signal (consumed via ConductorState)
-    const thematicSignal = (typeof ThematicRecallDetector !== 'undefined' && ThematicRecallDetector && typeof ThematicRecallDetector.getThematicSignal === 'function')
-      ? ThematicRecallDetector.getThematicSignal()
-      : { thematicStatus: 'fresh', recallSection: null };
-    // DynamicRangeTracker: flicker modifier from contrast deficit
-    const contrastFlickerMod = (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.getContrastFlickerModifier === 'function')
-      ? clamp(DynamicRangeTracker.getContrastFlickerModifier(), 0.95, 1.2)
-      : 1;
-    // LayerIndependenceScorer: density bias from layer coupling balance
-    const layerIndepBias = (typeof LayerIndependenceScorer !== 'undefined' && LayerIndependenceScorer && typeof LayerIndependenceScorer.getDensityBias === 'function')
-      ? clamp(LayerIndependenceScorer.getDensityBias(), 0.9, 1.15)
-      : 1;
-
-    // --- Batch 9 intelligence module reads ---
-    // ChromaticSaturationMonitor: density bias from pitch-class coverage
-    const chromaticDensityBias = (typeof ChromaticSaturationMonitor !== 'undefined' && ChromaticSaturationMonitor && typeof ChromaticSaturationMonitor.getDensityBias === 'function')
-      ? clamp(ChromaticSaturationMonitor.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // IntervalBalanceTracker: density bias from interval balance
-    const leapStepDensityBias = (typeof IntervalBalanceTracker !== 'undefined' && IntervalBalanceTracker && typeof IntervalBalanceTracker.getDensityBias === 'function')
-      ? clamp(IntervalBalanceTracker.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // TexturalGradientTracker: flicker modifier from texture rate-of-change
-    const texturalGradientFlicker = (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.getFlickerModifier === 'function')
-      ? clamp(TexturalGradientTracker.getFlickerModifier(), 0.9, 1.25)
-      : 1;
-    // CadentialPreparationAdvisor: tension bias near cadence points
-    const cadentialTensionBias = (typeof CadentialPreparationAdvisor !== 'undefined' && CadentialPreparationAdvisor && typeof CadentialPreparationAdvisor.getTensionBias === 'function')
-      ? clamp(CadentialPreparationAdvisor.getTensionBias(), 1, 1.2)
-      : 1;
-    // AmbitusMigrationTracker: density + register signals
-    const ambitusDensityBias = (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.getDensityBias === 'function')
-      ? clamp(AmbitusMigrationTracker.getDensityBias(), 0.9, 1.1)
-      : 1;
-    const ambitusSignal = (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.getAmbitusSignal === 'function')
-      ? AmbitusMigrationTracker.getAmbitusSignal()
-      : { range: 24, trend: 'stable', registerSuggestion: 'maintain' };
-    // TemporalProportionTracker: proportion quality signal (consumed via ConductorState)
-    const proportionSignal = (typeof TemporalProportionTracker !== 'undefined' && TemporalProportionTracker && typeof TemporalProportionTracker.getProportionSignal === 'function')
-      ? TemporalProportionTracker.getProportionSignal()
-      : { suggestion: 'maintain', idealBeats: 8, quality: 0.5 };
-    // RhythmicSymmetryDetector: symmetry signal (consumed via ConductorState)
-    const symmetrySignal = (typeof RhythmicSymmetryDetector !== 'undefined' && RhythmicSymmetryDetector && typeof RhythmicSymmetryDetector.getSymmetrySignal === 'function')
-      ? RhythmicSymmetryDetector.getSymmetrySignal()
-      : { symmetryScore: 0, type: 'none', suggestion: 'maintain' };
-    // SilenceDistributionTracker: silence distribution signal (consumed via ConductorState)
-    const silenceSignal = (typeof SilenceDistributionTracker !== 'undefined' && SilenceDistributionTracker && typeof SilenceDistributionTracker.getSilenceSignal === 'function')
-      ? SilenceDistributionTracker.getSilenceSignal()
-      : { clusterScore: 0, staggerScore: 0, silenceRatio: 0.3, suggestion: 'maintain' };
-
-    // --- Batch 10 intelligence module reads ---
-    // VoiceLeadingEfficiencyTracker: density bias from voice-leading smoothness
-    const voiceLeadDensityBias = (typeof VoiceLeadingEfficiencyTracker !== 'undefined' && VoiceLeadingEfficiencyTracker && typeof VoiceLeadingEfficiencyTracker.getDensityBias === 'function')
-      ? clamp(VoiceLeadingEfficiencyTracker.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // RhythmicGroupingAnalyzer: grouping signal (consumed via ConductorState)
-    const groupingSignal = (typeof RhythmicGroupingAnalyzer !== 'undefined' && RhythmicGroupingAnalyzer && typeof RhythmicGroupingAnalyzer.getGroupingSignal === 'function')
-      ? RhythmicGroupingAnalyzer.getGroupingSignal()
-      : { groupingType: 'ambiguous', binaryScore: 0.5, ternaryScore: 0.5, inTransition: false };
-    // DynamicArchitectPlanner: tension bias from macro dynamic plan
-    const dynamicPlanTensionBias = (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.getTensionBias === 'function')
-      ? clamp(DynamicArchitectPlanner.getTensionBias(), 0.9, 1.15)
-      : 1;
-    // TessituraPressureMonitor: density bias from extreme register pressure
-    const tessituraDensityBias = (typeof TessituraPressureMonitor !== 'undefined' && TessituraPressureMonitor && typeof TessituraPressureMonitor.getDensityBias === 'function')
-      ? clamp(TessituraPressureMonitor.getDensityBias(), 0.85, 1.1)
-      : 1;
-    // InterLayerRhythmAnalyzer: flicker modifier at convergence points
-    const polyAlignFlicker = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getFlickerModifier === 'function')
-      ? clamp(InterLayerRhythmAnalyzer.getFlickerModifier(), 0.9, 1.2)
-      : 1;
-    // MelodicContourTracker: density bias from directional monotony
-    const melodicDirDensityBias = (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.getDirectionalityDensityBias === 'function')
-      ? clamp(MelodicContourTracker.getDirectionalityDensityBias(), 0.9, 1.05)
-      : 1;
-    // HarmonicFieldDensityTracker: density bias from vertical harmonic thickness
-    const harmFieldDensityBias = (typeof HarmonicFieldDensityTracker !== 'undefined' && HarmonicFieldDensityTracker && typeof HarmonicFieldDensityTracker.getDensityBias === 'function')
-      ? clamp(HarmonicFieldDensityTracker.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // OrchestrationWeightTracker: register weight signal (consumed via ConductorState)
-    const orchestrationSignal = (typeof OrchestrationWeightTracker !== 'undefined' && OrchestrationWeightTracker && typeof OrchestrationWeightTracker.getWeightSignal === 'function')
-      ? OrchestrationWeightTracker.getWeightSignal()
-      : { bassWeight: 0.33, midWeight: 0.34, trebleWeight: 0.33, suggestion: 'balanced', dominantBand: 'none' };
-
-    // --- Batch 11 intelligence module reads ---
-    // RhythmicInertiaTracker: density bias from rhythmic pattern persistence
-    const rhythmicInertiaBias = (typeof RhythmicInertiaTracker !== 'undefined' && RhythmicInertiaTracker && typeof RhythmicInertiaTracker.getDensityBias === 'function')
-      ? clamp(RhythmicInertiaTracker.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // PitchClassGravityMap: tonal gravity signal (consumed via ConductorState)
-    const gravitySignal = (typeof PitchClassGravityMap !== 'undefined' && PitchClassGravityMap && typeof PitchClassGravityMap.getGravitySignal === 'function')
-      ? PitchClassGravityMap.getGravitySignal()
-      : { center: 0, stability: 0.5, driftFromCenter: 0, suggestion: 'maintain' };
-    // IntervalDirectionMemory: interval freshness signal (consumed via ConductorState)
-    const intervalFreshness = (typeof IntervalDirectionMemory !== 'undefined' && IntervalDirectionMemory && typeof IntervalDirectionMemory.getFreshnessSignal === 'function')
-      ? IntervalDirectionMemory.getFreshnessSignal()
-      : { overusedIntervals: [], freshness: 1, suggestion: 'maintain' };
-    // CrossLayerDensityBalancer: density bias from layer activity imbalance
-    const crossLayerDensityBias = (typeof CrossLayerDensityBalancer !== 'undefined' && CrossLayerDensityBalancer && typeof CrossLayerDensityBalancer.getDensityBias === 'function')
-      ? clamp(CrossLayerDensityBalancer.getDensityBias(), 0.9, 1.05)
-      : 1;
-    // HarmonicPedalFieldTracker: tension bias from pedal/drone stasis
-    const pedalFieldTensionBias = (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.getTensionBias === 'function')
-      ? clamp(HarmonicPedalFieldTracker.getTensionBias(), 0.9, 1.15)
-      : 1;
-    // InterLayerRhythmAnalyzer: timing drift signal (consumed via ConductorState)
-    const timingDriftSignal = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getDriftSignal === 'function')
-      ? InterLayerRhythmAnalyzer.getDriftSignal()
-      : { avgDrift: 0, tightness: 0.5, suggestion: 'maintain' };
-    // InterLayerRhythmAnalyzer: cross-layer phase relationship (consumed via ConductorState)
-    const phaseRelationship = (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getPhaseRelationship === 'function')
-      ? InterLayerRhythmAnalyzer.getPhaseRelationship()
-      : { phase: 'unknown', coincidence: 0, complementarity: 0 };
-    // RegistralVelocityCorrelator: flicker modifier from register-velocity correlation
-    const regVelFlickerMod = (typeof RegistralVelocityCorrelator !== 'undefined' && RegistralVelocityCorrelator && typeof RegistralVelocityCorrelator.getFlickerModifier === 'function')
-      ? clamp(RegistralVelocityCorrelator.getFlickerModifier(), 0.9, 1.15)
-      : 1;
-    // PhraseContourArchetypeDetector: contour classification (consumed via ConductorState)
-    const contourSignal = (typeof PhraseContourArchetypeDetector !== 'undefined' && PhraseContourArchetypeDetector && typeof PhraseContourArchetypeDetector.getContourSignal === 'function')
-      ? PhraseContourArchetypeDetector.getContourSignal()
-      : { archetype: 'undefined', confidence: 0, suggestion: 'maintain' };
-    // HarmonicDensityOscillator: tension bias from harmonic rate oscillation
-    const harmDensityOscTensionBias = (typeof HarmonicDensityOscillator !== 'undefined' && HarmonicDensityOscillator && typeof HarmonicDensityOscillator.getTensionBias === 'function')
-      ? clamp(HarmonicDensityOscillator.getTensionBias(), 0.9, 1.1)
-      : 1;
-    // AttackDensityProfiler: density bias from attack/sustain ratio
-    const attackDensityBias = (typeof AttackDensityProfiler !== 'undefined' && AttackDensityProfiler && typeof AttackDensityProfiler.getDensityBias === 'function')
-      ? clamp(AttackDensityProfiler.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // LayerEntryExitTracker: orchestration momentum (consumed via ConductorState)
-    const layerMomentumSignal = (typeof LayerEntryExitTracker !== 'undefined' && LayerEntryExitTracker && typeof LayerEntryExitTracker.getMomentumSignal === 'function')
-      ? LayerEntryExitTracker.getMomentumSignal()
-      : { momentum: 'stable', layerDelta: 0, currentLayers: 0 };
-    // IntervalExpansionContractor: density bias from interval vocabulary trend
-    const intervalExpDensityBias = (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.getDensityBias === 'function')
-      ? clamp(IntervalExpansionContractor.getDensityBias(), 0.9, 1.1)
-      : 1;
-    // DynamicPeakMemory: tension bias from peak spacing
-    const dynamicPeakTensionBias = (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.getTensionBias === 'function')
-      ? clamp(DynamicPeakMemory.getTensionBias(), 0.9, 1.1)
-      : 1;
-    // RhythmicDensityContrastTracker: flicker modifier from dense/sparse contrast
-    const rhythmDensityContrastFlicker = (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.getFlickerModifier === 'function')
-      ? clamp(RhythmicDensityContrastTracker.getFlickerModifier(), 0.9, 1.15)
-      : 1;
-    // TonalAnchorDistanceTracker: tension bias from tonal distance
-    const tonalAnchorTensionBias = (typeof TonalAnchorDistanceTracker !== 'undefined' && TonalAnchorDistanceTracker && typeof TonalAnchorDistanceTracker.getTensionBias === 'function')
-      ? clamp(TonalAnchorDistanceTracker.getTensionBias(), 0.9, 1.12)
-      : 1;
-
-    // Record density for wave analysis
-    if (typeof DensityWaveAnalyzer !== 'undefined' && DensityWaveAnalyzer && typeof DensityWaveAnalyzer.recordDensity === 'function') {
-      DensityWaveAnalyzer.recordDensity(currentDensity, absTime);
-    }
-    // Record dynamic extremes for range tracking
-    if (typeof DynamicRangeTracker !== 'undefined' && DynamicRangeTracker && typeof DynamicRangeTracker.recordExtremes === 'function') {
-      DynamicRangeTracker.recordExtremes(absTime);
-    }
-    // Record textural gradient snapshot
-    if (typeof TexturalGradientTracker !== 'undefined' && TexturalGradientTracker && typeof TexturalGradientTracker.recordDensity === 'function') {
-      TexturalGradientTracker.recordDensity(currentDensity, absTime);
-    }
-    // Record ambitus snapshot
-    if (typeof AmbitusMigrationTracker !== 'undefined' && AmbitusMigrationTracker && typeof AmbitusMigrationTracker.recordSnapshot === 'function') {
-      AmbitusMigrationTracker.recordSnapshot(absTime);
-    }
-    // Record intensity for macro dynamic architecture
-    if (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.recordIntensity === 'function') {
-      DynamicArchitectPlanner.recordIntensity(compositeIntensity, absTime);
-    }
-    // Record bass for pedal field tracking
-    if (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.recordBass === 'function') {
-      HarmonicPedalFieldTracker.recordBass(absTime);
-    }
-    // Record harmonic change rate for oscillation analysis
-    if (typeof HarmonicDensityOscillator !== 'undefined' && HarmonicDensityOscillator && typeof HarmonicDensityOscillator.recordChangeRate === 'function') {
-      const hrChangeRate = (typeof harmonicRhythm === 'number' && Number.isFinite(harmonicRhythm)) ? clamp(harmonicRhythm, 0, 1) : 0.5;
-      HarmonicDensityOscillator.recordChangeRate(hrChangeRate, absTime);
-    }
-    // Record layer entry/exit snapshot
-    if (typeof LayerEntryExitTracker !== 'undefined' && LayerEntryExitTracker && typeof LayerEntryExitTracker.recordSnapshot === 'function') {
-      LayerEntryExitTracker.recordSnapshot(absTime);
-    }
-    // Record interval expansion/contraction snapshot
-    if (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.recordSnapshot === 'function') {
-      IntervalExpansionContractor.recordSnapshot(absTime);
-    }
-    // Record intensity for dynamic peak memory
-    if (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.recordIntensity === 'function') {
-      DynamicPeakMemory.recordIntensity(compositeIntensity, absTime);
-    }
-    // Record rhythmic density for contrast tracking
-    if (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.recordDensity === 'function') {
-      RhythmicDensityContrastTracker.recordDensity(currentDensity);
-    }
-
-    // Apply coherence-based density bias: low coherence → thinner density
+    // Coherence + emission density corrections (not registry-managed — core pipeline)
     const coherenceDensityBias = (typeof LayerCoherenceScorer !== 'undefined' && LayerCoherenceScorer && typeof LayerCoherenceScorer.getDensityBias === 'function')
       ? LayerCoherenceScorer.getDensityBias()
       : 1;
-
     const emissionRatio = (typeof EmissionFeedbackListener !== 'undefined' && EmissionFeedbackListener && typeof EmissionFeedbackListener.getEmissionRatio === 'function')
       ? clamp(Number(EmissionFeedbackListener.getEmissionRatio()), 0, 2)
       : 1;
     const densityCorrection = clamp(1 + clamp(1 - emissionRatio, -1, 1) * 0.2, 0.8, 1.25);
 
-    // 3. Drive Motif Density (Coherence: High tension -> denser motifs)
-    // Smoothly interpolate towards target density, then apply micro-hyper
-    // flicker so density itself oscillates within a beat (Step 4)
-    const targetDensity = clamp(ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * onsetDensityBias * restOnsetBias * voiceCountBias * energyDensityNudge * climaxDensityBias * subdivisionBias * onsetRegularityBias * breathingDensityBias * motivicDensityBias * hrDensityBias * layerIndepBias * chromaticDensityBias * leapStepDensityBias * ambitusDensityBias * voiceLeadDensityBias * tessituraDensityBias * melodicDirDensityBias * harmFieldDensityBias * rhythmicInertiaBias * crossLayerDensityBias * attackDensityBias * intervalExpDensityBias, 0, 1);
+    // Drive motif density
+    const targetDensity = clamp(
+      ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * registryDensityBias,
+      0, 1
+    );
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
-    // Micro-hyper density flicker: density oscillates per-beat so some
-    // subsubdivs get many note options (dense run territory) while others
-    // get very few (sparse, exposed).  Amplitude scales with compositeIntensity
-    // so calm sections stay stable and intense sections shimmer.
-    // Texture intensity (#7): high texture activity → wider flicker amplitude
-    // so motifConfig density oscillates more dramatically during texture-rich passages.
+    // 5. Micro-hyper density flicker
     const textureDensityBoost = (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function')
       ? clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5
       : 0;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * velocitySpreadBias * grooveVelBias * durContourBias.flickerMod * velocityFlickerMod * densityWaveFlicker * contrastFlickerMod * texturalGradientFlicker * polyAlignFlicker * regVelFlickerMod * rhythmDensityContrastFlicker;
+    const registryFlickerMod = ConductorIntelligence.collectFlickerModifier();
+    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * registryFlickerMod;
     const densitySeed = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -465,44 +99,43 @@
     const flickeredDensity = clamp(currentDensity + densityFlicker, densityBounds.floor, densityBounds.ceiling);
 
     if (typeof motifConfig !== 'undefined' && typeof motifConfig.setUnitProfileOverride === 'function') {
-      // Apply flickered density to deeper units for texture buildup
       motifConfig.setUnitProfileOverride('div', { intervalDensity: flickeredDensity });
       motifConfig.setUnitProfileOverride('subdiv', { intervalDensity: flickeredDensity * 0.9 });
       motifConfig.setUnitProfileOverride('subsubdiv', { intervalDensity: flickeredDensity * 0.8 });
     }
 
-    // 4. Drive Stutter Behavior (Dynamicism: High intensity -> faster, more chaotic stutters)
+    // 6. Drive stutter behavior
     if (typeof Stutter !== 'undefined') {
-      // Profile-driven stutter params
       const stutterParams = ConductorConfig.getStutterParams(compositeIntensity);
-
-      // Update default directive for spontaneous stutters
       if (typeof Stutter.setDefaultDirective === 'function') {
         Stutter.setDefaultDirective({
           rate: stutterParams.rate,
           rateCurve: stutterParams.rateCurve,
           phase: {
             left: 0,
-            right: 0.5 + 0.2 * compositeIntensity, // wider stereo width with intensity
+            right: 0.5 + 0.2 * compositeIntensity,
             center: 0
           },
           coherence: {
-            enabled: true, // Always enable coherence for musicality
+            enabled: true,
             mode: stutterParams.coherenceMode
           }
         });
       }
     }
 
-    // 5. Delegate probability calculation to DynamismEngine (single authority)
-    // GlobalConductor provides macro context (motif density, stutter directives above);
-    // DynamismEngine is the sole probability calculator to avoid double-modulation.
+    // 7. DynamismEngine probability calculation
     if (typeof DynamismEngine === 'undefined' || !DynamismEngine || typeof DynamismEngine.resolve !== 'function') {
       throw new Error('GlobalConductor.update: DynamismEngine.resolve is not available');
     }
     const resolved = DynamismEngine.resolve('beat');
 
-    const derivedTension = clamp((Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * harmonicChangeBias * repetitionPenalty * climaxTensionMod * harmonicSurpriseBias * consonanceTensionBias * tensionResolBias * cadentialTensionBias * dynamicPlanTensionBias * pedalFieldTensionBias * harmDensityOscTensionBias * dynamicPeakTensionBias * tonalAnchorTensionBias, 0, 1);
+    // 8. Collect tension bias from registry
+    const registryTensionBias = ConductorIntelligence.collectTensionBias();
+    const derivedTension = clamp(
+      (Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * registryTensionBias,
+      0, 1
+    );
     if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.set === 'function') {
       HarmonicContext.set({ tension: derivedTension });
     }
@@ -510,15 +143,16 @@
     let playOut = resolved.playProb;
     let stutterOut = resolved.stutterProb;
 
-    // Apply climax boost on top of DynamismEngine's output (profile-driven)
     if (sectionPhase === 'climax') {
       const boost = ConductorConfig.getClimaxBoost();
       playOut = clamp(resolved.playProb * boost.playScale, 0, 1);
       stutterOut = clamp(resolved.stutterProb * boost.stutterScale, 0, 1);
     }
 
+    // 9. Collect state fields from registry + core pipeline fields
     if (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.updateFromConductor === 'function') {
-      ConductorState.updateFromConductor({
+      const registryFields = ConductorIntelligence.collectStateFields();
+      ConductorState.updateFromConductor(Object.assign(registryFields, {
         phraseCtx,
         sectionPhase,
         tension: derivedTension,
@@ -526,82 +160,9 @@
         harmonicRhythm,
         emissionRatio,
         compositeIntensity: resolved.composite,
-        onsetCrossModBias,
-        syncopationBias: syncopationBias.syncopationBias,
-        accentDownbeatBias: accentBias.downbeatBias,
-        accentOffbeatBias: accentBias.offbeatBias,
-        modalColorBias: modalColorBias.colorBias,
-        modalStabilityBias: modalColorBias.stabilityBias,
-        articulationLegatoBias: articulationBias.legatoBias,
-        articulationStaccatoBias: articulationBias.staccatoBias,
-        registerMigrationBias: registerMigrationBias.registerBias,
-        registerSuggestion: registerMigrationBias.suggestion,
-        intervalStepBias: intervalBias.stepBias,
-        intervalLeapBias: intervalBias.leapBias,
-        durationalContourBias: durContourBias.durationBias,
-        counterpointParallelBias: counterpointBias.parallelBias,
-        counterpointContraryBias: counterpointBias.contraryBias,
-        octaveSpreadBias,
-        pedalSuggestion: pedalSuggestion.suggestion,
-        pedalUrgency: pedalSuggestion.urgency,
-        phraseLengthAdjustment: phraseLengthAdj.adjustment,
-        phraseLengthSuggestion: phraseLengthAdj.suggestion,
-        metricDisplacement: displacementSignal.displacement,
-        hemiolaActive: displacementSignal.hemiolaActive,
-        timbreBalanced: timbreSignal.balanced,
-        timbreSuggestion: timbreSignal.suggestion,
-        thematicStatus: thematicSignal.thematicStatus,
-        thematicRecallSection: thematicSignal.recallSection,
-        leapStepLeapBias: intervalBias.leapBias,
-        leapStepStepBias: intervalBias.stepBias,
-        proportionSuggestion: proportionSignal.suggestion,
-        proportionIdealBeats: proportionSignal.idealBeats,
-        proportionQuality: proportionSignal.quality,
-        symmetryType: symmetrySignal.type,
-        symmetrySuggestion: symmetrySignal.suggestion,
-        ambitusRange: ambitusSignal.range,
-        ambitusTrend: ambitusSignal.trend,
-        ambitusRegisterSuggestion: ambitusSignal.registerSuggestion,
-        silenceSuggestion: silenceSignal.suggestion,
-        silenceRatio: silenceSignal.silenceRatio,
-        cadentialPreparationActive: (typeof CadentialPreparationAdvisor !== 'undefined' && CadentialPreparationAdvisor && typeof CadentialPreparationAdvisor.getCadentialSignal === 'function') ? CadentialPreparationAdvisor.getCadentialSignal().preparationActive : false,
-        voiceLeadingEfficiency: (typeof VoiceLeadingEfficiencyTracker !== 'undefined' && VoiceLeadingEfficiencyTracker && typeof VoiceLeadingEfficiencyTracker.getEfficiencySignal === 'function') ? VoiceLeadingEfficiencyTracker.getEfficiencySignal().efficiency : 0.5,
-        rhythmicGroupingType: groupingSignal.groupingType,
-        rhythmicGroupingInTransition: groupingSignal.inTransition,
-        dynamicPlanMacroPosition: (typeof DynamicArchitectPlanner !== 'undefined' && DynamicArchitectPlanner && typeof DynamicArchitectPlanner.getDynamicPlanSignal === 'function') ? DynamicArchitectPlanner.getDynamicPlanSignal().macroPosition : 0,
-        tessituraRegion: (typeof TessituraPressureMonitor !== 'undefined' && TessituraPressureMonitor && typeof TessituraPressureMonitor.getPressureSignal === 'function') ? TessituraPressureMonitor.getPressureSignal().region : 'comfortable',
-        polyrhythmConvergence: (typeof InterLayerRhythmAnalyzer !== 'undefined' && InterLayerRhythmAnalyzer && typeof InterLayerRhythmAnalyzer.getAlignmentSignal === 'function') ? InterLayerRhythmAnalyzer.getAlignmentSignal().convergencePoint : false,
-        melodicDirection: (typeof MelodicContourTracker !== 'undefined' && MelodicContourTracker && typeof MelodicContourTracker.getDirectionalitySignal === 'function') ? MelodicContourTracker.getDirectionalitySignal().direction : 'undulating',
-        harmonicFieldAvgSimultaneous: (typeof HarmonicFieldDensityTracker !== 'undefined' && HarmonicFieldDensityTracker && typeof HarmonicFieldDensityTracker.getFieldDensitySignal === 'function') ? HarmonicFieldDensityTracker.getFieldDensitySignal().avgSimultaneous : 1,
-        orchestrationSuggestion: orchestrationSignal.suggestion,
-        orchestrationDominantBand: orchestrationSignal.dominantBand,
-        tonalGravityCenter: gravitySignal.center,
-        tonalGravityStability: gravitySignal.stability,
-        tonalGravitySuggestion: gravitySignal.suggestion,
-        intervalFreshness: intervalFreshness.freshness,
-        intervalFreshnessSuggestion: intervalFreshness.suggestion,
-        timingTightness: timingDriftSignal.tightness,
-        timingDriftSuggestion: timingDriftSignal.suggestion,
-        rhythmPhase: phaseRelationship.phase,
-        rhythmCoincidence: phaseRelationship.coincidence,
-        rhythmComplementarity: phaseRelationship.complementarity,
-        rhythmicInertiaSuggestion: (typeof RhythmicInertiaTracker !== 'undefined' && RhythmicInertiaTracker && typeof RhythmicInertiaTracker.getInertiaSignal === 'function') ? RhythmicInertiaTracker.getInertiaSignal().suggestion : 'maintain',
-        envelopeShape: (typeof VelocityShapeAnalyzer !== 'undefined' && VelocityShapeAnalyzer && typeof VelocityShapeAnalyzer.getVelocityShape === 'function') ? VelocityShapeAnalyzer.getVelocityShape().shape : 'neutral',
-        crossLayerImbalance: (typeof CrossLayerDensityBalancer !== 'undefined' && CrossLayerDensityBalancer && typeof CrossLayerDensityBalancer.getBalanceSignal === 'function') ? CrossLayerDensityBalancer.getBalanceSignal().imbalance : 0,
-        pedalFieldStable: (typeof HarmonicPedalFieldTracker !== 'undefined' && HarmonicPedalFieldTracker && typeof HarmonicPedalFieldTracker.getPedalFieldSignal === 'function') ? HarmonicPedalFieldTracker.getPedalFieldSignal().fieldStable : false,
-        contourArchetype: contourSignal.archetype,
-        contourSuggestion: contourSignal.suggestion,
-        harmonicOscillating: harmDensityOscTensionBias !== 1,
-        attackSuggestion: (typeof AttackDensityProfiler !== 'undefined' && AttackDensityProfiler && typeof AttackDensityProfiler.getAttackSignal === 'function') ? AttackDensityProfiler.getAttackSignal().suggestion : 'balanced',
-        layerMomentum: layerMomentumSignal.momentum,
-        layerCount: layerMomentumSignal.currentLayers,
-        intervalExpansionTrend: (typeof IntervalExpansionContractor !== 'undefined' && IntervalExpansionContractor && typeof IntervalExpansionContractor.getExpansionSignal === 'function') ? IntervalExpansionContractor.getExpansionSignal().trend : 'stable',
-        dynamicPeakRecency: (typeof DynamicPeakMemory !== 'undefined' && DynamicPeakMemory && typeof DynamicPeakMemory.getPeakSignal === 'function') ? DynamicPeakMemory.getPeakSignal().peakRecency : 'none',
-        rhythmicContrastSuggestion: (typeof RhythmicDensityContrastTracker !== 'undefined' && RhythmicDensityContrastTracker && typeof RhythmicDensityContrastTracker.getContrastSignal === 'function') ? RhythmicDensityContrastTracker.getContrastSignal().suggestion : 'maintain',
-        tonalAdventureLevel: (typeof TonalAnchorDistanceTracker !== 'undefined' && TonalAnchorDistanceTracker && typeof TonalAnchorDistanceTracker.getDistanceSignal === 'function') ? TonalAnchorDistanceTracker.getDistanceSignal().adventureLevel : 'home',
         playProb: playOut,
         stutterProb: stutterOut
-      });
+      }));
     }
 
     return {

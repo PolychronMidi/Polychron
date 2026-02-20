@@ -70,6 +70,14 @@ PhraseLengthMomentumTracker = (() => {
     history.length = 0;
   }
 
+  ConductorIntelligence.registerStateProvider('PhraseLengthMomentumTracker', () => {
+    const s = PhraseLengthMomentumTracker.suggestAdjustment();
+    return {
+      phraseLengthAdjustment: s ? s.adjustment : 0,
+      phraseLengthSuggestion: s ? s.suggestion : 'maintain'
+    };
+  });
+
   return {
     recordPhraseLength,
     getMomentum,

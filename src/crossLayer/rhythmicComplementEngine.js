@@ -150,3 +150,4 @@ RhythmicComplementEngine = (() => {
 
   return { analyzeOtherLayer, suggestComplement, getMode, setMode, autoSelectMode, reset };
 })();
+CrossLayerRegistry.register('RhythmicComplementEngine', RhythmicComplementEngine, ['all', 'phrase']);

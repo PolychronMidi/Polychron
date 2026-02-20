@@ -96,3 +96,4 @@ TexturalMirror = (() => {
 
   return { recordTexture, suggestTexture, getTextureDistance, reset };
 })();
+CrossLayerRegistry.register('TexturalMirror', TexturalMirror, ['all', 'section']);
