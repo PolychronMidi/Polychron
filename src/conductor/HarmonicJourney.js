@@ -23,7 +23,7 @@
 HarmonicJourney = (() => {
   const V = Validator.create('HarmonicJourney');
 
-  V.assertFunction(harmonicJourneyHelpers, 'harmonicJourneyHelpers');
+  V.requireType(harmonicJourneyHelpers, 'function', 'harmonicJourneyHelpers');
   const HJ = harmonicJourneyHelpers();
 
   /** @type {JourneyStop[]} */
