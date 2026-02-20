@@ -720,3 +720,4 @@ declare var NegotiationEngine: any;
 declare var GrooveTransfer: any;
 declare var RegisterCollisionAvoider: any;
 declare var MotifIdentityMemory: any;
+declare var CrossLayerLifecycleManager: any;

@@ -199,6 +199,7 @@ EmissionFeedbackListener.initialize();
 HarmonicRhythmTracker.initialize();
 ConductorState.initialize();
 CadenceAdvisor.initialize();
+CrossLayerLifecycleManager.resetAll();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 
@@ -208,6 +209,7 @@ if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof Harmonic
 }
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+  CrossLayerLifecycleManager.resetSection();
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
 
   // Let SectionLengthAdvisor adjust phrase count based on energy trajectory
@@ -245,6 +247,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   LM.activate('L1', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
+    CrossLayerLifecycleManager.resetPhrase();
     // Restore L1 harmonic context (may have been overwritten by L2's complement)
     if (typeof HarmonicJourney !== 'undefined' && HarmonicJourney && typeof HarmonicJourney.applyToContext === 'function') {
       HarmonicJourney.applyToContext(sectionIndex);
@@ -339,6 +342,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
         const clCadence = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
           ? CadenceAdvisor.shouldCadence() : { suggest: false };
+        const clPhaseSnapshot = {
+          timeMs: clAbsMs,
+          phaseDiff: clPhase.phaseDiff,
+          mode: clPhase.mode,
+          confidence: clPhase.confidence
+        };
 
         const clNegotiation = NegotiationEngine.apply('L1', {
           playProb: DynamicRoleSwap.modifyPlayProb('L1', playProb),
@@ -350,6 +359,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         });
         playProb = clNegotiation.playProb;
         stutterProb = clNegotiation.stutterProb;
+        playProb = EntropyRegulator.regulate(playProb);
+        stutterProb = EntropyRegulator.regulate(stutterProb);
 
         playNotes('beat', { playProb, stutterProb });
 
@@ -360,23 +371,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clFeedback = FeedbackOscillator.applyFeedback(clAbsMs, 'L1');
         const clFeedbackEnergy = (clFeedback && Number.isFinite(clFeedback.energy)) ? clamp(clFeedback.energy, 0, 1) : 0;
 
-        const clCadenceGate = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, 'L1', Boolean(clCadence.suggest));
+        const clCadenceGate = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, 'L1', Boolean(clCadence.suggest), clPhaseSnapshot);
         CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
         const clCadResult = (clCadenceGate && clNegotiation.allowCadence)
           ? CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension)
           : null;
+        if (clCadResult) {
+          FeedbackOscillator.inject(clAbsMs, 'L1', clamp(clTension, 0, 1), 'cadence');
+        }
 
         const beatDurMs = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
         RhythmicPhaseLock.postBeat(clAbsMs, 'L1', beatDurMs);
         const clPhaseMode = RhythmicPhaseLock.getMode();
 
         SpectralComplementarity.postSpectralState(clAbsMs, 'L1');
-
-        AdaptiveTrustScores.registerOutcome('stutterContagion', clamp(stutterProb, 0, 1) - 0.5);
-        AdaptiveTrustScores.registerOutcome('phaseLock', clPhaseMode === 'lock' ? 0.35 : clPhaseMode === 'repel' ? -0.1 : 0.05);
-        AdaptiveTrustScores.registerOutcome('cadenceAlignment', clCadResult ? 0.4 : -0.08);
-        AdaptiveTrustScores.registerOutcome('feedbackOscillator', clFeedbackEnergy - 0.2);
-        AdaptiveTrustScores.decayAll(0.002);
 
         InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
         InteractionHeatMap.record('temporalGravity', clDensity);
@@ -385,7 +393,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         InteractionHeatMap.record('feedbackOscillator', clFeedbackEnergy);
         InteractionHeatMap.record('roleSwap', DynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
 
-        const clConvergenceIntensity = ConvergenceDetector.getConvergenceCount() > 0 ? 0.2 : 0;
+        const clConvergenceIntensity = ConvergenceDetector.wasRecent(clAbsMs, 'L1', 300) ? 1 : 0;
         InteractionHeatMap.record('convergence', clConvergenceIntensity);
 
         const edSignals = {
@@ -396,6 +404,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         };
         const clDownbeat = EmergentDownbeat.applyIfDownbeat(clAbsMs, 'L1', edSignals, 0, velocity);
         InteractionHeatMap.record('emergentDownbeat', clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
+        if (clDownbeat) {
+          FeedbackOscillator.inject(clAbsMs, 'L1', clamp(clDownbeat.strength, 0, 1), 'downbeat');
+        }
 
         const clBreathing = InteractionHeatMap.getBreathingRecommendation();
         if (clBreathing.recommendation === 'decrease') {
@@ -406,6 +417,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           stutterProb = clamp(stutterProb * 1.04, 0, 1);
         }
 
+        const stutterOutcome = clamp(1 - Math.abs(stutterProb - clIntent.interactionTarget) * 2, -1, 1);
+        const phaseOutcome = clamp((clPhaseMode === 'lock' ? 0.5 : clPhaseMode === 'drift' ? 0.15 : -0.4) + clPhase.confidence * 0.35, -1, 1);
+        const cadenceOutcome = clCadResult
+          ? (clCadResult.shouldResolve ? 0.85 : 0.35)
+          : (clCadenceGate ? -0.1 : -0.25);
+        const feedbackOutcome = clamp(clFeedbackEnergy - 0.2 + (clDownbeat ? clDownbeat.strength * 0.15 : 0), -1, 1);
+        AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
+        AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
+        AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
+        AdaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcome);
+        AdaptiveTrustScores.decayAll(0.002);
+
         ExplainabilityBus.emit('beat-decision', 'L1', {
           intent: clIntent,
           phaseConfidence: clPhase.confidence,
@@ -414,7 +437,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           breathing: clBreathing.recommendation
         }, clAbsMs);
 
-        InteractionHeatMap.flushBeat(clAbsMs);
+        const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
+        InteractionHeatMap.deferBeat(clBeatKey);
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
@@ -529,6 +553,12 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
         const clCadenceL2 = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
           ? CadenceAdvisor.shouldCadence() : { suggest: false };
+        const clPhaseSnapshotL2 = {
+          timeMs: clAbsMsL2,
+          phaseDiff: clPhaseL2.phaseDiff,
+          mode: clPhaseL2.mode,
+          confidence: clPhaseL2.confidence
+        };
 
         const clNegotiationL2 = NegotiationEngine.apply('L2', {
           playProb: DynamicRoleSwap.modifyPlayProb('L2', playProb),
@@ -540,6 +570,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         });
         playProb = clNegotiationL2.playProb;
         stutterProb = clNegotiationL2.stutterProb;
+        playProb = EntropyRegulator.regulate(playProb);
+        stutterProb = EntropyRegulator.regulate(stutterProb);
 
         playNotes('beat', { playProb, stutterProb });
 
@@ -550,23 +582,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clFeedbackL2 = FeedbackOscillator.applyFeedback(clAbsMsL2, 'L2');
         const clFeedbackEnergyL2 = (clFeedbackL2 && Number.isFinite(clFeedbackL2.energy)) ? clamp(clFeedbackL2.energy, 0, 1) : 0;
 
-        const clCadenceGateL2 = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMsL2, 'L2', Boolean(clCadenceL2.suggest));
+        const clCadenceGateL2 = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMsL2, 'L2', Boolean(clCadenceL2.suggest), clPhaseSnapshotL2);
         CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
         const clCadResultL2 = (clCadenceGateL2 && clNegotiationL2.allowCadence)
           ? CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2)
           : null;
+        if (clCadResultL2) {
+          FeedbackOscillator.inject(clAbsMsL2, 'L2', clamp(clTensionL2, 0, 1), 'cadence');
+        }
 
         const beatDurMsL2 = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
         RhythmicPhaseLock.postBeat(clAbsMsL2, 'L2', beatDurMsL2);
         const clPhaseModeL2 = RhythmicPhaseLock.getMode();
 
         SpectralComplementarity.postSpectralState(clAbsMsL2, 'L2');
-
-        AdaptiveTrustScores.registerOutcome('stutterContagion', clamp(stutterProb, 0, 1) - 0.5);
-        AdaptiveTrustScores.registerOutcome('phaseLock', clPhaseModeL2 === 'lock' ? 0.35 : clPhaseModeL2 === 'repel' ? -0.1 : 0.05);
-        AdaptiveTrustScores.registerOutcome('cadenceAlignment', clCadResultL2 ? 0.4 : -0.08);
-        AdaptiveTrustScores.registerOutcome('feedbackOscillator', clFeedbackEnergyL2 - 0.2);
-        AdaptiveTrustScores.decayAll(0.002);
 
         InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
         InteractionHeatMap.record('temporalGravity', clDensityL2);
@@ -575,7 +604,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         InteractionHeatMap.record('feedbackOscillator', clFeedbackEnergyL2);
         InteractionHeatMap.record('roleSwap', DynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
 
-        const clConvergenceIntensityL2 = ConvergenceDetector.getConvergenceCount() > 0 ? 0.2 : 0;
+        const clConvergenceIntensityL2 = ConvergenceDetector.wasRecent(clAbsMsL2, 'L2', 300) ? 1 : 0;
         InteractionHeatMap.record('convergence', clConvergenceIntensityL2);
 
         const edSignalsL2 = {
@@ -586,6 +615,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         };
         const clDownbeatL2 = EmergentDownbeat.applyIfDownbeat(clAbsMsL2, 'L2', edSignalsL2, 0, velocity);
         InteractionHeatMap.record('emergentDownbeat', clDownbeatL2 ? clamp(clDownbeatL2.strength, 0, 1) : 0);
+        if (clDownbeatL2) {
+          FeedbackOscillator.inject(clAbsMsL2, 'L2', clamp(clDownbeatL2.strength, 0, 1), 'downbeat');
+        }
 
         const clBreathingL2 = InteractionHeatMap.getBreathingRecommendation();
         if (clBreathingL2.recommendation === 'decrease') {
@@ -596,6 +628,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           stutterProb = clamp(stutterProb * 1.04, 0, 1);
         }
 
+        const stutterOutcomeL2 = clamp(1 - Math.abs(stutterProb - clIntentL2.interactionTarget) * 2, -1, 1);
+        const phaseOutcomeL2 = clamp((clPhaseModeL2 === 'lock' ? 0.5 : clPhaseModeL2 === 'drift' ? 0.15 : -0.4) + clPhaseL2.confidence * 0.35, -1, 1);
+        const cadenceOutcomeL2 = clCadResultL2
+          ? (clCadResultL2.shouldResolve ? 0.85 : 0.35)
+          : (clCadenceGateL2 ? -0.1 : -0.25);
+        const feedbackOutcomeL2 = clamp(clFeedbackEnergyL2 - 0.2 + (clDownbeatL2 ? clDownbeatL2.strength * 0.15 : 0), -1, 1);
+        AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcomeL2);
+        AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcomeL2);
+        AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcomeL2);
+        AdaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcomeL2);
+        AdaptiveTrustScores.decayAll(0.002);
+
         ExplainabilityBus.emit('beat-decision', 'L2', {
           intent: clIntentL2,
           phaseConfidence: clPhaseL2.confidence,
@@ -604,7 +648,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           breathing: clBreathingL2.recommendation
         }, clAbsMsL2);
 
-        InteractionHeatMap.flushBeat(clAbsMsL2);
+        const clBeatKeyL2 = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
+        InteractionHeatMap.flushBeatPair(clAbsMsL2, clBeatKeyL2);
+
+        if (((measureIndex * numerator + beatIndex) % 8) === 0) {
+          ExplainabilityBus.emit('crosslayer-telemetry', 'both', {
+            intent: SectionIntentCurves.getLastIntent(),
+            heat: InteractionHeatMap.getSystemHeat(),
+            trend: InteractionHeatMap.getTrend(),
+            trust: AdaptiveTrustScores.getSnapshot()
+          }, clAbsMsL2);
+        }
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
@@ -633,6 +687,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
+    InteractionHeatMap.flushDeferredOrphans(Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0);
   }
 
   // Record section in StructuralFormTracker for form-level awareness

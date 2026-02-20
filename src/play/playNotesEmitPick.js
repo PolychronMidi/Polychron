@@ -23,6 +23,14 @@ playNotesEmitPick = function(opts = {}) {
   let scheduled = 0;
   const activeLayerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
 
+  /** @param {number} tick */
+  const tickToAbsMs = (tick) => {
+    if (Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)) {
+      return (measureStartTime + (tick - measureStart) / tpSec) * 1000;
+    }
+    return Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0;
+  };
+
   const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
   let selectedShift = 0;
   if (shouldStutter) {
@@ -48,6 +56,10 @@ playNotesEmitPick = function(opts = {}) {
     const isPrimary = sourceCH === cCH1;
     let onTick = isPrimary ? on + rv(tpUnit * rf(1 / 9), [-0.1, 0.1], 0.3) : on + rv(tpUnit * rf(1 / 3), [-0.1, 0.1], 0.3);
     onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
+    const preSyncMs = tickToAbsMs(onTick);
+    onTick = RhythmicPhaseLock.applyPhaseLock(preSyncMs, activeLayerName, onTick).tick;
+    onTick = TemporalGravity.applyGravity(preSyncMs, activeLayerName, onTick);
+    const absMsAtOnTick = tickToAbsMs(onTick);
     const baseOnVel = (isPrimary ? velocity * rf(0.95, 1.15) : binVel * rf(0.75, 1.03)) * pickVelScale;
     const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pickIndex * 101 + sourceIndex;
     const sourceNoiseBase = baseOnVel * (1 - emissionCfg.sourceNoiseInfluence * noiseInfluence);
@@ -57,9 +69,12 @@ playNotesEmitPick = function(opts = {}) {
     const noteToEmitBase = applySelectedShiftToSource
       ? modClamp(pick.note + selectedShift, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1)
       : pick.note;
-    const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteToEmitBase, onTick).midi;
+    const noteAfterSpectral = SpectralComplementarity.nudgeToFillGap(noteToEmitBase, activeLayerName).midi;
+    const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteAfterSpectral, onTick).midi;
 
-    const texVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
+    const texVelBase = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
+    const texVelRole = DynamicRoleSwap.modifyVelocity(activeLayerName, texVelBase);
+    const texVel = VelocityInterference.applyInterference(absMsAtOnTick, activeLayerName, texVelRole).velocity;
     const texSustain = sustain * textureMode.sustainScale;
 
     const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
@@ -75,12 +90,16 @@ playNotesEmitPick = function(opts = {}) {
     // Record note into AbsoluteTimeWindow for cross-layer analysis
     if (isPrimary && typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordNote === 'function') {
       const atwLayer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-      const atwTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
+      const absMs = absMsAtOnTick;
+      const atwTime = absMs / 1000;
       AbsoluteTimeWindow.recordNote(noteToEmit, texVel, atwLayer, atwTime, unit);
 
       // Cross-layer interactions via AbsoluteTimeGrid
-      const absMs = atwTime * 1000;
       ConvergenceDetector.postOnset(absMs, atwLayer, noteToEmit, texVel);
+      const convergenceResult = ConvergenceDetector.applyIfConverged(absMs, atwLayer, noteToEmit, texVel);
+      if (convergenceResult) {
+        FeedbackOscillator.inject(absMs, atwLayer, clamp(convergenceResult.rarity, 0, 1), 'convergence', noteToEmit % 12);
+      }
       VelocityInterference.postVelocity(absMs, atwLayer, texVel, VelocityInterference.measureDelta(atwLayer, atwTime));
 
       // #6 Spectral Complementarity: record note for histogram tracking
@@ -89,6 +108,21 @@ playNotesEmitPick = function(opts = {}) {
       // #8 Cross-Layer Motif Echo: record note for interval capture
       MotifEcho.recordNote(noteToEmit, atwLayer, absMs);
       MotifIdentityMemory.recordNote(atwLayer, noteToEmit, absMs);
+
+      // Deliver pending motif echo as actual emitted notes
+      const deliveredEcho = MotifEcho.deliverEcho(absMs, atwLayer, noteToEmit);
+      if (deliveredEcho && Array.isArray(deliveredEcho.notes) && deliveredEcho.notes.length > 1) {
+        const echoCount = m.min(3, deliveredEcho.notes.length - 1);
+        for (let echoIndex = 0; echoIndex < echoCount; echoIndex++) {
+          const echoNote = deliveredEcho.notes[echoIndex + 1];
+          const echoStagger = tpUnit * rf(0.015, 0.06) * (echoIndex + 1);
+          const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95))));
+          const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [sourceCH, echoNote, echoVel] };
+          const echoOffEvt = { tick: onTick + echoStagger + texSustain * rf(0.6, 0.95), vals: [sourceCH, echoNote] };
+          microUnitAttenuator.record(echoOnEvt, echoOffEvt, crossModulation);
+          scheduled += 2;
+        }
+      }
 
       // #10 Entropy Regulator: record sample for entropy measurement
       EntropyRegulator.recordSample(noteToEmit, texVel, atwLayer);
@@ -183,6 +217,9 @@ playNotesEmitPick = function(opts = {}) {
     const isPrimary = reflectionCH === cCH2;
     let onTick = isPrimary ? on + rv(tpUnit * rf(0.2), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
     onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
+    const reflectionPreSyncMs = tickToAbsMs(onTick);
+    onTick = RhythmicPhaseLock.applyPhaseLock(reflectionPreSyncMs, activeLayerName, onTick).tick;
+    onTick = TemporalGravity.applyGravity(reflectionPreSyncMs, activeLayerName, onTick);
     const baseOnVel = (isPrimary ? velocity * rf(0.7, 1.2) : binVel * rf(0.55, 1.1)) * pickVelScale;
     const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pickIndex * 131 + reflectionIndex;
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
@@ -240,6 +277,9 @@ playNotesEmitPick = function(opts = {}) {
       const isPrimary = bassCH === cCH3;
       let onTick = isPrimary ? on + rv(tpUnit * rf(0.1), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
       onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
+      const bassPreSyncMs = tickToAbsMs(onTick);
+      onTick = RhythmicPhaseLock.applyPhaseLock(bassPreSyncMs, activeLayerName, onTick).tick;
+      onTick = TemporalGravity.applyGravity(bassPreSyncMs, activeLayerName, onTick);
       const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
       const bassVoiceId = voiceIdSeed + bassCH * 23 + pickIndex * 151 + bassIndex;
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);

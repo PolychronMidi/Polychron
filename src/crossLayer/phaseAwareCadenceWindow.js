@@ -3,6 +3,8 @@ PhaseAwareCadenceWindow = (() => {
   const MIN_CONFIDENCE = 0.45;
   /** @type {Map<string, Array<{ timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel' }>>} */
   const samplesByLayer = new Map();
+  /** @type {Map<string, { timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel', confidence: number }>} */
+  const latestByLayer = new Map();
 
   /** @param {string} layer */
   function ensureLayer(layer) {
@@ -32,7 +34,18 @@ PhaseAwareCadenceWindow = (() => {
     if (row.length > MAX_SAMPLES) row.shift();
 
     const confidence = getConfidence(layer);
+    const latest = { timeMs: absTimeMs, phaseDiff: snapshot.phaseDiff, mode: snapshot.mode, confidence };
+    latestByLayer.set(layer, latest);
     return { phaseDiff: snapshot.phaseDiff, mode: snapshot.mode, confidence };
+  }
+
+  /**
+   * @param {string} layer
+   * @returns {{ timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel', confidence: number } | null}
+   */
+  function getLatest(layer) {
+    const latest = latestByLayer.get(layer);
+    return latest || null;
   }
 
   /** @param {string} layer */
@@ -55,15 +68,20 @@ PhaseAwareCadenceWindow = (() => {
    * @param {string} layer
    * @param {boolean} cadenceSuggested
    */
-  function shouldAllowCadence(absTimeMs, layer, cadenceSuggested) {
-    const snapshot = update(absTimeMs, layer);
-    const allowed = Boolean(cadenceSuggested) && snapshot.confidence >= MIN_CONFIDENCE && snapshot.phaseDiff <= 0.3;
+  function shouldAllowCadence(absTimeMs, layer, cadenceSuggested, snapshot) {
+    const snap = snapshot || getLatest(layer) || {
+      timeMs: absTimeMs,
+      phaseDiff: 1,
+      mode: /** @type {'lock'|'drift'|'repel'} */ ('drift'),
+      confidence: 0
+    };
+    const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= 0.3;
 
     if (typeof ExplainabilityBus !== 'undefined' && ExplainabilityBus && typeof ExplainabilityBus.emit === 'function') {
       ExplainabilityBus.emit('phase-cadence-window', layer, {
         cadenceSuggested: Boolean(cadenceSuggested),
-        confidence: snapshot.confidence,
-        phaseDiff: snapshot.phaseDiff,
+        confidence: snap.confidence,
+        phaseDiff: snap.phaseDiff,
         allowed
       }, absTimeMs);
     }
@@ -73,7 +91,8 @@ PhaseAwareCadenceWindow = (() => {
 
   function reset() {
     samplesByLayer.clear();
+    latestByLayer.clear();
   }
 
-  return { update, getConfidence, shouldAllowCadence, reset };
+  return { update, getLatest, getConfidence, shouldAllowCadence, reset };
 })();
