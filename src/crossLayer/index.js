@@ -16,6 +16,8 @@ require('./grooveTransfer');
 require('./registerCollisionAvoider');
 // @ts-ignore: side-effect module load
 require('./motifIdentityMemory');
+// @ts-ignore: side-effect module load
+require('./crossLayerLifecycleManager');
 
 // @ts-ignore: side-effect module load
 require('./stutterContagion');

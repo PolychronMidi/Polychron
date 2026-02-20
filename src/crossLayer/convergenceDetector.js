@@ -16,6 +16,8 @@ ConvergenceDetector = (() => {
 
   let lastConvergenceMs = -Infinity;
   let totalConvergences = 0;
+  /** @type {Record<string, number>} */
+  const lastConvergenceByLayer = {};
 
   /**
    * Post a note onset from the active layer.
@@ -81,6 +83,7 @@ ConvergenceDetector = (() => {
     if (!conv) return null;
 
     totalConvergences++;
+    lastConvergenceByLayer[activeLayer] = absTimeMs;
 
     // === BURST EVENT: coordinated unison singularity ===
     // Both notes share a pitch class; emit octave-displaced cluster
@@ -128,6 +131,30 @@ ConvergenceDetector = (() => {
     return { convergence: true, rarity: conv.rarity, burstNotes, totalConvergences };
   }
 
+  /**
+   * Whether this layer had a convergence within the given lookback window.
+   * @param {number} absTimeMs
+   * @param {string} layer
+   * @param {number} [windowMs=250]
+   * @returns {boolean}
+   */
+  function wasRecent(absTimeMs, layer, windowMs) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+    const window = Number.isFinite(windowMs) ? Number(windowMs) : 250;
+    const lastMs = Number(lastConvergenceByLayer[layer]);
+    if (!Number.isFinite(lastMs)) return false;
+    return (absTimeMs - lastMs) <= Math.max(0, window);
+  }
+
+  /**
+   * @param {string} layer
+   * @returns {number}
+   */
+  function getLastConvergenceMs(layer) {
+    const value = Number(lastConvergenceByLayer[layer]);
+    return Number.isFinite(value) ? value : -Infinity;
+  }
+
   /** @returns {number} total convergences fired so far */
   function getConvergenceCount() { return totalConvergences; }
 
@@ -135,7 +162,10 @@ ConvergenceDetector = (() => {
   function reset() {
     lastConvergenceMs = -Infinity;
     totalConvergences = 0;
+    Object.keys(lastConvergenceByLayer).forEach((layer) => {
+      delete lastConvergenceByLayer[layer];
+    });
   }
 
-  return { postOnset, detect, applyIfConverged, getConvergenceCount, reset };
+  return { postOnset, detect, applyIfConverged, wasRecent, getLastConvergenceMs, getConvergenceCount, reset };
 })();

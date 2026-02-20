@@ -23,6 +23,8 @@ InteractionHeatMap = (() => {
 
   /** @type {Record<string, number>} current beat accumulator */
   let currentBeat = /** @type {Record<string, number>} */ ({});
+  /** @type {Map<string, { systems: Record<string, number>, totalFirings: number }>} */
+  const deferredByKey = new Map();
 
   /**
    * Record a system firing in the current beat.
@@ -43,6 +45,60 @@ InteractionHeatMap = (() => {
     history.push({ systems: { ...currentBeat }, totalFirings, absTimeMs });
     if (history.length > WINDOW_SIZE) history.shift();
     currentBeat = /** @type {Record<string, number>} */ ({});
+  }
+
+  /**
+   * Defer current accumulated beat under a key (typically L1 side of a pair).
+   * @param {string} beatKey
+   */
+  function deferBeat(beatKey) {
+    if (typeof beatKey !== 'string' || beatKey.length === 0) {
+      throw new Error('InteractionHeatMap.deferBeat: beatKey must be a non-empty string');
+    }
+    const systems = { ...currentBeat };
+    const totalFirings = Object.values(systems).reduce((s, v) => s + v, 0);
+    deferredByKey.set(beatKey, { systems, totalFirings });
+    currentBeat = /** @type {Record<string, number>} */ ({});
+  }
+
+  /**
+   * Flush pair by merging deferred + current under one snapshot (typically L2 side).
+   * @param {number} absTimeMs
+   * @param {string} beatKey
+   */
+  function flushBeatPair(absTimeMs, beatKey) {
+    if (typeof beatKey !== 'string' || beatKey.length === 0) {
+      throw new Error('InteractionHeatMap.flushBeatPair: beatKey must be a non-empty string');
+    }
+    const deferred = deferredByKey.get(beatKey);
+    const merged = /** @type {Record<string, number>} */ ({});
+
+    if (deferred) {
+      Object.keys(deferred.systems).forEach((name) => {
+        merged[name] = (merged[name] || 0) + deferred.systems[name];
+      });
+      deferredByKey.delete(beatKey);
+    }
+    Object.keys(currentBeat).forEach((name) => {
+      merged[name] = (merged[name] || 0) + currentBeat[name];
+    });
+
+    const totalFirings = Object.values(merged).reduce((s, v) => s + v, 0);
+    history.push({ systems: merged, totalFirings, absTimeMs });
+    if (history.length > WINDOW_SIZE) history.shift();
+    currentBeat = /** @type {Record<string, number>} */ ({});
+  }
+
+  /**
+   * Flush any deferred orphan beats when pairing can't be completed.
+   * @param {number} absTimeMs
+   */
+  function flushDeferredOrphans(absTimeMs) {
+    for (const [beatKey, deferred] of deferredByKey.entries()) {
+      history.push({ systems: { ...deferred.systems }, totalFirings: deferred.totalFirings, absTimeMs });
+      if (history.length > WINDOW_SIZE) history.shift();
+      deferredByKey.delete(beatKey);
+    }
   }
 
   /**
@@ -110,7 +166,19 @@ InteractionHeatMap = (() => {
   function reset() {
     history.length = 0;
     currentBeat = /** @type {Record<string, number>} */ ({});
+    deferredByKey.clear();
   }
 
-  return { record, flushBeat, getDensity, getSystemHeat, getBreathingRecommendation, getTrend, reset };
+  return {
+    record,
+    flushBeat,
+    deferBeat,
+    flushBeatPair,
+    flushDeferredOrphans,
+    getDensity,
+    getSystemHeat,
+    getBreathingRecommendation,
+    getTrend,
+    reset
+  };
 })();
