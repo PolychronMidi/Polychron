@@ -1,4 +1,7 @@
+const VPlayNotesEmitPick = Validator.create('playNotesEmitPick');
+
 playNotesEmitPick = function(opts = {}) {
+  VPlayNotesEmitPick.assertPlainObject(opts, 'opts');
   const {
     unit,
     pick,
@@ -16,25 +19,47 @@ playNotesEmitPick = function(opts = {}) {
     voiceIdSeed
   } = opts;
 
-  if (!pick || typeof pick.note === 'undefined') {
-    throw new Error(`${unit}.playNotes: invalid note object in motif picks`);
-  }
+  VPlayNotesEmitPick.assertObject(pick, 'pick');
+  VPlayNotesEmitPick.requireDefined(pick.note, 'pick.note');
   const minMidi = m.max(0, OCTAVE.min * 12);
   const maxMidi = m.min(MIDI_MAX_VALUE, OCTAVE.max * 12 - 1);
   const pickNote = modClamp(Number(pick.note), minMidi, maxMidi);
 
   let scheduled = 0;
-  const activeLayerName = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+  VPlayNotesEmitPick.assertObject(LM, 'LM');
+  VPlayNotesEmitPick.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  const activeLayerName = LM.activeLayer;
+  VPlayNotesEmitPick.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
+  VPlayNotesEmitPick.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');
+  VPlayNotesEmitPick.requireType(AbsoluteTimeWindow.getNotes, 'function', 'AbsoluteTimeWindow.getNotes');
+  VPlayNotesEmitPick.assertObject(MotifIdentityMemory, 'MotifIdentityMemory');
+  VPlayNotesEmitPick.requireType(MotifIdentityMemory.recordNote, 'function', 'MotifIdentityMemory.recordNote');
+  VPlayNotesEmitPick.requireType(MotifIdentityMemory.getActiveIdentity, 'function', 'MotifIdentityMemory.getActiveIdentity');
+  VPlayNotesEmitPick.assertObject(ConvergenceDetector, 'ConvergenceDetector');
+  VPlayNotesEmitPick.requireType(ConvergenceDetector.postOnset, 'function', 'ConvergenceDetector.postOnset');
+  VPlayNotesEmitPick.requireType(ConvergenceDetector.applyIfConverged, 'function', 'ConvergenceDetector.applyIfConverged');
+  VPlayNotesEmitPick.requireType(ConvergenceDetector.wasRecent, 'function', 'ConvergenceDetector.wasRecent');
+  VPlayNotesEmitPick.assertObject(HarmonicContext, 'HarmonicContext');
+  VPlayNotesEmitPick.requireType(HarmonicContext.getField, 'function', 'HarmonicContext.getField');
+  VPlayNotesEmitPick.assertObject(Stutter, 'Stutter');
+  VPlayNotesEmitPick.assertObject(Stutter.beatContext, 'Stutter.beatContext');
+  if (!(Stutter.beatContext.selectedReflectionChannels instanceof Set)) {
+    throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedReflectionChannels must be a Set`);
+  }
+  if (!(Stutter.beatContext.selectedBassChannels instanceof Set)) {
+    throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedBassChannels must be a Set`);
+  }
 
   /** @param {number} tick */
   const tickToAbsMs = (tick) => {
-    if (Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)) {
-      return (measureStartTime + (tick - measureStart) / tpSec) * 1000;
-    }
-    return Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0;
+    const measureStartValue = VPlayNotesEmitPick.requireFinite(measureStart, 'measureStart');
+    const measureStartTimeValue = VPlayNotesEmitPick.requireFinite(measureStartTime, 'measureStartTime');
+    const tpSecValue = VPlayNotesEmitPick.requireFinite(tpSec, 'tpSec');
+    return (measureStartTimeValue + (tick - measureStartValue) / tpSecValue) * 1000;
   };
 
-  const shouldStutter = (typeof resolvedStutterProb === 'number') ? (resolvedStutterProb > rf()) : false;
+  const resolvedStutterProbValue = VPlayNotesEmitPick.requireFinite(resolvedStutterProb, 'resolvedStutterProb');
+  const shouldStutter = resolvedStutterProbValue > rf();
   let selectedShift = 0;
   if (shouldStutter) {
     const minNote = minMidi;
@@ -49,7 +74,7 @@ playNotesEmitPick = function(opts = {}) {
     }
   }
 
-  const pickVelScale = (pick._distributedVelocity && Number.isFinite(pick._distributedVelocity))
+  const pickVelScale = Number.isFinite(pick._distributedVelocity)
     ? clamp(pick._distributedVelocity / m.max(1, velocity), 0.5, 1.5)
     : 1;
 
@@ -101,12 +126,15 @@ playNotesEmitPick = function(opts = {}) {
       // Record articulation for cross-layer contrast tracking
       ArticulationComplement.recordSustain(activeLayerName, texSustain, absMsAtOnTick);
       // Record texture mode for TexturalMirror
-      TexturalMirror.recordTexture(activeLayerName, textureMode.mode || 'normal', absMsAtOnTick);
+      if (!textureMode || typeof textureMode.mode !== 'string' || textureMode.mode.length === 0) {
+        throw new Error(`${unit}.playNotesEmitPick: textureMode.mode must be a non-empty string`);
+      }
+      TexturalMirror.recordTexture(activeLayerName, textureMode.mode, absMsAtOnTick);
     }
 
     // Record note into AbsoluteTimeWindow for cross-layer analysis
-    if (isPrimary && typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordNote === 'function') {
-      const atwLayer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+    if (isPrimary) {
+      const atwLayer = activeLayerName;
       const absMs = absMsAtOnTick;
       const atwTime = absMs / 1000;
       AbsoluteTimeWindow.recordNote(noteToEmit, texVel, atwLayer, atwTime, unit);
@@ -146,29 +174,34 @@ playNotesEmitPick = function(opts = {}) {
 
       // Record cross-layer interval for harmonic guard tracking
       const otherLayerForGuard = atwLayer === 'L1' ? 'L2' : 'L1';
-      if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.getNotes === 'function') {
-        const otherRecent = AbsoluteTimeWindow.getNotes({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
-        if (otherRecent.length > 0) {
-          const otherMidi = otherRecent[otherRecent.length - 1].midi || otherRecent[otherRecent.length - 1].note || 0;
-          if (Number.isFinite(otherMidi) && otherMidi > 0) {
-            HarmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidi, absMs);
-          }
+      const otherRecent = AbsoluteTimeWindow.getNotes({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+      if (otherRecent.length > 0) {
+        const otherRecentEntry = otherRecent[otherRecent.length - 1];
+        const otherMidiCandidate = Number(
+          (otherRecentEntry && Number.isFinite(Number(otherRecentEntry.midi)))
+            ? otherRecentEntry.midi
+            : (otherRecentEntry ? otherRecentEntry.note : NaN)
+        );
+        if (!Number.isFinite(otherMidiCandidate)) {
+          throw new Error(`${unit}.playNotesEmitPick: other layer note history entry must include finite midi or note`);
+        }
+        const otherMidi = otherMidiCandidate;
+        if (otherMidi > 0) {
+          HarmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidi, absMs);
         }
       }
 
       // Pitch Memory Recall: memorize significant patterns via MotifIdentityMemory
-      const memIdentity = (typeof MotifIdentityMemory !== 'undefined' && MotifIdentityMemory && typeof MotifIdentityMemory.getActiveIdentity === 'function')
-        ? MotifIdentityMemory.getActiveIdentity(atwLayer) : null;
+      const memIdentity = MotifIdentityMemory.getActiveIdentity(atwLayer);
       if (memIdentity && typeof memIdentity.intervalDna === 'string' && memIdentity.intervalDna.length > 0) {
         const memIntervals = memIdentity.intervalDna.split(',').map(Number).filter(Number.isFinite);
         if (memIntervals.length >= 2) {
-          const memConvergence = (typeof ConvergenceDetector !== 'undefined' && ConvergenceDetector && typeof ConvergenceDetector.wasRecent === 'function')
-            ? ConvergenceDetector.wasRecent(absMs, atwLayer, 500) : false;
+          const memConvergence = ConvergenceDetector.wasRecent(absMs, atwLayer, 500);
           PitchMemoryRecall.memorize(
             memIntervals,
             [noteToEmit % 12],
             { convergence: memConvergence, cadence: false, downbeat: false },
-            typeof sectionIndex === 'number' ? sectionIndex : 0
+            Number.isFinite(Number(sectionIndex)) ? Number(sectionIndex) : (() => { throw new Error(`${unit}.playNotesEmitPick: sectionIndex must be finite`); })()
           );
         }
       }
@@ -176,19 +209,17 @@ playNotesEmitPick = function(opts = {}) {
 
     if (textureMode.mode === 'chordBurst' && isPrimary) {
       let burstIntervals = [3, 4, 7];
-      if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-        const scalePCs = HarmonicContext.getField('scale');
-        if (Array.isArray(scalePCs) && scalePCs.length > 1) {
-          const rootPC = noteToEmit % 12;
-          const derived = [];
-          for (let scaleIndex = 0; scaleIndex < scalePCs.length; scaleIndex++) {
-            const pc = typeof scalePCs[scaleIndex] === 'number' ? scalePCs[scaleIndex] % 12 : -1;
-            if (pc < 0) continue;
-            const interval = (pc - rootPC + 12) % 12;
-            if (interval > 0) derived.push(interval);
-          }
-          if (derived.length >= 2) burstIntervals = derived;
+      const scalePCs = HarmonicContext.getField('scale');
+      if (Array.isArray(scalePCs) && scalePCs.length > 1) {
+        const rootPC = noteToEmit % 12;
+        const derived = [];
+        for (let scaleIndex = 0; scaleIndex < scalePCs.length; scaleIndex++) {
+          const pc = typeof scalePCs[scaleIndex] === 'number' ? scalePCs[scaleIndex] % 12 : -1;
+          if (pc < 0) continue;
+          const interval = (pc - rootPC + 12) % 12;
+          if (interval > 0) derived.push(interval);
         }
+        if (derived.length >= 2) burstIntervals = derived;
       }
       const burstCount = ri(2, 3);
       for (let burstIndex = 0; burstIndex < burstCount; burstIndex++) {
@@ -210,22 +241,20 @@ playNotesEmitPick = function(opts = {}) {
       const flurryGap = tpUnit * rf(0.04, 0.09);
 
       let scalePitches = null;
-      if (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
-        const scalePCs = HarmonicContext.getField('scale');
-        if (Array.isArray(scalePCs) && scalePCs.length > 1) {
-          const lo = minMidi;
-          const hi = maxMidi;
-          const pitches = [];
-          for (let oct = m.floor(lo / 12); oct <= m.ceil(hi / 12); oct++) {
-            for (let scaleIndex = 0; scaleIndex < scalePCs.length; scaleIndex++) {
-              const pc = typeof scalePCs[scaleIndex] === 'number' ? scalePCs[scaleIndex] % 12 : -1;
-              if (pc < 0) continue;
-              const midi = oct * 12 + pc;
-              if (midi >= lo && midi <= hi) pitches.push(midi);
-            }
+      const scalePCs = HarmonicContext.getField('scale');
+      if (Array.isArray(scalePCs) && scalePCs.length > 1) {
+        const lo = minMidi;
+        const hi = maxMidi;
+        const pitches = [];
+        for (let oct = m.floor(lo / 12); oct <= m.ceil(hi / 12); oct++) {
+          for (let scaleIndex = 0; scaleIndex < scalePCs.length; scaleIndex++) {
+            const pc = typeof scalePCs[scaleIndex] === 'number' ? scalePCs[scaleIndex] % 12 : -1;
+            if (pc < 0) continue;
+            const midi = oct * 12 + pc;
+            if (midi >= lo && midi <= hi) pitches.push(midi);
           }
-          if (pitches.length > 2) scalePitches = pitches.sort((a, b) => a - b);
         }
+        if (pitches.length > 2) scalePitches = pitches.sort((a, b) => a - b);
       }
 
       for (let flurryIndex = 0; flurryIndex < flurryCount; flurryIndex++) {
@@ -271,7 +300,7 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
     const { perProbScaled: perProbScaledRefl, onVel: onVelRefl } = getChannelCoherence(reflectionCH, 'reflection', reflectionNoiseBase, reflectionVoiceId, currentTime);
 
-    const reflectSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedReflectionChannels && Stutter.beatContext.selectedReflectionChannels.has(reflectionCH));
+    const reflectSelected = Stutter.beatContext.selectedReflectionChannels.has(reflectionCH);
     const reflectApplyShift = reflectSelected && selectedShift !== 0 && rf() < perProbScaledRefl;
     const reflectionEmitNoteBase = reflectApplyShift
       ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
@@ -331,7 +360,7 @@ playNotesEmitPick = function(opts = {}) {
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
       const { perProbScaled: perProbScaledBass, onVel } = getChannelCoherence(bassCH, 'bass', bassNoiseBase, bassVoiceId, currentTime);
 
-      const bassSelected = (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext && Stutter.beatContext.selectedBassChannels && Stutter.beatContext.selectedBassChannels.has(bassCH));
+      const bassSelected = Stutter.beatContext.selectedBassChannels.has(bassCH);
       const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
       const bassEmitBase = bassApplyShift ? pickNote + selectedShift : pickNote;
       const bassNoteBase = modClamp(bassEmitBase, minMidi, m.min(59, maxMidi));

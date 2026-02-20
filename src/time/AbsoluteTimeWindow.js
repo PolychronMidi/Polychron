@@ -11,6 +11,7 @@
  */
 
 AbsoluteTimeWindow = (() => {
+  const V = Validator.create('AbsoluteTimeWindow');
   const DEFAULT_WINDOW_SECONDS = 8;
   const MAX_ENTRIES = 2000;
 
@@ -53,16 +54,10 @@ AbsoluteTimeWindow = (() => {
    * @param {Object} entry - must include `.time` (absolute seconds)
    */
   function record(type, entry) {
-    if (!entry || typeof entry !== 'object') {
-      throw new Error('AbsoluteTimeWindow.record: entry must be an object');
-    }
+    V.assertPlainObject(entry, 'record.entry');
     const e = /** @type {ATWEntry} */ (entry);
-    if (typeof e.time !== 'number' || !Number.isFinite(e.time)) {
-      throw new Error('AbsoluteTimeWindow.record: entry.time must be a finite number');
-    }
-    if (!VALID_TYPES.has(type)) {
-      throw new Error(`AbsoluteTimeWindow.record: unknown type "${type}"`);
-    }
+    V.requireFinite(e.time, 'record.entry.time');
+    V.assertInSet(type, VALID_TYPES, 'record.type');
 
     const arr = entries[type];
     if (Array.isArray(arr)) {
@@ -107,16 +102,46 @@ AbsoluteTimeWindow = (() => {
   }
 
   /**
-   * Query entries of a given type with optional filtering.
-   * @param {string} type - 'note' | 'rhythm' | 'chord'
+   * Query entries with backward-compatible overloads:
+   * - getEntries(type, opts)
+   * - getEntries(windowSeconds)
+   * - getEntries(opts)
+   * - getEntries() // defaults to note entries
+   * @param {string|number|Object|undefined} typeOrWindowOrOpts
    * @param {Object} [opts]
-   * @param {string} [opts.layer] - filter by layer
-   * @param {number} [opts.since] - absolute seconds cutoff
-   * @param {number} [opts.windowSeconds] - window size override
    * @returns {ATWEntry[]}
    */
-  function getEntries(type, opts) {
-    const { layer, since, windowSeconds } = opts || {};
+  function getEntries(typeOrWindowOrOpts, opts) {
+    let type = 'note';
+    let effectiveOpts = opts;
+
+    if (typeof typeOrWindowOrOpts === 'string') {
+      type = typeOrWindowOrOpts;
+    } else if (typeof typeOrWindowOrOpts === 'number') {
+      const w = V.requireFinite(typeOrWindowOrOpts, 'getEntries.windowSeconds');
+      effectiveOpts = { windowSeconds: w };
+    } else if (typeof typeOrWindowOrOpts === 'undefined') {
+      // default type 'note' with optional opts
+    } else {
+      V.assertPlainObject(typeOrWindowOrOpts, 'getEntries.opts');
+      effectiveOpts = typeOrWindowOrOpts;
+    }
+
+    V.assertInSet(type, VALID_TYPES, 'getEntries.type');
+    let layer;
+    let since;
+    let windowSeconds;
+    if (typeof effectiveOpts === 'undefined') {
+      layer = undefined;
+      since = undefined;
+      windowSeconds = undefined;
+    } else {
+      V.assertPlainObject(effectiveOpts, 'getEntries.opts');
+      ({ layer, since, windowSeconds } = effectiveOpts);
+      if (typeof layer !== 'undefined') V.assertNonEmptyString(layer, 'getEntries.opts.layer');
+      if (typeof since !== 'undefined') V.requireFinite(since, 'getEntries.opts.since');
+      if (typeof windowSeconds !== 'undefined') V.requireFinite(windowSeconds, 'getEntries.opts.windowSeconds');
+    }
     const arr = entries[type];
     if (!Array.isArray(arr) || arr.length === 0) {
       return [];

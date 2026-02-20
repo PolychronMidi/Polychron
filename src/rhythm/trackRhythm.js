@@ -1,20 +1,31 @@
 // Consolidated rhythm tracking function — explicit context-based API
+const VTrackRhythm = Validator.create('trackRhythm');
+
 trackRhythm = (unit, layer, played) => {
-  if (!layer) throw new Error('trackRhythm requires a context object');
-  const key = (unit || '').toString().toLowerCase();
-  const unitNames = ['beat', 'div', 'subdiv', 'subsubdiv'];
-  if (!unitNames.includes(key)) {
-    throw new Error(`trackRhythm: unknown unit "${unit}"`);
-  }
+  VTrackRhythm.assertObject(layer, 'layer');
+  VTrackRhythm.assertNonEmptyString(unit, 'unit');
+  const key = unit.toLowerCase();
+  VTrackRhythm.requireEnum(key, ['beat', 'div', 'subdiv', 'subsubdiv'], 'unit');
+
+  const incrementCounter = (counterKey) => {
+    const existing = layer[counterKey];
+    if (typeof existing === 'undefined') {
+      layer[counterKey] = 1;
+    } else if (!Number.isFinite(existing)) {
+      throw new Error(`trackRhythm: counter "${counterKey}" must be finite when defined`);
+    } else {
+      layer[counterKey] = existing + 1;
+    }
+  };
 
   // If caller explicitly tells us whether a play occurred, respect that
   if (typeof played === 'boolean') {
     if (played) {
-      layer[`${key}sOn`] = (layer[`${key}sOn`] || 0) + 1;
+      incrementCounter(`${key}sOn`);
       layer[`${key}sOff`] = 0;
     } else {
       layer[`${key}sOn`] = 0;
-      layer[`${key}sOff`] = (layer[`${key}sOff`] || 0) + 1;
+      incrementCounter(`${key}sOff`);
     }
     return;
   }
@@ -57,11 +68,13 @@ trackRhythm = (unit, layer, played) => {
   const val = rhythmFinal[idxFinal];
 
   if (val > 0) {
-    layer[`${key}sOn`] = (layer[`${key}sOn`] || 0) + 1;
+    incrementCounter(`${key}sOn`);
     layer[`${key}sOff`] = 0;
   } else if (val === 0) {
     layer[`${key}sOn`] = 0;
-    layer[`${key}sOff`] = (layer[`${key}sOff`] || 0) + 1;
+    incrementCounter(`${key}sOff`);
+  } else {
+    throw new Error(`trackRhythm: rhythm value for unit "${unit}" must be 0 or > 0, received ${String(val)}`);
   }
   return;
 }

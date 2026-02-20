@@ -1,4 +1,5 @@
 GrooveTransfer = (() => {
+  const V = Validator.create('GrooveTransfer');
   const CHANNEL = 'grooveTransfer';
   const MAX_OFFSETS = 64;
   const DAMPING = 0.55;
@@ -8,20 +9,47 @@ GrooveTransfer = (() => {
 
   /** @param {string} layer */
   function ensure(layer) {
+    V.assertNonEmptyString(layer, 'layer');
     if (!offsetsByLayer.has(layer)) offsetsByLayer.set(layer, []);
     const arr = offsetsByLayer.get(layer);
     if (!arr) throw new Error('GrooveTransfer: failed to initialize layer offsets for ' + layer);
     return arr;
   }
 
+  function getAbsoluteTimeGridOrThrow() {
+    if (typeof AbsoluteTimeGrid === 'undefined' || !AbsoluteTimeGrid) {
+      throw new Error('GrooveTransfer: AbsoluteTimeGrid is required');
+    }
+    V.assertObject(AbsoluteTimeGrid, 'AbsoluteTimeGrid');
+    if (typeof AbsoluteTimeGrid.post !== 'function') {
+      throw new Error('GrooveTransfer: AbsoluteTimeGrid.post must be a function');
+    }
+    if (typeof AbsoluteTimeGrid.findClosest !== 'function') {
+      throw new Error('GrooveTransfer: AbsoluteTimeGrid.findClosest must be a function');
+    }
+    return AbsoluteTimeGrid;
+  }
+
+  /**
+   * @param {number} tick
+   * @returns {number}
+   */
+  function getAbsoluteTimeMs(tick) {
+    const msTick = V.requireFinite(tick, 'tick');
+    const currentMeasureStart = V.requireFinite(measureStart, 'measureStart');
+    const currentMeasureStartTime = V.requireFinite(measureStartTime, 'measureStartTime');
+    const currentTpSec = V.requireFinite(tpSec, 'tpSec');
+    return (currentMeasureStartTime + (msTick - currentMeasureStart) / currentTpSec) * 1000;
+  }
+
   /** @param {'beat'|'div'|'subdiv'|'subsubdiv'|string} unit */
   function getUnitStart(unit) {
-    if (unit === 'beat' && Number.isFinite(beatStart)) return beatStart;
-    if (unit === 'div' && Number.isFinite(divStart)) return divStart;
-    if (unit === 'subdiv' && Number.isFinite(subdivStart)) return subdivStart;
-    if (unit === 'subsubdiv' && Number.isFinite(subsubdivStart)) return subsubdivStart;
-    if (Number.isFinite(beatStart)) return beatStart;
-    return 0;
+    V.assertNonEmptyString(unit, 'unit');
+    if (unit === 'beat') return V.requireFinite(beatStart, 'beatStart');
+    if (unit === 'div') return V.requireFinite(divStart, 'divStart');
+    if (unit === 'subdiv') return V.requireFinite(subdivStart, 'subdivStart');
+    if (unit === 'subsubdiv') return V.requireFinite(subsubdivStart, 'subsubdivStart');
+    return V.requireFinite(beatStart, 'beatStart');
   }
 
   /**
@@ -30,20 +58,18 @@ GrooveTransfer = (() => {
    * @param {string} unit
    */
   function recordTiming(layer, tick, unit) {
-    if (!Number.isFinite(tick)) throw new Error('GrooveTransfer.recordTiming: tick must be finite');
+    V.assertNonEmptyString(layer, 'recordTiming.layer');
+    const tickN = V.requireFinite(tick, 'recordTiming.tick');
+    V.assertNonEmptyString(unit, 'recordTiming.unit');
     const base = getUnitStart(unit);
-    const offset = tick - base;
+    const offset = tickN - base;
     const row = ensure(layer);
     row.push(offset);
     if (row.length > MAX_OFFSETS) row.shift();
 
-    const absMs = Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)
-      ? (measureStartTime + (tick - measureStart) / tpSec) * 1000
-      : (Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0);
-
-    if (typeof AbsoluteTimeGrid !== 'undefined' && AbsoluteTimeGrid && typeof AbsoluteTimeGrid.post === 'function') {
-      AbsoluteTimeGrid.post(CHANNEL, layer, absMs, { offset, unit });
-    }
+    const absMs = getAbsoluteTimeMs(tickN);
+    const atg = getAbsoluteTimeGridOrThrow();
+    atg.post(CHANNEL, layer, absMs, { offset, unit });
   }
 
   /**
@@ -52,26 +78,31 @@ GrooveTransfer = (() => {
    * @param {string} unit
    */
   function applyOffset(layer, tick, unit) {
-    if (!Number.isFinite(tick)) throw new Error('GrooveTransfer.applyOffset: tick must be finite');
+    V.assertInSet(layer, new Set(['L1', 'L2']), 'applyOffset.layer');
+    const tickN = V.requireFinite(tick, 'applyOffset.tick');
+    V.assertNonEmptyString(unit, 'applyOffset.unit');
+
     const otherLayer = layer === 'L1' ? 'L2' : 'L1';
     const other = ensure(otherLayer);
-    if (other.length === 0) return tick;
+    if (other.length === 0) return tickN;
 
     const avg = other.reduce((sum, v) => sum + v, 0) / other.length;
 
-    const absMs = Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)
-      ? (measureStartTime + (tick - measureStart) / tpSec) * 1000
-      : (Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0);
+    const absMs = getAbsoluteTimeMs(tickN);
+    const atg = getAbsoluteTimeGridOrThrow();
 
     let localTransfer = avg;
-    const closest = (typeof AbsoluteTimeGrid !== 'undefined' && AbsoluteTimeGrid && typeof AbsoluteTimeGrid.findClosest === 'function')
-      ? AbsoluteTimeGrid.findClosest(CHANNEL, absMs, 120, layer)
-      : null;
-    if (closest && Number.isFinite(closest.offset) && closest.unit === unit) {
-      localTransfer = (avg * 0.5) + (closest.offset * 0.5);
+    const closest = atg.findClosest(CHANNEL, absMs, 120, layer);
+    if (closest) {
+      V.assertObject(closest, 'applyOffset.closest');
+      const closestOffset = V.requireFinite(closest.offset, 'applyOffset.closest.offset');
+      const closestUnit = V.assertNonEmptyString(closest.unit, 'applyOffset.closest.unit');
+      if (closestUnit === unit) {
+        localTransfer = (avg * 0.5) + (closestOffset * 0.5);
+      }
     }
 
-    const shifted = tick + localTransfer * DAMPING;
+    const shifted = tickN + localTransfer * DAMPING;
     return Math.round(shifted);
   }
 

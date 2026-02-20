@@ -19,9 +19,15 @@ ConvergenceHarmonicTrigger = (() => {
    * @param {{ rarity?: number, absTimeMs?: number, layer?: string }} event
    */
   function onConvergence(event) {
-    const ev = (event && typeof event === 'object') ? event : {};
-    const absTimeMs = Number.isFinite(ev.absTimeMs) ? Number(ev.absTimeMs) : 0;
-    const rarity = Number.isFinite(ev.rarity) ? Number(ev.rarity) : 0.5;
+    V.assertPlainObject(event, 'onConvergence.event');
+    const ev = event;
+    const absTimeMs = V.requireFinite(ev.absTimeMs, 'onConvergence.event.absTimeMs');
+    const rarity = (typeof ev.rarity === 'undefined')
+      ? 0.5
+      : clamp(V.requireFinite(ev.rarity, 'onConvergence.event.rarity'), 0, 1);
+    const layer = (typeof ev.layer === 'undefined')
+      ? 'L1'
+      : V.assertNonEmptyString(ev.layer, 'onConvergence.event.layer');
 
     if (absTimeMs - lastTriggerMs < MIN_TRIGGER_INTERVAL_MS) return;
 
@@ -30,10 +36,11 @@ ConvergenceHarmonicTrigger = (() => {
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system
-    const trustScore = (typeof AdaptiveTrustScores !== 'undefined' && AdaptiveTrustScores &&
-      typeof AdaptiveTrustScores.getWeight === 'function')
-      ? AdaptiveTrustScores.getWeight('convergence')
-      : 0.5;
+    if (typeof AdaptiveTrustScores === 'undefined' || !AdaptiveTrustScores ||
+        typeof AdaptiveTrustScores.getWeight !== 'function') {
+      throw new Error('ConvergenceHarmonicTrigger.onConvergence: AdaptiveTrustScores.getWeight is required');
+    }
+    const trustScore = V.requireFinite(AdaptiveTrustScores.getWeight('convergence'), 'onConvergence.trustScore');
     if (trustScore < 0.2) return; // too low trust to act
 
     // Determine change type based on cadence alignment state
@@ -41,35 +48,41 @@ ConvergenceHarmonicTrigger = (() => {
     let bias = 0;
 
     // Consume CadenceAlignment dead-end signals
-    if (typeof CadenceAlignment !== 'undefined' && CadenceAlignment &&
-        typeof CadenceAlignment.applyAlignment === 'function') {
-      const layer = (typeof ev.layer === 'string') ? ev.layer : 'L1';
-      const tension = (typeof ConductorState !== 'undefined' && ConductorState &&
-        typeof ConductorState.getField === 'function')
-        ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1)
-        : 0.5;
+    if (typeof CadenceAlignment === 'undefined' || !CadenceAlignment ||
+        typeof CadenceAlignment.applyAlignment !== 'function') {
+      throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment is required');
+    }
+    if (typeof ConductorState === 'undefined' || !ConductorState ||
+        typeof ConductorState.getField !== 'function') {
+      throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConductorState.getField is required');
+    }
 
-      // Read cadence alignment state for tonicBias/dominantBias
-      const alignment = CadenceAlignment.applyAlignment(absTimeMs, layer, tension);
-      if (alignment) {
-        const tonicBias = Number.isFinite(alignment.tonicBias) ? alignment.tonicBias : 0;
-        const dominantBias = Number.isFinite(alignment.dominantBias) ? alignment.dominantBias : 0;
+    const tension = clamp(V.requireFinite(ConductorState.getField('compositeIntensity'), 'onConvergence.tension'), 0, 1);
 
-        if (tonicBias > 0.5) {
-          changeType = 'tonic-reaffirm';
-          bias = tonicBias;
-        } else if (dominantBias > 0.5) {
-          changeType = 'dominant-push';
-          bias = dominantBias;
-        }
+    // Read cadence alignment state for tonicBias/dominantBias
+    const alignment = CadenceAlignment.applyAlignment(absTimeMs, layer, tension);
+    if (alignment !== null && typeof alignment !== 'object') {
+      throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment must return object|null');
+    }
+    if (alignment) {
+      const tonicBias = clamp(V.requireFinite(alignment.tonicBias, 'onConvergence.alignment.tonicBias'), 0, 1);
+      const dominantBias = clamp(V.requireFinite(alignment.dominantBias, 'onConvergence.alignment.dominantBias'), 0, 1);
+
+      if (tonicBias > 0.5) {
+        changeType = 'tonic-reaffirm';
+        bias = tonicBias;
+      } else if (dominantBias > 0.5) {
+        changeType = 'dominant-push';
+        bias = dominantBias;
       }
     }
 
     // Was convergence recent? (check both layers)
-    const wasRecent = (typeof ConvergenceDetector !== 'undefined' && ConvergenceDetector &&
-      typeof ConvergenceDetector.wasRecent === 'function')
-      ? ConvergenceDetector.wasRecent(absTimeMs, ev.layer || 'L1', 500)
-      : true;
+    if (typeof ConvergenceDetector === 'undefined' || !ConvergenceDetector ||
+        typeof ConvergenceDetector.wasRecent !== 'function') {
+      throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConvergenceDetector.wasRecent is required');
+    }
+    const wasRecent = ConvergenceDetector.wasRecent(absTimeMs, layer, 500);
 
     if (!wasRecent) return;
 
@@ -79,15 +92,16 @@ ConvergenceHarmonicTrigger = (() => {
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
     // Emit harmonic trigger event
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      EventBus.emit('CONVERGENCE_HARMONIC_TRIGGER', {
-        type: changeType,
-        bias,
-        rarity,
-        triggerCount,
-        absTimeMs
-      });
+    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+      throw new Error('ConvergenceHarmonicTrigger.onConvergence: EventBus.emit is required');
     }
+    EventBus.emit('CONVERGENCE_HARMONIC_TRIGGER', {
+      type: changeType,
+      bias,
+      rarity,
+      triggerCount,
+      absTimeMs
+    });
   }
 
   /**

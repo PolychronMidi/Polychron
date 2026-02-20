@@ -28,14 +28,20 @@ FeedbackOscillator = (() => {
    */
   function inject(absTimeMs, layer, energy, impulseType, pitchClass) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(layer, 'layer');
     V.requireFinite(energy, 'energy');
     const safePitchClass = (typeof pitchClass === 'number' && Number.isFinite(pitchClass))
       ? pitchClass
       : -1;
+    let finalImpulseType = 'accent';
+    if (typeof impulseType !== 'undefined') {
+      V.assertNonEmptyString(impulseType, 'impulseType');
+      finalImpulseType = impulseType;
+    }
     AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       energy: clamp(energy, 0, 1),
       roundTrip: 0,
-      impulseType: impulseType || 'accent',
+      impulseType: finalImpulseType,
       originLayer: layer,
       pitchClass: safePitchClass >= 0 ? safePitchClass % 12 : -1
     });
@@ -50,44 +56,59 @@ FeedbackOscillator = (() => {
    */
   function react(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(activeLayer, 'activeLayer');
 
     const incoming = AbsoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!incoming) return null;
+    if (typeof incoming !== 'object') {
+      throw new Error('FeedbackOscillator.react: AbsoluteTimeGrid.findClosest must return object|null');
+    }
     if (!Number.isFinite(incoming.energy) || incoming.energy < MIN_ENERGY) return null;
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
 
     const dampedEnergy = incoming.energy * DAMPING;
     if (dampedEnergy < MIN_ENERGY) return null;
 
-    const nextRoundTrip = (incoming.roundTrip || 0) + 1;
+    const incomingRoundTrip = V.requireFinite(incoming.roundTrip, 'react.incoming.roundTrip');
+    const nextRoundTrip = incomingRoundTrip + 1;
 
     // Pitch Memory: compute complementary pitch-class bias
-    const incomingPC = Number.isFinite(incoming.pitchClass) ? incoming.pitchClass : -1;
+    const incomingPC = (typeof incoming.pitchClass === 'undefined')
+      ? -1
+      : V.requireFinite(incoming.pitchClass, 'react.incoming.pitchClass');
     const pitchBias = (incomingPC >= 0 && incomingPC < 12)
       ? (incomingPC + COMPLEMENT_MAP[incomingPC]) % 12
       : -1;
+
+    const incomingImpulseType = (typeof incoming.impulseType === 'undefined')
+      ? 'accent'
+      : V.assertNonEmptyString(incoming.impulseType, 'react.incoming.impulseType');
+    const incomingOriginLayer = (typeof incoming.originLayer === 'undefined')
+      ? activeLayer
+      : V.assertNonEmptyString(incoming.originLayer, 'react.incoming.originLayer');
+    const incomingTimeMs = V.requireFinite(incoming.timeMs, 'react.incoming.timeMs');
 
     // Convert to this layer's tick space
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTick = Math.round(measureStart + ((incoming.timeMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = Math.round(measureStart + ((incomingTimeMs / 1000) - measureStartTime) * tpSec);
 
     // Post our reaction for the other layer to pick up (with evolved pitch)
     AbsoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
-      impulseType: incoming.impulseType || 'accent',
-      originLayer: incoming.originLayer || activeLayer,
+      impulseType: incomingImpulseType,
+      originLayer: incomingOriginLayer,
       pitchClass: pitchBias
     });
 
     return {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
-      impulseType: incoming.impulseType || 'accent',
+      impulseType: incomingImpulseType,
       syncTick,
       pitchBias
     };
@@ -98,11 +119,20 @@ FeedbackOscillator = (() => {
    * Modulates velocity and stutter intensity based on feedback energy.
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
-    * @returns {{ applied: boolean, energy: number, roundTrip: number, pitchBias: number } | null}
+     * @returns {{ applied: boolean, energy: number, roundTrip: number, pitchBias: number }}
    */
   function applyFeedback(absTimeMs, activeLayer) {
+      V.requireFinite(absTimeMs, 'absTimeMs');
+      V.assertNonEmptyString(activeLayer, 'activeLayer');
     const reaction = react(absTimeMs, activeLayer);
-    if (!reaction) return null;
+      if (!reaction) {
+        return {
+          applied: false,
+          energy: 0,
+          roundTrip: 0,
+          pitchBias: -1
+        };
+      }
 
     // Energy decays with each round-trip → subtle micro-accents
     // The receiving layer can use reaction.energy to modulate:

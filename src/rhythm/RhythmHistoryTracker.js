@@ -37,7 +37,12 @@ RhythmHistoryTracker = (() => {
     const counts = {};
     for (let i = 0; i < recent.length; i++) {
       const key = recent[i].method;
-      counts[key] = (counts[key] || 0) + 1;
+      const existing = counts[key];
+      if (typeof existing === 'undefined') {
+        counts[key] = 1;
+      } else {
+        counts[key] = V.requireFinite(existing, `penalizeRepetition.counts.${key}`) + 1;
+      }
     }
 
     const result = {};

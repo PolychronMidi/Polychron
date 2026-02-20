@@ -43,7 +43,7 @@ LM = layerManager ={
     // Validate initialState if provided
     if (initialState !== undefined) V.assertObject(initialState, 'initialState');
     // Build the flattened timing object from defaults + any provided initialState
-    const layer = Object.assign({ id: name }, defaults, initialState || {});
+    const layer = Object.assign({ id: name }, defaults, initialState);
     let buf;
 
     if (typeof buffer === 'string') {
@@ -51,7 +51,10 @@ LM = layerManager ={
       layer.bufferName = buffer;
       buf = [];
     } else {
-      buf = Array.isArray(buffer) ? buffer : [];
+      if (!Array.isArray(buffer)) {
+        throw new Error('LayerManager.register: buffer must be an array or layer buffer name string');
+      }
+      buf = buffer;
     }
 
     // Attach buffer and timing props directly to the layer object

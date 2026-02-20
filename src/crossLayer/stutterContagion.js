@@ -12,6 +12,7 @@
 
 StutterContagion = (() => {
   const V = Validator.create('StutterContagion');
+  const STUTTER_TYPES = new Set(['fade', 'pan', 'fx']);
   const SYNC_TOLERANCE_MS = 150;
   const BASE_DECAY = 0.6;
   const ALIGNED_DECAY = 0.35; // tighter decay = stickier when converged
@@ -47,10 +48,17 @@ StutterContagion = (() => {
    */
   function postStutter(absTimeMs, layer, intensity, channels, type) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(layer, 'layer');
+    const normalizedIntensity = clamp(V.requireFinite(intensity, 'intensity'), 0, 1);
+    const normalizedChannels = V.assertArray(channels, 'channels');
+    for (let i = 0; i < normalizedChannels.length; i++) {
+      V.requireFinite(normalizedChannels[i], `channels[${i}]`);
+    }
+    const normalizedType = V.assertInSet(type, STUTTER_TYPES, 'type');
     AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
-      intensity: clamp(intensity, 0, 1),
-      channels,
-      type
+      intensity: normalizedIntensity,
+      channels: normalizedChannels,
+      type: normalizedType
     });
   }
 
@@ -63,26 +71,35 @@ StutterContagion = (() => {
    */
   function checkContagion(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(activeLayer, 'activeLayer');
     const match = AbsoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!match) return null;
+    V.assertObject(match, 'checkContagion.match');
+    const matchIntensity = V.requireFinite(match.intensity, 'checkContagion.match.intensity');
+    const matchTimeMs = V.requireFinite(match.timeMs, 'checkContagion.match.timeMs');
+    const matchChannels = V.assertArray(match.channels, 'checkContagion.match.channels');
+    for (let i = 0; i < matchChannels.length; i++) {
+      V.requireFinite(matchChannels[i], `checkContagion.match.channels[${i}]`);
+    }
+    const matchType = V.assertInSet(match.type, STUTTER_TYPES, 'checkContagion.match.type');
 
     const decay = getAdaptiveDecay(absTimeMs);
-    const decayedIntensity = match.intensity * decay;
+    const decayedIntensity = matchIntensity * decay;
     if (decayedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTick = Math.round(measureStart + ((match.timeMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = Math.round(measureStart + ((matchTimeMs / 1000) - measureStartTime) * tpSec);
 
     return {
       syncTick,
       intensity: decayedIntensity,
-      channels: match.channels || [],
-      type: match.type || 'fade'
+      channels: matchChannels,
+      type: matchType
     };
   }
 
@@ -92,6 +109,8 @@ StutterContagion = (() => {
    * @param {string} activeLayer - current layer
    */
   function apply(absTimeMs, activeLayer) {
+    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(activeLayer, 'activeLayer');
     const contagion = checkContagion(absTimeMs, activeLayer);
     if (!contagion) return;
 

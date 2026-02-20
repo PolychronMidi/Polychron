@@ -1,10 +1,18 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 grandFinale = () => {
-
-  const LMCurrent = (typeof LM !== 'undefined' && LM) ? LM : { layers: {} };
+  if (typeof LM === 'undefined' || !LM || typeof LM !== 'object') {
+    throw new Error('grandFinale: LM must be a defined object');
+  }
+  if (!LM.layers || typeof LM.layers !== 'object') {
+    throw new Error('grandFinale: LM.layers must be a defined object');
+  }
+  const LMCurrent = LM;
   // Collect all layer data
-  const layerData = Object.entries(LMCurrent.layers || {}).map(([name, layer]) => {
+  const layerData = Object.entries(LMCurrent.layers).map(([name, layer]) => {
+    if (!layer || typeof layer !== 'object') {
+      throw new Error(`grandFinale: layer "${name}" must be an object`);
+    }
     return {
       name,
       layer: layer,
@@ -18,11 +26,17 @@ grandFinale = () => {
 
     // Finalize buffer
     if (!Array.isArray(buffer)) {
-      buffer = Array.isArray(buffer && buffer.rows) ? buffer.rows : (Array.isArray(buffer) ? buffer : []);
+      if (!buffer || typeof buffer !== 'object' || !Array.isArray(buffer.rows)) {
+        throw new Error(`grandFinale: layer "${name}" buffer must be an array or object with rows array`);
+      }
+      buffer = buffer.rows;
     }
     buffer = buffer.filter(i => i !== null)
       .map(i => {
-        const rawTick = i && i.tick;
+        if (!i || typeof i !== 'object') {
+          throw new Error(`grandFinale: layer "${name}" contains non-object event entry`);
+        }
+        const rawTick = i.tick;
         let tickNum = 0;
         let unitHash = null;
           // Keep original behavior: parse rawTick field first (may include appended '|<unitId>')
@@ -30,7 +44,8 @@ grandFinale = () => {
             const p = String(rawTick).split('|');
             tickNum = Number(p[0]);
             // Preserve the full trailing unit id (it may contain '|' separators)
-            unitHash = p.slice(1).join('|') || null;
+            const joinedUnitHash = p.slice(1).join('|');
+            unitHash = joinedUnitHash.length > 0 ? joinedUnitHash : null;
             // Validate canonical unit id suffix: must contain section/phrase tokens and tick range markers
             if (unitHash) {
               try {
@@ -47,13 +62,24 @@ grandFinale = () => {
           } else if (typeof rawTick === 'string') {
             tickNum = Number(rawTick);
           }
-        let tickVal = Number.isFinite(tickNum) ? tickNum : m.abs(Number(rawTick) || 0) * rf(.1, .3);
-        if (!Number.isFinite(tickVal) || tickVal < 0) tickVal = 0;
+        if (!Number.isFinite(tickNum)) {
+          throw new Error(`grandFinale: event tick must be a finite number, received "${String(rawTick)}"`);
+        }
+        let tickVal = tickNum;
+        if (tickVal < 0) {
+          throw new Error(`grandFinale: event tick must be >= 0, received ${tickVal}`);
+        }
         tickVal = m.round(tickVal);
-        const preservedFinal = unitHash || (i && i._unitHash) || null;
+        const inheritedUnitHash = (typeof i._unitHash === 'string' && i._unitHash.length > 0) ? i._unitHash : null;
+        const preservedFinal = unitHash !== null ? unitHash : inheritedUnitHash;
         return { ...i, tick: tickVal, _tickSortKey: tickVal, _unitHash: preservedFinal, _tickRaw: rawTick };
       })
-      .sort((a, b) => (a._tickSortKey || 0) - (b._tickSortKey || 0));
+      .sort((a, b) => {
+        if (!Number.isFinite(a._tickSortKey) || !Number.isFinite(b._tickSortKey)) {
+          throw new Error('grandFinale: sort keys must be finite numbers');
+        }
+        return a._tickSortKey - b._tickSortKey;
+      });
 
     // Generate CSV
     let composition = `0,0,header,1,1,${PPQ}\n1,0,start_track\n`;
@@ -61,9 +87,12 @@ grandFinale = () => {
 
     buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
-        const type = _.type === 'on' ? 'note_on_c' : (_.type || 'note_off_c');
-        const tickNum = _.tick || 0;
-        const tickInt = m.round(Number(tickNum) || 0);
+        const type = _.type === 'on' ? 'note_on_c' : (_.type ? _.type : 'note_off_c');
+        const tickNum = _.tick;
+        if (!Number.isFinite(Number(tickNum))) {
+          throw new Error(`grandFinale: event tick must be finite, received ${String(tickNum)}`);
+        }
+        const tickInt = m.round(Number(tickNum));
 
         // Event with undefined pitch is a serious bug in note generation
         if (Array.isArray(_.vals)) {
