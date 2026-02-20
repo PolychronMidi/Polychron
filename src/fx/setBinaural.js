@@ -49,9 +49,10 @@ setBinaural = () => {
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTick = Math.round(measureStart + ((syncMs / 1000) - measureStartTime) * tpSec);
+    const syncTickRaw = Math.round(measureStart + ((syncMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = Math.max(0, syncTickRaw);
 
-    allNotesOff(Math.max(syncTick, 0));
+    allNotesOff(syncTick);
 
     if (crossLayerShift) {
       // Sync: adopt the offset and flip state from the other layer's shift
@@ -83,8 +84,8 @@ setBinaural = () => {
       ...binauralR.map(ch => ({ tick: syncTick, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
     );
 
-    const startTick = syncTick - tpSec / 20;
-    const endTick = syncTick + tpSec / 20;
+    const startTick = Math.max(0, syncTick - tpSec / 20);
+    const endTick = Math.max(startTick, syncTick + tpSec / 20);
     const steps = 10;
     const tickIncrement = (endTick - startTick) / steps;
     for (let i = 0; i <= steps; i++) {

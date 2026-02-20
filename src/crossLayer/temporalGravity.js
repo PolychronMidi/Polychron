@@ -18,8 +18,10 @@ TemporalGravity = (() => {
    */
   function postDensity(absTimeMs, layer, density) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(layer, 'layer');
+    const densityN = V.requireFinite(density, 'density');
     AbsoluteTimeGrid.post(DENSITY_CHANNEL, layer, absTimeMs, {
-      density: clamp(density, 0, 1)
+      density: clamp(densityN, 0, 1)
     });
   }
 
@@ -30,10 +32,12 @@ TemporalGravity = (() => {
    * @returns {number} normalized density 0-1
    */
   function measureDensity(layer, absTimeSec) {
+    V.assertNonEmptyString(layer, 'layer');
+    const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = DENSITY_WINDOW_MS / 1000;
     const notes = AbsoluteTimeWindow.getNotes({
       layer,
-      since: absTimeSec - windowSec,
+      since: at - windowSec,
       windowSeconds: windowSec
     });
     // Normalize: 0 notes = 0, 10+ notes in 300ms = 1
@@ -50,29 +54,34 @@ TemporalGravity = (() => {
    */
   function applyGravity(absTimeMs, activeLayer, originalTick) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    V.requireFinite(originalTick, 'originalTick');
+    V.assertNonEmptyString(activeLayer, 'activeLayer');
+    const originalTickN = V.requireFinite(originalTick, 'originalTick');
 
     // Find the nearest density peak from another layer
     const well = AbsoluteTimeGrid.findClosest(
       DENSITY_CHANNEL, absTimeMs, GRAVITY_TOLERANCE_MS, activeLayer
     );
-    if (!well || !Number.isFinite(well.density) || well.density < 0.3) return originalTick;
+    if (!well) return originalTickN;
+    V.assertObject(well, 'applyGravity.well');
+    const wellDensity = V.requireFinite(well.density, 'applyGravity.well.density');
+    const wellTimeMs = V.requireFinite(well.timeMs, 'applyGravity.well.timeMs');
+    if (wellDensity < 0.3) return originalTickN;
 
     // Pull strength proportional to density and proximity
-    const dist = Math.abs(well.timeMs - absTimeMs);
+    const dist = Math.abs(wellTimeMs - absTimeMs);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
-    const pullStrength = well.density * proximity * MAX_PULL_TICKS_RATIO;
+    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
 
     // Direction: pull toward the gravity well's ms in tick space
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const wellTick = Math.round(measureStart + ((well.timeMs / 1000) - measureStartTime) * tpSec);
-    const direction = wellTick > originalTick ? 1 : -1;
+    const wellTick = Math.round(measureStart + ((wellTimeMs / 1000) - measureStartTime) * tpSec);
+    const direction = wellTick > originalTickN ? 1 : -1;
     const maxPull = tpSec * pullStrength;
-    const pull = Math.min(maxPull, Math.abs(wellTick - originalTick) * 0.5);
+    const pull = Math.min(maxPull, Math.abs(wellTick - originalTickN) * 0.5);
 
-    return Math.round(originalTick + direction * pull);
+    return Math.round(originalTickN + direction * pull);
   }
 
   return { postDensity, measureDensity, applyGravity };

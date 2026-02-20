@@ -3,6 +3,8 @@ FactoryManager = class FactoryManager {
   static sharedPhraseArcManager = null;
   /** @type {Object<string, any>|null} */
   static sharedComposerCtx = null;
+  /** @type {string|null} */
+  static activeFamily = null;
 
   static capabilityProfiles = factoryProfiles.getCapabilityProfilesDefault();
   static runtimeProfilePrecedence = factoryProfiles.getRuntimeProfilePrecedenceDefault();
@@ -111,7 +113,24 @@ FactoryManager = class FactoryManager {
    * @param {Object} [composerCtx]
    */
   static resolvePhraseFamilyOrFail(extraConfig = {}, composerCtx = null) {
-    return factoryFamilies.resolvePhraseFamilyOrFail(extraConfig, composerCtx, this.sharedComposerCtx, this.constructors);
+    const family = factoryFamilies.resolvePhraseFamilyOrFail(extraConfig, composerCtx, this.sharedComposerCtx, this.constructors);
+    this.activeFamily = family;
+    return family;
+  }
+
+  static getActiveFamily() {
+    if (typeof this.activeFamily === 'string' && this.activeFamily.length > 0) {
+      return this.activeFamily;
+    }
+    if (typeof LM === 'undefined' || !LM || typeof LM.getPhraseFamily !== 'function') {
+      throw new Error('ComposerFactory.getActiveFamily: LayerManager.getPhraseFamily is required when no active family is cached');
+    }
+    const family = LM.getPhraseFamily();
+    if (typeof family !== 'string' || family.length === 0) {
+      throw new Error('ComposerFactory.getActiveFamily: resolved family must be a non-empty string');
+    }
+    this.activeFamily = family;
+    return family;
   }
 
   static inferComposerType(composerInstance) {
