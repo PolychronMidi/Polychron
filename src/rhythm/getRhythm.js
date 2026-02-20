@@ -19,12 +19,12 @@ function assertGetRhythmDeps() {
   _getRhythmDepsValidated = true;
 }
 
-const V = Validator.create('getRhythm');
+const _grV = Validator.create('getRhythm');
 
 getRhythm = function getRhythm(level,length,pattern,method,...args){
   assertGetRhythmDeps();
-  V.assertNonEmptyString(level, 'level');
-  V.requireFinite(length, 'length');
+  _grV.assertNonEmptyString(level, 'level');
+  _grV.requireFinite(length, 'length');
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
 

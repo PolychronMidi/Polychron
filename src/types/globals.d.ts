@@ -473,6 +473,8 @@ declare var writeLock: any;
 declare var acquireLock: any;
 declare var releaseLock: any;
 declare var main: any;
+declare var MainBootstrap: any;
+declare var processBeat: any;
 
 // Additional managed globals (added to resolve `no-undef` entries from log/lint.log)
 // Node / runtime helpers
