@@ -617,6 +617,7 @@ declare var StutterFailFast: any;
 declare var playNotesEmitPick: any;
 
 declare var AbsoluteTimeWindow: any;
+declare var AbsoluteTimeGrid: any;
 declare var TempoFeelEngine: any;
 declare var MelodicContourTracker: any;
 declare var RegisterPressureMonitor: any;

@@ -18,11 +18,10 @@ AbsoluteTimeWindow = (() => {
   const entries = {
     note: [],
     rhythm: [],
-    chord: [],
-    binaural: []
+    chord: []
   };
 
-  const VALID_TYPES = new Set(['note', 'rhythm', 'chord', 'binaural']);
+  const VALID_TYPES = new Set(['note', 'rhythm', 'chord']);
 
   /**
    * Binary-search prune: remove entries older than the window cutoff.
@@ -157,20 +156,6 @@ AbsoluteTimeWindow = (() => {
   function getRhythms(opts) { return getEntries('rhythm', opts); }
   /** @param {Object} [opts] */
   function getChords(opts) { return getEntries('chord', opts); }
-  /** @param {Object} [opts] */
-  function getBinaural(opts) { return getEntries('binaural', opts); }
-
-  /**
-   * Record a binaural shift event with ms-precision timestamp.
-   * @param {number} freqOffset - binaural frequency offset in Hz
-   * @param {boolean} flip - current flipBin state
-   * @param {string} layer - layer identifier
-   * @param {number} time - absolute seconds (stored internally)
-   * @param {number} timeMs - absolute milliseconds for cross-layer sync precision
-   */
-  function recordBinaural(freqOffset, flip, layer, time, timeMs) {
-    record('binaural', { time, layer, freqOffset, flip, timeMs });
-  }
 
   /** Get the current window size in seconds. */
   function getWindowSize() { return DEFAULT_WINDOW_SECONDS; }
@@ -180,18 +165,15 @@ AbsoluteTimeWindow = (() => {
     if (entries.note) entries.note.length = 0;
     if (entries.rhythm) entries.rhythm.length = 0;
     if (entries.chord) entries.chord.length = 0;
-    if (entries.binaural) entries.binaural.length = 0;
   }
 
   return {
     recordNote,
     recordRhythm,
     recordChord,
-    recordBinaural,
     getNotes,
     getRhythms,
     getChords,
-    getBinaural,
     getEntries,
     getWindowSize,
     reset
