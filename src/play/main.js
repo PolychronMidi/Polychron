@@ -328,7 +328,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           throw new Error('main: Stutter.runDuePlans is not available');
         }
         Stutter.runDuePlans(beatStart);
-        playNotes('beat', { playProb, stutterProb });
+        playNotes('beat', { playProb: DynamicRoleSwap.modifyPlayProb('L1', playProb), stutterProb });
 
         // Cross-layer interactions (L1)
         const clAbsMs = beatStartTime * 1000;
@@ -341,7 +341,35 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clCadence = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
           ? CadenceAdvisor.shouldCadence() : { suggest: false };
         CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
-        CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension);
+        const clCadResult = CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension);
+
+        // #5 Rhythmic Phase Lock/Drift
+        const beatDurMs = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
+        RhythmicPhaseLock.postBeat(clAbsMs, 'L1', beatDurMs);
+
+        // #6 Spectral Complementarity
+        SpectralComplementarity.postSpectralState(clAbsMs, 'L1');
+
+        // #10 Entropy Regulator: set target from section arc and regulate
+        const sectionProgress = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
+        EntropyRegulator.setTargetFromArc(sectionProgress);
+
+        // #9 Interaction Heat Map: record which systems fired
+        InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
+        InteractionHeatMap.record('temporalGravity', TemporalGravity.measureDensity('L1', beatStartTime));
+        InteractionHeatMap.record('cadenceAlignment', clCadResult ? 0.8 : 0);
+        InteractionHeatMap.record('phaseLock', RhythmicPhaseLock.getMode() === 'lock' ? 1 : 0);
+
+        // #11 Emergent Downbeat: evaluate signals
+        const edSignals = {
+          convergence: false,
+          cadenceAlign: Boolean(clCadResult && clCadResult.shouldResolve),
+          velReinforce: false,
+          phaseLock: RhythmicPhaseLock.getMode() === 'lock'
+        };
+        EmergentDownbeat.applyIfDownbeat(clAbsMs, 'L1', edSignals, 0, velocity);
+
+        InteractionHeatMap.flushBeat(clAbsMs);
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
@@ -367,6 +395,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L1);
     LM.advance('L1', 'phrase');
+
+    // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
+    const phraseTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+      ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0.5;
+    DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
 
     LM.activate('L2', true);
 
@@ -431,7 +464,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           throw new Error('main: Stutter.runDuePlans is not available');
         }
         Stutter.runDuePlans(beatStart);
-        playNotes('beat', { playProb, stutterProb });
+        playNotes('beat', { playProb: DynamicRoleSwap.modifyPlayProb('L2', playProb), stutterProb });
 
         // Cross-layer interactions (L2)
         const clAbsMsL2 = beatStartTime * 1000;
@@ -444,7 +477,35 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         const clCadenceL2 = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
           ? CadenceAdvisor.shouldCadence() : { suggest: false };
         CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
-        CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2);
+        const clCadResultL2 = CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2);
+
+        // #5 Rhythmic Phase Lock/Drift
+        const beatDurMsL2 = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
+        RhythmicPhaseLock.postBeat(clAbsMsL2, 'L2', beatDurMsL2);
+
+        // #6 Spectral Complementarity
+        SpectralComplementarity.postSpectralState(clAbsMsL2, 'L2');
+
+        // #10 Entropy Regulator: regulate
+        const sectionProgressL2 = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
+        EntropyRegulator.setTargetFromArc(sectionProgressL2);
+
+        // #9 Interaction Heat Map: record which systems fired
+        InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
+        InteractionHeatMap.record('temporalGravity', TemporalGravity.measureDensity('L2', beatStartTime));
+        InteractionHeatMap.record('cadenceAlignment', clCadResultL2 ? 0.8 : 0);
+        InteractionHeatMap.record('phaseLock', RhythmicPhaseLock.getMode() === 'lock' ? 1 : 0);
+
+        // #11 Emergent Downbeat: evaluate signals
+        const edSignalsL2 = {
+          convergence: false,
+          cadenceAlign: Boolean(clCadResultL2 && clCadResultL2.shouldResolve),
+          velReinforce: false,
+          phaseLock: RhythmicPhaseLock.getMode() === 'lock'
+        };
+        EmergentDownbeat.applyIfDownbeat(clAbsMsL2, 'L2', edSignalsL2, 0, velocity);
+
+        InteractionHeatMap.flushBeat(clAbsMsL2);
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {

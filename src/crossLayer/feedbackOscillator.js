@@ -2,6 +2,12 @@
 // Layer A posts a reaction → B picks it up and posts its own reaction →
 // A picks up B's reaction → etc. Each round-trip dampens the intensity,
 // creating convergent rhythmic dialogues between layers.
+// Pitch Memory: carries pitch-class info through the loop. When layer A
+// plays a note that feeds back to B, B biases toward the complementary
+// interval (e.g., A plays a 5th → B gravitates toward the tritone).
+
+/** @type {ReadonlyArray<number>} complementary interval map: for each interval 0-11, the "answer" interval */
+const COMPLEMENT_MAP = Object.freeze([6, 5, 4, 3, 8, 7, 0, 5, 4, 3, 2, 1]);
 
 FeedbackOscillator = (() => {
   const V = Validator.create('FeedbackOscillator');
@@ -18,15 +24,20 @@ FeedbackOscillator = (() => {
    * @param {string} layer - source layer
    * @param {number} energy - initial energy 0-1
    * @param {string} [impulseType='accent'] - what triggered the impulse
+   * @param {number} [pitchClass=-1] - MIDI pitch class 0-11 or -1 for none
    */
-  function inject(absTimeMs, layer, energy, impulseType) {
+  function inject(absTimeMs, layer, energy, impulseType, pitchClass) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.requireFinite(energy, 'energy');
+    const safePitchClass = (typeof pitchClass === 'number' && Number.isFinite(pitchClass))
+      ? pitchClass
+      : -1;
     AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       energy: clamp(energy, 0, 1),
       roundTrip: 0,
       impulseType: impulseType || 'accent',
-      originLayer: layer
+      originLayer: layer,
+      pitchClass: safePitchClass >= 0 ? safePitchClass % 12 : -1
     });
   }
 
@@ -35,7 +46,7 @@ FeedbackOscillator = (() => {
    * Each reaction dampens the energy and increments the round-trip counter.
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
-   * @returns {{ energy: number, roundTrip: number, impulseType: string, syncTick: number } | null}
+   * @returns {{ energy: number, roundTrip: number, impulseType: string, syncTick: number, pitchBias: number } | null}
    */
   function react(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
@@ -52,25 +63,33 @@ FeedbackOscillator = (() => {
 
     const nextRoundTrip = (incoming.roundTrip || 0) + 1;
 
+    // Pitch Memory: compute complementary pitch-class bias
+    const incomingPC = Number.isFinite(incoming.pitchClass) ? incoming.pitchClass : -1;
+    const pitchBias = (incomingPC >= 0 && incomingPC < 12)
+      ? (incomingPC + COMPLEMENT_MAP[incomingPC]) % 12
+      : -1;
+
     // Convert to this layer's tick space
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
     const syncTick = Math.round(measureStart + ((incoming.timeMs / 1000) - measureStartTime) * tpSec);
 
-    // Post our reaction for the other layer to pick up
+    // Post our reaction for the other layer to pick up (with evolved pitch)
     AbsoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
       impulseType: incoming.impulseType || 'accent',
-      originLayer: incoming.originLayer || activeLayer
+      originLayer: incoming.originLayer || activeLayer,
+      pitchClass: pitchBias
     });
 
     return {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
       impulseType: incoming.impulseType || 'accent',
-      syncTick
+      syncTick,
+      pitchBias
     };
   }
 
@@ -79,7 +98,7 @@ FeedbackOscillator = (() => {
    * Modulates velocity and stutter intensity based on feedback energy.
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
-   * @returns {{ applied: boolean, energy: number, roundTrip: number } | null}
+    * @returns {{ applied: boolean, energy: number, roundTrip: number, pitchBias: number } | null}
    */
   function applyFeedback(absTimeMs, activeLayer) {
     const reaction = react(absTimeMs, activeLayer);
@@ -90,10 +109,12 @@ FeedbackOscillator = (() => {
     // - note velocity (boost by energy * 15%)
     // - stutter probability (energy as probability multiplier)
     // - pan width (wider stereo at higher energy)
+    // Pitch Memory: pitchBias is the complementary PC the receiver should favor
     return {
       applied: true,
       energy: reaction.energy,
-      roundTrip: reaction.roundTrip
+      roundTrip: reaction.roundTrip,
+      pitchBias: reaction.pitchBias
     };
   }
 

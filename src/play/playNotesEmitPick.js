@@ -75,6 +75,15 @@ playNotesEmitPick = function(opts = {}) {
       const absMs = atwTime * 1000;
       ConvergenceDetector.postOnset(absMs, atwLayer, noteToEmit, texVel);
       VelocityInterference.postVelocity(absMs, atwLayer, texVel, VelocityInterference.measureDelta(atwLayer, atwTime));
+
+      // #6 Spectral Complementarity: record note for histogram tracking
+      SpectralComplementarity.recordNote(noteToEmit, atwLayer);
+
+      // #8 Cross-Layer Motif Echo: record note for interval capture
+      MotifEcho.recordNote(noteToEmit, atwLayer, absMs);
+
+      // #10 Entropy Regulator: record sample for entropy measurement
+      EntropyRegulator.recordSample(noteToEmit, texVel, atwLayer);
     }
 
     if (textureMode.mode === 'chordBurst' && isPrimary) {

@@ -13,8 +13,28 @@
 StutterContagion = (() => {
   const V = Validator.create('StutterContagion');
   const SYNC_TOLERANCE_MS = 150;
-  const DECAY_FACTOR = 0.6;
+  const BASE_DECAY = 0.6;
+  const ALIGNED_DECAY = 0.35; // tighter decay = stickier when converged
+  const DIVERGED_DECAY = 0.8;  // looser decay = fades faster when divergent
+  const CONVERGENCE_WINDOW_MS = 2000; // look for recent convergences within this window
   const CHANNEL = 'stutterContagion';
+
+  /**
+   * Compute adaptive decay factor based on recent convergence state.
+   * @param {number} absTimeMs
+   * @returns {number} decay factor (lower = stickier)
+   */
+  function getAdaptiveDecay(absTimeMs) {
+    // Check if convergence happened recently via ATG onset channel
+    const recentConvergence = AbsoluteTimeGrid.findClosest(
+      'onset', absTimeMs, CONVERGENCE_WINDOW_MS
+    );
+    if (!recentConvergence) return BASE_DECAY;
+    const dist = Math.abs(recentConvergence.timeMs - absTimeMs);
+    const recency = 1 - (dist / CONVERGENCE_WINDOW_MS);
+    // Interpolate: recent convergence → ALIGNED (sticky), distant → DIVERGED (loose)
+    return BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
+  }
 
   /**
    * Post a stutter event from the active layer into ATG.
@@ -48,7 +68,8 @@ StutterContagion = (() => {
     );
     if (!match) return null;
 
-    const decayedIntensity = match.intensity * DECAY_FACTOR;
+    const decay = getAdaptiveDecay(absTimeMs);
+    const decayedIntensity = match.intensity * decay;
     if (decayedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space
@@ -87,8 +108,9 @@ StutterContagion = (() => {
     }
 
     // Re-post with decayed intensity to sustain the chain across more layers
+    const repostDecay = getAdaptiveDecay(absTimeMs);
     AbsoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
-      intensity: contagion.intensity * DECAY_FACTOR,
+      intensity: contagion.intensity * repostDecay,
       channels: contagion.channels,
       type: contagion.type
     });
