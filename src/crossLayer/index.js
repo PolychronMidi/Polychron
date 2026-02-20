@@ -1,6 +1,23 @@
 // src/crossLayer/index.js — Central entry for cross-layer interaction modules.
 
 // @ts-ignore: side-effect module load
+require('./explainabilityBus');
+// @ts-ignore: side-effect module load
+require('./adaptiveTrustScores');
+// @ts-ignore: side-effect module load
+require('./sectionIntentCurves');
+// @ts-ignore: side-effect module load
+require('./phaseAwareCadenceWindow');
+// @ts-ignore: side-effect module load
+require('./negotiationEngine');
+// @ts-ignore: side-effect module load
+require('./grooveTransfer');
+// @ts-ignore: side-effect module load
+require('./registerCollisionAvoider');
+// @ts-ignore: side-effect module load
+require('./motifIdentityMemory');
+
+// @ts-ignore: side-effect module load
 require('./stutterContagion');
 // @ts-ignore: side-effect module load
 require('./convergenceDetector');

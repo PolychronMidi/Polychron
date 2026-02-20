@@ -328,46 +328,91 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           throw new Error('main: Stutter.runDuePlans is not available');
         }
         Stutter.runDuePlans(beatStart);
-        playNotes('beat', { playProb: DynamicRoleSwap.modifyPlayProb('L1', playProb), stutterProb });
-
-        // Cross-layer interactions (L1)
         const clAbsMs = beatStartTime * 1000;
-        StutterContagion.postStutter(clAbsMs, 'L1', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
-        StutterContagion.apply(clAbsMs, 'L1');
-        TemporalGravity.postDensity(clAbsMs, 'L1', TemporalGravity.measureDensity('L1', beatStartTime));
-        FeedbackOscillator.applyFeedback(clAbsMs, 'L1');
+        const sectionProgress = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
+        const clIntent = SectionIntentCurves.getIntent(sectionProgress, sectionIndex, phraseIndex);
+        EntropyRegulator.setTarget(clIntent.entropyTarget);
+        const clEntropy = EntropyRegulator.getRegulation();
+        const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, 'L1');
+
         const clTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
           ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
         const clCadence = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
           ? CadenceAdvisor.shouldCadence() : { suggest: false };
-        CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
-        const clCadResult = CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension);
 
-        // #5 Rhythmic Phase Lock/Drift
+        const clNegotiation = NegotiationEngine.apply('L1', {
+          playProb: DynamicRoleSwap.modifyPlayProb('L1', playProb),
+          stutterProb,
+          cadenceSuggested: Boolean(clCadence.suggest),
+          phaseConfidence: clPhase.confidence,
+          intent: clIntent,
+          entropyScale: clEntropy.scale
+        });
+        playProb = clNegotiation.playProb;
+        stutterProb = clNegotiation.stutterProb;
+
+        playNotes('beat', { playProb, stutterProb });
+
+        StutterContagion.postStutter(clAbsMs, 'L1', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
+        StutterContagion.apply(clAbsMs, 'L1');
+        const clDensity = TemporalGravity.measureDensity('L1', beatStartTime);
+        TemporalGravity.postDensity(clAbsMs, 'L1', clDensity);
+        const clFeedback = FeedbackOscillator.applyFeedback(clAbsMs, 'L1');
+        const clFeedbackEnergy = (clFeedback && Number.isFinite(clFeedback.energy)) ? clamp(clFeedback.energy, 0, 1) : 0;
+
+        const clCadenceGate = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, 'L1', Boolean(clCadence.suggest));
+        CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
+        const clCadResult = (clCadenceGate && clNegotiation.allowCadence)
+          ? CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension)
+          : null;
+
         const beatDurMs = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
         RhythmicPhaseLock.postBeat(clAbsMs, 'L1', beatDurMs);
+        const clPhaseMode = RhythmicPhaseLock.getMode();
 
-        // #6 Spectral Complementarity
         SpectralComplementarity.postSpectralState(clAbsMs, 'L1');
 
-        // #10 Entropy Regulator: set target from section arc and regulate
-        const sectionProgress = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
-        EntropyRegulator.setTargetFromArc(sectionProgress);
+        AdaptiveTrustScores.registerOutcome('stutterContagion', clamp(stutterProb, 0, 1) - 0.5);
+        AdaptiveTrustScores.registerOutcome('phaseLock', clPhaseMode === 'lock' ? 0.35 : clPhaseMode === 'repel' ? -0.1 : 0.05);
+        AdaptiveTrustScores.registerOutcome('cadenceAlignment', clCadResult ? 0.4 : -0.08);
+        AdaptiveTrustScores.registerOutcome('feedbackOscillator', clFeedbackEnergy - 0.2);
+        AdaptiveTrustScores.decayAll(0.002);
 
-        // #9 Interaction Heat Map: record which systems fired
         InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
-        InteractionHeatMap.record('temporalGravity', TemporalGravity.measureDensity('L1', beatStartTime));
+        InteractionHeatMap.record('temporalGravity', clDensity);
         InteractionHeatMap.record('cadenceAlignment', clCadResult ? 0.8 : 0);
-        InteractionHeatMap.record('phaseLock', RhythmicPhaseLock.getMode() === 'lock' ? 1 : 0);
+        InteractionHeatMap.record('phaseLock', clPhaseMode === 'lock' ? 1 : 0);
+        InteractionHeatMap.record('feedbackOscillator', clFeedbackEnergy);
+        InteractionHeatMap.record('roleSwap', DynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
 
-        // #11 Emergent Downbeat: evaluate signals
+        const clConvergenceIntensity = ConvergenceDetector.getConvergenceCount() > 0 ? 0.2 : 0;
+        InteractionHeatMap.record('convergence', clConvergenceIntensity);
+
         const edSignals = {
-          convergence: false,
+          convergence: clConvergenceIntensity > 0,
           cadenceAlign: Boolean(clCadResult && clCadResult.shouldResolve),
           velReinforce: false,
-          phaseLock: RhythmicPhaseLock.getMode() === 'lock'
+          phaseLock: clPhaseMode === 'lock'
         };
-        EmergentDownbeat.applyIfDownbeat(clAbsMs, 'L1', edSignals, 0, velocity);
+        const clDownbeat = EmergentDownbeat.applyIfDownbeat(clAbsMs, 'L1', edSignals, 0, velocity);
+        InteractionHeatMap.record('emergentDownbeat', clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
+
+        const clBreathing = InteractionHeatMap.getBreathingRecommendation();
+        if (clBreathing.recommendation === 'decrease') {
+          playProb = clamp(playProb * 0.96, 0, 1);
+          stutterProb = clamp(stutterProb * 0.94, 0, 1);
+        } else if (clBreathing.recommendation === 'increase') {
+          playProb = clamp(playProb * 1.03, 0, 1);
+          stutterProb = clamp(stutterProb * 1.04, 0, 1);
+        }
+
+        ExplainabilityBus.emit('beat-decision', 'L1', {
+          intent: clIntent,
+          phaseConfidence: clPhase.confidence,
+          cadenceGate: clCadenceGate,
+          negotiation: clNegotiation,
+          breathing: clBreathing.recommendation
+        }, clAbsMs);
 
         InteractionHeatMap.flushBeat(clAbsMs);
 
@@ -399,7 +444,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
     const phraseTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
       ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0.5;
-    DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
+    const roleSwapResult = DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
+    AdaptiveTrustScores.registerOutcome('roleSwap', roleSwapResult.swapped ? 0.35 : -0.02);
+    if (roleSwapResult.swapped) {
+      ExplainabilityBus.emit('role-swap', 'both', {
+        swapCount: roleSwapResult.swapCount,
+        phraseIndex,
+        sectionIndex,
+        phraseTension
+      }, beatStartTime * 1000);
+    }
 
     LM.activate('L2', true);
 
@@ -464,46 +518,91 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
           throw new Error('main: Stutter.runDuePlans is not available');
         }
         Stutter.runDuePlans(beatStart);
-        playNotes('beat', { playProb: DynamicRoleSwap.modifyPlayProb('L2', playProb), stutterProb });
-
-        // Cross-layer interactions (L2)
         const clAbsMsL2 = beatStartTime * 1000;
-        StutterContagion.postStutter(clAbsMsL2, 'L2', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
-        StutterContagion.apply(clAbsMsL2, 'L2');
-        TemporalGravity.postDensity(clAbsMsL2, 'L2', TemporalGravity.measureDensity('L2', beatStartTime));
-        FeedbackOscillator.applyFeedback(clAbsMsL2, 'L2');
+        const sectionProgressL2 = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
+        const clIntentL2 = SectionIntentCurves.getIntent(sectionProgressL2, sectionIndex, phraseIndex);
+        EntropyRegulator.setTarget(clIntentL2.entropyTarget);
+        const clEntropyL2 = EntropyRegulator.getRegulation();
+        const clPhaseL2 = PhaseAwareCadenceWindow.update(clAbsMsL2, 'L2');
+
         const clTensionL2 = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
           ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
         const clCadenceL2 = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
           ? CadenceAdvisor.shouldCadence() : { suggest: false };
-        CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
-        const clCadResultL2 = CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2);
 
-        // #5 Rhythmic Phase Lock/Drift
+        const clNegotiationL2 = NegotiationEngine.apply('L2', {
+          playProb: DynamicRoleSwap.modifyPlayProb('L2', playProb),
+          stutterProb,
+          cadenceSuggested: Boolean(clCadenceL2.suggest),
+          phaseConfidence: clPhaseL2.confidence,
+          intent: clIntentL2,
+          entropyScale: clEntropyL2.scale
+        });
+        playProb = clNegotiationL2.playProb;
+        stutterProb = clNegotiationL2.stutterProb;
+
+        playNotes('beat', { playProb, stutterProb });
+
+        StutterContagion.postStutter(clAbsMsL2, 'L2', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
+        StutterContagion.apply(clAbsMsL2, 'L2');
+        const clDensityL2 = TemporalGravity.measureDensity('L2', beatStartTime);
+        TemporalGravity.postDensity(clAbsMsL2, 'L2', clDensityL2);
+        const clFeedbackL2 = FeedbackOscillator.applyFeedback(clAbsMsL2, 'L2');
+        const clFeedbackEnergyL2 = (clFeedbackL2 && Number.isFinite(clFeedbackL2.energy)) ? clamp(clFeedbackL2.energy, 0, 1) : 0;
+
+        const clCadenceGateL2 = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMsL2, 'L2', Boolean(clCadenceL2.suggest));
+        CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
+        const clCadResultL2 = (clCadenceGateL2 && clNegotiationL2.allowCadence)
+          ? CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2)
+          : null;
+
         const beatDurMsL2 = Number.isFinite(tpBeat) && tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
         RhythmicPhaseLock.postBeat(clAbsMsL2, 'L2', beatDurMsL2);
+        const clPhaseModeL2 = RhythmicPhaseLock.getMode();
 
-        // #6 Spectral Complementarity
         SpectralComplementarity.postSpectralState(clAbsMsL2, 'L2');
 
-        // #10 Entropy Regulator: regulate
-        const sectionProgressL2 = totalSections > 0 ? (sectionIndex + phraseIndex / Math.max(phrasesPerSection, 1)) / totalSections : 0.5;
-        EntropyRegulator.setTargetFromArc(sectionProgressL2);
+        AdaptiveTrustScores.registerOutcome('stutterContagion', clamp(stutterProb, 0, 1) - 0.5);
+        AdaptiveTrustScores.registerOutcome('phaseLock', clPhaseModeL2 === 'lock' ? 0.35 : clPhaseModeL2 === 'repel' ? -0.1 : 0.05);
+        AdaptiveTrustScores.registerOutcome('cadenceAlignment', clCadResultL2 ? 0.4 : -0.08);
+        AdaptiveTrustScores.registerOutcome('feedbackOscillator', clFeedbackEnergyL2 - 0.2);
+        AdaptiveTrustScores.decayAll(0.002);
 
-        // #9 Interaction Heat Map: record which systems fired
         InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
-        InteractionHeatMap.record('temporalGravity', TemporalGravity.measureDensity('L2', beatStartTime));
+        InteractionHeatMap.record('temporalGravity', clDensityL2);
         InteractionHeatMap.record('cadenceAlignment', clCadResultL2 ? 0.8 : 0);
-        InteractionHeatMap.record('phaseLock', RhythmicPhaseLock.getMode() === 'lock' ? 1 : 0);
+        InteractionHeatMap.record('phaseLock', clPhaseModeL2 === 'lock' ? 1 : 0);
+        InteractionHeatMap.record('feedbackOscillator', clFeedbackEnergyL2);
+        InteractionHeatMap.record('roleSwap', DynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
 
-        // #11 Emergent Downbeat: evaluate signals
+        const clConvergenceIntensityL2 = ConvergenceDetector.getConvergenceCount() > 0 ? 0.2 : 0;
+        InteractionHeatMap.record('convergence', clConvergenceIntensityL2);
+
         const edSignalsL2 = {
-          convergence: false,
+          convergence: clConvergenceIntensityL2 > 0,
           cadenceAlign: Boolean(clCadResultL2 && clCadResultL2.shouldResolve),
           velReinforce: false,
-          phaseLock: RhythmicPhaseLock.getMode() === 'lock'
+          phaseLock: clPhaseModeL2 === 'lock'
         };
-        EmergentDownbeat.applyIfDownbeat(clAbsMsL2, 'L2', edSignalsL2, 0, velocity);
+        const clDownbeatL2 = EmergentDownbeat.applyIfDownbeat(clAbsMsL2, 'L2', edSignalsL2, 0, velocity);
+        InteractionHeatMap.record('emergentDownbeat', clDownbeatL2 ? clamp(clDownbeatL2.strength, 0, 1) : 0);
+
+        const clBreathingL2 = InteractionHeatMap.getBreathingRecommendation();
+        if (clBreathingL2.recommendation === 'decrease') {
+          playProb = clamp(playProb * 0.96, 0, 1);
+          stutterProb = clamp(stutterProb * 0.94, 0, 1);
+        } else if (clBreathingL2.recommendation === 'increase') {
+          playProb = clamp(playProb * 1.03, 0, 1);
+          stutterProb = clamp(stutterProb * 1.04, 0, 1);
+        }
+
+        ExplainabilityBus.emit('beat-decision', 'L2', {
+          intent: clIntentL2,
+          phaseConfidence: clPhaseL2.confidence,
+          cadenceGate: clCadenceGateL2,
+          negotiation: clNegotiationL2,
+          breathing: clBreathingL2.recommendation
+        }, clAbsMsL2);
 
         InteractionHeatMap.flushBeat(clAbsMsL2);
 
