@@ -123,7 +123,7 @@ ConvergenceDetector = (() => {
     }
 
     // Emit convergence event for conductor/other subsystems to react
-    EventBus.emit('CROSS_LAYER_CONVERGENCE', {
+    EventBus.emit(EventCatalog.names.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,
       syncTick: conv.syncTick,

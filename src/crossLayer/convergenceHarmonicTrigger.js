@@ -95,7 +95,7 @@ ConvergenceHarmonicTrigger = (() => {
     if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: EventBus.emit is required');
     }
-    EventBus.emit('CONVERGENCE_HARMONIC_TRIGGER', {
+    EventBus.emit(EventCatalog.names.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,
       rarity,

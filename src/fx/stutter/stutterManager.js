@@ -1,7 +1,7 @@
 // fx/StutterManager.js - Audio effects manager
 
-const SC = (typeof StutterConfig !== 'undefined') ? StutterConfig : null;
-V = Validator.create('StutterManager');
+const SC = StutterConfig;
+const V = Validator.create('StutterManager');
 
 class StutterManager {
   constructor() {
@@ -11,9 +11,12 @@ class StutterManager {
     this.lastUsedCHs3 = new Set();     // for stutterFX
 
     // Capture the naked globals (rely on require-side effects to define them)
-    this._stutterFade = (typeof stutterFade === 'function') ? stutterFade : null;
-    this._stutterPan = (typeof stutterPan === 'function') ? stutterPan : null;
-    this._stutterFX = (typeof stutterFX === 'function') ? stutterFX : null;
+    if (typeof stutterFade !== 'function' || typeof stutterPan !== 'function' || typeof stutterFX !== 'function') {
+      throw new Error('StutterManager: stutterFade/stutterPan/stutterFX implementations are required');
+    }
+    this._stutterFade = stutterFade;
+    this._stutterPan = stutterPan;
+    this._stutterFX = stutterFX;
 
     // Shared state for stutterNotes shift tracking — shared across manager usage
     this.shared = { shifts: new Map(), global: {} };
@@ -33,6 +36,10 @@ class StutterManager {
     this.plans = new Map();
     this.scheduledPlans = new Map(); // tickKey -> [planId,...]
     this._nextPlanId = 1;
+
+    if (!StutterPlanScheduler || typeof StutterPlanScheduler.schedulePlan !== 'function') {
+      throw new Error('StutterManager: StutterPlanScheduler.schedulePlan is not available');
+    }
 
     if (!SC || typeof SC.getConfig !== 'function') {
       throw new Error('StutterManager: StutterConfig.getConfig is not available');
@@ -71,7 +78,7 @@ class StutterManager {
 
       // Chord burst → immediate micro-stutter response on reflection channels
       if (mode === 'chordBurst' && composite > 0.3) {
-        if (typeof reflection === 'undefined' || !Array.isArray(reflection)) {
+        if (!Array.isArray(reflection)) {
           throw new Error('StutterManager._attachTextureListener: reflection channels array is not available');
         }
         if (typeof this._stutterPan !== 'function') {
@@ -149,11 +156,7 @@ class StutterManager {
    * planCfg must include at least: profile, note, on, sustain. Optional: channels, numStutters, duration, minVelocity, maxVelocity, isFadeIn, decay
    */
   createPlan(planCfg = {}) {
-    const id = `plan-${this._nextPlanId++}`;
-    const cfg = /** @type {any} */ (Object.assign({}, planCfg));
-    cfg.id = id;
-    this.plans.set(id, cfg);
-    return id;
+    return StutterPlanScheduler.createPlan(this, planCfg);
   }
 
   /**
@@ -161,81 +164,35 @@ class StutterManager {
    * otherwise executed immediately. Returns the plan id.
    */
   schedulePlan(planOrCfg = {}) {
-    const isId = (typeof planOrCfg === 'string' && this.plans.has(planOrCfg));
-    const planId = isId ? planOrCfg : this.createPlan(planOrCfg || {});
-    const plan = /** @type {any} */ (this.plans.get(planId));
-
-    // Use provided startTick or fall back to plan.on or current beatStart
-    const startTick = Number.isFinite(Number(plan.startTick))
-      ? Number(plan.startTick)
-      : (Number.isFinite(Number(plan.on)) ? Number(plan.on) : (typeof beatStart !== 'undefined' ? Number(beatStart) : 0));
-
-    // queue for future tick, otherwise run now
-    const key = m.round(startTick);
-    if (key > m.round(typeof beatStart !== 'undefined' ? beatStart : 0)) {
-      const arr = this.scheduledPlans.get(key) || [];
-      arr.push(planId);
-      this.scheduledPlans.set(key, arr);
-      StutterMetrics.incScheduled(1, plan.profile || 'unknown');
-      StutterMetrics.incPendingForTick(key, 1);
-      return planId;
-    }
-
-    // immediate run
-    this.runPlan(planId);
-    return planId;
+    return StutterPlanScheduler.schedulePlan(this, planOrCfg);
   }
 
   /**
    * Execute a plan immediately (id or cfg). Returns plan object.
    */
   runPlan(planIdOrCfg = {}) {
-    const plan = /** @type {any} */ ((typeof planIdOrCfg === 'string') ? this.plans.get(planIdOrCfg) : planIdOrCfg);
-    if (!plan || typeof plan !== 'object') throw new Error('StutterManager.runPlan: invalid plan');
-    return this._executePlan(plan);
+    return StutterPlanScheduler.runPlan(this, planIdOrCfg);
   }
 
   /**
    * Cancel a previously scheduled plan by id.
    */
   cancelPlan(planId) {
-    if (!this.plans.has(planId)) return false;
-    this.plans.delete(planId);
-    for (const [tick, arr] of Array.from(this.scheduledPlans.entries())) {
-      const filtered = arr.filter(id => id !== planId);
-      if (filtered.length === 0) this.scheduledPlans.delete(tick); else this.scheduledPlans.set(tick, filtered);
-    }
-    return true;
+    return StutterPlanScheduler.cancelPlan(this, planId);
   }
 
   /**
    * Run any plans scheduled for the given tick (or earlier). Intended to be called from the beat loop.
    */
   runDuePlans(tick) {
-    const key = m.round(Number(tick));
-    const dueKeys = Array.from(this.scheduledPlans.keys()).filter(k => k <= key).sort((a,b) => a-b);
-    for (const k of dueKeys) {
-      const arr = this.scheduledPlans.get(k) || [];
-      for (const planId of arr) {
-        const plan = this.plans.get(planId);
-        if (plan) {
-          StutterMetrics.decPendingForTick(k, 1);
-          this._executePlan(plan);
-        }
-      }
-      this.scheduledPlans.delete(k);
-    }
-    return true;
+    return StutterPlanScheduler.runDuePlans(this, tick);
   }
 
   /**
    * Internal: execute plan object by calling `stutterNotes` across the plan channels/ticks.
    */
   _executePlan(plan = {}) {
-    if (typeof stutterExecutePlan !== 'function') {
-      throw new Error('StutterManager._executePlan: stutterExecutePlan helper not available');
-    }
-    return stutterExecutePlan(this, plan);
+    return StutterPlanScheduler.executePlan(this, plan);
   }
 
   /**
@@ -266,7 +223,7 @@ class StutterManager {
     // Idempotent per-beat setup: apply default directive (coherenceKey, reset per-beat selectors)
     if (!this.beatContext) this.beatContext = {};
     // Reset per-beat selection sets when beatIndex changes
-    const currentBeatIndexLocal = (typeof beatIndex !== 'undefined') ? beatIndex : null;
+    const currentBeatIndexLocal = beatIndex;
     if (this.beatContext._lastBeatIndex !== currentBeatIndexLocal) {
       this.beatContext._lastBeatIndex = currentBeatIndexLocal;
       this.beatContext.selectedReflectionChannels = new Set();
@@ -297,7 +254,7 @@ class StutterManager {
     }
     if (def.coherence && def.coherence.enabled) {
       const prefix = (def.coherence && typeof def.coherence.keyPrefix === 'string' && def.coherence.keyPrefix.length > 0) ? def.coherence.keyPrefix : 'stutter';
-      const seed = `${typeof measureIndex !== 'undefined' ? measureIndex : 'm'}:${typeof beatIndex !== 'undefined' ? beatIndex : 'b'}`;
+      const seed = `${m.round(V.requireFinite(measureIndex, 'measureIndex'))}:${m.round(V.requireFinite(beatIndex, 'beatIndex'))}`;
       this.beatContext.coherenceKey = `${prefix}:beat:${seed}`;
     } else if (this.beatContext && this.beatContext.coherenceKey && !(def.coherence && def.coherence.enabled)) {
       // clear if defaults say disabled and it was left over

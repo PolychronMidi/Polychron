@@ -3,48 +3,48 @@
 // stutter scheduling to the naked global `noteCascade` when available.
 
 let _playNotesDepsValidated = false;
-const VPlayNotes = Validator.create('playNotes');
-VPlayNotes.assertObject(EventCatalog, 'EventCatalog');
-VPlayNotes.assertObject(EventCatalog.names, 'EventCatalog.names');
+const V = Validator.create('playNotes');
+V.assertObject(EventCatalog, 'EventCatalog');
+V.assertObject(EventCatalog.names, 'EventCatalog.names');
 const PLAY_EVENTS = EventCatalog.names;
 
 function assertPlayNotesDeps() {
   if (_playNotesDepsValidated) return;
-  VPlayNotes.assertObject(motifConfig, 'motifConfig');
-  VPlayNotes.requireType(motifConfig.getUnitProfile, 'function', 'motifConfig.getUnitProfile');
-  VPlayNotes.assertObject(voiceConfig, 'voiceConfig');
-  VPlayNotes.requireType(voiceConfig.getProfile, 'function', 'voiceConfig.getProfile');
-  VPlayNotes.assertObject(ConductorConfig, 'ConductorConfig');
-  VPlayNotes.requireType(ConductorConfig.getEmissionScaling, 'function', 'ConductorConfig.getEmissionScaling');
-  VPlayNotes.requireType(ConductorConfig.getNoiseProfileForSection, 'function', 'ConductorConfig.getNoiseProfileForSection');
-  VPlayNotes.assertObject(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter');
-  VPlayNotes.requireType(ComposerRuntimeProfileAdapter.getEmissionAdjustments, 'function', 'ComposerRuntimeProfileAdapter.getEmissionAdjustments');
-  VPlayNotes.assertObject(TextureBlender, 'TextureBlender');
-  VPlayNotes.requireType(TextureBlender.resolve, 'function', 'TextureBlender.resolve');
-  VPlayNotes.assertObject(RhythmManager, 'RhythmManager');
-  VPlayNotes.requireType(RhythmManager.swingOffset, 'function', 'RhythmManager.swingOffset');
-  VPlayNotes.assertObject(DynamismEngine, 'DynamismEngine');
-  VPlayNotes.requireType(DynamismEngine.resolve, 'function', 'DynamismEngine.resolve');
-  VPlayNotes.assertObject(TempoFeelEngine, 'TempoFeelEngine');
-  VPlayNotes.requireType(TempoFeelEngine.getTickOffset, 'function', 'TempoFeelEngine.getTickOffset');
-  VPlayNotes.assertObject(voiceModulator, 'voiceModulator');
-  VPlayNotes.requireType(voiceModulator.distribute, 'function', 'voiceModulator.distribute');
+  V.assertObject(motifConfig, 'motifConfig');
+  V.requireType(motifConfig.getUnitProfile, 'function', 'motifConfig.getUnitProfile');
+  V.assertObject(voiceConfig, 'voiceConfig');
+  V.requireType(voiceConfig.getProfile, 'function', 'voiceConfig.getProfile');
+  V.assertObject(ConductorConfig, 'ConductorConfig');
+  V.requireType(ConductorConfig.getEmissionScaling, 'function', 'ConductorConfig.getEmissionScaling');
+  V.requireType(ConductorConfig.getNoiseProfileForSection, 'function', 'ConductorConfig.getNoiseProfileForSection');
+  V.assertObject(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter');
+  V.requireType(ComposerRuntimeProfileAdapter.getEmissionAdjustments, 'function', 'ComposerRuntimeProfileAdapter.getEmissionAdjustments');
+  V.assertObject(TextureBlender, 'TextureBlender');
+  V.requireType(TextureBlender.resolve, 'function', 'TextureBlender.resolve');
+  V.assertObject(RhythmManager, 'RhythmManager');
+  V.requireType(RhythmManager.swingOffset, 'function', 'RhythmManager.swingOffset');
+  V.assertObject(DynamismEngine, 'DynamismEngine');
+  V.requireType(DynamismEngine.resolve, 'function', 'DynamismEngine.resolve');
+  V.assertObject(TempoFeelEngine, 'TempoFeelEngine');
+  V.requireType(TempoFeelEngine.getTickOffset, 'function', 'TempoFeelEngine.getTickOffset');
+  V.assertObject(voiceModulator, 'voiceModulator');
+  V.requireType(voiceModulator.distribute, 'function', 'voiceModulator.distribute');
   _playNotesDepsValidated = true;
 }
 
 playNotes = function(unit = 'subdiv', opts = {}) {
   assertPlayNotesDeps();
-  VPlayNotes.assertPlainObject(opts, 'opts');
+  V.assertPlainObject(opts, 'opts');
   const {
     playProb = 0,
     stutterProb = 0
   } = opts;
 
-  VPlayNotes.assertObject(LM, 'LayerManager');
-  VPlayNotes.requireType(LM.getComposerFor, 'function', 'LayerManager.getComposerFor');
-  VPlayNotes.assertNonEmptyString(LM.activeLayer, 'LayerManager.activeLayer');
+  V.assertObject(LM, 'LayerManager');
+  V.requireType(LM.getComposerFor, 'function', 'LayerManager.getComposerFor');
+  V.assertNonEmptyString(LM.activeLayer, 'LayerManager.activeLayer');
   const layer = LM.layers[LM.activeLayer];
-  VPlayNotes.assertObject(layer, `LayerManager.layers.${LM.activeLayer}`);
+  V.assertObject(layer, `LayerManager.layers.${LM.activeLayer}`);
   const activeComposer = LM.getComposerFor(LM.activeLayer);
 
   const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
@@ -56,17 +56,17 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
   const emissionAdjustments = ComposerRuntimeProfileAdapter.getEmissionAdjustments(runtimeProfile);
 
-  VPlayNotes.assertObject(emissionAdjustments, 'emissionAdjustments');
+  V.assertObject(emissionAdjustments, 'emissionAdjustments');
 
-  const baseVelocitySeed = VPlayNotes.requireFinite(emissionAdjustments.baseVelocity, 'emissionAdjustments.baseVelocity');
-  const combinedVelocityScale = VPlayNotes.requireFinite(emissionAdjustments.velocityScale, 'emissionAdjustments.velocityScale');
+  const baseVelocitySeed = V.requireFinite(emissionAdjustments.baseVelocity, 'emissionAdjustments.baseVelocity');
+  const combinedVelocityScale = V.requireFinite(emissionAdjustments.velocityScale, 'emissionAdjustments.velocityScale');
 
   const emitNotesEmitted = (actual, intended, reason = 'unknown') => {
-    const actualCount = VPlayNotes.requireFinite(actual, 'notesEmitted.actual');
-    const intendedCountLocal = VPlayNotes.requireFinite(intended, 'notesEmitted.intended');
-    const playProbLocal = VPlayNotes.requireFinite(playProb, 'notesEmitted.playProb');
-    const stutterProbLocal = VPlayNotes.requireFinite(stutterProb, 'notesEmitted.stutterProb');
-    const tickValue = VPlayNotes.requireFinite(unitStart, 'notesEmitted.tick');
+    const actualCount = V.requireFinite(actual, 'notesEmitted.actual');
+    const intendedCountLocal = V.requireFinite(intended, 'notesEmitted.intended');
+    const playProbLocal = V.requireFinite(playProb, 'notesEmitted.playProb');
+    const stutterProbLocal = V.requireFinite(stutterProb, 'notesEmitted.stutterProb');
+    const tickValue = V.requireFinite(unitStart, 'notesEmitted.tick');
     EventBus.emit(PLAY_EVENTS.NOTES_EMITTED, {
       unit,
       layer: LM.activeLayer,
@@ -81,13 +81,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Conductor profile drives emission noise and voice velocity blend
   const emissionScaling = ConductorConfig.getEmissionScaling();
-  VPlayNotes.assertObject(emissionScaling, 'ConductorConfig.getEmissionScaling()');
+  V.assertObject(emissionScaling, 'ConductorConfig.getEmissionScaling()');
   const phaseNoiseProfile = ConductorConfig.getNoiseProfileForSection();
-  VPlayNotes.assertNonEmptyString(phaseNoiseProfile, 'ConductorConfig.getNoiseProfileForSection()');
+  V.assertNonEmptyString(phaseNoiseProfile, 'ConductorConfig.getNoiseProfileForSection()');
   const emissionCfg = Object.assign({}, emissionScaling, { noiseProfile: phaseNoiseProfile });
 
-  const motifTimingOffsetUnits = VPlayNotes.requireFinite(emissionAdjustments.timingOffsetUnits, 'emissionAdjustments.timingOffsetUnits');
-  const rhythmSwingAmount = VPlayNotes.requireFinite(emissionAdjustments.swingAmount, 'emissionAdjustments.swingAmount');
+  const motifTimingOffsetUnits = V.requireFinite(emissionAdjustments.timingOffsetUnits, 'emissionAdjustments.timingOffsetUnits');
+  const rhythmSwingAmount = V.requireFinite(emissionAdjustments.swingAmount, 'emissionAdjustments.swingAmount');
 
   if (!Number.isFinite(Number(tpUnit))) {
     throw new Error(`${unit}.playNotes: tpUnit must be a finite number`);
@@ -95,7 +95,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   if (!Number.isFinite(Number(beatStart))) {
     throw new Error(`${unit}.playNotes: beatStart must be a finite number`);
   }
-  const swingTicks = Number(RhythmManager.swingOffset(VPlayNotes.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount));
+  const swingTicks = Number(RhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount));
   if (!Number.isFinite(swingTicks)) {
     throw new Error(`${unit}.playNotes: RhythmManager.swingOffset must return a finite number`);
   }
@@ -139,9 +139,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   crossModulateRhythms();
 
   // Apply subtle noise modulation to base velocity for organic variation
-  VPlayNotes.requireType(getNoiseProfile, 'function', 'getNoiseProfile');
+  V.requireType(getNoiseProfile, 'function', 'getNoiseProfile');
   const noiseProfile = getNoiseProfile(emissionCfg.noiseProfile);
-  VPlayNotes.assertObject(noiseProfile, `getNoiseProfile(${emissionCfg.noiseProfile})`);
+  V.assertObject(noiseProfile, `getNoiseProfile(${emissionCfg.noiseProfile})`);
   const influenceX = Number(noiseProfile.influenceX);
   const influenceY = Number(noiseProfile.influenceY);
   if (!Number.isFinite(influenceX) || !Number.isFinite(influenceY)) {
@@ -160,7 +160,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   } else {
     throw new Error(`${unit}.playNotes: active layer id must be a finite number or non-empty string`);
   }
-  const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + VPlayNotes.requireFinite(measureCount, 'measureCount')); // Deterministic voice ID from context
+  const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount')); // Deterministic voice ID from context
 
   // DynamismEngine is the single probability authority. When probs arrive from
   // GlobalConductor they are already DynamismEngine-resolved; pass them through
@@ -181,7 +181,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Decides whether this unit emits normally, fires a percussive chord
   // stab, or injects a rapid scalar flurry.  Oscillation-driven so the
   // texture switching never settles into a predictable pattern.
-  const textureComposite = VPlayNotes.requireFinite(Number(resolved.composite), 'resolved.composite');
+  const textureComposite = V.requireFinite(Number(resolved.composite), 'resolved.composite');
   const textureMode = TextureBlender.resolve(unit, textureComposite);
 
   // ── Emit texture-contrast event for drum coupling (#5) ─────────
@@ -190,15 +190,15 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
-  VPlayNotes.assertObject(LM, 'LM');
-  VPlayNotes.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  V.assertObject(LM, 'LM');
+  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const layerName = LM.activeLayer;
-  const unitStartValue = VPlayNotes.requireFinite(unitStart, 'unitStart');
+  const unitStartValue = V.requireFinite(unitStart, 'unitStart');
   const unitBudgetKey = `${layerName}:${unit}:${unitStartValue}`;
 
   // Ensure per-layer budget maps exist (init.js defines these globals)
-  VPlayNotes.assertObject(remainingVoiceSlotsByLayer, 'remainingVoiceSlotsByLayer');
-  VPlayNotes.assertObject(lastVoiceBudgetKeyByLayer, 'lastVoiceBudgetKeyByLayer');
+  V.assertObject(remainingVoiceSlotsByLayer, 'remainingVoiceSlotsByLayer');
+  V.assertObject(lastVoiceBudgetKeyByLayer, 'lastVoiceBudgetKeyByLayer');
 
   if (lastVoiceBudgetKeyByLayer[layerName] !== unitBudgetKey) {
     const unitCfg = (unit === 'div') ? DIV_VOICES

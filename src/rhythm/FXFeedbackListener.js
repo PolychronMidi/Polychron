@@ -146,9 +146,7 @@ FXFeedbackListener = (() => {
 
     // Build a small map of method -> _fxIntensityScore (defaults to 0.5 neutral)
     const methodScores = {};
-    const allMethods = (typeof RhythmRegistry !== 'undefined' && RhythmRegistry && typeof RhythmRegistry.getAll === 'function')
-      ? RhythmRegistry.getAll()
-      : {};
+    const allMethods = RhythmRegistry.getAll();
     const biasedMethods = biasRhythmMethods(allMethods);
     for (const [mName, fn] of Object.entries(biasedMethods)) {
       methodScores[mName] = (fn && typeof fn._fxIntensityScore === 'number') ? fn._fxIntensityScore : 0.5;

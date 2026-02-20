@@ -1,4 +1,4 @@
-const _cmrV = Validator.create('crossModulateRhythms');
+const V = Validator.create('crossModulateRhythms');
 
 /**
  * Calculates cross-modulation value based on rhythm state across all levels
@@ -8,17 +8,13 @@ crossModulateRhythms = () => {
   lastCrossMod=crossModulation; crossModulation=0;
 
   // Conductor-driven scaling: profile controls how wide crossMod swings
-  const cmScale = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getCrossModScaling === 'function')
-    ? ConductorConfig.getCrossModScaling()
-    : { rangeScale: 1, penaltyScale: 1, textureBoostScale: 1 };
-  _cmrV.assertPlainObject(cmScale, 'cmScale');
-  _cmrV.requireFinite(cmScale.rangeScale, 'cmScale.rangeScale');
-  _cmrV.requireFinite(cmScale.penaltyScale, 'cmScale.penaltyScale');
+  const cmScale = ConductorConfig.getCrossModScaling();
+  V.assertPlainObject(cmScale, 'cmScale');
+  V.requireFinite(cmScale.rangeScale, 'cmScale.rangeScale');
+  V.requireFinite(cmScale.penaltyScale, 'cmScale.penaltyScale');
   const rs = cmScale.rangeScale;
   // Self-regulation multiplicative bias from ConductorConfig
-  const regBias = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getRegulationCrossModBias === 'function')
-    ? ConductorConfig.getRegulationCrossModBias()
-    : 1;
+  const regBias = ConductorConfig.getRegulationCrossModBias();
   const s = rs * regBias; // combined scale factor
 
   crossModulation+=
@@ -38,10 +34,8 @@ crossModulateRhythms = () => {
   // Texture feedback (#2): texture contrast events inflate crossMod →
   // wider DynamismEngine flicker → shifted TextureBlender probabilities →
   // self-modulating density wave that no single system controls
-  if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function') {
-    const texIntensity = DrumTextureCoupler.getIntensity();
-    if (Number.isFinite(texIntensity) && texIntensity > 0) {
-      crossModulation += texIntensity * rf(0.3, 0.8) * cmScale.textureBoostScale;
-    }
+  const texIntensity = DrumTextureCoupler.getIntensity();
+  if (Number.isFinite(texIntensity) && texIntensity > 0) {
+    crossModulation += texIntensity * rf(0.3, 0.8) * cmScale.textureBoostScale;
   }
 }

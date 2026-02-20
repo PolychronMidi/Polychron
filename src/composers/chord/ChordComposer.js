@@ -1,4 +1,4 @@
-const _ccV = Validator.create('ChordComposer');
+const V = Validator.create('ChordComposer');
 const _warnedInvalidChordSymbols = new Set();
 ChordComposer = class ChordComposer extends MeasureComposer {
   /**
@@ -6,7 +6,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
    */
   constructor(progression) {
     super();
-    _ccV.assertArray(progression, 'progression');
+    V.assertArray(progression, 'progression');
     // enable basic voice-leading scorer to allow selectNoteWithLeading delegation
     this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(progression,'R');

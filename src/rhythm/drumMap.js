@@ -28,6 +28,6 @@ const LOCAL_DRUM_MAP = {
 
 drumMap = {};
 Object.assign(drumMap, LOCAL_DRUM_MAP);
-if (typeof DRUM_MAP !== 'undefined' && DRUM_MAP && typeof DRUM_MAP === 'object') {
+if (DRUM_MAP && typeof DRUM_MAP === 'object') {
   Object.assign(drumMap, DRUM_MAP);
 }

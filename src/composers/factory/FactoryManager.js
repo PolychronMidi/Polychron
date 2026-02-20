@@ -1,4 +1,4 @@
-const _fmV = Validator.create('FactoryManager');
+const V = Validator.create('FactoryManager');
 FactoryManager = class FactoryManager {
   /** @type {any|null} */
   static sharedPhraseArcManager = null;
@@ -84,7 +84,7 @@ FactoryManager = class FactoryManager {
    * @param {Object} [ctx]
    */
   static create(config = {}, ctx = null) {
-    _fmV.assertPlainObject(config, 'config');
+    V.assertPlainObject(config, 'config');
     const type = /** @type {any} */ (config).type || 'scale';
     const constructorFn = this.constructors[type];
     if (!constructorFn) {

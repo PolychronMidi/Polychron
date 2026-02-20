@@ -1,7 +1,7 @@
-const VPlayNotesEmitPick = Validator.create('playNotesEmitPick');
+const V = Validator.create('playNotesEmitPick');
 
 playNotesEmitPick = function(opts = {}) {
-  VPlayNotesEmitPick.assertPlainObject(opts, 'opts');
+  V.assertPlainObject(opts, 'opts');
   const {
     unit,
     pick,
@@ -19,30 +19,30 @@ playNotesEmitPick = function(opts = {}) {
     voiceIdSeed
   } = opts;
 
-  VPlayNotesEmitPick.assertObject(pick, 'pick');
-  VPlayNotesEmitPick.requireDefined(pick.note, 'pick.note');
+  V.assertObject(pick, 'pick');
+  V.requireDefined(pick.note, 'pick.note');
   const minMidi = m.max(0, OCTAVE.min * 12);
   const maxMidi = m.min(MIDI_MAX_VALUE, OCTAVE.max * 12 - 1);
   const pickNote = modClamp(Number(pick.note), minMidi, maxMidi);
 
   let scheduled = 0;
-  VPlayNotesEmitPick.assertObject(LM, 'LM');
-  VPlayNotesEmitPick.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  V.assertObject(LM, 'LM');
+  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const activeLayerName = LM.activeLayer;
-  VPlayNotesEmitPick.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
-  VPlayNotesEmitPick.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');
-  VPlayNotesEmitPick.requireType(AbsoluteTimeWindow.getNotes, 'function', 'AbsoluteTimeWindow.getNotes');
-  VPlayNotesEmitPick.assertObject(MotifIdentityMemory, 'MotifIdentityMemory');
-  VPlayNotesEmitPick.requireType(MotifIdentityMemory.recordNote, 'function', 'MotifIdentityMemory.recordNote');
-  VPlayNotesEmitPick.requireType(MotifIdentityMemory.getActiveIdentity, 'function', 'MotifIdentityMemory.getActiveIdentity');
-  VPlayNotesEmitPick.assertObject(ConvergenceDetector, 'ConvergenceDetector');
-  VPlayNotesEmitPick.requireType(ConvergenceDetector.postOnset, 'function', 'ConvergenceDetector.postOnset');
-  VPlayNotesEmitPick.requireType(ConvergenceDetector.applyIfConverged, 'function', 'ConvergenceDetector.applyIfConverged');
-  VPlayNotesEmitPick.requireType(ConvergenceDetector.wasRecent, 'function', 'ConvergenceDetector.wasRecent');
-  VPlayNotesEmitPick.assertObject(HarmonicContext, 'HarmonicContext');
-  VPlayNotesEmitPick.requireType(HarmonicContext.getField, 'function', 'HarmonicContext.getField');
-  VPlayNotesEmitPick.assertObject(Stutter, 'Stutter');
-  VPlayNotesEmitPick.assertObject(Stutter.beatContext, 'Stutter.beatContext');
+  V.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
+  V.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');
+  V.requireType(AbsoluteTimeWindow.getNotes, 'function', 'AbsoluteTimeWindow.getNotes');
+  V.assertObject(MotifIdentityMemory, 'MotifIdentityMemory');
+  V.requireType(MotifIdentityMemory.recordNote, 'function', 'MotifIdentityMemory.recordNote');
+  V.requireType(MotifIdentityMemory.getActiveIdentity, 'function', 'MotifIdentityMemory.getActiveIdentity');
+  V.assertObject(ConvergenceDetector, 'ConvergenceDetector');
+  V.requireType(ConvergenceDetector.postOnset, 'function', 'ConvergenceDetector.postOnset');
+  V.requireType(ConvergenceDetector.applyIfConverged, 'function', 'ConvergenceDetector.applyIfConverged');
+  V.requireType(ConvergenceDetector.wasRecent, 'function', 'ConvergenceDetector.wasRecent');
+  V.assertObject(HarmonicContext, 'HarmonicContext');
+  V.requireType(HarmonicContext.getField, 'function', 'HarmonicContext.getField');
+  V.assertObject(Stutter, 'Stutter');
+  V.assertObject(Stutter.beatContext, 'Stutter.beatContext');
   if (!(Stutter.beatContext.selectedReflectionChannels instanceof Set)) {
     throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedReflectionChannels must be a Set`);
   }
@@ -52,13 +52,13 @@ playNotesEmitPick = function(opts = {}) {
 
   /** @param {number} tick */
   const tickToAbsMs = (tick) => {
-    const measureStartValue = VPlayNotesEmitPick.requireFinite(measureStart, 'measureStart');
-    const measureStartTimeValue = VPlayNotesEmitPick.requireFinite(measureStartTime, 'measureStartTime');
-    const tpSecValue = VPlayNotesEmitPick.requireFinite(tpSec, 'tpSec');
+    const measureStartValue = V.requireFinite(measureStart, 'measureStart');
+    const measureStartTimeValue = V.requireFinite(measureStartTime, 'measureStartTime');
+    const tpSecValue = V.requireFinite(tpSec, 'tpSec');
     return (measureStartTimeValue + (tick - measureStartValue) / tpSecValue) * 1000;
   };
 
-  const resolvedStutterProbValue = VPlayNotesEmitPick.requireFinite(resolvedStutterProb, 'resolvedStutterProb');
+  const resolvedStutterProbValue = V.requireFinite(resolvedStutterProb, 'resolvedStutterProb');
   const shouldStutter = resolvedStutterProbValue > rf();
   let selectedShift = 0;
   if (shouldStutter) {

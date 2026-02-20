@@ -1,4 +1,4 @@
-const _micV = Validator.create('ModalInterchangeComposer');
+const V = Validator.create('ModalInterchangeComposer');
 /**
  * Generates chord progressions with modal borrowing from parallel modes.
  *
@@ -13,9 +13,9 @@ const _micV = Validator.create('ModalInterchangeComposer');
  */
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25, opts = {}) {
-    _micV.assertNonEmptyString(key, 'key');
-    _micV.assertNonEmptyString(primaryMode, 'primaryMode');
-    _micV.requireFinite(borrowProbability, 'borrowProbability');
+    V.assertNonEmptyString(key, 'key');
+    V.assertNonEmptyString(primaryMode, 'primaryMode');
+    V.requireFinite(borrowProbability, 'borrowProbability');
     const generator = new ProgressionGenerator(key, primaryMode);
     const progressionChords = generator.random({
       source: 'modalInterchange',

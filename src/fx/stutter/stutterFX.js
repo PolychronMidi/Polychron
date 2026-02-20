@@ -3,6 +3,9 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
   if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
     throw new Error('stutterFX: StutterFailFast helper is not available');
   }
+  if (!FX_CC_DEFAULTS || typeof FX_CC_DEFAULTS !== 'object') {
+    throw new Error('stutterFX: FX_CC_DEFAULTS is required');
+  }
   const { eventName } = StutterFailFast.requireEventInfra();
   const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterFX');
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
@@ -48,10 +51,8 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       const mapToFxRange = (ch, cc, raw) => {
         const group = reflectionChannels.includes(ch) ? 'reflection' : bassChannels.includes(ch) ? 'bass' : 'source';
         let def = null;
-        if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
-          if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
-          else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
-        }
+        if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
+        else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
         if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) {
           return m.round(def.min + (def.max - def.min) * clamp(raw / 127, 0, 1));
         }
@@ -64,11 +65,9 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
     // restore to mid-point of configured range (falls back to 64)
     const defaultReset = (ch, cc) => {
       let def = null;
-      if (typeof FX_CC_DEFAULTS !== 'undefined' && FX_CC_DEFAULTS) {
-        const group = reflectionChannels.includes(ch) ? 'reflection' : bassChannels.includes(ch) ? 'bass' : 'source';
-        if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
-        else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
-      }
+      const group = reflectionChannels.includes(ch) ? 'reflection' : bassChannels.includes(ch) ? 'bass' : 'source';
+      if (FX_CC_DEFAULTS[group] && FX_CC_DEFAULTS[group][cc]) def = FX_CC_DEFAULTS[group][cc];
+      else if (FX_CC_DEFAULTS[cc]) def = FX_CC_DEFAULTS[cc];
       if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) return m.round((Number(def.min) + Number(def.max)) / 2);
       return 64;
     };

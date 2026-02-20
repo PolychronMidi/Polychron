@@ -26,7 +26,7 @@ ExplainabilityBus = (() => {
     entries.push(entry);
     if (entries.length > MAX_ENTRIES) entries.shift();
 
-    EventBus.emit('CROSS_LAYER_EXPLAIN', entry);
+    EventBus.emit(EventCatalog.names.CROSS_LAYER_EXPLAIN, entry);
     AbsoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
 
     return entry;

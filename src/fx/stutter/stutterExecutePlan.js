@@ -6,7 +6,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   const profile = cfg.profile || 'source';
   const baseNote = Number.isFinite(Number(cfg.note)) ? Number(cfg.note) : null;
   if (!Number.isFinite(baseNote)) throw new Error('stutterExecutePlan: plan.note (base MIDI note) is required');
-  const on = Number.isFinite(Number(cfg.on)) ? Number(cfg.on) : (typeof beatStart !== 'undefined' ? Number(beatStart) : 0);
+  const on = Number.isFinite(Number(cfg.on)) ? Number(cfg.on) : Number(beatStart);
   const sustain = Number.isFinite(Number(cfg.sustain)) ? Number(cfg.sustain) : tpSec * 0.25;
   const numStutters = Number.isFinite(Number(cfg.numStutters)) ? Number(cfg.numStutters) : m.max(1, ri(2, 6));
   const duration = Number.isFinite(Number(cfg.duration)) ? Number(cfg.duration) : Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1));
@@ -15,11 +15,11 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   if (Array.isArray(cfg.channels) && cfg.channels.length > 0) {
     finalChannels.push(.../** @type {number[]} */ (cfg.channels.slice()));
   } else if (profile === 'reflection') {
-    finalChannels.push(...(typeof reflection !== 'undefined' ? /** @type {number[]} */ (reflection.slice()) : /** @type {number[]} */ ([])));
+    finalChannels.push(.../** @type {number[]} */ (reflection.slice()));
   } else if (profile === 'bass') {
-    finalChannels.push(...(typeof bass !== 'undefined' ? /** @type {number[]} */ (bass.slice()) : /** @type {number[]} */ ([])));
+    finalChannels.push(.../** @type {number[]} */ (bass.slice()));
   } else {
-    finalChannels.push(...(typeof source !== 'undefined' ? /** @type {number[]} */ (source.slice()) : /** @type {number[]} */ ([])));
+    finalChannels.push(.../** @type {number[]} */ (source.slice()));
   }
 
   if (typeof StutterConfig === 'undefined' || !StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getDirectiveDefaults !== 'function') {
@@ -35,7 +35,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     throw new Error('stutterExecutePlan: invalid directive defaults from StutterConfig.getDirectiveDefaults');
   }
   const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
-  if (cfg.preset && typeof StutterConfig !== 'undefined' && StutterConfig && typeof StutterConfig.getPreset === 'function') {
+  if (cfg.preset) {
     const preset = StutterConfig.getPreset(cfg.preset);
     if (preset && typeof preset === 'object') Object.assign(directive, preset);
   }
@@ -64,8 +64,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     stutterMgr.beatContext.coherenceKey = `${prefix}:${seedPart}`;
   }
 
-  const leftCHs = (typeof lCH1 !== 'undefined') ? [lCH1, lCH2, lCH3, lCH4, lCH5, lCH6].filter(Number.isFinite) : [];
-  const rightCHs = (typeof rCH1 !== 'undefined') ? [rCH1, rCH2, rCH3, rCH4, rCH5, rCH6].filter(Number.isFinite) : [];
+  const leftCHs = [lCH1, lCH2, lCH3, lCH4, lCH5, lCH6].filter(Number.isFinite);
+  const rightCHs = [rCH1, rCH2, rCH3, rCH4, rCH5, rCH6].filter(Number.isFinite);
 
   const evalCurve = (curve, t) => {
     if (!curve) return undefined;

@@ -1,4 +1,4 @@
-const _motV = Validator.create('MotifComposer');
+const V = Validator.create('MotifComposer');
 /**
  * MotifComposer: factory for short motifs that fit a scale and optionally use voice-leading.
  * Features:
@@ -19,7 +19,7 @@ MotifComposer = class MotifComposer {
    * }} [options]
    */
   constructor(options = {}) {
-    _motV.assertPlainObject(options, 'options');
+    V.assertPlainObject(options, 'options');
     const opts = /** @type {any} */ (options || {});
 
     // length

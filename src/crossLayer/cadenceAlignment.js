@@ -74,7 +74,7 @@ CadenceAlignment = (() => {
     const intensityBoost = alignment.combinedTension;
 
     // Emit event for conductor awareness
-    EventBus.emit('CROSS_LAYER_CADENCE_ALIGN', {
+    EventBus.emit(EventCatalog.names.CROSS_LAYER_CADENCE_ALIGN, {
       layer: activeLayer,
       combinedTension: alignment.combinedTension,
       syncTick: alignment.syncTick,

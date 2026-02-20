@@ -1,4 +1,4 @@
-const _mcV = Validator.create('MeasureComposer');
+const V = Validator.create('MeasureComposer');
 /**
  * Composes meter-related values with randomization.
  * @class
@@ -33,7 +33,7 @@ MeasureComposer = class MeasureComposer {
   * @returns {{preservesScale:boolean, mutatesPitchClasses:boolean, deterministic:boolean, notesReflectOutputSet:boolean, timeVaryingScaleContext:boolean}}
    */
   setCapabilities(next = {}) {
-    _mcV.assertObject(next, 'capabilities');
+    V.assertObject(next, 'capabilities');
     const merged = Object.assign({}, this.capabilities || {}, next || {});
     let validated;
     if (typeof assertComposerCapabilities === 'function') {
