@@ -36,7 +36,6 @@ require('./playMotifs');
 
 // Register default generator wrapper
 MotifRegistry.register('motif', (opts = {}) => {
-  if (typeof MotifComposer !== 'function') throw new Error('motif generator: MotifComposer not available');
   const mc = new MotifComposer(opts);
   return mc.generate(opts);
 });

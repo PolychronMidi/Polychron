@@ -1,6 +1,6 @@
 /** @this {any} */
 stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-  if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
+  if (!StutterFailFast) {
     throw new Error('stutterPan: StutterFailFast helper is not available');
   }
   const { eventName } = StutterFailFast.requireEventInfra();

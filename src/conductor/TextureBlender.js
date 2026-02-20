@@ -46,7 +46,7 @@ TextureBlender = (() => {
    * @returns {{ burstBias: number, flurryBias: number }}
    */
   function getPhraseTextureInfluence() {
-    if (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function') {
+    if (ConductorState && typeof ConductorState.getSnapshot === 'function') {
       const state = ConductorState.getSnapshot();
       if (state && typeof state === 'object') {
         const pos = Number.isFinite(Number(state.phrasePosition)) ? Number(state.phrasePosition) : 0;
@@ -60,9 +60,9 @@ TextureBlender = (() => {
       }
     }
 
-    if (typeof ComposerFactory !== 'undefined' && ComposerFactory &&
+    if (ComposerFactory &&
         ComposerFactory.sharedPhraseArcManager &&
-        typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function') {
+        ComposerFactory.sharedPhraseArcManager.getPhraseContext) {
       const ctx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
       const pos = Number(ctx.position) || 0;
       const phase = ctx.phase || '';
@@ -83,7 +83,7 @@ TextureBlender = (() => {
    * @returns {{ burstSuppression: number, flurryBoost: number }}
    */
   function getStutterCoupling() {
-    if (typeof Stutter !== 'undefined' && Stutter && Stutter.beatContext) {
+    if (Stutter && Stutter.beatContext) {
       const bc = Stutter.beatContext;
       const hasReflection = bc.selectedReflectionChannels && bc.selectedReflectionChannels.size > 0;
       const hasBass = bc.selectedBassChannels && bc.selectedBassChannels.size > 0;
@@ -109,16 +109,16 @@ TextureBlender = (() => {
     }
 
     // ── Oscillating probability seeds ──────────────────────────────
-    const seed = (typeof unitStart === 'number' && Number.isFinite(unitStart))
+    const seed = (Number.isFinite(unitStart))
       ? unitStart
-      : (typeof beatStart === 'number' && Number.isFinite(beatStart) ? beatStart : 0);
+      : (Number.isFinite(beatStart) ? beatStart : 0);
     const unitDepth = unit === 'beat' ? 0 : unit === 'div' ? 1 : unit === 'subdiv' ? 2 : 3;
 
     const oscA = (m.sin(seed * 0.0023 + unitDepth * 3.7) + 1) * 0.5;
     const oscB = (m.sin(seed * 0.0059 - unitDepth * 5.3) + 1) * 0.5;
     const oscBlend = oscA * 0.6 + oscB * 0.4;
 
-    const crossModFactor = (typeof crossModulation === 'number' && Number.isFinite(crossModulation))
+    const crossModFactor = Number.isFinite(crossModulation)
       ? clamp(crossModulation / 6, 0, 1)
       : 0.5;
 
@@ -129,7 +129,7 @@ TextureBlender = (() => {
     const flurryFatigue = getFatigue('flurry');
 
     // ── Chord burst probability ────────────────────────────────────
-    const texCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getTextureScaling === 'function')
+    const texCfg = (ConductorConfig && typeof ConductorConfig.getTextureScaling === 'function')
       ? ConductorConfig.getTextureScaling()
       : { burstBaseScale: 1, flurryBaseScale: 1, burstCap: 0.18, flurryCap: 0.15 };
     const burstBaseRaw = unit === 'beat' ? 0.02 : unit === 'div' ? 0.06 : unit === 'subdiv' ? 0.10 : 0.08;

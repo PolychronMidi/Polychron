@@ -65,7 +65,7 @@ scaleNormalization = {
 
   collectComposerValidPCs(composer, opts = {}) {
     const pcs = new Set();
-    if (!composer || typeof composer !== 'object') return pcs;
+    if (!composer) return pcs;
 
     const preferTimeVaryingContext = opts.preferTimeVaryingContext !== false;
     const label = (typeof opts.label === 'string' && opts.label.length > 0)
@@ -81,7 +81,7 @@ scaleNormalization = {
       if (!Array.isArray(entries)) return;
       for (const entry of entries) {
         if (typeof entry === 'string') {
-          if (typeof t === 'undefined' || !t || !t.Note || typeof t.Note.chroma !== 'function') {
+          if (!t || !t.Note || typeof t.Note.chroma !== 'function') {
             throw new Error(`${label}: tonal Note.chroma() not available`);
           }
           const pc = t.Note.chroma(entry);
@@ -92,17 +92,15 @@ scaleNormalization = {
       }
     };
 
-    const caps = (typeof composer.getCapabilities === 'function')
+    const caps = (composer && typeof composer.getCapabilities === 'function')
       ? composer.getCapabilities()
-      : (composer.capabilities || {});
+      : (composer && composer.capabilities ? composer.capabilities : {});
 
     const shouldUseWindowScale = preferTimeVaryingContext
       && caps
       && caps.timeVaryingScaleContext === true
-      && typeof HarmonicContext !== 'undefined'
       && HarmonicContext
-      && typeof HarmonicContext.getField === 'function';
-
+      && HarmonicContext.getField;
     if (shouldUseWindowScale) {
       const windowScale = HarmonicContext.getField('scale');
       addFromEntries(windowScale);

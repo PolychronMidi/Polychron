@@ -11,7 +11,7 @@ class StutterManager {
     this.lastUsedCHs3 = new Set();     // for stutterFX
 
     // Capture the naked globals (rely on require-side effects to define them)
-    if (typeof stutterFade !== 'function' || typeof stutterPan !== 'function' || typeof stutterFX !== 'function') {
+    if (!stutterFade || !stutterPan || !stutterFX) {
       throw new Error('StutterManager: stutterFade/stutterPan/stutterFX implementations are required');
     }
     this._stutterFade = stutterFade;
@@ -87,7 +87,7 @@ class StutterManager {
         const reflChs = reflection.slice(0, 2);
         if (reflChs.length > 0) {
           const microRate = clamp(m.round(24 + composite * 16), 24, 48);
-          const microDuration = (typeof tpUnit === 'number' && Number.isFinite(tpUnit)) ? tpUnit * rf(0.3, 0.6) : 100;
+          const microDuration = Number.isFinite(tpUnit) ? tpUnit * rf(0.3, 0.6) : 100;
           this._stutterPan.call(this, reflChs, microRate, microDuration);
         }
       }
@@ -202,7 +202,7 @@ class StutterManager {
    * @returns {any} shared state from stutterNotes
    */
   scheduleStutterForUnit(opts = {}) {
-    if (typeof stutterNotes !== 'function') throw new Error('StutterManager.scheduleStutterForUnit: stutterNotes helper not available');
+    if (!stutterNotes) throw new Error('StutterManager.scheduleStutterForUnit: stutterNotes helper not available');
     const provided = Object.assign({}, opts);
     if (!provided.shared) provided.shared = this.shared;
 
@@ -235,10 +235,10 @@ class StutterManager {
         ? clamp(1 - this._textureIntensity * 1.5, 0.1, 0.5) // lower selection chance
         : 0.5;
 
-      if (typeof reflection === 'undefined' || !Array.isArray(reflection)) {
+      if (!Array.isArray(reflection)) {
         throw new Error('StutterManager.prepareBeat: reflection channels array is not available');
       }
-      if (typeof bass === 'undefined' || !Array.isArray(bass)) {
+      if (!Array.isArray(bass)) {
         throw new Error('StutterManager.prepareBeat: bass channels array is not available');
       }
       const reflCandidates = reflection.slice();

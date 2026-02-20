@@ -19,7 +19,7 @@ voiceModulator = (function() {
     if (!Array.isArray(selectedNotes)) throw new Error('voiceModulator.distribute: selectedNotes array required');
     const base = Number.isFinite(Number(options && options.baseVelocity)) ? Number(options.baseVelocity) : 90;
     // Voice spread params from ConductorConfig (profile-driven)
-    const vsCfg = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getVoiceSpreadScaling === 'function')
+    const vsCfg = (ConductorConfig && typeof ConductorConfig.getVoiceSpreadScaling === 'function')
       ? ConductorConfig.getVoiceSpreadScaling()
       : { spread: 0.15, chordBurstInnerBoost: 1.0, flurryDecayRate: 1.8, jitterAmount: 0.1 };
     const spread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : vsCfg.spread;

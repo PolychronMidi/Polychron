@@ -59,9 +59,7 @@ LM = layerManager ={
 
     // Attach buffer and timing props directly to the layer object
     LM.layers[name] = Object.assign({ buffer: buf }, layer);
-    const globalComposer = (composer && typeof composer === 'object')
-      ? composer
-      : null;
+    const globalComposer = composer ? composer : null;
     const registeredComposer = (LM.layers[name].measureComposer && typeof LM.layers[name].measureComposer === 'object')
       ? LM.layers[name].measureComposer
       : globalComposer;
@@ -95,9 +93,7 @@ LM = layerManager ={
     c = layer.buffer;
     LM.activeLayer = name;
     loadLayerToGlobals(layer);
-    const globalComposer = (composer && typeof composer === 'object')
-      ? composer
-      : null;
+    const globalComposer = composer ? composer : null;
     const layerComposer = (LM.layerComposers[name] && typeof LM.layerComposers[name] === 'object')
       ? LM.layerComposers[name]
       : ((layer.measureComposer && typeof layer.measureComposer === 'object') ? layer.measureComposer : globalComposer);
@@ -210,9 +206,7 @@ LM = layerManager ={
     V.requireDefined(layer, `layer "${name}"`);
     const mappedComposer = LM.layerComposers[name];
     const layerComposer = layer.measureComposer;
-    const globalComposer = (composer && typeof composer === 'object')
-      ? composer
-      : null;
+    const globalComposer = composer ? composer : null;
     const resolvedComposer = (mappedComposer && typeof mappedComposer === 'object')
       ? mappedComposer
       : ((layerComposer && typeof layerComposer === 'object') ? layerComposer : globalComposer);

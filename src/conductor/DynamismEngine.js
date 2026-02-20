@@ -14,22 +14,22 @@ DynamismEngine = (() => {
   function assertDependencies() {
     if (dependenciesValidated) return;
 
-    if (typeof ConductorConfig === 'undefined' || !ConductorConfig || typeof ConductorConfig.getFeedbackMixWeights !== 'function' || typeof ConductorConfig.getEnergyWeights !== 'function') {
+    if (!ConductorConfig || typeof ConductorConfig.getFeedbackMixWeights !== 'function' || typeof ConductorConfig.getEnergyWeights !== 'function') {
       throw new Error('DynamismEngine: ConductorConfig energy accessors are required');
     }
-    if (typeof FXFeedbackListener === 'undefined' || !FXFeedbackListener || typeof FXFeedbackListener.getIntensity !== 'function') {
+    if (!FXFeedbackListener || typeof FXFeedbackListener.getIntensity !== 'function') {
       throw new Error('DynamismEngine: FXFeedbackListener.getIntensity is required');
     }
-    if (typeof StutterFeedbackListener === 'undefined' || !StutterFeedbackListener || typeof StutterFeedbackListener.getIntensity !== 'function') {
+    if (!StutterFeedbackListener || typeof StutterFeedbackListener.getIntensity !== 'function') {
       throw new Error('DynamismEngine: StutterFeedbackListener.getIntensity is required');
     }
-    if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.getBoldness !== 'function') {
+    if (!JourneyRhythmCoupler || typeof JourneyRhythmCoupler.getBoldness !== 'function') {
       throw new Error('DynamismEngine: JourneyRhythmCoupler.getBoldness is required');
     }
-    if (typeof TextureBlender === 'undefined' || !TextureBlender || typeof TextureBlender.getRecentDensity !== 'function') {
+    if (!TextureBlender || typeof TextureBlender.getRecentDensity !== 'function') {
       throw new Error('DynamismEngine: TextureBlender.getRecentDensity is required');
     }
-    if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
+    if (!HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
       throw new Error('DynamismEngine: HarmonicJourney.getStop is required');
     }
     V.requireDefined(LM, 'LM');
@@ -43,7 +43,7 @@ DynamismEngine = (() => {
    * @returns {{dynamism:number, atStart:boolean, atEnd:boolean}}
    */
   function getPhraseContext() {
-    if (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function') {
+    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && ComposerFactory.sharedPhraseArcManager.getPhraseContext) {
       return ComposerFactory.sharedPhraseArcManager.getPhraseContext();
     }
     return { dynamism: 0.7, atStart: false, atEnd: false };
@@ -112,7 +112,7 @@ DynamismEngine = (() => {
       ? ConductorConfig.getHarmonicRhythmParams()
       : { blendWeight: 0.15, feedbackWeight: 0.2 };
     const harmonicRhythmWeight = clamp(Number(harmonicRhythmParams.feedbackWeight), 0, 0.5);
-    const harmonicRhythmEnergy = (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
+    const harmonicRhythmEnergy = (HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
       ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1) * harmonicRhythmWeight
       : 0;
 
@@ -160,14 +160,14 @@ DynamismEngine = (() => {
 
     // Scale flicker amplitude with crossModulation feedback (Step 5):
     // dense rhythmic activity → wider flicker → more textural contrast
-    const crossModAmp = (typeof crossModulation === 'number' && Number.isFinite(crossModulation))
+    const crossModAmp = (Number.isFinite(crossModulation))
       ? clamp(crossModulation / 6, 0, 1) // crossMod typically ranges ~0–6
       : flickerProfile.crossModWeight;
     const flickerScale = depthAmp * (0.5 + 0.5 * crossModAmp);
 
     // Two incommensurate noise samples for organic non-repeating flicker (#6)
     // Uses defaultSimplex (noise subsystem) when available; falls back to sine
-    const useNoise = typeof defaultSimplex !== 'undefined' && defaultSimplex && typeof defaultSimplex.noise === 'function';
+    const useNoise = defaultSimplex && typeof defaultSimplex.noise === 'function';
     const flicker1 = useNoise
       ? defaultSimplex.noise(unitSeed * 0.0037, unitPhase * 2.7) * flickerScale
       : m.sin(unitSeed * 0.0037 + unitPhase * 2.7) * flickerScale;
@@ -209,7 +209,7 @@ DynamismEngine = (() => {
       1
     );
 
-    const emissionGate = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getEmissionGateParams === 'function')
+    const emissionGate = (ConductorConfig && typeof ConductorConfig.getEmissionGateParams === 'function')
       ? ConductorConfig.getEmissionGateParams()
       : {
           playBase: 0.72,
@@ -221,7 +221,7 @@ DynamismEngine = (() => {
           layerBiasScale: 1
         };
 
-    const layerBias = (typeof LM !== 'undefined' && LM && LM.activeLayer === 'L2') ? 0.04 : 0;
+    const layerBias = (LM && LM.activeLayer === 'L2') ? 0.04 : 0;
     const playOut = clamp(
       inputPlay * (emissionGate.playBase + composite * emissionGate.playScale) +
       layerBias * 0.5 * emissionGate.layerBiasScale,

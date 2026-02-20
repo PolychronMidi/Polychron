@@ -52,7 +52,6 @@ MotifValidators = {
     }
 
     const merged = Object.assign({}, fallback, caps || {});
-    if (typeof assertComposerCapabilities !== 'function') throw new Error('MotifValidators: assertComposerCapabilities() not available');
     return assertComposerCapabilities(merged);
   },
 
@@ -87,7 +86,7 @@ MotifValidators = {
     } else {
       const maybeWindowScale = opts && /** @type {any} */ (opts).windowScale;
       let windowScale = Array.isArray(maybeWindowScale) && maybeWindowScale.length > 0 ? /** @type {(string|number)[]} */ (maybeWindowScale) : null;
-      if (!windowScale && typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+      if (!windowScale && HarmonicContext && typeof HarmonicContext.getField === 'function') {
         try {
           const hcScale = HarmonicContext.getField('scale');
           if (Array.isArray(hcScale) && hcScale.length > 0) windowScale = hcScale;

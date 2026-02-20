@@ -71,6 +71,7 @@ MainBootstrap = (() => {
     // so that no other file needs to. The ESLint rule exempts this file.
     const validated = FullBootstrap.getValidatedGlobalsList();
     const missing = [];
+    /* eslint-disable no-restricted-globals,no-restricted-syntax */
     for (const name of validated) {
       // typeof is the only safe way to check existence of a potentially undeclared identifier
       // eslint requires we use eval-free indirect access via globalThis for dynamic names
@@ -78,6 +79,7 @@ MainBootstrap = (() => {
         missing.push(name);
       }
     }
+    /* eslint-enable no-restricted-globals,no-restricted-syntax */
     if (missing.length > 0) {
       throw new Error(`MainBootstrap: missing validated globals: ${missing.join(', ')}`);
     }

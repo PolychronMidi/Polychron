@@ -46,7 +46,7 @@ VoiceLeadingCore = {
     constraints = Array.isArray(constraints) ? constraints : [];
 
     // Noise context
-    const currentTime = (typeof beatStart !== 'undefined' ? beatStart : 0);
+    const currentTime = Number.isFinite(Number(beatStart)) ? beatStart : 0;
     const voiceId = Number(candidate) + (lastNote * 17);
     const noiseContext = { currentTime, voiceId };
 
@@ -126,13 +126,13 @@ VoiceLeadingCore = {
 
       const harmonicKey = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
         ? opts.tonic
-        : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        : (HarmonicContext && HarmonicContext.getField)
           ? HarmonicContext.getField('key')
           : undefined;
 
       const harmonicQuality = (opts && typeof opts.quality === 'string' && opts.quality.length > 0)
         ? opts.quality
-        : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+        : (HarmonicContext && HarmonicContext.getField)
           ? HarmonicContext.getField('quality')
           : 'major';
 

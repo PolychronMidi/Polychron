@@ -5,9 +5,6 @@
 // The factories (e.g. `conductorProfileDefault`) are expected to be present as
 // naked globals by the time this module runs.
 
-if (CONDUCTOR_PROFILE_SOURCES !== null && typeof CONDUCTOR_PROFILE_SOURCES !== 'object') {
-  throw new Error('conductorProfiles: CONDUCTOR_PROFILE_SOURCES must be an object when pre-defined');
-}
 CONDUCTOR_PROFILE_SOURCES = {
   default: conductorProfileDefault(),
   restrained: conductorProfileRestrained(),

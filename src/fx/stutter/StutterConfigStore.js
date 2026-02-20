@@ -3,7 +3,7 @@
 
 const V = Validator.create('StutterConfigStore');
 
-if (typeof STUTTER_PROFILES === 'undefined') {
+if (!STUTTER_PROFILES) {
   throw new Error('StutterConfigStore.js: missing STUTTER_PROFILES global');
 }
 
@@ -96,7 +96,7 @@ function getProfileConfig(profile = 'source') {
 }
 
 function getVelocityRange(profile = 'source', isPrimary = true) {
-  if (typeof STUTTER_VELOCITY_RANGES === 'undefined' || !STUTTER_VELOCITY_RANGES || typeof STUTTER_VELOCITY_RANGES !== 'object') {
+  if (!STUTTER_VELOCITY_RANGES) {
     throw new Error('StutterConfigStore.getVelocityRange: STUTTER_VELOCITY_RANGES global not found');
   }
   const profileName = String(profile);
@@ -108,19 +108,19 @@ function getVelocityRange(profile = 'source', isPrimary = true) {
   return assertVelocityPairOrFail(ranges[key], `StutterConfig.velocityRanges.${profileName}.${key}`);
 }
 function getCrossModRules() {
-  if (typeof STUTTER_CROSSMOD_RULES === 'undefined') {
+  if (!STUTTER_CROSSMOD_RULES) {
     throw new Error('StutterConfigStore.getCrossModRules: STUTTER_CROSSMOD_RULES global is not defined');
   }
   return assertCrossModRulesOrFail(STUTTER_CROSSMOD_RULES);
 }
 
 function getPreset(name = 'default') {
-  if (typeof STUTTER_PRESETS === 'undefined') return null;
+  if (!STUTTER_PRESETS) return null;
   return (STUTTER_PRESETS && STUTTER_PRESETS[name]) ? STUTTER_PRESETS[name] : null;
 }
 
 function getDirectiveDefaults() {
-  if (typeof STUTTER_DIRECTIVE_DEFAULTS === 'undefined' || !STUTTER_DIRECTIVE_DEFAULTS || typeof STUTTER_DIRECTIVE_DEFAULTS !== 'object') {
+  if (!STUTTER_DIRECTIVE_DEFAULTS) {
     throw new Error('StutterConfigStore.getDirectiveDefaults: STUTTER_DIRECTIVE_DEFAULTS global is required');
   }
   const defaults = assertDirectiveDefaultsOrFail(STUTTER_DIRECTIVE_DEFAULTS);

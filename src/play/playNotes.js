@@ -264,7 +264,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   try {
-    if (typeof playNotesEmitPick !== 'function') {
+    if (!playNotesEmitPick || typeof playNotesEmitPick !== 'function') {
       throw new Error(`${unit}.playNotes: playNotesEmitPick helper is not available`);
     }
 

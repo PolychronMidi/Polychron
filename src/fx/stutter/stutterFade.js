@@ -1,6 +1,6 @@
 /** @this {any} */
 stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
-  if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
+  if (!StutterFailFast) {
     throw new Error('stutterFade: StutterFailFast helper is not available');
   }
   const { eventName } = StutterFailFast.requireEventInfra();

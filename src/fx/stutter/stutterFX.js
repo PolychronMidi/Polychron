@@ -1,9 +1,9 @@
 /** @this {any} */
 stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-  if (typeof StutterFailFast === 'undefined' || !StutterFailFast) {
+  if (!StutterFailFast) {
     throw new Error('stutterFX: StutterFailFast helper is not available');
   }
-  if (!FX_CC_DEFAULTS || typeof FX_CC_DEFAULTS !== 'object') {
+  if (!FX_CC_DEFAULTS) {
     throw new Error('stutterFX: FX_CC_DEFAULTS is required');
   }
   const { eventName } = StutterFailFast.requireEventInfra();

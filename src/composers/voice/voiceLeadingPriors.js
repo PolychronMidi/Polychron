@@ -28,7 +28,7 @@ voiceLeadingPriors = (function() {
       return opts.phase;
     }
 
-    if (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && ComposerFactory.sharedPhraseArcManager.getPhase) {
       const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;
@@ -67,7 +67,7 @@ voiceLeadingPriors = (function() {
   function resolveTonicPitchClass(opts = {}) {
     const tonic = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
       ? opts.tonic
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      : (HarmonicContext && HarmonicContext.getField)
         ? HarmonicContext.getField('key')
         : null;
 
@@ -109,7 +109,7 @@ voiceLeadingPriors = (function() {
 
     const qualityHint = (typeof opts.quality === 'string' && opts.quality.length > 0)
       ? opts.quality
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      : (HarmonicContext && HarmonicContext.getField)
         ? HarmonicContext.getField('quality')
         : 'major';
 
