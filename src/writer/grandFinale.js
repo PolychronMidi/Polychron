@@ -75,10 +75,26 @@ grandFinale = () => {
           throw new Error(`${type} event has invalid vals format at tick ${tickInt}: event=${JSON.stringify(_)}`);
         }
 
-        // Clamp velocity for Note_on events to a max (rounded)
+        if (type === 'note_on_c' || type === 'note_off_c') {
+          const ch = Number(_.vals[0]);
+          const pitch = Number(_.vals[1]);
+          if (!Number.isFinite(ch) || ch < 0 || ch > 15) {
+            throw new Error(`${type} event has invalid channel ${_.vals[0]} at tick ${tickInt}: event=${JSON.stringify(_)}`);
+          }
+          if (!Number.isFinite(pitch) || pitch < 0 || pitch > MIDI_MAX_VALUE) {
+            throw new Error(`${type} event has invalid pitch ${_.vals[1]} at tick ${tickInt}: event=${JSON.stringify(_)}`);
+          }
+          _.vals[0] = m.round(ch);
+          _.vals[1] = m.round(pitch);
+        }
+
+        // Validate velocity for Note_on events (rounded, strict MIDI range)
         if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
-          const vel = Number(_.vals[2]) || 0;
-          _.vals[2] = m.min(MIDI_MAX_VALUE, m.round(vel));
+          const vel = Number(_.vals[2]);
+          if (!Number.isFinite(vel) || vel < 0 || vel > MIDI_MAX_VALUE) {
+            throw new Error(`note_on_c event has invalid velocity ${_.vals[2]} at tick ${tickInt}: event=${JSON.stringify(_)}`);
+          }
+          _.vals[2] = m.round(vel);
         }
 
         composition += `1,${tickInt},${type},${_.vals.join(',')}\n`;
