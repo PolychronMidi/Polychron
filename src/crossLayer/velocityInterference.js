@@ -22,9 +22,12 @@ VelocityInterference = (() => {
    */
   function postVelocity(absTimeMs, layer, velocity, delta) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    V.assertNonEmptyString(layer, 'layer');
+    const velocityN = V.requireFinite(velocity, 'velocity');
+    const deltaN = V.requireFinite(delta, 'delta');
     AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
-      velocity: clamp(velocity, 0, 127),
-      delta
+      velocity: clamp(velocityN, 0, 127),
+      delta: deltaN
     });
   }
 
@@ -35,16 +38,22 @@ VelocityInterference = (() => {
    * @returns {number} velocity delta (positive = getting louder)
    */
   function measureDelta(layer, absTimeSec) {
+    V.assertNonEmptyString(layer, 'layer');
+    const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = CONTOUR_WINDOW_MS / 1000;
     const notes = AbsoluteTimeWindow.getNotes({
       layer,
-      since: absTimeSec - windowSec,
+      since: at - windowSec,
       windowSeconds: windowSec
     });
     if (notes.length < 2) return 0;
     const first = notes[0];
     const last = notes[notes.length - 1];
-    return (last.velocity || 0) - (first.velocity || 0);
+    V.assertObject(first, 'measureDelta.first');
+    V.assertObject(last, 'measureDelta.last');
+    const firstVelocity = V.requireFinite(first.velocity, 'measureDelta.first.velocity');
+    const lastVelocity = V.requireFinite(last.velocity, 'measureDelta.last.velocity');
+    return lastVelocity - firstVelocity;
   }
 
   /**
@@ -56,36 +65,39 @@ VelocityInterference = (() => {
    */
   function applyInterference(absTimeMs, activeLayer, baseVelocity) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    V.requireFinite(baseVelocity, 'baseVelocity');
+    V.assertNonEmptyString(activeLayer, 'activeLayer');
+    const baseVelocityN = V.requireFinite(baseVelocity, 'baseVelocity');
 
     const other = AbsoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
-    if (!other || !Number.isFinite(other.delta)) {
+    if (!other) {
       writeVizCC(activeLayer, 'neutral');
-      return { velocity: baseVelocity, mode: 'neutral' };
+      return { velocity: baseVelocityN, mode: 'neutral' };
     }
+    V.assertObject(other, 'applyInterference.other');
+    const otherDelta = V.requireFinite(other.delta, 'applyInterference.other.delta');
 
     // Get our own recent delta
     const absTimeSec = absTimeMs / 1000;
     const ourDelta = measureDelta(activeLayer, absTimeSec);
 
     // Same direction = reinforcement, opposite = separation
-    const sameDirection = (ourDelta >= 0 && other.delta >= 0) || (ourDelta < 0 && other.delta < 0);
+    const sameDirection = (ourDelta >= 0 && otherDelta >= 0) || (ourDelta < 0 && otherDelta < 0);
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength
-      const alignment = Math.min(Math.abs(ourDelta), Math.abs(other.delta));
+      const alignment = Math.min(Math.abs(ourDelta), Math.abs(otherDelta));
       const boost = clamp(alignment / 30, 0, 0.15); // max 15% boost
-      const reinforced = Math.round(clamp(baseVelocity * (1 + boost), 1, MIDI_MAX_VALUE));
+      const reinforced = Math.round(clamp(baseVelocityN * (1 + boost), 1, MIDI_MAX_VALUE));
       writeVizCC(activeLayer, 'reinforce');
       return { velocity: reinforced, mode: 'reinforce' };
     }
 
     // Opposing dynamics: reduce velocity to create spectral space
-    const opposition = Math.min(Math.abs(ourDelta), Math.abs(other.delta));
+    const opposition = Math.min(Math.abs(ourDelta), Math.abs(otherDelta));
     const reduction = clamp(opposition / 50, 0, 0.1); // max 10% reduction
-    const separated = Math.round(clamp(baseVelocity * (1 - reduction), 1, MIDI_MAX_VALUE));
+    const separated = Math.round(clamp(baseVelocityN * (1 - reduction), 1, MIDI_MAX_VALUE));
     writeVizCC(activeLayer, 'separate');
     return { velocity: separated, mode: 'separate' };
   }
@@ -96,11 +108,18 @@ VelocityInterference = (() => {
    * @param {'reinforce'|'separate'|'neutral'} mode
    */
   function writeVizCC(layer, mode) {
-    if (typeof p !== 'function' || typeof c === 'undefined') return;
-    if (!Number.isFinite(beatStart)) return;
+    V.assertNonEmptyString(layer, 'writeVizCC.layer');
+    V.assertInSet(mode, new Set(['reinforce', 'separate', 'neutral']), 'writeVizCC.mode');
+    if (typeof p !== 'function') {
+      throw new Error('VelocityInterference.writeVizCC: p must be a function');
+    }
+    if (typeof c === 'undefined' || !Array.isArray(c)) {
+      throw new Error('VelocityInterference.writeVizCC: c must be a note event array');
+    }
+    const startTick = V.requireFinite(beatStart, 'writeVizCC.beatStart');
     const ch = (layer === 'L1') ? cCH1 : cCH2;
     const val = mode === 'reinforce' ? VIZ_REINFORCE : mode === 'separate' ? VIZ_SEPARATE : VIZ_NEUTRAL;
-    p(c, { tick: beatStart, type: 'control_c', vals: [ch, VIZ_CC, val] });
+    p(c, { tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
   return { postVelocity, measureDelta, applyInterference };
