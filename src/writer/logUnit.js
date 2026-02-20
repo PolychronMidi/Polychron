@@ -18,11 +18,11 @@ logUnit = (type) => {
   let startTime = null;
   let endTime = null;
   let spPhrase = null;
-  const spMeasure = null;
-  const spBeat = null;
-  const spDiv = null;
-  const spSubdiv = null;
-  const spSubsubdiv = null;
+  let spMeasure = null;
+  let spBeat = null;
+  let spDiv = null;
+  let spSubdiv = null;
+  let spSubsubdiv = null;
   let composerDetails = '';
   let progressionSymbols = '';
   let actualMeter = null;
@@ -83,6 +83,7 @@ logUnit = (type) => {
     startTick = measureStart;
     endTick = measureStart + tpMeasure;
     startTime = measureStartTime;
+    spMeasure = tpMeasure / tpSec;
     endTime = measureStartTime + spMeasure;
     composerDetails = composerForLog ? `${composerForLog.constructor.name} ` : 'Unknown Composer ';
     if (composerForLog && composerForLog.scale && composerForLog.scale.name) {
@@ -109,6 +110,7 @@ logUnit = (type) => {
     startTick = beatStart;
     endTick = startTick + tpBeat;
     startTime = beatStartTime;
+    spBeat = tpBeat / tpSec;
     endTime = startTime + spBeat;
   } else if (type === 'division') {
     unit = divIndex + 1;
@@ -116,6 +118,7 @@ logUnit = (type) => {
     startTick = divStart;
     endTick = startTick + tpDiv;
     startTime = divStartTime;
+    spDiv = tpDiv / tpSec;
     endTime = startTime + spDiv;
   } else if (type === 'subdiv') {
     unit = subdivIndex + 1;
@@ -123,6 +126,7 @@ logUnit = (type) => {
     startTick = subdivStart;
     endTick = startTick + tpSubdiv;
     startTime = subdivStartTime;
+    spSubdiv = tpSubdiv / tpSec;
     endTime = startTime + spSubdiv;
   } else if (type === 'subsubdiv') {
     // Use defensively coerced indices/totals to avoid NaN/undefined emissions
@@ -133,6 +137,7 @@ logUnit = (type) => {
     startTick = subsubdivStart;
     endTick = startTick + tpSubsubdiv;
     startTime = subsubdivStartTime;
+    spSubsubdiv = tpSubsubdiv / tpSec;
     endTime = startTime + spSubsubdiv;
   }
   return (() => {

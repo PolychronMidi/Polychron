@@ -77,6 +77,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
     }
+    if (tick === undefined) throw new Error('stutterFade: for-loop produced no iterations');
     p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
   });
 };

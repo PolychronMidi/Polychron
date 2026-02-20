@@ -60,6 +60,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, mapToFxRange(channelToStutter, ccParam, currentValue)] });
     }
+    if (tick === undefined) throw new Error('stutterFX: for-loop produced no iterations');
     // restore to mid-point of configured range (falls back to 64)
     const defaultReset = (ch, cc) => {
       let def = null;
