@@ -329,6 +329,20 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         }
         Stutter.runDuePlans(beatStart);
         playNotes('beat', { playProb, stutterProb });
+
+        // Cross-layer interactions (L1)
+        const clAbsMs = beatStartTime * 1000;
+        StutterContagion.postStutter(clAbsMs, 'L1', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
+        StutterContagion.apply(clAbsMs, 'L1');
+        TemporalGravity.postDensity(clAbsMs, 'L1', TemporalGravity.measureDensity('L1', beatStartTime));
+        FeedbackOscillator.applyFeedback(clAbsMs, 'L1');
+        const clTension = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+          ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
+        const clCadence = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
+          ? CadenceAdvisor.shouldCadence() : { suggest: false };
+        CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
+        CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension);
+
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           setUnitTiming('div');
@@ -418,6 +432,19 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         }
         Stutter.runDuePlans(beatStart);
         playNotes('beat', { playProb, stutterProb });
+
+        // Cross-layer interactions (L2)
+        const clAbsMsL2 = beatStartTime * 1000;
+        StutterContagion.postStutter(clAbsMsL2, 'L2', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
+        StutterContagion.apply(clAbsMsL2, 'L2');
+        TemporalGravity.postDensity(clAbsMsL2, 'L2', TemporalGravity.measureDensity('L2', beatStartTime));
+        FeedbackOscillator.applyFeedback(clAbsMsL2, 'L2');
+        const clTensionL2 = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getField === 'function')
+          ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1) : 0;
+        const clCadenceL2 = (typeof CadenceAdvisor !== 'undefined' && CadenceAdvisor && typeof CadenceAdvisor.shouldCadence === 'function')
+          ? CadenceAdvisor.shouldCadence() : { suggest: false };
+        CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
+        CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2);
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {

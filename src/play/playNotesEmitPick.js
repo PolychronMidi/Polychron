@@ -70,6 +70,11 @@ playNotesEmitPick = function(opts = {}) {
       const atwLayer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
       const atwTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
       AbsoluteTimeWindow.recordNote(noteToEmit, texVel, atwLayer, atwTime, unit);
+
+      // Cross-layer interactions via AbsoluteTimeGrid
+      const absMs = atwTime * 1000;
+      ConvergenceDetector.postOnset(absMs, atwLayer, noteToEmit, texVel);
+      VelocityInterference.postVelocity(absMs, atwLayer, texVel, VelocityInterference.measureDelta(atwLayer, atwTime));
     }
 
     if (textureMode.mode === 'chordBurst' && isPrimary) {
