@@ -101,7 +101,6 @@ declare var beatStart: number;
 declare var beatStartTime: number;
 declare var currentDensity: number;
 declare var update: any;
-declare var V: any;
 declare var divStart: number;
 declare var divStartTime: number;
 declare var subdivStart: number;
@@ -342,6 +341,7 @@ declare var stutterPanCHs: any;
 declare var StutterRegistry: any;
 declare var StutterMetrics: any;
 declare var StutterConfigStore: any;
+declare var StutterPlanScheduler: any;
 
 declare var Stutter: any;
 declare var setBalanceAndFX: any;

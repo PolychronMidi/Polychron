@@ -3,7 +3,7 @@
  * LayerManager (LM): manage per-layer timing contexts and buffer switching.
  */
 
-V = Validator.create('LayerManager');
+const V = Validator.create('LayerManager');
 
 LM = layerManager ={
   layers: {},
