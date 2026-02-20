@@ -48,9 +48,6 @@ factoryProfiles = {
     if (!capabilityProfiles || typeof capabilityProfiles !== 'object') {
       throw new Error('factoryProfiles.validateCapabilityProfiles: capabilityProfiles must be an object');
     }
-    if (typeof assertComposerCapabilities !== 'function') {
-      throw new Error('factoryProfiles.validateCapabilityProfiles: assertComposerCapabilities() not available');
-    }
     const entries = Object.entries(capabilityProfiles);
     const normalized = {};
     for (const [type, profile] of entries) {
@@ -67,7 +64,7 @@ factoryProfiles = {
     if (typeof getConstructorOptionKeysByType !== 'function') {
       throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: getConstructorOptionKeysByType must be a function');
     }
-    if (typeof ComposerProfileValidation === 'undefined' || !ComposerProfileValidation || typeof ComposerProfileValidation.getAllowedKeysByTypeOrFail !== 'function') {
+    if (!ComposerProfileValidation || typeof ComposerProfileValidation.getAllowedKeysByTypeOrFail !== 'function') {
       throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: ComposerProfileValidation.getAllowedKeysByTypeOrFail() not available');
     }
 
@@ -103,20 +100,20 @@ factoryProfiles = {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       throw new Error('factoryProfiles.resolveRuntimeProfiles: config must be an object');
     }
-    if (typeof ComposerRuntimeProfileAdapter === 'undefined' || !ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail !== 'function') {
+    if (!ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail !== 'function') {
       throw new Error('factoryProfiles.resolveRuntimeProfiles: ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail() not available');
     }
     return ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail(config, 'ComposerFactory.resolveRuntimeProfiles');
   },
 
   applyRuntimeProfileConfig(composer, config = {}, runtimeProfilePrecedence = {}) {
-    if (!composer || typeof composer !== 'object') {
+    if (!composer) {
       throw new Error('factoryProfiles.applyRuntimeProfileConfig: composer must be an object');
     }
     const runtimeProfiles = this.resolveRuntimeProfiles(config);
     if (Object.keys(runtimeProfiles).length === 0) return composer;
 
-    if (typeof ComposerRuntimeProfileAdapter === 'undefined' || !ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail !== 'function' || typeof ComposerRuntimeProfileAdapter.applyToComposerOrFail !== 'function') {
+    if (!ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail !== 'function' || typeof ComposerRuntimeProfileAdapter.applyToComposerOrFail !== 'function') {
       throw new Error('factoryProfiles.applyRuntimeProfileConfig: ComposerRuntimeProfileAdapter is unavailable');
     }
 
@@ -127,7 +124,7 @@ factoryProfiles = {
   },
 
   applyCapabilityContract(composer, type, config = {}, capabilityProfiles = {}) {
-    if (!composer || typeof composer !== 'object') {
+    if (!composer) {
       throw new Error('factoryProfiles.applyCapabilityContract: composer must be an object');
     }
     const defaultProfile = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false };
@@ -138,9 +135,6 @@ factoryProfiles = {
     const fromConfig = (config && typeof config.capabilities === 'object' && config.capabilities !== null) ? config.capabilities : {};
     const merged = Object.assign({}, profile, fromComposer, fromConfig);
 
-    if (typeof assertComposerCapabilities !== 'function') {
-      throw new Error('factoryProfiles.applyCapabilityContract: assertComposerCapabilities() not available');
-    }
     const validated = assertComposerCapabilities(merged);
     if (typeof composer.setCapabilities === 'function') {
       composer.setCapabilities(validated);

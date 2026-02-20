@@ -9,7 +9,7 @@ factoryFamilies = {
         types: Object.keys(constructors)
       }
     };
-    const source = (typeof COMPOSER_FAMILIES !== 'undefined' && COMPOSER_FAMILIES && typeof COMPOSER_FAMILIES === 'object')
+    const source = (COMPOSER_FAMILIES && typeof COMPOSER_FAMILIES === 'object')
       ? COMPOSER_FAMILIES
       : fallback;
 
@@ -43,7 +43,7 @@ factoryFamilies = {
 
       const weight = Number(family.weight);
       // Apply conductor profile family weight multiplier if available
-      const profileMultiplier = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getFamilyWeights === 'function')
+      const profileMultiplier = (ConductorConfig && typeof ConductorConfig.getFamilyWeights === 'function')
         ? (Number(ConductorConfig.getFamilyWeights()[familyName]) || 1)
         : 1;
       normalized[familyName] = {
@@ -84,9 +84,9 @@ factoryFamilies = {
     if ((requestedFamily === undefined || requestedFamily === null) && context && typeof context.selectPhraseFamily === 'function') {
       const selected = context.selectPhraseFamily({
         availableFamilies: Object.keys(families),
-        sectionIndex: (typeof sectionIndex === 'number') ? sectionIndex : null,
-        phraseIndex: (typeof phraseIndex === 'number') ? phraseIndex : null,
-        measureIndex: (typeof measureIndex === 'number') ? measureIndex : null
+        sectionIndex: sectionIndex,
+        phraseIndex: phraseIndex,
+        measureIndex: measureIndex
       });
       if (selected !== undefined && selected !== null) {
         requestedFamily = selected;

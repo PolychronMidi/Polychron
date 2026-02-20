@@ -7,13 +7,13 @@ RhythmValues = (function() {
   }
 
   function swingOffset(beatIndex, amount) {
-    if (typeof beatIndex !== 'number' || typeof amount !== 'number') throw new Error('RhythmValues.swingOffset: numeric args required');
+    if (typeof amount !== 'number') throw new Error('RhythmValues.swingOffset: numeric args required');
     // amount 0..1, returns a signed offset in fractions of a beat
     return ((beatIndex % 2) === 1) ? amount * 0.5 : -amount * 0.5;
   }
 
   function accentWeight(beatIndex, pattern) {
-    if (typeof beatIndex !== 'number' || !Array.isArray(pattern)) throw new Error('RhythmValues.accentWeight: bad args');
+    if (!Array.isArray(pattern)) throw new Error('RhythmValues.accentWeight: bad args');
     return pattern[beatIndex % pattern.length] ? 1 : 0;
   }
 

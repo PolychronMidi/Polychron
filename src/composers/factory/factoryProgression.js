@@ -3,7 +3,7 @@ factoryProgression = {
     if (typeof key !== 'string' || key.length === 0) {
       throw new Error(`${label}: key must be a non-empty string`);
     }
-    if (typeof t === 'undefined' || !t || !t.Note || typeof t.Note.pitchClass !== 'function') {
+    if (!t || !t.Note || typeof t.Note.pitchClass !== 'function') {
       throw new Error(`${label}: tonal Note.pitchClass() not available`);
     }
     const pc = t.Note.pitchClass(key);
@@ -46,7 +46,7 @@ factoryProgression = {
     const pcs = [];
     for (const candidate of allNotes) {
       if (typeof candidate !== 'string' || candidate.length === 0) continue;
-      const pc = (typeof t !== 'undefined' && t && t.Note && typeof t.Note.pitchClass === 'function')
+      const pc = (t && t.Note && typeof t.Note.pitchClass === 'function')
         ? t.Note.pitchClass(candidate)
         : null;
       if (typeof pc === 'string' && pc.length > 0 && this.hasDiatonicKeyData(pc, quality) && !pcs.includes(pc)) {

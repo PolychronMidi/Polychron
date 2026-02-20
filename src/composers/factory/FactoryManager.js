@@ -121,7 +121,7 @@ FactoryManager = class FactoryManager {
     if (typeof this.activeFamily === 'string' && this.activeFamily.length > 0) {
       return this.activeFamily;
     }
-    if (typeof LM === 'undefined' || !LM || typeof LM.getPhraseFamily !== 'function') {
+    if (!LM || typeof LM.getPhraseFamily !== 'function') {
       throw new Error('ComposerFactory.getActiveFamily: LayerManager.getPhraseFamily is required when no active family is cached');
     }
     const family = LM.getPhraseFamily();

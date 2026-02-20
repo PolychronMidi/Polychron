@@ -59,7 +59,7 @@ LM = layerManager ={
 
     // Attach buffer and timing props directly to the layer object
     LM.layers[name] = Object.assign({ buffer: buf }, layer);
-    const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
+    const globalComposer = (composer && typeof composer === 'object')
       ? composer
       : null;
     const registeredComposer = (LM.layers[name].measureComposer && typeof LM.layers[name].measureComposer === 'object')
@@ -95,7 +95,7 @@ LM = layerManager ={
     c = layer.buffer;
     LM.activeLayer = name;
     loadLayerToGlobals(layer);
-    const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
+    const globalComposer = (composer && typeof composer === 'object')
       ? composer
       : null;
     const layerComposer = (LM.layerComposers[name] && typeof LM.layerComposers[name] === 'object')
@@ -107,7 +107,7 @@ LM = layerManager ={
       composer = layerComposer;
     }
     // Set active layer context in PhaseLockedRhythmGenerator for layer-aware phase tracking
-    if (typeof PhaseLockedRhythmGenerator !== 'undefined') {
+    if (PhaseLockedRhythmGenerator) {
       PhaseLockedRhythmGenerator.setActiveLayer(name);
     }
     if (isPoly) {
@@ -210,7 +210,7 @@ LM = layerManager ={
     V.requireDefined(layer, `layer "${name}"`);
     const mappedComposer = LM.layerComposers[name];
     const layerComposer = layer.measureComposer;
-    const globalComposer = (typeof composer !== 'undefined' && composer && typeof composer === 'object')
+    const globalComposer = (composer && typeof composer === 'object')
       ? composer
       : null;
     const resolvedComposer = (mappedComposer && typeof mappedComposer === 'object')
