@@ -6,7 +6,7 @@
 const V = Validator.create('setBinaural');
 
 /** Millisecond tolerance for treating two layer shifts as the same event */
-const BINAURAL_SYNC_TOLERANCE_MS = 200;
+const BINAURAL_SYNC_TOLERANCE_MS = 10;
 
 /** Next absolute ms at which a timed binaural shift should fire */
 let nextBinauralShiftMs = 0;
@@ -35,7 +35,7 @@ setBinaural = () => {
 
   if (shouldShift) {
     beatCount = 0;
-    nextBinauralShiftMs = absTimeMs + rf(.5, 2) * 1000;
+    nextBinauralShiftMs = absTimeMs + rf(.5, 3) * 1000;
 
     // Cross-layer ms-precision sync via AbsoluteTimeGrid
     const crossLayerShift = AbsoluteTimeGrid.findClosest(

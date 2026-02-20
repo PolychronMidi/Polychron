@@ -58,6 +58,12 @@ playNotesEmitPick = function(opts = {}) {
     return (measureStartTimeValue + (tick - measureStartValue) / tpSecValue) * 1000;
   };
 
+  /** @param {number} tick @param {string} label */
+  const ensureNonNegativeTick = (tick, label) => {
+    const tickValue = V.requireFinite(tick, label);
+    return tickValue < 0 ? 0 : tickValue;
+  };
+
   const resolvedStutterProbValue = V.requireFinite(resolvedStutterProb, 'resolvedStutterProb');
   const shouldStutter = resolvedStutterProbValue > rf();
   let selectedShift = 0;
@@ -90,6 +96,7 @@ playNotesEmitPick = function(opts = {}) {
     const preSyncMs = tickToAbsMs(onTick);
     onTick = RhythmicPhaseLock.applyPhaseLock(preSyncMs, activeLayerName, onTick).tick;
     onTick = TemporalGravity.applyGravity(preSyncMs, activeLayerName, onTick);
+    onTick = ensureNonNegativeTick(onTick, `${unit}.source.onTick`);
     const absMsAtOnTick = tickToAbsMs(onTick);
     const baseOnVel = (isPrimary ? velocity * rf(0.95, 1.15) : binVel * rf(0.75, 1.03)) * pickVelScale;
     const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pickIndex * 101 + sourceIndex;
@@ -116,7 +123,7 @@ playNotesEmitPick = function(opts = {}) {
     const texSustain = sustain * textureMode.sustainScale * articulationMod.sustainScale;
 
     const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
-    const sourceOffTick = on + texSustain * (isPrimary ? 1 : rv(rf(0.92, 1.03)));
+    const sourceOffTick = ensureNonNegativeTick(on + texSustain * (isPrimary ? 1 : rv(rf(0.92, 1.03))), `${unit}.source.offTick`);
     const srcOffEvt = { tick: sourceOffTick, vals: [sourceCH, noteToEmit] };
     microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation);
     scheduled += 2;
@@ -295,6 +302,7 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionPreSyncMs = tickToAbsMs(onTick);
     onTick = RhythmicPhaseLock.applyPhaseLock(reflectionPreSyncMs, activeLayerName, onTick).tick;
     onTick = TemporalGravity.applyGravity(reflectionPreSyncMs, activeLayerName, onTick);
+    onTick = ensureNonNegativeTick(onTick, `${unit}.reflection.onTick`);
     const baseOnVel = (isPrimary ? velocity * rf(0.7, 1.2) : binVel * rf(0.55, 1.1)) * pickVelScale;
     const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pickIndex * 131 + reflectionIndex;
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
@@ -308,7 +316,7 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionEmitNote = RegisterCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTick).midi;
 
     const reflOnEvt = { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] };
-    const reflectionOffTick = on + sustain * (isPrimary ? rf(0.7, 1.2) : rv(rf(0.65, 1.3)));
+    const reflectionOffTick = ensureNonNegativeTick(on + sustain * (isPrimary ? rf(0.7, 1.2) : rv(rf(0.65, 1.3))), `${unit}.reflection.offTick`);
     const reflOffEvt = { tick: reflectionOffTick, vals: [reflectionCH, reflectionEmitNote] };
     microUnitAttenuator.record(reflOnEvt, reflOffEvt, crossModulation);
     scheduled += 2;
@@ -355,6 +363,7 @@ playNotesEmitPick = function(opts = {}) {
       const bassPreSyncMs = tickToAbsMs(onTick);
       onTick = RhythmicPhaseLock.applyPhaseLock(bassPreSyncMs, activeLayerName, onTick).tick;
       onTick = TemporalGravity.applyGravity(bassPreSyncMs, activeLayerName, onTick);
+      onTick = ensureNonNegativeTick(onTick, `${unit}.bass.onTick`);
       const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
       const bassVoiceId = voiceIdSeed + bassCH * 23 + pickIndex * 151 + bassIndex;
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
@@ -370,7 +379,7 @@ playNotesEmitPick = function(opts = {}) {
       const bassSustainScale = textureMode.mode === 'chordBurst' ? textureMode.sustainScale * rf(1.2, 1.6)
         : textureMode.mode === 'flurry' ? rf(1.3, 1.8)
         : 1;
-      const bassOffTick = on + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(0.8, 3.5)));
+      const bassOffTick = ensureNonNegativeTick(on + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(0.8, 3.5))), `${unit}.bass.offTick`);
       const bassOffEvt = { tick: bassOffTick, vals: [bassCH, bassNote] };
       microUnitAttenuator.record(bassOnEvt, bassOffEvt, crossModulation);
       scheduled += 2;
