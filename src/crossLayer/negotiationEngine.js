@@ -16,19 +16,11 @@ NegotiationEngine = (() => {
     V.requireFinite(context.playProb, 'context.playProb');
     V.requireFinite(context.stutterProb, 'context.stutterProb');
 
-    const trustStutter = (typeof AdaptiveTrustScores !== 'undefined' && AdaptiveTrustScores && typeof AdaptiveTrustScores.getWeight === 'function')
-      ? AdaptiveTrustScores.getWeight('stutterContagion')
-      : 1;
-    const trustCadence = (typeof AdaptiveTrustScores !== 'undefined' && AdaptiveTrustScores && typeof AdaptiveTrustScores.getWeight === 'function')
-      ? AdaptiveTrustScores.getWeight('cadenceAlignment')
-      : 1;
-    const trustPhase = (typeof AdaptiveTrustScores !== 'undefined' && AdaptiveTrustScores && typeof AdaptiveTrustScores.getWeight === 'function')
-      ? AdaptiveTrustScores.getWeight('phaseLock')
-      : 1;
+    const trustStutter = AdaptiveTrustScores.getWeight('stutterContagion');
+    const trustCadence = AdaptiveTrustScores.getWeight('cadenceAlignment');
+    const trustPhase = AdaptiveTrustScores.getWeight('phaseLock');
 
-    const intent = context.intent || (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves && typeof SectionIntentCurves.getLastIntent === 'function'
-      ? SectionIntentCurves.getLastIntent()
-      : { densityTarget: 0.5, dissonanceTarget: 0.5, interactionTarget: 0.5, entropyTarget: 0.5 });
+    const intent = context.intent || SectionIntentCurves.getLastIntent();
 
     const phaseConfidence = clamp(Number(context.phaseConfidence) || 0, 0, 1);
     const entropyScale = Number.isFinite(context.entropyScale) ? Number(context.entropyScale) : 1;
@@ -47,20 +39,18 @@ NegotiationEngine = (() => {
 
     const allowCadence = Boolean(context.cadenceSuggested) && phaseConfidence >= 0.45 && trustCadence >= 0.7;
 
-    if (typeof ExplainabilityBus !== 'undefined' && ExplainabilityBus && typeof ExplainabilityBus.emit === 'function') {
-      ExplainabilityBus.emit('negotiation', layer, {
-        playProbIn: context.playProb,
-        stutterProbIn: context.stutterProb,
-        playProbOut: playProb,
-        stutterProbOut: stutterProb,
-        phaseConfidence,
-        trustStutter,
-        trustCadence,
-        trustPhase,
-        allowCadence,
-        conflict
-      });
-    }
+    ExplainabilityBus.emit('negotiation', layer, {
+      playProbIn: context.playProb,
+      stutterProbIn: context.stutterProb,
+      playProbOut: playProb,
+      stutterProbOut: stutterProb,
+      phaseConfidence,
+      trustStutter,
+      trustCadence,
+      trustPhase,
+      allowCadence,
+      conflict
+    });
 
     return { playProb, stutterProb, allowCadence, conflict, phaseConfidence };
   }

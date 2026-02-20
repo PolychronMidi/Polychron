@@ -61,17 +61,11 @@ ArticulationComplement = (() => {
     const selfLegatoBias = selfProfile.isLegato ? -0.15 : (selfProfile.isStaccato ? 0.1 : 0);
 
     // Get intent to modulate contrast strength
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { interactionTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
     const interactionTarget = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
 
     // Check role swap state
-    const swapped = (typeof DynamicRoleSwap !== 'undefined' && DynamicRoleSwap &&
-      typeof DynamicRoleSwap.getIsSwapped === 'function')
-      ? DynamicRoleSwap.getIsSwapped()
-      : false;
+    const swapped = DynamicRoleSwap.getIsSwapped() ?? false;
 
     // Base contrast: if other layer is legato, make this one more staccato
     let sustainScale = 1.0;

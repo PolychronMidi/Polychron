@@ -1,3 +1,4 @@
+const _scV = Validator.create('ScaleComposer');
 /**
  * Composes notes from a specific scale.
  * @extends MeasureComposer
@@ -9,6 +10,8 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    */
   constructor(scaleName,root) {
     super();
+    _scV.assertNonEmptyString(scaleName, 'scaleName');
+    _scV.assertNonEmptyString(root, 'root');
     this.root=root;
     // enable voice-leading by default for selection delegation
     this.enableVoiceLeading(new VoiceLeadingScore());

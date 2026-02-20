@@ -29,28 +29,16 @@ CrossLayerSilhouette = (() => {
     // Gather all available signals
 
     // Density from EntropyRegulator
-    const entropyReg = (typeof EntropyRegulator !== 'undefined' && EntropyRegulator &&
-      typeof EntropyRegulator.getRegulation === 'function')
-      ? EntropyRegulator.getRegulation()
-      : { currentEntropy: 0.5, targetEntropy: 0.5, error: 0 };
+    const entropyReg = EntropyRegulator.getRegulation();
 
     // Register balance from SpectralComplementarity (consuming spectral ATG data)
-    const spectralComplement = (typeof SpectralComplementarity !== 'undefined' && SpectralComplementarity &&
-      typeof SpectralComplementarity.analyzeComplement === 'function')
-      ? SpectralComplementarity.analyzeComplement('L1')
-      : { gapWeight: 0 };
+    const spectralComplement = SpectralComplementarity.analyzeComplement('L1');
 
     // Heat from InteractionHeatMap
-    const heat = (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap &&
-      typeof InteractionHeatMap.getDensity === 'function')
-      ? InteractionHeatMap.getDensity()
-      : 0.5;
+    const heat = InteractionHeatMap.getDensity();
 
     // Convergence intensity boosts dynamic reading
-    const convergenceRecent = (typeof ConvergenceDetector !== 'undefined' && ConvergenceDetector &&
-      typeof ConvergenceDetector.wasRecent === 'function')
-      ? (ConvergenceDetector.wasRecent(absTimeMs, 'L1', 500) || ConvergenceDetector.wasRecent(absTimeMs, 'L2', 500))
-      : false;
+    const convergenceRecent = ConvergenceDetector.wasRecent(absTimeMs, 'L1', 500) || ConvergenceDetector.wasRecent(absTimeMs, 'L2', 500);
 
     // Compute raw metrics
     const rawDensity = clamp(heat, 0, 1);
@@ -82,10 +70,7 @@ CrossLayerSilhouette = (() => {
    */
   function getCorrections() {
     // Ideal: mid-range balanced output unless intent says otherwise
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { densityTarget: 0.5, dissonanceTarget: 0.5, entropyTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent();
 
     const targetDensity = Number.isFinite(intent.densityTarget) ? intent.densityTarget : 0.5;
     const targetEntropy = Number.isFinite(intent.entropyTarget) ? intent.entropyTarget : 0.5;

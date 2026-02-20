@@ -26,12 +26,8 @@ ExplainabilityBus = (() => {
     entries.push(entry);
     if (entries.length > MAX_ENTRIES) entries.shift();
 
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      EventBus.emit('CROSS_LAYER_EXPLAIN', entry);
-    }
-    if (typeof AbsoluteTimeGrid !== 'undefined' && AbsoluteTimeGrid && typeof AbsoluteTimeGrid.post === 'function') {
-      AbsoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
-    }
+    EventBus.emit('CROSS_LAYER_EXPLAIN', entry);
+    AbsoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
 
     return entry;
   }

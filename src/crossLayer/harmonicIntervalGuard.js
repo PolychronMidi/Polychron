@@ -64,17 +64,11 @@ HarmonicIntervalGuard = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
     // Get dissonance target from intent
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { dissonanceTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent();
     const dissonanceTarget = Number.isFinite(intent.dissonanceTarget) ? intent.dissonanceTarget : 0.5;
 
     // Get pitch bias from FeedbackOscillator (consuming dead-end signal)
-    const feedbackBias = (typeof FeedbackOscillator !== 'undefined' && FeedbackOscillator &&
-      typeof FeedbackOscillator.applyFeedback === 'function')
-      ? FeedbackOscillator.applyFeedback(absTimeMs, activeLayer)
-      : null;
+    const feedbackBias = FeedbackOscillator.applyFeedback(absTimeMs, activeLayer) ?? null;
     const pitchBias = (feedbackBias && Number.isFinite(feedbackBias.pitchBias) && feedbackBias.pitchBias >= 0)
       ? feedbackBias.pitchBias
       : -1;
@@ -82,16 +76,13 @@ HarmonicIntervalGuard = (() => {
     // Find other layer's recent notes from ATW
     const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
     let otherRecentMidi = -1;
-    if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow &&
-        typeof AbsoluteTimeWindow.getNotes === 'function') {
-      const notes = AbsoluteTimeWindow.getNotes({
-        layer: otherLayer,
-        since: (absTimeMs / 1000) - 1,
-        windowSeconds: 1
-      });
-      if (notes.length > 0) {
-        otherRecentMidi = notes[notes.length - 1].midi || notes[notes.length - 1].note || -1;
-      }
+    const notes = AbsoluteTimeWindow.getNotes({
+      layer: otherLayer,
+      since: (absTimeMs / 1000) - 1,
+      windowSeconds: 1
+    });
+    if (notes.length > 0) {
+      otherRecentMidi = notes[notes.length - 1].midi || notes[notes.length - 1].note || -1;
     }
 
     if (otherRecentMidi < 0) return { midi, nudged: false, interval: -1 };

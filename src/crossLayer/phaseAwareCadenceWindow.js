@@ -23,9 +23,7 @@ PhaseAwareCadenceWindow = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     const row = ensureLayer(layer);
 
-    const phase = (typeof RhythmicPhaseLock !== 'undefined' && RhythmicPhaseLock && typeof RhythmicPhaseLock.measurePhase === 'function')
-      ? RhythmicPhaseLock.measurePhase(absTimeMs, layer)
-      : null;
+    const phase = RhythmicPhaseLock.measurePhase(absTimeMs, layer) ?? null;
 
     const snapshot = phase
       ? { timeMs: absTimeMs, phaseDiff: clamp(phase.phaseDiff, 0, 1), mode: phase.mode }
@@ -78,14 +76,12 @@ PhaseAwareCadenceWindow = (() => {
     };
     const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= 0.3;
 
-    if (typeof ExplainabilityBus !== 'undefined' && ExplainabilityBus && typeof ExplainabilityBus.emit === 'function') {
-      ExplainabilityBus.emit('phase-cadence-window', layer, {
-        cadenceSuggested: Boolean(cadenceSuggested),
-        confidence: snap.confidence,
-        phaseDiff: snap.phaseDiff,
-        allowed
-      }, absTimeMs);
-    }
+    ExplainabilityBus.emit('phase-cadence-window', layer, {
+      cadenceSuggested: Boolean(cadenceSuggested),
+      confidence: snap.confidence,
+      phaseDiff: snap.phaseDiff,
+      allowed
+    }, absTimeMs);
 
     return allowed;
   }

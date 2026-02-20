@@ -3,147 +3,8 @@ require('../index');
 
 main = async function main() { console.log('Starting main.js ...');
 
-if (typeof Validator === 'undefined' || !Validator || typeof Validator.create !== 'function') {
-  throw new Error('main.bootstrap: Validator.create is not available');
-}
-const V = Validator.create('main');
-
-/** @param {string} label @param {unknown} value */
-function requireFiniteNumber(label, value) {
-  return V.requireFinite(value, label);
-}
-
-/** @param {string} label @param {unknown} value */
-function requireUnitInterval(label, value) {
-  const n = requireFiniteNumber(label, value);
-  if (n < 0 || n > 1) {
-    throw new Error(`main: ${label} must be within [0, 1], received ${n}`);
-  }
-  return n;
-}
-
-/** @param {string} label @param {unknown} value */
-function requireNonEmptyString(label, value) {
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(`main: ${label} must be a non-empty string`);
-  }
-  return value;
-}
-
-/**
- * @param {number} measureIndexLocal
- * @param {number} beatIndexLocal
- * @returns {{ playProb: number, stutterProb: number }}
- */
-function getConductorProbabilities(measureIndexLocal, beatIndexLocal) {
-  const ctx = GlobalConductor.update(measureIndexLocal, beatIndexLocal);
-  if (!ctx || typeof ctx !== 'object') {
-    throw new Error('main: GlobalConductor.update must return an object context');
-  }
-  const playProbValue = requireUnitInterval('GlobalConductor.update.playProb', ctx.playProb);
-  const stutterProbValue = requireUnitInterval('GlobalConductor.update.stutterProb', ctx.stutterProb);
-  return { playProb: playProbValue, stutterProb: stutterProbValue };
-}
-
-if (typeof MAIN_LOOP_CONTROLS === 'undefined' || !MAIN_LOOP_CONTROLS || typeof MAIN_LOOP_CONTROLS !== 'object') {
-  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS must be a defined object');
-}
-const mainLoopControls = MAIN_LOOP_CONTROLS;
-
-if (!mainLoopControls.phraseFamilyBias || typeof mainLoopControls.phraseFamilyBias !== 'object') {
-  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.phraseFamilyBias must be an object');
-}
-const phaseFamilyBias = mainLoopControls.phraseFamilyBias;
-
-if (!phaseFamilyBias.phaseAffinity || typeof phaseFamilyBias.phaseAffinity !== 'object') {
-  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity must be an object');
-}
-const phaseAffinity = phaseFamilyBias.phaseAffinity;
-const phaseBiasLockProbability = requireUnitInterval('MAIN_LOOP_CONTROLS.phraseFamilyBias.lockProbability', phaseFamilyBias.lockProbability);
-
-if (!mainLoopControls.fxIntensityNormalization || typeof mainLoopControls.fxIntensityNormalization !== 'object') {
-  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.fxIntensityNormalization must be an object');
-}
-const fxIntensityNormalization = mainLoopControls.fxIntensityNormalization;
-const fxStereoPanDenominator = requireFiniteNumber('MAIN_LOOP_CONTROLS.fxIntensityNormalization.stereoPanDenominator', fxIntensityNormalization.stereoPanDenominator);
-if (fxStereoPanDenominator <= 0) {
-  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.fxIntensityNormalization.stereoPanDenominator must be > 0');
-}
-const fxVelocityShiftDenominator = requireFiniteNumber('MAIN_LOOP_CONTROLS.fxIntensityNormalization.velocityShiftDenominator', fxIntensityNormalization.velocityShiftDenominator);
-if (fxVelocityShiftDenominator <= 0) {
-  throw new Error('main.bootstrap: MAIN_LOOP_CONTROLS.fxIntensityNormalization.velocityShiftDenominator must be > 0');
-}
-const stutterPanJitterChance = requireUnitInterval('MAIN_LOOP_CONTROLS.stutterPanJitterChance', mainLoopControls.stutterPanJitterChance);
-
-function assertMainBootstrapGlobals() {
-  const events = V.getEventsOrThrow();
-
-  const requiredEvents = [
-    'SECTION_BOUNDARY',
-    'JOURNEY_MOVE',
-    'TEXTURE_CONTRAST',
-    'BEAT_FX_APPLIED',
-    'STUTTER_APPLIED',
-    'CONDUCTOR_REGULATION',
-    'BEAT_BINAURAL_APPLIED',
-    'HARMONIC_CHANGE',
-    'NOTES_EMITTED',
-    'MOTIF_CHAIN_APPLIED'
-  ];
-  requiredEvents.forEach((name) => {
-    requireNonEmptyString(`EventCatalog.names.${name}`, events[name]);
-  });
-
-  const requiredModules = [
-    ['EventBus', (typeof EventBus !== 'undefined') ? EventBus : null, 'emit'],
-    ['LayerManager', (typeof LM !== 'undefined') ? LM : null, 'register'],
-    ['ComposerFactory', (typeof ComposerFactory !== 'undefined') ? ComposerFactory : null, 'getPhraseArcManager'],
-    ['ConductorConfig', (typeof ConductorConfig !== 'undefined') ? ConductorConfig : null, 'applyPhaseProfile'],
-    ['Stutter', (typeof Stutter !== 'undefined') ? Stutter : null, 'prepareBeat'],
-    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'initialize'],
-    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'getField'],
-    ['GlobalConductor', (typeof GlobalConductor !== 'undefined') ? GlobalConductor : null, 'update'],
-    ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'planJourney'],
-    ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'applyToContext'],
-    ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'applyL2ToContext'],
-    ['SectionLengthAdvisor', (typeof SectionLengthAdvisor !== 'undefined') ? SectionLengthAdvisor : null, 'advisePhraseCount'],
-    ['PivotChordBridge', (typeof PivotChordBridge !== 'undefined') ? PivotChordBridge : null, 'prepareBridge'],
-    ['PhaseLockedRhythmGenerator', (typeof PhaseLockedRhythmGenerator !== 'undefined') ? PhaseLockedRhythmGenerator : null, 'initializePolyrhythmCoupling'],
-    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getDensity'],
-    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getSystemHeat'],
-    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getTrend'],
-    ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'flushDeferredOrphans'],
-    ['RhythmicPhaseLock', (typeof RhythmicPhaseLock !== 'undefined') ? RhythmicPhaseLock : null, 'getMode'],
-    ['CadenceAdvisor', (typeof CadenceAdvisor !== 'undefined') ? CadenceAdvisor : null, 'shouldCadence'],
-    ['TexturalMemoryAdvisor', (typeof TexturalMemoryAdvisor !== 'undefined') ? TexturalMemoryAdvisor : null, 'recordUsage'],
-    ['ConvergenceHarmonicTrigger', (typeof ConvergenceHarmonicTrigger !== 'undefined') ? ConvergenceHarmonicTrigger : null, 'onConvergence'],
-    ['StructuralFormTracker', (typeof StructuralFormTracker !== 'undefined') ? StructuralFormTracker : null, 'recordSection']
-  ];
-  requiredModules.forEach(([name, obj, method]) => {
-    if (!obj || typeof obj[method] !== 'function') {
-      throw new Error(`main.bootstrap: ${name}.${method} is not available`);
-    }
-  });
-
-  const requiredInitializers = [
-    ['FXFeedbackListener', (typeof FXFeedbackListener !== 'undefined') ? FXFeedbackListener : null],
-    ['StutterFeedbackListener', (typeof StutterFeedbackListener !== 'undefined') ? StutterFeedbackListener : null],
-    ['JourneyRhythmCoupler', (typeof JourneyRhythmCoupler !== 'undefined') ? JourneyRhythmCoupler : null],
-    ['ConductorRegulationListener', (typeof ConductorRegulationListener !== 'undefined') ? ConductorRegulationListener : null],
-    ['DrumTextureCoupler', (typeof DrumTextureCoupler !== 'undefined') ? DrumTextureCoupler : null],
-    ['EmissionFeedbackListener', (typeof EmissionFeedbackListener !== 'undefined') ? EmissionFeedbackListener : null],
-    ['HarmonicRhythmTracker', (typeof HarmonicRhythmTracker !== 'undefined') ? HarmonicRhythmTracker : null],
-    ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null],
-    ['CadenceAdvisor', (typeof CadenceAdvisor !== 'undefined') ? CadenceAdvisor : null]
-  ];
-  requiredInitializers.forEach(([name, obj]) => {
-    if (!obj || typeof obj.initialize !== 'function') {
-      throw new Error(`main.bootstrap: ${name}.initialize is not available`);
-    }
-  });
-}
-
-assertMainBootstrapGlobals();
+const boot = MainBootstrap.parseControls();
+MainBootstrap.assertBootstrapGlobals();
 const EVENTS = EventCatalog.names;
 
 const { layer: L1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
@@ -167,13 +28,13 @@ const composerCtx = {
    */
   selectPhraseFamily({ availableFamilies }) {
     if (!Array.isArray(availableFamilies) || availableFamilies.length === 0) return null;
-    const phase = requireNonEmptyString('ConductorState.sectionPhase', ConductorState.getField('sectionPhase'));
+    const phase = MainBootstrap.requireNonEmptyString('ConductorState.sectionPhase', ConductorState.getField('sectionPhase'));
 
     // Phase-based family affinity — centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
-    const preferred = phaseAffinity[phase];
+    const preferred = boot.phaseAffinity[phase];
     // Only bias if the preferred family exists; otherwise fall through to weighted random
     if (preferred && availableFamilies.includes(preferred)) {
-      if (rf() < phaseBiasLockProbability) return preferred;
+      if (rf() < boot.phaseBiasLockProbability) return preferred;
     }
     return null;
   }
@@ -206,7 +67,7 @@ const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
   LM.setComposerFor(layerName, nextComposer);
 
   // Record composer family for TexturalMemoryAdvisor variety tracking
-  TexturalMemoryAdvisor.recordUsage(phraseFamily, requireFiniteNumber('sectionIndex', sectionIndex));
+  TexturalMemoryAdvisor.recordUsage(phraseFamily, MainBootstrap.requireFiniteNumber('sectionIndex', sectionIndex));
 
   return nextComposer;
 };
@@ -223,7 +84,7 @@ CadenceAdvisor.initialize();
 CrossLayerLifecycleManager.resetAll();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
-V.requireFinite(totalSections, 'totalSections');
+MainBootstrap.requireFiniteNumber('totalSections', totalSections);
 if (totalSections <= 0) {
   throw new Error('main: totalSections must be > 0');
 }
@@ -234,14 +95,14 @@ HarmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'ran
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   CrossLayerLifecycleManager.resetSection();
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
-  V.requireFinite(phrasesPerSection, 'phrasesPerSection');
+  MainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
   if (phrasesPerSection <= 0) {
     throw new Error('main: phrasesPerSection must be > 0');
   }
 
   // Let SectionLengthAdvisor adjust phrase count based on energy trajectory
   phrasesPerSection = SectionLengthAdvisor.advisePhraseCount(phrasesPerSection);
-  V.requireFinite(phrasesPerSection, 'SectionLengthAdvisor.advisePhraseCount result');
+  MainBootstrap.requireFiniteNumber('SectionLengthAdvisor.advisePhraseCount result', phrasesPerSection);
   if (phrasesPerSection <= 0) {
     throw new Error('main: SectionLengthAdvisor.advisePhraseCount must return a value > 0');
   }
@@ -300,211 +161,17 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       ConductorConfig.tickCrossfade();
       ConductorConfig.regulationTick();
 
-      // main.js - using GlobalConductor for dynamic probabilities
-      const conductorCtx = getConductorProbabilities(measureIndex, -1); // Update measure-scope context
-
-      let playProb = conductorCtx.playProb;
-      let stutterProb = conductorCtx.stutterProb;
+      MainBootstrap.getConductorProbabilities(measureIndex, -1);
+      let playProb, stutterProb;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        // Refine context per beat for maximum dynamicism
-        const beatCtx = getConductorProbabilities(measureIndex, beatIndex);
+        const beatCtx = MainBootstrap.getConductorProbabilities(measureIndex, beatIndex);
         playProb = beatCtx.playProb;
         stutterProb = beatCtx.stutterProb;
 
-        beatCount++;
-        setUnitTiming('beat');
-        setOtherInstruments();
-        setBinaural();
-        EventBus.emit(EVENTS.BEAT_BINAURAL_APPLIED, {
-          beatIndex,
-          sectionIndex,
-          phraseIndex,
-          measureIndex,
-          layer: 'L1',
-          freqOffset: requireFiniteNumber('binauralFreqOffset', binauralFreqOffset),
-          flipBin: Boolean(flipBin)
-        });
-        setBalanceAndFX();
-        // Apply Stutter default directive for this beat (coherence key, etc.)
-        Stutter.prepareBeat(beatStart);
-        // Capture FX intensity from balance and variation globals (normalized 0-1)
-        const fxStereoPan = m.abs(requireFiniteNumber('balOffset', balOffset)) / fxStereoPanDenominator;
-        const fxVelocityShift = m.abs(requireFiniteNumber('refVar', refVar) + requireFiniteNumber('bassVar', bassVar)) / fxVelocityShiftDenominator;
-        EventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L1', stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
-        playDrums();
-        stutterFX(flipBin ? flipBinT3 : flipBinF3);
-        stutterFade(flipBin ? flipBinT3 : flipBinF3);
-        rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        // Run any explicit Stutter plans scheduled for this beat
-        Stutter.runDuePlans(beatStart);
-        const clAbsMs = beatStartTime * 1000;
-        const sectionProgress = (sectionIndex + phraseIndex / phrasesPerSection) / totalSections;
-        const sectionProgressBounded = requireUnitInterval('sectionProgress', sectionProgress);
-        const clIntent = SectionIntentCurves.getIntent(sectionProgressBounded, sectionIndex, phraseIndex);
-        EntropyRegulator.setTarget(clIntent.entropyTarget);
-        const clEntropy = EntropyRegulator.getRegulation();
-        const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, 'L1');
-
-        // Climax engine: coordinate multi-parameter climax
-        CrossLayerClimaxEngine.tick(clAbsMs, sectionProgressBounded);
-        const clClimaxMods = CrossLayerClimaxEngine.getModifiers('L1');
-
-        // Dynamic envelope: phrase-level velocity arc
-        const phraseProgressL1 = (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator);
-        const phraseProgressL1Bounded = requireUnitInterval('phraseProgressL1', phraseProgressL1);
-        CrossLayerDynamicEnvelope.tick(clAbsMs, 'L1', sectionProgressBounded, phraseProgressL1Bounded);
-        CrossLayerDynamicEnvelope.autoSelectArcType();
-
-        // Silhouette: holistic combined-output conductor
-        CrossLayerSilhouette.tick(clAbsMs, sectionProgressBounded);
-        const clSilhouetteCorrections = CrossLayerSilhouette.getCorrections();
-
-        // Rest synchronizer: coordinated silence
-        const clRestSignals = {
-          heatLevel: InteractionHeatMap.getDensity(),
-          densityTarget: clIntent.densityTarget,
-          phaseMode: requireNonEmptyString('RhythmicPhaseLock.getMode()', RhythmicPhaseLock.getMode())
-        };
-        const clRest = RestSynchronizer.evaluateSharedRest(clAbsMs, 'L1', clRestSignals);
-        const clComplementRest = RestSynchronizer.evaluateComplementaryRest(clAbsMs, 'L1');
-
-        // Rhythmic complement: auto-select mode each beat
-        RhythmicComplementEngine.autoSelectMode(clAbsMs);
-
-        const clTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
-        const clCadence = CadenceAdvisor.shouldCadence();
-        if (!clCadence || typeof clCadence !== 'object' || typeof clCadence.suggest !== 'boolean') {
-          throw new Error('main: CadenceAdvisor.shouldCadence must return an object with boolean suggest');
-        }
-        const clPhaseSnapshot = {
-          timeMs: clAbsMs,
-          phaseDiff: clPhase.phaseDiff,
-          mode: clPhase.mode,
-          confidence: clPhase.confidence
-        };
-
-        const clNegotiation = NegotiationEngine.apply('L1', {
-          playProb: DynamicRoleSwap.modifyPlayProb('L1', playProb),
-          stutterProb,
-          cadenceSuggested: Boolean(clCadence.suggest),
-          phaseConfidence: clPhase.confidence,
-          intent: clIntent,
-          entropyScale: clEntropy.scale
-        });
-        playProb = clNegotiation.playProb;
-        stutterProb = clNegotiation.stutterProb;
-        playProb = EntropyRegulator.regulate(playProb);
-        stutterProb = EntropyRegulator.regulate(stutterProb);
-
-        // Apply climax scaling
-        if (clClimaxMods.playProbScale !== 1.0) {
-          playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);
-        }
-        // Apply silhouette density correction
-        playProb = clamp(playProb + clSilhouetteCorrections.densityBias, 0, 1);
-        // Apply shared rest: gate play probability to zero during shared rests
-        if (clRest.shouldRest) {
-          playProb = 0;
-          stutterProb = 0;
-        }
-        // Apply complementary rest: boost fill when other layer is resting
-        if (clComplementRest.shouldFill) {
-          playProb = clamp(playProb * (1 + clComplementRest.fillUrgency * 0.3), 0, 1);
-        }
-
-        playNotes('beat', { playProb, stutterProb });
-        if (clRest.shouldRest) RestSynchronizer.postRest(clAbsMs, 'L1');
-
-        StutterContagion.postStutter(clAbsMs, 'L1', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
-        StutterContagion.apply(clAbsMs, 'L1');
-        const clDensity = TemporalGravity.measureDensity('L1', beatStartTime);
-        TemporalGravity.postDensity(clAbsMs, 'L1', clDensity);
-        const clFeedback = FeedbackOscillator.applyFeedback(clAbsMs, 'L1');
-        if (!clFeedback || typeof clFeedback !== 'object') {
-          throw new Error('main: FeedbackOscillator.applyFeedback must return an object');
-        }
-        const clFeedbackEnergy = requireUnitInterval('FeedbackOscillator.applyFeedback.energy', clFeedback.energy);
-
-        const clCadenceGate = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, 'L1', Boolean(clCadence.suggest), clPhaseSnapshot);
-        CadenceAlignment.postTension(clAbsMs, 'L1', clTension, clCadence.suggest);
-        const clCadResult = (clCadenceGate && clNegotiation.allowCadence)
-          ? CadenceAlignment.applyAlignment(clAbsMs, 'L1', clTension)
-          : null;
-        if (clCadResult) {
-          FeedbackOscillator.inject(clAbsMs, 'L1', clamp(clTension, 0, 1), 'cadence');
-        }
-
-        const tpBeatValue = requireFiniteNumber('tpBeat', tpBeat);
-        const tpSecValue = requireFiniteNumber('tpSec', tpSec);
-        if (tpBeatValue <= 0 || tpSecValue <= 0) {
-          throw new Error(`main: tpBeat and tpSec must be > 0 (tpBeat=${tpBeatValue}, tpSec=${tpSecValue})`);
-        }
-        const beatDurMs = (tpBeatValue / tpSecValue) * 1000;
-        RhythmicPhaseLock.postBeat(clAbsMs, 'L1', beatDurMs);
-        const clPhaseMode = RhythmicPhaseLock.getMode();
-
-        SpectralComplementarity.postSpectralState(clAbsMs, 'L1');
-
-        InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
-        InteractionHeatMap.record('temporalGravity', clDensity);
-        InteractionHeatMap.record('cadenceAlignment', clCadResult ? 0.8 : 0);
-        InteractionHeatMap.record('phaseLock', clPhaseMode === 'lock' ? 1 : 0);
-        InteractionHeatMap.record('feedbackOscillator', clFeedbackEnergy);
-        InteractionHeatMap.record('roleSwap', DynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
-
-        const clConvergenceIntensity = ConvergenceDetector.wasRecent(clAbsMs, 'L1', 300) ? 1 : 0;
-        InteractionHeatMap.record('convergence', clConvergenceIntensity);
-        // Seed ConvergenceHarmonicTrigger from convergence events
-        if (clConvergenceIntensity > 0) {
-          ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer: 'L1' });
-        }
-        InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
-        InteractionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
-
-        const edSignals = {
-          convergence: clConvergenceIntensity > 0,
-          cadenceAlign: Boolean(clCadResult && clCadResult.shouldResolve),
-          velReinforce: false,
-          phaseLock: clPhaseMode === 'lock'
-        };
-        const clDownbeat = EmergentDownbeat.applyIfDownbeat(clAbsMs, 'L1', edSignals, 0, velocity);
-        InteractionHeatMap.record('emergentDownbeat', clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
-        if (clDownbeat) {
-          FeedbackOscillator.inject(clAbsMs, 'L1', clamp(clDownbeat.strength, 0, 1), 'downbeat');
-        }
-
-        const clBreathing = InteractionHeatMap.getBreathingRecommendation();
-        if (clBreathing.recommendation === 'decrease') {
-          playProb = clamp(playProb * 0.96, 0, 1);
-          stutterProb = clamp(stutterProb * 0.94, 0, 1);
-        } else if (clBreathing.recommendation === 'increase') {
-          playProb = clamp(playProb * 1.03, 0, 1);
-          stutterProb = clamp(stutterProb * 1.04, 0, 1);
-        }
-
-        const stutterOutcome = clamp(1 - Math.abs(stutterProb - clIntent.interactionTarget) * 2, -1, 1);
-        const phaseOutcome = clamp((clPhaseMode === 'lock' ? 0.5 : clPhaseMode === 'drift' ? 0.15 : -0.4) + clPhase.confidence * 0.35, -1, 1);
-        const cadenceOutcome = clCadResult
-          ? (clCadResult.shouldResolve ? 0.85 : 0.35)
-          : (clCadenceGate ? -0.1 : -0.25);
-        const feedbackOutcome = clamp(clFeedbackEnergy - 0.2 + (clDownbeat ? clDownbeat.strength * 0.15 : 0), -1, 1);
-        AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
-        AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
-        AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
-        AdaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcome);
-        AdaptiveTrustScores.decayAll(0.002);
-
-        ExplainabilityBus.emit('beat-decision', 'L1', {
-          intent: clIntent,
-          phaseConfidence: clPhase.confidence,
-          cadenceGate: clCadenceGate,
-          negotiation: clNegotiation,
-          breathing: clBreathing.recommendation
-        }, clAbsMs);
-
-        const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
-        InteractionHeatMap.deferBeat(clBeatKey);
+        const beatResult = processBeat('L1', playProb, stutterProb, boot);
+        playProb = beatResult.playProb;
+        stutterProb = beatResult.stutterProb;
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
@@ -532,7 +199,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     LM.advance('L1', 'phrase');
 
     // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
-    const phraseTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
+    const phraseTension = MainBootstrap.requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
     const roleSwapResult = DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
     AdaptiveTrustScores.registerOutcome('roleSwap', roleSwapResult.swapped ? 0.35 : -0.02);
     if (roleSwapResult.swapped) {
@@ -557,235 +224,26 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       selectLayerComposerForMeasure('L2', phraseFamily);
       setUnitTiming('measure');
 
-      // L2 uses GlobalConductor for dynamic probabilities — symmetric with L1
-      const conductorCtxL2 = getConductorProbabilities(measureIndex, -1);
-
-      let playProb = conductorCtxL2.playProb;
-      let stutterProb = conductorCtxL2.stutterProb;
+      MainBootstrap.getConductorProbabilities(measureIndex, -1);
+      let playProb, stutterProb;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        // Refine context per beat for maximum dynamicism (symmetric with L1)
-        const beatCtxL2 = getConductorProbabilities(measureIndex, beatIndex);
-        playProb = beatCtxL2.playProb;
-        stutterProb = beatCtxL2.stutterProb;
+        const beatCtx = MainBootstrap.getConductorProbabilities(measureIndex, beatIndex);
+        playProb = beatCtx.playProb;
+        stutterProb = beatCtx.stutterProb;
 
-        setUnitTiming('beat');
-        setOtherInstruments();
-        setBinaural();
-        EventBus.emit(EVENTS.BEAT_BINAURAL_APPLIED, {
-          beatIndex,
-          sectionIndex,
-          phraseIndex,
-          measureIndex,
-          layer: 'L2',
-          freqOffset: requireFiniteNumber('binauralFreqOffset', binauralFreqOffset),
-          flipBin: Boolean(flipBin)
-        });
-        setBalanceAndFX();
-        // Apply Stutter default directive for this beat (symmetric with L1)
-        Stutter.prepareBeat(beatStart);
-        // Capture FX intensity with full payload (symmetric with L1)
-        const fxStereoPanL2 = m.abs(requireFiniteNumber('balOffset', balOffset)) / fxStereoPanDenominator;
-        const fxVelocityShiftL2 = m.abs(requireFiniteNumber('refVar', refVar) + requireFiniteNumber('bassVar', bassVar)) / fxVelocityShiftDenominator;
-        EventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer: 'L2', stereoPan: fxStereoPanL2, velocityShift: fxVelocityShiftL2 });
-        playDrums2();
-        stutterFX(flipBin ? flipBinT3 : flipBinF3);
-        stutterFade(flipBin ? flipBinT3 : flipBinF3);
-        rf() < stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-        // Run any explicit Stutter plans scheduled for this beat
-        Stutter.runDuePlans(beatStart);
-        const clAbsMsL2 = beatStartTime * 1000;
-        const sectionProgressL2 = (sectionIndex + phraseIndex / phrasesPerSection) / totalSections;
-        const sectionProgressL2Bounded = requireUnitInterval('sectionProgressL2', sectionProgressL2);
-        const clIntentL2 = SectionIntentCurves.getIntent(sectionProgressL2Bounded, sectionIndex, phraseIndex);
-        EntropyRegulator.setTarget(clIntentL2.entropyTarget);
-        const clEntropyL2 = EntropyRegulator.getRegulation();
-        const clPhaseL2 = PhaseAwareCadenceWindow.update(clAbsMsL2, 'L2');
-
-        // Climax engine: coordinate multi-parameter climax (shared state with L1)
-        CrossLayerClimaxEngine.tick(clAbsMsL2, sectionProgressL2Bounded);
-        const clClimaxModsL2 = CrossLayerClimaxEngine.getModifiers('L2');
-
-        // Dynamic envelope: phrase-level velocity arc
-        const phraseProgressL2 = (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator);
-        const phraseProgressL2Bounded = requireUnitInterval('phraseProgressL2', phraseProgressL2);
-        CrossLayerDynamicEnvelope.tick(clAbsMsL2, 'L2', sectionProgressL2Bounded, phraseProgressL2Bounded);
-
-        // Silhouette: holistic combined-output conductor
-        CrossLayerSilhouette.tick(clAbsMsL2, sectionProgressL2Bounded);
-        const clSilhouetteCorrectionsL2 = CrossLayerSilhouette.getCorrections();
-
-        // Rest synchronizer: coordinated silence
-        const clRestSignalsL2 = {
-          heatLevel: InteractionHeatMap.getDensity(),
-          densityTarget: clIntentL2.densityTarget,
-          phaseMode: requireNonEmptyString('RhythmicPhaseLock.getMode()', RhythmicPhaseLock.getMode())
-        };
-        const clRestL2 = RestSynchronizer.evaluateSharedRest(clAbsMsL2, 'L2', clRestSignalsL2);
-        const clComplementRestL2 = RestSynchronizer.evaluateComplementaryRest(clAbsMsL2, 'L2');
-
-        // Rhythmic complement: auto-select mode each beat
-        RhythmicComplementEngine.autoSelectMode(clAbsMsL2);
-
-        const clTensionL2 = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
-        const clCadenceL2 = CadenceAdvisor.shouldCadence();
-        if (!clCadenceL2 || typeof clCadenceL2 !== 'object' || typeof clCadenceL2.suggest !== 'boolean') {
-          throw new Error('main: CadenceAdvisor.shouldCadence must return an object with boolean suggest');
-        }
-        const clPhaseSnapshotL2 = {
-          timeMs: clAbsMsL2,
-          phaseDiff: clPhaseL2.phaseDiff,
-          mode: clPhaseL2.mode,
-          confidence: clPhaseL2.confidence
-        };
-
-        const clNegotiationL2 = NegotiationEngine.apply('L2', {
-          playProb: DynamicRoleSwap.modifyPlayProb('L2', playProb),
-          stutterProb,
-          cadenceSuggested: Boolean(clCadenceL2.suggest),
-          phaseConfidence: clPhaseL2.confidence,
-          intent: clIntentL2,
-          entropyScale: clEntropyL2.scale
-        });
-        playProb = clNegotiationL2.playProb;
-        stutterProb = clNegotiationL2.stutterProb;
-        playProb = EntropyRegulator.regulate(playProb);
-        stutterProb = EntropyRegulator.regulate(stutterProb);
-
-        // Apply climax scaling
-        if (clClimaxModsL2.playProbScale !== 1.0) {
-          playProb = clamp(playProb * clClimaxModsL2.playProbScale, 0, 1);
-        }
-        // Apply silhouette density correction
-        playProb = clamp(playProb + clSilhouetteCorrectionsL2.densityBias, 0, 1);
-        // Apply shared rest: gate play probability to zero during shared rests
-        if (clRestL2.shouldRest) {
-          playProb = 0;
-          stutterProb = 0;
-        }
-        // Apply complementary rest: boost fill when other layer is resting
-        if (clComplementRestL2.shouldFill) {
-          playProb = clamp(playProb * (1 + clComplementRestL2.fillUrgency * 0.3), 0, 1);
-        }
-
-        playNotes('beat', { playProb, stutterProb });
-        if (clRestL2.shouldRest) RestSynchronizer.postRest(clAbsMsL2, 'L2');
-
-        StutterContagion.postStutter(clAbsMsL2, 'L2', clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
-        StutterContagion.apply(clAbsMsL2, 'L2');
-        const clDensityL2 = TemporalGravity.measureDensity('L2', beatStartTime);
-        TemporalGravity.postDensity(clAbsMsL2, 'L2', clDensityL2);
-        const clFeedbackL2 = FeedbackOscillator.applyFeedback(clAbsMsL2, 'L2');
-        if (!clFeedbackL2 || typeof clFeedbackL2 !== 'object') {
-          throw new Error('main: FeedbackOscillator.applyFeedback must return an object');
-        }
-        const clFeedbackEnergyL2 = requireUnitInterval('FeedbackOscillator.applyFeedback.energy', clFeedbackL2.energy);
-
-        const clCadenceGateL2 = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMsL2, 'L2', Boolean(clCadenceL2.suggest), clPhaseSnapshotL2);
-        CadenceAlignment.postTension(clAbsMsL2, 'L2', clTensionL2, clCadenceL2.suggest);
-        const clCadResultL2 = (clCadenceGateL2 && clNegotiationL2.allowCadence)
-          ? CadenceAlignment.applyAlignment(clAbsMsL2, 'L2', clTensionL2)
-          : null;
-        if (clCadResultL2) {
-          FeedbackOscillator.inject(clAbsMsL2, 'L2', clamp(clTensionL2, 0, 1), 'cadence');
-        }
-
-        const tpBeatValueL2 = requireFiniteNumber('tpBeat', tpBeat);
-        const tpSecValueL2 = requireFiniteNumber('tpSec', tpSec);
-        if (tpBeatValueL2 <= 0 || tpSecValueL2 <= 0) {
-          throw new Error(`main: tpBeat and tpSec must be > 0 (tpBeat=${tpBeatValueL2}, tpSec=${tpSecValueL2})`);
-        }
-        const beatDurMsL2 = (tpBeatValueL2 / tpSecValueL2) * 1000;
-        RhythmicPhaseLock.postBeat(clAbsMsL2, 'L2', beatDurMsL2);
-        const clPhaseModeL2 = RhythmicPhaseLock.getMode();
-
-        SpectralComplementarity.postSpectralState(clAbsMsL2, 'L2');
-
-        InteractionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
-        InteractionHeatMap.record('temporalGravity', clDensityL2);
-        InteractionHeatMap.record('cadenceAlignment', clCadResultL2 ? 0.8 : 0);
-        InteractionHeatMap.record('phaseLock', clPhaseModeL2 === 'lock' ? 1 : 0);
-        InteractionHeatMap.record('feedbackOscillator', clFeedbackEnergyL2);
-        InteractionHeatMap.record('roleSwap', DynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
-
-        const clConvergenceIntensityL2 = ConvergenceDetector.wasRecent(clAbsMsL2, 'L2', 300) ? 1 : 0;
-        InteractionHeatMap.record('convergence', clConvergenceIntensityL2);
-        // Seed ConvergenceHarmonicTrigger from convergence events
-        if (clConvergenceIntensityL2 > 0) {
-          ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMsL2, layer: 'L2' });
-        }
-        InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
-        InteractionHeatMap.record('restSync', clRestL2.shouldRest ? 0.9 : 0);
-
-        const edSignalsL2 = {
-          convergence: clConvergenceIntensityL2 > 0,
-          cadenceAlign: Boolean(clCadResultL2 && clCadResultL2.shouldResolve),
-          velReinforce: false,
-          phaseLock: clPhaseModeL2 === 'lock'
-        };
-        const clDownbeatL2 = EmergentDownbeat.applyIfDownbeat(clAbsMsL2, 'L2', edSignalsL2, 0, velocity);
-        InteractionHeatMap.record('emergentDownbeat', clDownbeatL2 ? clamp(clDownbeatL2.strength, 0, 1) : 0);
-        if (clDownbeatL2) {
-          FeedbackOscillator.inject(clAbsMsL2, 'L2', clamp(clDownbeatL2.strength, 0, 1), 'downbeat');
-        }
-
-        const clBreathingL2 = InteractionHeatMap.getBreathingRecommendation();
-        if (clBreathingL2.recommendation === 'decrease') {
-          playProb = clamp(playProb * 0.96, 0, 1);
-          stutterProb = clamp(stutterProb * 0.94, 0, 1);
-        } else if (clBreathingL2.recommendation === 'increase') {
-          playProb = clamp(playProb * 1.03, 0, 1);
-          stutterProb = clamp(stutterProb * 1.04, 0, 1);
-        }
-
-        const stutterOutcomeL2 = clamp(1 - Math.abs(stutterProb - clIntentL2.interactionTarget) * 2, -1, 1);
-        const phaseOutcomeL2 = clamp((clPhaseModeL2 === 'lock' ? 0.5 : clPhaseModeL2 === 'drift' ? 0.15 : -0.4) + clPhaseL2.confidence * 0.35, -1, 1);
-        const cadenceOutcomeL2 = clCadResultL2
-          ? (clCadResultL2.shouldResolve ? 0.85 : 0.35)
-          : (clCadenceGateL2 ? -0.1 : -0.25);
-        const feedbackOutcomeL2 = clamp(clFeedbackEnergyL2 - 0.2 + (clDownbeatL2 ? clDownbeatL2.strength * 0.15 : 0), -1, 1);
-        AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcomeL2);
-        AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcomeL2);
-        AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcomeL2);
-        AdaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcomeL2);
-        AdaptiveTrustScores.decayAll(0.002);
-
-        ExplainabilityBus.emit('beat-decision', 'L2', {
-          intent: clIntentL2,
-          phaseConfidence: clPhaseL2.confidence,
-          cadenceGate: clCadenceGateL2,
-          negotiation: clNegotiationL2,
-          breathing: clBreathingL2.recommendation
-        }, clAbsMsL2);
-
-        const clBeatKeyL2 = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
-        InteractionHeatMap.flushBeatPair(clAbsMsL2, clBeatKeyL2);
-
-        if (((measureIndex * numerator + beatIndex) % 8) === 0) {
-          ExplainabilityBus.emit('crosslayer-telemetry', 'both', {
-            intent: SectionIntentCurves.getLastIntent(),
-            heat: InteractionHeatMap.getSystemHeat(),
-            trend: InteractionHeatMap.getTrend(),
-            trust: AdaptiveTrustScores.getSnapshot(),
-            silhouette: CrossLayerSilhouette.getSilhouette(),
-            climaxLevel: CrossLayerClimaxEngine.getClimaxLevel(),
-            rhythmicMode: RhythmicComplementEngine.getMode(),
-            textureDistance: TexturalMirror.getTextureDistance(),
-            pitchMemories: PitchMemoryRecall.getMemoryCount()
-          }, clAbsMsL2);
-        }
+        const beatResult = processBeat('L2', playProb, stutterProb, boot);
+        playProb = beatResult.playProb;
+        stutterProb = beatResult.stutterProb;
 
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-
           setUnitTiming('div');
           if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
-
           microUnitAttenuator.begin('subdiv', subdivsPerDiv);
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             setUnitTiming('subdiv');
             if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
-
             microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
             for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               setUnitTiming('subsubdiv');
@@ -802,14 +260,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
-    InteractionHeatMap.flushDeferredOrphans(requireFiniteNumber('beatStartTime', beatStartTime) * 1000);
+    InteractionHeatMap.flushDeferredOrphans(MainBootstrap.requireFiniteNumber('beatStartTime', beatStartTime) * 1000);
   }
 
   // Record section in StructuralFormTracker for form-level awareness
-  const sKey = requireNonEmptyString('ConductorState.key', ConductorState.getField('key'));
-  const sMode = requireNonEmptyString('ConductorState.mode', ConductorState.getField('mode'));
-  const sFamily = requireNonEmptyString('ComposerFactory.getActiveFamily()', ComposerFactory.getActiveFamily());
-  const sEnergy = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
+  const sKey = MainBootstrap.requireNonEmptyString('ConductorState.key', ConductorState.getField('key'));
+  const sMode = MainBootstrap.requireNonEmptyString('ConductorState.mode', ConductorState.getField('mode'));
+  const sFamily = MainBootstrap.requireNonEmptyString('ComposerFactory.getActiveFamily()', ComposerFactory.getActiveFamily());
+  const sEnergy = MainBootstrap.requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
   StructuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
 
   LM.advance('L1', 'section');

@@ -1,7 +1,11 @@
 // Required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
+const _hrV = Validator.create('HarmonicRhythmComposer');
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', opts = {}) {
+    _hrV.assertNonEmptyString(key, 'key');
+    _hrV.assertNonEmptyString(quality, 'quality');
+    _hrV.requireFinite(measuresPerChord, 'measuresPerChord');
     const generator = new ProgressionGenerator(key, quality);
     let chordSymbols = progression;
     const harmonicCorpusOpts = {

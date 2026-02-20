@@ -212,9 +212,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const eventName = EventCatalog.names.STUTTER_APPLIED;
   EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), tick: stutterOn });
   p(c, evOff);
-  if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') {
-    StutterMetrics.incEmitted(1, profile);
-  }
+  StutterMetrics.incEmitted(1, profile);
 
   return localShared;
 };

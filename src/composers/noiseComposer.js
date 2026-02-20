@@ -1,10 +1,9 @@
 // noiseComposer.js - Centralized noise application for composer classes
 // Keeps composer classes focused on their core responsibilities
+const _ncV = Validator.create('noiseComposer');
 
 const resolveConductorNoiseProfile = (fallbackProfile) => {
-  if (typeof fallbackProfile !== 'string' || fallbackProfile.length === 0) {
-    throw new Error('resolveConductorNoiseProfile: fallbackProfile must be a non-empty string');
-  }
+  _ncV.assertNonEmptyString(fallbackProfile, 'fallbackProfile');
   if (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getNoiseProfileForSection === 'function') {
     return ConductorConfig.getNoiseProfileForSection();
   }
@@ -18,9 +17,7 @@ const resolveConductorNoiseProfile = (fallbackProfile) => {
  * @returns {number} Note with pitch variation applied
  */
 applyComposerPitchNoise = function(selectedNote, context = {}) {
-  if (typeof selectedNote !== 'number') {
-    throw new Error('applyComposerPitchNoise: selectedNote must be a number');
-  }
+  _ncV.requireFinite(selectedNote, 'selectedNote');
 
   const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('dramatic'));
   const currentTime = (typeof context.callCount === 'number') ? (context.callCount * 0.1) : (typeof context.currentTime === 'number' ? context.currentTime : 0);

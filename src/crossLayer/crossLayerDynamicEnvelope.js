@@ -31,23 +31,14 @@ CrossLayerDynamicEnvelope = (() => {
     phraseProgress = clamp(phrProgress, 0, 1);
 
     // Get intent-driven parameters
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { densityTarget: 0.5, interactionTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent();
     const densityTarget = Number.isFinite(intent.densityTarget) ? intent.densityTarget : 0.5;
 
     // Get interaction trend from InteractionHeatMap
-    const trend = (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap &&
-      typeof InteractionHeatMap.getTrend === 'function')
-      ? InteractionHeatMap.getTrend()
-      : 0;
+    const trend = InteractionHeatMap.getTrend();
 
     // Check role swap
-    const swapped = (typeof DynamicRoleSwap !== 'undefined' && DynamicRoleSwap &&
-      typeof DynamicRoleSwap.getIsSwapped === 'function')
-      ? DynamicRoleSwap.getIsSwapped()
-      : false;
+    const swapped = DynamicRoleSwap.getIsSwapped();
 
     // Compute base envelope from phrase arc
     const phraseArc = Math.sin(phraseProgress * Math.PI); // peaks mid-phrase
@@ -107,10 +98,7 @@ CrossLayerDynamicEnvelope = (() => {
    * Auto-select arc type based on intent and section position.
    */
   function autoSelectArcType() {
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { interactionTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent();
 
     const interaction = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
     if (interaction > 0.65) {

@@ -1,3 +1,4 @@
+const _fmV = Validator.create('FactoryManager');
 FactoryManager = class FactoryManager {
   /** @type {any|null} */
   static sharedPhraseArcManager = null;
@@ -83,9 +84,7 @@ FactoryManager = class FactoryManager {
    * @param {Object} [ctx]
    */
   static create(config = {}, ctx = null) {
-    if (config !== undefined && (typeof config !== 'object' || config === null)) {
-      throw new Error('ComposerFactory.create: config must be an object if provided');
-    }
+    _fmV.assertPlainObject(config, 'config');
     const type = /** @type {any} */ (config).type || 'scale';
     const constructorFn = this.constructors[type];
     if (!constructorFn) {

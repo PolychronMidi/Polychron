@@ -1,5 +1,9 @@
+const _trV = Validator.create('TensionReleaseComposer');
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5, opts = {}) {
+    _trV.assertNonEmptyString(key, 'key');
+    _trV.assertNonEmptyString(quality, 'quality');
+    _trV.requireFinite(tensionCurve, 'tensionCurve');
     const generator = new ProgressionGenerator(key, quality);
     const progressionChords = generator.random({
       source: 'tensionRelease',

@@ -1,4 +1,5 @@
 // MeasureNotePool.js - note pool builder for MeasureComposer
+const _mnpV = Validator.create('MeasureNotePool');
 
 /**
  * Builds a note pool across octaves using interval selection.
@@ -13,13 +14,16 @@ MeasureNotePool = {
    * @returns {{note: number}[]} Array of note objects
    */
   buildNotePool(notes, intervals, octaveRange, rootNote) {
-    if (!Array.isArray(notes) || notes.length === 0) {
+    _mnpV.assertArray(notes, 'notes');
+    _mnpV.assertArray(intervals, 'intervals');
+    _mnpV.assertArray(octaveRange, 'octaveRange');
+    if (notes.length === 0) {
       throw new TypeError('notes must be a non-empty array');
     }
-    if (!Array.isArray(intervals) || intervals.length === 0) {
+    if (intervals.length === 0) {
       throw new TypeError('intervals must be a non-empty array');
     }
-    if (!Array.isArray(octaveRange) || octaveRange.length < 2) {
+    if (octaveRange.length < 2) {
       throw new TypeError('octaveRange must be an array with two elements: [minOctave, maxOctave]');
     }
 

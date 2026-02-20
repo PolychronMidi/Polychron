@@ -1,7 +1,11 @@
 // MelodicDevelopmentComposer.js - A ScaleComposer that applies melodic transformations based on intensity and phrase arc
+const _mdcV = Validator.create('MelodicDevelopmentComposer');
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, opts = {}) {
+    _mdcV.assertNonEmptyString(name, 'name');
+    _mdcV.assertNonEmptyString(root, 'root');
+    _mdcV.requireFinite(intensity, 'intensity');
     if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('MelodicDevelopmentComposer: allNotes not available');
     if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('MelodicDevelopmentComposer: allScales not available');
     const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;

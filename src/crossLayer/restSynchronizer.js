@@ -81,16 +81,13 @@ RestSynchronizer = (() => {
     }
 
     // Check if other layer is sparse from ATW
-    if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow &&
-        typeof AbsoluteTimeWindow.getNotes === 'function') {
-      const otherNotes = AbsoluteTimeWindow.getNotes({
-        layer: otherLayer,
-        since: (absTimeMs / 1000) - 0.5,
-        windowSeconds: 0.5
-      });
-      if (otherNotes.length === 0) {
-        return { shouldFill: true, fillUrgency: 0.7 };
-      }
+    const otherNotes = AbsoluteTimeWindow.getNotes({
+      layer: otherLayer,
+      since: (absTimeMs / 1000) - 0.5,
+      windowSeconds: 0.5
+    });
+    if (otherNotes.length === 0) {
+      return { shouldFill: true, fillUrgency: 0.7 };
     }
 
     return { shouldFill: false, fillUrgency: 0 };

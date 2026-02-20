@@ -21,11 +21,6 @@ RhythmicComplementEngine = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
 
-    if (typeof AbsoluteTimeWindow === 'undefined' || !AbsoluteTimeWindow ||
-        typeof AbsoluteTimeWindow.getNotes !== 'function') {
-      return { gaps: [], density: 0, avgIOI: 0 };
-    }
-
     const notes = AbsoluteTimeWindow.getNotes({
       layer: otherLayer,
       since: (absTimeMs / 1000) - 2,
@@ -64,10 +59,7 @@ RhythmicComplementEngine = (() => {
 
     if (mode === 'free') return { tick: onTick, velocityScale: 1.0, modified: false };
 
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { interactionTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
 
     // Only apply strong complement when interaction target is high
     const strength = clamp(intent.interactionTarget * 1.5 - 0.3, 0, 1);
@@ -88,10 +80,7 @@ RhythmicComplementEngine = (() => {
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
-      const grooveOffset = (typeof GrooveTransfer !== 'undefined' && GrooveTransfer &&
-        typeof GrooveTransfer.applyOffset === 'function')
-        ? GrooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick
-        : 0;
+      const grooveOffset = (GrooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick) ?? 0;
       return { tick: onTick + grooveOffset * strength * 0.5, velocityScale: 0.9, modified: grooveOffset !== 0 };
     }
 
@@ -120,10 +109,7 @@ RhythmicComplementEngine = (() => {
     beatsSinceChange++;
     if (beatsSinceChange < MODE_CHANGE_INTERVAL) return;
 
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { interactionTarget: 0.5, densityTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
 
     const interaction = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
     const density = Number.isFinite(intent.densityTarget) ? intent.densityTarget : 0.5;

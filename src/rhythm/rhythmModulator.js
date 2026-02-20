@@ -1,9 +1,11 @@
 // rhythmModulator.js - adapter to apply rhythm hits to note objects
 
 rhythmModulator = (function() {
+  const V = Validator.create('rhythmModulator');
+
   function apply(note, hit, options = {}) {
-    if (typeof note !== 'object' || note === null) throw new Error('rhythmModulator.apply: note object required');
-    if (typeof hit !== 'boolean' && typeof hit !== 'number') throw new Error('rhythmModulator.apply: hit must be boolean or number');
+    V.assertObject(note, 'note');
+    V.requireDefined(hit, 'hit');
 
     // Convert number-like hits to boolean
     const isHit = Boolean(hit);
