@@ -36,9 +36,6 @@ MeasureComposer = class MeasureComposer {
     V.assertObject(next, 'capabilities');
     const merged = Object.assign({}, this.capabilities || {}, next || {});
     const validated = assertComposerCapabilities(merged);
-        timeVaryingScaleContext: Boolean(merged.timeVaryingScaleContext)
-      };
-    }
     this.capabilities = validated;
     return this.capabilities;
   }

@@ -5,7 +5,7 @@
  * @returns {void}
  */
 getPolyrhythm = () => {
-  if (typeof LM === 'undefined' || !LM || typeof LM.getComposerFor !== 'function') {
+  if (!LM || typeof LM.getComposerFor !== 'function') {
     throw new Error('getPolyrhythm: LayerManager.getComposerFor not available');
   }
   const activeComposer = LM.getComposerFor('L1');

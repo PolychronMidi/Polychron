@@ -39,7 +39,7 @@ rhythmPriors = (function() {
   }
 
   function getProfileOrFail(qualityInput) {
-    if (!RHYTHM_PRIOR_TABLES || typeof RHYTHM_PRIOR_TABLES !== 'object') {
+    if (!RHYTHM_PRIOR_TABLES) {
       throw new Error('rhythmPriors.getProfileOrFail: RHYTHM_PRIOR_TABLES is unavailable');
     }
 

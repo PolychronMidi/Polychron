@@ -23,7 +23,7 @@ TempoFeelEngine = (() => {
   }
 
   function requireSectionPhase() {
-    if (typeof ConductorState === 'undefined' || !ConductorState || typeof ConductorState.getField !== 'function') {
+    if (!ConductorState || typeof ConductorState.getField !== 'function') {
       throw new Error('TempoFeelEngine: ConductorState.getField is required');
     }
     const phase = ConductorState.getField('sectionPhase');

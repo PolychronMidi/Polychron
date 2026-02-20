@@ -62,7 +62,7 @@ const normalizeComposerEntriesOrFail = (entries, label) => {
   }
 };
 
-if (typeof COMPOSER_TYPE_PROFILES === 'undefined' || !COMPOSER_TYPE_PROFILES || typeof COMPOSER_TYPE_PROFILES !== 'object') {
+if (!COMPOSER_TYPE_PROFILES || typeof COMPOSER_TYPE_PROFILES !== 'object') {
   throw new Error('Composer profiles normalization: COMPOSER_TYPE_PROFILES is undefined or invalid');
 }
 for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILES)) {
@@ -74,7 +74,7 @@ for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILES)) {
   }
 }
 
-if (typeof COMPOSER_PROFILE_POOLS === 'undefined' || !COMPOSER_PROFILE_POOLS || typeof COMPOSER_PROFILE_POOLS !== 'object') {
+if (!COMPOSER_PROFILE_POOLS || typeof COMPOSER_PROFILE_POOLS !== 'object') {
   throw new Error('Composer profiles normalization: COMPOSER_PROFILE_POOLS is undefined or invalid');
 }
 for (const [poolName, entries] of Object.entries(COMPOSER_PROFILE_POOLS)) {

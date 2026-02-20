@@ -37,9 +37,7 @@ logUnit = (type) => {
     const logList = LOG.toLowerCase().split(',').map(item => item.trim());
     shouldLog = logList.length === 1 ? logList[0] === type : logList.includes(type);
   }
-  if (typeof shouldLog === 'undefined') {
-    throw new Error('logUnit: LOG configuration invalid - shouldLog is undefined');
-  } else if (!shouldLog) return null;
+  if (!shouldLog) return null;
 
   if (type === 'section') {
     unit = sectionIndex + 1;

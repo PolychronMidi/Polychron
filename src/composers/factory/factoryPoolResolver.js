@@ -12,13 +12,13 @@ factoryPoolResolver = {
 
     const context = Object.assign({}, (composerCtx && typeof composerCtx === 'object') ? composerCtx : {});
     if (!Object.prototype.hasOwnProperty.call(context, 'sectionIndex')) {
-      context.sectionIndex = (typeof sectionIndex === 'number') ? sectionIndex : null;
+      context.sectionIndex = sectionIndex;
     }
     if (!Object.prototype.hasOwnProperty.call(context, 'phraseIndex')) {
-      context.phraseIndex = (typeof phraseIndex === 'number') ? phraseIndex : null;
+      context.phraseIndex = phraseIndex;
     }
     if (!Object.prototype.hasOwnProperty.call(context, 'measureIndex')) {
-      context.measureIndex = (typeof measureIndex === 'number') ? measureIndex : null;
+      context.measureIndex = measureIndex;
     }
 
     if (typeof selectComposerPoolOrFail === 'function') {
