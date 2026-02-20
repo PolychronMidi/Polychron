@@ -74,9 +74,7 @@ StutterPlanScheduler = (() => {
 
   function executePlan(stutterMgr, plan = {}) {
     V.assertObject(stutterMgr, 'stutterMgr');
-    if (!stutterExecutePlan || typeof stutterExecutePlan !== 'function') {
-      throw new Error('StutterPlanScheduler.executePlan: stutterExecutePlan helper not available');
-    }
+    V.requireType(stutterExecutePlan, 'function', 'stutterExecutePlan helper');
     return stutterExecutePlan(stutterMgr, plan);
   }
 

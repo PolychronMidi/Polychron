@@ -264,9 +264,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   try {
-    if (!playNotesEmitPick || typeof playNotesEmitPick !== 'function') {
-      throw new Error(`${unit}.playNotes: playNotesEmitPick helper is not available`);
-    }
+    V.requireType(playNotesEmitPick, 'function', `${unit}.playNotes: playNotesEmitPick helper`);
 
     for (let pi = 0; pi < picks.length; pi++) {
       scheduled += playNotesEmitPick({
