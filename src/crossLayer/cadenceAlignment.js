@@ -74,15 +74,13 @@ CadenceAlignment = (() => {
     const intensityBoost = alignment.combinedTension;
 
     // Emit event for conductor awareness
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      EventBus.emit('CROSS_LAYER_CADENCE_ALIGN', {
-        layer: activeLayer,
-        combinedTension: alignment.combinedTension,
-        syncTick: alignment.syncTick,
-        otherCadenceSuggested: alignment.otherCadenceSuggested,
-        absTimeMs
-      });
-    }
+    EventBus.emit('CROSS_LAYER_CADENCE_ALIGN', {
+      layer: activeLayer,
+      combinedTension: alignment.combinedTension,
+      syncTick: alignment.syncTick,
+      otherCadenceSuggested: alignment.otherCadenceSuggested,
+      absTimeMs
+    });
 
     return {
       shouldResolve: alignment.otherCadenceSuggested || alignment.combinedTension > 0.85,

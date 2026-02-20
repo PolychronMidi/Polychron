@@ -123,21 +123,19 @@ ConvergenceDetector = (() => {
     }
 
     // Emit convergence event for conductor/other subsystems to react
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
-      EventBus.emit('CROSS_LAYER_CONVERGENCE', {
-        layer: activeLayer,
-        rarity: conv.rarity,
-        syncTick: conv.syncTick,
-        noteA: currentMidi,
-        noteB: conv.otherMidi,
-        velocityA: currentVelocity,
-        velocityB: conv.otherVelocity,
-        burstNotes,
-        burstVel,
-        totalConvergences,
-        absTimeMs
-      });
-    }
+    EventBus.emit('CROSS_LAYER_CONVERGENCE', {
+      layer: activeLayer,
+      rarity: conv.rarity,
+      syncTick: conv.syncTick,
+      noteA: currentMidi,
+      noteB: conv.otherMidi,
+      velocityA: currentVelocity,
+      velocityB: conv.otherVelocity,
+      burstNotes,
+      burstVel,
+      totalConvergences,
+      absTimeMs
+    });
 
     return { convergence: true, rarity: conv.rarity, burstNotes, totalConvergences };
   }

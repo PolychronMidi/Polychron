@@ -41,7 +41,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   }
 
   let adaptiveCrossRules = null;
-  if (directive.metricsAdaptive && directive.metricsAdaptive.enabled && typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.getMetrics === 'function') {
+  if (directive.metricsAdaptive && directive.metricsAdaptive.enabled) {
     const metrics = StutterMetrics.getMetrics();
     const sens = Number.isFinite(Number(directive.metricsAdaptive.sensitivity)) ? Number(directive.metricsAdaptive.sensitivity) : 0.08;
     const adj = Object.assign({}, crossRules);
@@ -147,6 +147,6 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     delete stutterMgr.beatContext.coherenceKey;
   }
 
-  if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incEmitted === 'function') StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile);
+  StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile);
   return cfg;
 };

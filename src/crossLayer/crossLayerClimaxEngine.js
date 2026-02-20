@@ -26,20 +26,11 @@ CrossLayerClimaxEngine = (() => {
     // Gather signals
     const sectionArc = Math.sin(clamp(sectionProgress, 0, 1) * Math.PI); // peaks mid-section
 
-    const conductorIntensity = (typeof ConductorState !== 'undefined' && ConductorState &&
-      typeof ConductorState.getField === 'function')
-      ? clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1)
-      : 0.5;
+    const conductorIntensity = clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1);
 
-    const heatLevel = (typeof InteractionHeatMap !== 'undefined' && InteractionHeatMap &&
-      typeof InteractionHeatMap.getDensity === 'function')
-      ? clamp(InteractionHeatMap.getDensity(), 0, 1)
-      : 0.5;
+    const heatLevel = clamp(InteractionHeatMap.getDensity(), 0, 1);
 
-    const intent = (typeof SectionIntentCurves !== 'undefined' && SectionIntentCurves &&
-      typeof SectionIntentCurves.getLastIntent === 'function')
-      ? SectionIntentCurves.getLastIntent()
-      : { densityTarget: 0.5, interactionTarget: 0.5 };
+    const intent = SectionIntentCurves.getLastIntent();
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;
 
     // Composite climax signal

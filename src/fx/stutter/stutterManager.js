@@ -176,8 +176,8 @@ class StutterManager {
       const arr = this.scheduledPlans.get(key) || [];
       arr.push(planId);
       this.scheduledPlans.set(key, arr);
-      if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, plan.profile || 'unknown');
-      if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incPendingForTick === 'function') StutterMetrics.incPendingForTick(key, 1);
+      StutterMetrics.incScheduled(1, plan.profile || 'unknown');
+      StutterMetrics.incPendingForTick(key, 1);
       return planId;
     }
 
@@ -219,7 +219,7 @@ class StutterManager {
       for (const planId of arr) {
         const plan = this.plans.get(planId);
         if (plan) {
-          if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.decPendingForTick === 'function') StutterMetrics.decPendingForTick(k, 1);
+          StutterMetrics.decPendingForTick(k, 1);
           this._executePlan(plan);
         }
       }
@@ -257,7 +257,7 @@ class StutterManager {
       provided.beatContext.coherenceKey = `${prefix}:${seed}`;
     }
 
-    if (typeof StutterMetrics !== 'undefined' && StutterMetrics && typeof StutterMetrics.incScheduled === 'function') StutterMetrics.incScheduled(1, provided.profile || 'unknown');
+    StutterMetrics.incScheduled(1, provided.profile || 'unknown');
     return stutterNotes(provided);
   }
 

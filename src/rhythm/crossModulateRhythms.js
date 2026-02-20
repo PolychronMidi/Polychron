@@ -1,3 +1,5 @@
+const V = Validator.create('crossModulateRhythms');
+
 /**
  * Calculates cross-modulation value based on rhythm state across all levels
  * @returns {void}
@@ -9,6 +11,9 @@ crossModulateRhythms = () => {
   const cmScale = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getCrossModScaling === 'function')
     ? ConductorConfig.getCrossModScaling()
     : { rangeScale: 1, penaltyScale: 1, textureBoostScale: 1 };
+  V.assertPlainObject(cmScale, 'cmScale');
+  V.requireFinite(cmScale.rangeScale, 'cmScale.rangeScale');
+  V.requireFinite(cmScale.penaltyScale, 'cmScale.penaltyScale');
   const rs = cmScale.rangeScale;
   // Self-regulation multiplicative bias from ConductorConfig
   const regBias = (typeof ConductorConfig !== 'undefined' && ConductorConfig && typeof ConductorConfig.getRegulationCrossModBias === 'function')

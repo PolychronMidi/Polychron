@@ -58,11 +58,9 @@ MotifEcho = (() => {
     // Pick transform type
     const transforms = ['retrograde', 'inversion', 'augmentation', 'retrograde-inversion'];
     let transform = transforms[ri(transforms.length - 1)];
-    if (typeof MotifIdentityMemory !== 'undefined' && MotifIdentityMemory && typeof MotifIdentityMemory.chooseEchoTransform === 'function') {
-      const identityChoice = MotifIdentityMemory.chooseEchoTransform(layer);
-      if (identityChoice && typeof identityChoice.transform === 'string' && rf() < clamp(identityChoice.bias, 0, 1)) {
-        transform = identityChoice.transform;
-      }
+    const identityChoice = MotifIdentityMemory.chooseEchoTransform(layer);
+    if (identityChoice && typeof identityChoice.transform === 'string' && rf() < clamp(identityChoice.bias, 0, 1)) {
+      transform = identityChoice.transform;
     }
 
     // Schedule delivery after a random delay in beats

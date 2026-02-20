@@ -1,3 +1,4 @@
+const _moV = Validator.create('ModeComposer');
 /**
  * Composes notes from a specific mode (single static mode selection).
  *
@@ -17,6 +18,8 @@ ModeComposer = class ModeComposer extends MeasureComposer {
    */
   constructor(modeName,root) {
     super();
+    _moV.assertNonEmptyString(modeName, 'modeName');
+    _moV.assertNonEmptyString(root, 'root');
     this.root=root;
     this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(modeName,root);

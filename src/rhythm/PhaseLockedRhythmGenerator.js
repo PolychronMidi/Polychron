@@ -3,6 +3,7 @@
 // Reflects African music principles: cyclic patterns with phase relationships
 
 PhaseLockedRhythmGenerator = (() => {
+  const V = Validator.create('PhaseLockedRhythmGenerator');
   const phases = new Map();         // Map<layerName:patternName:length, offset>
   const generationHistory = [];     // Track recent generations for coherence analysis
   let activeLayer = null;           // Track which layer is currently active for phase context
@@ -13,9 +14,7 @@ PhaseLockedRhythmGenerator = (() => {
    * @returns {void}
    */
   function setActiveLayer(layerName) {
-    if (typeof layerName !== 'string' || !layerName) {
-      throw new Error('PhaseLockedRhythmGenerator.setActiveLayer: layerName must be non-empty string');
-    }
+    V.assertNonEmptyString(layerName, 'layerName');
     activeLayer = layerName;
   }
 
@@ -49,13 +48,8 @@ PhaseLockedRhythmGenerator = (() => {
    * @throws {Error} if length invalid, patternName not found, or offset calculation fails
    */
   function generate(length, patternName, phaseOffset = undefined) {
-    if (!Number.isInteger(length) || length <= 0) {
-      throw new Error(`PhaseLockedRhythmGenerator.generate: length must be positive integer, got ${length}`);
-    }
-
-    if (typeof patternName !== 'string' || !patternName) {
-      throw new Error('PhaseLockedRhythmGenerator.generate: patternName must be non-empty string');
-    }
+    V.requireFinite(length, 'length');
+    V.assertNonEmptyString(patternName, 'patternName');
 
     // Generate base pattern via RhythmRegistry
     if (typeof RhythmRegistry === 'undefined') {

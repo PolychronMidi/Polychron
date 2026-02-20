@@ -1,8 +1,10 @@
 // MotifValidators.js - validation helpers for motif generation
+const V = Validator.create('MotifValidators');
 
 MotifValidators = {
   _toPCSet(scaleLike, label = 'scale') {
-    if (!Array.isArray(scaleLike) || scaleLike.length === 0) {
+    V.assertArray(scaleLike, label);
+    if (scaleLike.length === 0) {
       throw new Error(`MotifValidators._toPCSet: ${label} must be a non-empty array`);
     }
 
@@ -50,7 +52,7 @@ MotifValidators = {
     }
 
     const merged = Object.assign({}, fallback, caps || {});
-    if (typeof assertComposerCapabilities !== 'function') throw new Error('MotifValidators.getCapabilities: assertComposerCapabilities() not available');
+    if (typeof assertComposerCapabilities !== 'function') throw new Error('MotifValidators: assertComposerCapabilities() not available');
     return assertComposerCapabilities(merged);
   },
 
@@ -62,8 +64,9 @@ MotifValidators = {
    * @param {{ mode?: 'auto'|'strict-global'|'local-window', windowScale?: Array<string|number>|null, context?: Object }} [opts]
    */
   assertScaleMatchesDeveloper(scaleNotes, developer, opts = {}) {
-    if (!Array.isArray(scaleNotes) || scaleNotes.length === 0) {
-      throw new Error('MotifValidators.assertScaleMatchesDeveloper: scaleNotes must be a non-empty array');
+    V.assertArray(scaleNotes, 'scaleNotes');
+    if (scaleNotes.length === 0) {
+      throw new Error('MotifValidators: scaleNotes must be a non-empty array');
     }
     if (!developer || typeof developer !== 'object') return;
 
@@ -72,9 +75,7 @@ MotifValidators = {
 
     const modeInput = (opts && typeof opts.mode === 'string') ? opts.mode : 'auto';
     const validModes = ['auto', 'strict-global', 'local-window'];
-    if (!validModes.includes(modeInput)) {
-      throw new Error(`MotifValidators.assertScaleMatchesDeveloper: invalid mode "${modeInput}"`);
-    }
+    V.assertInSet(modeInput, new Set(validModes), 'mode');
     const mode = modeInput === 'auto'
       ? (caps.timeVaryingScaleContext ? 'local-window' : 'strict-global')
       : modeInput;
@@ -99,7 +100,7 @@ MotifValidators = {
       }
       if (!windowScale) {
         const context = opts && opts.context ? JSON.stringify(opts.context) : '{}';
-        throw new Error(`MotifValidators.assertScaleMatchesDeveloper: local-window mode requires window scale context (context=${context})`);
+        throw new Error(`MotifValidators: local-window mode requires window scale context (context=${context})`);
       }
       expectedPCs = this._toPCSet(windowScale, 'windowScale');
     }

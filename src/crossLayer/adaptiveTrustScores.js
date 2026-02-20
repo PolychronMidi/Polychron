@@ -26,14 +26,12 @@ AdaptiveTrustScores = (() => {
     state.samples += 1;
     state.lastMs = Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0;
 
-    if (typeof ExplainabilityBus !== 'undefined' && ExplainabilityBus && typeof ExplainabilityBus.emit === 'function') {
-      ExplainabilityBus.emit('trust-update', 'both', {
-        systemName,
-        payoff: p,
-        score: state.score,
-        samples: state.samples
-      }, state.lastMs);
-    }
+    ExplainabilityBus.emit('trust-update', 'both', {
+      systemName,
+      payoff: p,
+      score: state.score,
+      samples: state.samples
+    }, state.lastMs);
 
     return state.score;
   }

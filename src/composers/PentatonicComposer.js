@@ -1,6 +1,9 @@
+const _penV = Validator.create('PentatonicComposer');
 PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {
     super();
+    _penV.assertNonEmptyString(root, 'root');
+    _penV.assertNonEmptyString(type, 'type');
     this.root = root;
     this.type = type;
     this.enableVoiceLeading(new VoiceLeadingScore());

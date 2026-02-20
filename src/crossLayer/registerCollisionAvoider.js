@@ -51,7 +51,7 @@ RegisterCollisionAvoider = (() => {
     }
 
     const adjusted = candidate !== midi;
-    if (adjusted && typeof ExplainabilityBus !== 'undefined' && ExplainabilityBus && typeof ExplainabilityBus.emit === 'function') {
+    if (adjusted) {
       ExplainabilityBus.emit('register-collision-avoided', layer, {
         sourceMidi: midi,
         otherMidi: other.midi,

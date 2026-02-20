@@ -84,14 +84,9 @@ PitchMemoryRecall = (() => {
     if (rf() > RECALL_PROBABILITY) return null;
 
     // Check if a significant event is happening (convergence/downbeat)
-    const hasConvergence = (typeof ConvergenceDetector !== 'undefined' && ConvergenceDetector &&
-      typeof ConvergenceDetector.wasRecent === 'function')
-      ? ConvergenceDetector.wasRecent(absTimeMs, activeLayer, 400)
-      : false;
+    const hasConvergence = ConvergenceDetector.wasRecent(absTimeMs, activeLayer, 400) ?? false;
 
-    const hasDownbeat = (typeof EmergentDownbeat !== 'undefined' && EmergentDownbeat)
-      ? false // downbeat detection is tick-level, checked externally
-      : false;
+    const hasDownbeat = Boolean(EmergentDownbeat);
 
     if (!hasConvergence && !hasDownbeat && rf() > 0.3) return null;
 

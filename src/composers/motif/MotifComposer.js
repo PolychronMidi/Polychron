@@ -1,3 +1,4 @@
+const _motV = Validator.create('MotifComposer');
 /**
  * MotifComposer: factory for short motifs that fit a scale and optionally use voice-leading.
  * Features:
@@ -18,9 +19,7 @@ MotifComposer = class MotifComposer {
    * }} [options]
    */
   constructor(options = {}) {
-    if (options !== undefined && (typeof options !== 'object' || options === null)) {
-      throw new Error('MotifComposer: constructor options must be an object if provided');
-    }
+    _motV.assertPlainObject(options, 'options');
     const opts = /** @type {any} */ (options || {});
 
     // length
