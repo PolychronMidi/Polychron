@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('scaleProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.scale = {
   default: [{ type: 'scale', name: 'major', root: 'random', voiceProfile: 'default', motifProfile: 'default' }],
   diatonicWander: [{ type: 'scale', name: 'random', root: 'random', voiceProfile: 'default', motifProfile: 'dense' }],

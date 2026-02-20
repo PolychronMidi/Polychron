@@ -1,7 +1,3 @@
-if (typeof ComposerProfileUtils === 'undefined' || !ComposerProfileUtils || typeof ComposerProfileUtils.isPlainObject !== 'function') {
-  throw new Error('ComposerProfiles.runtimeProfileAdapter: ComposerProfileUtils is unavailable');
-}
-
 const isFiniteNumber = (value) => {
   if (typeof value === 'number') return Number.isFinite(value);
   if (typeof value === 'string') {
@@ -19,9 +15,6 @@ const toFiniteOrDefault = (value, fallback) => {
 const resolveRuntimeProfilesOrFail = (config = {}, label = 'ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail') => {
   if (!ComposerProfileUtils.isPlainObject(config)) {
     throw new Error(`${label}: config must be an object`);
-  }
-  if (typeof ComposerProfileUtils.resolveNamedProfilesOrFail !== 'function') {
-    throw new Error(`${label}: ComposerProfileUtils.resolveNamedProfilesOrFail() not available`);
   }
   return ComposerProfileUtils.resolveNamedProfilesOrFail(config, `${label}.config`);
 };

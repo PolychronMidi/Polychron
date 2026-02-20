@@ -10,8 +10,7 @@ beatGridHelpers = (() => {
    * @returns {number} - beat duration in seconds (fallback: 0.5s)
    */
   function getBeatDuration() {
-    if (typeof tpSec !== 'undefined' && typeof tpBeat !== 'undefined'
-      && Number.isFinite(tpSec) && Number.isFinite(tpBeat) && tpSec > 0) {
+    if (Number.isFinite(tpSec) && Number.isFinite(tpBeat) && tpSec > 0) {
       return tpBeat / tpSec;
     }
     return 0.5;

@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('quartalProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.quartal = {
   default: [{ type: 'quartal', scaleName: 'major', root: 'random', voicingType: 'quartal', stackSize: 4, voiceProfile: 'default', motifProfile: 'default' }],
   openFourths: [{ type: 'quartal', scaleName: 'dorian', root: 'random', voicingType: 'quartal', stackSize: 5, voiceProfile: 'whisper', motifProfile: 'legato' }],

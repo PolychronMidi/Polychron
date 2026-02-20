@@ -17,7 +17,7 @@ HarmonicRhythmDensityRatio = (() => {
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
 
     // Harmonic rhythm from HarmonicRhythmTracker (0-1 normalized)
-    const harmonicRate = (typeof HarmonicRhythmTracker !== 'undefined' && HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
+    const harmonicRate = (HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
       ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1)
       : 0.5;
 

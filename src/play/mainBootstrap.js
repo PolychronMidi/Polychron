@@ -66,38 +66,55 @@ MainBootstrap = (() => {
 
   /** Verify all required globals exist before main loop starts. */
   function assertBootstrapGlobals() {
-    const events = V.getEventsOrThrow();
+    // ── Phase 1: Verify every name in FullBootstrap.VALIDATED_GLOBALS exists ──
+    // This is the ONE place typeof probes are legitimate — proving globals exist
+    // so that no other file needs to. The ESLint rule exempts this file.
+    const validated = FullBootstrap.getValidatedGlobalsList();
+    const missing = [];
+    for (const name of validated) {
+      // typeof is the only safe way to check existence of a potentially undeclared identifier
+      // eslint requires we use eval-free indirect access via globalThis for dynamic names
+      if (typeof globalThis[name] === 'undefined') {
+        missing.push(name);
+      }
+    }
+    if (missing.length > 0) {
+      throw new Error(`MainBootstrap: missing validated globals: ${missing.join(', ')}`);
+    }
 
+    // ── Phase 2: Verify EventCatalog event names ──
+    const events = V.getEventsOrThrow();
     ['SECTION_BOUNDARY', 'JOURNEY_MOVE', 'TEXTURE_CONTRAST', 'BEAT_FX_APPLIED',
       'STUTTER_APPLIED', 'CONDUCTOR_REGULATION', 'BEAT_BINAURAL_APPLIED',
       'HARMONIC_CHANGE', 'NOTES_EMITTED', 'MOTIF_CHAIN_APPLIED'
     ].forEach((name) => requireNonEmptyString(`EventCatalog.names.${name}`, events[name]));
 
+    // ── Phase 3: Verify key module methods exist (shape checks beyond typeof) ──
     /** @type {[string, any, string][]} */
     const requiredModules = [
-      ['EventBus', (typeof EventBus !== 'undefined') ? EventBus : null, 'emit'],
-      ['LayerManager', (typeof LM !== 'undefined') ? LM : null, 'register'],
-      ['ComposerFactory', (typeof ComposerFactory !== 'undefined') ? ComposerFactory : null, 'getPhraseArcManager'],
-      ['ConductorConfig', (typeof ConductorConfig !== 'undefined') ? ConductorConfig : null, 'applyPhaseProfile'],
-      ['Stutter', (typeof Stutter !== 'undefined') ? Stutter : null, 'prepareBeat'],
-      ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'initialize'],
-      ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null, 'getField'],
-      ['GlobalConductor', (typeof GlobalConductor !== 'undefined') ? GlobalConductor : null, 'update'],
-      ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'planJourney'],
-      ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'applyToContext'],
-      ['HarmonicJourney', (typeof HarmonicJourney !== 'undefined') ? HarmonicJourney : null, 'applyL2ToContext'],
-      ['SectionLengthAdvisor', (typeof SectionLengthAdvisor !== 'undefined') ? SectionLengthAdvisor : null, 'advisePhraseCount'],
-      ['PivotChordBridge', (typeof PivotChordBridge !== 'undefined') ? PivotChordBridge : null, 'prepareBridge'],
-      ['PhaseLockedRhythmGenerator', (typeof PhaseLockedRhythmGenerator !== 'undefined') ? PhaseLockedRhythmGenerator : null, 'initializePolyrhythmCoupling'],
-      ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getDensity'],
-      ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getSystemHeat'],
-      ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'getTrend'],
-      ['InteractionHeatMap', (typeof InteractionHeatMap !== 'undefined') ? InteractionHeatMap : null, 'flushDeferredOrphans'],
-      ['RhythmicPhaseLock', (typeof RhythmicPhaseLock !== 'undefined') ? RhythmicPhaseLock : null, 'getMode'],
-      ['CadenceAdvisor', (typeof CadenceAdvisor !== 'undefined') ? CadenceAdvisor : null, 'shouldCadence'],
-      ['TexturalMemoryAdvisor', (typeof TexturalMemoryAdvisor !== 'undefined') ? TexturalMemoryAdvisor : null, 'recordUsage'],
-      ['ConvergenceHarmonicTrigger', (typeof ConvergenceHarmonicTrigger !== 'undefined') ? ConvergenceHarmonicTrigger : null, 'onConvergence'],
-      ['StructuralFormTracker', (typeof StructuralFormTracker !== 'undefined') ? StructuralFormTracker : null, 'recordSection']
+      ['EventBus', EventBus, 'emit'],
+      ['LayerManager', LM, 'register'],
+      ['ComposerFactory', ComposerFactory, 'getPhraseArcManager'],
+      ['ConductorConfig', ConductorConfig, 'applyPhaseProfile'],
+      ['Stutter', Stutter, 'prepareBeat'],
+      ['ConductorState', ConductorState, 'initialize'],
+      ['ConductorState', ConductorState, 'getField'],
+      ['GlobalConductor', GlobalConductor, 'update'],
+      ['HarmonicJourney', HarmonicJourney, 'planJourney'],
+      ['HarmonicJourney', HarmonicJourney, 'applyToContext'],
+      ['HarmonicJourney', HarmonicJourney, 'applyL2ToContext'],
+      ['SectionLengthAdvisor', SectionLengthAdvisor, 'advisePhraseCount'],
+      ['PivotChordBridge', PivotChordBridge, 'prepareBridge'],
+      ['PhaseLockedRhythmGenerator', PhaseLockedRhythmGenerator, 'initializePolyrhythmCoupling'],
+      ['InteractionHeatMap', InteractionHeatMap, 'getDensity'],
+      ['InteractionHeatMap', InteractionHeatMap, 'getSystemHeat'],
+      ['InteractionHeatMap', InteractionHeatMap, 'getTrend'],
+      ['InteractionHeatMap', InteractionHeatMap, 'flushDeferredOrphans'],
+      ['RhythmicPhaseLock', RhythmicPhaseLock, 'getMode'],
+      ['CadenceAdvisor', CadenceAdvisor, 'shouldCadence'],
+      ['TexturalMemoryAdvisor', TexturalMemoryAdvisor, 'recordUsage'],
+      ['ConvergenceHarmonicTrigger', ConvergenceHarmonicTrigger, 'onConvergence'],
+      ['StructuralFormTracker', StructuralFormTracker, 'recordSection']
     ];
     requiredModules.forEach(([name, obj, method]) => {
       if (!obj || typeof obj[/** @type {string} */ (method)] !== 'function') {
@@ -105,17 +122,18 @@ MainBootstrap = (() => {
       }
     });
 
+    // ── Phase 4: Verify initializer methods ──
     /** @type {[string, any][]} */
     const requiredInitializers = [
-      ['FXFeedbackListener', (typeof FXFeedbackListener !== 'undefined') ? FXFeedbackListener : null],
-      ['StutterFeedbackListener', (typeof StutterFeedbackListener !== 'undefined') ? StutterFeedbackListener : null],
-      ['JourneyRhythmCoupler', (typeof JourneyRhythmCoupler !== 'undefined') ? JourneyRhythmCoupler : null],
-      ['ConductorRegulationListener', (typeof ConductorRegulationListener !== 'undefined') ? ConductorRegulationListener : null],
-      ['DrumTextureCoupler', (typeof DrumTextureCoupler !== 'undefined') ? DrumTextureCoupler : null],
-      ['EmissionFeedbackListener', (typeof EmissionFeedbackListener !== 'undefined') ? EmissionFeedbackListener : null],
-      ['HarmonicRhythmTracker', (typeof HarmonicRhythmTracker !== 'undefined') ? HarmonicRhythmTracker : null],
-      ['ConductorState', (typeof ConductorState !== 'undefined') ? ConductorState : null],
-      ['CadenceAdvisor', (typeof CadenceAdvisor !== 'undefined') ? CadenceAdvisor : null]
+      ['FXFeedbackListener', FXFeedbackListener],
+      ['StutterFeedbackListener', StutterFeedbackListener],
+      ['JourneyRhythmCoupler', JourneyRhythmCoupler],
+      ['ConductorRegulationListener', ConductorRegulationListener],
+      ['DrumTextureCoupler', DrumTextureCoupler],
+      ['EmissionFeedbackListener', EmissionFeedbackListener],
+      ['HarmonicRhythmTracker', HarmonicRhythmTracker],
+      ['ConductorState', ConductorState],
+      ['CadenceAdvisor', CadenceAdvisor]
     ];
     requiredInitializers.forEach(([name, obj]) => {
       if (!obj || typeof obj.initialize !== 'function') {

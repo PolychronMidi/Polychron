@@ -10,19 +10,19 @@ ClimaxProximityPredictor = (() => {
    */
   function predict() {
     // Gather signals with safe fallbacks
-    const energyMomentum = (typeof EnergyMomentumTracker !== 'undefined' && EnergyMomentumTracker && typeof EnergyMomentumTracker.getMomentum === 'function')
+    const energyMomentum = (EnergyMomentumTracker && typeof EnergyMomentumTracker.getMomentum === 'function')
       ? EnergyMomentumTracker.getMomentum()
       : { momentum: 0, trend: 'insufficient', plateauDuration: 0, stale: false };
 
-    const registerProfile = (typeof RegisterPressureMonitor !== 'undefined' && RegisterPressureMonitor && typeof RegisterPressureMonitor.getPressureSignal === 'function')
+    const registerProfile = (RegisterPressureMonitor && typeof RegisterPressureMonitor.getPressureSignal === 'function')
       ? RegisterPressureMonitor.getPressureSignal()
       : { highPressure: false, lowPressure: false };
 
-    const onsetProfile = (typeof OnsetDensityProfiler !== 'undefined' && OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')
+    const onsetProfile = (OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')
       ? OnsetDensityProfiler.getDensityBias()
       : 1;
 
-    const currentTension = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const currentTension = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (Number(HarmonicContext.getField('tension')) || 0)
       : 0;
 

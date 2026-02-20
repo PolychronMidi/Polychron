@@ -25,7 +25,6 @@ require('./PivotChordBridge');
 
 // Register progression generator wrapper
 ChordRegistry.register('progression', (key, quality, type) => {
-  if (typeof ProgressionGenerator !== 'function') throw new Error('progression generator: ProgressionGenerator not available');
   const pg = new ProgressionGenerator(key, quality);
   return type ? pg.generate(type) : pg.random();
 });

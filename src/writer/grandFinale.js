@@ -1,9 +1,6 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 grandFinale = () => {
-  if (typeof LM === 'undefined' || !LM || typeof LM !== 'object') {
-    throw new Error('grandFinale: LM must be a defined object');
-  }
   if (!LM.layers || typeof LM.layers !== 'object') {
     throw new Error('grandFinale: LM.layers must be a defined object');
   }

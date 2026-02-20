@@ -51,8 +51,8 @@ RegisterPressureMonitor = (() => {
     if (total < 4) return { octaveBias: 0, crowdedBands: [], emptyBands: [] };
 
     // Find playable range from OCTAVE globals
-    const minBand = (typeof OCTAVE !== 'undefined' && OCTAVE) ? m.floor(OCTAVE.min) : 3;
-    const maxBand = (typeof OCTAVE !== 'undefined' && OCTAVE) ? m.floor(OCTAVE.max) : 7;
+    const minBand = (OCTAVE) ? m.floor(OCTAVE.min) : 3;
+    const maxBand = (OCTAVE) ? m.floor(OCTAVE.max) : 7;
 
     const crowdedBands = [];
     const emptyBands = [];

@@ -11,6 +11,8 @@ require('./playNotes');
 // @ts-ignore: side-effect module load
 require('./microUnitAttenuator');
 // @ts-ignore: side-effect module load
+require('./fullBootstrap');
+// @ts-ignore: side-effect module load
 require('./mainBootstrap');
 // @ts-ignore: side-effect module load
 require('./processBeat');

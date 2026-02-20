@@ -1,7 +1,7 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
   const V = Validator.create('conductorConfigDynamics');
 
-  const controls = (typeof CONDUCTOR_DYNAMICS_CONTROLS !== 'undefined' && CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
+  const controls = (CONDUCTOR_DYNAMICS_CONTROLS && typeof CONDUCTOR_DYNAMICS_CONTROLS === 'object')
     ? CONDUCTOR_DYNAMICS_CONTROLS
     : {
         phaseProfileMap: {
@@ -107,7 +107,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
   };
 
   const regulationTick = () => {
-    const crossModSample = (typeof crossModulation === 'number' && Number.isFinite(crossModulation))
+    const crossModSample = (Number.isFinite(crossModulation))
       ? clamp(crossModulation / regulation.crossModSampleDivisor, 0, 1)
       : 0.5;
 
@@ -147,7 +147,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
       regulation.crossModBias = 1 + (regulation.crossModBias - 1) * regulation.settleDecay;
     }
 
-    if (typeof EventBus !== 'undefined' && EventBus && typeof EventBus.emit === 'function') {
+    if (EventBus && typeof EventBus.emit === 'function') {
       const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.CONDUCTOR_REGULATION, {
         avg,
@@ -171,7 +171,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
   };
 
   const applyPhaseProfile = (opts = {}) => {
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (HarmonicContext.getField('sectionPhase') || 'development')
       : 'development';
 

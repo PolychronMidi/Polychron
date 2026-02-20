@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('melodicDevelopmentProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.melodicDevelopment = {
   default: [{ type: 'melodicDevelopment', name: 'major', root: 'random', intensity: 0.6, developmentBias: 0.7, inversionMode: 'diatonic', inversionPivotMode: 'first-note', inversionFixedDegree: 0, normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, phraseArcOpts: { arcType: 'arch', registerRange: 10 }, arcScaling: true, voiceProfile: 'default', motifProfile: 'default', rhythmProfile: 'straight' }],
   corpusAdaptive: [{ type: 'melodicDevelopment', name: 'random', root: 'random', intensity: 0.65, developmentBias: 0.78, inversionMode: 'diatonic', inversionPivotMode: 'median', inversionFixedDegree: 0, normalizeToScale: true, useDegreeNoise: true, enablePhraseArcs: true, phraseArcOpts: { arcType: 'rise-fall', registerRange: 12 }, arcScaling: true, voiceProfile: 'corpusAdaptive', motifProfile: 'default', rhythmProfile: 'corpusAdaptive' }],

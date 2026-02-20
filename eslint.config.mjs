@@ -79,7 +79,8 @@ export default [
       'local/no-console-acceptable-warning': 'error',
       'local/no-math-random': 'error',
       'local/no-useless-expose-dependencies-comments': 'error',
-      'local/only-error-throws': 'error'
+      'local/only-error-throws': 'error',
+      'local/no-typeof-validated-global': 'error'
     },
 
   },

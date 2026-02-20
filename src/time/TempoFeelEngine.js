@@ -5,13 +5,13 @@
 TempoFeelEngine = (() => {
   const MAX_FEEL_RATIO = 0.025; // max 2.5% tempo deviation
 
-  if (typeof Validator === 'undefined' || !Validator || typeof Validator.create !== 'function') {
+  if (!Validator || typeof Validator.create !== 'function') {
     throw new Error('TempoFeelEngine: Validator.create is required');
   }
   const V = Validator.create('TempoFeelEngine');
 
   function requirePhraseContextPosition() {
-    if (typeof ComposerFactory === 'undefined' || !ComposerFactory || !ComposerFactory.sharedPhraseArcManager
+    if (!ComposerFactory || !ComposerFactory.sharedPhraseArcManager
       || typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext !== 'function') {
       throw new Error('TempoFeelEngine: ComposerFactory.sharedPhraseArcManager.getPhraseContext is required');
     }

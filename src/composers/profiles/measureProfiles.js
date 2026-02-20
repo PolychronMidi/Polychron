@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('measureProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.measure = {
   default: [{ type: 'measure', rhythmProfile: 'straight', motifProfile: 'default', voiceProfile: 'default' }],
   corpusAdaptive: [{ type: 'measure', rhythmProfile: 'corpusAdaptive', motifProfile: 'default', voiceProfile: 'corpusAdaptive' }],

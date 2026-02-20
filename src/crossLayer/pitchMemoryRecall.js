@@ -100,7 +100,7 @@ PitchMemoryRecall = (() => {
       // Similarity: how many pitch classes match
       const pcOverlap = mem.pitchClasses.filter(pc => pc === currentPC).length;
       // Prefer memories from different sections (thematic recall, not repetition)
-      const sectionDist = Math.abs((typeof sectionIndex === 'number' ? sectionIndex : 0) - mem.sectionIdx);
+      const sectionDist = Math.abs(sectionIndex - mem.sectionIdx);
       const score = mem.strength * 0.4 + (pcOverlap > 0 ? 0.3 : 0) + clamp(sectionDist * 0.1, 0, 0.3);
       if (score > bestScore) {
         bestScore = score;

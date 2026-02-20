@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('voiceLeadingProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.voiceLeading = {
   default: [{ type: 'voiceLeading', name: 'major', root: 'random', commonToneWeight: 0.7, contraryMotionPreference: 0.4, voiceProfile: 'default', motifProfile: 'default' }],
   open: [{ type: 'voiceLeading', name: 'random', root: 'random', commonToneWeight: 0.5, contraryMotionPreference: 0.55, voiceProfile: 'soft', motifProfile: 'sparse' }],

@@ -118,7 +118,7 @@ ProgressionGenerator = class ProgressionGenerator {
     if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
       return opts.phase;
     }
-    if (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
       const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;
@@ -157,7 +157,7 @@ ProgressionGenerator = class ProgressionGenerator {
 
   random(opts = {}) {
     // Check for a pending pivot chord bridge (first progression after a key change)
-    if (typeof PivotChordBridge !== 'undefined' && PivotChordBridge && typeof PivotChordBridge.hasBridge === 'function' && PivotChordBridge.hasBridge()) {
+    if (PivotChordBridge && typeof PivotChordBridge.hasBridge === 'function' && PivotChordBridge.hasBridge()) {
       return PivotChordBridge.consumeBridge();
     }
 

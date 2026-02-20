@@ -36,7 +36,7 @@ ConvergenceHarmonicTrigger = (() => {
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system
-    if (typeof AdaptiveTrustScores === 'undefined' || !AdaptiveTrustScores ||
+    if (!AdaptiveTrustScores ||
         typeof AdaptiveTrustScores.getWeight !== 'function') {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: AdaptiveTrustScores.getWeight is required');
     }
@@ -48,11 +48,11 @@ ConvergenceHarmonicTrigger = (() => {
     let bias = 0;
 
     // Consume CadenceAlignment dead-end signals
-    if (typeof CadenceAlignment === 'undefined' || !CadenceAlignment ||
+    if (!CadenceAlignment ||
         typeof CadenceAlignment.applyAlignment !== 'function') {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment is required');
     }
-    if (typeof ConductorState === 'undefined' || !ConductorState ||
+    if (!ConductorState ||
         typeof ConductorState.getField !== 'function') {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConductorState.getField is required');
     }
@@ -78,7 +78,7 @@ ConvergenceHarmonicTrigger = (() => {
     }
 
     // Was convergence recent? (check both layers)
-    if (typeof ConvergenceDetector === 'undefined' || !ConvergenceDetector ||
+    if (!ConvergenceDetector ||
         typeof ConvergenceDetector.wasRecent !== 'function') {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConvergenceDetector.wasRecent is required');
     }
@@ -92,7 +92,7 @@ ConvergenceHarmonicTrigger = (() => {
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
     // Emit harmonic trigger event
-    if (typeof EventBus === 'undefined' || !EventBus || typeof EventBus.emit !== 'function') {
+    if (!EventBus || typeof EventBus.emit !== 'function') {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: EventBus.emit is required');
     }
     EventBus.emit(EventCatalog.names.CONVERGENCE_HARMONIC_TRIGGER, {

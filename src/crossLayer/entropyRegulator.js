@@ -77,7 +77,7 @@ EntropyRegulator = (() => {
    */
   function rhythmicIrregularity(layer) {
     // Use AbsoluteTimeWindow note history if available
-    if (typeof AbsoluteTimeWindow === 'undefined' || !AbsoluteTimeWindow) return 0.5;
+    if (!AbsoluteTimeWindow) return 0.5;
     V.requireFinite(beatStartTime, 'beatStartTime');
     const notes = AbsoluteTimeWindow.getNotes({
       layer,

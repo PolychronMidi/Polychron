@@ -35,19 +35,7 @@ MeasureComposer = class MeasureComposer {
   setCapabilities(next = {}) {
     V.assertObject(next, 'capabilities');
     const merged = Object.assign({}, this.capabilities || {}, next || {});
-    let validated;
-    if (typeof assertComposerCapabilities === 'function') {
-      validated = assertComposerCapabilities(merged);
-    } else {
-      const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic', 'notesReflectOutputSet', 'timeVaryingScaleContext'];
-      for (const k of keys) {
-        if (typeof merged[k] !== 'boolean') throw new Error(`MeasureComposer.setCapabilities: ${k} must be boolean`);
-      }
-      validated = {
-        preservesScale: Boolean(merged.preservesScale),
-        mutatesPitchClasses: Boolean(merged.mutatesPitchClasses),
-        deterministic: Boolean(merged.deterministic),
-        notesReflectOutputSet: Boolean(merged.notesReflectOutputSet),
+    const validated = assertComposerCapabilities(merged);
         timeVaryingScaleContext: Boolean(merged.timeVaryingScaleContext)
       };
     }
