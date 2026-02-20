@@ -1,9 +1,9 @@
 // MotifValidators.js - validation helpers for motif generation
-const _mvV = Validator.create('MotifValidators');
+const V = Validator.create('MotifValidators');
 
 MotifValidators = {
   _toPCSet(scaleLike, label = 'scale') {
-    _mvV.assertArray(scaleLike, label);
+    V.assertArray(scaleLike, label);
     if (scaleLike.length === 0) {
       throw new Error(`MotifValidators._toPCSet: ${label} must be a non-empty array`);
     }
@@ -64,7 +64,7 @@ MotifValidators = {
    * @param {{ mode?: 'auto'|'strict-global'|'local-window', windowScale?: Array<string|number>|null, context?: Object }} [opts]
    */
   assertScaleMatchesDeveloper(scaleNotes, developer, opts = {}) {
-    _mvV.assertArray(scaleNotes, 'scaleNotes');
+    V.assertArray(scaleNotes, 'scaleNotes');
     if (scaleNotes.length === 0) {
       throw new Error('MotifValidators: scaleNotes must be a non-empty array');
     }
@@ -75,7 +75,7 @@ MotifValidators = {
 
     const modeInput = (opts && typeof opts.mode === 'string') ? opts.mode : 'auto';
     const validModes = ['auto', 'strict-global', 'local-window'];
-    _mvV.assertInSet(modeInput, new Set(validModes), 'mode');
+    V.assertInSet(modeInput, new Set(validModes), 'mode');
     const mode = modeInput === 'auto'
       ? (caps.timeVaryingScaleContext ? 'local-window' : 'strict-global')
       : modeInput;

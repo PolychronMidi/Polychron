@@ -1,12 +1,12 @@
 // drummer.js - Generates drum patterns with human-like timing
 
-const _drV = Validator.create('drummer');
+const V = Validator.create('drummer');
 
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1),conductorContext={})=>{
-  _drV.requireDefined(drumNames, 'drumNames');
-  _drV.requireFinite(stutterChance, 'stutterChance');
-  _drV.assertArray(stutterRange, 'stutterRange');
-  _drV.requireFinite(stutterDecayFactor, 'stutterDecayFactor');
+  V.requireDefined(drumNames, 'drumNames');
+  V.requireFinite(stutterChance, 'stutterChance');
+  V.assertArray(stutterRange, 'stutterRange');
+  V.requireFinite(stutterDecayFactor, 'stutterDecayFactor');
   if (drumNames === 'random') {
     const allDrums = Object.keys(drumMap);
     drumNames = [allDrums[m.floor(m.random() * allDrums.length)]];
@@ -30,16 +30,13 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
+  const conductorSnapshot = ConductorState.getSnapshot();
   const contextIntensity = Number.isFinite(Number(conductorContext.compositeIntensity))
     ? clamp(Number(conductorContext.compositeIntensity), 0, 1)
-    : (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function')
-      ? clamp(Number(ConductorState.getSnapshot().compositeIntensity) || 0, 0, 1)
-      : 0;
+    : clamp(Number(conductorSnapshot.compositeIntensity) || 0, 0, 1);
   const phrasePhase = (typeof conductorContext.phrasePhase === 'string' && conductorContext.phrasePhase.length > 0)
     ? conductorContext.phrasePhase
-    : ((typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getSnapshot === 'function')
-      ? (ConductorState.getSnapshot().phrasePhase || 'development')
-      : 'development');
+    : (conductorSnapshot.phrasePhase || 'development');
   const accentBoost = conductorContext.accent ? 0.12 : 0;
   const phaseBoost = (phrasePhase === 'climax' || phrasePhase === 'peak') ? 0.12 : (phrasePhase === 'resolution' ? -0.05 : 0);
   const velocityScale = clamp(0.8 + contextIntensity * 0.45 + accentBoost + phaseBoost, 0.55, 1.4);
@@ -65,7 +62,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
     }
   });
   combined.forEach(({ drum, offset }, idx) => {
-    const useOffset = (typeof adjustedOffsets[idx] !== 'undefined') ? adjustedOffsets[idx] : offset;
+    const useOffset = (adjustedOffsets[idx] !== undefined) ? adjustedOffsets[idx] : offset;
     const drumInfo = drumMap[drum];
     if (drumInfo) {
       if (rf() < stutterChance) {

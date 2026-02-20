@@ -22,7 +22,7 @@ rhythmPriors = (function() {
       return opts.phraseContext.phase;
     }
 
-    if (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+    if (ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
       const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;
@@ -39,7 +39,7 @@ rhythmPriors = (function() {
   }
 
   function getProfileOrFail(qualityInput) {
-    if (typeof RHYTHM_PRIOR_TABLES === 'undefined' || !RHYTHM_PRIOR_TABLES || typeof RHYTHM_PRIOR_TABLES !== 'object') {
+    if (!RHYTHM_PRIOR_TABLES || typeof RHYTHM_PRIOR_TABLES !== 'object') {
       throw new Error('rhythmPriors.getProfileOrFail: RHYTHM_PRIOR_TABLES is unavailable');
     }
 
@@ -104,7 +104,7 @@ rhythmPriors = (function() {
 
     const qualityHint = (typeof inOpts.quality === 'string' && inOpts.quality.length > 0)
       ? inOpts.quality
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      : (HarmonicContext && typeof HarmonicContext.getField === 'function')
         ? HarmonicContext.getField('quality')
         : 'major';
 

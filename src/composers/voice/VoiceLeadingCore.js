@@ -1,5 +1,5 @@
 // VoiceLeadingCore.js - core candidate scoring logic delegated from VoiceLeadingScore
-const _vlcV = Validator.create('VoiceLeadingCore');
+const V = Validator.create('VoiceLeadingCore');
 
 /**
  * @typedef {Object} VoiceLeadingCoreOpts
@@ -27,9 +27,9 @@ VoiceLeadingCore = {
    */
   computeCandidateScore(scorer, candidate, lastNotes, registerRange, constraints, opts = {}) {
     // Validate inputs
-    _vlcV.requireDefined(scorer, 'scorer');
-    _vlcV.requireFinite(candidate, 'candidate');
-    _vlcV.assertArray(lastNotes, 'lastNotes');
+    V.requireDefined(scorer, 'scorer');
+    V.requireFinite(candidate, 'candidate');
+    V.assertArray(lastNotes, 'lastNotes');
     if (!Array.isArray(lastNotes) || lastNotes.length === 0) throw new Error('VoiceLeadingCore.computeCandidateScore: lastNotes must be non-empty array');
     for (let i = 0; i < lastNotes.length; i++) if (!Number.isFinite(Number(lastNotes[i]))) throw new Error(`VoiceLeadingCore.computeCandidateScore: lastNotes[${i}] must be finite number`);
 

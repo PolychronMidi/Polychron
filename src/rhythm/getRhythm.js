@@ -4,27 +4,27 @@ let _getRhythmDepsValidated = false;
 
 function assertGetRhythmDeps() {
   if (_getRhythmDepsValidated) return;
-  if (typeof FXFeedbackListener === 'undefined' || !FXFeedbackListener || typeof FXFeedbackListener.biasRhythmWeights !== 'function') {
+  if (!FXFeedbackListener || typeof FXFeedbackListener.biasRhythmWeights !== 'function') {
     throw new Error('getRhythm: FXFeedbackListener.biasRhythmWeights is required');
   }
-  if (typeof StutterFeedbackListener === 'undefined' || !StutterFeedbackListener || typeof StutterFeedbackListener.biasRhythmWeights !== 'function') {
+  if (!StutterFeedbackListener || typeof StutterFeedbackListener.biasRhythmWeights !== 'function') {
     throw new Error('getRhythm: StutterFeedbackListener.biasRhythmWeights is required');
   }
-  if (typeof JourneyRhythmCoupler === 'undefined' || !JourneyRhythmCoupler || typeof JourneyRhythmCoupler.biasRhythmWeights !== 'function') {
+  if (!JourneyRhythmCoupler || typeof JourneyRhythmCoupler.biasRhythmWeights !== 'function') {
     throw new Error('getRhythm: JourneyRhythmCoupler.biasRhythmWeights is required');
   }
-  if (typeof PhaseLockedRhythmGenerator === 'undefined' || !PhaseLockedRhythmGenerator || typeof PhaseLockedRhythmGenerator.generate !== 'function') {
+  if (!PhaseLockedRhythmGenerator || typeof PhaseLockedRhythmGenerator.generate !== 'function') {
     throw new Error('getRhythm: PhaseLockedRhythmGenerator.generate is required');
   }
   _getRhythmDepsValidated = true;
 }
 
-const _grV = Validator.create('getRhythm');
+const V = Validator.create('getRhythm');
 
 getRhythm = function getRhythm(level,length,pattern,method,...args){
   assertGetRhythmDeps();
-  _grV.assertNonEmptyString(level, 'level');
-  _grV.requireFinite(length, 'length');
+  V.assertNonEmptyString(level, 'level');
+  V.requireFinite(length, 'length');
   // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
 
@@ -45,22 +45,21 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     let rhythmSource = JourneyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
 
     // Apply rhythm history novelty penalty to discourage repetition
-    if (typeof RhythmHistoryTracker !== 'undefined' && RhythmHistoryTracker && typeof RhythmHistoryTracker.penalizeRepetition === 'function') {
-      rhythmSource = RhythmHistoryTracker.penalizeRepetition(rhythmSource);
-    }
+    rhythmSource = RhythmHistoryTracker.penalizeRepetition(rhythmSource);
 
-    const hasLayerContext = typeof LM !== 'undefined' && LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
+    const hasLayerContext = LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
     const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
 
     if (useCorpusRhythmPriors) {
-      if (typeof rhythmPriors === 'undefined' || !rhythmPriors || typeof rhythmPriors.getBiasedRhythms !== 'function') {
+      if (!rhythmPriors || typeof rhythmPriors.getBiasedRhythms !== 'function') {
         throw new Error('getRhythm: rhythmPriors.getBiasedRhythms() unavailable while corpus rhythm priors are enabled');
       }
 
-      const phraseContext = (typeof ComposerFactory !== 'undefined' && ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
-        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
-        : undefined;
+      if (!ComposerFactory.sharedPhraseArcManager || typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext !== 'function') {
+        throw new Error('getRhythm: ComposerFactory.sharedPhraseArcManager.getPhraseContext is required when corpus rhythm priors are enabled');
+      }
+      const phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
       rhythmSource = rhythmPriors.getBiasedRhythms({
         rhythms: fxBiasedRhythmSource,
@@ -73,7 +72,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
       });
     }
 
-    const allowedPool = (typeof RHYTHM_PATTERN_POOLS !== 'undefined' && RHYTHM_PATTERN_POOLS && Array.isArray(RHYTHM_PATTERN_POOLS[level]))
+    const allowedPool = (RHYTHM_PATTERN_POOLS && Array.isArray(RHYTHM_PATTERN_POOLS[level]))
       ? RHYTHM_PATTERN_POOLS[level]
       : null;
     const allowedSet = allowedPool ? new Set(allowedPool) : null;
@@ -97,16 +96,12 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const { method: rhythmMethodKey, args: rhythmArgs }=rhythmSource[rhythmKey];
 
     // Record selection for novelty tracking
-    if (typeof RhythmHistoryTracker !== 'undefined' && RhythmHistoryTracker && typeof RhythmHistoryTracker.record === 'function') {
-      const rhtLayer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-      RhythmHistoryTracker.record(rhythmMethodKey, length, rhtLayer);
+    const rhtLayer = (typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+    RhythmHistoryTracker.record(rhythmMethodKey, length, rhtLayer);
 
-      // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
-      if (typeof AbsoluteTimeWindow !== 'undefined' && AbsoluteTimeWindow && typeof AbsoluteTimeWindow.recordRhythm === 'function') {
-        const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
-        AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, rhtLayer, absTime);
-      }
-    }
+    // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
+    const absTime = Number.isFinite(beatStartTime) ? beatStartTime : 0;
+    AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, rhtLayer, absTime);
 
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators

@@ -10,7 +10,7 @@
  * - Dynamism scaling (rhythmic activity)
  */
 
-const _paV = Validator.create('PhraseArcManager');
+const V = Validator.create('PhraseArcManager');
 
 PhraseArcManager = class PhraseArcManager {
   /**
@@ -20,7 +20,7 @@ PhraseArcManager = class PhraseArcManager {
    * @param {Object} [opts.densityRange] - Voice count multiplier range (default: {min: 0.85, max: 1.3})
    */
   constructor(opts = {}) {
-    _paV.assertPlainObject(opts, 'opts');
+    V.assertPlainObject(opts, 'opts');
     const validArcTypes = ['arch', 'rise-fall', 'build-resolve', 'wave'];
     if (opts.arcType === undefined) {
       this.arcType = 'arch';

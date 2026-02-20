@@ -13,7 +13,11 @@ EventCatalog = (() => {
     BEAT_BINAURAL_APPLIED: 'beat-binaural-applied',
     HARMONIC_CHANGE: 'harmonic-change',
     NOTES_EMITTED: 'notes-emitted',
-    MOTIF_CHAIN_APPLIED: 'motif-chain-applied'
+    MOTIF_CHAIN_APPLIED: 'motif-chain-applied',
+    CROSS_LAYER_EXPLAIN: 'CROSS_LAYER_EXPLAIN',
+    CONVERGENCE_HARMONIC_TRIGGER: 'CONVERGENCE_HARMONIC_TRIGGER',
+    CROSS_LAYER_CONVERGENCE: 'CROSS_LAYER_CONVERGENCE',
+    CROSS_LAYER_CADENCE_ALIGN: 'CROSS_LAYER_CADENCE_ALIGN'
   });
 
   function assertEventPayload(name, data) {
@@ -101,6 +105,42 @@ EventCatalog = (() => {
       case names.MOTIF_CHAIN_APPLIED:
         V.assertFinite(data.transformCount, 'motif-chain-applied.transformCount');
         V.assertFinite(data.resultNoteCount, 'motif-chain-applied.resultNoteCount');
+        return true;
+
+      case names.CROSS_LAYER_EXPLAIN:
+        V.assertNonEmptyString(data.type, 'cross-layer-explain.type');
+        V.assertNonEmptyString(data.layer, 'cross-layer-explain.layer');
+        V.assertFinite(data.absTimeMs, 'cross-layer-explain.absTimeMs');
+        return true;
+
+      case names.CONVERGENCE_HARMONIC_TRIGGER:
+        V.assertNonEmptyString(data.type, 'convergence-harmonic-trigger.type');
+        V.assertFinite(data.bias, 'convergence-harmonic-trigger.bias');
+        V.assertRange(data.rarity, 0, 1, 'convergence-harmonic-trigger.rarity');
+        V.assertRange(data.triggerCount, 0, Number.MAX_SAFE_INTEGER, 'convergence-harmonic-trigger.triggerCount');
+        V.assertFinite(data.absTimeMs, 'convergence-harmonic-trigger.absTimeMs');
+        return true;
+
+      case names.CROSS_LAYER_CONVERGENCE:
+        V.assertNonEmptyString(data.layer, 'cross-layer-convergence.layer');
+        V.assertRange(data.rarity, 0, 1, 'cross-layer-convergence.rarity');
+        V.assertRange(data.syncTick, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-convergence.syncTick');
+        V.assertFinite(data.noteA, 'cross-layer-convergence.noteA');
+        V.assertFinite(data.noteB, 'cross-layer-convergence.noteB');
+        V.assertFinite(data.velocityA, 'cross-layer-convergence.velocityA');
+        V.assertFinite(data.velocityB, 'cross-layer-convergence.velocityB');
+        V.assertArray(data.burstNotes, 'cross-layer-convergence.burstNotes');
+        V.assertFinite(data.burstVel, 'cross-layer-convergence.burstVel');
+        V.assertRange(data.totalConvergences, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-convergence.totalConvergences');
+        V.assertFinite(data.absTimeMs, 'cross-layer-convergence.absTimeMs');
+        return true;
+
+      case names.CROSS_LAYER_CADENCE_ALIGN:
+        V.assertNonEmptyString(data.layer, 'cross-layer-cadence-align.layer');
+        V.assertRange(data.combinedTension, 0, 1, 'cross-layer-cadence-align.combinedTension');
+        V.assertRange(data.syncTick, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-cadence-align.syncTick');
+        V.assertBoolean(data.otherCadenceSuggested, 'cross-layer-cadence-align.otherCadenceSuggested');
+        V.assertFinite(data.absTimeMs, 'cross-layer-cadence-align.absTimeMs');
         return true;
 
       default:

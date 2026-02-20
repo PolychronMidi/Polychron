@@ -1,15 +1,15 @@
 // Consolidated rhythm tracking function — explicit context-based API
-const VTrackRhythm = Validator.create('trackRhythm');
+const V = Validator.create('trackRhythm');
 
 trackRhythm = (unit, layer, played) => {
-  VTrackRhythm.assertObject(layer, 'layer');
-  VTrackRhythm.assertNonEmptyString(unit, 'unit');
+  V.assertObject(layer, 'layer');
+  V.assertNonEmptyString(unit, 'unit');
   const key = unit.toLowerCase();
-  VTrackRhythm.requireEnum(key, ['beat', 'div', 'subdiv', 'subsubdiv'], 'unit');
+  V.requireEnum(key, ['beat', 'div', 'subdiv', 'subsubdiv'], 'unit');
 
   const incrementCounter = (counterKey) => {
     const existing = layer[counterKey];
-    if (typeof existing === 'undefined') {
+    if (existing === undefined) {
       layer[counterKey] = 1;
     } else if (!Number.isFinite(existing)) {
       throw new Error(`trackRhythm: counter "${counterKey}" must be finite when defined`);
@@ -35,34 +35,34 @@ trackRhythm = (unit, layer, played) => {
   const idx = layer[`${key}Index`];
   // Prefer per-context rhythm/index, but fall back to globals when available.
   let rhythmFinal = Array.isArray(rhythm) ? rhythm : null;
-  let idxFinal = (typeof idx !== 'undefined') ? idx : undefined;
+  let idxFinal = idx;
 
   // Try global fallbacks without using globalThis (project convention: naked globals)
-  if (!Array.isArray(rhythmFinal) || typeof idxFinal === 'undefined') {
+  if (!Array.isArray(rhythmFinal) || idxFinal === undefined) {
     switch (key) {
       case 'beat':
-        if (!Array.isArray(rhythmFinal) && typeof beatRhythm !== 'undefined') rhythmFinal = beatRhythm;
-        if (typeof idxFinal === 'undefined' && typeof beatIndex !== 'undefined') idxFinal = beatIndex;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = beatRhythm;
+        if (idxFinal === undefined) idxFinal = beatIndex;
         break;
       case 'div':
-        if (!Array.isArray(rhythmFinal) && typeof divRhythm !== 'undefined') rhythmFinal = divRhythm;
-        if (typeof idxFinal === 'undefined' && typeof divIndex !== 'undefined') idxFinal = divIndex;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = divRhythm;
+        if (idxFinal === undefined) idxFinal = divIndex;
         break;
       case 'subdiv':
-        if (!Array.isArray(rhythmFinal) && typeof subdivRhythm !== 'undefined') rhythmFinal = subdivRhythm;
-        if (typeof idxFinal === 'undefined' && typeof subdivIndex !== 'undefined') idxFinal = subdivIndex;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = subdivRhythm;
+        if (idxFinal === undefined) idxFinal = subdivIndex;
         break;
       case 'subsubdiv':
-        if (!Array.isArray(rhythmFinal) && typeof subsubdivRhythm !== 'undefined') rhythmFinal = subsubdivRhythm;
-        if (typeof idxFinal === 'undefined' && typeof subsubdivIndex !== 'undefined') idxFinal = subsubdivIndex;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = subsubdivRhythm;
+        if (idxFinal === undefined) idxFinal = subsubdivIndex;
         break;
       default:
         throw new Error(`trackRhythm: unknown unit "${unit}"`);
   }
 }
   // If still missing or invalid, this is a critical invariance violation — fail fast.
-  if (!Array.isArray(rhythmFinal) || typeof idxFinal === 'undefined' || typeof rhythmFinal[idxFinal] === 'undefined') {
-    const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: typeof idx !== 'undefined', globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: typeof idxFinal !== 'undefined' };
+  if (!Array.isArray(rhythmFinal) || idxFinal === undefined || rhythmFinal[idxFinal] === undefined) {
+    const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: idx !== undefined, globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: idxFinal !== undefined };
     throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}" - details: ${JSON.stringify(details)}`);
   }
   const val = rhythmFinal[idxFinal];

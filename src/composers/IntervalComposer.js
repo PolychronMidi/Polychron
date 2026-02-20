@@ -1,4 +1,4 @@
-const _intV = Validator.create('IntervalComposer');
+const V = Validator.create('IntervalComposer');
 /**
  * IntervalComposer: Select scale degree subsets from any scale/mode/chord.
  * Universal utility for any composer that needs to choose which scale positions to use.
@@ -24,7 +24,7 @@ IntervalComposer = {
    * @throws {Error} If inputs are invalid
    */
   selectIntervals(scaleLength, opts = {}) {
-    _intV.requireFinite(scaleLength, 'scaleLength');
+    V.requireFinite(scaleLength, 'scaleLength');
     if (Number(scaleLength) <= 0) {
       throw new Error(`IntervalComposer.selectIntervals: invalid scaleLength=${scaleLength}`);
     }

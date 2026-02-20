@@ -99,7 +99,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const globalState = localShared.global;
 
   // Reset shift history and selection sets at beat boundary for variety
-  const currentBeatIndex = (typeof beatIndex !== 'undefined') ? beatIndex : null;
+  const currentBeatIndex = beatIndex;
   if (globalState._lastBeatIndex !== currentBeatIndex) {
     localShared.shifts.clear();
     globalState._lastBeatIndex = currentBeatIndex;

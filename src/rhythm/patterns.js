@@ -18,7 +18,7 @@ const LOCAL_RHYTHMS = {
 // Populate the naked-global `rhythms` by mutating rather than conditionally reassigning it
 rhythms = {};
 Object.assign(rhythms, LOCAL_RHYTHMS);
-if (typeof RHYTHM_PATTERNS !== 'undefined' && RHYTHM_PATTERNS) {
+if (RHYTHM_PATTERNS) {
   Object.assign(rhythms, RHYTHM_PATTERNS);
 }
 
