@@ -10,10 +10,6 @@ ConductorConfig = (() => {
 
   const V = Validator.create('ConductorConfig');
 
-  if (typeof conductorConfigValidateProfile !== 'function' || typeof conductorConfigMergeProfileTuning !== 'function' || typeof conductorConfigTuningDefaults !== 'function' || typeof conductorConfigTuningOverrides !== 'function' || typeof conductorConfigDynamics !== 'function') {
-    throw new Error('ConductorConfig: required helper globals are missing');
-  }
-
   const PROFILE_TUNING_DEFAULTS = conductorConfigTuningDefaults();
   const PROFILE_TUNING_OVERRIDES = conductorConfigTuningOverrides();
 
@@ -46,7 +42,7 @@ ConductorConfig = (() => {
   }
 
   function getProfilesOrFail() {
-    if (typeof CONDUCTOR_PROFILE_SOURCES === 'undefined' || !CONDUCTOR_PROFILE_SOURCES || typeof CONDUCTOR_PROFILE_SOURCES !== 'object') {
+    if (!CONDUCTOR_PROFILE_SOURCES || typeof CONDUCTOR_PROFILE_SOURCES !== 'object') {
       throw new Error('ConductorConfig.getProfilesOrFail: CONDUCTOR_PROFILE_SOURCES is not available');
     }
     const names = Object.keys(CONDUCTOR_PROFILE_SOURCES);
@@ -210,7 +206,7 @@ ConductorConfig = (() => {
     /** @type {{distance?:number,move?:string}|null} */
     let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
     if (!stop) {
-      if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
+      if (!HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
         throw new Error('ConductorConfig.getJourneyFxModulation: HarmonicJourney.getStop is not available');
       }
       if (!Number.isFinite(Number(sectionIndex))) {
@@ -329,14 +325,14 @@ ConductorConfig = (() => {
 
     const sectionPhase = (typeof sectionPhaseOverride === 'string' && sectionPhaseOverride.length > 0)
       ? sectionPhaseOverride
-      : (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+      : (HarmonicContext && typeof HarmonicContext.getField === 'function')
         ? (HarmonicContext.getField('sectionPhase') || 'development')
         : 'development';
 
     const selected = Object.prototype.hasOwnProperty.call(mapping, sectionPhase)
       ? V.assertNonEmptyString(mapping[sectionPhase], `ConductorConfig.noiseProfileByPhase.${sectionPhase}`)
       : defaultProfile;
-    if (typeof NOISE_PROFILES !== 'undefined' && NOISE_PROFILES && typeof NOISE_PROFILES === 'object') {
+    if (NOISE_PROFILES && typeof NOISE_PROFILES === 'object') {
       if (!Object.prototype.hasOwnProperty.call(NOISE_PROFILES, selected)) {
         throw new Error(`ConductorConfig.getNoiseProfileForSection: unknown noise profile "${selected}"`);
       }

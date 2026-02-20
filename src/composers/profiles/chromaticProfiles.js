@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('chromaticProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.chromatic = {
   default: [{ type: 'chromatic', targetScaleName: 'major', root: 'random', chromaticDensity: 0.4, voiceProfile: 'default', motifProfile: 'default' }],
   denseApproach: [{ type: 'chromatic', targetScaleName: 'major', root: 'random', chromaticDensity: 0.7, voiceProfile: 'expressive', motifProfile: 'dense' }],

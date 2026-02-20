@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('bluesProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.blues = {
   default: [{ type: 'blues', root: 'random', bluesType: 'minor', blueNoteProb: 0.35, voiceProfile: 'default', motifProfile: 'default' }],
   minorGrit: [{ type: 'blues', root: 'random', bluesType: 'minor', blueNoteProb: 0.5, voiceProfile: 'loud', motifProfile: 'dense' }],

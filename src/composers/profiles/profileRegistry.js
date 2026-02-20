@@ -1,13 +1,3 @@
-if (typeof ComposerProfileUtils === 'undefined' || !ComposerProfileUtils || typeof ComposerProfileUtils.isPlainObject !== 'function') {
-  throw new Error('ComposerProfiles.profileRegistry: ComposerProfileUtils is unavailable');
-}
-if (typeof ComposerProfileValidation === 'undefined' || !ComposerProfileValidation || typeof ComposerProfileValidation.validateDiversityOrFail !== 'function') {
-  throw new Error('ComposerProfiles.profileRegistry: ComposerProfileValidation is unavailable');
-}
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !ComposerProfileUtils.isPlainObject(COMPOSER_TYPE_PROFILE_SOURCES)) {
-  throw new Error('ComposerProfiles.profileRegistry: COMPOSER_TYPE_PROFILE_SOURCES is undefined or invalid');
-}
-
 COMPOSER_TYPE_PROFILES = {};
 
 for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILE_SOURCES)) {
@@ -62,7 +52,7 @@ COMPOSER_PROFILE_POOLS = {
 if (typeof COMPOSER_POOL_SELECTION_STRATEGY !== 'undefined' && COMPOSER_POOL_SELECTION_STRATEGY !== null && !ComposerProfileUtils.isPlainObject(COMPOSER_POOL_SELECTION_STRATEGY)) {
   throw new Error('ComposerProfiles.profileRegistry: COMPOSER_POOL_SELECTION_STRATEGY must be an object when pre-defined');
 }
-if (typeof COMPOSER_POOL_SELECTION_STRATEGY === 'undefined' || COMPOSER_POOL_SELECTION_STRATEGY === null) {
+if (COMPOSER_POOL_SELECTION_STRATEGY === null) {
   COMPOSER_POOL_SELECTION_STRATEGY = {
     version: 1,
     name: 'context-strategy-v1',

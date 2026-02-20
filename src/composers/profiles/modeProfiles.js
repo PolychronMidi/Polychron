@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('modeProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.mode = {
   default: [{ type: 'mode', name: 'ionian', root: 'random', voiceProfile: 'default', motifProfile: 'default' }],
   modalDrift: [{ type: 'mode', name: 'random', root: 'random', voiceProfile: 'default', motifProfile: 'dense' }],

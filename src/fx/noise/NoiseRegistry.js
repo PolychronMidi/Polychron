@@ -32,7 +32,7 @@ const implementations = {
 // Populate the naked-global `noiseGenerators` by mutating rather than conditionally reassigning
 noiseGenerators = {};
 Object.assign(noiseGenerators, implementations);
-if (typeof NOISE_GENERATOR_REGISTRY !== 'undefined' && NOISE_GENERATOR_REGISTRY) {
+if (NOISE_GENERATOR_REGISTRY) {
   Object.keys(NOISE_GENERATOR_REGISTRY).forEach(key => {
     const target = NOISE_GENERATOR_REGISTRY[key];
     const impl = implementations[target] || implementations[key];
@@ -47,7 +47,7 @@ generatorKeys = Object.keys(noiseGenerators);
 // During chord bursts → smooth generators (simplex, sine, fbm, gaussian)
 // During flurries → chaotic generators (turbulence, ridged, worley, metaRecursive)
 randomNoiseGenerator = function() {
-  if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+  if (DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
     const texMetrics = DrumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.2) {
       const smoothKeys = ['simplex', 'sine', 'fbm', 'gaussian', 'metaSimplex2D'];

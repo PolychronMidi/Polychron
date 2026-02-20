@@ -18,7 +18,6 @@ ChordManager = (function() {
     }
 
     // Fallback: use ProgressionGenerator directly (fail-fast if missing)
-    if (typeof ProgressionGenerator !== 'function') throw new Error('ChordManager.generateProgression: ProgressionGenerator not available');
     const pg = new ProgressionGenerator(key, quality);
     return type ? pg.generate(type) : pg.random();
   }

@@ -17,7 +17,7 @@ GrooveTransfer = (() => {
   }
 
   function getAbsoluteTimeGridOrThrow() {
-    if (typeof AbsoluteTimeGrid === 'undefined' || !AbsoluteTimeGrid) {
+    if (!AbsoluteTimeGrid) {
       throw new Error('GrooveTransfer: AbsoluteTimeGrid is required');
     }
     V.assertObject(AbsoluteTimeGrid, 'AbsoluteTimeGrid');

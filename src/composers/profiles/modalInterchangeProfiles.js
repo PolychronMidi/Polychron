@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('modalInterchangeProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.modalInterchange = {
   default: [{ type: 'modalInterchange', key: 'random', primaryMode: 'major', borrowProbability: 0.3, chordProfile: 'pop', rhythmProfile: 'straight' }],
   conservative: [{ type: 'modalInterchange', key: 'random', primaryMode: 'major', borrowProbability: 0.12, chordProfile: 'pop', rhythmProfile: 'straight' }],

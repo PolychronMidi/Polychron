@@ -119,11 +119,11 @@ StutterContagion = (() => {
     const numStutters = Math.max(5, Math.round(ri(10, 70) * contagion.intensity));
     const duration = tpSec * rf(.1, .8) * contagion.intensity;
 
-    if (contagion.type === 'fade' && typeof stutterFade === 'function') {
+    if (contagion.type === 'fade' && stutterFade) {
       stutterFade(flipBin ? flipBinT3 : flipBinF3, numStutters, duration);
-    } else if (contagion.type === 'pan' && typeof stutterPan === 'function') {
+    } else if (contagion.type === 'pan' && stutterPan) {
       stutterPan(flipBin ? flipBinT3 : flipBinF3, numStutters, duration);
-    } else if (contagion.type === 'fx' && typeof stutterFX === 'function') {
+    } else if (contagion.type === 'fx' && stutterFX) {
       stutterFX(flipBin ? flipBinT3 : flipBinF3, numStutters, duration);
     }
 

@@ -21,8 +21,7 @@ GrooveTemplateAdvisor = (() => {
     }
 
     // Subdivision duration in seconds; fallback to 0.125s
-    const subdivDur = (typeof tpSec !== 'undefined' && typeof tpSubdiv !== 'undefined'
-      && Number.isFinite(tpSec) && Number.isFinite(tpSubdiv) && tpSec > 0)
+    const subdivDur = (Number.isFinite(tpSec) && Number.isFinite(tpSubdiv) && tpSec > 0)
       ? tpSubdiv / tpSec
       : 0.125;
 

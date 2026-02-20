@@ -1,0 +1,307 @@
+// fullBootstrap.js — Authoritative registry of globals validated at boot time.
+// mainBootstrap.assertBootstrapGlobals() proves these exist before the main loop.
+// The ESLint rule `no-typeof-validated-global` bans redundant typeof probes on them.
+//
+// To add a new validated global:
+//   1. Add it to VALIDATED_GLOBALS below
+//   2. Add a corresponding check in mainBootstrap.assertBootstrapGlobals()
+//   3. The ESLint rule picks it up automatically — no other file edits needed.
+
+FullBootstrap = (() => {
+  /**
+   * Every name in this set is proven-defined by mainBootstrap.assertBootstrapGlobals()
+   * before any composition code runs. Typeof-probing these downstream is redundant
+   * and banned by the `local/no-typeof-validated-global` ESLint rule.
+   *
+   * Organized by subsystem, matching src/index.js load order.
+   */
+  const VALIDATED_GLOBALS = Object.freeze([
+
+    // ── utils ──
+    'Validator',
+
+    // ── conductor ──
+    'HarmonicContext',
+    'HarmonicRhythmTracker',
+    'harmonicJourneyHelpers',
+    'HarmonicJourney',
+    'PhraseArcManager',
+    'ConductorConfig',
+    'DynamismEngine',
+    'TextureBlender',
+    'ConductorState',
+    'ConductorIntelligence',
+    'GlobalConductor',
+
+    // ── conductor/profiles ──
+    'conductorProfileDefault',
+    'conductorProfileRestrained',
+    'conductorProfileExplosive',
+    'conductorProfileAtmospheric',
+    'conductorProfileRhythmicDrive',
+    'conductorProfileMinimal',
+    'CONDUCTOR_PROFILE_SOURCES',
+    'conductorConfigTuningDefaults',
+    'conductorConfigTuningOverrides',
+    'conductorConfigMergeProfileTuning',
+    'conductorConfigValidateProfile',
+    'conductorConfigDynamics',
+    'CONDUCTOR_DYNAMICS_CONTROLS',
+
+    // ── conductor/intelligence (all loaded by subdirectory indexes) ──
+    'EnergyMomentumTracker',
+    'ClimaxProximityPredictor',
+    'DensityWaveAnalyzer',
+    'DurationalContourTracker',
+    'DynamicArchitectPlanner',
+    'DynamicPeakMemory',
+    'DynamicRangeTracker',
+    'VelocityShapeAnalyzer',
+    'CadenceAdvisor',
+    'CadentialPreparationAdvisor',
+    'ChromaticSaturationMonitor',
+    'ConsonanceDissonanceTracker',
+    'HarmonicDensityOscillator',
+    'HarmonicFieldDensityTracker',
+    'HarmonicPedalFieldTracker',
+    'HarmonicRhythmDensityRatio',
+    'HarmonicSurpriseIndex',
+    'HarmonicVelocityMonitor',
+    'ModalColorTracker',
+    'PitchClassGravityMap',
+    'TensionResolutionTracker',
+    'TonalAnchorDistanceTracker',
+    'AmbitusMigrationTracker',
+    'CounterpointMotionTracker',
+    'IntervalBalanceTracker',
+    'IntervalDirectionMemory',
+    'IntervalExpansionContractor',
+    'MelodicContourTracker',
+    'OctaveSpreadMonitor',
+    'PhraseContourArchetypeDetector',
+    'RegisterMigrationTracker',
+    'RegisterPressureMonitor',
+    'RegistralVelocityCorrelator',
+    'TessituraPressureMonitor',
+    'ThematicRecallDetector',
+    'VoiceLeadingEfficiencyTracker',
+    'AccentPatternTracker',
+    'AttackDensityProfiler',
+    'GrooveTemplateAdvisor',
+    'InterLayerRhythmAnalyzer',
+    'OnsetDensityProfiler',
+    'OnsetRegularityMonitor',
+    'RhythmicComplexityGradient',
+    'RhythmicDensityContrastTracker',
+    'RhythmicGroupingAnalyzer',
+    'RhythmicInertiaTracker',
+    'RhythmicSymmetryDetector',
+    'SyncopationDensityTracker',
+    'TemporalProportionTracker',
+    'ArticulationProfiler',
+    'CrossLayerDensityBalancer',
+    'LayerCoherenceScorer',
+    'LayerEntryExitTracker',
+    'LayerIndependenceScorer',
+    'MotivicDensityTracker',
+    'OrchestrationWeightTracker',
+    'PedalPointDetector',
+    'PhraseLengthMomentumTracker',
+    'RepetitionFatigueMonitor',
+    'RestDensityTracker',
+    'SectionLengthAdvisor',
+    'SilenceDistributionTracker',
+    'TexturalGradientTracker',
+    'TexturalMemoryAdvisor',
+    'TimbreBalanceTracker',
+    'VoiceDensityBalancer',
+    'StructuralFormTracker',
+
+    // ── rhythm ──
+    'RhythmRegistry',
+    'RhythmManager',
+    'RhythmValues',
+    'rhythmConfig',
+    'rhythmModulator',
+    'FeedbackAccumulator',
+    'FXFeedbackListener',
+    'StutterFeedbackListener',
+    'JourneyRhythmCoupler',
+    'ConductorRegulationListener',
+    'DrumTextureCoupler',
+    'EmissionFeedbackListener',
+    'RhythmHistoryTracker',
+    'PhaseLockedRhythmGenerator',
+    'RHYTHM_PRIOR_TABLES',
+    'rhythmPriors',
+    'DRUM_MAP',
+
+    // ── time ──
+    'LM',
+    'AbsoluteTimeGrid',
+    'AbsoluteTimeWindow',
+    'TempoFeelEngine',
+
+    // ── composers ──
+    'ComposerFactory',
+    'FactoryManager',
+    'factoryProfiles',
+    'factoryProgression',
+    'factoryPoolResolver',
+    'factoryFamilies',
+    'factoryConstructors',
+    'MeasureComposer',
+    'ScaleComposer',
+    'ChordComposer',
+    'ModeComposer',
+    'PentatonicComposer',
+    'BluesComposer',
+    'ChromaticComposer',
+    'QuartalComposer',
+    'TensionReleaseComposer',
+    'ModalInterchangeComposer',
+    'HarmonicRhythmComposer',
+    'MelodicDevelopmentComposer',
+    'VoiceLeadingComposer',
+    'MotifComposer',
+    'MotifChain',
+    'playMotifs',
+    'ProgressionGenerator',
+    'PivotChordBridge',
+    'assertComposerCapabilities',
+    'ComposerRuntimeProfileAdapter',
+    'ComposerProfileUtils',
+    'ComposerProfileValidation',
+    'COMPOSER_TYPE_PROFILE_SOURCES',
+    'COMPOSER_TYPE_PROFILES',
+    'COMPOSER_PROFILE_POOLS',
+    'COMPOSER_FAMILIES',
+    'COMPOSER_POOL_SELECTION_STRATEGY',
+    'ChordRegistry',
+    'ChordManager',
+    'MotifRegistry',
+    'MotifManager',
+    'VoiceRegistry',
+    'VoiceManager',
+
+    // ── fx ──
+    'Stutter',
+    'StutterConfig',
+    'StutterRegistry',
+    'StutterFailFast',
+    'StutterConfigStore',
+    'STUTTER_PROFILES',
+    'STUTTER_VELOCITY_RANGES',
+    'STUTTER_CROSSMOD_RULES',
+    'STUTTER_PRESETS',
+    'STUTTER_DIRECTIVE_DEFAULTS',
+    'FX_CC_DEFAULTS',
+    'stutterFade',
+    'stutterPan',
+    'stutterFX',
+    'stutterNotes',
+    'stutterExecutePlan',
+    'SimplexNoise',
+    'defaultSimplex',
+    'NOISE_GENERATOR_REGISTRY',
+    'NOISE_PROFILES',
+    'getParameterModulation',
+    'getNoiseProfile',
+
+    // ── crossLayer ──
+    'CrossLayerRegistry',
+    'CrossLayerLifecycleManager',
+    'AdaptiveTrustScores',
+    'ConvergenceDetector',
+    'ConvergenceHarmonicTrigger',
+    'CadenceAlignment',
+    'StutterContagion',
+    'TemporalGravity',
+    'VelocityInterference',
+    'FeedbackOscillator',
+    'RhythmicPhaseLock',
+    'SpectralComplementarity',
+    'DynamicRoleSwap',
+    'MotifEcho',
+    'InteractionHeatMap',
+    'EntropyRegulator',
+    'EmergentDownbeat',
+    'ExplainabilityBus',
+    'SectionIntentCurves',
+    'PhaseAwareCadenceWindow',
+    'NegotiationEngine',
+    'GrooveTransfer',
+    'RegisterCollisionAvoider',
+    'MotifIdentityMemory',
+    'HarmonicIntervalGuard',
+    'RestSynchronizer',
+    'CrossLayerClimaxEngine',
+    'RhythmicComplementEngine',
+    'PitchMemoryRecall',
+    'ArticulationComplement',
+    'CrossLayerDynamicEnvelope',
+    'TexturalMirror',
+    'CrossLayerSilhouette',
+
+    // ── writer ──
+    'grandFinale',
+
+    // ── play ──
+    'EventCatalog',
+    'EventBus',
+    'MainBootstrap',
+    'processBeat',
+    'playNotes',
+    'playNotesEmitPick',
+
+    // ── timing state (initialized in utils/init.js) ──
+    'sectionIndex',
+    'phraseIndex',
+    'measureIndex',
+    'beatIndex',
+    'measuresPerPhrase',
+    'beatStartTime',
+    'beatStart',
+    'tpSec',
+    'tpBeat',
+    'tpSubdiv',
+    'tpUnit',
+    'crossModulation',
+    'balOffset',
+    'firstLoop',
+    'composer',
+    'reflection',
+    'bass',
+
+    // ── data globals ──
+    'PHRASES_ARC_CURVES',
+    'OCTAVE',
+    't',
+    'motifConfig',
+    'primaryInstrument',
+    'secondaryInstrument',
+    'bassInstrument',
+    'bassInstrument2',
+    'shouldLog',
+    'MAIN_LOOP_CONTROLS',
+  ]);
+
+  /** @type {ReadonlySet<string>} */
+  const validatedSet = Object.freeze(new Set(VALIDATED_GLOBALS));
+
+  return {
+    /** @returns {ReadonlySet<string>} The set of global names proven at boot. */
+    getValidatedGlobals() { return validatedSet; },
+
+    /** @returns {readonly string[]} The ordered list for iteration. */
+    getValidatedGlobalsList() { return VALIDATED_GLOBALS; },
+
+    /**
+     * Assert that a global name is in the validated set.
+     * Used by mainBootstrap to self-verify completeness.
+     * @param {string} name
+     * @returns {boolean}
+     */
+    isValidated(name) { return validatedSet.has(name); },
+  };
+})();

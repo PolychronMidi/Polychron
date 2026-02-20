@@ -81,7 +81,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
   getNotes(octaveRange) {
     // Prefer HarmonicContext window scale when composer declares timeVaryingScaleContext
-    const hcHasScale = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function');
+    const hcHasScale = (HarmonicContext && typeof HarmonicContext.getField === 'function');
     const hcScale = hcHasScale ? HarmonicContext.getField('scale') : null;
     const effectiveScale = (this.hasCapability('timeVaryingScaleContext') && Array.isArray(hcScale) && hcScale.length > 0)
       ? hcScale
@@ -117,7 +117,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     // Texture state biases development technique: chord bursts → transposition
     // (phases 0,1), flurries → inversion (phase 2), sustained single → retrograde (phase 3)
     const basePhase = m.floor((this.measureCount - 1) / 2) % 4;
-    if (typeof DrumTextureCoupler !== 'undefined' && DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+    if (DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
       const texMetrics = DrumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.3) {
         const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
@@ -139,7 +139,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     const intensity = this.intensity;
 
     // Build context for noise helper
-    const currentTime = (typeof beatStart !== 'undefined' ? beatStart : 0);
+    const currentTime = beatStart;
     const voiceId = (this.root ? this.root.charCodeAt(0) : 60) + this.measureCount;
     const noiseContext = { currentTime, voiceId, phase: this.currentPhase };
 

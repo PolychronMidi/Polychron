@@ -171,7 +171,7 @@ Validator = (() => {
   }
 
   function getEventsOrThrow(from) {
-    if (typeof EventCatalog === 'undefined' || !EventCatalog || !EventCatalog.names) {
+    if (!EventCatalog || !EventCatalog.names) {
       throw new Error(`${_fromLabel(from)}: EventCatalog.names is required`);
     }
     return EventCatalog.names;

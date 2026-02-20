@@ -473,6 +473,7 @@ declare var writeLock: any;
 declare var acquireLock: any;
 declare var releaseLock: any;
 declare var main: any;
+declare var FullBootstrap: any;
 declare var MainBootstrap: any;
 declare var processBeat: any;
 

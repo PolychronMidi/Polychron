@@ -43,7 +43,7 @@ DynamicPeakMemory = (() => {
     }
 
     const lastPeak = peaks[peaks.length - 1];
-    const now = (typeof beatStartTime !== 'undefined' && Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : lastPeak.time;
+    const now = (Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : lastPeak.time;
     const timeSince = now - lastPeak.time;
 
     let peakRecency = 'distant';

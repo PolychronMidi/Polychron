@@ -1,7 +1,3 @@
-if (typeof ComposerProfileUtils === 'undefined' || !ComposerProfileUtils || typeof ComposerProfileUtils.isPlainObject !== 'function') {
-  throw new Error('ComposerProfiles.validateProfiles: ComposerProfileUtils is unavailable');
-}
-
 const PROFILE_NAME_KEYS = ['voiceProfile', 'chordProfile', 'motifProfile', 'rhythmProfile'];
 const DIRECTION_SET = new Set(['R', 'L', 'E', '?']);
 const ARC_TYPE_SET = new Set(['arch', 'rise-fall', 'build-resolve', 'wave']);

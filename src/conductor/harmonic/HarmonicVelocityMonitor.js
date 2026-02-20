@@ -32,7 +32,7 @@ HarmonicVelocityMonitor = (() => {
    */
   function diagnoseEnergyMatch() {
     const vel = getHarmonicVelocity();
-    const compositeIntensity = (typeof ConductorState !== 'undefined' && ConductorState && typeof ConductorState.getState === 'function')
+    const compositeIntensity = (ConductorState && typeof ConductorState.getState === 'function')
       ? (ConductorState.getState().compositeIntensity || 0.5)
       : 0.5;
 

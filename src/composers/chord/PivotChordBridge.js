@@ -155,7 +155,6 @@ PivotChordBridge = (() => {
     _pendingBridge = null;
 
     if (sectionIndex <= 0) return; // No bridge for the first section
-    if (typeof HarmonicJourney === 'undefined' || !HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') return;
 
     const currentStop = HarmonicJourney.getStop(sectionIndex);
     const previousStop = HarmonicJourney.getStop(sectionIndex - 1);

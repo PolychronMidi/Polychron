@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('harmonicRhythmProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.harmonicRhythm = {
   default: [{ type: 'harmonicRhythm', progression: ['I', 'IV', 'V', 'I'], key: 'random', measuresPerChord: 2, quality: 'major', changeEmphasis: 2.0, anticipation: false, settling: true, enablePhraseArcs: true, phraseArcOpts: { arcType: 'arch', registerRange: 10 }, phraseBoundaryEmphasis: 1.3, chordProfile: 'pop', rhythmProfile: 'straight' }],
   corpusAdaptive: [{ type: 'harmonicRhythm', progression: 'corpus', key: 'random', measuresPerChord: 2, quality: 'major', changeEmphasis: 2.3, anticipation: true, settling: true, enablePhraseArcs: true, phraseArcOpts: { arcType: 'rise-fall', registerRange: 12 }, phraseBoundaryEmphasis: 1.7, chordProfile: 'corpusAdaptive', rhythmProfile: 'corpusAdaptive' }],

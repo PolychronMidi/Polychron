@@ -1,7 +1,3 @@
-if (typeof COMPOSER_TYPE_PROFILE_SOURCES === 'undefined' || !COMPOSER_TYPE_PROFILE_SOURCES || typeof COMPOSER_TYPE_PROFILE_SOURCES !== 'object') {
-  throw new Error('chordsProfiles: COMPOSER_TYPE_PROFILE_SOURCES is not available');
-}
-
 COMPOSER_TYPE_PROFILE_SOURCES.chords = {
   default: [{ type: 'chords', progression: 'random', direction: 'R', chordProfile: 'pop', rhythmProfile: 'straight' }],
   functionalPop: [{ type: 'chords', progression: ['C', 'Am', 'F', 'G'], direction: 'R', chordProfile: 'pop', rhythmProfile: 'straight' }],

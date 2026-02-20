@@ -13,7 +13,7 @@ CadentialPreparationAdvisor = (() => {
    */
   function getCadentialSignal() {
     // Check phrase position via ComposerFactory.sharedPhraseArcManager
-    const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory.sharedPhraseArcManager)
+    const phraseCtx = (ComposerFactory.sharedPhraseArcManager)
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
       : { position: 0.5, atEnd: false };
 
@@ -21,7 +21,7 @@ CadentialPreparationAdvisor = (() => {
     const atEnd = Boolean(phraseCtx.atEnd);
 
     // Check harmonic context for dominant approach
-    const tension = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const tension = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? (Number(HarmonicContext.getField('tension')) || 0)
       : 0;
 

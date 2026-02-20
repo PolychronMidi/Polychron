@@ -26,8 +26,8 @@ CadenceAdvisor = (() => {
       if (recentChanges.length > MAX_HISTORY) recentChanges.shift();
 
       // Also feed chord changes into AbsoluteTimeWindow for cross-layer analysis
-      const layer = (typeof LM !== 'undefined' && LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-      const absTime = (typeof beatStartTime !== 'undefined' && Number.isFinite(beatStartTime)) ? beatStartTime : 0;
+      const layer = (LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+      const absTime = (Number.isFinite(beatStartTime)) ? beatStartTime : 0;
       AbsoluteTimeWindow.recordChord(data.chords || null, data.key || '', data.mode || '', layer, absTime);
     });
   }
@@ -38,7 +38,7 @@ CadenceAdvisor = (() => {
    * @returns {{ suggest: boolean, type: string, confidence: number }}
    */
   function shouldCadence() {
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? HarmonicContext.getField('sectionPhase')
       : '';
 
@@ -48,7 +48,7 @@ CadenceAdvisor = (() => {
     }
 
     // Near phrase boundaries with sufficient harmonic motion → mild cadence suggestion
-    const phraseCtx = (typeof ComposerFactory !== 'undefined' && ComposerFactory
+    const phraseCtx = (ComposerFactory
       && ComposerFactory.sharedPhraseArcManager
       && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
@@ -67,7 +67,7 @@ CadenceAdvisor = (() => {
    * @returns {{ dominantBias: number, tonicBias: number, phase: string }}
    */
   function getCadenceBias() {
-    const phase = (typeof HarmonicContext !== 'undefined' && HarmonicContext && typeof HarmonicContext.getField === 'function')
+    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
       ? HarmonicContext.getField('sectionPhase')
       : '';
 

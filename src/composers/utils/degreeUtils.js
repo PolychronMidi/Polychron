@@ -16,7 +16,7 @@ resolveScalePC = function(scale = null) {
   return finalScale.map((s) => {
     if (typeof s === 'number') return ((s % 12) + 12) % 12;
     if (typeof s === 'string') {
-      if (typeof t === 'undefined' || !t.Note || typeof t.Note.chroma !== 'function') throw new Error('resolveScalePC: tonal.js not available');
+      if (!t.Note || typeof t.Note.chroma !== 'function') throw new Error('resolveScalePC: tonal.js not available');
       const c = t.Note.chroma(s);
       if (!Number.isFinite(c) || c < 0) throw new Error('resolveScalePC: invalid scale note "' + s + '"');
       return c;
