@@ -1,8 +1,3 @@
-
-if (!COMPOSER_TYPE_PROFILE_SOURCES) {
-  COMPOSER_TYPE_PROFILE_SOURCES = {};
-}
-
 COMPOSER_TYPES = [
   'measure',
   'scale',

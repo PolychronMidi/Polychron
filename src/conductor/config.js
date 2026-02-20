@@ -278,29 +278,8 @@ STUTTER_DIRECTIVE_DEFAULTS = {
   metricsAdaptive: { enabled: false, sensitivity: 0.08 }
 };
 
-CONDUCTOR_DYNAMICS_CONTROLS = {
-  phaseProfileMap: {
-    intro: 'restrained',
-    opening: 'restrained',
-    exposition: 'default',
-    development: 'default',
-    climax: 'explosive',
-    resolution: 'atmospheric',
-    conclusion: 'atmospheric',
-    coda: 'minimal'
-  },
-  crossfadeMeasuresDefault: 4,
-  regulation: {
-    windowSize: 16,
-    highThreshold: 0.78,
-    lowThreshold: 0.25,
-    maxDensityBias: 0.12,
-    maxCrossModBias: 0.3,
-    adjustRate: 0.02,
-    settleDecay: 0.9,
-    crossModSampleDivisor: 6
-  }
-};
+// CONDUCTOR_DYNAMICS_CONTROLS is defined in conductorDynamicsControls.js to
+// avoid load-order cycles; it is intentionally required earlier by index.js.
 
 MAIN_LOOP_CONTROLS = {
   phraseFamilyBias: {

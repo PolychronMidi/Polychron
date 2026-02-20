@@ -1,9 +1,4 @@
-// @ts-ignore: load side-effect module with globals
-require('./profileUtils');
-// @ts-ignore: load side-effect module with globals
-require('./validateProfiles');
-// @ts-ignore: load side-effect module with globals
-require('./runtimeProfileAdapter');
+// individual profile sources must run before utilities that depend on the accumulated global
 // @ts-ignore: load side-effect module with globals
 require('./measureProfiles');
 // @ts-ignore: load side-effect module with globals
@@ -30,5 +25,14 @@ require('./melodicDevelopmentProfiles');
 require('./voiceLeadingProfiles');
 // @ts-ignore: load side-effect module with globals
 require('./harmonicRhythmProfiles');
+
+// now that the global has been populated, load utilities that reference it
+// @ts-ignore: load side-effect module with globals
+require('./profileUtils');
+// @ts-ignore: load side-effect module with globals
+require('./validateProfiles');
+// @ts-ignore: load side-effect module with globals
+require('./runtimeProfileAdapter');
+// utilities are loaded; profileRegistry remains
 // @ts-ignore: load side-effect module with globals
 require('./profileRegistry');
