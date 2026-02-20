@@ -8,6 +8,9 @@ V = Validator.create('setBinaural');
 /** Millisecond tolerance for treating two layer shifts as the same event */
 const BINAURAL_SYNC_TOLERANCE_MS = 200;
 
+/** Next absolute ms at which a timed binaural shift should fire */
+let nextBinauralShiftMs = 0;
+
 setBinaural = () => {
   V.requireFinite(beatIndex, 'beatIndex');
   V.requireFinite(measureIndex, 'measureIndex');
@@ -27,16 +30,28 @@ setBinaural = () => {
     V.requireFinite(state.phrasePosition, 'state.phrasePosition');
     return state.phrasePosition <= 0.001 && beatIndex === 0;
   })();
-  const shouldShift = firstLoop < 1 || phraseBoundary || statePhraseBoundary;
+  const timedShift = absTimeMs >= nextBinauralShiftMs;
+  const shouldShift = firstLoop < 1 || phraseBoundary || statePhraseBoundary || timedShift;
 
   if (shouldShift) {
     beatCount = 0;
-    allNotesOff(Math.max(beatStart, 0));
+    nextBinauralShiftMs = absTimeMs + rf(.5, 2) * 1000;
 
     // Cross-layer ms-precision sync via AbsoluteTimeGrid
     const crossLayerShift = AbsoluteTimeGrid.findClosest(
       'binaural', absTimeMs, BINAURAL_SYNC_TOLERANCE_MS, activeLayer
     );
+
+    // Derive the sync ms: either the other layer's exact timestamp or our own
+    const syncMs = crossLayerShift ? crossLayerShift.timeMs : absTimeMs;
+
+    // Convert ms sync point to this layer's tick space (unit-independent)
+    V.requireFinite(measureStart, 'measureStart');
+    V.requireFinite(measureStartTime, 'measureStartTime');
+    V.requireFinite(tpSec, 'tpSec');
+    const syncTick = Math.round(measureStart + ((syncMs / 1000) - measureStartTime) * tpSec);
+
+    allNotesOff(Math.max(syncTick, 0));
 
     if (crossLayerShift) {
       // Sync: adopt the offset and flip state from the other layer's shift
@@ -64,12 +79,12 @@ setBinaural = () => {
     });
 
     p(c,
-      ...binauralL.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),
-      ...binauralR.map(ch => ({ tick: beatStart, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
+      ...binauralL.map(ch => ({ tick: syncTick, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),
+      ...binauralR.map(ch => ({ tick: syncTick, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
     );
 
-    const startTick = beatStart - tpSec / 20;
-    const endTick = beatStart + tpSec / 20;
+    const startTick = syncTick - tpSec / 20;
+    const endTick = syncTick + tpSec / 20;
     const steps = 10;
     const tickIncrement = (endTick - startTick) / steps;
     for (let i = 0; i <= steps; i++) {
