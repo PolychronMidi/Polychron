@@ -14,6 +14,7 @@
     "noEmit": true,
     "target": "ES2022",
     "module": "ESNext",
+    "moduleDetection": "force",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
