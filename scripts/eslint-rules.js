@@ -310,11 +310,18 @@ module.exports = {
       }
     },
 
-    'no-typeof-validated-global': {
+    /**
+     * no-unstamped-validator
+     *
+     * Flags direct calls to Validator.requireFinite / Validator.optionalFinite /
+     * Validator.assert* / etc. outside validators.js itself.  Consumers must use
+     * a stamped instance: `const V = Validator.create('ModuleName');`
+     */
+    'no-unstamped-validator': {
       meta: {
         type: 'problem',
         docs: {
-          description: 'Disallow typeof probes on globals validated at boot time',
+          description: 'Disallow direct Validator.method() calls — use a stamped V = Validator.create() instance instead',
           recommended: false
         },
         schema: []
@@ -324,25 +331,30 @@ module.exports = {
         const filename = context.getFilename();
         const basename = pathMod.basename(filename || '');
 
-        // Exempt: mainBootstrap.js (where validation happens) and fullBootstrap.js (the list itself)
-        if (basename === 'mainBootstrap.js' || basename === 'fullBootstrap.js') return {};
+        // Exempt: validators.js is the implementation itself
+        if (basename === 'validators.js') return {};
 
-        // Load the validated globals set from fullBootstrap.js at lint time (parse the array literal)
-        if (!_cachedValidatedGlobals) {
-          _cachedValidatedGlobals = _loadValidatedGlobals();
-        }
-        const validated = _cachedValidatedGlobals;
-        if (!validated || validated.size === 0) return {};
+        const VALIDATOR_METHODS = new Set([
+          'assertObject', 'assertPlainObject', 'assertBoolean', 'assertNonEmptyString',
+          'assertFinite', 'assertRange', 'assertIntegerRange', 'assertArray',
+          'assertArrayLength', 'assertKeysPresent', 'assertAllowedKeys', 'assertInSet',
+          'requireDefined', 'requireFinite', 'optionalFinite', 'requireType',
+          'requireEnum', 'getEventsOrThrow'
+        ]);
 
         return {
-          UnaryExpression(node) {
-            if (node.operator !== 'typeof') return;
-            const arg = node.argument;
-            if (!arg || arg.type !== 'Identifier') return;
-            if (validated.has(arg.name)) {
+          CallExpression(node) {
+            const callee = node.callee;
+            if (!callee || callee.type !== 'MemberExpression') return;
+            const obj = callee.object;
+            const prop = callee.property;
+            if (!obj || obj.type !== 'Identifier' || obj.name !== 'Validator') return;
+            const methodName = (prop && prop.type === 'Identifier') ? prop.name : ((prop && prop.type === 'Literal') ? prop.value : null);
+            if (!methodName || methodName === 'create') return; // Validator.create() is fine
+            if (VALIDATOR_METHODS.has(methodName)) {
               context.report({
                 node,
-                message: `Redundant typeof probe on '${arg.name}' — this global is validated at boot time by mainBootstrap.assertBootstrapGlobals(). Use the global directly or use Validator for value checks.`
+                message: `Direct Validator.${methodName}() call — use a stamped instance instead: const V = Validator.create('ModuleName'); V.${methodName}(...)`
               });
             }
           }

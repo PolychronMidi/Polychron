@@ -10,7 +10,7 @@ chordModulator = (function() {
     let midiNotes = ChordValues.chordToMidi(chordNotes);
 
     // Apply inversion
-    midiNotes = ChordValues.invert(midiNotes, opts.inversion || 0);
+    midiNotes = ChordValues.invert(midiNotes, opts.inversion);
 
     // Apply velocity scaling by mapping to objects
     const out = midiNotes.map(n => ({ note: n, velocity: m.max(1, m.min(127, m.round((typeof opts.baseVelocity === 'number' ? opts.baseVelocity : 100) * opts.velocityScale))) }));

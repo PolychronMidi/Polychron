@@ -80,7 +80,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     if (validatedProgression.length===0) { throw new Error('ChordComposer.noteSet: no valid chords');
     } else {
       this.progression=validatedProgression.map(t.Chord.get);
-      this.currentChordIndex=this.currentChordIndex || 0;
+      this.currentChordIndex=this.currentChordIndex ?? 0;
       let next;
       switch (direction.toUpperCase()) {
         case 'R': next=1; break;
