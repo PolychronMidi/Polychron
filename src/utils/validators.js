@@ -96,7 +96,6 @@ Validator = (() => {
     return value;
   }
 
-  /* --- convenience `require*` helpers requested by the team --- */
   function requireDefined(value, name, from) {
     if (value === undefined || value === null) {
       throw new Error(`${_fromLabel(from)}: ${name} is required`);
