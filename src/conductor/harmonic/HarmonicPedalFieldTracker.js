@@ -10,6 +10,7 @@
 // Both are consumed by GlobalConductor for different purposes.
 
 HarmonicPedalFieldTracker = (() => {
+  const V = Validator.create('HarmonicPedalFieldTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ bassPC: number, time: number }>} */
   const bassSamples = [];
@@ -19,7 +20,7 @@ HarmonicPedalFieldTracker = (() => {
    * @param {number} absTime
    */
   function recordBass(absTime) {
-    if (!Number.isFinite(absTime)) return;
+    V.requireFinite(absTime, 'absTime');
 
     const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: 2 });
 

@@ -9,7 +9,7 @@ RegisterCollisionAvoider = (() => {
     if (Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)) {
       return (measureStartTime + (tick - measureStart) / tpSec) * 1000;
     }
-    return Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0;
+    return beatStartTime * 1000;
   }
 
   /**

@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 RhythmicDensityContrastTracker = (() => {
+  const V = Validator.create('RhythmicDensityContrastTracker');
   const MAX_SAMPLES = 20;
   /** @type {number[]} */
   const densitySamples = [];
@@ -13,7 +14,7 @@ RhythmicDensityContrastTracker = (() => {
    * @param {number} density - 0-1 rhythmic density
    */
   function recordDensity(density) {
-    if (!Number.isFinite(density)) return;
+    V.requireFinite(density, 'density');
     densitySamples.push(clamp(density, 0, 1));
     if (densitySamples.length > MAX_SAMPLES) densitySamples.shift();
   }

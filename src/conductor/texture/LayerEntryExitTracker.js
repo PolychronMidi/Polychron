@@ -4,6 +4,7 @@
 // Pure query API — consumed via ConductorState.
 
 LayerEntryExitTracker = (() => {
+  const V = Validator.create('LayerEntryExitTracker');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ layerCount: number, time: number }>} */
   const snapshots = [];
@@ -13,7 +14,7 @@ LayerEntryExitTracker = (() => {
    * @param {number} absTime
    */
   function recordSnapshot(absTime) {
-    if (!Number.isFinite(absTime)) return;
+    V.requireFinite(absTime, 'absTime');
 
     const entries = AbsoluteTimeWindow.getEntries(2);
 

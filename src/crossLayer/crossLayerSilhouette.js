@@ -42,7 +42,7 @@ CrossLayerSilhouette = (() => {
     const rawDensity = clamp(heat, 0, 1);
     const rawRegister = clamp(spectralComplement.gapWeight, 0, 1);
     const rawDynamic = convergenceRecent ? 0.7 : 0.4;
-    const rawEntropy = Number.isFinite(entropyReg.currentEntropy) ? entropyReg.currentEntropy : 0.5;
+    const rawEntropy = V.optionalFinite(entropyReg.currentEntropy, 0.5);
 
     // Smooth
     smoothedDensity = smoothedDensity * (1 - SMOOTHING) + rawDensity * SMOOTHING;
@@ -70,8 +70,8 @@ CrossLayerSilhouette = (() => {
     // Ideal: mid-range balanced output unless intent says otherwise
     const intent = SectionIntentCurves.getLastIntent();
 
-    const targetDensity = Number.isFinite(intent.densityTarget) ? intent.densityTarget : 0.5;
-    const targetEntropy = Number.isFinite(intent.entropyTarget) ? intent.entropyTarget : 0.5;
+    const targetDensity = V.optionalFinite(intent.densityTarget, 0.5);
+    const targetEntropy = V.optionalFinite(intent.entropyTarget, 0.5);
 
     return {
       densityBias: clamp((targetDensity - smoothedDensity) * 0.5, -0.3, 0.3),

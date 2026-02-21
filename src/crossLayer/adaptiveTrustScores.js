@@ -24,7 +24,7 @@ AdaptiveTrustScores = (() => {
     const p = clamp(payoff, -1, 1);
     state.score = clamp(state.score * 0.9 + p * 0.1, -1, 1);
     state.samples += 1;
-    state.lastMs = Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0;
+    state.lastMs = beatStartTime * 1000;
 
     ExplainabilityBus.emit('trust-update', 'both', {
       systemName,

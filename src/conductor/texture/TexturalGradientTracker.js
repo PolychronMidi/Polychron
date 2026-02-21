@@ -5,6 +5,7 @@
 // Pure query API — no side effects.
 
 TexturalGradientTracker = (() => {
+  const V = Validator.create('TexturalGradientTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ density: number, time: number }>} */
   const densitySamples = [];
@@ -15,7 +16,8 @@ TexturalGradientTracker = (() => {
    * @param {number} absTime - absolute time in seconds
    */
   function recordDensity(density, absTime) {
-    if (!Number.isFinite(density) || !Number.isFinite(absTime)) return;
+    V.requireFinite(density, 'density');
+    V.requireFinite(absTime, 'absTime');
     densitySamples.push({ density: clamp(density, 0, 1), time: absTime });
     if (densitySamples.length > MAX_SAMPLES) densitySamples.shift();
   }

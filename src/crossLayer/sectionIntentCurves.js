@@ -37,10 +37,10 @@ SectionIntentCurves = (() => {
   function setManualIntent(intent) {
     V.assertObject(intent, 'intent');
     lastIntent = {
-      densityTarget: clamp(Number(intent.densityTarget ?? lastIntent.densityTarget), 0, 1),
-      dissonanceTarget: clamp(Number(intent.dissonanceTarget ?? lastIntent.dissonanceTarget), 0, 1),
-      interactionTarget: clamp(Number(intent.interactionTarget ?? lastIntent.interactionTarget), 0, 1),
-      entropyTarget: clamp(Number(intent.entropyTarget ?? lastIntent.entropyTarget), 0, 1)
+      densityTarget: clamp(V.optionalFinite(intent.densityTarget, lastIntent.densityTarget), 0, 1),
+      dissonanceTarget: clamp(V.optionalFinite(intent.dissonanceTarget, lastIntent.dissonanceTarget), 0, 1),
+      interactionTarget: clamp(V.optionalFinite(intent.interactionTarget, lastIntent.interactionTarget), 0, 1),
+      entropyTarget: clamp(V.optionalFinite(intent.entropyTarget, lastIntent.entropyTarget), 0, 1)
     };
     return lastIntent;
   }

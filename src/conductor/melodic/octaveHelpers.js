@@ -3,6 +3,7 @@
 // Pure query — reads AbsoluteTimeWindow.
 
 octaveHelpers = (() => {
+  const V = Validator.create('octaveHelpers');
   /**
    * Build an octave-band count histogram from recent notes.
    * @param {number} [windowSeconds=6] - lookback window
@@ -11,7 +12,7 @@ octaveHelpers = (() => {
    * @returns {{ counts: number[], total: number }}
    */
   function getOctaveHistogram(windowSeconds, bands, layer) {
-    const ws = Validator.optionalFinite(windowSeconds, 6);
+    const ws = V.optionalFinite(windowSeconds, 6);
     const numBands = (typeof bands === 'number' && bands > 0) ? bands : 11;
     /** @type {any} */
     const query = { windowSeconds: ws };

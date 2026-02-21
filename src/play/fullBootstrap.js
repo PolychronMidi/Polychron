@@ -157,6 +157,7 @@ FullBootstrap = (() => {
     'HARMONIC_PRIOR_TABLES',
     'harmonicPriors',
     'DRUM_MAP',
+    'rotate',
 
     // ── time ──
     'LM',
@@ -275,6 +276,7 @@ FullBootstrap = (() => {
 
     // ── writer ──
     'grandFinale',
+    'p',
 
     // ── play ──
     'EventCatalog',
