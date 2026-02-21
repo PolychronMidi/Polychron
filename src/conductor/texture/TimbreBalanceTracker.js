@@ -12,8 +12,8 @@ TimbreBalanceTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ channelCounts: Object.<number, number>, usedChannels: number, dominant: number|null, imbalanced: boolean }}
    */
-  function getTimbreProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getTimbreProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
 
@@ -55,8 +55,8 @@ TimbreBalanceTracker = (() => {
    * @param {Array<number>} [opts.availableChannels]
    * @returns {Array<number>}
    */
-  function getUnderusedChannels(opts) {
-    const { availableChannels } = opts || {};
+  function getUnderusedChannels(opts = {}) {
+    const { availableChannels } = opts;
     const profile = getTimbreProfile(opts);
     if (!availableChannels || availableChannels.length === 0) return [];
 

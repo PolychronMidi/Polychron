@@ -14,8 +14,8 @@ RestDensityTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ notesPerSecond: number, saturated: boolean, sparse: boolean }}
    */
-  function getOnsetDensity(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getOnsetDensity(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 2) {
@@ -78,8 +78,8 @@ RestDensityTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ breathCount: number, avgGap: number, maxGap: number, breathless: boolean, airy: boolean }}
    */
-  function getBreathingProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getBreathingProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 6;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {

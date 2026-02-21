@@ -12,8 +12,8 @@ HarmonicRhythmDensityRatio = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ ratio: number, harmonicRate: number, onsetRate: number, imbalanced: boolean, suggestion: string }}
    */
-  function getRatioProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getRatioProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
 
     // Harmonic rhythm from HarmonicRhythmTracker (0-1 normalized)

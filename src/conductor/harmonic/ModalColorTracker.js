@@ -15,8 +15,8 @@ ModalColorTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ pcDistribution: Array<number>, chordToneRatio: number, colorToneRatio: number, vanilla: boolean, colorful: boolean }}
    */
-  function getModalProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getModalProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const { counts: pcCounts, total } = pitchClassHelpers.getPitchClassHistogram(ws, layer);
 

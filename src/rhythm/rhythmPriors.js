@@ -94,16 +94,15 @@ rhythmPriors = (function() {
    * @param {boolean} [opts.atBoundary]
    * @returns {Object}
    */
-  function getBiasedRhythms(opts) {
-    if (opts !== undefined && (typeof opts !== 'object' || opts === null)) {
+  function getBiasedRhythms(opts = {}) {
+    if (typeof opts !== 'object' || opts === null) {
       throw new Error('rhythmPriors.getBiasedRhythms: opts must be an object');
     }
-    const inOpts = opts || {};
 
-    const rhythmsIn = cloneRhythmSpecMapOrFail(inOpts.rhythms);
+    const rhythmsIn = cloneRhythmSpecMapOrFail(opts.rhythms);
 
-    const qualityHint = (typeof inOpts.quality === 'string' && inOpts.quality.length > 0)
-      ? inOpts.quality
+    const qualityHint = (typeof opts.quality === 'string' && opts.quality.length > 0)
+      ? opts.quality
       : (HarmonicContext && typeof HarmonicContext.getField === 'function')
         ? HarmonicContext.getField('quality')
         : 'major';
@@ -112,9 +111,9 @@ rhythmPriors = (function() {
     if (!quality) return rhythmsIn;
 
     const profile = getProfileOrFail(quality);
-    const phase = resolvePhase(inOpts);
-    const level = (typeof inOpts.level === 'string' && inOpts.level.length > 0) ? inOpts.level : 'beat';
-    const strength = clamp(Number.isFinite(Number(inOpts.strength)) ? Number(inOpts.strength) : 0.7, 0, 1.5);
+    const phase = resolvePhase(opts);
+    const level = (typeof opts.level === 'string' && opts.level.length > 0) ? opts.level : 'beat';
+    const strength = clamp(Number.isFinite(Number(opts.strength)) ? Number(opts.strength) : 0.7, 0, 1.5);
 
     const phaseMethodMap = (profile.phaseMethodWeights && profile.phaseMethodWeights[phase] && typeof profile.phaseMethodWeights[phase] === 'object')
       ? profile.phaseMethodWeights[phase]
@@ -126,8 +125,8 @@ rhythmPriors = (function() {
 
     const levelPhaseWeight = resolveWeightOrDefault(levelMap, phase, 1);
     const atBoundary = Boolean(
-      inOpts.atBoundary === true ||
-      (inOpts.phraseContext && typeof inOpts.phraseContext === 'object' && inOpts.phraseContext.atBoundary === true)
+      opts.atBoundary === true ||
+      (opts.phraseContext && typeof opts.phraseContext === 'object' && opts.phraseContext.atBoundary === true)
     );
 
     const out = {};

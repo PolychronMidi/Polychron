@@ -13,8 +13,8 @@ PitchGravityCenter = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ center: number, drift: number, anchored: boolean }}
    */
-  function getGravityCenter(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getGravityCenter(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length === 0) {

@@ -476,6 +476,7 @@ declare var main: any;
 declare var FullBootstrap: any;
 declare var MainBootstrap: any;
 declare var processBeat: any;
+declare var layerPass: any;
 
 // Additional managed globals (added to resolve `no-undef` entries from log/lint.log)
 // Node / runtime helpers

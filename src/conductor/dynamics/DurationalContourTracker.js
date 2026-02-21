@@ -12,8 +12,8 @@ DurationalContourTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ slope: number, trend: string, avgDuration: number, accelerating: boolean, decelerating: boolean }}
    */
-  function getDurationContour(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getDurationContour(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {

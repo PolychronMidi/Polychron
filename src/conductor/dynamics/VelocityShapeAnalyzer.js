@@ -13,8 +13,8 @@ VelocityShapeAnalyzer = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
    */
-  function getVelocityShape(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getVelocityShape(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {

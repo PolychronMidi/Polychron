@@ -41,37 +41,6 @@ const composerCtx = {
 };
 ComposerFactory.setComposerContext(composerCtx);
 
-const selectLayerComposerForMeasure = (layerName, phraseFamily) => {
-  if (typeof layerName !== 'string' || layerName.length === 0) {
-    throw new Error('main.selectLayerComposerForMeasure: layerName must be a non-empty string');
-  }
-  if (typeof phraseFamily !== 'string' || phraseFamily.length === 0) {
-    throw new Error('main.selectLayerComposerForMeasure: phraseFamily must be a non-empty string');
-  }
-  const peerLayerName = layerName === 'L1' ? 'L2' : (layerName === 'L2' ? 'L1' : null);
-  const previousComposer = (LM.layerComposers && LM.layerComposers[layerName] && typeof LM.layerComposers[layerName] === 'object')
-    ? LM.layerComposers[layerName]
-    : null;
-  const peerComposer = (peerLayerName && LM.layerComposers && LM.layerComposers[peerLayerName] && typeof LM.layerComposers[peerLayerName] === 'object')
-    ? LM.layerComposers[peerLayerName]
-    : null;
-
-  const nextComposer = ComposerFactory.createRandomForLayer({
-    familyName: phraseFamily,
-    layerName,
-    previousComposer,
-    peerComposer,
-    extraConfig: { root: 'random' }
-  }, composerCtx);
-
-  LM.setComposerFor(layerName, nextComposer);
-
-  // Record composer family for TexturalMemoryAdvisor variety tracking
-  TexturalMemoryAdvisor.recordUsage(phraseFamily, MainBootstrap.requireFiniteNumber('sectionIndex', sectionIndex));
-
-  return nextComposer;
-};
-
 FXFeedbackListener.initialize();
 StutterFeedbackListener.initialize();
 JourneyRhythmCoupler.initialize();
@@ -140,8 +109,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const phraseFamily = ComposerFactory.resolvePhraseFamilyOrFail({ root: 'random' }, composerCtx);
     LM.setPhraseFamily(phraseFamily);
 
-    const phraseL1Composer = selectLayerComposerForMeasure('L1', phraseFamily);
-    selectLayerComposerForMeasure('L2', phraseFamily);
+    const phraseL1Composer = layerPass.selectLayerComposerForMeasure('L1', phraseFamily, composerCtx);
+    layerPass.selectLayerComposerForMeasure('L2', phraseFamily, composerCtx);
     composer = phraseL1Composer;
     [numerator, denominator] = composer.getMeter();
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
@@ -152,47 +121,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     PhaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
-    for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
-      measureCount++;
-      selectLayerComposerForMeasure('L1', phraseFamily);
-      setUnitTiming('measure');
-
-      // Advance conductor crossfade and self-regulation once per measure
-      ConductorConfig.tickCrossfade();
-      ConductorConfig.regulationTick();
-
-      MainBootstrap.getConductorProbabilities(measureIndex, -1);
-      let playProb, stutterProb;
-
-      for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        const beatCtx = MainBootstrap.getConductorProbabilities(measureIndex, beatIndex);
-        playProb = beatCtx.playProb;
-        stutterProb = beatCtx.stutterProb;
-
-        const beatResult = processBeat('L1', playProb, stutterProb, boot);
-        playProb = beatResult.playProb;
-        stutterProb = beatResult.stutterProb;
-
-        microUnitAttenuator.begin('div', divsPerBeat);
-        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-          setUnitTiming('div');
-          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
-          microUnitAttenuator.begin('subdiv', subdivsPerDiv);
-          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-            setUnitTiming('subdiv');
-            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
-            microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
-            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-              setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
-            }
-            microUnitAttenuator.flush();
-          }
-          microUnitAttenuator.flush();
-        }
-        microUnitAttenuator.flush();
-      }
-    }
+    layerPass.runLayerPass('L1', phraseFamily, { withConductorTick: true }, { boot, composerCtx });
 
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L1);
@@ -219,43 +148,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getMidiTiming();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
-    for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
-      measureCount++;
-      selectLayerComposerForMeasure('L2', phraseFamily);
-      setUnitTiming('measure');
-
-      MainBootstrap.getConductorProbabilities(measureIndex, -1);
-      let playProb, stutterProb;
-
-      for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        const beatCtx = MainBootstrap.getConductorProbabilities(measureIndex, beatIndex);
-        playProb = beatCtx.playProb;
-        stutterProb = beatCtx.stutterProb;
-
-        const beatResult = processBeat('L2', playProb, stutterProb, boot);
-        playProb = beatResult.playProb;
-        stutterProb = beatResult.stutterProb;
-
-        microUnitAttenuator.begin('div', divsPerBeat);
-        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-          setUnitTiming('div');
-          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
-          microUnitAttenuator.begin('subdiv', subdivsPerDiv);
-          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-            setUnitTiming('subdiv');
-            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
-            microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
-            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-              setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
-            }
-            microUnitAttenuator.flush();
-          }
-          microUnitAttenuator.flush();
-        }
-        microUnitAttenuator.flush();
-      }
-    }
+    layerPass.runLayerPass('L2', phraseFamily, {}, { boot, composerCtx });
 
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L2);

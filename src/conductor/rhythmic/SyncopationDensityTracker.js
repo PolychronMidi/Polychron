@@ -13,8 +13,8 @@ SyncopationDensityTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ syncopationRatio: number, onBeatCount: number, offBeatCount: number, total: number, monotonous: boolean, excessive: boolean }}
    */
-  function getSyncopationProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getSyncopationProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {

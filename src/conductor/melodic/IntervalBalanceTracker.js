@@ -13,8 +13,8 @@ IntervalBalanceTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ avgInterval: number, maxInterval: number, stepRatio: number, leapRatio: number, unisonRatio: number, variety: number, rut: string|null, monotonous: boolean, erratic: boolean }}
    */
-  function getIntervalProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getIntervalProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
