@@ -67,6 +67,8 @@ require('./interactionHeatMap');
 require('./entropyRegulator');
 // @ts-ignore: side-effect module load
 require('./emergentDownbeat');
+// @ts-ignore: conductor→crossLayer signal bridge (registers recorder + CrossLayerRegistry)
+require('./conductorSignalBridge');
 
 // Lifecycle manager loads LAST — after all modules have self-registered.
 // @ts-ignore: side-effect module load

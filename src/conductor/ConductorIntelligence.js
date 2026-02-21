@@ -37,6 +37,20 @@ ConductorIntelligence = (() => {
     return product;
   }
 
+  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
+  function collectDensityBiasWithAttribution() {
+    let product = 1;
+    const contributions = [];
+    for (let i = 0; i < densityBiases.length; i++) {
+      const entry = densityBiases[i];
+      const raw = entry.getter();
+      const clamped = clamp(raw, entry.lo, entry.hi);
+      product *= clamped;
+      contributions.push({ name: entry.name, raw, clamped });
+    }
+    return { product, contributions };
+  }
+
   // ── Tension biases ────────────────────────────────────────────────
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const tensionBiases = [];
@@ -66,6 +80,20 @@ ConductorIntelligence = (() => {
     return product;
   }
 
+  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
+  function collectTensionBiasWithAttribution() {
+    let product = 1;
+    const contributions = [];
+    for (let i = 0; i < tensionBiases.length; i++) {
+      const entry = tensionBiases[i];
+      const raw = entry.getter();
+      const clamped = clamp(raw, entry.lo, entry.hi);
+      product *= clamped;
+      contributions.push({ name: entry.name, raw, clamped });
+    }
+    return { product, contributions };
+  }
+
   // ── Flicker modifiers ─────────────────────────────────────────────
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const flickerModifiers = [];
@@ -93,6 +121,20 @@ ConductorIntelligence = (() => {
       product *= clamp(entry.getter(), entry.lo, entry.hi);
     }
     return product;
+  }
+
+  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
+  function collectFlickerModifierWithAttribution() {
+    let product = 1;
+    const contributions = [];
+    for (let i = 0; i < flickerModifiers.length; i++) {
+      const entry = flickerModifiers[i];
+      const raw = entry.getter();
+      const clamped = clamp(raw, entry.lo, entry.hi);
+      product *= clamped;
+      contributions.push({ name: entry.name, raw, clamped });
+    }
+    return { product, contributions };
   }
 
   // ── Recorders ─────────────────────────────────────────────────────
@@ -192,10 +234,13 @@ ConductorIntelligence = (() => {
   return {
     registerDensityBias,
     collectDensityBias,
+    collectDensityBiasWithAttribution,
     registerTensionBias,
     collectTensionBias,
+    collectTensionBiasWithAttribution,
     registerFlickerModifier,
     collectFlickerModifier,
+    collectFlickerModifierWithAttribution,
     registerRecorder,
     runRecorders,
     registerStateProvider,

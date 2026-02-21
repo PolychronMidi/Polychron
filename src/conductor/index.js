@@ -47,6 +47,12 @@ require('./ConductorState');
 require('./ConductorIntelligence');
 // @ts-ignore: coherence monitor (registers into ConductorIntelligence, must precede GlobalConductorUpdate)
 require('./CoherenceMonitor');
+// @ts-ignore: standardized read API for inter-module signal reading
+require('./signalReader');
+// @ts-ignore: adaptive profile hints (registers recorder + stateProvider)
+require('./profileAdaptation');
+// @ts-ignore: per-beat signal history (registers recorder + stateProvider)
+require('./signalTelemetry');
 // @ts-ignore: load side-effect module with globals
 require('./GlobalConductorUpdate');
 // @ts-ignore: load side-effect module with globals

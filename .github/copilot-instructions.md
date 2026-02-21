@@ -99,12 +99,12 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 | Directory | Role | Key Entry Points |
 |---|---|---|
 | `src/utils/` | Validator, clamps, randoms, MIDI data, instrumentation, shared priors infrastructure | `Validator.create()`, `modeQualityMap`, `priorsHelpers` |
-| `src/conductor/` | ~65 intelligence modules (dynamics, harmonic, melodic, rhythmic, texture). Merged each beat into a single composite signal. | `ConductorIntelligence`, `GlobalConductorUpdate`, `ConductorState` |
+| `src/conductor/` | ~70 intelligence modules (dynamics, harmonic, melodic, rhythmic, texture) + signal feedback infrastructure. Merged each beat into a single composite signal. | `ConductorIntelligence`, `signalReader`, `GlobalConductorUpdate`, `ConductorState` |
 | `src/rhythm/` | Pattern generators, onset makers, drum map, rhythm registry | `RhythmManager`, `RhythmRegistry` |
 | `src/time/` | Tick/time math, polyrhythm calculator, layer manager, absolute-time grid | `AbsoluteTimeGrid`, `LayerManager` |
 | `src/composers/` | Scale, chord, motif, voice-leading composers (one per file). Factory selects and blends. | `ComposerFactory` |
 | `src/fx/` | Noise engine (simplex/fbm/worley) + stutter subsystem | `noiseManager`, `StutterManager` |
-| `src/crossLayer/` | 33 modules coordinating L1↔L2 (phase lock, groove transfer, entropy regulation...) | `CrossLayerRegistry`, `crossLayerLifecycleManager` |
+| `src/crossLayer/` | 34 modules coordinating L1↔L2 (phase lock, groove transfer, entropy regulation, conductor signal bridge...) | `CrossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` |
 | `src/writer/` | CSV/MIDI output formatting | `grandFinale` |
 | `src/play/` | Top-level loops: section → phrase → measure → beat → div → subdiv → subsubdiv | `main.js` |
 
@@ -114,7 +114,11 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 
 The conductor pipeline exposes runtime signal data for cross-module reading:
 
-- **`ConductorIntelligence.getSignalSnapshot()`** — frozen snapshot of `{ densityProduct, tensionProduct, flickerProduct, stateFields, counts }`. 46+ intelligence modules self-register via `registerStateProvider`, `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`.
+- **`signalReader`** (`src/conductor/signalReader.js`) — **the** standardized read API for inter-module signal reading. All modules read signals through `signalReader` (never call `ConductorIntelligence.getSignalSnapshot()` or `ExplainabilityBus.queryByType()` directly). Key methods: `density()`, `tension()`, `flicker()`, `state(field)`, `snapshot()`, `densityAttribution()`, `tensionAttribution()`, `flickerAttribution()`, `recentEvents(type, limit)`.
+- **Product attribution** — `ConductorIntelligence.collectDensityBiasWithAttribution()` (and tension/flicker variants) returns `{ product, contributions: [{ name, raw, clamped }] }`. Enables any module to determine **which** peer is driving the composite signal.
+- **`conductorSignalBridge`** (`src/crossLayer/conductorSignalBridge.js`) — refreshes each beat via a ConductorIntelligence recorder, exposes `getSignals()` returning `{ density, tension, flicker, compositeIntensity, sectionPhase, coherenceEntropy }` for cross-layer modules.
+- **`profileAdaptation`** (`src/conductor/profileAdaptation.js`) — computes advisory `{ restrainedHint, explosiveHint, atmosphericHint }` from sustained signal conditions. Registered as both recorder and stateProvider.
+- **`signalTelemetry`** (`src/conductor/signalTelemetry.js`) — ring buffer of 200 per-beat signal snapshots. `getHistory(n)`, `isAnomalyDetected()`, `getTrend()`. Registered as recorder + stateProvider.
 - **`ExplainabilityBus.queryByType(type, limit)`** — filtered read of diagnostic entries by event type (most recent first).
 
 ---

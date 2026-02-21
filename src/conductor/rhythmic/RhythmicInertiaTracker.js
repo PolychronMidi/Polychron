@@ -55,10 +55,16 @@ RhythmicInertiaTracker = (() => {
     const inertia = streakInertia * 0.6 + diversityInertia * 0.4;
 
     // Density bias: high inertia (rut) → nudge density to destabilize;
-    // very low inertia (chaos) → slight reduction to stabilize
+    // very low inertia (chaos) → slight reduction to stabilize.
+    // Peer-aware: when flicker is strong (high texture variation),
+    // relax the inertia-break nudge — the texture layer is already providing variety.
     let densityBias = 1;
     if (inertia > 0.7) {
       densityBias = 1.06; // stuck in a rut → add density to force change
+      const flickerProduct = signalReader.flicker();
+      if (flickerProduct > 1.15) {
+        densityBias = 1.02; // flicker already pushing variation — soften our nudge
+      }
     } else if (inertia < 0.15) {
       densityBias = 0.95; // too chaotic → pull back
     }
