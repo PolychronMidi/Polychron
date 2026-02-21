@@ -4,6 +4,7 @@
 // Pure query API — tension bias drives gradual macro-dynamic shape.
 
 DynamicArchitectPlanner = (() => {
+  const V = Validator.create('DynamicArchitectPlanner');
   const MAX_SNAPSHOTS = 64;
   /** @type {Array<{ intensity: number, time: number }>} */
   const snapshots = [];
@@ -16,7 +17,8 @@ DynamicArchitectPlanner = (() => {
    * @param {number} absTime - absolute time in seconds
    */
   function recordIntensity(intensity, absTime) {
-    if (!Number.isFinite(intensity) || !Number.isFinite(absTime)) return;
+    V.requireFinite(intensity, 'intensity');
+    V.requireFinite(absTime, 'absTime');
     if (pieceStartTime < 0) pieceStartTime = absTime;
     snapshots.push({ intensity: clamp(intensity, 0, 1), time: absTime });
     if (snapshots.length > MAX_SNAPSHOTS) snapshots.shift();

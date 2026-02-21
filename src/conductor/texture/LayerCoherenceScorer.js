@@ -58,7 +58,7 @@ LayerCoherenceScorer = (() => {
    * @returns {boolean}
    */
   function isInTension(threshold) {
-    return lastCoherence < (threshold || 0.35);
+    return lastCoherence < (threshold ?? 0.35);
   }
 
   /**

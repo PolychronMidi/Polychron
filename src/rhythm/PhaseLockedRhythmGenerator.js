@@ -107,10 +107,6 @@ PhaseLockedRhythmGenerator = (() => {
     offset = ((offset % length) + length) % length; // Normalize to [0, length)
 
     // Rotate pattern by offset
-    if (typeof rotate === 'undefined') {
-      throw new Error('PhaseLockedRhythmGenerator.generate: rotate() function not available');
-    }
-
     let rotated;
     try {
       rotated = rotate(pattern, offset, 'R', length);

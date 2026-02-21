@@ -42,7 +42,7 @@ PitchMemoryRecall = (() => {
     // Don't store very weak patterns
     if (strength < 0.35) return;
 
-    const absTimeMs = Number.isFinite(beatStartTime) ? beatStartTime * 1000 : 0;
+    const absTimeMs = beatStartTime * 1000;
 
     memories.push({
       intervalDna: intervalDna.slice(0, 8), // limit DNA length

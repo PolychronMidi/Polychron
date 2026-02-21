@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 AmbitusMigrationTracker = (() => {
+  const V = Validator.create('AmbitusMigrationTracker');
   const WINDOW_SECONDS = 10;
   const MAX_HISTORY = 12;
   /** @type {Array<{ range: number, center: number, time: number }>} */
@@ -38,7 +39,7 @@ AmbitusMigrationTracker = (() => {
    * @param {number} absTime
    */
   function recordSnapshot(absTime) {
-    if (!Number.isFinite(absTime)) return;
+    V.requireFinite(absTime, 'absTime');
     const amb = getCurrentAmbitus();
     rangeHistory.push({ range: amb.range, center: amb.center, time: absTime });
     if (rangeHistory.length > MAX_HISTORY) rangeHistory.shift();

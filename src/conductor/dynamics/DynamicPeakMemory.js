@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 DynamicPeakMemory = (() => {
+  const V = Validator.create('DynamicPeakMemory');
   const MAX_PEAKS = 12;
   /** @type {Array<{ intensity: number, time: number, type: string }>} */
   const peaks = [];
@@ -16,7 +17,8 @@ DynamicPeakMemory = (() => {
    * @param {number} absTime
    */
   function recordIntensity(intensity, absTime) {
-    if (!Number.isFinite(intensity) || !Number.isFinite(absTime)) return;
+    V.requireFinite(intensity, 'intensity');
+    V.requireFinite(absTime, 'absTime');
     const clamped = clamp(intensity, 0, 1);
 
     // Detect peaks (local maxima above 0.75) and troughs (below 0.25)

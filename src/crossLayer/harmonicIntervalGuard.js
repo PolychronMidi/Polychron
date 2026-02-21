@@ -65,7 +65,7 @@ HarmonicIntervalGuard = (() => {
 
     // Get dissonance target from intent
     const intent = SectionIntentCurves.getLastIntent();
-    const dissonanceTarget = Number.isFinite(intent.dissonanceTarget) ? intent.dissonanceTarget : 0.5;
+    const dissonanceTarget = V.optionalFinite(intent.dissonanceTarget, 0.5);
 
     // Get pitch bias from FeedbackOscillator (consuming dead-end signal)
     const feedbackBias = FeedbackOscillator.applyFeedback(absTimeMs, activeLayer) ?? null;

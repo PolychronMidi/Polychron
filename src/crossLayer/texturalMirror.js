@@ -39,12 +39,12 @@ TexturalMirror = (() => {
 
     // Get intent
     const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
-    const interactionTarget = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
+    const interactionTarget = V.optionalFinite(intent.interactionTarget, 0.5);
 
     // Get role swap modifiers (consuming dead-end signals)
     const roleProfile = DynamicRoleSwap.getProfileModifiers(activeLayer) ?? { chordalBias: 0, melodicBias: 0, isSwapped: false };
-    const chordalBias = Number.isFinite(roleProfile.chordalBias) ? roleProfile.chordalBias : 0;
-    const melodicBias = Number.isFinite(roleProfile.melodicBias) ? roleProfile.melodicBias : 0;
+    const chordalBias = V.optionalFinite(roleProfile.chordalBias, 0);
+    const melodicBias = V.optionalFinite(roleProfile.melodicBias, 0);
 
     // Default if no other layer data
     if (!layerTextures[otherLayer]) {

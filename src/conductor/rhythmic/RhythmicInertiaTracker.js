@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 RhythmicInertiaTracker = (() => {
+  const V = Validator.create('RhythmicInertiaTracker');
   const MAX_SNAPSHOTS = 20;
   /** @type {Array<string>} */
   const patternFingerprints = [];
@@ -13,7 +14,7 @@ RhythmicInertiaTracker = (() => {
    * @param {number[]} onsetPattern - array of onset positions (0-1 within beat)
    */
   function recordPattern(onsetPattern) {
-    if (!Array.isArray(onsetPattern)) return;
+    V.assertArray(onsetPattern, 'onsetPattern');
     const fp = onsetPattern.map(v => m.round(v * 8) / 8).join(',');
     patternFingerprints.push(fp);
     if (patternFingerprints.length > MAX_SNAPSHOTS) patternFingerprints.shift();

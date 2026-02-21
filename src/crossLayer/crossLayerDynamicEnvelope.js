@@ -28,7 +28,7 @@ CrossLayerDynamicEnvelope = (() => {
 
     // Get intent-driven parameters
     const intent = SectionIntentCurves.getLastIntent();
-    const densityTarget = Number.isFinite(intent.densityTarget) ? intent.densityTarget : 0.5;
+    const densityTarget = V.optionalFinite(intent.densityTarget, 0.5);
 
     // Get interaction trend from InteractionHeatMap
     const trend = InteractionHeatMap.getTrend();
@@ -97,7 +97,7 @@ CrossLayerDynamicEnvelope = (() => {
   function autoSelectArcType() {
     const intent = SectionIntentCurves.getLastIntent();
 
-    const interaction = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
+    const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
     if (interaction > 0.65) {
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
     } else if (interaction > 0.35) {

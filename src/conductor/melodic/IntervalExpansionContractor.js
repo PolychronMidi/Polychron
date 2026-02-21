@@ -5,6 +5,7 @@
 // Pure query API — no side effects.
 
 IntervalExpansionContractor = (() => {
+  const V = Validator.create('IntervalExpansionContractor');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */
   const intervalSnapshots = [];
@@ -14,7 +15,7 @@ IntervalExpansionContractor = (() => {
    * @param {number} absTime
    */
   function recordSnapshot(absTime) {
-    if (!Number.isFinite(absTime)) return;
+    V.requireFinite(absTime, 'absTime');
 
     const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: 4 });
 

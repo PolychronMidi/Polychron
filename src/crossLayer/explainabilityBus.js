@@ -16,10 +16,8 @@ ExplainabilityBus = (() => {
     let t = 0;
     if (Number.isFinite(absTimeMs)) {
       t = Number(absTimeMs);
-    } else if (Number.isFinite(beatStartTime)) {
-      t = Number(beatStartTime) * 1000;
     } else {
-      t = 0;
+      t = beatStartTime * 1000;
     }
 
     V.assertNonEmptyString(layer, 'layer');

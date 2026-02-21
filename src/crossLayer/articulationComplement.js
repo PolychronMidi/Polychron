@@ -38,7 +38,7 @@ ArticulationComplement = (() => {
       return { avgSustain: 0.5, isLegato: false, isStaccato: false };
     }
     const avg = hist.reduce((a, b) => a + b, 0) / hist.length;
-    const beatTicks = Number.isFinite(tpBeat) ? tpBeat : 480;
+    const beatTicks = tpBeat;
     const normalized = avg / beatTicks; // ratio of sustain to beat length
     return {
       avgSustain: normalized,
@@ -62,7 +62,7 @@ ArticulationComplement = (() => {
 
     // Get intent to modulate contrast strength
     const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
-    const interactionTarget = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
+    const interactionTarget = V.optionalFinite(intent.interactionTarget, 0.5);
 
     // Check role swap state
     const swapped = DynamicRoleSwap.getIsSwapped() ?? false;

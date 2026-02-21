@@ -79,7 +79,7 @@ emitPickCrossLayerRecord = function(ctx) {
         memIntervals,
         [noteToEmit % 12],
         { convergence: memConvergence, cadence: false, downbeat: false },
-        Number.isFinite(Number(sectionIndex)) ? Number(sectionIndex) : (() => { throw new Error(`${unit}.emitPickCrossLayerRecord: sectionIndex must be finite`); })()
+        sectionIndex
       );
     }
   }

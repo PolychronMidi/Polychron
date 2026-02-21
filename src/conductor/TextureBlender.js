@@ -90,18 +90,14 @@ TextureBlender = (() => {
     }
 
     // ── Oscillating probability seeds ──────────────────────────────
-    const seed = (Number.isFinite(unitStart))
-      ? unitStart
-      : (Number.isFinite(beatStart) ? beatStart : 0);
+    const seed = Number.isFinite(unitStart) ? unitStart : beatStart;
     const unitDepth = unit === 'beat' ? 0 : unit === 'div' ? 1 : unit === 'subdiv' ? 2 : 3;
 
     const oscA = (m.sin(seed * 0.0023 + unitDepth * 3.7) + 1) * 0.5;
     const oscB = (m.sin(seed * 0.0059 - unitDepth * 5.3) + 1) * 0.5;
     const oscBlend = oscA * 0.6 + oscB * 0.4;
 
-    const crossModFactor = Number.isFinite(crossModulation)
-      ? clamp(crossModulation / 6, 0, 1)
-      : 0.5;
+    const crossModFactor = clamp(crossModulation / 6, 0, 1);
 
     // ── Context-aware modulation (#1 + #3) ─────────────────────────
     const phraseInfluence = getPhraseTextureInfluence();

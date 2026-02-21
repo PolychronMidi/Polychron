@@ -4,6 +4,7 @@
 // Pure query API — signals proportion quality and nudge suggestions.
 
 TemporalProportionTracker = (() => {
+  const V = Validator.create('TemporalProportionTracker');
   const PHI = 1.618033988749895;
   /** @type {number[]} */
   const sectionDurations = [];
@@ -19,7 +20,8 @@ TemporalProportionTracker = (() => {
    * @param {number} durationBeats
    */
   function recordSection(durationBeats) {
-    if (!Number.isFinite(durationBeats) || durationBeats <= 0) return;
+    V.requireFinite(durationBeats, 'durationBeats');
+    if (durationBeats <= 0) throw new Error('TemporalProportionTracker: durationBeats must be > 0');
     sectionDurations.push(durationBeats);
     if (sectionDurations.length > MAX_HISTORY) sectionDurations.shift();
   }
@@ -29,7 +31,8 @@ TemporalProportionTracker = (() => {
    * @param {number} durationBeats
    */
   function recordPhrase(durationBeats) {
-    if (!Number.isFinite(durationBeats) || durationBeats <= 0) return;
+    V.requireFinite(durationBeats, 'durationBeats');
+    if (durationBeats <= 0) throw new Error('TemporalProportionTracker: durationBeats must be > 0');
     phraseDurations.push(durationBeats);
     if (phraseDurations.length > MAX_HISTORY) phraseDurations.shift();
   }

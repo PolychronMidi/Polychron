@@ -3,6 +3,7 @@
 // Pure query API — consumed by main.js when determining phrasesPerSection.
 
 SectionLengthAdvisor = (() => {
+  const V = Validator.create('SectionLengthAdvisor');
   /** @type {Array<number>} */
   const energyHistory = [];
   const MAX_HISTORY = 60;
@@ -12,7 +13,7 @@ SectionLengthAdvisor = (() => {
    * @param {number} compositeIntensity - 0 to 1
    */
   function recordEnergy(compositeIntensity) {
-    if (!Number.isFinite(compositeIntensity)) return;
+    V.requireFinite(compositeIntensity, 'compositeIntensity');
     energyHistory.push(clamp(compositeIntensity, 0, 1));
     if (energyHistory.length > MAX_HISTORY) energyHistory.shift();
   }

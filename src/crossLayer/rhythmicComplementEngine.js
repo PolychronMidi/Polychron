@@ -69,14 +69,14 @@ RhythmicComplementEngine = (() => {
 
     if (mode === 'hocket') {
       // Shift onset by half a beat to interleave
-      const halfBeatTicks = Number.isFinite(tpBeat) ? tpBeat * 0.5 : 0;
+      const halfBeatTicks = tpBeat * 0.5;
       const shift = halfBeatTicks * rf(0.3, 0.7) * strength;
       return { tick: onTick + shift, velocityScale: 1.0 + strength * 0.1, modified: true };
     }
 
     if (mode === 'antiphony') {
       // Small delay for call-response feel
-      const responseTicks = Number.isFinite(tpBeat) ? tpBeat * rf(0.08, 0.2) * strength : 0;
+      const responseTicks = tpBeat * rf(0.08, 0.2) * strength;
       return { tick: onTick + responseTicks, velocityScale: 0.85 + strength * 0.15, modified: true };
     }
 
@@ -114,8 +114,8 @@ RhythmicComplementEngine = (() => {
 
     const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
 
-    const interaction = Number.isFinite(intent.interactionTarget) ? intent.interactionTarget : 0.5;
-    const density = Number.isFinite(intent.densityTarget) ? intent.densityTarget : 0.5;
+    const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
+    const density = V.optionalFinite(intent.densityTarget, 0.5);
 
     // High interaction + low density → hocket (interleaving gaps)
     // High interaction + high density → antiphony (dense call/response)

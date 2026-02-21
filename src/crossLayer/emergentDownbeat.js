@@ -70,8 +70,6 @@ EmergentDownbeat = (() => {
    * @param {number} strength - downbeat strength 0-1
    */
   function reinforceBass(midi, velocity, strength) {
-    if (typeof p !== 'function') throw new Error('EmergentDownbeat.reinforceBass: p (pushMultiple) not available — writer must load before play');
-    if (!Number.isFinite(beatStart)) return;
     if (strength < 0.5) return; // only for strong downbeats
 
     const bassNote = (midi % 12) + BASS_REINFORCE_OCTAVE * 12;
@@ -92,8 +90,6 @@ EmergentDownbeat = (() => {
    * @param {number} strength - downbeat strength 0-1
    */
   function widenStereo(layer, strength) {
-    if (typeof p !== 'function') throw new Error('EmergentDownbeat.widenStereo: p (pushMultiple) not available — writer must load before play');
-    if (!Number.isFinite(beatStart)) return;
     if (strength < 0.4) return;
 
     const offset = Math.round(STEREO_WIDEN_AMOUNT * strength);

@@ -87,7 +87,7 @@ class StutterManager {
         const reflChs = reflection.slice(0, 2);
         if (reflChs.length > 0) {
           const microRate = clamp(m.round(24 + composite * 16), 24, 48);
-          const microDuration = Number.isFinite(tpUnit) ? tpUnit * rf(0.3, 0.6) : 100;
+          const microDuration = tpUnit * rf(0.3, 0.6);
           this._stutterPan.call(this, reflChs, microRate, microDuration);
         }
       }

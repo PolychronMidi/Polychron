@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 HarmonicDensityOscillator = (() => {
+  const V = Validator.create('HarmonicDensityOscillator');
   const MAX_SAMPLES = 20;
   /** @type {Array<{ changeRate: number, time: number }>} */
   const changeSamples = [];
@@ -14,7 +15,8 @@ HarmonicDensityOscillator = (() => {
    * @param {number} absTime
    */
   function recordChangeRate(changeRate, absTime) {
-    if (!Number.isFinite(changeRate) || !Number.isFinite(absTime)) return;
+    V.requireFinite(changeRate, 'changeRate');
+    V.requireFinite(absTime, 'absTime');
     changeSamples.push({ changeRate: clamp(changeRate, 0, 1), time: absTime });
     if (changeSamples.length > MAX_SAMPLES) changeSamples.shift();
   }

@@ -3,6 +3,7 @@
 // Pure query API — scales HarmonicRhythmTracker thresholds and journey boldness.
 
 HarmonicVelocityMonitor = (() => {
+  const V = Validator.create('HarmonicVelocityMonitor');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -11,7 +12,7 @@ HarmonicVelocityMonitor = (() => {
    * @returns {{ changesPerSecond: number, total: number }}
    */
   function getHarmonicVelocity(windowSeconds) {
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const chords = AbsoluteTimeWindow.getChords({ windowSeconds: ws });
     if (chords.length < 2) return { changesPerSecond: 0, total: chords.length };
 
