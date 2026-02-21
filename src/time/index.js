@@ -14,3 +14,5 @@ require('./AbsoluteTimeWindow');
 require('./absoluteTimeGrid');
 // @ts-ignore: side-effect module load
 require('./TempoFeelEngine');
+// @ts-ignore: side-effect module load
+require('./TimeStream');

@@ -43,6 +43,8 @@ require('./TextureBlender');
 require('./ConductorState');
 // @ts-ignore: intelligence registry (must precede GlobalConductorUpdate & intelligence subdirectories)
 require('./ConductorIntelligence');
+// @ts-ignore: coherence monitor (registers into ConductorIntelligence, must precede GlobalConductorUpdate)
+require('./CoherenceMonitor');
 // @ts-ignore: load side-effect module with globals
 require('./GlobalConductorUpdate');
 // @ts-ignore: load side-effect module with globals
