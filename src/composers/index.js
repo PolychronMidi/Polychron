@@ -32,6 +32,8 @@ require('./ModalInterchangeComposer');
 // @ts-ignore: load side-effect module with globals
 require('./HarmonicRhythmComposer');
 // @ts-ignore: load side-effect module with globals
+require('./melodicDevelopmentVoicingIntent');
+// @ts-ignore: load side-effect module with globals
 require('./MelodicDevelopmentComposer');
 // @ts-ignore: load side-effect module with globals
 require('./motif');

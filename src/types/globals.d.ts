@@ -364,6 +364,7 @@ declare var RandomModeComposer: any;
 declare var TensionReleaseComposer: any;
 declare var ModalInterchangeComposer: any;
 declare var HarmonicRhythmComposer: any;
+declare var melodicDevelopmentVoicingIntent: (candidateNotes: any[], lastBaseNotes: any[], lastDevelopedNotes: any[], developmentBias: number, intensity: number, currentPhase: number) => { candidateWeights: { [note: number]: number } } | null;
 declare var MelodicDevelopmentComposer: any;
 declare var VoiceLeadingComposer: any;
 declare var MotifComposer: any;

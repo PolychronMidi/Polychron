@@ -17,7 +17,7 @@ CadentialPreparationAdvisor = (() => {
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
       : { position: 0.5, atEnd: false };
 
-    const position = Number(phraseCtx.position) || 0.5;
+    const position = Validator.optionalFinite(phraseCtx.position, 0.5);
     const atEnd = Boolean(phraseCtx.atEnd);
 
     // Check harmonic context for dominant approach

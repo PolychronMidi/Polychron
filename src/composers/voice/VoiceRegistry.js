@@ -44,9 +44,6 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
     let melodicPriorWeights = null;
 
     if (opts && opts.useCorpusMelodicPriors === true) {
-      if (typeof melodicPriors === 'undefined' || !melodicPriors || typeof melodicPriors.getCandidateWeights !== 'function') {
-        throw new Error('VoiceRegistry: melodicPriors.getCandidateWeights() unavailable while corpus melodic priors are enabled');
-      }
       melodicPriorWeights = melodicPriors.getCandidateWeights({
         candidates,
         lastNote: (lastNotes.length > 0 && Number.isFinite(Number(lastNotes[0]))) ? Number(lastNotes[0]) : undefined,

@@ -82,7 +82,7 @@ OctaveSpreadMonitor = (() => {
   }
 
   ConductorIntelligence.registerStateProvider('OctaveSpreadMonitor', () => ({
-    octaveSpreadBias: OctaveSpreadMonitor.getSpreadBias() || 0
+    octaveSpreadBias: OctaveSpreadMonitor.getSpreadBias()
   }));
 
   return {

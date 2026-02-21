@@ -79,8 +79,8 @@ TexturalMirror = (() => {
     if (l1.mode === l2.mode) return 0;
     // Simple heuristic: each mode gets an "energy" score
     const energy = { normal: 0.5, sparse: 0.2, dense: 0.8, chordBurst: 0.7, flurry: 0.9 };
-    const e1 = energy[l1.mode] || 0.5;
-    const e2 = energy[l2.mode] || 0.5;
+    const e1 = energy[l1.mode] ?? 0.5;
+    const e2 = energy[l2.mode] ?? 0.5;
     return clamp(Math.abs(e1 - e2) * 2, 0, 1);
   }
 

@@ -73,7 +73,7 @@ CrossLayerDynamicEnvelope = (() => {
    * @returns {number} 0.4–1.6
    */
   function getVelocityScale(layer) {
-    return clamp(smoothedScale[layer] || 1.0, 0.4, 1.6);
+    return clamp(smoothedScale[layer] ?? 1.0, 0.4, 1.6);
   }
 
   /**

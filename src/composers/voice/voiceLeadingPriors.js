@@ -39,10 +39,6 @@ voiceLeadingPriors = (function() {
   }
 
   function getProfileOrFail(qualityInput) {
-    if (typeof VOICE_LEADING_PRIOR_TABLES === 'undefined' || !VOICE_LEADING_PRIOR_TABLES || typeof VOICE_LEADING_PRIOR_TABLES !== 'object') {
-      throw new Error('voiceLeadingPriors.getProfileOrFail: VOICE_LEADING_PRIOR_TABLES is unavailable');
-    }
-
     const quality = normalizeQualityOrNull(qualityInput);
     if (!quality) throw new Error(`voiceLeadingPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 

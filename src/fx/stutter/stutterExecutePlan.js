@@ -7,12 +7,11 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     throw new Error('stutterExecutePlan: plan.profile is required');
   }
   const profile = cfg.profile;
-  const baseNote = Number.isFinite(Number(cfg.note)) ? Number(cfg.note) : null;
-  if (!Number.isFinite(baseNote)) throw new Error('stutterExecutePlan: plan.note (base MIDI note) is required');
-  const on = Number.isFinite(Number(cfg.on)) ? Number(cfg.on) : Number(beatStart);
-  const sustain = Number.isFinite(Number(cfg.sustain)) ? Number(cfg.sustain) : tpSec * 0.25;
-  const numStutters = Number.isFinite(Number(cfg.numStutters)) ? Number(cfg.numStutters) : m.max(1, ri(2, 6));
-  const duration = Number.isFinite(Number(cfg.duration)) ? Number(cfg.duration) : Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1));
+  const baseNote = Validator.requireFinite(cfg.note, 'plan.note', 'stutterExecutePlan');
+  const on = Validator.optionalFinite(Number(cfg.on), beatStart);
+  const sustain = Validator.optionalFinite(Number(cfg.sustain), tpSec * 0.25);
+  const numStutters = Validator.optionalFinite(Number(cfg.numStutters), m.max(1, ri(2, 6)));
+  const duration = Validator.optionalFinite(Number(cfg.duration), Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1)));
 
   const finalChannels = /** @type {number[]} */ ([]);
   if (Array.isArray(cfg.channels) && cfg.channels.length > 0) {
@@ -43,7 +42,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   let adaptiveCrossRules = null;
   if (directive.metricsAdaptive && directive.metricsAdaptive.enabled) {
     const metrics = StutterMetrics.getMetrics();
-    const sens = Number.isFinite(Number(directive.metricsAdaptive.sensitivity)) ? Number(directive.metricsAdaptive.sensitivity) : 0.08;
+    const sens = Validator.optionalFinite(Number(directive.metricsAdaptive.sensitivity), 0.08);
     const adj = Object.assign({}, crossRules);
     ['source', 'reflection', 'bass'].forEach((p) => {
       const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
@@ -107,8 +106,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   const baseStepPeriod = duration / m.max(1, Number(numStutters));
   for (let i = 0; i < numStutters; i++) {
     const tNorm = numStutters > 1 ? i / (numStutters - 1) : 0;
-    const rateCurveVal = evalCurve(directive.rateCurve || cfg.rateCurve, tNorm) || 1;
-    const phaseCurveVal = evalCurve(directive.phaseCurve || cfg.phaseCurve, tNorm) || undefined;
+    const rateCurveVal = evalCurve(directive.rateCurve || cfg.rateCurve, tNorm) ?? 1;
+    const phaseCurveVal = evalCurve(directive.phaseCurve || cfg.phaseCurve, tNorm);
 
     for (const ch of /** @type {any[]} */ (finalChannels)) {
       const side = leftCHs.includes(ch) ? 'left' : (rightCHs.includes(ch) ? 'right' : 'center');

@@ -31,9 +31,6 @@ harmonicPriors = (function() {
   }
 
   function getProfileOrFail(qualityInput) {
-    if (typeof HARMONIC_PRIOR_TABLES === 'undefined' || !HARMONIC_PRIOR_TABLES || typeof HARMONIC_PRIOR_TABLES !== 'object') {
-      throw new Error('harmonicPriors.getProfileOrFail: HARMONIC_PRIOR_TABLES is unavailable');
-    }
     const quality = normalizeQualityOrFail(qualityInput);
     const profile = HARMONIC_PRIOR_TABLES[quality];
     if (!profile || typeof profile !== 'object') {

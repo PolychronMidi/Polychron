@@ -50,14 +50,14 @@ const scaleFxDefaultObject = (fxDefault, scale) => {
 
 const resolveRangeScale = (groupName, effectNum) => {
   const groupBase = Number(ccGroupScale[groupName]);
-  const groupMul = Number.isFinite(groupBase) ? groupBase : 1;
+  const groupMul = Validator.optionalFinite(groupBase, 1);
   const groupMap = ccRangeScale[groupName];
   if (!groupMap || typeof groupMap !== 'object') {
     throw new Error(`setBalanceAndFX.resolveRangeScale: missing ccRangeScale group "${groupName}"`);
   }
   const specific = Number(groupMap[String(effectNum)]);
   const fallback = Number(groupMap.default);
-  const ccMul = Number.isFinite(specific) ? specific : (Number.isFinite(fallback) ? fallback : 1);
+  const ccMul = Validator.optionalFinite(specific, Validator.optionalFinite(fallback, 1));
   return clamp(groupMul * ccMul, 0.1, 4);
 };
 
@@ -119,14 +119,14 @@ const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefi
   const defaults = resolveFxDefaults(groupName, effectNum);
   // Normalize overrides so property access is safe for TS/CheckJS
   const o = (overrides && typeof overrides === 'object') ? overrides : {};
-  const minValue = Number.isFinite(Number(o.min)) ? Number(o.min) : Number(defaults.min);
-  const maxValue = Number.isFinite(Number(o.max)) ? Number(o.max) : Number(defaults.max);
+  const minValue = Validator.optionalFinite(Number(o.min), Number(defaults.min));
+  const maxValue = Validator.optionalFinite(Number(o.max), Number(defaults.max));
   if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
     throw new Error(`setBalanceAndFX.rfx: invalid min/max for group="${groupName}" cc=${effectNum}`);
   }
 
-  const rawConditionMin = Number.isFinite(Number(o.conditionMin)) ? Number(o.conditionMin) : Number(defaults.conditionMin);
-  const rawConditionMax = Number.isFinite(Number(o.conditionMax)) ? Number(o.conditionMax) : Number(defaults.conditionMax);
+  const rawConditionMin = Validator.optionalFinite(Number(o.conditionMin), Number(defaults.conditionMin));
+  const rawConditionMax = Validator.optionalFinite(Number(o.conditionMax), Number(defaults.conditionMax));
 
   const scale = resolveRangeScale(groupName, effectNum);
   const [scaledMin, scaledMax] = scaleFxRange(minValue, maxValue, scale);
@@ -140,20 +140,17 @@ const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefi
 // Respect both instance state and legacy naked global `firstLoop` set by tests
 if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop < 1) { firstLoop = 1; firstLoop = 1;
   // Apply a limited change to balance offset: use rl() but cap per-iteration change to +/-4 ticks for stability
-  const prevBal = Number.isFinite(Number(balOffset)) ? Number(balOffset) : 0;
-  // Use global previous balOffset when available so tests observing global changes see
-  // a limited delta relative to the global baseline rather than instance baseline
-  const prevGlobalBal = Number.isFinite(Number(balOffset)) ? Number(balOffset) : prevBal;
+  const prevBal = balOffset;
   const balMin = Number(spatialCanvas.balOffset[0]);
   const balMax = Number(spatialCanvas.balOffset[1]);
-  const balStep = Number.isFinite(Number(spatialCanvas.balStep)) ? Number(spatialCanvas.balStep) : 4;
+  const balStep = Validator.optionalFinite(Number(spatialCanvas.balStep), 4);
   const sideBiasMin = Number(spatialCanvas.sideBias[0]);
   const sideBiasMax = Number(spatialCanvas.sideBias[1]);
-  const sideBiasStep = Number.isFinite(Number(spatialCanvas.sideBiasStep)) ? Number(spatialCanvas.sideBiasStep) : 2;
-  const lBalMax = Number.isFinite(Number(spatialCanvas.lBalMax)) ? Number(spatialCanvas.lBalMax) : 54;
+  const sideBiasStep = Validator.optionalFinite(Number(spatialCanvas.sideBiasStep), 2);
+  const lBalMax = Validator.optionalFinite(Number(spatialCanvas.lBalMax), 54);
 
-  const candidateBal = rl(prevGlobalBal, -balStep, balStep, balMin, balMax);
-  balOffset = clamp(candidateBal, m.max(balMin, prevGlobalBal - balStep), m.min(balMax, prevGlobalBal + balStep));
+  const candidateBal = rl(prevBal, -balStep, balStep, balMin, balMax);
+  balOffset = clamp(candidateBal, m.max(balMin, prevBal - balStep), m.min(balMax, prevBal + balStep));
   sideBias=rl(sideBias,-sideBiasStep,sideBiasStep,sideBiasMin,sideBiasMax);
   lBal=m.max(0,m.min(lBalMax,balOffset + ri(3) + sideBias));
   rBal=m.min(MIDI_MAX_VALUE,m.max(74,MIDI_MAX_VALUE - balOffset - ri(3) + sideBias));
@@ -240,7 +237,7 @@ return [
       const reverbBoost = m.round(texInt * rf(8, 20) * fxScale.reverbScale * fxScale.textureBoostScale);
       const filterBoost = m.round(texInt * rf(5, 15) * fxScale.filterOpenness * fxScale.textureBoostScale);
       const delaySpike = m.round(texInt * rf(4, 12) * fxScale.delayScale * fxScale.textureBoostScale);
-      const texTick = Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0;
+      const texTick = beatStart;
 
       const clampToFxDefault = (ch, effectNum, value) => {
         // determine group for the channel

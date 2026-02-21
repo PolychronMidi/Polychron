@@ -34,9 +34,6 @@ voiceLeadingSelectNextNote = function voiceLeadingSelectNextNote(vls, lastNotes,
   let melodicPriorWeights = null;
 
   if (useCorpusMelodicPriors) {
-    if (typeof melodicPriors === 'undefined' || !melodicPriors || typeof melodicPriors.getCandidateWeights !== 'function') {
-      throw new Error('VoiceLeadingScore.selectNextNote: melodicPriors.getCandidateWeights() unavailable while corpus melodic priors are enabled');
-    }
     melodicPriorWeights = melodicPriors.getCandidateWeights({
       candidates: availableNotes,
       lastNote: Number(lastNotes[0]),

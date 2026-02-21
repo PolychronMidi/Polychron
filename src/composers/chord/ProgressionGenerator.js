@@ -51,7 +51,7 @@ ProgressionGenerator = class ProgressionGenerator {
     }
 
     const merged = Object.assign({}, builtIn);
-    if (typeof harmonicPriors !== 'undefined' && harmonicPriors) {
+    {
       const priorPatterns = harmonicPriors.getPatternSet(quality);
       for (const [name, romans] of Object.entries(priorPatterns)) {
         if (!Object.prototype.hasOwnProperty.call(merged, name)) {
@@ -134,9 +134,6 @@ ProgressionGenerator = class ProgressionGenerator {
 
     const normalizedType = type.toLowerCase();
     if (normalizedType === 'corpus') {
-      if (typeof harmonicPriors === 'undefined' || !harmonicPriors || typeof harmonicPriors.getRomanProgression !== 'function') {
-        throw new Error('ProgressionGenerator.generate: harmonicPriors.getRomanProgression() not available for corpus mode');
-      }
       const selection = harmonicPriors.getRomanProgression(this.romanQuality, Object.assign({}, opts, {
         phase: this.resolvePhrasePhase(opts)
       }));
@@ -168,7 +165,7 @@ ProgressionGenerator = class ProgressionGenerator {
       : hasProfileToggle
         ? opts.useCorpusHarmonicPriors === true
         : false;
-    if (useCorpus && typeof harmonicPriors !== 'undefined' && harmonicPriors) {
+    if (useCorpus) {
       const corpusOpts = {
         ...opts,
         phase: this.resolvePhrasePhase(opts),

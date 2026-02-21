@@ -150,6 +150,12 @@ FullBootstrap = (() => {
     'PhaseLockedRhythmGenerator',
     'RHYTHM_PRIOR_TABLES',
     'rhythmPriors',
+    'MELODIC_PRIOR_TABLES',
+    'melodicPriors',
+    'VOICE_LEADING_PRIOR_TABLES',
+    'voiceLeadingPriors',
+    'HARMONIC_PRIOR_TABLES',
+    'harmonicPriors',
     'DRUM_MAP',
 
     // ── time ──
@@ -184,6 +190,7 @@ FullBootstrap = (() => {
     'TensionReleaseComposer',
     'ModalInterchangeComposer',
     'HarmonicRhythmComposer',
+    'melodicDevelopmentVoicingIntent',
     'MelodicDevelopmentComposer',
     'VoiceLeadingComposer',
     'MotifComposer',

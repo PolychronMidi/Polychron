@@ -58,10 +58,6 @@ melodicPriors = (function() {
   }
 
   function getProfileOrFail(qualityInput) {
-    if (typeof MELODIC_PRIOR_TABLES === 'undefined' || !MELODIC_PRIOR_TABLES || typeof MELODIC_PRIOR_TABLES !== 'object') {
-      throw new Error('melodicPriors.getProfileOrFail: MELODIC_PRIOR_TABLES is unavailable');
-    }
-
     const quality = normalizeQualityOrNull(qualityInput);
     if (!quality) throw new Error(`melodicPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 
