@@ -110,9 +110,6 @@ VelocityInterference = (() => {
   function writeVizCC(layer, mode) {
     V.assertNonEmptyString(layer, 'writeVizCC.layer');
     V.assertInSet(mode, new Set(['reinforce', 'separate', 'neutral']), 'writeVizCC.mode');
-    if (typeof p !== 'function') {
-      throw new Error('VelocityInterference.writeVizCC: p must be a function');
-    }
     if (typeof c === 'undefined' || !Array.isArray(c)) {
       throw new Error('VelocityInterference.writeVizCC: c must be a note event array');
     }
