@@ -25,7 +25,8 @@ Everything in this project follows from five rules. Learn these and the rest is 
 Globals are the project's circulatory system. They are assigned as side-effects of `require()` calls in `index.js` files — never via `global.`, `globalThis.`, or `/* global */` comments (ESLint enforces this). All globals are declared in `src/types/globals.d.ts`.
 
 - Always reference globals directly — never alias them into intermediary variables.
-- To add a new global: create a side-effect module, require it from the subsystem's `index.js`, and declare it in `globals.d.ts`.
+- To add a new global: create a side-effect module, require it from the subsystem's `index.js`, declare it in `globals.d.ts`, **and** add it to `VALIDATED_GLOBALS` in `src/play/fullBootstrap.js`.
+- Boot validation: `mainBootstrap.assertBootstrapGlobals()` proves every `VALIDATED_GLOBALS` entry exists before the main loop runs. ESLint rule `local/no-typeof-validated-global` bans redundant `typeof` probes on these globals — reference them directly and trust the boot check.
 
 ### 2. Fail Fast — Loud Crashes, Never Silent Corruption
 
@@ -36,7 +37,9 @@ The **Validator** (`src/utils/validators.js`) is the immune system:
 const V = Validator.create('ModuleName');
 const t = V.requireFinite(timeMs, 'timeMs'); // returns value or throws
 ```
-Key methods: `requireFinite`, `requireDefined`, `requireType`, `requireEnum`, `assertRange`, `assertObject`, `assertArray`, `assertKeysPresent`, `assertAllowedKeys`, `getEventsOrThrow` (and more). Every thrown error is stamped with the module name for instant traceability.
+Key methods: `requireFinite`, `optionalFinite`, `requireDefined`, `requireType`, `requireEnum`, `assertRange`, `assertObject`, `assertPlainObject`, `assertArray`, `assertNonEmptyString`, `assertKeysPresent`, `assertAllowedKeys`, `getEventsOrThrow` (and more). Every thrown error is stamped with the module name for instant traceability.
+
+Use `optionalFinite(val, fallback)` **only** for legitimately optional numerics (e.g., external prior weights). Never use it to paper over values that should always be present — use `requireFinite` for those.
 
 ### 3. Self-Registration — Modules Announce Themselves
 
@@ -60,6 +63,8 @@ Each subsystem has one `*Manager` (Façade + service locator) that composes ligh
 - Per-effect variants → Strategy implementations (e.g., stutterFade/pan/fx)
 
 One manager per subsystem. Additional files are helpers, not more managers.
+
+When a file grows past ~200 lines, extract a focused helper as a new global loaded **before** the consumer in `index.js` (e.g., `emitPickCrossLayerRecord` extracted from `playNotesEmitPick`, `conductorConfigResolvers` extracted from `conductorConfig`). The consumer calls the helper directly — no import needed.
 
 ### 5. Coherent Files, One Responsibility
 
@@ -99,7 +104,8 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 
 - **Language:** JavaScript (CommonJS), TypeScript checking via `tsc --noEmit`
 - **Console output:** only script start, successful output, and temporary debug traces. Limited `console.warn('Acceptable warning: ...')` for long-run pulse checks.
-- **No ad-hoc validation:** use `Validator`, not `typeof` / `|| []` / `|| 0`.
+- **No ad-hoc validation:** use `Validator`, not `typeof` / `|| []` / `|| 0` / `Number.isFinite(x) ? x : fallback`.
+- **No typeof on boot-validated globals:** ESLint enforces `local/no-typeof-validated-global`. Trust bootstrap; reference globals directly.
 - **Globals are truth:** initialize correctly at the source. Never "sanitize" downstream.
 
 ---

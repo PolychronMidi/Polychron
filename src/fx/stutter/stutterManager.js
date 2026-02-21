@@ -117,8 +117,8 @@ class StutterManager {
 
   stutterFade(channels, numStutters = undefined, duration = undefined) {
     const grain = this._getStutterGrainParams();
-    const effectiveStutters = Number.isFinite(Number(numStutters)) ? Number(numStutters) : ri(grain.fadeCount[0], grain.fadeCount[1]);
-    const effectiveDuration = Number.isFinite(Number(duration)) ? Number(duration) : tpSec * rf(grain.fadeDuration[0], grain.fadeDuration[1]);
+    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain.fadeCount[0], grain.fadeCount[1]));
+    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain.fadeDuration[0], grain.fadeDuration[1]));
     if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFade: called with no channels');
     if (!Number.isFinite(effectiveStutters) || effectiveStutters <= 0) throw new Error('StutterManager.stutterFade: numStutters must be a positive number');
     if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) throw new Error('StutterManager.stutterFade: duration must be positive');
@@ -128,8 +128,8 @@ class StutterManager {
 
   stutterPan(channels, numStutters = undefined, duration = undefined) {
     const grain = this._getStutterGrainParams();
-    const effectiveStutters = Number.isFinite(Number(numStutters)) ? Number(numStutters) : ri(grain.panCount[0], grain.panCount[1]);
-    const effectiveDuration = Number.isFinite(Number(duration)) ? Number(duration) : tpSec * rf(grain.panDuration[0], grain.panDuration[1]);
+    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain.panCount[0], grain.panCount[1]));
+    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain.panDuration[0], grain.panDuration[1]));
     if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterPan: called with no channels');
     if (!Number.isFinite(effectiveStutters) || effectiveStutters <= 0) throw new Error('StutterManager.stutterPan: numStutters must be a positive number');
     if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) throw new Error('StutterManager.stutterPan: duration must be positive');
@@ -139,8 +139,8 @@ class StutterManager {
 
   stutterFX(channels, numStutters = undefined, duration = undefined) {
     const grain = this._getStutterGrainParams();
-    const effectiveStutters = Number.isFinite(Number(numStutters)) ? Number(numStutters) : ri(grain.fxCount[0], grain.fxCount[1]);
-    const effectiveDuration = Number.isFinite(Number(duration)) ? Number(duration) : tpSec * rf(grain.fxDuration[0], grain.fxDuration[1]);
+    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain.fxCount[0], grain.fxCount[1]));
+    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain.fxDuration[0], grain.fxDuration[1]));
     if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFX: called with no channels');
     if (!Number.isFinite(effectiveStutters) || effectiveStutters <= 0) throw new Error('StutterManager.stutterFX: numStutters must be a positive number');
     if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) throw new Error('StutterManager.stutterFX: duration must be positive');

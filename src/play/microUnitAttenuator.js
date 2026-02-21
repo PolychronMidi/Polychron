@@ -66,7 +66,7 @@ microUnitAttenuator = (() => {
         p(c, offEvt);
         return;
       }
-      _stack[_stack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: Number.isFinite(score) ? score : 0 });
+      _stack[_stack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: Validator.optionalFinite(score, 0) });
     },
 
     /**

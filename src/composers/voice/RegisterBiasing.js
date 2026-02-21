@@ -15,7 +15,7 @@ RegisterBiasing = {
    */
   apply(notePool, maxVoices, opts = {}, phraseContext = {}) {
     let finalRegisterBias = opts.registerBias; // 'higher'|'lower'|undefined
-    const arcRegisterBias = phraseContext.registerBias || 0;
+    const arcRegisterBias = Validator.optionalFinite(phraseContext.registerBias, 0);
 
     // Arc-based bias: apply probabilistically to preserve variety
     if (!finalRegisterBias && m.abs(arcRegisterBias) > VOICE_Manager.arcRegisterBiasThreshold && rf() < VOICE_Manager.arcRegisterBiasChance) {

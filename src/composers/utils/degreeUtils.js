@@ -101,7 +101,7 @@ degreeToMidi = function(degree, scale = null, octave = 4, opts = {}) {
 transposeByDegree = function(noteOrMidi, scale = null, degreeOffset = 0, opts = {}) {
   const transformOne = (input) => {
     const info = midiToDegree(input, scale, { quantize: Boolean(opts && opts.quantize) });
-    const targetAbs = info.absDegree + Number(degreeOffset || 0);
+    const targetAbs = info.absDegree + degreeOffset;
     const targetOct = Math.floor(targetAbs / info.scalePC.length);
     const targetDeg = ((targetAbs % info.scalePC.length) + info.scalePC.length) % info.scalePC.length;
     const outMidiRaw = targetOct * 12 + info.scalePC[targetDeg];

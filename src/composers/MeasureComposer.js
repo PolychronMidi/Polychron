@@ -144,7 +144,7 @@ MeasureComposer = class MeasureComposer {
 
     // Delegate interval selection to universal strategy
     let intervals = [];
-    const intervalOptions = self.intervalOptions || undefined;
+    const intervalOptions = self.intervalOptions;
     intervals = IntervalComposer.selectIntervals(self.notes.length, intervalOptions);
 
     try {

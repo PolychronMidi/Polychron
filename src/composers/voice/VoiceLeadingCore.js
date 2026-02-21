@@ -114,10 +114,6 @@ VoiceLeadingCore = {
 
     const useCorpusVoiceLeadingPriors = opts && opts.useCorpusVoiceLeadingPriors === true;
     if (useCorpusVoiceLeadingPriors) {
-      if (typeof voiceLeadingPriors === 'undefined' || !voiceLeadingPriors || typeof voiceLeadingPriors.getCandidateAdjustment !== 'function') {
-        throw new Error('VoiceLeadingCore.computeCandidateScore: voiceLeadingPriors.getCandidateAdjustment() unavailable while corpus priors are enabled');
-      }
-
       const phrasePhase = (opts && typeof opts.phase === 'string' && opts.phase.length > 0)
         ? opts.phase
         : (opts && opts.phraseContext && typeof opts.phraseContext.phase === 'string' && opts.phraseContext.phase.length > 0)

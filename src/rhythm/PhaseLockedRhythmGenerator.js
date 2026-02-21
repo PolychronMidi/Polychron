@@ -177,7 +177,7 @@ PhaseLockedRhythmGenerator = (() => {
 
     const phaseKeyBase = activeLayer ? `${activeLayer}:${patternName}` : patternName;
     const phaseKey = `${phaseKeyBase}:${length}`;
-    return phases.get(phaseKey) || 0;
+    return phases.get(phaseKey) ?? 0;
   }
 
   /**
