@@ -4,6 +4,7 @@
 
 signalTelemetry = (() => {
   const V = Validator.create('signalTelemetry');
+  let initialized = false;
 
   const MAX_HISTORY = 200;
   /** @type {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>} */
@@ -109,6 +110,8 @@ signalTelemetry = (() => {
 
   /** Subscribe to SECTION_BOUNDARY so the ring buffer clears each section. */
   function initialize() {
+    if (initialized) return;
+    initialized = true;
     const EVENTS = V.getEventsOrThrow();
     EventBus.on(EVENTS.SECTION_BOUNDARY, reset);
   }

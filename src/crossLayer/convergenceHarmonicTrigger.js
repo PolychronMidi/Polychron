@@ -48,8 +48,7 @@ ConvergenceHarmonicTrigger = (() => {
     let bias = 0;
 
     // Consume CadenceAlignment dead-end signals
-    if (!CadenceAlignment ||
-        !CadenceAlignment.applyAlignment) {
+    if (!CadenceAlignment.applyAlignment) {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment is required');
     }
     // Use bridge: blend actual tension product with compositeIntensity for semantic accuracy

@@ -4,6 +4,8 @@
 // never need to understand ConductorIntelligence internals.
 
 conductorSignalBridge = (() => {
+  const V = Validator.create('conductorSignalBridge');
+
   let cached = {
     density: 1,
     tension: 1,
@@ -16,17 +18,20 @@ conductorSignalBridge = (() => {
 
   /**
    * Refresh cached signals from the conductor pipeline.
-   * Called each beat from the cross-layer lifecycle.
+   * Called each beat via registered recorder — ctx carries the current beat's values.
+   * compositeIntensity comes from ctx (computed by GlobalConductorUpdate before recorders run).
+   * sectionPhase is read directly from HarmonicContext (stable for the entire section).
+   * @param {{ absTime: number, compositeIntensity: number, currentDensity: number, harmonicRhythm: number }} ctx
    */
-  function refresh() {
+  function refresh(ctx) {
     const snap = signalReader.snapshot();
     cached = {
       density: snap.densityProduct,
       tension: snap.tensionProduct,
       flicker: snap.flickerProduct,
-      compositeIntensity: snap.stateFields.compositeIntensity ?? 0,
-      sectionPhase: snap.stateFields.sectionPhase ?? 'development',
-      coherenceEntropy: snap.stateFields.coherenceEntropy ?? 0,
+      compositeIntensity: V.requireFinite(ctx.compositeIntensity, 'ctx.compositeIntensity'),
+      sectionPhase: V.assertNonEmptyString(HarmonicContext.getField('sectionPhase'), 'sectionPhase'),
+      coherenceEntropy: V.optionalFinite(snap.stateFields.coherenceEntropy, 0),
       updatedAt: Date.now()
     };
 
@@ -73,6 +78,6 @@ conductorSignalBridge = (() => {
 
   return { refresh, getSignals, reset };
 })();
-// Registered as a recorder so refresh() runs each beat automatically.
-ConductorIntelligence.registerRecorder('conductorSignalBridge', () => { conductorSignalBridge.refresh(); });
+// Registered as a recorder so refresh(ctx) runs each beat automatically.
+ConductorIntelligence.registerRecorder('conductorSignalBridge', (ctx) => { conductorSignalBridge.refresh(ctx); });
 CrossLayerRegistry.register('conductorSignalBridge', conductorSignalBridge, ['all', 'section']);

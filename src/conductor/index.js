@@ -35,6 +35,8 @@ require('./profiles/conductorDynamicsControls');// @ts-ignore: conductor profile
 require('./profiles/conductorConfigDynamics');
 // @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
 require('./profiles/conductorConfigResolvers');
+// @ts-ignore: conductor profile accessor delegates (must precede ConductorConfig)
+require('./profiles/conductorConfigAccessors');
 // @ts-ignore: conductor profile config/accessor (must precede DynamismEngine & GlobalConductor)
 require('./profiles/conductorConfig');
 // @ts-ignore: load side-effect module with globals

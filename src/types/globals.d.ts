@@ -160,6 +160,7 @@ declare var conductorConfigMergeProfileTuning: any;
 declare var conductorConfigValidateProfile: any;
 declare var conductorConfigDynamics: any;
 declare var conductorConfigResolvers: any;
+declare var conductorConfigAccessors: any;
 declare var ConductorConfig: any;
 declare var GlobalConductor: any;
 declare var MelodicContourTracker: any;
