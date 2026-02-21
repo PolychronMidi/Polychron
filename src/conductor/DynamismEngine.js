@@ -177,7 +177,7 @@ DynamismEngine = (() => {
     const feedbackEnergy = getFeedbackEnergy();
     const pulseEnergy = getUnitPulse(unit);
 
-    const weights = ConductorConfig.getEnergyWeights();
+    const weights = ConductorConfig.getHintBlendedEnergyWeights();
     const composite = clamp(
       phraseEnergy * weights.phrase +
       journeyEnergy * weights.journey +

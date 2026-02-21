@@ -6,6 +6,33 @@
 ConductorIntelligence = (() => {
   const V = Validator.create('ConductorIntelligence');
 
+  // ── Shared collection helpers ─────────────────────────────────────
+  /** @param {Array<{ getter: () => number, lo: number, hi: number }>} registry @returns {number} */
+  function _collect(registry) {
+    let product = 1;
+    for (let i = 0; i < registry.length; i++) {
+      product *= clamp(registry[i].getter(), registry[i].lo, registry[i].hi);
+    }
+    return product;
+  }
+
+  /**
+   * @param {Array<{ name: string, getter: () => number, lo: number, hi: number }>} registry
+   * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
+   */
+  function _collectWithAttribution(registry) {
+    let product = 1;
+    const contributions = [];
+    for (let i = 0; i < registry.length; i++) {
+      const entry = registry[i];
+      const raw = entry.getter();
+      const clamped = clamp(raw, entry.lo, entry.hi);
+      product *= clamped;
+      contributions.push({ name: entry.name, raw, clamped });
+    }
+    return { product, contributions };
+  }
+
   // ── Density biases ────────────────────────────────────────────────
   // Each entry: { name, getter, lo, hi }
   // getter() returns a number; clamped to [lo, hi] then multiplied into targetDensity.
@@ -28,28 +55,10 @@ ConductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all density biases */
-  function collectDensityBias() {
-    let product = 1;
-    for (let i = 0; i < densityBiases.length; i++) {
-      const entry = densityBiases[i];
-      product *= clamp(entry.getter(), entry.lo, entry.hi);
-    }
-    return product;
-  }
+  function collectDensityBias() { return _collect(densityBiases); }
 
   /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function collectDensityBiasWithAttribution() {
-    let product = 1;
-    const contributions = [];
-    for (let i = 0; i < densityBiases.length; i++) {
-      const entry = densityBiases[i];
-      const raw = entry.getter();
-      const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= clamped;
-      contributions.push({ name: entry.name, raw, clamped });
-    }
-    return { product, contributions };
-  }
+  function collectDensityBiasWithAttribution() { return _collectWithAttribution(densityBiases); }
 
   // ── Tension biases ────────────────────────────────────────────────
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
@@ -71,28 +80,10 @@ ConductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all tension biases */
-  function collectTensionBias() {
-    let product = 1;
-    for (let i = 0; i < tensionBiases.length; i++) {
-      const entry = tensionBiases[i];
-      product *= clamp(entry.getter(), entry.lo, entry.hi);
-    }
-    return product;
-  }
+  function collectTensionBias() { return _collect(tensionBiases); }
 
   /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function collectTensionBiasWithAttribution() {
-    let product = 1;
-    const contributions = [];
-    for (let i = 0; i < tensionBiases.length; i++) {
-      const entry = tensionBiases[i];
-      const raw = entry.getter();
-      const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= clamped;
-      contributions.push({ name: entry.name, raw, clamped });
-    }
-    return { product, contributions };
-  }
+  function collectTensionBiasWithAttribution() { return _collectWithAttribution(tensionBiases); }
 
   // ── Flicker modifiers ─────────────────────────────────────────────
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
@@ -114,28 +105,10 @@ ConductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all flicker modifiers */
-  function collectFlickerModifier() {
-    let product = 1;
-    for (let i = 0; i < flickerModifiers.length; i++) {
-      const entry = flickerModifiers[i];
-      product *= clamp(entry.getter(), entry.lo, entry.hi);
-    }
-    return product;
-  }
+  function collectFlickerModifier() { return _collect(flickerModifiers); }
 
   /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function collectFlickerModifierWithAttribution() {
-    let product = 1;
-    const contributions = [];
-    for (let i = 0; i < flickerModifiers.length; i++) {
-      const entry = flickerModifiers[i];
-      const raw = entry.getter();
-      const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= clamped;
-      contributions.push({ name: entry.name, raw, clamped });
-    }
-    return { product, contributions };
-  }
+  function collectFlickerModifierWithAttribution() { return _collectWithAttribution(flickerModifiers); }
 
   // ── Recorders ─────────────────────────────────────────────────────
   // Recorders receive a context object each beat and perform side-effects

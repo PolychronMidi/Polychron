@@ -51,6 +51,8 @@ HarmonicRhythmTracker.initialize();
 ConductorState.initialize();
 CadenceAdvisor.initialize();
 CoherenceMonitor.initialize();
+profileAdaptation.initialize();
+signalTelemetry.initialize();
 CrossLayerLifecycleManager.resetAll();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
