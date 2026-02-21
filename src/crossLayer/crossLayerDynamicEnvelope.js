@@ -59,12 +59,13 @@ CrossLayerDynamicEnvelope = (() => {
     }
 
     // Modulate by interaction trend (hot system → slightly louder)
-    targetScale += clamp(trend, -0.5, 0.5) * 0.15;
+    targetScale += clamp(trend.slope, -0.5, 0.5) * 0.15;
 
     targetScale = clamp(targetScale, 0.4, 1.6);
 
-    // Smooth the transition
-    smoothedScale[layer] = smoothedScale[layer] * (1 - SMOOTHING) + targetScale * SMOOTHING;
+    // Smooth the transition (initialize on first call per layer)
+    const prev = smoothedScale[layer] ?? 1.0;
+    smoothedScale[layer] = prev * (1 - SMOOTHING) + targetScale * SMOOTHING;
   }
 
   /**
