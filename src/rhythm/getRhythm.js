@@ -93,7 +93,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     RhythmHistoryTracker.record(rhythmMethodKey, length, LM.activeLayer);
 
     // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
-    const absTime = Number.isFinite(beatStartTime) ? beatStartTime : 0;
+    const absTime = beatStartTime;
     AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, LM.activeLayer, absTime);
 
     const generatedArgs = rhythmArgs(length, pattern);

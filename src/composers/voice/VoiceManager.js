@@ -43,16 +43,16 @@ VoiceManager = class VoiceManager {
   getVoiceCount(unit = 'beat') {
     let cfg = null;
     switch ((unit || 'beat')) {
-      case 'div': cfg = (typeof DIV_VOICES !== 'undefined') ? DIV_VOICES : null; break;
-      case 'subdiv': cfg = (typeof SUBDIV_VOICES !== 'undefined') ? SUBDIV_VOICES : null; break;
-      case 'subsubdiv': cfg = (typeof SUBSUBDIV_VOICES !== 'undefined') ? SUBSUBDIV_VOICES : null; break;
+      case 'div': cfg = DIV_VOICES; break;
+      case 'subdiv': cfg = SUBDIV_VOICES; break;
+      case 'subsubdiv': cfg = SUBSUBDIV_VOICES; break;
       case 'beat':
       default:
-        cfg = (typeof BEAT_VOICES !== 'undefined') ? BEAT_VOICES : ((typeof VOICES !== 'undefined') ? VOICES : null);
+        cfg = BEAT_VOICES;
         break;
     }
 
-    const { min, max, weights } = cfg || { min: 1, max: 1, weights: [1] };
+    const { min, max, weights } = cfg;
     return rw(min, max, weights);
   }
 

@@ -57,7 +57,6 @@ applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}
       variationRange = 1; // ±1 degree
     }
     if (options && options.scale !== undefined) {
-      if (typeof resolveScalePC !== 'function') throw new Error('applyMelodicTranspositionNoise: resolveScalePC() not available for degree-mode scale-aware bounds');
       const scalePC = resolveScalePC(options.scale);
       variationRange = clamp(variationRange, 1, m.max(1, scalePC.length - 1));
     }

@@ -20,8 +20,20 @@ FullBootstrap = (() => {
     // ── utils ──
     'Validator',
     'SystemSnapshot',
+    'ri',
+    'modClamp',
 
     // ── conductor ──
+    'VOICES',
+    'BEAT_VOICES',
+    'DIV_VOICES',
+    'SUBDIV_VOICES',
+    'SUBSUBDIV_VOICES',
+    'VOICE_PROFILES',
+    'CHORD_PROFILES',
+    'MOTIF_PROFILES',
+    'MOTIF_UNIT_PROFILES',
+    'MODAL_BORROWING',
     'HarmonicContext',
     'HarmonicRhythmTracker',
     'harmonicJourneyHelpers',
@@ -48,6 +60,7 @@ FullBootstrap = (() => {
     'conductorConfigMergeProfileTuning',
     'conductorConfigValidateProfile',
     'conductorConfigDynamics',
+    'conductorConfigResolvers',
     'CONDUCTOR_DYNAMICS_CONTROLS',
 
     // ── conductor/intelligence (all loaded by subdirectory indexes) ──
@@ -147,6 +160,12 @@ FullBootstrap = (() => {
     'TimeStream',
 
     // ── composers ──
+    'scaleNormalization',
+    'resolveScalePC',
+    'transposeByDegree',
+    'normalizeChordSymbol',
+    'applyVoiceLeadingWeightNoise',
+    'VoiceLeadingCore',
     'ComposerFactory',
     'FactoryManager',
     'factoryProfiles',
@@ -257,6 +276,9 @@ FullBootstrap = (() => {
     'processBeat',
     'playNotes',
     'playNotesEmitPick',
+    'emitPickCrossLayerRecord',
+    'emitPickSourceTextures',
+    'emitPickReflectionTextures',
 
     // ── timing state (initialized in utils/init.js) ──
     'sectionIndex',

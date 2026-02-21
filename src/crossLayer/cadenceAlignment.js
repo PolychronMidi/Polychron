@@ -90,6 +90,6 @@ CadenceAlignment = (() => {
     };
   }
 
-  return { postTension, checkAlignment, applyAlignment, reset() {} };
+  return { postTension, checkAlignment, applyAlignment, reset() { /* stateless — no per-scope state to clear */ } };
 })();
 CrossLayerRegistry.register('CadenceAlignment', CadenceAlignment, ['all']);

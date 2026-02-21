@@ -149,6 +149,6 @@ FeedbackOscillator = (() => {
     };
   }
 
-  return { inject, react, applyFeedback, reset() {} };
+  return { inject, react, applyFeedback, reset() { /* stateless — no per-scope state to clear */ } };
 })();
 CrossLayerRegistry.register('FeedbackOscillator', FeedbackOscillator, ['all']);

@@ -103,3 +103,8 @@ RegisterPressureMonitor = (() => {
     getPressureSignal
   };
 })();
+
+ConductorIntelligence.registerStateProvider('RegisterPressureMonitor', () => ({
+  overlap: RegisterPressureMonitor.getCrossLayerOverlap(),
+  ...RegisterPressureMonitor.getPressureSignal()
+}));

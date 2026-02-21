@@ -122,6 +122,6 @@ VelocityInterference = (() => {
     p(c, { tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
-  return { postVelocity, measureDelta, applyInterference, reset() {} };
+  return { postVelocity, measureDelta, applyInterference, reset() { /* stateless — no per-scope state to clear */ } };
 })();
 CrossLayerRegistry.register('VelocityInterference', VelocityInterference, ['all']);

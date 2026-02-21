@@ -1,15 +1,5 @@
 scaleNormalization = {
   createMidiFitter(scale, label = 'scaleNormalization.createMidiFitter') {
-    if (typeof resolveScalePC !== 'function') {
-      throw new Error(`${label}: resolveScalePC() not available`);
-    }
-    if (typeof modClamp !== 'function') {
-      throw new Error(`${label}: modClamp() not available`);
-    }
-    if (typeof transposeByDegree !== 'function') {
-      throw new Error(`${label}: transposeByDegree() not available`);
-    }
-
     const scalePC = resolveScalePC(scale);
     const allowedMidi = [];
     for (let midi = 0; midi <= 127; midi++) {

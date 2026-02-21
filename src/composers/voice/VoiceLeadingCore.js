@@ -46,18 +46,18 @@ VoiceLeadingCore = {
     constraints = Array.isArray(constraints) ? constraints : [];
 
     // Noise context
-    const currentTime = Number.isFinite(Number(beatStart)) ? beatStart : 0;
+    const currentTime = beatStart;
     const voiceId = Number(candidate) + (lastNote * 17);
     const noiseContext = { currentTime, voiceId };
 
     let totalCost = 0;
 
     // Smooth motion (voice leading preference)
-    const smoothMotionMod = typeof applyVoiceLeadingWeightNoise === 'function' ? applyVoiceLeadingWeightNoise(1.0, 'smoothMotion', noiseContext) : 1.0;
+    const smoothMotionMod = applyVoiceLeadingWeightNoise(1.0, 'smoothMotion', noiseContext);
     totalCost += VoiceLeadingScorers.scoreVoiceMotion(interval, lastNote, candidate) * (scorer.weights?.smoothMotion ?? 1.0) * smoothMotionMod;
 
     // Interval quality
-    const intervalQualityMod = typeof applyVoiceLeadingWeightNoise === 'function' ? applyVoiceLeadingWeightNoise(1.0, 'intervalQuality', noiseContext) : 1.0;
+    const intervalQualityMod = applyVoiceLeadingWeightNoise(1.0, 'intervalQuality', noiseContext);
     totalCost += VoiceLeadingScorers.scoreIntervalQuality(interval, lastNote, candidate, scorer.dynamism) * (scorer.weights?.intervalQuality ?? 0.5) * intervalQualityMod;
 
     // Consecutive leaps
@@ -92,7 +92,7 @@ VoiceLeadingCore = {
 
     // Common-tone preference
     const baseCtWeight = (opts && typeof opts.commonToneWeight === 'number') ? opts.commonToneWeight : scorer.commonToneWeight;
-    const ctWeightMod = typeof applyVoiceLeadingWeightNoise === 'function' ? applyVoiceLeadingWeightNoise(1.0, 'commonTone', noiseContext) : 1.0;
+    const ctWeightMod = applyVoiceLeadingWeightNoise(1.0, 'commonTone', noiseContext);
     const ctWeight = (typeof baseCtWeight === 'number') ? (baseCtWeight * ctWeightMod) : 0;
     if (typeof ctWeight === 'number' && ctWeight > 0) {
       const samePC = (((candidate % 12) + 12) % 12) === (((lastNote % 12) + 12) % 12);

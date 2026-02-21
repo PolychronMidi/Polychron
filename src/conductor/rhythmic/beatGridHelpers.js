@@ -5,15 +5,17 @@
 // Pure query — reads timing globals.
 
 beatGridHelpers = (() => {
+  const V = Validator.create('beatGridHelpers');
+
   /**
    * Get the current beat duration in seconds.
-   * @returns {number} - beat duration in seconds (fallback: 0.5s)
+   * @returns {number} - beat duration in seconds
    */
   function getBeatDuration() {
-    if (Number.isFinite(tpSec) && Number.isFinite(tpBeat) && tpSec > 0) {
-      return tpBeat / tpSec;
-    }
-    return 0.5;
+    V.requireFinite(tpSec, 'tpSec');
+    V.requireFinite(tpBeat, 'tpBeat');
+    if (tpSec <= 0) throw new Error('beatGridHelpers.getBeatDuration: tpSec must be > 0');
+    return tpBeat / tpSec;
   }
 
   /**

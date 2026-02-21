@@ -8,20 +8,7 @@ MotifValidators = {
       throw new Error(`MotifValidators._toPCSet: ${label} must be a non-empty array`);
     }
 
-    let pcs;
-    if (typeof resolveScalePC === 'function') {
-      pcs = resolveScalePC(scaleLike);
-    } else {
-      pcs = scaleLike.map((entry) => {
-        if (typeof entry === 'number') return ((entry % 12) + 12) % 12;
-        if (typeof entry === 'string') {
-          const pc = t.Note.chroma(entry);
-          if (!Number.isFinite(pc)) throw new Error(`MotifValidators._toPCSet: invalid note in ${label}: ${entry}`);
-          return ((pc % 12) + 12) % 12;
-        }
-        throw new Error(`MotifValidators._toPCSet: unsupported entry in ${label}`);
-      });
-    }
+    const pcs = resolveScalePC(scaleLike);
     return new Set(pcs.map((pc) => ((pc % 12) + 12) % 12));
   },
 

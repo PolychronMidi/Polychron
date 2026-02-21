@@ -136,6 +136,6 @@ StutterContagion = (() => {
     });
   }
 
-  return { postStutter, checkContagion, apply, reset() {} };
+  return { postStutter, checkContagion, apply, reset() { /* stateless — no per-scope state to clear */ } };
 })();
 CrossLayerRegistry.register('StutterContagion', StutterContagion, ['all']);

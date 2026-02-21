@@ -256,12 +256,7 @@ MeasureComposer = class MeasureComposer {
     if (!Array.isArray(self.notes) || self.notes.length === 0) return null;
 
     // Use centralized PC-matching helper
-    if (typeof VoiceLeadingCore !== 'undefined' && typeof VoiceLeadingCore.buildPCWeights === 'function') {
-      const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, self.notes, 1, 0);
-      return { candidateWeights };
-    }
-
-    // Fallback if helper not available
-    return null;
+    const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, self.notes, 1, 0);
+    return { candidateWeights };
   }
 }

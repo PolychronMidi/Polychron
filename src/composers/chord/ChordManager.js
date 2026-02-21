@@ -40,7 +40,7 @@ ChordManager = (function() {
     const midiNotes = chordNames.map(sym => {
       if (typeof sym === 'number') return sym;
 
-      const normalized = (typeof normalizeChordSymbol === 'function') ? normalizeChordSymbol(sym) : sym;
+      const normalized = normalizeChordSymbol(sym);
       if (typeof normalized !== 'string' || !normalized) {
         throw new Error(`ChordManager.applyVoicing: invalid chord symbol ${String(sym)}`);
       }

@@ -74,10 +74,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
   const activeComposer = LM.getComposerFor(LM.activeLayer);
 
-  if (typeof scaleNormalization === 'undefined' || !scaleNormalization || typeof scaleNormalization.collectComposerValidPCs !== 'function') {
-    throw new Error(`${unit}.playMotifs: scaleNormalization.collectComposerValidPCs() not available`);
-  }
-
   // Extract valid PCs from active composer
   const composerValidPCs = scaleNormalization.collectComposerValidPCs(activeComposer, {
     preferTimeVaryingContext: true,

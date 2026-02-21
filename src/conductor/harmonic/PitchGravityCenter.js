@@ -76,3 +76,8 @@ PitchGravityCenter = (() => {
     getCrossLayerDrift
   };
 })();
+
+ConductorIntelligence.registerStateProvider('PitchGravityCenter', () => ({
+  ...PitchGravityCenter.getGravityCenter(),
+  crossDrift: PitchGravityCenter.getCrossLayerDrift()
+}));

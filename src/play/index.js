@@ -4,6 +4,10 @@ require('./EventCatalog');
 require('./events');
 // @ts-ignore: side-effect module load
 require('./channelCoherence');
+// @ts-ignore: side-effect module load — cross-layer recording helper (must precede playNotesEmitPick)
+require('./emitPickCrossLayerRecord');
+// @ts-ignore: side-effect module load — texture emission helper (must precede playNotesEmitPick)
+require('./emitPickTextureEmit');
 // @ts-ignore: side-effect module load
 require('./playNotesEmitPick');
 // @ts-ignore: side-effect module load

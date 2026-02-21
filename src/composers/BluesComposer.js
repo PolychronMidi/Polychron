@@ -78,8 +78,8 @@ BluesComposer = class BluesComposer extends MeasureComposer {
 
     // Sort notes for directional shaping
     const sorted = [...baseNotes].sort((a, b) => {
-      const aN = typeof a === 'number' ? a : (a && a.note) || 0;
-      const bN = typeof b === 'number' ? b : (b && b.note) || 0;
+      const aN = typeof a === 'number' ? a : Validator.requireFinite(a && a.note, 'BluesComposer.getNotes.sortEntry.note');
+      const bN = typeof b === 'number' ? b : Validator.requireFinite(b && b.note, 'BluesComposer.getNotes.sortEntry.note');
       return aN - bN;
     });
 
