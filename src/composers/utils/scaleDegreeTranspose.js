@@ -20,9 +20,6 @@
  * @returns {number|object|Array<number|object>}
  */
 scaleDegreeTranspose = function(noteOrMidi, scale = null, degreeOffset = 0, opts = {}) {
-  if (typeof transposeByDegree !== 'function') {
-    throw new Error('scaleDegreeTranspose: transposeByDegree() not available (degreeUtils not loaded)');
-  }
   return transposeByDegree(noteOrMidi, scale, degreeOffset, opts);
 };
 

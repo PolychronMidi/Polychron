@@ -88,9 +88,6 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     if (!Array.isArray(effectiveScale) || effectiveScale.length === 0) {
       throw new Error('MelodicDevelopmentComposer.getNotes: no effective scale available');
     }
-    if (typeof scaleNormalization === 'undefined' || !scaleNormalization || typeof scaleNormalization.createMidiFitter !== 'function') {
-      throw new Error('MelodicDevelopmentComposer.getNotes: scaleNormalization.createMidiFitter() not available');
-    }
     const { fitMidi } = scaleNormalization.createMidiFitter(effectiveScale, 'MelodicDevelopmentComposer.getNotes');
 
     // If composer honors time-varying scale context, derive baseNotes from the effectiveScale (fail-fast if not available)

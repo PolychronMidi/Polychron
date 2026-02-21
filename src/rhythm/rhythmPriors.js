@@ -111,7 +111,7 @@ rhythmPriors = (function() {
     const profile = getProfileOrFail(quality);
     const phase = resolvePhase(opts);
     const level = (typeof opts.level === 'string' && opts.level.length > 0) ? opts.level : 'beat';
-    const strength = clamp(Number.isFinite(Number(opts.strength)) ? Number(opts.strength) : 0.7, 0, 1.5);
+    const strength = clamp(Validator.optionalFinite(Number(opts.strength), 0.7), 0, 1.5);
 
     const phaseMethodMap = (profile.phaseMethodWeights && profile.phaseMethodWeights[phase] && typeof profile.phaseMethodWeights[phase] === 'object')
       ? profile.phaseMethodWeights[phase]
@@ -147,7 +147,7 @@ rhythmPriors = (function() {
 
       out[name] = Object.assign({}, spec, {
         weights: spec.weights.map((weight) => {
-          const base = Number.isFinite(Number(weight)) ? Number(weight) : 0.1;
+          const base = Validator.optionalFinite(Number(weight), 0.1);
           return m.max(0.05, base * blendedMultiplier);
         })
       });

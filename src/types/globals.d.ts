@@ -157,6 +157,7 @@ declare var conductorConfigTuningOverrides: any;
 declare var conductorConfigMergeProfileTuning: any;
 declare var conductorConfigValidateProfile: any;
 declare var conductorConfigDynamics: any;
+declare var conductorConfigResolvers: any;
 declare var ConductorConfig: any;
 declare var GlobalConductor: any;
 declare var MelodicContourTracker: any;
@@ -584,6 +585,9 @@ declare var MainBootstrap: any;
 declare var processBeat: any;
 declare var layerPass: any;
 declare var playNotesEmitPick: any;
+declare var emitPickCrossLayerRecord: any;
+declare var emitPickSourceTextures: any;
+declare var emitPickReflectionTextures: any;
 
 // ── other ──
 declare var randomFloat: Function;

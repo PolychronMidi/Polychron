@@ -85,6 +85,7 @@ ConductorConfig = (() => {
   }
 
   const dynamics = conductorConfigDynamics({ getActiveProfile, getActiveProfileName, setActiveProfile });
+  const resolvers = conductorConfigResolvers({ getProfileTuning });
 
   function getProfileTuning() {
     const profileName = getActiveProfileName();
@@ -194,56 +195,6 @@ ConductorConfig = (() => {
     return Object.assign({}, arcMapping);
   }
 
-  /**
-   * Compute FX modulation scalars based on current journey stop (or an override).
-   * @param {{distance?:number,move?:string}|undefined} [stopOverride]
-   * @returns {{reverbScale:number,filterScale:number,portamentoScale:number}}
-   */
-  function getJourneyFxModulation(stopOverride) {
-    const profileTuning = getProfileTuning();
-    const tuning = profileTuning.journeyFx;
-
-    /** @type {{distance?:number,move?:string}|null} */
-    let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
-    if (!stop) {
-      if (!HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
-        throw new Error('ConductorConfig.getJourneyFxModulation: HarmonicJourney.getStop is not available');
-      }
-      if (!Number.isFinite(Number(sectionIndex))) {
-        throw new Error(`ConductorConfig.getJourneyFxModulation: sectionIndex must be finite, got ${sectionIndex}`);
-      }
-      const maybe = HarmonicJourney.getStop(Number(sectionIndex));
-      if (!maybe || typeof maybe !== 'object') {
-        throw new Error('ConductorConfig.getJourneyFxModulation: HarmonicJourney.getStop returned invalid stop object');
-      }
-      stop = maybe;
-    }
-
-    const distanceDivisor = V.assertRange(tuning.distanceDivisor, 0.1, 64, 'ConductorConfig.journeyFx.distanceDivisor');
-    const reverbMaxBoost = V.assertRange(tuning.reverbMaxBoost, 0, 2, 'ConductorConfig.journeyFx.reverbMaxBoost');
-    const filterMaxBoost = V.assertRange(tuning.filterMaxBoost, 0, 2, 'ConductorConfig.journeyFx.filterMaxBoost');
-    const returnHomePortamentoBoost = V.assertRange(tuning.returnHomePortamentoBoost, 0, 2, 'ConductorConfig.journeyFx.returnHomePortamentoBoost');
-    const returnHomeReverbDamp = V.assertRange(tuning.returnHomeReverbDamp, 0.1, 2, 'ConductorConfig.journeyFx.returnHomeReverbDamp');
-
-    const s = /** @type {{distance?:number,move?:string}} */ (stop);
-    const distance = V.assertRange(Number(s.distance), 0, 64, 'ConductorConfig.getJourneyFxModulation.stop.distance');
-    const move = V.assertNonEmptyString(s.move, 'ConductorConfig.getJourneyFxModulation.stop.move');
-    const distanceFactor = clamp(distance / distanceDivisor, 0, 1);
-
-    const baseReverbScale = 1 + distanceFactor * reverbMaxBoost;
-    const reverbScale = move === 'return-home'
-      ? clamp(baseReverbScale * returnHomeReverbDamp, 0.4, 2)
-      : clamp(baseReverbScale, 0.4, 2);
-
-    return {
-      reverbScale,
-      filterScale: clamp(1 + distanceFactor * filterMaxBoost, 0.4, 2),
-      portamentoScale: move === 'return-home'
-        ? clamp(1 + returnHomePortamentoBoost, 0.4, 2)
-        : 1
-    };
-  }
-
   function getEmissionScaling() {
     return dynamics.resolveField('emission');
   }
@@ -312,32 +263,6 @@ ConductorConfig = (() => {
     };
   }
 
-  /**
-   * Resolve noise profile by section phase for conductor-coherent timbral movement.
-   * @param {string|undefined} [sectionPhaseOverride]
-   * @returns {string}
-   */
-  function getNoiseProfileForSection(sectionPhaseOverride) {
-    const tuning = getProfileTuning();
-    const mapping = tuning.noiseProfileByPhase;
-    V.assertPlainObject(mapping, 'ConductorConfig.noiseProfileByPhase');
-    const defaultProfile = V.assertNonEmptyString(mapping.default, 'ConductorConfig.noiseProfileByPhase.default');
-
-    const sectionPhase = (typeof sectionPhaseOverride === 'string' && sectionPhaseOverride.length > 0)
-      ? sectionPhaseOverride
-      : HarmonicContext.getField('sectionPhase');
-
-    const selected = Object.prototype.hasOwnProperty.call(mapping, sectionPhase)
-      ? V.assertNonEmptyString(mapping[sectionPhase], `ConductorConfig.noiseProfileByPhase.${sectionPhase}`)
-      : defaultProfile;
-    if (NOISE_PROFILES) {
-      if (!Object.prototype.hasOwnProperty.call(NOISE_PROFILES, selected)) {
-        throw new Error(`ConductorConfig.getNoiseProfileForSection: unknown noise profile "${selected}"`);
-      }
-    }
-    return selected;
-  }
-
   function getRhythmDriftParams() {
     return getProfileTuning().rhythmDrift;
   }
@@ -364,7 +289,7 @@ ConductorConfig = (() => {
     getFamilyWeights,
     getJourneyBoldness,
     getArcMapping,
-    getJourneyFxModulation,
+    getJourneyFxModulation: resolvers.getJourneyFxModulation,
     getEmissionScaling,
     getEmissionGateParams,
     getFeedbackMixWeights,
@@ -376,7 +301,7 @@ ConductorConfig = (() => {
     getSpatialCanvasParams,
     getNoiseCanvasParams,
     getHarmonicRhythmParams,
-    getNoiseProfileForSection,
+    getNoiseProfileForSection: resolvers.getNoiseProfileForSection,
     getRhythmDriftParams,
     applyPhaseProfile: dynamics.applyPhaseProfile,
     tickCrossfade: dynamics.tickCrossfade,

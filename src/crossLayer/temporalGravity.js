@@ -84,6 +84,6 @@ TemporalGravity = (() => {
     return Math.round(originalTickN + direction * pull);
   }
 
-  return { postDensity, measureDensity, applyGravity, reset() {} };
+  return { postDensity, measureDensity, applyGravity, reset() { /* stateless — no per-scope state to clear */ } };
 })();
 CrossLayerRegistry.register('TemporalGravity', TemporalGravity, ['all']);

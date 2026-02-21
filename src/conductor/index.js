@@ -33,6 +33,8 @@ require('./profiles/conductorConfigMergeProfileTuning');
 require('./profiles/conductorConfigValidateProfile');// @ts-ignore: conductor dynamics controls must be available before helpers
 require('./profiles/conductorDynamicsControls');// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
 require('./profiles/conductorConfigDynamics');
+// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+require('./profiles/conductorConfigResolvers');
 // @ts-ignore: conductor profile config/accessor (must precede DynamismEngine & GlobalConductor)
 require('./profiles/conductorConfig');
 // @ts-ignore: load side-effect module with globals

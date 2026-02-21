@@ -68,7 +68,7 @@ MotifComposer = class MotifComposer {
       this.measureComposer = null;
     }
 
-    this._motifInstanceId = (typeof opts.motifInstanceId === 'string' && opts.motifInstanceId) ? opts.motifInstanceId : ('motif-' + ((typeof ri === 'function') ? ri(1e9 - 1) : (() => { throw new Error('Random integer generator ri() not available'); })()));
+    this._motifInstanceId = (typeof opts.motifInstanceId === 'string' && opts.motifInstanceId) ? opts.motifInstanceId : ('motif-' + ri(1e9 - 1));
     this._motifSequenceId = 0;
   }
 
@@ -173,7 +173,7 @@ MotifComposer = class MotifComposer {
         // Constrain developer note to nearest note in the scale
         const normalized = devNote % 12;
         const matchInCandidates = candidates.find(c => (c % 12) === normalized);
-        chosen = matchInCandidates !== undefined ? matchInCandidates : candidates[(typeof ri === 'function') ? ri(candidates.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()];
+        chosen = matchInCandidates !== undefined ? matchInCandidates : candidates[ri(candidates.length - 1)];
       } else if (this.measureComposer || optsAny.measureComposer) {
         // Use centralized voice coordination for single-voice selection
         const mc = optsAny.measureComposer || this.measureComposer;
@@ -195,9 +195,9 @@ MotifComposer = class MotifComposer {
             throw new Error('MotifComposer.generate: no valid target layer or measureComposer available for voice selection');
           }
           const selected = VC.pickNotesForBeat(targetLayer, avail, 1, scorer, voiceOpts);
-          chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()];
+          chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[ri(avail.length - 1)];
         } else {
-          try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()]; } catch { chosen = avail[(typeof ri === 'function') ? ri(avail.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })()]; }
+          try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[ri(avail.length - 1)]; } catch { chosen = avail[ri(avail.length - 1)]; }
         }
       } else if (this.VoiceLeadingScore && this.useVoiceLeading) {
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
@@ -205,7 +205,7 @@ MotifComposer = class MotifComposer {
         lastNotes.unshift(chosen);
         if (lastNotes.length > 4) lastNotes.pop();
       } else {
-        const randIdx = (typeof ri === 'function') ? ri(candidates.length - 1) : (()=>{ throw new Error('Random integer generator ri() not available'); })();
+        const randIdx = ri(candidates.length - 1);
         chosen = candidates[randIdx];
       }
 

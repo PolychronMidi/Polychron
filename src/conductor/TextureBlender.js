@@ -48,7 +48,7 @@ TextureBlender = (() => {
   function getPhraseTextureInfluence() {
     const state = ConductorState.getSnapshot();
     const pos = Validator.requireFinite(state.phrasePosition, 'state.phrasePosition');
-    const phase = state.phrasePhase || '';
+    const phase = state.phrasePhase ?? '';
     const atStart = pos <= 0.001;
     const atEnd = pos >= 0.999;
     if (atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };

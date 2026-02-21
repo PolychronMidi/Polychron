@@ -33,13 +33,8 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     if (!this.notes || this.notes.length === 0) return null;
 
     // Delegate to centralized helper (chord tones = weight 1, non-chord tones = weight 0)
-    if (typeof VoiceLeadingCore !== 'undefined' && typeof VoiceLeadingCore.buildPCWeights === 'function') {
-      const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, this.notes, 1, 0);
-      return { candidateWeights };
-    }
-
-    // Fallback to base implementation
-    return super.getVoicingIntent(candidateNotes);
+    const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, this.notes, 1, 0);
+    return { candidateWeights };
   }
 
   /**

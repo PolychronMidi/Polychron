@@ -31,7 +31,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     this.generator = generator;
 
     // Use centralized borrow mode configuration
-    const borrowConfig = (typeof MODAL_BORROWING !== 'undefined' && MODAL_BORROWING[primaryMode])
+    const borrowConfig = (MODAL_BORROWING[primaryMode])
       ? MODAL_BORROWING[primaryMode]
       : (primaryMode === 'major' ? ['minor', 'dorian', 'mixolydian', 'lydian'] : ['major', 'dorian', 'phrygian', 'locrian']);
     this.borrowModes = borrowConfig;

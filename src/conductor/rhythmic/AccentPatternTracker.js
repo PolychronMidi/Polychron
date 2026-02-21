@@ -36,8 +36,9 @@ AccentPatternTracker = (() => {
     let offbeats = 0;
     let accentCount = 0;
 
-    const num = (typeof numerator !== 'undefined' && Number.isFinite(numerator) && numerator > 0)
-      ? numerator : 4;
+    const V = Validator.create('AccentPatternTracker');
+    const num = V.requireFinite(numerator, 'numerator');
+    if (num <= 0) throw new Error('AccentPatternTracker.getAccentProfile: numerator must be > 0');
     const measureDur = beatDur * num;
 
     for (let i = 0; i < notes.length; i++) {
