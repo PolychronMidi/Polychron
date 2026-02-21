@@ -77,6 +77,8 @@ declare var muteAll: any;
 declare var setOtherInstruments: any;
 declare var Validator: any;
 declare var SystemSnapshot: any;
+declare var modeQualityMap: any;
+declare var priorsHelpers: any;
 
 // ── conductor ──
 declare var BPM: number;

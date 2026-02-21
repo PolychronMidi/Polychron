@@ -1,8 +1,4 @@
 harmonicPriors = (function() {
-  const modeToQuality = {
-    ionian: 'major', dorian: 'dorian', phrygian: 'minor', lydian: 'major',
-    mixolydian: 'mixolydian', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
-  };
 
   const cadenceTargetsByPhase = {
     opening: ['plagal', 'half'],
@@ -19,15 +15,7 @@ harmonicPriors = (function() {
   };
 
   function normalizeQualityOrFail(input) {
-    if (typeof input !== 'string' || input.length === 0) {
-      throw new Error('harmonicPriors.normalizeQualityOrFail: quality must be a non-empty string');
-    }
-    const normalized = String(input).toLowerCase();
-    const quality = modeToQuality[normalized];
-    if (!quality) {
-      throw new Error(`harmonicPriors.normalizeQualityOrFail: unknown quality or mode "${input}"`);
-    }
-    return quality;
+    return modeQualityMap.normalizeOrFail(input, 'harmonicPriors.normalizeQualityOrFail');
   }
 
   function getProfileOrFail(qualityInput) {
@@ -43,18 +31,7 @@ harmonicPriors = (function() {
   }
 
   function resolvePhase(opts = {}) {
-    if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
-      return opts.phase;
-    }
-
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager) {
-      const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
-      if (typeof phase === 'string' && phase.length > 0) {
-        return phase;
-      }
-    }
-
-    return 'development';
+    return priorsHelpers.resolvePhase(opts);
   }
 
   function resolveCadenceStrength(phase, opts = {}) {
