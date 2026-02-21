@@ -41,19 +41,19 @@ trackRhythm = (unit, layer, played) => {
   if (!Array.isArray(rhythmFinal) || idxFinal === undefined) {
     switch (key) {
       case 'beat':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = beatRhythm;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(beatRhythm) ? beatRhythm : null;
         if (idxFinal === undefined) idxFinal = beatIndex;
         break;
       case 'div':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = divRhythm;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(divRhythm) ? divRhythm : null;
         if (idxFinal === undefined) idxFinal = divIndex;
         break;
       case 'subdiv':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = subdivRhythm;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subdivRhythm) ? subdivRhythm : null;
         if (idxFinal === undefined) idxFinal = subdivIndex;
         break;
       case 'subsubdiv':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = subsubdivRhythm;
+        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subsubdivRhythm) ? subsubdivRhythm : null;
         if (idxFinal === undefined) idxFinal = subsubdivIndex;
         break;
       default:
