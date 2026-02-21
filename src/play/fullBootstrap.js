@@ -66,6 +66,7 @@ FullBootstrap = (() => {
     'conductorConfigValidateProfile',
     'conductorConfigDynamics',
     'conductorConfigResolvers',
+    'conductorConfigAccessors',
     'CONDUCTOR_DYNAMICS_CONTROLS',
 
     // ── conductor/intelligence (all loaded by subdirectory indexes) ──

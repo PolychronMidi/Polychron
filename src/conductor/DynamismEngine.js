@@ -169,8 +169,8 @@ DynamismEngine = (() => {
 
     const phraseCtx = getPhraseContext();
     const base = getBaseProbs(phraseCtx);
-    const inputPlay = Number.isFinite(Number(opts.playProb)) ? Number(opts.playProb) : base.playProb;
-    const inputStutter = Number.isFinite(Number(opts.stutterProb)) ? Number(opts.stutterProb) : base.stutterProb;
+    const inputPlay = V.optionalFinite(opts.playProb, base.playProb);
+    const inputStutter = V.optionalFinite(opts.stutterProb, base.stutterProb);
 
     const phraseEnergy = clamp(Number(phraseCtx.dynamism), 0, 1);
     const journeyEnergy = getJourneyEnergy();

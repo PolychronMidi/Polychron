@@ -86,6 +86,7 @@ ConductorConfig = (() => {
 
   const dynamics = conductorConfigDynamics({ getActiveProfile, getActiveProfileName, setActiveProfile });
   const resolvers = conductorConfigResolvers({ getProfileTuning });
+  const accessors = conductorConfigAccessors({ dynamics, getProfileTuning });
 
   function getProfileTuning() {
     const profileName = getActiveProfileName();
@@ -127,165 +128,6 @@ ConductorConfig = (() => {
     };
   }
 
-  function getDensitySmoothing() {
-    return dynamics.resolveField('density').smoothing;
-  }
-
-  function getDensityBounds() {
-    const density = dynamics.resolveField('density');
-    return { floor: density.floor, ceiling: density.ceiling };
-  }
-
-  function getFlickerParams() {
-    const flicker = dynamics.resolveField('flicker');
-    return { depthScale: flicker.depthScale, crossModWeight: flicker.crossModWeight };
-  }
-
-  function getEnergyWeights() {
-    return dynamics.resolveField('energyWeights');
-  }
-
-  /**
-   * Energy weights blended with profileAdaptation hints.
-   * Restraint hint pulls phrase back and elevates feedback reactivity;
-   * explosive hint amplifies phrase-arc energy;
-   * atmospheric hint softens pulse micro-oscillation.
-   */
-  function getHintBlendedEnergyWeights() {
-    const base = dynamics.resolveField('energyWeights');
-    const restrainedHint = clamp(signalReader.state('profileHintRestrained') ?? 0, 0, 1);
-    const explosiveHint = clamp(signalReader.state('profileHintExplosive') ?? 0, 0, 1);
-    const atmosphericHint = clamp(signalReader.state('profileHintAtmospheric') ?? 0, 0, 1);
-    return {
-      phrase: clamp(base.phrase * (1 - restrainedHint * 0.2 + explosiveHint * 0.2), 0.05, 2),
-      journey: base.journey,
-      feedback: clamp(base.feedback * (1 + restrainedHint * 0.3), 0.05, 2),
-      pulse: clamp(base.pulse * (1 - atmosphericHint * 0.4), 0.05, 2)
-    };
-  }
-
-  function getClimaxBoost() {
-    return dynamics.resolveField('climaxBoost');
-  }
-
-  function getCrossModScaling() {
-    return dynamics.resolveField('crossMod');
-  }
-
-  function getFxMixScaling() {
-    return dynamics.resolveField('fxMix');
-  }
-
-  function getTextureScaling() {
-    return dynamics.resolveField('texture');
-  }
-
-  function getAttenuationScaling() {
-    return dynamics.resolveField('attenuation');
-  }
-
-  function getVoiceSpreadScaling() {
-    return dynamics.resolveField('voiceSpread');
-  }
-
-  function getFamilyWeights() {
-    return dynamics.resolveField('familyWeights');
-  }
-
-  function getJourneyBoldness() {
-    const val = Number(dynamics.resolveField('journeyBoldness'));
-    return V.assertRange(val, 0, 2, 'ConductorConfig.journeyBoldness');
-  }
-
-  /**
-   * Return arc mapping for a profile or a specific phase.
-   * @param {string} [sectionPhase]
-   * @returns {Object|string}
-   */
-  function getArcMapping(sectionPhase) {
-    const arcMapping = dynamics.resolveField('arcMapping');
-    V.assertPlainObject(arcMapping, 'ConductorConfig.getArcMapping.arcMapping');
-    if (typeof sectionPhase === 'string' && sectionPhase.length > 0) {
-      if (!Object.prototype.hasOwnProperty.call(arcMapping, sectionPhase)) {
-        throw new Error(`ConductorConfig.getArcMapping: unknown sectionPhase "${sectionPhase}"`);
-      }
-      return V.assertNonEmptyString(arcMapping[sectionPhase], `ConductorConfig.arcMapping.${sectionPhase}`);
-    }
-    return Object.assign({}, arcMapping);
-  }
-
-  function getEmissionScaling() {
-    return dynamics.resolveField('emission');
-  }
-
-  function getEmissionGateParams() {
-    return getProfileTuning().emissionGate;
-  }
-
-  function getFeedbackMixWeights() {
-    const weights = getProfileTuning().feedbackMix;
-    V.assertPlainObject(weights, 'ConductorConfig.getFeedbackMixWeights.feedbackMix');
-    const sum = Number(weights.fx) + Number(weights.stutter) + Number(weights.journey);
-    if (!Number.isFinite(sum) || sum <= 0) {
-      throw new Error(`ConductorConfig.getFeedbackMixWeights: invalid weight sum ${sum}`);
-    }
-    return {
-      fx: Number(weights.fx) / sum,
-      stutter: Number(weights.stutter) / sum,
-      journey: Number(weights.journey) / sum
-    };
-  }
-
-  function getGlobalIntensityBlend() {
-    const blend = getProfileTuning().intensityBlend;
-    V.assertPlainObject(blend, 'ConductorConfig.getGlobalIntensityBlend.intensityBlend');
-    const sum = Number(blend.arc) + Number(blend.tension);
-    if (!Number.isFinite(sum) || sum <= 0) {
-      throw new Error(`ConductorConfig.getGlobalIntensityBlend: invalid blend sum ${sum}`);
-    }
-    return {
-      arc: Number(blend.arc) / sum,
-      tension: Number(blend.tension) / sum
-    };
-  }
-
-  function getStutterGrainParams() {
-    return getProfileTuning().stutterGrain;
-  }
-
-  function getPhraseBreathParams() {
-    return getProfileTuning().phraseBreath;
-  }
-
-  function getMotifTextureClampParams() {
-    return getProfileTuning().motifTexture;
-  }
-
-  function getMotifMutationParams() {
-    return getProfileTuning().motifMutation;
-  }
-
-  function getSpatialCanvasParams() {
-    return getProfileTuning().spatialCanvas;
-  }
-
-  function getNoiseCanvasParams() {
-    return getProfileTuning().noiseCanvas;
-  }
-
-  function getHarmonicRhythmParams() {
-    const cfg = getProfileTuning().harmonicRhythm;
-    V.assertPlainObject(cfg, 'ConductorConfig.getHarmonicRhythmParams.harmonicRhythm');
-    return {
-      blendWeight: V.assertRange(cfg.blendWeight, 0, 0.5, 'ConductorConfig.harmonicRhythm.blendWeight'),
-      feedbackWeight: V.assertRange(cfg.feedbackWeight, 0, 0.5, 'ConductorConfig.harmonicRhythm.feedbackWeight')
-    };
-  }
-
-  function getRhythmDriftParams() {
-    return getProfileTuning().rhythmDrift;
-  }
-
   return {
     getProfilesOrFail,
     getProfileNames,
@@ -295,34 +137,34 @@ ConductorConfig = (() => {
     getPhaseMultiplier,
     getStutterParams,
     getTargetDensity: dynamics.getTargetDensityRegulated,
-    getDensitySmoothing,
-    getDensityBounds,
-    getFlickerParams,
-    getEnergyWeights,
-    getHintBlendedEnergyWeights,
-    getClimaxBoost,
-    getCrossModScaling,
-    getFxMixScaling,
-    getTextureScaling,
-    getAttenuationScaling,
-    getVoiceSpreadScaling,
-    getFamilyWeights,
-    getJourneyBoldness,
-    getArcMapping,
+    getDensitySmoothing: accessors.getDensitySmoothing,
+    getDensityBounds: accessors.getDensityBounds,
+    getFlickerParams: accessors.getFlickerParams,
+    getEnergyWeights: accessors.getEnergyWeights,
+    getHintBlendedEnergyWeights: accessors.getHintBlendedEnergyWeights,
+    getClimaxBoost: accessors.getClimaxBoost,
+    getCrossModScaling: accessors.getCrossModScaling,
+    getFxMixScaling: accessors.getFxMixScaling,
+    getTextureScaling: accessors.getTextureScaling,
+    getAttenuationScaling: accessors.getAttenuationScaling,
+    getVoiceSpreadScaling: accessors.getVoiceSpreadScaling,
+    getFamilyWeights: accessors.getFamilyWeights,
+    getJourneyBoldness: accessors.getJourneyBoldness,
+    getArcMapping: accessors.getArcMapping,
     getJourneyFxModulation: resolvers.getJourneyFxModulation,
-    getEmissionScaling,
-    getEmissionGateParams,
-    getFeedbackMixWeights,
-    getGlobalIntensityBlend,
-    getStutterGrainParams,
-    getPhraseBreathParams,
-    getMotifTextureClampParams,
-    getMotifMutationParams,
-    getSpatialCanvasParams,
-    getNoiseCanvasParams,
-    getHarmonicRhythmParams,
+    getEmissionScaling: accessors.getEmissionScaling,
+    getEmissionGateParams: accessors.getEmissionGateParams,
+    getFeedbackMixWeights: accessors.getFeedbackMixWeights,
+    getGlobalIntensityBlend: accessors.getGlobalIntensityBlend,
+    getStutterGrainParams: accessors.getStutterGrainParams,
+    getPhraseBreathParams: accessors.getPhraseBreathParams,
+    getMotifTextureClampParams: accessors.getMotifTextureClampParams,
+    getMotifMutationParams: accessors.getMotifMutationParams,
+    getSpatialCanvasParams: accessors.getSpatialCanvasParams,
+    getNoiseCanvasParams: accessors.getNoiseCanvasParams,
+    getHarmonicRhythmParams: accessors.getHarmonicRhythmParams,
     getNoiseProfileForSection: resolvers.getNoiseProfileForSection,
-    getRhythmDriftParams,
+    getRhythmDriftParams: accessors.getRhythmDriftParams,
     applyPhaseProfile: dynamics.applyPhaseProfile,
     tickCrossfade: dynamics.tickCrossfade,
     regulationTick: dynamics.regulationTick,

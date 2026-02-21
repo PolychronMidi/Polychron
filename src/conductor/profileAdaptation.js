@@ -5,6 +5,7 @@
 
 profileAdaptation = (() => {
   const V = Validator.create('profileAdaptation');
+  let initialized = false;
 
   // Sustained-signal tracking: count consecutive beats meeting each threshold
   let lowDensityStreak = 0;
@@ -18,15 +19,26 @@ profileAdaptation = (() => {
 
   /**
    * Update streaks and compute hints. Called each beat via registerRecorder.
+   * Reads signalTelemetry trend to modulate streak growth — rising trends
+   * dampen density-low streaks (system recovering), falling trends amplify them.
+   * Skips streak accumulation during anomalies (transient spikes).
    */
   function update() {
+    // Anomalies are transient — don't let them build toward sustained-signal hints
+    if (signalTelemetry.isAnomalyDetected()) return;
+
     const d = signalReader.density();
     const t = signalReader.tension();
     const f = signalReader.flicker();
 
-    // Track sustained conditions
-    lowDensityStreak = d < DENSITY_LOW_THRESHOLD ? lowDensityStreak + 1 : 0;
-    highTensionStreak = t > TENSION_HIGH_THRESHOLD ? highTensionStreak + 1 : 0;
+    // Trend-aware streak growth: rising=0.75x, falling=1.25x for density streaks
+    const trend = signalTelemetry.getTrend();
+    const densityMod = trend === 'rising' ? 0.75 : trend === 'falling' ? 1.25 : 1;
+    const tensionMod = trend === 'rising' ? 1.25 : trend === 'falling' ? 0.75 : 1;
+
+    // Track sustained conditions with trend-modulated increments
+    lowDensityStreak = d < DENSITY_LOW_THRESHOLD ? lowDensityStreak + densityMod : 0;
+    highTensionStreak = t > TENSION_HIGH_THRESHOLD ? highTensionStreak + tensionMod : 0;
     flatFlickerStreak = m.abs(f - 1.0) < (FLICKER_FLAT_THRESHOLD - 1.0) ? flatFlickerStreak + 1 : 0;
   }
 
@@ -61,6 +73,8 @@ profileAdaptation = (() => {
 
   /** Subscribe to SECTION_BOUNDARY so streaks reset each section. */
   function initialize() {
+    if (initialized) return;
+    initialized = true;
     const EVENTS = V.getEventsOrThrow();
     EventBus.on(EVENTS.SECTION_BOUNDARY, reset);
   }
