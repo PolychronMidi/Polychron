@@ -53,8 +53,9 @@
       harmonicRhythm
     });
 
-    // 4. Collect density bias from registry
-    const registryDensityBias = ConductorIntelligence.collectDensityBias();
+    // 4. Collect density bias from registry (attributed for signal decomposition)
+    const densityAttr = ConductorIntelligence.collectDensityBiasWithAttribution();
+    const registryDensityBias = densityAttr.product;
 
     // Coherence + emission density corrections (boot-validated globals — direct calls)
     const coherenceDensityBias = LayerCoherenceScorer.getDensityBias();
@@ -69,9 +70,10 @@
     const smooth = ConductorConfig.getDensitySmoothing();
     currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
 
-    // 5. Micro-hyper density flicker
+    // 5. Micro-hyper density flicker (attributed)
     const textureDensityBoost = clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5;
-    const registryFlickerMod = ConductorIntelligence.collectFlickerModifier();
+    const flickerAttr = ConductorIntelligence.collectFlickerModifierWithAttribution();
+    const registryFlickerMod = flickerAttr.product;
     const flickerAmplitude = (compositeIntensity + textureDensityBoost) * registryFlickerMod;
     const densitySeed = Number(beatStart);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
@@ -103,8 +105,9 @@
     // 7. DynamismEngine probability calculation
     const resolved = DynamismEngine.resolve('beat');
 
-    // 8. Collect tension bias from registry
-    const registryTensionBias = ConductorIntelligence.collectTensionBias();
+    // 8. Collect tension bias from registry (attributed)
+    const tensionAttr = ConductorIntelligence.collectTensionBiasWithAttribution();
+    const registryTensionBias = tensionAttr.product;
     const derivedTension = clamp(
       (Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * registryTensionBias,
       0, 1
@@ -120,7 +123,7 @@
       stutterOut = clamp(resolved.stutterProb * boost.stutterScale, 0, 1);
     }
 
-    // 9. Collect state fields from registry + core pipeline fields
+    // 9. Collect state fields from registry + core pipeline fields + attribution
     const registryFields = ConductorIntelligence.collectStateFields();
     ConductorState.updateFromConductor(Object.assign(registryFields, {
       phraseCtx,
@@ -131,7 +134,10 @@
       emissionRatio,
       compositeIntensity: resolved.composite,
       playProb: playOut,
-      stutterProb: stutterOut
+      stutterProb: stutterOut,
+      densityAttribution: densityAttr.contributions,
+      tensionAttribution: tensionAttr.contributions,
+      flickerAttribution: flickerAttr.contributions
     }));
 
     return {

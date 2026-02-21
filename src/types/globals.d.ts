@@ -237,6 +237,9 @@ declare var RhythmicDensityContrastTracker: any;
 declare var TonalAnchorDistanceTracker: any;
 declare var ConductorIntelligence: any;
 declare var CoherenceMonitor: any;
+declare var signalReader: any;
+declare var profileAdaptation: any;
+declare var signalTelemetry: any;
 
 // ── rhythm ──
 declare var RhythmRegistry: any;
@@ -559,6 +562,7 @@ declare var CrossLayerDynamicEnvelope: any;
 declare var ConvergenceHarmonicTrigger: any;
 declare var TexturalMirror: any;
 declare var CrossLayerSilhouette: any;
+declare var conductorSignalBridge: any;
 
 // ── writer ──
 declare var formatTime: any;

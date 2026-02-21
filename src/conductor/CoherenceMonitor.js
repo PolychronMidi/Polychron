@@ -123,7 +123,24 @@ CoherenceMonitor = (() => {
     // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
     // Uses a bell curve centered at phrase midpoint: sin(progress * π) peaks at 0.5.
     const phraseProgress = TimeStream.normalizedProgress('phrase');
-    const phaseGain = 0.25 + 0.3 * m.sin(phraseProgress * m.PI); // 0.25 at edges, 0.55 at center
+    let phaseGain = 0.25 + 0.3 * m.sin(phraseProgress * m.PI); // 0.25 at edges, 0.55 at center
+
+    // Peer-aware: if a single density contributor is dominating the product,
+    // strengthen our correction — the pipeline is unbalanced and needs tighter coherence.
+    const attr = signalReader.densityAttribution();
+    if (attr.contributions.length > 1) {
+      let minC = Infinity;
+      let maxC = -Infinity;
+      for (let i = 0; i < attr.contributions.length; i++) {
+        const c = attr.contributions[i].clamped;
+        if (c < minC) minC = c;
+        if (c > maxC) maxC = c;
+      }
+      const spread = maxC - minC;
+      if (spread > 0.25) {
+        phaseGain *= 1.0 + clamp(spread - 0.25, 0, 0.5); // up to 50% stronger correction
+      }
+    }
 
     // If emitting too many notes (deviation > 0) → dampen (bias < 1)
     // If emitting too few notes (deviation < 0) → boost (bias > 1)

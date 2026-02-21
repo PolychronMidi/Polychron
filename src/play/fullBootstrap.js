@@ -47,6 +47,9 @@ FullBootstrap = (() => {
     'ConductorState',
     'ConductorIntelligence',
     'CoherenceMonitor',
+    'signalReader',
+    'profileAdaptation',
+    'signalTelemetry',
     'GlobalConductor',
 
     // ── conductor/profiles ──
@@ -275,6 +278,7 @@ FullBootstrap = (() => {
     'CrossLayerDynamicEnvelope',
     'TexturalMirror',
     'CrossLayerSilhouette',
+    'conductorSignalBridge',
 
     // ── writer ──
     'grandFinale',

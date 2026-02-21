@@ -89,13 +89,27 @@ EnergyMomentumTracker = (() => {
   /**
    * Get a density adjustment based on momentum.
    * Plateaued → spike density for contrast; stale → stronger spike.
+   * Dampened when tension is already high (prevents runaway energy escalation).
    * @returns {number} - 0.9 to 1.3
    */
   function getDensityNudge() {
     const mom = getMomentum();
-    if (mom.stale) return 1.25;
-    if (mom.trend === 'plateaued') return 1.1;
-    return 1.0;
+    let nudge = 1.0;
+    if (mom.stale) nudge = 1.25;
+    else if (mom.trend === 'plateaued') nudge = 1.1;
+
+    // Peer-aware: if tension product is already elevated, dampen our push
+    // to avoid compounding energy escalation across the pipeline.
+    if (nudge > 1.0) {
+      const tensionProduct = signalReader.tension();
+      if (tensionProduct > 1.15) {
+        nudge = 1.0 + (nudge - 1.0) * 0.4; // heavy dampen
+      } else if (tensionProduct > 1.05) {
+        nudge = 1.0 + (nudge - 1.0) * 0.7; // light dampen
+      }
+    }
+
+    return nudge;
   }
 
   /** Reset tracking. */
