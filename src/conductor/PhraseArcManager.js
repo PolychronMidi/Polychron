@@ -137,9 +137,9 @@ PhraseArcManager = class PhraseArcManager {
   }
 
   _getBreathProfile() {
-    const p = ConductorConfig.getPhraseBreathParams();
-    if (p && typeof p === 'object') {
-      return p;
+    const bp = ConductorConfig.getPhraseBreathParams();
+    if (bp && typeof bp === 'object') {
+      return bp;
     }
     return {
       registerRange: 12,
