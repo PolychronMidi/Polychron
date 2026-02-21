@@ -70,8 +70,8 @@ ConvergenceDetector = (() => {
     return {
       syncTick,
       rarity: clamp(rarity, 0, 1),
-      otherMidi: clamp(Math.round(Number(match.midi) || 0), 0, 127),
-      otherVelocity: clamp(Math.round(Number(match.velocity) || 0), 1, MIDI_MAX_VALUE)
+      otherMidi: clamp(Math.round(V.requireFinite(match.midi, 'match.midi')), 0, 127),
+      otherVelocity: clamp(Math.round(V.requireFinite(match.velocity, 'match.velocity')), 1, MIDI_MAX_VALUE)
     };
   }
 

@@ -12,9 +12,6 @@ ConductorRegulationListener = (() => {
 
   function applyJourneyBias(crossModBias) {
     V.requireDefined(JourneyRhythmCoupler, 'JourneyRhythmCoupler');
-    if (typeof JourneyRhythmCoupler.setExternalBias !== 'function') {
-      throw new Error('ConductorRegulationListener.applyJourneyBias: JourneyRhythmCoupler.setExternalBias is not available');
-    }
     JourneyRhythmCoupler.setExternalBias(crossModBias);
     return true;
   }

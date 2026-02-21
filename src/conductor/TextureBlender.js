@@ -47,25 +47,13 @@ TextureBlender = (() => {
    */
   function getPhraseTextureInfluence() {
     const state = ConductorState.getSnapshot();
-    if (state && typeof state === 'object') {
-      const pos = Number.isFinite(Number(state.phrasePosition)) ? Number(state.phrasePosition) : 0;
-      const phase = (typeof state.phrasePhase === 'string') ? state.phrasePhase : '';
-      const atStart = pos <= 0.001;
-      const atEnd = pos >= 0.999;
-      if (atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };
-      if (phase === 'climax' || phase === 'peak') return { burstBias: 1.6, flurryBias: 1.4 };
-      if (atEnd || phase === 'resolution') return { burstBias: 1.2, flurryBias: 0.5 };
-      return { burstBias: 0.7 + pos * 0.8, flurryBias: 0.8 + (1 - pos) * 0.6 };
-    }
-
-    const ctx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
-    const pos = Number(ctx.position);
-    const phase = ctx.phase || '';
-
-    if (ctx.atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };
-    if (phase === 'climax' || phase === 'peak')  return { burstBias: 1.6, flurryBias: 1.4 };
-    if (ctx.atEnd || phase === 'resolution')     return { burstBias: 1.2, flurryBias: 0.5 };
-    // Development: scale with position in phrase
+    const pos = Validator.requireFinite(state.phrasePosition, 'state.phrasePosition');
+    const phase = state.phrasePhase || '';
+    const atStart = pos <= 0.001;
+    const atEnd = pos >= 0.999;
+    if (atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };
+    if (phase === 'climax' || phase === 'peak') return { burstBias: 1.6, flurryBias: 1.4 };
+    if (atEnd || phase === 'resolution') return { burstBias: 1.2, flurryBias: 0.5 };
     return { burstBias: 0.7 + pos * 0.8, flurryBias: 0.8 + (1 - pos) * 0.6 };
   }
 

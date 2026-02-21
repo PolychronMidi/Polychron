@@ -17,7 +17,7 @@ ArticulationProfiler = (() => {
    */
   function getArticulationProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { staccatoRatio: 0, legatoRatio: 0, avgDuration: 0, monotonous: false, articulation: 'unknown' };

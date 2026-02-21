@@ -139,7 +139,10 @@ PitchMemoryRecall = (() => {
   /** @returns {number} */
   function getRecallCount() { return recallCount; }
 
-  // NO reset() — this module intentionally persists across sections
+  // NO resetAll/resetSection — this module intentionally persists across sections.
+  // Phrase-scope reset is a no-op to satisfy the registry contract.
+  function reset() { /* intentional no-op: long-term memory persists */ }
 
-  return { memorize, recall, getMemoryCount, getRecallCount };
+  return { memorize, recall, getMemoryCount, getRecallCount, reset };
 })();
+CrossLayerRegistry.register('PitchMemoryRecall', PitchMemoryRecall, ['phrase']);

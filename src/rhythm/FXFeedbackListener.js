@@ -9,9 +9,6 @@ FXFeedbackListener = (() => {
 
   function ensureAccumulator() {
     if (accumulator) return accumulator;
-    if (!FeedbackAccumulator || typeof FeedbackAccumulator.create !== 'function') {
-      throw new Error('FXFeedbackListener: FeedbackAccumulator.create is required');
-    }
     const EVENTS = V.getEventsOrThrow();
 
     accumulator = FeedbackAccumulator.create({

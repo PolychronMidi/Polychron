@@ -14,12 +14,12 @@ TimbreBalanceTracker = (() => {
    */
   function getTimbreProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
 
     const channelCounts = /** @type {Object.<number, number>} */ ({});
     for (let i = 0; i < notes.length; i++) {
-      const ch = (typeof notes[i].channel === 'number') ? notes[i].channel : 0;
+      const ch = Validator.optionalFinite(notes[i].channel, 0);
       channelCounts[ch] = (channelCounts[ch] || 0) + 1;
     }
 

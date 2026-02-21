@@ -3,7 +3,10 @@
 stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   if (!stutterMgr || typeof stutterMgr !== 'object') throw new Error('stutterExecutePlan: stutterMgr is required');
   const cfg = /** @type {any} */ (Object.assign({}, plan));
-  const profile = cfg.profile || 'source';
+  if (!cfg.profile || typeof cfg.profile !== 'string') {
+    throw new Error('stutterExecutePlan: plan.profile is required');
+  }
+  const profile = cfg.profile;
   const baseNote = Number.isFinite(Number(cfg.note)) ? Number(cfg.note) : null;
   if (!Number.isFinite(baseNote)) throw new Error('stutterExecutePlan: plan.note (base MIDI note) is required');
   const on = Number.isFinite(Number(cfg.on)) ? Number(cfg.on) : Number(beatStart);
@@ -22,9 +25,6 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     finalChannels.push(.../** @type {number[]} */ (source.slice()));
   }
 
-  if (!StutterConfig || typeof StutterConfig.getCrossModRules !== 'function' || typeof StutterConfig.getDirectiveDefaults !== 'function') {
-    throw new Error('stutterExecutePlan: StutterConfig methods getCrossModRules/getDirectiveDefaults are required');
-  }
   const crossRules = StutterConfig.getCrossModRules();
   if (!crossRules || typeof crossRules !== 'object') {
     throw new Error('stutterExecutePlan: invalid crossRules from StutterConfig.getCrossModRules');
@@ -76,8 +76,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
       const pos = clamp(tn * (n - 1), 0, n - 1);
       const idx = m.floor(pos);
       const frac = pos - idx;
-      const a = Number(curve[idx]) || 0;
-      const b = Number(curve[m.min(idx + 1, n - 1)]) || a;
+      const a = Validator.requireFinite(curve[idx], 'curve[idx]');
+      const b = Validator.requireFinite(curve[m.min(idx + 1, n - 1)], 'curve[idx+1]');
       return lerp(a, b, frac);
     }
     if (typeof curve === 'string') {

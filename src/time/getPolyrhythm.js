@@ -5,14 +5,12 @@
  * @returns {void}
  */
 getPolyrhythm = () => {
-  if (!LM || typeof LM.getComposerFor !== 'function') {
-    throw new Error('getPolyrhythm: LayerManager.getComposerFor not available');
-  }
   const activeComposer = LM.getComposerFor('L1');
 
   const MAX_ATTEMPTS = 100;
+  let found = false;
   let attempts = 0;
-  while (attempts++ < MAX_ATTEMPTS) {
+  while (!found && attempts++ < MAX_ATTEMPTS) {
     [polyNumerator, polyDenominator] = activeComposer.getMeter(true, true);
     if (!Number.isFinite(polyNumerator) || !Number.isFinite(polyDenominator) || polyDenominator <= 0) {
       continue;
@@ -49,14 +47,15 @@ getPolyrhythm = () => {
          (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1))) {
       measuresPerPhrase1 = bestMatch.primaryMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
-      return;
+      found = true;
     }
   }
-  // Max attempts reached: try new meter on L1 layer with relaxed constraints
-  console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new L1 meter...`);
-  [numerator, denominator] = activeComposer.getMeter(true, false);
-  // Recalculate all timing after meter change to prevent sync desync
-  getMidiTiming();
-  getPolyrhythm();
-  return;
+  if (!found) {
+    // Max attempts reached: try new meter on L1 layer with relaxed constraints
+    console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new L1 meter...`);
+    [numerator, denominator] = activeComposer.getMeter(true, false);
+    // Recalculate all timing after meter change to prevent sync desync
+    getMidiTiming();
+    getPolyrhythm();
+  }
 };

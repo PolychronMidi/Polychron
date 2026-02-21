@@ -15,7 +15,7 @@ MotivicDensityTracker = (() => {
    */
   function getMotivicProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
 
     const fragments = fragmentHelpers.getPCFragments(FRAGMENT_LENGTH, ws, { layer, signed: true });
     if (fragments.length === 0) {

@@ -92,9 +92,6 @@ ConvergenceHarmonicTrigger = (() => {
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
     // Emit harmonic trigger event
-    if (!EventBus || typeof EventBus.emit !== 'function') {
-      throw new Error('ConvergenceHarmonicTrigger.onConvergence: EventBus.emit is required');
-    }
     EventBus.emit(EventCatalog.names.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,

@@ -67,8 +67,8 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
 
     // Pick a starting note from the base pool
     const startNote = baseNotes[ri(0, m.max(0, baseNotes.length - 1))];
-    const startMidi = typeof startNote === 'number' ? startNote : (startNote && startNote.note) || 60;
-    if (!Number.isFinite(startMidi)) throw new Error('QuartalComposer.getNotes: invalid start note');
+    const startMidi = typeof startNote === 'number' ? startNote : (startNote && startNote.note);
+    if (!Number.isFinite(startMidi)) throw new Error('QuartalComposer.getNotes: start note must resolve to a finite MIDI number');
 
     // Build a sorted set of scale MIDI notes across available octaves for snapping
     const scaleMidiSet = [];

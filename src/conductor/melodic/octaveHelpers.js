@@ -11,7 +11,7 @@ octaveHelpers = (() => {
    * @returns {{ counts: number[], total: number }}
    */
   function getOctaveHistogram(windowSeconds, bands, layer) {
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 6;
+    const ws = Validator.optionalFinite(windowSeconds, 6);
     const numBands = (typeof bands === 'number' && bands > 0) ? bands : 11;
     /** @type {any} */
     const query = { windowSeconds: ws };

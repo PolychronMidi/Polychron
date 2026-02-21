@@ -15,7 +15,7 @@ TensionResolutionTracker = (() => {
    */
   function getResolutionProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { resolvedRatio: 1, unresolvedCount: 0, total: 0, danglingTension: false };

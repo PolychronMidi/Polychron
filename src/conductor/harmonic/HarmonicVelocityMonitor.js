@@ -11,7 +11,7 @@ HarmonicVelocityMonitor = (() => {
    * @returns {{ changesPerSecond: number, total: number }}
    */
   function getHarmonicVelocity(windowSeconds) {
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const chords = AbsoluteTimeWindow.getChords({ windowSeconds: ws });
     if (chords.length < 2) return { changesPerSecond: 0, total: chords.length };
 

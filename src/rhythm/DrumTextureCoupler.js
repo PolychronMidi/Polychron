@@ -14,9 +14,6 @@ DrumTextureCoupler = (() => {
   function ensureFeedback() {
     if (feedback) return feedback;
     V.requireDefined(FeedbackAccumulator, 'FeedbackAccumulator');
-    if (typeof FeedbackAccumulator.create !== 'function') {
-      throw new Error('DrumTextureCoupler: FeedbackAccumulator.create is required');
-    }
     const EVENTS = V.getEventsOrThrow();
 
     feedback = FeedbackAccumulator.create({

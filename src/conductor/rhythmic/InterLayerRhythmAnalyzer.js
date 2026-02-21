@@ -40,7 +40,7 @@ InterLayerRhythmAnalyzer = (() => {
    * @returns {{ phase: string, coincidence: number, complementarity: number }}
    */
   function getPhaseRelationship(windowSeconds) {
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 2;
+    const ws = Validator.optionalFinite(windowSeconds, 2);
     const l1Notes = AbsoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
     const l2Notes = AbsoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
 
@@ -184,7 +184,7 @@ InterLayerRhythmAnalyzer = (() => {
    * @returns {{ displacementRatio: number, hemiola: boolean, phaseOffset: number, intentional: boolean }}
    */
   function getDisplacementProfile(windowSeconds) {
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const l1Notes = AbsoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
     const l2Notes = AbsoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
     if (l1Notes.length < 4 || l2Notes.length < 4) {

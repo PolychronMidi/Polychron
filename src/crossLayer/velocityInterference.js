@@ -122,5 +122,6 @@ VelocityInterference = (() => {
     p(c, { tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
-  return { postVelocity, measureDelta, applyInterference };
+  return { postVelocity, measureDelta, applyInterference, reset() {} };
 })();
+CrossLayerRegistry.register('VelocityInterference', VelocityInterference, ['all']);

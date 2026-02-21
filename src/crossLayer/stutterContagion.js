@@ -136,5 +136,6 @@ StutterContagion = (() => {
     });
   }
 
-  return { postStutter, checkContagion, apply };
+  return { postStutter, checkContagion, apply, reset() {} };
 })();
+CrossLayerRegistry.register('StutterContagion', StutterContagion, ['all']);

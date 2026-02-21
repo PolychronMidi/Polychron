@@ -17,7 +17,7 @@ ModalColorTracker = (() => {
    */
   function getModalProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const { counts: pcCounts, total } = pitchClassHelpers.getPitchClassHistogram(ws, layer);
 
     if (total < 3) {

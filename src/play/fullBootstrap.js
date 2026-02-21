@@ -71,6 +71,7 @@ FullBootstrap = (() => {
     'HarmonicVelocityMonitor',
     'ModalColorTracker',
     'PitchClassGravityMap',
+    'PitchGravityCenter',
     'TensionResolutionTracker',
     'TonalAnchorDistanceTracker',
     'AmbitusMigrationTracker',

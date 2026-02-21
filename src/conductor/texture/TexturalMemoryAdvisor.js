@@ -106,3 +106,6 @@ TexturalMemoryAdvisor = (() => {
     reset
   };
 })();
+ConductorIntelligence.registerStateProvider('TexturalMemoryAdvisor', () => ({
+  usageKeys: Object.keys(TexturalMemoryAdvisor.getBiasWeights([])).length
+}));

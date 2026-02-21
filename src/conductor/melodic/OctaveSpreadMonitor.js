@@ -14,7 +14,7 @@ OctaveSpreadMonitor = (() => {
    */
   function getOctaveProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
 
     // Use shared helper — default 11 bands matches our 0-10 octave range
     const { counts: octaveCounts, total } = octaveHelpers.getOctaveHistogram(ws, 11, layer);
