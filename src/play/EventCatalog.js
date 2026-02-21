@@ -14,10 +14,10 @@ EventCatalog = (() => {
     HARMONIC_CHANGE: 'harmonic-change',
     NOTES_EMITTED: 'notes-emitted',
     MOTIF_CHAIN_APPLIED: 'motif-chain-applied',
-    CROSS_LAYER_EXPLAIN: 'CROSS_LAYER_EXPLAIN',
-    CONVERGENCE_HARMONIC_TRIGGER: 'CONVERGENCE_HARMONIC_TRIGGER',
-    CROSS_LAYER_CONVERGENCE: 'CROSS_LAYER_CONVERGENCE',
-    CROSS_LAYER_CADENCE_ALIGN: 'CROSS_LAYER_CADENCE_ALIGN'
+    CROSS_LAYER_EXPLAIN: 'cross-layer-explain',
+    CONVERGENCE_HARMONIC_TRIGGER: 'convergence-harmonic-trigger',
+    CROSS_LAYER_CONVERGENCE: 'cross-layer-convergence',
+    CROSS_LAYER_CADENCE_ALIGN: 'cross-layer-cadence-align'
   });
 
   function assertEventPayload(name, data) {
@@ -144,7 +144,7 @@ EventCatalog = (() => {
         return true;
 
       default:
-        return true;
+        throw new Error(`EventCatalog.assertEventPayload: unknown event name "${name}"`);
     }
   }
 

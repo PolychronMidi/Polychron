@@ -1,8 +1,8 @@
+const V = Validator.create('FactoryManager');
+
 factoryConstructors = {
   build(factoryManager) {
-    if (!factoryManager || typeof factoryManager !== 'function') {
-      throw new Error('factoryConstructors.build: factoryManager class is required');
-    }
+    V.requireType(factoryManager, 'function', 'factoryManager');
 
     /**
      * Resolve harmonic corpus options from a resolvedProfiles object.
@@ -10,9 +10,9 @@ factoryConstructors = {
      * @returns {{useCorpusHarmonicPriors:boolean, corpusHarmonicStrength:number}}
      */
     const resolveHarmonicCorpusOptions = (resolvedProfiles = null) => {
-      const chordProfile = (resolvedProfiles && typeof resolvedProfiles === 'object' && resolvedProfiles.chord && typeof resolvedProfiles.chord === 'object')
-        ? resolvedProfiles.chord
-        : null;
+      if (resolvedProfiles !== null) V.assertObject(resolvedProfiles, 'resolvedProfiles');
+      const chordProfile = (resolvedProfiles && resolvedProfiles.chord) ? resolvedProfiles.chord : null;
+      if (chordProfile !== null) V.assertObject(chordProfile, 'resolvedProfiles.chord');
       const useCorpusHarmonicPriors = Boolean(chordProfile && chordProfile.useCorpusHarmonicPriors === true);
       const corpusHarmonicStrength = useCorpusHarmonicPriors
         ? clamp(Number.isFinite(Number(chordProfile.corpusHarmonicStrength)) ? Number(chordProfile.corpusHarmonicStrength) : 0.55, 0, 1)
@@ -42,7 +42,7 @@ factoryConstructors = {
         if (Array.isArray(p)) {
           p = p.map(normalizeChordSymbol);
         }
-        if (typeof direction !== 'string' || direction.length === 0) throw new Error('ComposerFactory.chords: direction must be a non-empty string');
+        V.assertNonEmptyString(direction, 'direction');
         const composer = new ChordComposer(p);
         if (direction.toUpperCase() !== 'R') {
           composer.noteSet(p, direction);
@@ -57,7 +57,8 @@ factoryConstructors = {
           if (root === 'random') {
             if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('ComposerFactory.mode: allModes not available');
             const pair = allModes[ri(allModes.length - 1)];
-            if (typeof pair === 'string' && pair.indexOf(' ') > -1) {
+            V.assertString(pair, 'pair');
+            if (pair.indexOf(' ') > -1) {
               const parts = pair.split(' ');
               const rootFromPair = parts[0];
               const modeName = parts.slice(1).join(' ');
