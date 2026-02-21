@@ -2,6 +2,7 @@ import localRules from './scripts/eslint-rules.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import globalsPkg from 'globals';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,7 +90,7 @@ export default [
       ecmaVersion: 'latest',
       sourceType: 'script',
       globals: {
-
+        ...globalsPkg.node,
         ...MANAGED_GLOBALS,
 
       }
