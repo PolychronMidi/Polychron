@@ -117,7 +117,7 @@ playNotesEmitPick = function(opts = {}) {
     // Apply dynamic envelope and climax velocity scaling
     const envelopeScale = CrossLayerDynamicEnvelope.getVelocityScale(activeLayerName);
     const climaxMods = CrossLayerClimaxEngine.getModifiers(activeLayerName);
-    const texVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * climaxMods.velocityScale)));
+    const texVel = V.requireFinite(m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * climaxMods.velocityScale))), 'texVel');
     // Apply articulation complement sustain modifier
     const articulationMod = ArticulationComplement.getSustainModifier(activeLayerName);
     const texSustain = sustain * textureMode.sustainScale * articulationMod.sustainScale;
