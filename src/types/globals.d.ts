@@ -76,6 +76,7 @@ declare var allNotesOff: any;
 declare var muteAll: any;
 declare var setOtherInstruments: any;
 declare var Validator: any;
+declare var SystemSnapshot: any;
 
 // ── conductor ──
 declare var BPM: number;
@@ -232,6 +233,7 @@ declare var DynamicPeakMemory: any;
 declare var RhythmicDensityContrastTracker: any;
 declare var TonalAnchorDistanceTracker: any;
 declare var ConductorIntelligence: any;
+declare var CoherenceMonitor: any;
 
 // ── rhythm ──
 declare var RhythmRegistry: any;
@@ -347,6 +349,7 @@ declare var syncFactor: any;
 declare var AbsoluteTimeWindow: any;
 declare var AbsoluteTimeGrid: any;
 declare var TempoFeelEngine: any;
+declare var TimeStream: any;
 
 // ── composers ──
 declare var normalizeChordSymbol: any;

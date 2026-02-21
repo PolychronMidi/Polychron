@@ -61,9 +61,9 @@ Each subsystem has one `*Manager` (Façade + service locator) that composes ligh
 
 One manager per subsystem. Additional files are helpers, not more managers.
 
-### 5. Small Files, One Responsibility
+### 5. Coherent Files, One Responsibility
 
-Target ≤ 200 lines. File name matches its main export. `const` and pure functions where possible; writable globals only where the project convention requires them (timing, play-state).
+Target ≤ 200 lines of clean minimalist, self-documenting code (including structure-as-documentation), sparingly commented. File name matches its main export. `const` and pure functions where possible; writable globals only where the project convention requires them (timing, play-state).
 
 ---
 

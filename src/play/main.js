@@ -50,6 +50,7 @@ EmissionFeedbackListener.initialize();
 HarmonicRhythmTracker.initialize();
 ConductorState.initialize();
 CadenceAdvisor.initialize();
+CoherenceMonitor.initialize();
 CrossLayerLifecycleManager.resetAll();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
@@ -60,8 +61,10 @@ if (totalSections <= 0) {
 
 // Plan the harmonic journey across all sections
 HarmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
+TimeStream.setBounds('section', totalSections);
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
+  TimeStream.setPosition('section', sectionIndex);
   CrossLayerLifecycleManager.resetSection();
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
   MainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
@@ -75,6 +78,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   if (phrasesPerSection <= 0) {
     throw new Error('main: SectionLengthAdvisor.advisePhraseCount must return a value > 0');
   }
+  TimeStream.setBounds('phrase', phrasesPerSection);
 
   // Emit section boundary event to reset FX feedback accumulator
   EventBus.emit(EVENTS.SECTION_BOUNDARY, { sectionIndex });
@@ -102,6 +106,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   LM.activate('L1', false);
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
+    TimeStream.setPosition('phrase', phraseIndex);
     CrossLayerLifecycleManager.resetPhrase();
     // Restore L1 harmonic context (may have been overwritten by L2's complement)
     HarmonicJourney.applyToContext(sectionIndex);

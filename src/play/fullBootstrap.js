@@ -19,6 +19,7 @@ FullBootstrap = (() => {
 
     // ── utils ──
     'Validator',
+    'SystemSnapshot',
 
     // ── conductor ──
     'HarmonicContext',
@@ -31,6 +32,7 @@ FullBootstrap = (() => {
     'TextureBlender',
     'ConductorState',
     'ConductorIntelligence',
+    'CoherenceMonitor',
     'GlobalConductor',
 
     // ── conductor/profiles ──
@@ -141,6 +143,7 @@ FullBootstrap = (() => {
     'AbsoluteTimeGrid',
     'AbsoluteTimeWindow',
     'TempoFeelEngine',
+    'TimeStream',
 
     // ── composers ──
     'ComposerFactory',

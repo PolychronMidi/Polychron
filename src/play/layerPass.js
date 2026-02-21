@@ -44,8 +44,10 @@ layerPass = (() => {
    */
   function runLayerPass(layerId, phraseFamily, { withConductorTick = false } = {}, deps) {
     const { boot, composerCtx } = deps;
+    TimeStream.setBounds('measure', measuresPerPhrase);
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
+      TimeStream.setPosition('measure', measureIndex);
       measureCount++;
       selectLayerComposerForMeasure(layerId, phraseFamily, composerCtx);
       setUnitTiming('measure');
@@ -58,8 +60,10 @@ layerPass = (() => {
 
       MainBootstrap.getConductorProbabilities(measureIndex, -1);
       let playProb, stutterProb;
+      TimeStream.setBounds('beat', numerator);
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
+        TimeStream.setPosition('beat', beatIndex);
         const beatCtx = MainBootstrap.getConductorProbabilities(measureIndex, beatIndex);
         playProb = beatCtx.playProb;
         stutterProb = beatCtx.stutterProb;
@@ -68,16 +72,22 @@ layerPass = (() => {
         playProb = beatResult.playProb;
         stutterProb = beatResult.stutterProb;
 
+        TimeStream.setBounds('div', divsPerBeat);
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+          TimeStream.setPosition('div', divIndex);
           setUnitTiming('div');
           if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
+          TimeStream.setBounds('subdiv', subdivsPerDiv);
           microUnitAttenuator.begin('subdiv', subdivsPerDiv);
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+            TimeStream.setPosition('subdiv', subdivIndex);
             setUnitTiming('subdiv');
             if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
+            TimeStream.setBounds('subsubdiv', subsubsPerSub);
             microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
             for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+              TimeStream.setPosition('subsubdiv', subsubdivIndex);
               setUnitTiming('subsubdiv');
               if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
             }
