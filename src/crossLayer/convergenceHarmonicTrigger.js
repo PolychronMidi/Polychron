@@ -49,11 +49,11 @@ ConvergenceHarmonicTrigger = (() => {
 
     // Consume CadenceAlignment dead-end signals
     if (!CadenceAlignment ||
-        typeof CadenceAlignment.applyAlignment !== 'function') {
+        !CadenceAlignment.applyAlignment) {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment is required');
     }
     if (!ConductorState ||
-        typeof ConductorState.getField !== 'function') {
+        !ConductorState.getField) {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConductorState.getField is required');
     }
 

@@ -107,6 +107,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   for (phraseIndex = 0; phraseIndex < phrasesPerSection; phraseIndex++) {
     TimeStream.setPosition('phrase', phraseIndex);
+    EventBus.emit(EVENTS.PHRASE_BOUNDARY, { phraseIndex, sectionIndex, phrasesPerSection });
     CrossLayerLifecycleManager.resetPhrase();
     // Restore L1 harmonic context (may have been overwritten by L2's complement)
     HarmonicJourney.applyToContext(sectionIndex);

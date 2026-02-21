@@ -325,9 +325,7 @@ ConductorConfig = (() => {
 
     const sectionPhase = (typeof sectionPhaseOverride === 'string' && sectionPhaseOverride.length > 0)
       ? sectionPhaseOverride
-      : (HarmonicContext && typeof HarmonicContext.getField === 'function')
-        ? (HarmonicContext.getField('sectionPhase') || 'development')
-        : 'development';
+      : HarmonicContext.getField('sectionPhase');
 
     const selected = Object.prototype.hasOwnProperty.call(mapping, sectionPhase)
       ? V.assertNonEmptyString(mapping[sectionPhase], `ConductorConfig.noiseProfileByPhase.${sectionPhase}`)

@@ -9,14 +9,13 @@ SectionIntentCurves = (() => {
   };
 
   /**
-   * @param {number} sectionProgress - 0..1
-   * @param {number} [sectionIdx=0]
-   * @param {number} [phraseIdx=0]
+   * Compute section intent from TimeStream positions.
+   * Accepts no arguments — reads section/phrase progress and indices directly.
    */
-  function getIntent(sectionProgress, sectionIdx, phraseIdx) {
-    const p = clamp(Number.isFinite(sectionProgress) ? sectionProgress : 0.5, 0, 1);
-    const s = Number.isFinite(sectionIdx) ? Number(sectionIdx) : 0;
-    const ph = Number.isFinite(phraseIdx) ? Number(phraseIdx) : 0;
+  function getIntent() {
+    const p = clamp(TimeStream.compoundProgress('section'), 0, 1);
+    const s = TimeStream.getPosition('section');
+    const ph = TimeStream.getPosition('phrase');
 
     const arc = Math.sin(p * Math.PI);
     const wave = 0.5 + 0.5 * Math.sin((p + (s + ph * 0.3) * 0.07) * Math.PI * 2);

@@ -47,7 +47,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Apply rhythm history novelty penalty to discourage repetition
     rhythmSource = RhythmHistoryTracker.penalizeRepetition(rhythmSource);
 
-    const hasLayerContext = LM && typeof LM.getComposerFor === 'function' && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
+    const hasLayerContext = LM && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
     const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
 

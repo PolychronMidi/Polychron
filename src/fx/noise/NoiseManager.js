@@ -41,9 +41,7 @@ applyNoiseToPan = function(basePan, voiceId, currentTime, profileName = 'subtle'
 
   // X modulation affects pan position directly
   // Map from [0, 1] noise to [-64, +64] pan offset from center
-  const noiseCanvas = (ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
-    ? ConductorConfig.getNoiseCanvasParams()
-    : { panRange: 60, sustainRange: [0.8, 1.2] };
+  const noiseCanvas = ConductorConfig.getNoiseCanvasParams();
   const panRange = Number.isFinite(Number(noiseCanvas.panRange)) ? Number(noiseCanvas.panRange) : 60; // Max deviation from center
   const xOffset = (mod.x - 0.5) * 2 * panRange * profile.influenceX;
 
@@ -63,9 +61,7 @@ applyNoiseToSustain = function(baseSustain, voiceId, currentTime, profileName = 
 
   const mod = getParameterModulation(voiceId, 'sustain', currentTime);
   const profile = getNoiseProfile(profileName);
-  const noiseCanvas = (ConductorConfig && typeof ConductorConfig.getNoiseCanvasParams === 'function')
-    ? ConductorConfig.getNoiseCanvasParams()
-    : { panRange: 60, sustainRange: [0.8, 1.2] };
+  const noiseCanvas = ConductorConfig.getNoiseCanvasParams();
   const sustainRange = Array.isArray(noiseCanvas.sustainRange) && noiseCanvas.sustainRange.length === 2
     ? noiseCanvas.sustainRange
     : [0.8, 1.2];

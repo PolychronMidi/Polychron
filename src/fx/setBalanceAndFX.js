@@ -17,9 +17,7 @@ if (!ccGroupScale || typeof ccGroupScale !== 'object' || !ccRangeScale || typeof
   throw new Error('setBalanceAndFX: spatialCanvas missing ccGroupScale or ccRangeScale');
 }
 
-const journeyFxModulation = (typeof ConductorConfig.getJourneyFxModulation === 'function')
-  ? ConductorConfig.getJourneyFxModulation()
-  : (() => { throw new Error('setBalanceAndFX: ConductorConfig.getJourneyFxModulation is not a function'); })();
+const journeyFxModulation = ConductorConfig.getJourneyFxModulation();
 
 const scaleFxDefaultObject = (fxDefault, scale) => {
   const minValue = Number(fxDefault.min);
@@ -229,11 +227,9 @@ return [
   // open filter cutoff (CC74), and spike delay send (CC94) so the spatial
   // environment breathes with the texture system.
   // FX depth and texture boost amplitude are scaled by the active conductor profile.
-  const fxScale = (typeof ConductorConfig.getFxMixScaling === 'function')
-    ? ConductorConfig.getFxMixScaling()
-    : (() => { throw new Error('setBalanceAndFX: ConductorConfig.getFxMixScaling is not a function'); })();
+  const fxScale = ConductorConfig.getFxMixScaling();
 
-  if (DrumTextureCoupler && typeof DrumTextureCoupler.getIntensity === 'function') {
+  if (DrumTextureCoupler) {
     const texInt = DrumTextureCoupler.getIntensity();
     if (Number.isFinite(texInt) && texInt > 0.1) {
       const allChs = [

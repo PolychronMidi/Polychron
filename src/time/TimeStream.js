@@ -160,6 +160,51 @@ TimeStream = (() => {
     for (const level of LEVELS) pos[level] = 0;
   }
 
+  /**
+   * Compound progress within the current parent at the given level,
+   * rolling up all sub-level positions into a single 0..1 value.
+   * E.g. compoundProgress('phrase') yields a fraction that includes
+   * measure, beat, div, subdiv, and subsubdiv contributions.
+   * @param {string} level
+   * @returns {number} 0..1
+   */
+  function compoundProgress(level) {
+    V.assertInSet(level, LEVEL_SET, 'level');
+    const d = DEPTH[level];
+    if (bounds[level] <= 0) return 0;
+    let p = pos[level] / bounds[level];
+    let divisor = bounds[level];
+    for (let i = d + 1; i < LEVELS.length; i++) {
+      const sub = LEVELS[i];
+      if (bounds[sub] <= 0) break;
+      divisor *= bounds[sub];
+      p += pos[sub] / divisor;
+    }
+    return clamp(p, 0, 1);
+  }
+
+  /**
+   * Reset all positions strictly below the given level to 0.
+   * Called when a parent level advances (e.g. new phrase → reset measure, beat, ...).
+   * @param {string} level
+   */
+  function resetSubLevels(level) {
+    V.assertInSet(level, LEVEL_SET, 'level');
+    const d = DEPTH[level];
+    for (let i = d + 1; i < LEVELS.length; i++) {
+      pos[LEVELS[i]] = 0;
+    }
+  }
+
+  /**
+   * Human-readable hierarchical position string.
+   * E.g. "S2:P3:M1:B4" (section 2, phrase 3, measure 1, beat 4).
+   * @returns {string}
+   */
+  function positionString() {
+    return `S${pos.section}:P${pos.phrase}:M${pos.measure}:B${pos.beat}`;
+  }
+
   return {
     setPosition,
     setBounds,
@@ -177,6 +222,9 @@ TimeStream = (() => {
     snapshot,
     range,
     getLevels,
-    resetPositions
+    resetPositions,
+    compoundProgress,
+    resetSubLevels,
+    positionString
   };
 })();

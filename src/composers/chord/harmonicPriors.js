@@ -50,7 +50,7 @@ harmonicPriors = (function() {
       return opts.phase;
     }
 
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager) {
       const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;

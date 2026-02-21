@@ -21,9 +21,7 @@ CadentialPreparationAdvisor = (() => {
     const atEnd = Boolean(phraseCtx.atEnd);
 
     // Check harmonic context for dominant approach
-    const tension = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (Number(HarmonicContext.getField('tension')) || 0)
-      : 0;
+    const tension = HarmonicContext.getField('tension');
 
     // Calculate preparation urgency
     let urgency = 0;

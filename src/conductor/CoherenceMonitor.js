@@ -51,6 +51,52 @@ CoherenceMonitor = (() => {
       _updateBias();
     });
 
+    // Stutter notes contribute to actual density but bypass the normal note path.
+    // Count them so the coherence window reflects the true output density.
+    EventBus.on(EVENTS.STUTTER_APPLIED, () => {
+      cumulativeActual += 1;
+      if (window.length > 0) {
+        window[window.length - 1].actual += 1;
+        _updateBias();
+      }
+    });
+
+    // Motif chain expansions also add notes the window wouldn't otherwise see.
+    EventBus.on(EVENTS.MOTIF_CHAIN_APPLIED, (data) => {
+      const extra = V.requireFinite(data.resultNoteCount, 'resultNoteCount');
+      cumulativeActual += extra;
+      if (window.length > 0) {
+        window[window.length - 1].actual += extra;
+        _updateBias();
+      }
+    });
+
+    // Phrase boundaries trigger partial decay — keep recent history but attenuate
+    // older observations so the new phrase starts with a fresh-ish baseline.
+    EventBus.on(EVENTS.PHRASE_BOUNDARY, () => {
+      const decayFactor = 0.5;
+      for (let i = 0; i < window.length; i++) {
+        window[i].actual *= decayFactor;
+        window[i].intended *= decayFactor;
+      }
+      entropySignal *= decayFactor;
+    });
+
+    // Cross-check: if the conductor is regulating heavily and we're also
+    // pushing a strong bias, detect the feedback loop and dampen.
+    EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
+      const regBias = V.requireFinite(data.densityBias, 'densityBias');
+      // Both biases pushing in the same direction → dampen ours
+      const sameDirection = (regBias > 0 && coherenceBias > 1.0) || (regBias < 0 && coherenceBias < 1.0);
+      if (sameDirection) {
+        coherenceBias = clamp(
+          1.0 + (coherenceBias - 1.0) * 0.6,
+          BIAS_FLOOR,
+          BIAS_CEILING
+        );
+      }
+    });
+
     EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
       reset();
     });

@@ -51,7 +51,7 @@ ProgressionGenerator = class ProgressionGenerator {
     }
 
     const merged = Object.assign({}, builtIn);
-    if (typeof harmonicPriors !== 'undefined' && harmonicPriors && typeof harmonicPriors.getPatternSet === 'function') {
+    if (typeof harmonicPriors !== 'undefined' && harmonicPriors) {
       const priorPatterns = harmonicPriors.getPatternSet(quality);
       for (const [name, romans] of Object.entries(priorPatterns)) {
         if (!Object.prototype.hasOwnProperty.call(merged, name)) {
@@ -118,7 +118,7 @@ ProgressionGenerator = class ProgressionGenerator {
     if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
       return opts.phase;
     }
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager) {
       const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;
@@ -157,7 +157,7 @@ ProgressionGenerator = class ProgressionGenerator {
 
   random(opts = {}) {
     // Check for a pending pivot chord bridge (first progression after a key change)
-    if (PivotChordBridge && typeof PivotChordBridge.hasBridge === 'function' && PivotChordBridge.hasBridge()) {
+    if (PivotChordBridge && PivotChordBridge.hasBridge()) {
       return PivotChordBridge.consumeBridge();
     }
 
@@ -168,7 +168,7 @@ ProgressionGenerator = class ProgressionGenerator {
       : hasProfileToggle
         ? opts.useCorpusHarmonicPriors === true
         : false;
-    if (useCorpus && typeof harmonicPriors !== 'undefined' && harmonicPriors && typeof harmonicPriors.getRomanProgression === 'function') {
+    if (useCorpus && typeof harmonicPriors !== 'undefined' && harmonicPriors) {
       const corpusOpts = {
         ...opts,
         phase: this.resolvePhrasePhase(opts),

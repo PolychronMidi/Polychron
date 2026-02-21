@@ -33,10 +33,10 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
   const conductorSnapshot = ConductorState.getSnapshot();
   const contextIntensity = Number.isFinite(Number(conductorContext.compositeIntensity))
     ? clamp(Number(conductorContext.compositeIntensity), 0, 1)
-    : clamp(Number(conductorSnapshot.compositeIntensity) || 0, 0, 1);
+    : clamp(Number(conductorSnapshot.compositeIntensity), 0, 1);
   const phrasePhase = (typeof conductorContext.phrasePhase === 'string' && conductorContext.phrasePhase.length > 0)
     ? conductorContext.phrasePhase
-    : (conductorSnapshot.phrasePhase || 'development');
+    : conductorSnapshot.phrasePhase;
   const accentBoost = conductorContext.accent ? 0.12 : 0;
   const phaseBoost = (phrasePhase === 'climax' || phrasePhase === 'peak') ? 0.12 : (phrasePhase === 'resolution' ? -0.05 : 0);
   const velocityScale = clamp(0.8 + contextIntensity * 0.45 + accentBoost + phaseBoost, 0.55, 1.4);

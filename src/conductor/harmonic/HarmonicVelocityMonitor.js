@@ -32,9 +32,7 @@ HarmonicVelocityMonitor = (() => {
    */
   function diagnoseEnergyMatch() {
     const vel = getHarmonicVelocity();
-    const compositeIntensity = (ConductorState && typeof ConductorState.getState === 'function')
-      ? (ConductorState.getState().compositeIntensity || 0.5)
-      : 0.5;
+    const compositeIntensity = ConductorState.getField('compositeIntensity');
 
     // Expected changes/sec at given intensity: calm ~0.1, intense ~0.6
     const expectedRate = 0.1 + compositeIntensity * 0.5;

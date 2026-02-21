@@ -67,9 +67,7 @@ PhraseArcManager = class PhraseArcManager {
     let currentArcType = this.arcType;
     if (HarmonicContext && HarmonicContext.getField) {
       const sectionPhase = HarmonicContext.getField('sectionPhase');
-      if (ConductorConfig && typeof ConductorConfig.getArcMapping === 'function') {
-        currentArcType = ConductorConfig.getArcMapping(sectionPhase);
-      }
+      currentArcType = ConductorConfig.getArcMapping(sectionPhase);
     }
 
     // Fallback to configured arcType if mapped one is missing (though defaults cover it)
@@ -139,11 +137,9 @@ PhraseArcManager = class PhraseArcManager {
   }
 
   _getBreathProfile() {
-    if (ConductorConfig && typeof ConductorConfig.getPhraseBreathParams === 'function') {
-      const p = ConductorConfig.getPhraseBreathParams();
-      if (p && typeof p === 'object') {
-        return p;
-      }
+    const p = ConductorConfig.getPhraseBreathParams();
+    if (p && typeof p === 'object') {
+      return p;
     }
     return {
       registerRange: 12,

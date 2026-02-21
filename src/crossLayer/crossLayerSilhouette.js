@@ -20,11 +20,9 @@ CrossLayerSilhouette = (() => {
   /**
    * Tick the silhouette analyzer each beat.
    * @param {number} absTimeMs
-   * @param {number} sectionProgress - 0–1
    */
-  function tick(absTimeMs, sectionProgress) {
+  function tick(absTimeMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    V.requireFinite(sectionProgress, 'sectionProgress');
 
     // Gather all available signals
 

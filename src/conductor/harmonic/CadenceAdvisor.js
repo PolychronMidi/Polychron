@@ -26,7 +26,7 @@ CadenceAdvisor = (() => {
       if (recentChanges.length > MAX_HISTORY) recentChanges.shift();
 
       // Also feed chord changes into AbsoluteTimeWindow for cross-layer analysis
-      const layer = (LM && typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
+      const layer = LM.activeLayer;
       const absTime = (Number.isFinite(beatStartTime)) ? beatStartTime : 0;
       AbsoluteTimeWindow.recordChord(data.chords || null, data.key || '', data.mode || '', layer, absTime);
     });
@@ -38,9 +38,7 @@ CadenceAdvisor = (() => {
    * @returns {{ suggest: boolean, type: string, confidence: number }}
    */
   function shouldCadence() {
-    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? HarmonicContext.getField('sectionPhase')
-      : '';
+    const phase = HarmonicContext.getField('sectionPhase');
 
     // Resolution and conclusion phases strongly suggest cadence
     if (phase === 'resolution' || phase === 'conclusion') {
@@ -48,11 +46,7 @@ CadenceAdvisor = (() => {
     }
 
     // Near phrase boundaries with sufficient harmonic motion → mild cadence suggestion
-    const phraseCtx = (ComposerFactory
-      && ComposerFactory.sharedPhraseArcManager
-      && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
-      ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
-      : null;
+    const phraseCtx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
     if (phraseCtx && phraseCtx.position > 0.85 && recentChanges.length >= 3) {
       return { suggest: true, type: 'half', confidence: 0.55 };
@@ -67,9 +61,7 @@ CadenceAdvisor = (() => {
    * @returns {{ dominantBias: number, tonicBias: number, phase: string }}
    */
   function getCadenceBias() {
-    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? HarmonicContext.getField('sectionPhase')
-      : '';
+    const phase = HarmonicContext.getField('sectionPhase');
 
     if (phase === 'resolution') {
       return { dominantBias: 0.7, tonicBias: 0.9, phase };

@@ -99,7 +99,7 @@ HarmonicContext = (() => {
     }
     state.modifiedAt = Date.now();
 
-    if (changedFields.length > 0 && EventBus && typeof EventBus.emit === 'function') {
+    if (changedFields.length > 0) {
       const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.HARMONIC_CHANGE, {
         changedFields,
@@ -134,11 +134,9 @@ HarmonicContext = (() => {
    * @throws {Error} if field unknown
    */
   function getField(field) {
-    if (ConductorState && typeof ConductorState.getSnapshot === 'function') {
-      const snapshot = ConductorState.getSnapshot();
-      if (snapshot && Object.prototype.hasOwnProperty.call(snapshot, field)) {
-        return snapshot[field];
-      }
+    const snapshot = ConductorState.getSnapshot();
+    if (snapshot && Object.prototype.hasOwnProperty.call(snapshot, field)) {
+      return snapshot[field];
     }
 
     if (!Object.prototype.hasOwnProperty.call(state, field)) {
