@@ -3,6 +3,7 @@
 // Pure query API — biases duration selection in motifConfig.
 
 ArticulationProfiler = (() => {
+  const V = Validator.create('ArticulationProfiler');
   const WINDOW_SECONDS = 4;
   // Duration thresholds relative to beat duration
   const STACCATO_RATIO = 0.25; // ≤25% of beat = staccato
@@ -17,7 +18,7 @@ ArticulationProfiler = (() => {
    */
   function getArticulationProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { staccatoRatio: 0, legatoRatio: 0, avgDuration: 0, monotonous: false, articulation: 'unknown' };

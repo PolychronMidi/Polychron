@@ -4,6 +4,7 @@
 // Pure query API — biases rhythm onset probability and phrase breathing.
 
 RestDensityTracker = (() => {
+  const V = Validator.create('RestDensityTracker');
   const WINDOW_SECONDS = 4;
   const BREATH_THRESHOLD = 0.3; // gaps >0.3s count as breaths
 
@@ -16,7 +17,7 @@ RestDensityTracker = (() => {
    */
   function getOnsetDensity(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 2) {
       return { notesPerSecond: 0, saturated: false, sparse: true };
@@ -80,7 +81,7 @@ RestDensityTracker = (() => {
    */
   function getBreathingProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, 6);
+    const ws = V.optionalFinite(windowSeconds, 6);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { breathCount: 0, avgGap: 0, maxGap: 0, breathless: false, airy: false };

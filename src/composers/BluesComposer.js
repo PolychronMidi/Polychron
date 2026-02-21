@@ -3,6 +3,7 @@
 // call-and-response phrase shaping, and ghost note probability.
 
 BluesComposer = class BluesComposer extends MeasureComposer {
+  static _V = Validator.create('BluesComposer');
   /**
    * @param {string} root - Root note (e.g., 'C', 'A')
    * @param {'major'|'minor'} type - Blues tonality
@@ -78,8 +79,8 @@ BluesComposer = class BluesComposer extends MeasureComposer {
 
     // Sort notes for directional shaping
     const sorted = [...baseNotes].sort((a, b) => {
-      const aN = typeof a === 'number' ? a : Validator.requireFinite(a && a.note, 'BluesComposer.getNotes.sortEntry.note');
-      const bN = typeof b === 'number' ? b : Validator.requireFinite(b && b.note, 'BluesComposer.getNotes.sortEntry.note');
+      const aN = typeof a === 'number' ? a : BluesComposer._V.requireFinite(a && a.note, 'BluesComposer.getNotes.sortEntry.note');
+      const bN = typeof b === 'number' ? b : BluesComposer._V.requireFinite(b && b.note, 'BluesComposer.getNotes.sortEntry.note');
       return aN - bN;
     });
 

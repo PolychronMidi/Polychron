@@ -1,4 +1,5 @@
 rhythmPriors = (function() {
+  const V = Validator.create('rhythmPriors');
   const modeToQuality = {
     ionian: 'major', dorian: 'dorian', phrygian: 'minor', lydian: 'major',
     mixolydian: 'mixolydian', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
@@ -111,7 +112,7 @@ rhythmPriors = (function() {
     const profile = getProfileOrFail(quality);
     const phase = resolvePhase(opts);
     const level = (typeof opts.level === 'string' && opts.level.length > 0) ? opts.level : 'beat';
-    const strength = clamp(Validator.optionalFinite(Number(opts.strength), 0.7), 0, 1.5);
+    const strength = clamp(V.optionalFinite(Number(opts.strength), 0.7), 0, 1.5);
 
     const phaseMethodMap = (profile.phaseMethodWeights && profile.phaseMethodWeights[phase] && typeof profile.phaseMethodWeights[phase] === 'object')
       ? profile.phaseMethodWeights[phase]
@@ -147,7 +148,7 @@ rhythmPriors = (function() {
 
       out[name] = Object.assign({}, spec, {
         weights: spec.weights.map((weight) => {
-          const base = Validator.optionalFinite(Number(weight), 0.1);
+          const base = V.optionalFinite(Number(weight), 0.1);
           return m.max(0.05, base * blendedMultiplier);
         })
       });

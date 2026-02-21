@@ -3,6 +3,7 @@
 // Pure query API — scales motifConfig voice count targets and emission limits.
 
 VoiceDensityBalancer = (() => {
+  const V = Validator.create('VoiceDensityBalancer');
   const WINDOW_SECONDS = 2;
   const COINCIDENCE_MS = 0.05; // notes within 50ms count as simultaneous
 
@@ -16,7 +17,7 @@ VoiceDensityBalancer = (() => {
    */
   function getVoiceDensity(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 2) {
       return { avgVoices: notes.length, maxVoices: notes.length, thin: true, crowded: false };

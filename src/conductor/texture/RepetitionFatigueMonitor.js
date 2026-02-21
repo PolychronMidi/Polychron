@@ -3,6 +3,7 @@
 // Pure query API — penalty weight for VoiceLeadingScore or composer note selection.
 
 RepetitionFatigueMonitor = (() => {
+  const V = Validator.create('RepetitionFatigueMonitor');
   const WINDOW_SECONDS = 4;
   const MIN_PATTERN = 2;
   const MAX_PATTERN = 6;
@@ -16,7 +17,7 @@ RepetitionFatigueMonitor = (() => {
    */
   function getRepetitionProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < MIN_PATTERN * 2) {
       return { fatigueLevel: 0, repeatedPatterns: 0, totalPatterns: 0, fatigued: false };

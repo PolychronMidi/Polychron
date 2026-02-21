@@ -3,6 +3,7 @@
 // Pure query API — corrects density when harmonic and melodic activity diverge.
 
 HarmonicRhythmDensityRatio = (() => {
+  const V = Validator.create('HarmonicRhythmDensityRatio');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -14,7 +15,7 @@ HarmonicRhythmDensityRatio = (() => {
    */
   function getRatioProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
 
     // Harmonic rhythm from HarmonicRhythmTracker (0-1 normalized)
     const harmonicRate = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);

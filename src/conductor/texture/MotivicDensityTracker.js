@@ -3,6 +3,7 @@
 // Pure query API — biases targetDensity to thin when overcrowded, thicken when sparse.
 
 MotivicDensityTracker = (() => {
+  const V = Validator.create('MotivicDensityTracker');
   const WINDOW_SECONDS = 4;
   const FRAGMENT_LENGTH = 3; // 3-note pitch-class fragments
 
@@ -15,7 +16,7 @@ MotivicDensityTracker = (() => {
    */
   function getMotivicProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
 
     const fragments = fragmentHelpers.getPCFragments(FRAGMENT_LENGTH, ws, { layer, signed: true });
     if (fragments.length === 0) {

@@ -94,7 +94,7 @@ JourneyRhythmCoupler = (() => {
       }
 
       const newWeights = spec.weights.map((w, idx) => {
-        const wN = Validator.optionalFinite(Number(w), 0.1);
+        const wN = V.optionalFinite(Number(w), 0.1);
         const complexity = idx / spec.weights.length; // 0 = simple, 1 = complex
         // Bold harmonic moves push weight toward complex end
         const boldnessBoost = (complexity - 0.5) * boldness * 0.3;

@@ -3,6 +3,7 @@
 // Pure query API — biases rhythm pattern selection weights.
 
 SyncopationDensityTracker = (() => {
+  const V = Validator.create('SyncopationDensityTracker');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -15,7 +16,7 @@ SyncopationDensityTracker = (() => {
    */
   function getSyncopationProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { syncopationRatio: 0, onBeatCount: 0, offBeatCount: 0, total: 0, monotonous: false, excessive: false };

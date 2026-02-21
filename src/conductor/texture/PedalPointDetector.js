@@ -8,6 +8,7 @@
 // Both are consumed by GlobalConductor for different product chains.
 
 PedalPointDetector = (() => {
+  const V = Validator.create('PedalPointDetector');
   const WINDOW_SECONDS = 6;
   const BASS_CEILING = 55; // MIDI note — below this = bass register
 
@@ -20,7 +21,7 @@ PedalPointDetector = (() => {
    */
   function getPedalProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
 
     // Filter to bass register

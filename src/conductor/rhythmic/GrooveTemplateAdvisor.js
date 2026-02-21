@@ -3,6 +3,7 @@
 // Pure query API — advises velocity humanization and swing feel per section phase.
 
 GrooveTemplateAdvisor = (() => {
+  const V = Validator.create('GrooveTemplateAdvisor');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -14,7 +15,7 @@ GrooveTemplateAdvisor = (() => {
    */
   function getGrooveProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { avgDeviation: 0, maxDeviation: 0, swingRatio: 0.5, rigid: true, loose: false };

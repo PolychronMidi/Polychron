@@ -3,6 +3,7 @@
 // Pure query API — biases note selection toward underused color tones.
 
 ModalColorTracker = (() => {
+  const V = Validator.create('ModalColorTracker');
   const WINDOW_SECONDS = 6;
   // Scale-degree categories
   const CHORD_TONES = new Set([0, 4, 7]); // root, major 3rd, perfect 5th (approx)
@@ -17,7 +18,7 @@ ModalColorTracker = (() => {
    */
   function getModalProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const { counts: pcCounts, total } = pitchClassHelpers.getPitchClassHistogram(ws, layer);
 
     if (total < 3) {

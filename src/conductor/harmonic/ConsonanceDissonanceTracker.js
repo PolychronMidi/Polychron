@@ -3,6 +3,7 @@
 // Pure query API — modifies derivedTension to prevent dissonance ruts or blandness.
 
 ConsonanceDissonanceTracker = (() => {
+  const V = Validator.create('ConsonanceDissonanceTracker');
   const WINDOW_SECONDS = 4;
   // Shared consonant intervals from pitchClassHelpers
   const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
@@ -16,7 +17,7 @@ ConsonanceDissonanceTracker = (() => {
    */
   function getConsonanceProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { consonanceRatio: 0.5, dissonanceRatio: 0.5, bland: false, harsh: false };

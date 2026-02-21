@@ -81,7 +81,7 @@ StutterFeedbackListener = (() => {
       const methodMultiplier = 1 + (intensity - 0.5) * 0.25;
 
       const newWeights = spec.weights.map((w, idx) => {
-        const wN = Validator.optionalFinite(Number(w), 0.1);
+        const wN = V.optionalFinite(Number(w), 0.1);
         const complexity = idx / spec.weights.length; // 0=simple, 1=complex
         const complexityBoost = (complexity - 0.5) * intensity * 0.2;
         const adjusted = (wN + complexityBoost) * methodMultiplier;

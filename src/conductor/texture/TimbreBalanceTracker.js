@@ -3,6 +3,7 @@
 // Pure query API — nudges composer selection toward underused timbres.
 
 TimbreBalanceTracker = (() => {
+  const V = Validator.create('TimbreBalanceTracker');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -14,12 +15,12 @@ TimbreBalanceTracker = (() => {
    */
   function getTimbreProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
 
     const channelCounts = /** @type {Object.<number, number>} */ ({});
     for (let i = 0; i < notes.length; i++) {
-      const ch = Validator.optionalFinite(notes[i].channel, 0);
+      const ch = V.optionalFinite(notes[i].channel, 0);
       channelCounts[ch] = (channelCounts[ch] || 0) + 1;
     }
 

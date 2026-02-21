@@ -3,6 +3,7 @@
 // Pure query API — nudges composers toward underused octaves via ConductorState.
 
 OctaveSpreadMonitor = (() => {
+  const V = Validator.create('OctaveSpreadMonitor');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -14,7 +15,7 @@ OctaveSpreadMonitor = (() => {
    */
   function getOctaveProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
 
     // Use shared helper — default 11 bands matches our 0-10 octave range
     const { counts: octaveCounts, total } = octaveHelpers.getOctaveHistogram(ws, 11, layer);
