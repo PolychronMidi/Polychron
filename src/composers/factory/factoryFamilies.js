@@ -1,8 +1,8 @@
+const V = Validator.create('FactoryManager');
+
 factoryFamilies = {
   getComposerFamiliesOrFail(constructors) {
-    if (!constructors || typeof constructors !== 'object') {
-      throw new Error('factoryFamilies.getComposerFamiliesOrFail: constructors must be an object');
-    }
+    V.assertObject(constructors, 'constructors');
     const fallback = {
       default: {
         weight: 1,
@@ -22,9 +22,7 @@ factoryFamilies = {
 
     for (const familyName of familyNames) {
       const family = source[familyName];
-      if (!family || typeof family !== 'object') {
-        throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" must be an object`);
-      }
+      V.assertObject(family, `family "${familyName}"`);
       const types = Array.isArray(family.types) ? family.types : null;
       if (!types || types.length === 0) {
         throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" must define a non-empty types array`);
@@ -32,9 +30,7 @@ factoryFamilies = {
 
       const normalizedTypes = [];
       for (const type of types) {
-        if (typeof type !== 'string' || type.length === 0) {
-          throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" has invalid type entry`);
-        }
+        V.assertNonEmptyString(type, `family "${familyName}" type entry`);
         if (!validTypes.has(type)) {
           throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" references unknown composer type "${type}"`);
         }
@@ -43,7 +39,7 @@ factoryFamilies = {
 
       const weight = Number(family.weight);
       // Apply conductor profile family weight multiplier if available
-      const profileMultiplier = (ConductorConfig && typeof ConductorConfig.getFamilyWeights === 'function')
+      const profileMultiplier = (ConductorConfig && ConductorConfig.getFamilyWeights)
         ? (Number(ConductorConfig.getFamilyWeights()[familyName]) || 1)
         : 1;
       normalized[familyName] = {
@@ -64,24 +60,18 @@ factoryFamilies = {
    * @returns {string}
    */
   resolvePhraseFamilyOrFail(extraConfig = {}, composerCtx = null, sharedComposerCtx = null, constructors = {}) {
-    if (extraConfig !== undefined && (typeof extraConfig !== 'object' || extraConfig === null)) {
-      throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: extraConfig must be an object');
-    }
-    if (composerCtx !== null && composerCtx !== undefined && (typeof composerCtx !== 'object' || composerCtx === null)) {
-      throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: composerCtx must be an object when provided');
-    }
+    if (extraConfig !== undefined) V.assertObject(extraConfig, 'extraConfig');
+    if (composerCtx !== null && composerCtx !== undefined) V.assertObject(composerCtx, 'composerCtx');
 
     const families = this.getComposerFamiliesOrFail(constructors);
-    const context = (composerCtx && typeof composerCtx === 'object')
-      ? composerCtx
-      : ((sharedComposerCtx && typeof sharedComposerCtx === 'object') ? sharedComposerCtx : null);
+    const context = composerCtx ? composerCtx : (sharedComposerCtx ? sharedComposerCtx : null);
 
     let requestedFamily = extraConfig.phraseFamily ?? extraConfig.composerFamily;
-    if ((requestedFamily === undefined || requestedFamily === null) && context && typeof context.phraseFamily === 'string') {
+    if ((requestedFamily === undefined || requestedFamily === null) && context && context.phraseFamily) {
       requestedFamily = context.phraseFamily;
     }
 
-    if ((requestedFamily === undefined || requestedFamily === null) && context && typeof context.selectPhraseFamily === 'function') {
+    if ((requestedFamily === undefined || requestedFamily === null) && context && context.selectPhraseFamily) {
       const selected = context.selectPhraseFamily({
         availableFamilies: Object.keys(families),
         sectionIndex: sectionIndex,
@@ -94,9 +84,7 @@ factoryFamilies = {
     }
 
     if (requestedFamily !== undefined && requestedFamily !== null) {
-      if (typeof requestedFamily !== 'string' || requestedFamily.length === 0) {
-        throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: requested family must be a non-empty string');
-      }
+      V.assertNonEmptyString(requestedFamily, 'requestedFamily');
       if (!Object.prototype.hasOwnProperty.call(families, requestedFamily)) {
         throw new Error(`ComposerFactory.resolvePhraseFamilyOrFail: unknown family "${requestedFamily}"`);
       }
@@ -121,8 +109,8 @@ factoryFamilies = {
   },
 
   inferComposerType(composerInstance) {
-    if (!composerInstance || typeof composerInstance !== 'object') return null;
-    if (typeof composerInstance._factoryType === 'string' && composerInstance._factoryType.length > 0) {
+    V.assertObject(composerInstance, 'composerInstance');
+    if (composerInstance._factoryType) {
       return composerInstance._factoryType;
     }
     const ctorName = composerInstance.constructor && composerInstance.constructor.name;
@@ -141,19 +129,19 @@ factoryFamilies = {
       VoiceLeadingComposer: 'voiceLeading',
       HarmonicRhythmComposer: 'harmonicRhythm'
     };
-    return (typeof ctorName === 'string' && byCtorName[ctorName]) ? byCtorName[ctorName] : null;
+    const type = (ctorName && byCtorName[ctorName]) ? byCtorName[ctorName] : null;
+    if (!type) {
+      throw new Error(`ComposerFactory.inferComposerType: unable to infer type for composer instance`);
+    }
+    return type;
   },
 
   scoreFamilyCandidateConfig(candidateConfig, opts = {}) {
-    if (!candidateConfig || typeof candidateConfig !== 'object') {
-      throw new Error('ComposerFactory.scoreFamilyCandidateConfig: candidateConfig must be an object');
-    }
-    if (typeof candidateConfig.type !== 'string' || candidateConfig.type.length === 0) {
-      throw new Error('ComposerFactory.scoreFamilyCandidateConfig: candidateConfig.type must be a non-empty string');
-    }
+    V.assertObject(candidateConfig, 'candidateConfig');
+    V.assertNonEmptyString(candidateConfig.type, 'candidateConfig.type');
 
-    const previousType = this.inferComposerType(opts.previousComposer);
-    const peerType = this.inferComposerType(opts.peerComposer);
+    const previousType = opts.previousComposer ? this.inferComposerType(opts.previousComposer) : null;
+    const peerType = opts.peerComposer ? this.inferComposerType(opts.peerComposer) : null;
 
     let score = 1;
     if (previousType && candidateConfig.type === previousType) score += 0.45;
@@ -167,7 +155,8 @@ factoryFamilies = {
   },
 
   pickWeightedFamilyCandidateOrFail(candidateConfigs, opts = {}) {
-    if (!Array.isArray(candidateConfigs) || candidateConfigs.length === 0) {
+    V.assertArray(candidateConfigs, 'candidateConfigs');
+    if (candidateConfigs.length === 0) {
       throw new Error('ComposerFactory.pickWeightedFamilyCandidateOrFail: candidateConfigs must be a non-empty array');
     }
 

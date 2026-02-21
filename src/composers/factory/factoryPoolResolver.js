@@ -1,16 +1,17 @@
+const V = Validator.create('FactoryManager');
+
 factoryPoolResolver = {
   /**
    * @param {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} [extraConfig]
    * @param {Object} [composerCtx]
    */
   resolveComposerPoolName(extraConfig = {}, composerCtx = null) {
-    if (extraConfig !== undefined && (typeof extraConfig !== 'object' || extraConfig === null)) {
-      throw new Error('ComposerFactory.resolveComposerPoolName: extraConfig must be an object if provided');
-    }
+    if (extraConfig !== undefined) V.assertObject(extraConfig, 'extraConfig');
 
     const requestedPoolName = /** @type {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} */ (extraConfig).composerPool ?? /** @type {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} */ (extraConfig).profilePool ?? /** @type {{composerPool?:string, profilePool?:string, composerProfilePool?:string}} */ (extraConfig).composerProfilePool;
 
-    const context = Object.assign({}, (composerCtx && typeof composerCtx === 'object') ? composerCtx : {});
+    if (composerCtx !== null) V.assertObject(composerCtx, 'composerCtx');
+    const context = Object.assign({}, composerCtx || {});
     if (!Object.prototype.hasOwnProperty.call(context, 'sectionIndex')) {
       context.sectionIndex = sectionIndex;
     }
@@ -21,14 +22,13 @@ factoryPoolResolver = {
       context.measureIndex = measureIndex;
     }
 
-    if (typeof selectComposerPoolOrFail === 'function') {
+    if (selectComposerPoolOrFail) {
+      V.requireType(selectComposerPoolOrFail, 'function', 'selectComposerPoolOrFail');
       return selectComposerPoolOrFail({ requestedPoolName, context });
     }
 
     if (requestedPoolName !== undefined && requestedPoolName !== null) {
-      if (typeof requestedPoolName !== 'string' || requestedPoolName.length === 0) {
-        throw new Error('ComposerFactory.resolveComposerPoolName: configured pool name must be a non-empty string');
-      }
+      V.assertNonEmptyString(requestedPoolName, 'requestedPoolName');
       return requestedPoolName;
     }
 

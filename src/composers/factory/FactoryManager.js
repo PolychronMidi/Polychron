@@ -12,9 +12,8 @@ FactoryManager = class FactoryManager {
   static constructors = factoryConstructors.build(FactoryManager);
 
   static setComposerContext(ctx) {
-    if (ctx && typeof ctx === 'object') {
-      this.sharedComposerCtx = ctx;
-    }
+    V.assertObject(ctx, 'ctx');
+    this.sharedComposerCtx = ctx;
   }
 
   static getPhraseArcManager(opts = {}) {
@@ -118,16 +117,16 @@ FactoryManager = class FactoryManager {
   }
 
   static getActiveFamily() {
-    if (typeof this.activeFamily === 'string' && this.activeFamily.length > 0) {
+    if (this.activeFamily) {
+      V.assertNonEmptyString(this.activeFamily, 'this.activeFamily');
       return this.activeFamily;
     }
-    if (!LM || typeof LM.getPhraseFamily !== 'function') {
-      throw new Error('ComposerFactory.getActiveFamily: LayerManager.getPhraseFamily is required when no active family is cached');
+    if (!LM) {
+      throw new Error('ComposerFactory.getActiveFamily: LayerManager is required when no active family is cached');
     }
+    V.requireType(LM.getPhraseFamily, 'function', 'LM.getPhraseFamily');
     const family = LM.getPhraseFamily();
-    if (typeof family !== 'string' || family.length === 0) {
-      throw new Error('ComposerFactory.getActiveFamily: resolved family must be a non-empty string');
-    }
+    V.assertNonEmptyString(family, 'family');
     this.activeFamily = family;
     return family;
   }
@@ -150,20 +149,16 @@ FactoryManager = class FactoryManager {
    * @param {Object} [ctx]
    */
   static createRandomForLayer(opts = {}, ctx = null) {
-    if (opts !== undefined && (typeof opts !== 'object' || opts === null)) {
-      throw new Error('ComposerFactory.createRandomForLayer: opts must be an object');
-    }
+    if (opts !== undefined) V.assertObject(opts, 'opts');
 
     const familyName = /** @type {any} */ (opts).familyName;
-    if (typeof familyName !== 'string' || familyName.length === 0) {
-      throw new Error('ComposerFactory.createRandomForLayer: familyName must be a non-empty string');
-    }
+    V.assertNonEmptyString(familyName, 'familyName');
     const layerName = /** @type {any} */ (opts).layerName;
-    if (typeof layerName !== 'string' || layerName.length === 0) {
-      throw new Error('ComposerFactory.createRandomForLayer: layerName must be a non-empty string');
-    }
+    V.assertNonEmptyString(layerName, 'layerName');
 
-    const extraConfig = (/** @type {any} */ (opts).extraConfig && typeof /** @type {any} */ (opts).extraConfig === 'object') ? /** @type {any} */ (opts).extraConfig : {};
+    let extraConfig = /** @type {any} */ (opts).extraConfig;
+    if (extraConfig !== undefined) V.assertObject(extraConfig, 'extraConfig');
+    else extraConfig = {};
     const composerCtx = ctx || this.sharedComposerCtx;
     if (composerCtx) this.setComposerContext(composerCtx);
 
@@ -177,18 +172,20 @@ FactoryManager = class FactoryManager {
     const poolName = this.resolveComposerPoolName(extraConfig, composerCtx);
     let composerPool;
     if (poolName === 'default') {
-      if (typeof getDefaultComposerPoolOrFail !== 'function') {
+      if (!getDefaultComposerPoolOrFail) {
         throw new Error('ComposerFactory.createRandomForLayer: getDefaultComposerPoolOrFail() is not available');
       }
+      V.requireType(getDefaultComposerPoolOrFail, 'function', 'getDefaultComposerPoolOrFail');
       composerPool = getDefaultComposerPoolOrFail();
     } else {
-      if (typeof getComposerPoolOrFail !== 'function') {
+      if (!getComposerPoolOrFail) {
         throw new Error('ComposerFactory.createRandomForLayer: getComposerPoolOrFail() is not available');
       }
+      V.requireType(getComposerPoolOrFail, 'function', 'getComposerPoolOrFail');
       composerPool = getComposerPoolOrFail(poolName);
     }
 
-    const familyPool = composerPool.filter((cfg) => cfg && typeof cfg.type === 'string' && allowedTypes.has(cfg.type));
+    const familyPool = composerPool.filter((cfg) => cfg && cfg.type && allowedTypes.has(cfg.type));
     if (familyPool.length === 0) {
       throw new Error(`ComposerFactory.createRandomForLayer: no composer profiles in pool "${poolName}" for family "${familyName}"`);
     }
@@ -206,9 +203,7 @@ FactoryManager = class FactoryManager {
 
       try {
         const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
-        if (typeof composer.getNotes !== 'function') {
-          throw new Error('created composer missing getNotes() method');
-        }
+        V.requireType(composer.getNotes, 'function', 'composer.getNotes');
         const notes = composer.getNotes();
         if (!Array.isArray(notes) || notes.length === 0) {
           throw new Error('composer.getNotes() returned empty or invalid array');
