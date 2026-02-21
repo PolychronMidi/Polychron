@@ -149,5 +149,6 @@ FeedbackOscillator = (() => {
     };
   }
 
-  return { inject, react, applyFeedback };
+  return { inject, react, applyFeedback, reset() {} };
 })();
+CrossLayerRegistry.register('FeedbackOscillator', FeedbackOscillator, ['all']);

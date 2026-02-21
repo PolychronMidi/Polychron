@@ -65,9 +65,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     ? layer._workingOverrides.get(overrideKey)
     : bucketEntry.note;
 
-  if (!LM || typeof LM.getComposerFor !== 'function') {
-    throw new Error(`${unit}.playMotifs: LayerManager.getComposerFor not available`);
-  }
   if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
     throw new Error(`${unit}.playMotifs: LayerManager.activeLayer is not set`);
   }

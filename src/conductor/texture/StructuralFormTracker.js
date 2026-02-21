@@ -35,7 +35,7 @@ StructuralFormTracker = (() => {
     }
 
     // Suggest recap in the final ~25% of sections
-    const progressRatio = currentSection / totalSections;
+    const progressRatio = TimeStream.normalizedProgress('section');
     if (progressRatio < 0.75) {
       return { shouldRecap: false, recapSection: null, recapFamily: null, recapKey: null };
     }
@@ -103,3 +103,7 @@ StructuralFormTracker = (() => {
     reset
   };
 })();
+ConductorIntelligence.registerStateProvider('StructuralFormTracker', () => ({
+  sectionCount: Object.keys(StructuralFormTracker.getFamilyUsage()).length,
+  energyTrend: StructuralFormTracker.getEnergyArc().trend
+}));

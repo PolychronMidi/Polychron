@@ -22,7 +22,8 @@ ExplainabilityBus = (() => {
       t = 0;
     }
 
-    const entry = { type, layer: typeof layer === 'string' ? layer : 'L?', payload, absTimeMs: t };
+    V.assertNonEmptyString(layer, 'layer');
+    const entry = { type, layer, payload, absTimeMs: t };
     entries.push(entry);
     if (entries.length > MAX_ENTRIES) entries.shift();
 

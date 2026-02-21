@@ -15,7 +15,7 @@ fragmentHelpers = (() => {
    */
   function getPCFragments(length, windowSeconds, opts = {}) {
     const fragLen = (typeof length === 'number' && length >= 2) ? length : 3;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 6;
+    const ws = Validator.optionalFinite(windowSeconds, 6);
     const { layer, signed } = opts;
     /** @type {any} */
     const query = { windowSeconds: ws };

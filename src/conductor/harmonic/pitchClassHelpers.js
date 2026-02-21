@@ -15,7 +15,7 @@ pitchClassHelpers = (() => {
    * @returns {{ counts: number[], total: number }} - 12-element count array + note count
    */
   function getPitchClassHistogram(windowSeconds, layer) {
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 8;
+    const ws = Validator.optionalFinite(windowSeconds, 8);
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;

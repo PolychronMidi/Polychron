@@ -126,6 +126,11 @@ Validator = (() => {
     return value;
   }
 
+  function optionalFinite(value, fallback) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    return fallback;
+  }
+
   function requireEnum(value, allowedValues, name, from) {
     if (!allowedValues) {
       throw new Error(`${_fromLabel(from)}: allowedValues must be provided for ${name}`);
@@ -209,6 +214,7 @@ Validator = (() => {
         assertInSet: _wrapWithFrom(assertInSet, from),
       requireDefined: _wrapWithFrom(requireDefined, from),
       requireFinite: _wrapWithFrom(requireFinite, from),
+      optionalFinite,
       requireType: _wrapWithFrom(requireType, from),
       requireEnum: _wrapWithFrom(requireEnum, from),
       getEventsOrThrow: (/*optional*/ ) => getEventsOrThrow(from)
@@ -230,6 +236,7 @@ Validator = (() => {
     assertInSet,
     requireDefined,
     requireFinite,
+    optionalFinite,
     requireType,
     requireEnum,
     getEventsOrThrow,

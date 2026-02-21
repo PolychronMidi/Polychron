@@ -32,10 +32,12 @@ RhythmicComplementEngine = (() => {
     const iois = [];
     const gaps = [];
     for (let i = 1; i < notes.length; i++) {
-      const dt = ((notes[i].time || 0) - (notes[i - 1].time || 0)) * 1000;
+      const tCurr = V.requireFinite(notes[i].time, 'note.time');
+      const tPrev = V.requireFinite(notes[i - 1].time, 'note.time');
+      const dt = (tCurr - tPrev) * 1000;
       if (dt > 0) {
         iois.push(dt);
-        if (dt > 200) gaps.push((notes[i - 1].time || 0) * 1000 + dt / 2); // midpoint of gap
+        if (dt > 200) gaps.push(tPrev * 1000 + dt / 2); // midpoint of gap
       }
     }
 

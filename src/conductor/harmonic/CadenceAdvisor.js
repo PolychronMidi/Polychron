@@ -17,18 +17,22 @@ CadenceAdvisor = (() => {
     const EVENTS = V.getEventsOrThrow();
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
+      V.requireDefined(data.key, 'HARMONIC_CHANGE.key');
+      V.requireDefined(data.chords, 'HARMONIC_CHANGE.chords');
+      V.requireFinite(data.tick, 'HARMONIC_CHANGE.tick');
+      V.requireFinite(data.timestamp, 'HARMONIC_CHANGE.timestamp');
       recentChanges.push({
-        key: data.key || '',
-        chords: data.chords || null,
-        tick: data.tick || 0,
-        time: data.timestamp || 0
+        key: data.key,
+        chords: data.chords,
+        tick: data.tick,
+        time: data.timestamp
       });
       if (recentChanges.length > MAX_HISTORY) recentChanges.shift();
 
       // Also feed chord changes into AbsoluteTimeWindow for cross-layer analysis
       const layer = LM.activeLayer;
-      const absTime = (Number.isFinite(beatStartTime)) ? beatStartTime : 0;
-      AbsoluteTimeWindow.recordChord(data.chords || null, data.key || '', data.mode || '', layer, absTime);
+      V.requireFinite(beatStartTime, 'beatStartTime');
+      AbsoluteTimeWindow.recordChord(data.chords, data.key, data.mode, layer, beatStartTime);
     });
   }
 
@@ -101,3 +105,6 @@ CadenceAdvisor = (() => {
     reset
   };
 })();
+ConductorIntelligence.registerStateProvider('CadenceAdvisor', () => ({
+  recentChanges: CadenceAdvisor.getHarmonicDensity()
+}));

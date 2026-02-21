@@ -84,5 +84,6 @@ TemporalGravity = (() => {
     return Math.round(originalTickN + direction * pull);
   }
 
-  return { postDensity, measureDensity, applyGravity };
+  return { postDensity, measureDensity, applyGravity, reset() {} };
 })();
+CrossLayerRegistry.register('TemporalGravity', TemporalGravity, ['all']);

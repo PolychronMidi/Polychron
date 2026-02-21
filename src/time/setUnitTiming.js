@@ -12,9 +12,6 @@ setUnitTiming = (unitType) => {
   let activeLayer = null;
   let activeComposer = null;
   if (needsComposer) {
-    if (!LM || typeof LM.getComposerFor !== 'function') {
-      throw new Error('setUnitTiming: LayerManager.getComposerFor not available');
-    }
     if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
       throw new Error('setUnitTiming: LayerManager.activeLayer is not set');
     }

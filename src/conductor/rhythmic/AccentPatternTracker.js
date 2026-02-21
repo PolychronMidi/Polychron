@@ -14,7 +14,7 @@ AccentPatternTracker = (() => {
    */
   function getAccentProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { downbeatRatio: 0, backbeatRatio: 0, offbeatRatio: 0, accentShape: 'unknown' };

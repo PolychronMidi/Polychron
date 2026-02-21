@@ -15,7 +15,7 @@ IntervalBalanceTracker = (() => {
    */
   function getIntervalProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { avgInterval: 0, maxInterval: 0, stepRatio: 0, leapRatio: 0, unisonRatio: 0, variety: 0, rut: null, monotonous: false, erratic: false };

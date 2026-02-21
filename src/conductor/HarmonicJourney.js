@@ -129,10 +129,6 @@ HarmonicJourney = (() => {
    * @param {number} sectionIndex
    */
   function applyToContext(sectionIndex) {
-    if (!HarmonicContext || typeof HarmonicContext.set !== 'function') {
-      throw new Error('HarmonicJourney.applyToContext: HarmonicContext not available');
-    }
-
     const stop = getStop(sectionIndex);
     currentStopIndex = sectionIndex;
 
@@ -194,10 +190,6 @@ HarmonicJourney = (() => {
    * @param {number} sectionIndex
    */
   function applyL2ToContext(sectionIndex) {
-    if (!HarmonicContext || typeof HarmonicContext.set !== 'function') {
-      throw new Error('HarmonicJourney.applyL2ToContext: HarmonicContext not available');
-    }
-
     const comp = getL2Complement(sectionIndex);
     const resolved = HJ.resolveScaleAndQuality(comp.key, comp.mode);
 

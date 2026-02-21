@@ -52,10 +52,6 @@ PhaseLockedRhythmGenerator = (() => {
     V.assertNonEmptyString(patternName, 'patternName');
 
     // Generate base pattern via RhythmRegistry
-    if (!RhythmRegistry || typeof RhythmRegistry.execute !== 'function') {
-      throw new Error('PhaseLockedRhythmGenerator.generate: RhythmRegistry not available');
-    }
-
     let pattern;
     try {
       pattern = RhythmRegistry.execute(patternName, length);

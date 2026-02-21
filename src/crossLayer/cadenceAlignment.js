@@ -90,5 +90,6 @@ CadenceAlignment = (() => {
     };
   }
 
-  return { postTension, checkAlignment, applyAlignment };
+  return { postTension, checkAlignment, applyAlignment, reset() {} };
 })();
+CrossLayerRegistry.register('CadenceAlignment', CadenceAlignment, ['all']);

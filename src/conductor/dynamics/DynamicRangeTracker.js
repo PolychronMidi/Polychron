@@ -20,7 +20,7 @@ DynamicRangeTracker = (() => {
    */
   function getVelocityProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { min: 64, max: 64, mean: 64, spread: 0, compressed: false };

@@ -17,16 +17,7 @@ GrooveTransfer = (() => {
   }
 
   function getAbsoluteTimeGridOrThrow() {
-    if (!AbsoluteTimeGrid) {
-      throw new Error('GrooveTransfer: AbsoluteTimeGrid is required');
-    }
     V.assertObject(AbsoluteTimeGrid, 'AbsoluteTimeGrid');
-    if (typeof AbsoluteTimeGrid.post !== 'function') {
-      throw new Error('GrooveTransfer: AbsoluteTimeGrid.post must be a function');
-    }
-    if (typeof AbsoluteTimeGrid.findClosest !== 'function') {
-      throw new Error('GrooveTransfer: AbsoluteTimeGrid.findClosest must be a function');
-    }
     return AbsoluteTimeGrid;
   }
 

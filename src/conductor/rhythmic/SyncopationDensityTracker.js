@@ -15,7 +15,7 @@ SyncopationDensityTracker = (() => {
    */
   function getSyncopationProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
+    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { syncopationRatio: 0, onBeatCount: 0, offBeatCount: 0, total: 0, monotonous: false, excessive: false };

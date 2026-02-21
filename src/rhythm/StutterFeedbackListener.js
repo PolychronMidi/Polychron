@@ -13,9 +13,6 @@ StutterFeedbackListener = (() => {
   function ensureAccumulator() {
     if (accumulator) return accumulator;
     V.requireDefined(FeedbackAccumulator, 'FeedbackAccumulator');
-    if (typeof FeedbackAccumulator.create !== 'function') {
-      throw new Error('StutterFeedbackListener: FeedbackAccumulator.create is required');
-    }
     const EVENTS = V.getEventsOrThrow();
 
     accumulator = FeedbackAccumulator.create({

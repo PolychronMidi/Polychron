@@ -207,7 +207,10 @@ class StutterManager {
     if (!provided.shared) provided.shared = this.shared;
 
     // merge default directive into unit-stutter opts when present (coherence only currently)
-    provided.beatContext = this.beatContext || {};
+    provided.beatContext = this.beatContext;
+    if (!provided.beatContext || typeof provided.beatContext !== 'object') {
+      throw new Error('StutterManager.scheduleStutterForUnit: beatContext must be set before scheduling');
+    }
     if (!provided.beatContext.coherenceKey && this.defaultDirective && this.defaultDirective.coherence && this.defaultDirective.coherence.enabled) {
       const prefix = this.defaultDirective.coherence.keyPrefix || 'stutter';
       const seed = provided.coherenceGroup || provided.coherenceKey || 'unit';

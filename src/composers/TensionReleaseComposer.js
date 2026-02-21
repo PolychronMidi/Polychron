@@ -99,7 +99,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
 
     if (!this.progression || this.progression.length === 0) { throw new Error('TensionReleaseComposer.noteSet: no progression defined'); }
     if (direction !== 'tension') { super.noteSet(this.progression.map(c => c.symbol), direction); return; }
-    this.measureInSection = (this.measureInSection || 0) + 1;
+    this.measureInSection = this.measureInSection + 1;
     const position = (this.measureInSection % 16) / 16;
     const selectedChords = this.selectChordByTension(position);
     super.noteSet(selectedChords, 'R');

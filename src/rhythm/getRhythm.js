@@ -4,16 +4,16 @@ let _getRhythmDepsValidated = false;
 
 function assertGetRhythmDeps() {
   if (_getRhythmDepsValidated) return;
-  if (!FXFeedbackListener || typeof FXFeedbackListener.biasRhythmWeights !== 'function') {
+  if (!FXFeedbackListener || !FXFeedbackListener.biasRhythmWeights) {
     throw new Error('getRhythm: FXFeedbackListener.biasRhythmWeights is required');
   }
-  if (!StutterFeedbackListener || typeof StutterFeedbackListener.biasRhythmWeights !== 'function') {
+  if (!StutterFeedbackListener || !StutterFeedbackListener.biasRhythmWeights) {
     throw new Error('getRhythm: StutterFeedbackListener.biasRhythmWeights is required');
   }
-  if (!JourneyRhythmCoupler || typeof JourneyRhythmCoupler.biasRhythmWeights !== 'function') {
+  if (!JourneyRhythmCoupler || !JourneyRhythmCoupler.biasRhythmWeights) {
     throw new Error('getRhythm: JourneyRhythmCoupler.biasRhythmWeights is required');
   }
-  if (!PhaseLockedRhythmGenerator || typeof PhaseLockedRhythmGenerator.generate !== 'function') {
+  if (!PhaseLockedRhythmGenerator || !PhaseLockedRhythmGenerator.generate) {
     throw new Error('getRhythm: PhaseLockedRhythmGenerator.generate is required');
   }
   _getRhythmDepsValidated = true;
@@ -52,13 +52,6 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
 
     if (useCorpusRhythmPriors) {
-      if (!rhythmPriors || typeof rhythmPriors.getBiasedRhythms !== 'function') {
-        throw new Error('getRhythm: rhythmPriors.getBiasedRhythms() unavailable while corpus rhythm priors are enabled');
-      }
-
-      if (!ComposerFactory.sharedPhraseArcManager || typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext !== 'function') {
-        throw new Error('getRhythm: ComposerFactory.sharedPhraseArcManager.getPhraseContext is required when corpus rhythm priors are enabled');
-      }
       const phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
       rhythmSource = rhythmPriors.getBiasedRhythms({
@@ -96,12 +89,12 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const { method: rhythmMethodKey, args: rhythmArgs }=rhythmSource[rhythmKey];
 
     // Record selection for novelty tracking
-    const rhtLayer = (typeof LM.activeLayer === 'string') ? LM.activeLayer : 'L?';
-    RhythmHistoryTracker.record(rhythmMethodKey, length, rhtLayer);
+    V.requireType(LM.activeLayer, 'string', 'LM.activeLayer');
+    RhythmHistoryTracker.record(rhythmMethodKey, length, LM.activeLayer);
 
     // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
     const absTime = Number.isFinite(beatStartTime) ? beatStartTime : 0;
-    AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, rhtLayer, absTime);
+    AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, LM.activeLayer, absTime);
 
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators
