@@ -3,6 +3,7 @@
  * @returns {void}
  */
 setBalanceAndFX = () => {
+const V = Validator.create('setBalanceAndFX');
 if (!ConductorConfig || typeof ConductorConfig.getSpatialCanvasParams !== 'function') {
   throw new Error('setBalanceAndFX: ConductorConfig.getSpatialCanvasParams is not available — conductor must load before fx');
 }
@@ -50,14 +51,14 @@ const scaleFxDefaultObject = (fxDefault, scale) => {
 
 const resolveRangeScale = (groupName, effectNum) => {
   const groupBase = Number(ccGroupScale[groupName]);
-  const groupMul = Validator.optionalFinite(groupBase, 1);
+  const groupMul = V.optionalFinite(groupBase, 1);
   const groupMap = ccRangeScale[groupName];
   if (!groupMap || typeof groupMap !== 'object') {
     throw new Error(`setBalanceAndFX.resolveRangeScale: missing ccRangeScale group "${groupName}"`);
   }
   const specific = Number(groupMap[String(effectNum)]);
   const fallback = Number(groupMap.default);
-  const ccMul = Validator.optionalFinite(specific, Validator.optionalFinite(fallback, 1));
+  const ccMul = V.optionalFinite(specific, V.optionalFinite(fallback, 1));
   return clamp(groupMul * ccMul, 0.1, 4);
 };
 
@@ -119,14 +120,14 @@ const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefi
   const defaults = resolveFxDefaults(groupName, effectNum);
   // Normalize overrides so property access is safe for TS/CheckJS
   const o = (overrides && typeof overrides === 'object') ? overrides : {};
-  const minValue = Validator.optionalFinite(Number(o.min), Number(defaults.min));
-  const maxValue = Validator.optionalFinite(Number(o.max), Number(defaults.max));
+  const minValue = V.optionalFinite(Number(o.min), Number(defaults.min));
+  const maxValue = V.optionalFinite(Number(o.max), Number(defaults.max));
   if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
     throw new Error(`setBalanceAndFX.rfx: invalid min/max for group="${groupName}" cc=${effectNum}`);
   }
 
-  const rawConditionMin = Validator.optionalFinite(Number(o.conditionMin), Number(defaults.conditionMin));
-  const rawConditionMax = Validator.optionalFinite(Number(o.conditionMax), Number(defaults.conditionMax));
+  const rawConditionMin = V.optionalFinite(Number(o.conditionMin), Number(defaults.conditionMin));
+  const rawConditionMax = V.optionalFinite(Number(o.conditionMax), Number(defaults.conditionMax));
 
   const scale = resolveRangeScale(groupName, effectNum);
   const [scaledMin, scaledMax] = scaleFxRange(minValue, maxValue, scale);
@@ -143,11 +144,11 @@ if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop 
   const prevBal = balOffset;
   const balMin = Number(spatialCanvas.balOffset[0]);
   const balMax = Number(spatialCanvas.balOffset[1]);
-  const balStep = Validator.optionalFinite(Number(spatialCanvas.balStep), 4);
+  const balStep = V.optionalFinite(Number(spatialCanvas.balStep), 4);
   const sideBiasMin = Number(spatialCanvas.sideBias[0]);
   const sideBiasMax = Number(spatialCanvas.sideBias[1]);
-  const sideBiasStep = Validator.optionalFinite(Number(spatialCanvas.sideBiasStep), 2);
-  const lBalMax = Validator.optionalFinite(Number(spatialCanvas.lBalMax), 54);
+  const sideBiasStep = V.optionalFinite(Number(spatialCanvas.sideBiasStep), 2);
+  const lBalMax = V.optionalFinite(Number(spatialCanvas.lBalMax), 54);
 
   const candidateBal = rl(prevBal, -balStep, balStep, balMin, balMax);
   balOffset = clamp(candidateBal, m.max(balMin, prevBal - balStep), m.min(balMax, prevBal + balStep));

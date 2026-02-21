@@ -3,6 +3,7 @@
 // Pure query API — biases velocity curves for variety.
 
 AccentPatternTracker = (() => {
+  const V = Validator.create('AccentPatternTracker');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -14,7 +15,7 @@ AccentPatternTracker = (() => {
    */
   function getAccentProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { downbeatRatio: 0, backbeatRatio: 0, offbeatRatio: 0, accentShape: 'unknown' };
@@ -36,7 +37,6 @@ AccentPatternTracker = (() => {
     let offbeats = 0;
     let accentCount = 0;
 
-    const V = Validator.create('AccentPatternTracker');
     const num = V.requireFinite(numerator, 'numerator');
     if (num <= 0) throw new Error('AccentPatternTracker.getAccentProfile: numerator must be > 0');
     const measureDur = beatDur * num;

@@ -3,6 +3,7 @@
 // Directly scales conductor densityBias and crossModBias.
 
 OnsetDensityProfiler = (() => {
+  const V = Validator.create('OnsetDensityProfiler');
   const WINDOW_SECONDS = 3;
   const TARGET_NPS = 6; // target notes-per-second for "balanced" density
 
@@ -15,7 +16,7 @@ OnsetDensityProfiler = (() => {
    */
   function getDensity(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 2) return { nps: 0, trend: 'sparse' };
 

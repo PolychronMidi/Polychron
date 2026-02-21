@@ -3,6 +3,7 @@
 // Pure query API — nudges pitch gravity toward underexplored registers.
 
 RegisterMigrationTracker = (() => {
+  const V = Validator.create('RegisterMigrationTracker');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -14,7 +15,7 @@ RegisterMigrationTracker = (() => {
    */
   function getMigrationProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { avgPitch: 60, slope: 0, direction: 'insufficient', static: true };

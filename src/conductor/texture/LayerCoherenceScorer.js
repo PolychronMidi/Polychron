@@ -14,7 +14,7 @@ LayerCoherenceScorer = (() => {
    * @returns {number} - 0 (fully dissonant) to 1 (fully consonant)
    */
   function computeCoherence(windowSeconds) {
-    const ws = windowSeconds || 2;
+    const ws = windowSeconds ?? 2;
     const l1Notes = AbsoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
     const l2Notes = AbsoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
 

@@ -3,6 +3,7 @@
 // Pure query API — biases toward variety when IOI is too uniform, stabilizes when chaotic.
 
 OnsetRegularityMonitor = (() => {
+  const V = Validator.create('OnsetRegularityMonitor');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -14,7 +15,7 @@ OnsetRegularityMonitor = (() => {
    */
   function getRegularityProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { avgIOI: 0, ioiCV: 0, regularity: 0.5, uniform: false, chaotic: false };

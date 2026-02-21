@@ -3,6 +3,7 @@
 // Pure query API — advises register shifts toward or away from a tonal anchor.
 
 PitchGravityCenter = (() => {
+  const V = Validator.create('PitchGravityCenter');
   const WINDOW_SECONDS = 6;
   const ANCHOR_PITCH = 60; // Middle C as default tonal anchor
 
@@ -15,7 +16,7 @@ PitchGravityCenter = (() => {
    */
   function getGravityCenter(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length === 0) {
       return { center: ANCHOR_PITCH, drift: 0, anchored: true };

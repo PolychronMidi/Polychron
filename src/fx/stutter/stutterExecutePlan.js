@@ -1,17 +1,18 @@
 // stutterExecutePlan.js - shared executor for StutterManager plan objects
 
 stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
+  const V = Validator.create('stutterExecutePlan');
   if (!stutterMgr || typeof stutterMgr !== 'object') throw new Error('stutterExecutePlan: stutterMgr is required');
   const cfg = /** @type {any} */ (Object.assign({}, plan));
   if (!cfg.profile || typeof cfg.profile !== 'string') {
     throw new Error('stutterExecutePlan: plan.profile is required');
   }
   const profile = cfg.profile;
-  const baseNote = Validator.requireFinite(cfg.note, 'plan.note', 'stutterExecutePlan');
-  const on = Validator.optionalFinite(Number(cfg.on), beatStart);
-  const sustain = Validator.optionalFinite(Number(cfg.sustain), tpSec * 0.25);
-  const numStutters = Validator.optionalFinite(Number(cfg.numStutters), m.max(1, ri(2, 6)));
-  const duration = Validator.optionalFinite(Number(cfg.duration), Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1)));
+  const baseNote = V.requireFinite(cfg.note, 'plan.note');
+  const on = V.optionalFinite(Number(cfg.on), beatStart);
+  const sustain = V.optionalFinite(Number(cfg.sustain), tpSec * 0.25);
+  const numStutters = V.optionalFinite(Number(cfg.numStutters), m.max(1, ri(2, 6)));
+  const duration = V.optionalFinite(Number(cfg.duration), Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1)));
 
   const finalChannels = /** @type {number[]} */ ([]);
   if (Array.isArray(cfg.channels) && cfg.channels.length > 0) {
@@ -42,7 +43,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   let adaptiveCrossRules = null;
   if (directive.metricsAdaptive && directive.metricsAdaptive.enabled) {
     const metrics = StutterMetrics.getMetrics();
-    const sens = Validator.optionalFinite(Number(directive.metricsAdaptive.sensitivity), 0.08);
+    const sens = V.optionalFinite(Number(directive.metricsAdaptive.sensitivity), 0.08);
     const adj = Object.assign({}, crossRules);
     ['source', 'reflection', 'bass'].forEach((p) => {
       const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
@@ -75,8 +76,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
       const pos = clamp(tn * (n - 1), 0, n - 1);
       const idx = m.floor(pos);
       const frac = pos - idx;
-      const a = Validator.requireFinite(curve[idx], 'curve[idx]');
-      const b = Validator.requireFinite(curve[m.min(idx + 1, n - 1)], 'curve[idx+1]');
+      const a = V.requireFinite(curve[idx], 'curve[idx]');
+      const b = V.requireFinite(curve[m.min(idx + 1, n - 1)], 'curve[idx+1]');
       return lerp(a, b, frac);
     }
     if (typeof curve === 'string') {
@@ -136,7 +137,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
       const stepPeriodScaled = (baseStepPeriod / Math.max(0.01, Number(rateCurveVal))) / Math.max(0.01, rateScale);
       const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
 
-      stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity || 100, binVel: cfg.maxVelocity || 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
+      stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity ?? 100, binVel: cfg.maxVelocity ?? 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
     }
   }
 

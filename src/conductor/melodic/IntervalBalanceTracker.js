@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 IntervalBalanceTracker = (() => {
+  const V = Validator.create('IntervalBalanceTracker');
   const WINDOW_SECONDS = 5;
 
   /**
@@ -15,7 +16,7 @@ IntervalBalanceTracker = (() => {
    */
   function getIntervalProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 3) {
       return { avgInterval: 0, maxInterval: 0, stepRatio: 0, leapRatio: 0, unisonRatio: 0, variety: 0, rut: null, monotonous: false, erratic: false };

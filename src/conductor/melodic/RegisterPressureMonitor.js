@@ -14,7 +14,7 @@ RegisterPressureMonitor = (() => {
    */
   function getRegisterPressure(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const { counts } = octaveHelpers.getOctaveHistogram(windowSeconds || 4, NUM_BANDS, layer);
+    const { counts } = octaveHelpers.getOctaveHistogram(windowSeconds ?? 4, NUM_BANDS, layer);
     return counts;
   }
 

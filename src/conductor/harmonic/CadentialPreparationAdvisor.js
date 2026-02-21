@@ -4,6 +4,7 @@
 // Pure query API — biases derivedTension near cadence points.
 
 CadentialPreparationAdvisor = (() => {
+  const V = Validator.create('CadentialPreparationAdvisor');
   const PREP_WINDOW = 0.2; // prepare in the last 20% of a phrase
 
   /**
@@ -17,7 +18,7 @@ CadentialPreparationAdvisor = (() => {
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
       : { position: 0.5, atEnd: false };
 
-    const position = Validator.optionalFinite(phraseCtx.position, 0.5);
+    const position = V.optionalFinite(phraseCtx.position, 0.5);
     const atEnd = Boolean(phraseCtx.atEnd);
 
     // Check harmonic context for dominant approach

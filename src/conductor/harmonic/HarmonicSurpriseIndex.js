@@ -4,6 +4,7 @@
 // Pure query API — biases derivedTension toward harmonic freshness.
 
 HarmonicSurpriseIndex = (() => {
+  const V = Validator.create('HarmonicSurpriseIndex');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -15,7 +16,7 @@ HarmonicSurpriseIndex = (() => {
    */
   function getSurpriseProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { entropy: 0, surpriseIndex: 0.5, stale: false, fresh: false };

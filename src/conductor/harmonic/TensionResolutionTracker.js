@@ -3,6 +3,7 @@
 // Pure query API — modifies derivedTension to penalize sustained unresolved dissonance.
 
 TensionResolutionTracker = (() => {
+  const V = Validator.create('TensionResolutionTracker');
   const WINDOW_SECONDS = 4;
   const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;
 
@@ -15,7 +16,7 @@ TensionResolutionTracker = (() => {
    */
   function getResolutionProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { resolvedRatio: 1, unresolvedCount: 0, total: 0, danglingTension: false };

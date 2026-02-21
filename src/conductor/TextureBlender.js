@@ -6,6 +6,7 @@
 // Integrations: Stutter coupling (#1), Phrase arc fatigue tracking (#3).
 
 TextureBlender = (() => {
+  const V = Validator.create('TextureBlender');
   // ── Fatigue tracking: rolling window of recent decisions (#3) ──
   const FATIGUE_WINDOW = 12;
   const recentModes = [];
@@ -47,7 +48,7 @@ TextureBlender = (() => {
    */
   function getPhraseTextureInfluence() {
     const state = ConductorState.getSnapshot();
-    const pos = Validator.requireFinite(state.phrasePosition, 'state.phrasePosition');
+    const pos = V.requireFinite(state.phrasePosition, 'state.phrasePosition');
     const phase = state.phrasePhase ?? '';
     const atStart = pos <= 0.001;
     const atEnd = pos >= 0.999;

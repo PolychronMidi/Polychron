@@ -4,6 +4,7 @@
 // Pure query API — no side effects.
 
 VelocityShapeAnalyzer = (() => {
+  const V = Validator.create('VelocityShapeAnalyzer');
   const WINDOW_SECONDS = 5;
 
   /**
@@ -15,7 +16,7 @@ VelocityShapeAnalyzer = (() => {
    */
   function getVelocityShape(opts = {}) {
     const { layer, windowSeconds } = opts;
-    const ws = Validator.optionalFinite(windowSeconds, WINDOW_SECONDS);
+    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {
       return { slope: 0, shape: 'insufficient', avgVelocity: 64, flat: true, punchiness: 0.5 };
