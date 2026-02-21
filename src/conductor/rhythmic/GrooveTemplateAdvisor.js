@@ -12,8 +12,8 @@ GrooveTemplateAdvisor = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ avgDeviation: number, maxDeviation: number, swingRatio: number, rigid: boolean, loose: boolean }}
    */
-  function getGrooveProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getGrooveProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 4) {

@@ -13,8 +13,8 @@ OnsetDensityProfiler = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ nps: number, trend: string }}
    */
-  function getDensity(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getDensity(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
     if (notes.length < 2) return { nps: 0, trend: 'sparse' };

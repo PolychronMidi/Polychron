@@ -13,10 +13,10 @@ fragmentHelpers = (() => {
    * @param {boolean} [opts.signed] - if true, use signed intervals (-11 to +11) instead of unsigned mod-12 (0-11)
    * @returns {string[]} - array of fragment keys
    */
-  function getPCFragments(length, windowSeconds, opts) {
+  function getPCFragments(length, windowSeconds, opts = {}) {
     const fragLen = (typeof length === 'number' && length >= 2) ? length : 3;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : 6;
-    const { layer, signed } = opts || {};
+    const { layer, signed } = opts;
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;

@@ -16,6 +16,8 @@ require('./fullBootstrap');
 require('./mainBootstrap');
 // @ts-ignore: side-effect module load
 require('./processBeat');
+// @ts-ignore: side-effect module load
+require('./layerPass');
 // Explicitly include main in index require list so that file listings are comprehensive
 // (main is guarded and will not auto-run when required as a module)
 require('./main');

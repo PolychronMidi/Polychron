@@ -12,8 +12,8 @@ RegisterPressureMonitor = (() => {
    * @param {number} [opts.windowSeconds] - analysis window (default 4s)
    * @returns {Array<number>} - 10-element array of note counts per octave band
    */
-  function getRegisterPressure(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getRegisterPressure(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const { counts } = octaveHelpers.getOctaveHistogram(windowSeconds || 4, NUM_BANDS, layer);
     return counts;
   }

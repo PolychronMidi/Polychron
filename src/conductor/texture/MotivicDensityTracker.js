@@ -13,8 +13,8 @@ MotivicDensityTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ distinctFragments: number, totalFragments: number, density: number, overcrowded: boolean, sparse: boolean }}
    */
-  function getMotivicProfile(opts) {
-    const { layer, windowSeconds } = opts || {};
+  function getMotivicProfile(opts = {}) {
+    const { layer, windowSeconds } = opts;
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
 
     const fragments = fragmentHelpers.getPCFragments(FRAGMENT_LENGTH, ws, { layer, signed: true });
