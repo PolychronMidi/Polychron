@@ -74,9 +74,14 @@ CoherenceMonitor = (() => {
     // Deviation from 1.0 (perfect coherence)
     const deviation = windowRatio - 1.0;
 
+    // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
+    // Uses a bell curve centered at phrase midpoint: sin(progress * π) peaks at 0.5.
+    const phraseProgress = TimeStream.normalizedProgress('phrase');
+    const phaseGain = 0.25 + 0.3 * m.sin(phraseProgress * m.PI); // 0.25 at edges, 0.55 at center
+
     // If emitting too many notes (deviation > 0) → dampen (bias < 1)
     // If emitting too few notes (deviation < 0) → boost (bias > 1)
-    const correction = 1.0 - deviation * 0.4;
+    const correction = 1.0 - deviation * phaseGain;
 
     // Smooth the bias to avoid jitter
     coherenceBias = clamp(
@@ -138,6 +143,13 @@ CoherenceMonitor = (() => {
   // ── Self-register into ConductorIntelligence ──
   // getDensityBias is called each beat by the conductor pipeline.
   ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING);
+
+  // metrics to ConductorState via the state provider registry.
+  ConductorIntelligence.registerStateProvider('CoherenceMonitor', () => ({
+    coherenceBias: getDensityBias(),
+    coherenceEntropy: getEntropySignal(),
+    coherenceWindowSize: window.length
+  }));
 
   return {
     initialize,

@@ -43,7 +43,12 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const sectionProgress = (sectionIndex + phraseIndex / phrasesPerSection) / totalSections;
   const sectionProgressBound = requireUnitInterval('sectionProgress', sectionProgress);
   const clIntent = SectionIntentCurves.getIntent(sectionProgressBound, sectionIndex, phraseIndex);
+  // Shape entropy arc from TimeStream section progress, then override with intent target
+  EntropyRegulator.setTargetFromArc(TimeStream.normalizedProgress('section'));
   EntropyRegulator.setTarget(clIntent.entropyTarget);
+  // CoherenceMonitor entropy signal drives regulation aggressiveness:
+  // chaos → stronger regulation, stagnation → lighter touch
+  EntropyRegulator.setRegulationStrength(clamp(0.5 + CoherenceMonitor.getEntropySignal() * 0.4, 0, 1));
   const clEntropy = EntropyRegulator.getRegulation();
   const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, layer);
 
@@ -166,6 +171,9 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
   AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
   AdaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcome);
+  // CoherenceMonitor: bias near 1.0 = coherent (positive), far from 1.0 = correcting (negative)
+  const coherenceOutcome = clamp(1 - Math.abs(CoherenceMonitor.getDensityBias() - 1.0) * 4, -1, 1);
+  AdaptiveTrustScores.registerOutcome('coherenceMonitor', coherenceOutcome);
   AdaptiveTrustScores.decayAll(0.002);
 
   // --- Explainability ---

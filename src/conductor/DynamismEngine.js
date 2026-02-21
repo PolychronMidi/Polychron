@@ -14,24 +14,13 @@ DynamismEngine = (() => {
   function assertDependencies() {
     if (dependenciesValidated) return;
 
-    if (!ConductorConfig || typeof ConductorConfig.getFeedbackMixWeights !== 'function' || typeof ConductorConfig.getEnergyWeights !== 'function') {
-      throw new Error('DynamismEngine: ConductorConfig energy accessors are required');
-    }
-    if (!FXFeedbackListener || typeof FXFeedbackListener.getIntensity !== 'function') {
-      throw new Error('DynamismEngine: FXFeedbackListener.getIntensity is required');
-    }
-    if (!StutterFeedbackListener || typeof StutterFeedbackListener.getIntensity !== 'function') {
-      throw new Error('DynamismEngine: StutterFeedbackListener.getIntensity is required');
-    }
-    if (!JourneyRhythmCoupler || typeof JourneyRhythmCoupler.getBoldness !== 'function') {
-      throw new Error('DynamismEngine: JourneyRhythmCoupler.getBoldness is required');
-    }
-    if (!TextureBlender || typeof TextureBlender.getRecentDensity !== 'function') {
-      throw new Error('DynamismEngine: TextureBlender.getRecentDensity is required');
-    }
-    if (!HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
-      throw new Error('DynamismEngine: HarmonicJourney.getStop is required');
-    }
+    // All globals are boot-validated — assert shape once, then skip.
+    V.requireDefined(ConductorConfig, 'ConductorConfig');
+    V.requireDefined(FXFeedbackListener, 'FXFeedbackListener');
+    V.requireDefined(StutterFeedbackListener, 'StutterFeedbackListener');
+    V.requireDefined(JourneyRhythmCoupler, 'JourneyRhythmCoupler');
+    V.requireDefined(TextureBlender, 'TextureBlender');
+    V.requireDefined(HarmonicJourney, 'HarmonicJourney');
     V.requireDefined(LM, 'LM');
     V.assertObject(LM, 'LM');
 
@@ -43,10 +32,7 @@ DynamismEngine = (() => {
    * @returns {{dynamism:number, atStart:boolean, atEnd:boolean}}
    */
   function getPhraseContext() {
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && ComposerFactory.sharedPhraseArcManager.getPhraseContext) {
-      return ComposerFactory.sharedPhraseArcManager.getPhraseContext();
-    }
-    return { dynamism: 0.7, atStart: false, atEnd: false };
+    return ComposerFactory.sharedPhraseArcManager.getPhraseContext();
   }
 
   /**
@@ -95,7 +81,7 @@ DynamismEngine = (() => {
 
     // Use layer-aware stutter intensity (map L1->source, L2->reflection)
     const layerMap = { L1: 'source', L2: 'reflection' };
-    const layerProfile = (typeof LM.activeLayer === 'string') ? layerMap[LM.activeLayer] : null;
+    const layerProfile = layerMap[LM.activeLayer] || null;
     const stutterLayerIntensity = layerProfile
       ? clamp(Number(StutterFeedbackListener.getIntensity(layerProfile)), 0, 1)
       : 0;
@@ -108,13 +94,9 @@ DynamismEngine = (() => {
 
     const textureEnergy = clamp(Number(TextureBlender.getRecentDensity()), 0, 1) * 0.15;
 
-    const harmonicRhythmParams = (typeof ConductorConfig.getHarmonicRhythmParams === 'function')
-      ? ConductorConfig.getHarmonicRhythmParams()
-      : { blendWeight: 0.15, feedbackWeight: 0.2 };
+    const harmonicRhythmParams = ConductorConfig.getHarmonicRhythmParams();
     const harmonicRhythmWeight = clamp(Number(harmonicRhythmParams.feedbackWeight), 0, 0.5);
-    const harmonicRhythmEnergy = (HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
-      ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1) * harmonicRhythmWeight
-      : 0;
+    const harmonicRhythmEnergy = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1) * harmonicRhythmWeight;
 
     const mixWeights = ConductorConfig.getFeedbackMixWeights();
 
@@ -139,12 +121,8 @@ DynamismEngine = (() => {
    * @returns {number} 0-1
    */
   function getUnitPulse(unit) {
-    const measureProgress = (Number.isFinite(Number(measuresPerPhrase)) && Number(measuresPerPhrase) > 0 && Number.isFinite(Number(measureIndex)))
-      ? clamp(Number(measureIndex) / Number(measuresPerPhrase), 0, 1)
-      : 0;
-    const beatProgress = (Number.isFinite(Number(numerator)) && Number(numerator) > 0 && Number.isFinite(Number(beatIndex)))
-      ? clamp(Number(beatIndex) / Number(numerator), 0, 1)
-      : 0;
+    const measureProgress = clamp(TimeStream.normalizedProgress('measure'), 0, 1);
+    const beatProgress = clamp(TimeStream.normalizedProgress('beat'), 0, 1);
 
     const unitPhase = unit === 'beat' ? 0 : unit === 'div' ? 1.1 : unit === 'subdiv' ? 2.2 : 3.3;
     const unitSeed = Number.isFinite(Number(unitStart)) ? Number(unitStart) : (measureProgress * 137 + beatProgress * 89);
@@ -167,7 +145,7 @@ DynamismEngine = (() => {
 
     // Two incommensurate noise samples for organic non-repeating flicker (#6)
     // Uses defaultSimplex (noise subsystem) when available; falls back to sine
-    const useNoise = defaultSimplex && typeof defaultSimplex.noise === 'function';
+    const useNoise = true; // defaultSimplex is boot-validated
     const flicker1 = useNoise
       ? defaultSimplex.noise(unitSeed * 0.0037, unitPhase * 2.7) * flickerScale
       : m.sin(unitSeed * 0.0037 + unitPhase * 2.7) * flickerScale;
@@ -209,17 +187,7 @@ DynamismEngine = (() => {
       1
     );
 
-    const emissionGate = (ConductorConfig && typeof ConductorConfig.getEmissionGateParams === 'function')
-      ? ConductorConfig.getEmissionGateParams()
-      : {
-          playBase: 0.72,
-          playScale: 0.9,
-          stutterBase: 0.6,
-          stutterScale: 1.15,
-          journeyBoost: 0.08,
-          feedbackBoost: 0.08,
-          layerBiasScale: 1
-        };
+    const emissionGate = ConductorConfig.getEmissionGateParams();
 
     const layerBias = (LM && LM.activeLayer === 'L2') ? 0.04 : 0;
     const playOut = clamp(

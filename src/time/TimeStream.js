@@ -47,10 +47,16 @@ TimeStream = (() => {
     return bounds[level];
   }
 
-  /** @returns {number} 0..1 progress within the current parent at this level. */
+  /** @returns {number} 0..1 progress within the current parent at this level (reaches 1 at last index). */
   function progress(level) {
     V.assertInSet(level, LEVEL_SET, 'level');
     return bounds[level] > 1 ? pos[level] / (bounds[level] - 1) : 0;
+  }
+
+  /** @returns {number} 0..1 normalized progress: pos / bounds (matches existing codebase convention). */
+  function normalizedProgress(level) {
+    V.assertInSet(level, LEVEL_SET, 'level');
+    return bounds[level] > 0 ? pos[level] / bounds[level] : 0;
   }
 
   /**
@@ -160,6 +166,7 @@ TimeStream = (() => {
     getPosition,
     getBounds,
     progress,
+    normalizedProgress,
     globalProgress,
     remaining,
     isFirst,

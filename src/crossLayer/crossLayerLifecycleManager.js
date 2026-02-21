@@ -5,8 +5,9 @@
 CrossLayerLifecycleManager = (() => {
   function resetAll() {
     CrossLayerRegistry.resetAll();
-    // AbsoluteTimeGrid lives in src/time/ — not in the registry
+    // AbsoluteTimeGrid and TimeStream live in src/time/ — not in the registry
     AbsoluteTimeGrid.reset();
+    TimeStream.resetPositions();
   }
 
   function resetSection() {

@@ -58,6 +58,21 @@ SystemSnapshot = (() => {
       snap.density = { currentDensity };
     } catch { snap.density = null; }
 
+    // ── CoherenceMonitor feedback metrics ──
+    try {
+      snap.coherence = CoherenceMonitor.getMetrics();
+    } catch { snap.coherence = null; }
+
+    // ── Cross-layer interaction heat ──
+    try {
+      snap.systemHeat = InteractionHeatMap.getSystemHeat();
+    } catch { snap.systemHeat = null; }
+
+    // ── Adaptive trust scores ──
+    try {
+      snap.trustScores = AdaptiveTrustScores.getSnapshot();
+    } catch { snap.trustScores = null; }
+
     return Object.freeze(snap);
   }
 
