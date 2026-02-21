@@ -4,6 +4,10 @@ require('./validators');
 // @ts-ignore: side-effect module load
 require('./SystemSnapshot');
 // @ts-ignore: side-effect module load
+require('./modeQualityMap');
+// @ts-ignore: side-effect module load
+require('./priorsHelpers');
+// @ts-ignore: side-effect module load
 require('./clamps');
 // @ts-ignore: side-effect module load
 require('./randoms');

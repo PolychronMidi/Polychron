@@ -20,6 +20,8 @@ FullBootstrap = (() => {
     // ── utils ──
     'Validator',
     'SystemSnapshot',
+    'modeQualityMap',
+    'priorsHelpers',
     'ri',
     'modClamp',
 

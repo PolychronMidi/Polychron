@@ -9,37 +9,8 @@ voiceLeadingPriors = (function() {
    * @property {number} [strength=0.8] - Strength multiplier for adjustment (0-2)
    */
 
-  const modeToQuality = {
-    ionian: 'major', dorian: 'dorian', phrygian: 'minor', lydian: 'major',
-    mixolydian: 'mixolydian', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
-  };
-
-  function normalizeQualityOrNull(input) {
-    if (typeof input !== 'string' || input.length === 0) return null;
-    const normalized = String(input).toLowerCase();
-    if (Object.prototype.hasOwnProperty.call(modeToQuality, normalized)) return modeToQuality[normalized];
-    if (normalized.includes('min')) return 'minor';
-    if (normalized.includes('maj')) return 'major';
-    return null;
-  }
-
-  function resolvePhase(opts = {}) {
-    if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
-      return opts.phase;
-    }
-
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && ComposerFactory.sharedPhraseArcManager.getPhase) {
-      const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
-      if (typeof phase === 'string' && phase.length > 0) {
-        return phase;
-      }
-    }
-
-    return 'development';
-  }
-
   function getProfileOrFail(qualityInput) {
-    const quality = normalizeQualityOrNull(qualityInput);
+    const quality = modeQualityMap.normalizeOrNull(qualityInput);
     if (!quality) throw new Error(`voiceLeadingPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 
     const profile = VOICE_LEADING_PRIOR_TABLES[quality];
@@ -73,20 +44,6 @@ voiceLeadingPriors = (function() {
     return ((Number(chroma) % 12) + 12) % 12;
   }
 
-  function resolveWeightOrDefault(table, key, fallback = 1) {
-    const raw = table && Object.prototype.hasOwnProperty.call(table, key) ? Number(table[key]) : Number(fallback);
-    if (!Number.isFinite(raw) || raw <= 0) return Number(fallback);
-    return raw;
-  }
-
-  function weightedAdjustment(weight, scale) {
-    if (!Number.isFinite(Number(weight)) || !Number.isFinite(Number(scale))) return 0;
-    const w = Number(weight);
-    const s = Number(scale);
-    if (w >= 1) return -(w - 1) * s;
-    return (1 - w) * s;
-  }
-
   /**
    * Computes corpus-derived adjustment for voice leading candidate scoring.
    * @param {VoiceLeadingPriorsOpts} opts - Options for adjustment calculation
@@ -109,11 +66,11 @@ voiceLeadingPriors = (function() {
         ? HarmonicContext.getField('quality')
         : 'major';
 
-    const quality = normalizeQualityOrNull(qualityHint);
+    const quality = modeQualityMap.normalizeOrNull(qualityHint);
     if (!quality) return 0;
 
     const profile = getProfileOrFail(quality);
-    const phase = resolvePhase(opts);
+    const phase = priorsHelpers.resolvePhase(opts);
     const intervalMap = (profile.phaseIntervalWeights && profile.phaseIntervalWeights[phase] && typeof profile.phaseIntervalWeights[phase] === 'object')
       ? profile.phaseIntervalWeights[phase]
       : {};
@@ -128,12 +85,12 @@ voiceLeadingPriors = (function() {
     const interval = m.min(12, m.abs(to - from));
     const direction = (to > from) ? 'up' : (to < from) ? 'down' : 'static';
 
-    const intervalWeight = resolveWeightOrDefault(intervalMap, String(interval), 1);
-    const directionWeight = resolveWeightOrDefault(directionMap, direction, 1);
+    const intervalWeight = priorsHelpers.resolveWeightOrDefault(intervalMap, String(interval), 1);
+    const directionWeight = priorsHelpers.resolveWeightOrDefault(directionMap, direction, 1);
 
     let adjustment = 0;
-    adjustment += weightedAdjustment(intervalWeight, 2.0 * strength);
-    adjustment += weightedAdjustment(directionWeight, 1.4 * strength);
+    adjustment += priorsHelpers.weightedAdjustment(intervalWeight, 2.0 * strength);
+    adjustment += priorsHelpers.weightedAdjustment(directionWeight, 1.4 * strength);
 
     const tonicPc = resolveTonicPitchClass(opts);
     if (Number.isFinite(Number(tonicPc))) {
@@ -142,15 +99,14 @@ voiceLeadingPriors = (function() {
       const fromDegree = (fromPc - Number(tonicPc) + 12) % 12;
       const toDegree = (toPc - Number(tonicPc) + 12) % 12;
       const tendencyKey = `${fromDegree}->${toDegree}`;
-      const tendencyWeight = resolveWeightOrDefault(profile.tendencyWeights, tendencyKey, 1);
-      adjustment += weightedAdjustment(tendencyWeight, 1.8 * strength);
+      const tendencyWeight = priorsHelpers.resolveWeightOrDefault(profile.tendencyWeights, tendencyKey, 1);
+      adjustment += priorsHelpers.weightedAdjustment(tendencyWeight, 1.8 * strength);
     }
 
     return clamp(adjustment, -6, 6);
   }
 
   return {
-    normalizeQualityOrNull,
     getProfileOrFail,
     getCandidateAdjustment
   };

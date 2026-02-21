@@ -10,55 +10,8 @@ melodicPriors = (function() {
    * @property {number} [strength=0.8] - Prior strength from 0..2
    */
 
-  const modeToQuality = {
-    ionian: 'major', dorian: 'dorian', phrygian: 'minor', lydian: 'major',
-    mixolydian: 'mixolydian', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
-  };
-
-  function normalizeQualityOrNull(input) {
-    if (typeof input !== 'string' || input.length === 0) return null;
-    const normalized = String(input).toLowerCase();
-    if (Object.prototype.hasOwnProperty.call(modeToQuality, normalized)) return modeToQuality[normalized];
-    if (normalized.includes('min')) return 'minor';
-    if (normalized.includes('maj')) return 'major';
-    return null;
-  }
-
-  function resolvePhase(opts = {}) {
-    if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
-      return opts.phase;
-    }
-
-    if (opts && opts.phraseContext && typeof opts.phraseContext === 'object' && typeof opts.phraseContext.phase === 'string' && opts.phraseContext.phase.length > 0) {
-      return opts.phraseContext.phase;
-    }
-
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager && ComposerFactory.sharedPhraseArcManager.getPhase) {
-      const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
-      if (typeof phase === 'string' && phase.length > 0) {
-        return phase;
-      }
-    }
-
-    return 'development';
-  }
-
-  function resolveWeightOrDefault(table, key, fallback = 1) {
-    const raw = table && Object.prototype.hasOwnProperty.call(table, key) ? Number(table[key]) : Number(fallback);
-    if (!Number.isFinite(raw) || raw <= 0) return Number(fallback);
-    return raw;
-  }
-
-  function weightedAdjustment(weight, scale) {
-    if (!Number.isFinite(Number(weight)) || !Number.isFinite(Number(scale))) return 0;
-    const w = Number(weight);
-    const s = Number(scale);
-    if (w >= 1) return -(w - 1) * s;
-    return (1 - w) * s;
-  }
-
   function getProfileOrFail(qualityInput) {
-    const quality = normalizeQualityOrNull(qualityInput);
+    const quality = modeQualityMap.normalizeOrNull(qualityInput);
     if (!quality) throw new Error(`melodicPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 
     const profile = MELODIC_PRIOR_TABLES[quality];
@@ -115,11 +68,11 @@ melodicPriors = (function() {
         ? HarmonicContext.getField('quality')
         : 'major';
 
-    const quality = normalizeQualityOrNull(qualityHint);
+    const quality = modeQualityMap.normalizeOrNull(qualityHint);
     if (!quality) return /** @type {{ [note: number]: number }} */ ({});
 
     const profile = getProfileOrFail(quality);
-    const phase = resolvePhase(opts);
+    const phase = priorsHelpers.resolvePhase(opts);
     const phaseMap = (profile.phaseDegreeWeights && profile.phaseDegreeWeights[phase] && typeof profile.phaseDegreeWeights[phase] === 'object')
       ? profile.phaseDegreeWeights[phase]
       : {};
@@ -136,13 +89,13 @@ melodicPriors = (function() {
     const out = /** @type {{ [note: number]: number }} */ ({});
     for (const note of candidates) {
       const degree = (((note % 12) - Number(tonicPc) + 12) % 12);
-      const degreeWeight = resolveWeightOrDefault(phaseMap, String(degree), 1);
-      let adjustment = weightedAdjustment(degreeWeight, 1.5 * strength);
+      const degreeWeight = priorsHelpers.resolveWeightOrDefault(phaseMap, String(degree), 1);
+      let adjustment = priorsHelpers.weightedAdjustment(degreeWeight, 1.5 * strength);
 
       if (fromDegree !== null) {
         const tendencyKey = `${fromDegree}->${degree}`;
-        const tendencyWeight = resolveWeightOrDefault(profile.tendencyWeights, tendencyKey, 1);
-        adjustment += weightedAdjustment(tendencyWeight, 1.1 * strength);
+        const tendencyWeight = priorsHelpers.resolveWeightOrDefault(profile.tendencyWeights, tendencyKey, 1);
+        adjustment += priorsHelpers.weightedAdjustment(tendencyWeight, 1.1 * strength);
       }
 
       out[note] = clamp(1 - adjustment, 0.1, 3.2);
@@ -152,7 +105,6 @@ melodicPriors = (function() {
   }
 
   return {
-    normalizeQualityOrNull,
     getProfileOrFail,
     getCandidateWeights,
   };

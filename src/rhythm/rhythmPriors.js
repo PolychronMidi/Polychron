@@ -1,50 +1,12 @@
 rhythmPriors = (function() {
   const V = Validator.create('rhythmPriors');
-  const modeToQuality = {
-    ionian: 'major', dorian: 'dorian', phrygian: 'minor', lydian: 'major',
-    mixolydian: 'mixolydian', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
-  };
-
-  function normalizeQualityOrNull(input) {
-    if (typeof input !== 'string' || input.length === 0) return null;
-    const normalized = String(input).toLowerCase();
-    if (Object.prototype.hasOwnProperty.call(modeToQuality, normalized)) return modeToQuality[normalized];
-    if (normalized.includes('min')) return 'minor';
-    if (normalized.includes('maj')) return 'major';
-    return null;
-  }
-
-  function resolvePhase(opts = {}) {
-    if (opts && typeof opts.phase === 'string' && opts.phase.length > 0) {
-      return opts.phase;
-    }
-
-    if (opts && opts.phraseContext && typeof opts.phraseContext === 'object' && typeof opts.phraseContext.phase === 'string' && opts.phraseContext.phase.length > 0) {
-      return opts.phraseContext.phase;
-    }
-
-    if (ComposerFactory.sharedPhraseArcManager) {
-      const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
-      if (typeof phase === 'string' && phase.length > 0) {
-        return phase;
-      }
-    }
-
-    return 'development';
-  }
-
-  function resolveWeightOrDefault(table, key, fallback = 1) {
-    const raw = table && Object.prototype.hasOwnProperty.call(table, key) ? Number(table[key]) : Number(fallback);
-    if (!Number.isFinite(raw) || raw <= 0) return Number(fallback);
-    return raw;
-  }
 
   function getProfileOrFail(qualityInput) {
     if (!RHYTHM_PRIOR_TABLES) {
       throw new Error('rhythmPriors.getProfileOrFail: RHYTHM_PRIOR_TABLES is unavailable');
     }
 
-    const quality = normalizeQualityOrNull(qualityInput);
+    const quality = modeQualityMap.normalizeOrNull(qualityInput);
     if (!quality) throw new Error(`rhythmPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 
     const profile = RHYTHM_PRIOR_TABLES[quality];
@@ -106,11 +68,11 @@ rhythmPriors = (function() {
       ? opts.quality
       : HarmonicContext.getField('quality');
 
-    const quality = normalizeQualityOrNull(qualityHint);
+    const quality = modeQualityMap.normalizeOrNull(qualityHint);
     if (!quality) return rhythmsIn;
 
     const profile = getProfileOrFail(quality);
-    const phase = resolvePhase(opts);
+    const phase = priorsHelpers.resolvePhase(opts);
     const level = (typeof opts.level === 'string' && opts.level.length > 0) ? opts.level : 'beat';
     const strength = clamp(V.optionalFinite(Number(opts.strength), 0.7), 0, 1.5);
 
@@ -122,7 +84,7 @@ rhythmPriors = (function() {
       ? profile.levelPhaseMultipliers[level]
       : {};
 
-    const levelPhaseWeight = resolveWeightOrDefault(levelMap, phase, 1);
+    const levelPhaseWeight = priorsHelpers.resolveWeightOrDefault(levelMap, phase, 1);
     const atBoundary = Boolean(
       opts.atBoundary === true ||
       (opts.phraseContext && typeof opts.phraseContext === 'object' && opts.phraseContext.atBoundary === true)
@@ -138,9 +100,9 @@ rhythmPriors = (function() {
         continue;
       }
 
-      const methodWeight = resolveWeightOrDefault(phaseMethodMap, spec.method, 1);
+      const methodWeight = priorsHelpers.resolveWeightOrDefault(phaseMethodMap, spec.method, 1);
       const cadenceWeight = atBoundary
-        ? resolveWeightOrDefault(profile.cadentialMethodWeights, spec.method, 1)
+        ? priorsHelpers.resolveWeightOrDefault(profile.cadentialMethodWeights, spec.method, 1)
         : 1;
 
       const targetMultiplier = methodWeight * levelPhaseWeight * cadenceWeight;
@@ -158,7 +120,6 @@ rhythmPriors = (function() {
   }
 
   return {
-    normalizeQualityOrNull,
     getProfileOrFail,
     getBiasedRhythms
   };

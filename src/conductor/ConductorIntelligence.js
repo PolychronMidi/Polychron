@@ -174,6 +174,21 @@ ConductorIntelligence = (() => {
     };
   }
 
+  /**
+   * Frozen snapshot of all current signal products and state fields.
+   * Intended for cross-module reading (e.g., feedback loops, diagnostics).
+   * @returns {Readonly<{ densityProduct: number, tensionProduct: number, flickerProduct: number, stateFields: Record<string, any>, counts: Record<string, number> }>}
+   */
+  function getSignalSnapshot() {
+    return Object.freeze({
+      densityProduct: collectDensityBias(),
+      tensionProduct: collectTensionBias(),
+      flickerProduct: collectFlickerModifier(),
+      stateFields: collectStateFields(),
+      counts: getCounts()
+    });
+  }
+
   return {
     registerDensityBias,
     collectDensityBias,
@@ -185,6 +200,7 @@ ConductorIntelligence = (() => {
     runRecorders,
     registerStateProvider,
     collectStateFields,
-    getCounts
+    getCounts,
+    getSignalSnapshot
   };
 })();

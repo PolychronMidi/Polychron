@@ -72,6 +72,16 @@ Target ≤ 200 lines of clean minimalist, self-documenting code (including struc
 
 ---
 
+## Code Style Summary
+
+- **Language:** JavaScript (CommonJS), TypeScript checking via `tsc --noEmit`
+- **Console output:** only script start, successful output, and temporary debug traces. Limited `console.warn('Acceptable warning: ...')` for long-run pulse checks.
+- **No ad-hoc validation:** use `Validator`, not `typeof` / `|| []` / `|| 0` / `Number.isFinite(x) ? x : fallback`.
+- **No typeof on boot-validated globals:** ESLint enforces `local/no-typeof-validated-global`. Trust bootstrap; reference globals directly.
+- **Globals are truth:** initialize correctly at the source. Never "sanitize" downstream.
+
+---
+
 ## Load Order
 
 `src/index.js` requires subsystems in this exact order — later modules depend on earlier globals:
@@ -88,7 +98,7 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 
 | Directory | Role | Key Entry Points |
 |---|---|---|
-| `src/utils/` | Validator, clamps, randoms, MIDI data, instrumentation | `Validator.create()` |
+| `src/utils/` | Validator, clamps, randoms, MIDI data, instrumentation, shared priors infrastructure | `Validator.create()`, `modeQualityMap`, `priorsHelpers` |
 | `src/conductor/` | ~65 intelligence modules (dynamics, harmonic, melodic, rhythmic, texture). Merged each beat into a single composite signal. | `ConductorIntelligence`, `GlobalConductorUpdate`, `ConductorState` |
 | `src/rhythm/` | Pattern generators, onset makers, drum map, rhythm registry | `RhythmManager`, `RhythmRegistry` |
 | `src/time/` | Tick/time math, polyrhythm calculator, layer manager, absolute-time grid | `AbsoluteTimeGrid`, `LayerManager` |
@@ -100,14 +110,23 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 
 ---
 
-## Code Style Summary
+## Signal & Feedback Topology
 
-- **Language:** JavaScript (CommonJS), TypeScript checking via `tsc --noEmit`
-- **Console output:** only script start, successful output, and temporary debug traces. Limited `console.warn('Acceptable warning: ...')` for long-run pulse checks.
-- **No ad-hoc validation:** use `Validator`, not `typeof` / `|| []` / `|| 0` / `Number.isFinite(x) ? x : fallback`.
-- **No typeof on boot-validated globals:** ESLint enforces `local/no-typeof-validated-global`. Trust bootstrap; reference globals directly.
-- **Globals are truth:** initialize correctly at the source. Never "sanitize" downstream.
+The conductor pipeline exposes runtime signal data for cross-module reading:
+
+- **`ConductorIntelligence.getSignalSnapshot()`** — frozen snapshot of `{ densityProduct, tensionProduct, flickerProduct, stateFields, counts }`. 46+ intelligence modules self-register via `registerStateProvider`, `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`.
+- **`ExplainabilityBus.queryByType(type, limit)`** — filtered read of diagnostic entries by event type (most recent first).
 
 ---
 
+## Music21 Integration & Shared Priors Infrastructure
+
+`scripts/music21/` contains Python scripts for musicological analysis via Music21. Outputs `priorsData` files via `npm run music21`.
+
+All four priors modules (`melodicPriors`, `harmonicPriors`, `voiceLeadingPriors`, `rhythmPriors`) share two utility globals loaded from `src/utils/`:
+
+- **`modeQualityMap`** — canonical mode-to-quality map (`normalizeOrNull`, `normalizeOrFail`). Never duplicate this map in priors files.
+- **`priorsHelpers`** — `resolvePhase(opts)`, `resolveWeightOrDefault(table, key, fallback)`, `weightedAdjustment(weight, scale)`. All priors modules delegate to these instead of local copies.
+
+---
 *This document is the source of truth for project conventions. If anything contradicts the codebase, update this file.*
