@@ -73,6 +73,22 @@ SystemSnapshot = (() => {
       snap.trustScores = AdaptiveTrustScores.getSnapshot();
     } catch { snap.trustScores = null; }
 
+    // ── Entropy regulation state ──
+    try {
+      snap.entropy = EntropyRegulator.getRegulation();
+    } catch { snap.entropy = null; }
+
+    // ── Human-readable position ──
+    try {
+      snap.position = TimeStream.positionString();
+    } catch { snap.position = null; }
+
+    // ── Last explainability emission ──
+    try {
+      const recent = ExplainabilityBus.getRecent(1);
+      snap.lastExplain = recent.length > 0 ? recent[0] : null;
+    } catch { snap.lastExplain = null; }
+
     return Object.freeze(snap);
   }
 

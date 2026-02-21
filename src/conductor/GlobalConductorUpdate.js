@@ -19,10 +19,10 @@
     // 1. gather context (all globals boot-validated — no typeof guards needed)
     const phraseCtx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
-    const harmonicTension = HarmonicContext.getField('tension') || 0;
+    const harmonicTension = HarmonicContext.getField('tension');
 
-    const sectionPhase = HarmonicContext.getField('sectionPhase') || 'development';
-    const excursion = HarmonicContext.getField('excursion') || 0;
+    const sectionPhase = HarmonicContext.getField('sectionPhase');
+    const excursion = HarmonicContext.getField('excursion');
 
     // 2. derive composite intensity (0-1)
     const phaseMult = ConductorConfig.getPhaseMultiplier(sectionPhase);

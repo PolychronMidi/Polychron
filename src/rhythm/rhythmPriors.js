@@ -22,7 +22,7 @@ rhythmPriors = (function() {
       return opts.phraseContext.phase;
     }
 
-    if (ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhase === 'function') {
+    if (ComposerFactory.sharedPhraseArcManager) {
       const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;
@@ -103,9 +103,7 @@ rhythmPriors = (function() {
 
     const qualityHint = (typeof opts.quality === 'string' && opts.quality.length > 0)
       ? opts.quality
-      : (HarmonicContext && typeof HarmonicContext.getField === 'function')
-        ? HarmonicContext.getField('quality')
-        : 'major';
+      : HarmonicContext.getField('quality');
 
     const quality = normalizeQualityOrNull(qualityHint);
     if (!quality) return rhythmsIn;

@@ -19,16 +19,12 @@ CrossLayerDynamicEnvelope = (() => {
    * Tick the envelope generator each beat.
    * @param {number} absTimeMs
    * @param {string} layer
-   * @param {number} secProgress - 0–1 section progress
-   * @param {number} phrProgress - 0–1 phrase progress
    */
-  function tick(absTimeMs, layer, secProgress, phrProgress) {
+  function tick(absTimeMs, layer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    V.requireFinite(secProgress, 'secProgress');
-    V.requireFinite(phrProgress, 'phrProgress');
 
-    sectionProgress = clamp(secProgress, 0, 1);
-    phraseProgress = clamp(phrProgress, 0, 1);
+    sectionProgress = clamp(TimeStream.compoundProgress('section'), 0, 1);
+    phraseProgress = clamp(TimeStream.compoundProgress('phrase'), 0, 1);
 
     // Get intent-driven parameters
     const intent = SectionIntentCurves.getLastIntent();

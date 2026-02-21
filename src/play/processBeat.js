@@ -40,9 +40,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   // --- Cross-layer orchestration ---
   const clAbsMs = beatStartTime * 1000;
-  const sectionProgress = (sectionIndex + phraseIndex / phrasesPerSection) / totalSections;
-  const sectionProgressBound = requireUnitInterval('sectionProgress', sectionProgress);
-  const clIntent = SectionIntentCurves.getIntent(sectionProgressBound, sectionIndex, phraseIndex);
+  const clIntent = SectionIntentCurves.getIntent();
   // Shape entropy arc from TimeStream section progress, then override with intent target
   EntropyRegulator.setTargetFromArc(TimeStream.normalizedProgress('section'));
   EntropyRegulator.setTarget(clIntent.entropyTarget);
@@ -52,15 +50,13 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clEntropy = EntropyRegulator.getRegulation();
   const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, layer);
 
-  CrossLayerClimaxEngine.tick(clAbsMs, sectionProgressBound);
+  CrossLayerClimaxEngine.tick(clAbsMs);
   const clClimaxMods = CrossLayerClimaxEngine.getModifiers(layer);
 
-  const phraseProgress = (measureIndex * numerator + beatIndex) / (measuresPerPhrase * numerator);
-  const phraseProgressBound = requireUnitInterval('phraseProgress', phraseProgress);
-  CrossLayerDynamicEnvelope.tick(clAbsMs, layer, sectionProgressBound, phraseProgressBound);
+  CrossLayerDynamicEnvelope.tick(clAbsMs, layer);
   if (isL1) CrossLayerDynamicEnvelope.autoSelectArcType();
 
-  CrossLayerSilhouette.tick(clAbsMs, sectionProgressBound);
+  CrossLayerSilhouette.tick(clAbsMs);
   const clSilhouetteCorrections = CrossLayerSilhouette.getCorrections();
 
   const clRestSignals = {

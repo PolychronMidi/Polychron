@@ -117,17 +117,13 @@ MotifChain = (() => {
       throw new Error('MotifChain.mutate: no active motif to mutate');
     }
 
-    const mutationProfile = (ConductorConfig && typeof ConductorConfig.getMotifMutationParams === 'function')
-      ? ConductorConfig.getMotifMutationParams()
-      : { transposeRange: [-7, 7] };
+    const mutationProfile = ConductorConfig.getMotifMutationParams();
     const defaultTransposeRange = (Array.isArray(mutationProfile.transposeRange) && mutationProfile.transposeRange.length === 2)
       ? mutationProfile.transposeRange
       : [-7, 7];
 
     // Overlay context-aware transform advice from MotifTransformAdvisor
-    const advisorOpts = (typeof MotifTransformAdvisor !== 'undefined' && MotifTransformAdvisor && typeof MotifTransformAdvisor.adviseTransform === 'function')
-      ? MotifTransformAdvisor.adviseTransform()
-      : {};
+    const advisorOpts = MotifTransformAdvisor.adviseTransform();
 
     const {
       transposeRange = advisorOpts.transposeRange || defaultTransposeRange,

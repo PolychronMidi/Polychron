@@ -10,21 +10,13 @@ ClimaxProximityPredictor = (() => {
    */
   function predict() {
     // Gather signals with safe fallbacks
-    const energyMomentum = (EnergyMomentumTracker && typeof EnergyMomentumTracker.getMomentum === 'function')
-      ? EnergyMomentumTracker.getMomentum()
-      : { momentum: 0, trend: 'insufficient', plateauDuration: 0, stale: false };
+    const energyMomentum = EnergyMomentumTracker.getMomentum();
 
-    const registerProfile = (RegisterPressureMonitor && typeof RegisterPressureMonitor.getPressureSignal === 'function')
-      ? RegisterPressureMonitor.getPressureSignal()
-      : { highPressure: false, lowPressure: false };
+    const registerProfile = RegisterPressureMonitor.getPressureSignal();
 
-    const onsetProfile = (OnsetDensityProfiler && typeof OnsetDensityProfiler.getDensityBias === 'function')
-      ? OnsetDensityProfiler.getDensityBias()
-      : 1;
+    const onsetProfile = OnsetDensityProfiler.getDensityBias();
 
-    const currentTension = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (Number(HarmonicContext.getField('tension')) || 0)
-      : 0;
+    const currentTension = HarmonicContext.getField('tension');
 
     // Compute composite climax proximity (0-1)
     let climaxSignal = 0;

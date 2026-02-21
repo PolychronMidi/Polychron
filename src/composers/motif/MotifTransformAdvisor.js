@@ -10,21 +10,13 @@ MotifTransformAdvisor = (() => {
    */
   function adviseTransform() {
     // Gather context from available sources
-    const contour = (MelodicContourTracker && typeof MelodicContourTracker.getContour === 'function')
-      ? MelodicContourTracker.getContour()
-      : { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
+    const contour = MelodicContourTracker.getContour();
 
-    const coherence = (LayerCoherenceScorer && typeof LayerCoherenceScorer.getCoherence === 'function')
-      ? LayerCoherenceScorer.getCoherence()
-      : 0.5;
+    const coherence = LayerCoherenceScorer.getCoherence();
 
-    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('sectionPhase') || 'development')
-      : 'development';
+    const phase = HarmonicContext.getField('sectionPhase');
 
-    const excursion = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('excursion') || 0)
-      : 0;
+    const excursion = HarmonicContext.getField('excursion');
 
     // Base defaults
     /** @type {[number, number]} */
@@ -111,13 +103,9 @@ MotifTransformAdvisor = (() => {
    * @returns {number}
    */
   function getTransformComplexity() {
-    const phase = (HarmonicContext && typeof HarmonicContext.getField === 'function')
-      ? (HarmonicContext.getField('sectionPhase') || 'development')
-      : 'development';
+    const phase = HarmonicContext.getField('sectionPhase');
 
-    const coherence = (LayerCoherenceScorer && typeof LayerCoherenceScorer.getCoherence === 'function')
-      ? LayerCoherenceScorer.getCoherence()
-      : 0.5;
+    const coherence = LayerCoherenceScorer.getCoherence();
 
     const baseComplexity = {
       exposition: 0.2,

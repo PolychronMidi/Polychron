@@ -17,9 +17,7 @@ HarmonicRhythmDensityRatio = (() => {
     const ws = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) ? windowSeconds : WINDOW_SECONDS;
 
     // Harmonic rhythm from HarmonicRhythmTracker (0-1 normalized)
-    const harmonicRate = (HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function')
-      ? clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1)
-      : 0.5;
+    const harmonicRate = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
 
     // Onset density from notes in window
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });

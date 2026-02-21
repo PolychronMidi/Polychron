@@ -48,6 +48,7 @@ layerPass = (() => {
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       TimeStream.setPosition('measure', measureIndex);
+      EventBus.emit(EventCatalog.names.MEASURE_BOUNDARY, { measureIndex, measuresPerPhrase, layer: layerId });
       measureCount++;
       selectLayerComposerForMeasure(layerId, phraseFamily, composerCtx);
       setUnitTiming('measure');

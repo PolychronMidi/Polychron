@@ -47,7 +47,7 @@ generatorKeys = Object.keys(noiseGenerators);
 // During chord bursts → smooth generators (simplex, sine, fbm, gaussian)
 // During flurries → chaotic generators (turbulence, ridged, worley, metaRecursive)
 randomNoiseGenerator = function() {
-  if (DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+  if (DrumTextureCoupler) {
     const texMetrics = DrumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.2) {
       const smoothKeys = ['simplex', 'sine', 'fbm', 'gaussian', 'metaSimplex2D'];

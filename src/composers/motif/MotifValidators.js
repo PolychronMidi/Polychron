@@ -86,7 +86,7 @@ MotifValidators = {
     } else {
       const maybeWindowScale = opts && /** @type {any} */ (opts).windowScale;
       let windowScale = Array.isArray(maybeWindowScale) && maybeWindowScale.length > 0 ? /** @type {(string|number)[]} */ (maybeWindowScale) : null;
-      if (!windowScale && HarmonicContext && typeof HarmonicContext.getField === 'function') {
+      if (!windowScale && HarmonicContext) {
         try {
           const hcScale = HarmonicContext.getField('scale');
           if (Array.isArray(hcScale) && hcScale.length > 0) windowScale = hcScale;

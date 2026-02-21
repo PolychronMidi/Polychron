@@ -85,9 +85,7 @@ harmonicJourneyHelpers = (() => {
   const getMovePoolForPhase = (phase) => {
     // Conductor profile boldness shifts move pool composition:
     // < 1 = more conservative (suppress bold moves), > 1 = more adventurous (inject bold moves)
-    const boldness = (ConductorConfig && typeof ConductorConfig.getJourneyBoldness === 'function')
-      ? ConductorConfig.getJourneyBoldness()
-      : 1.0;
+    const boldness = ConductorConfig.getJourneyBoldness();
 
     let pool;
     switch (phase) {

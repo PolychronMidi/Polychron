@@ -157,7 +157,7 @@ HarmonicJourney = (() => {
     });
 
     // Emit journey-move event for rhythm-harmonic coupling
-    if (EventBus && typeof EventBus.emit === 'function') {
+    {
       const EVENTS = V.getEventsOrThrow();
       EventBus.emit(EVENTS.JOURNEY_MOVE, {
         move: stop.move,

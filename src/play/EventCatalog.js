@@ -17,7 +17,9 @@ EventCatalog = (() => {
     CROSS_LAYER_EXPLAIN: 'cross-layer-explain',
     CONVERGENCE_HARMONIC_TRIGGER: 'convergence-harmonic-trigger',
     CROSS_LAYER_CONVERGENCE: 'cross-layer-convergence',
-    CROSS_LAYER_CADENCE_ALIGN: 'cross-layer-cadence-align'
+    CROSS_LAYER_CADENCE_ALIGN: 'cross-layer-cadence-align',
+    PHRASE_BOUNDARY: 'phrase-boundary',
+    MEASURE_BOUNDARY: 'measure-boundary'
   });
 
   function assertEventPayload(name, data) {
@@ -141,6 +143,18 @@ EventCatalog = (() => {
         V.assertRange(data.syncTick, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-cadence-align.syncTick');
         V.assertBoolean(data.otherCadenceSuggested, 'cross-layer-cadence-align.otherCadenceSuggested');
         V.assertFinite(data.absTimeMs, 'cross-layer-cadence-align.absTimeMs');
+        return true;
+
+      case names.PHRASE_BOUNDARY:
+        V.assertRange(data.phraseIndex, 0, Number.MAX_SAFE_INTEGER, 'phrase-boundary.phraseIndex');
+        V.assertRange(data.sectionIndex, 0, Number.MAX_SAFE_INTEGER, 'phrase-boundary.sectionIndex');
+        V.assertRange(data.phrasesPerSection, 1, Number.MAX_SAFE_INTEGER, 'phrase-boundary.phrasesPerSection');
+        return true;
+
+      case names.MEASURE_BOUNDARY:
+        V.assertRange(data.measureIndex, 0, Number.MAX_SAFE_INTEGER, 'measure-boundary.measureIndex');
+        V.assertRange(data.measuresPerPhrase, 1, Number.MAX_SAFE_INTEGER, 'measure-boundary.measuresPerPhrase');
+        V.assertNonEmptyString(data.layer, 'measure-boundary.layer');
         return true;
 
       default:

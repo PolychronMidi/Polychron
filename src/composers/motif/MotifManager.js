@@ -41,17 +41,10 @@ MotifManager = (function() {
     if (!composer) throw new Error('MotifManager.planMeasure: no composer');
     // ── Texture-guided motif variation (#10) ──────────────────────────
     // Bursts → higher density (harmonic motifs), flurries → lower density (scalar)
-    if (DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+    if (DrumTextureCoupler) {
       const texMetrics = DrumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.2) {
-        const clampParams = (ConductorConfig && typeof ConductorConfig.getMotifTextureClampParams === 'function')
-          ? ConductorConfig.getMotifTextureClampParams()
-          : {
-              burstDensity: [0.7, 1.0],
-              sparseDensity: [0.3, 0.7],
-              burstIntervalDensity: [0.7, 0.95],
-              sparseIntervalDensity: [0.4, 0.7]
-            };
+        const clampParams = ConductorConfig.getMotifTextureClampParams();
         const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
         const burstDensityMin = clampParams.burstDensity[0];
         const burstDensityMax = clampParams.burstDensity[1];
@@ -98,7 +91,7 @@ MotifManager = (function() {
     // During bursts: derive from parent (coherent harmonic content)
     // During flurries: weaken parent derivation (independent scalar motion)
     let effectiveParentBucket = parentBucket;
-    if (DrumTextureCoupler && typeof DrumTextureCoupler.getMetrics === 'function') {
+    if (DrumTextureCoupler) {
       const texMetrics = DrumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.25 && texMetrics.flurryCount > texMetrics.burstCount && rf() < texMetrics.intensity * 0.6) {
         effectiveParentBucket = null;

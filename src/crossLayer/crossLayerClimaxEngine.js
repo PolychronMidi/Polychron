@@ -17,16 +17,14 @@ CrossLayerClimaxEngine = (() => {
   /**
    * Tick the climax detector each beat.
    * @param {number} absTimeMs
-   * @param {number} sectionProgress - 0–1
    */
-  function tick(absTimeMs, sectionProgress) {
+  function tick(absTimeMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    V.requireFinite(sectionProgress, 'sectionProgress');
 
     // Gather signals
-    const sectionArc = Math.sin(clamp(sectionProgress, 0, 1) * Math.PI); // peaks mid-section
+    const sectionArc = Math.sin(clamp(TimeStream.compoundProgress('section'), 0, 1) * Math.PI); // peaks mid-section
 
-    const conductorIntensity = clamp(Number(ConductorState.getField('compositeIntensity')) || 0, 0, 1);
+    const conductorIntensity = clamp(Number(ConductorState.getField('compositeIntensity')), 0, 1);
 
     const heatLevel = clamp(InteractionHeatMap.getDensity(), 0, 1);
 
