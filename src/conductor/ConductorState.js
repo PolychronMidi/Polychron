@@ -40,7 +40,6 @@ ConductorState = (() => {
   };
 
   function writeHarmonicFromContext() {
-    if (!HarmonicContext || typeof HarmonicContext.get !== 'function') return;
     const state = HarmonicContext.get();
     if (!state || typeof state !== 'object') return;
 
@@ -56,20 +55,14 @@ ConductorState = (() => {
   }
 
   function writeRegulationFromConductor() {
-    if (typeof ConductorConfig.getRegulationDensityBias === 'function') {
-      const densityBias = Number(ConductorConfig.getRegulationDensityBias());
-      if (Number.isFinite(densityBias)) snapshot.densityBias = densityBias;
-    }
+    const densityBias = Number(ConductorConfig.getRegulationDensityBias());
+    if (Number.isFinite(densityBias)) snapshot.densityBias = densityBias;
 
-    if (typeof ConductorConfig.getRegulationCrossModBias === 'function') {
-      const crossModBias = Number(ConductorConfig.getRegulationCrossModBias());
-      if (Number.isFinite(crossModBias)) snapshot.crossModBias = crossModBias;
-    }
+    const crossModBias = Number(ConductorConfig.getRegulationCrossModBias());
+    if (Number.isFinite(crossModBias)) snapshot.crossModBias = crossModBias;
 
-    if (typeof ConductorConfig.getActiveProfileName === 'function') {
-      const activeProfile = ConductorConfig.getActiveProfileName();
-      if (typeof activeProfile === 'string' && activeProfile.length > 0) snapshot.activeProfile = activeProfile;
-    }
+    const activeProfile = ConductorConfig.getActiveProfileName();
+    if (typeof activeProfile === 'string' && activeProfile.length > 0) snapshot.activeProfile = activeProfile;
   }
 
   function updateFromConductor(data = {}) {
@@ -85,9 +78,7 @@ ConductorState = (() => {
 
     const phraseCtx = (_data.phraseCtx && typeof _data.phraseCtx === 'object')
       ? _data.phraseCtx
-      : (ComposerFactory && ComposerFactory.sharedPhraseArcManager && typeof ComposerFactory.sharedPhraseArcManager.getPhraseContext === 'function')
-        ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
-        : null;
+      : ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
     if (phraseCtx) {
       if (Number.isFinite(Number(phraseCtx.position))) snapshot.phrasePosition = clamp(Number(phraseCtx.position), 0, 1);
@@ -104,9 +95,7 @@ ConductorState = (() => {
     if (Number.isFinite(Number(_data.playProb))) snapshot.playProb = clamp(Number(_data.playProb), 0, 1);
     if (Number.isFinite(Number(_data.stutterProb))) snapshot.stutterProb = clamp(Number(_data.stutterProb), 0, 1);
 
-    if (TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
-      snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
-    }
+    snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
 
     if (Number.isFinite(Number(beatStart))) snapshot.tick = Number(beatStart);
     snapshot.updatedAt = Date.now();
@@ -119,9 +108,7 @@ ConductorState = (() => {
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.textureMode = data.mode;
       if (Number.isFinite(Number(data.composite))) snapshot.compositeIntensity = clamp(Number(data.composite), 0, 1);
-      if (TextureBlender && typeof TextureBlender.getRecentDensity === 'function') {
-        snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
-      }
+      snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
       snapshot.updatedAt = Date.now();
     });
 
@@ -150,9 +137,7 @@ ConductorState = (() => {
       if (Number.isFinite(Number(data.excursion))) snapshot.excursion = m.max(0, Number(data.excursion));
       if (Number.isFinite(Number(data.tension))) snapshot.tension = clamp(Number(data.tension), 0, 1);
       if (Number.isFinite(Number(data.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(data.mutationCount));
-      if (HarmonicRhythmTracker && typeof HarmonicRhythmTracker.getHarmonicRhythm === 'function') {
-        snapshot.harmonicRhythm = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
-      }
+      snapshot.harmonicRhythm = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
       snapshot.updatedAt = Date.now();
     });
 

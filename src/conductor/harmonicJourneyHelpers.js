@@ -73,9 +73,9 @@ harmonicJourneyHelpers = (() => {
     return Math.min(circleDist, 12 - circleDist);
   };
 
-  const getSectionPhase = (sectionIndex, totalSections) => {
+  const getSectionPhase = (totalSections) => {
     if (totalSections <= 0) return 'development';
-    const pos = sectionIndex / totalSections;
+    const pos = TimeStream.normalizedProgress('section');
     if (pos < 0.2) return 'opening';
     if (pos < 0.55) return 'development';
     if (pos < 0.8) return 'climax';

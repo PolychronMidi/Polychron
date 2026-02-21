@@ -61,7 +61,7 @@ PhraseArcManager = class PhraseArcManager {
     this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
     this.densityRange = this._densityRangeOverride || breath.densityRange;
 
-    const pos = measuresPerPhrase > 0 ? measureIndex / measuresPerPhrase : 0;
+    const pos = TimeStream.normalizedProgress('measure');
     const phase = this._getPhase(pos);
 
     let currentArcType = this.arcType;
