@@ -145,6 +145,25 @@ ConductorConfig = (() => {
     return dynamics.resolveField('energyWeights');
   }
 
+  /**
+   * Energy weights blended with profileAdaptation hints.
+   * Restraint hint pulls phrase back and elevates feedback reactivity;
+   * explosive hint amplifies phrase-arc energy;
+   * atmospheric hint softens pulse micro-oscillation.
+   */
+  function getHintBlendedEnergyWeights() {
+    const base = dynamics.resolveField('energyWeights');
+    const restrainedHint = clamp(signalReader.state('profileHintRestrained') ?? 0, 0, 1);
+    const explosiveHint = clamp(signalReader.state('profileHintExplosive') ?? 0, 0, 1);
+    const atmosphericHint = clamp(signalReader.state('profileHintAtmospheric') ?? 0, 0, 1);
+    return {
+      phrase: clamp(base.phrase * (1 - restrainedHint * 0.2 + explosiveHint * 0.2), 0.05, 2),
+      journey: base.journey,
+      feedback: clamp(base.feedback * (1 + restrainedHint * 0.3), 0.05, 2),
+      pulse: clamp(base.pulse * (1 - atmosphericHint * 0.4), 0.05, 2)
+    };
+  }
+
   function getClimaxBoost() {
     return dynamics.resolveField('climaxBoost');
   }
@@ -280,6 +299,7 @@ ConductorConfig = (() => {
     getDensityBounds,
     getFlickerParams,
     getEnergyWeights,
+    getHintBlendedEnergyWeights,
     getClimaxBoost,
     getCrossModScaling,
     getFxMixScaling,

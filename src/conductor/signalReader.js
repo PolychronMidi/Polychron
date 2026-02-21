@@ -66,6 +66,9 @@ signalReader = (() => {
 
   /**
    * Query recent ExplainabilityBus events by type.
+   * Load-order note: ExplainabilityBus is registered in crossLayer (loads after conductor).
+   * This call is safe at runtime (beat-processing time) but must NOT be invoked at module
+   * load time — the global will not yet exist.
    * @param {string} type — event type to filter on
    * @param {number} [limit=10]
    * @returns {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>}

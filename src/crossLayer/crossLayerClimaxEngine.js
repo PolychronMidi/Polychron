@@ -24,7 +24,11 @@ CrossLayerClimaxEngine = (() => {
     // Gather signals
     const sectionArc = Math.sin(clamp(TimeStream.compoundProgress('section'), 0, 1) * Math.PI); // peaks mid-section
 
-    const conductorIntensity = clamp(Number(ConductorState.getField('compositeIntensity')), 0, 1);
+    const sigs = conductorSignalBridge.getSignals();
+    // Blend compositeIntensity with elevated density/tension products for richer peak detection
+    const densityPressure = clamp((sigs.density - 0.9) / 0.6, 0, 1);
+    const tensionPressure = clamp((sigs.tension - 0.9) / 0.6, 0, 1);
+    const conductorIntensity = clamp(sigs.compositeIntensity * 0.6 + densityPressure * 0.2 + tensionPressure * 0.2, 0, 1);
 
     const heatLevel = clamp(InteractionHeatMap.getDensity(), 0, 1);
 

@@ -52,12 +52,9 @@ ConvergenceHarmonicTrigger = (() => {
         !CadenceAlignment.applyAlignment) {
       throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment is required');
     }
-    if (!ConductorState ||
-        !ConductorState.getField) {
-      throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConductorState.getField is required');
-    }
-
-    const tension = clamp(V.requireFinite(ConductorState.getField('compositeIntensity'), 'onConvergence.tension'), 0, 1);
+    // Use bridge: blend actual tension product with compositeIntensity for semantic accuracy
+    const sigs = conductorSignalBridge.getSignals();
+    const tension = clamp(sigs.compositeIntensity * 0.5 + clamp(sigs.tension - 1, 0, 1) * 0.5, 0, 1);
 
     // Read cadence alignment state for tonicBias/dominantBias
     const alignment = CadenceAlignment.applyAlignment(absTimeMs, layer, tension);
