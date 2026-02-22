@@ -13,6 +13,12 @@ let _beatFeedbackPitchBias = -1;
 /** @param {number} bias */
 setFeedbackPitchBias = function(bias) { _beatFeedbackPitchBias = Number.isFinite(bias) ? bias : -1; };
 
+// Beat-level climax modifiers cache — set once from processBeat, read per-pick
+/** @type {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} */
+let _beatClimaxMods = { playProbScale: 1, velocityScale: 1, registerBias: 0, entropyTarget: -1 };
+/** @param {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} mods */
+setClimaxMods = function(mods) { _beatClimaxMods = mods; };
+
 function _refreshChannelCache() {
   const key = beatStart;
   const flip = flipBin;
@@ -158,10 +164,9 @@ playNotesEmitPick = function(opts = {}) {
     const texVelBase = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
     const texVelRole = DynamicRoleSwap.modifyVelocity(activeLayerName, texVelBase);
     const texVelInterference = VelocityInterference.applyInterference(absMsAtOnTick, activeLayerName, texVelRole).velocity;
-    // Apply dynamic envelope and climax velocity scaling
+    // Apply dynamic envelope and climax velocity scaling (cached per beat)
     const envelopeScale = CrossLayerDynamicEnvelope.getVelocityScale(activeLayerName);
-    const climaxMods = CrossLayerClimaxEngine.getModifiers(activeLayerName);
-    const texVel = V.requireFinite(m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * climaxMods.velocityScale))), 'texVel');
+    const texVel = V.requireFinite(m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * _beatClimaxMods.velocityScale))), 'texVel');
     // Apply articulation complement sustain modifier
     const articulationMod = ArticulationComplement.getSustainModifier(activeLayerName);
     const texSustain = sustain * textureMode.sustainScale * articulationMod.sustainScale;

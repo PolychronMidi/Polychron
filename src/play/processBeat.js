@@ -41,9 +41,9 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // --- Cross-layer orchestration ---
   const clAbsMs = beatStartTime * 1000;
   const clIntent = SectionIntentCurves.getIntent();
-  // Shape entropy arc from TimeStream section progress, then override with intent target
-  EntropyRegulator.setTargetFromArc(TimeStream.normalizedProgress('section'));
-  EntropyRegulator.setTarget(clIntent.entropyTarget);
+  // Blend section-shape arc (30%) with intent entropy target (70%)
+  const clArcTarget = EntropyRegulator.getArcTarget(TimeStream.normalizedProgress('section'));
+  EntropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
   // CoherenceMonitor entropy signal drives regulation aggressiveness:
   // chaos → stronger regulation, stagnation → lighter touch
   EntropyRegulator.setRegulationStrength(clamp(0.5 + CoherenceMonitor.getEntropySignal() * 0.4, 0, 1));
@@ -52,6 +52,8 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   CrossLayerClimaxEngine.tick(clAbsMs);
   const clClimaxMods = CrossLayerClimaxEngine.getModifiers(layer);
+  // Stash climax modifiers for playNotesEmitPick (avoids re-calling getModifiers per pick)
+  setClimaxMods(clClimaxMods);
 
   CrossLayerDynamicEnvelope.tick(clAbsMs, layer);
   if (isL1) CrossLayerDynamicEnvelope.autoSelectArcType();

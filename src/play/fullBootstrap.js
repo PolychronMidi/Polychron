@@ -295,6 +295,7 @@ FullBootstrap = (() => {
     'playNotes',
     'playNotesEmitPick',
     'setFeedbackPitchBias',
+    'setClimaxMods',
     'emitPickCrossLayerRecord',
     'emitPickSourceTextures',
     'emitPickReflectionTextures',

@@ -596,6 +596,7 @@ declare var processBeat: any;
 declare var layerPass: any;
 declare var playNotesEmitPick: any;
 declare var setFeedbackPitchBias: (bias: number) => void;
+declare var setClimaxMods: (mods: { playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }) => void;
 declare var emitPickCrossLayerRecord: any;
 declare var emitPickSourceTextures: any;
 declare var emitPickReflectionTextures: any;
