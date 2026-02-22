@@ -3,6 +3,7 @@
 // Pure query API — advises phrase-count decisions alongside SectionLengthAdvisor.
 
 PhraseLengthMomentumTracker = (() => {
+  const V = Validator.create('PhraseLengthMomentumTracker');
   /** @type {Array<{ section: number, phraseIndex: number, measures: number }>} */
   const history = [];
   const MAX_HISTORY = 32;
@@ -14,9 +15,7 @@ PhraseLengthMomentumTracker = (() => {
    * @param {number} measures - number of measures in the phrase
    */
   function recordPhraseLength(section, phraseIndex, measures) {
-    if (typeof measures !== 'number' || !Number.isFinite(measures)) {
-      throw new Error('PhraseLengthMomentumTracker.recordPhraseLength: measures must be finite');
-    }
+    V.requireFinite(measures, 'measures');
     history.push({ section, phraseIndex, measures });
     if (history.length > MAX_HISTORY) history.shift();
   }

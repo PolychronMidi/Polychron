@@ -49,61 +49,13 @@ HarmonicJourney = (() => {
       throw new Error('HarmonicJourney.planJourney: Tonal.js (t) not available');
     }
 
-    // Resolve starting key
-    let startKey = (opts.startKey === 'random' || !opts.startKey)
-      ? allNotes[ri(allNotes.length - 1)]
-      : opts.startKey;
-    startKey = t.Note.pitchClass(startKey);
-    if (!startKey) throw new Error(`HarmonicJourney.planJourney: invalid startKey "${opts.startKey}"`);
-
-    // Resolve starting mode
-    const validModes = ['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
-    let startMode = opts.startMode || 'random';
-    if (startMode === 'random') {
-      startMode = validModes[ri(validModes.length - 1)];
-    }
-    if (!validModes.includes(startMode)) {
-      throw new Error(`HarmonicJourney.planJourney: invalid startMode "${startMode}"`);
-    }
-
+    const { startKey, startMode } = harmonicJourneyPlanner.resolveStart(opts);
     originKey = startKey;
     originMode = startMode;
     plan = [{ key: startKey, mode: startMode, move: 'origin', distance: 0 }];
 
-    let currentKey = startKey;
-    let currentMode = startMode;
-
-    for (let s = 1; s < totalSections; s++) {
-      const phase = HJ.getSectionPhase(s, totalSections);
-      const movePool = HJ.getMovePoolForPhase(phase);
-
-      // Resolution sections bias toward returning home
-      if (phase === 'resolution' && rf() < 0.5) {
-        const dist = HJ.harmonicDistance(currentKey, originKey);
-        if (dist > 0) {
-          currentKey = originKey;
-          currentMode = originMode;
-          plan.push({ key: currentKey, mode: currentMode, move: 'return-home', distance: dist });
-          continue;
-        }
-      }
-
-      // Pick a random move from the phase-appropriate pool
-      const moveFn = movePool[ri(movePool.length - 1)];
-      const result = moveFn(currentKey, currentMode);
-
-      // Normalize key to pitch class
-      const nextKey = t.Note.pitchClass(result.key);
-      if (!nextKey) {
-        throw new Error(`HarmonicJourney.planJourney: move produced invalid key "${result.key}"`);
-      }
-
-      const dist = HJ.harmonicDistance(currentKey, nextKey);
-      currentKey = nextKey;
-      currentMode = result.mode;
-
-      plan.push({ key: currentKey, mode: currentMode, move: result.move, distance: dist });
-    }
+    const steps = harmonicJourneyPlanner.buildSteps(totalSections, originKey, originMode, HJ);
+    plan.push(...steps);
 
     currentStopIndex = 0;
     return plan.slice();

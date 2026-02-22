@@ -27,12 +27,7 @@ EmissionFeedbackListener = (() => {
       lastIntended = intended;
     });
 
-    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
-      ratio = 1;
-      lastActual = 0;
-      lastIntended = 0;
-    });
-
+    CrossLayerRegistry.register('EmissionFeedbackListener', { reset: resetSection }, ['section']);
     initialized = true;
   }
 
@@ -52,6 +47,12 @@ EmissionFeedbackListener = (() => {
     };
   }
 
+  function resetSection() {
+    ratio = 1;
+    lastActual = 0;
+    lastIntended = 0;
+  }
+
   function reset() {
     ratio = 1;
     lastActual = 0;
@@ -63,6 +64,7 @@ EmissionFeedbackListener = (() => {
     getEmissionRatio,
     getEmissionGap,
     getMetrics,
-    reset
+    reset,
+    resetSection
   };
 })();

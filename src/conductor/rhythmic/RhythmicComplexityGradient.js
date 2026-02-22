@@ -3,6 +3,7 @@
 // Pure query API — advises rhythm pattern tier selection and subdivision depth bias.
 
 RhythmicComplexityGradient = (() => {
+  const V = Validator.create('RhythmicComplexityGradient');
   /** @type {Array<{ time: number, complexity: number }>} */
   const samples = [];
   const MAX_SAMPLES = 48;
@@ -14,12 +15,8 @@ RhythmicComplexityGradient = (() => {
    * @param {number} time - absolute time in seconds
    */
   function recordComplexity(complexity, time) {
-    if (typeof complexity !== 'number' || !Number.isFinite(complexity)) {
-      throw new Error('RhythmicComplexityGradient.recordComplexity: complexity must be finite');
-    }
-    if (typeof time !== 'number' || !Number.isFinite(time)) {
-      throw new Error('RhythmicComplexityGradient.recordComplexity: time must be finite');
-    }
+    V.requireFinite(complexity, 'complexity');
+    V.requireFinite(time, 'time');
     samples.push({ time, complexity: clamp(complexity, 0, 1) });
     if (samples.length > MAX_SAMPLES) samples.shift();
   }

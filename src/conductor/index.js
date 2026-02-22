@@ -5,7 +5,11 @@ require('./HarmonicRhythmTracker');
 // @ts-ignore: load side-effect module with globals
 require('./harmonicJourneyHelpers');
 // @ts-ignore: load side-effect module with globals
+require('./harmonicJourneyPlanner');
+// @ts-ignore: load side-effect module with globals
 require('./HarmonicJourney');
+// @ts-ignore: load side-effect module with globals
+require('./phraseArcProfiler');
 // @ts-ignore: load side-effect module with globals
 require('./PhraseArcManager');
 // @ts-ignore: conductor profile factories (loaded here per local/no-requires-outside-index)
@@ -39,6 +43,8 @@ require('./profiles/conductorConfigResolvers');
 require('./profiles/conductorConfigAccessors');
 // @ts-ignore: conductor profile config/accessor (must precede DynamismEngine & GlobalConductor)
 require('./profiles/conductorConfig');
+// @ts-ignore: load side-effect module with globals
+require('./dynamismPulse');
 // @ts-ignore: load side-effect module with globals
 require('./DynamismEngine');
 // @ts-ignore: load side-effect module with globals

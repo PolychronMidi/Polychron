@@ -35,14 +35,15 @@ ConductorRegulationListener = (() => {
       applyJourneyBias(state.crossModBias);
     });
 
-    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
-      state.avg = 0;
-      state.densityBias = 0;
-      state.crossModBias = 1;
-      applyJourneyBias(1);
-    });
-
+    CrossLayerRegistry.register('ConductorRegulationListener', { reset: resetSection }, ['section']);
     initialized = true;
+  }
+
+  function resetSection() {
+    state.avg = 0;
+    state.densityBias = 0;
+    state.crossModBias = 1;
+    applyJourneyBias(1);
   }
 
   function getState() {
@@ -51,6 +52,7 @@ ConductorRegulationListener = (() => {
 
   return {
     initialize,
-    getState
+    getState,
+    resetSection
   };
 })();

@@ -47,11 +47,7 @@ JourneyRhythmCoupler = (() => {
       _boldness = moveToBoldness(distance, move);
     });
 
-    // Partial boldness decay at section boundaries (not full reset — let it linger)
-    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
-      _boldness *= 0.5;
-    });
-
+    CrossLayerRegistry.register('JourneyRhythmCoupler', { reset: resetSection }, ['section']);
     _initialized = true;
   }
 
@@ -115,6 +111,13 @@ JourneyRhythmCoupler = (() => {
   }
 
   /**
+   * Partial boldness decay at section boundaries (not full reset — let it linger).
+   */
+  function resetSection() {
+    _boldness *= 0.5;
+  }
+
+  /**
    * Reset state.
    */
   function reset() {
@@ -129,6 +132,7 @@ JourneyRhythmCoupler = (() => {
     setExternalBias,
     biasRhythmWeights,
     decay,
-    reset
+    reset,
+    resetSection
   };
 })();

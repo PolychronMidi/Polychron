@@ -4,6 +4,7 @@
 // Pure query API — advises family/key selection for structural callbacks.
 
 StructuralFormTracker = (() => {
+  const V = Validator.create('StructuralFormTracker');
   /** @type {Array<{ section: number, family: string, key: string, mode: string, energy: number }>} */
   const formMap = [];
 
@@ -16,9 +17,7 @@ StructuralFormTracker = (() => {
    * @param {number} energy - average composite intensity (0-1)
    */
   function recordSection(section, family, key, mode, energy) {
-    if (typeof section !== 'number' || !Number.isFinite(section)) {
-      throw new Error('StructuralFormTracker.recordSection: section must be finite number');
-    }
+    V.requireFinite(section, 'section');
     formMap.push({ section, family, key, mode, energy });
   }
 

@@ -43,8 +43,8 @@ getPolyrhythm = () => {
       }
     }
     if (bestMatch.totalMeasures !== Infinity &&
-        (bestMatch.totalMeasures > 2 &&
-         (bestMatch.primaryMeasures > 1 || bestMatch.polyMeasures > 1))) {
+        (bestMatch.totalMeasures > 3 &&
+         (bestMatch.primaryMeasures > 1 && bestMatch.polyMeasures > 1))) {
       measuresPerPhrase1 = bestMatch.primaryMeasures;
       measuresPerPhrase2 = bestMatch.polyMeasures;
       found = true;

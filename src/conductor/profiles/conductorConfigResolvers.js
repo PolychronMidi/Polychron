@@ -21,9 +21,6 @@ conductorConfigResolvers = function({ getProfileTuning }) {
     /** @type {{distance?:number,move?:string}|null} */
     let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
     if (!stop) {
-      if (!HarmonicJourney || typeof HarmonicJourney.getStop !== 'function') {
-        throw new Error('conductorConfigResolvers.getJourneyFxModulation: HarmonicJourney.getStop is not available');
-      }
       if (!Number.isFinite(Number(sectionIndex))) {
         throw new Error(`conductorConfigResolvers.getJourneyFxModulation: sectionIndex must be finite, got ${sectionIndex}`);
       }
