@@ -119,11 +119,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const phraseL1Composer = layerPass.selectLayerComposerForMeasure('L1', phraseFamily, composerCtx);
     layerPass.selectLayerComposerForMeasure('L2', phraseFamily, composerCtx);
     composer = phraseL1Composer;
-    [numerator, denominator] = composer.getMeter();
+    getMeterPair.pick();
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
     LM.activate('L1', false);
     getMidiTiming();
-    getPolyrhythm();
     // Initialize polyrhythmic phase coupling after alignment is computed
     PhaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
     measuresPerPhrase = measuresPerPhrase1;

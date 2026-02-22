@@ -323,6 +323,8 @@ declare var c: any;
 declare var LM: any;
 declare var getMidiTiming: any;
 declare var setMidiTiming: any;
+declare var POLYRHYTHM_PAIRS: any;
+declare var getMeterPair: { pick: () => void; reset: () => void };
 declare var getPolyrhythm: any;
 declare var setUnitTiming: any;
 declare var bestMatch: number;

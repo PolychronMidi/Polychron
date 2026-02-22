@@ -1,19 +1,17 @@
-// fullBootstrap.js — Authoritative registry of globals validated at boot time.
+// fullBootstrap.js — Boot-time existence check for all runtime globals.
 // mainBootstrap.assertBootstrapGlobals() proves these exist before the main loop.
 // The ESLint rule `no-typeof-validated-global` bans redundant typeof probes on them.
 //
-// To add a new validated global:
-//   1. Add it to VALIDATED_GLOBALS below
-//   2. Add a corresponding check in mainBootstrap.assertBootstrapGlobals()
-//   3. The ESLint rule picks it up automatically — no other file edits needed.
+// VALIDATED_GLOBALS is AUTO-GENERATED from src/types/globals.d.ts by
+// scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
+// To add a new validated global: edit globals.d.ts only.
 
 FullBootstrap = (() => {
   /**
+   * AUTO-GENERATED from src/types/globals.d.ts — do not edit by hand.
    * Every name in this set is proven-defined by mainBootstrap.assertBootstrapGlobals()
    * before any composition code runs. Typeof-probing these downstream is redundant
    * and banned by the `local/no-typeof-validated-global` ESLint rule.
-   *
-   * Organized by subsystem, matching src/index.js load order.
    */
   const VALIDATED_GLOBALS = Object.freeze([
 
@@ -169,6 +167,8 @@ FullBootstrap = (() => {
 
     // ── time ──
     'LM',
+    'POLYRHYTHM_PAIRS',
+    'getMeterPair',
     'timeGridPrune',
     'timeGridSearchStart',
     'AbsoluteTimeGrid',
