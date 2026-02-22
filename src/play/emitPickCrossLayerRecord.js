@@ -11,7 +11,7 @@ const V = Validator.create('emitPickCrossLayerRecord');
  */
 emitPickCrossLayerRecord = function(ctx) {
   V.assertPlainObject(ctx, 'ctx');
-  const { noteToEmit, texVel, activeLayerName, absMsAtOnTick, unit, onTick, sourceCH, tpUnit, texSustain } = ctx;
+  const { noteToEmit, texVel, activeLayerName, absMsAtOnTick, unit, onTick, sourceCH, tpUnit, texSustain, harmonicOtherMidi } = ctx;
 
   const absMs = absMsAtOnTick;
   const atwTime = absMs / 1000;
@@ -51,20 +51,29 @@ emitPickCrossLayerRecord = function(ctx) {
   // Entropy Regulator: record sample for entropy measurement
   EntropyRegulator.recordSample(noteToEmit, texVel, activeLayerName);
 
-  // Record cross-layer interval for harmonic guard tracking
-  const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
-  const otherRecentEntry = AbsoluteTimeWindow.getLastNote({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
-  if (otherRecentEntry) {
-    const otherMidiCandidate = Number(
-      (Number.isFinite(Number(otherRecentEntry.midi)))
-        ? otherRecentEntry.midi
-        : (otherRecentEntry.note || NaN)
-    );
-    if (!Number.isFinite(otherMidiCandidate)) {
-      throw new Error(`${unit}.emitPickCrossLayerRecord: other layer note history entry must include finite midi or note`);
-    }
-    if (otherMidiCandidate > 0) {
-      HarmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, absMs);
+  // Record cross-layer interval for harmonic guard tracking.
+  // Use pre-computed otherMidi from HarmonicIntervalGuard.nudgePitch() when available,
+  // avoiding a redundant AbsoluteTimeWindow.getLastNote() query.
+  if (Number.isFinite(harmonicOtherMidi) && harmonicOtherMidi > 0) {
+    HarmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, absMs);
+  } else if (harmonicOtherMidi === -1) {
+    // harmonicOtherMidi === -1 means nudgePitch found no other-layer note; skip query entirely
+  } else {
+    // Fallback: query ATW directly (should not normally occur)
+    const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
+    const otherRecentEntry = AbsoluteTimeWindow.getLastNote({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+    if (otherRecentEntry) {
+      const otherMidiCandidate = Number(
+        (Number.isFinite(Number(otherRecentEntry.midi)))
+          ? otherRecentEntry.midi
+          : (otherRecentEntry.note || NaN)
+      );
+      if (!Number.isFinite(otherMidiCandidate)) {
+        throw new Error(`${unit}.emitPickCrossLayerRecord: other layer note history entry must include finite midi or note`);
+      }
+      if (otherMidiCandidate > 0) {
+        HarmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, absMs);
+      }
     }
   }
 

@@ -294,6 +294,7 @@ FullBootstrap = (() => {
     'processBeat',
     'playNotes',
     'playNotesEmitPick',
+    'setFeedbackPitchBias',
     'emitPickCrossLayerRecord',
     'emitPickSourceTextures',
     'emitPickReflectionTextures',

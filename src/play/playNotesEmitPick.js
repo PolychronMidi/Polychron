@@ -8,6 +8,11 @@ let _chCacheFlip = /** @type {boolean|null} */ (null);
 /** @type {any[]} */ let _cachedReflectionChs = [];
 /** @type {any[]} */ let _cachedBassChs = [];
 
+// Beat-level feedback pitch bias — set once from processBeat, read per-pick
+let _beatFeedbackPitchBias = -1;
+/** @param {number} bias */
+setFeedbackPitchBias = function(bias) { _beatFeedbackPitchBias = Number.isFinite(bias) ? bias : -1; };
+
 function _refreshChannelCache() {
   const key = beatStart;
   const flip = flipBin;
@@ -144,7 +149,10 @@ playNotesEmitPick = function(opts = {}) {
       ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
       : pickNote;
     const noteAfterSpectral = SpectralComplementarity.nudgeToFillGap(noteToEmitBase, activeLayerName).midi;
-    const noteAfterHarmonic = HarmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTick).midi;
+    // Pass pre-computed pitchBias from processBeat's FeedbackOscillator call to avoid double-react
+    const feedbackPitchBias = _beatFeedbackPitchBias;
+    const harmonicResult = HarmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTick, feedbackPitchBias);
+    const noteAfterHarmonic = harmonicResult.midi;
     const noteToEmit = RegisterCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTick).midi;
 
     const texVelBase = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
@@ -179,7 +187,8 @@ playNotesEmitPick = function(opts = {}) {
     if (isPrimary) {
       scheduled += emitPickCrossLayerRecord({
         noteToEmit, texVel, activeLayerName, absMsAtOnTick, unit,
-        onTick, sourceCH, tpUnit, texSustain
+        onTick, sourceCH, tpUnit, texSustain,
+        harmonicOtherMidi: harmonicResult.otherMidi
       });
     }
 

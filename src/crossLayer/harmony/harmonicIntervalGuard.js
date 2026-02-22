@@ -53,13 +53,14 @@ HarmonicIntervalGuard = (() => {
 
   /**
    * Nudge a MIDI note to better fit the desired consonance/dissonance target.
-   * Uses SectionIntentCurves dissonanceTarget and FeedbackOscillator pitchBias.
+   * Accepts pre-computed pitchBias to avoid re-calling FeedbackOscillator.
    * @param {number} midi - original MIDI note
    * @param {string} activeLayer
    * @param {number} absTimeMs
-   * @returns {{ midi: number, nudged: boolean, interval: number }}
+   * @param {number} [externalPitchBias=-1] - pre-computed pitch bias from FeedbackOscillator
+   * @returns {{ midi: number, nudged: boolean, interval: number, otherMidi: number }}
    */
-  function nudgePitch(midi, activeLayer, absTimeMs) {
+  function nudgePitch(midi, activeLayer, absTimeMs, externalPitchBias) {
     V.requireFinite(midi, 'midi');
     V.requireFinite(absTimeMs, 'absTimeMs');
 
@@ -67,10 +68,9 @@ HarmonicIntervalGuard = (() => {
     const intent = SectionIntentCurves.getLastIntent();
     const dissonanceTarget = V.optionalFinite(intent.dissonanceTarget, 0.5);
 
-    // Get pitch bias from FeedbackOscillator (consuming dead-end signal)
-    const feedbackBias = FeedbackOscillator.applyFeedback(absTimeMs, activeLayer) ?? null;
-    const pitchBias = (feedbackBias && Number.isFinite(feedbackBias.pitchBias) && feedbackBias.pitchBias >= 0)
-      ? feedbackBias.pitchBias
+    // Use pre-computed pitch bias if provided; avoids re-calling FeedbackOscillator.applyFeedback
+    const pitchBias = (typeof externalPitchBias === 'number' && Number.isFinite(externalPitchBias) && externalPitchBias >= 0)
+      ? externalPitchBias
       : -1;
 
     // Find other layer's most recent note from ATW
@@ -85,7 +85,7 @@ HarmonicIntervalGuard = (() => {
       otherRecentMidi = lastNote.midi || lastNote.note || -1;
     }
 
-    if (otherRecentMidi < 0) return { midi, nudged: false, interval: -1 };
+    if (otherRecentMidi < 0) return { midi, nudged: false, interval: -1, otherMidi: -1 };
 
     const currentIC = ((midi - otherRecentMidi) % 12 + 12) % 12;
     const currentConsonance = CONSONANCE[currentIC];
@@ -93,10 +93,10 @@ HarmonicIntervalGuard = (() => {
     // Should we nudge? Only if current consonance is far from target
     const desiredConsonance = 1 - dissonanceTarget;
     const error = currentConsonance - desiredConsonance;
-    if (Math.abs(error) < 0.25) return { midi, nudged: false, interval: currentIC };
+    if (Math.abs(error) < 0.25) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Apply nudge probability scaled by error magnitude
-    if (rf() > Math.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC };
+    if (rf() > Math.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Find best candidate within ±3 semitones
     let bestNote = midi;
@@ -119,10 +119,10 @@ HarmonicIntervalGuard = (() => {
     if (bestNote !== midi) {
       const newIC = ((bestNote - otherRecentMidi) % 12 + 12) % 12;
       recordCrossInterval(bestNote, otherRecentMidi, absTimeMs);
-      return { midi: bestNote, nudged: true, interval: newIC };
+      return { midi: bestNote, nudged: true, interval: newIC, otherMidi: otherRecentMidi };
     }
 
-    return { midi, nudged: false, interval: currentIC };
+    return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
   }
 
   function reset() {

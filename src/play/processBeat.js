@@ -105,6 +105,8 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clFeedback = FeedbackOscillator.applyFeedback(clAbsMs, layer);
   if (!clFeedback || typeof clFeedback !== 'object') throw new Error('processBeat: FeedbackOscillator.applyFeedback must return an object');
   const clFeedbackEnergy = requireUnitInterval('FeedbackOscillator.applyFeedback.energy', clFeedback.energy);
+  // Stash pitchBias for playNotesEmitPick to use (avoids double-calling FeedbackOscillator per pick)
+  setFeedbackPitchBias(clFeedback.pitchBias);
 
   const clCadenceGate = PhaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, layer, Boolean(clCadence.suggest), clPhaseSnapshot);
   CadenceAlignment.postTension(clAbsMs, layer, clTension, clCadence.suggest);
