@@ -8,6 +8,8 @@ require('./AttackDensityProfiler');
 // @ts-ignore: load side-effect module with globals
 require('./GrooveTemplateAdvisor');
 // @ts-ignore: load side-effect module with globals
+require('./interLayerRhythmHelpers');
+// @ts-ignore: load side-effect module with globals
 require('./InterLayerRhythmAnalyzer');
 // @ts-ignore: load side-effect module with globals
 require('./OnsetDensityProfiler');

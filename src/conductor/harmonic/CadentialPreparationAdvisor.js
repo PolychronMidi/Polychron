@@ -12,7 +12,7 @@ CadentialPreparationAdvisor = (() => {
    * the current harmonic state supports preparation.
    * @returns {{ tensionBias: number, preparationActive: boolean, urgency: number }}
    */
-  function getCadentialSignal() {
+  function _computeCadentialSignal() {
     // Check phrase position via ComposerFactory.sharedPhraseArcManager
     const phraseCtx = (ComposerFactory.sharedPhraseArcManager)
       ? ComposerFactory.sharedPhraseArcManager.getPhraseContext()
@@ -49,6 +49,14 @@ CadentialPreparationAdvisor = (() => {
 
     return { tensionBias, preparationActive, urgency };
   }
+
+  const _cache = beatCache.create(_computeCadentialSignal);
+
+  /**
+   * Evaluate cadential proximity and harmonic approach (cached per beat).
+   * @returns {{ tensionBias: number, preparationActive: boolean, urgency: number }}
+   */
+  function getCadentialSignal() { return _cache.get(); }
 
   /**
    * Get tension multiplier for the derivedTension chain.

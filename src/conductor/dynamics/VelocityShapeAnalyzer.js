@@ -14,7 +14,7 @@ VelocityShapeAnalyzer = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
    */
-  function getVelocityShape(opts = {}) {
+  function _computeVelocityShape(opts = {}) {
     const { layer, windowSeconds } = opts;
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
@@ -87,6 +87,21 @@ VelocityShapeAnalyzer = (() => {
       flat: shape === 'flat',
       punchiness
     };
+  }
+
+  const _defaultShapeCache = beatCache.create(() => _computeVelocityShape());
+
+  /**
+   * Analyze velocity trajectory and envelope shape.
+   * Default call (no opts) is cached per beat; explicit opts bypass cache.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @param {number} [opts.windowSeconds]
+   * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
+   */
+  function getVelocityShape(opts) {
+    if (opts === undefined) return _defaultShapeCache.get();
+    return _computeVelocityShape(opts);
   }
 
   /**

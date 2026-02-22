@@ -206,6 +206,7 @@ declare var TimbreBalanceTracker: any;
 declare var HarmonicRhythmDensityRatio: any;
 declare var ThematicRecallDetector: any;
 declare var beatGridHelpers: any;
+declare var interLayerRhythmHelpers: any;
 declare var LayerIndependenceScorer: any;
 declare var TemporalProportionTracker: any;
 declare var ChromaticSaturationMonitor: any;
@@ -242,6 +243,7 @@ declare var signalReader: any;
 declare var profileAdaptation: any;
 declare var signalTelemetry: any;
 declare var ModuleLifecycle: any;
+declare var beatCache: any;
 
 // ── rhythm ──
 declare var RhythmRegistry: any;
@@ -544,6 +546,7 @@ declare var SpectralComplementarity: any;
 declare var DynamicRoleSwap: any;
 declare var MotifEcho: any;
 declare var InteractionHeatMap: any;
+declare var entropyMetrics: any;
 declare var EntropyRegulator: any;
 declare var EmergentDownbeat: any;
 declare var ExplainabilityBus: any;

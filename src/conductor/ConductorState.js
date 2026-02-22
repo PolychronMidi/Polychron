@@ -101,9 +101,17 @@ ConductorState = (() => {
     snapshot.updatedAt = Date.now();
   }
 
+  function resetSection() {
+    snapshot.textureMode = 'single';
+    snapshot.textureFatigue = 0;
+    snapshot.updatedAt = Date.now();
+  }
+
   function initialize() {
     if (initialized) return true;
     const EVENTS = V.getEventsOrThrow();
+
+    ConductorIntelligence.registerModule('ConductorState', { reset: resetSection }, ['section']);
 
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.textureMode = data.mode;
@@ -144,12 +152,6 @@ ConductorState = (() => {
     EventBus.on(EVENTS.BEAT_BINAURAL_APPLIED, (data) => {
       if (Number.isFinite(Number(data.freqOffset))) snapshot.binauralFreqOffset = Number(data.freqOffset);
       if (typeof data.flipBin === 'boolean') snapshot.binauralFlip = data.flipBin;
-      snapshot.updatedAt = Date.now();
-    });
-
-    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
-      snapshot.textureMode = 'single';
-      snapshot.textureFatigue = 0;
       snapshot.updatedAt = Date.now();
     });
 

@@ -12,7 +12,7 @@ TessituraPressureMonitor = (() => {
    * Analyze tessitural pressure from recent notes.
    * @returns {{ extremeRatio: number, region: string, densityBias: number }}
    */
-  function getPressureSignal() {
+  function _computePressureSignal() {
     const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 3) {
@@ -59,6 +59,14 @@ TessituraPressureMonitor = (() => {
 
     return { extremeRatio, region, densityBias };
   }
+
+  const _cache = beatCache.create(_computePressureSignal);
+
+  /**
+   * Analyze tessitural pressure from recent notes (cached per beat).
+   * @returns {{ extremeRatio: number, region: string, densityBias: number }}
+   */
+  function getPressureSignal() { return _cache.get(); }
 
   /**
    * Get density multiplier for the targetDensity chain.

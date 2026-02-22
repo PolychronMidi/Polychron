@@ -24,7 +24,7 @@ RhythmicInertiaTracker = (() => {
    * Compute inertia: high = patterns repeating, low = high variability.
    * @returns {{ inertia: number, densityBias: number, suggestion: string }}
    */
-  function getInertiaSignal() {
+  function _computeInertiaSignal() {
     if (patternFingerprints.length < 4) {
       return { inertia: 0.5, densityBias: 1, suggestion: 'maintain' };
     }
@@ -76,6 +76,14 @@ RhythmicInertiaTracker = (() => {
 
     return { inertia, densityBias, suggestion };
   }
+
+  const _cache = beatCache.create(_computeInertiaSignal);
+
+  /**
+   * Get latest inertia signal (cached per beat).
+   * @returns {{ inertia: number, densityBias: number, suggestion: string }}
+   */
+  function getInertiaSignal() { return _cache.get(); }
 
   /**
    * Get density multiplier for the targetDensity chain.

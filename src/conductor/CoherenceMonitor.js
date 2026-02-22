@@ -97,10 +97,6 @@ CoherenceMonitor = (() => {
       }
     });
 
-    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
-      reset();
-    });
-
     initialized = true;
   }
 
@@ -213,6 +209,7 @@ CoherenceMonitor = (() => {
     coherenceEntropy: getEntropySignal(),
     coherenceWindowSize: window.length
   }));
+  ConductorIntelligence.registerModule('CoherenceMonitor', { reset }, ['section']);
 
   return {
     initialize,

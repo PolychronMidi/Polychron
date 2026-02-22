@@ -7,6 +7,10 @@ IntervalBalanceTracker = (() => {
   const V = Validator.create('IntervalBalanceTracker');
   const WINDOW_SECONDS = 5;
 
+  // Beat-level cache: getIntervalProfile is called 2-3x per beat
+  // (densityBias + getIntervalBias via stateProvider + getLeapPenaltyBias)
+  const _profileCache = beatCache.create(() => _getIntervalProfile());
+
   /**
    * Analyze interval distribution from recent notes.
    * @param {Object} [opts]
@@ -14,7 +18,13 @@ IntervalBalanceTracker = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ avgInterval: number, maxInterval: number, stepRatio: number, leapRatio: number, unisonRatio: number, variety: number, rut: string|null, monotonous: boolean, erratic: boolean }}
    */
-  function getIntervalProfile(opts = {}) {
+  function getIntervalProfile(opts) {
+    if (opts === undefined) return _profileCache.get();
+    return _getIntervalProfile(opts);
+  }
+
+  /** @private */
+  function _getIntervalProfile(opts = {}) {
     const { layer, windowSeconds } = opts;
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });

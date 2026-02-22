@@ -3,9 +3,6 @@
 // Detects anomalies (>30% change from rolling mean) for debugging emergent moments.
 
 signalTelemetry = (() => {
-  const V = Validator.create('signalTelemetry');
-  let initialized = false;
-
   const MAX_HISTORY = 200;
   /** @type {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>} */
   const history = [];
@@ -108,20 +105,13 @@ signalTelemetry = (() => {
     trend = 'stable';
   }
 
-  /** Subscribe to SECTION_BOUNDARY so the ring buffer clears each section. */
-  function initialize() {
-    if (initialized) return;
-    initialized = true;
-    const EVENTS = V.getEventsOrThrow();
-    EventBus.on(EVENTS.SECTION_BOUNDARY, reset);
-  }
-
   // Self-register
   ConductorIntelligence.registerRecorder('signalTelemetry', record);
   ConductorIntelligence.registerStateProvider('signalTelemetry', () => ({
     telemetryAnomalyDetected: anomalyDetected,
     telemetryTrend: trend
   }));
+  ConductorIntelligence.registerModule('signalTelemetry', { reset }, ['section']);
 
-  return { record, getHistory, isAnomalyDetected, getTrend, reset, initialize };
+  return { record, getHistory, isAnomalyDetected, getTrend, reset };
 })();

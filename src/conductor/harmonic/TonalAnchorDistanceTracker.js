@@ -11,7 +11,7 @@ TonalAnchorDistanceTracker = (() => {
    * Compute tonal distance from home center.
    * @returns {{ distance: number, tensionBias: number, adventureLevel: string }}
    */
-  function getDistanceSignal() {
+  function _computeDistanceSignal() {
     const { counts: pcCounts, total } = pitchClassHelpers.getPitchClassHistogram(WINDOW_SECONDS);
 
     if (total < 5) {
@@ -56,6 +56,14 @@ TonalAnchorDistanceTracker = (() => {
 
     return { distance, tensionBias, adventureLevel };
   }
+
+  const _cache = beatCache.create(_computeDistanceSignal);
+
+  /**
+   * Compute tonal distance from home center (cached per beat).
+   * @returns {{ distance: number, tensionBias: number, adventureLevel: string }}
+   */
+  function getDistanceSignal() { return _cache.get(); }
 
   /**
    * Get tension multiplier for the derivedTension chain.

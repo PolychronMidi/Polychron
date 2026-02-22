@@ -51,6 +51,7 @@ FullBootstrap = (() => {
     'profileAdaptation',
     'signalTelemetry',
     'ModuleLifecycle',
+    'beatCache',
     'GlobalConductor',
 
     // ── conductor/profiles ──
