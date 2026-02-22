@@ -13,6 +13,10 @@ const _stutterStore = {
   profiles: Object.assign({}, STUTTER_PROFILES)
 };
 
+// Validation caches — these globals are static within a run, so re-validation is redundant.
+let _crossModValidated = false;
+let _profilesValidated = false;
+
 function assertProfileOrFail(profileName, profileObj) {
   V.assertPlainObject(profileObj, `StutterConfig.profiles.${profileName}`);
   V.assertRange(profileObj.perProb, 0, 1, `StutterConfig.profiles.${profileName}.perProb`);
@@ -84,10 +88,14 @@ function getConfig() { return validateConfig(); }
 function setConfig(partial = {}) {
   V.assertPlainObject(partial, 'StutterConfigStore.setConfig.partial');
   Object.assign(_stutterStore, partial);
+  _profilesValidated = false;
   return validateConfig();
 }
 function getProfileConfig(profile = 'source') {
-  validateConfig();
+  if (!_profilesValidated) {
+    validateConfig();
+    _profilesValidated = true;
+  }
   const profileName = String(profile);
   if (!_stutterStore.profiles[profileName]) {
     throw new Error(`StutterConfigStore.getProfileConfig: unknown profile "${profileName}"`);
@@ -111,7 +119,10 @@ function getCrossModRules() {
   if (!STUTTER_CROSSMOD_RULES) {
     throw new Error('StutterConfigStore.getCrossModRules: STUTTER_CROSSMOD_RULES global is not defined');
   }
-  return assertCrossModRulesOrFail(STUTTER_CROSSMOD_RULES);
+  if (_crossModValidated) return STUTTER_CROSSMOD_RULES;
+  const result = assertCrossModRulesOrFail(STUTTER_CROSSMOD_RULES);
+  _crossModValidated = true;
+  return result;
 }
 
 function getPreset(name = 'default') {
