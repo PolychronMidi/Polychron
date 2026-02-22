@@ -4,9 +4,6 @@
  */
 setBalanceAndFX = () => {
 const V = Validator.create('setBalanceAndFX');
-if (!ConductorConfig || typeof ConductorConfig.getSpatialCanvasParams !== 'function') {
-  throw new Error('setBalanceAndFX: ConductorConfig.getSpatialCanvasParams is not available — conductor must load before fx');
-}
 const spatialCanvas = ConductorConfig.getSpatialCanvasParams();
 if (!spatialCanvas || typeof spatialCanvas !== 'object' || !Array.isArray(spatialCanvas.balOffset) || !Array.isArray(spatialCanvas.sideBias)) {
   throw new Error('setBalanceAndFX: getSpatialCanvasParams returned invalid shape');

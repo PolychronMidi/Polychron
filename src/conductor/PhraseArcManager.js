@@ -39,12 +39,13 @@ PhraseArcManager = class PhraseArcManager {
       this._densityRangeOverride = null;
     }
 
-    const breath = this._getBreathProfile();
+    const breath = phraseArcProfiler.getBreathProfile();
     this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
     this.densityRange = this._densityRangeOverride || breath.densityRange;
 
-    // Arc profiles cache
-    this._arcProfiles = this._generateArcProfiles();
+    // Arc profiles cache; per-beat context cache (keyed on beatCount)
+    this._arcProfiles = phraseArcProfiler.generateArcProfiles();
+    this._contextCache = beatCache.create(() => this._computePhraseContext());
   }
 
   /**
@@ -53,36 +54,24 @@ PhraseArcManager = class PhraseArcManager {
    * @returns {Object} { position, phase, registerBias, densityMultiplier, voiceIndependence, dynamism, atBoundary }
    */
   getPhraseContext() {
-    // Beat-level cache: all inputs (measureIndex, phraseIndex, measuresPerPhrase) are
-    // constant within a beat, so repeated calls from GlobalConductorUpdate, DynamismEngine,
-    // ConductorState, CadenceAdvisor, playMotifs, TempoFeelEngine etc. can share one result.
-    const currentBeat = typeof beatCount === 'number' ? beatCount : -1;
-    if (currentBeat >= 0 && this._cachedBeat === currentBeat && this._cachedContext) {
-      return this._cachedContext;
-    }
+    return this._contextCache.get();
+  }
 
-    // Read directly from globals set in main.js loops
-    if (measureIndex === undefined || measuresPerPhrase === undefined || phraseIndex === undefined) {
-      throw new Error('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
-    }
-
-    const breath = this._getBreathProfile();
+  _computePhraseContext() {
+    const breath = phraseArcProfiler.getBreathProfile();
     this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
     this.densityRange = this._densityRangeOverride || breath.densityRange;
 
     const pos = TimeStream.normalizedProgress('measure');
-    const phase = this._getPhase(pos);
+    const phase = phraseArcProfiler.getPhase(pos);
 
     let currentArcType = this.arcType;
-    if (HarmonicContext && HarmonicContext.getField) {
-      const sectionPhase = HarmonicContext.getField('sectionPhase');
-      currentArcType = ConductorConfig.getArcMapping(sectionPhase);
-    }
+    const sectionPhase = HarmonicContext.getField('sectionPhase');
+    currentArcType = ConductorConfig.getArcMapping(sectionPhase);
 
-    // Fallback to configured arcType if mapped one is missing (though defaults cover it)
     const profile = this._arcProfiles[currentArcType] || this._arcProfiles[this.arcType];
 
-    const result = {
+    return {
       position: pos,
       phase: phase,
       measureInPhrase: measureIndex,
@@ -95,11 +84,6 @@ PhraseArcManager = class PhraseArcManager {
       atStart: measureIndex === 0,
       atEnd: measureIndex === measuresPerPhrase - 1
     };
-
-    // Cache for this beat
-    this._cachedBeat = currentBeat;
-    this._cachedContext = result;
-    return result;
   }
 
   /**
@@ -150,63 +134,4 @@ PhraseArcManager = class PhraseArcManager {
     return true;
   }
 
-  _getBreathProfile() {
-    const bp = ConductorConfig.getPhraseBreathParams();
-    if (bp && typeof bp === 'object') {
-      return bp;
-    }
-    return {
-      registerRange: 12,
-      densityRange: { min: 0.85, max: 1.3 },
-      independence: {
-        archInner: 0.7,
-        archOuter: 0.3,
-        riseFallInner: 0.6,
-        riseFallOuter: 0.4,
-        buildResolveInner: 0.8,
-        buildResolveOuter: 0.3,
-        waveBase: 0.4,
-        waveAmplitude: 0.4
-      },
-      dynamism: {
-        archBase: 0.5,
-        archAmplitude: 0.5,
-        riseFallBase: 0.4,
-        riseFallAmplitude: 0.6,
-        buildResolveBase: 0.3,
-        buildResolveSlope: 0.7,
-        buildResolveEnd: 0.2,
-        waveBase: 0.5,
-        waveAmplitude: 0.5
-      }
-    };
-  }
-
-  _getPhase(pos) {
-    if (pos < 0.25) return 'opening';
-    if (pos < 0.5) return 'development';
-    if (pos < 0.75) return 'climax';
-    return 'resolution';
-  }
-
-  /**
-   * Generate arc profile functions from PHRASES_ARC_CURVES global (defined in ConductorConfig).
-   * Fail-fast if the global is missing — arc curves must be centralized in config.
-   */
-  _generateArcProfiles() {
-    if (!PHRASES_ARC_CURVES) {
-      throw new Error('PhraseArcManager: PHRASES_ARC_CURVES global is not defined — ensure ConductorConfig is loaded first');
-    }
-
-    const adapted = {};
-    for (const [key, curve] of Object.entries(PHRASES_ARC_CURVES)) {
-      adapted[key] = {
-        register: (pos) => (curve.register ? curve.register(pos) : 0),
-        density: (pos) => (curve.density ? curve.density(pos) : 1),
-        independence: (pos) => (curve.independence ? curve.independence(pos) : 0.5),
-        dynamism: (pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0)
-      };
-    }
-    return adapted;
-  }
 }

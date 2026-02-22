@@ -122,15 +122,11 @@ VoiceLeadingCore = {
 
       const harmonicKey = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
         ? opts.tonic
-        : (HarmonicContext && HarmonicContext.getField)
-          ? HarmonicContext.getField('key')
-          : undefined;
+        : (HarmonicContext.getField('key') || undefined);
 
       const harmonicQuality = (opts && typeof opts.quality === 'string' && opts.quality.length > 0)
         ? opts.quality
-        : (HarmonicContext && HarmonicContext.getField)
-          ? HarmonicContext.getField('quality')
-          : 'major';
+        : (HarmonicContext.getField('quality') || 'major');
 
       const corpusStrength = Number.isFinite(Number(opts && opts.corpusVoiceLeadingStrength))
         ? Number(opts.corpusVoiceLeadingStrength)

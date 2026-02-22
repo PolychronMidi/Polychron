@@ -36,10 +36,6 @@ ConvergenceHarmonicTrigger = (() => {
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system
-    if (!AdaptiveTrustScores ||
-        typeof AdaptiveTrustScores.getWeight !== 'function') {
-      throw new Error('ConvergenceHarmonicTrigger.onConvergence: AdaptiveTrustScores.getWeight is required');
-    }
     const trustScore = V.requireFinite(AdaptiveTrustScores.getWeight('convergence'), 'onConvergence.trustScore');
     if (trustScore < 0.2) return; // too low trust to act
 
