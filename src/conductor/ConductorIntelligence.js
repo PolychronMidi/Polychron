@@ -6,6 +6,30 @@
 ConductorIntelligence = (() => {
   const V = Validator.create('ConductorIntelligence');
 
+  // ── Lifecycle (shared with CrossLayerRegistry via ModuleLifecycle) ─────
+  const lifecycle = ModuleLifecycle.create('ConductorIntelligence');
+  let _initialized = false;
+
+  /**
+   * Register a module for scoped lifecycle resets (section, phrase, all).
+   * Call alongside registerDensityBias/registerRecorder/etc. so new modules
+   * self-declare their lifecycle without editing a hardcoded list.
+   * @param {string} name
+   * @param {{ reset: function }} mod
+   * @param {Array<'all'|'section'|'phrase'>} scopes
+   */
+  function registerModule(name, mod, scopes) {
+    lifecycle.register(name, mod, scopes);
+  }
+
+  /** Subscribe lifecycle resets to SECTION_BOUNDARY. Call once from main.js. */
+  function initialize() {
+    if (_initialized) return;
+    _initialized = true;
+    const EVENTS = V.getEventsOrThrow();
+    EventBus.on(EVENTS.SECTION_BOUNDARY, () => lifecycle.resetSection());
+  }
+
   // ── Shared collection helpers ─────────────────────────────────────
   /** @param {Array<{ getter: () => number, lo: number, hi: number }>} registry @returns {number} */
   function _collect(registry) {
@@ -205,6 +229,14 @@ ConductorIntelligence = (() => {
   }
 
   return {
+    // lifecycle
+    registerModule,
+    initialize,
+    resetSection: lifecycle.resetSection,
+    resetPhrase: lifecycle.resetPhrase,
+    getModuleNames: lifecycle.getNames,
+    getModuleCount: lifecycle.getCount,
+    // contribution registries
     registerDensityBias,
     collectDensityBias,
     collectDensityBiasWithAttribution,

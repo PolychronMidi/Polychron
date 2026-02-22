@@ -77,6 +77,7 @@ RhythmicDensityContrastTracker = (() => {
     const s = RhythmicDensityContrastTracker.getContrastSignal();
     return { rhythmicContrastSuggestion: s ? s.suggestion : 'maintain' };
   });
+  ConductorIntelligence.registerModule('RhythmicDensityContrastTracker', { reset }, ['section']);
 
   return {
     recordDensity,

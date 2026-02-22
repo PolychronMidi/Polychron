@@ -119,6 +119,7 @@ EnergyMomentumTracker = (() => {
 
   ConductorIntelligence.registerDensityBias('EnergyMomentumTracker', () => EnergyMomentumTracker.getDensityNudge(), 0.9, 1.3);
   ConductorIntelligence.registerRecorder('EnergyMomentumTracker', (ctx) => { EnergyMomentumTracker.recordEnergy(ctx.compositeIntensity, ctx.absTime); });
+  ConductorIntelligence.registerModule('EnergyMomentumTracker', { reset }, ['section']);
 
   return {
     recordEnergy,

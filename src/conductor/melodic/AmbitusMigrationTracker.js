@@ -105,6 +105,7 @@ AmbitusMigrationTracker = (() => {
       ambitusRegisterSuggestion: s ? s.registerSuggestion : 'maintain'
     };
   });
+  ConductorIntelligence.registerModule('AmbitusMigrationTracker', { reset }, ['section']);
 
   return {
     getCurrentAmbitus,

@@ -107,3 +107,4 @@ ConductorIntelligence.registerStateProvider('StructuralFormTracker', () => ({
   sectionCount: Object.keys(StructuralFormTracker.getFamilyUsage()).length,
   energyTrend: StructuralFormTracker.getEnergyArc().trend
 }));
+ConductorIntelligence.registerModule('StructuralFormTracker', { reset: StructuralFormTracker.reset }, ['section']);

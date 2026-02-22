@@ -86,6 +86,7 @@ HarmonicDensityOscillator = (() => {
   ConductorIntelligence.registerStateProvider('HarmonicDensityOscillator', () => ({
     harmonicOscillating: HarmonicDensityOscillator.getTensionBias() !== 1
   }));
+  ConductorIntelligence.registerModule('HarmonicDensityOscillator', { reset }, ['section']);
 
   return {
     recordChangeRate,

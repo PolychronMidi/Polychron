@@ -77,6 +77,7 @@ PhraseLengthMomentumTracker = (() => {
       phraseLengthSuggestion: s ? s.suggestion : 'maintain'
     };
   });
+  ConductorIntelligence.registerModule('PhraseLengthMomentumTracker', { reset }, ['section']);
 
   return {
     recordPhraseLength,

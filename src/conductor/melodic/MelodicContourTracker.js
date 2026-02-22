@@ -153,6 +153,7 @@ MelodicContourTracker = (() => {
     const s = MelodicContourTracker.getDirectionalitySignal();
     return { melodicDirection: s ? s.direction : 'undulating' };
   });
+  ConductorIntelligence.registerModule('MelodicContourTracker', { reset }, ['section']);
 
   return {
     update,

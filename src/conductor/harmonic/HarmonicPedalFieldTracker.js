@@ -95,6 +95,7 @@ HarmonicPedalFieldTracker = (() => {
     const s = HarmonicPedalFieldTracker.getPedalFieldSignal();
     return { pedalFieldStable: s ? s.fieldStable : false };
   });
+  ConductorIntelligence.registerModule('HarmonicPedalFieldTracker', { reset }, ['section']);
 
   return {
     recordBass,

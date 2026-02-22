@@ -112,6 +112,7 @@ DynamicArchitectPlanner = (() => {
     const s = DynamicArchitectPlanner.getDynamicPlanSignal();
     return { dynamicPlanMacroPosition: s ? s.macroPosition : 0 };
   });
+  ConductorIntelligence.registerModule('DynamicArchitectPlanner', { reset }, ['section']);
 
   return {
     recordIntensity,

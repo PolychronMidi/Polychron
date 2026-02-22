@@ -108,6 +108,7 @@ IntervalExpansionContractor = (() => {
     const s = IntervalExpansionContractor.getExpansionSignal();
     return { intervalExpansionTrend: s ? s.trend : 'stable' };
   });
+  ConductorIntelligence.registerModule('IntervalExpansionContractor', { reset }, ['section']);
 
   return {
     recordSnapshot,

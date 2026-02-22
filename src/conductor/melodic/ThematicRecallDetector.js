@@ -110,6 +110,7 @@ ThematicRecallDetector = (() => {
       thematicRecallSection: s ? s.recallSection : null
     };
   });
+  ConductorIntelligence.registerModule('ThematicRecallDetector', { reset }, ['section']);
 
   return {
     recordSectionFingerprint,

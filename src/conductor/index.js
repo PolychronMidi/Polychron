@@ -75,8 +75,5 @@ require('./dynamics');
 // @ts-ignore: load side-effect subfolder with globals
 require('./texture');
 
-// @ts-ignore: centralized section-boundary reset for all intelligence modules
-require('./conductorIntelligenceSectionReset');
-
 // @ts-ignore: load side-effect module with globals
 require('./config');
