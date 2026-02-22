@@ -75,6 +75,7 @@ TonalAnchorDistanceTracker = (() => {
     const s = TonalAnchorDistanceTracker.getDistanceSignal();
     return { tonalAdventureLevel: s ? s.adventureLevel : 'home' };
   });
+  ConductorIntelligence.registerModule('TonalAnchorDistanceTracker', { reset }, ['section']);
 
   return {
     getDistanceSignal,

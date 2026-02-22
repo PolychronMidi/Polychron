@@ -93,6 +93,7 @@ DynamicPeakMemory = (() => {
     const s = DynamicPeakMemory.getPeakSignal();
     return { dynamicPeakRecency: s ? s.peakRecency : 'none' };
   });
+  ConductorIntelligence.registerModule('DynamicPeakMemory', { reset }, ['section']);
 
   return {
     recordIntensity,

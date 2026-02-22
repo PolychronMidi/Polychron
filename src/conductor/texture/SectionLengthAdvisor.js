@@ -72,6 +72,7 @@ SectionLengthAdvisor = (() => {
   }
 
   ConductorIntelligence.registerRecorder('SectionLengthAdvisor', (ctx) => { SectionLengthAdvisor.recordEnergy(ctx.compositeIntensity); });
+  ConductorIntelligence.registerModule('SectionLengthAdvisor', { reset }, ['section']);
 
   return {
     recordEnergy,

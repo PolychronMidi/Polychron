@@ -50,7 +50,7 @@ FullBootstrap = (() => {
     'signalReader',
     'profileAdaptation',
     'signalTelemetry',
-    'conductorIntelligenceSectionReset',
+    'ModuleLifecycle',
     'GlobalConductor',
 
     // ── conductor/profiles ──

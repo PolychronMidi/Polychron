@@ -104,6 +104,7 @@ TemporalProportionTracker = (() => {
       proportionQuality: s ? s.quality : 0.5
     };
   });
+  ConductorIntelligence.registerModule('TemporalProportionTracker', { reset }, ['section']);
 
   return {
     recordSection,

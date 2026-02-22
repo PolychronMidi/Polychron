@@ -108,3 +108,4 @@ CadenceAdvisor = (() => {
 ConductorIntelligence.registerStateProvider('CadenceAdvisor', () => ({
   recentChanges: CadenceAdvisor.getHarmonicDensity()
 }));
+ConductorIntelligence.registerModule('CadenceAdvisor', { reset: CadenceAdvisor.reset }, ['section']);

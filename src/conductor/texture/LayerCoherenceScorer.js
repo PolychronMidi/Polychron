@@ -77,6 +77,7 @@ LayerCoherenceScorer = (() => {
   }
 
   ConductorIntelligence.registerRecorder('LayerCoherenceScorer', () => { LayerCoherenceScorer.computeCoherence(); });
+  ConductorIntelligence.registerModule('LayerCoherenceScorer', { reset }, ['section']);
 
   return {
     computeCoherence,

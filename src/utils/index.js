@@ -1,6 +1,8 @@
 m=Math;
 // @ts-ignore: side-effect module load
 require('./validators');
+// @ts-ignore: shared lifecycle utility (must precede CrossLayerRegistry & ConductorIntelligence)
+require('./ModuleLifecycle');
 // @ts-ignore: side-effect module load
 require('./SystemSnapshot');
 // @ts-ignore: side-effect module load

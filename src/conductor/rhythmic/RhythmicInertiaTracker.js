@@ -95,6 +95,7 @@ RhythmicInertiaTracker = (() => {
     const s = RhythmicInertiaTracker.getInertiaSignal();
     return { rhythmicInertiaSuggestion: s ? s.suggestion : 'maintain' };
   });
+  ConductorIntelligence.registerModule('RhythmicInertiaTracker', { reset }, ['section']);
 
   return {
     recordPattern,
