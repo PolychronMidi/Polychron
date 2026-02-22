@@ -353,6 +353,8 @@ declare var midiMeter: any;
 declare var midiMeterRatio: any;
 declare var midiBPM: any;
 declare var syncFactor: any;
+declare var timeGridPrune: any;
+declare var timeGridSearchStart: any;
 declare var AbsoluteTimeWindow: any;
 declare var AbsoluteTimeGrid: any;
 declare var TempoFeelEngine: any;

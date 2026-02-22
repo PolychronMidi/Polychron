@@ -24,7 +24,7 @@ createNoiseOffset = function() {
 // Create noise influence mapper using meta-recursive easing
 // Returns value 0-1 determining how much noise affects a parameter
 noiseInfluenceMap = function(seed = rf()) {
-  return metaRecursiveEaseNoise(seed, 0, ri(20, 100));
+  return metaRecursiveEaseNoise(seed, 0, ri(5, 10));
 };
 
 // Dual-axis noise configuration (e.g., for stereo L/R modulation)

@@ -95,13 +95,14 @@ PitchMemoryRecall = (() => {
     let bestIdx = -1;
     let bestScore = -Infinity;
 
+    const sectionPos = TimeStream.getPosition('section');
     for (let i = 0; i < memories.length; i++) {
       const mem = memories[i];
-      // Similarity: how many pitch classes match
-      const pcOverlap = mem.pitchClasses.filter(pc => pc === currentPC).length;
+      // Similarity: does any pitch class match? (boolean — avoids .filter() allocation)
+      const hasMatch = mem.pitchClasses.includes(currentPC);
       // Prefer memories from different sections (thematic recall, not repetition)
-      const sectionDist = Math.abs(TimeStream.getPosition('section') - mem.sectionIdx);
-      const score = mem.strength * 0.4 + (pcOverlap > 0 ? 0.3 : 0) + clamp(sectionDist * 0.1, 0, 0.3);
+      const sectionDist = Math.abs(sectionPos - mem.sectionIdx);
+      const score = mem.strength * 0.4 + (hasMatch ? 0.3 : 0) + clamp(sectionDist * 0.1, 0, 0.3);
       if (score > bestScore) {
         bestScore = score;
         bestIdx = i;
@@ -113,13 +114,12 @@ PitchMemoryRecall = (() => {
     const mem = memories[bestIdx];
     // Transpose the recalled pattern to start from the current note
     const transposition = currentMidi - (mem.pitchClasses[0] + 60); // center around middle C
-    const notes = mem.intervalDna.reduce((acc, interval) => {
-      const lastNote = acc[acc.length - 1];
-      const next = lastNote + interval;
-      const clamped = clamp(next, OCTAVE.min * 12 - 1, OCTAVE.max * 12 - 1);
-      acc.push(clamped);
-      return acc;
-    }, [clamp(currentMidi + transposition * 0, OCTAVE.min * 12 - 1, OCTAVE.max * 12 - 1)]);
+    const minNote = OCTAVE.min * 12 - 1;
+    const maxNote = OCTAVE.max * 12 - 1;
+    const notes = [clamp(currentMidi + transposition * 0, minNote, maxNote)];
+    for (let di = 0; di < mem.intervalDna.length; di++) {
+      notes.push(clamp(notes[notes.length - 1] + mem.intervalDna[di], minNote, maxNote));
+    }
 
     // Boost the recalled memory's strength (reinforcement learning)
     memories[bestIdx].strength = clamp(mem.strength + 0.05, 0, 1);

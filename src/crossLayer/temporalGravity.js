@@ -35,13 +35,13 @@ TemporalGravity = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = DENSITY_WINDOW_MS / 1000;
-    const notes = AbsoluteTimeWindow.getNotes({
+    const count = AbsoluteTimeWindow.countNotes({
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
     });
     // Normalize: 0 notes = 0, 10+ notes in 300ms = 1
-    return clamp(notes.length / 10, 0, 1);
+    return clamp(count / 10, 0, 1);
   }
 
   /**

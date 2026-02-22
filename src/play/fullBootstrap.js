@@ -167,6 +167,8 @@ FullBootstrap = (() => {
 
     // ── time ──
     'LM',
+    'timeGridPrune',
+    'timeGridSearchStart',
     'AbsoluteTimeGrid',
     'AbsoluteTimeWindow',
     'TempoFeelEngine',

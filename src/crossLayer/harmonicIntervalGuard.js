@@ -73,16 +73,16 @@ HarmonicIntervalGuard = (() => {
       ? feedbackBias.pitchBias
       : -1;
 
-    // Find other layer's recent notes from ATW
+    // Find other layer's most recent note from ATW
     const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
     let otherRecentMidi = -1;
-    const notes = AbsoluteTimeWindow.getNotes({
+    const lastNote = AbsoluteTimeWindow.getLastNote({
       layer: otherLayer,
       since: (absTimeMs / 1000) - 1,
       windowSeconds: 1
     });
-    if (notes.length > 0) {
-      otherRecentMidi = notes[notes.length - 1].midi || notes[notes.length - 1].note || -1;
+    if (lastNote) {
+      otherRecentMidi = lastNote.midi || lastNote.note || -1;
     }
 
     if (otherRecentMidi < 0) return { midi, nudged: false, interval: -1 };

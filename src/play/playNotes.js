@@ -149,16 +149,25 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
   const noiseInfluence = clamp((influenceX + influenceY) / 2, 0, 1);
   const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
-  const layerIdValue = layer && Object.prototype.hasOwnProperty.call(layer, 'id') ? layer.id : null;
-  let layerIdSeed;
-  if (typeof layerIdValue === 'number' && Number.isFinite(layerIdValue)) {
-    layerIdSeed = layerIdValue;
-  } else if (typeof layerIdValue === 'string' && layerIdValue.length > 0) {
-    layerIdSeed = Array.from(layerIdValue).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  } else if (typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0) {
-    layerIdSeed = Array.from(LM.activeLayer).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  } else {
-    throw new Error(`${unit}.playNotes: active layer id must be a finite number or non-empty string`);
+
+  // Cache layerIdSeed on the layer object — avoids Array.from().reduce() per micro-unit
+  let layerIdSeed = layer._cachedLayerIdSeed;
+  if (layerIdSeed === undefined) {
+    const layerIdValue = layer && Object.prototype.hasOwnProperty.call(layer, 'id') ? layer.id : null;
+    if (typeof layerIdValue === 'number' && Number.isFinite(layerIdValue)) {
+      layerIdSeed = layerIdValue;
+    } else if (typeof layerIdValue === 'string' && layerIdValue.length > 0) {
+      let sum = 0;
+      for (let ci = 0; ci < layerIdValue.length; ci++) sum += layerIdValue.charCodeAt(ci);
+      layerIdSeed = sum;
+    } else if (typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0) {
+      let sum = 0;
+      for (let ci = 0; ci < LM.activeLayer.length; ci++) sum += LM.activeLayer.charCodeAt(ci);
+      layerIdSeed = sum;
+    } else {
+      throw new Error(`${unit}.playNotes: active layer id must be a finite number or non-empty string`);
+    }
+    layer._cachedLayerIdSeed = layerIdSeed;
   }
   const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount')); // Deterministic voice ID from context
 

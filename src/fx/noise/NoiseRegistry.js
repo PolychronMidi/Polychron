@@ -10,7 +10,7 @@ const implementations = {
 
   // 1D variants (y param ignored) — keep `y` referenced for TS no-unused-params
   perlin: (x, y, time) => { void y; return perlinNoise(x + time); },
-  metaRecursive: (x, y, time) => { void y; return metaRecursiveNoise(x + time, 0, ri(33, 111), noiseFunctions[ri(0, noiseFunctions.length - 1)]); },
+  metaRecursive: (x, y, time) => { void y; return metaRecursiveNoise(x + time, 0, ri(6, 12), noiseFunctions[ri(0, noiseFunctions.length - 1)]); },
 
   // Multi-octave variants
   fbm: (x, y, time, octaves = ri(3, 6)) => fbm(defaultSimplex, x + time * 0.05, y + time * 0.05, octaves),
@@ -25,8 +25,8 @@ const implementations = {
   gaussian: (x, y, time) => { void y; return m.exp(-m.pow((x + time * 0.1) % 1 - 0.5, 2) / 0.05); },
 
   // Meta-recursive 2D variants
-  metaSimplex2D: (x, y, time) => metaRecursiveSimplex2D(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(20, 80)),
-  metaFBM: (x, y, time) => metaRecursiveFBM(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(15, 45))
+  metaSimplex2D: (x, y, time) => metaRecursiveSimplex2D(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(5, 10)),
+  metaFBM: (x, y, time) => metaRecursiveFBM(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(4, 8))
 };
 
 // Populate the naked-global `noiseGenerators` by mutating rather than conditionally reassigning

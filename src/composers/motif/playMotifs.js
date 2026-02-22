@@ -41,13 +41,12 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
   const cycleTracker = layer._motifCycleTracking;
 
-  // Check if any groups completed a cycle and need transformation
-  const groupsToCheck = new Set(bucket.map(entry => entry.groupId).filter(g => g));
-  for (const groupId of groupsToCheck) {
-    if (!cycleTracker.has(groupId)) {
-      const firstEntry = bucket.find(e => e.groupId === groupId);
-      if (firstEntry && Number.isFinite(firstEntry.seqLen)) {
-        cycleTracker.set(groupId, { playedIndices: new Set(), seqLen: firstEntry.seqLen, cycleCount: 0 });
+  // Register any new groups — avoids .map()/.filter()/Set allocation per micro-unit
+  for (let bi = 0; bi < bucket.length; bi++) {
+    const gid = bucket[bi].groupId;
+    if (gid && !cycleTracker.has(gid)) {
+      if (Number.isFinite(bucket[bi].seqLen)) {
+        cycleTracker.set(gid, { playedIndices: new Set(), seqLen: bucket[bi].seqLen, cycleCount: 0 });
       }
     }
   }

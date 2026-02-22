@@ -65,6 +65,7 @@ StutterPlanScheduler = (() => {
         if (plan) {
           StutterMetrics.decPendingForTick(k, 1);
           executePlan(stutterMgr, plan);
+          stutterMgr.plans.delete(planId); // evict executed plan
         }
       }
       stutterMgr.scheduledPlans.delete(k);

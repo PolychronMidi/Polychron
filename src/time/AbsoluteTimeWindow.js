@@ -12,8 +12,8 @@
 
 AbsoluteTimeWindow = (() => {
   const V = Validator.create('AbsoluteTimeWindow');
-  const DEFAULT_WINDOW_SECONDS = 8;
-  const MAX_ENTRIES = 2000;
+  const DEFAULT_WINDOW_SECONDS = 4;
+  const MAX_ENTRIES = 1000;
 
   /** @type {Object.<string, ATWEntry[]>} */
   const entries = {
@@ -24,28 +24,15 @@ AbsoluteTimeWindow = (() => {
 
   const VALID_TYPES = new Set(['note', 'rhythm', 'chord']);
 
-  /**
-   * Binary-search prune: remove entries older than the window cutoff.
-   * @param {ATWEntry[]} arr - sorted entry array
-   * @param {number} currentTime - absolute seconds
-   * @param {number} windowSeconds - window size
-   */
+  // Per-beat query cache: avoids re-scanning the same window for identical params.
+  // Cleared on every record() call (new data invalidates cached results).
+  /** @type {Map<string, ATWEntry[]>} */
+  const _queryCache = new Map();
+
+  /** Prune via shared helper. */
   function prune(arr, currentTime, windowSeconds) {
     if (!Array.isArray(arr) || arr.length === 0) return;
-    const cutoff = currentTime - windowSeconds;
-    let lo = 0;
-    let hi = arr.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      const entry = /** @type {ATWEntry|undefined} */ (arr[mid]);
-      if (entry && typeof entry.time === 'number' && entry.time < cutoff) {
-        lo = mid + 1;
-      } else {
-        hi = mid;
-      }
-    }
-    if (lo > 0) arr.splice(0, lo);
-    if (arr.length > MAX_ENTRIES) arr.splice(0, arr.length - MAX_ENTRIES);
+    timeGridPrune(arr, 'time', currentTime, windowSeconds, MAX_ENTRIES);
   }
 
   /**
@@ -62,7 +49,12 @@ AbsoluteTimeWindow = (() => {
     const arr = entries[type];
     if (Array.isArray(arr)) {
       arr.push(e);
-      prune(arr, e.time, DEFAULT_WINDOW_SECONDS);
+      // Invalidate query cache — new data makes cached results stale
+      if (_queryCache.size > 0) _queryCache.clear();
+      // Only prune when over capacity to avoid O(n) splice on every record
+      if (arr.length > MAX_ENTRIES) {
+        prune(arr, e.time, DEFAULT_WINDOW_SECONDS);
+      }
     }
   }
 
@@ -75,7 +67,15 @@ AbsoluteTimeWindow = (() => {
    * @param {string} unitLabel - timing unit (e.g. 'beat', 'subdiv')
    */
   function recordNote(midi, velocity, layer, time, unitLabel) {
-    record('note', { time, layer, midi, velocity, unit: unitLabel });
+    // Inlined from record() — skips assertPlainObject (literal just created)
+    // and assertInSet (type is always 'note')
+    V.requireFinite(time, 'recordNote.time');
+    const arr = entries.note;
+    arr.push({ time, layer, midi, velocity, unit: unitLabel });
+    if (_queryCache.size > 0) _queryCache.clear();
+    if (arr.length > MAX_ENTRIES) {
+      prune(arr, time, DEFAULT_WINDOW_SECONDS);
+    }
   }
 
   /**
@@ -161,17 +161,22 @@ AbsoluteTimeWindow = (() => {
       ? since
       : (lastTime - effectiveWindowSeconds);
 
-    let result = arr.filter(e => {
-        const entry = /** @type {ATWEntry|undefined} */ (e);
-        return entry && typeof entry.time === 'number' && entry.time >= cutoff;
-    });
+    // Query cache: identical (type, layer, cutoff) → reuse prior result array
+    const cacheKey = type + ':' + (layer || '') + ':' + cutoff;
+    const cached = _queryCache.get(cacheKey);
+    if (cached) return cached;
 
-    if (layer) {
-      result = result.filter(e => {
-        const entry = /** @type {ATWEntry|undefined} */ (e);
-        return entry && entry.layer === layer;
-      });
+    // Binary search for cutoff position — O(log n)
+    const startIdx = timeGridSearchStart(arr, 'time', cutoff);
+    // Single-pass scan from cutoff to end — O(k) where k = matching entries
+    const result = [];
+    for (let i = startIdx; i < arr.length; i++) {
+      const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
+      if (!entry || typeof entry.time !== 'number') continue;
+      if (layer && entry.layer !== layer) continue;
+      result.push(entry);
     }
+    _queryCache.set(cacheKey, result);
     return result;
   }
 
@@ -182,6 +187,102 @@ AbsoluteTimeWindow = (() => {
   /** @param {Object} [opts] */
   function getChords(opts) { return getEntries('chord', opts); }
 
+  // --- Fast-path query methods (zero array allocation) ---
+
+  /**
+   * Parse note query opts and compute binary-search start index.
+   * Shared by countNotes / getLastNote / getNoteBounds.
+   * @param {Object} [opts] - { layer?, since?, windowSeconds? }
+   * @returns {{ layer: string|undefined, startIdx: number, cutoff: number }|null}
+   */
+  function _parseNoteQuery(opts) {
+    const arr = entries.note;
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    let layer, since, windowSeconds;
+    if (opts !== undefined) {
+      V.assertPlainObject(opts, 'noteQuery.opts');
+      ({ layer, since, windowSeconds } = opts);
+      if (layer !== undefined) V.assertNonEmptyString(layer, 'noteQuery.layer');
+      if (since !== undefined) V.requireFinite(since, 'noteQuery.since');
+      if (windowSeconds !== undefined) V.requireFinite(windowSeconds, 'noteQuery.windowSeconds');
+    }
+    const last = /** @type {ATWEntry} */ (arr[arr.length - 1]);
+    if (!last || typeof last.time !== 'number') return null;
+    const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
+      ? windowSeconds : DEFAULT_WINDOW_SECONDS;
+    const cutoff = (typeof since === 'number' && Number.isFinite(since))
+      ? since : (last.time - effectiveWindow);
+    return { layer, startIdx: timeGridSearchStart(arr, 'time', cutoff), cutoff };
+  }
+
+  /**
+   * Count notes matching the query without allocating a result array.
+   * Drop-in replacement for getNotes(opts).length.
+   * @param {Object} [opts] - { layer?, since?, windowSeconds? }
+   * @returns {number}
+   */
+  function countNotes(opts) {
+    const q = _parseNoteQuery(opts);
+    if (!q) return 0;
+    const arr = entries.note;
+    const { layer, startIdx } = q;
+    let count = 0;
+    for (let i = startIdx; i < arr.length; i++) {
+      const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
+      if (!entry || typeof entry.time !== 'number') continue;
+      if (layer && entry.layer !== layer) continue;
+      count++;
+    }
+    return count;
+  }
+
+  /**
+   * Get the most recent note matching the query via reverse scan.
+   * Drop-in replacement for: const a = getNotes(opts); a[a.length - 1].
+   * Typically O(1-5) since recent entries for any layer are near the end.
+   * @param {Object} [opts] - { layer?, since?, windowSeconds? }
+   * @returns {ATWEntry|null}
+   */
+  function getLastNote(opts) {
+    const q = _parseNoteQuery(opts);
+    if (!q) return null;
+    const arr = entries.note;
+    const { layer, cutoff } = q;
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
+      if (!entry || typeof entry.time !== 'number') continue;
+      if (entry.time < cutoff) break;
+      if (layer && entry.layer !== layer) continue;
+      return entry;
+    }
+    return null;
+  }
+
+  /**
+   * Get count, first, and last matching notes without allocating a result array.
+   * Drop-in replacement for getNotes(opts) when only boundary info is needed.
+   * @param {Object} [opts] - { layer?, since?, windowSeconds? }
+   * @returns {{ count: number, first: ATWEntry|null, last: ATWEntry|null }}
+   */
+  function getNoteBounds(opts) {
+    const q = _parseNoteQuery(opts);
+    if (!q) return { count: 0, first: null, last: null };
+    const arr = entries.note;
+    const { layer, startIdx } = q;
+    let count = 0;
+    /** @type {ATWEntry|null} */ let first = null;
+    /** @type {ATWEntry|null} */ let last = null;
+    for (let i = startIdx; i < arr.length; i++) {
+      const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
+      if (!entry || typeof entry.time !== 'number') continue;
+      if (layer && entry.layer !== layer) continue;
+      if (first === null) first = entry;
+      last = entry;
+      count++;
+    }
+    return { count, first, last };
+  }
+
   /** Get the current window size in seconds. */
   function getWindowSize() { return DEFAULT_WINDOW_SECONDS; }
 
@@ -190,6 +291,7 @@ AbsoluteTimeWindow = (() => {
     if (entries.note) entries.note.length = 0;
     if (entries.rhythm) entries.rhythm.length = 0;
     if (entries.chord) entries.chord.length = 0;
+    _queryCache.clear();
   }
 
   return {
@@ -200,6 +302,9 @@ AbsoluteTimeWindow = (() => {
     getRhythms,
     getChords,
     getEntries,
+    countNotes,
+    getLastNote,
+    getNoteBounds,
     getWindowSize,
     reset
   };

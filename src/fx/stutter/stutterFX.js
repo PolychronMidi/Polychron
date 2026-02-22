@@ -18,6 +18,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
     // Use moderate noise for FX curves — aligns with fade's organic treatment
     const noiseProfile = getNoiseProfile('moderate');
     let tick;
+    let lastNorm = 0;
 
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
       tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
@@ -42,10 +43,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       const norm = clamp(currentValue / MIDI_MAX_VALUE, 0, 1);
       if (!this.beatContext.mod) this.beatContext.mod = {};
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });
-
-      // feedback event (include inferred profile)
-      const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(currentValue / MIDI_MAX_VALUE, 0, 1), tick });
+      lastNorm = norm;
 
       // Map raw `currentValue` into the hub FX ranges for this channel/CC
       const mapToFxRange = (ch, cc, raw) => {
@@ -62,6 +60,11 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, mapToFxRange(channelToStutter, ccParam, currentValue)] });
     }
     if (tick === undefined) throw new Error('stutterFX: for-loop produced no iterations');
+
+    // Emit one summary event per channel (not per-iteration)
+    const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
+    EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), tick });
+
     // restore to mid-point of configured range (falls back to 64)
     const defaultReset = (ch, cc) => {
       let def = null;

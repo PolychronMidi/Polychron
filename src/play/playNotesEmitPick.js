@@ -1,4 +1,52 @@
 const V = Validator.create('playNotesEmitPick');
+let _emitPickDepsValidated = false;
+
+// Beat-level channel cache — flipBin/source/reflection/bass don't change within a beat
+let _chCacheBeat = -1;
+let _chCacheFlip = /** @type {boolean|null} */ (null);
+/** @type {any[]} */ let _cachedSourceChs = [];
+/** @type {any[]} */ let _cachedReflectionChs = [];
+/** @type {any[]} */ let _cachedBassChs = [];
+
+function _refreshChannelCache() {
+  const key = beatStart;
+  const flip = flipBin;
+  if (_chCacheBeat === key && _chCacheFlip === flip) return;
+  _chCacheBeat = key;
+  _chCacheFlip = flip;
+  const pool = flip ? flipBinT : flipBinF;
+  const poolSet = new Set(pool);
+  _cachedSourceChs = source.filter(ch => poolSet.has(ch));
+  _cachedReflectionChs = reflection.filter(ch => poolSet.has(ch));
+  _cachedBassChs = bass.filter(ch => poolSet.has(ch));
+}
+
+function assertEmitPickDeps(unit) {
+  if (_emitPickDepsValidated) return;
+  V.assertObject(LM, 'LM');
+  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  V.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
+  V.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');
+  V.requireType(AbsoluteTimeWindow.getNotes, 'function', 'AbsoluteTimeWindow.getNotes');
+  V.assertObject(MotifIdentityMemory, 'MotifIdentityMemory');
+  V.requireType(MotifIdentityMemory.recordNote, 'function', 'MotifIdentityMemory.recordNote');
+  V.requireType(MotifIdentityMemory.getActiveIdentity, 'function', 'MotifIdentityMemory.getActiveIdentity');
+  V.assertObject(ConvergenceDetector, 'ConvergenceDetector');
+  V.requireType(ConvergenceDetector.postOnset, 'function', 'ConvergenceDetector.postOnset');
+  V.requireType(ConvergenceDetector.applyIfConverged, 'function', 'ConvergenceDetector.applyIfConverged');
+  V.requireType(ConvergenceDetector.wasRecent, 'function', 'ConvergenceDetector.wasRecent');
+  V.assertObject(HarmonicContext, 'HarmonicContext');
+  V.requireType(HarmonicContext.getField, 'function', 'HarmonicContext.getField');
+  V.assertObject(Stutter, 'Stutter');
+  V.assertObject(Stutter.beatContext, 'Stutter.beatContext');
+  if (!(Stutter.beatContext.selectedReflectionChannels instanceof Set)) {
+    throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedReflectionChannels must be a Set`);
+  }
+  if (!(Stutter.beatContext.selectedBassChannels instanceof Set)) {
+    throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedBassChannels must be a Set`);
+  }
+  _emitPickDepsValidated = true;
+}
 
 playNotesEmitPick = function(opts = {}) {
   V.assertPlainObject(opts, 'opts');
@@ -26,36 +74,17 @@ playNotesEmitPick = function(opts = {}) {
   const pickNote = modClamp(Number(pick.note), minMidi, maxMidi);
 
   let scheduled = 0;
-  V.assertObject(LM, 'LM');
-  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  assertEmitPickDeps(unit);
   const activeLayerName = LM.activeLayer;
-  V.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
-  V.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');
-  V.requireType(AbsoluteTimeWindow.getNotes, 'function', 'AbsoluteTimeWindow.getNotes');
-  V.assertObject(MotifIdentityMemory, 'MotifIdentityMemory');
-  V.requireType(MotifIdentityMemory.recordNote, 'function', 'MotifIdentityMemory.recordNote');
-  V.requireType(MotifIdentityMemory.getActiveIdentity, 'function', 'MotifIdentityMemory.getActiveIdentity');
-  V.assertObject(ConvergenceDetector, 'ConvergenceDetector');
-  V.requireType(ConvergenceDetector.postOnset, 'function', 'ConvergenceDetector.postOnset');
-  V.requireType(ConvergenceDetector.applyIfConverged, 'function', 'ConvergenceDetector.applyIfConverged');
-  V.requireType(ConvergenceDetector.wasRecent, 'function', 'ConvergenceDetector.wasRecent');
-  V.assertObject(HarmonicContext, 'HarmonicContext');
-  V.requireType(HarmonicContext.getField, 'function', 'HarmonicContext.getField');
-  V.assertObject(Stutter, 'Stutter');
-  V.assertObject(Stutter.beatContext, 'Stutter.beatContext');
-  if (!(Stutter.beatContext.selectedReflectionChannels instanceof Set)) {
-    throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedReflectionChannels must be a Set`);
-  }
-  if (!(Stutter.beatContext.selectedBassChannels instanceof Set)) {
-    throw new Error(`${unit}.playNotesEmitPick: Stutter.beatContext.selectedBassChannels must be a Set`);
-  }
+
+  // Cache timing globals once per call (they don't change within a beat)
+  const _mStart = V.requireFinite(measureStart, 'measureStart');
+  const _mStartTime = V.requireFinite(measureStartTime, 'measureStartTime');
+  const _tpSec = V.requireFinite(tpSec, 'tpSec');
 
   /** @param {number} tick */
   const tickToAbsMs = (tick) => {
-    const measureStartValue = V.requireFinite(measureStart, 'measureStart');
-    const measureStartTimeValue = V.requireFinite(measureStartTime, 'measureStartTime');
-    const tpSecValue = V.requireFinite(tpSec, 'tpSec');
-    return (measureStartTimeValue + (tick - measureStartValue) / tpSecValue) * 1000;
+    return (_mStartTime + (tick - _mStart) / _tpSec) * 1000;
   };
 
   /** @param {number} tick @param {string} label */
@@ -84,7 +113,8 @@ playNotesEmitPick = function(opts = {}) {
     ? clamp(pick._distributedVelocity / m.max(1, velocity), 0.5, 1.5)
     : 1;
 
-  const activeSourceChannels = source.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
+  _refreshChannelCache();
+  const activeSourceChannels = _cachedSourceChs;
   for (let sourceIndex = 0; sourceIndex < activeSourceChannels.length; sourceIndex++) {
     const sourceCH = activeSourceChannels[sourceIndex];
     const isPrimary = sourceCH === cCH1;
@@ -155,7 +185,7 @@ playNotesEmitPick = function(opts = {}) {
     }
   }
 
-  const activeReflectionChannels = reflection.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
+  const activeReflectionChannels = _cachedReflectionChs;
   for (let reflectionIndex = 0; reflectionIndex < activeReflectionChannels.length; reflectionIndex++) {
     const reflectionCH = activeReflectionChannels[reflectionIndex];
     const isPrimary = reflectionCH === cCH2;
@@ -196,7 +226,7 @@ playNotesEmitPick = function(opts = {}) {
   }
 
   if (rf() < clamp(0.75 * bpmRatio3, 0.2, 0.7)) {
-    const activeBassChannels = bass.filter(ch => flipBin ? flipBinT.includes(ch) : flipBinF.includes(ch));
+    const activeBassChannels = _cachedBassChs;
     for (let bassIndex = 0; bassIndex < activeBassChannels.length; bassIndex++) {
       const bassCH = activeBassChannels[bassIndex];
       const isPrimary = bassCH === cCH3;

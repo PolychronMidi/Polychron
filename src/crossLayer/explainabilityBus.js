@@ -1,6 +1,7 @@
 ExplainabilityBus = (() => {
   const V = Validator.create('ExplainabilityBus');
   const MAX_ENTRIES = 600;
+  const EVICT_BATCH = 100; // amortize O(n) splice cost over many emit calls
   const CHANNEL = 'explainability';
   /** @type {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>} */
   const entries = [];
@@ -23,9 +24,11 @@ ExplainabilityBus = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const entry = { type, layer, payload, absTimeMs: t };
     entries.push(entry);
-    if (entries.length > MAX_ENTRIES) entries.shift();
+    // Batch evict: let buffer grow past capacity, then splice once — avoids O(n) shift per emit
+    if (entries.length > MAX_ENTRIES + EVICT_BATCH) {
+      entries.splice(0, entries.length - MAX_ENTRIES);
+    }
 
-    EventBus.emit(EventCatalog.names.CROSS_LAYER_EXPLAIN, entry);
     AbsoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
 
     return entry;

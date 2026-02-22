@@ -62,8 +62,7 @@ microUnitAttenuator = (() => {
       V.requireFinite(offEvt.tick, 'record.offEvt.tick');
       if (_stack.length === 0) {
         // No active attenuation — write through immediately
-        p(c, onEvt);
-        p(c, offEvt);
+        c.push(onEvt, offEvt);
         return;
       }
       _stack[_stack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: V.optionalFinite(score, 0) });
@@ -90,13 +89,11 @@ microUnitAttenuator = (() => {
       } else {
         // Sort descending by crossModulation score — highest scores survive
         pairs.sort((a, b) => b.score - a.score);
-        survivors = pairs.slice(0, limit);
+        // Truncate in-place — avoids allocating a new array via .slice()
+        pairs.length = limit;
         // Re-sort survivors by tick order so MIDI output stays chronological
-        survivors.sort((a, b) => {
-          const at = V.requireFinite(a && a.on ? a.on.tick : undefined, 'flush.survivorA.on.tick');
-          const bt = V.requireFinite(b && b.on ? b.on.tick : undefined, 'flush.survivorB.on.tick');
-          return at - bt;
-        });
+        pairs.sort((a, b) => a.on.tick - b.on.tick);
+        survivors = pairs;
       }
 
       // Write survivors to the next outer frame or directly to `c`
@@ -105,8 +102,7 @@ microUnitAttenuator = (() => {
         for (const pair of survivors) outer.pairs.push(pair);
       } else {
         for (const pair of survivors) {
-          p(c, pair.on);
-          p(c, pair.off);
+          c.push(pair.on, pair.off);
         }
       }
       return survivors.length;

@@ -183,9 +183,11 @@ Validator = (() => {
 
   function _wrapWithFrom(fn, from) {
     const fromLabel = _fromLabel(from);
-    return function wrapped(...args) {
+    // Avoid rest/spread (...args) to eliminate per-call array allocation on the hot path.
+    // All validator methods take at most 4 arguments.
+    return function wrapped(a, b, c, d) {
       try {
-        return fn(...args);
+        return fn(a, b, c, d);
       } catch (err) {
         const msg = String(err && err.message ? err.message : err);
         const stripped = msg.replace(/^[^:]+:\s*/, '');

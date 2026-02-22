@@ -53,13 +53,12 @@ emitPickCrossLayerRecord = function(ctx) {
 
   // Record cross-layer interval for harmonic guard tracking
   const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
-  const otherRecent = AbsoluteTimeWindow.getNotes({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
-  if (otherRecent.length > 0) {
-    const otherRecentEntry = otherRecent[otherRecent.length - 1];
+  const otherRecentEntry = AbsoluteTimeWindow.getLastNote({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+  if (otherRecentEntry) {
     const otherMidiCandidate = Number(
-      (otherRecentEntry && Number.isFinite(Number(otherRecentEntry.midi)))
+      (Number.isFinite(Number(otherRecentEntry.midi)))
         ? otherRecentEntry.midi
-        : (otherRecentEntry ? otherRecentEntry.note : NaN)
+        : (otherRecentEntry.note || NaN)
     );
     if (!Number.isFinite(otherMidiCandidate)) {
       throw new Error(`${unit}.emitPickCrossLayerRecord: other layer note history entry must include finite midi or note`);
@@ -72,7 +71,17 @@ emitPickCrossLayerRecord = function(ctx) {
   // Pitch Memory Recall: memorize significant patterns via MotifIdentityMemory
   const memIdentity = MotifIdentityMemory.getActiveIdentity(activeLayerName);
   if (memIdentity && typeof memIdentity.intervalDna === 'string' && memIdentity.intervalDna.length > 0) {
-    const memIntervals = memIdentity.intervalDna.split(',').map(Number).filter(Number.isFinite);
+    // Cache parsed intervals on the identity object to avoid split/map/filter per pick
+    let memIntervals = memIdentity._parsedIntervals;
+    if (memIntervals === undefined) {
+      const parts = memIdentity.intervalDna.split(',');
+      memIntervals = [];
+      for (let pi = 0; pi < parts.length; pi++) {
+        const n = Number(parts[pi]);
+        if (Number.isFinite(n)) memIntervals.push(n);
+      }
+      memIdentity._parsedIntervals = memIntervals;
+    }
     if (memIntervals.length >= 2) {
       const memConvergence = ConvergenceDetector.wasRecent(absMs, activeLayerName, 500);
       PitchMemoryRecall.memorize(

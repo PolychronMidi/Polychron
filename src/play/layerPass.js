@@ -62,6 +62,7 @@ layerPass = (() => {
       MainBootstrap.getConductorProbabilities(measureIndex, -1);
       let playProb, stutterProb;
       TimeStream.setBounds('beat', numerator);
+      const _mT = Date.now();
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         TimeStream.setPosition('beat', beatIndex);
@@ -98,6 +99,7 @@ layerPass = (() => {
         }
         microUnitAttenuator.flush();
       }
+      process.stderr.write('[main]     M' + measureIndex + ' done (' + ((Date.now() - _mT) / 1000).toFixed(1) + 's)\n');
     }
   }
 

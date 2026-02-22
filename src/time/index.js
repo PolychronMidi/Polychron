@@ -9,6 +9,8 @@ require('./setUnitTiming');
 // @ts-ignore: side-effect module load
 require('./getPolyrhythm');
 // @ts-ignore: side-effect module load
+require('./timeGridHelpers');
+// @ts-ignore: side-effect module load
 require('./AbsoluteTimeWindow');
 // @ts-ignore: side-effect module load
 require('./absoluteTimeGrid');
