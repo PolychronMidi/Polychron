@@ -59,7 +59,6 @@ layerPass = (() => {
         ConductorConfig.regulationTick();
       }
 
-      MainBootstrap.getConductorProbabilities(measureIndex, -1);
       let playProb, stutterProb;
       TimeStream.setBounds('beat', numerator);
       const _mT = Date.now();

@@ -48,10 +48,19 @@ PhraseArcManager = class PhraseArcManager {
   }
 
   /**
-   * Get phrase context using current global state
+   * Get phrase context using current global state.
+   * Result is cached per beat (keyed on beatCount) since globals don't change within a beat.
    * @returns {Object} { position, phase, registerBias, densityMultiplier, voiceIndependence, dynamism, atBoundary }
    */
   getPhraseContext() {
+    // Beat-level cache: all inputs (measureIndex, phraseIndex, measuresPerPhrase) are
+    // constant within a beat, so repeated calls from GlobalConductorUpdate, DynamismEngine,
+    // ConductorState, CadenceAdvisor, playMotifs, TempoFeelEngine etc. can share one result.
+    const currentBeat = typeof beatCount === 'number' ? beatCount : -1;
+    if (currentBeat >= 0 && this._cachedBeat === currentBeat && this._cachedContext) {
+      return this._cachedContext;
+    }
+
     // Read directly from globals set in main.js loops
     if (measureIndex === undefined || measuresPerPhrase === undefined || phraseIndex === undefined) {
       throw new Error('PhraseArcManager.getPhraseContext: globals not set (measureIndex, measuresPerPhrase, phraseIndex)');
@@ -73,7 +82,7 @@ PhraseArcManager = class PhraseArcManager {
     // Fallback to configured arcType if mapped one is missing (though defaults cover it)
     const profile = this._arcProfiles[currentArcType] || this._arcProfiles[this.arcType];
 
-    return {
+    const result = {
       position: pos,
       phase: phase,
       measureInPhrase: measureIndex,
@@ -86,6 +95,11 @@ PhraseArcManager = class PhraseArcManager {
       atStart: measureIndex === 0,
       atEnd: measureIndex === measuresPerPhrase - 1
     };
+
+    // Cache for this beat
+    this._cachedBeat = currentBeat;
+    this._cachedContext = result;
+    return result;
   }
 
   /**

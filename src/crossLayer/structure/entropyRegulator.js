@@ -143,20 +143,27 @@ EntropyRegulator = (() => {
    * Set the target entropy for the current musical moment.
    * Can be driven by section position, ConductorState, or manually.
    * @param {number} target - 0-1
+   * @param {number} [arcTarget] - optional arc-shaped baseline; blended 30/70 with intent target
    */
-  function setTarget(target) {
-    targetEntropy = clamp(target, 0, 1);
+  function setTarget(target, arcTarget) {
+    if (typeof arcTarget === 'number' && Number.isFinite(arcTarget)) {
+      // Blend section-shape arc (30%) with intent target (70%)
+      targetEntropy = clamp(arcTarget * 0.3 + target * 0.7, 0, 1);
+    } else {
+      targetEntropy = clamp(target, 0, 1);
+    }
   }
 
   /**
    * Compute target entropy from section position (arc curve).
    * Low at section boundaries, high in the middle.
    * @param {number} sectionProgress - 0-1 progress through current section
+   * @returns {number} arc-based target 0-1 (for blending with intent)
    */
-  function setTargetFromArc(sectionProgress) {
+  function getArcTarget(sectionProgress) {
     // Bell curve: peaks at 0.5, troughs at 0 and 1
     const arc = Math.sin(clamp(sectionProgress, 0, 1) * Math.PI);
-    targetEntropy = 0.2 + arc * 0.6; // range 0.2 - 0.8
+    return 0.2 + arc * 0.6; // range 0.2 - 0.8
   }
 
   /**
@@ -198,7 +205,7 @@ EntropyRegulator = (() => {
   }
 
   return {
-    recordSample, measureEntropy, setTarget, setTargetFromArc,
+    recordSample, measureEntropy, setTarget, getArcTarget,
     getRegulation, regulate, setRegulationStrength, reset
   };
 })();

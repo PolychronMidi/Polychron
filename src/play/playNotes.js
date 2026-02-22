@@ -179,7 +179,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const needsPerUnitResolve = (unit !== 'beat');
   const resolved = (needsPerUnitResolve)
     ? DynamismEngine.resolve(unit, { playProb, stutterProb })
-    : { playProb, stutterProb, composite: 0 };
+    : { playProb, stutterProb, composite: clamp(ConductorState.getField('compositeIntensity'), 0, 1) };
   const resolvedPlayProb = Number(resolved.playProb);
   const resolvedStutterProb = Number(resolved.stutterProb);
   if (!Number.isFinite(resolvedPlayProb) || !Number.isFinite(resolvedStutterProb)) {
