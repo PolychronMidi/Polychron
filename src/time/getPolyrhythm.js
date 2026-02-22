@@ -1,61 +1,38 @@
-// getPolyrhythm.js - Compute phrase alignment between L1 and L2 meters in seconds
+// getPolyrhythm.js - Select L2 meter alignment using the pre-computed POLYRHYTHM_PAIRS table.
+// Sets: polyNumerator, polyDenominator, polyMeterRatio, measuresPerPhrase1, measuresPerPhrase2.
 /**
- * Compute phrase alignment between L1 and L2 meters in seconds.
- * Sets: measuresPerPhrase1, measuresPerPhrase2.
+ * Pick a valid L2 meter alignment for the current L1 meter from POLYRHYTHM_PAIRS.
+ * Eliminates the retry loop — every entry in the table is pre-validated.
+ * Falls back to a new L1 meter only when no alignment exists for the current meter.
  * @returns {void}
  */
 getPolyrhythm = () => {
-  const activeComposer = LM.getComposerFor('L1');
-
-  const MAX_ATTEMPTS = 100;
-  let found = false;
-  let attempts = 0;
-  while (!found && attempts++ < MAX_ATTEMPTS) {
-    [polyNumerator, polyDenominator] = activeComposer.getMeter(true, true);
-    if (!Number.isFinite(polyNumerator) || !Number.isFinite(polyDenominator) || polyDenominator <= 0) {
-      continue;
-    }
-    polyMeterRatio = polyNumerator / polyDenominator;
-    const allMatches = [];
-    let bestMatch = {
-      primaryMeasures: Infinity,
-      polyMeasures: Infinity,
-      totalMeasures: Infinity,
-      polyNumerator: polyNumerator,
-      polyDenominator: polyDenominator
-    };
-
-    for (let primaryMeasures = 1; primaryMeasures < 7; primaryMeasures++) {
-      for (let polyMeasures = 1; polyMeasures < 7; polyMeasures++) {
-        if (m.abs(primaryMeasures * meterRatio - polyMeasures * polyMeterRatio) < .00000001) {
-          const currentMatch = {
-            primaryMeasures: primaryMeasures,
-            polyMeasures: polyMeasures,
-            totalMeasures: primaryMeasures + polyMeasures,
-            polyNumerator: polyNumerator,
-            polyDenominator: polyDenominator
-          };
-          allMatches.push(currentMatch);
-          if (currentMatch.totalMeasures < bestMatch.totalMeasures) {
-            bestMatch = currentMatch;
-          }
-        }
-      }
-    }
-    if (bestMatch.totalMeasures !== Infinity &&
-        (bestMatch.totalMeasures > 3 &&
-         (bestMatch.primaryMeasures > 1 && bestMatch.polyMeasures > 1))) {
-      measuresPerPhrase1 = bestMatch.primaryMeasures;
-      measuresPerPhrase2 = bestMatch.polyMeasures;
-      found = true;
+  // Find all table entries whose first or second meter matches the current L1 meter.
+  // Cross-multiply to compare ratios exactly without floating-point error.
+  const candidates = [];
+  for (let i = 0; i < POLYRHYTHM_PAIRS.length; i++) {
+    const p = POLYRHYTHM_PAIRS[i];
+    if (p.n1 * denominator === numerator * p.d1) {
+      candidates.push({ polyN: p.n2, polyD: p.d2, pm1: p.pm1, pm2: p.pm2 });
+    } else if (p.n2 * denominator === numerator * p.d2) {
+      candidates.push({ polyN: p.n1, polyD: p.d1, pm1: p.pm2, pm2: p.pm1 });
     }
   }
-  if (!found) {
-    // Max attempts reached: try new meter on L1 layer with relaxed constraints
-    console.warn(`Acceptable warning: getPolyrhythm() reached max attempts (${MAX_ATTEMPTS}); requesting new L1 meter...`);
+
+  if (candidates.length === 0) {
+    // No valid alignment for this L1 meter — request a new one and retry
+    console.warn(`Acceptable warning: getPolyrhythm(): no alignment for ${numerator}/${denominator}; requesting new L1 meter...`);
+    const activeComposer = LM.getComposerFor('L1');
     [numerator, denominator] = activeComposer.getMeter(true, false);
-    // Recalculate all timing after meter change to prevent sync desync
     getMidiTiming();
     getPolyrhythm();
+    return;
   }
+
+  const pick = candidates[m.floor(m.random() * candidates.length)];
+  polyNumerator = pick.polyN;
+  polyDenominator = pick.polyD;
+  polyMeterRatio = polyNumerator / polyDenominator;
+  measuresPerPhrase1 = pick.pm1;
+  measuresPerPhrase2 = pick.pm2;
 };

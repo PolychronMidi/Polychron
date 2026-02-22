@@ -15,7 +15,7 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "main": "npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/play/main.js",
+    "main": "node scripts/generate-globals-dts.js && npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/play/main.js",
     "shred": "npm run lint && npm run tc && node scripts/run-with-log.js shred.log node --max-old-space-size=16384 src/riffShredder/index.js",
     "music21-data": "node scripts/run-with-log.js music21.log python scripts/music21/run_music21_data.py",
     "lint:raw": "eslint . --ext .js --fix",
