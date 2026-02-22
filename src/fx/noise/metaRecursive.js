@@ -53,7 +53,7 @@ noiseFunctions = [
   (x) => m.pow(m.sin(x * m.PI), 3), // Cubic sine wave
 ];
 
-metaRecursiveEaseNoise = function(t, depth = 0, maxDepth = ri(34, 333)) {
+metaRecursiveEaseNoise = function(t, depth = 0, maxDepth = ri(6, 12)) {
   if (depth >= maxDepth) {
     const randomEase = easingFunctions[ri(0, easingFunctions.length - 1)];
     return randomEase(t);
@@ -67,7 +67,7 @@ metaRecursiveEaseNoise = function(t, depth = 0, maxDepth = ri(34, 333)) {
   return m.max(0, m.min(1, easedT + noiseValue));
 };
 
-metaRecursiveNoise = function(x, depth = 0, maxDepth = ri(33,111), noiseFunc) {
+metaRecursiveNoise = function(x, depth = 0, maxDepth = ri(6, 12), noiseFunc) {
   if (depth >= maxDepth) {
     return noiseFunc(x);
   }
@@ -78,7 +78,7 @@ metaRecursiveNoise = function(x, depth = 0, maxDepth = ri(33,111), noiseFunc) {
 };
 
 // Meta-recursive 2D using SimplexNoise - combines easing with simplex at multiple scales
-metaRecursiveSimplex2D = function(x, y, simplexInstance, depth = 0, maxDepth = ri(33, 111)) {
+metaRecursiveSimplex2D = function(x, y, simplexInstance, depth = 0, maxDepth = ri(5, 10)) {
   if (depth >= maxDepth) {
     return simplexInstance.noise(x, y);
   }
@@ -97,7 +97,7 @@ metaRecursiveSimplex2D = function(x, y, simplexInstance, depth = 0, maxDepth = r
 };
 
 // Meta-recursive FBM - recursively varies octave count and parameters
-metaRecursiveFBM = function(x, y, simplexInstance, depth = 0, maxDepth = ri(20, 60)) {
+metaRecursiveFBM = function(x, y, simplexInstance, depth = 0, maxDepth = ri(4, 8)) {
   if (depth >= maxDepth) {
     return simplexInstance.noise(x, y);
   }

@@ -13,8 +13,8 @@
 AbsoluteTimeGrid = (() => {
   const V = Validator.create('AbsoluteTimeGrid');
   /** Default ms window for pruning old entries */
-  const DEFAULT_WINDOW_MS = 8000;
-  const MAX_ENTRIES_PER_TYPE = 500;
+  const DEFAULT_WINDOW_MS = 4000;
+  const MAX_ENTRIES_PER_TYPE = 250;
 
   /** @type {Object.<string, ATGEntry[]>} */
   const channels = {};
@@ -31,26 +31,6 @@ AbsoluteTimeGrid = (() => {
   }
 
   /**
-   * Binary-search prune: remove entries older than cutoff.
-   * @param {ATGEntry[]} arr - sorted by timeMs
-   * @param {number} nowMs - current absolute ms
-   * @param {number} windowMs - retention window
-   */
-  function prune(arr, nowMs, windowMs) {
-    if (arr.length === 0) return;
-    const cutoff = nowMs - windowMs;
-    let lo = 0;
-    let hi = arr.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (arr[mid].timeMs < cutoff) lo = mid + 1;
-      else hi = mid;
-    }
-    if (lo > 0) arr.splice(0, lo);
-    if (arr.length > MAX_ENTRIES_PER_TYPE) arr.splice(0, arr.length - MAX_ENTRIES_PER_TYPE);
-  }
-
-  /**
    * Post a sync event to a named channel.
    * @param {string} channel - e.g. 'binaural', 'stutter', 'density'
    * @param {string} layer - layer that posted (e.g. 'L1')
@@ -64,10 +44,14 @@ AbsoluteTimeGrid = (() => {
     if (typeof data !== 'undefined') V.assertPlainObject(data, 'post.data');
 
     const arr = ensureChannel(channel);
-    const payload = typeof data === 'undefined' ? {} : data;
-    const entry = Object.assign({ timeMs: t, layer }, payload);
+    const entry = typeof data === 'undefined' ? { timeMs: t, layer } : data;
+    entry.timeMs = t;
+    entry.layer = layer;
     arr.push(entry);
-    prune(arr, t, DEFAULT_WINDOW_MS);
+    // Only prune when over capacity to avoid O(n) splice on every post
+    if (arr.length > MAX_ENTRIES_PER_TYPE) {
+      timeGridPrune(arr, 'timeMs', t, DEFAULT_WINDOW_MS, MAX_ENTRIES_PER_TYPE);
+    }
   }
 
   /**
@@ -105,12 +89,14 @@ AbsoluteTimeGrid = (() => {
       if (typeof onlyLayer !== 'undefined') V.assertNonEmptyString(onlyLayer, 'query.opts.onlyLayer');
     }
 
+    // Binary search for first entry >= lo — O(log n)
+    const startIdx = timeGridSearchStart(arr, 'timeMs', lo);
+
     const result = [];
-    // Reverse scan — most recent first, short-circuit once past window
-    for (let i = arr.length - 1; i >= 0; i--) {
+    // Forward scan from startIdx — only touches entries within the [lo, hi] window
+    for (let i = startIdx; i < arr.length; i++) {
       const e = arr[i];
-      if (e.timeMs < lo) break;
-      if (e.timeMs > hi) continue;
+      if (e.timeMs > hi) break;
       if (excludeLayer && e.layer === excludeLayer) continue;
       if (onlyLayer && e.layer !== onlyLayer) continue;
       result.push(e);
@@ -120,6 +106,7 @@ AbsoluteTimeGrid = (() => {
 
   /**
    * Find the single closest cross-layer event within tolerance.
+   * Zero-allocation: binary search + bounded forward scan, no intermediate array.
    * @param {string} channel - channel name
    * @param {number} aroundMs - center ms
    * @param {number} toleranceMs - +/- ms window
@@ -128,22 +115,29 @@ AbsoluteTimeGrid = (() => {
    */
   function findClosest(channel, aroundMs, toleranceMs, excludeLayer) {
     V.assertNonEmptyString(channel, 'findClosest.channel');
-    V.requireFinite(aroundMs, 'findClosest.aroundMs');
-    V.requireFinite(toleranceMs, 'findClosest.toleranceMs');
-    let matches;
-    if (typeof excludeLayer === 'undefined') {
-      matches = query(channel, aroundMs, toleranceMs);
-    } else {
-      V.assertNonEmptyString(excludeLayer, 'findClosest.excludeLayer');
-      matches = query(channel, aroundMs, toleranceMs, { excludeLayer });
-    }
-    if (matches.length === 0) return null;
-    let best = matches[0];
-    let bestDist = Math.abs(best.timeMs - aroundMs);
-    for (let i = 1; i < matches.length; i++) {
-      const dist = Math.abs(matches[i].timeMs - aroundMs);
+    const around = V.requireFinite(aroundMs, 'findClosest.aroundMs');
+    const tolerance = V.requireFinite(toleranceMs, 'findClosest.toleranceMs');
+    if (typeof excludeLayer !== 'undefined') V.assertNonEmptyString(excludeLayer, 'findClosest.excludeLayer');
+
+    const arr = channels[channel];
+    if (!arr || arr.length === 0) return null;
+
+    const lo = around - tolerance;
+    const hi = around + tolerance;
+
+    // Binary search for first entry >= lo — O(log n)
+    const startIdx = timeGridSearchStart(arr, 'timeMs', lo);
+
+    // Forward scan within window — only touches entries in [lo, hi]
+    /** @type {ATGEntry|null} */ let best = null;
+    let bestDist = Infinity;
+    for (let i = startIdx; i < arr.length; i++) {
+      const e = arr[i];
+      if (e.timeMs > hi) break;
+      if (excludeLayer && e.layer === excludeLayer) continue;
+      const dist = Math.abs(e.timeMs - around);
       if (dist < bestDist) {
-        best = matches[i];
+        best = e;
         bestDist = dist;
       }
     }

@@ -3,14 +3,20 @@ GrooveTransfer = (() => {
   const CHANNEL = 'grooveTransfer';
   const MAX_OFFSETS = 64;
   const DAMPING = 0.55;
+  const LAYER_SET = new Set(['L1', 'L2']);
 
   /** @type {Map<string, number[]>} */
   const offsetsByLayer = new Map();
+  /** @type {Map<string, number>} running sum per layer for O(1) average */
+  const sumByLayer = new Map();
 
   /** @param {string} layer */
   function ensure(layer) {
     V.assertNonEmptyString(layer, 'layer');
-    if (!offsetsByLayer.has(layer)) offsetsByLayer.set(layer, []);
+    if (!offsetsByLayer.has(layer)) {
+      offsetsByLayer.set(layer, []);
+      sumByLayer.set(layer, 0);
+    }
     const arr = offsetsByLayer.get(layer);
     if (!arr) throw new Error('GrooveTransfer: failed to initialize layer offsets for ' + layer);
     return arr;
@@ -56,7 +62,11 @@ GrooveTransfer = (() => {
     const offset = tickN - base;
     const row = ensure(layer);
     row.push(offset);
-    if (row.length > MAX_OFFSETS) row.shift();
+    sumByLayer.set(layer, (sumByLayer.get(layer) || 0) + offset);
+    if (row.length > MAX_OFFSETS) {
+      sumByLayer.set(layer, (sumByLayer.get(layer) || 0) - row[0]);
+      row.shift();
+    }
 
     const absMs = getAbsoluteTimeMs(tickN);
     const atg = getAbsoluteTimeGridOrThrow();
@@ -69,7 +79,7 @@ GrooveTransfer = (() => {
    * @param {string} unit
    */
   function applyOffset(layer, tick, unit) {
-    V.assertInSet(layer, new Set(['L1', 'L2']), 'applyOffset.layer');
+    V.assertInSet(layer, LAYER_SET, 'applyOffset.layer');
     const tickN = V.requireFinite(tick, 'applyOffset.tick');
     V.assertNonEmptyString(unit, 'applyOffset.unit');
 
@@ -77,7 +87,7 @@ GrooveTransfer = (() => {
     const other = ensure(otherLayer);
     if (other.length === 0) return tickN;
 
-    const avg = other.reduce((sum, v) => sum + v, 0) / other.length;
+    const avg = (sumByLayer.get(otherLayer) || 0) / other.length;
 
     const absMs = getAbsoluteTimeMs(tickN);
     const atg = getAbsoluteTimeGridOrThrow();
@@ -99,6 +109,7 @@ GrooveTransfer = (() => {
 
   function reset() {
     offsetsByLayer.clear();
+    sumByLayer.clear();
   }
 
   return { recordTiming, applyOffset, reset };

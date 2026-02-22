@@ -12,6 +12,7 @@ VelocityInterference = (() => {
   const VIZ_REINFORCE = 100; // CC value for reinforcement
   const VIZ_SEPARATE = 27;   // CC value for separation
   const VIZ_NEUTRAL = 64;    // CC value for neutral
+  const MODE_SET = new Set(['reinforce', 'separate', 'neutral']);
 
   /**
    * Post a velocity contour sample from the active layer.
@@ -41,14 +42,14 @@ VelocityInterference = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = CONTOUR_WINDOW_MS / 1000;
-    const notes = AbsoluteTimeWindow.getNotes({
+    const bounds = AbsoluteTimeWindow.getNoteBounds({
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
     });
-    if (notes.length < 2) return 0;
-    const first = notes[0];
-    const last = notes[notes.length - 1];
+    if (bounds.count < 2) return 0;
+    const first = bounds.first;
+    const last = bounds.last;
     V.assertObject(first, 'measureDelta.first');
     V.assertObject(last, 'measureDelta.last');
     const firstVelocity = V.requireFinite(first.velocity, 'measureDelta.first.velocity');
@@ -109,14 +110,14 @@ VelocityInterference = (() => {
    */
   function writeVizCC(layer, mode) {
     V.assertNonEmptyString(layer, 'writeVizCC.layer');
-    V.assertInSet(mode, new Set(['reinforce', 'separate', 'neutral']), 'writeVizCC.mode');
+    V.assertInSet(mode, MODE_SET, 'writeVizCC.mode');
     if (typeof c === 'undefined' || !Array.isArray(c)) {
       throw new Error('VelocityInterference.writeVizCC: c must be a note event array');
     }
     const startTick = V.requireFinite(beatStart, 'writeVizCC.beatStart');
     const ch = (layer === 'L1') ? cCH1 : cCH2;
     const val = mode === 'reinforce' ? VIZ_REINFORCE : mode === 'separate' ? VIZ_SEPARATE : VIZ_NEUTRAL;
-    p(c, { tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
+    c.push({ tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
   return { postVelocity, measureDelta, applyInterference, reset() { /* stateless — no per-scope state to clear */ } };

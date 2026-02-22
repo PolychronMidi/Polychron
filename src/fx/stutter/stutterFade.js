@@ -40,6 +40,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
     const noiseProfile = getNoiseProfile('moderate');
 
     let tick, volume;
+    let lastNorm = 0;
 
     for (let i = m.floor(numStutters * (rf(1/3, 2/3))); i < numStutters; i++) {
       tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
@@ -69,15 +70,17 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       const norm = clamp(volume / (maxVol || 127), 0, 1);
       if (!this.beatContext.mod) this.beatContext.mod = {};
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fade: norm });
-
-      // Emit a stutter-applied event for feedback loops (include inferred profile)
-      const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      EventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(volume / 127, 0, 1), tick });
+      lastNorm = norm;
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
     }
     if (tick === undefined) throw new Error('stutterFade: for-loop produced no iterations');
+
+    // Emit one summary event per channel (not per-iteration)
+    const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
+    EventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), tick });
+
     p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
   });
 };

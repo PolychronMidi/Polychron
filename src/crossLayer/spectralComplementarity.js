@@ -7,12 +7,21 @@ SpectralComplementarity = (() => {
   const V = Validator.create('SpectralComplementarity');
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)
-  const BIN_BOUNDARIES = [36, 60, 84, 109];
   const WINDOW_NOTES = 30; // rolling window size
   const NUDGE_STRENGTH = 0.4; // max probability of register nudge
 
   /** @type {Map<string, number[]>} recent MIDI notes per layer */
   const noteHistory = new Map();
+  /** @type {Map<string, number[]>} cached raw bin counts per layer — updated incrementally */
+  const binCountsByLayer = new Map();
+
+  /** Map a MIDI note to its register bin index (0-3). */
+  function noteToBin(midi) {
+    if (midi < 36) return 0;
+    if (midi < 60) return 1;
+    if (midi < 84) return 2;
+    return 3;
+  }
 
   /**
    * Record a note from the active layer.
@@ -21,37 +30,40 @@ SpectralComplementarity = (() => {
    */
   function recordNote(midi, layer) {
     V.requireFinite(midi, 'midi');
-    if (!noteHistory.has(layer)) noteHistory.set(layer, []);
+    if (!noteHistory.has(layer)) {
+      noteHistory.set(layer, []);
+      binCountsByLayer.set(layer, new Array(REGISTER_BINS).fill(0));
+    }
     const hist = noteHistory.get(layer);
     if (!hist) throw new Error('SpectralComplementarity.recordNote: missing note history for layer ' + layer);
+    const bins = binCountsByLayer.get(layer);
+    if (!bins) throw new Error('SpectralComplementarity.recordNote: missing bin counts for layer ' + layer);
     hist.push(midi);
-    if (hist.length > WINDOW_NOTES) hist.shift();
+    bins[noteToBin(midi)]++;
+    if (hist.length > WINDOW_NOTES) {
+      bins[noteToBin(hist[0])]--;
+      hist.shift();
+    }
   }
 
   /**
    * Compute register histogram for a layer.
+   * O(1) — reads cached bin counts instead of re-scanning noteHistory.
    * @param {string} layer
    * @returns {number[]} array of size REGISTER_BINS with normalized 0-1 densities
    */
   function getHistogram(layer) {
+    const bins = binCountsByLayer.get(layer);
+    if (!bins) return new Array(REGISTER_BINS).fill(0);
     const hist = noteHistory.get(layer);
-    if (!hist || hist.length === 0) return new Array(REGISTER_BINS).fill(0);
-    const bins = new Array(REGISTER_BINS).fill(0);
-    for (let i = 0; i < hist.length; i++) {
-      const note = hist[i];
-      let bin = 0;
-      for (let b = 0; b < BIN_BOUNDARIES.length; b++) {
-        if (note < BIN_BOUNDARIES[b]) { bin = b; break; }
-      }
-      bins[bin]++;
-    }
-    const total = hist.length;
-    return bins.map(b => b / total);
+    const total = (hist && hist.length > 0) ? hist.length : 1;
+    return [bins[0] / total, bins[1] / total, bins[2] / total, bins[3] / total];
   }
 
   /**
    * Analyze spectral complement: find which register bins the other layer
    * is sparse in, so this layer can fill the gap.
+   * Zero-allocation: reuses cached histograms and avoids .map()/.reduce().
    * @param {string} activeLayer - the layer being analyzed
    * @returns {{ gaps: number[], dominant: number[], gapWeight: number }}
    */
@@ -62,15 +74,21 @@ SpectralComplementarity = (() => {
 
     const gaps = [];
     const dominant = [];
+    let combinedSum = 0;
     for (let i = 0; i < REGISTER_BINS; i++) {
       if (otherHist[i] < 0.15) gaps.push(i);
       if (otherHist[i] > 0.4) dominant.push(i);
+      combinedSum += ourHist[i] + otherHist[i];
     }
 
     // Weight: how unbalanced is the combined spectrum?
-    const combined = ourHist.map((v, i) => v + otherHist[i]);
-    const avg = combined.reduce((a, b) => a + b, 0) / REGISTER_BINS;
-    const variance = combined.reduce((s, v) => s + (v - avg) * (v - avg), 0) / REGISTER_BINS;
+    const avg = combinedSum / REGISTER_BINS;
+    let variance = 0;
+    for (let i = 0; i < REGISTER_BINS; i++) {
+      const diff = (ourHist[i] + otherHist[i]) - avg;
+      variance += diff * diff;
+    }
+    variance /= REGISTER_BINS;
     const gapWeight = clamp(Math.sqrt(variance) * 2, 0, 1);
 
     return { gaps, dominant, gapWeight };
@@ -122,6 +140,7 @@ SpectralComplementarity = (() => {
 
   function reset() {
     noteHistory.clear();
+    binCountsByLayer.clear();
   }
 
   return { recordNote, getHistogram, analyzeComplement, nudgeToFillGap, postSpectralState, reset };

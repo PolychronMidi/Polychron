@@ -25,6 +25,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     let currentPan = edgeMargin;
     let direction = 1;
     let tick;
+    let lastIntensity = 0;
 
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
       tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
@@ -58,14 +59,15 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       const norm = (currentPan - 64) / 63; // -1..1
       if (!this.beatContext.mod) this.beatContext.mod = {};
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
-
-      // emit feedback for stutter cross-mod listeners (include inferred profile)
-      const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-      EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: Math.abs((currentPan - 64) / 63), tick });
+      lastIntensity = Math.abs(norm);
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }
     if (tick === undefined) throw new Error('stutterPan: for-loop produced no iterations');
+
+    // Emit one summary event per channel (not per-iteration)
+    const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
+    EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: clamp(lastIntensity, 0, 1), tick });
 
     // Record final pan position for note cooperation —
     // negative = left-biased, positive = right-biased, 0 = center

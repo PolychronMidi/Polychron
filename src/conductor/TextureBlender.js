@@ -47,9 +47,8 @@ TextureBlender = (() => {
    * @returns {{ burstBias: number, flurryBias: number }}
    */
   function getPhraseTextureInfluence() {
-    const state = ConductorState.getSnapshot();
-    const pos = V.requireFinite(state.phrasePosition, 'state.phrasePosition');
-    const phase = state.phrasePhase ?? '';
+    const pos = V.requireFinite(ConductorState.getField('phrasePosition'), 'phrasePosition');
+    const phase = ConductorState.getField('phrasePhase') ?? '';
     const atStart = pos <= 0.001;
     const atEnd = pos >= 0.999;
     if (atStart || phase === 'opening') return { burstBias: 0.3, flurryBias: 0.4 };

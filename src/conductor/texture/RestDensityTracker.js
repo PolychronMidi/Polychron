@@ -18,19 +18,19 @@ RestDensityTracker = (() => {
   function getOnsetDensity(opts = {}) {
     const { layer, windowSeconds } = opts;
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
-    if (notes.length < 2) {
+    const bounds = AbsoluteTimeWindow.getNoteBounds({ layer, windowSeconds: ws });
+    if (bounds.count < 2) {
       return { notesPerSecond: 0, saturated: false, sparse: true };
     }
 
-    const first = notes[0];
-    const last = notes[notes.length - 1];
+    const first = bounds.first;
+    const last = bounds.last;
     if (!first || !last) return { notesPerSecond: 0, saturated: false, sparse: true };
 
     const span = last.time - first.time;
     if (span <= 0) return { notesPerSecond: 0, saturated: false, sparse: true };
 
-    const nps = notes.length / span;
+    const nps = bounds.count / span;
     return {
       notesPerSecond: nps,
       saturated: nps > 12,

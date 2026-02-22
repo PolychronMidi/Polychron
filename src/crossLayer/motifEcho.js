@@ -11,6 +11,7 @@ MotifEcho = (() => {
   const ECHO_DELAY_BEATS_MAX = 4;
   const MAX_PENDING_ECHOES = 8;
   const ECHO_PROBABILITY = 0.35;
+  const TRANSFORMS = ['retrograde', 'inversion', 'augmentation', 'retrograde-inversion'];
 
   /** @type {Array<{ intervals: number[], originLayer: string, captureMs: number, deliverMs: number, transform: string }>} */
   const pendingEchoes = [];
@@ -56,8 +57,7 @@ MotifEcho = (() => {
     }
 
     // Pick transform type
-    const transforms = ['retrograde', 'inversion', 'augmentation', 'retrograde-inversion'];
-    let transform = transforms[ri(transforms.length - 1)];
+    let transform = TRANSFORMS[ri(TRANSFORMS.length - 1)];
     const identityChoice = MotifIdentityMemory.chooseEchoTransform(layer);
     if (identityChoice && typeof identityChoice.transform === 'string' && rf() < clamp(identityChoice.bias, 0, 1)) {
       transform = identityChoice.transform;
