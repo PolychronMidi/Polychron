@@ -61,6 +61,9 @@ RhythmicComplementEngine = (() => {
 
     if (mode === 'free') return { tick: onTick, velocityScale: 1.0, modified: false };
 
+    // If this layer is already resting, skip complement — rest takes priority
+    if (RestSynchronizer.isLayerResting(layer)) return { tick: onTick, velocityScale: 1.0, modified: false };
+
     const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
 
     // Only apply strong complement when interaction target is high
