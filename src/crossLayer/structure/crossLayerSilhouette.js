@@ -20,17 +20,19 @@ CrossLayerSilhouette = (() => {
   /**
    * Tick the silhouette analyzer each beat.
    * @param {number} absTimeMs
+   * @param {string} [activeLayer='L1']
    */
-  function tick(absTimeMs) {
+  function tick(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
+    const layerForSpectral = (typeof activeLayer === 'string' && activeLayer.length > 0) ? activeLayer : 'L1';
 
     // Gather all available signals
 
     // Density from EntropyRegulator
     const entropyReg = EntropyRegulator.getRegulation();
 
-    // Register balance from SpectralComplementarity (consuming spectral ATG data)
-    const spectralComplement = SpectralComplementarity.analyzeComplement('L1');
+    // Register balance from SpectralComplementarity (using active layer, not hardcoded)
+    const spectralComplement = SpectralComplementarity.analyzeComplement(layerForSpectral);
 
     // Heat from InteractionHeatMap
     const heat = InteractionHeatMap.getDensity();

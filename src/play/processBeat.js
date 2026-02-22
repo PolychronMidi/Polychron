@@ -56,7 +56,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   CrossLayerDynamicEnvelope.tick(clAbsMs, layer);
   if (isL1) CrossLayerDynamicEnvelope.autoSelectArcType();
 
-  CrossLayerSilhouette.tick(clAbsMs);
+  CrossLayerSilhouette.tick(clAbsMs, layer);
   const clSilhouetteCorrections = CrossLayerSilhouette.getCorrections();
 
   const clRestSignals = {
@@ -86,13 +86,23 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   });
   playProb = clNegotiation.playProb;
   stutterProb = clNegotiation.stutterProb;
-  playProb = EntropyRegulator.regulate(playProb);
-  stutterProb = EntropyRegulator.regulate(stutterProb);
+  // NegotiationEngine.apply already incorporates entropyScale — do not re-apply via regulate()
 
   if (clClimaxMods.playProbScale !== 1.0) playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);
   playProb = clamp(playProb + clSilhouetteCorrections.densityBias, 0, 1);
-  if (clRest.shouldRest) { playProb = 0; stutterProb = 0; }
+  // Suppress shared rests during climax approach to protect musical buildup
+  if (clRest.shouldRest && !CrossLayerClimaxEngine.isApproaching()) { playProb = 0; stutterProb = 0; }
   if (clComplementRest.shouldFill) playProb = clamp(playProb * (1 + clComplementRest.fillUrgency * 0.3), 0, 1);
+
+  // Apply breathing adjustment before beat-level notes so all granularity levels use the same probabilities
+  const clBreathing = InteractionHeatMap.getBreathingRecommendation();
+  if (clBreathing.recommendation === 'decrease') {
+    playProb = clamp(playProb * 0.96, 0, 1);
+    stutterProb = clamp(stutterProb * 0.94, 0, 1);
+  } else if (clBreathing.recommendation === 'increase') {
+    playProb = clamp(playProb * 1.03, 0, 1);
+    stutterProb = clamp(stutterProb * 1.04, 0, 1);
+  }
 
   playNotes('beat', { playProb, stutterProb });
   if (clRest.shouldRest) RestSynchronizer.postRest(clAbsMs, layer);
@@ -137,7 +147,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clConvergenceGate = clConvergenceIntensity > 0
     ? NegotiationEngine.gateConvergence(layer)
     : { allowHarmonicTrigger: false, allowDownbeat: false };
-  if (clConvergenceGate.allowHarmonicTrigger) ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer });
+  if (clConvergenceGate.allowHarmonicTrigger) ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer, alignment: clCadResult });
   InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
   InteractionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
 
@@ -151,16 +161,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clDownbeat = EmergentDownbeat.applyIfDownbeat(clAbsMs, layer, edSignals, 0, velocity);
   InteractionHeatMap.record('emergentDownbeat', clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
   if (clDownbeat) FeedbackOscillator.inject(clAbsMs, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
-
-  // --- Breathing ---
-  const clBreathing = InteractionHeatMap.getBreathingRecommendation();
-  if (clBreathing.recommendation === 'decrease') {
-    playProb = clamp(playProb * 0.96, 0, 1);
-    stutterProb = clamp(stutterProb * 0.94, 0, 1);
-  } else if (clBreathing.recommendation === 'increase') {
-    playProb = clamp(playProb * 1.03, 0, 1);
-    stutterProb = clamp(stutterProb * 1.04, 0, 1);
-  }
 
   // --- Trust scores ---
   const stutterOutcome = clamp(1 - Math.abs(stutterProb - clIntent.interactionTarget) * 2, -1, 1);

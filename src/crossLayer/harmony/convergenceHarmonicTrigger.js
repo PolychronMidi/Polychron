@@ -16,7 +16,7 @@ ConvergenceHarmonicTrigger = (() => {
   /**
    * Called when a convergence event fires (via EventBus or direct invocation).
    * Evaluates whether this convergence should trigger a harmonic change.
-   * @param {{ rarity?: number, absTimeMs?: number, layer?: string }} event
+   * @param {{ rarity?: number, absTimeMs?: number, layer?: string, alignment?: { tonicBias: number, dominantBias: number, shouldResolve: boolean } | null }} event
    */
   function onConvergence(event) {
     V.assertPlainObject(event, 'onConvergence.event');
@@ -43,24 +43,14 @@ ConvergenceHarmonicTrigger = (() => {
     const trustScore = V.requireFinite(AdaptiveTrustScores.getWeight('convergence'), 'onConvergence.trustScore');
     if (trustScore < 0.2) return; // too low trust to act
 
-    // Determine change type based on cadence alignment state
+    // Determine change type based on cadence alignment state.
+    // Use pre-computed alignment from processBeat when available to avoid
+    // a redundant CadenceAlignment.applyAlignment call and inconsistent tension.
     let changeType = 'modal-color'; // default: add modal interchange color
     let bias = 0;
 
-    // Consume CadenceAlignment dead-end signals
-    if (!CadenceAlignment.applyAlignment) {
-      throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment is required');
-    }
-    // Use bridge: blend actual tension product with compositeIntensity for semantic accuracy
-    const sigs = conductorSignalBridge.getSignals();
-    const tension = clamp(sigs.compositeIntensity * 0.5 + clamp(sigs.tension - 1, 0, 1) * 0.5, 0, 1);
-
-    // Read cadence alignment state for tonicBias/dominantBias
-    const alignment = CadenceAlignment.applyAlignment(absTimeMs, layer, tension);
-    if (alignment !== null && typeof alignment !== 'object') {
-      throw new Error('ConvergenceHarmonicTrigger.onConvergence: CadenceAlignment.applyAlignment must return object|null');
-    }
-    if (alignment) {
+    const alignment = (ev.alignment !== undefined) ? ev.alignment : null;
+    if (alignment && typeof alignment === 'object') {
       const tonicBias = clamp(V.requireFinite(alignment.tonicBias, 'onConvergence.alignment.tonicBias'), 0, 1);
       const dominantBias = clamp(V.requireFinite(alignment.dominantBias, 'onConvergence.alignment.dominantBias'), 0, 1);
 
@@ -73,14 +63,8 @@ ConvergenceHarmonicTrigger = (() => {
       }
     }
 
-    // Was convergence recent? (check both layers)
-    if (!ConvergenceDetector ||
-        typeof ConvergenceDetector.wasRecent !== 'function') {
-      throw new Error('ConvergenceHarmonicTrigger.onConvergence: ConvergenceDetector.wasRecent is required');
-    }
-    const wasRecent = ConvergenceDetector.wasRecent(absTimeMs, layer, 500);
-
-    if (!wasRecent) return;
+    // Caller (processBeat) already confirmed convergence via ConvergenceDetector.wasRecent(300ms),
+    // so a 500ms re-check is provably redundant. Skip it.
 
     lastTriggerMs = absTimeMs;
     triggerCount++;
@@ -92,6 +76,7 @@ ConvergenceHarmonicTrigger = (() => {
       type: changeType,
       bias,
       rarity,
+      layer,
       triggerCount,
       absTimeMs
     });

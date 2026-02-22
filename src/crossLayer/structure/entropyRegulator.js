@@ -13,6 +13,11 @@ EntropyRegulator = (() => {
   let targetEntropy = 0.5;
   let regulationStrength = 0.5; // how aggressively to steer (0-1)
 
+  // Beat-level cache: prevent multiple measureEntropy() calls within the same beat
+  // from re-smoothing (which corrupts the effective smoothing factor).
+  let _lastMeasureBeat = -1;
+  let _lastMeasuredEntropy = 0.5;
+
   /** @type {Map<string, number[]>} recent MIDI notes per layer */
   const noteHistory = new Map();
   /** @type {Map<string, number[]>} recent velocities per layer */
@@ -106,6 +111,13 @@ EntropyRegulator = (() => {
    * @returns {number} combined 0-1
    */
   function measureEntropy() {
+    // Guard: only re-compute and re-smooth once per beat to prevent
+    // multiple callers (getRegulation, regulate, CrossLayerSilhouette.tick)
+    // from compounding the exponential smoothing factor.
+    const currentBeat = typeof beatCount === 'number' ? beatCount : -1;
+    if (currentBeat === _lastMeasureBeat && currentBeat >= 0) return _lastMeasuredEntropy;
+    _lastMeasureBeat = currentBeat;
+
     const layers = ['L1', 'L2'];
     let totalPitch = 0, totalVel = 0, totalRhythm = 0, count = 0;
     for (const layer of layers) {
@@ -120,9 +132,10 @@ EntropyRegulator = (() => {
       }
       totalRhythm += rhythmicIrregularity(layer);
     }
-    if (count === 0) return 0.5;
+    if (count === 0) { _lastMeasuredEntropy = 0.5; return 0.5; }
     const combined = (totalPitch / count) * 0.4 + (totalVel / Math.max(count, 1)) * 0.3 + (totalRhythm / 2) * 0.3;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
+    _lastMeasuredEntropy = smoothedEntropy;
     return smoothedEntropy;
   }
 
@@ -178,6 +191,8 @@ EntropyRegulator = (() => {
     smoothedEntropy = 0.5;
     targetEntropy = 0.5;
     regulationStrength = 0.5;
+    _lastMeasureBeat = -1;
+    _lastMeasuredEntropy = 0.5;
     noteHistory.clear();
     velHistory.clear();
   }
