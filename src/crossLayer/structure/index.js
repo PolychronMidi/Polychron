@@ -7,6 +7,8 @@ require('./crossLayerClimaxEngine');
 // @ts-ignore: side-effect module load
 require('./crossLayerSilhouette');
 // @ts-ignore: side-effect module load
+require('./entropyMetrics');
+// @ts-ignore: side-effect module load
 require('./entropyRegulator');
 // @ts-ignore: side-effect module load
 require('./interactionHeatMap');

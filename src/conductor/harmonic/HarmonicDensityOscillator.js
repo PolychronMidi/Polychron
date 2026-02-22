@@ -25,7 +25,7 @@ HarmonicDensityOscillator = (() => {
    * Detect oscillation pattern in harmonic density.
    * @returns {{ oscillating: boolean, tensionBias: number, period: number }}
    */
-  function getOscillationSignal() {
+  function _computeOscillationSignal() {
     if (changeSamples.length < 6) {
       return { oscillating: false, tensionBias: 1, period: 0 };
     }
@@ -64,6 +64,14 @@ HarmonicDensityOscillator = (() => {
 
     return { oscillating, tensionBias, period };
   }
+
+  const _cache = beatCache.create(_computeOscillationSignal);
+
+  /**
+   * Detect oscillation pattern in harmonic density (cached per beat).
+   * @returns {{ oscillating: boolean, tensionBias: number, period: number }}
+   */
+  function getOscillationSignal() { return _cache.get(); }
 
   /**
    * Get tension multiplier for the derivedTension chain.

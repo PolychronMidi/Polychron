@@ -4,9 +4,6 @@
 // provides advisory signals that ConductorConfig can optionally blend.
 
 profileAdaptation = (() => {
-  const V = Validator.create('profileAdaptation');
-  let initialized = false;
-
   // Sustained-signal tracking: count consecutive beats meeting each threshold
   let lowDensityStreak = 0;
   let highTensionStreak = 0;
@@ -71,14 +68,6 @@ profileAdaptation = (() => {
     flatFlickerStreak = 0;
   }
 
-  /** Subscribe to SECTION_BOUNDARY so streaks reset each section. */
-  function initialize() {
-    if (initialized) return;
-    initialized = true;
-    const EVENTS = V.getEventsOrThrow();
-    EventBus.on(EVENTS.SECTION_BOUNDARY, reset);
-  }
-
   // Self-register: recorder (runs each beat) + state provider (exposes hints)
   ConductorIntelligence.registerRecorder('profileAdaptation', update);
   ConductorIntelligence.registerStateProvider('profileAdaptation', () => {
@@ -89,6 +78,7 @@ profileAdaptation = (() => {
       profileHintAtmospheric: h.atmosphericHint
     };
   });
+  ConductorIntelligence.registerModule('profileAdaptation', { reset }, ['section']);
 
-  return { update, getHints, reset, initialize };
+  return { update, getHints, reset };
 })();

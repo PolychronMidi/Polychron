@@ -7,6 +7,10 @@ OnsetDensityProfiler = (() => {
   const WINDOW_SECONDS = 3;
   const TARGET_NPS = 6; // target notes-per-second for "balanced" density
 
+  // Beat-level cache: getDensity() with default opts is called 2-3x per beat
+  // (getDensityBias + getCrossModBias via stateProvider)
+  const _defaultDensityCache = beatCache.create(() => _getDensity());
+
   /**
    * Get precise onset density (notes per second) from ATW.
    * @param {Object} [opts]
@@ -14,7 +18,13 @@ OnsetDensityProfiler = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ nps: number, trend: string }}
    */
-  function getDensity(opts = {}) {
+  function getDensity(opts) {
+    if (opts === undefined) return _defaultDensityCache.get();
+    return _getDensity(opts);
+  }
+
+  /** @private */
+  function _getDensity(opts = {}) {
     const { layer, windowSeconds } = opts;
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
     const notes = AbsoluteTimeWindow.getNotes({ layer, windowSeconds: ws });

@@ -20,9 +20,17 @@ HarmonicRhythmTracker = (() => {
     return clamp(measureTicks / (measureTicks + delta), 0, 1);
   }
 
+  function resetSection() {
+    harmonicRhythm *= 0.5;
+    changesInSection = 0;
+    lastTick = null;
+  }
+
   function initialize() {
     if (initialized) return;
     const EVENTS = V.getEventsOrThrow();
+
+    ConductorIntelligence.registerModule('HarmonicRhythmTracker', { reset: resetSection }, ['section']);
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
       const tick = normalizeTick(data.tick);
@@ -33,12 +41,6 @@ HarmonicRhythmTracker = (() => {
       harmonicRhythm = clamp(harmonicRhythm * 0.74 + (instant + chordBonus) * 0.26, 0, 1);
       lastTick = tick;
       changesInSection++;
-    });
-
-    EventBus.on(EVENTS.SECTION_BOUNDARY, () => {
-      harmonicRhythm *= 0.5;
-      changesInSection = 0;
-      lastTick = null;
     });
 
     initialized = true;

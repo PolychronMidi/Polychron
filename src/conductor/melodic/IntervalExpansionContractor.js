@@ -10,6 +10,9 @@ IntervalExpansionContractor = (() => {
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */
   const intervalSnapshots = [];
 
+  // Beat-level cache: getExpansionSignal is called 2x per beat (densityBias + stateProvider)
+  const _cache = beatCache.create(() => _getExpansionSignal());
+
   /**
    * Record an interval vocabulary snapshot from recent material.
    * @param {number} absTime
@@ -47,7 +50,10 @@ IntervalExpansionContractor = (() => {
    * Detect expansion/contraction trend.
    * @returns {{ trend: string, densityBias: number, avgIntervalTrend: number }}
    */
-  function getExpansionSignal() {
+  function getExpansionSignal() { return _cache.get(); }
+
+  /** @private */
+  function _getExpansionSignal() {
     if (intervalSnapshots.length < 4) {
       return { trend: 'stable', densityBias: 1, avgIntervalTrend: 0 };
     }

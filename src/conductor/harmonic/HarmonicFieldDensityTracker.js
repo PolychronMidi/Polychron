@@ -11,7 +11,7 @@ HarmonicFieldDensityTracker = (() => {
    * Analyze vertical density from recent notes.
    * @returns {{ avgSimultaneous: number, maxSimultaneous: number, densityBias: number }}
    */
-  function getFieldDensitySignal() {
+  function _computeFieldDensitySignal() {
     const notes = AbsoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 3) {
@@ -69,6 +69,14 @@ HarmonicFieldDensityTracker = (() => {
 
     return { avgSimultaneous, maxSimultaneous: maxSim, densityBias };
   }
+
+  const _cache = beatCache.create(_computeFieldDensitySignal);
+
+  /**
+   * Analyze vertical density from recent notes (cached per beat).
+   * @returns {{ avgSimultaneous: number, maxSimultaneous: number, densityBias: number }}
+   */
+  function getFieldDensitySignal() { return _cache.get(); }
 
   /**
    * Get density multiplier for the targetDensity chain.

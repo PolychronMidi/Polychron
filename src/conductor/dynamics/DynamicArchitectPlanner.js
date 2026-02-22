@@ -11,6 +11,9 @@ DynamicArchitectPlanner = (() => {
   let pieceStartTime = -1;
   let estimatedPieceDuration = 180; // default 3 min estimate
 
+  // Beat-level cache: getDynamicPlanSignal is called 2x per beat (tensionBias + stateProvider)
+  const _planCache = beatCache.create(() => _getDynamicPlanSignal());
+
   /**
    * Record an intensity snapshot.
    * @param {number} intensity - current composite intensity 0-1
@@ -69,7 +72,10 @@ DynamicArchitectPlanner = (() => {
    * Get tension bias to nudge the piece toward the macro dynamic plan.
    * @returns {{ tensionBias: number, macroPosition: number, targetIntensity: number }}
    */
-  function getDynamicPlanSignal() {
+  function getDynamicPlanSignal() { return _planCache.get(); }
+
+  /** @private */
+  function _getDynamicPlanSignal() {
     const pos = getMacroPosition();
     const target = idealDynamicCurve(pos);
 

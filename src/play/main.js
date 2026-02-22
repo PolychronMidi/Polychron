@@ -51,8 +51,6 @@ HarmonicRhythmTracker.initialize();
 ConductorState.initialize();
 CadenceAdvisor.initialize();
 CoherenceMonitor.initialize();
-profileAdaptation.initialize();
-signalTelemetry.initialize();
 ConductorIntelligence.initialize();
 CrossLayerLifecycleManager.resetAll();
 

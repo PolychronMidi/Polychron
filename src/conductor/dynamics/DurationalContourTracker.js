@@ -6,6 +6,9 @@ DurationalContourTracker = (() => {
   const V = Validator.create('DurationalContourTracker');
   const WINDOW_SECONDS = 4;
 
+  // Beat-level cache: getDurationBias is called 2x per beat (flickerModifier + stateProvider)
+  const _biasCache = beatCache.create(() => _getDurationBias());
+
   /**
    * Analyze duration contour in recent notes.
    * @param {Object} [opts]
@@ -50,13 +53,19 @@ DurationalContourTracker = (() => {
   }
 
   /**
-   * Get duration envelope bias for temporal shaping.
+   * Get duration envelope bias for temporal shaping (cached per beat).
    * Accelerating → gently resist (boost longer durations); decelerating → gently resist (boost shorter).
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ durationBias: number, flickerMod: number }}
    */
   function getDurationBias(opts) {
+    if (opts === undefined) return _biasCache.get();
+    return _getDurationBias(opts);
+  }
+
+  /** @private */
+  function _getDurationBias(opts) {
     const contour = getDurationContour(opts);
     if (contour.accelerating) {
       return { durationBias: 1.15, flickerMod: 1.1 };

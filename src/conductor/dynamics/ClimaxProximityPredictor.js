@@ -4,20 +4,18 @@
 // Pure query API — prepares density/register/dynamics ramp before peaks.
 
 ClimaxProximityPredictor = (() => {
-  // Beat-stamp cache: predict() queries 4 external modules but is called twice
-  // per beat (via getDensityRampBias + getTensionBias). Cache on beatCount.
-  let _cachedBeat = -1;
-  let _cachedPrediction = null;
+  // Beat-level cache: predict() queries 4 external modules but is called twice
+  // per beat (via getDensityRampBias + getTensionBias).
+  const _cache = beatCache.create(() => _predict());
 
   /**
-   * Predict climax proximity from multiple conductor signals.
+   * Predict climax proximity from multiple conductor signals (cached per beat).
    * @returns {{ proximity: number, phase: string, premature: boolean, density: number, tension: number }}
    */
-  function predict() {
-    const currentBeat = typeof beatCount === 'number' ? beatCount : -1;
-    if (currentBeat >= 0 && currentBeat === _cachedBeat && _cachedPrediction) {
-      return _cachedPrediction;
-    }
+  function predict() { return _cache.get(); }
+
+  /** @private */
+  function _predict() {
     // Gather signals with safe fallbacks
     const energyMomentum = EnergyMomentumTracker.getMomentum();
 
@@ -51,16 +49,13 @@ ClimaxProximityPredictor = (() => {
     // Premature climax: high proximity early in energy arc without sustained build
     const premature = phase === 'climax' && energyMomentum.plateauDuration < 2;
 
-    const result = {
+    return {
       proximity,
       phase,
       premature,
       density: clamp(onsetProfile, 0, 2),
       tension: currentTension
     };
-    _cachedBeat = currentBeat;
-    _cachedPrediction = result;
-    return result;
   }
 
   /**
