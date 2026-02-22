@@ -55,11 +55,42 @@ NegotiationEngine = (() => {
     return { playProb, stutterProb, allowCadence, conflict, phaseConfidence };
   }
 
+  /**
+   * Gate convergence reactions: only fire if convergence trust is high enough
+   * and not in conflict with other high-trust systems. Prevents triple-stacking
+   * of convergenceDetector + convergenceHarmonicTrigger + emergentDownbeat.
+   * @param {string} layer
+   * @returns {{ allowHarmonicTrigger: boolean, allowDownbeat: boolean }}
+   */
+  function gateConvergence(layer) {
+    const trustConvergence = AdaptiveTrustScores.getWeight('convergence');
+    const trustCadence = AdaptiveTrustScores.getWeight('cadenceAlignment');
+    const trustStutter = AdaptiveTrustScores.getWeight('stutterContagion');
+
+    // If convergence trust is low, suppress both secondary responders
+    if (trustConvergence < 0.5) {
+      return { allowHarmonicTrigger: false, allowDownbeat: false };
+    }
+
+    // If cadence trust is high and convergence trust is not dominant, skip harmonic trigger
+    // to avoid both cadenceAlignment and convergenceHarmonicTrigger firing
+    const allowHarmonicTrigger = trustConvergence >= trustCadence * 0.8;
+    // If stutter trust is very high, suppress downbeat to avoid stutter + downbeat stacking
+    const allowDownbeat = trustStutter < 1.4;
+
+    ExplainabilityBus.emit('convergence-gate', layer, {
+      trustConvergence, trustCadence, trustStutter,
+      allowHarmonicTrigger, allowDownbeat
+    });
+
+    return { allowHarmonicTrigger, allowDownbeat };
+  }
+
   function reset() {
     // Stateless by design — no internal state to clear. Intentionally a no-op.
     // Kept explicit to satisfy lint rule against silent early returns.
   }
 
-  return { apply, reset };
+  return { apply, gateConvergence, reset };
 })();
 CrossLayerRegistry.register('NegotiationEngine', NegotiationEngine, ['all']);

@@ -25,12 +25,12 @@ RegisterCollisionAvoider = (() => {
   }
 
   /**
-   * @param {string} layer
+   * @param {string} activeLayer
    * @param {number} midi
    * @param {number} tick
    * @returns {{ midi: number, adjusted: boolean }}
    */
-  function avoid(layer, midi, tick) {
+  function avoid(activeLayer, midi, tick) {
     V.requireFinite(midi, 'midi');
     V.requireFinite(tick, 'tick');
 
@@ -39,20 +39,36 @@ RegisterCollisionAvoider = (() => {
     const boundedMidi = clamp(midi, lo, hi);
 
     const absMs = tickToMs(tick);
-    const other = AbsoluteTimeGrid.findClosest(CHANNEL, absMs, TIME_TOLERANCE_MS, layer);
+    const other = AbsoluteTimeGrid.findClosest(CHANNEL, absMs, TIME_TOLERANCE_MS, activeLayer);
     if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
     if (Math.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
-    const direction = boundedMidi <= other.midi ? -12 : 12;
+    // Choose octave displacement that favors spectrally sparse bins
+    const upCandidate = clamp(boundedMidi + 12, lo, hi);
+    const downCandidate = clamp(boundedMidi - 12, lo, hi);
+    const upClearsCollision = Math.abs(upCandidate - other.midi) >= COLLISION_SEMITONES;
+    const downClearsCollision = Math.abs(downCandidate - other.midi) >= COLLISION_SEMITONES;
 
-    let candidate = clamp(boundedMidi + direction, lo, hi);
-    if (Math.abs(candidate - other.midi) < COLLISION_SEMITONES) {
-      candidate = clamp(boundedMidi - direction, lo, hi);
+    let candidate;
+    if (upClearsCollision && downClearsCollision) {
+      // Both directions clear — pick the one in a sparser spectral bin
+      const hist = SpectralComplementarity.getHistogram(activeLayer);
+      const upBin = upCandidate < 36 ? 0 : upCandidate < 60 ? 1 : upCandidate < 84 ? 2 : 3;
+      const downBin = downCandidate < 36 ? 0 : downCandidate < 60 ? 1 : downCandidate < 84 ? 2 : 3;
+      candidate = (hist[upBin] <= hist[downBin]) ? upCandidate : downCandidate;
+    } else if (upClearsCollision) {
+      candidate = upCandidate;
+    } else if (downClearsCollision) {
+      candidate = downCandidate;
+    } else {
+      // Neither direction fully clears — pick the one farther from other.midi
+      candidate = Math.abs(upCandidate - other.midi) >= Math.abs(downCandidate - other.midi)
+        ? upCandidate : downCandidate;
     }
 
     const adjusted = candidate !== midi;
     if (adjusted) {
-      ExplainabilityBus.emit('register-collision-avoided', layer, {
+      ExplainabilityBus.emit('register-collision-avoided', activeLayer, {
         sourceMidi: midi,
         otherMidi: other.midi,
         adjustedMidi: candidate,
