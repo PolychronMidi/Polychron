@@ -216,9 +216,6 @@ MotifComposer = class MotifComposer {
       VC.resetLayer(motifLayer);
     }
 
-    const MotifCtor = (typeof Motif !== "undefined") ? Motif : null;
-    if (MotifCtor) return new MotifCtor(seq);
-    // Fail-fast: Motif class is required
-    throw new Error('MotifComposer.generate: Motif class not available');
+    return new Motif(seq);
   }
 };

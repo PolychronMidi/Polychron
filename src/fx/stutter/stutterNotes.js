@@ -81,7 +81,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     emit = true // when false, return planned events instead of calling p()
   } = opts;
 
-  if (typeof channel === 'undefined' || typeof note !== 'number') throw new Error('stutterNotes: missing channel or numeric note');
+  if (typeof channel === 'undefined' || !Number.isFinite(note)) throw new Error('stutterNotes: missing channel or numeric note');
   if (!Array.isArray(reflection) || !Array.isArray(bass)) {
     throw new Error('stutterNotes: reflection and bass channel arrays must be defined');
   }

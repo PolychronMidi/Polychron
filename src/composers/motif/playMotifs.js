@@ -22,16 +22,6 @@
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer
   if (!layer) throw new Error(`${unit}.playMotifs missing layer`);
-  if (typeof playMotifsResolveBucket !== 'function') {
-    throw new Error(`${unit}.playMotifs: playMotifsResolveBucket helper not available`);
-  }
-  if (typeof playMotifsBuildCandidateNotes !== 'function') {
-    throw new Error(`${unit}.playMotifs: playMotifsBuildCandidateNotes helper not available`);
-  }
-  if (typeof playMotifsApplyCycleTransforms !== 'function') {
-    throw new Error(`${unit}.playMotifs: playMotifsApplyCycleTransforms helper not available`);
-  }
-
   const resolvedBucket = playMotifsResolveBucket(unit, layer);
   const targetIndex = resolvedBucket.targetIndex;
   const bucket = resolvedBucket.bucket;

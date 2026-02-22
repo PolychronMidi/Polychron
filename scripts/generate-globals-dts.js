@@ -1,95 +1,71 @@
 // scripts/generate-globals-dts.js
-// Generates src/types/validated-globals.d.ts from VALIDATED_GLOBALS in fullBootstrap.js,
-// then strips the now-redundant `declare var NAME: any;` lines from globals.d.ts.
-// Run automatically at the start of `npm run main`.
+// Single source of truth: src/types/globals.d.ts
+// Reads every `declare var NAME:` entry (preserving section comments) and
+// rewrites the VALIDATED_GLOBALS array in src/play/fullBootstrap.js.
+// Run automatically at the start of `npm run main` — adding a global now only
+// requires editing globals.d.ts.
+// globals.d.ts is never modified by this script.
 
 'use strict';
 
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
-const BOOTSTRAP_PATH = path.join(ROOT, 'src/play/fullBootstrap.js');
+const ROOT             = path.join(__dirname, '..');
 const GLOBALS_DTS_PATH = path.join(ROOT, 'src/types/globals.d.ts');
-const OUT_PATH = path.join(ROOT, 'src/types/validated-globals.d.ts');
+const BOOTSTRAP_PATH   = path.join(ROOT, 'src/play/fullBootstrap.js');
 
-// Hand-maintained typed overrides — non-`any` types for specific validated globals.
-// All other validated globals receive `any`.
-const TYPED_OVERRIDES = {
-  getMeterPair:        '{ pick: () => void; reset: () => void }',
-  setFeedbackPitchBias:'(bias: number) => void',
-  setClimaxMods:       '(mods: { playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }) => void',
-};
+// ── Parse globals.d.ts ───────────────────────────────────────────────────────
 
-// ── Parse VALIDATED_GLOBALS from fullBootstrap.js ────────────────────────────
+const dtsSrc = fs.readFileSync(GLOBALS_DTS_PATH, 'utf8');
 
-const bootstrapSrc = fs.readFileSync(BOOTSTRAP_PATH, 'utf8');
+const entries   = [];
+const sectionRe = /^\s*\/\/\s*─+\s*(.*?)\s*─+/;
+const declareRe = /^\s*declare\s+var\s+([A-Za-z_$][\w$]*)\s*:/;
 
-const arrayMatch = bootstrapSrc.match(/const VALIDATED_GLOBALS\s*=\s*Object\.freeze\(\[([\s\S]*?)\]\s*\)/);
-if (!arrayMatch) {
-  throw new Error('generate-globals-dts: could not find VALIDATED_GLOBALS array in ' + BOOTSTRAP_PATH);
-}
-const arrayBody = arrayMatch[1];
-
-// Each entry is either a section comment `// ── name ──` or a quoted name `'Foo'`
-const entries = [];
-for (const line of arrayBody.split('\n')) {
-  const sectionMatch = line.match(/\/\/\s*─+\s*(.*?)\s*─+/);
-  const nameMatch    = line.match(/'([A-Za-z_$][\w$]*)'/);
-  if (sectionMatch) entries.push({ type: 'section', text: sectionMatch[1].trim() });
-  else if (nameMatch) entries.push({ type: 'name', name: nameMatch[1] });
+for (const line of dtsSrc.split(/\r?\n/)) {
+  const sec  = line.match(sectionRe);
+  const decl = line.match(declareRe);
+  if      (sec)  entries.push({ type: 'section', text: sec[1] });
+  else if (decl) entries.push({ type: 'name',    name: decl[1] });
 }
 
-const validatedNames = new Set(entries.filter(e => e.type === 'name').map(e => e.name));
+const names = entries.filter(e => e.type === 'name').map(e => e.name);
+if (names.length === 0) throw new Error('generate-globals-dts: no declarations found in ' + GLOBALS_DTS_PATH);
 
-// ── Write validated-globals.d.ts ─────────────────────────────────────────────
+// ── Build replacement array body ─────────────────────────────────────────────
 
-const outLines = [
-  '// src/types/validated-globals.d.ts',
-  '// AUTO-GENERATED — do not edit by hand.',
-  '// Source of truth: VALIDATED_GLOBALS in src/play/fullBootstrap.js',
-  '// Regenerate: node scripts/generate-globals-dts.js  (runs automatically via npm run main)',
-  '',
-];
-
+const lines = [];
 for (const entry of entries) {
   if (entry.type === 'section') {
-    outLines.push('');
-    outLines.push(`// ── ${entry.text} ──`);
+    lines.push('');
+    lines.push(`    // ── ${entry.text} ──`);
   } else {
-    const type = TYPED_OVERRIDES[entry.name] || 'any';
-    outLines.push(`declare var ${entry.name}: ${type};`);
+    lines.push(`    '${entry.name}',`);
   }
 }
-outLines.push('');
+// trim leading blank line
+while (lines.length && lines[0].trim() === '') lines.shift();
 
-fs.writeFileSync(OUT_PATH, outLines.join('\n'), 'utf8');
-console.log(`generate-globals-dts: wrote ${validatedNames.size} declarations → ${path.relative(ROOT, OUT_PATH)}`);
+// ── Patch VALIDATED_GLOBALS in fullBootstrap.js — globals.d.ts untouched ────
 
-// ── Strip now-redundant `declare var NAME: any;` lines from globals.d.ts ─────
+const bootstrapSrc = fs.readFileSync(BOOTSTRAP_PATH, 'utf8');
+const srcLines = bootstrapSrc.split(/\r?\n/);
 
-const globalsSrc = fs.readFileSync(GLOBALS_DTS_PATH, 'utf8');
-const simpleAnyDecl = /^declare var ([A-Za-z_$][\w$]*):\s*any;$/;
+const openIdx = srcLines.findIndex(l => /const VALIDATED_GLOBALS\s*=\s*Object\.freeze\(\[/.test(l));
+if (openIdx === -1) throw new Error('generate-globals-dts: VALIDATED_GLOBALS open marker not found in ' + BOOTSTRAP_PATH);
 
-const newLines = globalsSrc.split('\n').filter(line => {
-  const m = line.match(simpleAnyDecl);
-  return !(m && validatedNames.has(m[1]));
-});
+const closeIdx = srcLines.findIndex((l, i) => i > openIdx && /^\s*\]\s*\)\s*;?\s*$/.test(l));
+if (closeIdx === -1) throw new Error('generate-globals-dts: VALIDATED_GLOBALS close marker not found in ' + BOOTSTRAP_PATH);
 
-// Collapse consecutive blank lines left by removals (max 1 blank line in a row)
-const collapsed = [];
-let prevBlank = false;
-for (const line of newLines) {
-  const blank = line.trim() === '';
-  if (blank && prevBlank) continue;
-  collapsed.push(line);
-  prevBlank = blank;
-}
+const closeLine = srcLines[closeIdx]; // preserve original indentation/semicolon
 
-const newGlobalsSrc = collapsed.join('\n');
-if (newGlobalsSrc !== globalsSrc) {
-  fs.writeFileSync(GLOBALS_DTS_PATH, newGlobalsSrc, 'utf8');
-  console.log(`generate-globals-dts: cleaned redundant any-declarations from ${path.relative(ROOT, GLOBALS_DTS_PATH)}`);
-} else {
-  console.log(`generate-globals-dts: globals.d.ts already clean`);
-}
+const newSrcLines = [
+  ...srcLines.slice(0, openIdx + 1),
+  ...lines,
+  closeLine,
+  ...srcLines.slice(closeIdx + 1),
+];
+
+fs.writeFileSync(BOOTSTRAP_PATH, newSrcLines.join('\n'), 'utf8');
+console.log(`generate-globals-dts: synced ${names.length} globals from globals.d.ts → fullBootstrap.js`);

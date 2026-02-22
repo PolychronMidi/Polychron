@@ -68,7 +68,7 @@ LM = layerManager ={
     // If a per-layer setup function was provided, call it with `c` set
     // to the layer buffer so existing setup functions that rely on
     // the active buffer continue to work.
-    const prevC = typeof c !== 'undefined' ? c : undefined;
+    const prevC = c;
     try {
       c = buf;
       if (typeof setupFn === 'function') setupFn(LM.layers[name], buf);

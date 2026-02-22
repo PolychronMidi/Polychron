@@ -19,7 +19,7 @@ MotifSpreader = {
     const measureMotif = mc.generate({ length, developFromComposer: composer, measureComposer: composer });
     if (!measureMotif || !measureMotif.sequence) throw new Error('MotifSpreader.spreadMeasure: motif generation failed');
 
-    layer.measureMotifs = { motif: measureMotif, groupId: `msr-${typeof measureCount === 'number' ? measureCount : 0}` };
+    layer.measureMotifs = { motif: measureMotif, groupId: `msr-${measureCount}` };
     layer._plannedBeats = Number(beats);
 
     // Init sibling voice tracking for the new measure

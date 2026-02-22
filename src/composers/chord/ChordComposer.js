@@ -73,7 +73,6 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch { /* swallow */ }
         _warnedInvalidChordSymbols.add(asRaw);
       }
-      try { if (typeof writeDebugFile === 'function') writeDebugFile('composers.ndjson', { tag: 'invalid-chord', chordSymbol: asRaw }); } catch { /* swallow */ }
       return null;
     }).filter(Boolean);
 
@@ -89,13 +88,10 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         case '?': next=ri(-2,2); break;
         default: throw new Error(`ChordComposer.noteSet: invalid direction "${direction}"`);
       }
-      if (typeof measureCount !== 'number') {
-        throw new Error('ChordComposer.noteSet: measureCount not available');
-      }
       const lastMeasure = (typeof this._lastMeasureCount === 'number') ? this._lastMeasureCount : measureCount;
       const measureAdvanced = measureCount > lastMeasure;
       const progressChord = measureAdvanced || rf() < 0.05;
-      if (progressChord && typeof subdivStart !== 'undefined') { allNotesOff(subdivStart); }
+      if (progressChord) { allNotesOff(subdivStart); }
       this._lastMeasureCount = measureCount;
       this.currentChordIndex+= progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
