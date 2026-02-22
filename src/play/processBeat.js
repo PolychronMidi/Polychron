@@ -131,13 +131,17 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   const clConvergenceIntensity = ConvergenceDetector.wasRecent(clAbsMs, layer, 300) ? 1 : 0;
   InteractionHeatMap.record('convergence', clConvergenceIntensity);
-  if (clConvergenceIntensity > 0) ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer });
+  // Gate convergence reactions through NegotiationEngine to prevent triple-stacking
+  const clConvergenceGate = clConvergenceIntensity > 0
+    ? NegotiationEngine.gateConvergence(layer)
+    : { allowHarmonicTrigger: false, allowDownbeat: false };
+  if (clConvergenceGate.allowHarmonicTrigger) ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer });
   InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
   InteractionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
 
   // --- Emergent downbeat ---
   const edSignals = {
-    convergence: clConvergenceIntensity > 0,
+    convergence: clConvergenceGate.allowDownbeat,
     cadenceAlign: Boolean(clCadResult && clCadResult.shouldResolve),
     velReinforce: false,
     phaseLock: clPhaseMode === 'lock'

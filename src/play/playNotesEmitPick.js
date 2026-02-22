@@ -115,10 +115,12 @@ playNotesEmitPick = function(opts = {}) {
 
   _refreshChannelCache();
   const activeSourceChannels = _cachedSourceChs;
+  const maxTickShift = tpSec * 0.1; // cap cumulative tick displacement to ±10% of tpSec
   for (let sourceIndex = 0; sourceIndex < activeSourceChannels.length; sourceIndex++) {
     const sourceCH = activeSourceChannels[sourceIndex];
     const isPrimary = sourceCH === cCH1;
     let onTick = isPrimary ? on + rv(tpUnit * rf(1 / 9), [-0.1, 0.1], 0.3) : on + rv(tpUnit * rf(1 / 3), [-0.1, 0.1], 0.3);
+    const preShiftTick = onTick;
     onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
     // Rhythmic complement: shift timing for hocket/antiphony/canon
     const rhythmComplement = RhythmicComplementEngine.suggestComplement(activeLayerName, onTick, tickToAbsMs(onTick));
@@ -126,6 +128,10 @@ playNotesEmitPick = function(opts = {}) {
     const preSyncMs = tickToAbsMs(onTick);
     onTick = RhythmicPhaseLock.applyPhaseLock(preSyncMs, activeLayerName, onTick).tick;
     onTick = TemporalGravity.applyGravity(preSyncMs, activeLayerName, onTick);
+    // Cap cumulative tick displacement
+    if (m.abs(onTick - preShiftTick) > maxTickShift) {
+      onTick = preShiftTick + m.sign(onTick - preShiftTick) * maxTickShift;
+    }
     onTick = ensureNonNegativeTick(onTick, `${unit}.source.onTick`);
     const absMsAtOnTick = tickToAbsMs(onTick);
     const baseOnVel = (isPrimary ? velocity * rf(0.95, 1.15) : binVel * rf(0.75, 1.03)) * pickVelScale;
@@ -190,10 +196,15 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionCH = activeReflectionChannels[reflectionIndex];
     const isPrimary = reflectionCH === cCH2;
     let onTick = isPrimary ? on + rv(tpUnit * rf(0.2), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
+    const reflPreShiftTick = onTick;
     onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
     const reflectionPreSyncMs = tickToAbsMs(onTick);
     onTick = RhythmicPhaseLock.applyPhaseLock(reflectionPreSyncMs, activeLayerName, onTick).tick;
     onTick = TemporalGravity.applyGravity(reflectionPreSyncMs, activeLayerName, onTick);
+    // Cap cumulative tick displacement to ±10% of tpSec
+    if (m.abs(onTick - reflPreShiftTick) > maxTickShift) {
+      onTick = reflPreShiftTick + m.sign(onTick - reflPreShiftTick) * maxTickShift;
+    }
     onTick = ensureNonNegativeTick(onTick, `${unit}.reflection.onTick`);
     const baseOnVel = (isPrimary ? velocity * rf(0.7, 1.2) : binVel * rf(0.55, 1.1)) * pickVelScale;
     const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pickIndex * 131 + reflectionIndex;
@@ -231,10 +242,15 @@ playNotesEmitPick = function(opts = {}) {
       const bassCH = activeBassChannels[bassIndex];
       const isPrimary = bassCH === cCH3;
       let onTick = isPrimary ? on + rv(tpUnit * rf(0.1), [-0.01, 0.1], 0.5) : on + rv(tpUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
+      const bassPreShiftTick = onTick;
       onTick = GrooveTransfer.applyOffset(activeLayerName, onTick, unit);
       const bassPreSyncMs = tickToAbsMs(onTick);
       onTick = RhythmicPhaseLock.applyPhaseLock(bassPreSyncMs, activeLayerName, onTick).tick;
       onTick = TemporalGravity.applyGravity(bassPreSyncMs, activeLayerName, onTick);
+      // Cap cumulative tick displacement to ±10% of tpSec
+      if (m.abs(onTick - bassPreShiftTick) > maxTickShift) {
+        onTick = bassPreShiftTick + m.sign(onTick - bassPreShiftTick) * maxTickShift;
+      }
       onTick = ensureNonNegativeTick(onTick, `${unit}.bass.onTick`);
       const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
       const bassVoiceId = voiceIdSeed + bassCH * 23 + pickIndex * 151 + bassIndex;
