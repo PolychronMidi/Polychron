@@ -25,7 +25,8 @@ Everything in this project follows from five rules. Learn these and the rest is 
 Globals are the project's circulatory system. They are assigned as side-effects of `require()` calls in `index.js` files — never via `global.`, `globalThis.`, or `/* global */` comments (ESLint enforces this). All globals are declared in `src/types/globals.d.ts`.
 
 - Always reference globals directly — never alias them into intermediary variables.
-- To add a new global: create a side-effect module, require it from the subsystem's `index.js`, declare it in `globals.d.ts`, **and** add it to `VALIDATED_GLOBALS` in `src/play/fullBootstrap.js`.
+- To add a new global: create a side-effect module, require it from the subsystem's `index.js`, and declare it in `globals.d.ts`. That's it — **never hand-edit `VALIDATED_GLOBALS` in `fullBootstrap.js`**.
+- **Single source of truth:** `src/types/globals.d.ts` is the canonical registry. `scripts/generate-globals-dts.js` runs automatically at the start of `npm run main` and rewrites the `VALIDATED_GLOBALS` array in `src/play/fullBootstrap.js` from it. `globals.d.ts` is never modified by the script.
 - Boot validation: `mainBootstrap.assertBootstrapGlobals()` proves every `VALIDATED_GLOBALS` entry exists before the main loop runs. ESLint rule `local/no-typeof-validated-global` bans redundant `typeof` probes on these globals — reference them directly and trust the boot check.
 
 ### 2. Fail Fast — Loud Crashes, Never Silent Corruption

@@ -111,7 +111,7 @@ VelocityInterference = (() => {
   function writeVizCC(layer, mode) {
     V.assertNonEmptyString(layer, 'writeVizCC.layer');
     V.assertInSet(mode, MODE_SET, 'writeVizCC.mode');
-    if (typeof c === 'undefined' || !Array.isArray(c)) {
+    if (!Array.isArray(c)) {
       throw new Error('VelocityInterference.writeVizCC: c must be a note event array');
     }
     const startTick = V.requireFinite(beatStart, 'writeVizCC.beatStart');

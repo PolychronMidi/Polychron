@@ -28,9 +28,7 @@ rhythmPriors = (function() {
   }
 
   function cloneRhythmSpecMapOrFail(rhythms) {
-    if (!rhythms || typeof rhythms !== 'object') {
-      throw new Error('rhythmPriors.cloneRhythmSpecMapOrFail: rhythms must be an object');
-    }
+    V.assertObject(rhythms, 'cloneRhythmSpecMapOrFail.rhythms');
 
     const out = {};
     for (const [name, spec] of Object.entries(rhythms)) {

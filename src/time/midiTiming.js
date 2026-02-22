@@ -1,3 +1,6 @@
+/** @param {number} n @returns {boolean} */
+isPowerOf2 = (n) => (n & (n - 1)) === 0;
+
 /**
  * Compute MIDI-compatible meter and tempo sync factor.
  * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, tpSec, tpMeasure, spMeasure.
@@ -11,8 +14,6 @@ getMidiTiming = (tick=measureStart) => {
     throw new Error(`Invalid BPM: ${BPM}`);
   }
   meterRatio = numerator / denominator;
-  /** @param {number} n @returns {boolean} */
-  isPowerOf2 = (n) => { return (n & (n - 1)) === 0; }
 
   if (isPowerOf2(denominator)) {
     midiMeter = [numerator, denominator];

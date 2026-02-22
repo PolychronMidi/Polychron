@@ -138,7 +138,7 @@ rlFX=(ch,effectNum,minValue,maxValue,condition=undefined,conditionMin=undefined,
       return effectValue;
     }
   };
-  return {..._,vals:[ch,effectNum,midiEffect.getValue()]};
+  return {...fxEventTemplate,vals:[ch,effectNum,midiEffect.getValue()]};
 };
 
 /**

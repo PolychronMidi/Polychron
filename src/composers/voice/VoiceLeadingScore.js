@@ -86,9 +86,6 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {number} Best scoring note
    */
   selectNextNote(lastNotes, availableNotes, config = {}) {
-    if (typeof voiceLeadingSelectNextNote !== 'function') {
-      throw new Error('VoiceLeadingScore.selectNextNote: voiceLeadingSelectNextNote helper not available');
-    }
     return voiceLeadingSelectNextNote(this, lastNotes, availableNotes, config);
   }
 
@@ -250,9 +247,6 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @returns {{ smoothness: number, avgRange: number, leapRecoveries: number }}
    */
   analyzeQuality(noteSequence) {
-    if (typeof voiceLeadingAnalyzeQuality !== 'function') {
-      throw new Error('VoiceLeadingScore.analyzeQuality: voiceLeadingAnalyzeQuality helper not available');
-    }
     return voiceLeadingAnalyzeQuality(this, noteSequence);
   }
 

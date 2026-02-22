@@ -173,11 +173,11 @@ HarmonicContext = (() => {
 
   /**
    * Check if note is in current scale
-   * @param {string|number} note - note name or MIDI number
+   * @param {string|number} noteInput - note name or MIDI number
    * @returns {boolean}
    */
-  function isNoteInScale(note) {
-    const chroma = typeof note === 'number' ? note % 12 : (t && t.Note) ? t.Note.chroma(note) : -1;
+  function isNoteInScale(noteInput) {
+    const chroma = typeof noteInput === 'number' ? noteInput % 12 : (t && t.Note) ? t.Note.chroma(noteInput) : -1;
     if (typeof chroma !== 'number' || chroma < 0) return false;
     return state.scale.some(n => (typeof n === 'number' ? n : (t && t.Note) ? t.Note.chroma(n) : -1) === chroma);
   }
