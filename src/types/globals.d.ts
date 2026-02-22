@@ -241,6 +241,7 @@ declare var CoherenceMonitor: any;
 declare var signalReader: any;
 declare var profileAdaptation: any;
 declare var signalTelemetry: any;
+declare var conductorIntelligenceSectionReset: any;
 
 // ── rhythm ──
 declare var RhythmRegistry: any;

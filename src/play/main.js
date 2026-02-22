@@ -53,6 +53,7 @@ CadenceAdvisor.initialize();
 CoherenceMonitor.initialize();
 profileAdaptation.initialize();
 signalTelemetry.initialize();
+conductorIntelligenceSectionReset.initialize();
 CrossLayerLifecycleManager.resetAll();
 
 totalSections = ri(SECTIONS.min, SECTIONS.max);
