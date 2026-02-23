@@ -4,7 +4,7 @@
 // (dead-end signals) to drive texture decisions.
 
 TexturalMirror = (() => {
-  const V = Validator.create('TexturalMirror');
+  const V = Validator.create('texturalMirror');
   const COMPLEMENT_MAP = Object.freeze({
     normal: 'normal',
     chordBurst: 'sparse',

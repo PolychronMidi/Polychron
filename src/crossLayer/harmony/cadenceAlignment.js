@@ -4,7 +4,7 @@
 // simultaneous resolution — syncing cadence points to the same ms-derived tick.
 
 CadenceAlignment = (() => {
-  const V = Validator.create('CadenceAlignment');
+  const V = Validator.create('cadenceAlignment');
   const CHANNEL = 'tension';
   const SYNC_TOLERANCE_MS = 400;
   const HIGH_TENSION_THRESHOLD = 0.7;

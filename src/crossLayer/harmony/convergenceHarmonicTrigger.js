@@ -4,7 +4,7 @@
 // Consumes CadenceAlignment tonicBias/dominantBias (dead-end signals).
 
 ConvergenceHarmonicTrigger = (() => {
-  const V = Validator.create('ConvergenceHarmonicTrigger');
+  const V = Validator.create('convergenceHarmonicTrigger');
   const MIN_TRIGGER_INTERVAL_MS = 2000;
   const TRIGGER_PROBABILITY = 0.35;
   const EVENTS = EventCatalog.names;

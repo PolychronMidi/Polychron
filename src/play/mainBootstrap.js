@@ -1,7 +1,7 @@
 // mainBootstrap.js - Bootstrap validation helpers and MAIN_LOOP_CONTROLS parsing for main.js
 
 MainBootstrap = (() => {
-  const V = Validator.create('MainBootstrap');
+  const V = Validator.create('mainBootstrap');
 
   /** @param {string} label @param {unknown} value @returns {number} */
   function requireFiniteNumber(label, value) {

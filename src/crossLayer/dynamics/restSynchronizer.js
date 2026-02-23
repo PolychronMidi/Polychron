@@ -4,7 +4,7 @@
 // Driven by InteractionHeatMap pressure and SectionIntentCurves density.
 
 RestSynchronizer = (() => {
-  const V = Validator.create('RestSynchronizer');
+  const V = Validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_MS = 800;
   const SHARED_REST_PROBABILITY = 0.15;
   const COMPLEMENT_FILL_THRESHOLD = 0.6;

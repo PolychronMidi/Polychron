@@ -4,7 +4,7 @@
 // crescendos while the other decrescendos, spectral separation increases.
 
 VelocityInterference = (() => {
-  const V = Validator.create('VelocityInterference');
+  const V = Validator.create('velocityInterference');
   const CHANNEL = 'velocity';
   const CONTOUR_WINDOW_MS = 400;
   const SYNC_TOLERANCE_MS = 300;

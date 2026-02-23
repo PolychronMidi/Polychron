@@ -4,7 +4,7 @@
 // Reads ATW for other layer timing to compute ideal complement positions.
 
 RhythmicComplementEngine = (() => {
-  const V = Validator.create('RhythmicComplementEngine');
+  const V = Validator.create('rhythmicComplementEngine');
 
   /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */
   let mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('free');

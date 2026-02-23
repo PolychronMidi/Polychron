@@ -4,7 +4,7 @@
 // the cluster center — creating organic emergent rubato.
 
 TemporalGravity = (() => {
-  const V = Validator.create('TemporalGravity');
+  const V = Validator.create('temporalGravity');
   const DENSITY_CHANNEL = 'density';
   const DENSITY_WINDOW_MS = 300;
   const GRAVITY_TOLERANCE_MS = 500;

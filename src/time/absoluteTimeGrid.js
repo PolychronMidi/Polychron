@@ -11,7 +11,7 @@
  */
 
 AbsoluteTimeGrid = (() => {
-  const V = Validator.create('AbsoluteTimeGrid');
+  const V = Validator.create('absoluteTimeGrid');
   /** Default ms window for pruning old entries */
   const DEFAULT_WINDOW_MS = 4000;
   const MAX_ENTRIES_PER_TYPE = 250;
