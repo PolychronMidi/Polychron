@@ -28,6 +28,7 @@ interface BiasAttribution {
   product: number;
   rawProduct?: number;
   floored?: boolean;
+  capped?: boolean;
   contributions: Array<{ name: string; raw: number; clamped: number }>;
 }
 
