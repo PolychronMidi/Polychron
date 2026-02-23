@@ -8,7 +8,7 @@ ConvergenceDetector = (() => {
   const V = Validator.create('convergenceDetector');
   const CHANNEL = 'onset';
   const EVENTS = EventCatalog.names;
-  const CONVERGENCE_TOLERANCE_MS = 25;
+  const CONVERGENCE_TOLERANCE_MS = 50;
   const MIN_CONVERGENCE_INTERVAL_MS = 500;
   const BURST_VOICES = 3;
   const BURST_STAGGER_RATIO = 0.008;

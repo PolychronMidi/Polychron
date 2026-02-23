@@ -26,6 +26,8 @@ interface BiasRegistration {
 
 interface BiasAttribution {
   product: number;
+  rawProduct?: number;
+  floored?: boolean;
   contributions: Array<{ name: string; raw: number; clamped: number }>;
 }
 
