@@ -216,11 +216,14 @@ systemManifest = (() => {
    * Compute contributor names that provide signal but lack lifecycle registration.
    * These are legitimately stateless/cached modules — no reset needed — but
    * surfacing them makes the matrix a diagnostic tool, not just a census.
-   * @param {{ conductorIntelligence: { moduleNames: string[] } }} registryManifest
+   * @param {{ conductorIntelligence: { moduleNames: string[] }, crossLayer: { moduleNames: string[] } }} registryManifest
    * @returns {string[]}
    */
   function _computeUnregisteredContributors(registryManifest) {
-    const lifecycleSet = new Set(registryManifest.conductorIntelligence.moduleNames);
+    const lifecycleSet = new Set([
+      ...registryManifest.conductorIntelligence.moduleNames,
+      ...registryManifest.crossLayer.moduleNames
+    ]);
     return ConductorIntelligence.getContributorNames()
       .filter(name => !lifecycleSet.has(name));
   }
