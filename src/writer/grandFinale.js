@@ -35,30 +35,13 @@ grandFinale = () => {
         }
         const rawTick = i.tick;
         let tickNum = 0;
-        let unitHash = null;
-          // Keep original behavior: parse rawTick field first (may include appended '|<unitId>')
-          if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {
-            const p = String(rawTick).split('|');
-            tickNum = Number(p[0]);
-            // Preserve the full trailing unit id (it may contain '|' separators)
-            const joinedUnitHash = p.slice(1).join('|');
-            unitHash = joinedUnitHash.length > 0 ? joinedUnitHash : null;
-            // Validate canonical unit id suffix: must contain section/phrase tokens and tick range markers
-            if (unitHash) {
-              try {
-                const seg = String(unitHash).split('|');
-                // perform validation checks (results intentionally discarded for now)
-                seg.some(s => /^section\d+/i.test(s) || /^phrase\d+/i.test(s));
-                seg.some(s => /^\d+-\d+$/.test(s) || /^\d+\.\d+-\d+\.\d+$/.test(s));
-              } catch (err) {
-                throw new Error('grandFinale parsing failed: ' + (err && err.stack ? err.stack : String(err)));
-              }
-            }
-          } else if (Number.isFinite(rawTick)) {
-            tickNum = Number(rawTick);
-          } else if (typeof rawTick === 'string') {
-            tickNum = Number(rawTick);
-          }
+        if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {
+          tickNum = Number(String(rawTick).split('|')[0]);
+        } else if (Number.isFinite(rawTick)) {
+          tickNum = Number(rawTick);
+        } else if (typeof rawTick === 'string') {
+          tickNum = Number(rawTick);
+        }
         if (!Number.isFinite(tickNum)) {
           throw new Error(`grandFinale: event tick must be a finite number, received "${String(rawTick)}"`);
         }
@@ -67,9 +50,7 @@ grandFinale = () => {
           throw new Error(`grandFinale: event tick must be >= 0, received ${tickVal}`);
         }
         tickVal = m.round(tickVal);
-        const inheritedUnitHash = (typeof i._unitHash === 'string' && i._unitHash.length > 0) ? i._unitHash : null;
-        const preservedFinal = unitHash !== null ? unitHash : inheritedUnitHash;
-        return { ...i, tick: tickVal, _tickSortKey: tickVal, _unitHash: preservedFinal, _tickRaw: rawTick };
+        return { ...i, tick: tickVal, _tickSortKey: tickVal, _tickRaw: rawTick };
       })
       .sort((a, b) => {
         if (!Number.isFinite(a._tickSortKey) || !Number.isFinite(b._tickSortKey)) {
@@ -128,7 +109,10 @@ grandFinale = () => {
       }
     });
 
-    composition += `1,${phraseStart},end_track`;
+    if (!Number.isFinite(finalTick) || finalTick < 0) {
+      throw new Error(`grandFinale: layer "${name}" produced no valid events (finalTick=${finalTick})`);
+    }
+    composition += `1,${finalTick},end_track`;
     const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     fs.writeFileSync(outputFilename, composition);
     console.log(`Wrote file: ${outputFilename}`);
