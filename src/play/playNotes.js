@@ -32,6 +32,11 @@ function assertPlayNotesDeps() {
   _playNotesDepsValidated = true;
 }
 
+
+/**
+ * @param {'beat'|'div'|'subdiv'|'subsubdiv'} unit
+ * @param {Object} opts
+ */
 playNotes = function(unit = 'subdiv', opts = {}) {
   assertPlayNotesDeps();
   V.assertPlainObject(opts, 'opts');

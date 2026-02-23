@@ -380,6 +380,349 @@ interface EventCatalogAPI {
   validateEmit(name: string, data: object): boolean;
 }
 
+// ── Cross-Layer Module Interfaces ──
+
+interface SectionIntentCurvesAPI {
+  getIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
+  getLastIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
+  setManualIntent(intent: { densityTarget?: number; dissonanceTarget?: number; interactionTarget?: number; entropyTarget?: number }): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
+  reset(): void;
+}
+
+interface NegotiationEngineAPI {
+  apply(layer: string, context: { playProb: number; stutterProb: number; cadenceSuggested: boolean; phaseConfidence: number; intent?: { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number }; entropyScale?: number }): { playProb: number; stutterProb: number; allowCadence: boolean; conflict: number; phaseConfidence: number };
+  gateConvergence(layer: string): { allowHarmonicTrigger: boolean; allowDownbeat: boolean };
+  reset(): void;
+}
+
+interface InteractionHeatMapAPI {
+  record(systemName: string, intensity: number): void;
+  flushBeat(absTimeMs: number): void;
+  deferBeat(beatKey: string): void;
+  flushBeatPair(absTimeMs: number, beatKey: string): void;
+  flushDeferredOrphans(absTimeMs: number): void;
+  getDensity(): number;
+  getSystemHeat(): Record<string, number>;
+  getBreathingRecommendation(): { recommendation: 'increase' | 'maintain' | 'decrease'; density: number; beatsTracked: number };
+  getTrend(): { trend: 'rising' | 'falling' | 'stable'; slope: number };
+  reset(): void;
+}
+
+interface EntropyRegulatorAPI {
+  recordSample(midi: number, velocity: number, layer: string): void;
+  measureEntropy(): number;
+  setTarget(target: number, arcTarget?: number): void;
+  getArcTarget(sectionProgress: number): number;
+  getRegulation(): { scale: number; currentEntropy: number; targetEntropy: number; error: number };
+  regulate(prob: number): number;
+  setRegulationStrength(strength: number): void;
+  reset(): void;
+}
+
+interface EntropyMetricsAPI {
+  pitchEntropy(notes: number[]): number;
+  velocityVariance(velocities: number[]): number;
+  rhythmicIrregularity(layer: string): number;
+}
+
+interface CrossLayerSilhouetteAPI {
+  tick(absTimeMs: number, activeLayer?: string): void;
+  getCorrections(): { densityBias: number; registerBias: number; dynamicBias: number; entropyBias: number };
+  getSilhouette(): { density: number; register: number; dynamic: number; entropy: number };
+  getSilhouetteArc(): Array<{ density: number; register: number; dynamic: number; entropy: number; timeMs: number }>;
+  reset(): void;
+}
+
+interface CrossLayerClimaxEngineAPI {
+  tick(absTimeMs: number): void;
+  getModifiers(layer?: string): { playProbScale: number; velocityScale: number; registerBias: number; entropyTarget: number };
+  isApproaching(): boolean;
+  isPeak(): boolean;
+  getClimaxLevel(): number;
+  getClimaxCount(): number;
+  reset(): void;
+}
+
+interface ConvergenceDetectorAPI {
+  postOnset(absTimeMs: number, layer: string, midi: number, velocity: number): void;
+  detect(absTimeMs: number, activeLayer: string): { syncTick: number; rarity: number; otherMidi: number; otherVelocity: number } | null;
+  applyIfConverged(absTimeMs: number, activeLayer: string, currentMidi: number, currentVelocity: number): { convergence: boolean; rarity: number; burstNotes: number[]; totalConvergences: number } | null;
+  wasRecent(absTimeMs: number, layer: string, windowMs?: number): boolean;
+  getLastConvergenceMs(layer: string): number;
+  getConvergenceCount(): number;
+  reset(): void;
+}
+
+interface GrooveTransferAPI {
+  recordTiming(layer: string, tick: number, unit: string): void;
+  applyOffset(layer: string, tick: number, unit: string): number;
+  reset(): void;
+}
+
+interface TemporalGravityAPI {
+  postDensity(absTimeMs: number, layer: string, density: number): void;
+  measureDensity(layer: string, absTimeSec: number): number;
+  applyGravity(absTimeMs: number, activeLayer: string, originalTick: number): number;
+  reset(): void;
+}
+
+interface StutterContagionAPI {
+  postStutter(absTimeMs: number, layer: string, intensity: number, channels: number[], type: string): void;
+  checkContagion(absTimeMs: number, activeLayer: string): { syncTick: number; intensity: number; channels: number[]; type: string } | null;
+  apply(absTimeMs: number, activeLayer: string): void;
+  reset(): void;
+}
+
+interface RhythmicPhaseLockAPI {
+  postBeat(absTimeMs: number, layer: string, beatDurationMs: number): void;
+  measurePhase(absTimeMs: number, activeLayer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; otherBeatMs: number } | null;
+  applyPhaseLock(absTimeMs: number, activeLayer: string, originalTick: number): { tick: number; mode: 'lock' | 'drift' | 'repel'; phaseDiff: number };
+  getMode(): 'lock' | 'drift' | 'repel';
+  getLockCount(): number;
+  reset(): void;
+}
+
+interface RhythmicComplementEngineAPI {
+  analyzeOtherLayer(activeLayer: string, absTimeMs: number): { gaps: number[]; density: number; avgIOI: number };
+  suggestComplement(layer: string, onTick: number, absTimeMs: number): { tick: number; velocityScale: number; modified: boolean };
+  getMode(): 'hocket' | 'antiphony' | 'canon' | 'free';
+  setMode(newMode: 'hocket' | 'antiphony' | 'canon' | 'free'): void;
+  autoSelectMode(absTimeMs?: number): void;
+  reset(): void;
+}
+
+interface FeedbackOscillatorAPI {
+  inject(absTimeMs: number, layer: string, energy: number, impulseType?: string, pitchClass?: number): void;
+  react(absTimeMs: number, activeLayer: string): { energy: number; roundTrip: number; impulseType: string; syncTick: number; pitchBias: number } | null;
+  applyFeedback(absTimeMs: number, activeLayer: string): { applied: boolean; energy: number; roundTrip: number; pitchBias: number };
+  reset(): void;
+}
+
+interface EmergentDownbeatAPI {
+  detect(absTimeMs: number, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }): { isDownbeat: boolean; strength: number; signalCount: number } | null;
+  accentVelocity(velocity: number, strength: number): number;
+  reinforceBass(midi: number, velocity: number, strength: number): void;
+  widenStereo(layer: string, strength: number): void;
+  applyIfDownbeat(absTimeMs: number, layer: string, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }, midi: number, velocity: number): { isDownbeat: boolean; accentedVelocity: number; strength: number } | null;
+  getDownbeatCount(): number;
+  reset(): void;
+}
+
+interface ConvergenceHarmonicTriggerAPI {
+  onConvergence(event: { rarity?: number; absTimeMs?: number; layer?: string; alignment?: { tonicBias: number; dominantBias: number; shouldResolve: boolean } | null }): void;
+  shouldTriggerChange(absTimeMs: number): boolean;
+  getTriggeredChanges(): Array<{ type: string; bias: number; absTimeMs: number }>;
+  getTriggerCount(): number;
+  reset(): void;
+}
+
+interface MotifEchoAPI {
+  recordNote(midi: number, layer: string, absTimeMs: number): void;
+  captureMotif(layer: string, absTimeMs: number): void;
+  applyTransform(intervals: number[], transform: string): number[];
+  deliverEcho(absTimeMs: number, activeLayer: string, currentMidi: number): { notes: number[]; transform: string; echoIndex: number } | null;
+  getPendingCount(): number;
+  reset(): void;
+}
+
+interface PitchMemoryRecallAPI {
+  memorize(intervalDna: number[], pitchClasses: number[], strengthSignals: { convergence?: boolean; cadence?: boolean; downbeat?: boolean }, sectionIdx: number): void;
+  recall(activeLayer: string, currentMidi: number, absTimeMs: number): { notes: number[]; transform: string; memoryIdx: number } | null;
+  getMemoryCount(): number;
+  getRecallCount(): number;
+  reset(): void;
+}
+
+interface PhaseAwareCadenceWindowAPI {
+  update(absTimeMs: number, layer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; confidence: number };
+  getLatest(layer: string): { timeMs: number; phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; confidence: number } | null;
+  getConfidence(layer: string): number;
+  shouldAllowCadence(absTimeMs: number, layer: string, cadenceSuggested: boolean, snapshot?: { timeMs: number; phaseDiff: number; mode: string; confidence: number } | null): boolean;
+  reset(): void;
+}
+
+interface MotifIdentityMemoryAPI {
+  recordNote(layer: string, midi: number, absTimeMs: number): { intervalDna: string; contour: string; confidence: number; absTimeMs: number } | null;
+  getActiveIdentity(layer: string): { intervalDna: string; contour: string; confidence: number; absTimeMs: number } | null;
+  chooseEchoTransform(layer: string): { transform: 'retrograde' | 'inversion' | 'augmentation' | 'retrograde-inversion'; bias: number } | null;
+  reset(): void;
+}
+
+interface HarmonicIntervalGuardAPI {
+  recordCrossInterval(midiA: number, midiB: number, absTimeMs: number): void;
+  getDissonanceLevel(): number;
+  nudgePitch(midi: number, activeLayer: string, absTimeMs: number, externalPitchBias?: number): { midi: number; nudged: boolean; interval: number; otherMidi: number };
+  reset(): void;
+}
+
+interface CadenceAlignmentAPI {
+  postTension(absTimeMs: number, layer: string, tension: number, cadenceSuggested: boolean): void;
+  checkAlignment(absTimeMs: number, activeLayer: string, ourTension: number): { aligned: boolean; syncTick: number; combinedTension: number; otherCadenceSuggested: boolean } | null;
+  applyAlignment(absTimeMs: number, activeLayer: string, ourTension: number): { shouldResolve: boolean; tonicBias: number; dominantBias: number; syncTick: number } | null;
+  reset(): void;
+}
+
+interface RegisterCollisionAvoiderAPI {
+  recordNote(layer: string, midi: number, tick: number): void;
+  avoid(activeLayer: string, midi: number, tick: number): { midi: number; adjusted: boolean };
+  reset(): void;
+}
+
+interface SpectralComplementarityAPI {
+  recordNote(midi: number, layer: string): void;
+  getHistogram(layer: string): number[];
+  analyzeComplement(activeLayer: string): { gaps: number[]; dominant: number[]; gapWeight: number };
+  nudgeToFillGap(midi: number, activeLayer: string): { midi: number; nudged: boolean; targetBin: number };
+  postSpectralState(absTimeMs: number, layer: string): void;
+  reset(): void;
+}
+
+interface VelocityInterferenceAPI {
+  postVelocity(absTimeMs: number, layer: string, velocity: number, delta: number): void;
+  measureDelta(layer: string, absTimeSec: number): number;
+  applyInterference(absTimeMs: number, activeLayer: string, baseVelocity: number): { velocity: number; mode: 'reinforce' | 'separate' | 'neutral' };
+  reset(): void;
+}
+
+interface TexturalMirrorAPI {
+  recordTexture(layer: string, mode: string, absTimeMs: number): void;
+  suggestTexture(activeLayer: string, absTimeMs: number): { preferredMode: string; weight: number };
+  getTextureDistance(): number;
+  reset(): void;
+}
+
+interface RestSynchronizerAPI {
+  evaluateSharedRest(absTimeMs: number, layer: string, signals?: { heatLevel?: number; densityTarget?: number; phaseMode?: string }): { shouldRest: boolean; duration: number };
+  evaluateComplementaryRest(absTimeMs: number, activeLayer: string): { shouldFill: boolean; fillUrgency: number };
+  postRest(absTimeMs: number, layer: string): void;
+  getSharedRestCount(): number;
+  isLayerResting(layer: string): boolean;
+  reset(): void;
+}
+
+interface DynamicRoleSwapAPI {
+  evaluateSwap(absTimeMs: number, currentTension: number): { swapped: boolean; swapCount: number };
+  getProfileModifiers(layer: string): { densityScale: number; chordalBias: number; melodicBias: number; isSwapped: boolean };
+  modifyPlayProb(layer: string, playProb: number): number;
+  modifyVelocity(layer: string, vel: number): number;
+  getIsSwapped(): boolean;
+  getSwapCount(): number;
+  reset(): void;
+}
+
+interface CrossLayerDynamicEnvelopeAPI {
+  tick(absTimeMs: number, layer: string): void;
+  getVelocityScale(layer: string): number;
+  setArcType(type: 'parallel' | 'complementary' | 'independent'): void;
+  getArcType(): 'parallel' | 'complementary' | 'independent';
+  autoSelectArcType(): void;
+  reset(): void;
+}
+
+interface ArticulationComplementAPI {
+  recordSustain(layer: string, sustainTicks: number, absTimeMs: number): void;
+  getArticulationProfile(layer: string): { avgSustain: number; isLegato: boolean; isStaccato: boolean };
+  getSustainModifier(activeLayer: string): { sustainScale: number; preferredStutterType: string };
+  reset(): void;
+}
+
+interface CrossLayerLifecycleManagerAPI {
+  resetAll(): void;
+  resetSection(): void;
+  resetPhrase(): void;
+}
+
+// ── Rhythm / Time / Composer Interfaces ──
+
+interface RhythmRegistryAPI {
+  register(name: string, fn: (...args: any[]) => any[]): (...args: any[]) => any[];
+  registerMany(obj: Record<string, (...args: any[]) => any[]>): void;
+  get(name: string): (...args: any[]) => any[];
+  execute(name: string, ...args: any[]): any[];
+  list(): string[];
+  getAll(): Record<string, (...args: any[]) => any[]>;
+}
+
+interface RhythmManagerAPI {
+  listGenerators(): string[];
+  getGenerator(name: string): (...args: any[]) => any;
+  getPattern(level: number, length: number, pattern: any, method?: string, ...args: any[]): any[];
+  applyToNote(note: any, hit: any, profileName?: string, options?: Record<string, any>): any;
+  quantizeTime(time: number, resolution: number): number;
+  swingOffset(beatIndex: number, amount: number): number;
+  accentWeight(beatIndex: number, pattern: Array<0 | 1>): 0 | 1;
+}
+
+interface RhythmValuesAPI {
+  quantizeTime(time: number, resolution: number): number;
+  swingOffset(beatIndex: number, amount: number): number;
+  accentWeight(beatIndex: number, pattern: Array<0 | 1>): 0 | 1;
+}
+
+interface PhaseLockedRhythmGeneratorAPI {
+  generate(length: number, patternName: string, phaseOffset?: number): any[];
+  lock(patternName: string, length: number, phase: number): void;
+  getPhase(patternName: string, length: number): number;
+  advancePhase(patternName: string, length: number, delta: number, modulo?: number): void;
+  getPhaseRelationship(patternA: string, lengthA: number, patternB: string, lengthB: number): number;
+  reset(): void;
+  getHistory(limit?: number): Array<{ patternName: string; length: number; offset: number }>;
+  setActiveLayer(layerName: string): void;
+  initializePolyrhythmCoupling(layer1: string, layer2: string, ratio1: number, ratio2: number): void;
+}
+
+interface MotifChainAPI {
+  setActive(motif: any): void;
+  getActive(): any | null;
+  addTransform(type: 'transpose' | 'rotate' | 'invert' | 'augment' | 'diminish' | 'reverse' | 'develop', ...args: any[]): void;
+  apply(): any;
+  applyToNotes(notes: Array<{ note: number }>, options?: Record<string, any>): Array<{ note: number }>;
+  mutate(options?: { transposeRange?: [number, number]; rotateRange?: [number, number] | null; allowInvert?: boolean; allowReverse?: boolean; allowAugment?: boolean; augmentRange?: [number, number] }): void;
+  clearTransforms(): void;
+  reset(): void;
+  getTransforms(): Array<{ type: string; args: any[] }>;
+  getHistory(limit?: number): Array<{ baseMotif: any; transforms: Array<{ type: string; args: any[] }>; resultLength: number }>;
+}
+
+interface MotifManagerAPI {
+  listGenerators(): string[];
+  getGenerator(name: string): (...args: any[]) => any;
+  generate(name: string, ...args: any[]): any;
+  applyToNotes(notes: any[], motifPattern: any, profileName?: string, options?: Record<string, any>): any[];
+  repeatPattern(pattern: any[], times: number): any[];
+  offsetPattern(pattern: any[], offsetSteps: number): any[];
+  scaleDurations(pattern: any[], scale: number): any[];
+  planMeasure(layer: any, composer: any): void;
+  planDivs(layer: any, dpb: number, beats: number, composer: any): void;
+  planSubdivs(layer: any, absDivIdx: number, sPerDiv: number): void;
+  planSubsubdivs(layer: any, absSubdivIdx: number, ssPerSub: number): void;
+}
+
+interface TempoFeelEngineAPI {
+  getTickOffset(): number;
+  getFeelState(): { feel: number; phase: string; position: number };
+}
+
+interface DynamismEngineAPI {
+  resolve(unit: 'beat' | 'div' | 'subdiv' | 'subsubdiv', opts?: { playProb?: number; stutterProb?: number }): { playProb: number; stutterProb: number; composite: number };
+}
+
+interface TextureBlenderAPI {
+  resolve(unit: 'beat' | 'div' | 'subdiv' | 'subsubdiv', composite: number): { mode: 'single' | 'chordBurst' | 'flurry'; velocityScale: number; sustainScale: number };
+  getRecentDensity(): number;
+}
+
+interface GlobalConductorAPI {
+  update(measureIndexLocal: number, beatIndexLocal: number): { playProb: number; stutterProb: number };
+}
+
+interface HarmonicRhythmTrackerAPI {
+  initialize(): void;
+  getHarmonicRhythm(): number;
+  getMetrics(): { harmonicRhythm: number; changesInSection: number; lastTick: number | null };
+  reset(): void;
+}
+
 // ── Remaining interfaces above, declare var sections below ──
 
 // ── utils ──
@@ -486,16 +829,16 @@ declare var bassInstrument: any;
 declare var bassInstrument2: any;
 declare var otherBassInstruments: any;
 declare var drumSets: any;
-declare var PhraseArcManager: any;
+declare var PhraseArcManager: PhraseArcManagerAPI;
 declare var phraseArcProfiler: any;
 declare var HarmonicContext: HarmonicContextAPI;
 declare var HarmonicJourney: HarmonicJourneyAPI;
-declare var HarmonicRhythmTracker: any;
+declare var HarmonicRhythmTracker: HarmonicRhythmTrackerAPI;
 declare var harmonicJourneyHelpers: any;
 declare var harmonicJourneyPlanner: any;
-declare var DynamismEngine: any;
+declare var DynamismEngine: DynamismEngineAPI;
 declare var dynamismPulse: any;
-declare var TextureBlender: any;
+declare var TextureBlender: TextureBlenderAPI;
 declare var ConductorState: ConductorStateAPI;
 declare var VOICE_PROFILES: any;
 declare var CHORD_PROFILES: any;
@@ -539,7 +882,7 @@ declare var conductorConfigDynamics: any;
 declare var conductorConfigResolvers: any;
 declare var conductorConfigAccessors: any;
 declare var ConductorConfig: ConductorConfigAPI;
-declare var GlobalConductor: any;
+declare var GlobalConductor: GlobalConductorAPI;
 declare var MelodicContourTracker: any;
 declare var RegisterPressureMonitor: any;
 declare var LayerCoherenceScorer: any;
@@ -623,14 +966,14 @@ declare var ModuleLifecycle: ModuleLifecycleFactory;
 declare var beatCache: BeatCacheFactory;
 
 // ── rhythm ──
-declare var RhythmRegistry: any;
-declare var RhythmManager: any;
-declare var RhythmValues: any;
+declare var RhythmRegistry: RhythmRegistryAPI;
+declare var RhythmManager: RhythmManagerAPI;
+declare var RhythmValues: RhythmValuesAPI;
 declare var rhythmConfig: any;
 declare var rhythmModulator: any;
 declare var RHYTHM_PRIOR_TABLES: any;
 declare var rhythmPriors: any;
-declare var PhaseLockedRhythmGenerator: any;
+declare var PhaseLockedRhythmGenerator: PhaseLockedRhythmGeneratorAPI;
 declare var FXFeedbackListener: any;
 declare var StutterFeedbackListener: any;
 declare var JourneyRhythmCoupler: any;
@@ -739,7 +1082,7 @@ declare var timeGridPrune: any;
 declare var timeGridSearchStart: any;
 declare var AbsoluteTimeWindow: any;
 declare var AbsoluteTimeGrid: AbsoluteTimeGridAPI;
-declare var TempoFeelEngine: any;
+declare var TempoFeelEngine: TempoFeelEngineAPI;
 declare var TimeStream: TimeStreamAPI;
 
 // ── composers ──
@@ -783,8 +1126,8 @@ declare var factoryProgression: any;
 declare var factoryPoolResolver: any;
 declare var factoryFamilies: any;
 declare var factoryConstructors: any;
-declare var ComposerFactory: any;
-declare var MotifChain: any;
+declare var ComposerFactory: ComposerFactoryAPI;
+declare var MotifChain: MotifChainAPI;
 declare var ProgressionGenerator: any;
 declare var PivotChordBridge: any;
 declare var HARMONIC_PRIOR_TABLES: any;
@@ -795,7 +1138,7 @@ declare var ChordValues: any;
 declare var chordConfig: any;
 declare var chordModulator: any;
 declare var MotifRegistry: any;
-declare var MotifManager: any;
+declare var MotifManager: MotifManagerAPI;
 declare var MotifValues: any;
 declare var motifConfig: any;
 declare var motifModulator: any;
@@ -812,7 +1155,7 @@ declare var MELODIC_PRIOR_TABLES: any;
 declare var melodicPriors: any;
 declare var voiceLeadingSelectNextNote: any;
 declare var voiceLeadingAnalyzeQuality: any;
-declare var VoiceManager: any;
+declare var VoiceManager: VoiceManagerAPI;
 declare var getScheduledNotes: any;
 declare var p: any;
 declare var note: any;
@@ -914,40 +1257,40 @@ declare var StutterFailFast: any;
 
 // ── crossLayer ──
 declare var t: any;
-declare var StutterContagion: any;
-declare var ConvergenceDetector: any;
-declare var TemporalGravity: any;
-declare var VelocityInterference: any;
-declare var FeedbackOscillator: any;
-declare var CadenceAlignment: any;
-declare var RhythmicPhaseLock: any;
-declare var SpectralComplementarity: any;
-declare var DynamicRoleSwap: any;
-declare var MotifEcho: any;
-declare var InteractionHeatMap: any;
-declare var entropyMetrics: any;
-declare var EntropyRegulator: any;
-declare var EmergentDownbeat: any;
+declare var StutterContagion: StutterContagionAPI;
+declare var ConvergenceDetector: ConvergenceDetectorAPI;
+declare var TemporalGravity: TemporalGravityAPI;
+declare var VelocityInterference: VelocityInterferenceAPI;
+declare var FeedbackOscillator: FeedbackOscillatorAPI;
+declare var CadenceAlignment: CadenceAlignmentAPI;
+declare var RhythmicPhaseLock: RhythmicPhaseLockAPI;
+declare var SpectralComplementarity: SpectralComplementarityAPI;
+declare var DynamicRoleSwap: DynamicRoleSwapAPI;
+declare var MotifEcho: MotifEchoAPI;
+declare var InteractionHeatMap: InteractionHeatMapAPI;
+declare var entropyMetrics: EntropyMetricsAPI;
+declare var EntropyRegulator: EntropyRegulatorAPI;
+declare var EmergentDownbeat: EmergentDownbeatAPI;
 declare var ExplainabilityBus: ExplainabilityBusAPI;
 declare var AdaptiveTrustScores: AdaptiveTrustScoresAPI;
-declare var SectionIntentCurves: any;
-declare var PhaseAwareCadenceWindow: any;
-declare var NegotiationEngine: any;
-declare var GrooveTransfer: any;
-declare var RegisterCollisionAvoider: any;
-declare var MotifIdentityMemory: any;
+declare var SectionIntentCurves: SectionIntentCurvesAPI;
+declare var PhaseAwareCadenceWindow: PhaseAwareCadenceWindowAPI;
+declare var NegotiationEngine: NegotiationEngineAPI;
+declare var GrooveTransfer: GrooveTransferAPI;
+declare var RegisterCollisionAvoider: RegisterCollisionAvoiderAPI;
+declare var MotifIdentityMemory: MotifIdentityMemoryAPI;
 declare var CrossLayerRegistry: CrossLayerRegistryAPI;
-declare var CrossLayerLifecycleManager: any;
-declare var HarmonicIntervalGuard: any;
-declare var RestSynchronizer: any;
-declare var CrossLayerClimaxEngine: any;
-declare var RhythmicComplementEngine: any;
-declare var PitchMemoryRecall: any;
-declare var ArticulationComplement: any;
-declare var CrossLayerDynamicEnvelope: any;
-declare var ConvergenceHarmonicTrigger: any;
-declare var TexturalMirror: any;
-declare var CrossLayerSilhouette: any;
+declare var CrossLayerLifecycleManager: CrossLayerLifecycleManagerAPI;
+declare var HarmonicIntervalGuard: HarmonicIntervalGuardAPI;
+declare var RestSynchronizer: RestSynchronizerAPI;
+declare var CrossLayerClimaxEngine: CrossLayerClimaxEngineAPI;
+declare var RhythmicComplementEngine: RhythmicComplementEngineAPI;
+declare var PitchMemoryRecall: PitchMemoryRecallAPI;
+declare var ArticulationComplement: ArticulationComplementAPI;
+declare var CrossLayerDynamicEnvelope: CrossLayerDynamicEnvelopeAPI;
+declare var ConvergenceHarmonicTrigger: ConvergenceHarmonicTriggerAPI;
+declare var TexturalMirror: TexturalMirrorAPI;
+declare var CrossLayerSilhouette: CrossLayerSilhouetteAPI;
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 
 // ── writer ──
@@ -977,6 +1320,11 @@ declare var velocity: any;
 declare var FullBootstrap: any;
 declare var MainBootstrap: any;
 declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; stutterProb: number; isL1: boolean }) => void;
+declare var BeatPipelineDescriptor: {
+  getStages(): ReadonlyArray<{ name: string; after: string[]; produces: string[] }>;
+  getStageNames(): string[];
+  assertTopologicalOrder(): void;
+};
 declare var processBeat: any;
 declare var layerPass: any;
 declare var playNotesEmitPick: any;

@@ -185,6 +185,28 @@ ConductorIntelligence = (() => {
 
   /**
    * Register a state-field provider.
+   *
+   * STATE FIELD CONSUMPTION AUDIT (50 providers, 9 directly consumed fields):
+   *
+   * Fields consumed by ConductorState.getField(name):
+   *   sectionPhase         → TempoFeelEngine, main.js
+   *   compositeIntensity   → HarmonicVelocityMonitor, main.js (×2), playNotes, processBeat
+   *   phrasePosition       → TextureBlender
+   *   phrasePhase          → TextureBlender
+   *   key                  → main.js
+   *   mode                 → main.js
+   *
+   * Fields consumed by signalReader.state(name):
+   *   profileHintRestrained  → conductorConfigAccessors
+   *   profileHintExplosive   → conductorConfigAccessors
+   *   profileHintAtmospheric → conductorConfigAccessors
+   *
+   * All other ~90+ fields are observation-point only: visible in bulk
+   * ConductorState.getSnapshot() (consumed by playDrums, playDrums2, drummer,
+   * setBinaural, SystemSnapshot, HarmonicContext, conductorSignalBridge) but
+   * never individually queried by name. This is by design — stateProviders act
+   * as a passive telemetry layer for diagnostic and snapshot consumers.
+   *
    * @param {string} name
    * @param {() => Record<string, any>} getter — returns a flat object of ConductorState fields
    */

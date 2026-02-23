@@ -142,6 +142,9 @@ MainBootstrap = (() => {
         throw new Error(`MainBootstrap: ${name}.initialize is not available`);
       }
     });
+
+    // ── Phase 5: Verify beat pipeline topological ordering ──
+    BeatPipelineDescriptor.assertTopologicalOrder();
   }
 
   return { requireFiniteNumber, requireUnitInterval, requireNonEmptyString, getConductorProbabilities, parseControls, assertBootstrapGlobals };
