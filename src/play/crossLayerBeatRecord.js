@@ -56,8 +56,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const clConvergenceGate = clConvergenceIntensity > 0
     ? NegotiationEngine.gateConvergence(layer)
     : { allowHarmonicTrigger: false, allowDownbeat: false };
+  const triggerCountBefore = ConvergenceHarmonicTrigger.getTriggerCount();
   if (clConvergenceGate.allowHarmonicTrigger) ConvergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer, alignment: clCadResult });
-  const convergenceTriggered = clConvergenceGate.allowHarmonicTrigger && ConvergenceHarmonicTrigger.getTriggerCount() > 0;
+  const convergenceTriggered = ConvergenceHarmonicTrigger.getTriggerCount() > triggerCountBefore;
   AdaptiveTrustScores.registerOutcome('convergence', convergenceTriggered ? 0.5 : (clConvergenceIntensity > 0 ? -0.1 : 0));
   InteractionHeatMap.record('climaxEngine', CrossLayerClimaxEngine.isApproaching() ? clamp(CrossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
   InteractionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
