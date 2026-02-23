@@ -205,7 +205,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   } catch (e) {
     emitNotesEmitted(0, intendedCount, 'emit-error');
     trackRhythm(unit, layer, false);
-    throw new Error(`${unit}.playNotes: non-fatal error while playing notes: ${e && e.stack ? e.stack : String(e)}`);
+    throw new Error(`${unit}.playNotes: error while playing notes: ${e && e.stack ? e.stack : String(e)}`);
   }
 
   return scheduled;

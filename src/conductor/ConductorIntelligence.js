@@ -57,6 +57,13 @@ ConductorIntelligence = (() => {
     return { product, contributions };
   }
 
+  /** @param {Array<{ name: string }>} registry @param {string} name @param {string} kind */
+  function _assertNoDuplicateName(registry, name, kind) {
+    if (registry.some(e => e.name === name)) {
+      throw new Error(`ConductorIntelligence.register${kind}: duplicate name "${name}"`);
+    }
+  }
+
   // ── Density biases ────────────────────────────────────────────────
   // Each entry: { name, getter, lo, hi }
   // getter() returns a number; clamped to [lo, hi] then multiplied into targetDensity.
@@ -72,6 +79,7 @@ ConductorIntelligence = (() => {
    */
   function registerDensityBias(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
+    _assertNoDuplicateName(densityBiases, name, 'densityBias');
     V.requireType(getter, 'function', 'getter');
     V.requireFinite(lo, 'lo');
     V.requireFinite(hi, 'hi');
@@ -97,6 +105,7 @@ ConductorIntelligence = (() => {
    */
   function registerTensionBias(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
+    _assertNoDuplicateName(tensionBiases, name, 'tensionBias');
     V.requireType(getter, 'function', 'getter');
     V.requireFinite(lo, 'lo');
     V.requireFinite(hi, 'hi');
@@ -122,6 +131,7 @@ ConductorIntelligence = (() => {
    */
   function registerFlickerModifier(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
+    _assertNoDuplicateName(flickerModifiers, name, 'flickerModifier');
     V.requireType(getter, 'function', 'getter');
     V.requireFinite(lo, 'lo');
     V.requireFinite(hi, 'hi');
@@ -155,6 +165,7 @@ ConductorIntelligence = (() => {
    */
   function registerRecorder(name, fn) {
     V.assertNonEmptyString(name, 'name');
+    _assertNoDuplicateName(recorders, name, 'recorder');
     V.requireType(fn, 'function', 'fn');
     recorders.push({ name, fn });
   }
@@ -212,6 +223,7 @@ ConductorIntelligence = (() => {
    */
   function registerStateProvider(name, getter) {
     V.assertNonEmptyString(name, 'name');
+    _assertNoDuplicateName(stateProviders, name, 'stateProvider');
     V.requireType(getter, 'function', 'getter');
     stateProviders.push({ name, getter });
   }

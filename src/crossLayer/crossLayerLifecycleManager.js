@@ -11,6 +11,7 @@ CrossLayerLifecycleManager = (() => {
   let hasRunSection = false;
 
   function resetAll() {
+    hasRunSection = false;
     CrossLayerRegistry.resetAll();
   }
 
