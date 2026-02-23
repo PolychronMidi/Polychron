@@ -5,7 +5,7 @@
 // increases density, widens register, boosts velocity, raises entropy target.
 
 CrossLayerClimaxEngine = (() => {
-  const V = Validator.create('CrossLayerClimaxEngine');
+  const V = Validator.create('crossLayerClimaxEngine');
   const APPROACH_THRESHOLD = 0.65;
   const PEAK_THRESHOLD = 0.82;
   const SMOOTHING = 0.25;

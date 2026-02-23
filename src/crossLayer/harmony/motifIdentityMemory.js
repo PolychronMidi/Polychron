@@ -1,5 +1,5 @@
 MotifIdentityMemory = (() => {
-  const V = Validator.create('MotifIdentityMemory');
+  const V = Validator.create('motifIdentityMemory');
   const MAX_NOTES = 24;
   const MAX_IDENTITIES = 16;
 

@@ -4,7 +4,7 @@
 // independent arcs. Provides per-beat velocity scaling factors.
 
 CrossLayerDynamicEnvelope = (() => {
-  const V = Validator.create('CrossLayerDynamicEnvelope');
+  const V = Validator.create('crossLayerDynamicEnvelope');
 
   /** @type {'parallel' | 'complementary' | 'independent'} */
   let arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');

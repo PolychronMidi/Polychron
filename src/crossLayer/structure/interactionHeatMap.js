@@ -5,7 +5,7 @@
 // Provides diagnostic visibility into cross-layer system effectiveness.
 
 InteractionHeatMap = (() => {
-  const V = Validator.create('InteractionHeatMap');
+  const V = Validator.create('interactionHeatMap');
   const WINDOW_SIZE = 64; // rolling window of beats to track
   const HIGH_DENSITY_THRESHOLD = 0.7;
   const LOW_DENSITY_THRESHOLD = 0.2;

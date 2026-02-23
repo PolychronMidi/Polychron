@@ -1,5 +1,5 @@
 GrooveTransfer = (() => {
-  const V = Validator.create('GrooveTransfer');
+  const V = Validator.create('grooveTransfer');
   const CHANNEL = 'grooveTransfer';
   const MAX_OFFSETS = 64;
   const DAMPING = 0.55;

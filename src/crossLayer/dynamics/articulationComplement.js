@@ -4,7 +4,7 @@
 // textures driven by DynamicRoleSwap and SectionIntentCurves.
 
 ArticulationComplement = (() => {
-  const V = Validator.create('ArticulationComplement');
+  const V = Validator.create('articulationComplement');
   const WINDOW_SIZE = 16;
   const CONTRAST_STRENGTH = 0.6;
 

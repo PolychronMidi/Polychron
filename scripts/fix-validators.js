@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const srcDir = path.join(__dirname, 'src');
+const srcDir = path.join(__dirname, '..', 'src');
 
 function fixMismatches(dir) {
     const files = fs.readdirSync(dir);
@@ -30,7 +30,7 @@ function fixMismatches(dir) {
 
             if (changed) {
                 fs.writeFileSync(fullPath, content, 'utf8');
-                console.log(`Fixed ${path.relative(__dirname, fullPath)}`);
+                console.log(`Fixed ${path.relative(path.join(__dirname, '..'), fullPath)}`);
             }
         }
     }

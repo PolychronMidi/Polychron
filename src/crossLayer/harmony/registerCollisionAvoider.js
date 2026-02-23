@@ -1,5 +1,5 @@
 RegisterCollisionAvoider = (() => {
-  const V = Validator.create('RegisterCollisionAvoider');
+  const V = Validator.create('registerCollisionAvoider');
   const CHANNEL = 'registerCollision';
   const TIME_TOLERANCE_MS = 140;
   const COLLISION_SEMITONES = 5;

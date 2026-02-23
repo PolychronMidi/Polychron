@@ -5,7 +5,7 @@
 // creating a momentary "singularity."
 
 ConvergenceDetector = (() => {
-  const V = Validator.create('ConvergenceDetector');
+  const V = Validator.create('convergenceDetector');
   const CHANNEL = 'onset';
   const EVENTS = EventCatalog.names;
   const CONVERGENCE_TOLERANCE_MS = 25;

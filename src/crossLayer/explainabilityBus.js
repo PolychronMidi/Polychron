@@ -1,5 +1,5 @@
 ExplainabilityBus = (() => {
-  const V = Validator.create('ExplainabilityBus');
+  const V = Validator.create('explainabilityBus');
   const MAX_ENTRIES = 600;
   const EVICT_BATCH = 100; // amortize O(n) splice cost over many emit calls
   const CHANNEL = 'explainability';

@@ -5,7 +5,7 @@
 // add bass reinforcement, widen stereo field.
 
 EmergentDownbeat = (() => {
-  const V = Validator.create('EmergentDownbeat');
+  const V = Validator.create('emergentDownbeat');
   const CHANNEL = 'emergentDownbeat';
   const MIN_DOWNBEAT_INTERVAL_MS = 800;
   const ACCENT_VELOCITY_BOOST = 0.2; // 20% velocity increase

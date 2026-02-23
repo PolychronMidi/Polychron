@@ -5,7 +5,7 @@
 // sections by design — it's the long-term memory of the composition.
 
 PitchMemoryRecall = (() => {
-  const V = Validator.create('PitchMemoryRecall');
+  const V = Validator.create('pitchMemoryRecall');
   const MAX_MEMORIES = 64;
   const RECALL_PROBABILITY = 0.2;
   const MIN_RECALL_INTERVAL_MS = 3000;
