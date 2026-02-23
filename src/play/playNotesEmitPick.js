@@ -34,7 +34,8 @@ function _refreshChannelCache() {
 
 function assertEmitPickDeps(unit) {
   if (_emitPickDepsValidated) return;
-  V.assertObject(LM, 'LM');
+  V.requireDefined(LM, 'LM');
+  V.assertObject(LM.layers, 'LM.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   V.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
   V.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');

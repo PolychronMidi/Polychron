@@ -5,11 +5,11 @@
 
 const V = Validator.create('LayerManager');
 
-LM = layerManager ={
-  layers: {},
-  layerComposers: {},
-  phraseFamily: null,
-  activeLayer: null,
+class LayerManager {
+  static layers = {};
+  static layerComposers = {};
+  static phraseFamily = /** @type {string|null} */ (null);
+  static activeLayer = /** @type {string|null} */ (null);
 
   /**
    * Register a layer with buffer and initial timing state.
@@ -17,7 +17,7 @@ LM = layerManager ={
    * @param {object} [initialState]
    * @param {Function} [setupFn]
    */
-  register: (name, buffer, initialState = {}, setupFn = undefined) => {
+  static register(name, buffer, initialState = {}, setupFn = undefined) {
     // Create a plain timing object (flattened, no TimingContext class)
     const defaults = {
       phraseStart: 0,
@@ -78,8 +78,8 @@ LM = layerManager ={
     // restore previous `c`
     if (prevC === undefined) c = undefined; else c = prevC;
     // return the layer object
-    return { layer: LM.layers[name], buffer: buf };
-  },
+    return { layer: LayerManager.layers[name], buffer: buf };
+  }
 
   /**
    * Activate a layer; restores timing globals and sets meter.
@@ -87,18 +87,18 @@ LM = layerManager ={
    * @param {boolean} [isPoly=false] - Whether this is a polyrhythmic layer.
    * @returns {{numerator: number, denominator: number, tpSec: number, tpMeasure: number}} Snapshot of key timing values.
    */
-  activate: (name, isPoly = false) => {
+  static activate(name, isPoly = false) {
     // no need to pass meter info here, as it stays consitent until the next layer switch
-    const layer = LM.layers[name];
+    const layer = LayerManager.layers[name];
     c = layer.buffer;
-    LM.activeLayer = name;
+    LayerManager.activeLayer = name;
     loadLayerToGlobals(layer);
     const globalComposer = composer ? composer : null;
-    const layerComposer = (LM.layerComposers[name] && typeof LM.layerComposers[name] === 'object')
-      ? LM.layerComposers[name]
+    const layerComposer = (LayerManager.layerComposers[name] && typeof LayerManager.layerComposers[name] === 'object')
+      ? LayerManager.layerComposers[name]
       : ((layer.measureComposer && typeof layer.measureComposer === 'object') ? layer.measureComposer : globalComposer);
     if (layerComposer && typeof layerComposer === 'object') {
-      LM.layerComposers[name] = layerComposer;
+      LayerManager.layerComposers[name] = layerComposer;
       layer.measureComposer = layerComposer;
       composer = layerComposer;
     }
@@ -111,7 +111,7 @@ LM = layerManager ={
       denominator = polyDenominator;
     }
     return layer;
-  },
+  }
 
   /**
    * Advance a layer's timing state.
@@ -119,8 +119,8 @@ LM = layerManager ={
    * @param {'phrase'|'section'} [advancementType='phrase'] - Type of advancement.
    * @returns {void}
    */
-  advance: (name, advancementType = 'phrase') => {
-    const layer = LM.layers[name];
+  static advance(name, advancementType = 'phrase') {
+    const layer = LayerManager.layers[name];
     V.requireDefined(layer, `layer "${name}"`);
     c = layer.buffer;
 
@@ -144,67 +144,67 @@ LM = layerManager ={
         sectionStart,
         sectionStartTime,
 
-        tpSec,
+        tpSec
       });
 
     } else if (advancementType === 'section') {
       layer.sectionStart=phraseStart; layer.sectionStartTime=phraseStartTime;
     }
-  },
+  }
 
   // Minimal helpers to initialize section origin for layers (keeps it tiny and explicit).
-  setSectionStartFor: (name) => {
-    const layer = LM.layers[name];
+  static setSectionStartFor(name) {
+    const layer = LayerManager.layers[name];
     V.requireDefined(layer, `layer "${name}"`);
     layer.sectionStart = phraseStart;
     layer.sectionStartTime = phraseStartTime;
-  },
+  }
 
-  setSectionStartAll: () => {
-    Object.keys(LM.layers).forEach((ln) => LM.setSectionStartFor(ln));
-  },
+  static setSectionStartAll() {
+    Object.keys(LayerManager.layers).forEach((ln) => LayerManager.setSectionStartFor(ln));
+  }
 
-  setPhraseFamily: (familyName) => {
+  static setPhraseFamily(familyName) {
     V.assertNonEmptyString(familyName, 'familyName');
-    LM.phraseFamily = familyName;
+    LayerManager.phraseFamily = familyName;
     return familyName;
-  },
+  }
 
-  getPhraseFamily: () => {
-    V.assertNonEmptyString(LM.phraseFamily, 'phraseFamily');
-    return LM.phraseFamily;
-  },
+  static getPhraseFamily() {
+    V.assertNonEmptyString(LayerManager.phraseFamily, 'phraseFamily');
+    return LayerManager.phraseFamily;
+  }
 
-  setComposerFor: (name, nextComposer) => {
+  static setComposerFor(name, nextComposer) {
     V.assertNonEmptyString(name, 'layer name');
     V.assertObject(nextComposer, 'composer');
-    const layer = LM.layers[name];
+    const layer = LayerManager.layers[name];
     V.requireDefined(layer, `layer "${name}"`);
-    LM.layerComposers[name] = nextComposer;
+    LayerManager.layerComposers[name] = nextComposer;
     layer.measureComposer = nextComposer;
-    if (LM.activeLayer === name) {
+    if (LayerManager.activeLayer === name) {
       composer = nextComposer;
     }
     return nextComposer;
-  },
+  }
 
-  setComposerForAll: (nextComposer) => {
+  static setComposerForAll(nextComposer) {
     V.assertObject(nextComposer, 'composer');
-    const layerNames = Object.keys(LM.layers);
+    const layerNames = Object.keys(LayerManager.layers);
     if (layerNames.length === 0) {
       throw new Error('LayerManager.setComposerForAll: no registered layers');
     }
     for (let i = 0; i < layerNames.length; i++) {
-      LM.setComposerFor(layerNames[i], nextComposer);
+      LayerManager.setComposerFor(layerNames[i], nextComposer);
     }
     return nextComposer;
-  },
+  }
 
-  getComposerFor: (name) => {
+  static getComposerFor(name) {
     V.assertNonEmptyString(name, 'layer name');
-    const layer = LM.layers[name];
+    const layer = LayerManager.layers[name];
     V.requireDefined(layer, `layer "${name}"`);
-    const mappedComposer = LM.layerComposers[name];
+    const mappedComposer = LayerManager.layerComposers[name];
     const layerComposer = layer.measureComposer;
     const globalComposer = composer ? composer : null;
     const resolvedComposer = (mappedComposer && typeof mappedComposer === 'object')
@@ -215,12 +215,64 @@ LM = layerManager ={
       V.requireDefined(resolvedComposer, `composer for layer "${name}"`);
     }
 
-    LM.layerComposers[name] = resolvedComposer;
+    LayerManager.layerComposers[name] = resolvedComposer;
     layer.measureComposer = resolvedComposer;
     return resolvedComposer;
-  },
+  }
 
-};
+  /**
+   * Save current timing globals back to the active layer.
+   */
+  static saveActive() {
+    if (!LayerManager.activeLayer) return;
+    saveGlobalsToLayer(LayerManager.layers[LayerManager.activeLayer]);
+  }
+
+  /**
+   * Get a layer by name.
+   * @param {string} name
+   * @returns {object}
+   */
+  static getLayer(name) {
+    return LayerManager.layers[name];
+  }
+
+  /**
+   * Get all registered layer names.
+   * @returns {string[]}
+   */
+  static getLayerNames() {
+    return Object.keys(LayerManager.layers);
+  }
+
+  /**
+   * Reset all layers (clear buffers and timing state).
+   */
+  static resetAll() {
+    for (const name of Object.keys(LayerManager.layers)) {
+      const layer = LayerManager.layers[name];
+      layer.buffer.length = 0;
+      layer.phraseStart = 0;
+      layer.phraseStartTime = 0;
+      layer.sectionStart = 0;
+      layer.sectionStartTime = 0;
+      layer.tpSec = 0;
+      layer.tpSection = 0;
+      layer.spSection = 0;
+      layer.tpPhrase = 0;
+      layer.spPhrase = 0;
+      layer.measureStart = 0;
+      layer.measureStartTime = 0;
+      layer.tpMeasure = 0;
+      layer.spMeasure = 0;
+      layer.divMotifs = [];
+    }
+    LayerManager.activeLayer = null;
+    LayerManager.phraseFamily = null;
+  }
+}
+
+LM = layerManager = LayerManager;
 
 /**
  * Restore timing into naked globals without using banned globals.
@@ -244,4 +296,24 @@ function loadLayerToGlobals(layer) {
 
   tpSec = layer.tpSec;
 
+}
+
+function saveGlobalsToLayer(layer) {
+  V.requireDefined(layer, 'layer');
+  layer.tpSection = tpSection;
+  layer.spSection = spSection;
+  layer.sectionStart = sectionStart;
+  layer.sectionStartTime = sectionStartTime;
+
+  layer.tpPhrase = tpPhrase;
+  layer.spPhrase = spPhrase;
+  layer.phraseStart = phraseStart;
+  layer.phraseStartTime = phraseStartTime;
+
+  layer.measureStart = measureStart;
+  layer.measureStartTime = measureStartTime;
+  layer.tpMeasure = tpMeasure;
+  layer.spMeasure = spMeasure;
+
+  layer.tpSec = tpSec;
 }

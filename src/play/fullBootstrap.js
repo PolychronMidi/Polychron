@@ -602,6 +602,8 @@ FullBootstrap = (() => {
     'logUnit',
     'pushMultiple',
     'grandFinale',
+    'VoiceLeadingScore',
+    'SimplexNoise',
     'fs',
     'finalTick',
     'path',

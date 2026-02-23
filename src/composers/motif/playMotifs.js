@@ -91,10 +91,11 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const VC = layer._voiceManagers[unit];
   const voiceCount = VC.getVoiceCount(unit);
   const scorer = activeComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
-  const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
+  const V = Validator.create('playMotifs');
+  const runtimeProfile = (activeComposer && V.optionalType(activeComposer.runtimeProfile, 'object'))
     ? activeComposer.runtimeProfile
     : null;
-  const runtimeVoiceOptions = (runtimeProfile && ComposerRuntimeProfileAdapter && typeof ComposerRuntimeProfileAdapter.getVoiceSelectionOptions === 'function')
+  const runtimeVoiceOptions = (runtimeProfile && ComposerRuntimeProfileAdapter && V.optionalType(ComposerRuntimeProfileAdapter.getVoiceSelectionOptions, 'function'))
     ? ComposerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile)
     : {};
 
