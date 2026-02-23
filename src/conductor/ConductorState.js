@@ -117,44 +117,44 @@ ConductorState = (() => {
     ConductorIntelligence.registerModule('ConductorState', { reset: resetSection }, ['section']);
 
     EventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
-      if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.textureMode = data.mode;
-      if (Number.isFinite(Number(data.composite))) snapshot.compositeIntensity = clamp(Number(data.composite), 0, 1);
+      snapshot.textureMode = data.mode;
+      snapshot.compositeIntensity = clamp(data.composite, 0, 1);
       snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
       snapshot.updatedAt = Date.now();
     });
 
     EventBus.on(EVENTS.JOURNEY_MOVE, (data) => {
-      if (typeof data.move === 'string' && data.move.length > 0) snapshot.journeyMove = data.move;
-      if (Number.isFinite(Number(data.distance))) snapshot.journeyDistance = m.max(0, Number(data.distance));
-      if (typeof data.key === 'string' && data.key.length > 0) snapshot.journeyKey = data.key;
-      if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.journeyMode = data.mode;
+      snapshot.journeyMove = data.move;
+      snapshot.journeyDistance = m.max(0, data.distance);
+      snapshot.journeyKey = data.key;
+      snapshot.journeyMode = data.mode;
       snapshot.updatedAt = Date.now();
     });
 
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
-      if (Number.isFinite(Number(data.densityBias))) snapshot.densityBias = Number(data.densityBias);
-      if (Number.isFinite(Number(data.crossModBias))) snapshot.crossModBias = Number(data.crossModBias);
-      if (typeof data.profile === 'string' && data.profile.length > 0) snapshot.activeProfile = data.profile;
+      snapshot.densityBias = data.densityBias;
+      snapshot.crossModBias = data.crossModBias;
+      snapshot.activeProfile = data.profile;
       snapshot.updatedAt = Date.now();
     });
 
     EventBus.on(EVENTS.HARMONIC_CHANGE, (data) => {
-      if (typeof data.key === 'string' && data.key.length > 0) snapshot.key = data.key;
-      if (typeof data.mode === 'string' && data.mode.length > 0) snapshot.mode = data.mode;
-      if (typeof data.quality === 'string' && data.quality.length > 0) snapshot.quality = data.quality;
+      snapshot.key = data.key;
+      snapshot.mode = data.mode;
+      snapshot.quality = data.quality;
       if (Array.isArray(data.scale)) snapshot.scale = data.scale.slice();
       if (Array.isArray(data.chords)) snapshot.chords = data.chords.slice();
-      if (typeof data.sectionPhase === 'string' && data.sectionPhase.length > 0) snapshot.sectionPhase = data.sectionPhase;
-      if (Number.isFinite(Number(data.excursion))) snapshot.excursion = m.max(0, Number(data.excursion));
-      if (Number.isFinite(Number(data.tension))) snapshot.tension = clamp(Number(data.tension), 0, 1);
-      if (Number.isFinite(Number(data.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(data.mutationCount));
+      snapshot.sectionPhase = data.sectionPhase;
+      snapshot.excursion = m.max(0, data.excursion);
+      snapshot.tension = clamp(data.tension, 0, 1);
+      snapshot.harmonicMutationCount = m.max(0, data.mutationCount);
       snapshot.harmonicRhythm = clamp(Number(HarmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
       snapshot.updatedAt = Date.now();
     });
 
     EventBus.on(EVENTS.BEAT_BINAURAL_APPLIED, (data) => {
-      if (Number.isFinite(Number(data.freqOffset))) snapshot.binauralFreqOffset = Number(data.freqOffset);
-      if (typeof data.flipBin === 'boolean') snapshot.binauralFlip = data.flipBin;
+      snapshot.binauralFreqOffset = data.freqOffset;
+      snapshot.binauralFlip = data.flipBin;
       snapshot.updatedAt = Date.now();
     });
 

@@ -1380,7 +1380,7 @@ declare var DynamicRoleSwap: DynamicRoleSwapAPI;
 declare var MotifEcho: MotifEchoAPI;
 declare var InteractionHeatMap: InteractionHeatMapAPI;
 declare var entropyMetrics: EntropyMetricsAPI;
-declare var EntropyRegulator: EntropyRegulatorAPI;
+declare var entropyRegulator: EntropyRegulatorAPI;
 declare var EmergentDownbeat: EmergentDownbeatAPI;
 declare var ExplainabilityBus: ExplainabilityBusAPI;
 declare var AdaptiveTrustScores: AdaptiveTrustScoresAPI;

@@ -18,7 +18,7 @@ the density product so the system listens to its own song.
 | `BIAS_FLOOR` | 0.75 | Min density correction multiplier | `SMOOTHING`, ConductorConfig density range |
 | `BIAS_CEILING` | 1.3 | Max density correction multiplier | `SMOOTHING`, profileAdaptation restrained hint |
 | `WINDOW_SIZE` | 16 | Rolling observation window (beats) | `decayFactor`, entropy variance calc |
-| `ENTROPY_DECAY` | 0.92 | Exponential decay for entropy signal | `rawEntropy` offset/scale, EntropyRegulator strength |
+| `ENTROPY_DECAY` | 0.92 | Exponential decay for entropy signal | `rawEntropy` offset/scale, entropyRegulator strength |
 | `phaseGain` bell | 0.25 + 0.3·sin(π·phraseProgress) | Correction strength peaks mid-phrase (0.55), drops at edges (0.25) | `SMOOTHING`, attribution spread boost |
 | `decayFactor` | 0.5 | Phrase-boundary decay for window entries — prevents stale data from dominating | `WINDOW_SIZE` |
 | `rawEntropy` offset | 0.04 | Variance baseline subtracted before scaling | `ENTROPY_DECAY`, scale factor 2 |
@@ -28,7 +28,7 @@ the density product so the system listens to its own song.
 
 ---
 
-## 2. Entropy Steering — `EntropyRegulator`
+## 2. Entropy Steering — `entropyRegulator`
 
 Measures combined pitch/velocity/rhythmic entropy. Steers cross-layer
 systems toward a target curve driven by section position.
@@ -80,8 +80,8 @@ final `playProb` / `stutterProb` values.
 | `playScale` clamp | [0.4, 1.8] | Prevents play probability extinction or saturation | CoherenceMonitor `BIAS_CEILING` (1.3) |
 | Stutter scale formula | (0.6 + interaction·0.75) × (0.85 + trust·0.1) | Computes stutter scale from interaction target + trust | `stutterScale` clamp |
 | `stutterScale` clamp | [0.25, 2.2] | Wider range than play — stutter is more exploratory | Play scale clamp |
-| Entropy play modulator | 0.7 + entropy·0.3, clamp [0.5, 1.5] | Entropy regulation adjusts play probability | EntropyRegulator scale output |
-| Entropy stutter modulator | 0.75 + entropy·0.25, clamp [0.5, 1.5] | Entropy regulation adjusts stutter probability | EntropyRegulator scale output |
+| Entropy play modulator | 0.7 + entropy·0.3, clamp [0.5, 1.5] | Entropy regulation adjusts play probability | entropyRegulator scale output |
+| Entropy stutter modulator | 0.75 + entropy·0.25, clamp [0.5, 1.5] | Entropy regulation adjusts stutter probability | entropyRegulator scale output |
 | Conflict threshold | 0.8 | Trust conflict above this triggers dampening | AdaptiveTrustScores conflict detection |
 | Play conflict dampen | 0.92 | 8% play reduction during high conflict | Conflict threshold |
 | Stutter conflict dampen | 0.9 | 10% stutter reduction during high conflict | Conflict threshold |
@@ -132,6 +132,6 @@ These relationships must hold to prevent runaway behavior:
 
 2. **Trust–weight symmetry:** `AdaptiveTrustScores.weight` clamp [0.4, 1.8] matches `NegotiationEngine.playScale` clamp [0.4, 1.8]. This ensures trust cannot push play probability outside the negotiation's own range.
 
-3. **Entropy regulation headroom:** `EntropyRegulator.scale` clamp [0.3, 2.0] × negotiation entropy modulator [0.5, 1.5] gives effective range [0.15, 3.0]. The negotiation's own clamps prevent this from manifesting fully.
+3. **Entropy regulation headroom:** `entropyRegulator.scale` clamp [0.3, 2.0] × negotiation entropy modulator [0.5, 1.5] gives effective range [0.15, 3.0]. The negotiation's own clamps prevent this from manifesting fully.
 
 4. **Streak → hint timing:** At 120 BPM, `STREAK_TRIGGER` = 6 → 3 seconds. Full hint (`ramp / 8`) at 14 beats → 7 seconds. Section lengths are typically 16–64 beats, so hints activate within one section.

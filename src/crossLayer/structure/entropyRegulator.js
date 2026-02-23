@@ -4,7 +4,8 @@
 // Nudges all cross-layer systems up or down to steer total entropy toward the target.
 // Acts as a meta-conductor for the cross-layer systems themselves.
 
-EntropyRegulator = (() => {
+entropyRegulator = (() => {
+  const V = Validator.create('entropyRegulator');
   const WINDOW_NOTES = 20;
   const SMOOTHING = 0.3; // exponential smoothing factor
 
@@ -24,12 +25,15 @@ EntropyRegulator = (() => {
    * @param {string} layer
    */
   function recordSample(midi, velocity, layer) {
+    V.requireFinite(midi, 'midi');
+    V.requireFinite(velocity, 'velocity');
+    V.assertNonEmptyString(layer, 'layer');
     if (!noteHistory.has(layer)) noteHistory.set(layer, []);
     if (!velHistory.has(layer)) velHistory.set(layer, []);
     const nh = noteHistory.get(layer);
     const vh = velHistory.get(layer);
-    if (!nh) throw new Error('EntropyRegulator.recordSample: missing note history for layer ' + layer);
-    if (!vh) throw new Error('EntropyRegulator.recordSample: missing velocity history for layer ' + layer);
+    if (!nh) throw new Error('entropyRegulator.recordSample: missing note history for layer ' + layer);
+    if (!vh) throw new Error('entropyRegulator.recordSample: missing velocity history for layer ' + layer);
     nh.push(midi);
     vh.push(velocity);
     if (nh.length > WINDOW_NOTES) nh.shift();
@@ -140,4 +144,4 @@ EntropyRegulator = (() => {
     getRegulation, regulate, setRegulationStrength, reset
   };
 })();
-CrossLayerRegistry.register('EntropyRegulator', EntropyRegulator, ['all', 'section']);
+CrossLayerRegistry.register('entropyRegulator', entropyRegulator, ['all', 'section']);
