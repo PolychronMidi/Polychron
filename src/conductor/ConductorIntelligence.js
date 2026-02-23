@@ -232,6 +232,27 @@ ConductorIntelligence = (() => {
   }
 
   // ── Diagnostics ───────────────────────────────────────────────────
+
+  /**
+   * Return every unique name that has registered any contribution
+   * (density, tension, flicker, recorder, or stateProvider).
+   * Strips colon-suffixed variants (e.g. 'Foo:bar' → 'Foo') so that
+   * modules registering multiple biases under sub-labels are unified.
+   * @returns {string[]}
+   */
+  function getContributorNames() {
+    const raw = new Set();
+    densityBiases.forEach(e => raw.add(e.name));
+    tensionBiases.forEach(e => raw.add(e.name));
+    flickerModifiers.forEach(e => raw.add(e.name));
+    recorders.forEach(e => raw.add(e.name));
+    stateProviders.forEach(e => raw.add(e.name));
+    // Normalize colon-qualified labels to their base module name
+    const normalized = new Set();
+    raw.forEach(n => normalized.add(n.split(':')[0]));
+    return Array.from(normalized).sort();
+  }
+
   /** @returns {{ density: number, tension: number, flicker: number, recorders: number, stateProviders: number }} */
   function getCounts() {
     return {
@@ -280,6 +301,7 @@ ConductorIntelligence = (() => {
     runRecorders,
     registerStateProvider,
     collectStateFields,
+    getContributorNames,
     getCounts,
     getSignalSnapshot
   };
