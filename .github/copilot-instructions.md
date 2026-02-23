@@ -107,7 +107,7 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 | `src/time/` | Tick/time math, polyrhythm calculator, layer manager, absolute-time grid | `AbsoluteTimeGrid`, `LayerManager` |
 | `src/composers/` | Scale, chord, motif, voice-leading composers (one per file). Factory selects and blends. | `ComposerFactory` |
 | `src/fx/` | Noise engine (simplex/fbm/worley) + stutter subsystem | `noiseManager`, `StutterManager` |
-| `src/crossLayer/` | 34 modules coordinating L1↔L2 (phase lock, groove transfer, entropy regulation, conductor signal bridge...) | `CrossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` |
+| `src/crossLayer/` | 35 modules coordinating L1↔L2 (phase lock, groove transfer, entropy regulation, conductor signal bridge...) | `CrossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` |
 | `src/writer/` | CSV/MIDI output formatting | `grandFinale` |
 | `src/play/` | Top-level loops: section → phrase → measure → beat → div → subdiv → subsubdiv | `main.js` |
 
@@ -121,7 +121,7 @@ The system's nervous system has three layers: conductor (signal producer), cross
 
 ```
 ┌─ Conductor ──────────────────────────────────────────────────────┐
-│  72 intelligence modules each register:                          │
+│  ~74 intelligence modules each register:                         │
 │    densityBias / tensionBias / flickerModifier → multiplicative   │
 │    recorder → side-effect per beat                               │
 │    stateProvider → fields merged into ConductorState             │
@@ -134,7 +134,7 @@ The system's nervous system has three layers: conductor (signal producer), cross
 └──────────────────────────────────────────────────────────────────┘
          ↓ getSignals() / signalReader.*()           ↑ ExplainabilityBus (diagnostic only)
 ┌─ Cross-Layer ────────────────────────────────────────────────────┐
-│  31 modules coordinate L1↔L2 via:                                │
+│  32 modules coordinate L1↔L2 via:                                │
 │    AbsoluteTimeGrid (shared temporal memory, see below)          │
 │    NegotiationEngine (conflict arbiter)                          │
 │    AdaptiveTrustScores (per-module trust weights, see below)     │

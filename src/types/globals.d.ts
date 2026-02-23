@@ -1,3 +1,5 @@
+// globals.d.ts - Centralized ambient declarations for global variables and interfaces.
+// exempt from target file length limits due to its role as a centralized declaration repository.
 // Managed globals — single source of truth for:
 // 1) TypeScript ambient declarations (`src/types/**/*.d.ts` include)
 // 2) ESLint global map (parsed directly by `eslint.config.mjs`)
@@ -9,7 +11,7 @@
 // ── Abbreviation Glossary ──
 // m   = Math                   rf  = randomFloat          ri  = randomInt
 // rw  = randomWeightedInRange  ra  = randomInRangeOrArray rv  = randomVariation
-// rl  = randomLimitedChange    t   = AbsoluteTimeGrid     c   = polyrhythm calculator
+// rl  = randomLimitedChange    t   = Tonal.js     c   = polyrhythm calculator
 // p   = pitch bend util        LM  = LayerManager         V   = Validator instance (per-module)
 
 // ── Core Interface Types ──
@@ -965,6 +967,7 @@ declare var totalSections: number;
 declare var phrasesPerSection: number;
 declare var measuresPerPhrase: number;
 declare var getChannelCoherence: any;
+declare var playNotesComputeUnit: (unit: string, emissionAdjustments: any, emissionCfg: any, layer: any) => { on: number; sustain: number; binVel: number; noiseInfluence: number; currentTime: number; voiceIdSeed: number };
 declare var playNotes: any;
 declare var microUnitAttenuator: any;
 declare var composer: any;
@@ -973,6 +976,7 @@ declare var lastVoiceBudgetKey: any;
 declare var velocity: any;
 declare var FullBootstrap: any;
 declare var MainBootstrap: any;
+declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; stutterProb: number; isL1: boolean }) => void;
 declare var processBeat: any;
 declare var layerPass: any;
 declare var playNotesEmitPick: any;

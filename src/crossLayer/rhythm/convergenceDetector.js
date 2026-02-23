@@ -7,6 +7,7 @@
 ConvergenceDetector = (() => {
   const V = Validator.create('ConvergenceDetector');
   const CHANNEL = 'onset';
+  const EVENTS = EventCatalog.names;
   const CONVERGENCE_TOLERANCE_MS = 25;
   const MIN_CONVERGENCE_INTERVAL_MS = 500;
   const BURST_VOICES = 3;
@@ -123,7 +124,7 @@ ConvergenceDetector = (() => {
     }
 
     // Emit convergence event for conductor/other subsystems to react
-    EventBus.emit(EventCatalog.names.CROSS_LAYER_CONVERGENCE, {
+    EventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,
       syncTick: conv.syncTick,

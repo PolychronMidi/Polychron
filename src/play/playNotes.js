@@ -58,9 +58,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   V.assertObject(emissionAdjustments, 'emissionAdjustments');
 
-  const baseVelocitySeed = V.requireFinite(emissionAdjustments.baseVelocity, 'emissionAdjustments.baseVelocity');
-  const combinedVelocityScale = V.requireFinite(emissionAdjustments.velocityScale, 'emissionAdjustments.velocityScale');
-
   const emitNotesEmitted = (actual, intended, reason = 'unknown') => {
     const actualCount = V.requireFinite(actual, 'notesEmitted.actual');
     const intendedCountLocal = V.requireFinite(intended, 'notesEmitted.intended');
@@ -86,90 +83,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   V.assertNonEmptyString(phaseNoiseProfile, 'ConductorConfig.getNoiseProfileForSection()');
   const emissionCfg = Object.assign({}, emissionScaling, { noiseProfile: phaseNoiseProfile });
 
-  const motifTimingOffsetUnits = V.requireFinite(emissionAdjustments.timingOffsetUnits, 'emissionAdjustments.timingOffsetUnits');
-  const rhythmSwingAmount = V.requireFinite(emissionAdjustments.swingAmount, 'emissionAdjustments.swingAmount');
-
-  if (!Number.isFinite(Number(tpUnit))) {
-    throw new Error(`${unit}.playNotes: tpUnit must be a finite number`);
-  }
-  if (!Number.isFinite(Number(beatStart))) {
-    throw new Error(`${unit}.playNotes: beatStart must be a finite number`);
-  }
-  const swingTicks = Number(RhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount));
-  if (!Number.isFinite(swingTicks)) {
-    throw new Error(`${unit}.playNotes: RhythmManager.swingOffset must return a finite number`);
-  }
-  const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;
-
-  // Apply micro-tempo variation from TempoFeelEngine
-  const tempoFeelOffset = TempoFeelEngine.getTickOffset();
-  if (!Number.isFinite(Number(tempoFeelOffset))) {
-    throw new Error(`${unit}.playNotes: TempoFeelEngine.getTickOffset must return a finite number`);
-  }
-
-  // Compute on and sustain
-  const on = unitStart + timingOffsetTicks + tempoFeelOffset + (tpUnit * rv(rf(.2), [-.1, .07], .3));
-  const shortSustain = rv(rf(m.max(tpUnit * .5, tpUnit / unitsPerParent), (tpUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
-  const longSustain = rv(rf(tpUnit * .8, (tpParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
-  const useShort = subdivsPerMinute > ri(400, 650);
-  const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));
-  velocity = rl(baseVelocitySeed,-3,3,95,105);
-  if (!Number.isFinite(combinedVelocityScale) || combinedVelocityScale <= 0) {
-    throw new Error(`${unit}.playNotes: combined profile velocity scale must be a positive finite number`);
-  }
-  velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
-
-  // Apply unit-level velocity scaling from motifConfig hierarchy
-  // (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 — finer units play softer)
-  const unitProfile = motifConfig.getUnitProfile(unit);
-  if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
-    velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
-  }
-
-  // Apply voiceConfig profile for additional velocity shaping
-  const vcProfile = voiceConfig.getProfile('default');
-  if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
-    velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
-  }
-
-  const binVel = rv(velocity * rf(.4, .9));
+  const { on, sustain, binVel, noiseInfluence, currentTime, voiceIdSeed } = playNotesComputeUnit(unit, emissionAdjustments, emissionCfg, layer);
 
   let scheduled = 0;
   let intendedCount = 1;
   crossModulateRhythms();
-
-  // Apply subtle noise modulation to base velocity for organic variation
-  V.requireType(getNoiseProfile, 'function', 'getNoiseProfile');
-  const noiseProfile = getNoiseProfile(emissionCfg.noiseProfile);
-  V.assertObject(noiseProfile, `getNoiseProfile(${emissionCfg.noiseProfile})`);
-  const influenceX = Number(noiseProfile.influenceX);
-  const influenceY = Number(noiseProfile.influenceY);
-  if (!Number.isFinite(influenceX) || !Number.isFinite(influenceY)) {
-    throw new Error(`${unit}.playNotes: subtle noise profile influence must be finite`);
-  }
-  const noiseInfluence = clamp((influenceX + influenceY) / 2, 0, 1);
-  const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
-
-  // Cache layerIdSeed on the layer object — avoids Array.from().reduce() per micro-unit
-  let layerIdSeed = layer._cachedLayerIdSeed;
-  if (layerIdSeed === undefined) {
-    const layerIdValue = layer && Object.prototype.hasOwnProperty.call(layer, 'id') ? layer.id : null;
-    if (typeof layerIdValue === 'number' && Number.isFinite(layerIdValue)) {
-      layerIdSeed = layerIdValue;
-    } else if (typeof layerIdValue === 'string' && layerIdValue.length > 0) {
-      let sum = 0;
-      for (let ci = 0; ci < layerIdValue.length; ci++) sum += layerIdValue.charCodeAt(ci);
-      layerIdSeed = sum;
-    } else if (typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0) {
-      let sum = 0;
-      for (let ci = 0; ci < LM.activeLayer.length; ci++) sum += LM.activeLayer.charCodeAt(ci);
-      layerIdSeed = sum;
-    } else {
-      throw new Error(`${unit}.playNotes: active layer id must be a finite number or non-empty string`);
-    }
-    layer._cachedLayerIdSeed = layerIdSeed;
-  }
-  const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount')); // Deterministic voice ID from context
 
   // DynamismEngine is the single probability authority. When probs arrive from
   // GlobalConductor they are already DynamismEngine-resolved; pass them through
@@ -180,11 +98,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const resolved = (needsPerUnitResolve)
     ? DynamismEngine.resolve(unit, { playProb, stutterProb })
     : { playProb, stutterProb, composite: clamp(ConductorState.getField('compositeIntensity'), 0, 1) };
-  const resolvedPlayProb = Number(resolved.playProb);
-  const resolvedStutterProb = Number(resolved.stutterProb);
-  if (!Number.isFinite(resolvedPlayProb) || !Number.isFinite(resolvedStutterProb)) {
-    throw new Error(`${unit}.playNotes: resolved probabilities must be finite`);
-  }
+  const resolvedPlayProb = V.requireFinite(Number(resolved.playProb), 'resolved.playProb');
+  const resolvedStutterProb = V.requireFinite(Number(resolved.stutterProb), 'resolved.stutterProb');
 
   // ── TextureBlender: per-unit contrast-blend mode ──────────────────
   // Decides whether this unit emits normally, fires a percussive chord
@@ -214,9 +129,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
       : (unit === 'subdiv') ? SUBDIV_VOICES
       : (unit === 'subsubdiv') ? SUBSUBDIV_VOICES
       : BEAT_VOICES;
-    if (!unitCfg || !Number.isFinite(Number(unitCfg.max))) {
-      throw new Error(`${unit}.playNotes: invalid voice unit configuration`);
-    }
+    V.assertObject(unitCfg, `${unit} voice unit configuration`);
+    V.requireFinite(Number(unitCfg.max), 'unitCfg.max');
     remainingVoiceSlotsByLayer[layerName] = Number(unitCfg.max);
     lastVoiceBudgetKeyByLayer[layerName] = unitBudgetKey;
   }
@@ -253,12 +167,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Enforce per-layer, per-unit remaining voice slots — trim picks if necessary
   if (Array.isArray(picks) && picks.length > 0) {
-    const available = Number.isFinite(Number(remainingVoiceSlotsByLayer[layerName]))
-      ? m.max(0, Number(remainingVoiceSlotsByLayer[layerName]))
-      : Number(remainingVoiceSlots);
-    if (!Number.isFinite(available)) {
-      throw new Error(`${unit}.playNotes: invalid available voice budget for layer ${layerName}`);
-    }
+    const available = m.max(0, V.optionalFinite(Number(remainingVoiceSlotsByLayer[layerName]), V.requireFinite(Number(remainingVoiceSlots), 'remainingVoiceSlots')));
     const allowed = m.max(0, m.min(picks.length, available));
     if (allowed <= 0) {
       // no budget available for this layer/unit — skip emission
