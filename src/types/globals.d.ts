@@ -43,7 +43,7 @@ interface SignalSnapshot {
 }
 
 interface ConductorIntelligenceAPI {
-  registerModule(name: string, mod: { reset: () => void }, scopes: Array<'all' | 'section' | 'phrase'>): void;
+  registerModule(name: string, mod: { reset: Function }, scopes: Array<'all' | 'section' | 'phrase'>): void;
   initialize(): void;
   resetSection(): void;
   resetPhrase(): void;
@@ -70,7 +70,7 @@ interface SignalReaderAPI {
   density(): number;
   tension(): number;
   flicker(): number;
-  state(field: string): unknown;
+  state(field: string): any;
   snapshot(): Readonly<SignalSnapshot>;
   densityAttribution(): BiasAttribution;
   tensionAttribution(): BiasAttribution;
@@ -79,7 +79,7 @@ interface SignalReaderAPI {
 }
 
 interface CrossLayerRegistryAPI {
-  register(name: string, module: { reset: () => void }, scopes: Array<'all' | 'section' | 'phrase'>): void;
+  register(name: string, module: { reset: Function }, scopes: Array<'all' | 'section' | 'phrase'>): void;
   resetAll(): void;
   resetSection(): void;
   resetPhrase(): void;
@@ -124,7 +124,7 @@ interface ValidatorFactory {
 
 interface ConductorStateSnapshot {
   key: string; mode: string; quality: string;
-  scale: number[]; chords: string[];
+  scale: any[]; chords: any[];
   tension: number; harmonicRhythm: number; harmonicMutationCount: number;
   excursion: number; sectionPhase: string;
   phrasePosition: number; phrasePhase: string; phraseDynamism: number;
@@ -201,27 +201,206 @@ interface AbsoluteTimeGridAPI {
   reset(channel?: string): void;
 }
 
+// ── Explainability / Trust / Coherence ──
+
+interface ExplainabilityEntry {
+  type: string;
+  layer: string;
+  payload: any;
+  absTimeMs: number;
+}
+
+interface ExplainabilityBusAPI {
+  emit(type: string, layer: string, payload: any, absTimeMs?: number): ExplainabilityEntry;
+  getRecent(limit?: number): ExplainabilityEntry[];
+  querySince(sinceMs: number): ExplainabilityEntry[];
+  queryByType(type: string, limit?: number): ExplainabilityEntry[];
+  reset(): void;
+}
+
+interface AdaptiveTrustScoresAPI {
+  registerOutcome(systemName: string, payoff: number): number;
+  getWeight(systemName: string): number;
+  decayAll(rate?: number): void;
+  getSnapshot(): Record<string, any>;
+  reset(): void;
+}
+
+interface CoherenceMonitorAPI {
+  initialize(): void;
+  getDensityBias(): number;
+  getEntropySignal(): number;
+  getMetrics(): { bias: number; entropy: number; windowSize: number; cumActual: number; cumIntended: number };
+  reset(): void;
+}
+
+// ── Conductor subsystem objects ──
+
+interface ConductorSignalBridgeAPI {
+  refresh(ctx: RecorderContext): void;
+  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number }>;
+  reset(): void;
+}
+
+interface ProfileAdaptationAPI {
+  update(): void;
+  getHints(): { restrainedHint: number; explosiveHint: number; atmosphericHint: number };
+  reset(): void;
+}
+
+interface SignalTelemetryAPI {
+  record(ctx: RecorderContext): void;
+  getHistory(n?: number): Array<{ tick: number; density: number; tension: number; flicker: number; compositeIntensity: number }>;
+  isAnomalyDetected(): boolean;
+  getTrend(): string;
+  reset(): void;
+}
+
+interface JourneyStop {
+  key: string;
+  mode: string;
+  move: string;
+  distance: number;
+}
+
+interface HarmonicContextAPI {
+  set(updates: { key?: string; mode?: string; quality?: string; scale?: any[]; chords?: any[]; tension?: number; excursion?: number; sectionPhase?: string }): void;
+  get(): { key: string; mode: string; quality: string; scale: any[]; chords: any[]; tension: number; excursion: number; sectionPhase: string; mutationCount: number; modifiedAt: number };
+  getField(field: string): any;
+  updateScaleFromMode(key: string, mode: string): void;
+  isNoteInScale(noteInput: string | number): boolean;
+  reset(): void;
+  toJSON(): object;
+}
+
+interface HarmonicJourneyAPI {
+  planJourney(totalSections: number, opts?: { startKey?: string; startMode?: string }): JourneyStop[];
+  getStop(sectionIndex: number): JourneyStop;
+  applyToContext(sectionIndex: number): void;
+  getL2Complement(sectionIndex: number): { key: string; mode: string; relationship: string };
+  applyL2ToContext(sectionIndex: number): void;
+  getPlan(): JourneyStop[];
+  getCurrentIndex(): number;
+  getOrigin(): { key: string; mode: string };
+  reset(): void;
+}
+
+// ── Time subsystem ──
+
+type TimeStreamLevel = 'section' | 'phrase' | 'measure' | 'beat' | 'div' | 'subdiv' | 'subsubdiv';
+
+interface TimeStreamAPI {
+  setPosition(level: TimeStreamLevel, index: number): void;
+  setBounds(level: TimeStreamLevel, count: number): void;
+  getPosition(level: TimeStreamLevel): number;
+  getBounds(level: TimeStreamLevel): number;
+  progress(level: TimeStreamLevel): number;
+  normalizedProgress(level: TimeStreamLevel): number;
+  globalProgress(): number;
+  remaining(level: TimeStreamLevel): number;
+  isFirst(level: TimeStreamLevel): boolean;
+  isLast(level: TimeStreamLevel): boolean;
+  lookAhead(level: TimeStreamLevel, n: number): number;
+  lookBehind(level: TimeStreamLevel, n: number): number;
+  depth(level: TimeStreamLevel): number;
+  snapshot(): Readonly<{ pos: Record<TimeStreamLevel, number>; bounds: Record<TimeStreamLevel, number>; globalProgress: number }>;
+  range(start: number, end: number): Generator<number>;
+  getLevels(): readonly string[];
+  resetPositions(): void;
+  compoundProgress(level: TimeStreamLevel): number;
+  resetSubLevels(level: TimeStreamLevel): void;
+  positionString(): string;
+}
+
+interface LayerManagerAPI {
+  layers: Record<string, any>;
+  layerComposers: Record<string, any>;
+  phraseFamily: any;
+  activeLayer: any;
+  register(name: string, buffer: any[] | string, initialState?: object, setupFn?: Function): { layer: any; buffer: any[] };
+  activate(name: string, isPoly?: boolean): any;
+  advance(name: string, advancementType?: 'phrase' | 'section'): void;
+  setSectionStartFor(name: string): void;
+  setSectionStartAll(): void;
+  setPhraseFamily(familyName: string): string;
+  getPhraseFamily(): any;
+  setComposerFor(name: string, nextComposer: object): any;
+  setComposerForAll(nextComposer: object): any;
+  getComposerFor(name: string): any;
+}
+
+// ── Lifecycle / caching utilities ──
+
+interface ModuleLifecycleInstance {
+  register(name: string, mod: { reset: Function }, scopes: Array<'all' | 'section' | 'phrase'>): void;
+  resetByScope(scope: string): void;
+  resetAll(): void;
+  resetSection(): void;
+  resetPhrase(): void;
+  getNames(): string[];
+  getCount(): number;
+}
+
+interface ModuleLifecycleFactory {
+  create(ownerName: string): ModuleLifecycleInstance;
+}
+
+interface BeatCacheInstance {
+  get(): any;
+}
+
+interface BeatCacheFactory {
+  create(fn: () => any): BeatCacheInstance;
+}
+
+// ── EventCatalog ──
+
+interface EventCatalogAPI {
+  names: Readonly<{
+    SECTION_BOUNDARY: 'section-boundary';
+    JOURNEY_MOVE: 'journey-move';
+    TEXTURE_CONTRAST: 'texture-contrast';
+    BEAT_FX_APPLIED: 'beat-fx-applied';
+    STUTTER_APPLIED: 'stutter-applied';
+    CONDUCTOR_REGULATION: 'conductor-regulation';
+    BEAT_BINAURAL_APPLIED: 'beat-binaural-applied';
+    HARMONIC_CHANGE: 'harmonic-change';
+    NOTES_EMITTED: 'notes-emitted';
+    MOTIF_CHAIN_APPLIED: 'motif-chain-applied';
+    CROSS_LAYER_EXPLAIN: 'cross-layer-explain';
+    CONVERGENCE_HARMONIC_TRIGGER: 'convergence-harmonic-trigger';
+    CROSS_LAYER_CONVERGENCE: 'cross-layer-convergence';
+    CROSS_LAYER_CADENCE_ALIGN: 'cross-layer-cadence-align';
+    PHRASE_BOUNDARY: 'phrase-boundary';
+    MEASURE_BOUNDARY: 'measure-boundary';
+  }>;
+  assertEventPayload(name: string, data: object): boolean;
+  validateEmit(name: string, data: object): boolean;
+}
+
+// ── Remaining interfaces above, declare var sections below ──
+
 // ── utils ──
 declare var m: typeof Math;
-declare var rf: any;
-declare var ri: any;
-declare var rw: any;
-declare var ra: any;
-declare var rv: any;
-declare var rl: any;
-declare var clamp: Function;
-declare var modClamp: Function;
-declare var lowModClamp: Function;
-declare var highModClamp: Function;
-declare var scaleClamp: Function;
-declare var scaleBoundClamp: Function;
-declare var softClamp: Function;
-declare var stepClamp: Function;
-declare var logClamp: Function;
-declare var expClamp: Function;
-declare var randomWeightedInArray: Function;
-declare var randomWeightedSelection: Function;
-declare var normalizeWeights: Function;
+declare var rf: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
+declare var ri: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
+declare var rw: (min: number, max: number, weights: number[]) => number;
+declare var ra: (v: number | any[] | (() => any)) => any;
+declare var rv: (value: number, boostRange?: number[], frequency?: number, deboostRange?: number[]) => number;
+declare var rl: (currentValue: number, minChange: number, maxChange: number, minValue: number, maxValue: number, type?: string) => number;
+declare var clamp: (value: number, min: number, max: number) => number;
+declare var modClamp: (value: number, min: number, max: number) => number;
+declare var lowModClamp: (value: number, min: number, max: number) => number;
+declare var highModClamp: (value: number, min: number, max: number) => number;
+declare var scaleClamp: (value: number, min: number, max: number, factor: number, maxFactor?: number, base?: number) => number;
+declare var scaleBoundClamp: (value: number, base: number, lowerScale: number, upperScale: number, minBound?: number, maxBound?: number) => number;
+declare var softClamp: (value: number, min: number, max: number, softness?: number) => number;
+declare var stepClamp: (value: number, min: number, max: number, step: number) => number;
+declare var logClamp: (value: number, min: number, max: number, base?: number) => number;
+declare var expClamp: (value: number, min: number, max: number, base?: number) => number;
+declare var randomWeightedInArray: (weights: number[]) => number;
+declare var randomWeightedSelection: (options: Record<string, { weights: number[] }>) => string;
+declare var normalizeWeights: (weights: number[], min: number, max: number, variationLow?: number, variationHigh?: number) => number[];
 declare var MIDI_MAX_VALUE: number;
 declare var midiData: any;
 declare var getMidiValue: any;
@@ -307,8 +486,8 @@ declare var otherBassInstruments: any;
 declare var drumSets: any;
 declare var PhraseArcManager: any;
 declare var phraseArcProfiler: any;
-declare var HarmonicContext: any;
-declare var HarmonicJourney: any;
+declare var HarmonicContext: HarmonicContextAPI;
+declare var HarmonicJourney: HarmonicJourneyAPI;
 declare var HarmonicRhythmTracker: any;
 declare var harmonicJourneyHelpers: any;
 declare var harmonicJourneyPlanner: any;
@@ -434,12 +613,12 @@ declare var DynamicPeakMemory: any;
 declare var RhythmicDensityContrastTracker: any;
 declare var TonalAnchorDistanceTracker: any;
 declare var ConductorIntelligence: ConductorIntelligenceAPI;
-declare var CoherenceMonitor: any;
+declare var CoherenceMonitor: CoherenceMonitorAPI;
 declare var signalReader: SignalReaderAPI;
-declare var profileAdaptation: any;
-declare var signalTelemetry: any;
-declare var ModuleLifecycle: any;
-declare var beatCache: any;
+declare var profileAdaptation: ProfileAdaptationAPI;
+declare var signalTelemetry: SignalTelemetryAPI;
+declare var ModuleLifecycle: ModuleLifecycleFactory;
+declare var beatCache: BeatCacheFactory;
 
 // ── rhythm ──
 declare var RhythmRegistry: any;
@@ -513,7 +692,7 @@ declare var subdivStartTime: number;
 declare var subsubdivStart: number;
 declare var subsubdivStartTime: number;
 declare var c: any;
-declare var LM: any;
+declare var LM: LayerManagerAPI;
 declare var getMidiTiming: any;
 declare var setMidiTiming: any;
 declare var POLYRHYTHM_PAIRS: any;
@@ -559,7 +738,7 @@ declare var timeGridSearchStart: any;
 declare var AbsoluteTimeWindow: any;
 declare var AbsoluteTimeGrid: AbsoluteTimeGridAPI;
 declare var TempoFeelEngine: any;
-declare var TimeStream: any;
+declare var TimeStream: TimeStreamAPI;
 
 // ── composers ──
 declare var normalizeChordSymbol: any;
@@ -747,8 +926,8 @@ declare var InteractionHeatMap: any;
 declare var entropyMetrics: any;
 declare var EntropyRegulator: any;
 declare var EmergentDownbeat: any;
-declare var ExplainabilityBus: any;
-declare var AdaptiveTrustScores: any;
+declare var ExplainabilityBus: ExplainabilityBusAPI;
+declare var AdaptiveTrustScores: AdaptiveTrustScoresAPI;
 declare var SectionIntentCurves: any;
 declare var PhaseAwareCadenceWindow: any;
 declare var NegotiationEngine: any;
@@ -767,7 +946,7 @@ declare var CrossLayerDynamicEnvelope: any;
 declare var ConvergenceHarmonicTrigger: any;
 declare var TexturalMirror: any;
 declare var CrossLayerSilhouette: any;
-declare var conductorSignalBridge: any;
+declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 
 // ── writer ──
 declare var formatTime: any;
@@ -781,7 +960,7 @@ declare var endTime: number;
 
 // ── play ──
 declare var EventBus: EventBusAPI;
-declare var EventCatalog: any;
+declare var EventCatalog: EventCatalogAPI;
 declare var totalSections: number;
 declare var phrasesPerSection: number;
 declare var measuresPerPhrase: number;
@@ -804,12 +983,12 @@ declare var emitPickSourceTextures: any;
 declare var emitPickReflectionTextures: any;
 
 // ── other ──
-declare var randomFloat: Function;
-declare var randomInt: Function;
-declare var randomWeightedInRange: Function;
-declare var randomInRangeOrArray: Function;
-declare var randomLimitedChange: Function;
-declare var randomVariation: Function;
+declare var randomFloat: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
+declare var randomInt: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
+declare var randomWeightedInRange: (min: number, max: number, weights: number[]) => number;
+declare var randomInRangeOrArray: (v: number | any[] | (() => any)) => any;
+declare var randomLimitedChange: (currentValue: number, minChange: number, maxChange: number, minValue: number, maxValue: number, type?: string) => number;
+declare var randomVariation: (value: number, boostRange?: number[], frequency?: number, deboostRange?: number[]) => number;
 declare var beatRhythm: any;
 declare var divRhythm: any;
 declare var subdivRhythm: any;
@@ -824,7 +1003,7 @@ declare var subsubdivIndex: number;
 declare var measureCount: number;
 declare var c1: any;
 declare var c2: any;
-declare var layerManager: any;
+declare var layerManager: LayerManagerAPI;
 declare var cCH2: number;
 declare var cCH3: number;
 declare var lCH1: number;

@@ -13,6 +13,18 @@ FullBootstrap = (() => {
 
     // ── Core Interface Types ──
 
+    // ── Explainability / Trust / Coherence ──
+
+    // ── Conductor subsystem objects ──
+
+    // ── Time subsystem ──
+
+    // ── Lifecycle / caching utilities ──
+
+    // ── EventCatalog ──
+
+    // ── Remaining interfaces above, declare var sections below ──
+
     // ── utils ──
     'm',
     'rf',
