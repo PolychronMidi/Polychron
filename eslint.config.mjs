@@ -82,7 +82,8 @@ export default [
       'local/no-useless-expose-dependencies-comments': 'error',
       'local/only-error-throws': 'error',
       'local/no-typeof-validated-global': 'error',
-      'local/no-unstamped-validator': 'error'
+      'local/no-unstamped-validator': 'error',
+      'local/no-conductor-registration-from-crosslayer': 'error'
     },
 
   },

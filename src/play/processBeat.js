@@ -17,7 +17,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   let playProb = playProbIn;
   let stutterProb = stutterProbIn;
 
-  // --- Beat setup (shared, minor L1/L2 differences) ---
+  // ── [stage: beat-setup] ─────────────────────────────────────────
   if (isL1) beatCount++;
   setUnitTiming('beat');
   setOtherInstruments();
@@ -38,9 +38,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   rf() < boot.stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
   Stutter.runDuePlans(beatStart);
 
-  // --- Cross-layer orchestration ---
+  // ── [stage: intent] ───────────────────────────────────────────
   const clAbsMs = beatStartTime * 1000;
   const clIntent = SectionIntentCurves.getIntent();
+
+  // ── [stage: entropy] ──────────────────────────────────────────
   // Blend section-shape arc (30%) with intent entropy target (70%)
   const clArcTarget = EntropyRegulator.getArcTarget(TimeStream.normalizedProgress('section'));
   EntropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
@@ -48,19 +50,25 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // chaos → stronger regulation, stagnation → lighter touch
   EntropyRegulator.setRegulationStrength(clamp(0.5 + CoherenceMonitor.getEntropySignal() * 0.4, 0, 1));
   const clEntropy = EntropyRegulator.getRegulation();
+
+  // ── [stage: phase] ────────────────────────────────────────────
   const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, layer);
 
+  // ── [stage: climax] ───────────────────────────────────────────
   CrossLayerClimaxEngine.tick(clAbsMs);
   const clClimaxMods = CrossLayerClimaxEngine.getModifiers(layer);
   // Stash climax modifiers for playNotesEmitPick (avoids re-calling getModifiers per pick)
   setClimaxMods(clClimaxMods);
 
+  // ── [stage: envelope] ─────────────────────────────────────────
   CrossLayerDynamicEnvelope.tick(clAbsMs, layer);
   if (isL1) CrossLayerDynamicEnvelope.autoSelectArcType();
 
+  // ── [stage: silhouette] ───────────────────────────────────────
   CrossLayerSilhouette.tick(clAbsMs, layer);
   const clSilhouetteCorrections = CrossLayerSilhouette.getCorrections();
 
+  // ── [stage: rest] ─────────────────────────────────────────────
   const clRestSignals = {
     heatLevel: InteractionHeatMap.getDensity(),
     densityTarget: clIntent.densityTarget,
@@ -69,8 +77,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clRest = RestSynchronizer.evaluateSharedRest(clAbsMs, layer, clRestSignals);
   const clComplementRest = RestSynchronizer.evaluateComplementaryRest(clAbsMs, layer);
 
+  // ── [stage: complement] ───────────────────────────────────────
   RhythmicComplementEngine.autoSelectMode(clAbsMs);
 
+  // ── [stage: tension-cadence] ──────────────────────────────────
   const clTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
   const clCadence = CadenceAdvisor.shouldCadence();
   if (!clCadence || typeof clCadence !== 'object' || typeof clCadence.suggest !== 'boolean') {
@@ -78,6 +88,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   }
   const clPhaseSnapshot = { timeMs: clAbsMs, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
 
+  // ── [stage: negotiation] ──────────────────────────────────────
   const clNegotiation = NegotiationEngine.apply(layer, {
     playProb: DynamicRoleSwap.modifyPlayProb(layer, playProb),
     stutterProb,
@@ -90,6 +101,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   stutterProb = clNegotiation.stutterProb;
   // NegotiationEngine.apply already incorporates entropyScale — do not re-apply via regulate()
 
+  // ── [stage: probability-adjust] ───────────────────────────────
   if (clClimaxMods.playProbScale !== 1.0) playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);
   playProb = clamp(playProb + clSilhouetteCorrections.densityBias, 0, 1);
   // Suppress shared rests during climax approach to protect musical buildup
@@ -106,7 +118,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     stutterProb = clamp(stutterProb * 1.04, 0, 1);
   }
 
+  // ── [stage: emission] ─────────────────────────────────────────
   playNotes('beat', { playProb, stutterProb });
+
+  // ── [stage: post-beat] ────────────────────────────────────────
   if (clRest.shouldRest) RestSynchronizer.postRest(clAbsMs, layer);
 
   crossLayerBeatRecord({

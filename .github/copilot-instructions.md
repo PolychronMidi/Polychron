@@ -27,8 +27,8 @@ Everything in this project follows from five rules. Learn these and the rest is 
 Globals are the project's circulatory system. They are assigned as side-effects of `require()` calls in `index.js` files — never via `global.`, `globalThis.`, or `/* global */` comments (ESLint enforces this). All globals are declared in `src/types/globals.d.ts`.
 
 - Always reference globals directly — never alias them into intermediary variables.
-- To add a new global: create a side-effect module, require it from the subsystem's `index.js`, and declare it in `globals.d.ts`. That's it — **never hand-edit `VALIDATED_GLOBALS` in `fullBootstrap.js`**.
-- **Single source of truth:** `src/types/globals.d.ts` is the canonical registry. `scripts/generate-globals-dts.js` runs automatically at the start of `npm run main` and rewrites the `VALIDATED_GLOBALS` array in `src/play/fullBootstrap.js` from it. `globals.d.ts` is never modified by the script.
+- To add a new global: create a side-effect module (or update `init.js`), require it from the subsystem's `index.js`, and declare it in `globals.d.ts`. That's it — **never hand-edit `VALIDATED_GLOBALS` in `fullBootstrap.js`**.
+- **Single source of truth:** `src/types/globals.d.ts` is the canonical registry. `scripts/generate-globals-dts.js` runs automatically at the start of `npm run main` and rewrites the `VALIDATED_GLOBALS` array in `src/play/fullBootstrap.js` from it. `globals.d.ts` and `init.js` are the only files that should ever be edited when adding a new global. The boot validation and ESLint rule ensure the integrity of this system.
 - Boot validation: `mainBootstrap.assertBootstrapGlobals()` proves every `VALIDATED_GLOBALS` entry exists before the main loop runs. ESLint rule `local/no-typeof-validated-global` bans redundant `typeof` probes on these globals — reference them directly and trust the boot check.
 
 ### 2. Fail Fast — Loud Crashes, Never Silent Corruption
@@ -71,7 +71,7 @@ When a file grows past ~200 lines, extract a focused helper as a new global load
 
 ### 5. Coherent Files, One Responsibility
 
-Target ≤ 200 lines of clean minimalist, self-documenting code (including structure-as-documentation), sparingly commented. File name matches its main export. `const` and pure functions where possible; writable globals only where the project convention requires them (timing, play-state).
+Target ≤ 200 lines of clean minimalist, self-documenting code (including structure-as-documentation), sparingly commented. Detailed comments are reserved for complex logic or non-obvious decisions. File name matches its main export. `const` and pure functions where possible; writable globals only where the project convention requires them (timing, play-state).
 
 ---
 

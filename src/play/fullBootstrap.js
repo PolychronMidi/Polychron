@@ -23,6 +23,10 @@ FullBootstrap = (() => {
 
     // ── EventCatalog ──
 
+    // ── Cross-Layer Module Interfaces ──
+
+    // ── Rhythm / Time / Composer Interfaces ──
+
     // ── Remaining interfaces above, declare var sections below ──
 
     // ── utils ──
@@ -620,6 +624,7 @@ FullBootstrap = (() => {
     'FullBootstrap',
     'MainBootstrap',
     'crossLayerBeatRecord',
+    'BeatPipelineDescriptor',
     'processBeat',
     'layerPass',
     'playNotesEmitPick',

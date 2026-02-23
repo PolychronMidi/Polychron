@@ -1,15 +1,17 @@
 // src/crossLayer/crossLayerLifecycleManager.js — Delegates to CrossLayerRegistry.
-// AbsoluteTimeGrid is NOT a crossLayer module (loaded via src/time/), so it is
-// still reset directly here. PitchMemoryRecall intentionally never reset.
+// AbsoluteTimeGrid and TimeStream (from src/time/) register into the lifecycle
+// here so they participate in scoped resets automatically.
+
+// Register time-subsystem modules into CrossLayerRegistry for lifecycle management.
+// They load before crossLayer (utils → … → time → … → crossLayer) so they exist now.
+CrossLayerRegistry.register('AbsoluteTimeGrid', AbsoluteTimeGrid, ['all', 'section']);
+CrossLayerRegistry.register('TimeStream', { reset: TimeStream.resetPositions }, ['all']);
 
 CrossLayerLifecycleManager = (() => {
   let hasRunSection = false;
 
   function resetAll() {
     CrossLayerRegistry.resetAll();
-    // AbsoluteTimeGrid and TimeStream live in src/time/ — not in the registry
-    AbsoluteTimeGrid.reset();
-    TimeStream.resetPositions();
   }
 
   function resetSection() {
@@ -23,7 +25,6 @@ CrossLayerLifecycleManager = (() => {
     }
     hasRunSection = true;
     CrossLayerRegistry.resetSection();
-    AbsoluteTimeGrid.reset();
   }
 
   function resetPhrase() {

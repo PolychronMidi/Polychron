@@ -1,6 +1,4 @@
 // @ts-ignore: side-effect module load
-require('./EventCatalog');
-// @ts-ignore: side-effect module load
 require('./events');
 // @ts-ignore: side-effect module load
 require('./channelCoherence');
@@ -22,6 +20,8 @@ require('./fullBootstrap');
 require('./mainBootstrap');
 // @ts-ignore: side-effect module load
 require('./crossLayerBeatRecord');
+// @ts-ignore: side-effect module load — declarative beat stage graph (must precede processBeat)
+require('./beatPipelineDescriptor');
 // @ts-ignore: side-effect module load
 require('./processBeat');
 // @ts-ignore: side-effect module load
