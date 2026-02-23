@@ -11,7 +11,7 @@ let _chCacheFlip = /** @type {boolean|null} */ (null);
 // Beat-level feedback pitch bias — set once from processBeat, read per-pick
 let _beatFeedbackPitchBias = -1;
 /** @param {number} bias */
-setFeedbackPitchBias = function(bias) { _beatFeedbackPitchBias = Number.isFinite(bias) ? bias : -1; };
+setFeedbackPitchBias = function(bias) { _beatFeedbackPitchBias = V.optionalFinite(bias, -1); };
 
 // Beat-level climax modifiers cache — set once from processBeat, read per-pick
 /** @type {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} */

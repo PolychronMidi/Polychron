@@ -32,10 +32,10 @@ RestSynchronizer = (() => {
     }
 
     // Get heat level from InteractionHeatMap
-    const heatLevel = typeof sig.heatLevel === 'number' && Number.isFinite(sig.heatLevel) ? sig.heatLevel : 0.5;
+    const heatLevel = V.optionalFinite(sig.heatLevel, 0.5);
 
     // Get density target from SectionIntentCurves
-    const densityTarget = typeof sig.densityTarget === 'number' && Number.isFinite(sig.densityTarget) ? sig.densityTarget : 0.5;
+    const densityTarget = V.optionalFinite(sig.densityTarget, 0.5);
 
     // Shared rests are more likely when heat is high (need breathing room)
     // and density target is low

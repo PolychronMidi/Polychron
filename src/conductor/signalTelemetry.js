@@ -3,6 +3,7 @@
 // Detects anomalies (>30% change from rolling mean) for debugging emergent moments.
 
 signalTelemetry = (() => {
+  const V = Validator.create('signalTelemetry');
   const MAX_HISTORY = 200;
   /** @type {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>} */
   const history = [];
@@ -82,7 +83,10 @@ signalTelemetry = (() => {
    * @returns {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>}
    */
   function getHistory(n) {
-    const count = Number.isFinite(n) ? m.max(1, m.min(/** @type {number} */ (n), history.length)) : m.min(20, history.length);
+    const maybeCount = V.optionalFinite(n);
+    const count = maybeCount === undefined
+      ? m.min(20, history.length)
+      : m.max(1, m.min(maybeCount, history.length));
     return history.slice(-count);
   }
 

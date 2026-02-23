@@ -90,7 +90,7 @@ TextureBlender = (() => {
     }
 
     // ── Oscillating probability seeds ──────────────────────────────
-    const seed = Number.isFinite(unitStart) ? unitStart : beatStart;
+  const seed = V.optionalFinite(unitStart, V.requireFinite(beatStart, 'beatStart'));
     const unitDepth = unit === 'beat' ? 0 : unit === 'div' ? 1 : unit === 'subdiv' ? 2 : 3;
 
     const oscA = (m.sin(seed * 0.0023 + unitDepth * 3.7) + 1) * 0.5;

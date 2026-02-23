@@ -1,3 +1,5 @@
+const V = Validator.create('profileUtils');
+
 COMPOSER_TYPES = [
   'measure',
   'scale',
@@ -113,27 +115,19 @@ const resolveNamedProfilesOrFail = (entry, label) => {
   }
 
   if (entry.voiceProfile !== undefined) {
-    if (!voiceConfig || typeof voiceConfig.getProfile !== 'function') {
-      throw new Error(`ComposerProfiles: ${label} requires voiceConfig.getProfile()`);
-    }
+    V.assertManagerShape(voiceConfig, 'voiceConfig', ['getProfile']);
     resolvedProfiles.voice = voiceConfig.getProfile(entry.voiceProfile);
   }
   if (entry.chordProfile !== undefined) {
-    if (!chordConfig || typeof chordConfig.getProfile !== 'function') {
-      throw new Error(`ComposerProfiles: ${label} requires chordConfig.getProfile()`);
-    }
+    V.assertManagerShape(chordConfig, 'chordConfig', ['getProfile']);
     resolvedProfiles.chord = chordConfig.getProfile(entry.chordProfile);
   }
   if (entry.motifProfile !== undefined) {
-    if (!motifConfig || typeof motifConfig.getProfile !== 'function') {
-      throw new Error(`ComposerProfiles: ${label} requires motifConfig.getProfile()`);
-    }
+    V.assertManagerShape(motifConfig, 'motifConfig', ['getProfile']);
     resolvedProfiles.motif = motifConfig.getProfile(entry.motifProfile);
   }
   if (entry.rhythmProfile !== undefined) {
-    if (!rhythmConfig || typeof rhythmConfig.getProfile !== 'function') {
-      throw new Error(`ComposerProfiles: ${label} requires rhythmConfig.getProfile()`);
-    }
+    V.assertManagerShape(rhythmConfig, 'rhythmConfig', ['getProfile']);
     resolvedProfiles.rhythm = rhythmConfig.getProfile(entry.rhythmProfile);
   }
 
@@ -141,9 +135,7 @@ const resolveNamedProfilesOrFail = (entry, label) => {
 };
 
 const cloneComposerEntryOrFail = (entry, label, expectedType = null) => {
-  if (!ComposerProfileValidation || typeof ComposerProfileValidation.validateEntryForTypeOrFail !== 'function') {
-    throw new Error('ComposerProfiles.cloneComposerEntryOrFail: ComposerProfileValidation.validateEntryForTypeOrFail() is not available');
-  }
+  V.assertManagerShape(ComposerProfileValidation, 'ComposerProfileValidation', ['validateEntryForTypeOrFail']);
   ComposerProfileValidation.validateEntryForTypeOrFail(entry, label, expectedType);
 
   const cloned = Object.assign({}, entry);

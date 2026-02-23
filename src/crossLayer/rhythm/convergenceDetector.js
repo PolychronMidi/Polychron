@@ -150,7 +150,7 @@ ConvergenceDetector = (() => {
    */
   function wasRecent(absTimeMs, layer, windowMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    const window = Number.isFinite(windowMs) ? Number(windowMs) : 250;
+    const window = V.optionalFinite(windowMs, 250);
     const lastMs = Number(lastConvergenceByLayer[layer]);
     if (!Number.isFinite(lastMs)) return false;
     return (absTimeMs - lastMs) <= Math.max(0, window);
@@ -162,7 +162,7 @@ ConvergenceDetector = (() => {
    */
   function getLastConvergenceMs(layer) {
     const value = Number(lastConvergenceByLayer[layer]);
-    return Number.isFinite(value) ? value : -Infinity;
+    return V.optionalFinite(value, -Infinity);
   }
 
   /** @returns {number} total convergences fired so far */

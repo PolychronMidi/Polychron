@@ -1,5 +1,7 @@
 // logUnit.js - Logs timing markers with context awareness, writing to active buffer (c = c1 or c2) for proper file separation.
 
+const V = Validator.create('logUnit');
+
 /**
  * Logs timing markers with context awareness.
  * Writes to active buffer (c = c1 or c2) for proper file separation.
@@ -27,7 +29,11 @@ logUnit = (type) => {
   let progressionSymbols = '';
   let actualMeter = null;
   let meterInfo = '';
-  const activeLayerObj = (LM && LM.layers && typeof LM.activeLayer === 'string') ? LM.layers[LM.activeLayer] : null;
+  V.requireDefined(LM, 'LM');
+  V.assertObject(LM.layers, 'LM.layers');
+  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  const activeLayerName = /** @type {string} */ (LM.activeLayer);
+  const activeLayerObj = LM.layers[activeLayerName];
   const composerForLog = (activeLayerObj && activeLayerObj.measureComposer && typeof activeLayerObj.measureComposer === 'object')
     ? activeLayerObj.measureComposer
     : composer;
@@ -142,7 +148,7 @@ logUnit = (type) => {
     c.push({
       tick: startTick,
       type: 'marker_t',
-      vals: [`${LM.activeLayer} ${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} ${typeof endTick === 'undefined' || endTime === null || startTime === null ? `Start: ${formatTime(startTime ?? 0)}` : `Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick}`} ${meterInfo ? meterInfo : ''}`]
+      vals: [`${activeLayerName} ${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} ${typeof endTick === 'undefined' || endTime === null || startTime === null ? `Start: ${formatTime(startTime ?? 0)}` : `Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick}`} ${meterInfo ? meterInfo : ''}`]
     });
   })();
 };

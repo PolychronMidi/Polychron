@@ -37,22 +37,14 @@ class StutterManager {
     this.scheduledPlans = new Map(); // tickKey -> [planId,...]
     this._nextPlanId = 1;
 
-    if (!StutterPlanScheduler || typeof StutterPlanScheduler.schedulePlan !== 'function') {
-      throw new Error('StutterManager: StutterPlanScheduler.schedulePlan is not available');
-    }
-
-    if (!SC || typeof SC.getConfig !== 'function') {
-      throw new Error('StutterManager: StutterConfig.getConfig is not available');
-    }
+    V.assertManagerShape(StutterPlanScheduler, 'StutterPlanScheduler', ['schedulePlan']);
+    V.assertManagerShape(SC, 'StutterConfig', ['getConfig', 'getDirectiveDefaults']);
     this.config = SC.getConfig();
     if (!this.config || typeof this.config !== 'object') {
       throw new Error('StutterManager: StutterConfig.getConfig returned invalid config');
     }
 
     // Default directive applied each beat unless overridden (keeps features active by default)
-    if (!SC || typeof SC.getDirectiveDefaults !== 'function') {
-      throw new Error('StutterManager: StutterConfig.getDirectiveDefaults is not available');
-    }
     this.defaultDirective = SC.getDirectiveDefaults();
     if (!this.defaultDirective || typeof this.defaultDirective !== 'object') {
       throw new Error('StutterManager: invalid default directive from StutterConfig.getDirectiveDefaults');

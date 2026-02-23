@@ -23,7 +23,7 @@ NegotiationEngine = (() => {
     const intent = context.intent || SectionIntentCurves.getLastIntent();
 
     const phaseConfidence = clamp(V.requireFinite(context.phaseConfidence, 'phaseConfidence'), 0, 1);
-    const entropyScale = Number.isFinite(context.entropyScale) ? Number(context.entropyScale) : 1;
+  const entropyScale = V.optionalFinite(context.entropyScale, 1);
 
     const playScale = clamp((0.75 + intent.densityTarget * 0.45) * (0.9 + trustPhase * 0.08), 0.4, 1.8);
     const stutterScale = clamp((0.6 + intent.interactionTarget * 0.75) * (0.85 + trustStutter * 0.1), 0.25, 2.2);
