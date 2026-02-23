@@ -11,6 +11,8 @@ require('./emitPickTextureEmit');
 // @ts-ignore: side-effect module load
 require('./playNotesEmitPick');
 // @ts-ignore: side-effect module load
+require('./playNotesComputeUnit');
+// @ts-ignore: side-effect module load
 require('./playNotes');
 // @ts-ignore: side-effect module load
 require('./microUnitAttenuator');
@@ -18,6 +20,8 @@ require('./microUnitAttenuator');
 require('./fullBootstrap');
 // @ts-ignore: side-effect module load
 require('./mainBootstrap');
+// @ts-ignore: side-effect module load
+require('./crossLayerBeatRecord');
 // @ts-ignore: side-effect module load
 require('./processBeat');
 // @ts-ignore: side-effect module load

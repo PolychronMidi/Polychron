@@ -8,6 +8,7 @@ CadenceAlignment = (() => {
   const CHANNEL = 'tension';
   const SYNC_TOLERANCE_MS = 400;
   const HIGH_TENSION_THRESHOLD = 0.7;
+  const EVENTS = EventCatalog.names;
 
   /**
    * Post a tension sample from the active layer.
@@ -74,7 +75,7 @@ CadenceAlignment = (() => {
     const intensityBoost = alignment.combinedTension;
 
     // Emit event for conductor awareness
-    EventBus.emit(EventCatalog.names.CROSS_LAYER_CADENCE_ALIGN, {
+    EventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
       layer: activeLayer,
       combinedTension: alignment.combinedTension,
       syncTick: alignment.syncTick,

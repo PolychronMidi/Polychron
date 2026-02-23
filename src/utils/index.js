@@ -20,3 +20,7 @@ require('./init');
 require('./midiData');
 // @ts-ignore: side-effect module load
 require('./instrumentation');
+// EventCatalog only depends on Validator — loaded here so all downstream subsystems
+// (crossLayer, play) can reference EventCatalog.names at module level.
+// @ts-ignore: side-effect module load
+require('../play/EventCatalog');

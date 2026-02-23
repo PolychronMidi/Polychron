@@ -7,6 +7,7 @@ ConvergenceHarmonicTrigger = (() => {
   const V = Validator.create('ConvergenceHarmonicTrigger');
   const MIN_TRIGGER_INTERVAL_MS = 2000;
   const TRIGGER_PROBABILITY = 0.35;
+  const EVENTS = EventCatalog.names;
 
   let lastTriggerMs = -Infinity;
   let triggerCount = 0;
@@ -68,7 +69,7 @@ ConvergenceHarmonicTrigger = (() => {
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
     // Emit harmonic trigger event
-    EventBus.emit(EventCatalog.names.CONVERGENCE_HARMONIC_TRIGGER, {
+    EventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,
       rarity,

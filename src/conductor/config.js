@@ -1,4 +1,5 @@
 // config.js - Central hub of tunable controls and profile tables.
+// exempt from target file length limits due to its role as a centralized config repository.
 
 primaryInstrument = getMidiValue('program', 'glockenspiel');
 secondaryInstrument = getMidiValue('program', 'music box');
