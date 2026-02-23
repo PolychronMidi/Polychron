@@ -98,6 +98,29 @@ interface EventBusAPI {
   clearAll(): void;
 }
 
+interface VoiceLeadingScoreAPI {
+  weights: Record<string, number>;
+  score(candidate: number, prevNote: number, context: any): number;
+  scoreInterval(interval: number, context: any): number;
+  scoreMotion(motion: number, context: any): number;
+  scoreRange(note: number, context: any): number;
+  scoreLeapRecovery(leap: number, context: any): number;
+  scoreVoiceCrossing(note: number, context: any): number;
+  scoreParallelMotion(motion: number, context: any): number;
+  scoreIntervalQuality(interval: number, context: any): number;
+  scoreConsecutiveLeaps(leap: number, context: any): number;
+  scoreDirectionalBias(motion: number, context: any): number;
+  scoreMaxLeap(leap: number, context: any): number;
+}
+
+interface SimplexNoiseAPI {
+  p: Uint8Array;
+  perm: Uint8Array;
+  dot(g: number[], x: number, y: number): number;
+  noise1D(xin: number): number;
+  noise(xin: number, yin: number): number;
+}
+
 interface ValidatorInstance {
   requireFinite(value: unknown, label: string): number;
   optionalFinite(value: unknown, fallback: number): number;
@@ -1374,6 +1397,8 @@ declare var formatTime: any;
 declare var logUnit: any;
 declare var pushMultiple: any;
 declare var grandFinale: any;
+declare var VoiceLeadingScore: { new(config?: any): VoiceLeadingScoreAPI };
+declare var SimplexNoise: { new(seed?: number): SimplexNoiseAPI };
 declare var fs: any;
 declare var finalTick: number;
 declare var path: any;

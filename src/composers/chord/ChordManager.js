@@ -1,19 +1,14 @@
 // ChordManager.js - single manager hub for chord subsystem
 
-ChordManager = (function() {
-  const registry = ChordRegistry;
-  const values = ChordValues;
-  const mod = chordModulator;
-  const config = chordConfig;
+class ChordManager {
+  static listGenerators() { return ChordRegistry.list(); }
 
-  function listGenerators() { return registry.list(); }
+  static getGenerator(name) { return ChordRegistry.get(name); }
 
-  function getGenerator(name) { return registry.get(name); }
-
-  function generateProgression(key, quality = 'major', type) {
+  static generateProgression(key, quality = 'major', type) {
     // Prefer registered 'progression' generator if present
-    if (registry.list().includes('progression')) {
-      const gen = registry.get('progression');
+    if (ChordRegistry.list().includes('progression')) {
+      const gen = ChordRegistry.get('progression');
       return gen(key, quality, type);
     }
 
@@ -22,8 +17,8 @@ ChordManager = (function() {
     return type ? pg.generate(type) : pg.random();
   }
 
-  function applyVoicing(chordSymbolOrArray, profileName, options = {}) {
-    const profile = profileName ? config.getProfile(profileName) : {};
+  static applyVoicing(chordSymbolOrArray, profileName, options = {}) {
+    const profile = profileName ? chordConfig.getProfile(profileName) : {};
     const opts = Object.assign({}, profile, options);
 
     if (typeof chordSymbolOrArray !== 'string' && !Array.isArray(chordSymbolOrArray)) {
@@ -49,13 +44,11 @@ ChordManager = (function() {
       if (!ch || !Array.isArray(ch.notes) || ch.notes.length === 0) {
         throw new Error(`ChordManager.applyVoicing: invalid chord symbol ${normalized}`);
       }
-      return values.chordToMidi(ch.notes);
+      return ChordValues.chordToMidi(ch.notes);
     }).flat();
 
     if (midiNotes.length === 0) throw new Error('ChordManager.applyVoicing: no MIDI notes resolved');
 
-    return mod.apply(midiNotes, opts);
+    return chordModulator.apply(midiNotes, opts);
   }
-
-  return { listGenerators, getGenerator, generateProgression, applyVoicing };
-})();
+}
