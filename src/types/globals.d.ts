@@ -1406,6 +1406,7 @@ declare var formatTime: any;
 declare var logUnit: any;
 declare var pushMultiple: any;
 declare var grandFinale: any;
+declare var systemManifest: { emit(): void };
 declare var VoiceLeadingScore: { new(config?: any): VoiceLeadingScoreAPI };
 declare var SimplexNoise: { new(seed?: number): SimplexNoiseAPI };
 declare var fs: any;

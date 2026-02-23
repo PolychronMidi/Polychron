@@ -151,7 +151,71 @@ MainBootstrap = (() => {
 
     // ── Phase 5: Verify beat pipeline topological ordering ──
     BeatPipelineDescriptor.assertTopologicalOrder();
+
+    // ── Phase 6: moved to assertRegistryPopulation() ──────────────────
+    // Registry counts are now verified later in the boot sequence after
+    // ConductorIntelligence.initialize() and cross‑layer reset. The original
+    // checks were firing too early when modules register during initialization
+    // or under minimal/test builds. See assertRegistryPopulation() below.
   }
 
-  return { requireFiniteNumber, requireUnitInterval, requireNonEmptyString, getConductorProbabilities, parseControls, assertBootstrapGlobals };
+  /**
+   * Collect a registry manifest for diagnostic/introspection output.
+   * Call after assertBootstrapGlobals() passes (all modules loaded and registered).
+   * @returns {{ conductorIntelligence: { moduleCount: number, moduleNames: string[], counts: object }, crossLayer: { moduleCount: number, moduleNames: string[] } }}
+   */
+  function getRegistryManifest() {
+    return {
+      conductorIntelligence: {
+        moduleCount: ConductorIntelligence.getModuleCount(),
+        moduleNames: ConductorIntelligence.getModuleNames(),
+        counts: ConductorIntelligence.getCounts()
+      },
+      crossLayer: {
+        moduleCount: CrossLayerRegistry.getCount(),
+        moduleNames: CrossLayerRegistry.getRegisteredNames()
+      }
+    };
+  }
+
+
+  /**
+   * Verify that the two registries have a sane number of entries.
+   * This is run after modules have had a chance to register themselves, so it
+   * must be called manually by the caller (main.js uses it immediately after
+   * ConductorIntelligence.initialize()).
+   *
+    * The thresholds are intentionally conservative; the real goal is to catch
+    * catastrophic mis‑loads (e.g. entire subsystem index.js omitted) while still
+    * enforcing fail-fast behavior. Any threshold violation throws immediately.
+   */
+  function assertRegistryPopulation() {
+    const ciCounts = ConductorIntelligence.getCounts();
+    const ciModuleCount = ConductorIntelligence.getModuleCount();
+    const clModuleCount = CrossLayerRegistry.getCount();
+
+    const WARN_CI_MODULES = 30;   // roughly half the normal ~70
+    const WARN_CL_MODULES = 15;   // roughly half the normal ~35
+
+    if (ciModuleCount === 0) {
+      throw new Error('MainBootstrap: ConductorIntelligence has no registered modules; subsystem load failure.');
+    }
+    if (ciModuleCount < WARN_CI_MODULES) {
+      throw new Error(`MainBootstrap: only ${ciModuleCount} ConductorIntelligence modules registered (expected >= ${WARN_CI_MODULES}).`);
+    }
+    if (ciCounts.density === 0 || ciCounts.tension === 0) {
+      throw new Error('MainBootstrap: ConductorIntelligence has no density/tension biases registered.');
+    }
+    if (ciCounts.recorders === 0 || ciCounts.stateProviders === 0) {
+      throw new Error('MainBootstrap: ConductorIntelligence recorders/stateProviders appear empty.');
+    }
+    if (clModuleCount === 0) {
+      throw new Error('MainBootstrap: CrossLayerRegistry has no registered modules; subsystem load failure.');
+    }
+    if (clModuleCount < WARN_CL_MODULES) {
+      throw new Error(`MainBootstrap: only ${clModuleCount} CrossLayer modules registered (expected >= ${WARN_CL_MODULES}).`);
+    }
+  }
+
+  return { requireFiniteNumber, requireUnitInterval, requireNonEmptyString, getConductorProbabilities, parseControls, assertBootstrapGlobals, getRegistryManifest, assertRegistryPopulation };
 })();

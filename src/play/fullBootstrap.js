@@ -602,6 +602,7 @@ FullBootstrap = (() => {
     'logUnit',
     'pushMultiple',
     'grandFinale',
+    'systemManifest',
     'VoiceLeadingScore',
     'SimplexNoise',
     'fs',

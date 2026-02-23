@@ -4,6 +4,8 @@ require('./formatTime');
 require('./logUnit');
 // @ts-ignore: side-effect module load
 require('./grandFinale');
+// @ts-ignore: side-effect module load — system manifest & capability matrix output
+require('./systemManifest');
 fs = require('fs');
 path = require('path');
 /**
@@ -28,7 +30,9 @@ path = require('path');
 pushMultiple = (buffer, ...items) => { buffer.push(...items); };
 p = pushMultiple;
 
-c = c1 = c2 = []; // naked global current buffer and layer buffers for csv rows
+c1 = []; // layer 1 CSV row buffer
+c2 = []; // layer 2 CSV row buffer
+c = c1; // current active buffer (reassigned per-layer pass)
 
 
 /**
