@@ -1,5 +1,7 @@
 // setUnitTiming.js - Calculate timing variables for each unit level based on the current musical context
 
+const V = Validator.create('setUnitTiming');
+
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
  * cascading parent position + index × duration pattern. See time.md for details.
@@ -12,14 +14,13 @@ setUnitTiming = (unitType) => {
   let activeLayer = null;
   let activeComposer = null;
   if (needsComposer) {
-    if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
-      throw new Error('setUnitTiming: LayerManager.activeLayer is not set');
-    }
-    activeLayer = LM.layers[LM.activeLayer];
+    V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+    const activeLayerName = /** @type {string} */ (LM.activeLayer);
+    activeLayer = LM.layers[activeLayerName];
     if (!activeLayer || typeof activeLayer !== 'object') {
-      throw new Error(`setUnitTiming: active layer "${LM.activeLayer}" not found`);
+      throw new Error(`setUnitTiming: active layer "${activeLayerName}" not found`);
     }
-    activeComposer = LM.getComposerFor(LM.activeLayer);
+    activeComposer = LM.getComposerFor(activeLayerName);
   }
 
   // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals in main.js

@@ -1,3 +1,5 @@
+const V = Validator.create('factoryProfiles');
+
 factoryProfiles = {
   getCapabilityProfilesDefault() {
     return {
@@ -64,9 +66,7 @@ factoryProfiles = {
     if (typeof getConstructorOptionKeysByType !== 'function') {
       throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: getConstructorOptionKeysByType must be a function');
     }
-    if (!ComposerProfileValidation || typeof ComposerProfileValidation.getAllowedKeysByTypeOrFail !== 'function') {
-      throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: ComposerProfileValidation.getAllowedKeysByTypeOrFail() not available');
-    }
+    V.assertManagerShape(ComposerProfileValidation, 'ComposerProfileValidation', ['getAllowedKeysByTypeOrFail']);
 
     const schemaKeysByType = ComposerProfileValidation.getAllowedKeysByTypeOrFail();
     if (!schemaKeysByType || typeof schemaKeysByType !== 'object') {
@@ -100,9 +100,7 @@ factoryProfiles = {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       throw new Error('factoryProfiles.resolveRuntimeProfiles: config must be an object');
     }
-    if (!ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail !== 'function') {
-      throw new Error('factoryProfiles.resolveRuntimeProfiles: ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail() not available');
-    }
+    V.assertManagerShape(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter', ['resolveRuntimeProfilesOrFail']);
     return ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail(config, 'ComposerFactory.resolveRuntimeProfiles');
   },
 
@@ -113,9 +111,7 @@ factoryProfiles = {
     const runtimeProfiles = this.resolveRuntimeProfiles(config);
     if (Object.keys(runtimeProfiles).length === 0) return composer;
 
-    if (!ComposerRuntimeProfileAdapter || typeof ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail !== 'function' || typeof ComposerRuntimeProfileAdapter.applyToComposerOrFail !== 'function') {
-      throw new Error('factoryProfiles.applyRuntimeProfileConfig: ComposerRuntimeProfileAdapter is unavailable');
-    }
+    V.assertManagerShape(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter', ['buildNormalizedRuntimeProfileOrFail', 'applyToComposerOrFail']);
 
     const runtimeProfile = ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail(runtimeProfiles, {
       baseVelocityPrecedence: runtimeProfilePrecedence.baseVelocity

@@ -79,12 +79,12 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
       let sum = 0;
       for (let ci = 0; ci < layerIdValue.length; ci++) sum += layerIdValue.charCodeAt(ci);
       layerIdSeed = sum;
-    } else if (typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0) {
-      let sum = 0;
-      for (let ci = 0; ci < LM.activeLayer.length; ci++) sum += LM.activeLayer.charCodeAt(ci);
-      layerIdSeed = sum;
     } else {
-      throw new Error(`${unit}.playNotesComputeUnit: active layer id must be a finite number or non-empty string`);
+      V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+      const activeLayerName = /** @type {string} */ (LM.activeLayer);
+      let sum = 0;
+      for (let ci = 0; ci < activeLayerName.length; ci++) sum += activeLayerName.charCodeAt(ci);
+      layerIdSeed = sum;
     }
     layer._cachedLayerIdSeed = layerIdSeed;
   }

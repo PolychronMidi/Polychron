@@ -141,7 +141,7 @@ MotifComposer = class MotifComposer {
 
     // If developer provides a note feed, cycle through its notes with octave normalization
     let devNotes = null;
-    if (developer && typeof developer.getNotes === 'function') {
+    if (developer) {
       devNotes = developer.getNotes();
       if (devNotes && !Array.isArray(devNotes)) {
         throw new Error('MotifComposer.generate: developer.getNotes() returned non-array - fail-fast');

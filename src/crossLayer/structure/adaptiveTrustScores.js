@@ -44,7 +44,7 @@ AdaptiveTrustScores = (() => {
 
   /** @param {number} [rate=0.01] */
   function decayAll(rate) {
-    const decayRate = Number.isFinite(rate) ? clamp(/** @type {number} */ (rate), 0, 1) : 0.01;
+    const decayRate = clamp(V.optionalFinite(rate, 0.01), 0, 1);
     for (const state of scoreBySystem.values()) {
       state.score *= (1 - decayRate);
     }

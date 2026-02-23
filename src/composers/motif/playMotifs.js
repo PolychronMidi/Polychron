@@ -21,6 +21,7 @@
 
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer
+  const V = Validator.create('playMotifs');
   if (!layer) throw new Error(`${unit}.playMotifs missing layer`);
   const resolvedBucket = playMotifsResolveBucket(unit, layer);
   const targetIndex = resolvedBucket.targetIndex;
@@ -54,14 +55,13 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     ? layer._workingOverrides.get(overrideKey)
     : bucketEntry.note;
 
-  if (typeof LM.activeLayer !== 'string' || LM.activeLayer.length === 0) {
-    throw new Error(`${unit}.playMotifs: LayerManager.activeLayer is not set`);
-  }
-  const activeLayer = LM.layers[LM.activeLayer];
+  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  const activeLayerName = /** @type {string} */ (LM.activeLayer);
+  const activeLayer = LM.layers[activeLayerName];
   if (!activeLayer || typeof activeLayer !== 'object') {
-    throw new Error(`${unit}.playMotifs: active layer "${LM.activeLayer}" not found`);
+    throw new Error(`${unit}.playMotifs: active layer "${activeLayerName}" not found`);
   }
-  const activeComposer = LM.getComposerFor(LM.activeLayer);
+  const activeComposer = LM.getComposerFor(activeLayerName);
 
   // Extract valid PCs from active composer
   const composerValidPCs = scaleNormalization.collectComposerValidPCs(activeComposer, {
@@ -91,7 +91,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const VC = layer._voiceManagers[unit];
   const voiceCount = VC.getVoiceCount(unit);
   const scorer = activeComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
-  const V = Validator.create('playMotifs');
   const runtimeProfile = (activeComposer && V.optionalType(activeComposer.runtimeProfile, 'object'))
     ? activeComposer.runtimeProfile
     : null;

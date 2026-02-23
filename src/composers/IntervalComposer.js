@@ -129,7 +129,7 @@ IntervalComposer = {
       }
       case 'skip': {
         const stepRaw = Number(options.step);
-        const step = Number.isFinite(stepRaw) ? m.max(1, m.round(stepRaw)) : (len >= 7 ? 2 : 1);
+        const step = m.max(1, m.round(V.optionalFinite(stepRaw, len >= 7 ? 2 : 1)));
         for (let i = 0; i < len; i += step) baseIndices.push(i);
         break;
       }
