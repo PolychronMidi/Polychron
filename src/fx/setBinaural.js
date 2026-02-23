@@ -20,7 +20,8 @@ setBinaural = () => {
   V.requireDefined(AbsoluteTimeGrid, 'AbsoluteTimeGrid');
   V.requireFinite(beatStartTime, 'beatStartTime');
 
-  const activeLayer = LM.activeLayer;
+  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+  const activeLayer = /** @type {string} */ (LM.activeLayer);
   const absTimeMs = beatStartTime * 1000;
 
   const phraseBoundary = beatIndex === 0 && measureIndex === 0;
