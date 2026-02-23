@@ -54,6 +54,9 @@ CoherenceMonitor.initialize();
 ConductorIntelligence.initialize();
 CrossLayerLifecycleManager.resetAll();
 
+// After initialization, validate that registries are sensibly populated.
+MainBootstrap.assertRegistryPopulation();
+
 totalSections = ri(SECTIONS.min, SECTIONS.max);
 MainBootstrap.requireFiniteNumber('totalSections', totalSections);
 if (totalSections <= 0) {
@@ -177,6 +180,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 }
 
   grandFinale();
+
+  // Emit system manifest and capability matrix for compositional forensics
+  systemManifest.emit();
 }
 
 // Run main only when invoked as the entry script

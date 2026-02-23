@@ -481,3 +481,40 @@ PHRASES_ARC_CURVES = {
 };
 
 SILENT_OUTRO_SECONDS=5;
+
+// ── Deep-freeze all config objects ──────────────────────────────────────────
+// Config globals are set once and never mutated at runtime. Freezing them turns
+// any accidental mutation into an immediate crash (Principle 2: Fail Fast).
+// Lambda-bearing objects (PHRASES_ARC_CURVES, RHYTHM_PATTERNS) are safely frozen
+// because Object.freeze preserves function references.
+(function freezeConfigs() {
+  function deepFreeze(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    Object.freeze(obj);
+    Object.getOwnPropertyNames(obj).forEach(name => {
+      const val = obj[name];
+      if (val !== null && typeof val === 'object' && !Object.isFrozen(val)) {
+        deepFreeze(val);
+      }
+    });
+    return obj;
+  }
+
+  [
+    BINAURAL, NUMERATOR, DENOMINATOR, OCTAVE,
+    BEAT_VOICES, DIV_VOICES, SUBDIV_VOICES, SUBSUBDIV_VOICES,
+    BEAT_SIBLING_VOICES, DIV_SIBLING_VOICES, SUBDIV_SIBLING_VOICES, SUBSUBDIV_SIBLING_VOICES,
+    SECTIONS, PHRASES_PER_SECTION, DIVISIONS, SUBDIVS, SUBSUBDIVS, DYNAMISM,
+    COMPOSER_FAMILIES, STUTTER_PROFILES, STUTTER_VELOCITY_RANGES,
+    STUTTER_CROSSMOD_RULES, STUTTER_PRESETS, STUTTER_CROSSMOD_RULES_FALLBACK,
+    STUTTER_DIRECTIVE_DEFAULTS, NOISE_PROFILES,
+    VOICE_Manager, MODAL_BORROWING,
+    VOICE_PROFILES, CHORD_PROFILES, MOTIF_PROFILES, MOTIF_UNIT_PROFILES, RHYTHM_PROFILES,
+    MAIN_LOOP_CONTROLS, CONDUCTOR_NOISE_PROFILE_BY_PHASE,
+    FX_CC_DEFAULTS, NOISE_GENERATOR_REGISTRY,
+    RHYTHM_PATTERNS, RHYTHM_PATTERN_POOLS, DRUM_MAP, PHRASES_ARC_CURVES
+  ].forEach(deepFreeze);
+
+  // SECTION_TYPES is an array of objects
+  deepFreeze(SECTION_TYPES);
+})();

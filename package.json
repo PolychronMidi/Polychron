@@ -24,6 +24,7 @@
     "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",
-    "deps:audit": "npm audit && depcheck"
+    "deps:audit": "npm audit && depcheck",
+    "matrix": "node scripts/generate-globals-dts.js && node scripts/generate-capability-matrix.js"
   }
 }
