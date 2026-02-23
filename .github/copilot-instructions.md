@@ -138,7 +138,7 @@ The system's nervous system has three layers: conductor (signal producer), cross
 │    AbsoluteTimeGrid (shared temporal memory, see below)          │
 │    NegotiationEngine (conflict arbiter)                          │
 │    AdaptiveTrustScores (per-module trust weights, see below)     │
-│    EntropyRegulator (meta-conductor steering entropy to target)  │
+│    entropyRegulator (meta-conductor steering entropy to target)  │
 │    ExplainabilityBus (ring buffer of typed diagnostic events)    │
 └──────────────────────────────────────────────────────────────────┘
          ↓ EventBus events / modified playProb        ↑ NOTES_EMITTED, STUTTER_APPLIED
@@ -154,7 +154,7 @@ The system's nervous system has three layers: conductor (signal producer), cross
 | Loop | Module | Mechanism |
 |---|---|---|
 | **Density correction** | `CoherenceMonitor` | Compares actual note output vs intended density. Feeds correction bias back into density product. The system listens to its own song. |
-| **Entropy steering** | `EntropyRegulator` | Measures combined pitch/velocity/rhythmic entropy. Steers cross-layer systems toward a target curve driven by section position. |
+| **Entropy steering** | `entropyRegulator` | Measures combined pitch/velocity/rhythmic entropy. Steers cross-layer systems toward a target curve driven by section position. |
 | **Sustained-condition hints** | `profileAdaptation` | Watches for sustained low-density / high-tension / flat-flicker streaks. Produces advisory hints consumed by `ConductorConfig`. |
 | **Trust governance** | `AdaptiveTrustScores` | EMA-based trust weights (0.4–1.8) per cross-layer module. Payoff table defined in `MAIN_LOOP_CONTROLS.trustPayoffs`. `NegotiationEngine` reads weights to gate which systems act. |
 

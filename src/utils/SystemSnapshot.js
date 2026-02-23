@@ -75,7 +75,7 @@ SystemSnapshot = (() => {
 
     // ── Entropy regulation state ──
     try {
-      snap.entropy = EntropyRegulator.getRegulation();
+      snap.entropy = entropyRegulator.getRegulation();
     } catch { snap.entropy = null; }
 
     // ── Human-readable position ──

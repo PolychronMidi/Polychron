@@ -49,7 +49,7 @@ emitPickCrossLayerRecord = function(ctx) {
   }
 
   // Entropy Regulator: record sample for entropy measurement
-  EntropyRegulator.recordSample(noteToEmit, texVel, activeLayerName);
+  entropyRegulator.recordSample(noteToEmit, texVel, activeLayerName);
 
   // Record cross-layer interval for harmonic guard tracking.
   // Use pre-computed otherMidi from HarmonicIntervalGuard.nudgePitch() when available,

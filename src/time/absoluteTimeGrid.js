@@ -47,10 +47,17 @@ AbsoluteTimeGrid = (() => {
     const entry = typeof data === 'undefined' ? { timeMs: t, layer } : data;
     entry.timeMs = t;
     entry.layer = layer;
-    arr.push(entry);
+    if (arr.length === 0 || t >= arr[arr.length - 1].timeMs) {
+      arr.push(entry);
+    } else {
+      // Keep channel time-sorted even when callers post out of order.
+      const insertIdx = timeGridSearchStart(arr, 'timeMs', t);
+      arr.splice(insertIdx, 0, entry);
+    }
     // Only prune when over capacity to avoid O(n) splice on every post
     if (arr.length > MAX_ENTRIES_PER_TYPE) {
-      timeGridPrune(arr, 'timeMs', t, DEFAULT_WINDOW_MS, MAX_ENTRIES_PER_TYPE);
+      const newestTime = arr[arr.length - 1].timeMs;
+      timeGridPrune(arr, 'timeMs', newestTime, DEFAULT_WINDOW_MS, MAX_ENTRIES_PER_TYPE);
     }
   }
 

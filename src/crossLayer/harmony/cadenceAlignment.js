@@ -74,7 +74,7 @@ CadenceAlignment = (() => {
     // Both layers at high tension → strongly bias toward cadential resolution
     const intensityBoost = alignment.combinedTension;
 
-    // Emit event for conductor awareness
+    // No active listeners — emitted for EventCatalog completeness and future extensibility
     EventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
       layer: activeLayer,
       combinedTension: alignment.combinedTension,

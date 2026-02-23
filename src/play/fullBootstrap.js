@@ -573,7 +573,7 @@ FullBootstrap = (() => {
     'MotifEcho',
     'InteractionHeatMap',
     'entropyMetrics',
-    'EntropyRegulator',
+    'entropyRegulator',
     'EmergentDownbeat',
     'ExplainabilityBus',
     'AdaptiveTrustScores',

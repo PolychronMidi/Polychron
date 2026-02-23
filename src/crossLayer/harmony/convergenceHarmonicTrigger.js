@@ -68,7 +68,7 @@ ConvergenceHarmonicTrigger = (() => {
 
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
-    // Emit harmonic trigger event
+    // No active listeners — emitted for EventCatalog completeness and future extensibility
     EventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,

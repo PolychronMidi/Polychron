@@ -123,7 +123,7 @@ ConvergenceDetector = (() => {
       p(c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
 
-    // Emit convergence event for conductor/other subsystems to react
+    // No active listeners — emitted for EventCatalog completeness and future extensibility
     EventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,

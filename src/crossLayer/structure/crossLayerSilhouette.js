@@ -28,8 +28,8 @@ CrossLayerSilhouette = (() => {
 
     // Gather all available signals
 
-    // Density from EntropyRegulator
-    const entropyReg = EntropyRegulator.getRegulation();
+    // Density from entropyRegulator
+    const entropyReg = entropyRegulator.getRegulation();
 
     // Register balance from SpectralComplementarity (using active layer, not hardcoded)
     const spectralComplement = SpectralComplementarity.analyzeComplement(layerForSpectral);

@@ -20,8 +20,9 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
   V.requireFinite(selectedNote, 'selectedNote');
 
   const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('dramatic'));
-  const currentTime = (typeof context.callCount === 'number') ? (context.callCount * 0.1) : (typeof context.currentTime === 'number' ? context.currentTime : 0);
-  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
+  const callCount = V.optionalFinite(context.callCount);
+  const currentTime = callCount !== undefined ? callCount * 0.1 : V.optionalFinite(context.currentTime, 0);
+  const voiceId = V.optionalFinite(context.voiceId, 60);
 
   const mod = getParameterModulation(voiceId, 'pitch', currentTime);
   const pitchVariation = m.round((mod.y - 0.5) * 2 * 4 * noiseProfile.influenceY); // ±2 semitones
@@ -39,9 +40,9 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
  */
 applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}) {
   const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('moderate'));
-  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
-  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
-  const phase = (typeof context.phase === 'number') ? context.phase : 0;
+  const currentTime = V.optionalFinite(context.currentTime, 0);
+  const voiceId = V.optionalFinite(context.voiceId, 60);
+  const phase = V.optionalFinite(context.phase, 0);
   const degreeMode = Boolean(options && options.degree === true);
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
@@ -80,8 +81,8 @@ applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}
  */
 applyMelodicPivotNoise = function(pivot, context = {}) {
   const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('moderate'));
-  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
-  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
+  const currentTime = V.optionalFinite(context.currentTime, 0);
+  const voiceId = V.optionalFinite(context.voiceId, 60);
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
   const pivotNoise = m.round((mod.y - 0.5) * 2 * 2 * noiseProfile.influenceY); // ±1 semitone
@@ -97,8 +98,8 @@ applyMelodicPivotNoise = function(pivot, context = {}) {
  */
 applyMelodicDurationNoise = function(baseDuration, context = {}) {
   const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('moderate'));
-  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
-  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
+  const currentTime = V.optionalFinite(context.currentTime, 0);
+  const voiceId = V.optionalFinite(context.voiceId, 60);
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
   const durationMod = 0.9 + (mod.y * 0.2 * noiseProfile.influenceY); // 0.9-1.1x multiplier
@@ -115,8 +116,8 @@ applyMelodicDurationNoise = function(baseDuration, context = {}) {
  */
 applyVoiceLeadingWeightNoise = function(baseWeight, weightType, context = {}) {
   const noiseProfile = getNoiseProfile(resolveConductorNoiseProfile('subtle'));
-  const currentTime = (typeof context.currentTime === 'number') ? context.currentTime : 0;
-  const voiceId = (typeof context.voiceId === 'number') ? context.voiceId : 60;
+  const currentTime = V.optionalFinite(context.currentTime, 0);
+  const voiceId = V.optionalFinite(context.voiceId, 60);
 
   const mod = getParameterModulation(voiceId, 'voicelead', currentTime);
 

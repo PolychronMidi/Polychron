@@ -1,4 +1,5 @@
 // processBeat.js - Shared per-beat body for L1 and L2, extracted from main.js to eliminate duplication.
+const V_processBeat = Validator.create('processBeat');
 
 /**
  * Process one beat for the given layer. Handles setup, cross-layer orchestration,
@@ -44,12 +45,12 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   // ── [stage: entropy] ──────────────────────────────────────────
   // Blend section-shape arc (30%) with intent entropy target (70%)
-  const clArcTarget = EntropyRegulator.getArcTarget(TimeStream.normalizedProgress('section'));
-  EntropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
+  const clArcTarget = entropyRegulator.getArcTarget(TimeStream.normalizedProgress('section'));
+  entropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
   // CoherenceMonitor entropy signal drives regulation aggressiveness:
   // chaos → stronger regulation, stagnation → lighter touch
-  EntropyRegulator.setRegulationStrength(clamp(0.5 + CoherenceMonitor.getEntropySignal() * 0.4, 0, 1));
-  const clEntropy = EntropyRegulator.getRegulation();
+  entropyRegulator.setRegulationStrength(clamp(0.5 + CoherenceMonitor.getEntropySignal() * 0.4, 0, 1));
+  const clEntropy = entropyRegulator.getRegulation();
 
   // ── [stage: phase] ────────────────────────────────────────────
   const clPhase = PhaseAwareCadenceWindow.update(clAbsMs, layer);
@@ -81,12 +82,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   RhythmicComplementEngine.autoSelectMode(clAbsMs);
 
   // ── [stage: tension-cadence] ──────────────────────────────────
-  const V = Validator.create('processBeat');
   const clTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
   const clCadence = CadenceAdvisor.shouldCadence();
-  if (!clCadence || V.optionalType(clCadence, 'object') === undefined || V.optionalType(clCadence.suggest, 'boolean') === undefined) {
-    throw new Error('processBeat: CadenceAdvisor.shouldCadence must return an object with boolean suggest');
-  }
+  V_processBeat.assertPlainObject(clCadence, 'CadenceAdvisor.shouldCadence()');
+  V_processBeat.assertBoolean(clCadence.suggest, 'clCadence.suggest');
   const clPhaseSnapshot = { timeMs: clAbsMs, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
 
   // ── [stage: negotiation] ──────────────────────────────────────

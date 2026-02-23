@@ -37,16 +37,17 @@ IntervalComposer = {
     const allIndices = Array.from({ length: len }, (_, i) => i);
 
     const densityRaw = options.density;
-    const density = Number.isFinite(Number(densityRaw)) ? clamp(Number(densityRaw), 0, 1) : 0.5;
+    const density = clamp(V.optionalFinite(densityRaw, 0.5), 0, 1);
     const jitter = options.jitter === undefined ? true : Boolean(options.jitter);
 
     const minNotesDefault = m.min(2, len);
-    const minNotes = clamp(Number.isFinite(Number(options.minNotes)) ? Number(options.minNotes) : minNotesDefault, 1, len);
-    const maxNotes = clamp(Number.isFinite(Number(options.maxNotes)) ? Number(options.maxNotes) : len, minNotes, len);
+    const minNotes = clamp(V.optionalFinite(options.minNotes, minNotesDefault), 1, len);
+    const maxNotes = clamp(V.optionalFinite(options.maxNotes, len), minNotes, len);
 
     let count;
-    if (Number.isFinite(Number(options.count))) {
-      count = m.round(Number(options.count));
+    const countRaw = V.optionalFinite(options.count);
+    if (countRaw !== undefined) {
+      count = m.round(countRaw);
     } else {
       const target = m.round(len * (0.25 + density * 0.75));
       count = clamp(target, minNotes, maxNotes);
@@ -55,7 +56,7 @@ IntervalComposer = {
 
     const preferRaw = Array.isArray(options.preferIndices) ? options.preferIndices : [];
     const preferIndices = preferRaw
-      .map(val => Number(val))
+      .map(val => V.optionalFinite(val, NaN))
       .filter(val => Number.isFinite(val))
       .map(val => clamp(m.round(val), 0, len - 1));
 
@@ -147,10 +148,7 @@ IntervalComposer = {
 
     // Clamp, dedupe, sort for consistency
     intervals = intervals
-      .map(interval => {
-        if (!Number.isFinite(Number(interval))) return 0;
-        return clamp(Number(interval), 0, len - 1);
-      });
+      .map(interval => clamp(V.optionalFinite(interval, 0), 0, len - 1));
 
     intervals = Array.from(new Set(intervals)).sort((a, b) => a - b);
 
