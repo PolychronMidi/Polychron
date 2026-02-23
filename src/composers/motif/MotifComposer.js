@@ -159,7 +159,7 @@ MotifComposer = class MotifComposer {
     }
 
     const VC = (VoiceManager)
-      ? VoiceManager
+      ? new VoiceManager()
       : (() => { throw new Error('MotifComposer.generate: VoiceManager not available'); })();
     const motifLayer = VC ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;
 

@@ -65,7 +65,7 @@ layerPass = (() => {
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         TimeStream.setPosition('beat', beatIndex);
-        const beatCtx = MainBootstrap.getConductorProbabilities(measureIndex, beatIndex);
+        const beatCtx = MainBootstrap.getConductorProbabilities();
         playProb = beatCtx.playProb;
         stutterProb = beatCtx.stutterProb;
 

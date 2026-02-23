@@ -83,7 +83,8 @@ export default [
       'local/only-error-throws': 'error',
       'local/no-typeof-validated-global': 'error',
       'local/no-unstamped-validator': 'error',
-      'local/no-conductor-registration-from-crosslayer': 'error'
+      'local/no-conductor-registration-from-crosslayer': 'error',
+      'local/no-direct-signal-read': 'error'
     },
 
   },
