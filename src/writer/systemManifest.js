@@ -232,12 +232,13 @@ systemManifest = (() => {
    * Append an attribution table to the lines array.
    * @param {string[]} lines
    * @param {string} title
-   * @param {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} attr
+   * @param {BiasAttribution} attr
    */
   function _appendAttributionTable(lines, title, attr) {
     lines.push(`### ${title} Attribution (end-of-run snapshot)`);
     lines.push('');
-    lines.push(`Product: **${attr.product.toFixed(4)}**`);
+    const flooredNote = (attr.floored && attr.rawProduct !== undefined) ? ` (floored from ${attr.rawProduct.toFixed(4)})` : '';
+    lines.push(`Product: **${attr.product.toFixed(4)}**${flooredNote}`);
     lines.push('');
     if (attr.contributions.length > 0) {
       lines.push('| Module | Raw | Clamped |');

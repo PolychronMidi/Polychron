@@ -91,11 +91,16 @@ ConductorIntelligence = (() => {
   /** @returns {number} product of all density biases (floored to prevent crush) */
   function collectDensityBias() { return m.max(_collect(densityBiases), DENSITY_PRODUCT_FLOOR); }
 
-  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
+  /** @returns {{ product: number, rawProduct: number, floored: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectDensityBiasWithAttribution() {
     const result = _collectWithAttribution(densityBiases);
-    result.product = m.max(result.product, DENSITY_PRODUCT_FLOOR);
-    return result;
+    const rawProduct = result.product;
+    return {
+      product: m.max(rawProduct, DENSITY_PRODUCT_FLOOR),
+      rawProduct,
+      floored: rawProduct < DENSITY_PRODUCT_FLOOR,
+      contributions: result.contributions
+    };
   }
 
   // ── Tension biases ────────────────────────────────────────────────
