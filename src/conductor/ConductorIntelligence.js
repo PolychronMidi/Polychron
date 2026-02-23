@@ -172,6 +172,14 @@ ConductorIntelligence = (() => {
   // ── State-field providers ─────────────────────────────────────────
   // Each provider returns an object whose keys map directly to
   // ConductorState.updateFromConductor() fields.
+  //
+  // IMPORTANT: Most stateProvider fields are NOT individually consumed today.
+  // Only 4 fields have confirmed consumers (profileHintRestrained,
+  // profileHintExplosive, profileHintAtmospheric via conductorConfigAccessors,
+  // and coherenceEntropy via conductorSignalBridge).
+  // The remaining ~90 fields flow into ConductorState bulk snapshots and
+  // ExplainabilityBus telemetry. They exist as typed observation points —
+  // wire a consumer before assuming they influence behavior.
   /** @type {Array<{ name: string, getter: () => Record<string, any> }>} */
   const stateProviders = [];
 

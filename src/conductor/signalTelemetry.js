@@ -82,7 +82,7 @@ signalTelemetry = (() => {
    * @returns {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>}
    */
   function getHistory(n) {
-    const count = Number.isFinite(n) ? m.max(1, m.min(n, history.length)) : m.min(20, history.length);
+    const count = Number.isFinite(n) ? m.max(1, m.min(/** @type {number} */ (n), history.length)) : m.min(20, history.length);
     return history.slice(-count);
   }
 

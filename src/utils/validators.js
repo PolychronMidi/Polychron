@@ -205,6 +205,7 @@ Validator = (() => {
       assertPlainObject: _wrapWithFrom(assertPlainObject, from),
       assertBoolean: _wrapWithFrom(assertBoolean, from),
       assertNonEmptyString: _wrapWithFrom(assertNonEmptyString, from),
+      assertString: _wrapWithFrom(assertNonEmptyString, from),
       assertFinite: _wrapWithFrom(assertFinite, from),
       assertRange: _wrapWithFrom(assertRange, from),
       assertIntegerRange: _wrapWithFrom(assertIntegerRange, from),

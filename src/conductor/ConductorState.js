@@ -65,6 +65,9 @@ ConductorState = (() => {
     if (typeof activeProfile === 'string' && activeProfile.length > 0) snapshot.activeProfile = activeProfile;
   }
 
+  // Core pipeline fields consumed from data: compositeIntensity, harmonicRhythm,
+  // emissionRatio, playProb, stutterProb, phraseCtx. Registry stateProvider
+  // fields are bulk-merged into data but only read if explicitly destructured here.
   function updateFromConductor(data = {}) {
     if (!data || typeof data !== 'object') {
       throw new Error('ConductorState.updateFromConductor: data must be an object');

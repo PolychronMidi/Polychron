@@ -136,7 +136,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
     const phraseTension = MainBootstrap.requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
     const roleSwapResult = DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
-    AdaptiveTrustScores.registerOutcome('roleSwap', roleSwapResult.swapped ? 0.35 : -0.02);
+    const rsp = MAIN_LOOP_CONTROLS.trustPayoffs.roleSwap;
+    AdaptiveTrustScores.registerOutcome('roleSwap', roleSwapResult.swapped ? rsp.swapped : rsp.notSwapped);
     if (roleSwapResult.swapped) {
       ExplainabilityBus.emit('role-swap', 'both', {
         swapCount: roleSwapResult.swapCount,
