@@ -713,7 +713,7 @@ interface TextureBlenderAPI {
 }
 
 interface GlobalConductorAPI {
-  update(measureIndexLocal: number, beatIndexLocal: number): { playProb: number; stutterProb: number };
+  update(): { playProb: number; stutterProb: number };
 }
 
 interface HarmonicRhythmTrackerAPI {
@@ -723,7 +723,83 @@ interface HarmonicRhythmTrackerAPI {
   reset(): void;
 }
 
-// ── Remaining interfaces above, declare var sections below ──
+// ── Conductor / Composer / FX Class Interfaces ──
+
+interface PhraseArcManagerAPI {
+  arcType: string;
+  registerRange: number;
+  densityRange: { min: number; max: number };
+  getPhraseContext(): { position: number; phase: string; measureInPhrase: number; phraseNumber: number; registerBias: number; densityMultiplier: number; voiceIndependence: number; dynamism: number; atBoundary: boolean; atStart: boolean; atEnd: boolean };
+  getPosition(): number;
+  getPhase(): string;
+  isAtBoundary(): boolean;
+  isAtEnd(): boolean;
+  isAtStart(): boolean;
+  reset(): boolean;
+}
+
+interface ComposerFactoryAPI {
+  sharedPhraseArcManager: PhraseArcManagerAPI;
+  sharedComposerCtx: any | null;
+  activeFamily: string | null;
+  capabilityProfiles: any;
+  runtimeProfilePrecedence: any;
+  constructors: any;
+  setComposerContext(ctx: any): void;
+  getPhraseArcManager(opts?: Record<string, any>): PhraseArcManagerAPI;
+  resetPhraseArcManager(): void;
+  getCommonProfileConfigKeys(): string[];
+  getConstructorOptionKeysByType(): Record<string, string[]>;
+  validateCapabilityProfiles(): any;
+  validateProfileSchemaFactoryCompatibility(): any;
+  resolveRuntimeProfiles(config?: Record<string, any>): any;
+  applyRuntimeProfileConfig(composer: any, config?: Record<string, any>): any;
+  applyCapabilityContract(composer: any, type: string, config?: Record<string, any>): any;
+  normalizeProgressionKeyOrFail(key: string, label?: string): string;
+  getRomanQualityOrFail(quality: string, label?: string): string;
+  hasDiatonicKeyData(key: string, quality?: string): boolean;
+  getProgressionKeyPoolOrFail(quality?: string): string[];
+  resolveProgressionKeyOrFail(key: string, label?: string, quality?: string): string;
+  create(config?: Record<string, any>, ctx?: any): any;
+  resolveComposerPoolName(extraConfig?: Record<string, any>, composerCtx?: any): string;
+  getComposerFamiliesOrFail(): Record<string, any>;
+  resolvePhraseFamilyOrFail(extraConfig?: Record<string, any>, composerCtx?: any): string;
+  getActiveFamily(): string;
+  inferComposerType(composerInstance: any): string;
+  scoreFamilyCandidateConfig(candidateConfig: any, opts?: any): number;
+  pickWeightedFamilyCandidateOrFail(candidateConfigs: any[], opts?: any): any;
+  createRandomForLayer(opts?: { familyName?: string; layerName?: string; extraConfig?: Object; previousComposer?: Object; peerComposer?: Object }, ctx?: any): any;
+}
+
+interface VoiceManagerAPI {
+  voiceHistoryByLayer: Map<string, number[][]>;
+  getVoiceCount(unit?: string): number;
+  pickNotesForBeat(layer: any, candidateNotes: any[], voiceCount: number, scorer: any, opts?: Record<string, any>): number[];
+  resetLayer(layer: any): void;
+  resetAll(): void;
+}
+
+interface StutterManagerAPI {
+  shared: { shifts: Map<any, any>; global: any };
+  beatContext: any;
+  plans: Map<any, any>;
+  scheduledPlans: Map<any, any>;
+  config: any;
+  defaultDirective: any;
+  setDefaultDirective(directive: Record<string, any>): any;
+  stutterFade(...args: any[]): any;
+  stutterPan(...args: any[]): any;
+  stutterFX(...args: any[]): any;
+  createPlan(planCfg?: Record<string, any>): any;
+  schedulePlan(planOrCfg?: Record<string, any>): any;
+  runPlan(planIdOrCfg?: Record<string, any>): any;
+  cancelPlan(planId: any): any;
+  runDuePlans(tick: number): any;
+  scheduleStutterForUnit(opts?: Record<string, any>): any;
+  prepareBeat(beatStart?: number): any;
+  resetChannelTracking(channels?: number[] | null): { cleared: number; lastUsedCHs?: number; lastUsedCHs2?: number; lastUsedCHs3?: number };
+}
+
 
 // ── utils ──
 declare var m: typeof Math;
@@ -829,7 +905,7 @@ declare var bassInstrument: any;
 declare var bassInstrument2: any;
 declare var otherBassInstruments: any;
 declare var drumSets: any;
-declare var PhraseArcManager: PhraseArcManagerAPI;
+declare var PhraseArcManager: { new(opts?: Record<string, any>): PhraseArcManagerAPI };
 declare var phraseArcProfiler: any;
 declare var HarmonicContext: HarmonicContextAPI;
 declare var HarmonicJourney: HarmonicJourneyAPI;
@@ -1155,7 +1231,7 @@ declare var MELODIC_PRIOR_TABLES: any;
 declare var melodicPriors: any;
 declare var voiceLeadingSelectNextNote: any;
 declare var voiceLeadingAnalyzeQuality: any;
-declare var VoiceManager: VoiceManagerAPI;
+declare var VoiceManager: { new(): VoiceManagerAPI };
 declare var getScheduledNotes: any;
 declare var p: any;
 declare var note: any;
@@ -1207,7 +1283,7 @@ declare var StutterRegistry: any;
 declare var StutterMetrics: any;
 declare var StutterConfigStore: any;
 declare var StutterPlanScheduler: any;
-declare var Stutter: any;
+declare var Stutter: StutterManagerAPI;
 declare var setBalanceAndFX: any;
 declare var setBinaural: any;
 declare var SimplexNoise: any;

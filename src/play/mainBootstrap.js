@@ -23,12 +23,10 @@ MainBootstrap = (() => {
   }
 
   /**
-   * @param {number} measureIndexLocal
-   * @param {number} beatIndexLocal
    * @returns {{ playProb: number, stutterProb: number }}
    */
-  function getConductorProbabilities(measureIndexLocal, beatIndexLocal) {
-    const ctx = GlobalConductor.update(measureIndexLocal, beatIndexLocal);
+  function getConductorProbabilities() {
+    const ctx = GlobalConductor.update();
     if (!ctx || typeof ctx !== 'object') {
       throw new Error('MainBootstrap: GlobalConductor.update must return an object context');
     }
@@ -116,7 +114,15 @@ MainBootstrap = (() => {
       ['CadenceAdvisor', CadenceAdvisor, 'shouldCadence'],
       ['TexturalMemoryAdvisor', TexturalMemoryAdvisor, 'recordUsage'],
       ['ConvergenceHarmonicTrigger', ConvergenceHarmonicTrigger, 'onConvergence'],
-      ['StructuralFormTracker', StructuralFormTracker, 'recordSection']
+      ['StructuralFormTracker', StructuralFormTracker, 'recordSection'],
+      ['EntropyRegulator', EntropyRegulator, 'measureEntropy'],
+      ['EntropyRegulator', EntropyRegulator, 'regulate'],
+      ['CrossLayerClimaxEngine', CrossLayerClimaxEngine, 'getModifiers'],
+      ['NegotiationEngine', NegotiationEngine, 'apply'],
+      ['SectionIntentCurves', SectionIntentCurves, 'getIntent'],
+      ['CrossLayerSilhouette', CrossLayerSilhouette, 'getCorrections'],
+      ['DynamismEngine', DynamismEngine, 'resolve'],
+      ['TextureBlender', TextureBlender, 'resolve']
     ];
     requiredModules.forEach(([name, obj, method]) => {
       if (!obj || typeof obj[/** @type {string} */ (method)] !== 'function') {

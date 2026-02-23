@@ -27,7 +27,7 @@ FullBootstrap = (() => {
 
     // ── Rhythm / Time / Composer Interfaces ──
 
-    // ── Remaining interfaces above, declare var sections below ──
+    // ── Conductor / Composer / FX Class Interfaces ──
 
     // ── utils ──
     'm',
