@@ -10,6 +10,11 @@
 // Boot the full side-effect tree (same as main.js but stops before composing)
 require('../src/index');
 
+// Some conductor modules lifecycle-register during initialize(), not at load.
+// Prime those initializers so registry counts match main runtime semantics.
+HarmonicRhythmTracker.initialize();
+ConductorState.initialize();
+
 // ensure registrar sanity while we're here
 if (typeof MainBootstrap !== 'undefined' && MainBootstrap.assertRegistryPopulation) {
   MainBootstrap.assertRegistryPopulation();

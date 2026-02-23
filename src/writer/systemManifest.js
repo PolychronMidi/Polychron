@@ -79,7 +79,9 @@ systemManifest = (() => {
         conductorIntelligence: {
           moduleCount: registryManifest.conductorIntelligence.moduleCount,
           moduleNames: registryManifest.conductorIntelligence.moduleNames,
-          contributions: registryManifest.conductorIntelligence.counts
+          contributions: registryManifest.conductorIntelligence.counts,
+          contributorNames: ConductorIntelligence.getContributorNames(),
+          unregisteredContributors: _computeUnregisteredContributors(registryManifest)
         },
         crossLayer: {
           moduleCount: registryManifest.crossLayer.moduleCount,
@@ -113,7 +115,7 @@ systemManifest = (() => {
     // ── Conductor Intelligence Modules ──
     lines.push('## Conductor Intelligence Modules');
     lines.push('');
-    lines.push(`Total registered: **${manifest.registries.conductorIntelligence.moduleCount}**`);
+    lines.push(`Total lifecycle-registered: **${manifest.registries.conductorIntelligence.moduleCount}** | Total signal contributors: **${manifest.registries.conductorIntelligence.contributorNames.length}**`);
     lines.push('');
     lines.push('Contribution counts:');
     const counts = manifest.registries.conductorIntelligence.contributions;
@@ -130,7 +132,7 @@ systemManifest = (() => {
     _appendAttributionTable(lines, 'Flicker Modifier', ConductorIntelligence.collectFlickerModifierWithAttribution());
 
     // Module listing
-    lines.push('### Registered Module Names');
+    lines.push('### Lifecycle-Registered Module Names');
     lines.push('');
     lines.push('| # | Module Name |');
     lines.push('|---|---|');
@@ -138,6 +140,22 @@ systemManifest = (() => {
       lines.push(`| ${i + 1} | ${name} |`);
     });
     lines.push('');
+
+    // ── Unregistered Contributors ──
+    const unreg = manifest.registries.conductorIntelligence.unregisteredContributors;
+    if (unreg.length > 0) {
+      lines.push('### Signal Contributors Without Lifecycle Registration');
+      lines.push('');
+      lines.push('> These modules provide density/tension/flicker/recorder/stateProvider contributions');
+      lines.push('> but are stateless or beatCache-only — no section reset needed.');
+      lines.push('');
+      lines.push('| # | Module Name |');
+      lines.push('|---|---|');
+      unreg.forEach((name, i) => {
+        lines.push(`| ${i + 1} | ${name} |`);
+      });
+      lines.push('');
+    }
 
     // ── Cross-Layer Modules ──
     lines.push('## Cross-Layer Modules');
@@ -192,6 +210,19 @@ systemManifest = (() => {
     lines.push('');
 
     return lines.join('\n');
+  }
+
+  /**
+   * Compute contributor names that provide signal but lack lifecycle registration.
+   * These are legitimately stateless/cached modules — no reset needed — but
+   * surfacing them makes the matrix a diagnostic tool, not just a census.
+   * @param {{ conductorIntelligence: { moduleNames: string[] } }} registryManifest
+   * @returns {string[]}
+   */
+  function _computeUnregisteredContributors(registryManifest) {
+    const lifecycleSet = new Set(registryManifest.conductorIntelligence.moduleNames);
+    return ConductorIntelligence.getContributorNames()
+      .filter(name => !lifecycleSet.has(name));
   }
 
   /**

@@ -84,10 +84,24 @@ MainBootstrap = (() => {
 
     // ── Phase 2: Verify EventCatalog event names ──
     const events = V.getEventsOrThrow();
-    ['SECTION_BOUNDARY', 'JOURNEY_MOVE', 'TEXTURE_CONTRAST', 'BEAT_FX_APPLIED',
+    const EXPECTED_EVENTS = [
+      'SECTION_BOUNDARY', 'JOURNEY_MOVE', 'TEXTURE_CONTRAST', 'BEAT_FX_APPLIED',
       'STUTTER_APPLIED', 'CONDUCTOR_REGULATION', 'BEAT_BINAURAL_APPLIED',
-      'HARMONIC_CHANGE', 'NOTES_EMITTED', 'MOTIF_CHAIN_APPLIED'
-    ].forEach((name) => requireNonEmptyString(`EventCatalog.names.${name}`, events[name]));
+      'HARMONIC_CHANGE', 'NOTES_EMITTED', 'MOTIF_CHAIN_APPLIED',
+      'CROSS_LAYER_EXPLAIN', 'CONVERGENCE_HARMONIC_TRIGGER',
+      'CROSS_LAYER_CONVERGENCE', 'CROSS_LAYER_CADENCE_ALIGN',
+      'PHRASE_BOUNDARY', 'MEASURE_BOUNDARY'
+    ];
+    EXPECTED_EVENTS.forEach((name) => requireNonEmptyString(`EventCatalog.names.${name}`, events[name]));
+    const catalogKeys = Object.keys(events);
+    const MIN_EVENT_COUNT = 16;
+    if (catalogKeys.length < MIN_EVENT_COUNT) {
+      throw new Error(`MainBootstrap: EventCatalog has only ${catalogKeys.length} events (expected >= ${MIN_EVENT_COUNT})`);
+    }
+    const unlisted = catalogKeys.filter(k => !EXPECTED_EVENTS.includes(k));
+    if (unlisted.length > 0) {
+      throw new Error(`MainBootstrap: EventCatalog has unverified events: ${unlisted.join(', ')} — add them to EXPECTED_EVENTS in mainBootstrap.js`);
+    }
 
     // ── Phase 3: Verify key module methods exist (shape checks beyond typeof) ──
     /** @type {[string, any, string][]} */

@@ -64,6 +64,7 @@ interface ConductorIntelligenceAPI {
   runRecorders(ctx: RecorderContext): void;
   registerStateProvider(name: string, getter: () => Record<string, unknown>): void;
   collectStateFields(): Record<string, unknown>;
+  getContributorNames(): string[];
   getCounts(): { density: number; tension: number; flicker: number; recorders: number; stateProviders: number };
   getSignalSnapshot(): Readonly<SignalSnapshot>;
 }
