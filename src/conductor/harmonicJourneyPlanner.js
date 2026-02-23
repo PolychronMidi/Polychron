@@ -46,6 +46,19 @@ harmonicJourneyPlanner = (() => {
       const phase = HJ.getSectionPhase(s, totalSections);
       const movePool = HJ.getMovePoolForPhase(phase);
 
+      // Mode diversity guard: if the last 2+ stops share the same mode,
+      // bias toward mode-changing moves by injecting parallel-mode from MODERATE_MOVES
+      const recentSameMode = steps.length >= 2
+        && steps[steps.length - 1].mode === currentMode
+        && steps[steps.length - 2].mode === currentMode;
+      let effectivePool = movePool;
+      if (recentSameMode && phase !== 'climax') {
+        // MODERATE_MOVES[0] is the parallel-mode function (always changes mode)
+        const modeChanger = HJ.getMovePoolForPhase('development')
+          .filter(fn => !movePool.includes(fn));
+        effectivePool = [...movePool, ...modeChanger, ...modeChanger];
+      }
+
       // Resolution sections bias toward returning home
       if (phase === 'resolution' && rf() < 0.5) {
         const dist = HJ.harmonicDistance(currentKey, originKey);
@@ -58,7 +71,7 @@ harmonicJourneyPlanner = (() => {
       }
 
       // Pick a random move from the phase-appropriate pool
-      const moveFn = movePool[ri(movePool.length - 1)];
+      const moveFn = effectivePool[ri(effectivePool.length - 1)];
       const result = moveFn(currentKey, currentMode);
 
       const nextKey = t.Note.pitchClass(result.key);

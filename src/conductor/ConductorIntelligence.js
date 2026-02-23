@@ -87,6 +87,7 @@ ConductorIntelligence = (() => {
   }
 
   const DENSITY_PRODUCT_FLOOR = 0.15;
+  const TENSION_PRODUCT_CEILING = 1.8;
 
   /** @returns {number} product of all density biases (floored to prevent crush) */
   function collectDensityBias() { return m.max(_collect(densityBiases), DENSITY_PRODUCT_FLOOR); }
@@ -123,11 +124,20 @@ ConductorIntelligence = (() => {
     tensionBiases.push({ name, getter, lo, hi });
   }
 
-  /** @returns {number} product of all tension biases */
-  function collectTensionBias() { return _collect(tensionBiases); }
+  /** @returns {number} product of all tension biases (capped to prevent saturation) */
+  function collectTensionBias() { return m.min(_collect(tensionBiases), TENSION_PRODUCT_CEILING); }
 
-  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function collectTensionBiasWithAttribution() { return _collectWithAttribution(tensionBiases); }
+  /** @returns {{ product: number, rawProduct: number, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
+  function collectTensionBiasWithAttribution() {
+    const result = _collectWithAttribution(tensionBiases);
+    const rawProduct = result.product;
+    return {
+      product: m.min(rawProduct, TENSION_PRODUCT_CEILING),
+      rawProduct,
+      capped: rawProduct > TENSION_PRODUCT_CEILING,
+      contributions: result.contributions
+    };
+  }
 
   // ── Flicker modifiers ─────────────────────────────────────────────
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
