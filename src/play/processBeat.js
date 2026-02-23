@@ -164,21 +164,26 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   InteractionHeatMap.record('emergentDownbeat', clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
   if (clDownbeat) FeedbackOscillator.inject(clAbsMs, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
 
-  // --- Trust scores ---
-  const stutterOutcome = clamp(1 - Math.abs(stutterProb - clIntent.interactionTarget) * 2, -1, 1);
-  const phaseOutcome = clamp((clPhaseMode === 'lock' ? 0.5 : clPhaseMode === 'drift' ? 0.15 : -0.4) + clPhase.confidence * 0.35, -1, 1);
+  // --- Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs) ---
+  const tp = MAIN_LOOP_CONTROLS.trustPayoffs;
+  const stutterOutcome = clamp(1 - Math.abs(stutterProb - clIntent.interactionTarget) * tp.stutterContagion.targetScale, -1, 1);
+  const plp = tp.phaseLock;
+  const phaseOutcome = clamp((clPhaseMode === 'lock' ? plp.lock : clPhaseMode === 'drift' ? plp.drift : plp.other) + clPhase.confidence * plp.confidenceScale, -1, 1);
+  const cap = tp.cadenceAlignment;
   const cadenceOutcome = clCadResult
-    ? (clCadResult.shouldResolve ? 0.85 : 0.35)
-    : (clCadenceGate ? -0.1 : -0.25);
-  const feedbackOutcome = clamp(clFeedbackEnergy - 0.2 + (clDownbeat ? clDownbeat.strength * 0.15 : 0), -1, 1);
+    ? (clCadResult.shouldResolve ? cap.resolved : cap.unresolved)
+    : (clCadenceGate ? cap.gatedNoResult : cap.ungated);
+  const fop = tp.feedbackOscillator;
+  const feedbackOutcome = clamp(clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
   AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
   AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
   AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
   AdaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcome);
-  // CoherenceMonitor: bias near 1.0 = coherent (positive), far from 1.0 = correcting (negative)
-  const coherenceOutcome = clamp(1 - Math.abs(CoherenceMonitor.getDensityBias() - 1.0) * 4, -1, 1);
+  // CoherenceMonitor: bias near neutralBias = coherent (positive), far = correcting (negative)
+  const cmp = tp.coherenceMonitor;
+  const coherenceOutcome = clamp(1 - Math.abs(CoherenceMonitor.getDensityBias() - cmp.neutralBias) * cmp.sensitivity, -1, 1);
   AdaptiveTrustScores.registerOutcome('coherenceMonitor', coherenceOutcome);
-  AdaptiveTrustScores.decayAll(0.002);
+  AdaptiveTrustScores.decayAll(tp.decayRate);
 
   // --- Explainability ---
   ExplainabilityBus.emit('beat-decision', layer, {

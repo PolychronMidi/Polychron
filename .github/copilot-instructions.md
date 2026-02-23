@@ -4,6 +4,8 @@
 > Two independent metric layers (L1/L2) evolve simultaneously,
 > coordinated by cross-layer intelligence and a conductor system.
 
+The system generates music through **emergent coherence** — not by planning notes, but by having 100+ independent observers each nudge a shared signal field, then letting feedback loops resolve contradictions into musicality. The complexity is real but the code is clean because every module follows five simple rules. Simplicity and complexity are not opposites when coherence is the medium between them.
+
 ---
 
 ## Run
@@ -113,11 +115,64 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 
 ## Signal & Feedback Topology
 
-The conductor pipeline exposes runtime signal data for cross-module reading:
+The system's nervous system has three layers: conductor (signal producer), cross-layer (layer coordinator), and play loop (executor + observer).
+
+### Data Flow
+
+```
+┌─ Conductor ──────────────────────────────────────────────────────┐
+│  72 intelligence modules each register:                          │
+│    densityBias / tensionBias / flickerModifier → multiplicative   │
+│    recorder → side-effect per beat                               │
+│    stateProvider → fields merged into ConductorState             │
+│                                                                  │
+│  GlobalConductorUpdate: collects products → compositeIntensity   │
+│    ↓                                                             │
+│  signalReader ─── the ONE read API for all signal consumers      │
+│    ↓                                                             │
+│  conductorSignalBridge (recorder) → caches snapshot each beat    │
+└──────────────────────────────────────────────────────────────────┘
+         ↓ getSignals() / signalReader.*()           ↑ ExplainabilityBus (diagnostic only)
+┌─ Cross-Layer ────────────────────────────────────────────────────┐
+│  31 modules coordinate L1↔L2 via:                                │
+│    AbsoluteTimeGrid (shared temporal memory, see below)          │
+│    NegotiationEngine (conflict arbiter)                          │
+│    AdaptiveTrustScores (per-module trust weights, see below)     │
+│    EntropyRegulator (meta-conductor steering entropy to target)  │
+│    ExplainabilityBus (ring buffer of typed diagnostic events)    │
+└──────────────────────────────────────────────────────────────────┘
+         ↓ EventBus events / modified playProb        ↑ NOTES_EMITTED, STUTTER_APPLIED
+┌─ Play Loop ──────────────────────────────────────────────────────┐
+│  section → phrase → measure → beat → div → subdiv → subsubdiv   │
+│  processBeat: orchestrates cross-layer, emits notes, records     │
+│  CoherenceMonitor: compares actual vs intended note output       │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Four Feedback Loops
+
+| Loop | Module | Mechanism |
+|---|---|---|
+| **Density correction** | `CoherenceMonitor` | Compares actual note output vs intended density. Feeds correction bias back into density product. The system listens to its own song. |
+| **Entropy steering** | `EntropyRegulator` | Measures combined pitch/velocity/rhythmic entropy. Steers cross-layer systems toward a target curve driven by section position. |
+| **Sustained-condition hints** | `profileAdaptation` | Watches for sustained low-density / high-tension / flat-flicker streaks. Produces advisory hints consumed by `ConductorConfig`. |
+| **Trust governance** | `AdaptiveTrustScores` | EMA-based trust weights (0.4–1.8) per cross-layer module. Payoff table defined in `MAIN_LOOP_CONTROLS.trustPayoffs`. `NegotiationEngine` reads weights to gate which systems act. |
+
+### Deliberate Firewall
+
+Cross-layer modules **cannot** directly influence density/tension/flicker products. They modify `playProb`/`stutterProb` locally and emit diagnostics to `ExplainabilityBus`. The conductor is insulated from cross-layer intelligence by design — feedback is delayed and diagnostic, not real-time closed-loop.
+
+### AbsoluteTimeGrid — Shared Temporal Memory
+
+`AbsoluteTimeGrid` (`src/time/AbsoluteTimeGrid.js`) is not just a time utility — it's the organism's shared memory. Both conductor and cross-layer modules `post()` data to named channels (tension, velocity, groove, explainability, etc.) and `findClosest()` / `query()` by absolute millisecond time. Every cross-layer module uses it for nearest-neighbor temporal queries across layers. It straddles three subsystems (time, conductor, cross-layer).
+
+**Key API:** `post(channel, layer, timeMs, data?)`, `query(channel, aroundMs, toleranceMs, opts?)`, `findClosest(channel, aroundMs, toleranceMs, excludeLayer?)`, `reset(channel?)`.
+
+### Signal Reading
 
 - **`signalReader`** (`src/conductor/signalReader.js`) — **the** standardized read API for inter-module signal reading. All modules read signals through `signalReader` (never call `ConductorIntelligence.getSignalSnapshot()` or `ExplainabilityBus.queryByType()` directly). Key methods: `density()`, `tension()`, `flicker()`, `state(field)`, `snapshot()`, `densityAttribution()`, `tensionAttribution()`, `flickerAttribution()`, `recentEvents(type, limit)`.
 - **Product attribution** — `ConductorIntelligence.collectDensityBiasWithAttribution()` (and tension/flicker variants) returns `{ product, contributions: [{ name, raw, clamped }] }`. Enables any module to determine **which** peer is driving the composite signal.
-- **`conductorSignalBridge`** (`src/crossLayer/conductorSignalBridge.js`) — refreshes each beat via a ConductorIntelligence recorder, exposes `getSignals()` returning `{ density, tension, flicker, compositeIntensity, sectionPhase, coherenceEntropy }` for cross-layer modules.
+- **`conductorSignalBridge`** (`src/crossLayer/conductorSignalBridge.js`) — refreshes each beat via a ConductorIntelligence recorder, exposes `getSignals()` returning `{ density, tension, flicker, compositeIntensity, sectionPhase, coherenceEntropy }` for cross-layer modules. **Single chokepoint** — if it fails, cross-layer operates blind. A liveness assertion in `crossLayerLifecycleManager.resetAll()` guards against this.
 - **`profileAdaptation`** (`src/conductor/profileAdaptation.js`) — computes advisory `{ restrainedHint, explosiveHint, atmosphericHint }` from sustained signal conditions. Registered as both recorder and stateProvider.
 - **`signalTelemetry`** (`src/conductor/signalTelemetry.js`) — ring buffer of 200 per-beat signal snapshots. `getHistory(n)`, `isAnomalyDetected()`, `getTrend()`. Registered as recorder + stateProvider.
 - **`ExplainabilityBus.queryByType(type, limit)`** — filtered read of diagnostic entries by event type (most recent first).

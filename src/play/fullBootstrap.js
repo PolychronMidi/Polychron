@@ -1,9 +1,4 @@
-// fullBootstrap.js — Boot-time existence check for all runtime globals.
-// mainBootstrap.assertBootstrapGlobals() proves these exist before the main loop.
-// The ESLint rule `no-typeof-validated-global` bans redundant typeof probes on them.
-//
-// VALIDATED_GLOBALS is AUTO-GENERATED from src/types/globals.d.ts by
-// scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
+// fullBootstrap.js — AUTO-GENERATED from src/types/globals.d.ts by scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
 // To add a new validated global: edit globals.d.ts only.
 
 FullBootstrap = (() => {
@@ -14,6 +9,10 @@ FullBootstrap = (() => {
    * and banned by the `local/no-typeof-validated-global` ESLint rule.
    */
   const VALIDATED_GLOBALS = Object.freeze([
+    // ── Abbreviation Glossary ──
+
+    // ── Core Interface Types ──
+
     // ── utils ──
     'm',
     'rf',
