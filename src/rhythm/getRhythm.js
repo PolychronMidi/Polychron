@@ -47,8 +47,8 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Apply rhythm history novelty penalty to discourage repetition
     rhythmSource = RhythmHistoryTracker.penalizeRepetition(rhythmSource);
 
-    const hasLayerContext = LM && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0;
-    const activeComposer = hasLayerContext ? LM.getComposerFor(LM.activeLayer) : null;
+    const activeLayerName = (LM && typeof LM.activeLayer === 'string' && LM.activeLayer.length > 0) ? LM.activeLayer : null;
+    const activeComposer = activeLayerName ? LM.getComposerFor(activeLayerName) : null;
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
 
     if (useCorpusRhythmPriors) {
@@ -90,11 +90,12 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
 
     // Record selection for novelty tracking
     V.requireType(LM.activeLayer, 'string', 'LM.activeLayer');
-    RhythmHistoryTracker.record(rhythmMethodKey, length, LM.activeLayer);
+    const activeLayer = /** @type {string} */ (LM.activeLayer);
+    RhythmHistoryTracker.record(rhythmMethodKey, length, activeLayer);
 
     // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
     const absTime = beatStartTime;
-    AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, LM.activeLayer, absTime);
+    AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, activeLayer, absTime);
 
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators

@@ -1,6 +1,6 @@
 // RhythmManager.js - single manager hub for rhythm subsystem
 
-RhythmManager = class {
+class RhythmManager_ {
   static listGenerators() { return RhythmRegistry.list(); }
 
   static getGenerator(name) { return RhythmRegistry.get(name); }
@@ -39,3 +39,5 @@ RhythmManager = class {
     return rhythmModulator.apply(note, hit, opts);
   }
 }
+
+RhythmManager = RhythmManager_;

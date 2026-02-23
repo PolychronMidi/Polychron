@@ -143,6 +143,7 @@ interface ValidatorInstance {
   assertString(value: unknown, label: string): string;
   assertInSet(value: unknown, allowedSet: Set<any>, label: string): any;
   assertArrayLength(value: unknown, length: number, label: string): any[];
+  assertManagerShape(mgr: unknown, label: string, methods: string[]): any;
   getEventsOrThrow(): Record<string, string>;
 }
 
@@ -343,18 +344,22 @@ interface TimeStreamAPI {
 interface LayerManagerAPI {
   layers: Record<string, any>;
   layerComposers: Record<string, any>;
-  phraseFamily: any;
-  activeLayer: any;
+  phraseFamily: string | null;
+  activeLayer: string | null;
   register(name: string, buffer: any[] | string, initialState?: object, setupFn?: Function): { layer: any; buffer: any[] };
   activate(name: string, isPoly?: boolean): any;
   advance(name: string, advancementType?: 'phrase' | 'section'): void;
   setSectionStartFor(name: string): void;
   setSectionStartAll(): void;
   setPhraseFamily(familyName: string): string;
-  getPhraseFamily(): any;
+  getPhraseFamily(): string;
   setComposerFor(name: string, nextComposer: object): any;
   setComposerForAll(nextComposer: object): any;
   getComposerFor(name: string): any;
+  saveActive(): void;
+  getLayer(name: string): any;
+  getLayerNames(): string[];
+  resetAll(): void;
 }
 
 // ── Lifecycle / caching utilities ──

@@ -15,14 +15,13 @@ DynamismEngine = (() => {
     if (dependenciesValidated) return;
 
     // All globals are boot-validated — assert shape once, then skip.
-    V.requireDefined(ConductorConfig, 'ConductorConfig');
-    V.requireDefined(FXFeedbackListener, 'FXFeedbackListener');
-    V.requireDefined(StutterFeedbackListener, 'StutterFeedbackListener');
-    V.requireDefined(JourneyRhythmCoupler, 'JourneyRhythmCoupler');
-    V.requireDefined(TextureBlender, 'TextureBlender');
-    V.requireDefined(HarmonicJourney, 'HarmonicJourney');
-    V.requireDefined(LM, 'LM');
-    V.requireType(LM.register, 'function', 'LM.register');
+    V.assertManagerShape(ConductorConfig, 'ConductorConfig', ['getHintBlendedEnergyWeights', 'getEmissionGateParams', 'getFeedbackMixWeights']);
+    V.assertManagerShape(FXFeedbackListener, 'FXFeedbackListener', ['getIntensity']);
+    V.assertManagerShape(StutterFeedbackListener, 'StutterFeedbackListener', ['getIntensity']);
+    V.assertManagerShape(JourneyRhythmCoupler, 'JourneyRhythmCoupler', ['getBoldness']);
+    V.assertManagerShape(TextureBlender, 'TextureBlender', ['getRecentDensity']);
+    V.assertManagerShape(HarmonicJourney, 'HarmonicJourney', ['getStop']);
+    V.assertManagerShape(LM, 'LM', ['register', 'activate']);
     V.assertObject(LM.layers, 'LM.layers');
 
     dependenciesValidated = true;

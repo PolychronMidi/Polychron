@@ -139,6 +139,26 @@ Validator = (() => {
     return fallback;
   }
 
+  /**
+   * Assert a manager-shaped global: defined, has expected static methods.
+   * Works for both plain objects and class constructors with static members.
+   * @param {unknown} mgr
+   * @param {string} label
+   * @param {string[]} methods - method names that must exist as functions
+   */
+  function assertManagerShape(mgr, label, methods) {
+    if (mgr === undefined || mgr === null) {
+      throw new Error(`${_fromLabel()}: ${label} is not defined`);
+    }
+    for (let i = 0; i < methods.length; i++) {
+      const m = methods[i];
+      if (typeof mgr[m] !== 'function') {
+        throw new Error(`${_fromLabel()}: ${label}.${m} must be a function`);
+      }
+    }
+    return mgr;
+  }
+
   function requireEnum(value, allowedValues, name, from) {
     if (!allowedValues) {
       throw new Error(`${_fromLabel(from)}: allowedValues must be provided for ${name}`);
@@ -227,6 +247,7 @@ Validator = (() => {
       requireFinite: _wrapWithFrom(requireFinite, from),
       optionalFinite,
       optionalType,
+      assertManagerShape: _wrapWithFrom(assertManagerShape, from),
       requireType: _wrapWithFrom(requireType, from),
       requireEnum: _wrapWithFrom(requireEnum, from),
       getEventsOrThrow: (/*optional*/ ) => getEventsOrThrow(from)
@@ -250,6 +271,7 @@ Validator = (() => {
     requireFinite,
     optionalFinite,
     optionalType,
+    assertManagerShape,
     requireType,
     requireEnum,
     getEventsOrThrow,

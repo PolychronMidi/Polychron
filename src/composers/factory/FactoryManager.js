@@ -1,5 +1,5 @@
 const V = Validator.create('FactoryManager');
-FactoryManager = class {
+class FactoryManager_ {
   /** @type {any|null} */
   static sharedPhraseArcManager = null;
   /** @type {Object<string, any>|null} */
@@ -9,7 +9,7 @@ FactoryManager = class {
 
   static capabilityProfiles = factoryProfiles.getCapabilityProfilesDefault();
   static runtimeProfilePrecedence = factoryProfiles.getRuntimeProfilePrecedenceDefault();
-  static constructors = factoryConstructors.build(this);
+  static constructors = factoryConstructors.build(FactoryManager_);
 
   static setComposerContext(ctx) {
     V.assertObject(ctx, 'ctx');
@@ -224,6 +224,6 @@ FactoryManager = class {
 
 };
 
-FactoryManager.validateCapabilityProfiles();
-FactoryManager.validateProfileSchemaFactoryCompatibility();
-ComposerFactory = FactoryManager;
+FactoryManager_.validateCapabilityProfiles();
+FactoryManager_.validateProfileSchemaFactoryCompatibility();
+FactoryManager = ComposerFactory = FactoryManager_;

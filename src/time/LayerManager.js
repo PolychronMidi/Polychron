@@ -172,7 +172,7 @@ class LayerManager {
 
   static getPhraseFamily() {
     V.assertNonEmptyString(LayerManager.phraseFamily, 'phraseFamily');
-    return LayerManager.phraseFamily;
+    return /** @type {string} */ (LayerManager.phraseFamily);
   }
 
   static setComposerFor(name, nextComposer) {

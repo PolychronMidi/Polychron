@@ -10,25 +10,15 @@ const PLAY_EVENTS = EventCatalog.names;
 
 function assertPlayNotesDeps() {
   if (_playNotesDepsValidated) return;
-  V.assertObject(motifConfig, 'motifConfig');
-  V.requireType(motifConfig.getUnitProfile, 'function', 'motifConfig.getUnitProfile');
-  V.assertObject(voiceConfig, 'voiceConfig');
-  V.requireType(voiceConfig.getProfile, 'function', 'voiceConfig.getProfile');
-  V.assertObject(ConductorConfig, 'ConductorConfig');
-  V.requireType(ConductorConfig.getEmissionScaling, 'function', 'ConductorConfig.getEmissionScaling');
-  V.requireType(ConductorConfig.getNoiseProfileForSection, 'function', 'ConductorConfig.getNoiseProfileForSection');
-  V.assertObject(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter');
-  V.requireType(ComposerRuntimeProfileAdapter.getEmissionAdjustments, 'function', 'ComposerRuntimeProfileAdapter.getEmissionAdjustments');
-  V.assertObject(TextureBlender, 'TextureBlender');
-  V.requireType(TextureBlender.resolve, 'function', 'TextureBlender.resolve');
-  V.requireDefined(RhythmManager, 'RhythmManager');
-  V.requireType(RhythmManager.swingOffset, 'function', 'RhythmManager.swingOffset');
-  V.assertObject(DynamismEngine, 'DynamismEngine');
-  V.requireType(DynamismEngine.resolve, 'function', 'DynamismEngine.resolve');
-  V.assertObject(TempoFeelEngine, 'TempoFeelEngine');
-  V.requireType(TempoFeelEngine.getTickOffset, 'function', 'TempoFeelEngine.getTickOffset');
-  V.assertObject(voiceModulator, 'voiceModulator');
-  V.requireType(voiceModulator.distribute, 'function', 'voiceModulator.distribute');
+  V.assertManagerShape(motifConfig, 'motifConfig', ['getUnitProfile']);
+  V.assertManagerShape(voiceConfig, 'voiceConfig', ['getProfile']);
+  V.assertManagerShape(ConductorConfig, 'ConductorConfig', ['getEmissionScaling', 'getNoiseProfileForSection']);
+  V.assertManagerShape(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter', ['getEmissionAdjustments']);
+  V.assertManagerShape(TextureBlender, 'TextureBlender', ['resolve']);
+  V.assertManagerShape(RhythmManager, 'RhythmManager', ['swingOffset']);
+  V.assertManagerShape(DynamismEngine, 'DynamismEngine', ['resolve']);
+  V.assertManagerShape(TempoFeelEngine, 'TempoFeelEngine', ['getTickOffset']);
+  V.assertManagerShape(voiceModulator, 'voiceModulator', ['distribute']);
   _playNotesDepsValidated = true;
 }
 
@@ -46,12 +36,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   } = opts;
 
   V.requireDefined(LM, 'LayerManager');
-  V.requireType(LM.getComposerFor, 'function', 'LayerManager.getComposerFor');
+  V.assertManagerShape(LM, 'LayerManager', ['getComposerFor']);
   V.assertObject(LM.layers, 'LayerManager.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LayerManager.activeLayer');
-  const layer = LM.layers[LM.activeLayer];
-  V.assertObject(layer, `LayerManager.layers.${LM.activeLayer}`);
-  const activeComposer = LM.getComposerFor(LM.activeLayer);
+  const activeLayer = /** @type {string} */ (LM.activeLayer);
+  const layer = LM.layers[activeLayer];
+  V.assertObject(layer, `LayerManager.layers.${activeLayer}`);
+  const activeComposer = LM.getComposerFor(activeLayer);
 
   const runtimeProfile = (activeComposer && V.optionalType(activeComposer.runtimeProfile, 'object'))
     ? activeComposer.runtimeProfile
@@ -72,7 +63,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     const tickValue = V.requireFinite(unitStart, 'notesEmitted.tick');
     EventBus.emit(PLAY_EVENTS.NOTES_EMITTED, {
       unit,
-      layer: LM.activeLayer,
+      layer: activeLayer,
       actual: actualCount,
       intended: intendedCountLocal,
       playProb: playProbLocal,
@@ -123,7 +114,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   V.requireDefined(LM, 'LM');
   V.assertObject(LM.layers, 'LM.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
-  const layerName = LM.activeLayer;
+  const layerName = /** @type {string} */ (LM.activeLayer);
   const unitStartValue = V.requireFinite(unitStart, 'unitStart');
   const unitBudgetKey = `${layerName}:${unit}:${unitStartValue}`;
 

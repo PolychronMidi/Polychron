@@ -34,19 +34,12 @@ function _refreshChannelCache() {
 
 function assertEmitPickDeps(unit) {
   if (_emitPickDepsValidated) return;
-  V.requireDefined(LM, 'LM');
+  V.assertManagerShape(LM, 'LM', ['activate']);
   V.assertObject(LM.layers, 'LM.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
-  V.assertObject(AbsoluteTimeWindow, 'AbsoluteTimeWindow');
-  V.requireType(AbsoluteTimeWindow.recordNote, 'function', 'AbsoluteTimeWindow.recordNote');
-  V.requireType(AbsoluteTimeWindow.getNotes, 'function', 'AbsoluteTimeWindow.getNotes');
-  V.assertObject(MotifIdentityMemory, 'MotifIdentityMemory');
-  V.requireType(MotifIdentityMemory.recordNote, 'function', 'MotifIdentityMemory.recordNote');
-  V.requireType(MotifIdentityMemory.getActiveIdentity, 'function', 'MotifIdentityMemory.getActiveIdentity');
-  V.assertObject(ConvergenceDetector, 'ConvergenceDetector');
-  V.requireType(ConvergenceDetector.postOnset, 'function', 'ConvergenceDetector.postOnset');
-  V.requireType(ConvergenceDetector.applyIfConverged, 'function', 'ConvergenceDetector.applyIfConverged');
-  V.requireType(ConvergenceDetector.wasRecent, 'function', 'ConvergenceDetector.wasRecent');
+  V.assertManagerShape(AbsoluteTimeWindow, 'AbsoluteTimeWindow', ['recordNote', 'getNotes']);
+  V.assertManagerShape(MotifIdentityMemory, 'MotifIdentityMemory', ['recordNote', 'getActiveIdentity']);
+  V.assertManagerShape(ConvergenceDetector, 'ConvergenceDetector', ['postOnset', 'applyIfConverged', 'wasRecent']);
   V.assertObject(HarmonicContext, 'HarmonicContext');
   V.requireType(HarmonicContext.getField, 'function', 'HarmonicContext.getField');
   V.assertObject(Stutter, 'Stutter');
@@ -87,7 +80,7 @@ playNotesEmitPick = function(opts = {}) {
 
   let scheduled = 0;
   assertEmitPickDeps(unit);
-  const activeLayerName = LM.activeLayer;
+  const activeLayerName = /** @type {string} */ (LM.activeLayer);
 
   // Cache timing globals once per call (they don't change within a beat)
   const _mStart = V.requireFinite(measureStart, 'measureStart');
