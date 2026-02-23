@@ -1,0 +1,15 @@
+module.exports = {
+  rules: {
+    'no-silent-early-return': require('./no-silent-early-return'),
+    'no-requires-outside-index': require('./no-requires-outside-index'),
+    'no-console-acceptable-warning': require('./no-console-acceptable-warning'),
+    'no-math-random': require('./no-math-random'),
+    'no-useless-expose-dependencies-comments': require('./no-useless-expose-dependencies-comments'),
+    'only-error-throws': require('./only-error-throws'),
+    'no-typeof-validated-global': require('./no-typeof-validated-global'),
+    'no-unstamped-validator': require('./no-unstamped-validator'),
+    'no-conductor-registration-from-crosslayer': require('./no-conductor-registration-from-crosslayer'),
+    'no-direct-signal-read': require('./no-direct-signal-read'),
+    'validator-name-matches-filename': require('./validator-name-matches-filename')
+  }
+};

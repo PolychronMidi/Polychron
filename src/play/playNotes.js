@@ -52,7 +52,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   V.assertObject(layer, `LayerManager.layers.${LM.activeLayer}`);
   const activeComposer = LM.getComposerFor(LM.activeLayer);
 
-  const runtimeProfile = (activeComposer && activeComposer.runtimeProfile && typeof activeComposer.runtimeProfile === 'object')
+  const runtimeProfile = (activeComposer && V.optionalType(activeComposer.runtimeProfile, 'object'))
     ? activeComposer.runtimeProfile
     : null;
 
@@ -143,13 +143,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Keep legacy globals in sync for backward compatibility
   remainingVoiceSlots = remainingVoiceSlotsByLayer[layerName];
   const layerBudgetKey = lastVoiceBudgetKeyByLayer[layerName];
-  if (typeof layerBudgetKey === 'undefined') {
+  if (layerBudgetKey === undefined) {
     throw new Error(`${unit}.playNotes: lastVoiceBudgetKeyByLayer[${layerName}] is not initialized`);
   }
   lastVoiceBudgetKey = `${layerName}:${String(layerBudgetKey)}`;
 
   // Gate play invocation with playProb and crossModulation
-  if (typeof resolvedPlayProb === 'number' && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
+  if (V.optionalFinite(resolvedPlayProb) !== undefined && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
     emitNotesEmitted(0, intendedCount, 'probability-gate');
     return trackRhythm(unit, layer, false);
   }

@@ -1,4 +1,4 @@
-import localRules from './scripts/eslint-rules.js';
+import localRules from './scripts/eslint-rules/index.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -84,7 +84,8 @@ export default [
       'local/no-typeof-validated-global': 'error',
       'local/no-unstamped-validator': 'error',
       'local/no-conductor-registration-from-crosslayer': 'error',
-      'local/no-direct-signal-read': 'error'
+      'local/no-direct-signal-read': 'error',
+      'local/validator-name-matches-filename': 'error'
     },
 
   },

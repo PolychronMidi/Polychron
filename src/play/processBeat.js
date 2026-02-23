@@ -83,7 +83,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // ── [stage: tension-cadence] ──────────────────────────────────
   const clTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
   const clCadence = CadenceAdvisor.shouldCadence();
-  if (!clCadence || typeof clCadence !== 'object' || typeof clCadence.suggest !== 'boolean') {
+  if (!clCadence || V.optionalType(clCadence, 'object') === undefined || V.optionalType(clCadence.suggest, 'boolean') === undefined) {
     throw new Error('processBeat: CadenceAdvisor.shouldCadence must return an object with boolean suggest');
   }
   const clPhaseSnapshot = { timeMs: clAbsMs, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
