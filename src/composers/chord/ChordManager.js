@@ -1,6 +1,6 @@
 // ChordManager.js - single manager hub for chord subsystem
 
-class ChordManager {
+ChordManager = ChordManager = class {
   static listGenerators() { return ChordRegistry.list(); }
 
   static getGenerator(name) { return ChordRegistry.get(name); }

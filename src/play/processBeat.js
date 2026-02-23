@@ -81,6 +81,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   RhythmicComplementEngine.autoSelectMode(clAbsMs);
 
   // ── [stage: tension-cadence] ──────────────────────────────────
+  const V = Validator.create('processBeat');
   const clTension = requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
   const clCadence = CadenceAdvisor.shouldCadence();
   if (!clCadence || V.optionalType(clCadence, 'object') === undefined || V.optionalType(clCadence.suggest, 'boolean') === undefined) {

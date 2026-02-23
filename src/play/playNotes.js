@@ -21,7 +21,7 @@ function assertPlayNotesDeps() {
   V.requireType(ComposerRuntimeProfileAdapter.getEmissionAdjustments, 'function', 'ComposerRuntimeProfileAdapter.getEmissionAdjustments');
   V.assertObject(TextureBlender, 'TextureBlender');
   V.requireType(TextureBlender.resolve, 'function', 'TextureBlender.resolve');
-  V.assertObject(RhythmManager, 'RhythmManager');
+  V.requireDefined(RhythmManager, 'RhythmManager');
   V.requireType(RhythmManager.swingOffset, 'function', 'RhythmManager.swingOffset');
   V.assertObject(DynamismEngine, 'DynamismEngine');
   V.requireType(DynamismEngine.resolve, 'function', 'DynamismEngine.resolve');
@@ -45,8 +45,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     stutterProb = 0
   } = opts;
 
-  V.assertObject(LM, 'LayerManager');
+  V.requireDefined(LM, 'LayerManager');
   V.requireType(LM.getComposerFor, 'function', 'LayerManager.getComposerFor');
+  V.assertObject(LM.layers, 'LayerManager.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LayerManager.activeLayer');
   const layer = LM.layers[LM.activeLayer];
   V.assertObject(layer, `LayerManager.layers.${LM.activeLayer}`);
@@ -119,7 +120,8 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
-  V.assertObject(LM, 'LM');
+  V.requireDefined(LM, 'LM');
+  V.assertObject(LM.layers, 'LM.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const layerName = LM.activeLayer;
   const unitStartValue = V.requireFinite(unitStart, 'unitStart');

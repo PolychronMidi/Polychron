@@ -123,7 +123,10 @@ interface SimplexNoiseAPI {
 
 interface ValidatorInstance {
   requireFinite(value: unknown, label: string): number;
+  optionalFinite(value: unknown): number | undefined;
   optionalFinite(value: unknown, fallback: number): number;
+  optionalType(value: unknown, type: string): unknown | undefined;
+  optionalType<T>(value: unknown, type: string, fallback: T): T;
   requireDefined(value: unknown, label: string): unknown;
   requireType(value: unknown, type: string, label: string): unknown;
   requireEnum(value: unknown, allowed: unknown[], label: string): unknown;
@@ -719,6 +722,7 @@ interface MotifManagerAPI {
   planDivs(layer: any, dpb: number, beats: number, composer: any): void;
   planSubdivs(layer: any, absDivIdx: number, sPerDiv: number): void;
   planSubsubdivs(layer: any, absSubdivIdx: number, ssPerSub: number): void;
+  _resetChildVM(layer: any, childUnit: string): void;
 }
 
 interface TempoFeelEngineAPI {

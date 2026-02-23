@@ -22,7 +22,8 @@ DynamismEngine = (() => {
     V.requireDefined(TextureBlender, 'TextureBlender');
     V.requireDefined(HarmonicJourney, 'HarmonicJourney');
     V.requireDefined(LM, 'LM');
-    V.assertObject(LM, 'LM');
+    V.requireType(LM.register, 'function', 'LM.register');
+    V.assertObject(LM.layers, 'LM.layers');
 
     dependenciesValidated = true;
   }

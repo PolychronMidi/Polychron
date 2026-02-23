@@ -1,18 +1,16 @@
 // src/play/layerPass.js - Extracted layer pass loop for main.js
 
 layerPass = (() => {
+  const V = Validator.create('layerPass');
+
   const selectLayerComposerForMeasure = (layerName, phraseFamily, composerCtx) => {
-    if (typeof layerName !== 'string' || layerName.length === 0) {
-      throw new Error('main.selectLayerComposerForMeasure: layerName must be a non-empty string');
-    }
-    if (typeof phraseFamily !== 'string' || phraseFamily.length === 0) {
-      throw new Error('main.selectLayerComposerForMeasure: phraseFamily must be a non-empty string');
-    }
+    V.assertNonEmptyString(layerName, 'layerName');
+    V.assertNonEmptyString(phraseFamily, 'phraseFamily');
     const peerLayerName = layerName === 'L1' ? 'L2' : (layerName === 'L2' ? 'L1' : null);
-    const previousComposer = (LM.layerComposers && LM.layerComposers[layerName] && typeof LM.layerComposers[layerName] === 'object')
+    const previousComposer = (LM.layerComposers && LM.layerComposers[layerName] && V.optionalType(LM.layerComposers[layerName], 'object'))
       ? LM.layerComposers[layerName]
       : null;
-    const peerComposer = (peerLayerName && LM.layerComposers && LM.layerComposers[peerLayerName] && typeof LM.layerComposers[peerLayerName] === 'object')
+    const peerComposer = (peerLayerName && LM.layerComposers && LM.layerComposers[peerLayerName] && V.optionalType(LM.layerComposers[peerLayerName], 'object'))
       ? LM.layerComposers[peerLayerName]
       : null;
 

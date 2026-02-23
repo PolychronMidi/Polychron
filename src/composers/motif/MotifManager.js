@@ -3,7 +3,7 @@
 // Coordinates motifConfig, IntervalComposer, MotifSpreader, MotifChain, and
 // motifModulator to produce coherent, parent-derived motif content at every level.
 
-class MotifManager {
+MotifManager = MotifManager = class {
   // --- Registry / value proxy helpers (existing API) -----------------------
 
   static listGenerators() { return MotifRegistry.list(); }

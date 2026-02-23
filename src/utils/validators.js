@@ -130,6 +130,15 @@ Validator = (() => {
     return fallback;
   }
 
+  function optionalType(value, type, fallback) {
+    if (type === 'array') {
+      if (Array.isArray(value)) return value;
+      return fallback;
+    }
+    if (typeof value === type) return value;
+    return fallback;
+  }
+
   function requireEnum(value, allowedValues, name, from) {
     if (!allowedValues) {
       throw new Error(`${_fromLabel(from)}: allowedValues must be provided for ${name}`);
@@ -217,6 +226,7 @@ Validator = (() => {
       requireDefined: _wrapWithFrom(requireDefined, from),
       requireFinite: _wrapWithFrom(requireFinite, from),
       optionalFinite,
+      optionalType,
       requireType: _wrapWithFrom(requireType, from),
       requireEnum: _wrapWithFrom(requireEnum, from),
       getEventsOrThrow: (/*optional*/ ) => getEventsOrThrow(from)
@@ -239,6 +249,7 @@ Validator = (() => {
     requireDefined,
     requireFinite,
     optionalFinite,
+    optionalType,
     requireType,
     requireEnum,
     getEventsOrThrow,
