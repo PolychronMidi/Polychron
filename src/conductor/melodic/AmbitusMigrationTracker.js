@@ -1,10 +1,10 @@
-// src/conductor/AmbitusMigrationTracker.js - Pitch range (ambitus) expansion/contraction.
+﻿// src/conductor/AmbitusMigrationTracker.js - Pitch range (ambitus) expansion/contraction.
 // Tracks the overall pitch range used in recent material and its rate of change.
 // Biases toward range exploration when constrained or consolidation when overspread.
-// Pure query API — no side effects.
+// Pure query API â€” no side effects.
 
 AmbitusMigrationTracker = (() => {
-  const V = Validator.create('AmbitusMigrationTracker');
+  const V = Validator.create('ambitusMigrationTracker');
   const WINDOW_SECONDS = 10;
   const MAX_HISTORY = 12;
   /** @type {Array<{ range: number, center: number, time: number }>} */
@@ -63,8 +63,8 @@ AmbitusMigrationTracker = (() => {
     }
 
     // Density bias based on range health
-    // Very narrow range (<12 semitones = 1 octave) → encourage exploration
-    // Very wide range (>36 semitones = 3 octaves) → encourage consolidation
+    // Very narrow range (<12 semitones = 1 octave) â†’ encourage exploration
+    // Very wide range (>36 semitones = 3 octaves) â†’ encourage consolidation
     let densityBias = 1;
     if (amb.range < 12) {
       densityBias = 1.06; // encourage notes outside current range
@@ -123,3 +123,4 @@ AmbitusMigrationTracker = (() => {
     reset
   };
 })();
+

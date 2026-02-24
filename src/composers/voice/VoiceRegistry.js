@@ -1,6 +1,6 @@
-// VoiceRegistry.js - canonical multi-voice selection function
+﻿// VoiceRegistry.js - canonical multi-voice selection function
 
-VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, opts = {}) {
+VoiceRegistry = function voiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, opts = {}) {
   if (!scorer || typeof scorer._scoreCandidate !== 'function') throw new Error('VoiceRegistry: valid scorer (VoiceLeadingScore) required');
   if (!Array.isArray(candidatesPerVoice) || candidatesPerVoice.length === 0) throw new Error('VoiceRegistry: candidatesPerVoice must be a non-empty array');
   const voices = candidatesPerVoice.length;
@@ -123,3 +123,5 @@ VoiceRegistry = function VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
 
   return chosen;
 };
+
+

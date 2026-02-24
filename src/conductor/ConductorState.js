@@ -1,5 +1,5 @@
-ConductorState = (() => {
-  const V = Validator.create('ConductorState');
+﻿ConductorState = (() => {
+  const V = Validator.create('conductorState');
 
   let initialized = false;
 
@@ -203,3 +203,4 @@ ConductorState = (() => {
     reset
   };
 })();
+

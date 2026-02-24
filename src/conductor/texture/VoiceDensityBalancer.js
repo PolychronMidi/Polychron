@@ -1,9 +1,9 @@
-// src/conductor/VoiceDensityBalancer.js - Counts simultaneous active voices per layer.
+﻿// src/conductor/VoiceDensityBalancer.js - Counts simultaneous active voices per layer.
 // Detects homophonic collapse (1 voice) or textural overcrowding.
-// Pure query API — scales motifConfig voice count targets and emission limits.
+// Pure query API â€” scales motifConfig voice count targets and emission limits.
 
 VoiceDensityBalancer = (() => {
-  const V = Validator.create('VoiceDensityBalancer');
+  const V = Validator.create('voiceDensityBalancer');
   const WINDOW_SECONDS = 2;
   const COINCIDENCE_MS = 0.05; // notes within 50ms count as simultaneous
 
@@ -57,7 +57,7 @@ VoiceDensityBalancer = (() => {
 
   /**
    * Get a voice-count bias for motifConfig.
-   * Thin → encourage more voices; crowded → reduce.
+   * Thin â†’ encourage more voices; crowded â†’ reduce.
    * Continuous interpolation prevents multiplicative crush with peer density biases.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
@@ -65,7 +65,7 @@ VoiceDensityBalancer = (() => {
    */
   function getVoiceCountBias(opts) {
     const vd = getVoiceDensity(opts);
-    // Continuous ramp based on avgVoices: thin (<1.5) → boost, crowded (>4) → dampen
+    // Continuous ramp based on avgVoices: thin (<1.5) â†’ boost, crowded (>4) â†’ dampen
     if (vd.avgVoices < 1.5) {
       const ramp = clamp((1.5 - vd.avgVoices) / 1.5, 0, 1);
       return 1.0 + ramp * 0.3;
@@ -96,3 +96,4 @@ VoiceDensityBalancer = (() => {
     getCrossLayerBalance
   };
 })();
+

@@ -1,4 +1,4 @@
-// src/conductor/CadenceAdvisor.js - Detects structurally appropriate cadence points.
+﻿// src/conductor/CadenceAdvisor.js - Detects structurally appropriate cadence points.
 // Listens to HARMONIC_CHANGE events to track chord progressions and advises
 // when a cadence is appropriate based on section phase and harmonic trajectory.
 
@@ -7,7 +7,7 @@ CadenceAdvisor = (() => {
   const recentChanges = [];
   const MAX_HISTORY = 12;
 
-  const V = Validator.create('CadenceAdvisor');
+  const V = Validator.create('cadenceAdvisor');
 
   /**
    * Wire up EventBus listener for harmonic-change events.
@@ -49,7 +49,7 @@ CadenceAdvisor = (() => {
       return { suggest: true, type: 'authentic', confidence: 0.85 };
     }
 
-    // Near phrase boundaries with sufficient harmonic motion → mild cadence suggestion
+    // Near phrase boundaries with sufficient harmonic motion â†’ mild cadence suggestion
     const phraseCtx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
     if (phraseCtx && phraseCtx.position > 0.85 && recentChanges.length >= 3) {
@@ -109,3 +109,4 @@ ConductorIntelligence.registerStateProvider('CadenceAdvisor', () => ({
   recentChanges: CadenceAdvisor.getHarmonicDensity()
 }));
 ConductorIntelligence.registerModule('CadenceAdvisor', { reset: CadenceAdvisor.reset }, ['section']);
+

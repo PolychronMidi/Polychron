@@ -1,10 +1,10 @@
-// src/conductor/HarmonicSurpriseIndex.js - Chord-progression predictability analysis.
+﻿// src/conductor/HarmonicSurpriseIndex.js - Chord-progression predictability analysis.
 // Measures pitch-class transition entropy in the ATW window.
 // High entropy = surprising/fresh; low entropy = predictable/stale.
-// Pure query API — biases derivedTension toward harmonic freshness.
+// Pure query API â€” biases derivedTension toward harmonic freshness.
 
 HarmonicSurpriseIndex = (() => {
-  const V = Validator.create('HarmonicSurpriseIndex');
+  const V = Validator.create('harmonicSurpriseIndex');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -49,7 +49,7 @@ HarmonicSurpriseIndex = (() => {
       }
     }
 
-    // Normalize: max possible entropy for 144 bigrams (12x12) ≈ 7.17
+    // Normalize: max possible entropy for 144 bigrams (12x12) â‰ˆ 7.17
     // But realistic max is much lower; normalize to ~4.5 for practical range
     const surpriseIndex = clamp(entropy / 4.5, 0, 1);
 
@@ -63,7 +63,7 @@ HarmonicSurpriseIndex = (() => {
 
   /**
    * Get a tension bias based on harmonic freshness.
-   * Stale progressions → boost tension to encourage change; fresh → no adjustment.
+   * Stale progressions â†’ boost tension to encourage change; fresh â†’ no adjustment.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.9 to 1.25
@@ -82,3 +82,4 @@ HarmonicSurpriseIndex = (() => {
     getTensionBias
   };
 })();
+

@@ -1,4 +1,4 @@
-// TextureBlender.js — Per-unit texture mode selector for contrast-blend oscillations.
+﻿// TextureBlender.js â€” Per-unit texture mode selector for contrast-blend oscillations.
 // Decides whether a unit should emit normally ('single'), fire a percussive
 // chord stab ('chordBurst'), or inject a rapid scalar flurry ('flurry').
 // Probabilities oscillate using micro-hyper technique so texture switching
@@ -6,8 +6,8 @@
 // Integrations: Stutter coupling (#1), Phrase arc fatigue tracking (#3).
 
 TextureBlender = (() => {
-  const V = Validator.create('TextureBlender');
-  // ── Fatigue tracking: rolling window of recent decisions (#3) ──
+  const V = Validator.create('textureBlender');
+  // â”€â”€ Fatigue tracking: rolling window of recent decisions (#3) â”€â”€
   const FATIGUE_WINDOW = 12;
   const recentModes = [];
 
@@ -89,7 +89,7 @@ TextureBlender = (() => {
       throw new Error('TextureBlender.resolve: composite must be a finite number');
     }
 
-    // ── Oscillating probability seeds ──────────────────────────────
+    // â”€â”€ Oscillating probability seeds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const seed = V.optionalFinite(unitStart, V.requireFinite(beatStart, 'beatStart'));
     const unitDepth = unit === 'beat' ? 0 : unit === 'div' ? 1 : unit === 'subdiv' ? 2 : 3;
 
@@ -99,13 +99,13 @@ TextureBlender = (() => {
 
     const crossModFactor = clamp(crossModulation / 6, 0, 1);
 
-    // ── Context-aware modulation (#1 + #3) ─────────────────────────
+    // â”€â”€ Context-aware modulation (#1 + #3) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const phraseInfluence = getPhraseTextureInfluence();
     const stutterCoupling = getStutterCoupling();
     const burstFatigue = getFatigue('chordBurst');
     const flurryFatigue = getFatigue('flurry');
 
-    // ── Chord burst probability ────────────────────────────────────
+    // â”€â”€ Chord burst probability â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const texCfg = ConductorConfig.getTextureScaling();
     const burstBaseRaw = unit === 'beat' ? 0.02 : unit === 'div' ? 0.06 : unit === 'subdiv' ? 0.10 : 0.08;
     const burstBase = burstBaseRaw * texCfg.burstBaseScale;
@@ -116,7 +116,7 @@ TextureBlender = (() => {
       texCfg.burstCap
     );
 
-    // ── Flurry probability ─────────────────────────────────────────────
+    // â”€â”€ Flurry probability â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const flurryBaseRaw = unit === 'beat' ? 0.03 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.06 : 0.04;
     const flurryBase = flurryBaseRaw * texCfg.flurryBaseScale;
     const invertedComposite = 1 - composite;
@@ -127,7 +127,7 @@ TextureBlender = (() => {
       texCfg.flurryCap
     );
 
-    // ── Roll the dice ──────────────────────────────────────────────
+    // â”€â”€ Roll the dice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const roll = rf();
     if (roll < burstProb) {
       /** @type {{ mode: 'chordBurst'|'flurry'|'single', velocityScale: number, sustainScale: number }} */
@@ -160,3 +160,4 @@ TextureBlender = (() => {
     getRecentDensity
   };
 })();
+

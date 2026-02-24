@@ -1,8 +1,8 @@
-// src/conductor/HarmonicPedalFieldTracker.js - Sustained harmonic field tracker.
+﻿// src/conductor/HarmonicPedalFieldTracker.js - Sustained harmonic field tracker.
 // Detects extended harmonic stasis (pedal/drone zones) by measuring how long
 // the same pitch class dominates the bass register. Tension bias encourages
 // movement after sustained fields or allows settling during instability.
-// Stateful — recordBass() accumulates samples; getPedalFieldSignal() reads streak.
+// Stateful â€” recordBass() accumulates samples; getPedalFieldSignal() reads streak.
 //
 // Complementary to PedalPointDetector (texture/) which is stateless and measures
 // bass PC dominance ratio for compositional advice. This tracker feeds the
@@ -10,7 +10,7 @@
 // Both are consumed by GlobalConductor for different purposes.
 
 HarmonicPedalFieldTracker = (() => {
-  const V = Validator.create('HarmonicPedalFieldTracker');
+  const V = Validator.create('harmonicPedalFieldTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ bassPC: number, time: number }>} */
   const bassSamples = [];
@@ -68,15 +68,15 @@ HarmonicPedalFieldTracker = (() => {
 
     const fieldStable = streak >= 4;
 
-    // Tension bias: long pedal → increase tension to encourage harmonic movement;
-    // very short/unstable → decrease tension to allow settling
+    // Tension bias: long pedal â†’ increase tension to encourage harmonic movement;
+    // very short/unstable â†’ decrease tension to allow settling
     let tensionBias = 1;
     if (pedalDuration > 15) {
-      tensionBias = 1.12; // very long pedal → strong push for change
+      tensionBias = 1.12; // very long pedal â†’ strong push for change
     } else if (pedalDuration > 8) {
       tensionBias = 1.06; // moderate pedal
     } else if (streak <= 1 && bassSamples.length >= 5) {
-      tensionBias = 0.95; // bass constantly changing → allow settling
+      tensionBias = 0.95; // bass constantly changing â†’ allow settling
     }
 
     return { pedalDuration, tensionBias, fieldStable };
@@ -110,3 +110,4 @@ HarmonicPedalFieldTracker = (() => {
     reset
   };
 })();
+

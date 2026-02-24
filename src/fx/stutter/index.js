@@ -1,10 +1,10 @@
-// src/fx/stutter/index.js - central entry for stutter system
+﻿// src/fx/stutter/index.js - central entry for stutter system
 // @ts-ignore: load side-effect module with globals
-require('./StutterConfigStore');
+require('./stutterConfigStore');
 // @ts-ignore: load side-effect module with globals
-require('./StutterRegistry');
+require('./stutterRegistry');
 // @ts-ignore: load side-effect module with globals
-require('./StutterMetrics');
+require('./stutterMetrics');
 // @ts-ignore: load side-effect module with globals
 require('./stutterChannels');
 // @ts-ignore: load side-effect module with globals
@@ -23,3 +23,5 @@ require('./stutterExecutePlan');
 require('./stutterPlanScheduler');
 // @ts-ignore: load side-effect module with globals
 require('./stutterManager');
+
+

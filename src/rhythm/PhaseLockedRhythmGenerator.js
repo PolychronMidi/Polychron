@@ -1,9 +1,9 @@
-// src/rhythm/PhaseLockedRhythmGenerator.js - Phase-locked polyrhythmic generation
+﻿// src/rhythm/PhaseLockedRhythmGenerator.js - Phase-locked polyrhythmic generation
 // Enables explicit polyrhythmic interlocking via phase offset tracking
 // Reflects African music principles: cyclic patterns with phase relationships
 
 PhaseLockedRhythmGenerator = (() => {
-  const V = Validator.create('PhaseLockedRhythmGenerator');
+  const V = Validator.create('phaseLockedRhythmGenerator');
   const phases = new Map();         // Map<layerName:patternName:length, offset>
   const generationHistory = [];     // Track recent generations for coherence analysis
   let activeLayer = null;           // Track which layer is currently active for phase context
@@ -91,9 +91,9 @@ PhaseLockedRhythmGenerator = (() => {
       }
     }
 
-    // ── Texture-driven phase drift (#9) ──────────────────────────
-    // Chord bursts → advance phase (layers drift apart → polyrhythmic tension)
-    // Flurries → negative drift (layers re-align → convergence)
+    // â”€â”€ Texture-driven phase drift (#9) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Chord bursts â†’ advance phase (layers drift apart â†’ polyrhythmic tension)
+    // Flurries â†’ negative drift (layers re-align â†’ convergence)
     const texMetrics = DrumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.2) {
       const driftParams = ConductorConfig.getRhythmDriftParams();
@@ -260,3 +260,4 @@ PhaseLockedRhythmGenerator = (() => {
     initializePolyrhythmCoupling
   };
 })();
+

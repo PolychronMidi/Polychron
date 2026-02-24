@@ -1,10 +1,10 @@
-// src/conductor/RhythmicDensityContrastTracker.js - Dense vs. sparse passage contrast.
+﻿// src/conductor/RhythmicDensityContrastTracker.js - Dense vs. sparse passage contrast.
 // Measures the contrast between rhythmically dense and sparse passages over time.
 // Flicker modifier widens when contrast is healthy, stabilizes when extreme.
-// Pure query API — no side effects.
+// Pure query API â€” no side effects.
 
 RhythmicDensityContrastTracker = (() => {
-  const V = Validator.create('RhythmicDensityContrastTracker');
+  const V = Validator.create('rhythmicDensityContrastTracker');
   const MAX_SAMPLES = 20;
   /** @type {number[]} */
   const densitySamples = [];
@@ -38,16 +38,16 @@ RhythmicDensityContrastTracker = (() => {
 
     const contrast = maxD - minD;
 
-    // Flicker modifier: healthy contrast (0.2-0.6) → slightly widen flicker;
-    // too little contrast → widen to create variety;
-    // extreme contrast → tighten for stability
+    // Flicker modifier: healthy contrast (0.2-0.6) â†’ slightly widen flicker;
+    // too little contrast â†’ widen to create variety;
+    // extreme contrast â†’ tighten for stability
     let flickerMod = 1;
     if (contrast < 0.15) {
-      flickerMod = 1.1; // too uniform → add variety via flicker
+      flickerMod = 1.1; // too uniform â†’ add variety via flicker
     } else if (contrast > 0.7) {
-      flickerMod = 0.92; // extreme shifts → stabilize
+      flickerMod = 0.92; // extreme shifts â†’ stabilize
     } else if (contrast > 0.3) {
-      flickerMod = 1.04; // healthy contrast → slight amplification
+      flickerMod = 1.04; // healthy contrast â†’ slight amplification
     }
 
     let suggestion = 'maintain';
@@ -94,3 +94,4 @@ RhythmicDensityContrastTracker = (() => {
     reset
   };
 })();
+

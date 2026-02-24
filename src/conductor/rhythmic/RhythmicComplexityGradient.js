@@ -1,9 +1,9 @@
-// src/conductor/RhythmicComplexityGradient.js - Tracks rhythmic subdivision complexity over time.
+﻿// src/conductor/RhythmicComplexityGradient.js - Tracks rhythmic subdivision complexity over time.
 // Detects whether the piece is building toward denser subdivisions or simplifying.
-// Pure query API — advises rhythm pattern tier selection and subdivision depth bias.
+// Pure query API â€” advises rhythm pattern tier selection and subdivision depth bias.
 
 RhythmicComplexityGradient = (() => {
-  const V = Validator.create('RhythmicComplexityGradient');
+  const V = Validator.create('rhythmicComplexityGradient');
   /** @type {Array<{ time: number, complexity: number }>} */
   const samples = [];
   const MAX_SAMPLES = 48;
@@ -51,7 +51,7 @@ RhythmicComplexityGradient = (() => {
 
   /**
    * Get a subdivision depth bias based on complexity trajectory.
-   * Building → allow deeper subdivisions; simplifying → encourage simpler.
+   * Building â†’ allow deeper subdivisions; simplifying â†’ encourage simpler.
    * @returns {number} - 0.8 to 1.3
    */
   function getSubdivisionBias() {
@@ -79,3 +79,4 @@ RhythmicComplexityGradient = (() => {
     reset
   };
 })();
+

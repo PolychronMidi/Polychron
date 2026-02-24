@@ -1,7 +1,7 @@
+﻿// @ts-ignore: load side-effect module with globals
+require('./intervalComposer');
 // @ts-ignore: load side-effect module with globals
-require('./IntervalComposer');
-// @ts-ignore: load side-effect module with globals
-require('./MeasureNotePool');
+require('./measureNotePool');
 // @ts-ignore: load side-effect module with globals
 require('./MeasureComposer');
 // @ts-ignore: load side-effect module with globals
@@ -82,3 +82,5 @@ if (!COMPOSER_PROFILE_POOLS) {
 for (const [poolName, entries] of Object.entries(COMPOSER_PROFILE_POOLS)) {
   normalizeComposerEntriesOrFail(entries, `COMPOSER_PROFILE_POOLS.${poolName}`);
 }
+
+

@@ -1,9 +1,9 @@
-// src/conductor/RepetitionFatigueMonitor.js - Detects exact pitch-sequence repetition.
+﻿// src/conductor/RepetitionFatigueMonitor.js - Detects exact pitch-sequence repetition.
 // Flags melodic loops/ruts at short timescales (2-6 note patterns recurring within 4s).
-// Pure query API — penalty weight for VoiceLeadingScore or composer note selection.
+// Pure query API â€” penalty weight for VoiceLeadingScore or composer note selection.
 
 RepetitionFatigueMonitor = (() => {
-  const V = Validator.create('RepetitionFatigueMonitor');
+  const V = Validator.create('repetitionFatigueMonitor');
   const WINDOW_SECONDS = 4;
   const MIN_PATTERN = 2;
   const MAX_PATTERN = 6;
@@ -60,7 +60,7 @@ RepetitionFatigueMonitor = (() => {
 
   /**
    * Get a repetition penalty multiplier for note selection.
-   * High fatigue → stronger penalty against repeated pitches.
+   * High fatigue â†’ stronger penalty against repeated pitches.
    * Continuous interpolation avoids chronic ceiling-lock.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
@@ -68,7 +68,7 @@ RepetitionFatigueMonitor = (() => {
    */
   function getRepetitionPenalty(opts) {
     const profile = getRepetitionProfile(opts);
-    // Continuous ramp: onset at 0.15, full at 0.6 — avoids stuck-at-max
+    // Continuous ramp: onset at 0.15, full at 0.6 â€” avoids stuck-at-max
     if (profile.fatigueLevel <= 0.15) return 1.0;
     const ramp = clamp((profile.fatigueLevel - 0.15) / 0.45, 0, 1);
     return 1.0 + ramp * 0.4;
@@ -81,3 +81,4 @@ RepetitionFatigueMonitor = (() => {
     getRepetitionPenalty
   };
 })();
+

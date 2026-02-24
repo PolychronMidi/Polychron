@@ -1,9 +1,9 @@
-// src/conductor/PhraseLengthMomentumTracker.js - Track phrase length trajectory.
+﻿// src/conductor/PhraseLengthMomentumTracker.js - Track phrase length trajectory.
 // Detects whether phrases are getting shorter (accelerating) or longer (expanding).
-// Pure query API — advises phrase-count decisions alongside SectionLengthAdvisor.
+// Pure query API â€” advises phrase-count decisions alongside SectionLengthAdvisor.
 
 PhraseLengthMomentumTracker = (() => {
-  const V = Validator.create('PhraseLengthMomentumTracker');
+  const V = Validator.create('phraseLengthMomentumTracker');
   /** @type {Array<{ section: number, phraseIndex: number, measures: number }>} */
   const history = [];
   const MAX_HISTORY = 32;
@@ -50,7 +50,7 @@ PhraseLengthMomentumTracker = (() => {
 
   /**
    * Suggest a phrase-length adjustment.
-   * Continuously accelerating → suggest lengthening; continuously expanding → suggest shortening.
+   * Continuously accelerating â†’ suggest lengthening; continuously expanding â†’ suggest shortening.
    * @returns {{ adjustment: number, suggestion: string }}
    */
   function suggestAdjustment() {
@@ -85,3 +85,4 @@ PhraseLengthMomentumTracker = (() => {
     reset
   };
 })();
+

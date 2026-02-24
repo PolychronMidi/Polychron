@@ -1,30 +1,30 @@
-// Subsystem helpers (helpers first, manager last)
+﻿// Subsystem helpers (helpers first, manager last)
 // @ts-ignore: load side-effect module with globals
-require('./MotifValues');
+require('./motifValues');
 // @ts-ignore: load side-effect module with globals
 require('./motifModulator');
 // @ts-ignore: load side-effect module with globals
 require('./motifConfig');
 // @ts-ignore: load side-effect module with globals
-require('./MotifRegistry');
+require('./motifRegistry');
 // @ts-ignore: load side-effect module with globals
-require('./MotifManager');
+require('./motifManager');
 // @ts-ignore: load side-effect module with globals
-require('./MotifValidators');
+require('./motifValidators');
 // @ts-ignore: load side-effect module with globals
 require('./MotifComposer');
 // @ts-ignore: load side-effect module with globals
 require('./motifs');
 // @ts-ignore: load side-effect module with globals
-require('./MotifChain');
+require('./motifChain');
 // @ts-ignore: load side-effect module with globals
-require('./MotifTransformAdvisor');
+require('./motifTransformAdvisor');
 // @ts-ignore: load side-effect module with globals
 require('./motifSpreader');
 // @ts-ignore: load side-effect module with globals
-require('./MotifTransforms');
+require('./motifTransforms');
 // @ts-ignore: load side-effect module with globals
-require('./CandidateExpansion');
+require('./candidateExpansion');
 // @ts-ignore: load side-effect module with globals
 require('./playMotifsResolveBucket');
 // @ts-ignore: load side-effect module with globals
@@ -39,3 +39,5 @@ MotifRegistry.register('motif', (opts = {}) => {
   const mc = new MotifComposer(opts);
   return mc.generate(opts);
 });
+
+

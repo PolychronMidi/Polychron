@@ -1,16 +1,16 @@
-// Subsystem helpers (helpers first, manager last)
+﻿// Subsystem helpers (helpers first, manager last)
 // @ts-ignore: load side-effect module with globals
-require('./VoiceValues');
+require('./voiceValues');
 // @ts-ignore: load side-effect module with globals
 require('./voiceModulator');
 // @ts-ignore: load side-effect module with globals
 require('./voiceConfig');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceRegistry');
+require('./voiceRegistry');
 // @ts-ignore: load side-effect module with globals
-require('./RegisterBiasing');
+require('./registerBiasing');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingScorers');
+require('./voiceLeadingScorers');
 // @ts-ignore: load side-effect module with globals
 require('./voiceLeadingPriorsData');
 // @ts-ignore: load side-effect module with globals
@@ -20,7 +20,7 @@ require('./melodicPriorsData');
 // @ts-ignore: load side-effect module with globals
 require('./melodicPriors');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingCore');
+require('./voiceLeadingCore');
 // @ts-ignore: load side-effect module with globals
 require('./voiceLeadingSelectNextNote');
 // @ts-ignore: load side-effect module with globals
@@ -33,3 +33,5 @@ require('./VoiceLeadingComposer');
 require('./VoiceLeadingScore');
 // @ts-ignore: load side-effect module with globals
 require('./VoiceManager');
+
+

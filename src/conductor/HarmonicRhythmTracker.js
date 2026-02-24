@@ -1,5 +1,5 @@
-HarmonicRhythmTracker = (() => {
-  const V = Validator.create('HarmonicRhythmTracker');
+﻿HarmonicRhythmTracker = (() => {
+  const V = Validator.create('harmonicRhythmTracker');
 
   let initialized = false;
   let lastTick = null;
@@ -71,3 +71,4 @@ HarmonicRhythmTracker = (() => {
     reset
   };
 })();
+

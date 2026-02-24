@@ -1,32 +1,32 @@
-// CoherenceMonitor.js — Closed-loop feedback that regulates density based on actual output.
+﻿// CoherenceMonitor.js â€” Closed-loop feedback that regulates density based on actual output.
 // Subscribes to NOTES_EMITTED events, compares actual note counts against the
 // conductor's intended density, and feeds a correction bias back into the
 // ConductorIntelligence density pipeline. This closes the open loop:
 // the system now listens to its own song.
 
 CoherenceMonitor = (() => {
-  const V = Validator.create('CoherenceMonitor');
+  const V = Validator.create('coherenceMonitor');
 
   let initialized = false;
 
-  // ── Tracking state ──
+  // â”€â”€ Tracking state â”€â”€
   const WINDOW_SIZE = 16;    // rolling window of beat-level observations
   const window = [];         // { actual, intended, tick }
   let cumulativeActual = 0;
   let cumulativeIntended = 0;
 
-  // ── Feedback signal ──
+  // â”€â”€ Feedback signal â”€â”€
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
   const BIAS_FLOOR = 0.82;
   const BIAS_CEILING = 1.3;
   const SMOOTHING = 0.75;    // exponential smoothing factor (higher = slower response)
 
-  // ── Entropy tracking ──
+  // â”€â”€ Entropy tracking â”€â”€
   let entropySignal = 0;     // -1 (stagnation) to +1 (chaos)
   const ENTROPY_DECAY = 0.92;
 
   /**
-   * Deferred initialization — called from main.js after EventBus is available.
+   * Deferred initialization â€” called from main.js after EventBus is available.
    * Subscribes to NOTES_EMITTED and SECTION_BOUNDARY events.
    */
   function initialize() {
@@ -75,7 +75,7 @@ CoherenceMonitor = (() => {
       }
     });
 
-    // Phrase boundaries trigger partial decay — keep recent history but attenuate
+    // Phrase boundaries trigger partial decay â€” keep recent history but attenuate
     // older observations so the new phrase starts with a fresh-ish baseline.
     EventBus.on(EVENTS.PHRASE_BOUNDARY, () => {
       const decayFactor = 0.5;
@@ -90,7 +90,7 @@ CoherenceMonitor = (() => {
     // pushing a strong bias, detect the feedback loop and dampen.
     EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       const regBias = V.requireFinite(data.densityBias, 'densityBias');
-      // Both biases pushing in the same direction → dampen ours
+      // Both biases pushing in the same direction â†’ dampen ours
       const sameDirection = (regBias > 0 && coherenceBias > 1.0) || (regBias < 0 && coherenceBias < 1.0);
       if (sameDirection) {
         coherenceBias = clamp(
@@ -121,12 +121,12 @@ CoherenceMonitor = (() => {
     const deviation = windowRatio - 1.0;
 
     // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
-    // Uses a bell curve centered at phrase midpoint: sin(progress * π) peaks at 0.5.
+    // Uses a bell curve centered at phrase midpoint: sin(progress * Ï€) peaks at 0.5.
     const phraseProgress = TimeStream.normalizedProgress('phrase');
     let phaseGain = 0.25 + 0.3 * m.sin(phraseProgress * m.PI); // 0.25 at edges, 0.55 at center
 
     // Peer-aware: if a single density contributor is dominating the product,
-    // strengthen our correction — the pipeline is unbalanced and needs tighter coherence.
+    // strengthen our correction â€” the pipeline is unbalanced and needs tighter coherence.
     const attr = signalReader.densityAttribution();
     if (attr.contributions.length > 1) {
       let minC = Infinity;
@@ -142,8 +142,8 @@ CoherenceMonitor = (() => {
       }
     }
 
-    // If emitting too many notes (deviation > 0) → dampen (bias < 1)
-    // If emitting too few notes (deviation < 0) → boost (bias > 1)
+    // If emitting too many notes (deviation > 0) â†’ dampen (bias < 1)
+    // If emitting too few notes (deviation < 0) â†’ boost (bias > 1)
     const correction = 1.0 - deviation * phaseGain;
 
     // Smooth the bias to avoid jitter
@@ -168,7 +168,7 @@ CoherenceMonitor = (() => {
       }
       variance /= window.length;
 
-      // High variance → chaos, low variance → stagnation
+      // High variance â†’ chaos, low variance â†’ stagnation
       const rawEntropy = clamp(variance - 0.04, -0.5, 0.5) * 2;
       entropySignal = entropySignal * ENTROPY_DECAY + rawEntropy * (1 - ENTROPY_DECAY);
     }
@@ -203,7 +203,7 @@ CoherenceMonitor = (() => {
     entropySignal = 0;
   }
 
-  // ── Self-register into ConductorIntelligence ──
+  // â”€â”€ Self-register into ConductorIntelligence â”€â”€
   // getDensityBias is called each beat by the conductor pipeline.
   ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.82, ceiling=1.3
 
@@ -223,3 +223,4 @@ CoherenceMonitor = (() => {
     reset
   };
 })();
+

@@ -1,5 +1,5 @@
-EmissionFeedbackListener = (() => {
-  const V = Validator.create('EmissionFeedbackListener');
+﻿EmissionFeedbackListener = (() => {
+  const V = Validator.create('emissionFeedbackListener');
 
   let initialized = false;
   let ratio = 1;
@@ -68,3 +68,4 @@ EmissionFeedbackListener = (() => {
     resetSection
   };
 })();
+

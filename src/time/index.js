@@ -1,4 +1,4 @@
-// Aggregated entry point for the src/time modules.
+﻿// Aggregated entry point for the src/time modules.
 
 // @ts-ignore: side-effect module load
 require('./LayerManager');
@@ -15,10 +15,12 @@ require('./getMeterPair');
 // @ts-ignore: side-effect module load
 require('./timeGridHelpers');
 // @ts-ignore: side-effect module load
-require('./AbsoluteTimeWindow');
+require('./absoluteTimeWindow');
 // @ts-ignore: side-effect module load
 require('./absoluteTimeGrid');
 // @ts-ignore: side-effect module load
-require('./TempoFeelEngine');
+require('./tempoFeelEngine');
 // @ts-ignore: side-effect module load
-require('./TimeStream');
+require('./timeStream');
+
+

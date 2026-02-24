@@ -1,11 +1,11 @@
-// RegisterBiasing.js - register bias selection and filtering helper
+﻿// RegisterBiasing.js - register bias selection and filtering helper
 
 /**
  * Applies register bias (higher/lower) using phrase arc context and intent.
  * Returns filtered note pool and resolved bias choice.
  */
 RegisterBiasing = {
-  _V: Validator.create('RegisterBiasing'),
+  _V: Validator.create('registerBiasing'),
   /**
    * Apply register bias filtering to a note pool
    * @param {number[]} notePool - Candidate notes
@@ -49,3 +49,4 @@ RegisterBiasing = {
     return { notePool: filteredPool, finalRegisterBias };
   }
 };
+

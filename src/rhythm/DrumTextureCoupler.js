@@ -1,9 +1,9 @@
-// src/rhythm/DrumTextureCoupler.js - EventBus listener coupling texture contrast events to drum accenting
+﻿// src/rhythm/DrumTextureCoupler.js - EventBus listener coupling texture contrast events to drum accenting
 // When TextureBlender fires chord bursts or flurries, this listener accumulates
 // intensity and exposes it so drum patterns can accent in sympathy.
 
 DrumTextureCoupler = (() => {
-  const V = Validator.create('DrumTextureCoupler');
+  const V = Validator.create('drumTextureCoupler');
 
   let feedback = null;
   const decayRate = 0.88;
@@ -63,7 +63,7 @@ DrumTextureCoupler = (() => {
 
   /**
    * Get current texture-drum coupling intensity (0-1).
-   * Higher values mean more recent texture contrast events → drums should accent.
+   * Higher values mean more recent texture contrast events â†’ drums should accent.
    * @returns {number}
    */
   function getIntensity() {
@@ -98,3 +98,4 @@ DrumTextureCoupler = (() => {
     getMetrics
   };
 })();
+

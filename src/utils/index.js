@@ -1,12 +1,12 @@
-m=Math;
+﻿m=Math;
 // @ts-ignore: side-effect module load
 require('./validators');
 // @ts-ignore: shared lifecycle utility (must precede CrossLayerRegistry & ConductorIntelligence)
-require('./ModuleLifecycle');
+require('./moduleLifecycle');
 // @ts-ignore: per-beat memoization for expensive conductor queries
 require('./beatCache');
 // @ts-ignore: side-effect module load
-require('./SystemSnapshot');
+require('./systemSnapshot');
 // @ts-ignore: side-effect module load
 require('./modeQualityMap');
 // @ts-ignore: side-effect module load
@@ -20,7 +20,9 @@ require('./init');
 require('./midiData');
 // @ts-ignore: side-effect module load
 require('./instrumentation');
-// EventCatalog only depends on Validator — loaded here so all downstream subsystems
+// EventCatalog only depends on Validator â€” loaded here so all downstream subsystems
 // (crossLayer, play) can reference EventCatalog.names at module level.
 // @ts-ignore: side-effect module load
-require('./EventCatalog');
+require('./eventCatalog');
+
+

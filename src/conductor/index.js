@@ -1,13 +1,13 @@
+﻿// @ts-ignore: load side-effect module with globals
+require('./harmonicContext');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicContext');
-// @ts-ignore: load side-effect module with globals
-require('./HarmonicRhythmTracker');
+require('./harmonicRhythmTracker');
 // @ts-ignore: load side-effect module with globals
 require('./harmonicJourneyHelpers');
 // @ts-ignore: load side-effect module with globals
 require('./harmonicJourneyPlanner');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicJourney');
+require('./harmonicJourney');
 // @ts-ignore: load side-effect module with globals
 require('./phraseArcProfiler');
 // @ts-ignore: load side-effect module with globals
@@ -46,15 +46,15 @@ require('./profiles/conductorConfig');
 // @ts-ignore: load side-effect module with globals
 require('./dynamismPulse');
 // @ts-ignore: load side-effect module with globals
-require('./DynamismEngine');
+require('./dynamismEngine');
 // @ts-ignore: load side-effect module with globals
-require('./TextureBlender');
+require('./textureBlender');
 // @ts-ignore: load side-effect module with globals
-require('./ConductorState');
+require('./conductorState');
 // @ts-ignore: intelligence registry (must precede GlobalConductorUpdate & intelligence subdirectories)
-require('./ConductorIntelligence');
+require('./conductorIntelligence');
 // @ts-ignore: coherence monitor (registers into ConductorIntelligence, must precede GlobalConductorUpdate)
-require('./CoherenceMonitor');
+require('./coherenceMonitor');
 // @ts-ignore: standardized read API for inter-module signal reading
 require('./signalReader');
 // @ts-ignore: adaptive profile hints (registers recorder + stateProvider)
@@ -62,14 +62,14 @@ require('./profileAdaptation');
 // @ts-ignore: per-beat signal history (registers recorder + stateProvider)
 require('./signalTelemetry');
 // @ts-ignore: load side-effect module with globals
-require('./GlobalConductorUpdate');
+require('./globalConductorUpdate');
 // @ts-ignore: load side-effect module with globals
-require('./GlobalConductor');
+require('./globalConductor');
 
 // @ts-ignore: load side-effect module with globals (cross-domain analysis helpers)
 require('./analysisHelpers');
 
-// Intelligence modules — grouped by domain
+// Intelligence modules â€” grouped by domain
 // @ts-ignore: load side-effect subfolder with globals
 require('./harmonic');
 // @ts-ignore: load side-effect subfolder with globals
@@ -83,3 +83,5 @@ require('./texture');
 
 // @ts-ignore: load side-effect module with globals
 require('./config');
+
+

@@ -1,9 +1,9 @@
-// src/rhythm/RhythmHistoryTracker.js - Tracks recent rhythm method selections.
+﻿// src/rhythm/RhythmHistoryTracker.js - Tracks recent rhythm method selections.
 // Provides novelty bias by penalizing recently-used rhythm patterns.
 // Integrates into getRhythm() as an additional bias stage.
 
 RhythmHistoryTracker = (() => {
-  const V = Validator.create('RhythmHistoryTracker');
+  const V = Validator.create('rhythmHistoryTracker');
   const WINDOW = 12; // track last 12 rhythm selections
   /** @type {Array<{ method: string, length: number, layer: string }>} */
   const history = [];
@@ -93,3 +93,4 @@ RhythmHistoryTracker = (() => {
     reset
   };
 })();
+

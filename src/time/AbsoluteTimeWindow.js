@@ -1,4 +1,4 @@
-// src/time/AbsoluteTimeWindow.js - Rolling window tracker using absolute seconds.
+﻿// src/time/AbsoluteTimeWindow.js - Rolling window tracker using absolute seconds.
 // Provides a cross-layer common clock for phrase-scale musical analysis.
 // Uses beatStartTime (absolute seconds from piece start) as time reference.
 
@@ -11,7 +11,7 @@
  */
 
 AbsoluteTimeWindow = (() => {
-  const V = Validator.create('AbsoluteTimeWindow');
+  const V = Validator.create('absoluteTimeWindow');
   const DEFAULT_WINDOW_SECONDS = 4;
   const MAX_ENTRIES = 1000;
 
@@ -36,7 +36,7 @@ AbsoluteTimeWindow = (() => {
   }
 
   /**
-   * Generic record method — inserts a typed entry and prunes.
+   * Generic record method â€” inserts a typed entry and prunes.
    * @param {string} type - 'note' | 'rhythm' | 'chord'
    * @param {Object} entry - must include `.time` (absolute seconds)
    */
@@ -49,7 +49,7 @@ AbsoluteTimeWindow = (() => {
     const arr = entries[type];
     if (Array.isArray(arr)) {
       arr.push(e);
-      // Invalidate query cache — new data makes cached results stale
+      // Invalidate query cache â€” new data makes cached results stale
       if (_queryCache.size > 0) _queryCache.clear();
       // Only prune when over capacity to avoid O(n) splice on every record
       if (arr.length > MAX_ENTRIES) {
@@ -67,7 +67,7 @@ AbsoluteTimeWindow = (() => {
    * @param {string} unitLabel - timing unit (e.g. 'beat', 'subdiv')
    */
   function recordNote(midi, velocity, layer, time, unitLabel) {
-    // Inlined from record() — skips assertPlainObject (literal just created)
+    // Inlined from record() â€” skips assertPlainObject (literal just created)
     // and assertInSet (type is always 'note')
     V.requireFinite(time, 'recordNote.time');
     const arr = entries.note;
@@ -161,14 +161,14 @@ AbsoluteTimeWindow = (() => {
       ? since
       : (lastTime - effectiveWindowSeconds);
 
-    // Query cache: identical (type, layer, cutoff) → reuse prior result array
+    // Query cache: identical (type, layer, cutoff) â†’ reuse prior result array
     const cacheKey = type + ':' + (layer || '') + ':' + cutoff;
     const cached = _queryCache.get(cacheKey);
     if (cached) return cached;
 
-    // Binary search for cutoff position — O(log n)
+    // Binary search for cutoff position â€” O(log n)
     const startIdx = timeGridSearchStart(arr, 'time', cutoff);
-    // Single-pass scan from cutoff to end — O(k) where k = matching entries
+    // Single-pass scan from cutoff to end â€” O(k) where k = matching entries
     const result = [];
     for (let i = startIdx; i < arr.length; i++) {
       const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
@@ -309,3 +309,4 @@ AbsoluteTimeWindow = (() => {
     reset
   };
 })();
+

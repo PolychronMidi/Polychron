@@ -1,10 +1,10 @@
-// src/conductor/DynamicPeakMemory.js - Dynamic peak/trough spacing tracker.
+﻿// src/conductor/DynamicPeakMemory.js - Dynamic peak/trough spacing tracker.
 // Remembers the loudest and quietest moments and prevents re-peaking too soon.
 // Tension bias spaces dynamic peaks for maximum impact.
-// Pure query API — no side effects.
+// Pure query API â€” no side effects.
 
 DynamicPeakMemory = (() => {
-  const V = Validator.create('DynamicPeakMemory');
+  const V = Validator.create('dynamicPeakMemory');
   const MAX_PEAKS = 12;
   /** @type {Array<{ intensity: number, time: number, type: string }>} */
   const peaks = [];
@@ -53,14 +53,14 @@ DynamicPeakMemory = (() => {
     else if (timeSince < 15) peakRecency = 'recent';
     else if (timeSince < 30) peakRecency = 'moderate';
 
-    // Tension bias: if peak was very recent → suppress tension to prevent
-    // another peak too soon; if distant → allow tension buildup
+    // Tension bias: if peak was very recent â†’ suppress tension to prevent
+    // another peak too soon; if distant â†’ allow tension buildup
     let tensionBias = 1;
     if (lastPeak.type === 'peak') {
       if (timeSince < 8) {
-        tensionBias = 0.92; // just peaked → pull back
+        tensionBias = 0.92; // just peaked â†’ pull back
       } else if (timeSince > 25) {
-        tensionBias = 1.06; // long since peak → allow buildup
+        tensionBias = 1.06; // long since peak â†’ allow buildup
       }
     } else {
       // After a trough, allow gentle recovery
@@ -110,3 +110,4 @@ DynamicPeakMemory = (() => {
     reset
   };
 })();
+

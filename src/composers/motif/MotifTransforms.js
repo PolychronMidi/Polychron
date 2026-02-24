@@ -1,4 +1,4 @@
-// MotifTransforms.js - Motif transformation strategies
+﻿// MotifTransforms.js - Motif transformation strategies
 // Pure permutation transformations for motif sequences
 
 /**
@@ -69,7 +69,7 @@ MotifTransforms = {
    * @param {number} semitones - Semitones to shift
    */
   transposePitch(entries, semitones) {
-    const V = Validator.create('MotifTransforms');
+    const V = Validator.create('motifTransforms');
     V.requireFinite(semitones, 'semitones');
     const shift = m.round(Number(semitones));
     if (shift === 0) return;
@@ -165,3 +165,4 @@ MotifTransforms = {
     }
   }
 };
+

@@ -1,9 +1,9 @@
-// src/conductor/RegisterMigrationTracker.js - Tracks directional pitch-center drift.
+﻿// src/conductor/RegisterMigrationTracker.js - Tracks directional pitch-center drift.
 // Detects ascending, descending, or static register migration over time.
-// Pure query API — nudges pitch gravity toward underexplored registers.
+// Pure query API â€” nudges pitch gravity toward underexplored registers.
 
 RegisterMigrationTracker = (() => {
-  const V = Validator.create('RegisterMigrationTracker');
+  const V = Validator.create('registerMigrationTracker');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -44,7 +44,7 @@ RegisterMigrationTracker = (() => {
 
   /**
    * Suggest a register correction to counteract drift or monotony.
-   * Ascending → bias downward; descending → bias upward; static → encourage movement.
+   * Ascending â†’ bias downward; descending â†’ bias upward; static â†’ encourage movement.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ registerBias: number, suggestion: string }}
@@ -78,3 +78,4 @@ RegisterMigrationTracker = (() => {
     getRegisterBias
   };
 })();
+

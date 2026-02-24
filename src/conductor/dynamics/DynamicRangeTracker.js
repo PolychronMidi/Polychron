@@ -1,10 +1,10 @@
-// src/conductor/dynamics/DynamicRangeTracker.js - Unified dynamic range analysis.
+﻿// src/conductor/dynamics/DynamicRangeTracker.js - Unified dynamic range analysis.
 // Merges DynamicRangeAdvisor + DynamicContrastMemory.
 // Provides instantaneous velocity spread bias + longitudinal contrast tracking.
-// Pure query API — recordExtremes for longitudinal memory.
+// Pure query API â€” recordExtremes for longitudinal memory.
 
 DynamicRangeTracker = (() => {
-  const V = Validator.create('DynamicRangeTracker');
+  const V = Validator.create('dynamicRangeTracker');
   const WINDOW_SECONDS = 4;
   let globalMin = 127;
   let globalMax = 0;
@@ -52,7 +52,7 @@ DynamicRangeTracker = (() => {
 
   /**
    * Get velocity-spread bias for the flickerAmplitude chain.
-   * Compressed → wider spread; already wide → slight reduction.
+   * Compressed â†’ wider spread; already wide â†’ slight reduction.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.8 to 1.3
@@ -119,7 +119,7 @@ DynamicRangeTracker = (() => {
 
   /**
    * Get contrast-driven flicker modifier.
-   * Contrast deficit → amplify flicker for wider velocity spread.
+   * Contrast deficit â†’ amplify flicker for wider velocity spread.
    * @returns {number} - 0.95 to 1.2
    */
   function getContrastFlickerModifier() {
@@ -163,3 +163,4 @@ DynamicRangeTracker = (() => {
     reset
   };
 })();
+
