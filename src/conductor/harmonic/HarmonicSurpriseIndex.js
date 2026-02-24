@@ -63,15 +63,22 @@ HarmonicSurpriseIndex = (() => {
 
   /**
    * Get a tension bias based on harmonic freshness.
-   * Stale progressions â†’ boost tension to encourage change; fresh â†’ no adjustment.
+   * Continuous ramp: surpriseIndex 0→0.25 → bias 1.2→1.0 (stale→neutral);
+   * surpriseIndex 0.65→1.0 → bias 1.0→0.92 (fresh→reduce).
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.9 to 1.25
    */
   function getTensionBias(opts) {
     const profile = getSurpriseProfile(opts);
-    if (profile.stale) return 1.2;
-    if (profile.fresh) return 0.92;
+    if (profile.surpriseIndex < 0.25) {
+      // Stale: 0→0.25 maps to 1.2→1.0
+      return 1.2 - clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.2;
+    }
+    if (profile.surpriseIndex > 0.65) {
+      // Fresh: 0.65→1.0 maps to 1.0→0.92
+      return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.08;
+    }
     return 1.0;
   }
 
@@ -82,4 +89,3 @@ HarmonicSurpriseIndex = (() => {
     getTensionBias
   };
 })();
-

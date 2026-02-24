@@ -44,15 +44,9 @@ TonalAnchorDistanceTracker = (() => {
     else if (distance <= 4) adventureLevel = 'moderate';
     else adventureLevel = 'far';
 
-    // Tension bias: farther from home → more tension (unstable), but capped
-    let tensionBias = 1;
-    if (distance >= 5) {
-      tensionBias = 1.1; // far from home → noticeable tension
-    } else if (distance >= 3) {
-      tensionBias = 1.05; // moderately distant
-    } else if (distance === 0) {
-      tensionBias = 0.97; // very grounded → allow slight relaxation
-    }
+    // Tension bias: continuous ramp from distance 0→6.
+    // distance 0 → 0.97 (grounded), 1→6 → ramp 0.97→1.1
+    const tensionBias = 0.97 + clamp(distance / 6, 0, 1) * 0.13;
 
     return { distance, tensionBias, adventureLevel };
   }
