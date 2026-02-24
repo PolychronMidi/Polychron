@@ -149,9 +149,14 @@ interLayerRhythmHelpers = (() => {
     const alignmentScore = comparisons > 0 ? alignments / comparisons : 0;
     const convergencePoint = alignmentScore > 0.6;
 
+    // Continuous ramp: alignmentScore 0→0.15 → flickerMod 0.95→1.0,
+    //                    alignmentScore 0.6→1.0 → flickerMod 1.0→1.15
     let flickerMod = 1;
-    if (convergencePoint) flickerMod = 1.15;
-    else if (alignmentScore < 0.15) flickerMod = 0.95;
+    if (convergencePoint) {
+      flickerMod = 1.0 + clamp((alignmentScore - 0.6) / 0.4, 0, 1) * 0.15;
+    } else if (alignmentScore < 0.15) {
+      flickerMod = 0.95 + (alignmentScore / 0.15) * 0.05;
+    }
 
     return { alignmentScore, convergencePoint, flickerMod };
   }

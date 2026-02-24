@@ -62,14 +62,14 @@ AmbitusMigrationTracker = (() => {
       else if (diff < -5) trend = 'contracting';
     }
 
-    // Density bias based on range health
-    // Very narrow range (<12 semitones = 1 octave) â†’ encourage exploration
-    // Very wide range (>36 semitones = 3 octaves) â†’ encourage consolidation
+    // Density bias based on range health — continuous ramps
+    // Narrow range (0→12 semitones) → ramp 1.06→1.0
+    // Wide range (36→60 semitones) → ramp 1.0→0.94
     let densityBias = 1;
     if (amb.range < 12) {
-      densityBias = 1.06; // encourage notes outside current range
+      densityBias = 1.0 + (1 - clamp(amb.range / 12, 0, 1)) * 0.06;
     } else if (amb.range > 36) {
-      densityBias = 0.94; // pull back, consolidate
+      densityBias = 1.0 - clamp((amb.range - 36) / 24, 0, 1) * 0.06;
     }
 
     // Register suggestion
@@ -123,4 +123,3 @@ AmbitusMigrationTracker = (() => {
     reset
   };
 })();
-

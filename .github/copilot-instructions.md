@@ -1,10 +1,10 @@
-# Polychron — Project Guide
+# Polychron — Project Guide *This document is the source of truth for project conventions and overview. If anything contradicts the codebase, update this file.*
 
 > A generative polyrhythmic MIDI composition engine.
 > Two independent metric layers (L1/L2) evolve simultaneously,
 > coordinated by cross-layer intelligence and a conductor system.
 
-The system generates music through **emergent coherence** — not by planning notes, but by having 100+ independent observers each nudge a shared signal field, then letting feedback loops resolve contradictions into musicality. The complexity is real but the code is clean because every module follows five simple rules. Simplicity and complexity are not opposites when coherence is the medium between them.
+The system generates music through **emergent coherence** — not by simply planning notes, but by having 100+ independent observers each nudge a shared signal field, then letting feedback loops resolve contradictions into musicality. The complexity is real but the code is clean because every module follows five simple rules. Simplicity and complexity are not opposites when coherence is the medium between them.
 
 ---
 
@@ -14,7 +14,7 @@ The system generates music through **emergent coherence** — not by planning no
 npm run main   # the ONE command — lint, typecheck, generate output
 ```
 
-Wait for completion before acting on results. Output lands in `output/`.
+Wait for completion before acting on results. Output lands in `output/`, logs in `log/`.
 
 ---
 
@@ -22,9 +22,9 @@ Wait for completion before acting on results. Output lands in `output/`.
 
 Everything in this project follows from five rules. Learn these and the rest is derivable.
 
-### 1. Naked Globals via Side-Effect Require
+### 1. How To Avoid Anti-Patterns: Globals And Clean Self-Documenting Code
 
-Globals are the project's circulatory system. They are assigned as side-effects of `require()` calls in `index.js` files — never via `global.`, `globalThis.`, or `/* global */` comments (ESLint enforces this). All globals are declared in `src/types/globals.d.ts`.
+Globals are the project's circulatory system. They are assigned as side-effects of `require()` calls in `index.js` files — (never via `global.`, `globalThis.`, or `/* global */` comments, since this is considered a useless spam anti-pattern, and enforced with ESLint).
 
 - Always reference globals directly — never alias them into intermediary variables.
 - To add a new global: create a side-effect module (or update `init.js`), require it from the subsystem's `index.js`, and declare it in `globals.d.ts`. **Never hand-edit `VALIDATED_GLOBALS` in `fullBootstrap.js`** — `scripts/generate-globals-dts.js` rewrites it automatically from `globals.d.ts` at the start of `npm run main`.
@@ -194,4 +194,3 @@ All four priors modules share two utility globals from `src/utils/`:
 - **`priorsHelpers`** — `resolvePhase(opts)`, `resolveWeightOrDefault(table, key, fallback)`, `weightedAdjustment(weight, scale)`.
 
 ---
-*This document is the source of truth for project conventions. If anything contradicts the codebase, update this file.*
