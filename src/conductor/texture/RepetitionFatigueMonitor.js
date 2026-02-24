@@ -60,22 +60,23 @@ RepetitionFatigueMonitor = (() => {
 
   /**
    * Get a repetition penalty multiplier for note selection.
-   * High fatigue â†’ stronger penalty against repeated pitches.
+   * High fatigue → stronger penalty against repeated pitches.
    * Continuous interpolation avoids chronic ceiling-lock.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-   * @returns {number} - 1.0 (no penalty) to 1.4 (strong penalty)
+   * @returns {number} - 1.0 (no penalty) to 1.3 (strong penalty)
    */
   function getRepetitionPenalty(opts) {
     const profile = getRepetitionProfile(opts);
-    // Continuous ramp: onset at 0.15, full at 0.85 â wider range avoids chronic saturation
-    // in small pitch-class spaces where n-gram repetition is naturally high.
-    if (profile.fatigueLevel <= 0.15) return 1.0;
-    const ramp = clamp((profile.fatigueLevel - 0.15) / 0.70, 0, 1);
-    return 1.0 + ramp * 0.4;
+    // Continuous ramp: onset at 0.20, full at 1.0 — wider range and lower max avoids
+    // chronic ceiling-lock in small pitch-class spaces where mod-12 n-gram
+    // repetition is naturally high.
+    if (profile.fatigueLevel <= 0.20) return 1.0;
+    const ramp = clamp((profile.fatigueLevel - 0.20) / 0.80, 0, 1);
+    return 1.0 + ramp * 0.3;
   }
 
-  ConductorIntelligence.registerTensionBias('RepetitionFatigueMonitor', () => RepetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.5);
+  ConductorIntelligence.registerTensionBias('RepetitionFatigueMonitor', () => RepetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.3);
 
   return {
     getRepetitionProfile,
