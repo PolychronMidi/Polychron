@@ -38,7 +38,7 @@ MotifValidators = {
       };
     }
 
-    const merged = Object.assign({}, fallback, caps || {});
+    const merged = Object.assign({}, fallback, caps);
     return assertComposerCapabilities(merged);
   },
 
@@ -104,4 +104,3 @@ MotifValidators = {
     }
   }
 };
-

@@ -112,7 +112,7 @@ HarmonicContext = (() => {
         excursion: state.excursion,
         tension: state.tension,
         mutationCount: state.mutationCount,
-        tick: Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0,
+        tick: V.requireFinite(beatStart, 'beatStart'),
         timestamp: state.modifiedAt
       });
     }
@@ -218,4 +218,3 @@ HarmonicContext = (() => {
     toJSON
   };
 })();
-

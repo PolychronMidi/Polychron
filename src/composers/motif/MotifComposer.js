@@ -20,7 +20,7 @@ MotifComposer = class MotifComposer {
    */
   constructor(options = {}) {
     V.assertPlainObject(options, 'options');
-    const opts = /** @type {any} */ (options || {});
+    const opts = /** @type {any} */ (options);
 
     // length
     if (opts.length !== undefined) {

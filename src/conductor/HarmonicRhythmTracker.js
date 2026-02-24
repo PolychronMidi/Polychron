@@ -7,16 +7,13 @@
   let changesInSection = 0;
 
   function normalizeTick(tick) {
-    const n = Number(tick);
-    if (Number.isFinite(n)) return n;
-    if (Number.isFinite(Number(beatStart))) return Number(beatStart);
-    return 0;
+    return V.requireFinite(Number(tick), 'tick');
   }
 
   function tickDistanceToRate(currentTick) {
     if (lastTick === null) return 0.35;
     const delta = m.max(1, m.abs(currentTick - lastTick));
-    const measureTicks = Number.isFinite(Number(tpMeasure)) ? m.max(1, Number(tpMeasure)) : 1;
+    const measureTicks = m.max(1, V.requireFinite(tpMeasure, 'tpMeasure'));
     return clamp(measureTicks / (measureTicks + delta), 0, 1);
   }
 
@@ -71,4 +68,3 @@
     reset
   };
 })();
-
