@@ -68,9 +68,10 @@ RepetitionFatigueMonitor = (() => {
    */
   function getRepetitionPenalty(opts) {
     const profile = getRepetitionProfile(opts);
-    // Continuous ramp: onset at 0.15, full at 0.6 â€” avoids stuck-at-max
+    // Continuous ramp: onset at 0.15, full at 0.85 â wider range avoids chronic saturation
+    // in small pitch-class spaces where n-gram repetition is naturally high.
     if (profile.fatigueLevel <= 0.15) return 1.0;
-    const ramp = clamp((profile.fatigueLevel - 0.15) / 0.45, 0, 1);
+    const ramp = clamp((profile.fatigueLevel - 0.15) / 0.70, 0, 1);
     return 1.0 + ramp * 0.4;
   }
 
@@ -81,4 +82,3 @@ RepetitionFatigueMonitor = (() => {
     getRepetitionPenalty
   };
 })();
-

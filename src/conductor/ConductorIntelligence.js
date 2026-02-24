@@ -31,11 +31,30 @@ ConductorIntelligence = (() => {
   }
 
   // â”€â”€ Shared collection helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Dampening factor: shrinks deviations from 1.0 before multiplying,
+  // preventing 23 contributors from crushing the product to near-zero.
+  // A clamped value of 0.75 becomes 1.0 + (0.75 - 1.0) * 0.6 = 0.85.
+  const DENSITY_DEVIATION_DAMPING = 0.6;
+
+  /** @param {number} clamped @returns {number} */
+  function _dampen(clamped) {
+    return 1.0 + (clamped - 1.0) * DENSITY_DEVIATION_DAMPING;
+  }
+
   /** @param {Array<{ getter: () => number, lo: number, hi: number }>} registry @returns {number} */
   function _collect(registry) {
     let product = 1;
     for (let i = 0; i < registry.length; i++) {
       product *= clamp(registry[i].getter(), registry[i].lo, registry[i].hi);
+    }
+    return product;
+  }
+
+  /** Like _collect but applies deviation dampening (for density only). */
+  function _collectDampened(registry) {
+    let product = 1;
+    for (let i = 0; i < registry.length; i++) {
+      product *= _dampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi));
     }
     return product;
   }
@@ -52,6 +71,20 @@ ConductorIntelligence = (() => {
       const raw = entry.getter();
       const clamped = clamp(raw, entry.lo, entry.hi);
       product *= clamped;
+      contributions.push({ name: entry.name, raw, clamped });
+    }
+    return { product, contributions };
+  }
+
+  /** Like _collectWithAttribution but applies deviation dampening (for density). */
+  function _collectDampenedWithAttribution(registry) {
+    let product = 1;
+    const contributions = [];
+    for (let i = 0; i < registry.length; i++) {
+      const entry = registry[i];
+      const raw = entry.getter();
+      const clamped = clamp(raw, entry.lo, entry.hi);
+      product *= _dampen(clamped);
       contributions.push({ name: entry.name, raw, clamped });
     }
     return { product, contributions };
@@ -89,12 +122,12 @@ ConductorIntelligence = (() => {
   const DENSITY_PRODUCT_FLOOR = 0.30;
   const TENSION_PRODUCT_CEILING = 1.8;
 
-  /** @returns {number} product of all density biases (floored to prevent crush) */
-  function collectDensityBias() { return m.max(_collect(densityBiases), DENSITY_PRODUCT_FLOOR); }
+  /** @returns {number} product of all density biases (dampened + floored to prevent crush) */
+  function collectDensityBias() { return m.max(_collectDampened(densityBiases), DENSITY_PRODUCT_FLOOR); }
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectDensityBiasWithAttribution() {
-    const result = _collectWithAttribution(densityBiases);
+    const result = _collectDampenedWithAttribution(densityBiases);
     const rawProduct = result.product;
     return {
       product: m.max(rawProduct, DENSITY_PRODUCT_FLOOR),
@@ -339,4 +372,3 @@ ConductorIntelligence = (() => {
     getSignalSnapshot
   };
 })();
-
