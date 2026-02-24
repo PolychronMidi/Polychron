@@ -56,15 +56,13 @@ HarmonicFieldDensityTracker = (() => {
     }
     const avgSimultaneous = sum / clusterSizes.length;
 
-    // Density bias: thick vertical texture (>4 simultaneous) → thin out;
-    // very thin (<2) → allow thickening
+    // Continuous ramp: thin texture → boost density; thick → reduce.
+    // avgSim 0→2.5 maps to 1.05→1.0; avgSim 2.5→7 maps to 1.0→0.9.
     let densityBias = 1;
-    if (avgSimultaneous > 5) {
-      densityBias = 0.9; // very dense vertically → reduce
-    } else if (avgSimultaneous > 3.5) {
-      densityBias = 0.96;
-    } else if (avgSimultaneous < 1.5) {
-      densityBias = 1.05; // very thin → allow more vertical density
+    if (avgSimultaneous < 2.5) {
+      densityBias = 1.0 + clamp((2.5 - avgSimultaneous) / 2.5, 0, 1) * 0.05;
+    } else {
+      densityBias = 1.0 - clamp((avgSimultaneous - 2.5) / 4.5, 0, 1) * 0.1;
     }
 
     return { avgSimultaneous, maxSimultaneous: maxSim, densityBias };

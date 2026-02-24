@@ -46,15 +46,13 @@ TessituraPressureMonitor = (() => {
     else if (highRatio > 0.3) region = 'high-pressure';
     else if (extremeRatio > 0.15) region = 'mild-pressure';
 
-    // Density bias: sustained extreme → reduce density to relieve pressure
-    // This gives space for register migration back to comfortable range
+    // Continuous ramp: comfortable register → slight boost; extreme → pull-back.
+    // extremeRatio 0→0.1 maps to 1.03→1.0; extremeRatio 0.1→0.6 maps to 1.0→0.88.
     let densityBias = 1;
-    if (extremeRatio > 0.5) {
-      densityBias = 0.88; // heavy extreme saturation → strong pull-back
-    } else if (extremeRatio > 0.3) {
-      densityBias = 0.94; // moderate pressure
-    } else if (extremeRatio < 0.05) {
-      densityBias = 1.03; // very comfortable → can handle slightly more
+    if (extremeRatio < 0.1) {
+      densityBias = 1.0 + clamp((0.1 - extremeRatio) / 0.1, 0, 1) * 0.03;
+    } else {
+      densityBias = 1.0 - clamp((extremeRatio - 0.1) / 0.5, 0, 1) * 0.12;
     }
 
     return { extremeRatio, region, densityBias };
