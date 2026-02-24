@@ -21,6 +21,7 @@ coherenceVerdicts = (() => {
     _checkTrustEcosystem(manifest, verdicts);
     _checkAttributionExtremes(attribution, verdicts);
     _checkCoherenceMonitorFloor(attribution, verdicts);
+    _checkStaleContributors(attribution, verdicts);
 
     // Sort by severity: critical > warning > info
     const order = { critical: 0, warning: 1, info: 2 };
@@ -79,7 +80,7 @@ coherenceVerdicts = (() => {
     }
 
     if (s.effectiveDimensionality < 2.0) {
-      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Effective dimensionality collapsed to ${s.effectiveDimensionality.toFixed(2)}/6 — system operating on fewer than 2 independent axes.` });
+      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Effective dimensionality collapsed to ${s.effectiveDimensionality.toFixed(2)}/4 — system operating on fewer than 2 independent axes.` });
     }
 
     if (s.velocity < 0.01 && s.regime !== 'stagnant') {
@@ -180,6 +181,48 @@ coherenceVerdicts = (() => {
     if (sorted.length > 0 && sorted[0].name === 'CoherenceMonitor') {
       const suppressionPct = ((1 - sorted[0].clamped) * 100).toFixed(0);
       verdicts.push({ severity: 'warning', area: 'density', finding: `CoherenceMonitor is the single largest density suppressor (${suppressionPct}% reduction) — the system's density floor may be structurally depressed.` });
+    }
+  }
+
+  /**
+   * Detect stale contributors: modules providing near-constant drag or boost.
+   * When a module's clamped value is far from 1.0 (>5% deviation), it may be
+   * stuck at a boundary. End-of-run snapshot only captures the final state,
+   * but persistent boundary values indicate chronic static drag.
+   */
+  function _checkStaleContributors(attribution, verdicts) {
+    if (!attribution) return;
+    const STALE_THRESHOLD = 0.05; // >5% deviation from neutral considered significant
+    const tables = [
+      { name: 'density', data: attribution.density },
+      { name: 'tension', data: attribution.tension },
+      { name: 'flicker', data: attribution.flicker }
+    ];
+
+    for (let t = 0; t < tables.length; t++) {
+      const { name: pipeline, data } = tables[t];
+      if (!data || !data.contributions) continue;
+
+      const stale = [];
+      for (let j = 0; j < data.contributions.length; j++) {
+        const c = data.contributions[j];
+        const dev = m.abs(c.clamped - 1.0);
+        // Stale: significant deviation AND raw equals clamped (not being clipped,
+        // so the module itself is returning a boundary-like constant)
+        if (dev > STALE_THRESHOLD && c.raw === c.clamped) {
+          stale.push({ name: c.name, value: c.clamped });
+        }
+      }
+
+      if (stale.length >= 5) {
+        const names = stale.map(s => `${s.name} (${s.value.toFixed(2)})`).join(', ');
+        const direction = stale.filter(s => s.value < 1.0).length > stale.length / 2 ? 'suppressing' : 'boosting';
+        verdicts.push({
+          severity: 'warning',
+          area: 'attribution',
+          finding: `${stale.length} ${pipeline} contributors ${direction} with constant drag: ${names}. Consider widening registration bounds or adding dynamic response.`
+        });
+      }
     }
   }
 

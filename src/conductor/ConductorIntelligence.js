@@ -39,26 +39,45 @@ ConductorIntelligence = (() => {
   const BASE_DEVIATION_DAMPING = 0.6;
   const REF_PIPELINE_SIZE = 20;
 
-  /**
-   * @param {number} clamped
-   * @param {number} damping - effective damping for this pipeline
-   * @returns {number}
-   */
-  function _dampen(clamped, damping) {
-    return 1.0 + (clamped - 1.0) * damping;
-  }
-
   /** Compute effective damping scaled by pipeline contributor count. */
   function _scaledDamping(registryLength) {
     return BASE_DEVIATION_DAMPING * clamp(registryLength / REF_PIPELINE_SIZE, 0.3, 1.0);
   }
 
-  /** Applies deviation dampening to all pipelines (density, tension, flicker). */
+  // Progressive dampening: as the running product diverges from 1.0,
+  // subsequent deviations in the same direction face stronger dampening.
+  // This prevents coordinated crush (10 modules each pulling to 0.85–0.94)
+  // from accumulating catastrophic suppression, without touching any
+  // individual module's response. Deviations opposing the running product
+  // are given lighter dampening to encourage self-correction.
+  const PROGRESSIVE_STRENGTH = 0.5; // how aggressively to ramp dampening (0=off, 1=full)
+
+  /**
+   * Compute progressive dampening factor for a single contributor.
+   * @param {number} clamped - contributor's clamped bias value
+   * @param {number} baseDamping - pipeline-scaled base dampening
+   * @param {number} runningProduct - product so far (before this contributor)
+   * @returns {number} dampened value
+   */
+  function _progressiveDampen(clamped, baseDamping, runningProduct) {
+    const deviation = clamped - 1.0;
+    if (m.abs(deviation) < 1e-6) return 1.0;
+    // Is this deviation pushing the product further from 1.0?
+    const productDeviation = runningProduct - 1.0;
+    const sameDirection = (deviation < 0 && productDeviation < 0) || (deviation > 0 && productDeviation > 0);
+    // Ramp: product at 0.6 → extra dampening 0.2; product at 0.5 → extra 0.25
+    const drift = m.abs(productDeviation);
+    const extraDampening = sameDirection ? PROGRESSIVE_STRENGTH * clamp(drift, 0, 0.5) : 0;
+    const effectiveDamping = clamp(baseDamping - extraDampening, 0.15, baseDamping);
+    return 1.0 + deviation * effectiveDamping;
+  }
+
+  /** Applies progressive deviation dampening to all pipelines (density, tension, flicker). */
   function _collectDampened(registry) {
     const damping = _scaledDamping(registry.length);
     let product = 1;
     for (let i = 0; i < registry.length; i++) {
-      product *= _dampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi), damping);
+      product *= _progressiveDampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi), damping, product);
     }
     return product;
   }
@@ -72,7 +91,7 @@ ConductorIntelligence = (() => {
       const entry = registry[i];
       const raw = entry.getter();
       const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= _dampen(clamped, damping);
+      product *= _progressiveDampen(clamped, damping, product);
       contributions.push({ name: entry.name, raw, clamped });
     }
     return { product, contributions };

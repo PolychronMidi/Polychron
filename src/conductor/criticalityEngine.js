@@ -41,6 +41,10 @@ criticalityEngine = (() => {
   /** @type {number[]} */
   let avalancheSizes = [];
 
+  let densitySnap = 1.0;
+  let tensionSnap = 1.0;
+  let flickerSnap = 1.0;
+
   function _energy() {
     const d = signalReader.density() - 0.5;
     const t = signalReader.tension() - 1.0;
@@ -55,6 +59,11 @@ criticalityEngine = (() => {
     if (energyBuffer.length > WINDOW) energyBuffer.shift();
 
     const accumulated = energyBuffer.reduce((s, x) => s + x, 0);
+
+    // Snapshot current signal levels for per-signal bias gating
+    densitySnap = signalReader.density();
+    tensionSnap = signalReader.tension();
+    flickerSnap = signalReader.flicker();
 
     if (inAvalanche > 0) {
       inAvalanche--;
@@ -88,9 +97,12 @@ criticalityEngine = (() => {
     }
   }
 
-  function densityBias()  { return currentBias; }
-  function tensionBias()  { return currentBias; }
-  function flickerMod()   { return currentBias; }
+  // Per-signal bias: only dampen signals that are elevated, not already suppressed.
+  // Density: strained when < 0.65 → skip dampening. Tension: elevated when > 1.1.
+  // Flicker: suppressed when < 0.7 → skip dampening.
+  function densityBias()  { return densitySnap < 0.65 ? 1.0 : currentBias; }
+  function tensionBias()  { return tensionSnap < 1.0  ? 1.0 : currentBias; }
+  function flickerMod()   { return flickerSnap < 0.70 ? 1.0 : currentBias; }
 
   function getState() {
     return {
@@ -113,6 +125,9 @@ criticalityEngine = (() => {
     inAvalanche    = 0;
     currentBias    = 1.0;
     avalancheSizes = [];
+    densitySnap    = 1.0;
+    tensionSnap    = 1.0;
+    flickerSnap    = 1.0;
   }
 
   // --- Self-registration ---
