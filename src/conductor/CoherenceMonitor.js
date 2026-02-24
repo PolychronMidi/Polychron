@@ -123,7 +123,7 @@ CoherenceMonitor = (() => {
     // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
     // Uses a bell curve centered at phrase midpoint: sin(progress * Ï€) peaks at 0.5.
     const phraseProgress = TimeStream.normalizedProgress('phrase');
-    let phaseGain = 0.25 + 0.3 * m.sin(phraseProgress * m.PI); // 0.25 at edges, 0.55 at center
+    let phaseGain = 0.35 + 0.4 * m.sin(phraseProgress * m.PI); // 0.35 at edges, 0.75 at center
 
     // Peer-aware: if a single density contributor is dominating the product,
     // strengthen our correction â€” the pipeline is unbalanced and needs tighter coherence.

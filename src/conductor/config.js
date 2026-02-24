@@ -309,8 +309,8 @@ MAIN_LOOP_CONTROLS = {
     phaseLock: { lock: 0.5, drift: 0.15, other: -0.4, confidenceScale: 0.35 },
     cadenceAlignment: { resolved: 0.85, unresolved: 0.35, gatedNoResult: -0.1, ungated: 0.02 },
     feedbackOscillator: { energyOffset: 0, downbeatScale: 0.15 },
-    coherenceMonitor: { neutralBias: 1.0, sensitivity: 1.5 },
-    roleSwap: { swapped: 0.35, notSwapped: -0.02 },
+    coherenceMonitor: { neutralBias: 0.85, sensitivity: 1.5 },
+    roleSwap: { swapped: 0.35, notSwapped: 0 },
     decayRate: 0.002
   }
 };
