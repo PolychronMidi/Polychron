@@ -22,5 +22,5 @@ require('./absoluteTimeGrid');
 require('./tempoFeelEngine');
 // @ts-ignore: side-effect module load
 require('./timeStream');
-
-
+// @ts-ignore: fractal arc generator (multi-scale arc embedding)
+require('./fractalArcGenerator');

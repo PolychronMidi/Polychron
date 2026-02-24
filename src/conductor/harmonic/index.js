@@ -31,5 +31,5 @@ require('./pitchGravityCenter');
 require('./tensionResolutionTracker');
 // @ts-ignore: load side-effect module with globals
 require('./tonalAnchorDistanceTracker');
-
-
+// @ts-ignore: harmonic function graph (T/S/D classification + tension bias)
+require('./harmonicFunctionGraph');

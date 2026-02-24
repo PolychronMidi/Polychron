@@ -18,3 +18,5 @@ require('./pitchMemoryRecall');
 require('./registerCollisionAvoider');
 // @ts-ignore: side-effect module load
 require('./spectralComplementarity');
+// @ts-ignore: vertical interval collision monitor between layers
+require('./verticalIntervalMonitor');
