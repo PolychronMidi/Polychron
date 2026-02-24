@@ -65,6 +65,18 @@ require('./signalTelemetry');
 require('./signalHealthAnalyzer');
 // @ts-ignore: meta-diagnostic: phase-space trajectory analysis (registers recorder + stateProvider)
 require('./systemDynamicsProfiler');
+// @ts-ignore: regime-reactive damping (reads SystemDynamicsProfiler, registers bias triplet)
+require('./regimeReactiveDamping');
+// @ts-ignore: attribution-driven pipeline balancer (reads signalReader attribution)
+require('./pipelineBalancer');
+// @ts-ignore: density-tension coupling manager (reads SystemDynamicsProfiler coupling matrix)
+require('./pipelineCouplingManager');
+// @ts-ignore: 3D narrative trajectory (tension/novelty/density arc tracking)
+require('./narrativeTrajectory');
+// @ts-ignore: compositional strategy memory (composer family variety pressure)
+require('./structuralNarrativeAdvisor');
+// @ts-ignore: self-organized criticality engine (avalanche-based damping)
+require('./criticalityEngine');
 // @ts-ignore: load side-effect module with globals
 require('./globalConductorUpdate');
 // @ts-ignore: load side-effect module with globals

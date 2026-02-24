@@ -270,6 +270,12 @@ FullBootstrap = (() => {
     'signalTelemetry',
     'SignalHealthAnalyzer',
     'SystemDynamicsProfiler',
+    'regimeReactiveDamping',
+    'pipelineBalancer',
+    'pipelineCouplingManager',
+    'narrativeTrajectory',
+    'structuralNarrativeAdvisor',
+    'criticalityEngine',
     'ModuleLifecycle',
     'beatCache',
 
@@ -392,6 +398,7 @@ FullBootstrap = (() => {
     'AbsoluteTimeGrid',
     'TempoFeelEngine',
     'TimeStream',
+    'fractalArcGenerator',
 
     // ── composers ──
     'normalizeChordSymbol',
@@ -600,6 +607,11 @@ FullBootstrap = (() => {
     'TexturalMirror',
     'CrossLayerSilhouette',
     'conductorSignalBridge',
+    'verticalIntervalMonitor',
+    'polyrhythmicPhasePredictor',
+    'contextualTrust',
+    'beatInterleavedProcessor',
+    'harmonicFunctionGraph',
 
     // ── writer ──
     'formatTime',
@@ -609,6 +621,7 @@ FullBootstrap = (() => {
     'coherenceVerdicts',
     'systemManifestMarkdown',
     'systemManifest',
+    'outputAnalyzer',
     'VoiceLeadingScore',
     'SimplexNoise',
     'fs',

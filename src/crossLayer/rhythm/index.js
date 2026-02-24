@@ -16,3 +16,5 @@ require('./rhythmicPhaseLock');
 require('./stutterContagion');
 // @ts-ignore: side-effect module load
 require('./temporalGravity');
+// @ts-ignore: polyrhythmic convergence prediction via LCM
+require('./polyrhythmicPhasePredictor');

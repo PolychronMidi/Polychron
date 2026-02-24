@@ -1137,6 +1137,12 @@ declare var profileAdaptation: ProfileAdaptationAPI;
 declare var signalTelemetry: SignalTelemetryAPI;
 declare var SignalHealthAnalyzer: SignalHealthAnalyzerAPI;
 declare var SystemDynamicsProfiler: SystemDynamicsProfilerAPI;
+declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): number; flickerMod(): number; reset(): void };
+declare var pipelineBalancer: { densityBias(): number; reset(): void };
+declare var pipelineCouplingManager: { tensionBias(): number; reset(): void };
+declare var narrativeTrajectory: { getTrajectory(): { point: { t: number; n: number; d: number }; velocity: number; curvature: number; length: number }; tensionBias(): number; reset(): void };
+declare var structuralNarrativeAdvisor: { recordFamily(family: string): void; getHistory(): string[]; getVarietyPressure(): number; densityBias(): number; reset(): void };
+declare var criticalityEngine: { densityBias(): number; tensionBias(): number; flickerMod(): number; getState(): { threshold: number; avalancheCount: number; totalBeats: number; rate: number; inAvalanche: boolean; recentEnergy: number }; reset(): void };
 declare var ModuleLifecycle: ModuleLifecycleFactory;
 declare var beatCache: BeatCacheFactory;
 
@@ -1259,6 +1265,7 @@ declare var AbsoluteTimeWindow: any;
 declare var AbsoluteTimeGrid: AbsoluteTimeGridAPI;
 declare var TempoFeelEngine: TempoFeelEngineAPI;
 declare var TimeStream: TimeStreamAPI;
+declare var fractalArcGenerator: { intensity(levelIdx: number): number; composite(): number; arcShape(progress: number): number; reset(): void };
 
 // ── composers ──
 declare var normalizeChordSymbol: any;
@@ -1467,6 +1474,11 @@ declare var ConvergenceHarmonicTrigger: ConvergenceHarmonicTriggerAPI;
 declare var TexturalMirror: TexturalMirrorAPI;
 declare var CrossLayerSilhouette: CrossLayerSilhouetteAPI;
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
+declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };
+declare var polyrhythmicPhasePredictor: { process(ctx: any): number; predictConvergences(): void; reset(): void };
+declare var contextualTrust: { record(moduleName: string, payoff: number): void; getWeight(moduleName: string): number; getScoreCount(): number; reset(): void };
+declare var beatInterleavedProcessor: { recordLayerBeat(layer: number, outcome: any): void; getOtherLayerOutcome(myLayer: number): any; getBeatSnapshot(): { layer1: any; layer2: any }; reset(): void };
+declare var harmonicFunctionGraph: { classify(chordRoot: number, keyRoot: number): string; getFunction(): string; tensionBias(): number; reset(): void };
 
 // ── writer ──
 declare var formatTime: any;
@@ -1480,6 +1492,7 @@ declare var systemManifestMarkdown: {
   build(manifest: any, attribution: { density: any; tension: any; flicker: any }): string;
 };
 declare var systemManifest: { emit(): void };
+declare var outputAnalyzer: { analyse(notes: { pitch: number; startMs: number; durationMs: number; velocity: number }[]): any; reset(): void };
 declare var VoiceLeadingScore: { new(config?: any): VoiceLeadingScoreAPI };
 declare var SimplexNoise: { new(seed?: number): SimplexNoiseAPI };
 declare var fs: any;
