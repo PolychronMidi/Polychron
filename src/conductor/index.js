@@ -63,6 +63,8 @@ require('./profileAdaptation');
 require('./signalTelemetry');
 // @ts-ignore: meta-diagnostic: pipeline health analysis (registers recorder + stateProvider)
 require('./signalHealthAnalyzer');
+// @ts-ignore: meta-diagnostic: phase-space trajectory analysis (registers recorder + stateProvider)
+require('./systemDynamicsProfiler');
 // @ts-ignore: load side-effect module with globals
 require('./globalConductorUpdate');
 // @ts-ignore: load side-effect module with globals

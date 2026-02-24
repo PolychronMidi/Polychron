@@ -94,6 +94,7 @@ systemManifest = (() => {
         flickerProduct: signalSnapshot.flickerProduct
       },
       signalHealth: _buildSignalHealth(),
+      systemDynamics: _buildSystemDynamics(),
       trustPayoffs,
       trustScoresEndOfRun: trustSnapshot
     };
@@ -213,6 +214,9 @@ systemManifest = (() => {
     // ── Signal Health Report ──
     _appendSignalHealthReport(lines, manifest);
 
+    // ── System Dynamics Report ──
+    _appendSystemDynamicsReport(lines, manifest);
+
     return lines.join('\n');
   }
 
@@ -264,6 +268,18 @@ systemManifest = (() => {
       return SignalHealthAnalyzer.getSummary();
     } catch {
       return { beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} };
+    }
+  }
+
+  /**
+   * Build system dynamics data for the manifest JSON.
+   * @returns {object}
+   */
+  function _buildSystemDynamics() {
+    try {
+      return SystemDynamicsProfiler.getSummary();
+    } catch {
+      return { beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] };
     }
   }
 
@@ -355,6 +371,76 @@ systemManifest = (() => {
         });
         lines.push('');
       }
+    }
+  }
+
+  /**
+   * Append the System Dynamics Report section to the capability matrix.
+   * @param {string[]} lines
+   * @param {object} manifest
+   */
+  function _appendSystemDynamicsReport(lines, manifest) {
+    const sd = manifest.systemDynamics;
+    if (!sd || !sd.snapshot || !sd.snapshot.regime) return;
+
+    const s = sd.snapshot;
+    lines.push('## System Dynamics Report');
+    lines.push('');
+    lines.push(`> Phase-space trajectory analysis | Regime: **${s.regime}** | Grade: **${s.grade}** | Beats: ${sd.beatsAnalyzed || 0}`);
+    lines.push('');
+
+    // Trajectory metrics table
+    lines.push('### Trajectory Metrics');
+    lines.push('');
+    lines.push('| Metric | Value | Interpretation |');
+    lines.push('|---|---|---|');
+    lines.push(`| Velocity | ${s.velocity} | ${s.velocity < 0.01 ? 'Barely moving — stuck in attractor' : s.velocity < 0.05 ? 'Slow evolution' : 'Active exploration'} |`);
+    lines.push(`| Curvature | ${s.curvature} | ${s.curvature < 0.3 ? 'Straight-line drift' : s.curvature < 0.7 ? 'Gentle winding' : 'Frequent reversals'} |`);
+    lines.push(`| Effective Dimensionality | ${s.effectiveDimensionality} / ${(sd.dimensionNames || []).length} | ${s.effectiveDimensionality < 2 ? 'Collapsed to ~1 axis' : s.effectiveDimensionality < 3.5 ? 'Moderate spread' : 'Rich multi-dimensional'} |`);
+    lines.push(`| Coupling Strength | ${s.couplingStrength} | ${s.couplingStrength < 0.2 ? 'Dimensions independent' : s.couplingStrength < 0.45 ? 'Moderate coupling' : 'Strong cross-coupling'} |`);
+    lines.push('');
+
+    // Regime explanation
+    const regimeDescriptions = {
+      stagnant: 'System barely moving through state space — compositional stasis.',
+      oscillating: 'Frequent direction reversals — pendulum-like behavior rather than true evolution.',
+      exploring: 'High velocity + multi-dimensional — actively discovering new territory.',
+      coherent: 'Strong cross-coupling — dimensions evolving together as a unified organism.',
+      fragmented: 'Weak coupling + many axes — dimensions acting independently without coordination.',
+      drifting: 'Slow monotonic change — one-directional evolution without surprise.',
+      evolving: 'Moderate dynamic movement — healthy compositional development.',
+      initializing: 'Insufficient beats for analysis.'
+    };
+    const desc = regimeDescriptions[s.regime] || '';
+    if (desc) {
+      lines.push(`**Regime interpretation:** ${desc}`);
+      lines.push('');
+    }
+
+    // Cross-coupling matrix (strongest pairs only)
+    if (s.couplingMatrix && Object.keys(s.couplingMatrix).length > 0) {
+      const pairs = Object.entries(s.couplingMatrix)
+        .filter(([, v]) => m.abs(v) > 0.25)
+        .sort((a, b) => m.abs(b[1]) - m.abs(a[1]));
+
+      if (pairs.length > 0) {
+        lines.push('### Cross-Dimensional Coupling (|r| > 0.25)');
+        lines.push('');
+        lines.push('| Dimension Pair | Correlation | Relationship |');
+        lines.push('|---|---|---|');
+        pairs.forEach(([pair, corr]) => {
+          const direction = corr > 0 ? 'co-evolving' : 'anti-correlated';
+          const strength = m.abs(corr) > 0.7 ? 'strong' : m.abs(corr) > 0.45 ? 'moderate' : 'weak';
+          lines.push(`| ${pair} | ${corr.toFixed(3)} | ${strength} ${direction} |`);
+        });
+        lines.push('');
+      }
+    }
+
+    // Dimension names
+    if (sd.dimensionNames && sd.dimensionNames.length > 0) {
+      lines.push(`> Dimensions: ${sd.dimensionNames.join(', ')}`);
+      lines.push('');
     }
   }
 
