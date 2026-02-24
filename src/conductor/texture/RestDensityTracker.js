@@ -40,15 +40,25 @@ RestDensityTracker = (() => {
 
   /**
    * Bias factor for rhythm onset probability.
-   * Saturated â†’ reduce onsets; sparse â†’ boost onsets.
+   * Continuous ramp: sparse → boost, dense → suppress.
+   * Output range matches registered clamp [0.85, 1.15] — no boundary pinning.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-   * @returns {number} - 0.7 to 1.3
+   * @returns {number} - 0.85 to 1.15
    */
   function getOnsetBias(opts) {
     const density = getOnsetDensity(opts);
-    if (density.saturated) return 0.75;
-    if (density.sparse) return 1.25;
+    const nps = density.notesPerSecond;
+    // Sparse zone: nps 0–3 → bias 1.15–1.0
+    if (nps <= 3) {
+      const ramp = clamp((3 - nps) / 3, 0, 1);
+      return 1.0 + ramp * 0.15;
+    }
+    // Dense zone: nps 15–25 → bias 1.0–0.85
+    if (nps >= 15) {
+      const ramp = clamp((nps - 15) / 10, 0, 1);
+      return 1.0 - ramp * 0.15;
+    }
     return 1.0;
   }
 
@@ -134,4 +144,3 @@ RestDensityTracker = (() => {
     getBreathingDensityBias
   };
 })();
-
