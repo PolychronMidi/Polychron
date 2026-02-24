@@ -10,6 +10,7 @@ module.exports = {
     'no-unstamped-validator': require('./no-unstamped-validator'),
     'no-conductor-registration-from-crosslayer': require('./no-conductor-registration-from-crosslayer'),
     'no-direct-signal-read': require('./no-direct-signal-read'),
-    'validator-name-matches-filename': require('./validator-name-matches-filename')
+    'validator-name-matches-filename': require('./validator-name-matches-filename'),
+    'filename-case-conventions': require('./filename-case-conventions')
   }
 };
