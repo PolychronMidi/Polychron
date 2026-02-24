@@ -41,13 +41,13 @@ AttackDensityProfiler = (() => {
     const attackRatio = attacks / total;
     const sustainRatio = sustains / total;
 
-    // Density bias: too many attacks → slight reduction (let notes breathe);
-    // too many sustains → slight increase (add rhythmic interest)
+    // Continuous ramp: sustain-heavy → boost density; attack-heavy → reduce.
+    // attackRatio 0→0.3 maps to 1.05→1.0; attackRatio 0.5→1.0 maps to 1.0→0.94.
     let densityBias = 1;
-    if (attackRatio > 0.75) {
-      densityBias = 0.94; // very percussive → thin out
-    } else if (sustainRatio > 0.8) {
-      densityBias = 1.05; // all sustained → add some attacks
+    if (attackRatio < 0.3) {
+      densityBias = 1.0 + clamp((0.3 - attackRatio) / 0.3, 0, 1) * 0.05;
+    } else if (attackRatio > 0.5) {
+      densityBias = 1.0 - clamp((attackRatio - 0.5) / 0.5, 0, 1) * 0.06;
     }
 
     let suggestion = 'balanced';

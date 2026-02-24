@@ -57,16 +57,15 @@ OnsetRegularityMonitor = (() => {
 
   /**
    * Get a rhythm variety bias.
-   * Uniform â†’ encourage variation; chaotic â†’ encourage stabilization.
+   * Continuous ramp: chaotic (regularity 0) → 0.85; uniform (regularity 1) → 1.2.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.85 to 1.25
    */
   function getRhythmVarietyBias(opts) {
     const profile = getRegularityProfile(opts);
-    if (profile.uniform) return 1.2;   // Boost variety
-    if (profile.chaotic) return 0.85;  // Encourage stability
-    return 1.0;
+    // Linear ramp: regularity 0→1 maps to 0.85→1.20
+    return 0.85 + profile.regularity * 0.35;
   }
 
   ConductorIntelligence.registerDensityBias('OnsetRegularityMonitor', () => OnsetRegularityMonitor.getRhythmVarietyBias(), 0.85, 1.25);

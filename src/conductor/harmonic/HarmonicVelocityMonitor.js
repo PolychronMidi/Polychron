@@ -35,13 +35,13 @@ HarmonicVelocityMonitor = (() => {
     const vel = getHarmonicVelocity();
     const compositeIntensity = ConductorState.getField('compositeIntensity');
 
-    // Expected changes/sec at given intensity: calm ~0.1, intense ~0.6
-    const expectedRate = 0.1 + compositeIntensity * 0.5;
+    // Expected changes/sec at given intensity: calm ~0.2, intense ~1.2
+    const expectedRate = 0.2 + Number(compositeIntensity) * 1.0;
     const mismatch = vel.changesPerSecond - expectedRate;
 
     let diagnosis = 'balanced';
-    if (mismatch > 0.2) diagnosis = 'harmony-too-fast';
-    if (mismatch < -0.15) diagnosis = 'harmony-stalling';
+    if (mismatch > 0.3) diagnosis = 'harmony-too-fast';
+    if (mismatch < -0.2) diagnosis = 'harmony-stalling';
 
     return { mismatch, diagnosis };
   }
@@ -50,7 +50,7 @@ HarmonicVelocityMonitor = (() => {
    * Get a harmonic-change threshold bias.
    * Continuous ramp based on mismatch magnitude — avoids step-function
    * flip-flops that contribute to oscillating regime dynamics.
-   * Harmony too fast â†' raise threshold (slow it down); too slow â†' lower it.
+   * Harmony too fast → raise threshold (slow it down); too slow → lower it.
    * @returns {number} - 0.7 to 1.4
    */
   function getChangeThresholdBias() {
@@ -66,7 +66,7 @@ HarmonicVelocityMonitor = (() => {
 
   /**
    * Get a journey boldness bias.
-   * Continuous ramp — stalling harmony â†' bolder moves; rushing â†' more conservative.
+   * Continuous ramp — stalling harmony → bolder moves; rushing → more conservative.
    * @returns {number} - 0.7 to 1.3
    */
   function getJourneyBoldnessBias() {
