@@ -120,7 +120,7 @@ ConductorIntelligence = (() => {
   }
 
   const DENSITY_PRODUCT_FLOOR = 0.30;
-  const TENSION_PRODUCT_CEILING = 1.4;
+  const TENSION_PRODUCT_CEILING = 1.6;
 
   /** @returns {number} product of all density biases (dampened + floored to prevent crush) */
   function collectDensityBias() { return m.max(_collectDampened(densityBiases), DENSITY_PRODUCT_FLOOR); }
@@ -157,12 +157,12 @@ ConductorIntelligence = (() => {
     tensionBiases.push({ name, getter, lo, hi });
   }
 
-  /** @returns {number} product of all tension biases (capped to prevent saturation) */
-  function collectTensionBias() { return m.min(_collect(tensionBiases), TENSION_PRODUCT_CEILING); }
+  /** @returns {number} product of all tension biases (dampened + capped to prevent saturation) */
+  function collectTensionBias() { return m.min(_collectDampened(tensionBiases), TENSION_PRODUCT_CEILING); }
 
   /** @returns {{ product: number, rawProduct: number, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectTensionBiasWithAttribution() {
-    const result = _collectWithAttribution(tensionBiases);
+    const result = _collectDampenedWithAttribution(tensionBiases);
     const rawProduct = result.product;
     return {
       product: m.min(rawProduct, TENSION_PRODUCT_CEILING),

@@ -17,7 +17,7 @@ CoherenceMonitor = (() => {
 
   // â”€â”€ Feedback signal â”€â”€
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
-  const BIAS_FLOOR = 0.82;
+  const BIAS_FLOOR = 0.70;
   const BIAS_CEILING = 1.3;
   const SMOOTHING = 0.75;    // exponential smoothing factor (higher = slower response)
 
@@ -205,7 +205,7 @@ CoherenceMonitor = (() => {
 
   // â”€â”€ Self-register into ConductorIntelligence â”€â”€
   // getDensityBias is called each beat by the conductor pipeline.
-  ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.82, ceiling=1.3
+  ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.70, ceiling=1.3
 
   // metrics to ConductorState via the state provider registry.
   ConductorIntelligence.registerStateProvider('CoherenceMonitor', () => ({
@@ -223,4 +223,3 @@ CoherenceMonitor = (() => {
     reset
   };
 })();
-

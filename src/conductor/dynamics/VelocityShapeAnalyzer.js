@@ -115,8 +115,8 @@ VelocityShapeAnalyzer = (() => {
     const shape = getVelocityShape(opts);
     if (shape.flat) return 1.15;
     if (shape.shape === 'punchy') return 1.12;
-    if (shape.shape === 'terraced') return 0.9;
-    if (shape.shape === 'smooth') return 0.9;
+    if (shape.shape === 'terraced') return 0.92;
+    if (shape.shape === 'smooth') return 0.95;
     return 1.0;
   }
 
@@ -131,4 +131,3 @@ VelocityShapeAnalyzer = (() => {
     getFlickerModifier
   };
 })();
-
