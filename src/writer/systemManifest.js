@@ -93,6 +93,7 @@ systemManifest = (() => {
         tensionProduct: signalSnapshot.tensionProduct,
         flickerProduct: signalSnapshot.flickerProduct
       },
+      signalHealth: _buildSignalHealth(),
       trustPayoffs,
       trustScoresEndOfRun: trustSnapshot
     };
@@ -209,6 +210,9 @@ systemManifest = (() => {
     lines.push(`- Active Profile: ${manifest.config.activeProfile}`);
     lines.push('');
 
+    // ── Signal Health Report ──
+    _appendSignalHealthReport(lines, manifest);
+
     return lines.join('\n');
   }
 
@@ -249,6 +253,109 @@ systemManifest = (() => {
       });
     }
     lines.push('');
+  }
+
+  /**
+   * Build signal health data for the manifest JSON.
+   * @returns {object}
+   */
+  function _buildSignalHealth() {
+    try {
+      return SignalHealthAnalyzer.getSummary();
+    } catch {
+      return { beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} };
+    }
+  }
+
+  /**
+   * Append the Signal Health Report section to the capability matrix.
+   * @param {string[]} lines
+   * @param {object} manifest
+   */
+  function _appendSignalHealthReport(lines, manifest) {
+    const sh = manifest.signalHealth;
+    if (!sh || !sh.lastHealth) return;
+
+    lines.push('## Signal Health Report');
+    lines.push('');
+    lines.push(`> Overall: **${sh.lastHealth.overall || 'unknown'}** | Beats analyzed: ${sh.beatsAnalyzed || 0}`);
+    lines.push('');
+
+    // Pipeline health table
+    lines.push('### Pipeline Health');
+    lines.push('');
+    lines.push('| Pipeline | Grade | Product | Crush Factor | Saturated | Pinned Rate |');
+    lines.push('|---|---|---|---|---|---|');
+    const pipelines = ['density', 'tension', 'flicker'];
+    for (let i = 0; i < pipelines.length; i++) {
+      const p = pipelines[i];
+      const h = sh.lastHealth[p];
+      const pr = sh.pinnedRate ? sh.pinnedRate[p] : 0;
+      const sr = sh.saturationRate ? sh.saturationRate[p] : undefined;
+      if (h) {
+        const productStr = typeof h.product === 'number' ? h.product.toFixed(4) : '?';
+        const crushStr = typeof h.crushFactor === 'number' ? (h.crushFactor * 100).toFixed(0) + '%' : '?';
+        const satStr = typeof h.saturated === 'boolean' ? (h.saturated ? 'YES' : 'no') : (sr !== undefined ? (sr > 0.5 ? 'frequent' : 'no') : '—');
+        const pinnedStr = typeof pr === 'number' ? (pr * 100).toFixed(0) + '%' : '?';
+        lines.push(`| ${p} | ${h.grade || '?'} | ${productStr} | ${crushStr} | ${satStr} | ${pinnedStr} |`);
+      }
+    }
+    lines.push('');
+
+    // Boundary-pinned modules (last beat)
+    const allPinned = [];
+    for (let i = 0; i < pipelines.length; i++) {
+      const h = sh.lastHealth[pipelines[i]];
+      if (h && h.pinnedModules && h.pinnedModules.length > 0) {
+        for (let j = 0; j < h.pinnedModules.length; j++) {
+          allPinned.push({ module: h.pinnedModules[j], pipeline: pipelines[i] });
+        }
+      }
+    }
+    if (allPinned.length > 0) {
+      lines.push('### Boundary-Pinned Modules (end-of-run)');
+      lines.push('');
+      lines.push('> These modules\' raw values exceeded their registered clamp range.');
+      lines.push('');
+      lines.push('| Module | Pipeline |');
+      lines.push('|---|---|');
+      allPinned.forEach(p => {
+        lines.push(`| ${p.module} | ${p.pipeline} |`);
+      });
+      lines.push('');
+    }
+
+    // Trust ecosystem health
+    const trust = sh.lastHealth.trust;
+    if (trust) {
+      lines.push('### Trust Ecosystem Health');
+      lines.push('');
+      lines.push(`Grade: **${trust.grade || 'unknown'}**`);
+      lines.push('');
+      if (trust.starvingSystems && trust.starvingSystems.length > 0) {
+        lines.push(`Starving (score < 0.05): ${trust.starvingSystems.join(', ')}`);
+        lines.push('');
+      }
+      if (trust.thrivingSystems && trust.thrivingSystems.length > 0) {
+        lines.push(`Thriving (score > 0.40): ${trust.thrivingSystems.join(', ')}`);
+        lines.push('');
+      }
+    }
+
+    // Saturation rates (if any pipeline saturated more than 10% of beats)
+    if (sh.saturationRate && sh.beatsAnalyzed > 0) {
+      const satEntries = Object.entries(sh.saturationRate).filter(([, r]) => r > 0.1);
+      if (satEntries.length > 0) {
+        lines.push('### Pipeline Saturation Warning');
+        lines.push('');
+        lines.push('> These pipelines hit their floor/ceiling on a significant fraction of beats.');
+        lines.push('');
+        satEntries.forEach(([pipeline, rate]) => {
+          lines.push(`- **${pipeline}**: saturated on ${(rate * 100).toFixed(0)}% of beats`);
+        });
+        lines.push('');
+      }
+    }
   }
 
   return { emit };
