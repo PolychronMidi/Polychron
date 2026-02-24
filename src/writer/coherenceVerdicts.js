@@ -70,7 +70,7 @@ coherenceVerdicts = (() => {
 
     if (s.regime === 'stagnant') {
       verdicts.push({ severity: 'critical', area: 'dynamics', finding: `Regime stagnant (velocity ${s.velocity}) — system stuck in attractor. Signal getters may be producing near-constant values.` });
-    } else if (s.regime === 'oscillating' && s.curvature > 0.9) {
+    } else if (s.regime === 'oscillating' && s.curvature > 0.6) {
       verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Regime oscillating with high curvature (${s.curvature.toFixed(3)}) — pendulum reversals rather than forward evolution. Look for bias getters that flip between two states.` });
     } else if (s.regime === 'fragmented') {
       verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Regime fragmented — dimensions acting independently without coordination.` });
