@@ -32,7 +32,7 @@ SystemDynamicsProfiler = (() => {
   // velocity/curvature. Without this, first-differences amplify beat-to-beat
   // noise from 74 independent modules, inflating curvature artificially.
   // The smoothing factor matches the musical output's effective responsiveness.
-  const STATE_SMOOTHING = 0.35;
+  const STATE_SMOOTHING = 0.25;
   /** @type {number[] | null} */
   let _smoothedState = null;
 
@@ -204,20 +204,21 @@ SystemDynamicsProfiler = (() => {
    * @returns {string}
    */
   function _classifyRegime(avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
-    // Thresholds calibrated for STATE_SMOOTHING = 0.35 EMA on the state vector.
-    // Smoothing reduces velocity by ~60% and curvature by ~40% vs raw values.
+    // Thresholds calibrated for STATE_SMOOTHING = 0.25 EMA on the state vector.
+    // Smoothing reduces velocity by ~70% and curvature by ~50% vs raw values.
+    // Velocity thresholds scaled ~0.71x from the 0.35 baseline.
     // Stagnant: barely moving through state space
-    if (avgVelocity < 0.004) return 'stagnant';
+    if (avgVelocity < 0.003) return 'stagnant';
     // Oscillating: high curvature (frequent reversals) with moderate velocity
-    if (avgCurvature > 0.5 && avgVelocity < 0.04) return 'oscillating';
+    if (avgCurvature > 0.5 && avgVelocity < 0.03) return 'oscillating';
     // Exploring: high velocity + varied curvature + multi-dimensional
-    if (avgVelocity > 0.02 && effectiveDim > 2.5) return 'exploring';
+    if (avgVelocity > 0.015 && effectiveDim > 2.5) return 'exploring';
     // Coherent: strong coupling + moderate velocity (dimensions move together)
-    if (couplingStrength > 0.45 && avgVelocity > 0.008) return 'coherent';
+    if (couplingStrength > 0.45 && avgVelocity > 0.006) return 'coherent';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.2 && effectiveDim > 3) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
-    if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
+    if (avgCurvature < 0.2 && avgVelocity > 0.006) return 'drifting';
     return 'evolving';
   }
 
