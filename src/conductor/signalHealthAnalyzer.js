@@ -157,10 +157,21 @@ SignalHealthAnalyzer = (() => {
 
   /**
    * End-of-run summary: percentage of beats spent in each state.
+   * Recomputes trust from the final snapshot to avoid stale per-beat data.
    * @returns {SignalHealthSummary}
    */
   function getSummary() {
     const b = m.max(1, beatsSeen);
+    // Recompute trust from the final trust scores — the per-beat _lastHealth.trust
+    // can be stale because the recorder runs before crossLayerBeatRecord registers
+    // the current beat's outcomes.
+    const freshTrust = _analyzeTrust();
+    const freshOverall = _overallGrade([
+      _lastHealth.density.grade,
+      _lastHealth.tension.grade,
+      _lastHealth.flicker.grade,
+      freshTrust.grade
+    ]);
     return {
       beatsAnalyzed: beatsSeen,
       pinnedRate: {
@@ -172,7 +183,13 @@ SignalHealthAnalyzer = (() => {
         density: saturationCounts.density / b,
         tension: saturationCounts.tension / b
       },
-      lastHealth: _lastHealth
+      lastHealth: {
+        density: _lastHealth.density,
+        tension: _lastHealth.tension,
+        flicker: _lastHealth.flicker,
+        trust: freshTrust,
+        overall: freshOverall
+      }
     };
   }
 

@@ -54,9 +54,9 @@ RestDensityTracker = (() => {
       const ramp = clamp((3 - nps) / 3, 0, 1);
       return 1.0 + ramp * 0.15;
     }
-    // Dense zone: nps 15–25 → bias 1.0–0.85
+    // Dense zone: nps 15–40 → bias 1.0–0.85
     if (nps >= 15) {
-      const ramp = clamp((nps - 15) / 10, 0, 1);
+      const ramp = clamp((nps - 15) / 25, 0, 1);
       return 1.0 - ramp * 0.15;
     }
     return 1.0;
