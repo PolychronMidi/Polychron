@@ -15,7 +15,7 @@ dynamismPulse = (() => {
     const beatProgress = clamp(TimeStream.normalizedProgress('beat'), 0, 1);
 
     const unitPhase = unit === 'beat' ? 0 : unit === 'div' ? 1.1 : unit === 'subdiv' ? 2.2 : 3.3;
-    const unitSeed = Number.isFinite(Number(unitStart)) ? Number(unitStart) : (measureProgress * 137 + beatProgress * 89);
+    const unitSeed = unitStart;
     const osc = (m.sin(unitSeed * 0.0009 + unitPhase) + 1) * 0.5;
 
     const basePulse = measureProgress * 0.35 + beatProgress * 0.35 + osc * 0.3;
@@ -28,9 +28,7 @@ dynamismPulse = (() => {
 
     // Scale flicker amplitude with crossModulation feedback:
     // dense rhythmic activity → wider flicker → more textural contrast
-    const crossModAmp = (Number.isFinite(crossModulation))
-      ? clamp(crossModulation / 6, 0, 1) // crossMod typically ranges ~0–6
-      : flickerProfile.crossModWeight;
+    const crossModAmp = clamp(crossModulation / 6, 0, 1); // crossMod typically ranges ~0–6
     const flickerScale = depthAmp * (0.5 + 0.5 * crossModAmp);
 
     // Two incommensurate noise samples for organic non-repeating flicker

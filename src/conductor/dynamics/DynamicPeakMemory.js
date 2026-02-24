@@ -45,7 +45,7 @@ DynamicPeakMemory = (() => {
     }
 
     const lastPeak = peaks[peaks.length - 1];
-    const now = (Number.isFinite(Number(beatStartTime))) ? Number(beatStartTime) : lastPeak.time;
+    const now = V.requireFinite(beatStartTime, 'beatStartTime');
     const timeSince = now - lastPeak.time;
 
     let peakRecency = 'distant';

@@ -21,10 +21,8 @@ GrooveTemplateAdvisor = (() => {
       return { avgDeviation: 0, maxDeviation: 0, swingRatio: 0.5, rigid: true, loose: false };
     }
 
-    // Subdivision duration in seconds; fallback to 0.125s
-    const subdivDur = (Number.isFinite(tpSec) && Number.isFinite(tpSubdiv) && tpSec > 0)
-      ? tpSubdiv / tpSec
-      : 0.125;
+    // Subdivision duration in seconds
+    const subdivDur = V.requireFinite(tpSubdiv, 'tpSubdiv') / V.requireFinite(tpSec, 'tpSec');
 
     let sumDev = 0;
     let maxDev = 0;

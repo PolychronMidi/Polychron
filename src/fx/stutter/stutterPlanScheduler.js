@@ -15,7 +15,7 @@ StutterPlanScheduler = (() => {
   function schedulePlan(stutterMgr, planOrCfg = {}) {
     V.assertObject(stutterMgr, 'stutterMgr');
     const isId = (typeof planOrCfg === 'string' && stutterMgr.plans.has(planOrCfg));
-    const planId = isId ? planOrCfg : createPlan(stutterMgr, planOrCfg || {});
+    const planId = isId ? planOrCfg : createPlan(stutterMgr, planOrCfg);
     const plan = /** @type {any} */ (stutterMgr.plans.get(planId));
 
     const startTick = Number.isFinite(Number(plan.startTick))

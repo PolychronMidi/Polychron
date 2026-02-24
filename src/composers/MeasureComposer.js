@@ -34,7 +34,7 @@ MeasureComposer = class MeasureComposer {
    */
   setCapabilities(next = {}) {
     V.assertObject(next, 'capabilities');
-    const merged = Object.assign({}, this.capabilities || {}, next || {});
+    const merged = Object.assign({}, this.capabilities || {}, next);
     const validated = assertComposerCapabilities(merged);
     this.capabilities = validated;
     return this.capabilities;

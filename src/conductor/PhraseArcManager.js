@@ -29,7 +29,7 @@ PhraseArcManager = class PhraseArcManager {
     } else {
       this.arcType = opts.arcType;
     }
-    this._registerRangeOverride = Number.isFinite(Number(opts.registerRange)) ? Number(opts.registerRange) : null;
+    this._registerRangeOverride = (opts.registerRange !== undefined) ? V.requireFinite(Number(opts.registerRange), 'opts.registerRange') : null;
     if (opts.densityRange !== undefined) {
       if (!opts.densityRange || typeof opts.densityRange !== 'object' || !('min' in opts.densityRange && 'max' in opts.densityRange)) {
         throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');

@@ -23,7 +23,7 @@ assertComposerCapabilities = function(composerOrCapabilities) {
     ? composerOrCapabilities.capabilities
     : composerOrCapabilities;
 
-  const merged = Object.assign({}, _COMPOSER_CAPABILITY_DEFAULTS, source || {});
+  const merged = Object.assign({}, _COMPOSER_CAPABILITY_DEFAULTS, source);
   const keys = ['preservesScale', 'mutatesPitchClasses', 'deterministic', 'notesReflectOutputSet', 'timeVaryingScaleContext'];
   for (const key of keys) {
     if (typeof merged[key] !== 'boolean') {

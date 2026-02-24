@@ -56,9 +56,7 @@ DynamismEngine = (() => {
    */
   function getJourneyEnergy() {
     assertDependencies();
-    if (!Number.isFinite(Number(sectionIndex))) {
-      return 0;
-    }
+    V.requireFinite(Number(sectionIndex), 'sectionIndex');
 
     const stop = HarmonicJourney.getStop(Number(sectionIndex));
     V.assertObject(stop, 'HarmonicJourney stop');
@@ -180,4 +178,3 @@ DynamismEngine = (() => {
     resolve
   };
 })();
-
