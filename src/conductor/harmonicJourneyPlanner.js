@@ -81,6 +81,24 @@ harmonicJourneyPlanner = (() => {
         throw new Error(`HarmonicJourney.planJourney: move produced invalid key "${result.key}"`);
       }
 
+      // Consecutive-mode guard: if result preserves the current mode and we have
+      // room for variety, retry once with a mode-changing move.
+      if (result.mode === currentMode && steps.length > 0 && s < totalSections - 1) {
+        const modeChangers = HJ.getMovePoolForPhase('development');
+        const retry = modeChangers[ri(modeChangers.length - 1)](currentKey, currentMode);
+        if (retry.mode !== currentMode) {
+          const retrySimplified = t.Note.simplify(retry.key);
+          const retryKey = t.Note.pitchClass(retrySimplified || retry.key);
+          if (retryKey) {
+            const dist = HJ.harmonicDistance(currentKey, retryKey);
+            currentKey = retryKey;
+            currentMode = retry.mode;
+            steps.push({ key: currentKey, mode: currentMode, move: retry.move + ' (mode-shift)', distance: dist });
+            continue;
+          }
+        }
+      }
+
       const dist = HJ.harmonicDistance(currentKey, nextKey);
       currentKey = nextKey;
       currentMode = result.mode;

@@ -60,7 +60,11 @@ DynamicRangeTracker = (() => {
   function getSpreadBias(opts) {
     const profile = getVelocityProfile(opts);
     if (profile.compressed) return 1.2;
-    if (profile.spread > 60) return 0.85;
+    // Continuous ramp: spread 40–80 → bias 1.0–0.88 (no hard cliff at 60)
+    if (profile.spread > 40) {
+      const ramp = clamp((profile.spread - 40) / 40, 0, 1);
+      return 1.0 - ramp * 0.12;
+    }
     return 1.0;
   }
 
@@ -163,4 +167,3 @@ DynamicRangeTracker = (() => {
     reset
   };
 })();
-

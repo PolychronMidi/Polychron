@@ -140,7 +140,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const phraseTension = MainBootstrap.requireUnitInterval('ConductorState.compositeIntensity', ConductorState.getField('compositeIntensity'));
     const roleSwapResult = DynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
     const rsp = MAIN_LOOP_CONTROLS.trustPayoffs.roleSwap;
-    AdaptiveTrustScores.registerOutcome('roleSwap', roleSwapResult.swapped ? rsp.swapped : rsp.notSwapped);
+    if (roleSwapResult.swapped) {
+      AdaptiveTrustScores.registerOutcome('roleSwap', rsp.swapped);
+    }
     if (roleSwapResult.swapped) {
       ExplainabilityBus.emit('role-swap', 'both', {
         swapCount: roleSwapResult.swapCount,
