@@ -88,6 +88,30 @@ harmonicJourneyPlanner = (() => {
       steps.push({ key: currentKey, mode: currentMode, move: result.move, distance: dist });
     }
 
+    // Post-hoc diversity check: if all steps share the same mode as origin,
+    // force the middle step to use a contrasting mode.
+    if (steps.length >= 2) {
+      const modes = new Set([originMode]);
+      for (let i = 0; i < steps.length; i++) modes.add(steps[i].mode);
+      if (modes.size < 2 + m.min(1, steps.length - 1)) {
+        // Pick the step closest to the midpoint and force a parallel-mode change
+        const midIdx = m.floor(steps.length / 2);
+        const parallelMoves = HJ.getMovePoolForPhase('development');
+        const moveFn = parallelMoves[ri(parallelMoves.length - 1)];
+        const prevKey = midIdx > 0 ? steps[midIdx - 1].key : originKey;
+        const prevMode = midIdx > 0 ? steps[midIdx - 1].mode : originMode;
+        const result = moveFn(prevKey, prevMode);
+        const simplified = t.Note.simplify(result.key);
+        const nextKey = t.Note.pitchClass(simplified || result.key);
+        if (nextKey) {
+          steps[midIdx].key = nextKey;
+          steps[midIdx].mode = result.mode;
+          steps[midIdx].move = result.move + ' (diversity)';
+          steps[midIdx].distance = HJ.harmonicDistance(prevKey, nextKey);
+        }
+      }
+    }
+
     return steps;
   }
 
