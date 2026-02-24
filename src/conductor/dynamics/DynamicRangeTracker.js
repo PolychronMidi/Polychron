@@ -52,20 +52,19 @@ DynamicRangeTracker = (() => {
 
   /**
    * Get velocity-spread bias for the flickerAmplitude chain.
-   * Compressed â†’ wider spread; already wide â†’ slight reduction.
+   * Continuous ramp: narrow spread → widen (boost); wide spread → slight reduction.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.8 to 1.3
    */
   function getSpreadBias(opts) {
     const profile = getVelocityProfile(opts);
-    if (profile.compressed) return 1.2;
-    // Continuous ramp: spread 40–80 → bias 1.0–0.88 (no hard cliff at 60)
-    if (profile.spread > 40) {
-      const ramp = clamp((profile.spread - 40) / 40, 0, 1);
-      return 1.0 - ramp * 0.12;
+    // Continuous ramp: spread 0→30 maps to 1.2→1.0; spread 30→80 maps to 1.0→0.88
+    if (profile.spread <= 30) {
+      return 1.2 - (profile.spread / 30) * 0.2;
     }
-    return 1.0;
+    const ramp = clamp((profile.spread - 30) / 50, 0, 1);
+    return 1.0 - ramp * 0.12;
   }
 
   /**
@@ -123,14 +122,21 @@ DynamicRangeTracker = (() => {
 
   /**
    * Get contrast-driven flicker modifier.
-   * Contrast deficit â†’ amplify flicker for wider velocity spread.
+   * Continuous ramp based on dynamic range utilization.
+   * Narrow global range or low recent utilization → amplify flicker.
    * @returns {number} - 0.95 to 1.2
    */
   function getContrastFlickerModifier() {
     const profile = getContrastProfile();
-    if (profile.contrastDeficit) return 1.15;
-    if (profile.suggestion === 'explore-extremes') return 1.1;
-    return 1.0;
+    if (profile.globalRange < 1) return 1.0;
+    if (profile.globalRange < 30) {
+      // Narrow global range — ramp boost: globalRange 0→30 maps to 1.1→1.0
+      return 1.0 + clamp((30 - profile.globalRange) / 30, 0, 1) * 0.1;
+    }
+    // Wide global range — ramp based on recent utilization ratio
+    // utilizationRatio 0→0.8 maps to 1.15→1.0
+    const utilizationRatio = profile.recentRange / profile.globalRange;
+    return 1.0 + clamp((0.8 - utilizationRatio) / 0.8, 0, 1) * 0.15;
   }
 
   /**

@@ -65,16 +65,16 @@ TensionResolutionTracker = (() => {
 
   /**
    * Get a tension bias based on resolution patterns.
-   * Dangling unresolved â†’ boost tension to signal need for resolution.
+   * Continuous ramp: resolvedRatio 0→1 maps to 1.25→1.0.
+   * Low resolution (many unresolved dissonances) → higher tension.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.9 to 1.25
    */
   function getTensionBias(opts) {
     const profile = getResolutionProfile(opts);
-    if (profile.danglingTension) return 1.2;
-    if (profile.resolvedRatio < 0.5) return 1.1;
-    return 1.0;
+    // Continuous ramp: resolvedRatio 0→1.0 maps to 1.25→1.0
+    return 1.0 + (1.0 - profile.resolvedRatio) * 0.25;
   }
 
   ConductorIntelligence.registerTensionBias('TensionResolutionTracker', () => TensionResolutionTracker.getTensionBias(), 0.9, 1.25);
@@ -84,4 +84,3 @@ TensionResolutionTracker = (() => {
     getTensionBias
   };
 })();
-
