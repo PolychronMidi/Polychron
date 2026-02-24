@@ -154,6 +154,27 @@ foreach ($relativePath in $violatingFiles) {
     }
 }
 
+# Update Validator.create() calls in the renamed files
+foreach ($oldRelativePath in $renamedFiles.Keys) {
+    $newRelativePath = $renamedFiles[$oldRelativePath]
+    $fullPath = Join-Path $RootPath $newRelativePath
+    if (Test-Path $fullPath) {
+        $content = Get-Content -Path $fullPath -Raw
+        $oldBasename = [System.IO.Path]::GetFileNameWithoutExtension($oldRelativePath)
+        $newBasename = [System.IO.Path]::GetFileNameWithoutExtension($newRelativePath)
+
+        # Replace Validator.create('OldName') with Validator.create('newName')
+        $oldValidator = "Validator.create('$oldBasename')"
+        $newValidator = "Validator.create('$newBasename')"
+
+        if ($content -match [regex]::Escape($oldValidator)) {
+            $content = $content -replace [regex]::Escape($oldValidator), $newValidator
+            Set-Content -Path $fullPath -Value $content -Encoding UTF8
+            Write-Host ("Updated Validator.create in {0}: {1} -> {2}" -f $fullPath, $oldValidator, $newValidator)
+        }
+    }
+}
+
 # Now update require statements in index.js files
 $indexFiles = Get-ChildItem -Path $RootPath -Recurse -Filter "index.js" -File
 

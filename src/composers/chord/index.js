@@ -1,14 +1,14 @@
-// Subsystem helpers (helpers first, manager last)
+﻿// Subsystem helpers (helpers first, manager last)
 // @ts-ignore: load side-effect module with globals
-require('./ChordValues');
+require('./chordValues');
 // @ts-ignore: load side-effect module with globals
 require('./chordModulator');
 // @ts-ignore: load side-effect module with globals
 require('./chordConfig');
 // @ts-ignore: load side-effect module with globals
-require('./ChordRegistry');
+require('./chordRegistry');
 // @ts-ignore: load side-effect module with globals
-require('./ChordManager');
+require('./chordManager');
 
 // @ts-ignore: load side-effect module with globals
 require('./chordUtils');
@@ -21,10 +21,12 @@ require('./ChordComposer');
 // @ts-ignore: load side-effect module with globals
 require('./ProgressionGenerator');
 // @ts-ignore: load side-effect module with globals
-require('./PivotChordBridge');
+require('./pivotChordBridge');
 
 // Register progression generator wrapper
 ChordRegistry.register('progression', (key, quality, type) => {
   const pg = new ProgressionGenerator(key, quality);
   return type ? pg.generate(type) : pg.random();
 });
+
+

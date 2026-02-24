@@ -1,4 +1,4 @@
-const V = Validator.create('IntervalComposer');
+﻿const V = Validator.create('intervalComposer');
 /**
  * IntervalComposer: Select scale degree subsets from any scale/mode/chord.
  * Universal utility for any composer that needs to choose which scale positions to use.
@@ -159,3 +159,4 @@ IntervalComposer = {
     return intervals;
   },
 };
+

@@ -1,11 +1,11 @@
-// src/conductor/TexturalGradientTracker.js - Rate of change in textural density.
-// Tracks how fast the composite texture (voices × onset rate) is thickening
+﻿// src/conductor/TexturalGradientTracker.js - Rate of change in textural density.
+// Tracks how fast the composite texture (voices Ã— onset rate) is thickening
 // or thinning over time. Biases toward gradual transitions when rate is too
 // extreme, or allows sudden changes when dramatically appropriate.
-// Pure query API — no side effects.
+// Pure query API â€” no side effects.
 
 TexturalGradientTracker = (() => {
-  const V = Validator.create('TexturalGradientTracker');
+  const V = Validator.create('texturalGradientTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ density: number, time: number }>} */
   const densitySamples = [];
@@ -51,16 +51,16 @@ TexturalGradientTracker = (() => {
     const denom = n * sumXX - sumX * sumX;
     const gradient = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
 
-    // Absolute rate of change — high means rapid texture shift
+    // Absolute rate of change â€” high means rapid texture shift
     const absGradient = m.abs(gradient);
 
-    // flickerMod: rapid changes → widen flicker to accommodate transition,
-    // stable → narrow flicker for consistency
+    // flickerMod: rapid changes â†’ widen flicker to accommodate transition,
+    // stable â†’ narrow flicker for consistency
     let flickerMod = 1;
     if (absGradient > 0.15) {
       flickerMod = clamp(1 + absGradient * 0.4, 1, 1.25);
     } else if (absGradient < 0.03) {
-      flickerMod = 0.92; // very stable → tighten flicker
+      flickerMod = 0.92; // very stable â†’ tighten flicker
     }
 
     let suggestion = 'stable';
@@ -95,3 +95,4 @@ TexturalGradientTracker = (() => {
     reset
   };
 })();
+

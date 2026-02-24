@@ -1,9 +1,9 @@
-// src/rhythm/StutterFeedbackListener.js - EventBus listener for stutter → Rhythm feedback loops
+﻿// src/rhythm/StutterFeedbackListener.js - EventBus listener for stutter â†’ Rhythm feedback loops
 // Mirrors FXFeedbackListener but accumulates stutter activity (CC + note) so
 // rhythm/dynamism systems can respond to stutter intensity.
 
 StutterFeedbackListener = (() => {
-  const V = Validator.create('StutterFeedbackListener');
+  const V = Validator.create('stutterFeedbackListener');
 
   let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
@@ -114,3 +114,4 @@ StutterFeedbackListener = (() => {
     reset
   };
 })();
+

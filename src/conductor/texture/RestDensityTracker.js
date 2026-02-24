@@ -1,10 +1,10 @@
-// src/conductor/texture/RestDensityTracker.js - Tracks rest-to-onset ratio across layers.
+﻿// src/conductor/texture/RestDensityTracker.js - Tracks rest-to-onset ratio across layers.
 // Flags over-saturation (wall of sound) or sparse deserts.
-// Also detects phrase breathing points — merged from PhraseBreathingAdvisor.
-// Pure query API — biases rhythm onset probability and phrase breathing.
+// Also detects phrase breathing points â€” merged from PhraseBreathingAdvisor.
+// Pure query API â€” biases rhythm onset probability and phrase breathing.
 
 RestDensityTracker = (() => {
-  const V = Validator.create('RestDensityTracker');
+  const V = Validator.create('restDensityTracker');
   const WINDOW_SECONDS = 4;
   const BREATH_THRESHOLD = 0.3; // gaps >0.3s count as breaths
 
@@ -40,7 +40,7 @@ RestDensityTracker = (() => {
 
   /**
    * Bias factor for rhythm onset probability.
-   * Saturated → reduce onsets; sparse → boost onsets.
+   * Saturated â†’ reduce onsets; sparse â†’ boost onsets.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.7 to 1.3
@@ -111,7 +111,7 @@ RestDensityTracker = (() => {
 
   /**
    * Density bias to enforce breathing room.
-   * Breathless → reduce density; airy → boost density.
+   * Breathless â†’ reduce density; airy â†’ boost density.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.8 to 1.2
@@ -134,3 +134,4 @@ RestDensityTracker = (() => {
     getBreathingDensityBias
   };
 })();
+

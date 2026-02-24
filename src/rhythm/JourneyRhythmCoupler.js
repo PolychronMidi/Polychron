@@ -1,8 +1,8 @@
-// src/rhythm/JourneyRhythmCoupler.js - Harmonic journey → rhythm complexity coupling
+﻿// src/rhythm/JourneyRhythmCoupler.js - Harmonic journey â†’ rhythm complexity coupling
 // Bold key moves trigger higher rhythm complexity via EventBus journey-move events
 
 JourneyRhythmCoupler = (() => {
-  const V = Validator.create('JourneyRhythmCoupler');
+  const V = Validator.create('journeyRhythmCoupler');
 
   let _boldness = 0;
   let _externalBias = 1;
@@ -11,8 +11,8 @@ JourneyRhythmCoupler = (() => {
 
   /**
    * Map journey move distance + type to a boldness score (0-1).
-   * Distant chromatic moves = high boldness → complex rhythms.
-   * Static holds and gentle returns = low boldness → simple rhythms.
+   * Distant chromatic moves = high boldness â†’ complex rhythms.
+   * Static holds and gentle returns = low boldness â†’ simple rhythms.
    * @param {number} distance - chromatic semitone distance (0-6)
    * @param {string} move - journey move type name
    * @returns {number} boldness 0-1
@@ -21,13 +21,13 @@ JourneyRhythmCoupler = (() => {
     if (move === 'hold' || move === 'origin') return 0;
     if (move === 'return-home') return 0.1;
 
-    // Distance-based boldness curve — roughly linear with saturation at tritone
+    // Distance-based boldness curve â€” roughly linear with saturation at tritone
     if (distance <= 1) return 0.15;
     if (distance <= 2) return 0.25;
     if (distance <= 3) return 0.4;
     if (distance <= 4) return 0.55;
     if (distance <= 5) return 0.7;
-    return 0.85; // distance 6 = tritone — maximum harmonic tension
+    return 0.85; // distance 6 = tritone â€” maximum harmonic tension
   }
 
   /**
@@ -69,7 +69,7 @@ JourneyRhythmCoupler = (() => {
 
   /**
    * Bias rhythm weights based on journey boldness.
-   * Higher boldness → favor complex rhythm patterns (later weight indices).
+   * Higher boldness â†’ favor complex rhythm patterns (later weight indices).
    * Designed to chain with FXFeedbackListener.biasRhythmWeights() in getRhythm.js.
    * @param {Object} rhythmsObj - rhythm lookup with weights
    * @returns {Object} copy with boldness-biased weights
@@ -80,7 +80,7 @@ JourneyRhythmCoupler = (() => {
     }
 
     const boldness = getBoldness();
-    if (boldness < 0.05) return rhythmsObj; // No significant bias — pass through
+    if (boldness < 0.05) return rhythmsObj; // No significant bias â€” pass through
 
     const modified = {};
     for (const [key, spec] of Object.entries(rhythmsObj)) {
@@ -111,7 +111,7 @@ JourneyRhythmCoupler = (() => {
   }
 
   /**
-   * Partial boldness decay at section boundaries (not full reset — let it linger).
+   * Partial boldness decay at section boundaries (not full reset â€” let it linger).
    */
   function resetSection() {
     _boldness *= 0.5;
@@ -136,3 +136,4 @@ JourneyRhythmCoupler = (() => {
     resetSection
   };
 })();
+

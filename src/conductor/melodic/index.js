@@ -1,31 +1,33 @@
-// src/conductor/melodic/index.js — Pitch, intervals, contour, register, voice leading
+﻿// src/conductor/melodic/index.js â€” Pitch, intervals, contour, register, voice leading
 // @ts-ignore: load side-effect module with globals
-require('./AmbitusMigrationTracker');
+require('./ambitusMigrationTracker');
 // @ts-ignore: load side-effect module with globals
-require('./CounterpointMotionTracker');
+require('./counterpointMotionTracker');
 // @ts-ignore: load side-effect module with globals
-require('./IntervalBalanceTracker');
+require('./intervalBalanceTracker');
 // @ts-ignore: load side-effect module with globals
-require('./IntervalDirectionMemory');
+require('./intervalDirectionMemory');
 // @ts-ignore: load side-effect module with globals
-require('./IntervalExpansionContractor');
+require('./intervalExpansionContractor');
 // @ts-ignore: load side-effect module with globals
-require('./MelodicContourTracker');
+require('./melodicContourTracker');
 // @ts-ignore: load side-effect module with globals
 require('./octaveHelpers');
 // @ts-ignore: load side-effect module with globals
-require('./OctaveSpreadMonitor');
+require('./octaveSpreadMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./PhraseContourArchetypeDetector');
+require('./phraseContourArchetypeDetector');
 // @ts-ignore: load side-effect module with globals
-require('./RegisterMigrationTracker');
+require('./registerMigrationTracker');
 // @ts-ignore: load side-effect module with globals
-require('./RegisterPressureMonitor');
+require('./registerPressureMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./RegistralVelocityCorrelator');
+require('./registralVelocityCorrelator');
 // @ts-ignore: load side-effect module with globals
-require('./TessituraPressureMonitor');
+require('./tessituraPressureMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./ThematicRecallDetector');
+require('./thematicRecallDetector');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceLeadingEfficiencyTracker');
+require('./voiceLeadingEfficiencyTracker');
+
+

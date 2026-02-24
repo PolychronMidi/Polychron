@@ -1,4 +1,4 @@
-// HarmonicJourney.js - Tonal center trajectory engine for cross-section/cross-layer coherence.
+﻿// HarmonicJourney.js - Tonal center trajectory engine for cross-section/cross-layer coherence.
 //
 // Plans a key/mode journey across sections using music-theory relationships
 // (circle of fifths, relative major/minor, parallel modes, chromatic mediants).
@@ -21,7 +21,7 @@
  */
 
 HarmonicJourney = (() => {
-  const V = Validator.create('HarmonicJourney');
+  const V = Validator.create('harmonicJourney');
 
   V.requireType(harmonicJourneyHelpers, 'function', 'harmonicJourneyHelpers');
   const HJ = harmonicJourneyHelpers();
@@ -128,7 +128,7 @@ HarmonicJourney = (() => {
     const relFn = relationships[ri(relationships.length - 1)];
     const result = relFn(l1Stop.key, l1Stop.mode);
 
-    // Normalize key — simplify strips double-sharps/flats (C## → D, B# → C)
+    // Normalize key â€” simplify strips double-sharps/flats (C## â†’ D, B# â†’ C)
     const simplified = t.Note.simplify(result.key);
     const normalized = t.Note.pitchClass(simplified || result.key);
     if (!normalized) {
@@ -200,3 +200,4 @@ HarmonicJourney = (() => {
     reset
   };
 })();
+

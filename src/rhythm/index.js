@@ -1,26 +1,26 @@
-// Subsystem helpers (helpers first, manager last)
+﻿// Subsystem helpers (helpers first, manager last)
 // @ts-ignore: side-effect module load
-require('./RhythmValues');
+require('./rhythmValues');
 // @ts-ignore: side-effect module load
 require('./rhythmModulator');
 // @ts-ignore: side-effect module load
-require('./FeedbackAccumulator');
+require('./feedbackAccumulator');
 // @ts-ignore: side-effect module load
-require('./FXFeedbackListener');
+require('./fXFeedbackListener');
 // @ts-ignore: side-effect module load
-require('./StutterFeedbackListener');
+require('./stutterFeedbackListener');
 // @ts-ignore: side-effect module load
-require('./EmissionFeedbackListener');
+require('./emissionFeedbackListener');
 // @ts-ignore: side-effect module load
-require('./JourneyRhythmCoupler');
+require('./journeyRhythmCoupler');
 // @ts-ignore: side-effect module load
-require('./ConductorRegulationListener');
+require('./conductorRegulationListener');
 // @ts-ignore: side-effect module load
-require('./DrumTextureCoupler');
+require('./drumTextureCoupler');
 // @ts-ignore: side-effect module load
-require('./RhythmHistoryTracker');
+require('./rhythmHistoryTracker');
 // @ts-ignore: side-effect module load
-require('./PhaseLockedRhythmGenerator');
+require('./phaseLockedRhythmGenerator');
 // @ts-ignore: side-effect module load
 require('./rhythmConfig');
 // @ts-ignore: side-effect module load
@@ -28,9 +28,9 @@ require('./rhythmPriorsData');
 // @ts-ignore: side-effect module load
 require('./rhythmPriors');
 // @ts-ignore: side-effect module load
-require('./RhythmRegistry');
+require('./rhythmRegistry');
 // @ts-ignore: side-effect module load
-require('./RhythmManager');
+require('./rhythmManager');
 
 // Ensure drumMap is loaded before drummer (drummer depends on drumMap internals)
 // @ts-ignore: side-effect module load
@@ -67,3 +67,5 @@ RhythmRegistry.register('closestDivisor', closestDivisor);
 
 // Preserve legacy naked global mapping for backward compatibility
 rhythmMethods = RhythmRegistry.getAll();
+
+

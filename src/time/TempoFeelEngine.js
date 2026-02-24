@@ -1,11 +1,11 @@
-// src/time/TempoFeelEngine.js - Applies subtle tick offsets for micro-tempo variation.
+﻿// src/time/TempoFeelEngine.js - Applies subtle tick offsets for micro-tempo variation.
 // Creates accelerando/ritardando feel aligned with phrase arcs and section phases.
-// Pure query API — consumer adds getTickOffset() to note timing calculations.
+// Pure query API â€” consumer adds getTickOffset() to note timing calculations.
 
 TempoFeelEngine = (() => {
   const MAX_FEEL_RATIO = 0.025; // max 2.5% tempo deviation
 
-  const V = Validator.create('TempoFeelEngine');
+  const V = Validator.create('tempoFeelEngine');
 
   function requirePhraseContextPosition() {
     const phraseCtx = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
@@ -83,3 +83,4 @@ TempoFeelEngine = (() => {
     getFeelState
   };
 })();
+

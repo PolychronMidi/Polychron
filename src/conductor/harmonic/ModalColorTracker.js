@@ -1,9 +1,9 @@
-// src/conductor/ModalColorTracker.js - Tracks which scale degrees are actually sounding.
+﻿// src/conductor/ModalColorTracker.js - Tracks which scale degrees are actually sounding.
 // Detects "vanilla" (1-3-5 heavy) vs. colorful (2, 4, 6, 7) pitch usage.
-// Pure query API — biases note selection toward underused color tones.
+// Pure query API â€” biases note selection toward underused color tones.
 
 ModalColorTracker = (() => {
-  const V = Validator.create('ModalColorTracker');
+  const V = Validator.create('modalColorTracker');
   const WINDOW_SECONDS = 6;
   // Scale-degree categories
   const CHORD_TONES = new Set([0, 4, 7]); // root, major 3rd, perfect 5th (approx)
@@ -47,7 +47,7 @@ ModalColorTracker = (() => {
 
   /**
    * Get a note-selection bias to encourage modal variety.
-   * Vanilla → boost color tones; overly colorful → stabilize with chord tones.
+   * Vanilla â†’ boost color tones; overly colorful â†’ stabilize with chord tones.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ colorBias: number, stabilityBias: number }}
@@ -95,3 +95,4 @@ ModalColorTracker = (() => {
     getUnderusedPitchClasses
   };
 })();
+

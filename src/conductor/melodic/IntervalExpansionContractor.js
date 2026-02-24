@@ -1,11 +1,11 @@
-// src/conductor/IntervalExpansionContractor.js - Intervallic vocabulary expansion/contraction.
+﻿// src/conductor/IntervalExpansionContractor.js - Intervallic vocabulary expansion/contraction.
 // Tracks whether the range of interval sizes used is expanding (wider leaps
 // emerging) or contracting (tighter steps dominating) over time.
 // Density bias to allow expansion room or encourage consolidation.
-// Pure query API — no side effects.
+// Pure query API â€” no side effects.
 
 IntervalExpansionContractor = (() => {
-  const V = Validator.create('IntervalExpansionContractor');
+  const V = Validator.create('intervalExpansionContractor');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */
   const intervalSnapshots = [];
@@ -83,13 +83,13 @@ IntervalExpansionContractor = (() => {
     if (avgIntervalTrend > 1.5) trend = 'expanding';
     else if (avgIntervalTrend < -1.5) trend = 'contracting';
 
-    // Density bias: rapid expansion → slight reduction to give melodic room;
-    // extreme contraction → slight increase to encourage variety
+    // Density bias: rapid expansion â†’ slight reduction to give melodic room;
+    // extreme contraction â†’ slight increase to encourage variety
     let densityBias = 1;
     if (avgIntervalTrend > 2) {
-      densityBias = 0.96; // expanding fast → give room
+      densityBias = 0.96; // expanding fast â†’ give room
     } else if (avgIntervalTrend < -2) {
-      densityBias = 1.04; // contracting → encourage variety
+      densityBias = 1.04; // contracting â†’ encourage variety
     }
 
     return { trend, densityBias, avgIntervalTrend };
@@ -123,3 +123,4 @@ IntervalExpansionContractor = (() => {
     reset
   };
 })();
+

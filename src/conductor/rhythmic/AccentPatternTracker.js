@@ -1,9 +1,9 @@
-// src/conductor/AccentPatternTracker.js - Tracks velocity accent patterns relative to metric position.
+﻿// src/conductor/AccentPatternTracker.js - Tracks velocity accent patterns relative to metric position.
 // Detects accent ruts (always downbeat emphasis, or no accents at all).
-// Pure query API — biases velocity curves for variety.
+// Pure query API â€” biases velocity curves for variety.
 
 AccentPatternTracker = (() => {
-  const V = Validator.create('AccentPatternTracker');
+  const V = Validator.create('accentPatternTracker');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -79,7 +79,7 @@ AccentPatternTracker = (() => {
 
   /**
    * Get a velocity accent bias to encourage variety.
-   * Downbeat-heavy → boost off-beat accents; flat → boost downbeat emphasis.
+   * Downbeat-heavy â†’ boost off-beat accents; flat â†’ boost downbeat emphasis.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ downbeatBias: number, offbeatBias: number }}
@@ -111,3 +111,4 @@ AccentPatternTracker = (() => {
     getAccentBias
   };
 })();
+

@@ -1,5 +1,5 @@
-// MeasureNotePool.js - note pool builder for MeasureComposer
-const V = Validator.create('MeasureNotePool');
+﻿// MeasureNotePool.js - note pool builder for MeasureComposer
+const V = Validator.create('measureNotePool');
 
 /**
  * Builds a note pool across octaves using interval selection.
@@ -53,3 +53,4 @@ MeasureNotePool = {
     return notesOut;
   }
 };
+

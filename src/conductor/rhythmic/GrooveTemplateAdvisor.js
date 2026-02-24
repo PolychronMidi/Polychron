@@ -1,9 +1,9 @@
-// src/conductor/GrooveTemplateAdvisor.js - Tracks micro-timing deviations from the grid.
+﻿// src/conductor/GrooveTemplateAdvisor.js - Tracks micro-timing deviations from the grid.
 // Detects mechanical rigidity vs. human-like swing feel.
-// Pure query API — advises velocity humanization and swing feel per section phase.
+// Pure query API â€” advises velocity humanization and swing feel per section phase.
 
 GrooveTemplateAdvisor = (() => {
-  const V = Validator.create('GrooveTemplateAdvisor');
+  const V = Validator.create('grooveTemplateAdvisor');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -60,7 +60,7 @@ GrooveTemplateAdvisor = (() => {
 
   /**
    * Suggest a groove feel adjustment.
-   * Rigid → add swing/humanize; loose → tighten toward grid.
+   * Rigid â†’ add swing/humanize; loose â†’ tighten toward grid.
    * @returns {{ suggestion: string, swingAmount: number }}
    */
   function suggestGrooveFeel() {
@@ -76,7 +76,7 @@ GrooveTemplateAdvisor = (() => {
 
   /**
    * Get a velocity humanization bias.
-   * Rigid timing → more velocity variation; loose → less.
+   * Rigid timing â†’ more velocity variation; loose â†’ less.
    * @returns {number} - 0.8 to 1.3
    */
   function getVelocityHumanizeBias() {
@@ -94,3 +94,4 @@ GrooveTemplateAdvisor = (() => {
     getVelocityHumanizeBias
   };
 })();
+

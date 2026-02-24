@@ -1,31 +1,33 @@
-// src/conductor/rhythmic/index.js — Rhythm, timing, onset, accent, syncopation
+﻿// src/conductor/rhythmic/index.js â€” Rhythm, timing, onset, accent, syncopation
 // @ts-ignore: load side-effect module with globals
 require('./beatGridHelpers');
 // @ts-ignore: load side-effect module with globals
-require('./AccentPatternTracker');
+require('./accentPatternTracker');
 // @ts-ignore: load side-effect module with globals
-require('./AttackDensityProfiler');
+require('./attackDensityProfiler');
 // @ts-ignore: load side-effect module with globals
-require('./GrooveTemplateAdvisor');
+require('./grooveTemplateAdvisor');
 // @ts-ignore: load side-effect module with globals
 require('./interLayerRhythmHelpers');
 // @ts-ignore: load side-effect module with globals
-require('./InterLayerRhythmAnalyzer');
+require('./interLayerRhythmAnalyzer');
 // @ts-ignore: load side-effect module with globals
-require('./OnsetDensityProfiler');
+require('./onsetDensityProfiler');
 // @ts-ignore: load side-effect module with globals
-require('./OnsetRegularityMonitor');
+require('./onsetRegularityMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./RhythmicComplexityGradient');
+require('./rhythmicComplexityGradient');
 // @ts-ignore: load side-effect module with globals
-require('./RhythmicDensityContrastTracker');
+require('./rhythmicDensityContrastTracker');
 // @ts-ignore: load side-effect module with globals
-require('./RhythmicGroupingAnalyzer');
+require('./rhythmicGroupingAnalyzer');
 // @ts-ignore: load side-effect module with globals
-require('./RhythmicInertiaTracker');
+require('./rhythmicInertiaTracker');
 // @ts-ignore: load side-effect module with globals
-require('./RhythmicSymmetryDetector');
+require('./rhythmicSymmetryDetector');
 // @ts-ignore: load side-effect module with globals
-require('./SyncopationDensityTracker');
+require('./syncopationDensityTracker');
 // @ts-ignore: load side-effect module with globals
-require('./TemporalProportionTracker');
+require('./temporalProportionTracker');
+
+

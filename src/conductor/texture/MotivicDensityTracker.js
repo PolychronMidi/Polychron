@@ -1,9 +1,9 @@
-// src/conductor/MotivicDensityTracker.js - Counts distinct active pitch patterns.
+﻿// src/conductor/MotivicDensityTracker.js - Counts distinct active pitch patterns.
 // Detects motivic overcrowding (too many competing fragments) or sparseness.
-// Pure query API — biases targetDensity to thin when overcrowded, thicken when sparse.
+// Pure query API â€” biases targetDensity to thin when overcrowded, thicken when sparse.
 
 MotivicDensityTracker = (() => {
-  const V = Validator.create('MotivicDensityTracker');
+  const V = Validator.create('motivicDensityTracker');
   const WINDOW_SECONDS = 4;
   const FRAGMENT_LENGTH = 3; // 3-note pitch-class fragments
 
@@ -43,7 +43,7 @@ MotivicDensityTracker = (() => {
 
   /**
    * Get a motivic density bias.
-   * Overcrowded → thin density; sparse → boost density.
+   * Overcrowded â†’ thin density; sparse â†’ boost density.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.8 to 1.2
@@ -62,3 +62,4 @@ MotivicDensityTracker = (() => {
     getDensityBias
   };
 })();
+

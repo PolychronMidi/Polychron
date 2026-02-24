@@ -1,4 +1,4 @@
-// src/composers/HarmonicContext.js - Shared harmonic state for composer coherence
+﻿// src/composers/HarmonicContext.js - Shared harmonic state for composer coherence
 // Enables harmonically-aware composition across multiple composer types
 
 /**
@@ -15,7 +15,7 @@
  * @property {number} modifiedAt
  */
 HarmonicContext = (() => {
-  const V = Validator.create('HarmonicContext');
+  const V = Validator.create('harmonicContext');
 
   /** @type {HarmonicState} */
   let state = {
@@ -218,3 +218,4 @@ HarmonicContext = (() => {
     toJSON
   };
 })();
+

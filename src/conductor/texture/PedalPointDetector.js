@@ -1,6 +1,6 @@
-// src/conductor/PedalPointDetector.js - Sustained/repeated bass note detection.
+﻿// src/conductor/PedalPointDetector.js - Sustained/repeated bass note detection.
 // Detects harmonic anchoring from bass pedal points (MIDI <= 55).
-// Stateless — queries ATW per call; returns dominant bass PC and staleness.
+// Stateless â€” queries ATW per call; returns dominant bass PC and staleness.
 //
 // Complementary to HarmonicPedalFieldTracker (harmonic/) which is stateful and
 // tracks bass PC streak duration for derivedTension bias. This detector feeds
@@ -8,9 +8,9 @@
 // Both are consumed by GlobalConductor for different product chains.
 
 PedalPointDetector = (() => {
-  const V = Validator.create('PedalPointDetector');
+  const V = Validator.create('pedalPointDetector');
   const WINDOW_SECONDS = 6;
-  const BASS_CEILING = 55; // MIDI note — below this = bass register
+  const BASS_CEILING = 55; // MIDI note â€” below this = bass register
 
   /**
    * Detect pedal points (repeated/sustained bass notes) in the ATW window.
@@ -82,7 +82,7 @@ PedalPointDetector = (() => {
 
   /**
    * Get a bass movement suggestion.
-   * Stale pedal → encourage bass movement; no pedal → suggest anchoring.
+   * Stale pedal â†’ encourage bass movement; no pedal â†’ suggest anchoring.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ suggestion: string, urgency: number }}
@@ -111,3 +111,4 @@ PedalPointDetector = (() => {
     getBassSuggestion
   };
 })();
+

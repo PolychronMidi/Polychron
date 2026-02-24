@@ -1,5 +1,5 @@
-ConductorRegulationListener = (() => {
-  const V = Validator.create('ConductorRegulationListener');
+﻿ConductorRegulationListener = (() => {
+  const V = Validator.create('conductorRegulationListener');
 
   let initialized = false;
 
@@ -56,3 +56,4 @@ ConductorRegulationListener = (() => {
     resetSection
   };
 })();
+

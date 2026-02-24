@@ -1,17 +1,19 @@
-// src/conductor/dynamics/index.js — Dynamic level, energy, tension, climax
+﻿// src/conductor/dynamics/index.js â€” Dynamic level, energy, tension, climax
 // @ts-ignore: load side-effect module with globals
-require('./ClimaxProximityPredictor');
+require('./climaxProximityPredictor');
 // @ts-ignore: load side-effect module with globals
-require('./DensityWaveAnalyzer');
+require('./densityWaveAnalyzer');
 // @ts-ignore: load side-effect module with globals
-require('./DurationalContourTracker');
+require('./durationalContourTracker');
 // @ts-ignore: load side-effect module with globals
-require('./DynamicArchitectPlanner');
+require('./dynamicArchitectPlanner');
 // @ts-ignore: load side-effect module with globals
-require('./DynamicPeakMemory');
+require('./dynamicPeakMemory');
 // @ts-ignore: load side-effect module with globals
-require('./DynamicRangeTracker');
+require('./dynamicRangeTracker');
 // @ts-ignore: load side-effect module with globals
-require('./EnergyMomentumTracker');
+require('./energyMomentumTracker');
 // @ts-ignore: load side-effect module with globals
-require('./VelocityShapeAnalyzer');
+require('./velocityShapeAnalyzer');
+
+

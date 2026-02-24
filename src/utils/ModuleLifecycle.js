@@ -1,14 +1,14 @@
-// ModuleLifecycle.js — Shared scope-based lifecycle management.
+﻿// ModuleLifecycle.js â€” Shared scope-based lifecycle management.
 // Both CrossLayerRegistry and ConductorIntelligence compose this
 // for uniform module lifecycle (scoped resets at all/section/phrase boundaries).
 // Each module self-declares which scopes it participates in at registration time.
 
 ModuleLifecycle = (() => {
-  const V = Validator.create('ModuleLifecycle');
+  const V = Validator.create('moduleLifecycle');
 
   /**
    * Create a new lifecycle instance for a subsystem.
-   * @param {string} ownerName — diagnostic label (e.g. 'CrossLayerRegistry')
+   * @param {string} ownerName â€” diagnostic label (e.g. 'CrossLayerRegistry')
    * @returns {{ register, resetByScope, resetAll, resetSection, resetPhrase, getNames, getCount }}
    */
   function create(ownerName) {
@@ -19,9 +19,9 @@ ModuleLifecycle = (() => {
 
     /**
      * Register a module for scoped lifecycle resets.
-     * @param {string} name — unique module name
-     * @param {{ reset: function }} mod — must expose reset()
-     * @param {Array<'all'|'section'|'phrase'>} scopes — which resets to participate in
+     * @param {string} name â€” unique module name
+     * @param {{ reset: function }} mod â€” must expose reset()
+     * @param {Array<'all'|'section'|'phrase'>} scopes â€” which resets to participate in
      */
     function register(name, mod, scopes) {
       V.assertNonEmptyString(name, 'name');
@@ -59,3 +59,4 @@ ModuleLifecycle = (() => {
 
   return { create };
 })();
+

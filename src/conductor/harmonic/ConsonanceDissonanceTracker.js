@@ -1,9 +1,9 @@
-// src/conductor/ConsonanceDissonanceTracker.js - Interval-quality ratio analysis.
+﻿// src/conductor/ConsonanceDissonanceTracker.js - Interval-quality ratio analysis.
 // Measures consonant vs dissonant intervals in simultaneously sounding notes.
-// Pure query API — modifies derivedTension to prevent dissonance ruts or blandness.
+// Pure query API â€” modifies derivedTension to prevent dissonance ruts or blandness.
 
 ConsonanceDissonanceTracker = (() => {
-  const V = Validator.create('ConsonanceDissonanceTracker');
+  const V = Validator.create('consonanceDissonanceTracker');
   const WINDOW_SECONDS = 4;
   // Shared consonant intervals from pitchClassHelpers
   const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
@@ -57,7 +57,7 @@ ConsonanceDissonanceTracker = (() => {
 
   /**
    * Get a tension bias based on consonance/dissonance balance.
-   * Bland → boost tension for more dissonance; harsh → reduce for more consonance.
+   * Bland â†’ boost tension for more dissonance; harsh â†’ reduce for more consonance.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.85 to 1.25
@@ -76,3 +76,4 @@ ConsonanceDissonanceTracker = (() => {
     getTensionBias
   };
 })();
+

@@ -1,9 +1,9 @@
-// src/conductor/OnsetDensityProfiler.js - Ground-truth onset density metric via ATW.
+﻿// src/conductor/OnsetDensityProfiler.js - Ground-truth onset density metric via ATW.
 // Note-onset count per second across both layers, independent of EventBus feedback.
 // Directly scales conductor densityBias and crossModBias.
 
 OnsetDensityProfiler = (() => {
-  const V = Validator.create('OnsetDensityProfiler');
+  const V = Validator.create('onsetDensityProfiler');
   const WINDOW_SECONDS = 3;
   const TARGET_NPS = 6; // target notes-per-second for "balanced" density
 
@@ -69,7 +69,7 @@ OnsetDensityProfiler = (() => {
     const d = getDensity();
     if (d.nps === 0) return 1.0;
     const ratio = d.nps / TARGET_NPS;
-    // Continuous ramp: ratio 0.5–1.0 → bias 1.35–1.0, ratio 1.0–2.0 → bias 1.0–0.75
+    // Continuous ramp: ratio 0.5â€“1.0 â†’ bias 1.35â€“1.0, ratio 1.0â€“2.0 â†’ bias 1.0â€“0.75
     if (ratio <= 1.0) {
       const ramp = clamp((1.0 - ratio) / 0.5, 0, 1);
       return 1.0 + ramp * 0.35;
@@ -80,7 +80,7 @@ OnsetDensityProfiler = (() => {
 
   /**
    * Get a crossMod bias based on onset density trends.
-   * Accelerating → dampen crossMod; decelerating → boost it.
+   * Accelerating â†’ dampen crossMod; decelerating â†’ boost it.
    * @returns {number} - 0.8 to 1.2
    */
   function getCrossModBias() {
@@ -113,3 +113,4 @@ OnsetDensityProfiler = (() => {
     getLayerDensities
   };
 })();
+

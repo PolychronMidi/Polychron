@@ -1,9 +1,9 @@
-// src/conductor/HarmonicRhythmDensityRatio.js - Ratio of harmonic change rate to onset rate.
+﻿// src/conductor/HarmonicRhythmDensityRatio.js - Ratio of harmonic change rate to onset rate.
 // Detects imbalance: fast harmony + sparse notes, or slow harmony + dense notes.
-// Pure query API — corrects density when harmonic and melodic activity diverge.
+// Pure query API â€” corrects density when harmonic and melodic activity diverge.
 
 HarmonicRhythmDensityRatio = (() => {
-  const V = Validator.create('HarmonicRhythmDensityRatio');
+  const V = Validator.create('harmonicRhythmDensityRatio');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -33,11 +33,11 @@ HarmonicRhythmDensityRatio = (() => {
     let imbalanced = false;
 
     if (ratio > 2) {
-      // Fast harmony, sparse notes — need more notes to support changes
+      // Fast harmony, sparse notes â€” need more notes to support changes
       suggestion = 'increase-density';
       imbalanced = true;
     } else if (ratio < 0.4) {
-      // Slow harmony, dense notes — harmony can't keep up
+      // Slow harmony, dense notes â€” harmony can't keep up
       suggestion = 'decrease-density';
       imbalanced = true;
     }
@@ -65,3 +65,4 @@ HarmonicRhythmDensityRatio = (() => {
     getDensityBias
   };
 })();
+

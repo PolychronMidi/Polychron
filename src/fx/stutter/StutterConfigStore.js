@@ -1,7 +1,7 @@
-// StutterConfigStore.js - config storage and validation
+﻿// StutterConfigStore.js - config storage and validation
 // Exports the StutterConfig global directly (no wrapper needed).
 
-const V = Validator.create('StutterConfigStore');
+const V = Validator.create('stutterConfigStore');
 
 if (!STUTTER_PROFILES) {
   throw new Error('StutterConfigStore.js: missing STUTTER_PROFILES global');
@@ -13,7 +13,7 @@ const _stutterStore = {
   profiles: Object.assign({}, STUTTER_PROFILES)
 };
 
-// Validation caches — these globals are static within a run, so re-validation is redundant.
+// Validation caches â€” these globals are static within a run, so re-validation is redundant.
 let _crossModValidated = false;
 let _profilesValidated = false;
 
@@ -166,3 +166,4 @@ StutterConfig = {
   getPreset,
   getDirectiveDefaults
 };
+

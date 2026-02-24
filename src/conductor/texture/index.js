@@ -1,39 +1,41 @@
-// src/conductor/texture/index.js — Texture, orchestration, layers, phrasing, structure
+﻿// src/conductor/texture/index.js â€” Texture, orchestration, layers, phrasing, structure
 // @ts-ignore: load side-effect module with globals
-require('./ArticulationProfiler');
+require('./articulationProfiler');
 // @ts-ignore: load side-effect module with globals
-require('./CrossLayerDensityBalancer');
+require('./crossLayerDensityBalancer');
 // @ts-ignore: load side-effect module with globals
-require('./LayerCoherenceScorer');
+require('./layerCoherenceScorer');
 // @ts-ignore: load side-effect module with globals
-require('./LayerEntryExitTracker');
+require('./layerEntryExitTracker');
 // @ts-ignore: load side-effect module with globals
-require('./LayerIndependenceScorer');
+require('./layerIndependenceScorer');
 // @ts-ignore: load side-effect module with globals
 require('./fragmentHelpers');
 // @ts-ignore: load side-effect module with globals
-require('./MotivicDensityTracker');
+require('./motivicDensityTracker');
 // @ts-ignore: load side-effect module with globals
-require('./OrchestrationWeightTracker');
+require('./orchestrationWeightTracker');
 // @ts-ignore: load side-effect module with globals
-require('./PedalPointDetector');
+require('./pedalPointDetector');
 // @ts-ignore: load side-effect module with globals
-require('./PhraseLengthMomentumTracker');
+require('./phraseLengthMomentumTracker');
 // @ts-ignore: load side-effect module with globals
-require('./RepetitionFatigueMonitor');
+require('./repetitionFatigueMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./RestDensityTracker');
+require('./restDensityTracker');
 // @ts-ignore: load side-effect module with globals
-require('./SectionLengthAdvisor');
+require('./sectionLengthAdvisor');
 // @ts-ignore: load side-effect module with globals
-require('./SilenceDistributionTracker');
+require('./silenceDistributionTracker');
 // @ts-ignore: load side-effect module with globals
-require('./StructuralFormTracker');
+require('./structuralFormTracker');
 // @ts-ignore: load side-effect module with globals
-require('./TexturalGradientTracker');
+require('./texturalGradientTracker');
 // @ts-ignore: load side-effect module with globals
-require('./TexturalMemoryAdvisor');
+require('./texturalMemoryAdvisor');
 // @ts-ignore: load side-effect module with globals
-require('./TimbreBalanceTracker');
+require('./timbreBalanceTracker');
 // @ts-ignore: load side-effect module with globals
-require('./VoiceDensityBalancer');
+require('./voiceDensityBalancer');
+
+

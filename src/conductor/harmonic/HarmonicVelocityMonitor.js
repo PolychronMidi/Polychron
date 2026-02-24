@@ -1,9 +1,9 @@
-// src/conductor/HarmonicVelocityMonitor.js - Harmonic change rate vs energy arc.
+﻿// src/conductor/HarmonicVelocityMonitor.js - Harmonic change rate vs energy arc.
 // Flags harmony moving too fast in calm passages or stalling at climaxes.
-// Pure query API — scales HarmonicRhythmTracker thresholds and journey boldness.
+// Pure query API â€” scales HarmonicRhythmTracker thresholds and journey boldness.
 
 HarmonicVelocityMonitor = (() => {
-  const V = Validator.create('HarmonicVelocityMonitor');
+  const V = Validator.create('harmonicVelocityMonitor');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -48,7 +48,7 @@ HarmonicVelocityMonitor = (() => {
 
   /**
    * Get a harmonic-change threshold bias.
-   * Harmony too fast → raise threshold (slow it down); too slow → lower it.
+   * Harmony too fast â†’ raise threshold (slow it down); too slow â†’ lower it.
    * @returns {number} - 0.7 to 1.4
    */
   function getChangeThresholdBias() {
@@ -60,7 +60,7 @@ HarmonicVelocityMonitor = (() => {
 
   /**
    * Get a journey boldness bias.
-   * Stalling harmony → bolder moves; rushing → more conservative.
+   * Stalling harmony â†’ bolder moves; rushing â†’ more conservative.
    * @returns {number} - 0.7 to 1.3
    */
   function getJourneyBoldnessBias() {
@@ -79,3 +79,4 @@ HarmonicVelocityMonitor = (() => {
     getJourneyBoldnessBias
   };
 })();
+

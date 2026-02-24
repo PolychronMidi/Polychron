@@ -1,33 +1,35 @@
-// src/conductor/harmonic/index.js — Harmony, tonality, chord quality, key distance
+﻿// src/conductor/harmonic/index.js â€” Harmony, tonality, chord quality, key distance
 // @ts-ignore: load side-effect module with globals
 require('./pitchClassHelpers');
 // @ts-ignore: load side-effect module with globals
-require('./CadenceAdvisor');
+require('./cadenceAdvisor');
 // @ts-ignore: load side-effect module with globals
-require('./CadentialPreparationAdvisor');
+require('./cadentialPreparationAdvisor');
 // @ts-ignore: load side-effect module with globals
-require('./ChromaticSaturationMonitor');
+require('./chromaticSaturationMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./ConsonanceDissonanceTracker');
+require('./consonanceDissonanceTracker');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicDensityOscillator');
+require('./harmonicDensityOscillator');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicFieldDensityTracker');
+require('./harmonicFieldDensityTracker');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicPedalFieldTracker');
+require('./harmonicPedalFieldTracker');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicRhythmDensityRatio');
+require('./harmonicRhythmDensityRatio');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicSurpriseIndex');
+require('./harmonicSurpriseIndex');
 // @ts-ignore: load side-effect module with globals
-require('./HarmonicVelocityMonitor');
+require('./harmonicVelocityMonitor');
 // @ts-ignore: load side-effect module with globals
-require('./ModalColorTracker');
+require('./modalColorTracker');
 // @ts-ignore: load side-effect module with globals
-require('./PitchClassGravityMap');
+require('./pitchClassGravityMap');
 // @ts-ignore: load side-effect module with globals
-require('./PitchGravityCenter');
+require('./pitchGravityCenter');
 // @ts-ignore: load side-effect module with globals
-require('./TensionResolutionTracker');
+require('./tensionResolutionTracker');
 // @ts-ignore: load side-effect module with globals
-require('./TonalAnchorDistanceTracker');
+require('./tonalAnchorDistanceTracker');
+
+
