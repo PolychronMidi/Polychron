@@ -1476,6 +1476,9 @@ declare var grandFinale: any;
 declare var coherenceVerdicts: {
   compute(manifest: any, attribution: { density: any; tension: any; flicker: any }): Array<{ severity: string; area: string; finding: string }>;
 };
+declare var systemManifestMarkdown: {
+  build(manifest: any, attribution: { density: any; tension: any; flicker: any }): string;
+};
 declare var systemManifest: { emit(): void };
 declare var VoiceLeadingScore: { new(config?: any): VoiceLeadingScoreAPI };
 declare var SimplexNoise: { new(seed?: number): SimplexNoiseAPI };

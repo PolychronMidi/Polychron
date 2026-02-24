@@ -7,23 +7,23 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
   const crossfade = {
     from: null,
     to: null,
-    measuresTotal: Number.isFinite(Number(controls.crossfadeMeasuresDefault)) ? m.max(1, Number(controls.crossfadeMeasuresDefault)) : 4,
+    measuresTotal: m.max(1, V.optionalFinite(Number(controls.crossfadeMeasuresDefault), 4)),
     measuresCurrent: 0,
     active: false
   };
 
   const regulation = {
     window: /** @type {number[]} */ ([]),
-    windowSize: Number.isFinite(Number(regulationCfg.windowSize)) ? m.max(2, Number(regulationCfg.windowSize)) : 16,
-    highThreshold: Number.isFinite(Number(regulationCfg.highThreshold)) ? Number(regulationCfg.highThreshold) : 0.78,
-    lowThreshold: Number.isFinite(Number(regulationCfg.lowThreshold)) ? Number(regulationCfg.lowThreshold) : 0.25,
+    windowSize: m.max(2, V.optionalFinite(Number(regulationCfg.windowSize), 16)),
+    highThreshold: V.optionalFinite(Number(regulationCfg.highThreshold), 0.78),
+    lowThreshold: V.optionalFinite(Number(regulationCfg.lowThreshold), 0.25),
     densityBias: 0,
     crossModBias: 1.0,
-    maxDensityBias: Number.isFinite(Number(regulationCfg.maxDensityBias)) ? m.max(0, Number(regulationCfg.maxDensityBias)) : 0.12,
-    maxCrossModBias: Number.isFinite(Number(regulationCfg.maxCrossModBias)) ? m.max(0, Number(regulationCfg.maxCrossModBias)) : 0.3,
-    adjustRate: Number.isFinite(Number(regulationCfg.adjustRate)) ? m.max(0, Number(regulationCfg.adjustRate)) : 0.02,
-    settleDecay: Number.isFinite(Number(regulationCfg.settleDecay)) ? clamp(Number(regulationCfg.settleDecay), 0, 1) : 0.9,
-    crossModSampleDivisor: Number.isFinite(Number(regulationCfg.crossModSampleDivisor)) ? m.max(0.1, Number(regulationCfg.crossModSampleDivisor)) : 6
+    maxDensityBias: m.max(0, V.optionalFinite(Number(regulationCfg.maxDensityBias), 0.12)),
+    maxCrossModBias: m.max(0, V.optionalFinite(Number(regulationCfg.maxCrossModBias), 0.3)),
+    adjustRate: m.max(0, V.optionalFinite(Number(regulationCfg.adjustRate), 0.02)),
+    settleDecay: clamp(V.optionalFinite(Number(regulationCfg.settleDecay), 0.9), 0, 1),
+    crossModSampleDivisor: m.max(0.1, V.optionalFinite(Number(regulationCfg.crossModSampleDivisor), 6))
   };
 
   const PHASE_PROFILE_MAP = (controls.phaseProfileMap && typeof controls.phaseProfileMap === 'object')
@@ -83,9 +83,10 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
   };
 
   const regulationTick = () => {
-    const crossModSample = (Number.isFinite(crossModulation))
-      ? clamp(crossModulation / regulation.crossModSampleDivisor, 0, 1)
-      : 0.5;
+    const crossModSample = clamp(
+      V.optionalFinite(crossModulation, 0.5) / regulation.crossModSampleDivisor,
+      0, 1
+    );
 
     regulation.window.push(crossModSample);
     if (regulation.window.length > regulation.windowSize) {
@@ -158,9 +159,10 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     if (outgoingName !== profileName) {
       crossfade.from = outgoing;
       crossfade.to = getActiveProfile();
-      crossfade.measuresTotal = (Number.isFinite(Number(opts.crossfadeMeasures)))
-        ? m.max(1, Number(opts.crossfadeMeasures))
-        : (Number.isFinite(Number(controls.crossfadeMeasuresDefault)) ? m.max(1, Number(controls.crossfadeMeasuresDefault)) : 4);
+      crossfade.measuresTotal = m.max(1, V.optionalFinite(
+        Number(opts.crossfadeMeasures),
+        V.optionalFinite(Number(controls.crossfadeMeasuresDefault), 4)
+      ));
       crossfade.measuresCurrent = 0;
       crossfade.active = true;
     }

@@ -48,18 +48,15 @@
     if (typeof state.quality === 'string' && state.quality.length > 0) snapshot.quality = state.quality;
     if (Array.isArray(state.scale)) snapshot.scale = state.scale.slice();
     if (Array.isArray(state.chords)) snapshot.chords = state.chords.slice();
-    if (Number.isFinite(Number(state.tension))) snapshot.tension = clamp(Number(state.tension), 0, 1);
-    if (Number.isFinite(Number(state.mutationCount))) snapshot.harmonicMutationCount = m.max(0, Number(state.mutationCount));
-    if (Number.isFinite(Number(state.excursion))) snapshot.excursion = m.max(0, Number(state.excursion));
+    snapshot.tension = clamp(V.optionalFinite(Number(state.tension), snapshot.tension), 0, 1);
+    snapshot.harmonicMutationCount = m.max(0, V.optionalFinite(Number(state.mutationCount), snapshot.harmonicMutationCount));
+    snapshot.excursion = m.max(0, V.optionalFinite(Number(state.excursion), snapshot.excursion));
     if (typeof state.sectionPhase === 'string' && state.sectionPhase.length > 0) snapshot.sectionPhase = state.sectionPhase;
   }
 
   function writeRegulationFromConductor() {
-    const densityBias = Number(ConductorConfig.getRegulationDensityBias());
-    if (Number.isFinite(densityBias)) snapshot.densityBias = densityBias;
-
-    const crossModBias = Number(ConductorConfig.getRegulationCrossModBias());
-    if (Number.isFinite(crossModBias)) snapshot.crossModBias = crossModBias;
+    snapshot.densityBias = V.optionalFinite(Number(ConductorConfig.getRegulationDensityBias()), snapshot.densityBias);
+    snapshot.crossModBias = V.optionalFinite(Number(ConductorConfig.getRegulationCrossModBias()), snapshot.crossModBias);
 
     const activeProfile = ConductorConfig.getActiveProfileName();
     if (typeof activeProfile === 'string' && activeProfile.length > 0) snapshot.activeProfile = activeProfile;
@@ -84,23 +81,23 @@
       : ComposerFactory.sharedPhraseArcManager.getPhraseContext();
 
     if (phraseCtx) {
-      if (Number.isFinite(Number(phraseCtx.position))) snapshot.phrasePosition = clamp(Number(phraseCtx.position), 0, 1);
+      snapshot.phrasePosition = clamp(V.optionalFinite(Number(phraseCtx.position), snapshot.phrasePosition), 0, 1);
       if (typeof phraseCtx.phase === 'string' && phraseCtx.phase.length > 0) snapshot.phrasePhase = phraseCtx.phase;
-      if (Number.isFinite(Number(phraseCtx.dynamism))) snapshot.phraseDynamism = clamp(Number(phraseCtx.dynamism), 0, 1);
-      if (Number.isFinite(Number(phraseCtx.registerBias))) snapshot.registerBias = Number(phraseCtx.registerBias);
-      if (Number.isFinite(Number(phraseCtx.densityMultiplier))) snapshot.densityMultiplier = Number(phraseCtx.densityMultiplier);
-      if (Number.isFinite(Number(phraseCtx.voiceIndependence))) snapshot.voiceIndependence = clamp(Number(phraseCtx.voiceIndependence), 0, 1);
+      snapshot.phraseDynamism = clamp(V.optionalFinite(Number(phraseCtx.dynamism), snapshot.phraseDynamism), 0, 1);
+      snapshot.registerBias = V.optionalFinite(Number(phraseCtx.registerBias), snapshot.registerBias);
+      snapshot.densityMultiplier = V.optionalFinite(Number(phraseCtx.densityMultiplier), snapshot.densityMultiplier);
+      snapshot.voiceIndependence = clamp(V.optionalFinite(Number(phraseCtx.voiceIndependence), snapshot.voiceIndependence), 0, 1);
     }
 
-    if (Number.isFinite(Number(_data.compositeIntensity))) snapshot.compositeIntensity = clamp(Number(_data.compositeIntensity), 0, 1);
-    if (Number.isFinite(Number(_data.harmonicRhythm))) snapshot.harmonicRhythm = clamp(Number(_data.harmonicRhythm), 0, 1);
-    if (Number.isFinite(Number(_data.emissionRatio))) snapshot.emissionRatio = clamp(Number(_data.emissionRatio), 0, 2);
-    if (Number.isFinite(Number(_data.playProb))) snapshot.playProb = clamp(Number(_data.playProb), 0, 1);
-    if (Number.isFinite(Number(_data.stutterProb))) snapshot.stutterProb = clamp(Number(_data.stutterProb), 0, 1);
+    snapshot.compositeIntensity = clamp(V.optionalFinite(Number(_data.compositeIntensity), snapshot.compositeIntensity), 0, 1);
+    snapshot.harmonicRhythm = clamp(V.optionalFinite(Number(_data.harmonicRhythm), snapshot.harmonicRhythm), 0, 1);
+    snapshot.emissionRatio = clamp(V.optionalFinite(Number(_data.emissionRatio), snapshot.emissionRatio), 0, 2);
+    snapshot.playProb = clamp(V.optionalFinite(Number(_data.playProb), snapshot.playProb), 0, 1);
+    snapshot.stutterProb = clamp(V.optionalFinite(Number(_data.stutterProb), snapshot.stutterProb), 0, 1);
 
     snapshot.textureFatigue = clamp(Number(TextureBlender.getRecentDensity()), 0, 1);
 
-    if (Number.isFinite(Number(beatStart))) snapshot.tick = Number(beatStart);
+    snapshot.tick = V.optionalFinite(Number(beatStart), snapshot.tick);
     snapshot.updatedAt = Date.now();
   }
 
@@ -203,4 +200,3 @@
     reset
   };
 })();
-
