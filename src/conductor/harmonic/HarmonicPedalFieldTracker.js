@@ -68,15 +68,17 @@ HarmonicPedalFieldTracker = (() => {
 
     const fieldStable = streak >= 4;
 
-    // Tension bias: long pedal â†’ increase tension to encourage harmonic movement;
-    // very short/unstable â†’ decrease tension to allow settling
+    // Continuous ramp based on pedalDuration and streak stability.
+    // Long pedal → increase tension to encourage harmonic movement;
+    // very unstable bass → decrease tension to allow settling.
     let tensionBias = 1;
-    if (pedalDuration > 15) {
-      tensionBias = 1.12; // very long pedal â†’ strong push for change
-    } else if (pedalDuration > 8) {
-      tensionBias = 1.06; // moderate pedal
-    } else if (streak <= 1 && bassSamples.length >= 5) {
-      tensionBias = 0.95; // bass constantly changing â†’ allow settling
+    if (pedalDuration > 0) {
+      // Pedal forming — ramp tension up: duration 0→20 maps to 1.0→1.15
+      tensionBias = 1.0 + clamp(pedalDuration / 20, 0, 1) * 0.15;
+    } else if (bassSamples.length >= 5) {
+      // No pedal — ramp settling bias from streak instability
+      const instability = 1 - (streak / bassSamples.length);
+      tensionBias = 1.0 - clamp(instability, 0, 1) * 0.05;
     }
 
     return { pedalDuration, tensionBias, fieldStable };
@@ -110,4 +112,3 @@ HarmonicPedalFieldTracker = (() => {
     reset
   };
 })();
-
