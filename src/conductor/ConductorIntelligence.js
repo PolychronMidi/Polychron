@@ -86,7 +86,7 @@ ConductorIntelligence = (() => {
     densityBiases.push({ name, getter, lo, hi });
   }
 
-  const DENSITY_PRODUCT_FLOOR = 0.15;
+  const DENSITY_PRODUCT_FLOOR = 0.30;
   const TENSION_PRODUCT_CEILING = 1.8;
 
   /** @returns {number} product of all density biases (floored to prevent crush) */

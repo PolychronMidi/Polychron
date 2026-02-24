@@ -62,17 +62,20 @@ OnsetDensityProfiler = (() => {
    * Get a density bias for the conductor.
    * >1 when density is below target (encourage more notes);
    * <1 when above target (thin out).
-   * @returns {number} - 0.6 to 1.4
+   * Continuous interpolation prevents multiplicative crush with peer density biases.
+   * @returns {number} - 0.75 to 1.35
    */
   function getDensityBias() {
     const d = getDensity();
     if (d.nps === 0) return 1.0;
     const ratio = d.nps / TARGET_NPS;
-    if (ratio > 1.5) return 0.7;
-    if (ratio > 1.2) return 0.85;
-    if (ratio < 0.5) return 1.35;
-    if (ratio < 0.8) return 1.15;
-    return 1.0;
+    // Continuous ramp: ratio 0.5–1.0 → bias 1.35–1.0, ratio 1.0–2.0 → bias 1.0–0.75
+    if (ratio <= 1.0) {
+      const ramp = clamp((1.0 - ratio) / 0.5, 0, 1);
+      return 1.0 + ramp * 0.35;
+    }
+    const ramp = clamp((ratio - 1.0) / 1.0, 0, 1);
+    return 1.0 - ramp * 0.25;
   }
 
   /**
@@ -98,7 +101,7 @@ OnsetDensityProfiler = (() => {
     return { combined: all.nps, l1: l1.nps, l2: l2.nps };
   }
 
-  ConductorIntelligence.registerDensityBias('OnsetDensityProfiler', () => OnsetDensityProfiler.getDensityBias(), 0.6, 1.4);
+  ConductorIntelligence.registerDensityBias('OnsetDensityProfiler', () => OnsetDensityProfiler.getDensityBias(), 0.75, 1.35);
   ConductorIntelligence.registerStateProvider('OnsetDensityProfiler', () => ({
     onsetCrossModBias: clamp(OnsetDensityProfiler.getCrossModBias(), 0.8, 1.2)
   }));

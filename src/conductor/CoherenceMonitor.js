@@ -17,9 +17,9 @@ CoherenceMonitor = (() => {
 
   // ── Feedback signal ──
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
-  const BIAS_FLOOR = 0.75;
+  const BIAS_FLOOR = 0.82;
   const BIAS_CEILING = 1.3;
-  const SMOOTHING = 0.88;    // exponential smoothing factor (higher = slower response)
+  const SMOOTHING = 0.75;    // exponential smoothing factor (higher = slower response)
 
   // ── Entropy tracking ──
   let entropySignal = 0;     // -1 (stagnation) to +1 (chaos)
@@ -55,8 +55,10 @@ CoherenceMonitor = (() => {
     // Count them so the coherence window reflects the true output density.
     EventBus.on(EVENTS.STUTTER_APPLIED, () => {
       cumulativeActual += 1;
+      cumulativeIntended += 1;
       if (window.length > 0) {
         window[window.length - 1].actual += 1;
+        window[window.length - 1].intended += 1;
         _updateBias();
       }
     });
@@ -65,8 +67,10 @@ CoherenceMonitor = (() => {
     EventBus.on(EVENTS.MOTIF_CHAIN_APPLIED, (data) => {
       const extra = V.requireFinite(data.resultNoteCount, 'resultNoteCount');
       cumulativeActual += extra;
+      cumulativeIntended += extra;
       if (window.length > 0) {
         window[window.length - 1].actual += extra;
+        window[window.length - 1].intended += extra;
         _updateBias();
       }
     });
@@ -201,7 +205,7 @@ CoherenceMonitor = (() => {
 
   // ── Self-register into ConductorIntelligence ──
   // getDensityBias is called each beat by the conductor pipeline.
-  ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING);
+  ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.82, ceiling=1.3
 
   // metrics to ConductorState via the state provider registry.
   ConductorIntelligence.registerStateProvider('CoherenceMonitor', () => ({

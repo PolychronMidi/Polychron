@@ -84,7 +84,11 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     ? (clCadResult.shouldResolve ? cap.resolved : cap.unresolved)
     : (clCadenceGate ? cap.gatedNoResult : cap.ungated);
   const fop = tp.feedbackOscillator;
-  const feedbackOutcome = clamp(clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
+  // Idle beats (no feedback reaction and no downbeat) get neutral payoff
+  // instead of the negative energyOffset that was dragging trust below zero.
+  const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
+    ? 0
+    : clamp(clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
   AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
   AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
   AdaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
