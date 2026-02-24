@@ -88,12 +88,13 @@ harmonicJourneyPlanner = (() => {
       steps.push({ key: currentKey, mode: currentMode, move: result.move, distance: dist });
     }
 
-    // Post-hoc diversity check: if all steps share the same mode as origin,
-    // force the middle step to use a contrasting mode.
-    if (steps.length >= 2) {
+    // Post-hoc diversity check: for short journeys, ensure mode variety.
+    // For 2-section journeys, always force diversity to avoid same-mode pairs.
+    if (steps.length >= 1) {
       const modes = new Set([originMode]);
       for (let i = 0; i < steps.length; i++) modes.add(steps[i].mode);
-      if (modes.size < 2 + m.min(1, steps.length - 1)) {
+      const minModes = totalSections <= 2 ? 3 : 2 + m.min(1, steps.length - 1); // Force diversity for short journeys
+      if (modes.size < minModes) {
         // Pick the step closest to the midpoint and force a parallel-mode change
         const midIdx = m.floor(steps.length / 2);
         const parallelMoves = HJ.getMovePoolForPhase('development');

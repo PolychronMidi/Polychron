@@ -308,7 +308,7 @@ MAIN_LOOP_CONTROLS = {
     stutterContagion: { targetScale: 2 },
     phaseLock: { lock: 0.5, drift: 0.15, other: -0.4, confidenceScale: 0.35 },
     cadenceAlignment: { resolved: 0.85, unresolved: 0.35, gatedNoResult: -0.1, ungated: 0.02 },
-    feedbackOscillator: { energyOffset: -0.05, downbeatScale: 0.15 },
+    feedbackOscillator: { energyOffset: 0, downbeatScale: 0.15 },
     coherenceMonitor: { neutralBias: 1.0, sensitivity: 1.5 },
     roleSwap: { swapped: 0.35, notSwapped: -0.02 },
     decayRate: 0.002
