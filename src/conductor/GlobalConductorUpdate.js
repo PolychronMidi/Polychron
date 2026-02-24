@@ -106,12 +106,18 @@
     const resolved = DynamismEngine.resolve('beat');
 
     // 8. Collect tension bias from registry (attributed)
+    // Temporal smoothing: density has EMA via getDensitySmoothing(),
+    // but tension had none — contributing to the oscillating regime.
+    // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = ConductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
-    const derivedTension = clamp(
+    const rawTension = clamp(
       (Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * registryTensionBias,
       0, 1
     );
+    const TENSION_SMOOTHING = 0.12;
+    const prevTension = HarmonicContext.getField('tension');
+    const derivedTension = prevTension * (1 - TENSION_SMOOTHING) + rawTension * TENSION_SMOOTHING;
     HarmonicContext.set({ tension: derivedTension });
 
     let playOut = resolved.playProb;
