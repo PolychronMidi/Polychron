@@ -325,6 +325,31 @@ interface SignalHealthAnalyzerAPI {
   reset(): void;
 }
 
+// ── System Dynamics Profiler (phase-space trajectory analysis) ──
+
+interface SystemDynamicsSnapshot {
+  velocity: number;
+  curvature: number;
+  effectiveDimensionality: number;
+  couplingStrength: number;
+  regime: string;
+  grade: string;
+  couplingMatrix: Record<string, number>;
+}
+
+interface SystemDynamicsSummary {
+  beatsAnalyzed: number;
+  snapshot: SystemDynamicsSnapshot;
+  dimensionNames: string[];
+}
+
+interface SystemDynamicsProfilerAPI {
+  analyze(): void;
+  getSnapshot(): SystemDynamicsSnapshot;
+  getSummary(): SystemDynamicsSummary;
+  reset(): void;
+}
+
 interface JourneyStop {
   key: string;
   mode: string;
@@ -1111,6 +1136,7 @@ declare var signalReader: SignalReaderAPI;
 declare var profileAdaptation: ProfileAdaptationAPI;
 declare var signalTelemetry: SignalTelemetryAPI;
 declare var SignalHealthAnalyzer: SignalHealthAnalyzerAPI;
+declare var SystemDynamicsProfiler: SystemDynamicsProfilerAPI;
 declare var ModuleLifecycle: ModuleLifecycleFactory;
 declare var beatCache: BeatCacheFactory;
 

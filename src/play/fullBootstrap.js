@@ -17,6 +17,8 @@ FullBootstrap = (() => {
 
     // ── Conductor subsystem objects ──
 
+    // ── System Dynamics Profiler (phase-space trajectory analysis) ──
+
     // ── Time subsystem ──
 
     // ── Lifecycle / caching utilities ──
@@ -267,6 +269,7 @@ FullBootstrap = (() => {
     'profileAdaptation',
     'signalTelemetry',
     'SignalHealthAnalyzer',
+    'SystemDynamicsProfiler',
     'ModuleLifecycle',
     'beatCache',
 
