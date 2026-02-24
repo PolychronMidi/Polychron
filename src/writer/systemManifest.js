@@ -11,15 +11,48 @@ systemManifest = (() => {
    */
   function emit() {
     const manifest = _buildManifest();
+
+    // ── Attribution (live call — not cached in manifest) ──
+    const attribution = {
+      density: ConductorIntelligence.collectDensityBiasWithAttribution(),
+      tension: ConductorIntelligence.collectTensionBiasWithAttribution(),
+      flicker: ConductorIntelligence.collectFlickerModifierWithAttribution()
+    };
+    manifest.attribution = {
+      density: _serializeAttribution(attribution.density),
+      tension: _serializeAttribution(attribution.tension),
+      flicker: _serializeAttribution(attribution.flicker)
+    };
+
+    // ── Coherence verdicts ──
+    manifest.coherenceVerdicts = coherenceVerdicts.compute(manifest, attribution);
+
     const manifestPath = 'output/system-manifest.json';
     const matrixPath = 'output/capability-matrix.md';
 
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     console.log(`Wrote file: ${manifestPath}`);
 
-    const matrix = _buildCapabilityMatrix(manifest);
+    const matrix = _buildCapabilityMatrix(manifest, attribution);
     fs.writeFileSync(matrixPath, matrix, 'utf8');
     console.log(`Wrote file: ${matrixPath}`);
+  }
+
+  /**
+   * Serialize an attribution result for JSON output.
+   * @param {object} attr
+   * @returns {object}
+   */
+  function _serializeAttribution(attr) {
+    return {
+      product: attr.product,
+      rawProduct: attr.rawProduct,
+      floored: attr.floored || false,
+      capped: attr.capped || false,
+      contributions: attr.contributions.map(c => ({
+        name: c.name, raw: c.raw, clamped: c.clamped
+      }))
+    };
   }
 
   /** @returns {object} */
@@ -104,9 +137,10 @@ systemManifest = (() => {
    * Build a Markdown capability matrix from the manifest data.
    * Lists every registered module, its registry, and contribution types.
    * @param {object} manifest
+   * @param {{ density: object, tension: object, flicker: object }} attribution
    * @returns {string}
    */
-  function _buildCapabilityMatrix(manifest) {
+  function _buildCapabilityMatrix(manifest, attribution) {
     const lines = [];
     lines.push('# Module Capability Matrix');
     lines.push('');
@@ -128,10 +162,10 @@ systemManifest = (() => {
     lines.push(`- State providers: ${counts.stateProviders}`);
     lines.push('');
 
-    // Attribution tables for density/tension/flicker
-    _appendAttributionTable(lines, 'Density Bias', ConductorIntelligence.collectDensityBiasWithAttribution());
-    _appendAttributionTable(lines, 'Tension Bias', ConductorIntelligence.collectTensionBiasWithAttribution());
-    _appendAttributionTable(lines, 'Flicker Modifier', ConductorIntelligence.collectFlickerModifierWithAttribution());
+    // Attribution tables for density/tension/flicker (use passed-in data)
+    _appendAttributionTable(lines, 'Density Bias', attribution.density);
+    _appendAttributionTable(lines, 'Tension Bias', attribution.tension);
+    _appendAttributionTable(lines, 'Flicker Modifier', attribution.flicker);
 
     // Module listing
     lines.push('### Lifecycle-Registered Module Names');
@@ -217,7 +251,56 @@ systemManifest = (() => {
     // ── System Dynamics Report ──
     _appendSystemDynamicsReport(lines, manifest);
 
+    // ── Coherence Verdicts ──
+    _appendCoherenceVerdicts(lines, manifest);
+
     return lines.join('\n');
+  }
+
+  /**
+   * Append the Coherence Verdicts section to the capability matrix.
+   * @param {string[]} lines
+   * @param {object} manifest
+   */
+  function _appendCoherenceVerdicts(lines, manifest) {
+    const verdicts = manifest.coherenceVerdicts;
+    if (!verdicts || verdicts.length === 0) return;
+
+    lines.push('## Coherence Verdicts');
+    lines.push('');
+    lines.push('> Auto-diagnosed findings from signal health, dynamics, attribution, and trust data.');
+    lines.push('');
+
+    const criticals = verdicts.filter(v => v.severity === 'critical');
+    const warnings = verdicts.filter(v => v.severity === 'warning');
+    const infos = verdicts.filter(v => v.severity === 'info');
+
+    if (criticals.length > 0) {
+      lines.push('### Critical');
+      lines.push('');
+      criticals.forEach(v => {
+        lines.push(`- **[${v.area}]** ${v.finding}`);
+      });
+      lines.push('');
+    }
+
+    if (warnings.length > 0) {
+      lines.push('### Warnings');
+      lines.push('');
+      warnings.forEach(v => {
+        lines.push(`- **[${v.area}]** ${v.finding}`);
+      });
+      lines.push('');
+    }
+
+    if (infos.length > 0) {
+      lines.push('### Info');
+      lines.push('');
+      infos.forEach(v => {
+        lines.push(`- **[${v.area}]** ${v.finding}`);
+      });
+      lines.push('');
+    }
   }
 
   /**

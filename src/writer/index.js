@@ -4,6 +4,8 @@ require('./formatTime');
 require('./logUnit');
 // @ts-ignore: side-effect module load
 require('./grandFinale');
+// @ts-ignore: side-effect module load — coherence verdicts engine
+require('./coherenceVerdicts');
 // @ts-ignore: side-effect module load — system manifest & capability matrix output
 require('./systemManifest');
 fs = require('fs');

@@ -27,9 +27,8 @@ Everything in this project follows from five rules. Learn these and the rest is 
 Globals are the project's circulatory system. They are assigned as side-effects of `require()` calls in `index.js` files — never via `global.`, `globalThis.`, or `/* global */` comments (ESLint enforces this). All globals are declared in `src/types/globals.d.ts`.
 
 - Always reference globals directly — never alias them into intermediary variables.
-- To add a new global: create a side-effect module (or update `init.js`), require it from the subsystem's `index.js`, and declare it in `globals.d.ts`. That's it — **never hand-edit `VALIDATED_GLOBALS` in `fullBootstrap.js`**.
-- **Single source of truth:** `src/types/globals.d.ts` is the canonical registry. `scripts/generate-globals-dts.js` runs automatically at the start of `npm run main` and rewrites the `VALIDATED_GLOBALS` array in `src/play/fullBootstrap.js` from it. `globals.d.ts` and `init.js` are the only files that should ever be edited when adding a new global. The boot validation and ESLint rule ensure the integrity of this system.
-- Boot validation: `mainBootstrap.assertBootstrapGlobals()` proves every `VALIDATED_GLOBALS` entry exists before the main loop runs. ESLint rule `local/no-typeof-validated-global` bans redundant `typeof` probes on these globals — reference them directly and trust the boot check.
+- To add a new global: create a side-effect module (or update `init.js`), require it from the subsystem's `index.js`, and declare it in `globals.d.ts`. **Never hand-edit `VALIDATED_GLOBALS` in `fullBootstrap.js`** — `scripts/generate-globals-dts.js` rewrites it automatically from `globals.d.ts` at the start of `npm run main`.
+- Boot validation (`mainBootstrap.assertBootstrapGlobals()`) proves every entry exists before the main loop. ESLint rule `local/no-typeof-validated-global` bans redundant `typeof` probes — reference globals directly and trust the boot check.
 
 ### 2. Fail Fast — Loud Crashes, Never Silent Corruption
 
@@ -40,9 +39,9 @@ The **Validator** (`src/utils/validators.js`) is the immune system:
 const V = Validator.create('ModuleName');
 const t = V.requireFinite(timeMs, 'timeMs'); // returns value or throws
 ```
-Key methods: `requireFinite`, `optionalFinite`, `requireDefined`, `requireType`, `requireEnum`, `assertRange`, `assertObject`, `assertPlainObject`, `assertArray`, `assertNonEmptyString`, `assertKeysPresent`, `assertAllowedKeys`, `getEventsOrThrow` (and more). Every thrown error is stamped with the module name for instant traceability.
+Key methods: `requireFinite`, `optionalFinite`, `requireDefined`, `requireType`, `requireEnum`, `assertRange`, `assertObject`, `assertArray`, `assertNonEmptyString`, `getEventsOrThrow` (and more). Every error is stamped with the module name.
 
-Use `optionalFinite(val, fallback)` **only** for legitimately optional numerics (e.g., external prior weights). Never use it to paper over values that should always be present — use `requireFinite` for those.
+Use `optionalFinite(val, fallback)` **only** for legitimately optional numerics — never to paper over values that should always be present.
 
 ### 3. Self-Registration — Modules Announce Themselves
 
@@ -108,7 +107,7 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 | `src/composers/` | Scale, chord, motif, voice-leading composers (one per file). Factory selects and blends. | `ComposerFactory` |
 | `src/fx/` | Noise engine (simplex/fbm/worley) + stutter subsystem | `noiseManager`, `StutterManager` |
 | `src/crossLayer/` | 35 modules coordinating L1↔L2 (phase lock, groove transfer, entropy regulation, conductor signal bridge...) | `CrossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` |
-| `src/writer/` | CSV/MIDI output formatting | `grandFinale` |
+| `src/writer/` | CSV/MIDI output, diagnostic manifest & capability matrix, coherence verdicts | `grandFinale`, `systemManifest`, `coherenceVerdicts` |
 | `src/play/` | Top-level loops: section → phrase → measure → beat → div → subdiv → subsubdiv | `main.js` |
 
 ---
@@ -164,40 +163,35 @@ Cross-layer modules **cannot** directly influence density/tension/flicker produc
 
 ### AbsoluteTimeGrid — Shared Temporal Memory
 
-`AbsoluteTimeGrid` (`src/time/AbsoluteTimeGrid.js`) is not just a time utility — it's the organism's shared memory. Both conductor and cross-layer modules `post()` data to named channels (tension, velocity, groove, explainability, etc.) and `findClosest()` / `query()` by absolute millisecond time. Every cross-layer module uses it for nearest-neighbor temporal queries across layers. It straddles three subsystems (time, conductor, cross-layer).
+`AbsoluteTimeGrid` is the organism's shared memory. Conductor and cross-layer modules `post()` data to named channels and `findClosest()` / `query()` by absolute millisecond time. Straddles time, conductor, and cross-layer subsystems.
 
 **Key API:** `post(channel, layer, timeMs, data?)`, `query(channel, aroundMs, toleranceMs, opts?)`, `findClosest(channel, aroundMs, toleranceMs, excludeLayer?)`, `reset(channel?)`.
 
-### Signal Reading
+### Signal Reading & Diagnostics
 
-- **`signalReader`** (`src/conductor/signalReader.js`) — **the** standardized read API for inter-module signal reading. All modules read signals through `signalReader` (never call `ConductorIntelligence.getSignalSnapshot()` or `ExplainabilityBus.queryByType()` directly). Key methods: `density()`, `tension()`, `flicker()`, `state(field)`, `snapshot()`, `densityAttribution()`, `tensionAttribution()`, `flickerAttribution()`, `recentEvents(type, limit)`.
-- **Product attribution** — `ConductorIntelligence.collectDensityBiasWithAttribution()` (and tension/flicker variants) returns `{ product, contributions: [{ name, raw, clamped }] }`. Enables any module to determine **which** peer is driving the composite signal.
-- **`conductorSignalBridge`** (`src/crossLayer/conductorSignalBridge.js`) — refreshes each beat via a ConductorIntelligence recorder, exposes `getSignals()` returning `{ density, tension, flicker, compositeIntensity, sectionPhase, coherenceEntropy }` for cross-layer modules. **Single chokepoint** — if it fails, cross-layer operates blind. A liveness assertion in `crossLayerLifecycleManager.resetAll()` guards against this.
-- **`profileAdaptation`** (`src/conductor/profileAdaptation.js`) — computes advisory `{ restrainedHint, explosiveHint, atmosphericHint }` from sustained signal conditions. Registered as both recorder and stateProvider.
-- **`signalTelemetry`** (`src/conductor/signalTelemetry.js`) — ring buffer of 200 per-beat signal snapshots. `getHistory(n)`, `isAnomalyDetected()`, `getTrend()`. Registered as recorder + stateProvider.
-- **`SignalHealthAnalyzer`** (`src/conductor/signalHealthAnalyzer.js`) — meta-diagnostic that assesses pipeline health every beat. Detects four failure modes: boundary saturation (contributor pinned at clamp limit), multiplicative crush (many modules pulling product away from 1.0), pipeline saturation (product hitting floor/ceiling), and trust starvation (trust score decaying to zero). Grades each pipeline as `healthy`/`strained`/`stressed`/`critical` and emits results to `ConductorState` and `ExplainabilityBus`. End-of-run summary with pinned rates and saturation rates is rendered in `capability-matrix.md` under **Signal Health Report** and persisted in `system-manifest.json`. Pure observation — does not modify signal values.
-- **`SystemDynamicsProfiler`** (`src/conductor/systemDynamicsProfiler.js`) — phase-space trajectory analysis. Treats the entire system as a dynamical entity moving through a 6-dimensional state space (density, tension, flicker, entropy, trust, phase). Each beat, samples the state vector and computes: **trajectory velocity** (how fast the system is changing), **trajectory curvature** (turning behavior — straight drift vs winding evolution), **cross-dimensional coupling** (rolling correlation matrix between all dimension pairs), and **effective dimensionality** (Shannon entropy of variance ratios — how many independent axes the system is actually using). Classifies the operating **regime** as `exploring`/`coherent`/`evolving`/`drifting`/`oscillating`/`fragmented`/`stagnant`. End-of-run summary rendered in `capability-matrix.md` under **System Dynamics Report** with trajectory metrics, regime interpretation, and strongest cross-dimensional correlations. Pure observation — does not modify signal values.
-- **`ExplainabilityBus.queryByType(type, limit)`** — filtered read of diagnostic entries by event type (most recent first).
+- **`signalReader`** — the ONE read API. Methods: `density()`, `tension()`, `flicker()`, `state(field)`, `snapshot()`, `densityAttribution()`, `tensionAttribution()`, `flickerAttribution()`, `recentEvents(type, limit)`. Never call `ConductorIntelligence.getSignalSnapshot()` directly.
+- **`conductorSignalBridge`** — refreshes each beat via recorder; exposes `getSignals()` for cross-layer modules. Single chokepoint — liveness-asserted on reset.
+- **`SignalHealthAnalyzer`** — per-beat pipeline health (boundary saturation, multiplicative crush, pipeline saturation, trust starvation). Grades: `healthy`/`strained`/`stressed`/`critical`. Pure observation.
+- **`SystemDynamicsProfiler`** — 6D phase-space trajectory (density, tension, flicker, entropy, trust, phase). Computes velocity, curvature, cross-coupling, effective dimensionality. Regime classification: `exploring`/`coherent`/`evolving`/`drifting`/`oscillating`/`fragmented`/`stagnant`. Pure observation.
+- **`coherenceVerdicts`** — auto-diagnoses actionable findings (severity-graded critical/warning/info) from signal health, dynamics, attribution, trust, and coupling data. The system reflecting on its own coherence state.
+- **Output:** `system-manifest.json` (complete machine-readable record: config, topology, per-module attribution, health, dynamics, verdicts) + `capability-matrix.md` (human-readable diagnostic view + Coherence Verdicts section). Both emitted by `systemManifest.emit()` after composition.
 
 ---
 
 ## Shared Infrastructure Utilities
 
-`src/utils/` provides two factory globals composed by multiple subsystems:
-
-- **`ModuleLifecycle`** (`src/utils/ModuleLifecycle.js`) — `ModuleLifecycle.create(ownerName)` returns a scoped-reset registry. Composed by both `CrossLayerRegistry` and `ConductorIntelligence` for uniform lifecycle management. Modules self-declare which scopes they participate in (`all`, `section`, `phrase`) at registration time — no central reset list needed.
-- **`beatCache`** (`src/utils/beatCache.js`) — `beatCache.create(fn)` wraps an expensive no-arg function so it runs at most once per beat (keyed on global `beatCount`). Use in any conductor module that registers both a bias getter and a stateProvider calling the same costly computation — eliminates redundant per-beat work.
+- **`ModuleLifecycle`** — `ModuleLifecycle.create(ownerName)` returns a scoped-reset registry. Composed by both `CrossLayerRegistry` and `ConductorIntelligence`. Modules self-declare scopes (`all`, `section`, `phrase`) at registration.
+- **`beatCache`** — `beatCache.create(fn)` wraps an expensive function to run at most once per beat (keyed on `beatCount`). Use when a module registers both a bias getter and a stateProvider calling the same computation.
 
 ---
 
-## Music21 Integration & Shared Priors Infrastructure
+## Music21 & Priors
 
-`scripts/music21/` contains Python scripts for musicological analysis via Music21. Outputs `priorsData` files via `npm run music21`.
+`scripts/music21/` — Python scripts for musicological analysis via Music21. Run via `npm run music21`.
 
-All four priors modules (`melodicPriors`, `harmonicPriors`, `voiceLeadingPriors`, `rhythmPriors`) share two utility globals loaded from `src/utils/`:
-
-- **`modeQualityMap`** — canonical mode-to-quality map (`normalizeOrNull`, `normalizeOrFail`). Never duplicate this map in priors files.
-- **`priorsHelpers`** — `resolvePhase(opts)`, `resolveWeightOrDefault(table, key, fallback)`, `weightedAdjustment(weight, scale)`. All priors modules delegate to these instead of local copies.
+All four priors modules share two utility globals from `src/utils/`:
+- **`modeQualityMap`** — canonical mode-to-quality map. Never duplicate in priors files.
+- **`priorsHelpers`** — `resolvePhase(opts)`, `resolveWeightOrDefault(table, key, fallback)`, `weightedAdjustment(weight, scale)`.
 
 ---
 *This document is the source of truth for project conventions. If anything contradicts the codebase, update this file.*

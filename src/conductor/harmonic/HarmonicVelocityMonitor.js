@@ -55,13 +55,13 @@ HarmonicVelocityMonitor = (() => {
    */
   function getChangeThresholdBias() {
     const diag = diagnoseEnergyMatch();
-    // Continuous ramp: mismatch 0 → 1.0, positive → up to 1.3, negative → down to 0.75
+    // Continuous ramp: mismatch 0 → 1.0, positive → up to 1.15, negative → down to 0.88
     if (diag.mismatch > 0) {
-      // Ramp from 1.0 at mismatch=0 to 1.3 at mismatch=0.8+
-      return 1.0 + clamp(diag.mismatch / 0.8, 0, 1) * 0.3;
+      // Ramp from 1.0 at mismatch=0 to 1.15 at mismatch=0.8+
+      return 1.0 + clamp(diag.mismatch / 0.8, 0, 1) * 0.15;
     }
-    // Ramp from 1.0 at mismatch=0 to 0.75 at mismatch=-0.6-
-    return 1.0 + clamp(diag.mismatch / 0.6, -1, 0) * 0.25;
+    // Ramp from 1.0 at mismatch=0 to 0.88 at mismatch=-0.6-
+    return 1.0 + clamp(diag.mismatch / 0.6, -1, 0) * 0.12;
   }
 
   /**
@@ -72,14 +72,14 @@ HarmonicVelocityMonitor = (() => {
   function getJourneyBoldnessBias() {
     const diag = diagnoseEnergyMatch();
     if (diag.mismatch < 0) {
-      // Ramp from 1.0 at mismatch=0 to 1.25 at mismatch=-0.6-
-      return 1.0 + clamp(diag.mismatch / -0.6, 0, 1) * 0.25;
+      // Ramp from 1.0 at mismatch=0 to 1.12 at mismatch=-0.6-
+      return 1.0 + clamp(diag.mismatch / -0.6, 0, 1) * 0.12;
     }
-    // Ramp from 1.0 at mismatch=0 to 0.75 at mismatch=0.8+
-    return 1.0 - clamp(diag.mismatch / 0.8, 0, 1) * 0.25;
+    // Ramp from 1.0 at mismatch=0 to 0.88 at mismatch=0.8+
+    return 1.0 - clamp(diag.mismatch / 0.8, 0, 1) * 0.12;
   }
 
-  ConductorIntelligence.registerTensionBias('HarmonicVelocityMonitor', () => HarmonicVelocityMonitor.getChangeThresholdBias(), 0.7, 1.4);
+  ConductorIntelligence.registerTensionBias('HarmonicVelocityMonitor', () => HarmonicVelocityMonitor.getChangeThresholdBias(), 0.85, 1.2);
 
   return {
     getHarmonicVelocity,
