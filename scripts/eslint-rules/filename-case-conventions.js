@@ -21,6 +21,20 @@ module.exports = {
           hasMatchingClass = true;
         }
       },
+      AssignmentExpression(node) {
+        if (node.left.type === 'Identifier' && node.left.name === basename &&
+            node.right.type === 'ClassExpression' &&
+            node.right.id && node.right.id.name === basename) {
+          hasMatchingClass = true;
+        }
+      },
+      VariableDeclarator(node) {
+        if (node.id.type === 'Identifier' && node.id.name === basename &&
+            node.init && node.init.type === 'ClassExpression' &&
+            node.init.id && node.init.id.name === basename) {
+          hasMatchingClass = true;
+        }
+      },
       'Program:exit'(node) {
         if (isPascalCaseFilename && !hasMatchingClass) {
           context.report({
