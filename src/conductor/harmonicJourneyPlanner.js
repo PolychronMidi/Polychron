@@ -74,7 +74,9 @@ harmonicJourneyPlanner = (() => {
       const moveFn = effectivePool[ri(effectivePool.length - 1)];
       const result = moveFn(currentKey, currentMode);
 
-      const nextKey = t.Note.pitchClass(result.key);
+      // simplify normalizes double-sharps/flats (C## → D, B# → C)
+      const simplified = t.Note.simplify(result.key);
+      const nextKey = t.Note.pitchClass(simplified || result.key);
       if (!nextKey) {
         throw new Error(`HarmonicJourney.planJourney: move produced invalid key "${result.key}"`);
       }

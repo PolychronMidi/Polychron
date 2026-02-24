@@ -74,12 +74,12 @@ SECTION_TYPES=[
   { type: 'coda', weight: 1, phrases: { min: 1, max: 1 }, bpmScale: .9, dynamics: 'pp', motif: [0,7,12] }
 ];
 PHRASES_PER_SECTION={
-  min: 2,
-  max: 4
+  min: 1,
+  max: 2
 };
 SECTIONS={
-  min: 6,
-  max: 9
+  min: 2,
+  max: 3
 };
 DIVISIONS={
   min: 1,

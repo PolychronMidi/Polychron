@@ -58,14 +58,22 @@ VoiceDensityBalancer = (() => {
   /**
    * Get a voice-count bias for motifConfig.
    * Thin → encourage more voices; crowded → reduce.
+   * Continuous interpolation prevents multiplicative crush with peer density biases.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-   * @returns {number} - 0.7 to 1.4
+   * @returns {number} - 0.8 to 1.3
    */
   function getVoiceCountBias(opts) {
     const vd = getVoiceDensity(opts);
-    if (vd.thin) return 1.3;
-    if (vd.crowded) return 0.75;
+    // Continuous ramp based on avgVoices: thin (<1.5) → boost, crowded (>4) → dampen
+    if (vd.avgVoices < 1.5) {
+      const ramp = clamp((1.5 - vd.avgVoices) / 1.5, 0, 1);
+      return 1.0 + ramp * 0.3;
+    }
+    if (vd.avgVoices > 4) {
+      const ramp = clamp((vd.avgVoices - 4) / 4, 0, 1);
+      return 1.0 - ramp * 0.2;
+    }
     return 1.0;
   }
 
@@ -80,7 +88,7 @@ VoiceDensityBalancer = (() => {
     return { l1Avg: l1.avgVoices, l2Avg: l2.avgVoices, balanced };
   }
 
-  ConductorIntelligence.registerDensityBias('VoiceDensityBalancer', () => VoiceDensityBalancer.getVoiceCountBias(), 0.7, 1.4);
+  ConductorIntelligence.registerDensityBias('VoiceDensityBalancer', () => VoiceDensityBalancer.getVoiceCountBias(), 0.8, 1.3);
 
   return {
     getVoiceDensity,
