@@ -20,8 +20,10 @@ SystemDynamicsProfiler = (() => {
   const MIN_WINDOW = 6; // minimum beats before meaningful analysis
 
   // ── State ──
-  /** @type {Array<number[]>} ring buffer of state vectors */
+  /** @type {Array<number[]>} smoothed ring buffer for velocity/curvature */
   const trajectory = [];
+  /** @type {Array<number[]>} raw ring buffer for coupling/dimensionality */
+  const rawTrajectory = [];
   /** @type {Array<number[]>} velocity vectors (first differences) */
   const velocities = [];
   let beatsSeen = 0;
@@ -238,7 +240,8 @@ SystemDynamicsProfiler = (() => {
     const rawState = _sampleState();
 
     // EMA smooth the state vector to suppress high-frequency module noise
-    // before differentiation. Raw values are still used for coupling/variance.
+    // before differentiation. Raw values are used for coupling/variance
+    // to avoid EMA-inflated correlations.
     if (!_smoothedState) {
       _smoothedState = rawState.slice();
     } else {
@@ -248,9 +251,13 @@ SystemDynamicsProfiler = (() => {
     }
     const state = _smoothedState.slice();
 
-    // Maintain rolling window
+    // Smoothed trajectory â†' velocity/curvature (derivatives need smooth input)
     trajectory.push(state);
     if (trajectory.length > WINDOW) trajectory.shift();
+
+    // Raw trajectory â†' coupling/dimensionality (correlations need unsmoothed data)
+    rawTrajectory.push(rawState.slice());
+    if (rawTrajectory.length > WINDOW) rawTrajectory.shift();
 
     // Compute velocity (first difference)
     if (trajectory.length >= 2) {
@@ -283,9 +290,9 @@ SystemDynamicsProfiler = (() => {
     }
     if (curvCount > 0) avgCurvature /= curvCount;
 
-    // ── Cross-coupling & effective dimensionality ──
-    const { mean, variance } = _stats(trajectory);
-    const { matrix, strength } = _coupling(trajectory, mean);
+    // â"€â"€ Cross-coupling & effective dimensionality (from RAW trajectory) â"€â"€
+    const { mean, variance } = _stats(rawTrajectory);
+    const { matrix, strength } = _coupling(rawTrajectory, mean);
     const effDim = _effectiveDimensionality(variance);
 
     // ── Regime classification ──
@@ -332,6 +339,7 @@ SystemDynamicsProfiler = (() => {
 
   function reset() {
     trajectory.length = 0;
+    rawTrajectory.length = 0;
     velocities.length = 0;
     beatsSeen = 0;
     _smoothedState = null;

@@ -182,8 +182,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   try {
     V.requireType(playNotesEmitPick, 'function', `${unit}.playNotes: playNotesEmitPick helper`);
 
+    let picksEmitted = 0;
     for (let pi = 0; pi < picks.length; pi++) {
-      scheduled += playNotesEmitPick({
+      const events = playNotesEmitPick({
         unit,
         pick: picks[pi],
         pickIndex: pi,
@@ -199,8 +200,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         currentTime,
         voiceIdSeed
       });
+      scheduled += events;
+      if (events > 0) picksEmitted++;
     }
-    emitNotesEmitted(scheduled, intendedCount, 'scheduled');
+    emitNotesEmitted(picksEmitted, intendedCount, 'scheduled');
     trackRhythm(unit, layer, true);
   } catch (e) {
     emitNotesEmitted(0, intendedCount, 'emit-error');
