@@ -7,6 +7,11 @@
 
 (function() {
 
+  // Flicker modifier EMA state — smooths the amplitude envelope
+  // while preserving the per-beat noise pattern.
+  let _prevFlickerMod = 1;
+  const FLICKER_SMOOTHING = 0.25;
+
   /**
    * Update all dynamic systems based on current musical context.
    * Call once per beat (or measure) from main loop.
@@ -73,7 +78,12 @@
     // 5. Micro-hyper density flicker (attributed)
     const textureDensityBoost = clamp(Number(DrumTextureCoupler.getIntensity()), 0, 1) * 0.5;
     const flickerAttr = ConductorIntelligence.collectFlickerModifierWithAttribution();
-    const registryFlickerMod = flickerAttr.product;
+    // EMA on flicker modifier: smooths the amplitude envelope to reduce
+    // beat-to-beat reversals that inflate trajectory curvature, while
+    // preserving the per-beat noise pattern (sine + random terms below).
+    const rawFlickerMod = flickerAttr.product;
+    const registryFlickerMod = _prevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
+    _prevFlickerMod = registryFlickerMod;
     const flickerAmplitude = (compositeIntensity + textureDensityBoost) * registryFlickerMod;
     const densitySeed = Number(beatStart);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
