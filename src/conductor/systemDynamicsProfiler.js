@@ -14,8 +14,13 @@
 
 SystemDynamicsProfiler = (() => {
   // ── Phase space dimensions ──
+  // Full 6D state space for coupling/dimensionality diagnostics.
+  // Only the first N_COMPOSITIONAL_DIMS are used for velocity/curvature,
+  // because trust (governance meta-signal) and phase (monotonic sawtooth)
+  // inflate trajectory curvature without reflecting compositional oscillation.
   const DIM_NAMES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
   const N_DIMS = DIM_NAMES.length;
+  const N_COMPOSITIONAL_DIMS = 4; // density, tension, flicker, entropy
   const WINDOW = 32; // rolling window for statistics
   const MIN_WINDOW = 6; // minimum beats before meaningful analysis
 
@@ -245,8 +250,8 @@ SystemDynamicsProfiler = (() => {
    */
   function _grade(regime) {
     if (regime === 'exploring' || regime === 'coherent' || regime === 'evolving') return 'healthy';
-    if (regime === 'drifting') return 'strained';
-    if (regime === 'oscillating' || regime === 'fragmented') return 'stressed';
+    if (regime === 'drifting' || regime === 'fragmented') return 'strained';
+    if (regime === 'oscillating') return 'stressed';
     if (regime === 'stagnant') return 'critical';
     return 'healthy';
   }
@@ -277,12 +282,14 @@ SystemDynamicsProfiler = (() => {
     rawTrajectory.push(rawState.slice());
     if (rawTrajectory.length > WINDOW) rawTrajectory.shift();
 
-    // Compute velocity (first difference)
+    // Compute velocity (first difference) — compositional dims only.
+    // Trust and phase are excluded: trust is a governance meta-signal whose
+    // density anti-correlation inflates curvature, and phase is monotonic.
     if (trajectory.length >= 2) {
       const prev = trajectory[trajectory.length - 2];
       const curr = trajectory[trajectory.length - 1];
-      const vel = new Array(N_DIMS);
-      for (let d = 0; d < N_DIMS; d++) vel[d] = curr[d] - prev[d];
+      const vel = new Array(N_COMPOSITIONAL_DIMS);
+      for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) vel[d] = curr[d] - prev[d];
       velocities.push(vel);
       if (velocities.length > WINDOW) velocities.shift();
     }
@@ -376,7 +383,11 @@ SystemDynamicsProfiler = (() => {
     dynamicsEffectiveDim: _lastSnapshot.effectiveDimensionality,
     dynamicsCouplingStrength: _lastSnapshot.couplingStrength
   }));
-  ConductorIntelligence.registerModule('SystemDynamicsProfiler', { reset }, ['section']);
+  // Scope 'all' — profiler accumulates across sections because trajectory
+  // shape (velocity, curvature, coupling) is meaningful across key changes.
+  // Section resets were discarding history in short compositions, causing
+  // sparse statistics and unreliable regime classification.
+  ConductorIntelligence.registerModule('SystemDynamicsProfiler', { reset }, ['all']);
 
   return { analyze, getSnapshot, getSummary, reset };
 })();

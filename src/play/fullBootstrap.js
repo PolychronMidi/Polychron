@@ -607,6 +607,7 @@ FullBootstrap = (() => {
     'pushMultiple',
     'grandFinale',
     'coherenceVerdicts',
+    'systemManifestMarkdown',
     'systemManifest',
     'VoiceLeadingScore',
     'SimplexNoise',
