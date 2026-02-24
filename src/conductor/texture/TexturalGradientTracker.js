@@ -54,14 +54,15 @@ TexturalGradientTracker = (() => {
     // Absolute rate of change â€” high means rapid texture shift
     const absGradient = m.abs(gradient);
 
-    // flickerMod: rapid changes â†’ widen flicker to accommodate transition,
+    // flickerMod: rapid changes → widen flicker to accommodate transition,
     // stable → narrow flicker for consistency (continuous ramp, no step)
     let flickerMod = 1;
     if (absGradient > 0.15) {
-      flickerMod = clamp(1 + absGradient * 0.4, 1, 1.25);
+      flickerMod = clamp(1 + absGradient * 0.3, 1, 1.15);
     } else if (absGradient < 0.03) {
-      // Continuous ramp: gradient 0→0.03 maps to flickerMod 0.94→1.0
-      flickerMod = 0.94 + (absGradient / 0.03) * 0.06;
+      // Continuous ramp: gradient 0→0.03 maps to flickerMod 0.96→1.0
+      // (raised floor from 0.94 to 0.96 to reduce flicker crush)
+      flickerMod = 0.96 + (absGradient / 0.03) * 0.04;
     }
 
     let suggestion = 'stable';
@@ -85,7 +86,7 @@ TexturalGradientTracker = (() => {
     densitySamples.length = 0;
   }
 
-  ConductorIntelligence.registerFlickerModifier('TexturalGradientTracker', () => TexturalGradientTracker.getFlickerModifier(), 0.9, 1.25);
+  ConductorIntelligence.registerFlickerModifier('TexturalGradientTracker', () => TexturalGradientTracker.getFlickerModifier(), 0.96, 1.15);
   ConductorIntelligence.registerRecorder('TexturalGradientTracker', (ctx) => { TexturalGradientTracker.recordDensity(ctx.currentDensity, ctx.absTime); });
   ConductorIntelligence.registerModule('TexturalGradientTracker', { reset }, ['section']);
 

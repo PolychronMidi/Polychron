@@ -146,9 +146,23 @@ CoherenceMonitor = (() => {
     // If emitting too few notes (deviation < 0) â†’ boost (bias > 1)
     const correction = 1.0 - deviation * phaseGain;
 
+    // Density-level awareness: the emission-fidelity check above is blind to
+    // upstream suppression (when both intended and actual are equally low).
+    // Supplement with a product-level correction when density is structurally
+    // depressed. This closes the gap where the system precisely plays its
+    // suppressed intentions and sees no deviation.
+    const densityProduct = signalReader.density();
+    const HEALTHY_DENSITY = 0.70;
+    let productCorrection = 1.0;
+    if (densityProduct < HEALTHY_DENSITY) {
+      const deficit = (HEALTHY_DENSITY - densityProduct) / HEALTHY_DENSITY;
+      productCorrection = 1.0 + deficit * 0.25; // up to 1.25 when density at 0
+    }
+    const blendedCorrection = correction * productCorrection;
+
     // Smooth the bias to avoid jitter
     coherenceBias = clamp(
-      coherenceBias * SMOOTHING + correction * (1 - SMOOTHING),
+      coherenceBias * SMOOTHING + blendedCorrection * (1 - SMOOTHING),
       BIAS_FLOOR,
       BIAS_CEILING
     );

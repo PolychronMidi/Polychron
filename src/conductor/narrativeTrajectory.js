@@ -13,8 +13,9 @@ narrativeTrajectory = (() => {
 
   const HISTORY_LEN      = 16;
   const SMOOTHING        = 0.3;
-  const STEER_GAIN       = 0.03;
-  const MONOTONE_THRESHOLD = 0.005;
+  const STEER_GAIN       = 0.06;       // doubled from 0.03 for audible effect
+  const MONOTONE_THRESHOLD = 0.002;    // lowered from 0.005 — matches EMA-smoothed velocity scale
+  const CURVATURE_STEER  = 0.04;       // steer away from pendulum reversals
 
   /** @type {{ t: number, n: number, d: number }[]} */
   let trajectory = [];
@@ -60,9 +61,12 @@ narrativeTrajectory = (() => {
       curvature = ab + bc > 0.0001 ? (4 * area) / (ab * bc * ac + 1e-9) : 0;
     }
 
-    // Steer when trajectory is too flat (monotone)
+    // Steer when trajectory is too flat (monotone) or oscillating (high curvature)
     if (velocity < MONOTONE_THRESHOLD && trajectory.length >= 4) {
       steerBias = 1.0 + STEER_GAIN;
+    } else if (curvature > 0.5 && trajectory.length >= 4) {
+      // High curvature = pendulum reversal — nudge tension to break cycle
+      steerBias = 1.0 + CURVATURE_STEER * clamp(curvature, 0.5, 2.0);
     } else {
       steerBias = 1.0;
     }
@@ -88,7 +92,7 @@ narrativeTrajectory = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerTensionBias('narrativeTrajectory', tensionBias, 0.96, 1.06);
+  ConductorIntelligence.registerTensionBias('narrativeTrajectory', tensionBias, 0.94, 1.12);
   ConductorIntelligence.registerRecorder('narrativeTrajectory', refresh);
   ConductorIntelligence.registerStateProvider('narrativeTrajectory', () => ({
     narrativeVelocity: velocity,

@@ -14,10 +14,11 @@
 
 SystemDynamicsProfiler = (() => {
   // ── Phase space dimensions ──
-  // Full 6D state space for coupling/dimensionality diagnostics.
-  // Only the first N_COMPOSITIONAL_DIMS are used for velocity/curvature,
-  // because trust (governance meta-signal) and phase (monotonic sawtooth)
-  // inflate trajectory curvature without reflecting compositional oscillation.
+  // Full 6D state space for the coupling matrix (diagnostic exposure).
+  // Only the first N_COMPOSITIONAL_DIMS are used for velocity, curvature,
+  // coupling strength, and effective dimensionality — because trust
+  // (governance meta-signal) and phase (monotonic sawtooth) inflate
+  // those metrics without reflecting compositional oscillation.
   const DIM_NAMES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
   const N_DIMS = DIM_NAMES.length;
   const N_COMPOSITIONAL_DIMS = 4; // density, tension, flicker, entropy
@@ -65,7 +66,7 @@ SystemDynamicsProfiler = (() => {
     return {
       velocity: 0,
       curvature: 0,
-      effectiveDimensionality: N_DIMS,
+      effectiveDimensionality: N_COMPOSITIONAL_DIMS,
       couplingStrength: 0,
       regime: 'initializing',
       grade: 'healthy',
@@ -117,7 +118,10 @@ SystemDynamicsProfiler = (() => {
     } catch { /* non-fatal */ }
 
     let entropy = 0;
-    try { entropy = CoherenceMonitor.getEntropySignal(); } catch { /* non-fatal */ }
+    // Use entropyRegulator's actual pitch/velocity/rhythm entropy (0–1)
+    // instead of CoherenceMonitor's emission-fidelity variance (which is
+    // effectively constant at ~0 when emission matches intention).
+    try { entropy = entropyRegulator.measureEntropy(); } catch { /* non-fatal */ }
 
     let phase = 0;
     try { phase = TimeStream.normalizedProgress('section'); } catch { /* non-fatal */ }
@@ -168,6 +172,10 @@ SystemDynamicsProfiler = (() => {
     const n = data.length;
     /** @type {Record<string, number>} */
     const matrix = {};
+    // Strength accumulates only compositional pairs (density, tension, flicker,
+    // entropy). Trust (governance meta-signal) and phase (monotonic sawtooth)
+    // inflate coupling strength without reflecting compositional coherence.
+    // Full 6D matrix is still computed for diagnostic exposure.
     let totalAbs = 0;
     let pairCount = 0;
 
@@ -187,8 +195,10 @@ SystemDynamicsProfiler = (() => {
         const corr = denom > 1e-10 ? covAB / denom : 0;
         const key = DIM_NAMES[a] + '-' + DIM_NAMES[b];
         matrix[key] = m.round(corr * 1000) / 1000;
-        totalAbs += m.abs(corr);
-        pairCount++;
+        if (a < N_COMPOSITIONAL_DIMS && b < N_COMPOSITIONAL_DIMS) {
+          totalAbs += m.abs(corr);
+          pairCount++;
+        }
       }
     }
 
@@ -198,22 +208,24 @@ SystemDynamicsProfiler = (() => {
   /**
    * Effective dimensionality: how many independent axes the system is using.
    * Uses variance ratios as a lightweight PCA proxy.
-   * If one dimension dominates, effectiveDim ≈ 1. If spread evenly, ≈ N_DIMS.
+   * If one dimension dominates, effectiveDim ≈ 1. If spread evenly, ≈ N_COMPOSITIONAL_DIMS.
    * Computed as exp(Shannon entropy of normalized variances).
+   * Scoped to compositional dimensions only — trust and phase are excluded
+   * because they reflect governance/position, not compositional activity.
    * @param {number[]} variance
-   * @returns {number} 1.0 to N_DIMS
+   * @returns {number} 1.0 to N_COMPOSITIONAL_DIMS
    */
   function _effectiveDimensionality(variance) {
     let total = 0;
-    for (let d = 0; d < N_DIMS; d++) total += variance[d];
+    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) total += variance[d];
     if (total < 1e-12) return 1;
 
     let entropy = 0;
-    for (let d = 0; d < N_DIMS; d++) {
+    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
       const p = variance[d] / total;
       if (p > 1e-12) entropy -= p * m.log(p);
     }
-    return clamp(m.exp(entropy), 1, N_DIMS);
+    return clamp(m.exp(entropy), 1, N_COMPOSITIONAL_DIMS);
   }
 
   /**
@@ -228,6 +240,8 @@ SystemDynamicsProfiler = (() => {
     // Thresholds calibrated for adaptive STATE_SMOOTHING targeting effective
     // responsiveness ≈ 0.175 (profileSmoothing × stateSmoothing). Validated
     // against explosive (0.5 × 0.35) and default (0.8 × 0.22) profiles.
+    // Coupling strength and effectiveDim are now scoped to compositional
+    // dimensions only (4D, 6 pairs). Thresholds adjusted accordingly.
     // Stagnant: barely moving through state space
     if (avgVelocity < 0.004) return 'stagnant';
     // Oscillating: high curvature (frequent reversals) with moderate velocity
@@ -235,9 +249,9 @@ SystemDynamicsProfiler = (() => {
     // Exploring: high velocity + varied curvature + multi-dimensional
     if (avgVelocity > 0.02 && effectiveDim > 2.5) return 'exploring';
     // Coherent: strong coupling + moderate velocity (dimensions move together)
-    if (couplingStrength > 0.45 && avgVelocity > 0.008) return 'coherent';
+    if (couplingStrength > 0.40 && avgVelocity > 0.008) return 'coherent';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
-    if (couplingStrength < 0.2 && effectiveDim > 3) return 'fragmented';
+    if (couplingStrength < 0.2 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
     if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
     return 'evolving';

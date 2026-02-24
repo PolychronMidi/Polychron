@@ -153,7 +153,11 @@
       stutterProb: stutterOut,
       densityAttribution: densityAttr.contributions,
       tensionAttribution: tensionAttr.contributions,
-      flickerAttribution: flickerAttr.contributions
+      flickerAttribution: flickerAttr.contributions,
+      // Extra-pipeline density multipliers — outside the registry product but
+      // affecting targetDensity. Exposed for manifest attribution visibility.
+      extraDensityCorrection: densityCorrection,
+      extraCoherenceDensityBias: coherenceDensityBias
     }));
 
     return {

@@ -47,9 +47,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // Blend section-shape arc (30%) with intent entropy target (70%)
   const clArcTarget = entropyRegulator.getArcTarget(TimeStream.normalizedProgress('section'));
   entropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
-  // CoherenceMonitor entropy signal drives regulation aggressiveness:
-  // chaos → stronger regulation, stagnation → lighter touch
-  entropyRegulator.setRegulationStrength(clamp(0.5 + CoherenceMonitor.getEntropySignal() * 0.4, 0, 1));
+  // Regulation aggressiveness scales with deviation from target entropy:
+  // large deviation → stronger regulation, near-target → lighter touch.
+  const entropyDeviation = m.abs(entropyRegulator.measureEntropy() - clArcTarget);
+  entropyRegulator.setRegulationStrength(clamp(0.3 + entropyDeviation * 1.4, 0.2, 0.9));
   const clEntropy = entropyRegulator.getRegulation();
 
   // ── [stage: phase] ────────────────────────────────────────────

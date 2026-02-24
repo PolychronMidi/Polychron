@@ -28,6 +28,8 @@
     densityBias: 0,
     crossModBias: 1,
     emissionRatio: 1,
+    extraDensityCorrection: 1,
+    extraCoherenceDensityBias: 1,
     activeProfile: 'default',
     journeyMove: 'origin',
     journeyDistance: 0,
@@ -92,6 +94,8 @@
     snapshot.compositeIntensity = clamp(V.optionalFinite(Number(_data.compositeIntensity), snapshot.compositeIntensity), 0, 1);
     snapshot.harmonicRhythm = clamp(V.optionalFinite(Number(_data.harmonicRhythm), snapshot.harmonicRhythm), 0, 1);
     snapshot.emissionRatio = clamp(V.optionalFinite(Number(_data.emissionRatio), snapshot.emissionRatio), 0, 2);
+    snapshot.extraDensityCorrection = V.optionalFinite(Number(_data.extraDensityCorrection), snapshot.extraDensityCorrection);
+    snapshot.extraCoherenceDensityBias = V.optionalFinite(Number(_data.extraCoherenceDensityBias), snapshot.extraCoherenceDensityBias);
     snapshot.playProb = clamp(V.optionalFinite(Number(_data.playProb), snapshot.playProb), 0, 1);
     snapshot.stutterProb = clamp(V.optionalFinite(Number(_data.stutterProb), snapshot.stutterProb), 0, 1);
 
@@ -183,6 +187,8 @@
     snapshot.harmonicRhythm = 0;
     snapshot.harmonicMutationCount = 0;
     snapshot.emissionRatio = 1;
+    snapshot.extraDensityCorrection = 1;
+    snapshot.extraCoherenceDensityBias = 1;
     snapshot.binauralFreqOffset = 0;
     snapshot.binauralFlip = false;
     snapshot.playProb = 0.5;

@@ -165,6 +165,7 @@ interface ConductorStateSnapshot {
   compositeIntensity: number; playProb: number; stutterProb: number;
   textureMode: string; textureFatigue: number; densityBias: number;
   crossModBias: number; emissionRatio: number; activeProfile: string;
+  extraDensityCorrection: number; extraCoherenceDensityBias: number;
   journeyMove: string; journeyDistance: number; journeyKey: string; journeyMode: string;
   binauralFreqOffset: number; binauralFlip: boolean;
   tick: number; updatedAt: number;

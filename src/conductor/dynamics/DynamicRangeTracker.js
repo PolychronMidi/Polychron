@@ -59,12 +59,13 @@ DynamicRangeTracker = (() => {
    */
   function getSpreadBias(opts) {
     const profile = getVelocityProfile(opts);
-    // Continuous ramp: spread 0→30 maps to 1.2→1.0; spread 30→80 maps to 1.0→0.88
+    // Continuous ramp: spread 0→30 maps to 1.15→1.0; spread 30→80 maps to 1.0→0.92
+    // (raised floor from 0.88 to 0.92 to reduce flicker crush)
     if (profile.spread <= 30) {
-      return 1.2 - (profile.spread / 30) * 0.2;
+      return 1.15 - (profile.spread / 30) * 0.15;
     }
     const ramp = clamp((profile.spread - 30) / 50, 0, 1);
-    return 1.0 - ramp * 0.12;
+    return 1.0 - ramp * 0.08;
   }
 
   /**
@@ -158,7 +159,7 @@ DynamicRangeTracker = (() => {
     snapshots.length = 0;
   }
 
-  ConductorIntelligence.registerFlickerModifier('DynamicRangeTracker:spread', () => DynamicRangeTracker.getSpreadBias(), 0.8, 1.3);
+  ConductorIntelligence.registerFlickerModifier('DynamicRangeTracker:spread', () => DynamicRangeTracker.getSpreadBias(), 0.92, 1.15);
   ConductorIntelligence.registerFlickerModifier('DynamicRangeTracker:contrast', () => DynamicRangeTracker.getContrastFlickerModifier(), 0.95, 1.2);
   ConductorIntelligence.registerRecorder('DynamicRangeTracker', (ctx) => { DynamicRangeTracker.recordExtremes(ctx.absTime); });
   ConductorIntelligence.registerModule('DynamicRangeTracker', { reset }, ['section']);

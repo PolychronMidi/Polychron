@@ -18,8 +18,17 @@ systemManifest = (() => {
       tension: ConductorIntelligence.collectTensionBiasWithAttribution(),
       flicker: ConductorIntelligence.collectFlickerModifierWithAttribution()
     };
+
+    // Extra-pipeline density multipliers (outside the registry product).
+    // Captured from ConductorState so the manifest reveals the full picture.
+    const snap = ConductorState.getSnapshot();
+    const extraDensityMultipliers = {
+      emissionCorrection: snap.extraDensityCorrection,
+      coherenceDensityBias: snap.extraCoherenceDensityBias
+    };
+
     manifest.attribution = {
-      density: _serializeAttribution(attribution.density),
+      density: Object.assign(_serializeAttribution(attribution.density), { extraMultipliers: extraDensityMultipliers }),
       tension: _serializeAttribution(attribution.tension),
       flicker: _serializeAttribution(attribution.flicker)
     };
