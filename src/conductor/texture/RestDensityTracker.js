@@ -121,20 +121,34 @@ RestDensityTracker = (() => {
 
   /**
    * Density bias to enforce breathing room.
-   * Breathless â†’ reduce density; airy â†’ boost density.
+   * Continuous ramp based on breath ratio: few breaths → suppress, many → boost.
+   * Output range matches registered clamp [0.85, 1.15].
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-   * @returns {number} - 0.8 to 1.2
+   * @returns {number} - 0.85 to 1.15
    */
   function getBreathingDensityBias(opts) {
     const profile = getBreathingProfile(opts);
-    if (profile.breathless) return 0.85;
-    if (profile.airy) return 1.15;
+    if (profile.breathCount === 0 && profile.avgGap === 0) return 1.0;
+    // breathRatio: fraction of inter-onset gaps that are "breaths" (>0.3s)
+    // Low ratio = wall of sound, high ratio = airy
+    const noteCount = profile.breathCount + 1; // approximate
+    const breathRatio = noteCount > 1 ? profile.breathCount / noteCount : 0;
+    // Breathless zone: ratio 0–0.05 → bias 0.85–1.0
+    if (breathRatio <= 0.05) {
+      const ramp = clamp((0.05 - breathRatio) / 0.05, 0, 1);
+      return 1.0 - ramp * 0.15;
+    }
+    // Airy zone: ratio 0.35–0.60 → bias 1.0–1.15
+    if (breathRatio >= 0.35) {
+      const ramp = clamp((breathRatio - 0.35) / 0.25, 0, 1);
+      return 1.0 + ramp * 0.15;
+    }
     return 1.0;
   }
 
   ConductorIntelligence.registerDensityBias('RestDensityTracker:onset', () => RestDensityTracker.getOnsetBias(), 0.85, 1.15);
-  ConductorIntelligence.registerDensityBias('RestDensityTracker:breathing', () => RestDensityTracker.getBreathingDensityBias(), 0.8, 1.2);
+  ConductorIntelligence.registerDensityBias('RestDensityTracker:breathing', () => RestDensityTracker.getBreathingDensityBias(), 0.85, 1.15);
 
   return {
     getOnsetDensity,

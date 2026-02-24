@@ -87,7 +87,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // Idle beats get a small positive payoff for readiness; active feedback gets a stronger base boost
   // so that even low-energy reactions build trust over time.
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
-    ? 0.04
+    ? 0.06
     : clamp(0.15 + clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
   AdaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
   AdaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
