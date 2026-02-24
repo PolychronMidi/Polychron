@@ -19,7 +19,7 @@ CoherenceMonitor = (() => {
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
   const BIAS_FLOOR = 0.70;
   const BIAS_CEILING = 1.3;
-  const SMOOTHING = 0.75;    // exponential smoothing factor (higher = slower response)
+  const SMOOTHING = 0.55;    // exponential smoothing factor (higher = slower response)
 
   // â”€â”€ Entropy tracking â”€â”€
   let entropySignal = 0;     // -1 (stagnation) to +1 (chaos)

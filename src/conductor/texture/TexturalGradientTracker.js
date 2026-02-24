@@ -55,12 +55,13 @@ TexturalGradientTracker = (() => {
     const absGradient = m.abs(gradient);
 
     // flickerMod: rapid changes â†’ widen flicker to accommodate transition,
-    // stable â†’ narrow flicker for consistency
+    // stable → narrow flicker for consistency (continuous ramp, no step)
     let flickerMod = 1;
     if (absGradient > 0.15) {
       flickerMod = clamp(1 + absGradient * 0.4, 1, 1.25);
     } else if (absGradient < 0.03) {
-      flickerMod = 0.92; // very stable â†’ tighten flicker
+      // Continuous ramp: gradient 0→0.03 maps to flickerMod 0.94→1.0
+      flickerMod = 0.94 + (absGradient / 0.03) * 0.06;
     }
 
     let suggestion = 'stable';
@@ -95,4 +96,3 @@ TexturalGradientTracker = (() => {
     reset
   };
 })();
-

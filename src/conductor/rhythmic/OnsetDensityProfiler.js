@@ -5,7 +5,7 @@
 OnsetDensityProfiler = (() => {
   const V = Validator.create('onsetDensityProfiler');
   const WINDOW_SECONDS = 3;
-  const TARGET_NPS = 6; // target notes-per-second for "balanced" density
+  const TARGET_NPS = 8; // target notes-per-second for "balanced" density
 
   // Beat-level cache: getDensity() with default opts is called 2-3x per beat
   // (getDensityBias + getCrossModBias via stateProvider)
@@ -113,4 +113,3 @@ OnsetDensityProfiler = (() => {
     getLayerDensities
   };
 })();
-

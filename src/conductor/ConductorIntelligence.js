@@ -41,16 +41,7 @@ ConductorIntelligence = (() => {
     return 1.0 + (clamped - 1.0) * DENSITY_DEVIATION_DAMPING;
   }
 
-  /** @param {Array<{ getter: () => number, lo: number, hi: number }>} registry @returns {number} */
-  function _collect(registry) {
-    let product = 1;
-    for (let i = 0; i < registry.length; i++) {
-      product *= clamp(registry[i].getter(), registry[i].lo, registry[i].hi);
-    }
-    return product;
-  }
-
-  /** Like _collect but applies deviation dampening (for density only). */
+  /** Applies deviation dampening to all pipelines (density, tension, flicker). */
   function _collectDampened(registry) {
     let product = 1;
     for (let i = 0; i < registry.length; i++) {
@@ -59,24 +50,7 @@ ConductorIntelligence = (() => {
     return product;
   }
 
-  /**
-   * @param {Array<{ name: string, getter: () => number, lo: number, hi: number }>} registry
-   * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
-   */
-  function _collectWithAttribution(registry) {
-    let product = 1;
-    const contributions = [];
-    for (let i = 0; i < registry.length; i++) {
-      const entry = registry[i];
-      const raw = entry.getter();
-      const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= clamped;
-      contributions.push({ name: entry.name, raw, clamped });
-    }
-    return { product, contributions };
-  }
-
-  /** Like _collectWithAttribution but applies deviation dampening (for density). */
+  /** Like _collectDampened but with per-contributor attribution. */
   function _collectDampenedWithAttribution(registry) {
     let product = 1;
     const contributions = [];
@@ -192,11 +166,11 @@ ConductorIntelligence = (() => {
     flickerModifiers.push({ name, getter, lo, hi });
   }
 
-  /** @returns {number} product of all flicker modifiers */
-  function collectFlickerModifier() { return _collect(flickerModifiers); }
+  /** @returns {number} product of all flicker modifiers (dampened to prevent crush) */
+  function collectFlickerModifier() { return _collectDampened(flickerModifiers); }
 
   /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function collectFlickerModifierWithAttribution() { return _collectWithAttribution(flickerModifiers); }
+  function collectFlickerModifierWithAttribution() { return _collectDampenedWithAttribution(flickerModifiers); }
 
   // â”€â”€ Recorders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Recorders receive a context object each beat and perform side-effects
