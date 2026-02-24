@@ -32,33 +32,47 @@ ConductorIntelligence = (() => {
 
   // â”€â”€ Shared collection helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Dampening factor: shrinks deviations from 1.0 before multiplying,
-  // preventing 23 contributors from crushing the product to near-zero.
-  // A clamped value of 0.75 becomes 1.0 + (0.75 - 1.0) * 0.6 = 0.85.
-  const DENSITY_DEVIATION_DAMPING = 0.6;
+  // preventing many contributors from crushing the product to near-zero.
+  // Auto-scaled per pipeline: base damping (0.6) calibrated for ~20
+  // contributors. Smaller pipelines get proportionally less pass-through
+  // so each module's deviation is attenuated more, reducing volatility.
+  const BASE_DEVIATION_DAMPING = 0.6;
+  const REF_PIPELINE_SIZE = 20;
 
-  /** @param {number} clamped @returns {number} */
-  function _dampen(clamped) {
-    return 1.0 + (clamped - 1.0) * DENSITY_DEVIATION_DAMPING;
+  /**
+   * @param {number} clamped
+   * @param {number} damping - effective damping for this pipeline
+   * @returns {number}
+   */
+  function _dampen(clamped, damping) {
+    return 1.0 + (clamped - 1.0) * damping;
+  }
+
+  /** Compute effective damping scaled by pipeline contributor count. */
+  function _scaledDamping(registryLength) {
+    return BASE_DEVIATION_DAMPING * clamp(registryLength / REF_PIPELINE_SIZE, 0.3, 1.0);
   }
 
   /** Applies deviation dampening to all pipelines (density, tension, flicker). */
   function _collectDampened(registry) {
+    const damping = _scaledDamping(registry.length);
     let product = 1;
     for (let i = 0; i < registry.length; i++) {
-      product *= _dampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi));
+      product *= _dampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi), damping);
     }
     return product;
   }
 
   /** Like _collectDampened but with per-contributor attribution. */
   function _collectDampenedWithAttribution(registry) {
+    const damping = _scaledDamping(registry.length);
     let product = 1;
     const contributions = [];
     for (let i = 0; i < registry.length; i++) {
       const entry = registry[i];
       const raw = entry.getter();
       const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= _dampen(clamped);
+      product *= _dampen(clamped, damping);
       contributions.push({ name: entry.name, raw, clamped });
     }
     return { product, contributions };
