@@ -38,16 +38,17 @@ RhythmicDensityContrastTracker = (() => {
 
     const contrast = maxD - minD;
 
-    // Flicker modifier: healthy contrast (0.2-0.6) â†’ slightly widen flicker;
-    // too little contrast â†’ widen to create variety;
-    // extreme contrast â†’ tighten for stability
+    // Flicker modifier: continuous ramp based on contrast.
+    // Low contrast (0→0.15) → ramp 1.1→1.0 (add variety)
+    // Mid contrast (0.15→0.6) → ramp 1.0→1.04 (slight amplification)
+    // High contrast (0.6→1.0) → ramp 1.04→0.92 (stabilize)
     let flickerMod = 1;
     if (contrast < 0.15) {
-      flickerMod = 1.1; // too uniform â†’ add variety via flicker
-    } else if (contrast > 0.7) {
-      flickerMod = 0.92; // extreme shifts â†’ stabilize
-    } else if (contrast > 0.3) {
-      flickerMod = 1.04; // healthy contrast â†’ slight amplification
+      flickerMod = 1.1 - clamp(contrast / 0.15, 0, 1) * 0.1;
+    } else if (contrast > 0.6) {
+      flickerMod = 1.04 - clamp((contrast - 0.6) / 0.4, 0, 1) * 0.12;
+    } else {
+      flickerMod = 1.0 + clamp((contrast - 0.15) / 0.45, 0, 1) * 0.04;
     }
 
     let suggestion = 'maintain';
@@ -94,4 +95,3 @@ RhythmicDensityContrastTracker = (() => {
     reset
   };
 })();
-

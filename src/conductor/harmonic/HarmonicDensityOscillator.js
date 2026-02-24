@@ -51,15 +51,15 @@ HarmonicDensityOscillator = (() => {
       ? (changeSamples[changeSamples.length - 1].time - changeSamples[0].time) / (alternations / 2)
       : 0;
 
-    // Tension bias: reinforce natural breathing if oscillating nicely,
-    // nudge change if stagnant
+    // Tension bias: continuous ramp based on alternation rate.
+    // High alternation (0.4→0.8) → ramp 1.0→1.03 (natural breathing)
+    // Low alternation (0→0.15) → ramp 1.08→1.0 (push for change)
+    // Mid range → neutral
     let tensionBias = 1;
-    if (oscillating && alternationRate > 0.5) {
-      // Good harmonic breathing â€” slight tension support
-      tensionBias = 1.03;
-    } else if (alternationRate < 0.15) {
-      // Stagnant harmonic rate â€” push for change
-      tensionBias = 1.08;
+    if (alternationRate < 0.15) {
+      tensionBias = 1.08 - clamp(alternationRate / 0.15, 0, 1) * 0.08;
+    } else if (alternationRate > 0.4) {
+      tensionBias = 1.0 + clamp((alternationRate - 0.4) / 0.4, 0, 1) * 0.03;
     }
 
     return { oscillating, tensionBias, period };
@@ -103,4 +103,3 @@ HarmonicDensityOscillator = (() => {
     reset
   };
 })();
-

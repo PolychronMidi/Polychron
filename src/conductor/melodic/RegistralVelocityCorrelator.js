@@ -65,13 +65,15 @@ RegistralVelocityCorrelator = (() => {
     // Absolute correlation: how rigid is the mapping?
     const absCorr = m.abs(correlation);
 
-    // Flicker modifier: very rigid correlation → widen flicker to break pattern;
-    // natural moderate correlation → maintain; zero correlation → slight tighten
+    // Flicker modifier: continuous ramp based on absolute correlation.
+    // High correlation (0.4→1.0) → ramp 1.0→1.1 (break rigid pattern)
+    // Low correlation (0→0.2) → ramp 0.94→1.0 (tighten for coherence)
+    // Mid (0.2→0.4) → neutral
     let flickerMod = 1;
-    if (absCorr > 0.75) {
-      flickerMod = 1.1; // too rigid → add variety
-    } else if (absCorr < 0.1) {
-      flickerMod = 0.94; // no relationship → tighten for coherence
+    if (absCorr > 0.4) {
+      flickerMod = 1.0 + clamp((absCorr - 0.4) / 0.6, 0, 1) * 0.1;
+    } else if (absCorr < 0.2) {
+      flickerMod = 0.94 + clamp(absCorr / 0.2, 0, 1) * 0.06;
     }
 
     let suggestion = 'maintain';
