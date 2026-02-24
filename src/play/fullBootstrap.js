@@ -266,6 +266,7 @@ FullBootstrap = (() => {
     'signalReader',
     'profileAdaptation',
     'signalTelemetry',
+    'SignalHealthAnalyzer',
     'ModuleLifecycle',
     'beatCache',
 

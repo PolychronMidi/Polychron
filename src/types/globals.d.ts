@@ -289,6 +289,42 @@ interface SignalTelemetryAPI {
   reset(): void;
 }
 
+interface SignalHealthPipeline {
+  grade: string;
+  product: number;
+  pinnedModules: string[];
+  crushFactor: number;
+  saturated?: boolean;
+}
+
+interface SignalHealthTrust {
+  grade: string;
+  starvingSystems: string[];
+  thrivingSystems: string[];
+}
+
+interface SignalHealthSnapshot {
+  density: SignalHealthPipeline;
+  tension: SignalHealthPipeline;
+  flicker: SignalHealthPipeline;
+  trust: SignalHealthTrust;
+  overall: string;
+}
+
+interface SignalHealthSummary {
+  beatsAnalyzed: number;
+  pinnedRate: { density: number; tension: number; flicker: number };
+  saturationRate: { density: number; tension: number };
+  lastHealth: SignalHealthSnapshot;
+}
+
+interface SignalHealthAnalyzerAPI {
+  analyze(): void;
+  getHealth(): SignalHealthSnapshot;
+  getSummary(): SignalHealthSummary;
+  reset(): void;
+}
+
 interface JourneyStop {
   key: string;
   mode: string;
@@ -1074,6 +1110,7 @@ declare var CoherenceMonitor: CoherenceMonitorAPI;
 declare var signalReader: SignalReaderAPI;
 declare var profileAdaptation: ProfileAdaptationAPI;
 declare var signalTelemetry: SignalTelemetryAPI;
+declare var SignalHealthAnalyzer: SignalHealthAnalyzerAPI;
 declare var ModuleLifecycle: ModuleLifecycleFactory;
 declare var beatCache: BeatCacheFactory;
 
