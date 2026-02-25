@@ -10,7 +10,7 @@
   // Flicker modifier EMA state — smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
   let _prevFlickerMod = 1;
-  const FLICKER_SMOOTHING = 0.25;
+  const FLICKER_SMOOTHING = 0.15;
 
   /**
    * Update all dynamic systems based on current musical context.
@@ -63,13 +63,14 @@
     const registryDensityBias = densityAttr.product;
 
     // Coherence + emission density corrections (boot-validated globals — direct calls)
-    const coherenceDensityBias = LayerCoherenceScorer.getDensityBias();
+    // LayerCoherenceScorer.getDensityBias() now registered in the density registry
+    // (attributed, dampened). Only emission correction remains extra-pipeline.
     const emissionRatio = clamp(Number(EmissionFeedbackListener.getEmissionRatio()), 0, 2);
     const densityCorrection = clamp(1 + clamp(1 - emissionRatio, -1, 1) * 0.2, 0.8, 1.25);
 
     // Drive motif density
     const targetDensity = clamp(
-      ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * coherenceDensityBias * registryDensityBias,
+      ConductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * registryDensityBias,
       0, 1
     );
     const smooth = ConductorConfig.getDensitySmoothing();
@@ -84,7 +85,11 @@
     const rawFlickerMod = flickerAttr.product;
     const registryFlickerMod = _prevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
     _prevFlickerMod = registryFlickerMod;
-    const flickerAmplitude = (compositeIntensity + textureDensityBoost) * registryFlickerMod;
+    // Partial decoupling: flicker base blends compositeIntensity with a
+    // fixed midpoint. Prevents density-flicker anti-correlation (r=-0.7)
+    // caused by compositeIntensity driving both pipelines in lockstep.
+    const flickerBase = compositeIntensity * 0.5 + 0.5;
+    const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod;
     const densitySeed = Number(beatStart);
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -154,10 +159,10 @@
       densityAttribution: densityAttr.contributions,
       tensionAttribution: tensionAttr.contributions,
       flickerAttribution: flickerAttr.contributions,
-      // Extra-pipeline density multipliers — outside the registry product but
-      // affecting targetDensity. Exposed for manifest attribution visibility.
+      // Extra-pipeline density multipliers — only emission correction remains
+      // outside the registry. LayerCoherenceScorer is now in-registry (attributed).
       extraDensityCorrection: densityCorrection,
-      extraCoherenceDensityBias: coherenceDensityBias
+      extraCoherenceDensityBias: 1.0
     }));
 
     return {

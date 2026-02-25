@@ -40,7 +40,8 @@ regimeReactiveDamping = (() => {
   const REGIME_FLICKER_DIR = {
     stagnant: 1,     // boost
     fragmented: -1,  // dampen
-    oscillating: -1, // dampen (key target)
+    oscillating: 0,  // neutral (was -1 — dampening flicker while density is neutral
+                     //   created mechanical anti-correlation r=-0.7 via shared causal path)
     exploring: 0,
     coherent: 0,
     evolving: 0,
@@ -56,34 +57,49 @@ regimeReactiveDamping = (() => {
   // At curvature 0 → bias = 1.0 (neutral). At curvature 1.0 → full magnitude.
   const CURVATURE_CEILING = 1.0;
 
+  // EMA smoothing on bias outputs — prevents discontinuous jumps on regime
+  // transitions that feed back as self-induced oscillation via the profiler.
+  const BIAS_SMOOTHING = 0.20;
+
   let currentRegime = 'evolving';
   let curvatureGain = 0;
+  let _smoothedDensity = 1.0;
+  let _smoothedTension = 1.0;
+  let _smoothedFlicker = 1.0;
 
   function refresh() {
     const snap = SystemDynamicsProfiler.getSnapshot();
     currentRegime = snap ? snap.regime : 'evolving';
     const rawCurv = snap ? (snap.curvature || 0) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
+
+    // Compute raw bias values and apply EMA to prevent discontinuous jumps
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * MAX_TENSION * curvatureGain;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain;
+    _smoothedDensity = _smoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING;
+    _smoothedTension = _smoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING;
+    _smoothedFlicker = _smoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING;
   }
 
   function densityBias() {
-    const dir = REGIME_DENSITY_DIR[currentRegime] || 0;
-    return 1.0 + dir * MAX_DENSITY * curvatureGain;
+    return _smoothedDensity;
   }
 
   function tensionBias() {
-    const dir = REGIME_TENSION_DIR[currentRegime] || 0;
-    return 1.0 + dir * MAX_TENSION * curvatureGain;
+    return _smoothedTension;
   }
 
   function flickerMod() {
-    const dir = REGIME_FLICKER_DIR[currentRegime] || 0;
-    return 1.0 + dir * MAX_FLICKER * curvatureGain;
+    return _smoothedFlicker;
   }
 
   function reset() {
     currentRegime = 'evolving';
     curvatureGain = 0;
+    _smoothedDensity = 1.0;
+    _smoothedTension = 1.0;
+    _smoothedFlicker = 1.0;
   }
 
   // --- Self-registration ---

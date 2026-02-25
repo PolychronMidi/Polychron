@@ -34,6 +34,14 @@ SystemDynamicsProfiler = (() => {
   const velocities = [];
   let beatsSeen = 0;
 
+  // Regime hysteresis: requires REGIME_HOLD consecutive beats of a new
+  // classification before switching. Prevents single-beat noise from
+  // flipping the regime and triggering regime-reactive damping oscillations.
+  const REGIME_HOLD = 4;
+  let _lastRegime = 'evolving';
+  let _candidateRegime = 'evolving';
+  let _candidateCount = 0;
+
   // Pre-differentiation EMA: smooths the raw state vector before computing
   // velocity/curvature. Without this, first-differences amplify beat-to-beat
   // noise from 74 independent modules, inflating curvature artificially.
@@ -117,11 +125,12 @@ SystemDynamicsProfiler = (() => {
       if (trustCount > 0) avgTrust /= trustCount;
     } catch { /* non-fatal */ }
 
-    let entropy = 0;
-    // Use entropyRegulator's actual pitch/velocity/rhythm entropy (0–1)
-    // instead of CoherenceMonitor's emission-fidelity variance (which is
-    // effectively constant at ~0 when emission matches intention).
-    try { entropy = entropyRegulator.measureEntropy(); } catch { /* non-fatal */ }
+    // Neutral midpoint (0.5) prevents zero-injection when entropyRegulator
+    // has insufficient data or throws. Early beats return 0.5 from the
+    // regulator anyway (count === 0 guard), but the catch path was 0 before,
+    // poisoning the rolling window with zeros that suppress entropy variance.
+    let entropy = 0.5;
+    try { entropy = entropyRegulator.measureEntropy(); } catch { /* fallback: neutral */ }
 
     let phase = 0;
     try { phase = TimeStream.normalizedProgress('section'); } catch { /* non-fatal */ }
@@ -258,6 +267,35 @@ SystemDynamicsProfiler = (() => {
   }
 
   /**
+   * Apply hysteresis to regime transitions.
+   * Requires REGIME_HOLD consecutive beats of a new classification before switching.
+   * Prevents single-beat noise from flip-flopping regime-reactive damping.
+   * @param {string} rawRegime - instantaneous classification from _classifyRegime
+   * @returns {string} - stable regime with hysteresis
+   */
+  function _resolveRegime(rawRegime) {
+    if (rawRegime === _lastRegime) {
+      // Reinforce current regime, reset candidate
+      _candidateRegime = rawRegime;
+      _candidateCount = 0;
+      return _lastRegime;
+    }
+    if (rawRegime === _candidateRegime) {
+      _candidateCount++;
+      if (_candidateCount >= REGIME_HOLD) {
+        _lastRegime = rawRegime;
+        _candidateCount = 0;
+        return rawRegime;
+      }
+    } else {
+      // New candidate replaces old
+      _candidateRegime = rawRegime;
+      _candidateCount = 1;
+    }
+    return _lastRegime;
+  }
+
+  /**
    * Grade the trajectory health.
    * @param {string} regime
    * @returns {string}
@@ -334,8 +372,9 @@ SystemDynamicsProfiler = (() => {
     const { matrix, strength } = _coupling(rawTrajectory, mean);
     const effDim = _effectiveDimensionality(variance);
 
-    // ── Regime classification ──
-    const regime = _classifyRegime(avgVelocity, avgCurvature, effDim, strength);
+    // ── Regime classification (with hysteresis) ──
+    const rawRegime = _classifyRegime(avgVelocity, avgCurvature, effDim, strength);
+    const regime = _resolveRegime(rawRegime);
     const grade = _grade(regime);
 
     _lastSnapshot = {
@@ -385,6 +424,9 @@ SystemDynamicsProfiler = (() => {
     _stateSmoothingResolved = false;
     _stateSmoothing = 0.30;
     _lastSnapshot = _emptySnapshot();
+    _lastRegime = 'evolving';
+    _candidateRegime = 'evolving';
+    _candidateCount = 0;
   }
 
   // ── Self-register ──

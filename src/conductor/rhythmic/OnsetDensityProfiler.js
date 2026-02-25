@@ -74,8 +74,18 @@ OnsetDensityProfiler = (() => {
       const ramp = clamp((1.0 - ratio) / 0.5, 0, 1);
       return 1.0 + ramp * 0.35;
     }
+    // Density-aware attenuation: when conductor density product is low,
+    // reduce onset suppression strength to avoid compounding the deficit.
+    // At density 0.70+ → full suppression; at density 0.40 → half suppression.
+    // Uses currentDensity global (previous beat's EMA value) instead of
+    // signalReader.density() — the latter re-enters collectDensityBias,
+    // causing infinite recursion since this getter is called from that pipeline.
+    const conductorDensity = currentDensity;
+    const attenuate = conductorDensity < 0.70
+      ? clamp((conductorDensity - 0.40) / 0.30, 0.5, 1.0)
+      : 1.0;
     const ramp = clamp((ratio - 1.0) / 2.0, 0, 1);
-    return 1.0 - ramp * 0.20;
+    return 1.0 - ramp * 0.20 * attenuate;
   }
 
   /**
