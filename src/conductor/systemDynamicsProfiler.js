@@ -153,7 +153,7 @@ SystemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 7.0; // raised (was 6.0) — entropy still dead at 6.0×; 7.0× safe now that pipelineNormalizer absorbs overshoot (prev 7× failed pre-normalizer)
+      entropy = 0.5 + (rawE - 0.5) * 10.0; // raised (was 7.0) — entropy still dead at 7×; 10× safe with pipelineNormalizer absorbing overshoot
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
@@ -285,7 +285,7 @@ SystemDynamicsProfiler = (() => {
     // Coherent: strong coupling + moderate velocity (dimensions move together)
     if (couplingStrength > 0.40 && avgVelocity > 0.008) return 'coherent';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
-    if (couplingStrength < 0.2 && effectiveDim > 2.5) return 'fragmented';
+    if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
     if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
     return 'evolving';
