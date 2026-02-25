@@ -125,12 +125,12 @@ SystemDynamicsProfiler = (() => {
       if (trustCount > 0) avgTrust /= trustCount;
     } catch { /* non-fatal */ }
 
-    // Neutral midpoint (0.5) prevents zero-injection when entropyRegulator
-    // has insufficient data or throws. Early beats return 0.5 from the
-    // regulator anyway (count === 0 guard), but the catch path was 0 before,
-    // poisoning the rolling window with zeros that suppress entropy variance.
+    // Use raw (unsmoothed) entropy — the EMA-smoothed value converges to
+    // near-constant, producing zero variance in the coupling matrix. Raw
+    // values preserve the beat-to-beat fluctuations that reveal coupling.
+    // Neutral midpoint (0.5) fallback prevents zero-injection on error.
     let entropy = 0.5;
-    try { entropy = entropyRegulator.measureEntropy(); } catch { /* fallback: neutral */ }
+    try { entropy = entropyRegulator.measureRawEntropy(); } catch { /* fallback: neutral */ }
 
     let phase = 0;
     try { phase = TimeStream.normalizedProgress('section'); } catch { /* non-fatal */ }

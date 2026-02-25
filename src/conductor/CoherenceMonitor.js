@@ -156,7 +156,7 @@ CoherenceMonitor = (() => {
     let productCorrection = 1.0;
     if (densityProduct < HEALTHY_DENSITY) {
       const deficit = (HEALTHY_DENSITY - densityProduct) / HEALTHY_DENSITY;
-      productCorrection = 1.0 + deficit * 0.25; // up to 1.25 when density at 0
+      productCorrection = 1.0 + deficit * 0.50; // up to 1.50 when density at 0
     }
     const blendedCorrection = correction * productCorrection;
 

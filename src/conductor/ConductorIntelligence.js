@@ -50,7 +50,7 @@ ConductorIntelligence = (() => {
   // from accumulating catastrophic suppression, without touching any
   // individual module's response. Deviations opposing the running product
   // are given lighter dampening to encourage self-correction.
-  const PROGRESSIVE_STRENGTH = 0.5; // how aggressively to ramp dampening (0=off, 1=full)
+  const PROGRESSIVE_STRENGTH = 0.65; // how aggressively to ramp dampening (0=off, 1=full)
 
   /**
    * Compute progressive dampening factor for a single contributor.

@@ -147,8 +147,14 @@ RestDensityTracker = (() => {
     return 1.0;
   }
 
-  ConductorIntelligence.registerDensityBias('RestDensityTracker:onset', () => RestDensityTracker.getOnsetBias(), 0.85, 1.15);
-  ConductorIntelligence.registerDensityBias('RestDensityTracker:breathing', () => RestDensityTracker.getBreathingDensityBias(), 0.85, 1.15);
+  // Single combined registration: onset and breathing were separate registrations
+  // both pinned at 0.85 floor, giving 0.85² = 0.7225 from one module. Merged
+  // into a geometric mean so the module has one voice in the density product.
+  ConductorIntelligence.registerDensityBias('RestDensityTracker', () => {
+    const onset = RestDensityTracker.getOnsetBias();
+    const breathing = RestDensityTracker.getBreathingDensityBias();
+    return m.sqrt(onset * breathing);
+  }, 0.85, 1.15);
 
   return {
     getOnsetDensity,

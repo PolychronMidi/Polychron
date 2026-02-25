@@ -10,6 +10,7 @@ entropyRegulator = (() => {
   const SMOOTHING = 0.3; // exponential smoothing factor
 
   let smoothedEntropy = 0.5;
+  let lastRawEntropy = 0.5;
   let targetEntropy = 0.5;
   let regulationStrength = 0.5; // how aggressively to steer (0-1)
 
@@ -63,17 +64,29 @@ entropyRegulator = (() => {
     if (count === 0) { smoothedEntropy = 0.5; return 0.5; }
     const combined = (totalPitch / count) * 0.4 + (totalVel / Math.max(count, 1)) * 0.3 + (totalRhythm / 2) * 0.3;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
+    lastRawEntropy = combined;
     return smoothedEntropy;
   }
 
   const _measureCache = beatCache.create(_computeEntropy);
 
   /**
-   * Measure combined entropy of both layers.
+   * Measure combined entropy of both layers (EMA-smoothed).
    * @returns {number} combined 0-1
    */
   function measureEntropy() {
     return _measureCache.get();
+  }
+
+  /**
+   * Return the raw (unsmoothed) entropy from the last computation.
+   * Use for trajectory analysis where EMA flattening would suppress variance.
+   * Must call measureEntropy() first to ensure the cache has run.
+   * @returns {number} 0-1
+   */
+  function measureRawEntropy() {
+    _measureCache.get(); // ensure computation has run this beat
+    return lastRawEntropy;
   }
 
   /**
@@ -133,6 +146,7 @@ entropyRegulator = (() => {
 
   function reset() {
     smoothedEntropy = 0.5;
+    lastRawEntropy = 0.5;
     targetEntropy = 0.5;
     regulationStrength = 0.5;
     noteHistory.clear();
@@ -140,7 +154,7 @@ entropyRegulator = (() => {
   }
 
   return {
-    recordSample, measureEntropy, setTarget, getArcTarget,
+    recordSample, measureEntropy, measureRawEntropy, setTarget, getArcTarget,
     getRegulation, regulate, setRegulationStrength, reset
   };
 })();
