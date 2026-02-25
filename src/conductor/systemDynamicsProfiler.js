@@ -54,12 +54,28 @@ SystemDynamicsProfiler = (() => {
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
 
+  // Profile-adaptive oscillating curvature threshold. Explosive profiles
+  // naturally produce higher curvature due to wider parameter swings —
+  // a fixed 0.5 threshold misclassifies healthy explosive evolution as
+  // oscillation. Resolved lazily alongside state smoothing.
+  const _OSCILLATING_CURVATURE_DEFAULT = 0.50;
+  let _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
+
   function _resolveStateSmoothing() {
     if (_stateSmoothingResolved) return;
     try {
       const profileSmoothing = ConductorConfig.getDensitySmoothing();
       _stateSmoothing = clamp(_STATE_SMOOTHING_BASELINE / profileSmoothing, 0.20, 0.40);
-    } catch { _stateSmoothing = 0.30; }
+
+      // Scale oscillating threshold by profile character
+      const profileName = ConductorConfig.getActiveProfileName();
+      if (profileName === 'explosive') _oscillatingCurvatureThreshold = 0.65;
+      else if (profileName === 'minimal') _oscillatingCurvatureThreshold = 0.45;
+      else _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
+    } catch {
+      _stateSmoothing = 0.30;
+      _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
+    }
     _stateSmoothingResolved = true;
   }
 
@@ -253,8 +269,9 @@ SystemDynamicsProfiler = (() => {
     // dimensions only (4D, 6 pairs). Thresholds adjusted accordingly.
     // Stagnant: barely moving through state space
     if (avgVelocity < 0.004) return 'stagnant';
-    // Oscillating: high curvature (frequent reversals) with moderate velocity
-    if (avgCurvature > 0.5 && avgVelocity < 0.04) return 'oscillating';
+    // Oscillating: high curvature (frequent reversals) with moderate velocity.
+    // Threshold is profile-adaptive — explosive tolerates higher curvature.
+    if (avgCurvature > _oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
     // Exploring: high velocity + varied curvature + multi-dimensional
     if (avgVelocity > 0.02 && effectiveDim > 2.5) return 'exploring';
     // Coherent: strong coupling + moderate velocity (dimensions move together)
@@ -423,6 +440,7 @@ SystemDynamicsProfiler = (() => {
     _smoothedState = null;
     _stateSmoothingResolved = false;
     _stateSmoothing = 0.30;
+    _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
     _lastSnapshot = _emptySnapshot();
     _lastRegime = 'evolving';
     _candidateRegime = 'evolving';

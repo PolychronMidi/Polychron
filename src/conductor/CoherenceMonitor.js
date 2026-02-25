@@ -152,7 +152,7 @@ CoherenceMonitor = (() => {
     // depressed. This closes the gap where the system precisely plays its
     // suppressed intentions and sees no deviation.
     const densityProduct = signalReader.density();
-    const HEALTHY_DENSITY = 0.70;
+    const HEALTHY_DENSITY = 0.78;
     let productCorrection = 1.0;
     if (densityProduct < HEALTHY_DENSITY) {
       const deficit = (HEALTHY_DENSITY - densityProduct) / HEALTHY_DENSITY;
