@@ -12,7 +12,6 @@ pipelineBalancer = (() => {
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
-  const STRAINED_FLOOR      = 0.85;   // aggregate product below this → coordinated suppression (was 0.75)
   const AGGREGATE_LIFT       = 0.20;   // max lift per beat when aggregate is strained (was 0.15)
 
   let counterBias = 1.0;
@@ -42,12 +41,11 @@ pipelineBalancer = (() => {
       }
     }
 
-    // Aggregate strained detection: when density product is suppressed by
-    // coordinated small pulls (no single dominator), apply gentle lift.
+    // Continuous aggregate lift: density below 1.0 activates proportional correction
+    // (replaces hard STRAINED_FLOOR threshold — was barely engaging at density 0.80).
     // Weight below-1.0 contributors to size the deficit proportionally.
     const densityNow = signalReader.density();
-    if (densityNow < STRAINED_FLOOR && counterBias <= 1.0) {
-      // Count how many contributors are below 1.0 vs above
+    if (counterBias <= 1.0) {
       let suppressorPull = 0;
       let boosterPull = 0;
       if (attr && Array.isArray(attr)) {
@@ -56,10 +54,8 @@ pipelineBalancer = (() => {
           else if (a.value > 1.01) boosterPull += a.value - 1.0;
         }
       }
-      // Imbalance: excess suppression that isn't offset by boosters
       const netSuppression = clamp(suppressorPull - boosterPull, 0, 2);
-      const deficit = clamp((STRAINED_FLOOR - densityNow) / STRAINED_FLOOR, 0, 1);
-      // Scale lift by both structural deficit and suppressor imbalance
+      const deficit = clamp(1.0 - densityNow, 0, 1);
       counterBias = 1.0 + AGGREGATE_LIFT * deficit * clamp(netSuppression / 0.5, 0.5, 2.0);
     }
   }
