@@ -16,7 +16,7 @@ pipelineCouplingManager = (() => {
   const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
   const GAIN               = 0.06;
   const TF_GAIN            = 0.12; // tripled (was 0.04) — r=0.827 showed ±2% was impotent
-  const FE_GAIN            = 0.06; // doubled (was 0.03) — entropy variety coupling was strengthening despite gentle nudge
+  const FE_GAIN            = 0.10; // raised (was 0.06) — r=0.476 excess producing only 1.4% correction
 
   let biasTension = 1.0;
   let biasFlicker = 1.0;

@@ -72,8 +72,8 @@ pipelineBalancer = (() => {
   // Mirror of density-side logic: when tension product diverges significantly
   // from 1.0 due to coordinated small boosts (53% crush), nudge it back.
   const TENSION_NEUTRAL      = 1.0;
-  const TENSION_STRAINED_GAP = 0.20; // activate when |product - 1.0| > this
-  const TENSION_LIFT         = 0.08; // max counter-bias magnitude per beat
+  const TENSION_STRAINED_GAP = 0.15; // activate when |product - 1.0| > this (was 0.20)
+  const TENSION_LIFT         = 0.14; // max counter-bias magnitude per beat (was 0.08)
 
   let tensionCounter = 1.0;
 
@@ -100,7 +100,7 @@ pipelineBalancer = (() => {
 
   // --- Self-registration ---
   ConductorIntelligence.registerDensityBias('pipelineBalancer', densityBias, 0.92, 1.15);
-  ConductorIntelligence.registerTensionBias('pipelineBalancer', tensionBias, 0.92, 1.08);
+  ConductorIntelligence.registerTensionBias('pipelineBalancer', tensionBias, 0.86, 1.14);
   ConductorIntelligence.registerRecorder('pipelineBalancer', () => { refresh(); refreshTension(); });
   ConductorIntelligence.registerModule('pipelineBalancer', { reset }, ['section']);
 
