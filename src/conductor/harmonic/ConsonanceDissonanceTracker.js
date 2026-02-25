@@ -76,7 +76,7 @@ ConsonanceDissonanceTracker = (() => {
     return 1.0;
   }
 
-  ConductorIntelligence.registerTensionBias('ConsonanceDissonanceTracker', () => ConsonanceDissonanceTracker.getTensionBias(), 0.85, 1.25);
+  ConductorIntelligence.registerTensionBias('ConsonanceDissonanceTracker', () => ConsonanceDissonanceTracker.getTensionBias(), 0.85, 1.15);
 
   return {
     getConsonanceProfile,

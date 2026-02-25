@@ -16,7 +16,7 @@ pipelineCouplingManager = (() => {
   const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
   const GAIN               = 0.20; // rolled back (was 0.24) — r=-0.157 overcorrected past target 0.35
   const TF_GAIN            = 0.16; // raised (was 0.14) — r=0.498 still above target 0.30; incremental tightening
-  const FE_GAIN            = 0.10; // raised (was 0.06) — r=0.476 excess producing only 1.4% correction
+  const FE_GAIN            = 0.14; // raised (was 0.10) — r=0.503 double the 0.25 target
 
   let biasTension = 1.0;
   let biasFlicker = 1.0;
@@ -98,7 +98,7 @@ pipelineCouplingManager = (() => {
 
   // --- Self-registration ---
   ConductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.16);
-  ConductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.92, 1.08);
+  ConductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.88, 1.12);
   ConductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   ConductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 
