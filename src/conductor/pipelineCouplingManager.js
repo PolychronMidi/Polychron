@@ -11,12 +11,12 @@
 
 pipelineCouplingManager = (() => {
 
-  const TARGET_DT_COUPLING = 0.35;
+  const TARGET_DT_COUPLING = 0.20; // lowered (was 0.35) — d-t naturally decorrelated at 0.058; prevent overcorrection
   const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
   const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
   const GAIN               = 0.24; // raised (was 0.20) — couplingStrength 0.162 < fragmented threshold; strengthen nudges
-  const TF_GAIN            = 0.17; // raised (was 0.15) — t-f 0.469 overcorrected by rollback; 0.17 splits 0.15/0.18
-  const FE_GAIN            = 0.20; // f-e 0.000 (entropy dead) — hold; will re-evaluate once entropy revived
+  const TF_GAIN            = 0.21; // raised (was 0.17) — t-f 0.109 well below 0.30 target; needs stronger nudge
+  const FE_GAIN            = 0.12; // lowered (was 0.20) — f-e 0.495 overcoupled at 10× entropy; reduce to prevent lockstep
 
   let biasTension = 1.0;
   let biasFlicker = 1.0;
