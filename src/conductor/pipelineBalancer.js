@@ -13,7 +13,7 @@ pipelineBalancer = (() => {
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
   const AGGREGATE_LIFT       = 0.20;   // max lift per beat when aggregate is strained (was 0.15)
-  const AGG_SMOOTH           = 0.30;   // EMA alpha for aggregate counterBias — damps beat-to-beat jitter
+  const AGG_SMOOTH           = 0.45;   // EMA alpha for aggregate counterBias — faster decay limits d-t coupling
 
   let counterBias = 1.0;
   let smoothedAggBias = 1.0;

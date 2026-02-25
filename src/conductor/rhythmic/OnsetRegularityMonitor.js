@@ -68,7 +68,7 @@ OnsetRegularityMonitor = (() => {
     return 0.88 + profile.regularity * 0.32;
   }
 
-  ConductorIntelligence.registerDensityBias('OnsetRegularityMonitor', () => OnsetRegularityMonitor.getRhythmVarietyBias(), 0.92, 1.25);
+  ConductorIntelligence.registerDensityBias('OnsetRegularityMonitor', () => OnsetRegularityMonitor.getRhythmVarietyBias(), 0.95, 1.25);
 
   return {
     getRegularityProfile,
