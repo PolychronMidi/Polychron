@@ -77,7 +77,7 @@ LayerCoherenceScorer = (() => {
   }
 
   ConductorIntelligence.registerRecorder('LayerCoherenceScorer', () => { LayerCoherenceScorer.computeCoherence(); });
-  ConductorIntelligence.registerDensityBias('LayerCoherenceScorer', () => LayerCoherenceScorer.getDensityBias(), 0.85, 1.15);
+  ConductorIntelligence.registerDensityBias('LayerCoherenceScorer', () => LayerCoherenceScorer.getDensityBias(), 0.90, 1.15);
   ConductorIntelligence.registerModule('LayerCoherenceScorer', { reset }, ['section']);
 
   return {

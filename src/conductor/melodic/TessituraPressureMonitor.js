@@ -55,9 +55,9 @@ TessituraPressureMonitor = (() => {
       const rawSuppression = clamp((extremeRatio - 0.1) / 0.5, 0, 1) * 0.12;
       // Density-aware attenuation: reduce suppression when density is already
       // below healthy threshold — avoids compounding structural deficit.
-      // At currentDensity 0.70+ → full suppression; at 0.40 → half suppression.
-      const attenuate = currentDensity < 0.70
-        ? clamp((currentDensity - 0.40) / 0.30, 0.5, 1.0)
+      // At currentDensity 0.90+ → full suppression; at 0.50 → half suppression.
+      const attenuate = currentDensity < 0.90
+        ? clamp((currentDensity - 0.50) / 0.40, 0.5, 1.0)
         : 1.0;
       densityBias = 1.0 - rawSuppression * attenuate;
     }

@@ -55,10 +55,10 @@ HarmonicVelocityMonitor = (() => {
    */
   function getChangeThresholdBias() {
     const diag = diagnoseEnergyMatch();
-    // Continuous ramp: mismatch 0 → 1.0, positive → up to 1.15, negative → down to 0.88
+    // Continuous ramp: mismatch 0 → 1.0, positive → up to 1.10, negative → down to 0.88
     if (diag.mismatch > 0) {
-      // Ramp from 1.0 at mismatch=0 to 1.15 at mismatch=0.8+
-      return 1.0 + clamp(diag.mismatch / 0.8, 0, 1) * 0.15;
+      // Ramp from 1.0 at mismatch=0 to 1.10 at mismatch=0.8+ (was 1.15 — chronic ceiling pin)
+      return 1.0 + clamp(diag.mismatch / 0.8, 0, 1) * 0.10;
     }
     // Ramp from 1.0 at mismatch=0 to 0.88 at mismatch=-0.6-
     return 1.0 + clamp(diag.mismatch / 0.6, -1, 0) * 0.12;
