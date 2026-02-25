@@ -50,7 +50,7 @@ ConductorIntelligence = (() => {
   // from accumulating catastrophic suppression, without touching any
   // individual module's response. Deviations opposing the running product
   // are given lighter dampening to encourage self-correction.
-  const PROGRESSIVE_STRENGTH = 0.65; // how aggressively to ramp dampening (0=off, 1=full)
+  const PROGRESSIVE_STRENGTH = 0.55; // softened (was 0.65) — part of 41% coordinated density crush
 
   /**
    * Compute progressive dampening factor for a single contributor.
@@ -126,7 +126,7 @@ ConductorIntelligence = (() => {
     densityBiases.push({ name, getter, lo, hi });
   }
 
-  const DENSITY_PRODUCT_FLOOR = 0.30;
+  const DENSITY_PRODUCT_FLOOR = 0.45; // raised (was 0.30) — harder safety net for compounding suppression
   const TENSION_PRODUCT_CEILING = 1.5;  // lowered (was 1.8) — caps runaway tension accumulation
 
   /** @returns {number} product of all density biases (dampened + floored to prevent crush) */
