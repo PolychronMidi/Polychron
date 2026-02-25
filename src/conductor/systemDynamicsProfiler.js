@@ -65,7 +65,7 @@ SystemDynamicsProfiler = (() => {
     if (_stateSmoothingResolved) return;
     try {
       const profileSmoothing = ConductorConfig.getDensitySmoothing();
-      _stateSmoothing = clamp(_STATE_SMOOTHING_BASELINE / profileSmoothing, 0.20, 0.40);
+      _stateSmoothing = clamp(_STATE_SMOOTHING_BASELINE / profileSmoothing, 0.15, 0.40);
 
       // Scale oscillating threshold by profile character
       const profileName = ConductorConfig.getActiveProfileName();
@@ -153,7 +153,7 @@ SystemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 5.0;
+      entropy = 0.5 + (rawE - 0.5) * 6.0;
     } catch { /* fallback: neutral */ }
 
     let phase = 0;

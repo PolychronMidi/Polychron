@@ -57,17 +57,17 @@ ConsonanceDissonanceTracker = (() => {
 
   /**
    * Get a tension bias based on consonance/dissonance balance.
-   * Continuous ramp: consonanceRatio 0.5→1.0 maps to bias 1.0→1.2 (bland→boost);
+   * Continuous ramp: consonanceRatio 0.5→1.0 maps to bias 1.0→1.15 (bland→boost);
    * dissonanceRatio 0.3→1.0 maps to bias 1.0→0.85 (harsh→reduce).
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-   * @returns {number} - 0.85 to 1.25
+   * @returns {number} - 0.85 to 1.15
    */
   function getTensionBias(opts) {
     const profile = getConsonanceProfile(opts);
-    // Bland side: consonanceRatio 0.5→1.0 → bias 1.0→1.2
+    // Bland side: consonanceRatio 0.5→1.0 → bias 1.0→1.15
     if (profile.consonanceRatio > 0.5) {
-      return 1.0 + clamp((profile.consonanceRatio - 0.5) / 0.5, 0, 1) * 0.2;
+      return 1.0 + clamp((profile.consonanceRatio - 0.5) / 0.5, 0, 1) * 0.15;
     }
     // Harsh side: dissonanceRatio 0.3→0.8 → bias 1.0→0.85
     if (profile.dissonanceRatio > 0.3) {
