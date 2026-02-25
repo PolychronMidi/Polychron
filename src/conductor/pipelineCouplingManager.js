@@ -14,9 +14,9 @@ pipelineCouplingManager = (() => {
   const TARGET_DT_COUPLING = 0.35;
   const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
   const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
-  const GAIN               = 0.19; // d-t 0.085 trending toward 0.35 target — hold steady
-  const TF_GAIN            = 0.15; // lowered (was 0.18) — t-f 0.096 overcorrected past 0.30 target
-  const FE_GAIN            = 0.20; // raised (was 0.16) — f-e 0.612 is 2.4× the 0.25 target; aggressive correction needed
+  const GAIN               = 0.20; // raised (was 0.19) — d-t 0.027 effectively zero; restore previous level
+  const TF_GAIN            = 0.17; // raised (was 0.15) — t-f 0.469 overcorrected by rollback; 0.17 splits 0.15/0.18
+  const FE_GAIN            = 0.20; // f-e 0.000 (entropy dead) — hold; will re-evaluate once entropy revived
 
   let biasTension = 1.0;
   let biasFlicker = 1.0;

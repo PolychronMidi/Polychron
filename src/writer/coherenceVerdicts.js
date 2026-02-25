@@ -160,10 +160,10 @@ coherenceVerdicts = (() => {
 
       // Check if product is floored or capped
       if (data.floored) {
-        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product floored at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) — too many modules pulling below 1.0.` });
+        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product soft-floored at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) — soft envelope compressing low product.` });
       }
       if (data.capped) {
-        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product capped at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) — ceiling reached.` });
+        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product soft-capped at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) — soft envelope compressing high product.` });
       }
     }
   }

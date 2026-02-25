@@ -1141,6 +1141,7 @@ declare var SignalHealthAnalyzer: SignalHealthAnalyzerAPI;
 declare var SystemDynamicsProfiler: SystemDynamicsProfilerAPI;
 declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): number; flickerMod(): number; reset(): void };
 declare var pipelineBalancer: { densityBias(): number; reset(): void };
+declare var pipelineNormalizer: { normalize(pipeline: string, rawProduct: number): number; reset(): void; getSnapshot(): Record<string, object> };
 declare var pipelineCouplingManager: { tensionBias(): number; reset(): void };
 declare var narrativeTrajectory: { getTrajectory(): { point: { t: number; n: number; d: number }; velocity: number; curvature: number; length: number }; tensionBias(): number; reset(): void };
 declare var structuralNarrativeAdvisor: { recordFamily(family: string): void; getHistory(): string[]; getVarietyPressure(): number; densityBias(): number; reset(): void };

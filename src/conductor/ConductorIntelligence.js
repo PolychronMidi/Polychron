@@ -126,20 +126,18 @@ ConductorIntelligence = (() => {
     densityBiases.push({ name, getter, lo, hi });
   }
 
-  const DENSITY_PRODUCT_FLOOR = 0.45; // raised (was 0.30) — harder safety net for compounding suppression
-  const TENSION_PRODUCT_CEILING = 1.5;  // lowered (was 1.8) — caps runaway tension accumulation
-
-  /** @returns {number} product of all density biases (dampened + floored to prevent crush) */
-  function collectDensityBias() { return m.max(_collectDampened(densityBiases), DENSITY_PRODUCT_FLOOR); }
+  /** @returns {number} product of all density biases (dampened + soft-envelope normalized) */
+  function collectDensityBias() { return pipelineNormalizer.normalize('density', _collectDampened(densityBiases)); }
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectDensityBiasWithAttribution() {
     const result = _collectDampenedWithAttribution(densityBiases);
     const rawProduct = result.product;
+    const product = pipelineNormalizer.normalize('density', rawProduct);
     return {
-      product: m.max(rawProduct, DENSITY_PRODUCT_FLOOR),
+      product,
       rawProduct,
-      floored: rawProduct < DENSITY_PRODUCT_FLOOR,
+      floored: product > rawProduct,
       contributions: result.contributions
     };
   }
@@ -164,17 +162,18 @@ ConductorIntelligence = (() => {
     tensionBiases.push({ name, getter, lo, hi });
   }
 
-  /** @returns {number} product of all tension biases (dampened + capped to prevent saturation) */
-  function collectTensionBias() { return m.min(_collectDampened(tensionBiases), TENSION_PRODUCT_CEILING); }
+  /** @returns {number} product of all tension biases (dampened + soft-envelope normalized) */
+  function collectTensionBias() { return pipelineNormalizer.normalize('tension', _collectDampened(tensionBiases)); }
 
   /** @returns {{ product: number, rawProduct: number, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectTensionBiasWithAttribution() {
     const result = _collectDampenedWithAttribution(tensionBiases);
     const rawProduct = result.product;
+    const product = pipelineNormalizer.normalize('tension', rawProduct);
     return {
-      product: m.min(rawProduct, TENSION_PRODUCT_CEILING),
+      product,
       rawProduct,
-      capped: rawProduct > TENSION_PRODUCT_CEILING,
+      capped: product < rawProduct,
       contributions: result.contributions
     };
   }
@@ -199,11 +198,22 @@ ConductorIntelligence = (() => {
     flickerModifiers.push({ name, getter, lo, hi });
   }
 
-  /** @returns {number} product of all flicker modifiers (dampened to prevent crush) */
-  function collectFlickerModifier() { return _collectDampened(flickerModifiers); }
+  /** @returns {number} product of all flicker modifiers (dampened + soft-envelope normalized) */
+  function collectFlickerModifier() { return pipelineNormalizer.normalize('flicker', _collectDampened(flickerModifiers)); }
 
-  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function collectFlickerModifierWithAttribution() { return _collectDampenedWithAttribution(flickerModifiers); }
+  /** @returns {{ product: number, rawProduct: number, floored: boolean, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
+  function collectFlickerModifierWithAttribution() {
+    const result = _collectDampenedWithAttribution(flickerModifiers);
+    const rawProduct = result.product;
+    const product = pipelineNormalizer.normalize('flicker', rawProduct);
+    return {
+      product,
+      rawProduct,
+      floored: product > rawProduct,
+      capped: product < rawProduct,
+      contributions: result.contributions
+    };
+  }
 
   // â”€â”€ Recorders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Recorders receive a context object each beat and perform side-effects

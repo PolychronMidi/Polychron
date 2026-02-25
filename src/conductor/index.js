@@ -53,6 +53,8 @@ require('./textureBlender');
 require('./conductorState');
 // @ts-ignore: intelligence registry (must precede GlobalConductorUpdate & intelligence subdirectories)
 require('./conductorIntelligence');
+// @ts-ignore: adaptive soft-envelope pipeline normalization (replaces static product floors/ceilings)
+require('./pipelineNormalizer');
 // @ts-ignore: coherence monitor (registers into ConductorIntelligence, must precede GlobalConductorUpdate)
 require('./coherenceMonitor');
 // @ts-ignore: standardized read API for inter-module signal reading

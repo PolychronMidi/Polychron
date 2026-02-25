@@ -68,15 +68,14 @@ RepetitionFatigueMonitor = (() => {
    */
   function getRepetitionPenalty(opts) {
     const profile = getRepetitionProfile(opts);
-    // Continuous ramp: onset at 0.20, full at 1.0. Reduced from 0.2 to 0.15
-    // max to soften multiplicative tension crush — RepetitionFatigueMonitor was
-    // contributing ~14% tension inflation alongside ConsonanceDissonanceTracker.
+    // Continuous ramp: onset at 0.20, full at 1.0. Reduced from 0.15 to 0.12
+    // max to ease tension crush — output 1.143 consuming 95% of [1, 1.15] range.
     if (profile.fatigueLevel <= 0.20) return 1.0;
     const ramp = clamp((profile.fatigueLevel - 0.20) / 0.80, 0, 1);
-    return 1.0 + ramp * 0.15;
+    return 1.0 + ramp * 0.12;
   }
 
-  ConductorIntelligence.registerTensionBias('RepetitionFatigueMonitor', () => RepetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.15);
+  ConductorIntelligence.registerTensionBias('RepetitionFatigueMonitor', () => RepetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.12);
 
   return {
     getRepetitionProfile,
