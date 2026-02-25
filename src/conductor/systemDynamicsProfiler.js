@@ -145,15 +145,15 @@ SystemDynamicsProfiler = (() => {
     // near-constant, producing zero variance in the coupling matrix. Raw
     // values preserve the beat-to-beat fluctuations that reveal coupling.
     // Neutral midpoint (0.5) fallback prevents zero-injection on error.
-    // Amplify departure from 0.5 by 5× — entropy varies in a narrow band
+    // Amplify departure from 0.5 by 7× — entropy varies in a narrow band
     // (~0.48–0.52), making its variance invisible to coupling analysis.
     // Amplification increases signal-to-noise in the state vector without
     // altering the actual entropy measurement used elsewhere.
-    // Raised from 3× after entropy couplings showed all-zero on explosive.
+    // Raised from 5× after eff dim collapsed to 1.26 — entropy axis invisible.
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 5.0;
+      entropy = 0.5 + (rawE - 0.5) * 7.0;
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
