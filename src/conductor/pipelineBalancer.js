@@ -12,7 +12,7 @@ pipelineBalancer = (() => {
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
-  const STRAINED_FLOOR      = 0.65;   // aggregate product below this → coordinated suppression
+  const STRAINED_FLOOR      = 0.75;   // aggregate product below this → coordinated suppression
   const AGGREGATE_LIFT       = 0.15;   // max lift per beat when aggregate is strained
 
   let counterBias = 1.0;
@@ -68,14 +68,41 @@ pipelineBalancer = (() => {
     return counterBias;
   }
 
+  // --- Tension aggregate lift ---
+  // Mirror of density-side logic: when tension product diverges significantly
+  // from 1.0 due to coordinated small boosts (53% crush), nudge it back.
+  const TENSION_NEUTRAL      = 1.0;
+  const TENSION_STRAINED_GAP = 0.20; // activate when |product - 1.0| > this
+  const TENSION_LIFT         = 0.08; // max counter-bias magnitude per beat
+
+  let tensionCounter = 1.0;
+
+  function refreshTension() {
+    const tensionNow = signalReader.tension();
+    const gap = tensionNow - TENSION_NEUTRAL;
+    if (m.abs(gap) > TENSION_STRAINED_GAP) {
+      // Counter the direction of excess: high tension → suppress, low → boost
+      const deficit = clamp((m.abs(gap) - TENSION_STRAINED_GAP) / 0.5, 0, 1);
+      tensionCounter = 1.0 - m.sign(gap) * TENSION_LIFT * deficit;
+    } else {
+      tensionCounter = 1.0;
+    }
+  }
+
+  function tensionBias() {
+    return tensionCounter;
+  }
+
   function reset() {
     counterBias = 1.0;
+    tensionCounter = 1.0;
   }
 
   // --- Self-registration ---
   ConductorIntelligence.registerDensityBias('pipelineBalancer', densityBias, 0.92, 1.15);
-  ConductorIntelligence.registerRecorder('pipelineBalancer', refresh);
+  ConductorIntelligence.registerTensionBias('pipelineBalancer', tensionBias, 0.92, 1.08);
+  ConductorIntelligence.registerRecorder('pipelineBalancer', () => { refresh(); refreshTension(); });
   ConductorIntelligence.registerModule('pipelineBalancer', { reset }, ['section']);
 
-  return { densityBias, reset };
+  return { densityBias, tensionBias, reset };
 })();
