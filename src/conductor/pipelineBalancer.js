@@ -13,7 +13,7 @@ pipelineBalancer = (() => {
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
   const AGGREGATE_LIFT       = 0.25;   // raised (was 0.20) — pipelineBalancer only 1.022 at density 0.785
-  const AGG_SMOOTH           = 0.45;   // EMA alpha for aggregate counterBias — faster decay limits d-t coupling
+  const AGG_SMOOTH           = 0.50;   // raised (was 0.45) — heavier EMA smooths transient overshoots reducing oscillation
 
   let counterBias = 1.0;
   let smoothedAggBias = 1.0;

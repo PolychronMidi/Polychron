@@ -37,7 +37,7 @@ SystemDynamicsProfiler = (() => {
   // Regime hysteresis: requires REGIME_HOLD consecutive beats of a new
   // classification before switching. Prevents single-beat noise from
   // flipping the regime and triggering regime-reactive damping oscillations.
-  const REGIME_HOLD = 4;
+  const REGIME_HOLD = 5; // raised (was 4) — curvature 0.581 near explosive threshold; reduce label flutter
   let _lastRegime = 'evolving';
   let _candidateRegime = 'evolving';
   let _candidateCount = 0;
@@ -153,7 +153,7 @@ SystemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 6.0;
+      entropy = 0.5 + (rawE - 0.5) * 6.5; // raised (was 6.0) — entropy couplings revived but feeble; 6.5 safe midpoint below 7×
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
