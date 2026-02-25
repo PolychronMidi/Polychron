@@ -272,6 +272,7 @@ FullBootstrap = (() => {
     'SystemDynamicsProfiler',
     'regimeReactiveDamping',
     'pipelineBalancer',
+    'pipelineNormalizer',
     'pipelineCouplingManager',
     'narrativeTrajectory',
     'structuralNarrativeAdvisor',

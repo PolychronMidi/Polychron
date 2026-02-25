@@ -153,7 +153,7 @@ SystemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 5.5; // lowered (was 6.5) — f-e 0.612 lockstep collapsed dim to 1.20; 5.5 keeps entropy alive without shared-input lock
+      entropy = 0.5 + (rawE - 0.5) * 7.0; // raised (was 6.0) — entropy still dead at 6.0×; 7.0× safe now that pipelineNormalizer absorbs overshoot (prev 7× failed pre-normalizer)
     } catch { /* fallback: neutral */ }
 
     let phase = 0;

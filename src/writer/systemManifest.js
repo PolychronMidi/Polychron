@@ -136,6 +136,7 @@ systemManifest = (() => {
         flickerProduct: signalSnapshot.flickerProduct
       },
       signalHealth: _buildSignalHealth(),
+      pipelineNormalizer: _buildPipelineNormalizer(),
       systemDynamics: _buildSystemDynamics(),
       trustPayoffs,
       trustScoresEndOfRun: trustSnapshot
@@ -162,6 +163,15 @@ systemManifest = (() => {
       return SignalHealthAnalyzer.getSummary();
     } catch {
       return { beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} };
+    }
+  }
+
+  /** @returns {object} */
+  function _buildPipelineNormalizer() {
+    try {
+      return pipelineNormalizer.getSnapshot();
+    } catch {
+      return {};
     }
   }
 
