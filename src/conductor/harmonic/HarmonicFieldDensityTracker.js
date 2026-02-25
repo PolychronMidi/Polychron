@@ -62,7 +62,7 @@ HarmonicFieldDensityTracker = (() => {
     if (avgSimultaneous < 2.5) {
       densityBias = 1.0 + clamp((2.5 - avgSimultaneous) / 2.5, 0, 1) * 0.05;
     } else {
-      densityBias = 1.0 - clamp((avgSimultaneous - 2.5) / 4.5, 0, 1) * 0.1;
+      densityBias = 1.0 - clamp((avgSimultaneous - 2.5) / 4.5, 0, 1) * 0.06; // softened (was 0.10) — permanent 0.90 was chronic drain
     }
 
     return { avgSimultaneous, maxSimultaneous: maxSim, densityBias };

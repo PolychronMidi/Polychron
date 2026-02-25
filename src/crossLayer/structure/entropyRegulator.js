@@ -6,7 +6,7 @@
 
 entropyRegulator = (() => {
   const V = Validator.create('entropyRegulator');
-  const WINDOW_NOTES = 20;
+  const WINDOW_NOTES = 10; // halved (was 20) — faster window turnover creates more beat-to-beat variance
   const SMOOTHING = 0.3; // exponential smoothing factor
 
   let smoothedEntropy = 0.5;
