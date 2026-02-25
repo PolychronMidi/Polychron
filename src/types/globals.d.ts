@@ -508,6 +508,7 @@ interface InteractionHeatMapAPI {
 interface EntropyRegulatorAPI {
   recordSample(midi: number, velocity: number, layer: string): void;
   measureEntropy(): number;
+  measureRawEntropy(): number;
   setTarget(target: number, arcTarget?: number): void;
   getArcTarget(sectionProgress: number): number;
   getRegulation(): { scale: number; currentEntropy: number; targetEntropy: number; error: number };

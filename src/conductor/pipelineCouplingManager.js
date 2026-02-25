@@ -11,25 +11,29 @@
 
 pipelineCouplingManager = (() => {
 
-  const TARGET_COUPLING = 0.35;
-  const GAIN            = 0.06;
+  const TARGET_DT_COUPLING = 0.35;
+  const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
+  const GAIN               = 0.06;
+  const TF_GAIN            = 0.04; // lighter touch for flicker decoupling
 
   let biasTension = 1.0;
+  let biasFlicker = 1.0;
 
   function refresh() {
     const snap = SystemDynamicsProfiler.getSnapshot();
     if (!snap || !snap.couplingMatrix) {
       biasTension = 1.0;
+      biasFlicker = 1.0;
     } else {
-      const dtKey = 'density-tension';
-      const coupling = typeof snap.couplingMatrix[dtKey] === 'number'
-        ? snap.couplingMatrix[dtKey]
+      // --- Density-tension coupling management ---
+      const dtCoupling = typeof snap.couplingMatrix['density-tension'] === 'number'
+        ? snap.couplingMatrix['density-tension']
         : snap.couplingStrength;
 
-      if (!Number.isFinite(coupling)) {
+      if (!Number.isFinite(dtCoupling)) {
         biasTension = 1.0;
       } else {
-        const error = TARGET_COUPLING - coupling;
+        const error = TARGET_DT_COUPLING - dtCoupling;
         const densityNow = signalReader.density();
         const tensionNow = signalReader.tension();
         const dirMatch   = (densityNow - 0.5) * (tensionNow - 0.5);
@@ -42,6 +46,23 @@ pipelineCouplingManager = (() => {
           biasTension = 1.0;
         }
       }
+
+      // --- Tension-flicker coupling management ---
+      // When tension-flicker correlation is too high, nudge flicker toward
+      // neutral to break the shared-input lock. Uses lighter gain since
+      // some natural correlation is acceptable (both respond to intensity).
+      const tfCoupling = typeof snap.couplingMatrix['tension-flicker'] === 'number'
+        ? snap.couplingMatrix['tension-flicker']
+        : 0;
+
+      if (!Number.isFinite(tfCoupling) || m.abs(tfCoupling) < TARGET_TF_COUPLING) {
+        biasFlicker = 1.0;
+      } else {
+        // Positive excess coupling: suppress flicker when tension is high
+        const excess = m.abs(tfCoupling) - TARGET_TF_COUPLING;
+        const tensionDir = signalReader.tension() > 0.5 ? -1 : 1;
+        biasFlicker = 1.0 + tensionDir * TF_GAIN * excess;
+      }
     }
   }
 
@@ -49,14 +70,20 @@ pipelineCouplingManager = (() => {
     return biasTension;
   }
 
+  function flickerBias() {
+    return biasFlicker;
+  }
+
   function reset() {
     biasTension = 1.0;
+    biasFlicker = 1.0;
   }
 
   // --- Self-registration ---
   ConductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.92, 1.08);
+  ConductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.92, 1.08);
   ConductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   ConductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 
-  return { tensionBias, reset };
+  return { tensionBias, flickerBias, reset };
 })();
