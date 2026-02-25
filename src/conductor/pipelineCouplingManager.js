@@ -13,10 +13,10 @@ pipelineCouplingManager = (() => {
 
   const TARGET_DT_COUPLING = 0.35;
   const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
-  const TARGET_FE_COUPLING = 0.35; // flicker-entropy: moderate — some is musically meaningful
+  const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
   const GAIN               = 0.06;
   const TF_GAIN            = 0.04; // lighter touch for flicker decoupling
-  const FE_GAIN            = 0.03; // gentlest touch — entropy variety → textural variety is partly desirable
+  const FE_GAIN            = 0.06; // doubled (was 0.03) — entropy variety coupling was strengthening despite gentle nudge
 
   let biasTension = 1.0;
   let biasFlicker = 1.0;

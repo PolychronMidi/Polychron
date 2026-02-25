@@ -192,7 +192,7 @@ coherenceVerdicts = (() => {
    */
   function _checkStaleContributors(attribution, verdicts) {
     if (!attribution) return;
-    const STALE_THRESHOLD = 0.05; // >5% deviation from neutral considered significant
+    const STALE_THRESHOLD = 0.08; // >8% deviation from neutral (was 5% — too many false positives)
     const tables = [
       { name: 'density', data: attribution.density },
       { name: 'tension', data: attribution.tension },
@@ -214,7 +214,7 @@ coherenceVerdicts = (() => {
         }
       }
 
-      if (stale.length >= 5) {
+      if (stale.length >= 7) {
         const names = stale.map(s => `${s.name} (${s.value.toFixed(2)})`).join(', ');
         const direction = stale.filter(s => s.value < 1.0).length > stale.length / 2 ? 'suppressing' : 'boosting';
         verdicts.push({
