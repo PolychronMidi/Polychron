@@ -127,7 +127,7 @@ ConductorIntelligence = (() => {
   }
 
   const DENSITY_PRODUCT_FLOOR = 0.30;
-  const TENSION_PRODUCT_CEILING = 1.8;
+  const TENSION_PRODUCT_CEILING = 1.5;  // lowered (was 1.8) — caps runaway tension accumulation
 
   /** @returns {number} product of all density biases (dampened + floored to prevent crush) */
   function collectDensityBias() { return m.max(_collectDampened(densityBiases), DENSITY_PRODUCT_FLOOR); }
