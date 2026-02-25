@@ -14,7 +14,7 @@ pipelineCouplingManager = (() => {
   const TARGET_DT_COUPLING = 0.35;
   const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
   const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
-  const GAIN               = 0.20; // raised (was 0.19) — d-t 0.027 effectively zero; restore previous level
+  const GAIN               = 0.24; // raised (was 0.20) — couplingStrength 0.162 < fragmented threshold; strengthen nudges
   const TF_GAIN            = 0.17; // raised (was 0.15) — t-f 0.469 overcorrected by rollback; 0.17 splits 0.15/0.18
   const FE_GAIN            = 0.20; // f-e 0.000 (entropy dead) — hold; will re-evaluate once entropy revived
 
@@ -97,7 +97,7 @@ pipelineCouplingManager = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.16);
+  ConductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.20);
   ConductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.88, 1.12);
   ConductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   ConductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);

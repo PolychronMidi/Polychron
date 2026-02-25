@@ -28,9 +28,9 @@ pipelineNormalizer = (() => {
   const WARMUP_ALPHA   = 0.25;
 
   const _state = {
-    density: { emaRaw: 1.0, beats: 0, lastBeat: -1 },
-    tension: { emaRaw: 1.0, beats: 0, lastBeat: -1 },
-    flicker: { emaRaw: 1.0, beats: 0, lastBeat: -1 }
+    density: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 },
+    tension: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 },
+    flicker: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 }
   };
 
   /**
@@ -70,6 +70,8 @@ pipelineNormalizer = (() => {
       s.beats++;
       const alpha = s.beats <= WARMUP_BEATS ? WARMUP_ALPHA : TRACKING_ALPHA;
       s.emaRaw += alpha * (rawProduct - s.emaRaw);
+      if (rawProduct < bounds.softMin) s.compressedLow++;
+      else if (rawProduct > bounds.softMax) s.compressedHigh++;
     }
 
     return _softEnvelope(rawProduct, bounds.softMin, bounds.softMax, bounds.range);
@@ -80,6 +82,8 @@ pipelineNormalizer = (() => {
       _state[key].emaRaw = 1.0;
       _state[key].beats = 0;
       _state[key].lastBeat = -1;
+      _state[key].compressedLow = 0;
+      _state[key].compressedHigh = 0;
     }
   }
 
@@ -88,13 +92,16 @@ pipelineNormalizer = (() => {
     const result = {};
     for (const [pipeline, s] of Object.entries(_state)) {
       const b = BOUNDS[pipeline];
+      const total = s.beats || 1;
       result[pipeline] = {
         emaRawProduct: Number(s.emaRaw.toFixed(4)),
         beats: s.beats,
         softMin: b.softMin,
         softMax: b.softMax,
         hardMin: Number((b.softMin - b.range).toFixed(2)),
-        hardMax: Number((b.softMax + b.range).toFixed(2))
+        hardMax: Number((b.softMax + b.range).toFixed(2)),
+        compressedLowRate: Number((s.compressedLow / total).toFixed(3)),
+        compressedHighRate: Number((s.compressedHigh / total).toFixed(3))
       };
     }
     return result;
