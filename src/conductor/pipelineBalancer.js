@@ -13,8 +13,10 @@ pipelineBalancer = (() => {
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
   const AGGREGATE_LIFT       = 0.20;   // max lift per beat when aggregate is strained (was 0.15)
+  const AGG_SMOOTH           = 0.30;   // EMA alpha for aggregate counterBias — damps beat-to-beat jitter
 
   let counterBias = 1.0;
+  let smoothedAggBias = 1.0;
 
   function refresh() {
     const attr = signalReader.densityAttribution();
@@ -41,9 +43,8 @@ pipelineBalancer = (() => {
       }
     }
 
-    // Continuous aggregate lift: density below 1.0 activates proportional correction
-    // (replaces hard STRAINED_FLOOR threshold — was barely engaging at density 0.80).
-    // Weight below-1.0 contributors to size the deficit proportionally.
+    // Continuous aggregate lift: density below 1.0 activates proportional correction.
+    // EMA-smoothed to prevent beat-to-beat jitter from feeding oscillation.
     const densityNow = signalReader.density();
     if (counterBias <= 1.0) {
       let suppressorPull = 0;
@@ -56,7 +57,9 @@ pipelineBalancer = (() => {
       }
       const netSuppression = clamp(suppressorPull - boosterPull, 0, 2);
       const deficit = clamp(1.0 - densityNow, 0, 1);
-      counterBias = 1.0 + AGGREGATE_LIFT * deficit * clamp(netSuppression / 0.5, 0.5, 2.0);
+      const rawAgg = 1.0 + AGGREGATE_LIFT * deficit * clamp(netSuppression / 0.5, 0.5, 2.0);
+      smoothedAggBias += AGG_SMOOTH * (rawAgg - smoothedAggBias);
+      counterBias = smoothedAggBias;
     }
   }
 
