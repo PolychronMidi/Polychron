@@ -62,7 +62,7 @@ SignalHealthAnalyzer = (() => {
     let grade = 'healthy';
     if (saturated && crushFactor > 0.4) grade = 'critical';
     else if (saturated || pinnedModules.length >= 3) grade = 'stressed';
-    else if (pinnedModules.length >= 1 || crushFactor > 0.3) grade = 'strained';
+    else if (pinnedModules.length >= 1 || crushFactor > 0.4) grade = 'strained';
 
     return { grade, product: attr.product, pinnedModules, crushFactor, saturated };
   }

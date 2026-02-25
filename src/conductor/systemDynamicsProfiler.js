@@ -153,7 +153,7 @@ SystemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 10.0; // raised (was 7.0) — entropy still dead at 7×; 10× safe with pipelineNormalizer absorbing overshoot
+      entropy = 0.5 + (rawE - 0.5) * 8.0; // lowered (was 10.0) — 10× caused d-e 0.53, f-e 0.50, effDim collapse to 1.07; 8× reduces overcoupling
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
