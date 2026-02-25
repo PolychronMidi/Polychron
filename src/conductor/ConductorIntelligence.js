@@ -50,7 +50,7 @@ ConductorIntelligence = (() => {
   // from accumulating catastrophic suppression, without touching any
   // individual module's response. Deviations opposing the running product
   // are given lighter dampening to encourage self-correction.
-  const PROGRESSIVE_STRENGTH = 0.55; // softened (was 0.65) — part of 41% coordinated density crush
+  const PROGRESSIVE_STRENGTH = 0.50; // softened (was 0.55) — density crush still 37% with 3 pinned modules
 
   /**
    * Compute progressive dampening factor for a single contributor.

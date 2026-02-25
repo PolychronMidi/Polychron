@@ -15,7 +15,7 @@ pipelineCouplingManager = (() => {
   const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
   const TARGET_FE_COUPLING = 0.25; // flicker-entropy: tighter target (was 0.35, r=0.704 showed shared-input lock)
   const GAIN               = 0.20; // rolled back (was 0.24) — r=-0.157 overcorrected past target 0.35
-  const TF_GAIN            = 0.14; // raised (was 0.10) — r=0.712 showed explosive profile inherently couples t-f
+  const TF_GAIN            = 0.16; // raised (was 0.14) — r=0.498 still above target 0.30; incremental tightening
   const FE_GAIN            = 0.10; // raised (was 0.06) — r=0.476 excess producing only 1.4% correction
 
   let biasTension = 1.0;
