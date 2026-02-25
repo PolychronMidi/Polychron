@@ -12,8 +12,8 @@ pipelineBalancer = (() => {
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
-  const STRAINED_FLOOR      = 0.75;   // aggregate product below this → coordinated suppression
-  const AGGREGATE_LIFT       = 0.15;   // max lift per beat when aggregate is strained
+  const STRAINED_FLOOR      = 0.85;   // aggregate product below this → coordinated suppression (was 0.75)
+  const AGGREGATE_LIFT       = 0.20;   // max lift per beat when aggregate is strained (was 0.15)
 
   let counterBias = 1.0;
 
