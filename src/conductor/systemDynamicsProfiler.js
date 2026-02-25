@@ -50,7 +50,7 @@ SystemDynamicsProfiler = (() => {
   // dimension. Heavy profile smoothing (explosive=0.5) needs lighter profiler
   // smoothing; light profile smoothing (default=0.8) needs heavier. Targeting
   // a constant effective responsiveness: profileSmoothing × stateSmoothing ≈ 0.175.
-  const _STATE_SMOOTHING_BASELINE = 0.175;
+  const _STATE_SMOOTHING_BASELINE = 0.22;
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
 

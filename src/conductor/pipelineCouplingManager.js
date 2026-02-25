@@ -13,8 +13,10 @@ pipelineCouplingManager = (() => {
 
   const TARGET_DT_COUPLING = 0.35;
   const TARGET_TF_COUPLING = 0.30; // tension-flicker: looser target (some correlation is natural)
+  const TARGET_FE_COUPLING = 0.35; // flicker-entropy: moderate — some is musically meaningful
   const GAIN               = 0.06;
   const TF_GAIN            = 0.04; // lighter touch for flicker decoupling
+  const FE_GAIN            = 0.03; // gentlest touch — entropy variety → textural variety is partly desirable
 
   let biasTension = 1.0;
   let biasFlicker = 1.0;
@@ -62,6 +64,21 @@ pipelineCouplingManager = (() => {
         const excess = m.abs(tfCoupling) - TARGET_TF_COUPLING;
         const tensionDir = signalReader.tension() > 0.5 ? -1 : 1;
         biasFlicker = 1.0 + tensionDir * TF_GAIN * excess;
+      }
+
+      // --- Flicker-entropy coupling management ---
+      // When flicker and entropy co-evolve too strongly (r=0.44 in last run),
+      // flicker loses independence. Gentle nudge to decorrelate. Some coupling
+      // is musically meaningful (entropy variety → textural variety), so the
+      // target is higher than tension-flicker and the gain is lighter.
+      const feCoupling = typeof snap.couplingMatrix['flicker-entropy'] === 'number'
+        ? snap.couplingMatrix['flicker-entropy']
+        : 0;
+
+      if (Number.isFinite(feCoupling) && m.abs(feCoupling) > TARGET_FE_COUPLING) {
+        const feExcess = m.abs(feCoupling) - TARGET_FE_COUPLING;
+        // Push flicker opposite to the coupling direction
+        biasFlicker *= 1.0 - m.sign(feCoupling) * FE_GAIN * feExcess;
       }
     }
   }
