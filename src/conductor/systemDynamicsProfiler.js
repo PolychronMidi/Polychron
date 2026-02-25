@@ -50,7 +50,7 @@ SystemDynamicsProfiler = (() => {
   // dimension. Heavy profile smoothing (explosive=0.5) needs lighter profiler
   // smoothing; light profile smoothing (default=0.8) needs heavier. Targeting
   // a constant effective responsiveness: profileSmoothing × stateSmoothing ≈ 0.175.
-  const _STATE_SMOOTHING_BASELINE = 0.22;
+  const _STATE_SMOOTHING_BASELINE = 0.18; // lowered (was 0.22) — velocity 0.009 near-stasis; increase responsiveness
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
 
@@ -145,15 +145,15 @@ SystemDynamicsProfiler = (() => {
     // near-constant, producing zero variance in the coupling matrix. Raw
     // values preserve the beat-to-beat fluctuations that reveal coupling.
     // Neutral midpoint (0.5) fallback prevents zero-injection on error.
-    // Amplify departure from 0.5 by 7× — entropy varies in a narrow band
+    // Amplify departure from 0.5 by 5× — entropy varies in a narrow band
     // (~0.48–0.52), making its variance invisible to coupling analysis.
     // Amplification increases signal-to-noise in the state vector without
     // altering the actual entropy measurement used elsewhere.
-    // Raised from 5× after eff dim collapsed to 1.26 — entropy axis invisible.
+    // Rolled back from 7× after all entropy couplings went to 0.000.
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 7.0;
+      entropy = 0.5 + (rawE - 0.5) * 5.0;
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
