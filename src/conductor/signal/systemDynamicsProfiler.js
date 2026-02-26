@@ -154,7 +154,7 @@ systemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 12.0; // raised (was 8.0) — pipelineCouplingManager now actively manages f-e coupling (target 0.25, gain 0.12), mitigating the overcoupling risk that killed 10×
+      entropy = 0.5 + (rawE - 0.5) * 10.0; // reduced (was 12.0) — 12× caused 83.6% variance share, dominating effectiveDim. 10× preserves coupling visibility with less scale distortion
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
@@ -241,25 +241,118 @@ systemDynamicsProfiler = (() => {
 
   /**
    * Effective dimensionality: how many independent axes the system is using.
-   * Uses variance ratios as a lightweight PCA proxy.
-   * If one dimension dominates, effectiveDim ≈ 1. If spread evenly, ≈ N_COMPOSITIONAL_DIMS.
-   * Computed as exp(Shannon entropy of normalized variances).
-   * Scoped to compositional dimensions only — trust and phase are excluded
-   * because they reflect governance/position, not compositional activity.
-   * @param {number[]} variance
+   * Computed from eigenvalues of the 4×4 compositional correlation matrix
+   * via Jacobi rotation. This is scale-independent — unlike variance ratios,
+   * a heavily amplified axis (e.g. entropy at 12×) cannot dominate the metric
+   * unless it genuinely correlates with other axes.
+   * Result: exp(Shannon entropy of normalized eigenvalues), range [1, N_COMPOSITIONAL_DIMS].
+   * @param {Array<number[]>} data - raw trajectory (N×6 or N×4+)
+   * @param {number[]} mean   - per-dimension means
    * @returns {number} 1.0 to N_COMPOSITIONAL_DIMS
    */
-  function _effectiveDimensionality(variance) {
+  function _effectiveDimensionality(data, mean) {
+    const n = data.length;
+    if (n < 3) return 1;
+    const K = N_COMPOSITIONAL_DIMS;
+
+    // Build K×K correlation matrix from compositional dims only
+    const R = new Array(K);
+    for (let i = 0; i < K; i++) R[i] = new Array(K).fill(0);
+
+    // Accumulate covariance + per-dim variance
+    const varAcc = new Array(K).fill(0);
+    for (let s = 0; s < n; s++) {
+      for (let i = 0; i < K; i++) {
+        const di = data[s][i] - mean[i];
+        varAcc[i] += di * di;
+        for (let j = i; j < K; j++) {
+          R[i][j] += di * (data[s][j] - mean[j]);
+        }
+      }
+    }
+    // Normalize to Pearson r
+    for (let i = 0; i < K; i++) {
+      for (let j = i; j < K; j++) {
+        if (i === j) { R[i][j] = 1.0; continue; }
+        const denom = m.sqrt(varAcc[i] * varAcc[j]);
+        const r = denom > 1e-10 ? R[i][j] / denom : 0;
+        R[i][j] = r;
+        R[j][i] = r;
+      }
+    }
+
+    // Jacobi eigenvalue iteration (4×4 symmetric — converges in ~5 sweeps)
+    const eigenvalues = _jacobiEigenvalues(R, K);
+
+    // Shannon entropy of normalized eigenvalues → effective dimensionality
     let total = 0;
-    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) total += variance[d];
+    for (let i = 0; i < K; i++) total += m.max(eigenvalues[i], 0);
     if (total < 1e-12) return 1;
 
-    let entropy = 0;
-    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
-      const p = variance[d] / total;
-      if (p > 1e-12) entropy -= p * m.log(p);
+    let H = 0;
+    for (let i = 0; i < K; i++) {
+      const p = m.max(eigenvalues[i], 0) / total;
+      if (p > 1e-12) H -= p * m.log(p);
     }
-    return clamp(m.exp(entropy), 1, N_COMPOSITIONAL_DIMS);
+    return clamp(m.exp(H), 1, K);
+  }
+
+  /**
+   * Jacobi eigenvalue algorithm for a small symmetric matrix.
+   * Returns eigenvalues (unsorted). Mutates the input matrix.
+   * For K=4, converges in < 10 sweeps.
+   * @param {number[][]} A - K×K symmetric matrix (mutated)
+   * @param {number} K
+   * @returns {number[]} eigenvalues
+   */
+  function _jacobiEigenvalues(A, K) {
+    const MAX_SWEEPS = 20;
+    for (let sweep = 0; sweep < MAX_SWEEPS; sweep++) {
+      // Find largest off-diagonal element
+      let maxVal = 0;
+      let p = 0;
+      let q = 1;
+      for (let i = 0; i < K; i++) {
+        for (let j = i + 1; j < K; j++) {
+          if (m.abs(A[i][j]) > maxVal) {
+            maxVal = m.abs(A[i][j]);
+            p = i;
+            q = j;
+          }
+        }
+      }
+      if (maxVal < 1e-10) break; // converged
+
+      // Compute Jacobi rotation angle
+      const diff = A[q][q] - A[p][p];
+      const t = m.abs(diff) < 1e-12
+        ? 1.0
+        : (2.0 * A[p][q]) / (diff + m.sign(diff) * m.sqrt(diff * diff + 4 * A[p][q] * A[p][q]));
+      const c = 1.0 / m.sqrt(1 + t * t);
+      const s = t * c;
+
+      // Apply rotation
+      const app = A[p][p];
+      const aqq = A[q][q];
+      const apq = A[p][q];
+      A[p][p] = c * c * app - 2 * s * c * apq + s * s * aqq;
+      A[q][q] = s * s * app + 2 * s * c * apq + c * c * aqq;
+      A[p][q] = 0;
+      A[q][p] = 0;
+
+      for (let r = 0; r < K; r++) {
+        if (r === p || r === q) continue;
+        const arp = A[r][p];
+        const arq = A[r][q];
+        A[r][p] = c * arp - s * arq;
+        A[p][r] = A[r][p];
+        A[r][q] = s * arp + c * arq;
+        A[q][r] = A[r][q];
+      }
+    }
+    const eigenvalues = new Array(K);
+    for (let i = 0; i < K; i++) eigenvalues[i] = A[i][i];
+    return eigenvalues;
   }
 
   /**
@@ -396,7 +489,7 @@ systemDynamicsProfiler = (() => {
     // â"€â"€ Cross-coupling & effective dimensionality (from RAW trajectory) â"€â"€
     const { mean, variance } = _stats(rawTrajectory);
     const { matrix, strength } = _coupling(rawTrajectory, mean);
-    const effDim = _effectiveDimensionality(variance);
+    const effDim = _effectiveDimensionality(rawTrajectory, mean);
     // per-axis variance ratios for dead-axis detection.
     // Normalized so they sum to 1.0 — a value near 0 means that axis
     // contributes negligible variance to the phase-space trajectory.
