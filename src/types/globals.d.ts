@@ -337,6 +337,10 @@ interface SystemDynamicsSnapshot {
   grade: string;
   couplingMatrix: Record<string, number>;
   compositionalVariance: number[];
+  entropyAmplification: number;
+  entropySampleErrors: number;
+  entropyRhythmErrors: number;
+  lastEntropyError: string;
 }
 
 interface SystemDynamicsSummary {
@@ -518,6 +522,7 @@ interface EntropyRegulatorAPI {
   regulate(prob: number): number;
   setRegulationStrength(strength: number): void;
   reset(): void;
+  getRhythmErrors(): number;
 }
 
 interface EntropyMetricsAPI {

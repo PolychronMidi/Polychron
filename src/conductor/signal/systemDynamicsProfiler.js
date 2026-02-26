@@ -33,6 +33,19 @@ systemDynamicsProfiler = (() => {
   /** @type {Array<number[]>} velocity vectors (first differences) */
   const velocities = [];
   let beatsSeen = 0;
+  let _entropySampleErrors = 0;
+  let _lastEntropyError = '';
+
+  // ── Adaptive entropy amplification ──
+  // Instead of a hardcoded multiplier (manually tuned 5→7→12→10→3 across
+  // runs), this proportional controller reads the previous beat's
+  // compositionalVariance and adjusts to target ~25% variance share.
+  // Self-correcting: too much entropy → amplification drops; too little → rises.
+  const _ENTROPY_AMP_TARGET_SHARE = 0.25;
+  const _ENTROPY_AMP_MIN = 1.0;
+  const _ENTROPY_AMP_MAX = 15.0;
+  const _ENTROPY_AMP_SMOOTH = 0.12; // slow EMA to avoid oscillation
+  let _entropyAmp = 3.0; // initial seed (converges within ~20 beats)
 
   // Regime hysteresis: requires REGIME_HOLD consecutive beats of a new
   // classification before switching. Prevents single-beat noise from
@@ -50,7 +63,7 @@ systemDynamicsProfiler = (() => {
   // dimension. Heavy profile smoothing (explosive=0.5) needs lighter profiler
   // smoothing; light profile smoothing (default=0.8) needs heavier. Targeting
   // a constant effective responsiveness: profileSmoothing × stateSmoothing ≈ 0.175.
-  const _STATE_SMOOTHING_BASELINE = 0.18; // lowered (was 0.22) — velocity 0.009 near-stasis; increase responsiveness
+  const _STATE_SMOOTHING_BASELINE = 0.12; // lowered (was 0.14) — velocity 0.008 in Run 8 still near-stasis; increase responsiveness further
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
 
@@ -85,6 +98,17 @@ systemDynamicsProfiler = (() => {
   /** @type {SystemDynamicsSnapshot} */
   let _lastSnapshot = _emptySnapshot();
 
+  /** Adapt entropy amplification to target equal variance share. */
+  function _adaptEntropyAmplification() {
+    const currentShare = _lastSnapshot.compositionalVariance[3]; // entropy index
+    // Proportional controller: desired = current × (target / actual)
+    // When dead (<0.01), targets maximum; otherwise scales proportionally.
+    const targetAmp = currentShare < 0.01
+      ? _ENTROPY_AMP_MAX
+      : clamp(_entropyAmp * (_ENTROPY_AMP_TARGET_SHARE / currentShare), _ENTROPY_AMP_MIN, _ENTROPY_AMP_MAX);
+    _entropyAmp = _entropyAmp * (1 - _ENTROPY_AMP_SMOOTH) + targetAmp * _ENTROPY_AMP_SMOOTH;
+  }
+
   /** @returns {SystemDynamicsSnapshot} */
   function _emptySnapshot() {
     return {
@@ -95,7 +119,11 @@ systemDynamicsProfiler = (() => {
       regime: 'initializing',
       grade: 'healthy',
       couplingMatrix: {},
-      compositionalVariance: [0.25, 0.25, 0.25, 0.25]
+      compositionalVariance: [0.25, 0.25, 0.25, 0.25],
+      entropyAmplification: _entropyAmp,
+      entropySampleErrors: 0,
+      entropyRhythmErrors: 0,
+      lastEntropyError: ''
     };
   }
 
@@ -142,20 +170,48 @@ systemDynamicsProfiler = (() => {
       if (trustCount > 0) avgTrust /= trustCount;
     } catch { /* non-fatal */ }
 
-    // Use raw (unsmoothed) entropy — the EMA-smoothed value converges to
-    // near-constant, producing zero variance in the coupling matrix. Raw
-    // values preserve the beat-to-beat fluctuations that reveal coupling.
-    // Neutral midpoint (0.5) fallback prevents zero-injection on error.
-    // Amplify departure from 0.5 by 5× — entropy varies in a narrow band
-    // (~0.48–0.52), making its variance invisible to coupling analysis.
-    // Amplification increases signal-to-noise in the state vector without
-    // altering the actual entropy measurement used elsewhere.
-    // Rolled back from 7× after all entropy couplings went to 0.000.
+    // Compute truly instantaneous entropy directly from absoluteTimeWindow,
+    // bypassing entropyRegulator's triple-dampened pipeline (10-note sliding
+    // window → EMA smoothing → beatCache memoization) which produced variance
+    // ≈ 0 across 3 consecutive runs. A 1-second ATW query gives real beat-to-
+    // beat content changes as notes enter/leave the window.
     let entropy = 0.5;
     try {
-      const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 10.0; // reduced (was 12.0) — 12× caused 83.6% variance share, dominating effectiveDim. 10× preserves coupling visibility with less scale distortion
-    } catch { /* fallback: neutral */ }
+      const atwSince = beatStartTime - 1.0;
+      const recentNotes = absoluteTimeWindow.getNotes({ since: atwSince, windowSeconds: 1.0 });
+      if (recentNotes.length >= 3) {
+        const midis = new Array(recentNotes.length);
+        const vels = new Array(recentNotes.length);
+        for (let i = 0; i < recentNotes.length; i++) {
+          midis[i] = recentNotes[i].midi;
+          vels[i] = recentNotes[i].velocity;
+        }
+        const pitchE = entropyMetrics.pitchEntropy(midis);
+        const velE = entropyMetrics.velocityVariance(vels);
+        // IOI-based rhythmic irregularity (inline — avoids per-layer ATW re-query)
+        let rhythmE = 0;
+        const iois = [];
+        for (let i = 1; i < recentNotes.length; i++) {
+          const dt = recentNotes[i].time - recentNotes[i - 1].time;
+          if (dt > 0) iois.push(dt);
+        }
+        if (iois.length >= 2) {
+          const ioiMean = iois.reduce((a, b) => a + b, 0) / iois.length;
+          const ioiStd = m.sqrt(iois.reduce((s, v) => s + (v - ioiMean) * (v - ioiMean), 0) / iois.length);
+          rhythmE = clamp(ioiStd / m.max(ioiMean, 0.001), 0, 1);
+        }
+        const combined = pitchE * 0.4 + velE * 0.3 + rhythmE * 0.3;
+        _adaptEntropyAmplification();
+        entropy = 0.5 + (combined - 0.5) * _entropyAmp;
+      }
+    } catch (e) {
+      _entropySampleErrors++;
+      _lastEntropyError = e && e.message ? e.message : 'unknown';
+      explainabilityBus.emit('entropy-sample-error', 'both', {
+        error: _lastEntropyError,
+        errorCount: _entropySampleErrors
+      });
+    }
 
     let phase = 0;
     try { phase = timeStream.normalizedProgress('section'); } catch { /* non-fatal */ }
@@ -512,7 +568,11 @@ systemDynamicsProfiler = (() => {
       regime,
       grade,
       couplingMatrix: matrix,
-      compositionalVariance: varRatios
+      compositionalVariance: varRatios,
+      entropyAmplification: m.round(_entropyAmp * 100) / 100,
+      entropySampleErrors: _entropySampleErrors,
+      entropyRhythmErrors: entropyRegulator.getRhythmErrors(),
+      lastEntropyError: _lastEntropyError
     };
 
     // Emit real-time telemetry on every beat for observability
@@ -567,6 +627,7 @@ systemDynamicsProfiler = (() => {
     _lastRegime = 'evolving';
     _candidateRegime = 'evolving';
     _candidateCount = 0;
+    _entropyAmp = 3.0;
   }
 
   // ── Self-register ──

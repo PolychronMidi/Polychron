@@ -31,10 +31,17 @@ dimensionalityExpander = (() => {
   // Dead-axis detection: if a compositional axis contributes less than
   // this fraction of total variance, inject perturbation to revive it.
   // With 4 axes, uniform distribution = 0.25 each; 0.05 means < 20% of
-  // fair share. This is the meta-fix: catches ANY dead axis automatically
-  // (entropy, or any future axis that goes flat), not just coupling locks.
+  // fair share. Catches ANY dead nudgeable axis automatically.
   const DEAD_AXIS_THRESHOLD = 0.05;
   const DEAD_AXIS_PERTURBATION = 0.08;
+
+  // Dominant-axis suppression: mirror of dead-axis detection. If a
+  // nudgeable axis exceeds this fraction of total variance, dampen it
+  // to restore balance. Without this, a single axis can absorb >50% of
+  // variance while overall dimensionality looks healthy (effDim > 2.2).
+  const DOMINANT_AXIS_THRESHOLD = 0.50;
+  const DOMINANT_AXIS_DAMPENING = 0.12;
+
   // Mapping from variance index to axis name
   const VARIANCE_AXES = ['density', 'tension', 'flicker']; // entropy (idx 3) has no bias
 
@@ -107,7 +114,37 @@ dimensionalityExpander = (() => {
 
     _urgency = _computeUrgency(snap.effectiveDimensionality);
 
-    if (_urgency < 0.01) {
+    // --- Variance balance (runs EVERY beat, independent of urgency) ---
+    // Dead-axis revival + dominant-axis suppression. These fire even when
+    // effectiveDimensionality looks healthy (e.g., 3.09) because individual
+    // axis imbalance is invisible to overall dimensionality.
+    let varD = 0;
+    let varT = 0;
+    let varF = 0;
+    const varRatios = snap.compositionalVariance;
+    if (varRatios && varRatios.length >= 3) {
+      for (let i = 0; i < VARIANCE_AXES.length; i++) {
+        if (varRatios[i] < DEAD_AXIS_THRESHOLD) {
+          // Dead axis: inject alternating perturbation to revive it
+          const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
+          const nudge = DEAD_AXIS_PERTURBATION * severity;
+          const dir = (beatCount % 16) < 8 ? 1 : -1;
+          if (VARIANCE_AXES[i] === 'density') varD = dir * nudge;
+          else if (VARIANCE_AXES[i] === 'tension') varT = dir * nudge;
+          else varF = dir * nudge;
+        } else if (varRatios[i] > DOMINANT_AXIS_THRESHOLD) {
+          // Dominant axis: dampen toward fair share
+          const excess = varRatios[i] - DOMINANT_AXIS_THRESHOLD;
+          const nudge = -DOMINANT_AXIS_DAMPENING * excess;
+          if (VARIANCE_AXES[i] === 'density') varD = nudge;
+          else if (VARIANCE_AXES[i] === 'tension') varT = nudge;
+          else varF = nudge;
+        }
+      }
+    }
+
+    // If dimensionality is healthy and no variance imbalance, smooth toward 1.0
+    if (_urgency < 0.01 && varD === 0 && varT === 0 && varF === 0) {
       _densityBias = _densityBias * (1 - SMOOTHING) + SMOOTHING;
       _tensionBias = _tensionBias * (1 - SMOOTHING) + SMOOTHING;
       _flickerBias = _flickerBias * (1 - SMOOTHING) + SMOOTHING;
@@ -120,34 +157,15 @@ dimensionalityExpander = (() => {
       return;
     }
 
-    const pert = _computePerturbations(snap.couplingMatrix, _urgency);
-
-    // --- Dead-axis variance injection (meta-fix) ---
-    // If any compositional axis has near-zero variance, inject gentle
-    // perturbation to revive it. This fires regardless of coupling state
-    // and catches dead axes (like entropy at 0.000) automatically.
-    let deadAxisD = 0;
-    let deadAxisT = 0;
-    let deadAxisF = 0;
-    const varRatios = snap.compositionalVariance;
-    if (varRatios && varRatios.length >= 3) {
-      for (let i = 0; i < VARIANCE_AXES.length; i++) {
-        if (varRatios[i] < DEAD_AXIS_THRESHOLD) {
-          // Severity scales with how dead the axis is
-          const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
-          const nudge = DEAD_AXIS_PERTURBATION * severity;
-          // Alternate direction using beat count to prevent monotonic push
-          const dir = (beatCount % 16) < 8 ? 1 : -1;
-          if (VARIANCE_AXES[i] === 'density') deadAxisD = dir * nudge;
-          else if (VARIANCE_AXES[i] === 'tension') deadAxisT = dir * nudge;
-          else deadAxisF = dir * nudge;
-        }
-      }
+    // Coupling-based perturbations (only when dimensionality is collapsed)
+    let pert = { density: 0, tension: 0, flicker: 0 };
+    if (_urgency >= 0.01) {
+      pert = _computePerturbations(snap.couplingMatrix, _urgency);
     }
 
-    const rawD = 1.0 + pert.density + deadAxisD;
-    const rawT = 1.0 + pert.tension + deadAxisT;
-    const rawF = 1.0 + pert.flicker + deadAxisF;
+    const rawD = 1.0 + pert.density + varD;
+    const rawT = 1.0 + pert.tension + varT;
+    const rawF = 1.0 + pert.flicker + varF;
 
     _densityBias = _densityBias * (1 - SMOOTHING) + rawD * SMOOTHING;
     _tensionBias = _tensionBias * (1 - SMOOTHING) + rawT * SMOOTHING;
@@ -160,7 +178,7 @@ dimensionalityExpander = (() => {
       densityBias: _densityBias,
       tensionBias: _tensionBias,
       flickerBias: _flickerBias,
-      deadAxisNudges: { density: deadAxisD, tension: deadAxisT, flicker: deadAxisF }
+      varianceNudges: { density: varD, tension: varT, flicker: varF }
     });
   }
 

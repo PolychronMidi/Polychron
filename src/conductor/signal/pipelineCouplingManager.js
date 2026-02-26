@@ -27,11 +27,12 @@ pipelineCouplingManager = (() => {
   const DEFAULT_TARGET = 0.25;
   const DEFAULT_GAIN   = 0.16;
 
-  // Per-pair overrides from tuning history (runs 1-5).
+  // Per-pair overrides from tuning history (runs 1-9).
   // Missing pairs fall through to DEFAULT_TARGET / DEFAULT_GAIN.
   const PAIR_OVERRIDES = {
-    'density-tension':  { target: 0.20, gain: 0.24 }, // naturally decorrelated; prevent overcorrection
-    'tension-flicker':  { target: 0.30, gain: 0.21 }, // some correlation is natural (both respond to intensity)
+    'density-tension':  { target: 0.20, gain: 0.22 }, // -0.528 in Run 9 — gain 0.30 overcorrected; pull back to 0.22
+    'density-flicker':  { target: 0.20, gain: 0.34 }, // 0.589 in Run 10 — re-emerged after t-f fix; gain 0.28→0.34
+    'tension-flicker':  { target: 0.25, gain: 0.36 }, // 0.515 in Run 9 (was 0.417) — most persistent coupling; gain 0.30→0.36
     'flicker-entropy':  { target: 0.25, gain: 0.12 }, // gentle — entropy nudge is indirect
   };
 

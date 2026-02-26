@@ -46,6 +46,8 @@ entropyRegulator = (() => {
    * @private
    * @returns {number} combined 0-1
    */
+  let _rhythmIrregErrors = 0;
+
   function _computeEntropy() {
     const layers = ['L1', 'L2'];
     let totalPitch = 0, totalVel = 0, totalRhythm = 0, count = 0;
@@ -59,9 +61,28 @@ entropyRegulator = (() => {
       if (vh && vh.length > 2) {
         totalVel += entropyMetrics.velocityVariance(vh);
       }
-      totalRhythm += entropyMetrics.rhythmicIrregularity(layer);
+      // rhythmicIrregularity queries absoluteTimeWindow which may throw
+      // during early beats or section transitions. Isolate per-layer so
+      // a failure in one layer doesn't abort the entire entropy measurement.
+      try {
+        totalRhythm += entropyMetrics.rhythmicIrregularity(layer);
+      } catch (e) {
+        _rhythmIrregErrors++;
+        explainabilityBus.emit('entropy-rhythm-error', 'both', {
+          layer,
+          error: e && e.message ? e.message : 'unknown',
+          errorCount: _rhythmIrregErrors
+        });
+      }
     }
-    if (count === 0) { smoothedEntropy = 0.5; return 0.5; }
+    if (count === 0) {
+      // No note history yet (early beats after section reset).
+      // Still update lastRawEntropy so measureRawEntropy() doesn't
+      // return stale data from before the reset.
+      lastRawEntropy = 0.5;
+      smoothedEntropy = 0.5;
+      return 0.5;
+    }
     const combined = (totalPitch / count) * 0.4 + (totalVel / Math.max(count, 1)) * 0.3 + (totalRhythm / 2) * 0.3;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
     lastRawEntropy = combined;
@@ -163,7 +184,11 @@ entropyRegulator = (() => {
     regulationStrength = 0.5;
     noteHistory.clear();
     velHistory.clear();
+    // _rhythmIrregErrors intentionally NOT reset — accumulates across run for diagnostic
   }
+
+  /** @returns {number} total rhythmicIrregularity failures across the run */
+  function getRhythmErrors() { return _rhythmIrregErrors; }
 
   function initialize() {
     feedbackRegistry.registerLoop(
@@ -185,7 +210,7 @@ entropyRegulator = (() => {
 
   return {
     recordSample, measureEntropy, measureRawEntropy, setTarget, getArcTarget,
-    getRegulation, regulate, setRegulationStrength, reset
+    getRegulation, regulate, setRegulationStrength, reset, getRhythmErrors
   };
 })();
 crossLayerRegistry.register('entropyRegulator', entropyRegulator, ['all', 'section']);
