@@ -1,4 +1,4 @@
-const V = Validator.create('PentatonicComposer');
+const V = validator.create('PentatonicComposer');
 PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   constructor(root = 'C', type = 'major') {
     super();

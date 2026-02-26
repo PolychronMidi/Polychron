@@ -1,11 +1,11 @@
-﻿// TimeStream.js â€” Navigable metric hierarchy abstraction.
+﻿// TimeStream.js - Navigable metric hierarchy abstraction.
 // Tracks current position and bounds at every structural level.
 // Allows composers and cross-layer modules to query where they are,
-// look ahead/behind, compute progress, and detect boundaries â€”
+// look ahead/behind, compute progress, and detect boundaries -
 // without coupling to the imperative loop structure in layerPass.
 
 TimeStream = (() => {
-  const V = Validator.create('timeStream');
+  const V = validator.create('timeStream');
 
   const LEVELS = Object.freeze(['section', 'phrase', 'measure', 'beat', 'div', 'subdiv', 'subsubdiv']);
   const LEVEL_SET = new Set(LEVELS);
@@ -17,7 +17,7 @@ TimeStream = (() => {
   // Units-per-parent at each level (set when structure is determined)
   const bounds = { section: 1, phrase: 1, measure: 1, beat: 1, div: 1, subdiv: 1, subsubdiv: 1 };
 
-  // â”€â”€ Position updates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Position updates
 
   /** Set current index at a structural level. Called by main/layerPass as loops iterate. */
   function setPosition(level, index) {
@@ -32,8 +32,6 @@ TimeStream = (() => {
     if (n <= 0) throw new Error('TimeStream.setBounds: count must be > 0');
     bounds[level] = n;
   }
-
-  // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /** @returns {number} Current index at the given level. */
   function getPosition(level) {
@@ -102,7 +100,7 @@ TimeStream = (() => {
   /**
    * Hypothetical index n steps ahead at this level (clamped to bounds).
    * @param {string} level
-   * @param {number} n â€” positive integer
+   * @param {number} n - positive integer
    * @returns {number} clamped future index
    */
   function lookAhead(level, n) {
@@ -113,7 +111,7 @@ TimeStream = (() => {
   /**
    * Hypothetical index n steps behind at this level (clamped to 0).
    * @param {string} level
-   * @param {number} n â€” positive integer
+   * @param {number} n - positive integer
    * @returns {number} clamped past index
    */
   function lookBehind(level, n) {
@@ -228,4 +226,3 @@ TimeStream = (() => {
     positionString
   };
 })();
-

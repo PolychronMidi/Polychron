@@ -1,10 +1,10 @@
 ﻿// src/conductor/melodic/IntervalBalanceTracker.js - Unified interval analysis.
 // Merges IntervalTensionProfiler + IntervalVarietyTracker + LeapStepBalancer.
 // Provides density bias, interval selection biases, rut detection, and leap penalties.
-// Pure query API â€” no side effects.
+// Pure query API - no side effects.
 
 IntervalBalanceTracker = (() => {
-  const V = Validator.create('intervalBalanceTracker');
+  const V = validator.create('intervalBalanceTracker');
   const WINDOW_SECONDS = 5;
 
   // Beat-level cache: getIntervalProfile is called 2-3x per beat
@@ -171,4 +171,3 @@ IntervalBalanceTracker = (() => {
     suggestIntervalChange
   };
 })();
-

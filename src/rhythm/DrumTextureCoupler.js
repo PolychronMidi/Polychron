@@ -3,7 +3,7 @@
 // intensity and exposes it so drum patterns can accent in sympathy.
 
 DrumTextureCoupler = (() => {
-  const V = Validator.create('drumTextureCoupler');
+  const V = validator.create('drumTextureCoupler');
 
   let feedback = null;
   const decayRate = 0.88;
@@ -98,4 +98,3 @@ DrumTextureCoupler = (() => {
     getMetrics
   };
 })();
-

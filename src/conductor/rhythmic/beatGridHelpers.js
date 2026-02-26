@@ -5,7 +5,7 @@
 // Pure query — reads timing globals.
 
 beatGridHelpers = (() => {
-  const V = Validator.create('beatGridHelpers');
+  const V = validator.create('beatGridHelpers');
 
   /**
    * Get the current beat duration in seconds.

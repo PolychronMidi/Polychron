@@ -1,6 +1,6 @@
 // drummer.js - Generates drum patterns with human-like timing
 
-const V = Validator.create('drummer');
+const V = validator.create('drummer');
 
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1),conductorContext={})=>{
   V.requireDefined(drumNames, 'drumNames');

@@ -1,4 +1,4 @@
-const V = Validator.create('MotifComposer');
+const V = validator.create('MotifComposer');
 /**
  * MotifComposer: factory for short motifs that fit a scale and optionally use voice-leading.
  * Features:

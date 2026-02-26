@@ -10,7 +10,7 @@
  */
 
 polyrhythmicPhasePredictor = (() => {
-  const V = Validator.create('polyrhythmicPhasePredictor');
+  const V = validator.create('polyrhythmicPhasePredictor');
 
   const CHANNEL        = 'phaseConvergence';
   const BOOST_WINDOW   = 0.15;   // fraction of phrase length

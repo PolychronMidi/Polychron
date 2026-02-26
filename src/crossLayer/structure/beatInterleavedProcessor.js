@@ -18,7 +18,7 @@
  */
 
 beatInterleavedProcessor = (() => {
-  const V = Validator.create('beatInterleavedProcessor');
+  const V = validator.create('beatInterleavedProcessor');
 
   /** @type {Map<number, object>} */
   let currentBeatOutcomes = new Map();

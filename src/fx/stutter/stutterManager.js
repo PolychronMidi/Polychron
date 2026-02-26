@@ -1,7 +1,7 @@
 // fx/StutterManager.js - Audio effects manager
 
 const SC = StutterConfig;
-const V = Validator.create('stutterManager');
+const V = validator.create('stutterManager');
 
 class StutterManager {
   constructor() {

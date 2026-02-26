@@ -1,5 +1,5 @@
 NegotiationEngine = (() => {
-  const V = Validator.create('negotiationEngine');
+  const V = validator.create('negotiationEngine');
   /**
    * @param {string} layer
    * @param {{

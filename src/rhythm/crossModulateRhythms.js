@@ -1,4 +1,4 @@
-const V = Validator.create('crossModulateRhythms');
+const V = validator.create('crossModulateRhythms');
 
 /**
  * Calculates cross-modulation value based on rhythm state across all levels

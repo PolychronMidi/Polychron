@@ -8,7 +8,7 @@ ConductorConfig = (() => {
   /** @type {Object|null} */
   let activeProfileCache = null;
 
-  const V = Validator.create('conductorConfig');
+  const V = validator.create('conductorConfig');
 
   const PROFILE_TUNING_DEFAULTS = conductorConfigTuningDefaults();
   const PROFILE_TUNING_OVERRIDES = conductorConfigTuningOverrides();

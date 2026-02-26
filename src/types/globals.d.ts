@@ -12,7 +12,7 @@
 // m   = Math                   rf  = randomFloat          ri  = randomInt
 // rw  = randomWeightedInRange  ra  = randomInRangeOrArray rv  = randomVariation
 // rl  = randomLimitedChange    t   = Tonal.js     c   = polyrhythm calculator
-// p   = pitch bend util        LM  = LayerManager         V   = Validator instance (per-module)
+// p   = pitch bend util        LM  = LayerManager         V   = validator instance (per-module)
 
 // ── Core Interface Types ──
 // These type the 7 nervous-system globals. Every other module touches at least one.
@@ -967,7 +967,7 @@ declare var COMPOSER_TYPE_PROFILE_SOURCES: any;
 declare var allNotesOff: any;
 declare var muteAll: any;
 declare var setOtherInstruments: any;
-declare var Validator: ValidatorFactory;
+declare var validator: ValidatorFactory;
 declare var SystemSnapshot: any;
 declare var modeQualityMap: any;
 declare var priorsHelpers: any;

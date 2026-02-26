@@ -1,7 +1,7 @@
 // src/play/layerPass.js - Extracted layer pass loop for main.js
 
 layerPass = (() => {
-  const V = Validator.create('layerPass');
+  const V = validator.create('layerPass');
 
   const selectLayerComposerForMeasure = (layerName, phraseFamily, composerCtx) => {
     V.assertNonEmptyString(layerName, 'layerName');

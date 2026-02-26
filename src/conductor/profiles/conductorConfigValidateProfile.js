@@ -1,5 +1,5 @@
 conductorConfigValidateProfile = (profile, label) => {
-  const V = Validator.create('conductorConfigValidateProfile');
+  const V = validator.create('conductorConfigValidateProfile');
   const REQUIRED_DENSITY_KEYS = ['floor', 'ceiling', 'range', 'smoothing'];
   const REQUIRED_STUTTER_KEYS = ['rateTiers', 'coherenceFlip', 'rateCurveFlip'];
   const REQUIRED_ENERGY_KEYS = ['phrase', 'journey', 'feedback', 'pulse'];

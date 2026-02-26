@@ -3,7 +3,7 @@
 // stutter scheduling to the naked global `noteCascade` when available.
 
 let _playNotesDepsValidated = false;
-const V = Validator.create('playNotes');
+const V = validator.create('playNotes');
 V.assertObject(EventCatalog, 'EventCatalog');
 V.assertObject(EventCatalog.names, 'EventCatalog.names');
 const PLAY_EVENTS = EventCatalog.names;

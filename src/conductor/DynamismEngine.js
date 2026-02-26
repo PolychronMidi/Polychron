@@ -2,7 +2,7 @@
 // Combines phrase arc, harmonic journey tension, and feedback intensity into per-unit play/stutter probabilities.
 
 DynamismEngine = (() => {
-  const V = Validator.create('dynamismEngine');
+  const V = validator.create('dynamismEngine');
   let dependenciesValidated = false;
 
   const moveBias = {
@@ -14,7 +14,7 @@ DynamismEngine = (() => {
   function assertDependencies() {
     if (dependenciesValidated) return;
 
-    // All globals are boot-validated â€” assert shape once, then skip.
+    // All globals are boot-validated - assert shape once, then skip.
     V.assertManagerShape(ConductorConfig, 'ConductorConfig', ['getHintBlendedEnergyWeights', 'getEmissionGateParams', 'getFeedbackMixWeights']);
     V.assertManagerShape(FXFeedbackListener, 'FXFeedbackListener', ['getIntensity']);
     V.assertManagerShape(StutterFeedbackListener, 'StutterFeedbackListener', ['getIntensity']);

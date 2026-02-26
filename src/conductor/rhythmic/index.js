@@ -1,4 +1,4 @@
-﻿// src/conductor/rhythmic/index.js â€” Rhythm, timing, onset, accent, syncopation
+﻿// src/conductor/rhythmic/index.js - Rhythm, timing, onset, accent, syncopation
 // @ts-ignore: load side-effect module with globals
 require('./beatGridHelpers');
 // @ts-ignore: load side-effect module with globals
@@ -29,5 +29,3 @@ require('./rhythmicSymmetryDetector');
 require('./syncopationDensityTracker');
 // @ts-ignore: load side-effect module with globals
 require('./temporalProportionTracker');
-
-

@@ -1,4 +1,4 @@
-﻿// src/conductor/harmonic/index.js â€” Harmony, tonality, chord quality, key distance
+﻿// src/conductor/harmonic/index.js - Harmony, tonality, chord quality, key distance
 // @ts-ignore: load side-effect module with globals
 require('./pitchClassHelpers');
 // @ts-ignore: load side-effect module with globals

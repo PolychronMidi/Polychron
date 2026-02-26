@@ -1,4 +1,4 @@
-const V = Validator.create('runtimeProfileAdapter');
+const V = validator.create('runtimeProfileAdapter');
 const isFiniteNumber = (value) => {
   if (typeof value === 'number') return Number.isFinite(value);
   if (typeof value === 'string') {

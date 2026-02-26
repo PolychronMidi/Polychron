@@ -1,10 +1,10 @@
 ﻿// src/conductor/StructuralFormTracker.js - Section-level form map.
 // Tracks which families, keys, energy levels appeared in each section.
 // Detects ABA returns, through-composed drift, or lack of recapitulation.
-// Pure query API â€” advises family/key selection for structural callbacks.
+// Pure query API - advises family/key selection for structural callbacks.
 
 StructuralFormTracker = (() => {
-  const V = Validator.create('structuralFormTracker');
+  const V = validator.create('structuralFormTracker');
   /** @type {Array<{ section: number, family: string, key: string, mode: string, energy: number }>} */
   const formMap = [];
 
@@ -107,4 +107,3 @@ ConductorIntelligence.registerStateProvider('StructuralFormTracker', () => ({
   energyTrend: StructuralFormTracker.getEnergyArc().trend
 }));
 ConductorIntelligence.registerModule('StructuralFormTracker', { reset: StructuralFormTracker.reset }, ['section']);
-

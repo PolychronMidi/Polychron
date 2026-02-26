@@ -7,7 +7,7 @@
  * @returns {{ getJourneyFxModulation: Function, getNoiseProfileForSection: Function }}
  */
 conductorConfigResolvers = function({ getProfileTuning }) {
-  const V = Validator.create('conductorConfigResolvers');
+  const V = validator.create('conductorConfigResolvers');
 
   /**
    * Compute FX modulation scalars based on current journey stop (or an override).

@@ -69,7 +69,7 @@ MotifTransforms = {
    * @param {number} semitones - Semitones to shift
    */
   transposePitch(entries, semitones) {
-    const V = Validator.create('motifTransforms');
+    const V = validator.create('motifTransforms');
     V.requireFinite(semitones, 'semitones');
     const shift = m.round(Number(semitones));
     if (shift === 0) return;
@@ -165,4 +165,3 @@ MotifTransforms = {
     }
   }
 };
-

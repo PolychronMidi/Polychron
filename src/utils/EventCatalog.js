@@ -1,7 +1,7 @@
 ﻿// EventCatalog.js - central event names + lightweight payload validation.
 
 EventCatalog = (() => {
-  const V = Validator.create('eventCatalog');
+  const V = validator.create('eventCatalog');
 
   const names = Object.freeze({
     SECTION_BOUNDARY: 'section-boundary',
@@ -172,4 +172,3 @@ EventCatalog = (() => {
     validateEmit
   };
 })();
-

@@ -1,4 +1,4 @@
-const V = Validator.create('ModeComposer');
+const V = validator.create('ModeComposer');
 /**
  * Composes notes from a specific mode (single static mode selection).
  *

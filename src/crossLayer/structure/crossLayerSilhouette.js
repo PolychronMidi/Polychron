@@ -5,7 +5,7 @@
 // Acts as the "meta-conductor" layer above individual cross-layer modules.
 
 CrossLayerSilhouette = (() => {
-  const V = Validator.create('crossLayerSilhouette');
+  const V = validator.create('crossLayerSilhouette');
   const SMOOTHING = 0.15;
   const ARC_HISTORY = 16;
 

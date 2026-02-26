@@ -1,6 +1,6 @@
 // setUnitTiming.js - Calculate timing variables for each unit level based on the current musical context
 
-const V = Validator.create('setUnitTiming');
+const V = validator.create('setUnitTiming');
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using

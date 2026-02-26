@@ -1,5 +1,5 @@
 PhaseAwareCadenceWindow = (() => {
-  const V = Validator.create('phaseAwareCadenceWindow');
+  const V = validator.create('phaseAwareCadenceWindow');
   const MAX_SAMPLES = 24;
   const MIN_CONFIDENCE = 0.45;
   /** @type {Map<string, Array<{ timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel' }>>} */

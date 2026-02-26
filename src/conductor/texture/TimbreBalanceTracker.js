@@ -1,9 +1,9 @@
 ﻿// src/conductor/TimbreBalanceTracker.js - Instrument/channel distribution balance.
 // Tracks MIDI channel usage to detect timbre clustering or neglect.
-// Pure query API â€” nudges composer selection toward underused timbres.
+// Pure query API - nudges composer selection toward underused timbres.
 
 TimbreBalanceTracker = (() => {
-  const V = Validator.create('timbreBalanceTracker');
+  const V = validator.create('timbreBalanceTracker');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -104,4 +104,3 @@ TimbreBalanceTracker = (() => {
     getTimbreSignal
   };
 })();
-

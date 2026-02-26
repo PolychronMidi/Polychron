@@ -1,4 +1,4 @@
-﻿const V = Validator.create('factoryManager');
+﻿const V = validator.create('factoryManager');
 class FactoryManager_ {
   /** @type {any|null} */
   static sharedPhraseArcManager = null;
@@ -87,7 +87,7 @@ class FactoryManager_ {
     const type = /** @type {any} */ (config).type || 'scale';
     const constructorFn = this.constructors[type];
     if (!constructorFn) {
-      throw new Error(`ComposerFactory.create: unknown composer type "${type}"â€”fail-fast`);
+      throw new Error(`ComposerFactory.create: unknown composer type "${type}"-fail-fast`);
     }
 
     const composerCtx = ctx || this.sharedComposerCtx;
@@ -227,4 +227,3 @@ class FactoryManager_ {
 FactoryManager_.validateCapabilityProfiles();
 FactoryManager_.validateProfileSchemaFactoryCompatibility();
 FactoryManager = ComposerFactory = FactoryManager_;
-

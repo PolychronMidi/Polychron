@@ -1,6 +1,6 @@
-// validators.js - shared fail-fast validation helpers
+// validator.js - shared fail-fast validation helpers
 
-Validator = (() => {
+validator = (() => {
   function assertObject(value, label) {
     if (!value || typeof value !== 'object') {
       throw new Error(`${_fromLabel()}: ${label} must be an object`);
@@ -221,7 +221,7 @@ Validator = (() => {
         const msg = String(err && err.message ? err.message : err);
         const stripped = msg.replace(/^[^:]+:\s*/, '');
         const enriched = new Error(`${fromLabel}: ${stripped}`);
-        // Attach system snapshot (loaded after validators; try/catch guards pre-load calls)
+        // Attach system snapshot (loaded after validator; try/catch guards pre-load calls)
         try { SystemSnapshot.enrichError(enriched); } catch { /* not yet loaded */ }
         throw enriched;
       }

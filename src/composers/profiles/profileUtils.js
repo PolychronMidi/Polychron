@@ -1,4 +1,4 @@
-const V = Validator.create('profileUtils');
+const V = validator.create('profileUtils');
 
 COMPOSER_TYPES = [
   'measure',

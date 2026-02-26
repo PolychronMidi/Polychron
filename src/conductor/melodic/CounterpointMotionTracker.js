@@ -1,9 +1,9 @@
 ﻿// src/conductor/CounterpointMotionTracker.js - Inter-layer melodic motion classification.
 // Classifies note-pairs across L1/L2 as parallel, contrary, oblique, or similar motion.
-// Pure query API â€” composers use to favor underused motion types.
+// Pure query API - composers use to favor underused motion types.
 
 CounterpointMotionTracker = (() => {
-  const V = Validator.create('counterpointMotionTracker');
+  const V = validator.create('counterpointMotionTracker');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -44,7 +44,7 @@ CounterpointMotionTracker = (() => {
       if (l1Dir === 0 || l2Dir === 0) {
         oblique++;
       } else if ((l1Dir > 0 && l2Dir > 0) || (l1Dir < 0 && l2Dir < 0)) {
-        // Same direction â€” parallel if same interval size, similar otherwise
+        // Same direction - parallel if same interval size, similar otherwise
         if (m.abs(l1Dir) === m.abs(l2Dir)) parallel++;
         else similar++;
       } else {
@@ -103,4 +103,3 @@ CounterpointMotionTracker = (() => {
     getMotionBias
   };
 })();
-

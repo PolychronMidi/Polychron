@@ -24,3 +24,5 @@ require('./narrativeTrajectory');
 require('./structuralNarrativeAdvisor');
 // @ts-ignore: self-organized criticality engine (avalanche-based damping)
 require('./criticalityEngine');
+// @ts-ignore: self-organized criticality engine (avalanche-based damping)
+require('./output');

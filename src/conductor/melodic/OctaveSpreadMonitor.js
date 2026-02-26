@@ -1,9 +1,9 @@
 ﻿// src/conductor/OctaveSpreadMonitor.js - Note distribution across octaves.
 // Detects octave clustering (all notes in one octave) vs wide spread.
-// Pure query API â€” nudges composers toward underused octaves via ConductorState.
+// Pure query API - nudges composers toward underused octaves via ConductorState.
 
 OctaveSpreadMonitor = (() => {
-  const V = Validator.create('octaveSpreadMonitor');
+  const V = validator.create('octaveSpreadMonitor');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -17,7 +17,7 @@ OctaveSpreadMonitor = (() => {
     const { layer, windowSeconds } = opts;
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
 
-    // Use shared helper â€” default 11 bands matches our 0-10 octave range
+    // Use shared helper - default 11 bands matches our 0-10 octave range
     const { counts: octaveCounts, total } = octaveHelpers.getOctaveHistogram(ws, 11, layer);
 
     if (total < 3) {
@@ -92,4 +92,3 @@ OctaveSpreadMonitor = (() => {
     getSpreadBias
   };
 })();
-

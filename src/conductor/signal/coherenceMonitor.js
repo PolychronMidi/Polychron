@@ -1,32 +1,32 @@
-﻿// CoherenceMonitor.js â€” Closed-loop feedback that regulates density based on actual output.
+﻿// CoherenceMonitor.js - Closed-loop feedback that regulates density based on actual output.
 // Subscribes to NOTES_EMITTED events, compares actual note counts against the
 // conductor's intended density, and feeds a correction bias back into the
 // ConductorIntelligence density pipeline. This closes the open loop:
 // the system now listens to its own song.
 
 CoherenceMonitor = (() => {
-  const V = Validator.create('coherenceMonitor');
+  const V = validator.create('coherenceMonitor');
 
   let initialized = false;
 
-  // â”€â”€ Tracking state â”€â”€
+  // Tracking state
   const WINDOW_SIZE = 16;    // rolling window of beat-level observations
   const window = [];         // { actual, intended, tick }
   let cumulativeActual = 0;
   let cumulativeIntended = 0;
 
-  // â”€â”€ Feedback signal â”€â”€
+  // Feedback signal
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
   const BIAS_FLOOR = 0.60;
   const BIAS_CEILING = 1.3;
   const SMOOTHING = 0.55;    // exponential smoothing factor (higher = slower response)
 
-  // â”€â”€ Entropy tracking â”€â”€
+  // Entropy tracking
   let entropySignal = 0;     // -1 (stagnation) to +1 (chaos)
   const ENTROPY_DECAY = 0.92;
 
   /**
-   * Deferred initialization â€” called from main.js after EventBus is available.
+   * Deferred initialization - called from main.js after EventBus is available.
    * Subscribes to NOTES_EMITTED and SECTION_BOUNDARY events.
    */
   function initialize() {
@@ -75,7 +75,7 @@ CoherenceMonitor = (() => {
       }
     });
 
-    // Phrase boundaries trigger partial decay â€” keep recent history but attenuate
+    // Phrase boundaries trigger partial decay - keep recent history but attenuate
     // older observations so the new phrase starts with a fresh-ish baseline.
     EventBus.on(EVENTS.PHRASE_BOUNDARY, () => {
       const decayFactor = 0.5;
@@ -126,7 +126,7 @@ CoherenceMonitor = (() => {
     let phaseGain = 0.35 + 0.4 * m.sin(phraseProgress * m.PI); // 0.35 at edges, 0.75 at center
 
     // Peer-aware: if a single density contributor is dominating the product,
-    // strengthen our correction â€” the pipeline is unbalanced and needs tighter coherence.
+    // strengthen our correction - the pipeline is unbalanced and needs tighter coherence.
     const attr = signalReader.densityAttribution();
     if (attr.contributions.length > 1) {
       let minC = Infinity;
@@ -217,7 +217,7 @@ CoherenceMonitor = (() => {
     entropySignal = 0;
   }
 
-  // â”€â”€ Self-register into ConductorIntelligence â”€â”€
+  // Self-register into ConductorIntelligence
   // getDensityBias is called each beat by the conductor pipeline.
   ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.60, ceiling=1.3
 

@@ -154,7 +154,7 @@ foreach ($relativePath in $violatingFiles) {
     }
 }
 
-# Update Validator.create() calls in the renamed files
+# Update validator.create() calls in the renamed files
 foreach ($oldRelativePath in $renamedFiles.Keys) {
     $newRelativePath = $renamedFiles[$oldRelativePath]
     $fullPath = Join-Path $RootPath $newRelativePath
@@ -163,14 +163,14 @@ foreach ($oldRelativePath in $renamedFiles.Keys) {
         $oldBasename = [System.IO.Path]::GetFileNameWithoutExtension($oldRelativePath)
         $newBasename = [System.IO.Path]::GetFileNameWithoutExtension($newRelativePath)
 
-        # Replace Validator.create('OldName') with Validator.create('newName')
-        $oldValidator = "Validator.create('$oldBasename')"
-        $newValidator = "Validator.create('$newBasename')"
+        # Replace validator.create('OldName') with validator.create('newName')
+        $oldValidator = "validator.create('$oldBasename')"
+        $newValidator = "validator.create('$newBasename')"
 
         if ($content -match [regex]::Escape($oldValidator)) {
             $content = $content -replace [regex]::Escape($oldValidator), $newValidator
             Set-Content -Path $fullPath -Value $content -Encoding UTF8
-            Write-Host ("Updated Validator.create in {0}: {1} -> {2}" -f $fullPath, $oldValidator, $newValidator)
+            Write-Host ("Updated validator.create in {0}: {1} -> {2}" -f $fullPath, $oldValidator, $newValidator)
         }
     }
 }

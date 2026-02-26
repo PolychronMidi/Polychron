@@ -1,4 +1,4 @@
-const V = Validator.create('ModalInterchangeComposer');
+const V = validator.create('ModalInterchangeComposer');
 /**
  * Generates chord progressions with modal borrowing from parallel modes.
  *

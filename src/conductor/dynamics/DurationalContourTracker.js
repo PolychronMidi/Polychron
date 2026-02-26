@@ -1,9 +1,9 @@
 ﻿// src/conductor/DurationalContourTracker.js - Tracks note-duration trajectory over time.
 // Detects acceleration (durations getting shorter) or deceleration (durations getting longer).
-// Pure query API â€” biases duration envelope for intentional temporal shaping.
+// Pure query API - biases duration envelope for intentional temporal shaping.
 
 DurationalContourTracker = (() => {
-  const V = Validator.create('durationalContourTracker');
+  const V = validator.create('durationalContourTracker');
   const WINDOW_SECONDS = 4;
 
   // Beat-level cache: getDurationBias is called 2x per beat (flickerModifier + stateProvider)

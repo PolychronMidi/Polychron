@@ -15,15 +15,15 @@ function fixMismatches(dir) {
             let content = fs.readFileSync(fullPath, 'utf8');
             const basename = path.basename(fullPath, '.js');
 
-            const regex = /Validator\.create\(['"]([^'"]+)['"]\)/g;
+            const regex = /validator\.create\(['"]([^'"]+)['"]\)/g;
             let match;
             let changed = false;
 
             while ((match = regex.exec(content)) !== null) {
                 const validatorName = match[1];
                 if (validatorName !== basename) {
-                    content = content.replace(`Validator.create('${validatorName}')`, `Validator.create('${basename}')`);
-                    content = content.replace(`Validator.create("${validatorName}")`, `Validator.create('${basename}')`);
+                    content = content.replace(`validator.create('${validatorName}')`, `validator.create('${basename}')`);
+                    content = content.replace(`validator.create("${validatorName}")`, `validator.create('${basename}')`);
                     changed = true;
                 }
             }

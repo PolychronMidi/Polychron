@@ -3,7 +3,7 @@
 // Five analysis functions operating on AbsoluteTimeWindow data.
 
 interLayerRhythmHelpers = (() => {
-  const V = Validator.create('interLayerRhythmHelpers');
+  const V = validator.create('interLayerRhythmHelpers');
   const WINDOW_SECONDS        = 4;
   const COINCIDENCE_THRESHOLD = 0.05; // seconds
   const ALIGNMENT_THRESHOLD   = 0.08; // seconds

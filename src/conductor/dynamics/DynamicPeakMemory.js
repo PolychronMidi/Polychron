@@ -1,10 +1,10 @@
 ﻿// src/conductor/DynamicPeakMemory.js - Dynamic peak/trough spacing tracker.
 // Remembers the loudest and quietest moments and prevents re-peaking too soon.
 // Tension bias spaces dynamic peaks for maximum impact.
-// Pure query API â€” no side effects.
+// Pure query API - no side effects.
 
 DynamicPeakMemory = (() => {
-  const V = Validator.create('dynamicPeakMemory');
+  const V = validator.create('dynamicPeakMemory');
   const MAX_PEAKS = 12;
   /** @type {Array<{ intensity: number, time: number, type: string }>} */
   const peaks = [];

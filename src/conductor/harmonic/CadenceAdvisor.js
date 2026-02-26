@@ -7,7 +7,7 @@ CadenceAdvisor = (() => {
   const recentChanges = [];
   const MAX_HISTORY = 12;
 
-  const V = Validator.create('cadenceAdvisor');
+  const V = validator.create('cadenceAdvisor');
 
   /**
    * Wire up EventBus listener for harmonic-change events.
@@ -109,4 +109,3 @@ ConductorIntelligence.registerStateProvider('CadenceAdvisor', () => ({
   recentChanges: CadenceAdvisor.getHarmonicDensity()
 }));
 ConductorIntelligence.registerModule('CadenceAdvisor', { reset: CadenceAdvisor.reset }, ['section']);
-

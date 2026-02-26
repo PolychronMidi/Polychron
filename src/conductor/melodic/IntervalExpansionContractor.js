@@ -2,10 +2,10 @@
 // Tracks whether the range of interval sizes used is expanding (wider leaps
 // emerging) or contracting (tighter steps dominating) over time.
 // Density bias to allow expansion room or encourage consolidation.
-// Pure query API â€” no side effects.
+// Pure query API - no side effects.
 
 IntervalExpansionContractor = (() => {
-  const V = Validator.create('intervalExpansionContractor');
+  const V = validator.create('intervalExpansionContractor');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */
   const intervalSnapshots = [];
@@ -123,4 +123,3 @@ IntervalExpansionContractor = (() => {
     reset
   };
 })();
-

@@ -3,7 +3,7 @@
 // Directly scales conductor densityBias and crossModBias.
 
 OnsetDensityProfiler = (() => {
-  const V = Validator.create('onsetDensityProfiler');
+  const V = validator.create('onsetDensityProfiler');
   const WINDOW_SECONDS = 3;
   const TARGET_NPS = 15; // target notes-per-second for "balanced" density
 

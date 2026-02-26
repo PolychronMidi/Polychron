@@ -1,4 +1,4 @@
-const V = Validator.create('MeasureComposer');
+const V = validator.create('MeasureComposer');
 /**
  * Composes meter-related values with randomization.
  * @class

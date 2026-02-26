@@ -1,4 +1,4 @@
-const V = Validator.create('factoryFamilies');
+const V = validator.create('factoryFamilies');
 
 factoryFamilies = {
   getComposerFamiliesOrFail(constructors) {

@@ -3,7 +3,7 @@
 // Pure query — reads AbsoluteTimeWindow.
 
 fragmentHelpers = (() => {
-  const V = Validator.create('fragmentHelpers');
+  const V = validator.create('fragmentHelpers');
   /**
    * Extract pitch-class interval fragments of a given length from recent notes.
    * Each fragment is a string key of consecutive PC intervals (e.g., "3,7").

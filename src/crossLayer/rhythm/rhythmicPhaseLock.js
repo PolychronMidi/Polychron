@@ -4,7 +4,7 @@
 // When large, repel further. Creates breathing patterns: sync → desync → sync.
 
 RhythmicPhaseLock = (() => {
-  const V = Validator.create('rhythmicPhaseLock');
+  const V = validator.create('rhythmicPhaseLock');
   const CHANNEL = 'beatPhase';
   const PHASE_TOLERANCE_MS = 80;
   const LOCK_THRESHOLD = 0.2;    // phase diff < 20% of beat → lock

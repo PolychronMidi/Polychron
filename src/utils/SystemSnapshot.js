@@ -1,5 +1,5 @@
 // SystemSnapshot.js — Captures full system state for diagnostic enrichment on errors.
-// When a Validator throw fires, the snapshot is attached so the crash
+// When a validator throw fires, the snapshot is attached so the crash
 // carries the exact harmonic, rhythmic, timing, and layer context of that tick.
 
 SystemSnapshot = (() => {

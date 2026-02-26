@@ -1,10 +1,10 @@
 ﻿// src/conductor/HarmonicDensityOscillator.js - Harmonic change rate oscillation tracker.
 // Detects periodic oscillation in harmonic density (chord changes per time unit).
 // Tension bias to reinforce natural harmonic "breathing" or break stale patterns.
-// Pure query API â€” no side effects.
+// Pure query API - no side effects.
 
 HarmonicDensityOscillator = (() => {
-  const V = Validator.create('harmonicDensityOscillator');
+  const V = validator.create('harmonicDensityOscillator');
   const MAX_SAMPLES = 20;
   /** @type {Array<{ changeRate: number, time: number }>} */
   const changeSamples = [];

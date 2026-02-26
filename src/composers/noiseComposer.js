@@ -1,6 +1,6 @@
 // noiseComposer.js - Centralized noise application for composer classes
 // Keeps composer classes focused on their core responsibilities
-const V = Validator.create('noiseComposer');
+const V = validator.create('noiseComposer');
 
 const resolveConductorNoiseProfile = (fallbackProfile) => {
   V.assertNonEmptyString(fallbackProfile, 'fallbackProfile');

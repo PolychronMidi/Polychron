@@ -1,4 +1,4 @@
-const V = Validator.create('factoryConstructors');
+const V = validator.create('factoryConstructors');
 
 factoryConstructors = {
   build(factoryManager) {

@@ -5,7 +5,7 @@
  * Returns filtered note pool and resolved bias choice.
  */
 RegisterBiasing = {
-  _V: Validator.create('registerBiasing'),
+  _V: validator.create('registerBiasing'),
   /**
    * Apply register bias filtering to a note pool
    * @param {number[]} notePool - Candidate notes
@@ -49,4 +49,3 @@ RegisterBiasing = {
     return { notePool: filteredPool, finalRegisterBias };
   }
 };
-

@@ -1,4 +1,4 @@
-const V = Validator.create('TensionReleaseComposer');
+const V = validator.create('TensionReleaseComposer');
 TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   constructor(key = 'C', quality = 'major', tensionCurve = 0.5, opts = {}) {
     V.assertNonEmptyString(key, 'key');

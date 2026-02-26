@@ -1,4 +1,4 @@
-const V = Validator.create('factoryPoolResolver');
+const V = validator.create('factoryPoolResolver');
 
 factoryPoolResolver = {
   /**

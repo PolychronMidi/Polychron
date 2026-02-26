@@ -1,10 +1,10 @@
 ﻿// src/conductor/LayerEntryExitTracker.js - Layer entry/exit orchestration tracker.
 // Detects when polyrhythmic layers enter or exit activity (additive vs.
 // subtractive orchestration). Signals orchestration momentum direction.
-// Pure query API â€” consumed via ConductorState.
+// Pure query API - consumed via ConductorState.
 
 LayerEntryExitTracker = (() => {
-  const V = Validator.create('layerEntryExitTracker');
+  const V = validator.create('layerEntryExitTracker');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ layerCount: number, time: number }>} */
   const snapshots = [];
@@ -75,4 +75,3 @@ LayerEntryExitTracker = (() => {
     reset
   };
 })();
-

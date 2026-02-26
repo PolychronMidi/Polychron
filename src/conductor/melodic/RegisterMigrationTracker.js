@@ -1,9 +1,9 @@
 ﻿// src/conductor/RegisterMigrationTracker.js - Tracks directional pitch-center drift.
 // Detects ascending, descending, or static register migration over time.
-// Pure query API â€” nudges pitch gravity toward underexplored registers.
+// Pure query API - nudges pitch gravity toward underexplored registers.
 
 RegisterMigrationTracker = (() => {
-  const V = Validator.create('registerMigrationTracker');
+  const V = validator.create('registerMigrationTracker');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -78,4 +78,3 @@ RegisterMigrationTracker = (() => {
     getRegisterBias
   };
 })();
-

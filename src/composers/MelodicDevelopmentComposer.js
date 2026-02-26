@@ -1,5 +1,5 @@
 // MelodicDevelopmentComposer.js - A ScaleComposer that applies melodic transformations based on intensity and phrase arc
-const V = Validator.create('MelodicDevelopmentComposer');
+const V = validator.create('MelodicDevelopmentComposer');
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
   constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, opts = {}) {

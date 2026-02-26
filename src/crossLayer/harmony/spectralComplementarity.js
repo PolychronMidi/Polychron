@@ -4,7 +4,7 @@
 // Ensures combined output always has full-spectrum coverage.
 
 SpectralComplementarity = (() => {
-  const V = Validator.create('spectralComplementarity');
+  const V = validator.create('spectralComplementarity');
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)
   const WINDOW_NOTES = 30; // rolling window size

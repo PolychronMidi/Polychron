@@ -1,9 +1,9 @@
 ﻿// src/conductor/TensionResolutionTracker.js - Tracks dissonanceâ†’consonance resolution.
 // Detects dangling unresolved tension (dissonant intervals not followed by resolution).
-// Pure query API â€” modifies derivedTension to penalize sustained unresolved dissonance.
+// Pure query API - modifies derivedTension to penalize sustained unresolved dissonance.
 
 TensionResolutionTracker = (() => {
-  const V = Validator.create('tensionResolutionTracker');
+  const V = validator.create('tensionResolutionTracker');
   const WINDOW_SECONDS = 4;
   const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;
 
@@ -43,7 +43,7 @@ TensionResolutionTracker = (() => {
       }
     }
 
-    // Check last interval pair â€” if dissonant, it's dangling
+    // Check last interval pair - if dissonant, it's dangling
     if (notes.length >= 2) {
       const lastInterval = m.abs(
         ((typeof notes[notes.length - 1].midi === 'number') ? notes[notes.length - 1].midi : 60) -

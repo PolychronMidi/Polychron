@@ -1,4 +1,4 @@
-﻿// src/conductor/texture/index.js â€” Texture, orchestration, layers, phrasing, structure
+﻿// src/conductor/texture/index.js - Texture, orchestration, layers, phrasing, structure
 // @ts-ignore: load side-effect module with globals
 require('./articulationProfiler');
 // @ts-ignore: load side-effect module with globals
@@ -37,5 +37,3 @@ require('./texturalMemoryAdvisor');
 require('./timbreBalanceTracker');
 // @ts-ignore: load side-effect module with globals
 require('./voiceDensityBalancer');
-
-

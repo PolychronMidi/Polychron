@@ -15,7 +15,7 @@
  */
 
 outputAnalyzer = (() => {
-  const V = Validator.create('outputAnalyzer');
+  const V = validator.create('outputAnalyzer');
 
   /**
    * Analyse an array of note events.

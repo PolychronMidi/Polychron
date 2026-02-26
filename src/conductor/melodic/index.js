@@ -1,4 +1,4 @@
-﻿// src/conductor/melodic/index.js â€” Pitch, intervals, contour, register, voice leading
+﻿// src/conductor/melodic/index.js - Pitch, intervals, contour, register, voice leading
 // @ts-ignore: load side-effect module with globals
 require('./ambitusMigrationTracker');
 // @ts-ignore: load side-effect module with globals
@@ -29,5 +29,3 @@ require('./tessituraPressureMonitor');
 require('./thematicRecallDetector');
 // @ts-ignore: load side-effect module with globals
 require('./voiceLeadingEfficiencyTracker');
-
-

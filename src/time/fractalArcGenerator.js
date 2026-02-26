@@ -15,7 +15,7 @@
  */
 
 fractalArcGenerator = (() => {
-  const V = Validator.create('fractalArcGenerator');
+  const V = validator.create('fractalArcGenerator');
 
   /** @type {TimeStreamLevel[]} */
   const LEVELS  = ['section', 'phrase', 'measure'];

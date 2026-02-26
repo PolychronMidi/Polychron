@@ -1,5 +1,5 @@
 // processBeat.js - Shared per-beat body for L1 and L2, extracted from main.js to eliminate duplication.
-const V_processBeat = Validator.create('processBeat');
+const V_processBeat = validator.create('processBeat');
 
 /**
  * Process one beat for the given layer. Handles setup, cross-layer orchestration,
