@@ -1,13 +1,13 @@
 /** @this {any} */
 stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
-  if (!StutterFailFast) {
-    throw new Error('stutterFX: StutterFailFast helper is not available');
+  if (!stutterFailFast) {
+    throw new Error('stutterFX: stutterFailFast helper is not available');
   }
   if (!FX_CC_DEFAULTS) {
     throw new Error('stutterFX: FX_CC_DEFAULTS is required');
   }
-  const { eventName } = StutterFailFast.requireEventInfra();
-  const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterFX');
+  const { eventName } = stutterFailFast.requireEventInfra();
+  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays('stutterFX');
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
   channelsArray.forEach(channelToStutter => {
@@ -26,13 +26,13 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       const baseValue = startValue + (endValue - startValue) * progress;
 
       // Noise-modulate the FX curve — X axis warps the ramp, Y axis adds flutter
-      const mod = StutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fx', tick), `stutterFX channel=${channelToStutter} tick=${tick}`);
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fx', tick), `stutterFX channel=${channelToStutter} tick=${tick}`);
 
       // If a coherence key exists, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = StutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterFX coherence key=${coherenceKey} channel=${channelToStutter}`);
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterFX coherence key=${coherenceKey} channel=${channelToStutter}`);
       }
 
       const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX + (coh.x - 0.5) * 10;
@@ -62,8 +62,8 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
     if (tick === undefined) throw new Error('stutterFX: for-loop produced no iterations');
 
     // Emit one summary event per channel (not per-iteration)
-    const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-    EventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), tick });
+    const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
+    eventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), tick });
 
     // restore to mid-point of configured range (falls back to 64)
     const defaultReset = (ch, cc) => {

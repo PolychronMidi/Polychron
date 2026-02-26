@@ -66,9 +66,9 @@ factoryProfiles = {
     if (typeof getConstructorOptionKeysByType !== 'function') {
       throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: getConstructorOptionKeysByType must be a function');
     }
-    V.assertManagerShape(ComposerProfileValidation, 'ComposerProfileValidation', ['getAllowedKeysByTypeOrFail']);
+    V.assertManagerShape(composerProfileValidation, 'composerProfileValidation', ['getAllowedKeysByTypeOrFail']);
 
-    const schemaKeysByType = ComposerProfileValidation.getAllowedKeysByTypeOrFail();
+    const schemaKeysByType = composerProfileValidation.getAllowedKeysByTypeOrFail();
     if (!schemaKeysByType || typeof schemaKeysByType !== 'object') {
       throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: schema key map is invalid');
     }
@@ -83,7 +83,7 @@ factoryProfiles = {
 
       for (const key of schemaSet) {
         if (!factorySet.has(key)) {
-          throw new Error(`factoryProfiles.validateProfileSchemaFactoryCompatibility: schema key "${type}.${key}" is not handled by ComposerFactory`);
+          throw new Error(`factoryProfiles.validateProfileSchemaFactoryCompatibility: schema key "${type}.${key}" is not handled by FactoryManager`);
         }
       }
       for (const key of factorySet) {
@@ -100,8 +100,8 @@ factoryProfiles = {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       throw new Error('factoryProfiles.resolveRuntimeProfiles: config must be an object');
     }
-    V.assertManagerShape(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter', ['resolveRuntimeProfilesOrFail']);
-    return ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail(config, 'ComposerFactory.resolveRuntimeProfiles');
+    V.assertManagerShape(composerRuntimeProfileAdapter, 'composerRuntimeProfileAdapter', ['resolveRuntimeProfilesOrFail']);
+    return composerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail(config, 'FactoryManager.resolveRuntimeProfiles');
   },
 
   applyRuntimeProfileConfig(composer, config = {}, runtimeProfilePrecedence = {}) {
@@ -111,12 +111,12 @@ factoryProfiles = {
     const runtimeProfiles = this.resolveRuntimeProfiles(config);
     if (Object.keys(runtimeProfiles).length === 0) return composer;
 
-    V.assertManagerShape(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter', ['buildNormalizedRuntimeProfileOrFail', 'applyToComposerOrFail']);
+    V.assertManagerShape(composerRuntimeProfileAdapter, 'composerRuntimeProfileAdapter', ['buildNormalizedRuntimeProfileOrFail', 'applyToComposerOrFail']);
 
-    const runtimeProfile = ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail(runtimeProfiles, {
+    const runtimeProfile = composerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail(runtimeProfiles, {
       baseVelocityPrecedence: runtimeProfilePrecedence.baseVelocity
     });
-    return ComposerRuntimeProfileAdapter.applyToComposerOrFail(composer, runtimeProfile);
+    return composerRuntimeProfileAdapter.applyToComposerOrFail(composer, runtimeProfile);
   },
 
   applyCapabilityContract(composer, type, config = {}, capabilityProfiles = {}) {

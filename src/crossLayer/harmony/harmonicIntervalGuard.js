@@ -2,9 +2,9 @@
 // Tracks which intervals appear simultaneously between layers.
 // When intent calls for consonance, nudges cross-layer intervals toward
 // perfect/imperfect consonances. When dissonance is desired, steers toward
-// tritones, 2nds, and 7ths. Consumes FeedbackOscillator.pitchBias (dead-end signal).
+// tritones, 2nds, and 7ths. Consumes feedbackOscillator.pitchBias (dead-end signal).
 
-HarmonicIntervalGuard = (() => {
+harmonicIntervalGuard = (() => {
   const V = validator.create('harmonicIntervalGuard');
   const MAX_HISTORY = 40;
 
@@ -53,11 +53,11 @@ HarmonicIntervalGuard = (() => {
 
   /**
    * Nudge a MIDI note to better fit the desired consonance/dissonance target.
-   * Accepts pre-computed pitchBias to avoid re-calling FeedbackOscillator.
+   * Accepts pre-computed pitchBias to avoid re-calling feedbackOscillator.
    * @param {number} midi - original MIDI note
    * @param {string} activeLayer
    * @param {number} absTimeMs
-   * @param {number} [externalPitchBias=-1] - pre-computed pitch bias from FeedbackOscillator
+   * @param {number} [externalPitchBias=-1] - pre-computed pitch bias from feedbackOscillator
    * @returns {{ midi: number, nudged: boolean, interval: number, otherMidi: number }}
    */
   function nudgePitch(midi, activeLayer, absTimeMs, externalPitchBias) {
@@ -65,10 +65,10 @@ HarmonicIntervalGuard = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
     // Get dissonance target from intent
-    const intent = SectionIntentCurves.getLastIntent();
+    const intent = sectionIntentCurves.getLastIntent();
     const dissonanceTarget = V.optionalFinite(intent.dissonanceTarget, 0.5);
 
-    // Use pre-computed pitch bias if provided; avoids re-calling FeedbackOscillator.applyFeedback
+    // Use pre-computed pitch bias if provided; avoids re-calling feedbackOscillator.applyFeedback
     const pitchBias = (typeof externalPitchBias === 'number' && Number.isFinite(externalPitchBias) && externalPitchBias >= 0)
       ? externalPitchBias
       : -1;
@@ -76,7 +76,7 @@ HarmonicIntervalGuard = (() => {
     // Find other layer's most recent note from ATW
     const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
     let otherRecentMidi = -1;
-    const lastNote = AbsoluteTimeWindow.getLastNote({
+    const lastNote = absoluteTimeWindow.getLastNote({
       layer: otherLayer,
       since: (absTimeMs / 1000) - 1,
       windowSeconds: 1
@@ -133,4 +133,4 @@ HarmonicIntervalGuard = (() => {
 
   return { recordCrossInterval, getDissonanceLevel, nudgePitch, reset };
 })();
-CrossLayerRegistry.register('HarmonicIntervalGuard', HarmonicIntervalGuard, ['all', 'section']);
+crossLayerRegistry.register('harmonicIntervalGuard', harmonicIntervalGuard, ['all', 'section']);

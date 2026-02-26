@@ -3,7 +3,7 @@
 // hits a dense cluster, the other layer's note ticks get micro-pulled toward
 // the cluster center — creating organic emergent rubato.
 
-TemporalGravity = (() => {
+temporalGravity = (() => {
   const V = validator.create('temporalGravity');
   const DENSITY_CHANNEL = 'density';
   const DENSITY_WINDOW_MS = 300;
@@ -20,7 +20,7 @@ TemporalGravity = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(layer, 'layer');
     const densityN = V.requireFinite(density, 'density');
-    AbsoluteTimeGrid.post(DENSITY_CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(DENSITY_CHANNEL, layer, absTimeMs, {
       density: clamp(densityN, 0, 1)
     });
   }
@@ -35,7 +35,7 @@ TemporalGravity = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = DENSITY_WINDOW_MS / 1000;
-    const count = AbsoluteTimeWindow.countNotes({
+    const count = absoluteTimeWindow.countNotes({
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
@@ -58,7 +58,7 @@ TemporalGravity = (() => {
     const originalTickN = V.requireFinite(originalTick, 'originalTick');
 
     // Find the nearest density peak from another layer
-    const well = AbsoluteTimeGrid.findClosest(
+    const well = absoluteTimeGrid.findClosest(
       DENSITY_CHANNEL, absTimeMs, GRAVITY_TOLERANCE_MS, activeLayer
     );
     if (!well) return originalTickN;
@@ -86,4 +86,4 @@ TemporalGravity = (() => {
 
   return { postDensity, measureDensity, applyGravity, reset() { /* stateless — no per-scope state to clear */ } };
 })();
-CrossLayerRegistry.register('TemporalGravity', TemporalGravity, ['all']);
+crossLayerRegistry.register('temporalGravity', temporalGravity, ['all']);

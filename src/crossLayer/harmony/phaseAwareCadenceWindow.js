@@ -1,4 +1,4 @@
-PhaseAwareCadenceWindow = (() => {
+phaseAwareCadenceWindow = (() => {
   const V = validator.create('phaseAwareCadenceWindow');
   const MAX_SAMPLES = 24;
   const MIN_CONFIDENCE = 0.45;
@@ -11,7 +11,7 @@ PhaseAwareCadenceWindow = (() => {
   function ensureLayer(layer) {
     if (!samplesByLayer.has(layer)) samplesByLayer.set(layer, []);
     const arr = samplesByLayer.get(layer);
-    if (!arr) throw new Error('PhaseAwareCadenceWindow: failed to init layer samples for ' + layer);
+    if (!arr) throw new Error('phaseAwareCadenceWindow: failed to init layer samples for ' + layer);
     return arr;
   }
 
@@ -23,7 +23,7 @@ PhaseAwareCadenceWindow = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     const row = ensureLayer(layer);
 
-    const phase = RhythmicPhaseLock.measurePhase(absTimeMs, layer) ?? null;
+    const phase = rhythmicPhaseLock.measurePhase(absTimeMs, layer) ?? null;
 
     const snapshot = phase
       ? { timeMs: absTimeMs, phaseDiff: clamp(phase.phaseDiff, 0, 1), mode: phase.mode }
@@ -76,7 +76,7 @@ PhaseAwareCadenceWindow = (() => {
     };
     const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= 0.3;
 
-    ExplainabilityBus.emit('phase-cadence-window', layer, {
+    explainabilityBus.emit('phase-cadence-window', layer, {
       cadenceSuggested: Boolean(cadenceSuggested),
       confidence: snap.confidence,
       phaseDiff: snap.phaseDiff,
@@ -93,4 +93,4 @@ PhaseAwareCadenceWindow = (() => {
 
   return { update, getLatest, getConfidence, shouldAllowCadence, reset };
 })();
-CrossLayerRegistry.register('PhaseAwareCadenceWindow', PhaseAwareCadenceWindow, ['all', 'section']);
+crossLayerRegistry.register('phaseAwareCadenceWindow', phaseAwareCadenceWindow, ['all', 'section']);

@@ -1,4 +1,4 @@
-ExplainabilityBus = (() => {
+explainabilityBus = (() => {
   const V = validator.create('explainabilityBus');
   const MAX_ENTRIES = 600;
   const EVICT_BATCH = 100; // amortize O(n) splice cost over many emit calls
@@ -14,14 +14,13 @@ ExplainabilityBus = (() => {
    */
   function emit(type, layer, payload, absTimeMs) {
     V.assertNonEmptyString(type, 'type');
+    V.assertNonEmptyString(layer, 'layer');
     let t = 0;
     if (Number.isFinite(absTimeMs)) {
       t = Number(absTimeMs);
     } else {
       t = beatStartTime * 1000;
     }
-
-    V.assertNonEmptyString(layer, 'layer');
     const entry = { type, layer, payload, absTimeMs: t };
     entries.push(entry);
     // Batch evict: let buffer grow past capacity, then splice once — avoids O(n) shift per emit
@@ -29,7 +28,7 @@ ExplainabilityBus = (() => {
       entries.splice(0, entries.length - MAX_ENTRIES);
     }
 
-    AbsoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
+    absoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
 
     return entry;
   }
@@ -68,4 +67,4 @@ ExplainabilityBus = (() => {
 
   return { emit, getRecent, querySince, queryByType, reset };
 })();
-CrossLayerRegistry.register('ExplainabilityBus', ExplainabilityBus, ['all', 'section']);
+crossLayerRegistry.register('explainabilityBus', explainabilityBus, ['all', 'section']);

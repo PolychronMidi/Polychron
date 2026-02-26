@@ -3,23 +3,23 @@
 // independently approach high tension within the same ms window, forces
 // simultaneous resolution — syncing cadence points to the same ms-derived tick.
 
-CadenceAlignment = (() => {
+cadenceAlignment = (() => {
   const V = validator.create('cadenceAlignment');
   const CHANNEL = 'tension';
   const SYNC_TOLERANCE_MS = 400;
   const HIGH_TENSION_THRESHOLD = 0.7;
-  const EVENTS = EventCatalog.names;
+  const EVENTS = eventCatalog.names;
 
   /**
    * Post a tension sample from the active layer.
    * @param {number} absTimeMs - absolute ms
    * @param {string} layer - source layer
    * @param {number} tension - normalized 0-1 harmonic tension
-   * @param {boolean} cadenceSuggested - whether CadenceAdvisor suggests a cadence
+   * @param {boolean} cadenceSuggested - whether cadenceAdvisor suggests a cadence
    */
   function postTension(absTimeMs, layer, tension, cadenceSuggested) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       tension: clamp(tension, 0, 1),
       cadenceSuggested
     });
@@ -38,7 +38,7 @@ CadenceAlignment = (() => {
 
     if (ourTension < HIGH_TENSION_THRESHOLD) return null;
 
-    const other = AbsoluteTimeGrid.findClosest(
+    const other = absoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!other || !Number.isFinite(other.tension)) return null;
@@ -61,7 +61,7 @@ CadenceAlignment = (() => {
 
   /**
    * Apply cadence alignment: when both layers at high tension, bias toward resolution.
-   * Returns a cadence bias modifier that can be fed to CadenceAdvisor or chord selection.
+   * Returns a cadence bias modifier that can be fed to cadenceAdvisor or chord selection.
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} ourTension - this layer's current tension
@@ -74,8 +74,8 @@ CadenceAlignment = (() => {
     // Both layers at high tension → strongly bias toward cadential resolution
     const intensityBoost = alignment.combinedTension;
 
-    // No active listeners — emitted for EventCatalog completeness and future extensibility
-    EventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
+    // No active listeners — emitted for eventCatalog completeness and future extensibility
+    eventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
       layer: activeLayer,
       combinedTension: alignment.combinedTension,
       syncTick: alignment.syncTick,
@@ -93,4 +93,4 @@ CadenceAlignment = (() => {
 
   return { postTension, checkAlignment, applyAlignment, reset() { /* stateless — no per-scope state to clear */ } };
 })();
-CrossLayerRegistry.register('CadenceAlignment', CadenceAlignment, ['all']);
+crossLayerRegistry.register('cadenceAlignment', cadenceAlignment, ['all']);

@@ -98,10 +98,10 @@ pipelineBalancer = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerDensityBias('pipelineBalancer', densityBias, 0.92, 1.15);
-  ConductorIntelligence.registerTensionBias('pipelineBalancer', tensionBias, 0.86, 1.14);
-  ConductorIntelligence.registerRecorder('pipelineBalancer', () => { refresh(); refreshTension(); });
-  ConductorIntelligence.registerModule('pipelineBalancer', { reset }, ['section']);
+  conductorIntelligence.registerDensityBias('pipelineBalancer', densityBias, 0.92, 1.15);
+  conductorIntelligence.registerTensionBias('pipelineBalancer', tensionBias, 0.86, 1.14);
+  conductorIntelligence.registerRecorder('pipelineBalancer', () => { refresh(); refreshTension(); });
+  conductorIntelligence.registerModule('pipelineBalancer', { reset }, ['section']);
 
   return { densityBias, tensionBias, reset };
 })();

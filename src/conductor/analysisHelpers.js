@@ -1,7 +1,7 @@
 // src/conductor/analysisHelpers.js - Shared analysis utilities.
-// Used by VelocityShapeAnalyzer, DurationalContourTracker, EnergyMomentumTracker,
-// RegisterMigrationTracker, PhraseLengthMomentumTracker, RhythmicComplexityGradient,
-// StructuralFormTracker.
+// Used by velocityShapeAnalyzer, durationalContourTracker, energyMomentumTracker,
+// registerMigrationTracker, phraseLengthMomentumTracker, rhythmicComplexityGradient,
+// structuralFormTracker.
 // Pure, stateless helpers — no side effects, no ATW dependency.
 
 analysisHelpers = (() => {

@@ -64,7 +64,7 @@ rhythmPriors = (function() {
 
     const qualityHint = (typeof opts.quality === 'string' && opts.quality.length > 0)
       ? opts.quality
-      : HarmonicContext.getField('quality');
+      : harmonicContext.getField('quality');
 
     const quality = modeQualityMap.normalizeOrNull(qualityHint);
     if (!quality) return rhythmsIn;

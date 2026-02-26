@@ -1,7 +1,14 @@
-AdaptiveTrustScores = (() => {
+adaptiveTrustScores = (() => {
   const V = validator.create('adaptiveTrustScores');
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
+
+  // Exploration bonus: starving systems get periodic positive nudges
+  // to ensure they occasionally act and have a chance to prove their worth.
+  const EXPLORATION_THRESHOLD = 0.10; // score below this triggers exploration
+  const EXPLORATION_NUDGE     = 0.03; // small positive injection per decay cycle
+  const EXPLORATION_INTERVAL  = 8;    // apply nudge every N decay cycles
+  let decayCycleCount = 0;
 
   /** @param {string} systemName */
   function ensure(systemName) {
@@ -10,7 +17,7 @@ AdaptiveTrustScores = (() => {
       scoreBySystem.set(systemName, { score: 0, samples: 0, lastMs: 0 });
     }
     const state = scoreBySystem.get(systemName);
-    if (!state) throw new Error('AdaptiveTrustScores: failed to initialize state for ' + systemName);
+    if (!state) throw new Error('adaptiveTrustScores: failed to initialize state for ' + systemName);
     return state;
   }
 
@@ -26,7 +33,7 @@ AdaptiveTrustScores = (() => {
     state.samples += 1;
     state.lastMs = beatStartTime * 1000;
 
-    ExplainabilityBus.emit('trust-update', 'both', {
+    explainabilityBus.emit('trust-update', 'both', {
       systemName,
       payoff: p,
       score: state.score,
@@ -45,8 +52,17 @@ AdaptiveTrustScores = (() => {
   /** @param {number} [rate=0.01] */
   function decayAll(rate) {
     const decayRate = clamp(V.optionalFinite(rate, 0.01), 0, 1);
+    decayCycleCount++;
+    const applyExploration = (decayCycleCount % EXPLORATION_INTERVAL) === 0;
+
     for (const state of scoreBySystem.values()) {
       state.score *= (1 - decayRate);
+
+      // Exploration bonus: periodically nudge starving systems toward neutral
+      // so they occasionally earn enough trust to act via negotiationEngine.
+      if (applyExploration && state.score < EXPLORATION_THRESHOLD && state.samples > 16) {
+        state.score = clamp(state.score + EXPLORATION_NUDGE, -1, 1);
+      }
     }
   }
 
@@ -64,8 +80,9 @@ AdaptiveTrustScores = (() => {
 
   function reset() {
     scoreBySystem.clear();
+    decayCycleCount = 0;
   }
 
   return { registerOutcome, getWeight, decayAll, getSnapshot, reset };
 })();
-CrossLayerRegistry.register('AdaptiveTrustScores', AdaptiveTrustScores, ['all']);
+crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);

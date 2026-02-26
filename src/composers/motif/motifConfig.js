@@ -1,6 +1,6 @@
 // motifConfig.js - named motif profiles + per-unit hierarchical profiles
 // Delegates authoritative profiles to src/conductor/config.js, adds unit-level controls
-// for hierarchical motif spreading (group sizing, IntervalComposer density/style).
+// for hierarchical motif spreading (group sizing, intervalComposer density/style).
 
 motifConfig = (function() {
   const UNIT_PROFILES = MOTIF_UNIT_PROFILES;

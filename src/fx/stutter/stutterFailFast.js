@@ -1,6 +1,6 @@
 // stutterFailFast.js - shared dependency and payload checks for stutter modules
 
-StutterFailFast = (() => {
+stutterFailFast = (() => {
   const V = validator.create('stutterFailFast');
 
   function requireEventInfra() {
@@ -20,7 +20,7 @@ StutterFailFast = (() => {
 
   function assertModulationXY(mod, label) {
     if (!mod || !Number.isFinite(Number(mod.x)) || !Number.isFinite(Number(mod.y))) {
-      throw new Error(`StutterFailFast: ${label} modulation must have finite x/y`);
+      throw new Error(`stutterFailFast: ${label} modulation must have finite x/y`);
     }
     return mod;
   }

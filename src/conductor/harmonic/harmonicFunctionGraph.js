@@ -7,7 +7,7 @@
  * Dominant / Ambiguous) within the current key context. Registers a
  * tension bias that rises on dominant-function chords and relaxes on tonics.
  *
- * Also posts function labels to AbsoluteTimeGrid channel 'harmonicFunction'
+ * Also posts function labels to absoluteTimeGrid channel 'harmonicFunction'
  * so cross-layer modules can reason about harmonic trajectory.
  */
 
@@ -54,7 +54,7 @@ harmonicFunctionGraph = (() => {
   }
 
   function refresh() {
-    const snap = ConductorState.getSnapshot();
+    const snap = conductorState.getSnapshot();
     const chordRoot = V.optionalFinite(snap.tension, 0);
     const keyStr    = snap.key || 'C';
     // Derive numeric root from key name via tonal
@@ -64,7 +64,7 @@ harmonicFunctionGraph = (() => {
     tensionVal = FUNCTION_TENSION[currentFunction] || 1.0;
 
     const nowMs = V.optionalFinite(snap.tick, 0);
-    AbsoluteTimeGrid.post(CHANNEL, '0', nowMs, {
+    absoluteTimeGrid.post(CHANNEL, '0', nowMs, {
       fn: currentFunction,
       chordRoot,
       keyRoot,
@@ -80,12 +80,12 @@ harmonicFunctionGraph = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerTensionBias('harmonicFunctionGraph', tensionBias, 0.92, 1.10);
-  ConductorIntelligence.registerRecorder('harmonicFunctionGraph', refresh);
-  ConductorIntelligence.registerStateProvider('harmonicFunctionGraph', () => ({
+  conductorIntelligence.registerTensionBias('harmonicFunctionGraph', tensionBias, 0.92, 1.10);
+  conductorIntelligence.registerRecorder('harmonicFunctionGraph', refresh);
+  conductorIntelligence.registerStateProvider('harmonicFunctionGraph', () => ({
     harmonicFunction: currentFunction,
   }));
-  ConductorIntelligence.registerModule('harmonicFunctionGraph', { reset }, ['section']);
+  conductorIntelligence.registerModule('harmonicFunctionGraph', { reset }, ['section']);
 
   return { classify, getFunction, tensionBias, reset };
 })();

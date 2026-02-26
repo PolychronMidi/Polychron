@@ -54,18 +54,18 @@ require('./patterns');
 // @ts-ignore: side-effect module load
 require('./crossModulateRhythms');
 
-// Register existing generator methods into the RhythmRegistry (fail-fast)
-RhythmRegistry.register('binary', binary);
-RhythmRegistry.register('hex', hex);
-RhythmRegistry.register('onsets', onsets);
-RhythmRegistry.register('random', random);
-RhythmRegistry.register('prob', prob);
-RhythmRegistry.register('euclid', euclid);
-RhythmRegistry.register('rotate', rotate);
-RhythmRegistry.register('morph', morph);
-RhythmRegistry.register('closestDivisor', closestDivisor);
+// Register existing generator methods into the rhythmRegistry (fail-fast)
+rhythmRegistry.register('binary', binary);
+rhythmRegistry.register('hex', hex);
+rhythmRegistry.register('onsets', onsets);
+rhythmRegistry.register('random', random);
+rhythmRegistry.register('prob', prob);
+rhythmRegistry.register('euclid', euclid);
+rhythmRegistry.register('rotate', rotate);
+rhythmRegistry.register('morph', morph);
+rhythmRegistry.register('closestDivisor', closestDivisor);
 
 // Preserve legacy naked global mapping for backward compatibility
-rhythmMethods = RhythmRegistry.getAll();
+rhythmMethods = rhythmRegistry.getAll();
 
 

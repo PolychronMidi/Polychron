@@ -92,14 +92,14 @@ narrativeTrajectory = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerTensionBias('narrativeTrajectory', tensionBias, 0.94, 1.12);
-  ConductorIntelligence.registerRecorder('narrativeTrajectory', refresh);
-  ConductorIntelligence.registerStateProvider('narrativeTrajectory', () => ({
+  conductorIntelligence.registerTensionBias('narrativeTrajectory', tensionBias, 0.94, 1.12);
+  conductorIntelligence.registerRecorder('narrativeTrajectory', refresh);
+  conductorIntelligence.registerStateProvider('narrativeTrajectory', () => ({
     narrativeVelocity: velocity,
     narrativeCurvature: curvature,
     narrativePoint: { ...smoothed },
   }));
-  ConductorIntelligence.registerModule('narrativeTrajectory', { reset }, ['all']);
+  conductorIntelligence.registerModule('narrativeTrajectory', { reset }, ['all']);
 
   return { getTrajectory, tensionBias, reset };
 })();

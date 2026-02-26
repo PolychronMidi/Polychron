@@ -1,4 +1,4 @@
-RegisterCollisionAvoider = (() => {
+registerCollisionAvoider = (() => {
   const V = validator.create('registerCollisionAvoider');
   const CHANNEL = 'registerCollision';
   const TIME_TOLERANCE_MS = 140;
@@ -21,7 +21,7 @@ RegisterCollisionAvoider = (() => {
     V.requireFinite(midi, 'midi');
     V.requireFinite(tick, 'tick');
     const absMs = tickToMs(tick);
-    AbsoluteTimeGrid.post(CHANNEL, layer, absMs, { midi, tick });
+    absoluteTimeGrid.post(CHANNEL, layer, absMs, { midi, tick });
   }
 
   /**
@@ -39,7 +39,7 @@ RegisterCollisionAvoider = (() => {
     const boundedMidi = clamp(midi, lo, hi);
 
     const absMs = tickToMs(tick);
-    const other = AbsoluteTimeGrid.findClosest(CHANNEL, absMs, TIME_TOLERANCE_MS, activeLayer);
+    const other = absoluteTimeGrid.findClosest(CHANNEL, absMs, TIME_TOLERANCE_MS, activeLayer);
     if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
     if (Math.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
@@ -52,7 +52,7 @@ RegisterCollisionAvoider = (() => {
     let candidate;
     if (upClearsCollision && downClearsCollision) {
       // Both directions clear — pick the one in a sparser spectral bin
-      const hist = SpectralComplementarity.getHistogram(activeLayer);
+      const hist = spectralComplementarity.getHistogram(activeLayer);
       const upBin = upCandidate < 36 ? 0 : upCandidate < 60 ? 1 : upCandidate < 84 ? 2 : 3;
       const downBin = downCandidate < 36 ? 0 : downCandidate < 60 ? 1 : downCandidate < 84 ? 2 : 3;
       candidate = (hist[upBin] <= hist[downBin]) ? upCandidate : downCandidate;
@@ -68,7 +68,7 @@ RegisterCollisionAvoider = (() => {
 
     const adjusted = candidate !== midi;
     if (adjusted) {
-      ExplainabilityBus.emit('register-collision-avoided', activeLayer, {
+      explainabilityBus.emit('register-collision-avoided', activeLayer, {
         sourceMidi: midi,
         otherMidi: other.midi,
         adjustedMidi: candidate,
@@ -85,4 +85,4 @@ RegisterCollisionAvoider = (() => {
 
   return { recordNote, avoid, reset };
 })();
-CrossLayerRegistry.register('RegisterCollisionAvoider', RegisterCollisionAvoider, ['all', 'phrase']);
+crossLayerRegistry.register('registerCollisionAvoider', registerCollisionAvoider, ['all', 'phrase']);

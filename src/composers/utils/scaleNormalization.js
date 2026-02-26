@@ -89,10 +89,10 @@ scaleNormalization = {
     const shouldUseWindowScale = preferTimeVaryingContext
       && caps
       && caps.timeVaryingScaleContext === true
-      && HarmonicContext
-      && HarmonicContext.getField;
+      && harmonicContext
+      && harmonicContext.getField;
     if (shouldUseWindowScale) {
-      const windowScale = HarmonicContext.getField('scale');
+      const windowScale = harmonicContext.getField('scale');
       addFromEntries(windowScale);
     }
 

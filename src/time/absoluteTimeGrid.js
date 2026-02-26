@@ -1,6 +1,7 @@
 // src/time/absoluteTimeGrid.js — Millisecond-precision cross-layer sync grid.
 // Unit-agnostic: syncs layers by absolute wall-clock ms, not by musical structure.
 // Designed as an extensible feedback-loop backbone for any cross-layer FX sync.
+// Evolved to a spatial-hashed temporal ledger for O(1) scaling.
 
 /**
  * @typedef {{
@@ -10,23 +11,23 @@
  * }} ATGEntry
  */
 
-AbsoluteTimeGrid = (() => {
+absoluteTimeGrid = (() => {
   const V = validator.create('absoluteTimeGrid');
   /** Default ms window for pruning old entries */
   const DEFAULT_WINDOW_MS = 4000;
-  const MAX_ENTRIES_PER_TYPE = 250;
+  const BUCKET_SIZE_MS = 1000; // Spatial hashing bucket size
 
-  /** @type {Object.<string, ATGEntry[]>} */
+  /** @type {Object.<string, Map<number, ATGEntry[]>>} */
   const channels = {};
 
   /**
    * Ensure a channel exists.
    * @param {string} name
-   * @returns {ATGEntry[]}
+   * @returns {Map<number, ATGEntry[]>}
    */
   function ensureChannel(name) {
     V.assertNonEmptyString(name, 'channel');
-    if (!channels[name]) channels[name] = [];
+    if (!channels[name]) channels[name] = new Map();
     return channels[name];
   }
 
@@ -43,21 +44,32 @@ AbsoluteTimeGrid = (() => {
     const t = V.requireFinite(timeMs, 'post.timeMs');
     if (typeof data !== 'undefined') V.assertPlainObject(data, 'post.data');
 
-    const arr = ensureChannel(channel);
+    const channelMap = ensureChannel(channel);
     const entry = typeof data === 'undefined' ? { timeMs: t, layer } : data;
     entry.timeMs = t;
     entry.layer = layer;
-    if (arr.length === 0 || t >= arr[arr.length - 1].timeMs) {
-      arr.push(entry);
-    } else {
-      // Keep channel time-sorted even when callers post out of order.
-      const insertIdx = timeGridSearchStart(arr, 'timeMs', t);
-      arr.splice(insertIdx, 0, entry);
+
+    const bucketIdx = Math.floor(t / BUCKET_SIZE_MS);
+    let bucket = channelMap.get(bucketIdx);
+    if (!bucket) {
+      bucket = [];
+      channelMap.set(bucketIdx, bucket);
     }
-    // Only prune when over capacity to avoid O(n) splice on every post
-    if (arr.length > MAX_ENTRIES_PER_TYPE) {
-      const newestTime = arr[arr.length - 1].timeMs;
-      timeGridPrune(arr, 'timeMs', newestTime, DEFAULT_WINDOW_MS, MAX_ENTRIES_PER_TYPE);
+
+    if (bucket.length === 0 || t >= bucket[bucket.length - 1].timeMs) {
+      bucket.push(entry);
+    } else {
+      // Keep bucket time-sorted even when callers post out of order.
+      const insertIdx = timeGridSearchStart(bucket, 'timeMs', t);
+      bucket.splice(insertIdx, 0, entry);
+    }
+
+    // Prune old buckets (O(1) cleanup instead of O(n) array splice)
+    const oldestAllowedBucket = Math.floor((t - DEFAULT_WINDOW_MS) / BUCKET_SIZE_MS);
+    for (const key of channelMap.keys()) {
+      if (key < oldestAllowedBucket) {
+        channelMap.delete(key);
+      }
     }
   }
 
@@ -76,11 +88,11 @@ AbsoluteTimeGrid = (() => {
     const around = V.requireFinite(aroundMs, 'query.aroundMs');
     const tolerance = V.requireFinite(toleranceMs, 'query.toleranceMs');
     if (tolerance < 0) {
-      throw new Error('AbsoluteTimeGrid.query: toleranceMs must be >= 0');
+      throw new Error('absoluteTimeGrid.query: toleranceMs must be >= 0');
     }
 
-    const arr = channels[channel];
-    if (!arr || arr.length === 0) return [];
+    const channelMap = channels[channel];
+    if (!channelMap || channelMap.size === 0) return [];
 
     const lo = around - tolerance;
     const hi = around + tolerance;
@@ -96,17 +108,24 @@ AbsoluteTimeGrid = (() => {
       if (typeof onlyLayer !== 'undefined') V.assertNonEmptyString(onlyLayer, 'query.opts.onlyLayer');
     }
 
-    // Binary search for first entry >= lo — O(log n)
-    const startIdx = timeGridSearchStart(arr, 'timeMs', lo);
-
+    const startBucket = Math.floor(lo / BUCKET_SIZE_MS);
+    const endBucket = Math.floor(hi / BUCKET_SIZE_MS);
     const result = [];
-    // Forward scan from startIdx — only touches entries within the [lo, hi] window
-    for (let i = startIdx; i < arr.length; i++) {
-      const e = arr[i];
-      if (e.timeMs > hi) break;
-      if (excludeLayer && e.layer === excludeLayer) continue;
-      if (onlyLayer && e.layer !== onlyLayer) continue;
-      result.push(e);
+
+    for (let b = startBucket; b <= endBucket; b++) {
+      const bucket = channelMap.get(b);
+      if (!bucket) continue;
+
+      // For the first bucket, we might need to skip early entries
+      const startIdx = (b === startBucket) ? timeGridSearchStart(bucket, 'timeMs', lo) : 0;
+
+      for (let i = startIdx; i < bucket.length; i++) {
+        const e = bucket[i];
+        if (e.timeMs > hi) break;
+        if (excludeLayer && e.layer === excludeLayer) continue;
+        if (onlyLayer && e.layer !== onlyLayer) continue;
+        result.push(e);
+      }
     }
     return result;
   }
@@ -126,26 +145,33 @@ AbsoluteTimeGrid = (() => {
     const tolerance = V.requireFinite(toleranceMs, 'findClosest.toleranceMs');
     if (typeof excludeLayer !== 'undefined') V.assertNonEmptyString(excludeLayer, 'findClosest.excludeLayer');
 
-    const arr = channels[channel];
-    if (!arr || arr.length === 0) return null;
+    const channelMap = channels[channel];
+    if (!channelMap || channelMap.size === 0) return null;
 
     const lo = around - tolerance;
     const hi = around + tolerance;
 
-    // Binary search for first entry >= lo — O(log n)
-    const startIdx = timeGridSearchStart(arr, 'timeMs', lo);
+    const startBucket = Math.floor(lo / BUCKET_SIZE_MS);
+    const endBucket = Math.floor(hi / BUCKET_SIZE_MS);
 
-    // Forward scan within window — only touches entries in [lo, hi]
     /** @type {ATGEntry|null} */ let best = null;
     let bestDist = Infinity;
-    for (let i = startIdx; i < arr.length; i++) {
-      const e = arr[i];
-      if (e.timeMs > hi) break;
-      if (excludeLayer && e.layer === excludeLayer) continue;
-      const dist = Math.abs(e.timeMs - around);
-      if (dist < bestDist) {
-        best = e;
-        bestDist = dist;
+
+    for (let b = startBucket; b <= endBucket; b++) {
+      const bucket = channelMap.get(b);
+      if (!bucket) continue;
+
+      const startIdx = (b === startBucket) ? timeGridSearchStart(bucket, 'timeMs', lo) : 0;
+
+      for (let i = startIdx; i < bucket.length; i++) {
+        const e = bucket[i];
+        if (e.timeMs > hi) break;
+        if (excludeLayer && e.layer === excludeLayer) continue;
+        const dist = Math.abs(e.timeMs - around);
+        if (dist < bestDist) {
+          best = e;
+          bestDist = dist;
+        }
       }
     }
     return best;
@@ -165,11 +191,11 @@ AbsoluteTimeGrid = (() => {
    */
   function reset(channel) {
     if (channel) {
-      if (channels[channel]) channels[channel].length = 0;
+      if (channels[channel]) channels[channel].clear();
     } else {
       const names = Object.keys(channels);
       for (let i = 0; i < names.length; i++) {
-        channels[names[i]].length = 0;
+        channels[names[i]].clear();
       }
     }
   }

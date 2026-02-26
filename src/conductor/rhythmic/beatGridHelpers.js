@@ -1,7 +1,7 @@
 // src/conductor/rhythmic/beatGridHelpers.js - Shared beat-grid utility.
-// Used by AccentPatternTracker, SyncopationDensityTracker, InterLayerRhythmAnalyzer,
-// ArticulationProfiler, DurationalContourTracker, RhythmicSymmetryDetector,
-// RhythmicGroupingAnalyzer, OnsetRegularityMonitor.
+// Used by accentPatternTracker, syncopationDensityTracker, interLayerRhythmAnalyzer,
+// articulationProfiler, durationalContourTracker, rhythmicSymmetryDetector,
+// rhythmicGroupingAnalyzer, onsetRegularityMonitor.
 // Pure query — reads timing globals.
 
 beatGridHelpers = (() => {

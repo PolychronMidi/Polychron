@@ -57,7 +57,7 @@ setUnitTiming = (unitType) => {
       tpBeat = tpMeasure / Number(numerator);
 
       // Plan measure-level + beat-level hierarchical motifs
-      MotifManager.planMeasure(activeLayer, activeComposer);
+      motifManager.planMeasure(activeLayer, activeComposer);
 
       break;
 
@@ -88,10 +88,10 @@ setUnitTiming = (unitType) => {
       // DIVS-only planner invocation (use DIV API and run once per measure)
       const plannedDivCount = Number(divsPerBeat) * Number(numerator);
       if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer._plannedDivCount !== plannedDivCount) {
-        MotifManager.planDivs(activeLayer, Number(divsPerBeat), Number(numerator), activeComposer);
+        motifManager.planDivs(activeLayer, Number(divsPerBeat), Number(numerator), activeComposer);
       }
       if (!Array.isArray(activeLayer.divMotifs) || activeLayer.divMotifs.length < plannedDivCount) {
-        throw new Error(`setUnitTiming(beat): MotifSpreader failed to populate divMotifs (${activeLayer.divMotifs ? activeLayer.divMotifs.length : 0} / ${plannedDivCount})`);
+        throw new Error(`setUnitTiming(beat): motifSpreader failed to populate divMotifs (${activeLayer.divMotifs ? activeLayer.divMotifs.length : 0} / ${plannedDivCount})`);
       }
 
       break;
@@ -114,7 +114,7 @@ setUnitTiming = (unitType) => {
 
       // Plan subdiv-level motifs derived from the current div's divMotifs bucket
       { const _absDivIdx = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
-        MotifManager.planSubdivs(activeLayer, _absDivIdx, Number(subdivsPerDiv)); }
+        motifManager.planSubdivs(activeLayer, _absDivIdx, Number(subdivsPerDiv)); }
 
       break;
 
@@ -137,7 +137,7 @@ setUnitTiming = (unitType) => {
       // Plan subsubdiv-level motifs derived from the current subdiv's subdivMotifs bucket
       { const _absDivIdx2 = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
         const _absSubIdx = _absDivIdx2 * Number(subdivsPerDiv) + Number(subdivIndex);
-        MotifManager.planSubsubdivs(activeLayer, _absSubIdx, Number(subsubsPerSub)); }
+        motifManager.planSubsubdivs(activeLayer, _absSubIdx, Number(subsubsPerSub)); }
 
       break;
 

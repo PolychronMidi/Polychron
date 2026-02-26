@@ -1,7 +1,7 @@
 // conductorConfig.js — Conductor profile validation, selection, and access.
 // Single authority for the active conductor profile.
 
-ConductorConfig = (() => {
+conductorConfig = (() => {
   /** @type {string} */
   let activeProfileName = 'default';
 
@@ -14,27 +14,27 @@ ConductorConfig = (() => {
   const PROFILE_TUNING_OVERRIDES = conductorConfigTuningOverrides();
 
   function assertProfileTuningOrFail(tuning, profileName) {
-    V.assertPlainObject(tuning, `ConductorConfig.profileTuning.${profileName}`);
-    V.assertPlainObject(tuning.journeyFx, `ConductorConfig.profileTuning.${profileName}.journeyFx`);
-    V.assertPlainObject(tuning.feedbackMix, `ConductorConfig.profileTuning.${profileName}.feedbackMix`);
-    V.assertPlainObject(tuning.intensityBlend, `ConductorConfig.profileTuning.${profileName}.intensityBlend`);
-    V.assertPlainObject(tuning.harmonicRhythm, `ConductorConfig.profileTuning.${profileName}.harmonicRhythm`);
-    V.assertPlainObject(tuning.noiseProfileByPhase, `ConductorConfig.profileTuning.${profileName}.noiseProfileByPhase`);
+    V.assertPlainObject(tuning, `conductorConfig.profileTuning.${profileName}`);
+    V.assertPlainObject(tuning.journeyFx, `conductorConfig.profileTuning.${profileName}.journeyFx`);
+    V.assertPlainObject(tuning.feedbackMix, `conductorConfig.profileTuning.${profileName}.feedbackMix`);
+    V.assertPlainObject(tuning.intensityBlend, `conductorConfig.profileTuning.${profileName}.intensityBlend`);
+    V.assertPlainObject(tuning.harmonicRhythm, `conductorConfig.profileTuning.${profileName}.harmonicRhythm`);
+    V.assertPlainObject(tuning.noiseProfileByPhase, `conductorConfig.profileTuning.${profileName}.noiseProfileByPhase`);
 
-    V.assertRange(tuning.journeyFx.distanceDivisor, 0.1, 64, `ConductorConfig.profileTuning.${profileName}.journeyFx.distanceDivisor`);
-    V.assertRange(tuning.journeyFx.reverbMaxBoost, 0, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.reverbMaxBoost`);
-    V.assertRange(tuning.journeyFx.filterMaxBoost, 0, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.filterMaxBoost`);
-    V.assertRange(tuning.journeyFx.returnHomePortamentoBoost, 0, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.returnHomePortamentoBoost`);
-    V.assertRange(tuning.journeyFx.returnHomeReverbDamp, 0.1, 2, `ConductorConfig.profileTuning.${profileName}.journeyFx.returnHomeReverbDamp`);
+    V.assertRange(tuning.journeyFx.distanceDivisor, 0.1, 64, `conductorConfig.profileTuning.${profileName}.journeyFx.distanceDivisor`);
+    V.assertRange(tuning.journeyFx.reverbMaxBoost, 0, 2, `conductorConfig.profileTuning.${profileName}.journeyFx.reverbMaxBoost`);
+    V.assertRange(tuning.journeyFx.filterMaxBoost, 0, 2, `conductorConfig.profileTuning.${profileName}.journeyFx.filterMaxBoost`);
+    V.assertRange(tuning.journeyFx.returnHomePortamentoBoost, 0, 2, `conductorConfig.profileTuning.${profileName}.journeyFx.returnHomePortamentoBoost`);
+    V.assertRange(tuning.journeyFx.returnHomeReverbDamp, 0.1, 2, `conductorConfig.profileTuning.${profileName}.journeyFx.returnHomeReverbDamp`);
 
-    V.assertRange(tuning.feedbackMix.fx, 0, 10, `ConductorConfig.profileTuning.${profileName}.feedbackMix.fx`);
-    V.assertRange(tuning.feedbackMix.stutter, 0, 10, `ConductorConfig.profileTuning.${profileName}.feedbackMix.stutter`);
-    V.assertRange(tuning.feedbackMix.journey, 0, 10, `ConductorConfig.profileTuning.${profileName}.feedbackMix.journey`);
-    V.assertRange(tuning.intensityBlend.arc, 0, 10, `ConductorConfig.profileTuning.${profileName}.intensityBlend.arc`);
-    V.assertRange(tuning.intensityBlend.tension, 0, 10, `ConductorConfig.profileTuning.${profileName}.intensityBlend.tension`);
-    V.assertRange(tuning.harmonicRhythm.blendWeight, 0, 0.5, `ConductorConfig.profileTuning.${profileName}.harmonicRhythm.blendWeight`);
-    V.assertRange(tuning.harmonicRhythm.feedbackWeight, 0, 0.5, `ConductorConfig.profileTuning.${profileName}.harmonicRhythm.feedbackWeight`);
-    V.assertNonEmptyString(tuning.noiseProfileByPhase.default, `ConductorConfig.profileTuning.${profileName}.noiseProfileByPhase.default`);
+    V.assertRange(tuning.feedbackMix.fx, 0, 10, `conductorConfig.profileTuning.${profileName}.feedbackMix.fx`);
+    V.assertRange(tuning.feedbackMix.stutter, 0, 10, `conductorConfig.profileTuning.${profileName}.feedbackMix.stutter`);
+    V.assertRange(tuning.feedbackMix.journey, 0, 10, `conductorConfig.profileTuning.${profileName}.feedbackMix.journey`);
+    V.assertRange(tuning.intensityBlend.arc, 0, 10, `conductorConfig.profileTuning.${profileName}.intensityBlend.arc`);
+    V.assertRange(tuning.intensityBlend.tension, 0, 10, `conductorConfig.profileTuning.${profileName}.intensityBlend.tension`);
+    V.assertRange(tuning.harmonicRhythm.blendWeight, 0, 0.5, `conductorConfig.profileTuning.${profileName}.harmonicRhythm.blendWeight`);
+    V.assertRange(tuning.harmonicRhythm.feedbackWeight, 0, 0.5, `conductorConfig.profileTuning.${profileName}.harmonicRhythm.feedbackWeight`);
+    V.assertNonEmptyString(tuning.noiseProfileByPhase.default, `conductorConfig.profileTuning.${profileName}.noiseProfileByPhase.default`);
   }
 
   function validateProfileOrFail(profile, label) {
@@ -43,10 +43,10 @@ ConductorConfig = (() => {
 
   function getProfilesOrFail() {
     if (!CONDUCTOR_PROFILE_SOURCES) {
-      throw new Error('ConductorConfig.getProfilesOrFail: CONDUCTOR_PROFILE_SOURCES is not available');
+      throw new Error('conductorConfig.getProfilesOrFail: CONDUCTOR_PROFILE_SOURCES is not available');
     }
     const names = Object.keys(CONDUCTOR_PROFILE_SOURCES);
-    if (names.length === 0) throw new Error('ConductorConfig.getProfilesOrFail: no conductor profiles defined');
+    if (names.length === 0) throw new Error('conductorConfig.getProfilesOrFail: no conductor profiles defined');
     for (const name of names) {
       validateProfileOrFail(CONDUCTOR_PROFILE_SOURCES[name], `CONDUCTOR_PROFILE_SOURCES.${name}`);
     }
@@ -59,11 +59,11 @@ ConductorConfig = (() => {
 
   function setActiveProfile(name) {
     if (typeof name !== 'string' || name.length === 0) {
-      throw new Error('ConductorConfig.setActiveProfile: name must be a non-empty string');
+      throw new Error('conductorConfig.setActiveProfile: name must be a non-empty string');
     }
     const profiles = getProfilesOrFail();
     if (!Object.prototype.hasOwnProperty.call(profiles, name)) {
-      throw new Error(`ConductorConfig.setActiveProfile: unknown profile "${name}"`);
+      throw new Error(`conductorConfig.setActiveProfile: unknown profile "${name}"`);
     }
     activeProfileName = name;
     activeProfileCache = null;
@@ -74,7 +74,7 @@ ConductorConfig = (() => {
     const profiles = getProfilesOrFail();
     const profile = profiles[activeProfileName];
     if (!profile) {
-      throw new Error(`ConductorConfig.getActiveProfile: active profile "${activeProfileName}" not found`);
+      throw new Error(`conductorConfig.getActiveProfile: active profile "${activeProfileName}" not found`);
     }
     activeProfileCache = profile;
     return profile;
@@ -98,15 +98,15 @@ ConductorConfig = (() => {
 
   function getPhaseMultiplier(sectionPhase) {
     const profile = dynamics.resolveField('phaseMultipliers');
-    V.assertPlainObject(profile, 'ConductorConfig.getPhaseMultiplier.phaseMultipliers');
+    V.assertPlainObject(profile, 'conductorConfig.getPhaseMultiplier.phaseMultipliers');
     if (typeof sectionPhase !== 'string' || sectionPhase.length === 0) {
-      throw new Error('ConductorConfig.getPhaseMultiplier: sectionPhase must be a non-empty string');
+      throw new Error('conductorConfig.getPhaseMultiplier: sectionPhase must be a non-empty string');
     }
     if (!Object.prototype.hasOwnProperty.call(profile, sectionPhase)) {
-      throw new Error(`ConductorConfig.getPhaseMultiplier: unknown sectionPhase "${sectionPhase}"`);
+      throw new Error(`conductorConfig.getPhaseMultiplier: unknown sectionPhase "${sectionPhase}"`);
     }
     const mult = profile[sectionPhase];
-    return V.assertRange(mult, 0, 3, `ConductorConfig.phaseMultipliers.${sectionPhase}`);
+    return V.assertRange(mult, 0, 3, `conductorConfig.phaseMultipliers.${sectionPhase}`);
   }
 
   function getStutterParams(compositeIntensity) {

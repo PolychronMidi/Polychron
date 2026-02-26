@@ -5,7 +5,7 @@
  *
  * Extends the trust system by keying trust scores on (module × regime)
  * pairs. Different dynamical regimes may warrant different trust weights
- * for the same cross-layer module. This module wraps AdaptiveTrustScores
+ * for the same cross-layer module. This module wraps adaptiveTrustScores
  * with contextual lookup and registers as a cross-layer module.
  *
  * API:
@@ -28,7 +28,7 @@ contextualTrust = (() => {
   let scores = new Map();
 
   function _key(moduleName) {
-    const snap = SystemDynamicsProfiler.getSnapshot();
+    const snap = systemDynamicsProfiler.getSnapshot();
     const regime = snap ? snap.regime : 'evolving';
     return `${moduleName}::${regime}`;
   }
@@ -47,7 +47,7 @@ contextualTrust = (() => {
 
   /**
    * Get trust weight for a module in the current regime.
-   * Falls back to global AdaptiveTrustScores if no contextual data.
+   * Falls back to global adaptiveTrustScores if no contextual data.
    */
   function getWeight(moduleName) {
     const k = _key(moduleName);
@@ -56,7 +56,7 @@ contextualTrust = (() => {
       return Math.max(W_LO, Math.min(W_HI, 1 + s * W_SCALE));
     }
     // Fallback to global trust
-    return AdaptiveTrustScores.getWeight(moduleName);
+    return adaptiveTrustScores.getWeight(moduleName);
   }
 
   function getScoreCount() { return scores.size; }
@@ -67,7 +67,7 @@ contextualTrust = (() => {
 
   const mod = { record, getWeight, getScoreCount, reset };
 
-  CrossLayerRegistry.register('contextualTrust', mod, ['all']);
+  crossLayerRegistry.register('contextualTrust', mod, ['all']);
 
   return mod;
 })();

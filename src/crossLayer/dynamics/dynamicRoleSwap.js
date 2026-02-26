@@ -1,9 +1,9 @@
 // src/crossLayer/dynamicRoleSwap.js — Periodic layer behavioral profile swap.
 // Every N phrases, the two layers swap behavioral profiles: dense → sparse,
-// melodic → chordal, etc. Driven by ConductorState intensity — swaps happen
+// melodic → chordal, etc. Driven by conductorState intensity — swaps happen
 // at tension valleys for natural transitions.
 
-DynamicRoleSwap = (() => {
+dynamicRoleSwap = (() => {
   const V = validator.create('dynamicRoleSwap');
   const MIN_PHRASES_BETWEEN_SWAPS = 3;
   const TENSION_VALLEY_THRESHOLD = 0.3; // only swap when tension is low
@@ -16,7 +16,7 @@ DynamicRoleSwap = (() => {
   /**
    * Called at each phrase boundary to evaluate whether a swap should occur.
    * @param {number} absTimeMs - current absolute ms
-   * @param {number} currentTension - 0-1 normalized tension from ConductorState
+   * @param {number} currentTension - 0-1 normalized tension from conductorState
    * @returns {{ swapped: boolean, swapCount: number }}
    */
   function evaluateSwap(absTimeMs, currentTension) {
@@ -108,4 +108,4 @@ DynamicRoleSwap = (() => {
 
   return { evaluateSwap, getProfileModifiers, modifyPlayProb, modifyVelocity, getIsSwapped, getSwapCount, reset };
 })();
-CrossLayerRegistry.register('DynamicRoleSwap', DynamicRoleSwap, ['all']);
+crossLayerRegistry.register('dynamicRoleSwap', dynamicRoleSwap, ['all']);

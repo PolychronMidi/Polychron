@@ -1,9 +1,9 @@
 // src/crossLayer/articulationComplement.js — Cross-layer articulation contrast.
 // When one layer plays legato (long sustains), steers the other toward staccato
 // (short, punchy notes) and vice versa. Creates complementary articulation
-// textures driven by DynamicRoleSwap and SectionIntentCurves.
+// textures driven by dynamicRoleSwap and sectionIntentCurves.
 
-ArticulationComplement = (() => {
+articulationComplement = (() => {
   const V = validator.create('articulationComplement');
   const WINDOW_SIZE = 16;
   const CONTRAST_STRENGTH = 0.6;
@@ -22,7 +22,7 @@ ArticulationComplement = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     if (!sustainHistory.has(layer)) sustainHistory.set(layer, []);
     const hist = sustainHistory.get(layer);
-    if (!hist) throw new Error('ArticulationComplement.recordSustain: missing history for ' + layer);
+    if (!hist) throw new Error('articulationComplement.recordSustain: missing history for ' + layer);
     hist.push(sustainTicks);
     if (hist.length > WINDOW_SIZE) hist.shift();
   }
@@ -61,11 +61,11 @@ ArticulationComplement = (() => {
     const selfLegatoBias = selfProfile.isLegato ? -0.15 : (selfProfile.isStaccato ? 0.1 : 0);
 
     // Get intent to modulate contrast strength
-    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
+    const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
     const interactionTarget = V.optionalFinite(intent.interactionTarget, 0.5);
 
     // Check role swap state
-    const swapped = DynamicRoleSwap.getIsSwapped() ?? false;
+    const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
 
     // Base contrast: if other layer is legato, make this one more staccato
     let sustainScale = 1.0;
@@ -96,4 +96,4 @@ ArticulationComplement = (() => {
 
   return { recordSustain, getArticulationProfile, getSustainModifier, reset };
 })();
-CrossLayerRegistry.register('ArticulationComplement', ArticulationComplement, ['all', 'section']);
+crossLayerRegistry.register('articulationComplement', articulationComplement, ['all', 'section']);

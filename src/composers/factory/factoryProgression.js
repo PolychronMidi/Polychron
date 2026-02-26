@@ -1,5 +1,5 @@
 factoryProgression = {
-  normalizeProgressionKeyOrFail(key, label = 'ComposerFactory.normalizeProgressionKeyOrFail') {
+  normalizeProgressionKeyOrFail(key, label = 'FactoryManager.normalizeProgressionKeyOrFail') {
     if (typeof key !== 'string' || key.length === 0) {
       throw new Error(`${label}: key must be a non-empty string`);
     }
@@ -13,7 +13,7 @@ factoryProgression = {
     return pc;
   },
 
-  getRomanQualityOrFail(quality, label = 'ComposerFactory.getRomanQualityOrFail') {
+  getRomanQualityOrFail(quality, label = 'FactoryManager.getRomanQualityOrFail') {
     if (typeof quality !== 'string' || quality.length === 0) {
       throw new Error(`${label}: quality must be a non-empty string`);
     }
@@ -30,7 +30,7 @@ factoryProgression = {
   },
 
   hasDiatonicKeyData(key, quality = 'major') {
-    const romanQuality = this.getRomanQualityOrFail(quality, 'ComposerFactory.hasDiatonicKeyData');
+    const romanQuality = this.getRomanQualityOrFail(quality, 'FactoryManager.hasDiatonicKeyData');
     const keyApi = romanQuality === 'minor' ? t.Key.minorKey : t.Key.majorKey;
     const keyData = keyApi(key);
     const scale = romanQuality === 'minor' ? keyData?.natural?.scale : keyData?.scale;
@@ -40,9 +40,9 @@ factoryProgression = {
 
   getProgressionKeyPoolOrFail(quality = 'major') {
     if (!Array.isArray(allNotes) || allNotes.length === 0) {
-      throw new Error('ComposerFactory.getProgressionKeyPoolOrFail: allNotes not available');
+      throw new Error('FactoryManager.getProgressionKeyPoolOrFail: allNotes not available');
     }
-    this.getRomanQualityOrFail(quality, 'ComposerFactory.getProgressionKeyPoolOrFail');
+    this.getRomanQualityOrFail(quality, 'FactoryManager.getProgressionKeyPoolOrFail');
     const pcs = [];
     for (const candidate of allNotes) {
       if (typeof candidate !== 'string' || candidate.length === 0) continue;
@@ -54,12 +54,12 @@ factoryProgression = {
       }
     }
     if (pcs.length === 0) {
-      throw new Error(`ComposerFactory.getProgressionKeyPoolOrFail: no valid pitch-class keys derived from allNotes for quality "${quality}"`);
+      throw new Error(`FactoryManager.getProgressionKeyPoolOrFail: no valid pitch-class keys derived from allNotes for quality "${quality}"`);
     }
     return pcs;
   },
 
-  resolveProgressionKeyOrFail(key, label = 'ComposerFactory.resolveProgressionKeyOrFail', quality = 'major') {
+  resolveProgressionKeyOrFail(key, label = 'FactoryManager.resolveProgressionKeyOrFail', quality = 'major') {
     this.getRomanQualityOrFail(quality, `${label}.quality`);
     let input = key;
     if (key === 'random') {

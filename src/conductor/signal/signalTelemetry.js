@@ -110,12 +110,12 @@ signalTelemetry = (() => {
   }
 
   // Self-register
-  ConductorIntelligence.registerRecorder('signalTelemetry', record);
-  ConductorIntelligence.registerStateProvider('signalTelemetry', () => ({
+  conductorIntelligence.registerRecorder('signalTelemetry', record);
+  conductorIntelligence.registerStateProvider('signalTelemetry', () => ({
     telemetryAnomalyDetected: anomalyDetected,
     telemetryTrend: trend
   }));
-  ConductorIntelligence.registerModule('signalTelemetry', { reset }, ['section']);
+  conductorIntelligence.registerModule('signalTelemetry', { reset }, ['section']);
 
   return { record, getHistory, isAnomalyDetected, getTrend, reset };
 })();

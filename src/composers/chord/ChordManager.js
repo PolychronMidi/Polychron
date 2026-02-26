@@ -1,14 +1,14 @@
 // ChordManager.js - single manager hub for chord subsystem
 
-class ChordManager_ {
-  static listGenerators() { return ChordRegistry.list(); }
+ChordManager = class {
+  static listGenerators() { return chordRegistry.list(); }
 
-  static getGenerator(name) { return ChordRegistry.get(name); }
+  static getGenerator(name) { return chordRegistry.get(name); }
 
   static generateProgression(key, quality = 'major', type) {
     // Prefer registered 'progression' generator if present
-    if (ChordRegistry.list().includes('progression')) {
-      const gen = ChordRegistry.get('progression');
+    if (chordRegistry.list().includes('progression')) {
+      const gen = chordRegistry.get('progression');
       return gen(key, quality, type);
     }
 
@@ -44,13 +44,11 @@ class ChordManager_ {
       if (!ch || !Array.isArray(ch.notes) || ch.notes.length === 0) {
         throw new Error(`ChordManager.applyVoicing: invalid chord symbol ${normalized}`);
       }
-      return ChordValues.chordToMidi(ch.notes);
+      return chordValues.chordToMidi(ch.notes);
     }).flat();
 
     if (midiNotes.length === 0) throw new Error('ChordManager.applyVoicing: no MIDI notes resolved');
 
     return chordModulator.apply(midiNotes, opts);
   }
-}
-
-ChordManager = ChordManager_;
+};

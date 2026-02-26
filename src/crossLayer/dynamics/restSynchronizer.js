@@ -1,9 +1,9 @@
 // src/crossLayer/restSynchronizer.js — Coordinated and complementary musical silence.
 // Coordinates shared rests (both layers go quiet together for breathing room)
 // and complementary rests (one layer fills when the other rests, creating hocket).
-// Driven by InteractionHeatMap pressure and SectionIntentCurves density.
+// Driven by interactionHeatMap pressure and sectionIntentCurves density.
 
-RestSynchronizer = (() => {
+restSynchronizer = (() => {
   const V = validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_MS = 800;
   const SHARED_REST_PROBABILITY = 0.15;
@@ -31,10 +31,10 @@ RestSynchronizer = (() => {
       return { shouldRest: false, duration: 0 };
     }
 
-    // Get heat level from InteractionHeatMap
+    // Get heat level from interactionHeatMap
     const heatLevel = V.optionalFinite(sig.heatLevel, 0.5);
 
-    // Get density target from SectionIntentCurves
+    // Get density target from sectionIntentCurves
     const densityTarget = V.optionalFinite(sig.densityTarget, 0.5);
 
     // Shared rests are more likely when heat is high (need breathing room)
@@ -79,7 +79,7 @@ RestSynchronizer = (() => {
     }
 
     // Check if other layer is sparse from ATW
-    const otherCount = AbsoluteTimeWindow.countNotes({
+    const otherCount = absoluteTimeWindow.countNotes({
       layer: otherLayer,
       since: (absTimeMs / 1000) - 0.5,
       windowSeconds: 0.5
@@ -117,4 +117,4 @@ RestSynchronizer = (() => {
 
   return { evaluateSharedRest, evaluateComplementaryRest, postRest, getSharedRestCount, isLayerResting, reset };
 })();
-CrossLayerRegistry.register('RestSynchronizer', RestSynchronizer, ['all', 'section']);
+crossLayerRegistry.register('restSynchronizer', restSynchronizer, ['all', 'section']);

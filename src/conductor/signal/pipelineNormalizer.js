@@ -107,7 +107,7 @@ pipelineNormalizer = (() => {
     return result;
   }
 
-  ConductorIntelligence.registerModule('pipelineNormalizer', { reset }, ['all']);
+  conductorIntelligence.registerModule('pipelineNormalizer', { reset }, ['all']);
 
   return { normalize, reset, getSnapshot };
 })();

@@ -4,10 +4,10 @@
 // Burst = coordinated unison note cluster (same pitch class, octave-displaced)
 // creating a momentary "singularity."
 
-ConvergenceDetector = (() => {
+convergenceDetector = (() => {
   const V = validator.create('convergenceDetector');
   const CHANNEL = 'onset';
-  const EVENTS = EventCatalog.names;
+  const EVENTS = eventCatalog.names;
   const CONVERGENCE_TOLERANCE_MS = 50;
   const MIN_CONVERGENCE_INTERVAL_MS = 500;
   const BURST_VOICES = 3;
@@ -31,7 +31,7 @@ ConvergenceDetector = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.requireFinite(midi, 'midi');
     V.requireFinite(velocity, 'velocity');
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       midi: clamp(Math.round(midi), 0, 127),
       velocity: clamp(Math.round(velocity), 1, MIDI_MAX_VALUE)
     });
@@ -50,7 +50,7 @@ ConvergenceDetector = (() => {
     // Throttle: don't fire convergence events more often than the interval
     if (absTimeMs - lastConvergenceMs < MIN_CONVERGENCE_INTERVAL_MS) return null;
 
-    const match = AbsoluteTimeGrid.findClosest(
+    const match = absoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, CONVERGENCE_TOLERANCE_MS, activeLayer
     );
     if (!match) return null;
@@ -123,8 +123,8 @@ ConvergenceDetector = (() => {
       p(c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
 
-    // No active listeners — emitted for EventCatalog completeness and future extensibility
-    EventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
+    // No active listeners — emitted for eventCatalog completeness and future extensibility
+    eventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,
       syncTick: conv.syncTick,
@@ -179,4 +179,4 @@ ConvergenceDetector = (() => {
 
   return { postOnset, detect, applyIfConverged, wasRecent, getLastConvergenceMs, getConvergenceCount, reset };
 })();
-CrossLayerRegistry.register('ConvergenceDetector', ConvergenceDetector, ['all', 'phrase']);
+crossLayerRegistry.register('convergenceDetector', convergenceDetector, ['all', 'phrase']);

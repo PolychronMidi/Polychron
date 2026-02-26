@@ -9,7 +9,7 @@
 /** @type {ReadonlyArray<number>} complementary interval map: for each interval 0-11, the "answer" interval */
 const COMPLEMENT_MAP = Object.freeze([6, 5, 4, 3, 8, 7, 0, 5, 4, 3, 2, 1]);
 
-FeedbackOscillator = (() => {
+feedbackOscillator = (() => {
   const V = validator.create('feedbackOscillator');
   const CHANNEL = 'feedbackLoop';
   const SYNC_TOLERANCE_MS = 250;
@@ -38,7 +38,7 @@ FeedbackOscillator = (() => {
       V.assertNonEmptyString(impulseType, 'impulseType');
       finalImpulseType = impulseType;
     }
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       energy: clamp(energy, 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
@@ -58,12 +58,12 @@ FeedbackOscillator = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
 
-    const incoming = AbsoluteTimeGrid.findClosest(
+    const incoming = absoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!incoming) return null;
     if (typeof incoming !== 'object') {
-      throw new Error('FeedbackOscillator.react: AbsoluteTimeGrid.findClosest must return object|null');
+      throw new Error('feedbackOscillator.react: absoluteTimeGrid.findClosest must return object|null');
     }
     if (!Number.isFinite(incoming.energy) || incoming.energy < MIN_ENERGY) return null;
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
@@ -98,7 +98,7 @@ FeedbackOscillator = (() => {
     const syncTick = Math.max(0, syncTickRaw);
 
     // Post our reaction for the other layer to pick up (with evolved pitch)
-    AbsoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
       impulseType: incomingImpulseType,
@@ -151,4 +151,4 @@ FeedbackOscillator = (() => {
 
   return { inject, react, applyFeedback, reset() { /* stateless — no per-scope state to clear */ } };
 })();
-CrossLayerRegistry.register('FeedbackOscillator', FeedbackOscillator, ['all']);
+crossLayerRegistry.register('feedbackOscillator', feedbackOscillator, ['all']);

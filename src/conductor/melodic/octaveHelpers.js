@@ -1,6 +1,6 @@
 // src/conductor/melodic/octaveHelpers.js - Shared octave histogram utility.
-// Used by OctaveSpreadMonitor, RegisterPressureMonitor.
-// Pure query — reads AbsoluteTimeWindow.
+// Used by octaveSpreadMonitor, registerPressureMonitor.
+// Pure query — reads absoluteTimeWindow.
 
 octaveHelpers = (() => {
   const V = validator.create('octaveHelpers');
@@ -17,7 +17,7 @@ octaveHelpers = (() => {
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
-    const notes = AbsoluteTimeWindow.getNotes(query);
+    const notes = absoluteTimeWindow.getNotes(query);
     const counts = new Array(numBands).fill(0);
     let total = 0;
     for (let i = 0; i < notes.length; i++) {

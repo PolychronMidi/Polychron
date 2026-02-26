@@ -1,4 +1,4 @@
-NegotiationEngine = (() => {
+negotiationEngine = (() => {
   const V = validator.create('negotiationEngine');
   /**
    * @param {string} layer
@@ -16,11 +16,11 @@ NegotiationEngine = (() => {
     V.requireFinite(context.playProb, 'context.playProb');
     V.requireFinite(context.stutterProb, 'context.stutterProb');
 
-    const trustStutter = AdaptiveTrustScores.getWeight('stutterContagion');
-    const trustCadence = AdaptiveTrustScores.getWeight('cadenceAlignment');
-    const trustPhase = AdaptiveTrustScores.getWeight('phaseLock');
+    const trustStutter = adaptiveTrustScores.getWeight('stutterContagion');
+    const trustCadence = adaptiveTrustScores.getWeight('cadenceAlignment');
+    const trustPhase = adaptiveTrustScores.getWeight('phaseLock');
 
-    const intent = context.intent || SectionIntentCurves.getLastIntent();
+    const intent = context.intent || sectionIntentCurves.getLastIntent();
 
     const phaseConfidence = clamp(V.requireFinite(context.phaseConfidence, 'phaseConfidence'), 0, 1);
   const entropyScale = V.optionalFinite(context.entropyScale, 1);
@@ -39,7 +39,7 @@ NegotiationEngine = (() => {
 
     const allowCadence = Boolean(context.cadenceSuggested) && phaseConfidence >= 0.45 && trustCadence >= 0.7;
 
-    ExplainabilityBus.emit('negotiation', layer, {
+    explainabilityBus.emit('negotiation', layer, {
       playProbIn: context.playProb,
       stutterProbIn: context.stutterProb,
       playProbOut: playProb,
@@ -63,9 +63,9 @@ NegotiationEngine = (() => {
    * @returns {{ allowHarmonicTrigger: boolean, allowDownbeat: boolean }}
    */
   function gateConvergence(layer) {
-    const trustConvergence = AdaptiveTrustScores.getWeight('convergence');
-    const trustCadence = AdaptiveTrustScores.getWeight('cadenceAlignment');
-    const trustStutter = AdaptiveTrustScores.getWeight('stutterContagion');
+    const trustConvergence = adaptiveTrustScores.getWeight('convergence');
+    const trustCadence = adaptiveTrustScores.getWeight('cadenceAlignment');
+    const trustStutter = adaptiveTrustScores.getWeight('stutterContagion');
 
     // If convergence trust is low, suppress both secondary responders
     if (trustConvergence < 0.5) {
@@ -78,7 +78,7 @@ NegotiationEngine = (() => {
     // If stutter trust is very high, suppress downbeat to avoid stutter + downbeat stacking
     const allowDownbeat = trustStutter < 1.4;
 
-    ExplainabilityBus.emit('convergence-gate', layer, {
+    explainabilityBus.emit('convergence-gate', layer, {
       trustConvergence, trustCadence, trustStutter,
       allowHarmonicTrigger, allowDownbeat
     });
@@ -93,4 +93,4 @@ NegotiationEngine = (() => {
 
   return { apply, gateConvergence, reset };
 })();
-CrossLayerRegistry.register('NegotiationEngine', NegotiationEngine, ['all']);
+crossLayerRegistry.register('negotiationEngine', negotiationEngine, ['all']);

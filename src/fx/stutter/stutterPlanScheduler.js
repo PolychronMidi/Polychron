@@ -1,6 +1,6 @@
 // stutterPlanScheduler.js - Extracted plan scheduling helpers for StutterManager.
 
-StutterPlanScheduler = (() => {
+stutterPlanScheduler = (() => {
   const V = validator.create('stutterPlanScheduler');
 
   function createPlan(stutterMgr, planCfg = {}) {
@@ -27,8 +27,8 @@ StutterPlanScheduler = (() => {
       const arr = stutterMgr.scheduledPlans.get(key) || [];
       arr.push(planId);
       stutterMgr.scheduledPlans.set(key, arr);
-      StutterMetrics.incScheduled(1, plan.profile || 'unknown');
-      StutterMetrics.incPendingForTick(key, 1);
+      stutterMetrics.incScheduled(1, plan.profile || 'unknown');
+      stutterMetrics.incPendingForTick(key, 1);
       return planId;
     }
 
@@ -39,7 +39,7 @@ StutterPlanScheduler = (() => {
   function runPlan(stutterMgr, planIdOrCfg = {}) {
     V.assertObject(stutterMgr, 'stutterMgr');
     const plan = /** @type {any} */ ((typeof planIdOrCfg === 'string') ? stutterMgr.plans.get(planIdOrCfg) : planIdOrCfg);
-    if (!plan || typeof plan !== 'object') throw new Error('StutterPlanScheduler.runPlan: invalid plan');
+    if (!plan || typeof plan !== 'object') throw new Error('stutterPlanScheduler.runPlan: invalid plan');
     return executePlan(stutterMgr, plan);
   }
 
@@ -63,7 +63,7 @@ StutterPlanScheduler = (() => {
       for (const planId of arr) {
         const plan = stutterMgr.plans.get(planId);
         if (plan) {
-          StutterMetrics.decPendingForTick(k, 1);
+          stutterMetrics.decPendingForTick(k, 1);
           executePlan(stutterMgr, plan);
           stutterMgr.plans.delete(planId); // evict executed plan
         }

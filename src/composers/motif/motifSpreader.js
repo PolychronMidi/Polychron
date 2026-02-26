@@ -2,22 +2,22 @@
 // Generates motif groups at each level of the musical hierarchy
 // (measure → beat → div → subdiv → subsubdiv) with parent‑child derivation.
 // Measure-level master motifs create coherence; child levels derive variations
-// via MotifChain transforms + IntervalComposer subsets.
+// via motifChain transforms + intervalComposer subsets.
 
-MotifSpreader = {
+motifSpreader = {
   /**
    * Plan measure-level motif and derive beat-level buckets.
-   * Called once per measure from MotifManager.planMeasure().
+   * Called once per measure from motifManager.planMeasure().
    */
   spreadMeasure({ layer, beats, composer, profile }) {
-    if (!layer) throw new Error('MotifSpreader.spreadMeasure: no layer');
-    if (!Number.isFinite(Number(beats)) || Number(beats) <= 0) throw new Error('MotifSpreader.spreadMeasure: invalid beats');
-    if (!composer) throw new Error('MotifSpreader.spreadMeasure: no composer');
+    if (!layer) throw new Error('motifSpreader.spreadMeasure: no layer');
+    if (!Number.isFinite(Number(beats)) || Number(beats) <= 0) throw new Error('motifSpreader.spreadMeasure: invalid beats');
+    if (!composer) throw new Error('motifSpreader.spreadMeasure: no composer');
 
     const mc = new MotifComposer({ useVoiceLeading: Boolean(composer.VoiceLeadingScore) });
     const length = m.max(2, m.round(Number(beats) * rf(1.5, 2.5)));
     const measureMotif = mc.generate({ length, developFromComposer: composer, measureComposer: composer });
-    if (!measureMotif || !measureMotif.sequence) throw new Error('MotifSpreader.spreadMeasure: motif generation failed');
+    if (!measureMotif || !measureMotif.sequence) throw new Error('motifSpreader.spreadMeasure: motif generation failed');
 
     layer.measureMotifs = { motif: measureMotif, groupId: `msr-${measureCount}` };
     layer._plannedBeats = Number(beats);
@@ -41,9 +41,9 @@ MotifSpreader = {
    * Accepts optional parentBucket for parent-derived coherence.
    */
   spreadDivs({ layer, divsPerBeat: planDivsPerBeat, beats = 1, composer, parentBucket = null }) {
-    if (!layer) throw new Error('MotifSpreader.spreadDivs: no layer provided - fail-fast');
-    if (!Number.isFinite(Number(planDivsPerBeat)) || Number(planDivsPerBeat) <= 0) throw new Error('MotifSpreader.spreadDivs: planDivsPerBeat must be > 0 - fail-fast');
-    if (!Number.isFinite(Number(beats)) || Number(beats) <= 0) throw new Error(`MotifSpreader.spreadDivs: invalid beats=${beats} - fail-fast`);
+    if (!layer) throw new Error('motifSpreader.spreadDivs: no layer provided - fail-fast');
+    if (!Number.isFinite(Number(planDivsPerBeat)) || Number(planDivsPerBeat) <= 0) throw new Error('motifSpreader.spreadDivs: planDivsPerBeat must be > 0 - fail-fast');
+    if (!Number.isFinite(Number(beats)) || Number(beats) <= 0) throw new Error(`motifSpreader.spreadDivs: invalid beats=${beats} - fail-fast`);
 
     const divCount = Number(planDivsPerBeat) * Number(beats);
     layer._plannedDivsPerBeat = Number(planDivsPerBeat);
@@ -85,9 +85,9 @@ MotifSpreader = {
       const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
       const length = Math.max(1, m.round(gDivLen * ri(1, 3)));
       const motifGroup = mcGroup.generate({ length, developFromComposer: developComposer, measureComposer: composer });
-      if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) throw new Error('MotifSpreader.spreadDivs: MotifComposer.generate() returned invalid structure - fail-fast');
+      if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) throw new Error('motifSpreader.spreadDivs: MotifComposer.generate() returned invalid structure - fail-fast');
       const seq = motifGroup.sequence || motifGroup.events;
-      if (!Array.isArray(seq)) throw new Error('MotifSpreader.spreadDivs: motif sequence is not an array - fail-fast');
+      if (!Array.isArray(seq)) throw new Error('motifSpreader.spreadDivs: motif sequence is not an array - fail-fast');
       const totalEvents = Math.max(1, seq.length);
       const groupStart = divOffset;
       const groupEnd = Math.min(divCount - 1, divOffset + gDivLen - 1);
@@ -102,14 +102,14 @@ MotifSpreader = {
           for (let ei = startEvt; ei < endEvt; ei++) {
             const evt = seq[ei];
             const noteValue = Number(evt.note);
-            if (!Number.isFinite(noteValue)) throw new Error(`MotifSpreader: motif event ${ei} produced non-finite note value`);
+            if (!Number.isFinite(noteValue)) throw new Error(`motifSpreader: motif event ${ei} produced non-finite note value`);
             layer.divMotifs[targetDiv].push({ note: noteValue, groupId, seqIndex: ei, seqLen: totalEvents });
           }
         } else {
           const fallbackIdx = m.min(totalEvents - 1, startEvt);
           const evt = seq[fallbackIdx];
           const noteValue = Number(evt.note);
-          if (!Number.isFinite(noteValue)) throw new Error(`MotifSpreader: motif event ${fallbackIdx} produced non-finite note value`);
+          if (!Number.isFinite(noteValue)) throw new Error(`motifSpreader: motif event ${fallbackIdx} produced non-finite note value`);
           layer.divMotifs[targetDiv].push({ note: noteValue, groupId, seqIndex: fallbackIdx, seqLen: totalEvents });
         }
       }
@@ -118,20 +118,20 @@ MotifSpreader = {
     });
 
     for (let i = 0; i < divCount; i++) {
-      if (!Array.isArray(layer.divMotifs[i]) || layer.divMotifs[i].length === 0) throw new Error(`MotifSpreader.spreadDivs: divMotifs[${i}] not populated - fail-fast`);
+      if (!Array.isArray(layer.divMotifs[i]) || layer.divMotifs[i].length === 0) throw new Error(`motifSpreader.spreadDivs: divMotifs[${i}] not populated - fail-fast`);
     }
   },
 
   /**
    * Plan sub-unit motifs (subdiv or subsubdiv) derived from parent bucket.
-   * Called at div/subdiv boundaries from MotifManager.
+   * Called at div/subdiv boundaries from motifManager.
    */
   spreadSubunits({ layer, unit, parentIndex, count, bucketKey, parentBucketKey, profile }) {
-    if (!layer) throw new Error(`MotifSpreader.spreadSubunits(${unit}): no layer`);
+    if (!layer) throw new Error(`motifSpreader.spreadSubunits(${unit}): no layer`);
     if (!Number.isFinite(Number(count)) || Number(count) <= 0) return;
     const parentBuckets = layer[parentBucketKey];
     if (!Array.isArray(parentBuckets) || !Array.isArray(parentBuckets[parentIndex])) {
-      throw new Error(`MotifSpreader.spreadSubunits(${unit}): missing parent bucket at ${parentBucketKey}[${parentIndex}]`);
+      throw new Error(`motifSpreader.spreadSubunits(${unit}): missing parent bucket at ${parentBucketKey}[${parentIndex}]`);
     }
     // Reset sibling voices for this sub-unit cycle
     if (layer._siblingVoicePCs && layer._siblingVoicePCs[unit]) layer._siblingVoicePCs[unit] = new Set();
@@ -146,25 +146,25 @@ MotifSpreader = {
 
   /**
    * Generic derivation of child buckets from a parent motif.
-   * Uses MotifChain for transforms and IntervalComposer for degree subsets.
+   * Uses motifChain for transforms and intervalComposer for degree subsets.
    */
   _deriveChildBuckets({ layer, parentMotif, count, bucketKey, unit, profile, baseIndex = 0 }) {
     const seq = parentMotif.sequence || parentMotif.events;
-    if (!Array.isArray(seq) || seq.length === 0) throw new Error(`MotifSpreader._deriveChildBuckets(${unit}): empty parent sequence`);
+    if (!Array.isArray(seq) || seq.length === 0) throw new Error(`motifSpreader._deriveChildBuckets(${unit}): empty parent sequence`);
 
     for (let i = 0; i < count; i++) {
       const idx = baseIndex + i;
-      MotifChain.clearTransforms();
-      MotifChain.setActive(parentMotif);
+      motifChain.clearTransforms();
+      motifChain.setActive(parentMotif);
       // Separate ranges: rotate uses small position offsets; transpose uses wider pitch shifts
-      if (rf() > 0.15) MotifChain.mutate({ transposeRange: [-m.max(3, count * 2), m.max(3, count * 2)], rotateRange: [-m.max(1, count), m.max(1, count)] });
+      if (rf() > 0.15) motifChain.mutate({ transposeRange: [-m.max(3, count * 2), m.max(3, count * 2)], rotateRange: [-m.max(1, count), m.max(1, count)] });
       let derived;
-      try { derived = MotifChain.apply(); } catch { derived = parentMotif; }
+      try { derived = motifChain.apply(); } catch { derived = parentMotif; }
       const dSeq = derived.sequence || derived.events;
       if (!Array.isArray(dSeq) || dSeq.length === 0) { layer[bucketKey][idx] = [{ note: Number(seq[0].note), groupId: `${unit}${idx}`, seqIndex: 0, seqLen: 1 }]; continue; }
 
       let intervals;
-      try { intervals = IntervalComposer.selectIntervals(dSeq.length, { density: profile.intervalDensity, style: profile.style, minNotes: 1 }); }
+      try { intervals = intervalComposer.selectIntervals(dSeq.length, { density: profile.intervalDensity, style: profile.style, minNotes: 1 }); }
       catch { intervals = [0]; }
 
       const groupId = `${unit}${idx}`;

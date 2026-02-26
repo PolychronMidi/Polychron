@@ -1,4 +1,4 @@
-// conductorConfigAccessors.js — Extracted accessor methods for ConductorConfig.
+// conductorConfigAccessors.js — Extracted accessor methods for conductorConfig.
 // Pure delegates to dynamics.resolveField() or getProfileTuning() sub-keys.
 // Loaded before conductorConfig.js; called once with { dynamics, getProfileTuning }.
 
@@ -56,7 +56,7 @@ conductorConfigAccessors = (deps) => {
 
   function getJourneyBoldness() {
     const val = Number(dynamics.resolveField('journeyBoldness'));
-    return V.assertRange(val, 0, 2, 'ConductorConfig.journeyBoldness');
+    return V.assertRange(val, 0, 2, 'conductorConfig.journeyBoldness');
   }
 
   /**
@@ -66,12 +66,12 @@ conductorConfigAccessors = (deps) => {
    */
   function getArcMapping(sectionPhase) {
     const arcMapping = dynamics.resolveField('arcMapping');
-    V.assertPlainObject(arcMapping, 'ConductorConfig.getArcMapping.arcMapping');
+    V.assertPlainObject(arcMapping, 'conductorConfig.getArcMapping.arcMapping');
     if (typeof sectionPhase === 'string' && sectionPhase.length > 0) {
       if (!Object.prototype.hasOwnProperty.call(arcMapping, sectionPhase)) {
-        throw new Error(`ConductorConfig.getArcMapping: unknown sectionPhase "${sectionPhase}"`);
+        throw new Error(`conductorConfig.getArcMapping: unknown sectionPhase "${sectionPhase}"`);
       }
-      return V.assertNonEmptyString(arcMapping[sectionPhase], `ConductorConfig.arcMapping.${sectionPhase}`);
+      return V.assertNonEmptyString(arcMapping[sectionPhase], `conductorConfig.arcMapping.${sectionPhase}`);
     }
     return Object.assign({}, arcMapping);
   }
@@ -89,10 +89,10 @@ conductorConfigAccessors = (deps) => {
 
   function getFeedbackMixWeights() {
     const weights = getProfileTuning().feedbackMix;
-    V.assertPlainObject(weights, 'ConductorConfig.getFeedbackMixWeights.feedbackMix');
+    V.assertPlainObject(weights, 'conductorConfig.getFeedbackMixWeights.feedbackMix');
     const sum = Number(weights.fx) + Number(weights.stutter) + Number(weights.journey);
     if (!Number.isFinite(sum) || sum <= 0) {
-      throw new Error(`ConductorConfig.getFeedbackMixWeights: invalid weight sum ${sum}`);
+      throw new Error(`conductorConfig.getFeedbackMixWeights: invalid weight sum ${sum}`);
     }
     return {
       fx: Number(weights.fx) / sum,
@@ -103,10 +103,10 @@ conductorConfigAccessors = (deps) => {
 
   function getGlobalIntensityBlend() {
     const blend = getProfileTuning().intensityBlend;
-    V.assertPlainObject(blend, 'ConductorConfig.getGlobalIntensityBlend.intensityBlend');
+    V.assertPlainObject(blend, 'conductorConfig.getGlobalIntensityBlend.intensityBlend');
     const sum = Number(blend.arc) + Number(blend.tension);
     if (!Number.isFinite(sum) || sum <= 0) {
-      throw new Error(`ConductorConfig.getGlobalIntensityBlend: invalid blend sum ${sum}`);
+      throw new Error(`conductorConfig.getGlobalIntensityBlend: invalid blend sum ${sum}`);
     }
     return {
       arc: Number(blend.arc) / sum,
@@ -116,10 +116,10 @@ conductorConfigAccessors = (deps) => {
 
   function getHarmonicRhythmParams() {
     const cfg = getProfileTuning().harmonicRhythm;
-    V.assertPlainObject(cfg, 'ConductorConfig.getHarmonicRhythmParams.harmonicRhythm');
+    V.assertPlainObject(cfg, 'conductorConfig.getHarmonicRhythmParams.harmonicRhythm');
     return {
-      blendWeight: V.assertRange(cfg.blendWeight, 0, 0.5, 'ConductorConfig.harmonicRhythm.blendWeight'),
-      feedbackWeight: V.assertRange(cfg.feedbackWeight, 0, 0.5, 'ConductorConfig.harmonicRhythm.feedbackWeight')
+      blendWeight: V.assertRange(cfg.blendWeight, 0, 0.5, 'conductorConfig.harmonicRhythm.blendWeight'),
+      feedbackWeight: V.assertRange(cfg.feedbackWeight, 0, 0.5, 'conductorConfig.harmonicRhythm.feedbackWeight')
     };
   }
 

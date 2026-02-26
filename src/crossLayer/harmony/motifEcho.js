@@ -4,7 +4,7 @@
 // (retrograde, inversion, augmentation) into L2's motif pool.
 // Creates fugue-like imitative counterpoint across polyrhythmic layers.
 
-MotifEcho = (() => {
+motifEcho = (() => {
   const V = validator.create('motifEcho');
   const CHANNEL = 'motifEcho';
   const ECHO_DELAY_BEATS_MIN = 1;
@@ -31,7 +31,7 @@ MotifEcho = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     if (!recentNotes.has(layer)) recentNotes.set(layer, []);
     const notes = recentNotes.get(layer);
-    if (!notes) throw new Error('MotifEcho.recordNote: missing recent notes for layer ' + layer);
+    if (!notes) throw new Error('motifEcho.recordNote: missing recent notes for layer ' + layer);
     notes.push(midi);
     if (notes.length > RECENT_WINDOW) notes.shift();
 
@@ -58,7 +58,7 @@ MotifEcho = (() => {
 
     // Pick transform type
     let transform = TRANSFORMS[ri(TRANSFORMS.length - 1)];
-    const identityChoice = MotifIdentityMemory.chooseEchoTransform(layer);
+    const identityChoice = motifIdentityMemory.chooseEchoTransform(layer);
     if (identityChoice && typeof identityChoice.transform === 'string' && rf() < clamp(identityChoice.bias, 0, 1)) {
       transform = identityChoice.transform;
     }
@@ -77,7 +77,7 @@ MotifEcho = (() => {
     });
 
     // Post to ATG for visibility
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       intervals,
       transform,
       delayBeats
@@ -154,4 +154,4 @@ MotifEcho = (() => {
 
   return { recordNote, captureMotif, applyTransform, deliverEcho, getPendingCount, reset };
 })();
-CrossLayerRegistry.register('MotifEcho', MotifEcho, ['all', 'phrase']);
+crossLayerRegistry.register('motifEcho', motifEcho, ['all', 'phrase']);

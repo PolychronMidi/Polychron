@@ -44,9 +44,9 @@ entropyMetrics = (() => {
    * @returns {number} 0-1
    */
   function rhythmicIrregularity(layer) {
-    if (!AbsoluteTimeWindow) return 0.5;
+    if (!absoluteTimeWindow) return 0.5;
     V.requireFinite(beatStartTime, 'beatStartTime');
-    const notes = AbsoluteTimeWindow.getNotes({
+    const notes = absoluteTimeWindow.getNotes({
       layer,
       since: beatStartTime - 2,
       windowSeconds: 2

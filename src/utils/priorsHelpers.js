@@ -4,7 +4,7 @@
 priorsHelpers = (() => {
   /**
    * Resolve the current phrase phase from opts, phraseContext, or sharedPhraseArcManager.
-   * Full version — checks opts.phase → opts.phraseContext.phase → ComposerFactory fallback.
+   * Full version — checks opts.phase → opts.phraseContext.phase → FactoryManager fallback.
    * @param {Object} [opts]
    * @returns {string}
    */
@@ -18,9 +18,9 @@ priorsHelpers = (() => {
       return opts.phraseContext.phase;
     }
 
-    if (ComposerFactory && ComposerFactory.sharedPhraseArcManager
-        && ComposerFactory.sharedPhraseArcManager.getPhase) {
-      const phase = ComposerFactory.sharedPhraseArcManager.getPhase();
+    if (FactoryManager && FactoryManager.sharedPhraseArcManager
+        && FactoryManager.sharedPhraseArcManager.getPhase) {
+      const phase = FactoryManager.sharedPhraseArcManager.getPhase();
       if (typeof phase === 'string' && phase.length > 0) {
         return phase;
       }

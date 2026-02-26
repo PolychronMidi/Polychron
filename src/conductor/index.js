@@ -25,23 +25,23 @@ require('./profiles/conductorProfileAtmospheric');
 require('./profiles/conductorProfileRhythmicDrive');
 // @ts-ignore: load side-effect module with globals
 require('./profiles/conductorProfileMinimal');
-// @ts-ignore: conductor profile sources (must precede ConductorConfig)
+// @ts-ignore: conductor profile sources (must precede conductorConfig)
 require('./profiles/conductorProfiles');
-// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+// @ts-ignore: conductor profile helper globals (must precede conductorConfig)
 require('./profiles/conductorConfigTuningDefaults');
-// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+// @ts-ignore: conductor profile helper globals (must precede conductorConfig)
 require('./profiles/conductorConfigTuningOverrides');
-// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+// @ts-ignore: conductor profile helper globals (must precede conductorConfig)
 require('./profiles/conductorConfigMergeProfileTuning');
-// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+// @ts-ignore: conductor profile helper globals (must precede conductorConfig)
 require('./profiles/conductorConfigValidateProfile');// @ts-ignore: conductor dynamics controls must be available before helpers
-require('./profiles/conductorDynamicsControls');// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+require('./profiles/conductorDynamicsControls');// @ts-ignore: conductor profile helper globals (must precede conductorConfig)
 require('./profiles/conductorConfigDynamics');
-// @ts-ignore: conductor profile helper globals (must precede ConductorConfig)
+// @ts-ignore: conductor profile helper globals (must precede conductorConfig)
 require('./profiles/conductorConfigResolvers');
-// @ts-ignore: conductor profile accessor delegates (must precede ConductorConfig)
+// @ts-ignore: conductor profile accessor delegates (must precede conductorConfig)
 require('./profiles/conductorConfigAccessors');
-// @ts-ignore: conductor profile config/accessor (must precede DynamismEngine & GlobalConductor)
+// @ts-ignore: conductor profile config/accessor (must precede dynamismEngine & globalConductor)
 require('./profiles/conductorConfig');
 // @ts-ignore: load side-effect module with globals
 require('./dynamismPulse');
@@ -51,7 +51,7 @@ require('./dynamismEngine');
 require('./textureBlender');
 // @ts-ignore: load side-effect module with globals
 require('./conductorState');
-// @ts-ignore: intelligence registry (must precede GlobalConductorUpdate & intelligence subdirectories)
+// @ts-ignore: intelligence registry (must precede globalConductorUpdate & intelligence subdirectories)
 require('./conductorIntelligence');
 // @ts-ignore: signal pipeline infrastructure (normalizer, reader, profiler, health, coupling, etc.)
 require('./signal');

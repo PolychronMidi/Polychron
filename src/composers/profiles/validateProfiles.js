@@ -46,18 +46,18 @@ const assertProgressionOrFail = (value, label) => {
 };
 
 const assertPhraseArcOptsOrFail = (value, label) => {
-  if (!ComposerProfileUtils.isPlainObject(value)) throw new Error(`ComposerProfiles: ${label} must be an object`);
+  if (!composerProfileUtils.isPlainObject(value)) throw new Error(`ComposerProfiles: ${label} must be an object`);
   const allowedKeys = new Set(['arcType', 'registerRange', 'densityRange']);
   for (const key of Object.keys(value)) {
     if (!allowedKeys.has(key)) throw new Error(`ComposerProfiles: ${label}.${key} is not supported`);
   }
   if (value.arcType !== undefined) {
-    ComposerProfileUtils.assertStringOrFail(value.arcType, `${label}.arcType`);
+    composerProfileUtils.assertStringOrFail(value.arcType, `${label}.arcType`);
     assertInSetOrFail(value.arcType, ARC_TYPE_SET, `${label}.arcType`);
   }
   if (value.registerRange !== undefined) assertPositiveFiniteOrFail(value.registerRange, `${label}.registerRange`);
   if (value.densityRange !== undefined) {
-    if (!ComposerProfileUtils.isPlainObject(value.densityRange)) throw new Error(`ComposerProfiles: ${label}.densityRange must be an object`);
+    if (!composerProfileUtils.isPlainObject(value.densityRange)) throw new Error(`ComposerProfiles: ${label}.densityRange must be an object`);
     assertPositiveFiniteOrFail(value.densityRange.min, `${label}.densityRange.min`);
     assertPositiveFiniteOrFail(value.densityRange.max, `${label}.densityRange.max`);
     if (Number(value.densityRange.max) < Number(value.densityRange.min)) throw new Error(`ComposerProfiles: ${label}.densityRange.max must be >= min`);
@@ -74,55 +74,55 @@ const validateAllowedKeysOrFail = (entry, type, label) => {
 
 const validateResolvedProfilesShapeOrFail = (entry, label) => {
   if (entry.resolvedProfiles === undefined) return;
-  if (!ComposerProfileUtils.isPlainObject(entry.resolvedProfiles)) throw new Error(`ComposerProfiles: ${label}.resolvedProfiles must be an object`);
+  if (!composerProfileUtils.isPlainObject(entry.resolvedProfiles)) throw new Error(`ComposerProfiles: ${label}.resolvedProfiles must be an object`);
   const allowed = new Set(['voice', 'chord', 'motif', 'rhythm']);
   for (const key of Object.keys(entry.resolvedProfiles)) {
     if (!allowed.has(key)) throw new Error(`ComposerProfiles: ${label}.resolvedProfiles.${key} is not supported`);
-    if (!ComposerProfileUtils.isPlainObject(entry.resolvedProfiles[key])) throw new Error(`ComposerProfiles: ${label}.resolvedProfiles.${key} must be an object`);
+    if (!composerProfileUtils.isPlainObject(entry.resolvedProfiles[key])) throw new Error(`ComposerProfiles: ${label}.resolvedProfiles.${key} must be an object`);
   }
 };
 
 const validateByType = {
   measure: () => {},
   scale: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
   },
   chords: (entry, label) => {
     assertProgressionOrFail(entry.progression, `${label}.progression`);
-    ComposerProfileUtils.assertStringOrFail(entry.direction, `${label}.direction`);
+    composerProfileUtils.assertStringOrFail(entry.direction, `${label}.direction`);
     assertInSetOrFail(entry.direction.toUpperCase(), DIRECTION_SET, `${label}.direction`);
   },
   mode: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
   },
   pentatonic: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
-    ComposerProfileUtils.assertStringOrFail(entry.scaleType, `${label}.scaleType`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.scaleType, `${label}.scaleType`);
     if (!['major', 'minor', 'random'].includes(String(entry.scaleType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.scaleType must be major|minor|random`);
   },
   blues: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
-    ComposerProfileUtils.assertStringOrFail(entry.bluesType, `${label}.bluesType`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.bluesType, `${label}.bluesType`);
     if (!['major', 'minor', 'random'].includes(String(entry.bluesType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.bluesType must be major|minor|random`);
     assertFiniteRangeOrFail(entry.blueNoteProb, 0, 1, `${label}.blueNoteProb`);
   },
   chromatic: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.targetScaleName, `${label}.targetScaleName`);
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.targetScaleName, `${label}.targetScaleName`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
     assertFiniteRangeOrFail(entry.chromaticDensity, 0, 1, `${label}.chromaticDensity`);
   },
   quartal: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.scaleName, `${label}.scaleName`);
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
-    ComposerProfileUtils.assertStringOrFail(entry.voicingType, `${label}.voicingType`);
+    composerProfileUtils.assertStringOrFail(entry.scaleName, `${label}.scaleName`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.voicingType, `${label}.voicingType`);
     if (!['quartal', 'quintal', 'mixed', 'random'].includes(String(entry.voicingType).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.voicingType must be quartal|quintal|mixed|random`);
     assertIntegerRangeOrFail(entry.stackSize, 2, 6, `${label}.stackSize`);
   },
   tensionRelease: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);
-    ComposerProfileUtils.assertStringOrFail(entry.quality, `${label}.quality`);
+    composerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);
+    composerProfileUtils.assertStringOrFail(entry.quality, `${label}.quality`);
     if (!['major', 'minor'].includes(String(entry.quality).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.quality must be major|minor`);
     assertFiniteRangeOrFail(entry.tensionCurve, 0, 1, `${label}.tensionCurve`);
     assertBooleanOrFail(entry.enablePhraseArcs, `${label}.enablePhraseArcs`);
@@ -130,19 +130,19 @@ const validateByType = {
     if (entry.phraseArcOpts !== undefined) assertPhraseArcOptsOrFail(entry.phraseArcOpts, `${label}.phraseArcOpts`);
   },
   modalInterchange: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);
-    ComposerProfileUtils.assertStringOrFail(entry.primaryMode, `${label}.primaryMode`);
+    composerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);
+    composerProfileUtils.assertStringOrFail(entry.primaryMode, `${label}.primaryMode`);
     if (!['major', 'minor'].includes(String(entry.primaryMode).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.primaryMode must be major|minor`);
     assertFiniteRangeOrFail(entry.borrowProbability, 0, 1, `${label}.borrowProbability`);
   },
   melodicDevelopment: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
     assertFiniteRangeOrFail(entry.intensity, 0, 1, `${label}.intensity`);
     assertFiniteRangeOrFail(entry.developmentBias, 0, 1, `${label}.developmentBias`);
-    ComposerProfileUtils.assertStringOrFail(entry.inversionMode, `${label}.inversionMode`);
+    composerProfileUtils.assertStringOrFail(entry.inversionMode, `${label}.inversionMode`);
     if (!['diatonic', 'chromatic'].includes(String(entry.inversionMode).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.inversionMode must be diatonic|chromatic`);
-    ComposerProfileUtils.assertStringOrFail(entry.inversionPivotMode, `${label}.inversionPivotMode`);
+    composerProfileUtils.assertStringOrFail(entry.inversionPivotMode, `${label}.inversionPivotMode`);
     if (!['first-note', 'median', 'fixed-degree'].includes(String(entry.inversionPivotMode).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.inversionPivotMode must be first-note|median|fixed-degree`);
     if (entry.inversionFixedDegree !== undefined && !Number.isFinite(Number(entry.inversionFixedDegree))) throw new Error(`ComposerProfiles: ${label}.inversionFixedDegree must be finite when provided`);
     assertBooleanOrFail(entry.normalizeToScale, `${label}.normalizeToScale`);
@@ -152,16 +152,16 @@ const validateByType = {
     if (entry.phraseArcOpts !== undefined) assertPhraseArcOptsOrFail(entry.phraseArcOpts, `${label}.phraseArcOpts`);
   },
   voiceLeading: (entry, label) => {
-    ComposerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
-    ComposerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
+    composerProfileUtils.assertStringOrFail(entry.name, `${label}.name`);
+    composerProfileUtils.assertStringOrFail(entry.root, `${label}.root`);
     assertFiniteRangeOrFail(entry.commonToneWeight, 0, 1, `${label}.commonToneWeight`);
     assertFiniteRangeOrFail(entry.contraryMotionPreference, 0, 1, `${label}.contraryMotionPreference`);
   },
   harmonicRhythm: (entry, label) => {
     assertProgressionOrFail(entry.progression, `${label}.progression`);
-    ComposerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);
+    composerProfileUtils.assertStringOrFail(entry.key, `${label}.key`);
     assertIntegerRangeOrFail(entry.measuresPerChord, 1, 8, `${label}.measuresPerChord`);
-    ComposerProfileUtils.assertStringOrFail(entry.quality, `${label}.quality`);
+    composerProfileUtils.assertStringOrFail(entry.quality, `${label}.quality`);
     if (!['major', 'minor'].includes(String(entry.quality).toLowerCase())) throw new Error(`ComposerProfiles: ${label}.quality must be major|minor`);
     assertPositiveFiniteOrFail(entry.changeEmphasis, `${label}.changeEmphasis`);
     assertBooleanOrFail(entry.anticipation, `${label}.anticipation`);
@@ -173,10 +173,10 @@ const validateByType = {
 };
 
 const validateEntryForTypeOrFail = (entry, label, expectedType = null) => {
-  if (!ComposerProfileUtils.isPlainObject(entry)) throw new Error(`ComposerProfiles: ${label} entry must be an object`);
-  ComposerProfileUtils.assertStringOrFail(entry.type, `${label}.type`);
+  if (!composerProfileUtils.isPlainObject(entry)) throw new Error(`ComposerProfiles: ${label} entry must be an object`);
+  composerProfileUtils.assertStringOrFail(entry.type, `${label}.type`);
 
-  if (!ComposerProfileUtils.COMPOSER_TYPES.includes(entry.type)) {
+  if (!composerProfileUtils.COMPOSER_TYPES.includes(entry.type)) {
     throw new Error(`ComposerProfiles: ${label}.type "${entry.type}" is unsupported`);
   }
   if (expectedType && entry.type !== expectedType) {
@@ -186,7 +186,7 @@ const validateEntryForTypeOrFail = (entry, label, expectedType = null) => {
   validateAllowedKeysOrFail(entry, entry.type, label);
   validateResolvedProfilesShapeOrFail(entry, label);
   for (const key of PROFILE_NAME_KEYS) {
-    if (entry[key] !== undefined) ComposerProfileUtils.assertStringOrFail(entry[key], `${label}.${key}`);
+    if (entry[key] !== undefined) composerProfileUtils.assertStringOrFail(entry[key], `${label}.${key}`);
   }
 
   const validatorCheck = validateByType[entry.type];
@@ -195,12 +195,12 @@ const validateEntryForTypeOrFail = (entry, label, expectedType = null) => {
 };
 
 const validateDiversityOrFail = (type, profileMap) => {
-  const dimensions = ComposerProfileUtils.DIVERSITY_DIMENSIONS_BY_TYPE[type] || [];
+  const dimensions = composerProfileUtils.DIVERSITY_DIMENSIONS_BY_TYPE[type] || [];
   for (const dim of dimensions) {
     const distinct = new Set();
     for (const entries of Object.values(profileMap)) {
       for (const entry of entries) {
-        if (entry[dim] !== undefined) distinct.add(ComposerProfileUtils.serializeDimensionValue(entry[dim]));
+        if (entry[dim] !== undefined) distinct.add(composerProfileUtils.serializeDimensionValue(entry[dim]));
       }
     }
     if (distinct.size < 2) {
@@ -217,7 +217,7 @@ const getAllowedKeysByTypeOrFail = () => {
   return out;
 };
 
-ComposerProfileValidation = {
+composerProfileValidation = {
   validateEntryForTypeOrFail,
   validateDiversityOrFail,
   getAllowedKeysByTypeOrFail

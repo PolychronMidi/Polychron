@@ -3,7 +3,7 @@
 // When phase difference is small, briefly lock them (quantize onsets to aligned grid).
 // When large, repel further. Creates breathing patterns: sync → desync → sync.
 
-RhythmicPhaseLock = (() => {
+rhythmicPhaseLock = (() => {
   const V = validator.create('rhythmicPhaseLock');
   const CHANNEL = 'beatPhase';
   const PHASE_TOLERANCE_MS = 80;
@@ -26,7 +26,7 @@ RhythmicPhaseLock = (() => {
   function postBeat(absTimeMs, layer, beatDurationMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.requireFinite(beatDurationMs, 'beatDurationMs');
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { beatDurationMs });
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { beatDurationMs });
   }
 
   /**
@@ -38,7 +38,7 @@ RhythmicPhaseLock = (() => {
   function measurePhase(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
-    const other = AbsoluteTimeGrid.findClosest(
+    const other = absoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, PHASE_TOLERANCE_MS * 10, activeLayer
     );
     if (!other || !Number.isFinite(other.beatDurationMs)) return null;
@@ -108,4 +108,4 @@ RhythmicPhaseLock = (() => {
 
   return { postBeat, measurePhase, applyPhaseLock, getMode, getLockCount, reset };
 })();
-CrossLayerRegistry.register('RhythmicPhaseLock', RhythmicPhaseLock, ['all']);
+crossLayerRegistry.register('rhythmicPhaseLock', rhythmicPhaseLock, ['all']);

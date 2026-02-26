@@ -3,7 +3,7 @@
 // are crescendoing toward the same ms point, velocities reinforce. When one
 // crescendos while the other decrescendos, spectral separation increases.
 
-VelocityInterference = (() => {
+velocityInterference = (() => {
   const V = validator.create('velocityInterference');
   const CHANNEL = 'velocity';
   const CONTOUR_WINDOW_MS = 400;
@@ -26,7 +26,7 @@ VelocityInterference = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const velocityN = V.requireFinite(velocity, 'velocity');
     const deltaN = V.requireFinite(delta, 'delta');
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       velocity: clamp(velocityN, 0, 127),
       delta: deltaN
     });
@@ -42,7 +42,7 @@ VelocityInterference = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = CONTOUR_WINDOW_MS / 1000;
-    const bounds = AbsoluteTimeWindow.getNoteBounds({
+    const bounds = absoluteTimeWindow.getNoteBounds({
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
@@ -69,7 +69,7 @@ VelocityInterference = (() => {
     V.assertNonEmptyString(activeLayer, 'activeLayer');
     const baseVelocityN = V.requireFinite(baseVelocity, 'baseVelocity');
 
-    const other = AbsoluteTimeGrid.findClosest(
+    const other = absoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!other) {
@@ -112,7 +112,7 @@ VelocityInterference = (() => {
     V.assertNonEmptyString(layer, 'writeVizCC.layer');
     V.assertInSet(mode, MODE_SET, 'writeVizCC.mode');
     if (!Array.isArray(c)) {
-      throw new Error('VelocityInterference.writeVizCC: c must be a note event array');
+      throw new Error('velocityInterference.writeVizCC: c must be a note event array');
     }
     const startTick = V.requireFinite(beatStart, 'writeVizCC.beatStart');
     const ch = (layer === 'L1') ? cCH1 : cCH2;
@@ -122,4 +122,4 @@ VelocityInterference = (() => {
 
   return { postVelocity, measureDelta, applyInterference, reset() { /* stateless — no per-scope state to clear */ } };
 })();
-CrossLayerRegistry.register('VelocityInterference', VelocityInterference, ['all']);
+crossLayerRegistry.register('velocityInterference', velocityInterference, ['all']);

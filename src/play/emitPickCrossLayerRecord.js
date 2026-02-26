@@ -15,26 +15,26 @@ emitPickCrossLayerRecord = function(ctx) {
 
   const absMs = absMsAtOnTick;
   const atwTime = absMs / 1000;
-  AbsoluteTimeWindow.recordNote(noteToEmit, texVel, activeLayerName, atwTime, unit);
+  absoluteTimeWindow.recordNote(noteToEmit, texVel, activeLayerName, atwTime, unit);
 
   // Cross-layer interactions
-  ConvergenceDetector.postOnset(absMs, activeLayerName, noteToEmit, texVel);
-  const convergenceResult = ConvergenceDetector.applyIfConverged(absMs, activeLayerName, noteToEmit, texVel);
+  convergenceDetector.postOnset(absMs, activeLayerName, noteToEmit, texVel);
+  const convergenceResult = convergenceDetector.applyIfConverged(absMs, activeLayerName, noteToEmit, texVel);
   if (convergenceResult) {
-    FeedbackOscillator.inject(absMs, activeLayerName, clamp(convergenceResult.rarity, 0, 1), 'convergence', noteToEmit % 12);
+    feedbackOscillator.inject(absMs, activeLayerName, clamp(convergenceResult.rarity, 0, 1), 'convergence', noteToEmit % 12);
   }
-  VelocityInterference.postVelocity(absMs, activeLayerName, texVel, VelocityInterference.measureDelta(activeLayerName, atwTime));
+  velocityInterference.postVelocity(absMs, activeLayerName, texVel, velocityInterference.measureDelta(activeLayerName, atwTime));
 
   // Spectral Complementarity: record note for histogram tracking
-  SpectralComplementarity.recordNote(noteToEmit, activeLayerName);
+  spectralComplementarity.recordNote(noteToEmit, activeLayerName);
 
   // Cross-Layer Motif Echo: record note for interval capture
-  MotifEcho.recordNote(noteToEmit, activeLayerName, absMs);
-  MotifIdentityMemory.recordNote(activeLayerName, noteToEmit, absMs);
+  motifEcho.recordNote(noteToEmit, activeLayerName, absMs);
+  motifIdentityMemory.recordNote(activeLayerName, noteToEmit, absMs);
 
   // Deliver pending motif echo as actual emitted notes
   let additionalScheduled = 0;
-  const deliveredEcho = MotifEcho.deliverEcho(absMs, activeLayerName, noteToEmit);
+  const deliveredEcho = motifEcho.deliverEcho(absMs, activeLayerName, noteToEmit);
   if (deliveredEcho && Array.isArray(deliveredEcho.notes) && deliveredEcho.notes.length > 1) {
     const echoCount = m.min(3, deliveredEcho.notes.length - 1);
     for (let echoIndex = 0; echoIndex < echoCount; echoIndex++) {
@@ -52,16 +52,16 @@ emitPickCrossLayerRecord = function(ctx) {
   entropyRegulator.recordSample(noteToEmit, texVel, activeLayerName);
 
   // Record cross-layer interval for harmonic guard tracking.
-  // Use pre-computed otherMidi from HarmonicIntervalGuard.nudgePitch() when available,
-  // avoiding a redundant AbsoluteTimeWindow.getLastNote() query.
+  // Use pre-computed otherMidi from harmonicIntervalGuard.nudgePitch() when available,
+  // avoiding a redundant absoluteTimeWindow.getLastNote() query.
   if (Number.isFinite(harmonicOtherMidi) && harmonicOtherMidi > 0) {
-    HarmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, absMs);
+    harmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, absMs);
   } else if (harmonicOtherMidi === -1) {
     // harmonicOtherMidi === -1 means nudgePitch found no other-layer note; skip query entirely
   } else {
     // Fallback: query ATW directly (should not normally occur)
     const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
-    const otherRecentEntry = AbsoluteTimeWindow.getLastNote({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+    const otherRecentEntry = absoluteTimeWindow.getLastNote({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
     if (otherRecentEntry) {
       const otherMidiCandidate = Number(
         (Number.isFinite(Number(otherRecentEntry.midi)))
@@ -72,13 +72,13 @@ emitPickCrossLayerRecord = function(ctx) {
         throw new Error(`${unit}.emitPickCrossLayerRecord: other layer note history entry must include finite midi or note`);
       }
       if (otherMidiCandidate > 0) {
-        HarmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, absMs);
+        harmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, absMs);
       }
     }
   }
 
-  // Pitch Memory Recall: memorize significant patterns via MotifIdentityMemory
-  const memIdentity = MotifIdentityMemory.getActiveIdentity(activeLayerName);
+  // Pitch Memory Recall: memorize significant patterns via motifIdentityMemory
+  const memIdentity = motifIdentityMemory.getActiveIdentity(activeLayerName);
   if (memIdentity && typeof memIdentity.intervalDna === 'string' && memIdentity.intervalDna.length > 0) {
     // Cache parsed intervals on the identity object to avoid split/map/filter per pick
     /** @type {any} */ const memI = memIdentity;
@@ -93,8 +93,8 @@ emitPickCrossLayerRecord = function(ctx) {
       memI._parsedIntervals = memIntervals;
     }
     if (memIntervals.length >= 2) {
-      const memConvergence = ConvergenceDetector.wasRecent(absMs, activeLayerName, 500);
-      PitchMemoryRecall.memorize(
+      const memConvergence = convergenceDetector.wasRecent(absMs, activeLayerName, 500);
+      pitchMemoryRecall.memorize(
         memIntervals,
         [noteToEmit % 12],
         { convergence: memConvergence, cadence: false, downbeat: false },

@@ -4,7 +4,7 @@
 // downbeats. Detect these emergent downbeats and lean into them: accent notes,
 // add bass reinforcement, widen stereo field.
 
-EmergentDownbeat = (() => {
+emergentDownbeat = (() => {
   const V = validator.create('emergentDownbeat');
   const CHANNEL = 'emergentDownbeat';
   const MIN_DOWNBEAT_INTERVAL_MS = 800;
@@ -46,7 +46,7 @@ EmergentDownbeat = (() => {
     downbeatCount++;
 
     // Post to ATG for other systems to see
-    AbsoluteTimeGrid.post(CHANNEL, 'both', absTimeMs, { strength: score, signalCount });
+    absoluteTimeGrid.post(CHANNEL, 'both', absTimeMs, { strength: score, signalCount });
 
     return { isDownbeat: true, strength: clamp(score, 0, 1), signalCount };
   }
@@ -135,4 +135,4 @@ EmergentDownbeat = (() => {
 
   return { detect, accentVelocity, reinforceBass, widenStereo, applyIfDownbeat, getDownbeatCount, reset };
 })();
-CrossLayerRegistry.register('EmergentDownbeat', EmergentDownbeat, ['all']);
+crossLayerRegistry.register('emergentDownbeat', emergentDownbeat, ['all']);

@@ -10,7 +10,7 @@
  * }} ContagionPayload
  */
 
-StutterContagion = (() => {
+stutterContagion = (() => {
   const V = validator.create('stutterContagion');
   const STUTTER_TYPES = new Set(['fade', 'pan', 'fx']);
   const SYNC_TOLERANCE_MS = 150;
@@ -27,7 +27,7 @@ StutterContagion = (() => {
    */
   function getAdaptiveDecay(absTimeMs) {
     // Check if convergence happened recently via ATG onset channel
-    const recentConvergence = AbsoluteTimeGrid.findClosest(
+    const recentConvergence = absoluteTimeGrid.findClosest(
       'onset', absTimeMs, CONVERGENCE_WINDOW_MS
     );
     if (!recentConvergence) return BASE_DECAY;
@@ -55,7 +55,7 @@ StutterContagion = (() => {
       V.requireFinite(normalizedChannels[i], `channels[${i}]`);
     }
     const normalizedType = V.assertInSet(type, STUTTER_TYPES, 'type');
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       intensity: normalizedIntensity,
       channels: normalizedChannels,
       type: normalizedType
@@ -72,7 +72,7 @@ StutterContagion = (() => {
   function checkContagion(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
-    const match = AbsoluteTimeGrid.findClosest(
+    const match = absoluteTimeGrid.findClosest(
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!match) return null;
@@ -129,7 +129,7 @@ StutterContagion = (() => {
 
     // Re-post with decayed intensity to sustain the chain across more layers
     const repostDecay = getAdaptiveDecay(absTimeMs);
-    AbsoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
+    absoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
       intensity: contagion.intensity * repostDecay,
       channels: contagion.channels,
       type: contagion.type
@@ -138,4 +138,4 @@ StutterContagion = (() => {
 
   return { postStutter, checkContagion, apply, reset() { /* stateless — no per-scope state to clear */ } };
 })();
-CrossLayerRegistry.register('StutterContagion', StutterContagion, ['all']);
+crossLayerRegistry.register('stutterContagion', stutterContagion, ['all']);

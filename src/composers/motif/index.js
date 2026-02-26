@@ -14,7 +14,7 @@ require('./motifValidators');
 // @ts-ignore: load side-effect module with globals
 require('./MotifComposer');
 // @ts-ignore: load side-effect module with globals
-require('./motifs');
+require('./Motif');
 // @ts-ignore: load side-effect module with globals
 require('./motifChain');
 // @ts-ignore: load side-effect module with globals
@@ -35,9 +35,7 @@ require('./playMotifsApplyCycleTransforms');
 require('./playMotifs');
 
 // Register default generator wrapper
-MotifRegistry.register('motif', (opts = {}) => {
+motifRegistry.register('motif', (opts = {}) => {
   const mc = new MotifComposer(opts);
   return mc.generate(opts);
 });
-
-

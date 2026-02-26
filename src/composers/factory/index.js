@@ -10,6 +10,4 @@ require('./factoryFamilies');
 // @ts-ignore: load side-effect module with globals
 require('./factoryConstructors');
 // @ts-ignore: load side-effect module with globals
-require('./factoryManager');
-
-
+require('./FactoryManager');

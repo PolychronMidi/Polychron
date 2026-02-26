@@ -6,7 +6,7 @@
  * Tracks which composer families and texture profiles have been used
  * across sections. Provides a "variety pressure" density bias that
  * encourages the system to explore under-represented strategies.
- * Also exposes state to ConductorState for downstream consumers.
+ * Also exposes state to conductorState for downstream consumers.
  */
 
 structuralNarrativeAdvisor = (() => {
@@ -47,7 +47,7 @@ structuralNarrativeAdvisor = (() => {
    * Called each beat via recorder — reads current composer from state.
    */
   function refresh() {
-    const snap = ConductorState.getSnapshot();
+    const snap = conductorState.getSnapshot();
     const family = snap.textureMode || snap.activeProfile || null;
     if (family) recordFamily(String(family));
   }
@@ -65,13 +65,13 @@ structuralNarrativeAdvisor = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerDensityBias('structuralNarrativeAdvisor', densityBias, 0.96, 1.12);
-  ConductorIntelligence.registerRecorder('structuralNarrativeAdvisor', refresh);
-  ConductorIntelligence.registerStateProvider('structuralNarrativeAdvisor', () => ({
+  conductorIntelligence.registerDensityBias('structuralNarrativeAdvisor', densityBias, 0.96, 1.12);
+  conductorIntelligence.registerRecorder('structuralNarrativeAdvisor', refresh);
+  conductorIntelligence.registerStateProvider('structuralNarrativeAdvisor', () => ({
     composerVariety: varietyPressure,
     uniqueFamilies: familyCounts.size,
   }));
-  ConductorIntelligence.registerModule('structuralNarrativeAdvisor', { reset }, ['all']);
+  conductorIntelligence.registerModule('structuralNarrativeAdvisor', { reset }, ['all']);
 
   return { recordFamily, getHistory, getVarietyPressure, densityBias, reset };
 })();

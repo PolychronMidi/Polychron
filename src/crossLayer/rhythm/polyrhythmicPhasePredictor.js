@@ -5,7 +5,7 @@
  *
  * Uses POLYRHYTHM_PAIRS to forecast when the two metric layers will
  * next converge (LCM-based downbeat alignment). Posts predictions to
- * AbsoluteTimeGrid and registers a cross-layer module that nudges
+ * absoluteTimeGrid and registers a cross-layer module that nudges
  * playProb upward near predicted convergence points.
  */
 
@@ -36,8 +36,8 @@ polyrhythmicPhasePredictor = (() => {
     const cycle = lcm(d1, d2);
 
     const phraseLen = V.optionalFinite(
-      TimeStream.normalizedProgress('phrase') > 0
-        ? TimeStream.getBounds('phrase') * (1000 / 120) // approximate ms from phrase bound
+      timeStream.normalizedProgress('phrase') > 0
+        ? timeStream.getBounds('phrase') * (1000 / 120) // approximate ms from phrase bound
         : 0,
       4000
     );
@@ -49,7 +49,7 @@ polyrhythmicPhasePredictor = (() => {
       if (i % d1 === 0 && i % d2 === 0) {
         const t = nowMs + i * stepMs;
         predictions.push(t);
-        AbsoluteTimeGrid.post(CHANNEL, '0', t, { cycle, step: i });
+        absoluteTimeGrid.post(CHANNEL, '0', t, { cycle, step: i });
       }
     }
   }
@@ -63,8 +63,8 @@ polyrhythmicPhasePredictor = (() => {
 
     const nowMs = V.optionalFinite(beatCtx && beatCtx.absoluteTimeMs, 0);
     const phraseLen = V.optionalFinite(
-      TimeStream.normalizedProgress('phrase') > 0
-        ? TimeStream.getBounds('phrase') * (1000 / 120)
+      timeStream.normalizedProgress('phrase') > 0
+        ? timeStream.getBounds('phrase') * (1000 / 120)
         : 0,
       4000
     );
@@ -91,7 +91,7 @@ polyrhythmicPhasePredictor = (() => {
   // Cross-layer registration
   const mod = { process, reset, predictConvergences };
 
-  CrossLayerRegistry.register('polyrhythmicPhasePredictor', mod, ['all', 'phrase']);
+  crossLayerRegistry.register('polyrhythmicPhasePredictor', mod, ['all', 'phrase']);
 
   return mod;
 })();

@@ -24,7 +24,7 @@ require('./ProgressionGenerator');
 require('./pivotChordBridge');
 
 // Register progression generator wrapper
-ChordRegistry.register('progression', (key, quality, type) => {
+chordRegistry.register('progression', (key, quality, type) => {
   const pg = new ProgressionGenerator(key, quality);
   return type ? pg.generate(type) : pg.random();
 });

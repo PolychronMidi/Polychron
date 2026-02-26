@@ -3,7 +3,7 @@
 // in a register, nudges the other to fill spectral gaps (bass or treble).
 // Ensures combined output always has full-spectrum coverage.
 
-SpectralComplementarity = (() => {
+spectralComplementarity = (() => {
   const V = validator.create('spectralComplementarity');
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)
@@ -35,9 +35,9 @@ SpectralComplementarity = (() => {
       binCountsByLayer.set(layer, new Array(REGISTER_BINS).fill(0));
     }
     const hist = noteHistory.get(layer);
-    if (!hist) throw new Error('SpectralComplementarity.recordNote: missing note history for layer ' + layer);
+    if (!hist) throw new Error('spectralComplementarity.recordNote: missing note history for layer ' + layer);
     const bins = binCountsByLayer.get(layer);
-    if (!bins) throw new Error('SpectralComplementarity.recordNote: missing bin counts for layer ' + layer);
+    if (!bins) throw new Error('spectralComplementarity.recordNote: missing bin counts for layer ' + layer);
     hist.push(midi);
     bins[noteToBin(midi)]++;
     if (hist.length > WINDOW_NOTES) {
@@ -135,7 +135,7 @@ SpectralComplementarity = (() => {
    */
   function postSpectralState(absTimeMs, layer) {
     const hist = getHistogram(layer);
-    AbsoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { histogram: hist });
+    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { histogram: hist });
   }
 
   function reset() {
@@ -145,4 +145,4 @@ SpectralComplementarity = (() => {
 
   return { recordNote, getHistogram, analyzeComplement, nudgeToFillGap, postSpectralState, reset };
 })();
-CrossLayerRegistry.register('SpectralComplementarity', SpectralComplementarity, ['all', 'section']);
+crossLayerRegistry.register('spectralComplementarity', spectralComplementarity, ['all', 'section']);

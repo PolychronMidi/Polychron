@@ -1,15 +1,15 @@
 /**
  * Resolve a scale to ordered pitch classes (0-11).
- * Accepts note names or numeric pitch classes and falls back to HarmonicContext when omitted.
+ * Accepts note names or numeric pitch classes and falls back to harmonicContext when omitted.
  * @param {Array<string|number>|null} scale
  * @returns {number[]}
  */
 resolveScalePC = function(scale = null) {
   let theScale = scale;
   if (!Array.isArray(theScale) || theScale.length === 0) {
-    if (HarmonicContext) theScale = HarmonicContext.getField('scale');
+    if (harmonicContext) theScale = harmonicContext.getField('scale');
   }
-  if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('resolveScalePC: scale must be provided or available via HarmonicContext');
+  if (!Array.isArray(theScale) || theScale.length === 0) throw new Error('resolveScalePC: scale must be provided or available via harmonicContext');
 
   // Narrow type for TypeScript/checkJs
   const finalScale = /** @type {(string|number)[]} */ (theScale);

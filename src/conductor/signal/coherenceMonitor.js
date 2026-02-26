@@ -1,10 +1,10 @@
-﻿// CoherenceMonitor.js - Closed-loop feedback that regulates density based on actual output.
+﻿// coherenceMonitor.js - Closed-loop feedback that regulates density based on actual output.
 // Subscribes to NOTES_EMITTED events, compares actual note counts against the
 // conductor's intended density, and feeds a correction bias back into the
-// ConductorIntelligence density pipeline. This closes the open loop:
+// conductorIntelligence density pipeline. This closes the open loop:
 // the system now listens to its own song.
 
-CoherenceMonitor = (() => {
+coherenceMonitor = (() => {
   const V = validator.create('coherenceMonitor');
 
   let initialized = false;
@@ -26,20 +26,20 @@ CoherenceMonitor = (() => {
   const ENTROPY_DECAY = 0.92;
 
   /**
-   * Deferred initialization - called from main.js after EventBus is available.
+   * Deferred initialization - called from main.js after eventBus is available.
    * Subscribes to NOTES_EMITTED and SECTION_BOUNDARY events.
    */
   function initialize() {
     if (initialized) return;
-    V.requireDefined(EventBus, 'EventBus');
+    V.requireDefined(eventBus, 'eventBus');
     const EVENTS = V.getEventsOrThrow();
 
-    EventBus.on(EVENTS.NOTES_EMITTED, (data) => {
+    eventBus.on(EVENTS.NOTES_EMITTED, (data) => {
       V.assertObject(data, 'notes-emitted payload');
       const actual = V.requireFinite(data.actual, 'actual');
       const intended = V.requireFinite(data.intended, 'intended');
       if (intended < 0 || actual < 0) {
-        throw new Error('CoherenceMonitor: actual/intended must be non-negative');
+        throw new Error('coherenceMonitor: actual/intended must be non-negative');
       }
 
       // Push into rolling window
@@ -51,9 +51,9 @@ CoherenceMonitor = (() => {
       _updateBias();
     });
 
-    // Stutter notes contribute to actual density but bypass the normal note path.
+    // stutter notes contribute to actual density but bypass the normal note path.
     // Count them so the coherence window reflects the true output density.
-    EventBus.on(EVENTS.STUTTER_APPLIED, () => {
+    eventBus.on(EVENTS.STUTTER_APPLIED, () => {
       cumulativeActual += 1;
       cumulativeIntended += 1;
       if (window.length > 0) {
@@ -64,7 +64,7 @@ CoherenceMonitor = (() => {
     });
 
     // Motif chain expansions also add notes the window wouldn't otherwise see.
-    EventBus.on(EVENTS.MOTIF_CHAIN_APPLIED, (data) => {
+    eventBus.on(EVENTS.MOTIF_CHAIN_APPLIED, (data) => {
       const extra = V.requireFinite(data.resultNoteCount, 'resultNoteCount');
       cumulativeActual += extra;
       cumulativeIntended += extra;
@@ -77,7 +77,7 @@ CoherenceMonitor = (() => {
 
     // Phrase boundaries trigger partial decay - keep recent history but attenuate
     // older observations so the new phrase starts with a fresh-ish baseline.
-    EventBus.on(EVENTS.PHRASE_BOUNDARY, () => {
+    eventBus.on(EVENTS.PHRASE_BOUNDARY, () => {
       const decayFactor = 0.5;
       for (let i = 0; i < window.length; i++) {
         window[i].actual *= decayFactor;
@@ -88,7 +88,7 @@ CoherenceMonitor = (() => {
 
     // Cross-check: if the conductor is regulating heavily and we're also
     // pushing a strong bias, detect the feedback loop and dampen.
-    EventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
+    eventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       const regBias = V.requireFinite(data.densityBias, 'densityBias');
       // Both biases pushing in the same direction â†’ dampen ours
       const sameDirection = (regBias > 0 && coherenceBias > 1.0) || (regBias < 0 && coherenceBias < 1.0);
@@ -100,6 +100,14 @@ CoherenceMonitor = (() => {
         );
       }
     });
+
+    feedbackRegistry.registerLoop(
+      'coherenceMonitor',
+      'notes_emitted',
+      'density',
+      () => Math.abs(coherenceBias - 1.0) / (BIAS_CEILING - 1.0),
+      () => Math.sign(coherenceBias - 1.0)
+    );
 
     initialized = true;
   }
@@ -122,7 +130,7 @@ CoherenceMonitor = (() => {
 
     // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
     // Uses a bell curve centered at phrase midpoint: sin(progress * Ï€) peaks at 0.5.
-    const phraseProgress = TimeStream.normalizedProgress('phrase');
+    const phraseProgress = timeStream.normalizedProgress('phrase');
     let phaseGain = 0.35 + 0.4 * m.sin(phraseProgress * m.PI); // 0.35 at edges, 0.75 at center
 
     // Peer-aware: if a single density contributor is dominating the product,
@@ -161,11 +169,18 @@ CoherenceMonitor = (() => {
     const blendedCorrection = correction * productCorrection;
 
     // Smooth the bias to avoid jitter
-    coherenceBias = clamp(
+    let newBias = clamp(
       coherenceBias * SMOOTHING + blendedCorrection * (1 - SMOOTHING),
       BIAS_FLOOR,
       BIAS_CEILING
     );
+
+    const dampening = feedbackRegistry.getResonanceDampening('coherenceMonitor');
+    if (dampening < 1.0) {
+      newBias = 1.0 + (newBias - 1.0) * dampening;
+    }
+
+    coherenceBias = newBias;
 
     // Update entropy signal: measures variance in recent ratios
     if (window.length >= 4) {
@@ -188,7 +203,7 @@ CoherenceMonitor = (() => {
     }
   }
 
-  /** @returns {number} Density bias multiplier for ConductorIntelligence. */
+  /** @returns {number} Density bias multiplier for conductorIntelligence. */
   function getDensityBias() {
     return clamp(coherenceBias, BIAS_FLOOR, BIAS_CEILING);
   }
@@ -217,17 +232,19 @@ CoherenceMonitor = (() => {
     entropySignal = 0;
   }
 
-  // Self-register into ConductorIntelligence
+  // Self-register into conductorIntelligence
   // getDensityBias is called each beat by the conductor pipeline.
-  ConductorIntelligence.registerDensityBias('CoherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.60, ceiling=1.3
+  conductorIntelligence.registerDensityBias('coherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.60, ceiling=1.3
 
-  // metrics to ConductorState via the state provider registry.
-  ConductorIntelligence.registerStateProvider('CoherenceMonitor', () => ({
+  // metrics to conductorState via the state provider registry.
+  conductorIntelligence.registerStateProvider('coherenceMonitor', () => ({
     coherenceBias: getDensityBias(),
     coherenceEntropy: getEntropySignal(),
     coherenceWindowSize: window.length
   }));
-  ConductorIntelligence.registerModule('CoherenceMonitor', { reset }, ['section']);
+  conductorIntelligence.registerModule('coherenceMonitor', { reset }, ['section']);
+
+  moduleLifecycle.registerInitializer('coherenceMonitor', initialize);
 
   return {
     initialize,

@@ -1,10 +1,10 @@
 // src/crossLayer/crossLayerSilhouette.js — Holistic combined-output conductor.
 // Observes the combined behavior of all cross-layer modules and produces
 // correctional biases to keep the overall output balanced and musical.
-// Consumes SpectralComplementarity ATG 'spectral' channel (dead-end signal).
+// Consumes spectralComplementarity ATG 'spectral' channel (dead-end signal).
 // Acts as the "meta-conductor" layer above individual cross-layer modules.
 
-CrossLayerSilhouette = (() => {
+crossLayerSilhouette = (() => {
   const V = validator.create('crossLayerSilhouette');
   const SMOOTHING = 0.15;
   const ARC_HISTORY = 16;
@@ -31,14 +31,14 @@ CrossLayerSilhouette = (() => {
     // Density from entropyRegulator
     const entropyReg = entropyRegulator.getRegulation();
 
-    // Register balance from SpectralComplementarity (using active layer, not hardcoded)
-    const spectralComplement = SpectralComplementarity.analyzeComplement(layerForSpectral);
+    // Register balance from spectralComplementarity (using active layer, not hardcoded)
+    const spectralComplement = spectralComplementarity.analyzeComplement(layerForSpectral);
 
-    // Heat from InteractionHeatMap
-    const heat = InteractionHeatMap.getDensity();
+    // Heat from interactionHeatMap
+    const heat = interactionHeatMap.getDensity();
 
     // Convergence intensity boosts dynamic reading
-    const convergenceRecent = ConvergenceDetector.wasRecent(absTimeMs, 'L1', 500) || ConvergenceDetector.wasRecent(absTimeMs, 'L2', 500);
+    const convergenceRecent = convergenceDetector.wasRecent(absTimeMs, 'L1', 500) || convergenceDetector.wasRecent(absTimeMs, 'L2', 500);
 
     // Compute raw metrics
     const rawDensity = clamp(heat, 0, 1);
@@ -70,7 +70,7 @@ CrossLayerSilhouette = (() => {
    */
   function getCorrections() {
     // Ideal: mid-range balanced output unless intent says otherwise
-    const intent = SectionIntentCurves.getLastIntent();
+    const intent = sectionIntentCurves.getLastIntent();
 
     const targetDensity = V.optionalFinite(intent.densityTarget, 0.5);
     const targetEntropy = V.optionalFinite(intent.entropyTarget, 0.5);
@@ -114,4 +114,4 @@ CrossLayerSilhouette = (() => {
 
   return { tick, getCorrections, getSilhouette, getSilhouetteArc, reset };
 })();
-CrossLayerRegistry.register('CrossLayerSilhouette', CrossLayerSilhouette, ['all', 'section']);
+crossLayerRegistry.register('crossLayerSilhouette', crossLayerSilhouette, ['all', 'section']);

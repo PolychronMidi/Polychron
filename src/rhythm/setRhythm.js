@@ -14,7 +14,7 @@ setRhythm = function setRhythm(level, ctx = null) {
   // ── Texture-modulated onset density (#8) ──────────────────────────
   // Flurry activity → denser onsets (more notes), burst activity → sparser (give chords room)
   const texProbScale = (() => {
-    const metrics = DrumTextureCoupler.getMetrics();
+    const metrics = drumTextureCoupler.getMetrics();
     if (metrics.intensity > 0.15) {
       const burstDom = metrics.burstCount > metrics.flurryCount;
       return burstDom ? (1 - metrics.intensity * 0.4) : (1 + metrics.intensity * 0.5);

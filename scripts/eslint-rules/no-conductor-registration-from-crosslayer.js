@@ -2,7 +2,7 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow ConductorIntelligence.registerDensityBias/registerTensionBias/registerFlickerModifier in src/crossLayer/',
+      description: 'Disallow conductorIntelligence.registerDensityBias/registerTensionBias/registerFlickerModifier in src/crossLayer/',
       recommended: false
     },
     schema: []
@@ -27,14 +27,14 @@ module.exports = {
         if (!callee || callee.type !== 'MemberExpression') return;
         const obj = callee.object;
         const prop = callee.property;
-        if (!obj || obj.type !== 'Identifier' || obj.name !== 'ConductorIntelligence') return;
+        if (!obj || obj.type !== 'Identifier' || obj.name !== 'conductorIntelligence') return;
         const methodName = (prop && prop.type === 'Identifier') ? prop.name : ((prop && prop.type === 'Literal') ? prop.value : null);
         if (methodName && BANNED_METHODS.has(methodName)) {
           context.report({
             node,
             message: `Firewall violation: cross-layer modules must not register conductor biases. ` +
-              `ConductorIntelligence.${methodName}() is only allowed in src/conductor/. ` +
-              `Modify playProb/stutterProb locally or emit to ExplainabilityBus instead.`
+              `conductorIntelligence.${methodName}() is only allowed in src/conductor/. ` +
+              `Modify playProb/stutterProb locally or emit to explainabilityBus instead.`
           });
         }
       }

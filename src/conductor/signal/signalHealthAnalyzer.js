@@ -4,10 +4,10 @@
 //   2. Multiplicative crush — many contributors pulling product from 1.0
 //   3. Pipeline saturation — product hitting floor/ceiling
 //   4. Trust starvation — trust score decaying toward zero
-// Emits health grades into ConductorState and ExplainabilityBus each beat.
+// Emits health grades into conductorState and explainabilityBus each beat.
 // Does NOT modify signal values — pure observation + diagnostics.
 
-SignalHealthAnalyzer = (() => {
+signalHealthAnalyzer = (() => {
   // ── Accumulator state (reset per section) ──
   let beatsSeen = 0;
   /** @type {{ density: number, tension: number, flicker: number }} */
@@ -74,7 +74,7 @@ SignalHealthAnalyzer = (() => {
   function _analyzeTrust() {
     let snapshot;
     try {
-      snapshot = AdaptiveTrustScores.getSnapshot();
+      snapshot = adaptiveTrustScores.getSnapshot();
     } catch {
       return { grade: 'unknown', starvingSystems: [], thrivingSystems: [] };
     }
@@ -111,14 +111,14 @@ SignalHealthAnalyzer = (() => {
   }
 
   /**
-   * Run full health analysis. Called each beat via ConductorIntelligence recorder.
+   * Run full health analysis. Called each beat via conductorIntelligence recorder.
    */
   function analyze() {
     beatsSeen++;
 
-    const densityAttr = ConductorIntelligence.collectDensityBiasWithAttribution();
-    const tensionAttr = ConductorIntelligence.collectTensionBiasWithAttribution();
-    const flickerAttr = ConductorIntelligence.collectFlickerModifierWithAttribution();
+    const densityAttr = conductorIntelligence.collectDensityBiasWithAttribution();
+    const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
+    const flickerAttr = conductorIntelligence.collectFlickerModifierWithAttribution();
 
     const density = _analyzePipeline(densityAttr);
     const tension = _analyzePipeline(tensionAttr);
@@ -140,7 +140,7 @@ SignalHealthAnalyzer = (() => {
 
     // Emit diagnostics on non-healthy beats
     if (overall !== 'healthy') {
-      ExplainabilityBus.emit('signal-health', 'both', {
+      explainabilityBus.emit('signal-health', 'both', {
         overall,
         density: { grade: density.grade, pinnedModules: density.pinnedModules, crushFactor: density.crushFactor, saturated: density.saturated },
         tension: { grade: tension.grade, pinnedModules: tension.pinnedModules, crushFactor: tension.crushFactor, saturated: tension.saturated },
@@ -205,15 +205,15 @@ SignalHealthAnalyzer = (() => {
   }
 
   // ── Self-register ──
-  ConductorIntelligence.registerRecorder('SignalHealthAnalyzer', () => { SignalHealthAnalyzer.analyze(); });
-  ConductorIntelligence.registerStateProvider('SignalHealthAnalyzer', () => ({
+  conductorIntelligence.registerRecorder('signalHealthAnalyzer', () => { signalHealthAnalyzer.analyze(); });
+  conductorIntelligence.registerStateProvider('signalHealthAnalyzer', () => ({
     signalHealthOverall: _lastHealth.overall,
     signalHealthDensityGrade: _lastHealth.density.grade,
     signalHealthTensionGrade: _lastHealth.tension.grade,
     signalHealthFlickerGrade: _lastHealth.flicker.grade,
     signalHealthTrustGrade: _lastHealth.trust.grade
   }));
-  ConductorIntelligence.registerModule('SignalHealthAnalyzer', { reset }, ['section']);
+  conductorIntelligence.registerModule('signalHealthAnalyzer', { reset }, ['section']);
 
   return { analyze, getHealth, getSummary, reset };
 })();

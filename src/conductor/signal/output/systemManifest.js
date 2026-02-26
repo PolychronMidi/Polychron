@@ -14,14 +14,14 @@ systemManifest = (() => {
 
     // ── Attribution (live call — not cached in manifest) ──
     const attribution = {
-      density: ConductorIntelligence.collectDensityBiasWithAttribution(),
-      tension: ConductorIntelligence.collectTensionBiasWithAttribution(),
-      flicker: ConductorIntelligence.collectFlickerModifierWithAttribution()
+      density: conductorIntelligence.collectDensityBiasWithAttribution(),
+      tension: conductorIntelligence.collectTensionBiasWithAttribution(),
+      flicker: conductorIntelligence.collectFlickerModifierWithAttribution()
     };
 
     // Extra-pipeline density multipliers (outside the registry product).
-    // Captured from ConductorState so the manifest reveals the full picture.
-    const snap = ConductorState.getSnapshot();
+    // Captured from conductorState so the manifest reveals the full picture.
+    const snap = conductorState.getSnapshot();
     const extraDensityMultipliers = {
       emissionCorrection: snap.extraDensityCorrection,
       coherenceDensityBias: snap.extraCoherenceDensityBias
@@ -67,19 +67,19 @@ systemManifest = (() => {
   /** @returns {object} */
   function _buildManifest() {
     // ── Registry topology ──
-    const registryManifest = MainBootstrap.getRegistryManifest();
+    const registryManifest = mainBootstrap.getRegistryManifest();
 
     // ── Conductor signal snapshot ──
-    // Firewall: use signalReader API instead of ConductorIntelligence directly.
+    // Firewall: use signalReader API instead of conductorIntelligence directly.
     const signalSnapshot = signalReader.snapshot();
 
     // ── Active conductor profile ──
-    const activeProfile = ConductorConfig.getActiveProfileName();
+    const activeProfile = conductorConfig.getActiveProfileName();
 
     // ── Harmonic journey plan ──
     let journeyPlan = [];
     try {
-      journeyPlan = HarmonicJourney.getPlan().map((stop, i) => ({
+      journeyPlan = harmonicJourney.getPlan().map((stop, i) => ({
         section: i,
         key: stop.key,
         mode: stop.mode,
@@ -108,7 +108,7 @@ systemManifest = (() => {
     // ── Adaptive trust scores (end-of-run state) ──
     let trustSnapshot = {};
     try {
-      trustSnapshot = AdaptiveTrustScores.getSnapshot();
+      trustSnapshot = adaptiveTrustScores.getSnapshot();
     } catch {
       // Non-fatal
     }
@@ -122,7 +122,7 @@ systemManifest = (() => {
           moduleCount: registryManifest.conductorIntelligence.moduleCount,
           moduleNames: registryManifest.conductorIntelligence.moduleNames,
           contributions: registryManifest.conductorIntelligence.counts,
-          contributorNames: ConductorIntelligence.getContributorNames(),
+          contributorNames: conductorIntelligence.getContributorNames(),
           unregisteredContributors: _computeUnregisteredContributors(registryManifest)
         },
         crossLayer: {
@@ -153,14 +153,14 @@ systemManifest = (() => {
       ...registryManifest.conductorIntelligence.moduleNames,
       ...registryManifest.crossLayer.moduleNames
     ]);
-    return ConductorIntelligence.getContributorNames()
+    return conductorIntelligence.getContributorNames()
       .filter(name => !lifecycleSet.has(name));
   }
 
   /** @returns {object} */
   function _buildSignalHealth() {
     try {
-      return SignalHealthAnalyzer.getSummary();
+      return signalHealthAnalyzer.getSummary();
     } catch {
       return { beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} };
     }
@@ -178,7 +178,7 @@ systemManifest = (() => {
   /** @returns {object} */
   function _buildSystemDynamics() {
     try {
-      return SystemDynamicsProfiler.getSummary();
+      return systemDynamicsProfiler.getSummary();
     } catch {
       return { beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] };
     }

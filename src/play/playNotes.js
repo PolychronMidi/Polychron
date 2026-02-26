@@ -4,20 +4,20 @@
 
 let _playNotesDepsValidated = false;
 const V = validator.create('playNotes');
-V.assertObject(EventCatalog, 'EventCatalog');
-V.assertObject(EventCatalog.names, 'EventCatalog.names');
-const PLAY_EVENTS = EventCatalog.names;
+V.assertObject(eventCatalog, 'eventCatalog');
+V.assertObject(eventCatalog.names, 'eventCatalog.names');
+const PLAY_EVENTS = eventCatalog.names;
 
 function assertPlayNotesDeps() {
   if (_playNotesDepsValidated) return;
   V.assertManagerShape(motifConfig, 'motifConfig', ['getUnitProfile']);
   V.assertManagerShape(voiceConfig, 'voiceConfig', ['getProfile']);
-  V.assertManagerShape(ConductorConfig, 'ConductorConfig', ['getEmissionScaling', 'getNoiseProfileForSection']);
-  V.assertManagerShape(ComposerRuntimeProfileAdapter, 'ComposerRuntimeProfileAdapter', ['getEmissionAdjustments']);
-  V.assertManagerShape(TextureBlender, 'TextureBlender', ['resolve']);
-  V.assertManagerShape(RhythmManager, 'RhythmManager', ['swingOffset']);
-  V.assertManagerShape(DynamismEngine, 'DynamismEngine', ['resolve']);
-  V.assertManagerShape(TempoFeelEngine, 'TempoFeelEngine', ['getTickOffset']);
+  V.assertManagerShape(conductorConfig, 'conductorConfig', ['getEmissionScaling', 'getNoiseProfileForSection']);
+  V.assertManagerShape(composerRuntimeProfileAdapter, 'composerRuntimeProfileAdapter', ['getEmissionAdjustments']);
+  V.assertManagerShape(textureBlender, 'textureBlender', ['resolve']);
+  V.assertManagerShape(rhythmManager, 'rhythmManager', ['swingOffset']);
+  V.assertManagerShape(dynamismEngine, 'dynamismEngine', ['resolve']);
+  V.assertManagerShape(tempoFeelEngine, 'tempoFeelEngine', ['getTickOffset']);
   V.assertManagerShape(voiceModulator, 'voiceModulator', ['distribute']);
   _playNotesDepsValidated = true;
 }
@@ -51,7 +51,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   if (!runtimeProfile) {
     throw new Error(`${unit}.playNotes: active composer runtimeProfile is required`);
   }
-  const emissionAdjustments = ComposerRuntimeProfileAdapter.getEmissionAdjustments(runtimeProfile);
+  const emissionAdjustments = composerRuntimeProfileAdapter.getEmissionAdjustments(runtimeProfile);
 
   V.assertObject(emissionAdjustments, 'emissionAdjustments');
 
@@ -61,7 +61,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     const playProbLocal = V.requireFinite(playProb, 'notesEmitted.playProb');
     const stutterProbLocal = V.requireFinite(stutterProb, 'notesEmitted.stutterProb');
     const tickValue = V.requireFinite(unitStart, 'notesEmitted.tick');
-    EventBus.emit(PLAY_EVENTS.NOTES_EMITTED, {
+    eventBus.emit(PLAY_EVENTS.NOTES_EMITTED, {
       unit,
       layer: activeLayer,
       actual: actualCount,
@@ -74,10 +74,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   };
 
   // Conductor profile drives emission noise and voice velocity blend
-  const emissionScaling = ConductorConfig.getEmissionScaling();
-  V.assertObject(emissionScaling, 'ConductorConfig.getEmissionScaling()');
-  const phaseNoiseProfile = ConductorConfig.getNoiseProfileForSection();
-  V.assertNonEmptyString(phaseNoiseProfile, 'ConductorConfig.getNoiseProfileForSection()');
+  const emissionScaling = conductorConfig.getEmissionScaling();
+  V.assertObject(emissionScaling, 'conductorConfig.getEmissionScaling()');
+  const phaseNoiseProfile = conductorConfig.getNoiseProfileForSection();
+  V.assertNonEmptyString(phaseNoiseProfile, 'conductorConfig.getNoiseProfileForSection()');
   const emissionCfg = Object.assign({}, emissionScaling, { noiseProfile: phaseNoiseProfile });
 
   const { on, sustain, binVel, noiseInfluence, currentTime, voiceIdSeed } = playNotesComputeUnit(unit, emissionAdjustments, emissionCfg, layer);
@@ -86,28 +86,28 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   let intendedCount = 1;
   crossModulateRhythms();
 
-  // DynamismEngine is the single probability authority. When probs arrive from
-  // GlobalConductor they are already DynamismEngine-resolved; pass them through
+  // dynamismEngine is the single probability authority. When probs arrive from
+  // globalConductor they are already dynamismEngine-resolved; pass them through
   // without re-modulating to prevent double-application of the same signals.
-  // Only invoke DynamismEngine directly for sub-beat units (div/subdiv/subsubdiv)
+  // Only invoke dynamismEngine directly for sub-beat units (div/subdiv/subsubdiv)
   // that need per-unit pulse refinement.
   const needsPerUnitResolve = (unit !== 'beat');
   const resolved = (needsPerUnitResolve)
-    ? DynamismEngine.resolve(unit, { playProb, stutterProb })
-    : { playProb, stutterProb, composite: clamp(ConductorState.getField('compositeIntensity'), 0, 1) };
+    ? dynamismEngine.resolve(unit, { playProb, stutterProb })
+    : { playProb, stutterProb, composite: clamp(conductorState.getField('compositeIntensity'), 0, 1) };
   const resolvedPlayProb = V.requireFinite(Number(resolved.playProb), 'resolved.playProb');
   const resolvedStutterProb = V.requireFinite(Number(resolved.stutterProb), 'resolved.stutterProb');
 
-  // ── TextureBlender: per-unit contrast-blend mode ──────────────────
+  // ── textureBlender: per-unit contrast-blend mode ──────────────────
   // Decides whether this unit emits normally, fires a percussive chord
   // stab, or injects a rapid scalar flurry.  Oscillation-driven so the
   // texture switching never settles into a predictable pattern.
   const textureComposite = V.requireFinite(Number(resolved.composite), 'resolved.composite');
-  const textureMode = TextureBlender.resolve(unit, textureComposite);
+  const textureMode = textureBlender.resolve(unit, textureComposite);
 
   // ── Emit texture-contrast event for drum coupling (#5) ─────────
   if (textureMode.mode !== 'single') {
-    EventBus.emit(PLAY_EVENTS.TEXTURE_CONTRAST, { mode: textureMode.mode, unit, composite: textureComposite });
+    eventBus.emit(PLAY_EVENTS.TEXTURE_CONTRAST, { mode: textureMode.mode, unit, composite: textureComposite });
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)

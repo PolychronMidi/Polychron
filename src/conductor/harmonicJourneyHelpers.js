@@ -1,4 +1,4 @@
-// harmonicJourneyHelpers.js - shared theory helpers for HarmonicJourney
+// harmonicJourneyHelpers.js - shared theory helpers for harmonicJourney
 
 harmonicJourneyHelpers = (() => {
   const CLOSE_MOVES = [
@@ -85,7 +85,7 @@ harmonicJourneyHelpers = (() => {
   const getMovePoolForPhase = (phase) => {
     // Conductor profile boldness shifts move pool composition:
     // < 1 = more conservative (suppress bold moves), > 1 = more adventurous (inject bold moves)
-    const boldness = ConductorConfig.getJourneyBoldness();
+    const boldness = conductorConfig.getJourneyBoldness();
 
     let pool;
     switch (phase) {

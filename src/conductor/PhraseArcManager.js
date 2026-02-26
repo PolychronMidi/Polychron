@@ -62,12 +62,12 @@ PhraseArcManager = class PhraseArcManager {
     this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
     this.densityRange = this._densityRangeOverride || breath.densityRange;
 
-    const pos = TimeStream.normalizedProgress('measure');
+    const pos = timeStream.normalizedProgress('measure');
     const phase = phraseArcProfiler.getPhase(pos);
 
     let currentArcType = this.arcType;
-    const sectionPhase = HarmonicContext.getField('sectionPhase');
-    currentArcType = ConductorConfig.getArcMapping(sectionPhase);
+    const sectionPhase = harmonicContext.getField('sectionPhase');
+    currentArcType = conductorConfig.getArcMapping(sectionPhase);
 
     const profile = this._arcProfiles[currentArcType] || this._arcProfiles[this.arcType];
 

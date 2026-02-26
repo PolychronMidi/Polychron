@@ -1,6 +1,6 @@
 // scripts/generate-capability-matrix.js
 // Boots the full system (side-effect tree) without running a composition,
-// then introspects ConductorIntelligence and CrossLayerRegistry to produce
+// then introspects conductorIntelligence and crossLayerRegistry to produce
 // output/capability-matrix.md — the organism's structural census.
 //
 // Usage: node scripts/generate-capability-matrix.js
@@ -12,12 +12,11 @@ require('../src/index');
 
 // Some conductor modules lifecycle-register during initialize(), not at load.
 // Prime those initializers so registry counts match main runtime semantics.
-HarmonicRhythmTracker.initialize();
-ConductorState.initialize();
+moduleLifecycle.initializeAll();
 
 // ensure registrar sanity while we're here
-if (typeof MainBootstrap !== 'undefined' && MainBootstrap.assertRegistryPopulation) {
-  MainBootstrap.assertRegistryPopulation();
+if (typeof mainBootstrap !== 'undefined' && mainBootstrap.assertRegistryPopulation) {
+  mainBootstrap.assertRegistryPopulation();
 }
 
 const _fs = require('fs');
@@ -28,13 +27,13 @@ if (!_fs.existsSync(outDir)) _fs.mkdirSync(outDir, { recursive: true });
 
 // ── Collect registry data ────────────────────────────────────────────────────
 
-const ciModuleNames = ConductorIntelligence.getModuleNames();
-const ciCounts = ConductorIntelligence.getCounts();
-const clModuleNames = CrossLayerRegistry.getRegisteredNames();
+const ciModuleNames = conductorIntelligence.getModuleNames();
+const ciCounts = conductorIntelligence.getCounts();
+const clModuleNames = crossLayerRegistry.getRegisteredNames();
 
-const densityAttr = ConductorIntelligence.collectDensityBiasWithAttribution();
-const tensionAttr = ConductorIntelligence.collectTensionBiasWithAttribution();
-const flickerAttr = ConductorIntelligence.collectFlickerModifierWithAttribution();
+const densityAttr = conductorIntelligence.collectDensityBiasWithAttribution();
+const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
+const flickerAttr = conductorIntelligence.collectFlickerModifierWithAttribution();
 
 // ── Build Markdown ───────────────────────────────────────────────────────────
 
@@ -52,7 +51,7 @@ lines.push('');
 
 lines.push('## Conductor Intelligence Modules');
 lines.push('');
-lines.push(`Total lifecycle-registered: **${ConductorIntelligence.getModuleCount()}**`);
+lines.push(`Total lifecycle-registered: **${conductorIntelligence.getModuleCount()}**`);
 lines.push('');
 lines.push('### Contribution Counts');
 lines.push('');
@@ -84,7 +83,7 @@ lines.push('---');
 lines.push('');
 lines.push('## Cross-Layer Modules');
 lines.push('');
-lines.push(`Total registered: **${CrossLayerRegistry.getCount()}**`);
+lines.push(`Total registered: **${crossLayerRegistry.getCount()}**`);
 lines.push('');
 lines.push('| # | Module Name |');
 lines.push('|---|---|');
@@ -101,20 +100,20 @@ lines.push('## Summary');
 lines.push('');
 lines.push(`| Metric | Value |`);
 lines.push('|---|---|');
-lines.push(`| Conductor intelligence modules | ${ConductorIntelligence.getModuleCount()} |`);
-lines.push(`| Cross-layer modules | ${CrossLayerRegistry.getCount()} |`);
+lines.push(`| Conductor intelligence modules | ${conductorIntelligence.getModuleCount()} |`);
+lines.push(`| Cross-layer modules | ${crossLayerRegistry.getCount()} |`);
 lines.push(`| Total density bias contributors | ${ciCounts.density} |`);
 lines.push(`| Total tension bias contributors | ${ciCounts.tension} |`);
 lines.push(`| Total flicker modifier contributors | ${ciCounts.flicker} |`);
 lines.push(`| Total recorders | ${ciCounts.recorders} |`);
 lines.push(`| Total state providers | ${ciCounts.stateProviders} |`);
-lines.push(`| Combined module count | ${ConductorIntelligence.getModuleCount() + CrossLayerRegistry.getCount()} |`);
+lines.push(`| Combined module count | ${conductorIntelligence.getModuleCount() + crossLayerRegistry.getCount()} |`);
 lines.push('');
 
 const outPath = _path.join(outDir, 'capability-matrix.md');
 _fs.writeFileSync(outPath, lines.join('\n'), 'utf8');
 console.log(`generate-capability-matrix: wrote ${outPath}`);
-console.log(`  Conductor: ${ConductorIntelligence.getModuleCount()} modules, Cross-Layer: ${CrossLayerRegistry.getCount()} modules`);
+console.log(`  Conductor: ${conductorIntelligence.getModuleCount()} modules, Cross-Layer: ${crossLayerRegistry.getCount()} modules`);
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-MotifIdentityMemory = (() => {
+motifIdentityMemory = (() => {
   const V = validator.create('motifIdentityMemory');
   const MAX_NOTES = 24;
   const MAX_IDENTITIES = 16;
@@ -12,7 +12,7 @@ MotifIdentityMemory = (() => {
   function ensureNotes(layer) {
     if (!notesByLayer.has(layer)) notesByLayer.set(layer, []);
     const row = notesByLayer.get(layer);
-    if (!row) throw new Error('MotifIdentityMemory: failed to initialize notes for layer ' + layer);
+    if (!row) throw new Error('motifIdentityMemory: failed to initialize notes for layer ' + layer);
     return row;
   }
 
@@ -20,7 +20,7 @@ MotifIdentityMemory = (() => {
   function ensureIdentities(layer) {
     if (!identitiesByLayer.has(layer)) identitiesByLayer.set(layer, []);
     const row = identitiesByLayer.get(layer);
-    if (!row) throw new Error('MotifIdentityMemory: failed to initialize identities for layer ' + layer);
+    if (!row) throw new Error('motifIdentityMemory: failed to initialize identities for layer ' + layer);
     return row;
   }
 
@@ -87,4 +87,4 @@ MotifIdentityMemory = (() => {
 
   return { recordNote, getActiveIdentity, chooseEchoTransform, reset };
 })();
-CrossLayerRegistry.register('MotifIdentityMemory', MotifIdentityMemory, ['all', 'phrase']);
+crossLayerRegistry.register('motifIdentityMemory', motifIdentityMemory, ['all', 'phrase']);

@@ -1,6 +1,6 @@
 // fx/StutterManager.js - Audio effects manager
 
-const SC = StutterConfig;
+const SC = stutterConfig;
 const V = validator.create('stutterManager');
 
 class StutterManager {
@@ -25,7 +25,7 @@ class StutterManager {
     // { fadeDirection: 'in'|'out', fadeChannels: Set, panChannels: Set, panDirections: {} }
     this.beatContext = {};
 
-    // Texture coupling state: updated by EventBus 'texture-contrast' listener (#1)
+    // Texture coupling state: updated by eventBus 'texture-contrast' listener (#1)
     this._textureIntensity = 0;
     this._lastTextureMode = 'single';
     this._textureDecay = 0.85;
@@ -37,20 +37,20 @@ class StutterManager {
     this.scheduledPlans = new Map(); // tickKey -> [planId,...]
     this._nextPlanId = 1;
 
-    V.assertManagerShape(StutterPlanScheduler, 'StutterPlanScheduler', ['schedulePlan']);
-    V.assertManagerShape(SC, 'StutterConfig', ['getConfig', 'getDirectiveDefaults']);
+    V.assertManagerShape(stutterPlanScheduler, 'stutterPlanScheduler', ['schedulePlan']);
+    V.assertManagerShape(SC, 'stutterConfig', ['getConfig', 'getDirectiveDefaults']);
     this.config = SC.getConfig();
     if (!this.config || typeof this.config !== 'object') {
-      throw new Error('StutterManager: StutterConfig.getConfig returned invalid config');
+      throw new Error('StutterManager: stutterConfig.getConfig returned invalid config');
     }
 
     // Default directive applied each beat unless overridden (keeps features active by default)
     this.defaultDirective = SC.getDirectiveDefaults();
     if (!this.defaultDirective || typeof this.defaultDirective !== 'object') {
-      throw new Error('StutterManager: invalid default directive from StutterConfig.getDirectiveDefaults');
+      throw new Error('StutterManager: invalid default directive from stutterConfig.getDirectiveDefaults');
     }
 
-    // fx loads before play/EventBus; listener is attached lazily from prepareBeat().
+    // fx loads before play/eventBus; listener is attached lazily from prepareBeat().
   }
 
   _attachTextureListener() {
@@ -58,10 +58,10 @@ class StutterManager {
     const EVENTS = V.getEventsOrThrow();
     const eventName = EVENTS.TEXTURE_CONTRAST;
 
-    // ── Texture-contrast EventBus listener (#1 bidirectional dialogue) ──
+    // ── Texture-contrast eventBus listener (#1 bidirectional dialogue) ──
     // Chord bursts → trigger micro-stutters with tight rate + wide stereo phase
     // Flurries → suppress spontaneous stutters (let the runs breathe)
-    EventBus.on(eventName, (data) => {
+    eventBus.on(eventName, (data) => {
       const composite = Number(data.composite);
       const mode = data.mode;
       const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
@@ -100,7 +100,7 @@ class StutterManager {
   }
 
   _getStutterGrainParams() {
-    const grain = ConductorConfig.getStutterGrainParams();
+    const grain = conductorConfig.getStutterGrainParams();
     if (!grain || typeof grain !== 'object') {
       throw new Error('StutterManager._getStutterGrainParams: invalid grain params');
     }
@@ -141,14 +141,14 @@ class StutterManager {
   }
 
   // -----------------------------
-  // Stutter plan API (explicit, opt-in)
+  // stutter plan API (explicit, opt-in)
   // -----------------------------
   /**
    * Create a reusable plan object and return its id (does not schedule it).
    * planCfg must include at least: profile, note, on, sustain. Optional: channels, numStutters, duration, minVelocity, maxVelocity, isFadeIn, decay
    */
   createPlan(planCfg = {}) {
-    return StutterPlanScheduler.createPlan(this, planCfg);
+    return stutterPlanScheduler.createPlan(this, planCfg);
   }
 
   /**
@@ -156,35 +156,35 @@ class StutterManager {
    * otherwise executed immediately. Returns the plan id.
    */
   schedulePlan(planOrCfg = {}) {
-    return StutterPlanScheduler.schedulePlan(this, planOrCfg);
+    return stutterPlanScheduler.schedulePlan(this, planOrCfg);
   }
 
   /**
    * Execute a plan immediately (id or cfg). Returns plan object.
    */
   runPlan(planIdOrCfg = {}) {
-    return StutterPlanScheduler.runPlan(this, planIdOrCfg);
+    return stutterPlanScheduler.runPlan(this, planIdOrCfg);
   }
 
   /**
    * Cancel a previously scheduled plan by id.
    */
   cancelPlan(planId) {
-    return StutterPlanScheduler.cancelPlan(this, planId);
+    return stutterPlanScheduler.cancelPlan(this, planId);
   }
 
   /**
    * Run any plans scheduled for the given tick (or earlier). Intended to be called from the beat loop.
    */
   runDuePlans(tick) {
-    return StutterPlanScheduler.runDuePlans(this, tick);
+    return stutterPlanScheduler.runDuePlans(this, tick);
   }
 
   /**
    * Internal: execute plan object by calling `stutterNotes` across the plan channels/ticks.
    */
   _executePlan(plan = {}) {
-    return StutterPlanScheduler.executePlan(this, plan);
+    return stutterPlanScheduler.executePlan(this, plan);
   }
 
   /**
@@ -209,7 +209,7 @@ class StutterManager {
       provided.beatContext.coherenceKey = `${prefix}:${seed}`;
     }
 
-    StutterMetrics.incScheduled(1, provided.profile || 'unknown');
+    stutterMetrics.incScheduled(1, provided.profile || 'unknown');
     return stutterNotes(provided);
   }
 
@@ -291,9 +291,9 @@ class StutterManager {
 }
 
 // Export StutterManager instance and class to global namespace
-Stutter = new StutterManager();
+stutter = new StutterManager();
 
 // Delegator wrappers for runtime/tests (minimal and fail-fast).
-stutterFade = (...args) => Stutter.stutterFade(...args);
-stutterPan = (...args) => Stutter.stutterPan(...args);
-stutterFX = (...args) => Stutter.stutterFX(...args);
+stutterFade = (...args) => stutter.stutterFade(...args);
+stutterPan = (...args) => stutter.stutterPan(...args);
+stutterFX = (...args) => stutter.stutterFX(...args);

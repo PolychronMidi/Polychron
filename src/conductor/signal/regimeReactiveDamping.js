@@ -3,7 +3,7 @@
 /**
  * Regime-Reactive Damping (E4)
  *
- * Reads the current regime from SystemDynamicsProfiler and adjusts
+ * Reads the current regime from systemDynamicsProfiler and adjusts
  * density / tension / flicker biases so the signal pipeline responds
  * appropriately to each dynamical phase.
  *
@@ -68,7 +68,7 @@ regimeReactiveDamping = (() => {
   let _smoothedFlicker = 1.0;
 
   function refresh() {
-    const snap = SystemDynamicsProfiler.getSnapshot();
+    const snap = systemDynamicsProfiler.getSnapshot();
     currentRegime = snap ? snap.regime : 'evolving';
     const rawCurv = snap ? (snap.curvature || 0) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
@@ -103,11 +103,19 @@ regimeReactiveDamping = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, 0.88, 1.12);
-  ConductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, 0.94, 1.06);
-  ConductorIntelligence.registerFlickerModifier('regimeReactiveDamping', flickerMod, 0.85, 1.15);
-  ConductorIntelligence.registerRecorder('regimeReactiveDamping', refresh);
-  ConductorIntelligence.registerModule('regimeReactiveDamping', { reset }, ['section']);
+  conductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, 0.88, 1.12);
+  conductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, 0.94, 1.06);
+  conductorIntelligence.registerFlickerModifier('regimeReactiveDamping', flickerMod, 0.85, 1.15);
+  conductorIntelligence.registerRecorder('regimeReactiveDamping', refresh);
+  conductorIntelligence.registerModule('regimeReactiveDamping', { reset }, ['section']);
+
+  feedbackRegistry.registerLoop(
+    'regimeReactiveDamping',
+    'regime',
+    'density',
+    () => m.abs(_smoothedDensity - 1.0) / MAX_DENSITY,
+    () => m.sign(_smoothedDensity - 1.0)
+  );
 
   return { densityBias, tensionBias, flickerMod, reset };
 })();

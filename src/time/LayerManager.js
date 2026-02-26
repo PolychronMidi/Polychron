@@ -102,9 +102,9 @@ class LayerManager {
       layer.measureComposer = layerComposer;
       composer = layerComposer;
     }
-    // Set active layer context in PhaseLockedRhythmGenerator for layer-aware phase tracking
-    if (PhaseLockedRhythmGenerator) {
-      PhaseLockedRhythmGenerator.setActiveLayer(name);
+    // Set active layer context in phaseLockedRhythmGenerator for layer-aware phase tracking
+    if (phaseLockedRhythmGenerator) {
+      phaseLockedRhythmGenerator.setActiveLayer(name);
     }
     if (isPoly) {
       numerator = polyNumerator;

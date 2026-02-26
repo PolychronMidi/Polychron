@@ -1,7 +1,7 @@
 // conductorSignalBridge.js — Cross-layer module exposing conductor pipeline signals
 // to all cross-layer modules via a curated, stable API.
 // Reads signalReader each beat and caches a snapshot so cross-layer modules
-// never need to understand ConductorIntelligence internals.
+// never need to understand conductorIntelligence internals.
 
 conductorSignalBridge = (() => {
   const V = validator.create('conductorSignalBridge');
@@ -19,8 +19,8 @@ conductorSignalBridge = (() => {
   /**
    * Refresh cached signals from the conductor pipeline.
    * Called each beat via registered recorder — ctx carries the current beat's values.
-   * compositeIntensity comes from ctx (computed by GlobalConductorUpdate before recorders run).
-   * sectionPhase is read directly from HarmonicContext (stable for the entire section).
+   * compositeIntensity comes from ctx (computed by globalConductorUpdate before recorders run).
+   * sectionPhase is read directly from harmonicContext (stable for the entire section).
    * @param {{ absTime: number, compositeIntensity: number, currentDensity: number, harmonicRhythm: number }} ctx
    */
   function refresh(ctx) {
@@ -30,16 +30,16 @@ conductorSignalBridge = (() => {
       tension: snap.tensionProduct,
       flicker: snap.flickerProduct,
       compositeIntensity: V.requireFinite(ctx.compositeIntensity, 'ctx.compositeIntensity'),
-      sectionPhase: V.assertNonEmptyString(HarmonicContext.getField('sectionPhase'), 'sectionPhase'),
+      sectionPhase: V.assertNonEmptyString(harmonicContext.getField('sectionPhase'), 'sectionPhase'),
       coherenceEntropy: V.optionalFinite(snap.stateFields.coherenceEntropy, 0),
       updatedAt: Date.now()
     };
 
-    // Emit to ExplainabilityBus when signals reach extremes
+    // Emit to explainabilityBus when signals reach extremes
     const extremeDensity = cached.density < 0.5 || cached.density > 1.8;
     const extremeTension = cached.tension < 0.5 || cached.tension > 1.8;
     if (extremeDensity || extremeTension) {
-      ExplainabilityBus.emit('conductor-signal-extreme', 'bridge', {
+      explainabilityBus.emit('conductor-signal-extreme', 'bridge', {
         density: cached.density,
         tension: cached.tension,
         flicker: cached.flicker,
@@ -79,5 +79,5 @@ conductorSignalBridge = (() => {
   return { refresh, getSignals, reset };
 })();
 // Registered as a recorder so refresh(ctx) runs each beat automatically.
-ConductorIntelligence.registerRecorder('conductorSignalBridge', (ctx) => { conductorSignalBridge.refresh(ctx); });
-CrossLayerRegistry.register('conductorSignalBridge', conductorSignalBridge, ['all', 'section']);
+conductorIntelligence.registerRecorder('conductorSignalBridge', (ctx) => { conductorSignalBridge.refresh(ctx); });
+crossLayerRegistry.register('conductorSignalBridge', conductorSignalBridge, ['all', 'section']);

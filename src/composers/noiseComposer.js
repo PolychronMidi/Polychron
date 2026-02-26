@@ -4,8 +4,8 @@ const V = validator.create('noiseComposer');
 
 const resolveConductorNoiseProfile = (fallbackProfile) => {
   V.assertNonEmptyString(fallbackProfile, 'fallbackProfile');
-  if (ConductorConfig) {
-    return ConductorConfig.getNoiseProfileForSection();
+  if (conductorConfig) {
+    return conductorConfig.getNoiseProfileForSection();
   }
   return fallbackProfile;
 };

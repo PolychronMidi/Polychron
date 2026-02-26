@@ -145,10 +145,10 @@ MeasureComposer = class MeasureComposer {
     // Delegate interval selection to universal strategy
     let intervals = [];
     const intervalOptions = self.intervalOptions;
-    intervals = IntervalComposer.selectIntervals(self.notes.length, intervalOptions);
+    intervals = intervalComposer.selectIntervals(self.notes.length, intervalOptions);
 
     try {
-      const notesOut = MeasureNotePool.buildNotePool(self.notes, intervals, [minOctave, maxOctave], rootNote);
+      const notesOut = measureNotePool.buildNotePool(self.notes, intervals, [minOctave, maxOctave], rootNote);
 
       if (!Array.isArray(notesOut) || notesOut.length === 0) {
         throw new Error(`MeasureComposer.getNotes produced empty result: no valid notes generated for intervals [${intervals}], octaveRange ${JSON.stringify(octaveRange)}, rootNote ${rootNote}`);
@@ -256,7 +256,7 @@ MeasureComposer = class MeasureComposer {
     if (!Array.isArray(self.notes) || self.notes.length === 0) return null;
 
     // Use centralized PC-matching helper
-    const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, self.notes, 1, 0);
+    const candidateWeights = voiceLeadingCore.buildPCWeights(candidateNotes, self.notes, 1, 0);
     return { candidateWeights };
   }
 }
