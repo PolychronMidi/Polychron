@@ -8,6 +8,11 @@ adaptiveTrustScores = (() => {
   const EXPLORATION_THRESHOLD = 0.10; // score below this triggers exploration
   const EXPLORATION_NUDGE     = 0.03; // small positive injection per decay cycle
   const EXPLORATION_INTERVAL  = 8;    // apply nudge every N decay cycles
+
+  // Trust ceiling: prevents runaway dominance where high-trust systems
+  // accumulate ever-more influence via positive feedback (high trust →
+  // more influence → more positive outcomes → higher trust).
+  const TRUST_CEILING = 0.75; // max score (→ max weight ≈ 1.56)
   let decayCycleCount = 0;
 
   /** @param {string} systemName */
@@ -29,7 +34,7 @@ adaptiveTrustScores = (() => {
     V.requireFinite(payoff, 'payoff');
     const state = ensure(systemName);
     const p = clamp(payoff, -1, 1);
-    state.score = clamp(state.score * 0.9 + p * 0.1, -1, 1);
+    state.score = clamp(state.score * 0.9 + p * 0.1, -1, TRUST_CEILING);
     state.samples += 1;
     state.lastMs = beatStartTime * 1000;
 

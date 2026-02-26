@@ -113,20 +113,28 @@ harmonicJourneyPlanner = (() => {
       for (let i = 0; i < steps.length; i++) modes.add(steps[i].mode);
       const minModes = m.min(2, 1 + steps.length); // at least 2 modes when possible
       if (modes.size < minModes) {
-        // Pick the step closest to the midpoint and force a parallel-mode change
+        // Pick the step closest to the midpoint and force a parallel-mode change.
+        // Retry up to 5 times to ensure the mode actually differs.
         const midIdx = m.floor(steps.length / 2);
         const parallelMoves = HJ.getMovePoolForPhase('development');
-        const moveFn = parallelMoves[ri(parallelMoves.length - 1)];
         const prevKey = midIdx > 0 ? steps[midIdx - 1].key : originKey;
         const prevMode = midIdx > 0 ? steps[midIdx - 1].mode : originMode;
-        const result = moveFn(prevKey, prevMode);
-        const simplified = t.Note.simplify(result.key);
-        const nextKey = t.Note.pitchClass(simplified || result.key);
-        if (nextKey) {
-          steps[midIdx].key = nextKey;
-          steps[midIdx].mode = result.mode;
-          steps[midIdx].move = result.move + ' (diversity)';
-          steps[midIdx].distance = HJ.harmonicDistance(prevKey, nextKey);
+        const existingModes = modes;
+        let applied = false;
+
+        for (let attempt = 0; attempt < 5 && !applied; attempt++) {
+          const moveFn = parallelMoves[ri(parallelMoves.length - 1)];
+          const result = moveFn(prevKey, prevMode);
+          if (existingModes.has(result.mode)) continue; // same mode — retry
+          const simplified = t.Note.simplify(result.key);
+          const nextKey = t.Note.pitchClass(simplified || result.key);
+          if (nextKey) {
+            steps[midIdx].key = nextKey;
+            steps[midIdx].mode = result.mode;
+            steps[midIdx].move = result.move + ' (diversity)';
+            steps[midIdx].distance = HJ.harmonicDistance(prevKey, nextKey);
+            applied = true;
+          }
         }
       }
     }
