@@ -66,9 +66,9 @@ regimeReactiveDamping = (() => {
   // axis to restart trajectory movement. This addresses the "near-zero velocity
   // despite evolving regime" problem — the system equilibrates too fast.
   const LOW_VEL_THRESHOLD = 0.015;
-  const LOW_VEL_BEATS     = 12;
-  const DRIFT_MAGNITUDE   = 0.06;
-  const DRIFT_DECAY       = 0.85; // drift decays each beat, replaced when velocity recovers
+  const LOW_VEL_BEATS     = 8;
+  const DRIFT_MAGNITUDE   = 0.09;
+  const DRIFT_DECAY       = 0.93; // drift decays each beat, replaced when velocity recovers
   let lowVelStreak = 0;
   let _driftD = 0;
   let _driftT = 0;

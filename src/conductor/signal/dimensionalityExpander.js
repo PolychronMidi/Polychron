@@ -18,15 +18,15 @@
 dimensionalityExpander = (() => {
 
   // Below this threshold, we begin injecting perturbations.
-  const DIM_THRESHOLD = 2.5;
+  const DIM_THRESHOLD = 2.2;
   // Below this, perturbation is at full strength.
   const DIM_CRITICAL = 1.5;
   // Maximum perturbation magnitude per axis.
-  const MAX_PERTURBATION = 0.08;
+  const MAX_PERTURBATION = 0.15;
   // EMA smoothing on bias outputs to prevent discontinuous jumps.
   const SMOOTHING = 0.25;
   // Correlation threshold: only break correlations stronger than this.
-  const COUPLING_THRESHOLD = 0.40;
+  const COUPLING_THRESHOLD = 0.30;
 
   let _densityBias = 1.0;
   let _tensionBias = 1.0;
@@ -147,9 +147,9 @@ dimensionalityExpander = (() => {
   }
 
   // --- Self-registration (conductor-side: bias registration is permitted here) ---
-  conductorIntelligence.registerDensityBias('dimensionalityExpander', densityBias, 0.92, 1.08);
-  conductorIntelligence.registerTensionBias('dimensionalityExpander', tensionBias, 0.92, 1.08);
-  conductorIntelligence.registerFlickerModifier('dimensionalityExpander', flickerBias, 0.92, 1.08);
+  conductorIntelligence.registerDensityBias('dimensionalityExpander', densityBias, 0.85, 1.15);
+  conductorIntelligence.registerTensionBias('dimensionalityExpander', tensionBias, 0.85, 1.15);
+  conductorIntelligence.registerFlickerModifier('dimensionalityExpander', flickerBias, 0.85, 1.15);
   conductorIntelligence.registerRecorder('dimensionalityExpander', refresh);
   conductorIntelligence.registerModule('dimensionalityExpander', { reset }, ['all', 'section']);
 
