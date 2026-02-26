@@ -61,6 +61,19 @@ regimeReactiveDamping = (() => {
   // transitions that feed back as self-induced oscillation via the profiler.
   const BIAS_SMOOTHING = 0.20;
 
+  // --- Velocity floor: detect phase-space stasis and inject directional drift ---
+  // When velocity stays below threshold for LOW_VEL_BEATS, nudge the least-active
+  // axis to restart trajectory movement. This addresses the "near-zero velocity
+  // despite evolving regime" problem — the system equilibrates too fast.
+  const LOW_VEL_THRESHOLD = 0.015;
+  const LOW_VEL_BEATS     = 12;
+  const DRIFT_MAGNITUDE   = 0.06;
+  const DRIFT_DECAY       = 0.85; // drift decays each beat, replaced when velocity recovers
+  let lowVelStreak = 0;
+  let _driftD = 0;
+  let _driftT = 0;
+  let _driftF = 0;
+
   let currentRegime = 'evolving';
   let curvatureGain = 0;
   let _smoothedDensity = 1.0;
@@ -73,13 +86,51 @@ regimeReactiveDamping = (() => {
     const rawCurv = snap ? (snap.curvature || 0) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
 
+    // --- Velocity floor logic ---
+    const velocity = snap ? (snap.velocity || 0) : 0;
+    if (velocity < LOW_VEL_THRESHOLD) {
+      lowVelStreak++;
+    } else {
+      lowVelStreak = 0;
+      _driftD *= DRIFT_DECAY;
+      _driftT *= DRIFT_DECAY;
+      _driftF *= DRIFT_DECAY;
+    }
+
+    if (lowVelStreak >= LOW_VEL_BEATS && snap && snap.couplingMatrix) {
+      // Find the axis with weakest absolute correlation to others —
+      // perturbing it has the least chance of cascading through coupling.
+      const cm = snap.couplingMatrix;
+      const dCoup = m.abs(cm['density-tension'] || 0) + m.abs(cm['density-flicker'] || 0);
+      const tCoup = m.abs(cm['density-tension'] || 0) + m.abs(cm['tension-flicker'] || 0);
+      const fCoup = m.abs(cm['density-flicker'] || 0) + m.abs(cm['tension-flicker'] || 0);
+
+      // Directional: alternate sign each time to prevent monotonic drift
+      const sign = (lowVelStreak % 24) < 12 ? 1 : -1;
+
+      if (dCoup <= tCoup && dCoup <= fCoup) {
+        _driftD = sign * DRIFT_MAGNITUDE;
+      } else if (tCoup <= fCoup) {
+        _driftT = sign * DRIFT_MAGNITUDE;
+      } else {
+        _driftF = sign * DRIFT_MAGNITUDE;
+      }
+      // Reset streak so drift is injected once per LOW_VEL_BEATS window
+      lowVelStreak = 0;
+    }
+
     // Compute raw bias values and apply EMA to prevent discontinuous jumps
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * MAX_TENSION * curvatureGain;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain;
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + _driftD;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * MAX_TENSION * curvatureGain + _driftT;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + _driftF;
     _smoothedDensity = _smoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING;
     _smoothedTension = _smoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING;
     _smoothedFlicker = _smoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING;
+
+    // Decay drift contribution
+    _driftD *= DRIFT_DECAY;
+    _driftT *= DRIFT_DECAY;
+    _driftF *= DRIFT_DECAY;
   }
 
   function densityBias() {
@@ -100,6 +151,10 @@ regimeReactiveDamping = (() => {
     _smoothedDensity = 1.0;
     _smoothedTension = 1.0;
     _smoothedFlicker = 1.0;
+    lowVelStreak = 0;
+    _driftD = 0;
+    _driftT = 0;
+    _driftF = 0;
   }
 
   // --- Self-registration ---

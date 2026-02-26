@@ -58,11 +58,18 @@ signalHealthAnalyzer = (() => {
     // Pipeline saturation: product hit floor or ceiling
     const saturated = Boolean(attr.floored || attr.capped);
 
+    // Width-aware crush threshold: wider pipelines naturally produce higher
+    // consensus ratios because more independent signals are likely to agree
+    // on direction. Base threshold 0.40 adjusts up by 1% per contributor
+    // beyond 10, capped at 0.58.
+    const widthAdjust = m.max(0, (total - 10) * 0.01);
+    const crushThreshold = m.min(0.58, 0.40 + widthAdjust);
+
     // Grading
     let grade = 'healthy';
-    if (saturated && crushFactor > 0.4) grade = 'critical';
+    if (saturated && crushFactor > crushThreshold) grade = 'critical';
     else if (saturated || pinnedModules.length >= 3) grade = 'stressed';
-    else if (pinnedModules.length >= 1 || crushFactor > 0.4) grade = 'strained';
+    else if (pinnedModules.length >= 1 || crushFactor > crushThreshold) grade = 'strained';
 
     return { grade, product: attr.product, pinnedModules, crushFactor, saturated };
   }

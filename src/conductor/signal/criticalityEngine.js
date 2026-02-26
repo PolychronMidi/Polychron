@@ -97,12 +97,33 @@ criticalityEngine = (() => {
     }
   }
 
-  // Per-signal bias: only dampen signals that are elevated, not already suppressed.
-  // Density: strained when < 0.65 → skip dampening. Tension: elevated when > 1.1.
-  // Flicker: suppressed when < 0.7 → skip dampening.
-  function densityBias()  { return densitySnap < 0.65 ? 1.0 : currentBias; }
-  function tensionBias()  { return tensionSnap < 1.0  ? 1.0 : currentBias; }
-  function flickerMod()   { return flickerSnap < 0.70 ? 1.0 : currentBias; }
+  // Per-signal bias: scale by pipeline health grade from signalHealthAnalyzer.
+  // Healthy pipelines get full avalanche damping; strained pipelines get reduced;
+  // stressed/critical pipelines (already struggling) get no further damping.
+  // Original binary gates preserved as first pass.
+
+  /** @param {string} grade @returns {number} */
+  function _healthScale(grade) {
+    if (grade === 'healthy') return 1.0;
+    if (grade === 'strained') return 0.5;
+    return 0; // stressed or critical → skip damping entirely
+  }
+
+  function densityBias() {
+    if (densitySnap < 0.65) return 1.0;
+    const scale = _healthScale(signalHealthAnalyzer.getHealth().density.grade);
+    return 1.0 + (currentBias - 1.0) * scale;
+  }
+  function tensionBias() {
+    if (tensionSnap < 1.0) return 1.0;
+    const scale = _healthScale(signalHealthAnalyzer.getHealth().tension.grade);
+    return 1.0 + (currentBias - 1.0) * scale;
+  }
+  function flickerMod() {
+    if (flickerSnap < 0.70) return 1.0;
+    const scale = _healthScale(signalHealthAnalyzer.getHealth().flicker.grade);
+    return 1.0 + (currentBias - 1.0) * scale;
+  }
 
   function getState() {
     return {
