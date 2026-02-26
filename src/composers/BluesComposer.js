@@ -3,7 +3,7 @@
 // call-and-response phrase shaping, and ghost note probability.
 
 BluesComposer = class BluesComposer extends MeasureComposer {
-  static _V = Validator.create('BluesComposer');
+  static _V = validator.create('BluesComposer');
   /**
    * @param {string} root - Root note (e.g., 'C', 'A')
    * @param {'major'|'minor'} type - Blues tonality

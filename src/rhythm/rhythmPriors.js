@@ -1,5 +1,5 @@
 rhythmPriors = (function() {
-  const V = Validator.create('rhythmPriors');
+  const V = validator.create('rhythmPriors');
 
   function getProfileOrFail(qualityInput) {
     if (!RHYTHM_PRIOR_TABLES) {

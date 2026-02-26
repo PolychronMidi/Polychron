@@ -63,7 +63,7 @@ require('./globalConductor');
 // @ts-ignore: load side-effect module with globals (cross-domain analysis helpers)
 require('./analysisHelpers');
 
-// Intelligence modules â€” grouped by domain
+// Intelligence modules - grouped by domain
 // @ts-ignore: load side-effect subfolder with globals
 require('./harmonic');
 // @ts-ignore: load side-effect subfolder with globals

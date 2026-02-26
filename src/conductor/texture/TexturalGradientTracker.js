@@ -2,10 +2,10 @@
 // Tracks how fast the composite texture (voices Ã— onset rate) is thickening
 // or thinning over time. Biases toward gradual transitions when rate is too
 // extreme, or allows sudden changes when dramatically appropriate.
-// Pure query API â€” no side effects.
+// Pure query API - no side effects.
 
 TexturalGradientTracker = (() => {
-  const V = Validator.create('texturalGradientTracker');
+  const V = validator.create('texturalGradientTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ density: number, time: number }>} */
   const densitySamples = [];
@@ -51,7 +51,7 @@ TexturalGradientTracker = (() => {
     const denom = n * sumXX - sumX * sumX;
     const gradient = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
 
-    // Absolute rate of change â€” high means rapid texture shift
+    // Absolute rate of change - high means rapid texture shift
     const absGradient = m.abs(gradient);
 
     // flickerMod: rapid changes → widen flicker to accommodate transition,

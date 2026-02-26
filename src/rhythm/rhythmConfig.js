@@ -1,7 +1,7 @@
 // rhythmConfig.js - simple named rhythm profiles (delegate to RHYTHM_PROFILES in src/conductor/config.js)
 
 rhythmConfig = (function() {
-  const V = Validator.create('rhythmConfig');
+  const V = validator.create('rhythmConfig');
   const LOCAL = {
     straight: { swing: 0, velocityScale: 1 },
     swung: { swing: 0.2, velocityScale: 1 },

@@ -1,7 +1,7 @@
 // stutterExecutePlan.js - shared executor for StutterManager plan objects
 
 stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
-  const V = Validator.create('stutterExecutePlan');
+  const V = validator.create('stutterExecutePlan');
   if (!stutterMgr || typeof stutterMgr !== 'object') throw new Error('stutterExecutePlan: stutterMgr is required');
   const cfg = /** @type {any} */ (Object.assign({}, plan));
   if (!cfg.profile || typeof cfg.profile !== 'string') {

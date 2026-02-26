@@ -1,5 +1,5 @@
 SectionIntentCurves = (() => {
-  const V = Validator.create('sectionIntentCurves');
+  const V = validator.create('sectionIntentCurves');
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {
     densityTarget: 0.5,

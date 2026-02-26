@@ -1,9 +1,9 @@
 ﻿// src/conductor/RepetitionFatigueMonitor.js - Detects exact pitch-sequence repetition.
 // Flags melodic loops/ruts at short timescales (2-6 note patterns recurring within 4s).
-// Pure query API â€” penalty weight for VoiceLeadingScore or composer note selection.
+// Pure query API - penalty weight for VoiceLeadingScore or composer note selection.
 
 RepetitionFatigueMonitor = (() => {
-  const V = Validator.create('repetitionFatigueMonitor');
+  const V = validator.create('repetitionFatigueMonitor');
   const WINDOW_SECONDS = 4;
   const MIN_PATTERN = 2;
   const MAX_PATTERN = 6;

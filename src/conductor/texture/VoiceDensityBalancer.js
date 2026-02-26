@@ -1,9 +1,9 @@
 ﻿// src/conductor/VoiceDensityBalancer.js - Counts simultaneous active voices per layer.
 // Detects homophonic collapse (1 voice) or textural overcrowding.
-// Pure query API â€” scales motifConfig voice count targets and emission limits.
+// Pure query API - scales motifConfig voice count targets and emission limits.
 
 VoiceDensityBalancer = (() => {
-  const V = Validator.create('voiceDensityBalancer');
+  const V = validator.create('voiceDensityBalancer');
   const WINDOW_SECONDS = 2;
   const COINCIDENCE_MS = 0.05; // notes within 50ms count as simultaneous
 

@@ -3,7 +3,7 @@
 // rhythm/dynamism systems can respond to stutter intensity.
 
 StutterFeedbackListener = (() => {
-  const V = Validator.create('stutterFeedbackListener');
+  const V = validator.create('stutterFeedbackListener');
 
   let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
@@ -114,4 +114,3 @@ StutterFeedbackListener = (() => {
     reset
   };
 })();
-

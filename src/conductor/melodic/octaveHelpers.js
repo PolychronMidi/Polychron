@@ -3,7 +3,7 @@
 // Pure query — reads AbsoluteTimeWindow.
 
 octaveHelpers = (() => {
-  const V = Validator.create('octaveHelpers');
+  const V = validator.create('octaveHelpers');
   /**
    * Build an octave-band count histogram from recent notes.
    * @param {number} [windowSeconds=6] - lookback window

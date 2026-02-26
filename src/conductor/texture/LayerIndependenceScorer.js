@@ -1,10 +1,10 @@
 ﻿// src/conductor/LayerIndependenceScorer.js - Combined rhythmic + melodic independence.
 // Measures how independent L1 and L2 are in pitch and rhythm.
 // Too locked = boring homophony; too diverged = incoherent.
-// Pure query API â€” nudges density toward balance between coupling and independence.
+// Pure query API - nudges density toward balance between coupling and independence.
 
 LayerIndependenceScorer = (() => {
-  const V = Validator.create('layerIndependenceScorer');
+  const V = validator.create('layerIndependenceScorer');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -30,7 +30,7 @@ LayerIndependenceScorer = (() => {
       l2IOIs.push(l2Notes[i].time - l2Notes[i - 1].time);
     }
 
-    // Compare IOI sequences â€” lower correlation = more independent
+    // Compare IOI sequences - lower correlation = more independent
     const minIOILen = m.min(l1IOIs.length, l2IOIs.length);
     let ioiMatchCount = 0;
     for (let i = 0; i < minIOILen; i++) {
@@ -87,4 +87,3 @@ LayerIndependenceScorer = (() => {
     getDensityBias
   };
 })();
-

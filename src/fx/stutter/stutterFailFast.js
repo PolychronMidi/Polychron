@@ -1,7 +1,7 @@
 // stutterFailFast.js - shared dependency and payload checks for stutter modules
 
 StutterFailFast = (() => {
-  const V = Validator.create('stutterFailFast');
+  const V = validator.create('stutterFailFast');
 
   function requireEventInfra() {
     const eventName = V.getEventsOrThrow().STUTTER_APPLIED;

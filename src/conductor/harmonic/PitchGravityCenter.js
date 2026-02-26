@@ -1,9 +1,9 @@
 ﻿// src/conductor/PitchGravityCenter.js - Weighted average pitch ("center of gravity").
 // Detects tonal drift vs. anchoring across the recent note window.
-// Pure query API â€” advises register shifts toward or away from a tonal anchor.
+// Pure query API - advises register shifts toward or away from a tonal anchor.
 
 PitchGravityCenter = (() => {
-  const V = Validator.create('pitchGravityCenter');
+  const V = validator.create('pitchGravityCenter');
   const WINDOW_SECONDS = 6;
   const ANCHOR_PITCH = 60; // Middle C as default tonal anchor
 
@@ -82,4 +82,3 @@ ConductorIntelligence.registerStateProvider('PitchGravityCenter', () => ({
   ...PitchGravityCenter.getGravityCenter(),
   crossDrift: PitchGravityCenter.getCrossLayerDrift()
 }));
-

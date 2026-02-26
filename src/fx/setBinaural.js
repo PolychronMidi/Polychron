@@ -3,7 +3,7 @@
  * synced across layers via AbsoluteTimeGrid using ms-precision timestamps.
  * @returns {void}
  */
-const V = Validator.create('setBinaural');
+const V = validator.create('setBinaural');
 
 /** Millisecond tolerance for treating two layer shifts as the same event */
 const BINAURAL_SYNC_TOLERANCE_MS = 10;

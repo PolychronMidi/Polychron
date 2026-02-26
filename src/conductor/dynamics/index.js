@@ -1,4 +1,4 @@
-﻿// src/conductor/dynamics/index.js â€” Dynamic level, energy, tension, climax
+﻿// src/conductor/dynamics/index.js - Dynamic level, energy, tension, climax
 // @ts-ignore: load side-effect module with globals
 require('./climaxProximityPredictor');
 // @ts-ignore: load side-effect module with globals
@@ -15,5 +15,3 @@ require('./dynamicRangeTracker');
 require('./energyMomentumTracker');
 // @ts-ignore: load side-effect module with globals
 require('./velocityShapeAnalyzer');
-
-

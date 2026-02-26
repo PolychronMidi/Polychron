@@ -11,7 +11,7 @@
  */
 
 verticalIntervalMonitor = (() => {
-  const V = Validator.create('verticalIntervalMonitor');
+  const V = validator.create('verticalIntervalMonitor');
 
   const CHANNEL     = 'notePitch';
   const TOLERANCE   = 80;          // ms — simultaneity window

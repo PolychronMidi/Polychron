@@ -15,7 +15,7 @@
  * @property {number} modifiedAt
  */
 HarmonicContext = (() => {
-  const V = Validator.create('harmonicContext');
+  const V = validator.create('harmonicContext');
 
   /** @type {HarmonicState} */
   let state = {

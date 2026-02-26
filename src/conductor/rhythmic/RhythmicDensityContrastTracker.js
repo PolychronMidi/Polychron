@@ -1,10 +1,10 @@
 ﻿// src/conductor/RhythmicDensityContrastTracker.js - Dense vs. sparse passage contrast.
 // Measures the contrast between rhythmically dense and sparse passages over time.
 // Flicker modifier widens when contrast is healthy, stabilizes when extreme.
-// Pure query API â€” no side effects.
+// Pure query API - no side effects.
 
 RhythmicDensityContrastTracker = (() => {
-  const V = Validator.create('rhythmicDensityContrastTracker');
+  const V = validator.create('rhythmicDensityContrastTracker');
   const MAX_SAMPLES = 20;
   /** @type {number[]} */
   const densitySamples = [];

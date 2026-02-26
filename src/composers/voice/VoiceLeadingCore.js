@@ -1,5 +1,5 @@
 ﻿// VoiceLeadingCore.js - core candidate scoring logic delegated from VoiceLeadingScore
-const V = Validator.create('voiceLeadingCore');
+const V = validator.create('voiceLeadingCore');
 
 /**
  * @typedef {Object} VoiceLeadingCoreOpts
@@ -192,4 +192,3 @@ VoiceLeadingCore = {
     return weights;
   }
 };
-

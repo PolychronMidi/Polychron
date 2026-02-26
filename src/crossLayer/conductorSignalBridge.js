@@ -4,7 +4,7 @@
 // never need to understand ConductorIntelligence internals.
 
 conductorSignalBridge = (() => {
-  const V = Validator.create('conductorSignalBridge');
+  const V = validator.create('conductorSignalBridge');
 
   let cached = {
     density: 1,

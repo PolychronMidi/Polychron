@@ -3,7 +3,7 @@
 // Integrates into getRhythm() as an additional bias stage.
 
 RhythmHistoryTracker = (() => {
-  const V = Validator.create('rhythmHistoryTracker');
+  const V = validator.create('rhythmHistoryTracker');
   const WINDOW = 12; // track last 12 rhythm selections
   /** @type {Array<{ method: string, length: number, layer: string }>} */
   const history = [];
@@ -93,4 +93,3 @@ RhythmHistoryTracker = (() => {
     reset
   };
 })();
-

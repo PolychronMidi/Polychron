@@ -1,4 +1,4 @@
-const V = Validator.create('ChordComposer');
+const V = validator.create('ChordComposer');
 const _warnedInvalidChordSymbols = new Set();
 ChordComposer = class ChordComposer extends MeasureComposer {
   /**

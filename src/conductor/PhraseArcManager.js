@@ -10,7 +10,7 @@
  * - Dynamism scaling (rhythmic activity)
  */
 
-const V = Validator.create('PhraseArcManager');
+const V = validator.create('PhraseArcManager');
 
 PhraseArcManager = class PhraseArcManager {
   /**

@@ -5,7 +5,7 @@
 // Creates fugue-like imitative counterpoint across polyrhythmic layers.
 
 MotifEcho = (() => {
-  const V = Validator.create('motifEcho');
+  const V = validator.create('motifEcho');
   const CHANNEL = 'motifEcho';
   const ECHO_DELAY_BEATS_MIN = 1;
   const ECHO_DELAY_BEATS_MAX = 4;

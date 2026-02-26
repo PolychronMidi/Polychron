@@ -19,7 +19,7 @@ function assertGetRhythmDeps() {
   _getRhythmDepsValidated = true;
 }
 
-const V = Validator.create('getRhythm');
+const V = validator.create('getRhythm');
 
 getRhythm = function getRhythm(level,length,pattern,method,...args){
   assertGetRhythmDeps();

@@ -2,7 +2,7 @@
 // Enables experimental motif feedback: transformations stack and mutate over time
 
 MotifChain = (() => {
-  const V = Validator.create('motifChain');
+  const V = validator.create('motifChain');
 
   let activeMotif = null;           // Current base motif
   let transforms = [];              // Array of transform specs: [{type, args}, ...]
@@ -195,4 +195,3 @@ MotifChain = (() => {
     getHistory
   };
 })();
-

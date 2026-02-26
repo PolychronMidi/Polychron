@@ -1,5 +1,5 @@
 // Consolidated rhythm tracking function — explicit context-based API
-const V = Validator.create('trackRhythm');
+const V = validator.create('trackRhythm');
 
 trackRhythm = (unit, layer, played) => {
   V.assertObject(layer, 'layer');

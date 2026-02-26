@@ -1,5 +1,5 @@
 conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
-  const V = Validator.create('conductorConfigDynamics');
+  const V = validator.create('conductorConfigDynamics');
 
   const controls = CONDUCTOR_DYNAMICS_CONTROLS;
   const regulationCfg = (controls.regulation && typeof controls.regulation === 'object') ? controls.regulation : {};

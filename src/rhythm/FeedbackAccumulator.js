@@ -1,5 +1,5 @@
 ﻿FeedbackAccumulator = (() => {
-  const V = Validator.create('feedbackAccumulator');
+  const V = validator.create('feedbackAccumulator');
 
   /**
    * @param {{
@@ -86,4 +86,3 @@
     create
   };
 })();
-

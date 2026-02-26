@@ -3,7 +3,7 @@
 // Caches layer ID seed on the layer object (avoids recomputing per micro-unit).
 // Mutates the global `velocity` as a side effect.
 
-const V = Validator.create('playNotesComputeUnit');
+const V = validator.create('playNotesComputeUnit');
 
 /**
  * Compute note timing, velocity, and noise context for one emission unit.

@@ -15,7 +15,7 @@ module.exports = {
 
     // The two legitimate chokepoints are exempt
     if (
-      normalized.includes('src/conductor/signalReader.js') ||
+      normalized.includes('src/conductor/signal/signalReader.js') ||
       normalized.includes('src/crossLayer/conductorSignalBridge.js')
     ) return {};
 

@@ -11,7 +11,7 @@
  */
 
 StutterContagion = (() => {
-  const V = Validator.create('stutterContagion');
+  const V = validator.create('stutterContagion');
   const STUTTER_TYPES = new Set(['fade', 'pan', 'fx']);
   const SYNC_TOLERANCE_MS = 150;
   const BASE_DECAY = 0.6;

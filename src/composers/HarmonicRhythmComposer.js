@@ -1,5 +1,5 @@
 // Required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
-const V = Validator.create('HarmonicRhythmComposer');
+const V = validator.create('HarmonicRhythmComposer');
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   constructor(progression = ['I','IV','V','I'], key = 'C', measuresPerChord = 2, quality = 'major', opts = {}) {

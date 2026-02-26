@@ -1,9 +1,9 @@
 ﻿// src/conductor/ArticulationProfiler.js - Note-duration distribution analysis.
 // Detects staccato-heavy vs legato-heavy texture; flags duration monotony.
-// Pure query API â€” biases duration selection in motifConfig.
+// Pure query API - biases duration selection in motifConfig.
 
 ArticulationProfiler = (() => {
-  const V = Validator.create('articulationProfiler');
+  const V = validator.create('articulationProfiler');
   const WINDOW_SECONDS = 4;
   // Duration thresholds relative to beat duration
   const STACCATO_RATIO = 0.25; // â‰¤25% of beat = staccato
@@ -86,4 +86,3 @@ ArticulationProfiler = (() => {
     getDurationBias
   };
 })();
-

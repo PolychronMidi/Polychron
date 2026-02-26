@@ -4,7 +4,7 @@
 // at tension valleys for natural transitions.
 
 DynamicRoleSwap = (() => {
-  const V = Validator.create('dynamicRoleSwap');
+  const V = validator.create('dynamicRoleSwap');
   const MIN_PHRASES_BETWEEN_SWAPS = 3;
   const TENSION_VALLEY_THRESHOLD = 0.3; // only swap when tension is low
   const SWAP_PROBABILITY = 0.6; // probability of actually swapping when conditions met

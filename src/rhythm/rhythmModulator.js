@@ -1,7 +1,7 @@
 // rhythmModulator.js - adapter to apply rhythm hits to note objects
 
 rhythmModulator = (function() {
-  const V = Validator.create('rhythmModulator');
+  const V = validator.create('rhythmModulator');
 
   function apply(note, hit, options = {}) {
     V.assertObject(note, 'note');

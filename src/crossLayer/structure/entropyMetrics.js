@@ -3,7 +3,7 @@
 // Extracted to keep entropyRegulator.js focused on regulation logic.
 
 entropyMetrics = (() => {
-  const V = Validator.create('entropyMetrics');
+  const V = validator.create('entropyMetrics');
 
   /**
    * Compute pitch-class diversity (Shannon entropy normalized to 0-1).

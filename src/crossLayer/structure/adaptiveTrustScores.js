@@ -1,5 +1,5 @@
 AdaptiveTrustScores = (() => {
-  const V = Validator.create('adaptiveTrustScores');
+  const V = validator.create('adaptiveTrustScores');
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
 

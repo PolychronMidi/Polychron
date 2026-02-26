@@ -98,7 +98,7 @@ FullBootstrap = (() => {
     'allNotesOff',
     'muteAll',
     'setOtherInstruments',
-    'Validator',
+    'validator',
     'SystemSnapshot',
     'modeQualityMap',
     'priorsHelpers',

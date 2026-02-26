@@ -12,7 +12,7 @@
 // many modules contribute or which profile is active.
 
 pipelineNormalizer = (() => {
-  const V = Validator.create('pipelineNormalizer');
+  const V = validator.create('pipelineNormalizer');
 
   // Soft-envelope boundaries per pipeline, calibrated from observed products.
   // softMin/softMax: compression onset thresholds (passthrough zone).

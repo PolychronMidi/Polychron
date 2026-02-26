@@ -1,4 +1,4 @@
-const V = Validator.create('ScaleComposer');
+const V = validator.create('ScaleComposer');
 /**
  * Composes notes from a specific scale.
  * @extends MeasureComposer

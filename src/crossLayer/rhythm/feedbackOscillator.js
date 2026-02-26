@@ -10,7 +10,7 @@
 const COMPLEMENT_MAP = Object.freeze([6, 5, 4, 3, 8, 7, 0, 5, 4, 3, 2, 1]);
 
 FeedbackOscillator = (() => {
-  const V = Validator.create('feedbackOscillator');
+  const V = validator.create('feedbackOscillator');
   const CHANNEL = 'feedbackLoop';
   const SYNC_TOLERANCE_MS = 250;
   const DAMPING = 0.55;

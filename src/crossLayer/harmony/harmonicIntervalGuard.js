@@ -5,7 +5,7 @@
 // tritones, 2nds, and 7ths. Consumes FeedbackOscillator.pitchBias (dead-end signal).
 
 HarmonicIntervalGuard = (() => {
-  const V = Validator.create('harmonicIntervalGuard');
+  const V = validator.create('harmonicIntervalGuard');
   const MAX_HISTORY = 40;
 
   // Consonance table: interval class → consonance score 0–1

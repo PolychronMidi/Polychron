@@ -3,7 +3,7 @@
 // Reflects African music principles: cyclic patterns with phase relationships
 
 PhaseLockedRhythmGenerator = (() => {
-  const V = Validator.create('phaseLockedRhythmGenerator');
+  const V = validator.create('phaseLockedRhythmGenerator');
   const phases = new Map();         // Map<layerName:patternName:length, offset>
   const generationHistory = [];     // Track recent generations for coherence analysis
   let activeLayer = null;           // Track which layer is currently active for phase context
@@ -91,7 +91,7 @@ PhaseLockedRhythmGenerator = (() => {
       }
     }
 
-    // â”€â”€ Texture-driven phase drift (#9) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Texture-driven phase drift (#9)
     // Chord bursts â†’ advance phase (layers drift apart â†’ polyrhythmic tension)
     // Flurries â†’ negative drift (layers re-align â†’ convergence)
     const texMetrics = DrumTextureCoupler.getMetrics();
@@ -260,4 +260,3 @@ PhaseLockedRhythmGenerator = (() => {
     initializePolyrhythmCoupling
   };
 })();
-

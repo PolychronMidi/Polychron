@@ -1,10 +1,10 @@
 ﻿// src/conductor/DynamicArchitectPlanner.js - Macro-level dynamic architecture.
 // Tracks overall dynamic envelope across the entire piece (ppâ†’ff arc) and
 // biases tension to enforce a long-range dynamic plan.
-// Pure query API â€” tension bias drives gradual macro-dynamic shape.
+// Pure query API - tension bias drives gradual macro-dynamic shape.
 
 DynamicArchitectPlanner = (() => {
-  const V = Validator.create('dynamicArchitectPlanner');
+  const V = validator.create('dynamicArchitectPlanner');
   const MAX_SNAPSHOTS = 64;
   /** @type {Array<{ intensity: number, time: number }>} */
   const snapshots = [];
@@ -127,4 +127,3 @@ DynamicArchitectPlanner = (() => {
     reset
   };
 })();
-

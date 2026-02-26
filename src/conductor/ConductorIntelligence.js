@@ -1,12 +1,12 @@
-﻿// src/conductor/ConductorIntelligence.js â€” Registry for conductor intelligence modules.
+﻿// src/conductor/ConductorIntelligence.js - Registry for conductor intelligence modules.
 // Each intelligence module self-registers its contributions (density biases,
 // tension biases, flicker modifiers, recorders, state-field providers).
 // GlobalConductorUpdate iterates these registries instead of probing 70+ typeof guards.
 
 ConductorIntelligence = (() => {
-  const V = Validator.create('conductorIntelligence');
+  const V = validator.create('conductorIntelligence');
 
-  // â”€â”€ Lifecycle (shared with CrossLayerRegistry via ModuleLifecycle) â”€â”€â”€â”€â”€
+  // Lifecycle (shared with CrossLayerRegistry via ModuleLifecycle)
   const lifecycle = ModuleLifecycle.create('ConductorIntelligence');
   let _initialized = false;
 
@@ -30,7 +30,7 @@ ConductorIntelligence = (() => {
     EventBus.on(EVENTS.SECTION_BOUNDARY, () => lifecycle.resetSection());
   }
 
-  // â”€â”€ Shared collection helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Shared collection helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Dampening factor: shrinks deviations from 1.0 before multiplying,
   // preventing many contributors from crushing the product to near-zero.
   // Auto-scaled per pipeline: base damping (0.6) calibrated for ~20
@@ -104,7 +104,7 @@ ConductorIntelligence = (() => {
     }
   }
 
-  // â”€â”€ Density biases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Density biases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Each entry: { name, getter, lo, hi }
   // getter() returns a number; clamped to [lo, hi] then multiplied into targetDensity.
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
@@ -112,10 +112,10 @@ ConductorIntelligence = (() => {
 
   /**
    * Register a density-bias contributor.
-   * @param {string} name â€” diagnostic label
-   * @param {() => number} getter â€” returns bias multiplier (ideally near 1.0)
-   * @param {number} lo â€” clamp minimum (e.g. 0.8)
-   * @param {number} hi â€” clamp maximum (e.g. 1.2)
+   * @param {string} name - diagnostic label
+   * @param {() => number} getter - returns bias multiplier (ideally near 1.0)
+   * @param {number} lo - clamp minimum (e.g. 0.8)
+   * @param {number} hi - clamp maximum (e.g. 1.2)
    */
   function registerDensityBias(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
@@ -142,7 +142,7 @@ ConductorIntelligence = (() => {
     };
   }
 
-  // â”€â”€ Tension biases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Tension biases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const tensionBiases = [];
 
@@ -178,7 +178,7 @@ ConductorIntelligence = (() => {
     };
   }
 
-  // â”€â”€ Flicker modifiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Flicker modifiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const flickerModifiers = [];
 
@@ -215,7 +215,7 @@ ConductorIntelligence = (() => {
     };
   }
 
-  // â”€â”€ Recorders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Recorders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Recorders receive a context object each beat and perform side-effects
   // (recording snapshots, updating internal state).
   /**
@@ -251,7 +251,7 @@ ConductorIntelligence = (() => {
     }
   }
 
-  // â”€â”€ State-field providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // State-field providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Each provider returns an object whose keys map directly to
   // ConductorState.updateFromConductor() fields.
   //
@@ -260,7 +260,7 @@ ConductorIntelligence = (() => {
   // profileHintExplosive, profileHintAtmospheric via conductorConfigAccessors,
   // and coherenceEntropy via conductorSignalBridge).
   // The remaining ~90 fields flow into ConductorState bulk snapshots and
-  // ExplainabilityBus telemetry. They exist as typed observation points â€”
+  // ExplainabilityBus telemetry. They exist as typed observation points -
   // wire a consumer before assuming they influence behavior.
   /** @type {Array<{ name: string, getter: () => Record<string, any> }>} */
   const stateProviders = [];
@@ -286,11 +286,11 @@ ConductorIntelligence = (() => {
    * All other ~90+ fields are observation-point only: visible in bulk
    * ConductorState.getSnapshot() (consumed by playDrums, playDrums2, drummer,
    * setBinaural, SystemSnapshot, HarmonicContext, conductorSignalBridge) but
-   * never individually queried by name. This is by design â€” stateProviders act
+   * never individually queried by name. This is by design - stateProviders act
    * as a passive telemetry layer for diagnostic and snapshot consumers.
    *
    * @param {string} name
-   * @param {() => Record<string, any>} getter â€” returns a flat object of ConductorState fields
+   * @param {() => Record<string, any>} getter - returns a flat object of ConductorState fields
    */
   function registerStateProvider(name, getter) {
     V.assertNonEmptyString(name, 'name');
@@ -314,7 +314,7 @@ ConductorIntelligence = (() => {
     return merged;
   }
 
-  // â”€â”€ Diagnostics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Diagnostics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
    * Return every unique name that has registered any contribution

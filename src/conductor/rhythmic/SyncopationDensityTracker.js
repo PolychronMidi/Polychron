@@ -1,9 +1,9 @@
 ﻿// src/conductor/SyncopationDensityTracker.js - Measures off-beat onset ratio.
 // Detects metric monotony (all on-beat) or excessive syncopation (all off-beat).
-// Pure query API â€” biases rhythm pattern selection weights.
+// Pure query API - biases rhythm pattern selection weights.
 
 SyncopationDensityTracker = (() => {
-  const V = Validator.create('syncopationDensityTracker');
+  const V = validator.create('syncopationDensityTracker');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -82,4 +82,3 @@ SyncopationDensityTracker = (() => {
     getRhythmBias
   };
 })();
-

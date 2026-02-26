@@ -2,7 +2,7 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce that the string passed to Validator.create() exactly matches the current file\'s basename',
+      description: 'Enforce that the string passed to validator.create() exactly matches the current file\'s basename',
       recommended: false
     },
     schema: []
@@ -19,7 +19,7 @@ module.exports = {
         const obj = callee.object;
         const prop = callee.property;
 
-        if (!obj || obj.type !== 'Identifier' || obj.name !== 'Validator') return;
+        if (!obj || obj.type !== 'Identifier' || obj.name !== 'validator') return;
         const methodName = (prop && prop.type === 'Identifier') ? prop.name : ((prop && prop.type === 'Literal') ? prop.value : null);
 
         if (methodName === 'create') {
@@ -31,7 +31,7 @@ module.exports = {
             if (firstArg.value !== basename) {
               context.report({
                 node: firstArg,
-                message: `Validator.create() argument must match the filename. Expected '${basename}', got '${firstArg.value}'.`
+                message: `validator.create() argument must match the filename. Expected '${basename}', got '${firstArg.value}'.`
               });
             }
           }

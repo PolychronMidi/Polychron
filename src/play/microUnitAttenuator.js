@@ -11,7 +11,7 @@
 // survivors to the next frame (or to `c` if at the outermost level).
 
 microUnitAttenuator = (() => {
-  const V = Validator.create('microUnitAttenuator');
+  const V = validator.create('microUnitAttenuator');
   /** @type {Array<{ unit: string, limit: number, pairs: Array<{ on: object, off: object, score: number }> }>} */
   const _stack = [];
 

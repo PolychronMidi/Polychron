@@ -2,7 +2,7 @@
 // Detects extended harmonic stasis (pedal/drone zones) by measuring how long
 // the same pitch class dominates the bass register. Tension bias encourages
 // movement after sustained fields or allows settling during instability.
-// Stateful â€” recordBass() accumulates samples; getPedalFieldSignal() reads streak.
+// Stateful - recordBass() accumulates samples; getPedalFieldSignal() reads streak.
 //
 // Complementary to PedalPointDetector (texture/) which is stateless and measures
 // bass PC dominance ratio for compositional advice. This tracker feeds the
@@ -10,7 +10,7 @@
 // Both are consumed by GlobalConductor for different purposes.
 
 HarmonicPedalFieldTracker = (() => {
-  const V = Validator.create('harmonicPedalFieldTracker');
+  const V = validator.create('harmonicPedalFieldTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ bassPC: number, time: number }>} */
   const bassSamples = [];

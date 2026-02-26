@@ -1,5 +1,5 @@
 ﻿ConductorState = (() => {
-  const V = Validator.create('conductorState');
+  const V = validator.create('conductorState');
 
   let initialized = false;
 

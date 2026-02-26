@@ -3,7 +3,7 @@
  * @returns {void}
  */
 setBalanceAndFX = () => {
-const V = Validator.create('setBalanceAndFX');
+const V = validator.create('setBalanceAndFX');
 const spatialCanvas = ConductorConfig.getSpatialCanvasParams();
 if (!spatialCanvas || typeof spatialCanvas !== 'object' || !Array.isArray(spatialCanvas.balOffset) || !Array.isArray(spatialCanvas.sideBias)) {
   throw new Error('setBalanceAndFX: getSpatialCanvasParams returned invalid shape');

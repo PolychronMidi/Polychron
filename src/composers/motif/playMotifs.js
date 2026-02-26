@@ -21,7 +21,7 @@
 
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer
-  const V = Validator.create('playMotifs');
+  const V = validator.create('playMotifs');
   if (!layer) throw new Error(`${unit}.playMotifs missing layer`);
   const resolvedBucket = playMotifsResolveBucket(unit, layer);
   const targetIndex = resolvedBucket.targetIndex;

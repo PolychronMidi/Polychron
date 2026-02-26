@@ -34,9 +34,9 @@ Globals are the project's circulatory system. They are assigned as side-effects 
 
 Every module throws on bad input. No silent early returns. No `|| 0` fallbacks. No "graceful degradation." If a value can be absent, the *source* must guarantee it — not the consumer.
 
-The **Validator** (`src/utils/validators.js`) is the immune system:
+The **validator** (`src/utils/validator.js`) is the immune system:
 ```js
-const V = Validator.create('ModuleName');
+const V = validator.create('ModuleName');
 const t = V.requireFinite(timeMs, 'timeMs'); // returns value or throws
 ```
 Key methods: `requireFinite`, `optionalFinite`, `requireDefined`, `requireType`, `requireEnum`, `assertRange`, `assertObject`, `assertArray`, `assertNonEmptyString`, `getEventsOrThrow` (and more). Every error is stamped with the module name.
@@ -78,7 +78,7 @@ Target ≤ 200 lines of clean minimalist, self-documenting code (including struc
 
 - **Language:** JavaScript (CommonJS), TypeScript checking via `tsc --noEmit`
 - **Console output:** only script start, successful output, and temporary debug traces. Limited `console.warn('Acceptable warning: ...')` for long-run pulse checks.
-- **No ad-hoc validation:** use `Validator`, not `typeof` / `|| []` / `|| 0` / `Number.isFinite(x) ? x : fallback`.
+- **No ad-hoc validation:** use `validator`, not `typeof` / `|| []` / `|| 0` / `Number.isFinite(x) ? x : fallback`.
 - **No typeof on boot-validated globals:** ESLint enforces `local/no-typeof-validated-global`. Trust bootstrap; reference globals directly.
 - **Globals are truth:** initialize correctly at the source. Never "sanitize" downstream.
 
@@ -100,7 +100,7 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 
 | Directory | Role | Key Entry Points |
 |---|---|---|
-| `src/utils/` | Validator, clamps, randoms, MIDI data, instrumentation, shared priors infrastructure, shared lifecycle & caching | `Validator.create()`, `modeQualityMap`, `priorsHelpers`, `ModuleLifecycle.create()`, `beatCache.create()` |
+| `src/utils/` | validator, clamps, randoms, MIDI data, instrumentation, shared priors infrastructure, shared lifecycle & caching | `validator.create()`, `modeQualityMap`, `priorsHelpers`, `ModuleLifecycle.create()`, `beatCache.create()` |
 | `src/conductor/` | ~70 intelligence modules (dynamics, harmonic, melodic, rhythmic, texture) + signal feedback infrastructure. Merged each beat into a single composite signal. | `ConductorIntelligence`, `signalReader`, `GlobalConductorUpdate`, `ConductorState` |
 | `src/rhythm/` | Pattern generators, onset makers, drum map, rhythm registry | `RhythmManager`, `RhythmRegistry` |
 | `src/time/` | Tick/time math, polyrhythm calculator, layer manager, absolute-time grid | `AbsoluteTimeGrid`, `LayerManager` |

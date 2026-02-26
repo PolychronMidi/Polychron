@@ -12,7 +12,7 @@
  */
 
 harmonicFunctionGraph = (() => {
-  const V = Validator.create('harmonicFunctionGraph');
+  const V = validator.create('harmonicFunctionGraph');
 
   const CHANNEL = 'harmonicFunction';
 

@@ -1,4 +1,4 @@
-const V = Validator.create('playNotesEmitPick');
+const V = validator.create('playNotesEmitPick');
 let _emitPickDepsValidated = false;
 
 // Beat-level channel cache — flipBin/source/reflection/bass don't change within a beat

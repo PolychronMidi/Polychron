@@ -4,7 +4,7 @@
 
 conductorConfigAccessors = (deps) => {
   const { dynamics, getProfileTuning } = deps;
-  const V = Validator.create('conductorConfigAccessors');
+  const V = validator.create('conductorConfigAccessors');
 
   // ── dynamics.resolveField delegates ───────────────────────────────
 

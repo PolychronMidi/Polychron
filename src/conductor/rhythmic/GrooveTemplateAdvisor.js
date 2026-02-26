@@ -1,9 +1,9 @@
 ﻿// src/conductor/GrooveTemplateAdvisor.js - Tracks micro-timing deviations from the grid.
 // Detects mechanical rigidity vs. human-like swing feel.
-// Pure query API â€” advises velocity humanization and swing feel per section phase.
+// Pure query API - advises velocity humanization and swing feel per section phase.
 
 GrooveTemplateAdvisor = (() => {
-  const V = Validator.create('grooveTemplateAdvisor');
+  const V = validator.create('grooveTemplateAdvisor');
   const WINDOW_SECONDS = 4;
 
   /**

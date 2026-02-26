@@ -189,9 +189,9 @@ const validateEntryForTypeOrFail = (entry, label, expectedType = null) => {
     if (entry[key] !== undefined) ComposerProfileUtils.assertStringOrFail(entry[key], `${label}.${key}`);
   }
 
-  const validator = validateByType[entry.type];
-  if (typeof validator !== 'function') throw new Error(`ComposerProfiles: ${label} unsupported type "${entry.type}"`);
-  validator(entry, label);
+  const validatorCheck = validateByType[entry.type];
+  if (typeof validatorCheck !== 'function') throw new Error(`ComposerProfiles: ${label} unsupported type "${entry.type}"`);
+  validatorCheck(entry, label);
 };
 
 const validateDiversityOrFail = (type, profileMap) => {

@@ -1,9 +1,9 @@
 ﻿// src/conductor/HarmonicVelocityMonitor.js - Harmonic change rate vs energy arc.
 // Flags harmony moving too fast in calm passages or stalling at climaxes.
-// Pure query API â€” scales HarmonicRhythmTracker thresholds and journey boldness.
+// Pure query API - scales HarmonicRhythmTracker thresholds and journey boldness.
 
 HarmonicVelocityMonitor = (() => {
-  const V = Validator.create('harmonicVelocityMonitor');
+  const V = validator.create('harmonicVelocityMonitor');
   const WINDOW_SECONDS = 6;
 
   /**

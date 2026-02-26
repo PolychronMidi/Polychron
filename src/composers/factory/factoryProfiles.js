@@ -1,4 +1,4 @@
-const V = Validator.create('factoryProfiles');
+const V = validator.create('factoryProfiles');
 
 factoryProfiles = {
   getCapabilityProfilesDefault() {

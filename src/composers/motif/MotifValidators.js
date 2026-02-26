@@ -1,5 +1,5 @@
 ﻿// MotifValidators.js - validation helpers for motif generation
-const V = Validator.create('motifValidators');
+const V = validator.create('motifValidators');
 
 MotifValidators = {
   _toPCSet(scaleLike, label = 'scale') {
@@ -78,7 +78,7 @@ MotifValidators = {
           const hcScale = HarmonicContext.getField('scale');
           if (Array.isArray(hcScale) && hcScale.length > 0) windowScale = hcScale;
         } catch (err) {
-          throw new Error(`MotifValidators.assertScaleMatchesDeveloper: failed to read HarmonicContext.scale â€” ${err && err.message ? err.message : String(err)}`);
+          throw new Error(`MotifValidators.assertScaleMatchesDeveloper: failed to read HarmonicContext.scale - ${err && err.message ? err.message : String(err)}`);
         }
       }
       if (!windowScale && caps.notesReflectOutputSet && Array.isArray(developer.notes) && developer.notes.length > 0) {

@@ -1,10 +1,10 @@
 ﻿// src/conductor/CadentialPreparationAdvisor.js - Cadential approach detector.
 // Monitors proximity to phrase/section boundaries and harmonic approach patterns,
 // signalling when dominant preparation or leading-tone pressure should begin.
-// Pure query API â€” biases derivedTension near cadence points.
+// Pure query API - biases derivedTension near cadence points.
 
 CadentialPreparationAdvisor = (() => {
-  const V = Validator.create('cadentialPreparationAdvisor');
+  const V = validator.create('cadentialPreparationAdvisor');
   const PREP_WINDOW = 0.2; // prepare in the last 20% of a phrase
 
   /**
@@ -39,10 +39,10 @@ CadentialPreparationAdvisor = (() => {
     // But only if current tension is below the target for cadential preparation
     let tensionBias = 1;
     if (preparationActive) {
-      // Ramp tension during preparation â€” stronger as we approach the cadence
+      // Ramp tension during preparation - stronger as we approach the cadence
       const targetTension = 0.5 + urgency * 0.3; // target 0.5-0.8
       if (tension < targetTension) {
-        // Under-tensioned for cadential approach â€” boost
+        // Under-tensioned for cadential approach - boost
         tensionBias = clamp(1 + urgency * 0.15, 1, 1.2);
       }
     }
@@ -80,4 +80,3 @@ CadentialPreparationAdvisor = (() => {
     getTensionBias
   };
 })();
-

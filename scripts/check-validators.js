@@ -15,8 +15,8 @@ function findMismatches(dir) {
             const content = fs.readFileSync(fullPath, 'utf8');
             const basename = path.basename(fullPath, '.js');
 
-            // Match Validator.create('Name') or Validator.create("Name")
-            const regex = /Validator\.create\(['"]([^'"]+)['"]\)/g;
+            // Match validator.create('Name') or validator.create("Name")
+            const regex = /validator\.create\(['"]([^'"]+)['"]\)/g;
             let match;
 
             while ((match = regex.exec(content)) !== null) {
@@ -31,6 +31,6 @@ function findMismatches(dir) {
     }
 }
 
-console.log('Checking for Validator.create() mismatches...\n');
+console.log('Checking for validator.create() mismatches...\n');
 findMismatches(srcDir);
 console.log('\nDone.');

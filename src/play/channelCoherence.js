@@ -1,7 +1,7 @@
 // channelCoherence.js — Extracts per-channel Stutter/crossMod coherence adjustments
 // Shared by source, reflection, and bass emission blocks in playNotes.
 
-const V = Validator.create('channelCoherence');
+const V = validator.create('channelCoherence');
 
 /**
  * Computes per-channel stutter coherence adjustments and noise-shaped velocity.

@@ -1,10 +1,10 @@
 ﻿// src/conductor/HarmonicSurpriseIndex.js - Chord-progression predictability analysis.
 // Measures pitch-class transition entropy in the ATW window.
 // High entropy = surprising/fresh; low entropy = predictable/stale.
-// Pure query API â€” biases derivedTension toward harmonic freshness.
+// Pure query API - biases derivedTension toward harmonic freshness.
 
 HarmonicSurpriseIndex = (() => {
-  const V = Validator.create('harmonicSurpriseIndex');
+  const V = validator.create('harmonicSurpriseIndex');
   const WINDOW_SECONDS = 6;
 
   /**

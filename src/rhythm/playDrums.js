@@ -1,5 +1,5 @@
 // playDrums.js - Drum pattern generation based on beat rhythm, beat index, and phrase structure
-const V = Validator.create('playDrums');
+const V = validator.create('playDrums');
 
 playDrums = function playDrums() {
   V.assertObject(ConductorState, 'ConductorState');

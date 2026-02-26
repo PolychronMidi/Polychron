@@ -1,6 +1,6 @@
 _random = require('@tonaljs/rhythm-pattern').random;
 
-const V = Validator.create('setRhythm');
+const V = validator.create('setRhythm');
 
 /**
  * Resolve and cache rhythm arrays per level.

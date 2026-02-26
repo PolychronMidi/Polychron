@@ -15,7 +15,7 @@
  */
 
 contextualTrust = (() => {
-  const V = Validator.create('contextualTrust');
+  const V = validator.create('contextualTrust');
 
   const DECAY    = 0.9;
   const LO       = -1;

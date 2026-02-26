@@ -1,10 +1,10 @@
 ﻿// src/conductor/TemporalProportionTracker.js - Golden-ratio / Fibonacci proportions in durations.
 // Tracks phrase & section durations, evaluates how close their ratios come to
 // aesthetically pleasing proportions (Ï• â‰ˆ 1.618, âˆš2, 2:3, etc.).
-// Pure query API â€” signals proportion quality and nudge suggestions.
+// Pure query API - signals proportion quality and nudge suggestions.
 
 TemporalProportionTracker = (() => {
-  const V = Validator.create('temporalProportionTracker');
+  const V = validator.create('temporalProportionTracker');
   const PHI = 1.618033988749895;
   /** @type {number[]} */
   const sectionDurations = [];
@@ -113,4 +113,3 @@ TemporalProportionTracker = (() => {
     reset
   };
 })();
-

@@ -1,10 +1,10 @@
 ﻿// src/conductor/dynamics/DynamicRangeTracker.js - Unified dynamic range analysis.
 // Merges DynamicRangeAdvisor + DynamicContrastMemory.
 // Provides instantaneous velocity spread bias + longitudinal contrast tracking.
-// Pure query API â€” recordExtremes for longitudinal memory.
+// Pure query API - recordExtremes for longitudinal memory.
 
 DynamicRangeTracker = (() => {
-  const V = Validator.create('dynamicRangeTracker');
+  const V = validator.create('dynamicRangeTracker');
   const WINDOW_SECONDS = 4;
   let globalMin = 127;
   let globalMax = 0;

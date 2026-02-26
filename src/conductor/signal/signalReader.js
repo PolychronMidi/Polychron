@@ -5,7 +5,7 @@
 // ConductorIntelligence.getSignalSnapshot() or ExplainabilityBus.queryByType() directly.
 
 signalReader = (() => {
-  const V = Validator.create('signalReader');
+  const V = validator.create('signalReader');
 
   /** @returns {number} Product of all registered density biases. */
   function density() {

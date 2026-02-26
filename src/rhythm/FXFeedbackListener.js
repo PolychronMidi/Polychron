@@ -2,7 +2,7 @@
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
-  const V = Validator.create('fXFeedbackListener');
+  const V = validator.create('fXFeedbackListener');
 
   let accumulator = null;
   let initialized = false;
@@ -196,4 +196,3 @@ FXFeedbackListener = (() => {
     reset
   };
 })();
-

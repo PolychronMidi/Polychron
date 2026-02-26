@@ -1,7 +1,7 @@
 // stutterPlanScheduler.js - Extracted plan scheduling helpers for StutterManager.
 
 StutterPlanScheduler = (() => {
-  const V = Validator.create('stutterPlanScheduler');
+  const V = validator.create('stutterPlanScheduler');
 
   function createPlan(stutterMgr, planCfg = {}) {
     V.assertObject(stutterMgr, 'stutterMgr');

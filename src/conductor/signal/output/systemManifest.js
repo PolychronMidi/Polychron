@@ -3,7 +3,7 @@
 // enabling compositional forensics and newcomer onboarding.
 
 systemManifest = (() => {
-  const V = Validator.create('systemManifest');
+  const V = validator.create('systemManifest');
 
   /**
    * Write system-manifest.json and capability-matrix.md to output/.
