@@ -94,7 +94,8 @@ systemDynamicsProfiler = (() => {
       couplingStrength: 0,
       regime: 'initializing',
       grade: 'healthy',
-      couplingMatrix: {}
+      couplingMatrix: {},
+      compositionalVariance: [0.25, 0.25, 0.25, 0.25]
     };
   }
 
@@ -153,7 +154,7 @@ systemDynamicsProfiler = (() => {
     let entropy = 0.5;
     try {
       const rawE = entropyRegulator.measureRawEntropy();
-      entropy = 0.5 + (rawE - 0.5) * 8.0; // lowered (was 10.0) — 10× caused d-e 0.53, f-e 0.50, effDim collapse to 1.07; 8× reduces overcoupling
+      entropy = 0.5 + (rawE - 0.5) * 12.0; // raised (was 8.0) — pipelineCouplingManager now actively manages f-e coupling (target 0.25, gain 0.12), mitigating the overcoupling risk that killed 10×
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
@@ -396,7 +397,15 @@ systemDynamicsProfiler = (() => {
     const { mean, variance } = _stats(rawTrajectory);
     const { matrix, strength } = _coupling(rawTrajectory, mean);
     const effDim = _effectiveDimensionality(variance);
-
+    // per-axis variance ratios for dead-axis detection.
+    // Normalized so they sum to 1.0 — a value near 0 means that axis
+    // contributes negligible variance to the phase-space trajectory.
+    let varTotal = 0;
+    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) varTotal += variance[d];
+    const varRatios = new Array(N_COMPOSITIONAL_DIMS);
+    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
+      varRatios[d] = varTotal > 1e-12 ? variance[d] / varTotal : 1 / N_COMPOSITIONAL_DIMS;
+    }
     // ── Regime classification (with hysteresis) ──
     const rawRegime = _classifyRegime(avgVelocity, avgCurvature, effDim, strength);
     const regime = _resolveRegime(rawRegime);
@@ -409,7 +418,8 @@ systemDynamicsProfiler = (() => {
       couplingStrength: m.round(strength * 1000) / 1000,
       regime,
       grade,
-      couplingMatrix: matrix
+      couplingMatrix: matrix,
+      compositionalVariance: varRatios
     };
 
     // Emit real-time telemetry on every beat for observability

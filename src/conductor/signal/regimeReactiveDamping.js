@@ -73,6 +73,7 @@ regimeReactiveDamping = (() => {
   let _driftD = 0;
   let _driftT = 0;
   let _driftF = 0;
+  let _injectionCount = 0; // persistent counter for sign alternation (survives streak resets)
 
   let currentRegime = 'evolving';
   let curvatureGain = 0;
@@ -105,8 +106,11 @@ regimeReactiveDamping = (() => {
       const tCoup = m.abs(cm['density-tension'] || 0) + m.abs(cm['tension-flicker'] || 0);
       const fCoup = m.abs(cm['density-flicker'] || 0) + m.abs(cm['tension-flicker'] || 0);
 
-      // Directional: alternate sign each time to prevent monotonic drift
-      const sign = (lowVelStreak % 24) < 12 ? 1 : -1;
+      // Directional: alternate sign using persistent counter to prevent
+      // monotonic drift. _injectionCount survives streak resets and section
+      // resets, ensuring true alternation across the full composition.
+      _injectionCount++;
+      const sign = (_injectionCount % 2 === 0) ? 1 : -1;
 
       if (dCoup <= tCoup && dCoup <= fCoup) {
         _driftD = sign * DRIFT_MAGNITUDE;
@@ -151,10 +155,12 @@ regimeReactiveDamping = (() => {
     _smoothedDensity = 1.0;
     _smoothedTension = 1.0;
     _smoothedFlicker = 1.0;
+    // Drift state intentionally NOT reset on section boundaries.
+    // The profiler (scope 'all') retains trajectory history across sections,
+    // so drift must persist to maintain momentum. lowVelStreak resets to
+    // allow re-detection in the new section, but accumulated drift and
+    // injection count carry forward.
     lowVelStreak = 0;
-    _driftD = 0;
-    _driftT = 0;
-    _driftF = 0;
   }
 
   // --- Self-registration ---

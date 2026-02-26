@@ -79,8 +79,10 @@ coherenceVerdicts = (() => {
       verdicts.push({ severity: 'info', area: 'dynamics', finding: `Regime ${s.regime} — healthy compositional development.` });
     }
 
-    if (s.effectiveDimensionality < 2.0) {
-      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Effective dimensionality collapsed to ${s.effectiveDimensionality.toFixed(2)}/4 — system operating on fewer than 2 independent axes.` });
+    if (s.effectiveDimensionality < 1.5) {
+      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Effective dimensionality collapsed to ${s.effectiveDimensionality.toFixed(2)}/4 — system operating on fewer than 1.5 independent compositional axes. Severe variance imbalance or strong coupling.` });
+    } else if (s.effectiveDimensionality < 2.0) {
+      verdicts.push({ severity: 'info', area: 'dynamics', finding: `Effective dimensionality ${s.effectiveDimensionality.toFixed(2)}/4 — mild variance imbalance across compositional axes. Normal for short sections or pieces with a dominant signal.` });
     }
 
     if (s.velocity < 0.01 && s.regime !== 'stagnant') {
@@ -94,15 +96,34 @@ coherenceVerdicts = (() => {
     if (!sd || !sd.snapshot || !sd.snapshot.couplingMatrix) return;
 
     const matrix = sd.snapshot.couplingMatrix;
-    const strongPairs = Object.entries(matrix)
+
+    // Only report correlations between compositional dimensions (density,
+    // tension, flicker, entropy). Trust and phase are governance/position
+    // signals excluded from velocity/curvature/dimensionality by the profiler.
+    // Reporting trust-X or phase-X coupling as warnings creates false positives
+    // — those correlations are structurally expected, not actionable.
+    const compositionalPairs = Object.entries(matrix)
+      .filter(([pair]) => !pair.includes('trust') && !pair.includes('phase'))
       .filter(([, v]) => m.abs(v) > 0.5)
       .sort((a, b) => m.abs(b[1]) - m.abs(a[1]));
 
-    for (let i = 0; i < strongPairs.length; i++) {
-      const [pair, corr] = strongPairs[i];
+    for (let i = 0; i < compositionalPairs.length; i++) {
+      const [pair, corr] = compositionalPairs[i];
       const direction = corr > 0 ? 'co-evolving' : 'anti-correlated';
       const severity = m.abs(corr) > 0.7 ? 'warning' : 'info';
       verdicts.push({ severity, area: 'coupling', finding: `${pair} strongly ${direction} (r=${corr.toFixed(3)}) — these dimensions may be driven by a shared input or feedback loop.` });
+    }
+
+    // Governance coupling reported as info-only for diagnostic completeness
+    const governancePairs = Object.entries(matrix)
+      .filter(([pair]) => pair.includes('trust') || pair.includes('phase'))
+      .filter(([, v]) => m.abs(v) > 0.5)
+      .sort((a, b) => m.abs(b[1]) - m.abs(a[1]));
+
+    for (let i = 0; i < governancePairs.length; i++) {
+      const [pair, corr] = governancePairs[i];
+      const direction = corr > 0 ? 'co-evolving' : 'anti-correlated';
+      verdicts.push({ severity: 'info', area: 'coupling', finding: `${pair} strongly ${direction} (r=${corr.toFixed(3)}) — governance coupling (expected, not actionable).` });
     }
   }
 
