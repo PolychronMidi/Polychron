@@ -71,6 +71,14 @@ pipelineCouplingManager = (() => {
     let nudgeD = 0;
     let nudgeT = 0;
     let nudgeF = 0;
+
+    /** @param {string} axis  @param {number} amount */
+    function _addNudge(axis, amount) {
+      if (axis === 'density') nudgeD += amount;
+      else if (axis === 'tension') nudgeT += amount;
+      else nudgeF += amount;
+    }
+
     const matrix = snap.couplingMatrix;
 
     for (let a = 0; a < COMPOSITIONAL_DIMS.length; a++) {
@@ -85,20 +93,28 @@ pipelineCouplingManager = (() => {
         const absCorr = m.abs(corr);
         if (absCorr <= target) continue;
 
-        // Determine which axis to nudge: prefer B (the less-dominant partner),
-        // fall back to A when B is entropy (no conductor bias for entropy).
-        const nudgeTarget = NUDGEABLE_SET.has(dimB) ? dimB
-          : (NUDGEABLE_SET.has(dimA) ? dimA : null);
-        if (!nudgeTarget) continue;
+        // Split decorrelation nudge across BOTH nudgeable axes in opposite
+        // directions. Single-axis nudging caused accidental co-movement when
+        // multiple pairs pushed the same axis the same way (Run 6: d-f flipped
+        // sign but kept |0.466| — both density and flicker pushed < 1.0).
+        const aIsNudgeable = NUDGEABLE_SET.has(dimA);
+        const bIsNudgeable = NUDGEABLE_SET.has(dimB);
+        if (!aIsNudgeable && !bIsNudgeable) continue;
 
-        // Push opposite to correlation direction to break lock
         const excess = absCorr - target;
         const direction = -m.sign(corr);
         const magnitude = gain * excess;
 
-        if (nudgeTarget === 'density') nudgeD += direction * magnitude;
-        else if (nudgeTarget === 'tension') nudgeT += direction * magnitude;
-        else nudgeF += direction * magnitude;
+        if (aIsNudgeable && bIsNudgeable) {
+          // Both axes have conductor biases — split the force oppositely
+          const half = magnitude * 0.5;
+          _addNudge(dimA, -direction * half); // push A one way
+          _addNudge(dimB, direction * half);  // push B the other
+        } else {
+          // Only one axis nudgeable (entropy pair) — full force on the nudgeable one
+          const target2 = aIsNudgeable ? dimA : dimB;
+          _addNudge(target2, direction * magnitude);
+        }
       }
     }
 
