@@ -1,13 +1,13 @@
 // src/crossLayer/convergenceHarmonicTrigger.js — Rhythm→harmony causal link.
 // When rhythmic convergences happen, this module triggers harmonic changes:
 // modal interchange moments, cadence resolutions, or tonic reaffirmations.
-// Consumes CadenceAlignment tonicBias/dominantBias (dead-end signals).
+// Consumes cadenceAlignment tonicBias/dominantBias (dead-end signals).
 
-ConvergenceHarmonicTrigger = (() => {
+convergenceHarmonicTrigger = (() => {
   const V = validator.create('convergenceHarmonicTrigger');
   const MIN_TRIGGER_INTERVAL_MS = 2000;
   const TRIGGER_PROBABILITY = 0.35;
-  const EVENTS = EventCatalog.names;
+  const EVENTS = eventCatalog.names;
 
   let lastTriggerMs = -Infinity;
   let triggerCount = 0;
@@ -15,7 +15,7 @@ ConvergenceHarmonicTrigger = (() => {
   const pendingChanges = [];
 
   /**
-   * Called when a convergence event fires (via EventBus or direct invocation).
+   * Called when a convergence event fires (via eventBus or direct invocation).
    * Evaluates whether this convergence should trigger a harmonic change.
    * @param {{ rarity?: number, absTimeMs?: number, layer?: string, alignment?: { tonicBias: number, dominantBias: number, shouldResolve: boolean } | null }} event
    */
@@ -37,12 +37,12 @@ ConvergenceHarmonicTrigger = (() => {
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system
-    const trustScore = V.requireFinite(AdaptiveTrustScores.getWeight('convergence'), 'onConvergence.trustScore');
+    const trustScore = V.requireFinite(adaptiveTrustScores.getWeight('convergence'), 'onConvergence.trustScore');
     if (trustScore < 0.2) return; // too low trust to act
 
     // Determine change type based on cadence alignment state.
     // Use pre-computed alignment from processBeat when available to avoid
-    // a redundant CadenceAlignment.applyAlignment call and inconsistent tension.
+    // a redundant cadenceAlignment.applyAlignment call and inconsistent tension.
     let changeType = 'modal-color'; // default: add modal interchange color
     let bias = 0;
 
@@ -60,7 +60,7 @@ ConvergenceHarmonicTrigger = (() => {
       }
     }
 
-    // Caller (processBeat) already confirmed convergence via ConvergenceDetector.wasRecent(300ms),
+    // Caller (processBeat) already confirmed convergence via convergenceDetector.wasRecent(300ms),
     // so a 500ms re-check is provably redundant. Skip it.
 
     lastTriggerMs = absTimeMs;
@@ -68,8 +68,8 @@ ConvergenceHarmonicTrigger = (() => {
 
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
-    // No active listeners — emitted for EventCatalog completeness and future extensibility
-    EventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
+    // No active listeners — emitted for eventCatalog completeness and future extensibility
+    eventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,
       rarity,
@@ -109,4 +109,4 @@ ConvergenceHarmonicTrigger = (() => {
 
   return { onConvergence, shouldTriggerChange, getTriggeredChanges, getTriggerCount, reset };
 })();
-CrossLayerRegistry.register('ConvergenceHarmonicTrigger', ConvergenceHarmonicTrigger, ['all', 'section']);
+crossLayerRegistry.register('convergenceHarmonicTrigger', convergenceHarmonicTrigger, ['all', 'section']);

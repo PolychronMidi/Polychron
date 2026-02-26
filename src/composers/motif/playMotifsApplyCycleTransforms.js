@@ -15,8 +15,8 @@ playMotifsApplyCycleTransforms = function playMotifsApplyCycleTransforms(layer, 
       if (groupEntries.length > 0) {
         if (rf() >= 0.05) {
           try {
-            const transforms = MotifTransforms.selectRandom(groupEntries.length);
-            MotifTransforms.applyAll(groupEntries, transforms);
+            const transforms = motifTransforms.selectRandom(groupEntries.length);
+            motifTransforms.applyAll(groupEntries, transforms);
           } catch (e) {
             throw new Error(`playMotifs: transformation failed for groupId ${groupId}: ${e && e.message ? e.message : e}`);
           }

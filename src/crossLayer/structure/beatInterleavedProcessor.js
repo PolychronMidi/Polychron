@@ -65,7 +65,7 @@ beatInterleavedProcessor = (() => {
 
   const mod = { recordLayerBeat, getOtherLayerOutcome, getBeatSnapshot, reset };
 
-  CrossLayerRegistry.register('beatInterleavedProcessor', mod, ['all', 'phrase']);
+  crossLayerRegistry.register('beatInterleavedProcessor', mod, ['all', 'phrase']);
 
   return mod;
 })();

@@ -8,7 +8,7 @@
  * @typedef {{ name: string, after: string[], produces: string[] }} BeatPipelineStage
  */
 
-BeatPipelineDescriptor = (() => {
+beatPipelineDescriptor = (() => {
 
   /** @type {readonly BeatPipelineStage[]} */
   const STAGES = Object.freeze([
@@ -81,7 +81,7 @@ BeatPipelineDescriptor = (() => {
       for (let j = 0; j < stage.after.length; j++) {
         if (!seen.has(stage.after[j])) {
           throw new Error(
-            `BeatPipelineDescriptor: stage "${stage.name}" depends on "${stage.after[j]}" ` +
+            `beatPipelineDescriptor: stage "${stage.name}" depends on "${stage.after[j]}" ` +
             `which has not appeared earlier in the pipeline`
           );
         }

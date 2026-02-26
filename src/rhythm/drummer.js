@@ -30,7 +30,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
-  const conductorSnapshot = ConductorState.getSnapshot();
+  const conductorSnapshot = conductorState.getSnapshot();
   const contextIntensity = Number.isFinite(Number(conductorContext.compositeIntensity))
     ? clamp(Number(conductorContext.compositeIntensity), 0, 1)
     : clamp(Number(conductorSnapshot.compositeIntensity), 0, 1);

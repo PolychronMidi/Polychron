@@ -7,14 +7,14 @@ function assertGetRhythmDeps() {
   if (!FXFeedbackListener || !FXFeedbackListener.biasRhythmWeights) {
     throw new Error('getRhythm: FXFeedbackListener.biasRhythmWeights is required');
   }
-  if (!StutterFeedbackListener || !StutterFeedbackListener.biasRhythmWeights) {
-    throw new Error('getRhythm: StutterFeedbackListener.biasRhythmWeights is required');
+  if (!stutterFeedbackListener || !stutterFeedbackListener.biasRhythmWeights) {
+    throw new Error('getRhythm: stutterFeedbackListener.biasRhythmWeights is required');
   }
-  if (!JourneyRhythmCoupler || !JourneyRhythmCoupler.biasRhythmWeights) {
-    throw new Error('getRhythm: JourneyRhythmCoupler.biasRhythmWeights is required');
+  if (!journeyRhythmCoupler || !journeyRhythmCoupler.biasRhythmWeights) {
+    throw new Error('getRhythm: journeyRhythmCoupler.biasRhythmWeights is required');
   }
-  if (!PhaseLockedRhythmGenerator || !PhaseLockedRhythmGenerator.generate) {
-    throw new Error('getRhythm: PhaseLockedRhythmGenerator.generate is required');
+  if (!phaseLockedRhythmGenerator || !phaseLockedRhythmGenerator.generate) {
+    throw new Error('getRhythm: phaseLockedRhythmGenerator.generate is required');
   }
   _getRhythmDepsValidated = true;
 }
@@ -31,21 +31,21 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
   if (method) {
     // Phase-locked path: length-only patterns can be generated with phase cohesion
     if (args && args.length === 1 && args[0] === length) {
-      return PhaseLockedRhythmGenerator.generate(length, method);
+      return phaseLockedRhythmGenerator.generate(length, method);
     }
-    // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
-    return RhythmRegistry.execute(method, ...args);
+    // Fail-fast: delegate to rhythmRegistry, which will throw if method not found
+    return rhythmRegistry.execute(method, ...args);
   } else {
     const fxBiasedRhythmSource = FXFeedbackListener.biasRhythmWeights(rhythms);
 
     // Also apply stutter-based rhythm bias if available
-    const stutterBiasedRhythmSource = StutterFeedbackListener.biasRhythmWeights(fxBiasedRhythmSource);
+    const stutterBiasedRhythmSource = stutterFeedbackListener.biasRhythmWeights(fxBiasedRhythmSource);
 
-    // Chain journey-boldness bias on top of FX+Stutter bias
-    let rhythmSource = JourneyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
+    // Chain journey-boldness bias on top of FX+stutter bias
+    let rhythmSource = journeyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
 
     // Apply rhythm history novelty penalty to discourage repetition
-    rhythmSource = RhythmHistoryTracker.penalizeRepetition(rhythmSource);
+    rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);
 
     V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
     const activeLayerName = /** @type {string} */ (LM.activeLayer);
@@ -53,7 +53,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const useCorpusRhythmPriors = Boolean(activeComposer && activeComposer.useCorpusRhythmPriors === true);
 
     if (useCorpusRhythmPriors) {
-      const phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
+      const phraseContext = FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
       rhythmSource = rhythmPriors.getBiasedRhythms({
         rhythms: fxBiasedRhythmSource,
@@ -90,18 +90,18 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const { method: rhythmMethodKey, args: rhythmArgs }=rhythmSource[rhythmKey];
 
     // Record selection for novelty tracking
-    RhythmHistoryTracker.record(rhythmMethodKey, length, activeLayerName);
+    rhythmHistoryTracker.record(rhythmMethodKey, length, activeLayerName);
 
-    // Also feed into AbsoluteTimeWindow for cross-layer rhythm analysis
+    // Also feed into absoluteTimeWindow for cross-layer rhythm analysis
     const absTime = beatStartTime;
-    AbsoluteTimeWindow.recordRhythm(rhythmMethodKey, length, activeLayerName, absTime);
+    absoluteTimeWindow.recordRhythm(rhythmMethodKey, length, activeLayerName, absTime);
 
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators
     if (Array.isArray(generatedArgs) && generatedArgs.length === 1 && generatedArgs[0] === length) {
-      return PhaseLockedRhythmGenerator.generate(length, rhythmMethodKey);
+      return phaseLockedRhythmGenerator.generate(length, rhythmMethodKey);
     }
-    // Fail-fast: delegate to RhythmRegistry, which will throw if method not found
-    return RhythmRegistry.execute(rhythmMethodKey, ...generatedArgs);
+    // Fail-fast: delegate to rhythmRegistry, which will throw if method not found
+    return rhythmRegistry.execute(rhythmMethodKey, ...generatedArgs);
   }
 };

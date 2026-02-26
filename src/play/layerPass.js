@@ -14,7 +14,7 @@ layerPass = (() => {
       ? LM.layerComposers[peerLayerName]
       : null;
 
-    const nextComposer = ComposerFactory.createRandomForLayer({
+    const nextComposer = FactoryManager.createRandomForLayer({
       familyName: phraseFamily,
       layerName,
       previousComposer,
@@ -24,8 +24,8 @@ layerPass = (() => {
 
     LM.setComposerFor(layerName, nextComposer);
 
-    // Record composer family for TexturalMemoryAdvisor variety tracking
-    TexturalMemoryAdvisor.recordUsage(phraseFamily, MainBootstrap.requireFiniteNumber('sectionIndex', sectionIndex));
+    // Record composer family for texturalMemoryAdvisor variety tracking
+    texturalMemoryAdvisor.recordUsage(phraseFamily, mainBootstrap.requireFiniteNumber('sectionIndex', sectionIndex));
 
     return nextComposer;
   };
@@ -42,29 +42,29 @@ layerPass = (() => {
    */
   function runLayerPass(layerId, phraseFamily, { withConductorTick = false } = {}, deps) {
     const { boot, composerCtx } = deps;
-    TimeStream.setBounds('measure', measuresPerPhrase);
+    timeStream.setBounds('measure', measuresPerPhrase);
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
-      TimeStream.setPosition('measure', measureIndex);
-      // No active listeners — emitted for EventCatalog completeness and future extensibility
-      EventBus.emit(EventCatalog.names.MEASURE_BOUNDARY, { measureIndex, measuresPerPhrase, layer: layerId });
+      timeStream.setPosition('measure', measureIndex);
+      // No active listeners — emitted for eventCatalog completeness and future extensibility
+      eventBus.emit(eventCatalog.names.MEASURE_BOUNDARY, { measureIndex, measuresPerPhrase, layer: layerId });
       measureCount++;
       selectLayerComposerForMeasure(layerId, phraseFamily, composerCtx);
       setUnitTiming('measure');
 
       if (withConductorTick) {
         // Advance conductor crossfade and self-regulation once per measure
-        ConductorConfig.tickCrossfade();
-        ConductorConfig.regulationTick();
+        conductorConfig.tickCrossfade();
+        conductorConfig.regulationTick();
       }
 
       let playProb, stutterProb;
-      TimeStream.setBounds('beat', numerator);
+      timeStream.setBounds('beat', numerator);
       const _mT = Date.now();
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
-        TimeStream.setPosition('beat', beatIndex);
-        const beatCtx = MainBootstrap.getConductorProbabilities();
+        timeStream.setPosition('beat', beatIndex);
+        const beatCtx = mainBootstrap.getConductorProbabilities();
         playProb = beatCtx.playProb;
         stutterProb = beatCtx.stutterProb;
 
@@ -72,22 +72,22 @@ layerPass = (() => {
         playProb = beatResult.playProb;
         stutterProb = beatResult.stutterProb;
 
-        TimeStream.setBounds('div', divsPerBeat);
+        timeStream.setBounds('div', divsPerBeat);
         microUnitAttenuator.begin('div', divsPerBeat);
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
-          TimeStream.setPosition('div', divIndex);
+          timeStream.setPosition('div', divIndex);
           setUnitTiming('div');
           if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
-          TimeStream.setBounds('subdiv', subdivsPerDiv);
+          timeStream.setBounds('subdiv', subdivsPerDiv);
           microUnitAttenuator.begin('subdiv', subdivsPerDiv);
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
-            TimeStream.setPosition('subdiv', subdivIndex);
+            timeStream.setPosition('subdiv', subdivIndex);
             setUnitTiming('subdiv');
             if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
-            TimeStream.setBounds('subsubdiv', subsubsPerSub);
+            timeStream.setBounds('subsubdiv', subsubsPerSub);
             microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
             for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
-              TimeStream.setPosition('subsubdiv', subsubdivIndex);
+              timeStream.setPosition('subsubdiv', subsubdivIndex);
               setUnitTiming('subsubdiv');
               if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
             }

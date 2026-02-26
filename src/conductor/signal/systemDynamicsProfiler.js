@@ -12,7 +12,7 @@
 //
 // Does NOT modify signal values — pure observation + diagnostics.
 
-SystemDynamicsProfiler = (() => {
+systemDynamicsProfiler = (() => {
   // ── Phase space dimensions ──
   // Full 6D state space for the coupling matrix (diagnostic exposure).
   // Only the first N_COMPOSITIONAL_DIMS are used for velocity, curvature,
@@ -64,11 +64,11 @@ SystemDynamicsProfiler = (() => {
   function _resolveStateSmoothing() {
     if (_stateSmoothingResolved) return;
     try {
-      const profileSmoothing = ConductorConfig.getDensitySmoothing();
+      const profileSmoothing = conductorConfig.getDensitySmoothing();
       _stateSmoothing = clamp(_STATE_SMOOTHING_BASELINE / profileSmoothing, 0.15, 0.40);
 
       // Scale oscillating threshold by profile character
-      const profileName = ConductorConfig.getActiveProfileName();
+      const profileName = conductorConfig.getActiveProfileName();
       if (profileName === 'explosive') _oscillatingCurvatureThreshold = 0.65;
       else if (profileName === 'minimal') _oscillatingCurvatureThreshold = 0.45;
       else _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
@@ -130,7 +130,7 @@ SystemDynamicsProfiler = (() => {
     let avgTrust = 0;
     let trustCount = 0;
     try {
-      const ts = AdaptiveTrustScores.getSnapshot();
+      const ts = adaptiveTrustScores.getSnapshot();
       const entries = Object.values(ts);
       for (let i = 0; i < entries.length; i++) {
         if (entries[i] && typeof entries[i].score === 'number') {
@@ -157,7 +157,7 @@ SystemDynamicsProfiler = (() => {
     } catch { /* fallback: neutral */ }
 
     let phase = 0;
-    try { phase = TimeStream.normalizedProgress('section'); } catch { /* non-fatal */ }
+    try { phase = timeStream.normalizedProgress('section'); } catch { /* non-fatal */ }
 
     return [
       snap.densityProduct,
@@ -333,7 +333,7 @@ SystemDynamicsProfiler = (() => {
     return 'healthy';
   }
 
-  /** Run per-beat analysis. Called via ConductorIntelligence recorder. */
+  /** Run per-beat analysis. Called via conductorIntelligence recorder. */
   function analyze() {
     beatsSeen++;
     const rawState = _sampleState();
@@ -412,9 +412,20 @@ SystemDynamicsProfiler = (() => {
       couplingMatrix: matrix
     };
 
+    // Emit real-time telemetry on every beat for observability
+    explainabilityBus.emit('system-dynamics-telemetry', 'both', {
+      regime,
+      grade,
+      velocity: _lastSnapshot.velocity,
+      curvature: _lastSnapshot.curvature,
+      effectiveDimensionality: _lastSnapshot.effectiveDimensionality,
+      couplingStrength: _lastSnapshot.couplingStrength,
+      stateVector: rawState // The full 6D state
+    }, beatStartTime * 1000);
+
     // Emit diagnostics on non-healthy beats
     if (grade !== 'healthy') {
-      ExplainabilityBus.emit('system-dynamics', 'both', {
+      explainabilityBus.emit('system-dynamics', 'both', {
         regime,
         grade,
         velocity: _lastSnapshot.velocity,
@@ -456,8 +467,8 @@ SystemDynamicsProfiler = (() => {
   }
 
   // ── Self-register ──
-  ConductorIntelligence.registerRecorder('SystemDynamicsProfiler', () => { SystemDynamicsProfiler.analyze(); });
-  ConductorIntelligence.registerStateProvider('SystemDynamicsProfiler', () => ({
+  conductorIntelligence.registerRecorder('systemDynamicsProfiler', () => { systemDynamicsProfiler.analyze(); });
+  conductorIntelligence.registerStateProvider('systemDynamicsProfiler', () => ({
     dynamicsRegime: _lastSnapshot.regime,
     dynamicsGrade: _lastSnapshot.grade,
     dynamicsVelocity: _lastSnapshot.velocity,
@@ -469,7 +480,7 @@ SystemDynamicsProfiler = (() => {
   // shape (velocity, curvature, coupling) is meaningful across key changes.
   // Section resets were discarding history in short compositions, causing
   // sparse statistics and unreliable regime classification.
-  ConductorIntelligence.registerModule('SystemDynamicsProfiler', { reset }, ['all']);
+  conductorIntelligence.registerModule('systemDynamicsProfiler', { reset }, ['all']);
 
   return { analyze, getSnapshot, getSummary, reset };
 })();

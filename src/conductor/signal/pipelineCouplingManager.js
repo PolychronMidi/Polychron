@@ -3,7 +3,7 @@
 /**
  * Pipeline Coupling Manager (E6)
  *
- * Uses the coupling matrix from SystemDynamicsProfiler to decide
+ * Uses the coupling matrix from systemDynamicsProfiler to decide
  * whether density and tension should move together or independently.
  * When coupling is already high, backs off; when low, nudges tension
  * toward density direction. Registered as a tension bias.
@@ -18,11 +18,17 @@ pipelineCouplingManager = (() => {
   const TF_GAIN            = 0.21; // raised (was 0.17) — t-f 0.109 well below 0.30 target; needs stronger nudge
   const FE_GAIN            = 0.12; // lowered (was 0.20) — f-e 0.495 overcoupled at 10× entropy; reduce to prevent lockstep
 
+  const FATIGUE_RATE       = 0.05;
+  const RECOVERY_RATE      = 0.10;
+  const MAX_FATIGUE_DAMP   = 0.80;
+
   let biasTension = 1.0;
   let biasFlicker = 1.0;
+  let fatigueTension = 0;
+  let fatigueFlicker = 0;
 
   function refresh() {
-    const snap = SystemDynamicsProfiler.getSnapshot();
+    const snap = systemDynamicsProfiler.getSnapshot();
     if (!snap || !snap.couplingMatrix) {
       biasTension = 1.0;
       biasFlicker = 1.0;
@@ -81,6 +87,30 @@ pipelineCouplingManager = (() => {
         biasFlicker *= 1.0 - m.sign(feCoupling) * FE_GAIN * feExcess;
       }
     }
+
+    // --- Fatigue mechanism ---
+    // Sustained high bias accumulates fatigue; fatigue dampens the bias toward 1.0.
+    const tensionDeviation = m.abs(biasTension - 1.0);
+    if (tensionDeviation > 0.04) {
+      fatigueTension = clamp(fatigueTension + FATIGUE_RATE * tensionDeviation, 0, 1);
+    } else {
+      fatigueTension = clamp(fatigueTension - RECOVERY_RATE, 0, 1);
+    }
+    if (fatigueTension > 0) {
+      const damp = 1.0 - fatigueTension * MAX_FATIGUE_DAMP;
+      biasTension = 1.0 + (biasTension - 1.0) * damp;
+    }
+
+    const flickerDeviation = m.abs(biasFlicker - 1.0);
+    if (flickerDeviation > 0.04) {
+      fatigueFlicker = clamp(fatigueFlicker + FATIGUE_RATE * flickerDeviation, 0, 1);
+    } else {
+      fatigueFlicker = clamp(fatigueFlicker - RECOVERY_RATE, 0, 1);
+    }
+    if (fatigueFlicker > 0) {
+      const damp = 1.0 - fatigueFlicker * MAX_FATIGUE_DAMP;
+      biasFlicker = 1.0 + (biasFlicker - 1.0) * damp;
+    }
   }
 
   function tensionBias() {
@@ -94,13 +124,23 @@ pipelineCouplingManager = (() => {
   function reset() {
     biasTension = 1.0;
     biasFlicker = 1.0;
+    fatigueTension = 0;
+    fatigueFlicker = 0;
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.20);
-  ConductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.88, 1.12);
-  ConductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
-  ConductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
+  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.20);
+  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.88, 1.12);
+  conductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
+  conductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
+
+  feedbackRegistry.registerLoop(
+    'pipelineCouplingManager',
+    'coupling_matrix',
+    'tension',
+    () => m.abs(biasTension - 1.0) / 0.20,
+    () => m.sign(biasTension - 1.0)
+  );
 
   return { tensionBias, flickerBias, reset };
 })();

@@ -4,7 +4,7 @@
 // above thresholds, coordinates a unified climactic build:
 // increases density, widens register, boosts velocity, raises entropy target.
 
-CrossLayerClimaxEngine = (() => {
+crossLayerClimaxEngine = (() => {
   const V = validator.create('crossLayerClimaxEngine');
   const APPROACH_THRESHOLD = 0.65;
   const PEAK_THRESHOLD = 0.82;
@@ -22,7 +22,7 @@ CrossLayerClimaxEngine = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
     // Gather signals
-    const sectionArc = Math.sin(clamp(TimeStream.compoundProgress('section'), 0, 1) * Math.PI); // peaks mid-section
+    const sectionArc = Math.sin(clamp(timeStream.compoundProgress('section'), 0, 1) * Math.PI); // peaks mid-section
 
     const sigs = conductorSignalBridge.getSignals();
     // Blend compositeIntensity with elevated density/tension products for richer peak detection
@@ -30,9 +30,9 @@ CrossLayerClimaxEngine = (() => {
     const tensionPressure = clamp((sigs.tension - 0.9) / 0.6, 0, 1);
     const conductorIntensity = clamp(sigs.compositeIntensity * 0.6 + densityPressure * 0.2 + tensionPressure * 0.2, 0, 1);
 
-    const heatLevel = clamp(InteractionHeatMap.getDensity(), 0, 1);
+    const heatLevel = clamp(interactionHeatMap.getDensity(), 0, 1);
 
-    const intent = SectionIntentCurves.getLastIntent();
+    const intent = sectionIntentCurves.getLastIntent();
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;
 
     // Composite climax signal
@@ -93,4 +93,4 @@ CrossLayerClimaxEngine = (() => {
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };
 })();
-CrossLayerRegistry.register('CrossLayerClimaxEngine', CrossLayerClimaxEngine, ['all', 'section']);
+crossLayerRegistry.register('crossLayerClimaxEngine', crossLayerClimaxEngine, ['all', 'section']);

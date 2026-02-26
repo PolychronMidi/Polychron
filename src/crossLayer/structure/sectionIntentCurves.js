@@ -1,4 +1,4 @@
-SectionIntentCurves = (() => {
+sectionIntentCurves = (() => {
   const V = validator.create('sectionIntentCurves');
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {
@@ -9,13 +9,13 @@ SectionIntentCurves = (() => {
   };
 
   /**
-   * Compute section intent from TimeStream positions.
+   * Compute section intent from timeStream positions.
    * Accepts no arguments — reads section/phrase progress and indices directly.
    */
   function getIntent() {
-    const p = clamp(TimeStream.compoundProgress('section'), 0, 1);
-    const s = TimeStream.getPosition('section');
-    const ph = TimeStream.getPosition('phrase');
+    const p = clamp(timeStream.compoundProgress('section'), 0, 1);
+    const s = timeStream.getPosition('section');
+    const ph = timeStream.getPosition('phrase');
 
     const arc = Math.sin(p * Math.PI);
     const wave = 0.5 + 0.5 * Math.sin((p + (s + ph * 0.3) * 0.07) * Math.PI * 2);
@@ -56,4 +56,4 @@ SectionIntentCurves = (() => {
 
   return { getIntent, getLastIntent, setManualIntent, reset };
 })();
-CrossLayerRegistry.register('SectionIntentCurves', SectionIntentCurves, ['all']);
+crossLayerRegistry.register('sectionIntentCurves', sectionIntentCurves, ['all']);

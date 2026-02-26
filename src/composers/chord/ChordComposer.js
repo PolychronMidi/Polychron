@@ -11,14 +11,14 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(progression,'R');
 
-    // Update HarmonicContext with active chord set for type coherence
+    // Update harmonicContext with active chord set for type coherence
     if (this.progression && this.progression.length > 0) {
       try {
         const chordSymbols = this.progression.map(c => c.symbol);
-        HarmonicContext.set({ chords: chordSymbols });
+        harmonicContext.set({ chords: chordSymbols });
       } catch (e) {
         // Fail-fast for context updates; let error bubble
-        throw new Error(`ChordComposer: failed to update HarmonicContext: ${e && e.message ? e.message : e}`);
+        throw new Error(`ChordComposer: failed to update harmonicContext: ${e && e.message ? e.message : e}`);
       }
     }
   }
@@ -33,7 +33,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     if (!this.notes || this.notes.length === 0) return null;
 
     // Delegate to centralized helper (chord tones = weight 1, non-chord tones = weight 0)
-    const candidateWeights = VoiceLeadingCore.buildPCWeights(candidateNotes, this.notes, 1, 0);
+    const candidateWeights = voiceLeadingCore.buildPCWeights(candidateNotes, this.notes, 1, 0);
     return { candidateWeights };
   }
 
@@ -134,7 +134,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
 
       const currentChord = this.progression[this.currentChordIndex];
       if (!currentChord) {
-        throw new Error('ChordComposer.noteSet: current chord missing for HarmonicContext update');
+        throw new Error('ChordComposer.noteSet: current chord missing for harmonicContext update');
       }
       const chordSymbols = this.progression.map(c => c.symbol);
       const scale = Array.isArray(currentChord.notes) ? currentChord.notes : [];
@@ -146,7 +146,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
           throw new Error(`ChordComposer.noteSet: current chord missing tonic (${currentChord.symbol})`);
         }
         const quality = currentChord.type || 'unknown';
-        HarmonicContext.set({ key, quality, scale, chords: chordSymbols });
+        harmonicContext.set({ key, quality, scale, chords: chordSymbols });
       }
   }
   /** @returns {{note: number}[]} Chord notes */

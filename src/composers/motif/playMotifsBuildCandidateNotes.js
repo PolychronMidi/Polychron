@@ -15,7 +15,7 @@ playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, res
   if (candidateNotes.length < 3) {
     const minNote = minMidi;
     const maxNote = maxMidi;
-    candidateNotes = CandidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6, unit);
+    candidateNotes = candidateExpansion.expandScaleAware(candidateNotes, composerValidPCs, minNote, maxNote, 6, unit);
   }
 
   if (composerValidPCs.size > 0) {
@@ -29,10 +29,10 @@ playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, res
     }
   }
 
-  if (HarmonicContext) {
-    const scale = HarmonicContext.getField('scale');
+  if (harmonicContext) {
+    const scale = harmonicContext.getField('scale');
     if (Array.isArray(scale) && scale.length > 0) {
-      const filtered = candidateNotes.filter(note => HarmonicContext.isNoteInScale(note));
+      const filtered = candidateNotes.filter(note => harmonicContext.isNoteInScale(note));
       if (filtered.length > 0) {
         const filteredPCs = new Set(filtered.map(n => ((n % 12) + 12) % 12));
         let allValid = true;

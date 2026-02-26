@@ -26,11 +26,11 @@ microUnitAttenuator = (() => {
       const n = Number(unitsPerParent);
       if (!Number.isFinite(n) || n <= 0) throw new Error(`microUnitAttenuator.begin: invalid unitsPerParent=${unitsPerParent}`);
       // Unit-aware caps: deeper units get tighter limits to prevent texture overload
-      // Ranges driven by ConductorConfig profile for per-profile density shaping
-      V.assertObject(ConductorConfig, 'ConductorConfig');
-      V.requireType(ConductorConfig.getAttenuationScaling, 'function', 'ConductorConfig.getAttenuationScaling');
-      const attCfg = ConductorConfig.getAttenuationScaling();
-      V.assertObject(attCfg, 'ConductorConfig.getAttenuationScaling()');
+      // Ranges driven by conductorConfig profile for per-profile density shaping
+      V.assertObject(conductorConfig, 'conductorConfig');
+      V.requireType(conductorConfig.getAttenuationScaling, 'function', 'conductorConfig.getAttenuationScaling');
+      const attCfg = conductorConfig.getAttenuationScaling();
+      V.assertObject(attCfg, 'conductorConfig.getAttenuationScaling()');
       V.assertArrayLength(attCfg.subsubdivRange, 2, 'attCfg.subsubdivRange');
       V.assertArrayLength(attCfg.subdivRange, 2, 'attCfg.subdivRange');
       V.assertArrayLength(attCfg.divRange, 2, 'attCfg.divRange');

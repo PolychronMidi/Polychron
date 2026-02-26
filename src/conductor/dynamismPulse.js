@@ -1,5 +1,5 @@
 // src/conductor/dynamismPulse.js
-// Per-unit probability pulse extracted from DynamismEngine.getUnitPulse().
+// Per-unit probability pulse extracted from dynamismEngine.getUnitPulse().
 // Combines measure/beat progress, oscillation, and micro-hyper flicker.
 
 dynamismPulse = (() => {
@@ -11,8 +11,8 @@ dynamismPulse = (() => {
    * @returns {number} 0-1
    */
   function compute(unit) {
-    const measureProgress = clamp(TimeStream.normalizedProgress('measure'), 0, 1);
-    const beatProgress = clamp(TimeStream.normalizedProgress('beat'), 0, 1);
+    const measureProgress = clamp(timeStream.normalizedProgress('measure'), 0, 1);
+    const beatProgress = clamp(timeStream.normalizedProgress('beat'), 0, 1);
 
     const unitPhase = unit === 'beat' ? 0 : unit === 'div' ? 1.1 : unit === 'subdiv' ? 2.2 : 3.3;
     const unitSeed = unitStart;
@@ -23,7 +23,7 @@ dynamismPulse = (() => {
     // ── Micro-hyper flicker (depth-scaled, profile-driven) ─────────────────────
     // Amplitude increases for finer units: beat=0, div=small, subdiv=med, subsubdiv=large
     const baseDepthAmp = unit === 'beat' ? 0 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.14 : 0.22;
-    const flickerProfile = ConductorConfig.getFlickerParams();
+    const flickerProfile = conductorConfig.getFlickerParams();
     const depthAmp = baseDepthAmp * flickerProfile.depthScale;
 
     // Scale flicker amplitude with crossModulation feedback:

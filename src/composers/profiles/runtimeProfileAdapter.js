@@ -13,22 +13,22 @@ const toFiniteOrDefault = (value, fallback) => {
   return Number(value);
 };
 
-const resolveRuntimeProfilesOrFail = (config = {}, label = 'ComposerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail') => {
-  if (!ComposerProfileUtils.isPlainObject(config)) {
+const resolveRuntimeProfilesOrFail = (config = {}, label = 'composerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail') => {
+  if (!composerProfileUtils.isPlainObject(config)) {
     throw new Error(`${label}: config must be an object`);
   }
-  return ComposerProfileUtils.resolveNamedProfilesOrFail(config, `${label}.config`);
+  return composerProfileUtils.resolveNamedProfilesOrFail(config, `${label}.config`);
 };
 
 const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) => {
-  if (!ComposerProfileUtils.isPlainObject(resolvedProfiles)) {
-    throw new Error('ComposerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail: resolvedProfiles must be an object');
+  if (!composerProfileUtils.isPlainObject(resolvedProfiles)) {
+    throw new Error('composerRuntimeProfileAdapter.buildNormalizedRuntimeProfileOrFail: resolvedProfiles must be an object');
   }
 
-  const chord = ComposerProfileUtils.isPlainObject(resolvedProfiles.chord) ? resolvedProfiles.chord : null;
-  const voice = ComposerProfileUtils.isPlainObject(resolvedProfiles.voice) ? resolvedProfiles.voice : null;
-  const motif = ComposerProfileUtils.isPlainObject(resolvedProfiles.motif) ? resolvedProfiles.motif : null;
-  const rhythm = ComposerProfileUtils.isPlainObject(resolvedProfiles.rhythm) ? resolvedProfiles.rhythm : null;
+  const chord = composerProfileUtils.isPlainObject(resolvedProfiles.chord) ? resolvedProfiles.chord : null;
+  const voice = composerProfileUtils.isPlainObject(resolvedProfiles.voice) ? resolvedProfiles.voice : null;
+  const motif = composerProfileUtils.isPlainObject(resolvedProfiles.motif) ? resolvedProfiles.motif : null;
+  const rhythm = composerProfileUtils.isPlainObject(resolvedProfiles.rhythm) ? resolvedProfiles.rhythm : null;
 
   const baseVelocityPrecedence = Array.isArray(opts.baseVelocityPrecedence) && opts.baseVelocityPrecedence.length > 0
     ? opts.baseVelocityPrecedence
@@ -108,13 +108,13 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
 
 const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
   V.assertObject(composer, 'composer');
-  if (!ComposerProfileUtils.isPlainObject(runtimeProfile)) {
-    throw new Error('ComposerRuntimeProfileAdapter.applyToComposerOrFail: runtimeProfile must be an object');
+  if (!composerProfileUtils.isPlainObject(runtimeProfile)) {
+    throw new Error('composerRuntimeProfileAdapter.applyToComposerOrFail: runtimeProfile must be an object');
   }
 
   composer.runtimeProfile = Object.assign({}, runtimeProfile);
 
-  const namedProfiles = ComposerProfileUtils.isPlainObject(runtimeProfile.namedProfiles)
+  const namedProfiles = composerProfileUtils.isPlainObject(runtimeProfile.namedProfiles)
     ? runtimeProfile.namedProfiles
     : {};
   composer.profileConfigs = Object.assign({}, composer.profileConfigs || {}, namedProfiles);
@@ -223,7 +223,7 @@ const getEmissionAdjustments = (runtimeProfile = null) => {
   };
 };
 
-ComposerRuntimeProfileAdapter = {
+composerRuntimeProfileAdapter = {
   resolveRuntimeProfilesOrFail,
   buildNormalizedRuntimeProfileOrFail,
   applyToComposerOrFail,

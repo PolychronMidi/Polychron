@@ -3,7 +3,7 @@
 // antiphony (call-response), and canon (delayed imitation).
 // Reads ATW for other layer timing to compute ideal complement positions.
 
-RhythmicComplementEngine = (() => {
+rhythmicComplementEngine = (() => {
   const V = validator.create('rhythmicComplementEngine');
 
   /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */
@@ -21,7 +21,7 @@ RhythmicComplementEngine = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
 
-    const notes = AbsoluteTimeWindow.getNotes({
+    const notes = absoluteTimeWindow.getNotes({
       layer: otherLayer,
       since: (absTimeMs / 1000) - 2,
       windowSeconds: 2
@@ -62,9 +62,9 @@ RhythmicComplementEngine = (() => {
     if (mode === 'free') return { tick: onTick, velocityScale: 1.0, modified: false };
 
     // If this layer is already resting, skip complement — rest takes priority
-    if (RestSynchronizer.isLayerResting(layer)) return { tick: onTick, velocityScale: 1.0, modified: false };
+    if (restSynchronizer.isLayerResting(layer)) return { tick: onTick, velocityScale: 1.0, modified: false };
 
-    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
+    const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
 
     // Only apply strong complement when interaction target is high
     const strength = clamp(intent.interactionTarget * 1.5 - 0.3, 0, 1);
@@ -85,7 +85,7 @@ RhythmicComplementEngine = (() => {
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
-      let grooveOffset = GrooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick;
+      let grooveOffset = grooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick;
       if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
       return { tick: onTick + grooveOffset * strength * 0.5, velocityScale: 0.9, modified: grooveOffset !== 0 };
     }
@@ -102,7 +102,7 @@ RhythmicComplementEngine = (() => {
    */
   function setMode(newMode) {
     if (!['hocket', 'antiphony', 'canon', 'free'].includes(newMode)) {
-      throw new Error('RhythmicComplementEngine.setMode: invalid mode "' + newMode + '"');
+      throw new Error('rhythmicComplementEngine.setMode: invalid mode "' + newMode + '"');
     }
     mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ (newMode);
     beatsSinceChange = 0;
@@ -115,7 +115,7 @@ RhythmicComplementEngine = (() => {
     beatsSinceChange++;
     if (beatsSinceChange < MODE_CHANGE_INTERVAL) return;
 
-    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
+    const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
 
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
     const density = V.optionalFinite(intent.densityTarget, 0.5);
@@ -142,4 +142,4 @@ RhythmicComplementEngine = (() => {
 
   return { analyzeOtherLayer, suggestComplement, getMode, setMode, autoSelectMode, reset };
 })();
-CrossLayerRegistry.register('RhythmicComplementEngine', RhythmicComplementEngine, ['all', 'phrase']);
+crossLayerRegistry.register('rhythmicComplementEngine', rhythmicComplementEngine, ['all', 'phrase']);

@@ -34,7 +34,7 @@ module.exports = {
       AssignmentExpression(node) {
         if (node.left.type === 'Identifier' && node.left.name === basename &&
             node.right.type === 'ClassExpression' &&
-            node.right.id && node.right.id.name === basename) {
+            (!node.right.id || node.right.id.name === basename)) {
           hasMatchingClass = true;
         }
         if (node.left.type === 'Identifier' && isPascalCase(node.left.name) &&
@@ -48,7 +48,7 @@ module.exports = {
       VariableDeclarator(node) {
         if (node.id.type === 'Identifier' && node.id.name === basename &&
             node.init && node.init.type === 'ClassExpression' &&
-            node.init.id && node.init.id.name === basename) {
+            (!node.init.id || node.init.id.name === basename)) {
           hasMatchingClass = true;
         }
         if (node.id.type === 'Identifier' && isPascalCase(node.id.name) &&

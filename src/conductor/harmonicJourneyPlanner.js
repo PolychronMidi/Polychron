@@ -1,5 +1,5 @@
 // src/conductor/harmonicJourneyPlanner.js
-// Pure journey-planning helpers extracted from HarmonicJourney.planJourney().
+// Pure journey-planning helpers extracted from harmonicJourney.planJourney().
 // Resolves the starting key/mode and builds subsequent journey steps.
 
 harmonicJourneyPlanner = (() => {
@@ -17,12 +17,12 @@ harmonicJourneyPlanner = (() => {
       ? allNotes[ri(allNotes.length - 1)]
       : opts.startKey;
     startKey = t.Note.pitchClass(startKey);
-    if (!startKey) throw new Error(`HarmonicJourney.planJourney: invalid startKey "${opts.startKey}"`);
+    if (!startKey) throw new Error(`harmonicJourney.planJourney: invalid startKey "${opts.startKey}"`);
 
     let startMode = opts.startMode || 'random';
     if (startMode === 'random') startMode = VALID_MODES[ri(VALID_MODES.length - 1)];
     if (!VALID_MODES.includes(startMode)) {
-      throw new Error(`HarmonicJourney.planJourney: invalid startMode "${startMode}"`);
+      throw new Error(`harmonicJourney.planJourney: invalid startMode "${startMode}"`);
     }
 
     return { startKey, startMode };
@@ -78,7 +78,7 @@ harmonicJourneyPlanner = (() => {
       const simplified = t.Note.simplify(result.key);
       const nextKey = t.Note.pitchClass(simplified || result.key);
       if (!nextKey) {
-        throw new Error(`HarmonicJourney.planJourney: move produced invalid key "${result.key}"`);
+        throw new Error(`harmonicJourney.planJourney: move produced invalid key "${result.key}"`);
       }
 
       // Consecutive-mode guard: if result preserves the current mode and we have

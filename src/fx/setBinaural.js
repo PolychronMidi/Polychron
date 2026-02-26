@@ -1,6 +1,6 @@
 /**
  * Manages binaural beat pitch shifts and volume crossfades at beat boundaries,
- * synced across layers via AbsoluteTimeGrid using ms-precision timestamps.
+ * synced across layers via absoluteTimeGrid using ms-precision timestamps.
  * @returns {void}
  */
 const V = validator.create('setBinaural');
@@ -14,10 +14,10 @@ let nextBinauralShiftMs = 0;
 setBinaural = () => {
   V.requireFinite(beatIndex, 'beatIndex');
   V.requireFinite(measureIndex, 'measureIndex');
-  V.requireDefined(ConductorState, 'ConductorState');
+  V.requireDefined(conductorState, 'conductorState');
   V.requireDefined(BINAURAL, 'BINAURAL');
   V.requireDefined(binauralOffset, 'binauralOffset');
-  V.requireDefined(AbsoluteTimeGrid, 'AbsoluteTimeGrid');
+  V.requireDefined(absoluteTimeGrid, 'absoluteTimeGrid');
   V.requireFinite(beatStartTime, 'beatStartTime');
 
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
@@ -26,8 +26,8 @@ setBinaural = () => {
 
   const phraseBoundary = beatIndex === 0 && measureIndex === 0;
   const statePhraseBoundary = (() => {
-    const state = ConductorState.getSnapshot();
-    V.requireDefined(state, 'ConductorState.getSnapshot()');
+    const state = conductorState.getSnapshot();
+    V.requireDefined(state, 'conductorState.getSnapshot()');
     V.requireFinite(state.phrasePosition, 'state.phrasePosition');
     return state.phrasePosition <= 0.001 && beatIndex === 0;
   })();
@@ -38,8 +38,8 @@ setBinaural = () => {
     beatCount = 0;
     nextBinauralShiftMs = absTimeMs + rf(.5, 3) * 1000;
 
-    // Cross-layer ms-precision sync via AbsoluteTimeGrid
-    const crossLayerShift = AbsoluteTimeGrid.findClosest(
+    // Cross-layer ms-precision sync via absoluteTimeGrid
+    const crossLayerShift = absoluteTimeGrid.findClosest(
       'binaural', absTimeMs, BINAURAL_SYNC_TOLERANCE_MS, activeLayer
     );
 
@@ -75,7 +75,7 @@ setBinaural = () => {
     V.requireFinite(binauralMinus, 'binauralMinus');
 
     // Post this shift to the grid for cross-layer coordination
-    AbsoluteTimeGrid.post('binaural', activeLayer, absTimeMs, {
+    absoluteTimeGrid.post('binaural', activeLayer, absTimeMs, {
       freqOffset: binauralFreqOffset,
       flip: flipBin
     });

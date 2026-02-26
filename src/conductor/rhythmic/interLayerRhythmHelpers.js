@@ -1,6 +1,6 @@
 // src/conductor/rhythmic/interLayerRhythmHelpers.js
-// Pure computation helpers extracted from InterLayerRhythmAnalyzer.
-// Five analysis functions operating on AbsoluteTimeWindow data.
+// Pure computation helpers extracted from interLayerRhythmAnalyzer.
+// Five analysis functions operating on absoluteTimeWindow data.
 
 interLayerRhythmHelpers = (() => {
   const V = validator.create('interLayerRhythmHelpers');
@@ -11,12 +11,12 @@ interLayerRhythmHelpers = (() => {
   const LOOSE_THRESHOLD       = 0.08; // seconds
 
   /**
-   * Group AbsoluteTimeWindow entries by layer, sort onsets.
+   * Group absoluteTimeWindow entries by layer, sort onsets.
    * @param {number} ws
    * @returns {{ layerOnsets: Object.<string, number[]>, layerKeys: string[] }}
    */
   function getLayerOnsets(ws) {
-    const entries = AbsoluteTimeWindow.getEntries(ws);
+    const entries = absoluteTimeWindow.getEntries(ws);
     /** @type {Object.<string, number[]>} */
     const layerOnsets = {};
     for (let i = 0; i < entries.length; i++) {
@@ -40,8 +40,8 @@ interLayerRhythmHelpers = (() => {
    */
   function computePhaseRelationship(windowSeconds) {
     const ws = V.optionalFinite(windowSeconds, 2);
-    const l1Notes = AbsoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
-    const l2Notes = AbsoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
+    const l1Notes = absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
+    const l2Notes = absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
 
     if (l1Notes.length < 2 || l2Notes.length < 2) {
       return { phase: 'unknown', coincidence: 0, complementarity: 0 };
@@ -168,8 +168,8 @@ interLayerRhythmHelpers = (() => {
    */
   function computeDisplacementProfile(windowSeconds) {
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const l1Notes = AbsoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
-    const l2Notes = AbsoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
+    const l1Notes = absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
+    const l2Notes = absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
 
     if (l1Notes.length < 4 || l2Notes.length < 4) {
       return { displacementRatio: 0, hemiola: false, phaseOffset: 0, intentional: false };

@@ -38,7 +38,7 @@ fractalArcGenerator = (() => {
   function intensity(levelIdx) {
     const lvl = LEVELS[levelIdx];
     if (!lvl) return 0.5;
-    const p = TimeStream.normalizedProgress(lvl);
+    const p = timeStream.normalizedProgress(lvl);
     return arcShape(V.optionalFinite(p, 0.5));
   }
 

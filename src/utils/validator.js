@@ -204,10 +204,10 @@ validator = (() => {
   }
 
   function getEventsOrThrow(from) {
-    if (!EventCatalog || !EventCatalog.names) {
-      throw new Error(`${_fromLabel(from)}: EventCatalog.names is required`);
+    if (!eventCatalog || !eventCatalog.names) {
+      throw new Error(`${_fromLabel(from)}: eventCatalog.names is required`);
     }
-    return EventCatalog.names;
+    return eventCatalog.names;
   }
 
   function _wrapWithFrom(fn, from) {
@@ -222,7 +222,7 @@ validator = (() => {
         const stripped = msg.replace(/^[^:]+:\s*/, '');
         const enriched = new Error(`${fromLabel}: ${stripped}`);
         // Attach system snapshot (loaded after validator; try/catch guards pre-load calls)
-        try { SystemSnapshot.enrichError(enriched); } catch { /* not yet loaded */ }
+        try { systemSnapshot.enrichError(enriched); } catch { /* not yet loaded */ }
         throw enriched;
       }
     };

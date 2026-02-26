@@ -99,9 +99,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {VoiceLeadingScoreOpts} opts - Additional options
    * @returns {number} Total weighted cost (lower is better)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingCore
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingCore
   _scoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {
-    return VoiceLeadingCore.computeCandidateScore(this, candidate, lastNotes, registerRange, constraints, opts);
+    return voiceLeadingCore.computeCandidateScore(this, candidate, lastNotes, registerRange, constraints, opts);
   }
 
   /**
@@ -112,9 +112,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} toNote - Candidate note
    * @returns {number} Motion cost (0-10)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreVoiceMotion(interval, fromNote, toNote) {
-    return VoiceLeadingScorers.scoreVoiceMotion(interval, fromNote, toNote);
+    return voiceLeadingScorers.scoreVoiceMotion(interval, fromNote, toNote);
   }
 
   /**
@@ -124,9 +124,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} range - [min, max] register bounds
    * @returns {number} Range cost (0-8)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreVoiceRange(note, range) {
-    return VoiceLeadingScorers.scoreVoiceRange(note, range);
+    return voiceLeadingScorers.scoreVoiceRange(note, range);
   }
 
   /**
@@ -137,9 +137,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - [n-1, n-2, ...] to check direction
    * @returns {number} Recovery cost (0-5)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreLeapRecovery(currentInterval, prevInterval, lastNotes, candidate) {
-    return VoiceLeadingScorers.scoreLeapRecovery(this, currentInterval, prevInterval, lastNotes, candidate);
+    return voiceLeadingScorers.scoreLeapRecovery(this, currentInterval, prevInterval, lastNotes, candidate);
   }
 
   /**
@@ -149,9 +149,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - Last notes [soprano, alto, tenor, bass]
    * @returns {number} Crossing cost (0-6)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreVoiceCrossing(candidate, lastNotes) {
-    return VoiceLeadingScorers.scoreVoiceCrossing(candidate, lastNotes);
+    return voiceLeadingScorers.scoreVoiceCrossing(candidate, lastNotes);
   }
 
   /**
@@ -161,9 +161,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} lastMotion - Previous interval from history
    * @returns {number} Parallel motion cost (0-3)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreParallelMotion(currentMotion, lastMotion) {
-    return VoiceLeadingScorers.scoreParallelMotion(currentMotion, lastMotion);
+    return voiceLeadingScorers.scoreParallelMotion(currentMotion, lastMotion);
   }
 
   /**
@@ -174,9 +174,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} toNote - Candidate note
    * @returns {number} Interval quality cost (0-6)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreIntervalQuality(interval, fromNote, toNote) {
-    return VoiceLeadingScorers.scoreIntervalQuality(interval, fromNote, toNote, this.dynamism);
+    return voiceLeadingScorers.scoreIntervalQuality(interval, fromNote, toNote, this.dynamism);
   }
 
   /**
@@ -186,9 +186,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - Previous notes for history check
    * @returns {number} Consecutive leap cost (0-8)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreConsecutiveLeaps(currentInterval, lastNotes) {
-    return VoiceLeadingScorers.scoreConsecutiveLeaps(currentInterval, lastNotes, this.dynamism);
+    return voiceLeadingScorers.scoreConsecutiveLeaps(currentInterval, lastNotes, this.dynamism);
   }
 
   /**
@@ -199,9 +199,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {string} register - Voice register
    * @returns {number} Directional bias cost (0-2)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreDirectionalBias(candidate, lastNote, register) {
-    return VoiceLeadingScorers.scoreDirectionalBias(candidate, lastNote, register);
+    return voiceLeadingScorers.scoreDirectionalBias(candidate, lastNote, register);
   }
 
   /**
@@ -211,9 +211,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {string} register - Voice register
    * @returns {number} Max leap cost (0-10)
    */
-  // @ts-ignore TS6133 - method called dynamically by VoiceLeadingScorers
+  // @ts-ignore TS6133 - method called dynamically by voiceLeadingScorers
   _scoreMaxLeap(interval, register) {
-    return VoiceLeadingScorers.scoreMaxLeap(interval, register, this.maxLeapSize, this.dynamism);
+    return voiceLeadingScorers.scoreMaxLeap(interval, register, this.maxLeapSize, this.dynamism);
   }
 
   /**
@@ -283,5 +283,5 @@ VoiceLeadingScore = class VoiceLeadingScore {
 }
 
 // Ensure private-class helper methods are treated as "used" by TypeScript when
-// callers access them dynamically (e.g. VoiceLeadingCore or external scoring helpers).
+// callers access them dynamically (e.g. voiceLeadingCore or external scoring helpers).
 // Note: Using @ts-ignore on method declarations instead for cleaner suppression.

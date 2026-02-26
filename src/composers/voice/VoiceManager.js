@@ -2,7 +2,7 @@
 
 /**
  * Coordinates voice selection using VOICES config, composer note pools, and voice leading.
- * Manages per-voice history and calls VoiceRegistry for joint optimization.
+ * Manages per-voice history and calls voiceRegistry for joint optimization.
  *
  * **Voicing Intent Pattern:**
  * VoiceManager accepts optional voicing intent from composers via the `opts` parameter.
@@ -18,7 +18,7 @@
  * }
  * ```
  *
- * The voicing intent is passed through to VoiceLeadingScore and VoiceRegistry, which combine
+ * The voicing intent is passed through to VoiceLeadingScore and voiceRegistry, which combine
  * it with voice leading cost functions (smooth motion, leap recovery, etc.) to make the final
  * selection. This separation allows composers to define *what* notes fit their harmonic/melodic
  * logic while the voice module handles *how* to select voices smoothly.
@@ -148,7 +148,7 @@ VoiceManager = class VoiceManager {
     const maxVoices = m.min(adjustedVoiceCount, notePool.length);
 
     // Apply register bias using centralized helper
-    const registerBiasResult = RegisterBiasing.apply(notePool, maxVoices, opts, phraseContext);
+    const registerBiasResult = registerBiasing.apply(notePool, maxVoices, opts, phraseContext);
     notePool = registerBiasResult.notePool;
     const finalRegisterBias = registerBiasResult.finalRegisterBias;
 
@@ -178,19 +178,19 @@ VoiceManager = class VoiceManager {
         lastNotesByVoice.push(lnv);
       }
 
-      // Call VoiceRegistry for joint optimization with voiceIndependence hint
+      // Call voiceRegistry for joint optimization with voiceIndependence hint
       const scorerOpts = Object.assign({}, opts, {
         candidateWeights: weightMap,
         voiceIndependence: voiceIndependence, // Pass to scorer for contrapuntal vs homophonic tendency
         minSemitones: opts.minSemitones  // Pass voice spacing constraint
       });
-      const selected = VoiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
+      const selected = voiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
       if (!Array.isArray(selected) || selected.length !== maxVoices) {
-        throw new Error(`VoiceManager.pickNotesForBeat: VoiceRegistry returned invalid selection for layer ${layerId}`);
+        throw new Error(`VoiceManager.pickNotesForBeat: voiceRegistry returned invalid selection for layer ${layerId}`);
       }
       // Update history (validate entries)
       for (let i = 0; i < selected.length; i++) {
-        if (!Number.isFinite(Number(selected[i]))) throw new Error(`VoiceManager.pickNotesForBeat: VoiceRegistry returned non-finite note at index ${i}`);
+        if (!Number.isFinite(Number(selected[i]))) throw new Error(`VoiceManager.pickNotesForBeat: voiceRegistry returned non-finite note at index ${i}`);
         if (!voiceHistory[i]) voiceHistory[i] = [];
         voiceHistory[i].unshift(Number(selected[i]));
         if (voiceHistory[i].length > 8) voiceHistory[i].pop();

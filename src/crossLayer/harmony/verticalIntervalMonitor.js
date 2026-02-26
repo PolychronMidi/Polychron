@@ -3,11 +3,11 @@
 /**
  * Vertical Interval Monitor (E2)
  *
- * Cross-layer module that queries AbsoluteTimeGrid for recent note
+ * Cross-layer module that queries absoluteTimeGrid for recent note
  * events from both layers and analyses the vertical intervals between
  * simultaneous notes. Detects parallel octaves/fifths, dissonance
  * clusters, and registral overlap, emitting diagnostics to
- * ExplainabilityBus and nudging playProb when collisions are detected.
+ * explainabilityBus and nudging playProb when collisions are detected.
  */
 
 verticalIntervalMonitor = (() => {
@@ -34,8 +34,8 @@ verticalIntervalMonitor = (() => {
     lastCheckMs = nowMs;
 
     // Query recent note pitches from both layers
-    const l1Events = AbsoluteTimeGrid.query(CHANNEL, nowMs, TOLERANCE, { onlyLayer: '1' });
-    const l2Events = AbsoluteTimeGrid.query(CHANNEL, nowMs, TOLERANCE, { onlyLayer: '2' });
+    const l1Events = absoluteTimeGrid.query(CHANNEL, nowMs, TOLERANCE, { onlyLayer: '1' });
+    const l2Events = absoluteTimeGrid.query(CHANNEL, nowMs, TOLERANCE, { onlyLayer: '2' });
 
     if (!l1Events || !l2Events || l1Events.length === 0 || l2Events.length === 0) return 0;
 
@@ -53,7 +53,7 @@ verticalIntervalMonitor = (() => {
 
     if (collisions > 0) {
       collisionCount += collisions;
-      ExplainabilityBus.emit('verticalCollision', '0', {
+      explainabilityBus.emit('verticalCollision', '0', {
         collisions,
         timeMs: nowMs,
         totalCollisions: collisionCount,
@@ -73,7 +73,7 @@ verticalIntervalMonitor = (() => {
 
   const mod = { process, getCollisionCount, reset };
 
-  CrossLayerRegistry.register('verticalIntervalMonitor', mod, ['all', 'section']);
+  crossLayerRegistry.register('verticalIntervalMonitor', mod, ['all', 'section']);
 
   return mod;
 })();

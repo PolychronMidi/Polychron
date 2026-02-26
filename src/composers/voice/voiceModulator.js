@@ -18,8 +18,8 @@ voiceModulator = (function() {
   function distribute(selectedNotes, options = {}) {
     if (!Array.isArray(selectedNotes)) throw new Error('voiceModulator.distribute: selectedNotes array required');
     const base = Number.isFinite(Number(options && options.baseVelocity)) ? Number(options.baseVelocity) : 90;
-    // Voice spread params from ConductorConfig (profile-driven)
-    const vsCfg = ConductorConfig.getVoiceSpreadScaling();
+    // Voice spread params from conductorConfig (profile-driven)
+    const vsCfg = conductorConfig.getVoiceSpreadScaling();
     const spread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : vsCfg.spread;
     const texMode = (options && typeof options.textureMode === 'string') ? options.textureMode : 'single';
     const count = selectedNotes.length;

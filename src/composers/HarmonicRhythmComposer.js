@@ -58,7 +58,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     // Sustained chord-burst activity → faster harmonic rhythm (reduce measuresPerChord)
     // Sustained flurry activity → slower harmonic rhythm (hold chords longer)
     let effectiveMPC = this.measuresPerChord;
-    const texMetrics = DrumTextureCoupler.getMetrics();
+    const texMetrics = drumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.3) {
       const burstDominant = texMetrics.burstCount > texMetrics.flurryCount;
       if (burstDominant) {
@@ -111,9 +111,9 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     // Add some random drift for variety
     tension = clamp(tension + rf(-0.1, 0.1), 0, 1);
 
-    // Update HarmonicContext without overwriting other fields
+    // Update harmonicContext without overwriting other fields
     // (We don't know the full state here, just updating tension)
-    try { HarmonicContext.set({ tension }); } catch { /* ignore if tension update fails */ }
+    try { harmonicContext.set({ tension }); } catch { /* ignore if tension update fails */ }
 
     super.noteSet([currentChord], 'R');
     this.measureCount++;

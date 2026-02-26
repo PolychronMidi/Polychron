@@ -80,8 +80,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
   }
 
   getNotes(octaveRange) {
-    // Prefer HarmonicContext window scale when composer declares timeVaryingScaleContext
-    const hcScale = HarmonicContext.getField('scale');
+    // Prefer harmonicContext window scale when composer declares timeVaryingScaleContext
+    const hcScale = harmonicContext.getField('scale');
     const effectiveScale = (this.hasCapability('timeVaryingScaleContext') && Array.isArray(hcScale) && hcScale.length > 0)
       ? hcScale
       : (Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : hcScale);
@@ -113,8 +113,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     // Texture state biases development technique: chord bursts → transposition
     // (phases 0,1), flurries → inversion (phase 2), sustained single → retrograde (phase 3)
     const basePhase = m.floor((this.measureCount - 1) / 2) % 4;
-    if (DrumTextureCoupler) {
-      const texMetrics = DrumTextureCoupler.getMetrics();
+    if (drumTextureCoupler) {
+      const texMetrics = drumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.3) {
         const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
         const flurryDom = texMetrics.flurryCount > texMetrics.burstCount;

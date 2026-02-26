@@ -303,7 +303,7 @@ MAIN_LOOP_CONTROLS = {
     playProb: 0.5,
     stutterProb: 0.3
   },
-  /** Tunable constants for AdaptiveTrustScores payoff calculations (processBeat + main). */
+  /** Tunable constants for adaptiveTrustScores payoff calculations (processBeat + main). */
   trustPayoffs: {
     stutterContagion: { targetScale: 2 },
     phaseLock: { lock: 0.5, drift: 0.15, other: -0.4, confidenceScale: 0.35 },

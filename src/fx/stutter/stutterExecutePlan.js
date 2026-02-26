@@ -25,24 +25,24 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     finalChannels.push(.../** @type {number[]} */ (source.slice()));
   }
 
-  const crossRules = StutterConfig.getCrossModRules();
+  const crossRules = stutterConfig.getCrossModRules();
   if (!crossRules || typeof crossRules !== 'object') {
-    throw new Error('stutterExecutePlan: invalid crossRules from StutterConfig.getCrossModRules');
+    throw new Error('stutterExecutePlan: invalid crossRules from stutterConfig.getCrossModRules');
   }
 
-  const directiveDefaults = StutterConfig.getDirectiveDefaults();
+  const directiveDefaults = stutterConfig.getDirectiveDefaults();
   if (!directiveDefaults || typeof directiveDefaults !== 'object') {
-    throw new Error('stutterExecutePlan: invalid directive defaults from StutterConfig.getDirectiveDefaults');
+    throw new Error('stutterExecutePlan: invalid directive defaults from stutterConfig.getDirectiveDefaults');
   }
   const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
   if (cfg.preset) {
-    const preset = StutterConfig.getPreset(cfg.preset);
+    const preset = stutterConfig.getPreset(cfg.preset);
     if (preset && typeof preset === 'object') Object.assign(directive, preset);
   }
 
   let adaptiveCrossRules = null;
   if (directive.metricsAdaptive && directive.metricsAdaptive.enabled) {
-    const metrics = StutterMetrics.getMetrics();
+    const metrics = stutterMetrics.getMetrics();
     const sens = V.optionalFinite(Number(directive.metricsAdaptive.sensitivity), 0.08);
     const adj = Object.assign({}, crossRules);
     ['source', 'reflection', 'bass'].forEach((p) => {
@@ -147,6 +147,6 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     delete stutterMgr.beatContext.coherenceKey;
   }
 
-  StutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile);
+  stutterMetrics.incEmitted(numStutters * /** @type {any[]} */ (finalChannels).length, profile);
   return cfg;
 };

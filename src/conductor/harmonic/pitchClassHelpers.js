@@ -1,8 +1,8 @@
 // src/conductor/harmonic/pitchClassHelpers.js - Shared pitch-class utilities.
-// Used by ChromaticSaturationMonitor, ModalColorTracker, PitchClassGravityMap,
-// TonalAnchorDistanceTracker, ConsonanceDissonanceTracker, TensionResolutionTracker,
-// LayerCoherenceScorer.
-// Pure query — reads AbsoluteTimeWindow.
+// Used by chromaticSaturationMonitor, modalColorTracker, pitchClassGravityMap,
+// tonalAnchorDistanceTracker, consonanceDissonanceTracker, tensionResolutionTracker,
+// layerCoherenceScorer.
+// Pure query — reads absoluteTimeWindow.
 
 pitchClassHelpers = (() => {
   const V = validator.create('pitchClassHelpers');
@@ -20,7 +20,7 @@ pitchClassHelpers = (() => {
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
-    const notes = AbsoluteTimeWindow.getNotes(query);
+    const notes = absoluteTimeWindow.getNotes(query);
     const counts = new Array(12).fill(0);
     let total = 0;
     for (let i = 0; i < notes.length; i++) {
@@ -35,7 +35,7 @@ pitchClassHelpers = (() => {
 
   /**
    * Build a 12-element pitch-class histogram from a pre-fetched notes array.
-   * Avoids re-querying AbsoluteTimeWindow when the caller already has notes.
+   * Avoids re-querying absoluteTimeWindow when the caller already has notes.
    * @param {Array<{midi: number}>} notes
    * @returns {{ counts: number[], total: number }}
    */

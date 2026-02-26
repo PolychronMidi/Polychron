@@ -1,4 +1,4 @@
-GrooveTransfer = (() => {
+grooveTransfer = (() => {
   const V = validator.create('grooveTransfer');
   const CHANNEL = 'grooveTransfer';
   const MAX_OFFSETS = 64;
@@ -18,13 +18,13 @@ GrooveTransfer = (() => {
       sumByLayer.set(layer, 0);
     }
     const arr = offsetsByLayer.get(layer);
-    if (!arr) throw new Error('GrooveTransfer: failed to initialize layer offsets for ' + layer);
+    if (!arr) throw new Error('grooveTransfer: failed to initialize layer offsets for ' + layer);
     return arr;
   }
 
   function getAbsoluteTimeGridOrThrow() {
-    V.assertObject(AbsoluteTimeGrid, 'AbsoluteTimeGrid');
-    return AbsoluteTimeGrid;
+    V.assertObject(absoluteTimeGrid, 'absoluteTimeGrid');
+    return absoluteTimeGrid;
   }
 
   /**
@@ -114,4 +114,4 @@ GrooveTransfer = (() => {
 
   return { recordTiming, applyOffset, reset };
 })();
-CrossLayerRegistry.register('GrooveTransfer', GrooveTransfer, ['all', 'phrase']);
+crossLayerRegistry.register('grooveTransfer', grooveTransfer, ['all', 'phrase']);

@@ -114,8 +114,8 @@ MotifComposer = class MotifComposer {
     }
 
     // Validate scale notes against developer contract.
-    const windowScale = HarmonicContext.getField('scale');
-    MotifValidators.assertScaleMatchesDeveloper(scaleNotes, developer, {
+    const windowScale = harmonicContext.getField('scale');
+    motifValidators.assertScaleMatchesDeveloper(scaleNotes, developer, {
       mode: 'auto',
       windowScale,
       context: {

@@ -1,7 +1,7 @@
 // profileAdaptation.js — Advisory hints for adaptive profile parameter blending.
 // Reads signalReader each beat and computes a hint vector suggesting profile
 // adjustments based on emergent musical content. Does NOT switch profiles —
-// provides advisory signals that ConductorConfig can optionally blend.
+// provides advisory signals that conductorConfig can optionally blend.
 
 profileAdaptation = (() => {
   // Sustained-signal tracking: count consecutive beats meeting each threshold
@@ -69,8 +69,8 @@ profileAdaptation = (() => {
   }
 
   // Self-register: recorder (runs each beat) + state provider (exposes hints)
-  ConductorIntelligence.registerRecorder('profileAdaptation', update);
-  ConductorIntelligence.registerStateProvider('profileAdaptation', () => {
+  conductorIntelligence.registerRecorder('profileAdaptation', update);
+  conductorIntelligence.registerStateProvider('profileAdaptation', () => {
     const h = getHints();
     return {
       profileHintRestrained: h.restrainedHint,
@@ -78,7 +78,7 @@ profileAdaptation = (() => {
       profileHintAtmospheric: h.atmosphericHint
     };
   });
-  ConductorIntelligence.registerModule('profileAdaptation', { reset }, ['section']);
+  conductorIntelligence.registerModule('profileAdaptation', { reset }, ['section']);
 
   return { update, getHints, reset };
 })();

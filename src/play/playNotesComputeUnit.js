@@ -10,7 +10,7 @@ const V = validator.create('playNotesComputeUnit');
  * Side effect: sets the global `velocity`.
  *
  * @param {string} unit - 'beat' | 'div' | 'subdiv' | 'subsubdiv'
- * @param {any} emissionAdjustments - from ComposerRuntimeProfileAdapter
+ * @param {any} emissionAdjustments - from composerRuntimeProfileAdapter
  * @param {any} emissionCfg - emissionScaling merged with noiseProfile
  * @param {any} layer - active layer object (mutated to cache _cachedLayerIdSeed)
  * @returns {{ on: number, sustain: number, binVel: number, noiseInfluence: number, currentTime: number, voiceIdSeed: number }}
@@ -28,12 +28,12 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   V.requireFinite(Number(tpUnit), 'tpUnit');
   V.requireFinite(Number(beatStart), 'beatStart');
   const swingTicks = V.requireFinite(
-    Number(RhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount)),
+    Number(rhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount)),
     'swingTicks'
   );
   const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;
 
-  const tempoFeelOffset = V.requireFinite(Number(TempoFeelEngine.getTickOffset()), 'tempoFeelOffset');
+  const tempoFeelOffset = V.requireFinite(Number(tempoFeelEngine.getTickOffset()), 'tempoFeelOffset');
 
   // Compute on-tick and sustain durations
   const on = unitStart + timingOffsetTicks + tempoFeelOffset + (tpUnit * rv(rf(.2), [-.1, .07], .3));

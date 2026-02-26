@@ -4,7 +4,7 @@
  */
 setBalanceAndFX = () => {
 const V = validator.create('setBalanceAndFX');
-const spatialCanvas = ConductorConfig.getSpatialCanvasParams();
+const spatialCanvas = conductorConfig.getSpatialCanvasParams();
 if (!spatialCanvas || typeof spatialCanvas !== 'object' || !Array.isArray(spatialCanvas.balOffset) || !Array.isArray(spatialCanvas.sideBias)) {
   throw new Error('setBalanceAndFX: getSpatialCanvasParams returned invalid shape');
 }
@@ -15,7 +15,7 @@ if (!ccGroupScale || typeof ccGroupScale !== 'object' || !ccRangeScale || typeof
   throw new Error('setBalanceAndFX: spatialCanvas missing ccGroupScale or ccRangeScale');
 }
 
-const journeyFxModulation = ConductorConfig.getJourneyFxModulation();
+const journeyFxModulation = conductorConfig.getJourneyFxModulation();
 
 const scaleFxDefaultObject = (fxDefault, scale) => {
   const minValue = Number(fxDefault.min);
@@ -223,10 +223,10 @@ return [
   // open filter cutoff (CC74), and spike delay send (CC94) so the spatial
   // environment breathes with the texture system.
   // FX depth and texture boost amplitude are scaled by the active conductor profile.
-  const fxScale = ConductorConfig.getFxMixScaling();
+  const fxScale = conductorConfig.getFxMixScaling();
 
-  if (DrumTextureCoupler) {
-    const texInt = DrumTextureCoupler.getIntensity();
+  if (drumTextureCoupler) {
+    const texInt = drumTextureCoupler.getIntensity();
     if (Number.isFinite(texInt) && texInt > 0.1) {
       const allChs = [
         ...(Array.isArray(source2) ? source2 : []),

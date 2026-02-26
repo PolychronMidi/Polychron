@@ -6,10 +6,10 @@
 // 1. Resolve target bucket from the appropriate unit-level motif array
 // 2. Extract note from bucket entry (pre-generated at planning time)
 // 3. Validate MIDI range and clamp if needed
-// 4. Expand pool via CandidateExpansion.expandScaleAware if < 3 candidates (scale-aware neighbors)
+// 4. Expand pool via candidateExpansion.expandScaleAware if < 3 candidates (scale-aware neighbors)
 // 5. Filter to current composer's pitch classes (prevents stale notes from previous composer)
 // 6. Enforce sibling voice limits (constrain candidates to established sibling PCs when full)
-// 7. Optional: filter via HarmonicContext.isNoteInScale (only if it preserves composer PCs)
+// 7. Optional: filter via harmonicContext.isNoteInScale (only if it preserves composer PCs)
 // 8. Delegate selection to VoiceManager.pickNotesForBeat with:
 //    - voiceCount from VOICES config
 //    - composer.getVoicingIntent() for candidate weights
@@ -17,7 +17,7 @@
 //    - phraseContext for arc-driven biases
 // 9. Validate all picks belong to composer's pitch-class set (fail-fast if VoiceManager error)
 // 10. Register picked PCs in sibling voice tracking
-// 11. Track cycle completion and apply MotifTransforms after each full cycle
+// 11. Track cycle completion and apply motifTransforms after each full cycle
 
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer
@@ -94,14 +94,14 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const runtimeProfile = (activeComposer && V.optionalType(activeComposer.runtimeProfile, 'object'))
     ? activeComposer.runtimeProfile
     : null;
-  const runtimeVoiceOptions = (runtimeProfile && ComposerRuntimeProfileAdapter && V.optionalType(ComposerRuntimeProfileAdapter.getVoiceSelectionOptions, 'function'))
-    ? ComposerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile)
+  const runtimeVoiceOptions = (runtimeProfile && composerRuntimeProfileAdapter && V.optionalType(composerRuntimeProfileAdapter.getVoiceSelectionOptions, 'function'))
+    ? composerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile)
     : {};
 
   // Get phrase context from PhraseArcManager if available
   let phraseContext = null;
-  if (ComposerFactory && ComposerFactory.sharedPhraseArcManager) {
-    phraseContext = ComposerFactory.sharedPhraseArcManager.getPhraseContext();
+  if (FactoryManager && FactoryManager.sharedPhraseArcManager) {
+    phraseContext = FactoryManager.sharedPhraseArcManager.getPhraseContext();
   }
 
   // Pass voicing options from composer for voice spacing constraints

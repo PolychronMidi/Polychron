@@ -124,9 +124,9 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
       regulation.crossModBias = 1 + (regulation.crossModBias - 1) * regulation.settleDecay;
     }
 
-    if (EventBus) {
+    if (eventBus) {
       const EVENTS = V.getEventsOrThrow();
-      EventBus.emit(EVENTS.CONDUCTOR_REGULATION, {
+      eventBus.emit(EVENTS.CONDUCTOR_REGULATION, {
         avg,
         densityBias: regulation.densityBias,
         crossModBias: regulation.crossModBias,
@@ -148,7 +148,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
   };
 
   const applyPhaseProfile = (opts = {}) => {
-    const phase = HarmonicContext.getField('sectionPhase');
+    const phase = harmonicContext.getField('sectionPhase');
 
     const profileName = PHASE_PROFILE_MAP[phase] || 'default';
     const outgoing = getActiveProfile();

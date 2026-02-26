@@ -1,10 +1,10 @@
 /** @this {any} */
 stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
-  if (!StutterFailFast) {
-    throw new Error('stutterPan: StutterFailFast helper is not available');
+  if (!stutterFailFast) {
+    throw new Error('stutterPan: stutterFailFast helper is not available');
   }
-  const { eventName } = StutterFailFast.requireEventInfra();
-  const { reflectionChannels, bassChannels } = StutterFailFast.requireChannelArrays('stutterPan');
+  const { eventName } = stutterFailFast.requireEventInfra();
+  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays('stutterPan');
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
   // Write beat-level pan context for spatial-aware octave shifts (task 7)
@@ -36,13 +36,13 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
-      const mod = StutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', tick), `stutterPan channel=${channelToStutter} tick=${tick}`);
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', tick), `stutterPan channel=${channelToStutter} tick=${tick}`);
 
       // If coherence key exists, overlay correlated modulation
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = StutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterPan coherence key=${coherenceKey} channel=${channelToStutter}`);
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterPan coherence key=${coherenceKey} channel=${channelToStutter}`);
       }
 
       // Y axis controls pan flutter - add oscillation on top of movement
@@ -66,8 +66,8 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     if (tick === undefined) throw new Error('stutterPan: for-loop produced no iterations');
 
     // Emit one summary event per channel (not per-iteration)
-    const profile = StutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-    EventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: clamp(lastIntensity, 0, 1), tick });
+    const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
+    eventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: clamp(lastIntensity, 0, 1), tick });
 
     // Record final pan position for note cooperation —
     // negative = left-biased, positive = right-biased, 0 = center

@@ -1,25 +1,25 @@
 // signalReader.js — Standardized read API for the conductor signal pipeline.
 // Provides a thin, stable interface for any module to read density/tension/flicker
-// products, state-provider fields, signal attribution, and ExplainabilityBus events.
+// products, state-provider fields, signal attribution, and explainabilityBus events.
 // All inter-module signal reading goes through signalReader — never call
-// ConductorIntelligence.getSignalSnapshot() or ExplainabilityBus.queryByType() directly.
+// conductorIntelligence.getSignalSnapshot() or explainabilityBus.queryByType() directly.
 
 signalReader = (() => {
   const V = validator.create('signalReader');
 
   /** @returns {number} Product of all registered density biases. */
   function density() {
-    return ConductorIntelligence.collectDensityBias();
+    return conductorIntelligence.collectDensityBias();
   }
 
   /** @returns {number} Product of all registered tension biases. */
   function tension() {
-    return ConductorIntelligence.collectTensionBias();
+    return conductorIntelligence.collectTensionBias();
   }
 
   /** @returns {number} Product of all registered flicker modifiers. */
   function flicker() {
-    return ConductorIntelligence.collectFlickerModifier();
+    return conductorIntelligence.collectFlickerModifier();
   }
 
   /**
@@ -29,7 +29,7 @@ signalReader = (() => {
    */
   function state(field) {
     V.assertNonEmptyString(field, 'field');
-    return ConductorIntelligence.collectStateFields()[field];
+    return conductorIntelligence.collectStateFields()[field];
   }
 
   /**
@@ -37,7 +37,7 @@ signalReader = (() => {
    * @returns {Readonly<{ densityProduct: number, tensionProduct: number, flickerProduct: number, stateFields: Record<string, any>, counts: Record<string, number> }>}
    */
   function snapshot() {
-    return ConductorIntelligence.getSignalSnapshot();
+    return conductorIntelligence.getSignalSnapshot();
   }
 
   /**
@@ -45,7 +45,7 @@ signalReader = (() => {
    * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
    */
   function densityAttribution() {
-    return ConductorIntelligence.collectDensityBiasWithAttribution();
+    return conductorIntelligence.collectDensityBiasWithAttribution();
   }
 
   /**
@@ -53,7 +53,7 @@ signalReader = (() => {
    * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
    */
   function tensionAttribution() {
-    return ConductorIntelligence.collectTensionBiasWithAttribution();
+    return conductorIntelligence.collectTensionBiasWithAttribution();
   }
 
   /**
@@ -61,12 +61,12 @@ signalReader = (() => {
    * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
    */
   function flickerAttribution() {
-    return ConductorIntelligence.collectFlickerModifierWithAttribution();
+    return conductorIntelligence.collectFlickerModifierWithAttribution();
   }
 
   /**
-   * Query recent ExplainabilityBus events by type.
-   * Load-order note: ExplainabilityBus is registered in crossLayer (loads after conductor).
+   * Query recent explainabilityBus events by type.
+   * Load-order note: explainabilityBus is registered in crossLayer (loads after conductor).
    * This call is safe at runtime (beat-processing time) but must NOT be invoked at module
    * load time — the global will not yet exist.
    * @param {string} type — event type to filter on
@@ -75,7 +75,7 @@ signalReader = (() => {
    */
   function recentEvents(type, limit) {
     V.assertNonEmptyString(type, 'type');
-    return ExplainabilityBus.queryByType(type, limit ?? 10);
+    return explainabilityBus.queryByType(type, limit ?? 10);
   }
 
   return {

@@ -17,7 +17,7 @@ factoryFamilies = {
     const normalized = {};
     const familyNames = Object.keys(source);
     if (familyNames.length === 0) {
-      throw new Error('ComposerFactory.getComposerFamiliesOrFail: no composer families configured');
+      throw new Error('FactoryManager.getComposerFamiliesOrFail: no composer families configured');
     }
 
     for (const familyName of familyNames) {
@@ -25,22 +25,22 @@ factoryFamilies = {
       V.assertObject(family, `family "${familyName}"`);
       const types = Array.isArray(family.types) ? family.types : null;
       if (!types || types.length === 0) {
-        throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" must define a non-empty types array`);
+        throw new Error(`FactoryManager.getComposerFamiliesOrFail: family "${familyName}" must define a non-empty types array`);
       }
 
       const normalizedTypes = [];
       for (const type of types) {
         V.assertNonEmptyString(type, `family "${familyName}" type entry`);
         if (!validTypes.has(type)) {
-          throw new Error(`ComposerFactory.getComposerFamiliesOrFail: family "${familyName}" references unknown composer type "${type}"`);
+          throw new Error(`FactoryManager.getComposerFamiliesOrFail: family "${familyName}" references unknown composer type "${type}"`);
         }
         if (!normalizedTypes.includes(type)) normalizedTypes.push(type);
       }
 
       const weight = Number(family.weight);
       // Apply conductor profile family weight multiplier if available
-      const profileMultiplier = (ConductorConfig && ConductorConfig.getFamilyWeights)
-        ? (Number(ConductorConfig.getFamilyWeights()[familyName]) || 1)
+      const profileMultiplier = (conductorConfig && conductorConfig.getFamilyWeights)
+        ? (Number(conductorConfig.getFamilyWeights()[familyName]) || 1)
         : 1;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
@@ -86,7 +86,7 @@ factoryFamilies = {
     if (requestedFamily !== undefined && requestedFamily !== null) {
       V.assertNonEmptyString(requestedFamily, 'requestedFamily');
       if (!Object.prototype.hasOwnProperty.call(families, requestedFamily)) {
-        throw new Error(`ComposerFactory.resolvePhraseFamilyOrFail: unknown family "${requestedFamily}"`);
+        throw new Error(`FactoryManager.resolvePhraseFamilyOrFail: unknown family "${requestedFamily}"`);
       }
       return requestedFamily;
     }
@@ -97,7 +97,7 @@ factoryFamilies = {
       totalWeight += Number(families[familyName].weight);
     }
     if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
-      throw new Error('ComposerFactory.resolvePhraseFamilyOrFail: family weights must sum to a positive finite number');
+      throw new Error('FactoryManager.resolvePhraseFamilyOrFail: family weights must sum to a positive finite number');
     }
 
     let roll = rf() * totalWeight;
@@ -131,7 +131,7 @@ factoryFamilies = {
     };
     const type = (ctorName && byCtorName[ctorName]) ? byCtorName[ctorName] : null;
     if (!type) {
-      throw new Error(`ComposerFactory.inferComposerType: unable to infer type for composer instance`);
+      throw new Error(`FactoryManager.inferComposerType: unable to infer type for composer instance`);
     }
     return type;
   },
@@ -149,7 +149,7 @@ factoryFamilies = {
     if (previousType && peerType && previousType !== peerType && candidateConfig.type !== peerType) score += 0.1;
 
     if (!Number.isFinite(score)) {
-      throw new Error('ComposerFactory.scoreFamilyCandidateConfig: computed score is not finite');
+      throw new Error('FactoryManager.scoreFamilyCandidateConfig: computed score is not finite');
     }
     return m.max(0.05, score);
   },
@@ -157,14 +157,14 @@ factoryFamilies = {
   pickWeightedFamilyCandidateOrFail(candidateConfigs, opts = {}) {
     V.assertArray(candidateConfigs, 'candidateConfigs');
     if (candidateConfigs.length === 0) {
-      throw new Error('ComposerFactory.pickWeightedFamilyCandidateOrFail: candidateConfigs must be a non-empty array');
+      throw new Error('FactoryManager.pickWeightedFamilyCandidateOrFail: candidateConfigs must be a non-empty array');
     }
 
     const weights = candidateConfigs.map((cfg) => this.scoreFamilyCandidateConfig(cfg, opts));
     let total = 0;
     for (const w of weights) total += Number(w);
     if (!Number.isFinite(total) || total <= 0) {
-      throw new Error('ComposerFactory.pickWeightedFamilyCandidateOrFail: candidate weights sum to non-positive value');
+      throw new Error('FactoryManager.pickWeightedFamilyCandidateOrFail: candidate weights sum to non-positive value');
     }
 
     let roll = rf() * total;

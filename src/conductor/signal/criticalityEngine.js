@@ -79,11 +79,11 @@ criticalityEngine = (() => {
       currentBias = SNAP_STRENGTH;
       energyBuffer = [];
 
-      ExplainabilityBus.emit('avalanche', '0', {
+      explainabilityBus.emit('avalanche', '0', {
         energy: accumulated,
         threshold,
         count: avalancheCount,
-      }, ConductorState.getField('tick') || 0);
+      }, conductorState.getField('tick') || 0);
     } else {
       currentBias = 1.0;
     }
@@ -131,12 +131,12 @@ criticalityEngine = (() => {
   }
 
   // --- Self-registration ---
-  ConductorIntelligence.registerDensityBias('criticalityEngine', densityBias, 0.88, 1.05);
-  ConductorIntelligence.registerTensionBias('criticalityEngine', tensionBias, 0.88, 1.05);
-  ConductorIntelligence.registerFlickerModifier('criticalityEngine', flickerMod, 0.88, 1.05);
-  ConductorIntelligence.registerRecorder('criticalityEngine', refresh);
-  ConductorIntelligence.registerStateProvider('criticalityEngine', getState);
-  ConductorIntelligence.registerModule('criticalityEngine', { reset }, ['all']);
+  conductorIntelligence.registerDensityBias('criticalityEngine', densityBias, 0.88, 1.05);
+  conductorIntelligence.registerTensionBias('criticalityEngine', tensionBias, 0.88, 1.05);
+  conductorIntelligence.registerFlickerModifier('criticalityEngine', flickerMod, 0.88, 1.05);
+  conductorIntelligence.registerRecorder('criticalityEngine', refresh);
+  conductorIntelligence.registerStateProvider('criticalityEngine', getState);
+  conductorIntelligence.registerModule('criticalityEngine', { reset }, ['all']);
 
   return { densityBias, tensionBias, flickerMod, getState, reset };
 })();

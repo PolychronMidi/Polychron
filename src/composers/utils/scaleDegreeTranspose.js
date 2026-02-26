@@ -2,7 +2,7 @@
  * scaleDegreeTranspose
  * Transpose a note (or array of notes) by diatonic scale degrees while preserving scale membership.
  * - Accepts a single MIDI number, an object with `.note`, or an array of those.
- * - If `scale` is omitted the function falls back to `HarmonicContext.getField('scale')`.
+ * - If `scale` is omitted the function falls back to `harmonicContext.getField('scale')`.
  * - `degreeOffset` moves by diatonic steps (positive or negative).
  * - `opts.quantize` will quantize an out-of-scale input to the nearest scale degree before transposing.
  *

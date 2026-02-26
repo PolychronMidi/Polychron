@@ -1,5 +1,5 @@
 // conductorConfigResolvers.js — Journey FX modulation and noise profile resolution.
-// Extracted from ConductorConfig to keep the profile hub focused on accessor dispatch.
+// Extracted from conductorConfig to keep the profile hub focused on accessor dispatch.
 
 /**
  * @param {Object} deps
@@ -24,9 +24,9 @@ conductorConfigResolvers = function({ getProfileTuning }) {
       if (!Number.isFinite(Number(sectionIndex))) {
         throw new Error(`conductorConfigResolvers.getJourneyFxModulation: sectionIndex must be finite, got ${sectionIndex}`);
       }
-      const maybe = HarmonicJourney.getStop(Number(sectionIndex));
+      const maybe = harmonicJourney.getStop(Number(sectionIndex));
       if (!maybe || typeof maybe !== 'object') {
-        throw new Error('conductorConfigResolvers.getJourneyFxModulation: HarmonicJourney.getStop returned invalid stop object');
+        throw new Error('conductorConfigResolvers.getJourneyFxModulation: harmonicJourney.getStop returned invalid stop object');
       }
       stop = maybe;
     }
@@ -69,7 +69,7 @@ conductorConfigResolvers = function({ getProfileTuning }) {
 
     const sectionPhase = (typeof sectionPhaseOverride === 'string' && sectionPhaseOverride.length > 0)
       ? sectionPhaseOverride
-      : HarmonicContext.getField('sectionPhase');
+      : harmonicContext.getField('sectionPhase');
 
     const selected = Object.prototype.hasOwnProperty.call(mapping, sectionPhase)
       ? V.assertNonEmptyString(mapping[sectionPhase], `conductorConfigResolvers.noiseProfileByPhase.${sectionPhase}`)

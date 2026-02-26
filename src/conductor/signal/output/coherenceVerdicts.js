@@ -153,8 +153,8 @@ coherenceVerdicts = (() => {
         }
         // Detect modules stuck at exact floor/ceiling values (0.6000, 0.8000, etc.)
         // that suggest permanent pinning rather than dynamic response
-        if (c.clamped === 0.6 && c.name === 'CoherenceMonitor') {
-          verdicts.push({ severity: 'info', area: 'attribution', finding: `CoherenceMonitor density bias locked at floor (0.60) — system consistently emitting more notes than intended, suppressing density by 40%.` });
+        if (c.clamped === 0.6 && c.name === 'coherenceMonitor') {
+          verdicts.push({ severity: 'info', area: 'attribution', finding: `coherenceMonitor density bias locked at floor (0.60) — system consistently emitting more notes than intended, suppressing density by 40%.` });
         }
       }
 
@@ -168,19 +168,19 @@ coherenceVerdicts = (() => {
     }
   }
 
-  /** Special check for CoherenceMonitor permanent floor state. */
+  /** Special check for coherenceMonitor permanent floor state. */
   function _checkCoherenceMonitorFloor(attribution, verdicts) {
     if (!attribution || !attribution.density || !attribution.density.contributions) return;
-    const cm = attribution.density.contributions.find(c => c.name === 'CoherenceMonitor');
+    const cm = attribution.density.contributions.find(c => c.name === 'coherenceMonitor');
     if (!cm) return;
     // Already handled in _checkAttributionExtremes — but check if it's the
     // single largest density suppressor
     const sorted = attribution.density.contributions
       .filter(c => c.clamped < 1.0)
       .sort((a, b) => a.clamped - b.clamped);
-    if (sorted.length > 0 && sorted[0].name === 'CoherenceMonitor') {
+    if (sorted.length > 0 && sorted[0].name === 'coherenceMonitor') {
       const suppressionPct = ((1 - sorted[0].clamped) * 100).toFixed(0);
-      verdicts.push({ severity: 'warning', area: 'density', finding: `CoherenceMonitor is the single largest density suppressor (${suppressionPct}% reduction) — the system's density floor may be structurally depressed.` });
+      verdicts.push({ severity: 'warning', area: 'density', finding: `coherenceMonitor is the single largest density suppressor (${suppressionPct}% reduction) — the system's density floor may be structurally depressed.` });
     }
   }
 

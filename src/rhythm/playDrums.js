@@ -2,17 +2,17 @@
 const V = validator.create('playDrums');
 
 playDrums = function playDrums() {
-  V.assertObject(ConductorState, 'ConductorState');
-  V.requireType(ConductorState.getSnapshot, 'function', 'ConductorState.getSnapshot');
-  V.assertObject(DrumTextureCoupler, 'DrumTextureCoupler');
-  V.requireType(DrumTextureCoupler.shouldAccent, 'function', 'DrumTextureCoupler.shouldAccent');
-  const conductorState = ConductorState.getSnapshot();
-  V.assertObject(conductorState, 'ConductorState.getSnapshot()');
-  const intensityRaw = V.requireFinite(conductorState.compositeIntensity, 'conductorState.compositeIntensity');
+  V.assertObject(conductorState, 'conductorState');
+  V.requireType(conductorState.getSnapshot, 'function', 'conductorState.getSnapshot');
+  V.assertObject(drumTextureCoupler, 'drumTextureCoupler');
+  V.requireType(drumTextureCoupler.shouldAccent, 'function', 'drumTextureCoupler.shouldAccent');
+  const csSnap = conductorState.getSnapshot();
+  V.assertObject(csSnap, 'conductorState.getSnapshot()');
+  const intensityRaw = V.requireFinite(csSnap.compositeIntensity, 'conductorState.compositeIntensity');
   const intensity = clamp(intensityRaw, 0, 1);
-  const accent = DrumTextureCoupler.shouldAccent();
-  V.assertBoolean(accent, 'DrumTextureCoupler.shouldAccent()');
-  const phrasePhase = V.assertNonEmptyString(conductorState.phrasePhase, 'conductorState.phrasePhase');
+  const accent = drumTextureCoupler.shouldAccent();
+  V.assertBoolean(accent, 'drumTextureCoupler.shouldAccent()');
+  const phrasePhase = V.assertNonEmptyString(csSnap.phrasePhase, 'conductorState.phrasePhase');
   const drumCtx = { compositeIntensity: intensity, phrasePhase, accent };
   const stutterChance = clamp(0.16 + intensity * 0.42 + (accent ? 0.12 : 0), 0.08, 0.9);
   const stutterRange = intensity > 0.65 ? [3, 12] : [2, 8];

@@ -11,7 +11,7 @@ VoiceLeadingComposer = class VoiceLeadingComposer extends ScaleComposer {
 
   getNotes(octaveRange) {
     // Return full note pool for centralized voice selection
-    // Voice leading optimization now handled by VoiceManager/VoiceRegistry
+    // Voice leading optimization now handled by VoiceManager/voiceRegistry
     const notes = super.getNotes(octaveRange);
     if (!Array.isArray(notes) || notes.length === 0) {
       throw new Error('VoiceLeadingComposer.getNotes: expected super.getNotes() to return a non-empty array');

@@ -1,37 +1,37 @@
 COMPOSER_TYPE_PROFILES = {};
 
 for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILE_SOURCES)) {
-  if (!ComposerProfileUtils.COMPOSER_TYPES.includes(type)) {
+  if (!composerProfileUtils.COMPOSER_TYPES.includes(type)) {
     throw new Error(`ComposerProfiles: unknown type source "${type}"`);
   }
-  if (!ComposerProfileUtils.isPlainObject(profiles)) {
+  if (!composerProfileUtils.isPlainObject(profiles)) {
     throw new Error(`ComposerProfiles: invalid profile map for type "${type}"`);
   }
 
   const profileNames = Object.keys(profiles);
   if (!profileNames.includes('default')) throw new Error(`ComposerProfiles: type "${type}" must include a default profile`);
 
-  const minCount = ComposerProfileUtils.MIN_PROFILE_COUNT_BY_TYPE[type] || 1;
+  const minCount = composerProfileUtils.MIN_PROFILE_COUNT_BY_TYPE[type] || 1;
   if (profileNames.length < minCount) {
     throw new Error(`ComposerProfiles: type "${type}" must expose at least ${minCount} profiles`);
   }
 
   COMPOSER_TYPE_PROFILES[type] = {};
   for (const [profileName, entries] of Object.entries(profiles)) {
-    ComposerProfileUtils.assertStringOrFail(profileName, `COMPOSER_TYPE_PROFILES.${type}.profileName`);
-    COMPOSER_TYPE_PROFILES[type][profileName] = ComposerProfileUtils.cloneComposerEntriesOrFail(entries, `COMPOSER_TYPE_PROFILES.${type}.${profileName}`, type);
+    composerProfileUtils.assertStringOrFail(profileName, `COMPOSER_TYPE_PROFILES.${type}.profileName`);
+    COMPOSER_TYPE_PROFILES[type][profileName] = composerProfileUtils.cloneComposerEntriesOrFail(entries, `COMPOSER_TYPE_PROFILES.${type}.${profileName}`, type);
   }
 
-  ComposerProfileValidation.validateDiversityOrFail(type, COMPOSER_TYPE_PROFILES[type]);
+  composerProfileValidation.validateDiversityOrFail(type, COMPOSER_TYPE_PROFILES[type]);
 }
 
 const defaultPoolTemplate = [];
-for (const [type, profileName] of ComposerProfileUtils.DEFAULT_POOL_SELECTORS) {
+for (const [type, profileName] of composerProfileUtils.DEFAULT_POOL_SELECTORS) {
   const typeProfiles = COMPOSER_TYPE_PROFILES[type];
-  if (!ComposerProfileUtils.isPlainObject(typeProfiles)) {
+  if (!composerProfileUtils.isPlainObject(typeProfiles)) {
     throw new Error(`ComposerProfiles: unknown type "${type}" while building pools`);
   }
-  const entries = ComposerProfileUtils.pickProfileEntriesOrFail(typeProfiles, type, profileName);
+  const entries = composerProfileUtils.pickProfileEntriesOrFail(typeProfiles, type, profileName);
   for (const entry of entries) defaultPoolTemplate.push(entry);
 }
 
@@ -39,17 +39,17 @@ const fullSpectrumEclecticTemplate = [];
 for (const [type, profiles] of Object.entries(COMPOSER_TYPE_PROFILES)) {
   for (const [profileName, entries] of Object.entries(profiles)) {
     const label = `COMPOSER_TYPE_PROFILES.${type}.${profileName}`;
-    const cloned = ComposerProfileUtils.cloneComposerEntriesOrFail(entries, label, type);
+    const cloned = composerProfileUtils.cloneComposerEntriesOrFail(entries, label, type);
     for (const entry of cloned) fullSpectrumEclecticTemplate.push(entry);
   }
 }
 
 COMPOSER_PROFILE_POOLS = {
-  default: ComposerProfileUtils.cloneComposerEntriesOrFail(defaultPoolTemplate, 'COMPOSER_PROFILE_POOLS.default'),
-  fullSpectrumEclectic: ComposerProfileUtils.cloneComposerEntriesOrFail(fullSpectrumEclecticTemplate, 'COMPOSER_PROFILE_POOLS.fullSpectrumEclectic')
+  default: composerProfileUtils.cloneComposerEntriesOrFail(defaultPoolTemplate, 'COMPOSER_PROFILE_POOLS.default'),
+  fullSpectrumEclectic: composerProfileUtils.cloneComposerEntriesOrFail(fullSpectrumEclecticTemplate, 'COMPOSER_PROFILE_POOLS.fullSpectrumEclectic')
 };
 
-if (COMPOSER_POOL_SELECTION_STRATEGY !== null && !ComposerProfileUtils.isPlainObject(COMPOSER_POOL_SELECTION_STRATEGY)) {
+if (COMPOSER_POOL_SELECTION_STRATEGY !== null && !composerProfileUtils.isPlainObject(COMPOSER_POOL_SELECTION_STRATEGY)) {
   throw new Error('ComposerProfiles.profileRegistry: COMPOSER_POOL_SELECTION_STRATEGY must be an object when pre-defined');
 }
 if (COMPOSER_POOL_SELECTION_STRATEGY === null) {
@@ -71,7 +71,7 @@ if (COMPOSER_POOL_SELECTION_STRATEGY === null) {
 const getAvailablePoolNames = () => Object.keys(COMPOSER_PROFILE_POOLS).sort();
 
 const assertPoolExistsOrFail = (poolName, label) => {
-  ComposerProfileUtils.assertStringOrFail(poolName, label);
+  composerProfileUtils.assertStringOrFail(poolName, label);
   if (!Object.prototype.hasOwnProperty.call(COMPOSER_PROFILE_POOLS, poolName)) {
     throw new Error(`ComposerProfiles: ${label} references unknown pool "${poolName}"`);
   }
@@ -82,7 +82,7 @@ const resolveRulePoolOrNull = (rules, index, label) => {
   for (let i = 0; i < rules.length; i++) {
     const rule = rules[i];
     const ruleLabel = `${label}[${i}]`;
-    if (!ComposerProfileUtils.isPlainObject(rule)) throw new Error(`ComposerProfiles: ${ruleLabel} must be an object`);
+    if (!composerProfileUtils.isPlainObject(rule)) throw new Error(`ComposerProfiles: ${ruleLabel} must be an object`);
 
     const mod = Number(rule.mod);
     const remainder = Number(rule.remainder);
@@ -98,7 +98,7 @@ const resolveRulePoolOrNull = (rules, index, label) => {
 };
 
 const normalizeStrategyOrFail = (strategy = COMPOSER_POOL_SELECTION_STRATEGY) => {
-  if (!ComposerProfileUtils.isPlainObject(strategy)) {
+  if (!composerProfileUtils.isPlainObject(strategy)) {
     throw new Error('ComposerProfiles.selectComposerPoolOrFail: strategy must be an object');
   }
   const normalized = {
@@ -113,7 +113,7 @@ const normalizeStrategyOrFail = (strategy = COMPOSER_POOL_SELECTION_STRATEGY) =>
 };
 
 const resolveContextPoolNameOrNull = (context, strategy) => {
-  if (!ComposerProfileUtils.isPlainObject(context)) return null;
+  if (!composerProfileUtils.isPlainObject(context)) return null;
 
   if (context.composerPool !== undefined) {
     assertPoolExistsOrFail(context.composerPool, 'ComposerProfiles.context.composerPool');
@@ -135,7 +135,7 @@ const resolveContextPoolNameOrNull = (context, strategy) => {
     }
   }
 
-  const policy = ComposerProfileUtils.isPlainObject(context.composerPoolPolicy) ? context.composerPoolPolicy : null;
+  const policy = composerProfileUtils.isPlainObject(context.composerPoolPolicy) ? context.composerPoolPolicy : null;
   const sectionRules = policy && Array.isArray(policy.sectionModuloRules)
     ? policy.sectionModuloRules
     : strategy.sectionModuloRules;
@@ -158,7 +158,7 @@ const resolveContextPoolNameOrNull = (context, strategy) => {
 };
 
 selectComposerPoolOrFail = (opts = {}) => {
-  if (!ComposerProfileUtils.isPlainObject(opts)) throw new Error('ComposerProfiles.selectComposerPoolOrFail: opts must be an object');
+  if (!composerProfileUtils.isPlainObject(opts)) throw new Error('ComposerProfiles.selectComposerPoolOrFail: opts must be an object');
   const strategy = normalizeStrategyOrFail(opts.strategy || COMPOSER_POOL_SELECTION_STRATEGY);
 
   const requestedPool = opts.requestedPoolName !== undefined ? opts.requestedPoolName : opts.poolName;
@@ -168,7 +168,7 @@ selectComposerPoolOrFail = (opts = {}) => {
   }
 
   const context = opts.context;
-  if (context !== undefined && context !== null && !ComposerProfileUtils.isPlainObject(context)) {
+  if (context !== undefined && context !== null && !composerProfileUtils.isPlainObject(context)) {
     throw new Error('ComposerProfiles.selectComposerPoolOrFail: opts.context must be an object when provided');
   }
   const fromContext = resolveContextPoolNameOrNull(context || null, strategy);
@@ -181,25 +181,25 @@ selectComposerPoolOrFail = (opts = {}) => {
 // getComposerProfileAuditOrFail removed (never called outside profileRegistry.js)
 
 getComposerTypeProfilesOrFail = (type) => {
-  ComposerProfileUtils.assertStringOrFail(type, 'ComposerProfiles.getComposerTypeProfilesOrFail.type');
+  composerProfileUtils.assertStringOrFail(type, 'ComposerProfiles.getComposerTypeProfilesOrFail.type');
   const profiles = COMPOSER_TYPE_PROFILES[type];
-  if (!ComposerProfileUtils.isPlainObject(profiles)) {
+  if (!composerProfileUtils.isPlainObject(profiles)) {
     throw new Error(`ComposerProfiles.getComposerTypeProfilesOrFail: unknown composer type "${type}"`);
   }
 
   const cloned = {};
   for (const [profileName, entries] of Object.entries(profiles)) {
-    cloned[profileName] = ComposerProfileUtils.cloneComposerEntriesOrFail(entries, `getComposerTypeProfilesOrFail(${type}).${profileName}`, type);
+    cloned[profileName] = composerProfileUtils.cloneComposerEntriesOrFail(entries, `getComposerTypeProfilesOrFail(${type}).${profileName}`, type);
   }
   return cloned;
 };
 
 getComposerTypeProfileOrFail = (type, profileName = 'default') => {
-  ComposerProfileUtils.assertStringOrFail(type, 'ComposerProfiles.getComposerTypeProfileOrFail.type');
-  ComposerProfileUtils.assertStringOrFail(profileName, 'ComposerProfiles.getComposerTypeProfileOrFail.profileName');
+  composerProfileUtils.assertStringOrFail(type, 'ComposerProfiles.getComposerTypeProfileOrFail.type');
+  composerProfileUtils.assertStringOrFail(profileName, 'ComposerProfiles.getComposerTypeProfileOrFail.profileName');
 
   const profiles = COMPOSER_TYPE_PROFILES[type];
-  if (!ComposerProfileUtils.isPlainObject(profiles)) {
+  if (!composerProfileUtils.isPlainObject(profiles)) {
     throw new Error(`ComposerProfiles.getComposerTypeProfileOrFail: unknown composer type "${type}"`);
   }
 
@@ -208,16 +208,16 @@ getComposerTypeProfileOrFail = (type, profileName = 'default') => {
     throw new Error(`ComposerProfiles.getComposerTypeProfileOrFail: profile "${profileName}" not found for type "${type}"`);
   }
 
-  return ComposerProfileUtils.cloneComposerEntriesOrFail(profile, `getComposerTypeProfileOrFail(${type},${profileName})`, type);
+  return composerProfileUtils.cloneComposerEntriesOrFail(profile, `getComposerTypeProfileOrFail(${type},${profileName})`, type);
 };
 
 getComposerPoolOrFail = (poolName = 'default') => {
-  ComposerProfileUtils.assertStringOrFail(poolName, 'ComposerProfiles.getComposerPoolOrFail.poolName');
+  composerProfileUtils.assertStringOrFail(poolName, 'ComposerProfiles.getComposerPoolOrFail.poolName');
   const pool = COMPOSER_PROFILE_POOLS[poolName];
   if (!Array.isArray(pool) || pool.length === 0) {
     throw new Error(`ComposerProfiles.getComposerPoolOrFail: pool "${poolName}" is missing or empty`);
   }
-  return ComposerProfileUtils.cloneComposerEntriesOrFail(pool, `getComposerPoolOrFail(${poolName})`);
+  return composerProfileUtils.cloneComposerEntriesOrFail(pool, `getComposerPoolOrFail(${poolName})`);
 };
 
 getDefaultComposerPoolOrFail = () => getComposerPoolOrFail('default');

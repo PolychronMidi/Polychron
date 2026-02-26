@@ -4,11 +4,11 @@
 
 phraseArcProfiler = (() => {
   /**
-   * Get phrase breath parameters from ConductorConfig with built-in fallback.
+   * Get phrase breath parameters from conductorConfig with built-in fallback.
    * @returns {Object} breath profile with registerRange, densityRange, independence, dynamism
    */
   function getBreathProfile() {
-    const bp = ConductorConfig.getPhraseBreathParams();
+    const bp = conductorConfig.getPhraseBreathParams();
     if (bp && typeof bp === 'object') {
       return bp;
     }
@@ -58,7 +58,7 @@ phraseArcProfiler = (() => {
    */
   function generateArcProfiles() {
     if (!PHRASES_ARC_CURVES) {
-      throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined — ensure ConductorConfig is loaded first');
+      throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined — ensure conductorConfig is loaded first');
     }
     /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function } }} */
     const adapted = {};

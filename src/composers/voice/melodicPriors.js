@@ -32,7 +32,7 @@ melodicPriors = (function() {
   function resolveTonicPitchClass(opts = {}) {
     const tonic = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
       ? opts.tonic
-      : (HarmonicContext.getField('key') || null);
+      : (harmonicContext.getField('key') || null);
 
     if (typeof tonic !== 'string' || tonic.length === 0) return null;
     const chroma = t.Note.chroma(tonic);
@@ -62,7 +62,7 @@ melodicPriors = (function() {
 
     const qualityHint = (typeof opts.quality === 'string' && opts.quality.length > 0)
       ? opts.quality
-      : (HarmonicContext.getField('quality') || 'major');
+      : (harmonicContext.getField('quality') || 'major');
 
     const quality = modeQualityMap.normalizeOrNull(qualityHint);
     if (!quality) return /** @type {{ [note: number]: number }} */ ({});

@@ -4,7 +4,7 @@ module.exports = {
     docs: {
       description:
         'Enforce reading conductor signals via signalReader rather than calling ' +
-        'ConductorIntelligence.getSignalSnapshot() or ExplainabilityBus.queryByType() directly.'
+        'conductorIntelligence.getSignalSnapshot() or explainabilityBus.queryByType() directly.'
     },
     schema: []
   },
@@ -20,8 +20,8 @@ module.exports = {
     ) return {};
 
     const BANNED = [
-      { obj: 'ConductorIntelligence', method: 'getSignalSnapshot' },
-      { obj: 'ExplainabilityBus', method: 'queryByType' }
+      { obj: 'conductorIntelligence', method: 'getSignalSnapshot' },
+      { obj: 'explainabilityBus', method: 'queryByType' }
     ];
 
     return {

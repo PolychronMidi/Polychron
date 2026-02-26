@@ -8,13 +8,13 @@ crossModulateRhythms = () => {
   lastCrossMod=crossModulation; crossModulation=0;
 
   // Conductor-driven scaling: profile controls how wide crossMod swings
-  const cmScale = ConductorConfig.getCrossModScaling();
+  const cmScale = conductorConfig.getCrossModScaling();
   V.assertPlainObject(cmScale, 'cmScale');
   V.requireFinite(cmScale.rangeScale, 'cmScale.rangeScale');
   V.requireFinite(cmScale.penaltyScale, 'cmScale.penaltyScale');
   const rs = cmScale.rangeScale;
-  // Self-regulation multiplicative bias from ConductorConfig
-  const regBias = ConductorConfig.getRegulationCrossModBias();
+  // Self-regulation multiplicative bias from conductorConfig
+  const regBias = conductorConfig.getRegulationCrossModBias();
   const s = rs * regBias; // combined scale factor
 
   crossModulation+=
@@ -32,9 +32,9 @@ crossModulateRhythms = () => {
   (beatRhythm[beatIndex]<1?rf(.4,.5)*s:0) + (divRhythm[divIndex]<1?rf(.3,.4)*s:0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3)*s:0);
 
   // Texture feedback (#2): texture contrast events inflate crossMod →
-  // wider DynamismEngine flicker → shifted TextureBlender probabilities →
+  // wider dynamismEngine flicker → shifted textureBlender probabilities →
   // self-modulating density wave that no single system controls
-  const texIntensity = DrumTextureCoupler.getIntensity();
+  const texIntensity = drumTextureCoupler.getIntensity();
   if (Number.isFinite(texIntensity) && texIntensity > 0) {
     crossModulation += texIntensity * rf(0.3, 0.8) * cmScale.textureBoostScale;
   }

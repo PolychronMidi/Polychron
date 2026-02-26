@@ -3,7 +3,7 @@
 // together), complementary arcs (one rises while the other falls), or
 // independent arcs. Provides per-beat velocity scaling factors.
 
-CrossLayerDynamicEnvelope = (() => {
+crossLayerDynamicEnvelope = (() => {
   const V = validator.create('crossLayerDynamicEnvelope');
 
   /** @type {'parallel' | 'complementary' | 'independent'} */
@@ -23,18 +23,18 @@ CrossLayerDynamicEnvelope = (() => {
   function tick(absTimeMs, layer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
-    sectionProgress = clamp(TimeStream.compoundProgress('section'), 0, 1);
-    phraseProgress = clamp(TimeStream.compoundProgress('phrase'), 0, 1);
+    sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
+    phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
 
     // Get intent-driven parameters
-    const intent = SectionIntentCurves.getLastIntent();
+    const intent = sectionIntentCurves.getLastIntent();
     const densityTarget = V.optionalFinite(intent.densityTarget, 0.5);
 
-    // Get interaction trend from InteractionHeatMap
-    const trend = InteractionHeatMap.getTrend();
+    // Get interaction trend from interactionHeatMap
+    const trend = interactionHeatMap.getTrend();
 
     // Check role swap
-    const swapped = DynamicRoleSwap.getIsSwapped();
+    const swapped = dynamicRoleSwap.getIsSwapped();
 
     // Compute base envelope from phrase arc
     const phraseArc = Math.sin(phraseProgress * Math.PI); // peaks mid-phrase
@@ -83,7 +83,7 @@ CrossLayerDynamicEnvelope = (() => {
    */
   function setArcType(type) {
     if (!['parallel', 'complementary', 'independent'].includes(type)) {
-      throw new Error('CrossLayerDynamicEnvelope.setArcType: invalid type "' + type + '"');
+      throw new Error('crossLayerDynamicEnvelope.setArcType: invalid type "' + type + '"');
     }
     arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (type);
   }
@@ -95,7 +95,7 @@ CrossLayerDynamicEnvelope = (() => {
    * Auto-select arc type based on intent and section position.
    */
   function autoSelectArcType() {
-    const intent = SectionIntentCurves.getLastIntent();
+    const intent = sectionIntentCurves.getLastIntent();
 
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
     if (interaction > 0.65) {
@@ -117,4 +117,4 @@ CrossLayerDynamicEnvelope = (() => {
 
   return { tick, getVelocityScale, setArcType, getArcType, autoSelectArcType, reset };
 })();
-CrossLayerRegistry.register('CrossLayerDynamicEnvelope', CrossLayerDynamicEnvelope, ['all', 'section']);
+crossLayerRegistry.register('crossLayerDynamicEnvelope', crossLayerDynamicEnvelope, ['all', 'section']);

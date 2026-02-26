@@ -135,8 +135,8 @@ const resolveNamedProfilesOrFail = (entry, label) => {
 };
 
 const cloneComposerEntryOrFail = (entry, label, expectedType = null) => {
-  V.assertManagerShape(ComposerProfileValidation, 'ComposerProfileValidation', ['validateEntryForTypeOrFail']);
-  ComposerProfileValidation.validateEntryForTypeOrFail(entry, label, expectedType);
+  V.assertManagerShape(composerProfileValidation, 'composerProfileValidation', ['validateEntryForTypeOrFail']);
+  composerProfileValidation.validateEntryForTypeOrFail(entry, label, expectedType);
 
   const cloned = Object.assign({}, entry);
   const resolved = resolveNamedProfilesOrFail(cloned, label);
@@ -198,7 +198,7 @@ const buildProfileAuditOrFail = (typeProfiles, profilePools) => {
   };
 };
 
-ComposerProfileUtils = {
+composerProfileUtils = {
   COMPOSER_TYPES,
   MIN_PROFILE_COUNT_BY_TYPE,
   DIVERSITY_DIMENSIONS_BY_TYPE,

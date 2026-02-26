@@ -91,7 +91,7 @@ entropyRegulator = (() => {
 
   /**
    * Set the target entropy for the current musical moment.
-   * Can be driven by section position, ConductorState, or manually.
+   * Can be driven by section position, conductorState, or manually.
    * @param {number} target - 0-1
    * @param {number} [arcTarget] - optional arc-shaped baseline; blended 30/70 with intent target
    */
@@ -116,6 +116,12 @@ entropyRegulator = (() => {
     return 0.2 + arc * 0.6; // range 0.2 - 0.8
   }
 
+  function _getRawRegulationScale() {
+    const current = measureEntropy();
+    const error = targetEntropy - current;
+    return clamp(1 + error * regulationStrength * 2, 0.3, 2.0);
+  }
+
   /**
    * Get regulation modifier: how much to scale cross-layer system activity.
    * > 1 means increase activity, < 1 means decrease.
@@ -125,7 +131,13 @@ entropyRegulator = (() => {
     const current = measureEntropy();
     const error = targetEntropy - current;
     // PID-like: proportional response
-    const scale = clamp(1 + error * regulationStrength * 2, 0.3, 2.0);
+    let scale = _getRawRegulationScale();
+
+    const dampening = feedbackRegistry.getResonanceDampening('entropyRegulator');
+    if (dampening < 1.0) {
+      scale = 1.0 + (scale - 1.0) * dampening;
+    }
+
     return { scale, currentEntropy: current, targetEntropy, error };
   }
 
@@ -153,9 +165,27 @@ entropyRegulator = (() => {
     velHistory.clear();
   }
 
+  function initialize() {
+    feedbackRegistry.registerLoop(
+      'entropyRegulator',
+      'entropy',
+      'cross_layer_prob',
+      () => {
+        const scale = _getRawRegulationScale();
+        return Math.abs(scale - 1.0) / 1.0;
+      },
+      () => {
+        const scale = _getRawRegulationScale();
+        return Math.sign(scale - 1.0);
+      }
+    );
+  }
+
+  moduleLifecycle.registerInitializer('entropyRegulator', initialize);
+
   return {
     recordSample, measureEntropy, measureRawEntropy, setTarget, getArcTarget,
     getRegulation, regulate, setRegulationStrength, reset
   };
 })();
-CrossLayerRegistry.register('entropyRegulator', entropyRegulator, ['all', 'section']);
+crossLayerRegistry.register('entropyRegulator', entropyRegulator, ['all', 'section']);

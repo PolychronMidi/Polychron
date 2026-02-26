@@ -1,9 +1,9 @@
 // src/crossLayer/texturalMirror.js — Cross-layer texture management.
 // Tracks each layer's texture mode and suggests complementary or contrasting
-// textures for the other layer. Consumes DynamicRoleSwap chordalBias/melodicBias
+// textures for the other layer. Consumes dynamicRoleSwap chordalBias/melodicBias
 // (dead-end signals) to drive texture decisions.
 
-TexturalMirror = (() => {
+texturalMirror = (() => {
   const V = validator.create('texturalMirror');
   const COMPLEMENT_MAP = Object.freeze({
     normal: 'normal',
@@ -38,11 +38,11 @@ TexturalMirror = (() => {
     const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
 
     // Get intent
-    const intent = SectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
+    const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
     const interactionTarget = V.optionalFinite(intent.interactionTarget, 0.5);
 
     // Get role swap modifiers (consuming dead-end signals)
-    const roleProfile = DynamicRoleSwap.getProfileModifiers(activeLayer) ?? { chordalBias: 0, melodicBias: 0, isSwapped: false };
+    const roleProfile = dynamicRoleSwap.getProfileModifiers(activeLayer) ?? { chordalBias: 0, melodicBias: 0, isSwapped: false };
     const chordalBias = V.optionalFinite(roleProfile.chordalBias, 0);
     const melodicBias = V.optionalFinite(roleProfile.melodicBias, 0);
 
@@ -90,4 +90,4 @@ TexturalMirror = (() => {
 
   return { recordTexture, suggestTexture, getTextureDistance, reset };
 })();
-CrossLayerRegistry.register('TexturalMirror', TexturalMirror, ['all', 'section']);
+crossLayerRegistry.register('texturalMirror', texturalMirror, ['all', 'section']);

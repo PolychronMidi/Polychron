@@ -133,9 +133,9 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const modBus = (beatContext && beatContext.mod && beatContext.mod[channel]) ? beatContext.mod[channel] : null;
 
   // Cross-mod rules from config (pan/fade/fx influence on stutter behavior)
-  const crossRules = StutterConfig.getCrossModRules();
+  const crossRules = stutterConfig.getCrossModRules();
   if (!crossRules || typeof crossRules !== 'object' || !crossRules.pan || !crossRules.fade || !crossRules.fx) {
-    throw new Error('stutterNotes: StutterConfig.getCrossModRules returned invalid shape');
+    throw new Error('stutterNotes: stutterConfig.getCrossModRules returned invalid shape');
   }
 
   // Apply cross-mod adjustments
@@ -171,7 +171,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const stutterNote = m.round(_clampStutterNote(baseMidiNote + shift, isBass));
 
   // Velocity: scaled version of the original, with fade-direction coherence
-  const velRanges = StutterConfig.getVelocityRange(profile, isPrimary);
+  const velRanges = stutterConfig.getVelocityRange(profile, isPrimary);
   if (!Array.isArray(velRanges) || velRanges.length < 2 || !Number.isFinite(Number(velRanges[0])) || !Number.isFinite(Number(velRanges[1]))) {
     throw new Error(`stutterNotes: invalid velocity range for profile="${profile}"`);
   }
@@ -206,13 +206,13 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Emit and metrics
   p(c, evOn);
-  const eventName = EventCatalog.names.STUTTER_APPLIED;
-  EventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), tick: stutterOn });
+  const eventName = eventCatalog.names.STUTTER_APPLIED;
+  eventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), tick: stutterOn });
   p(c, evOff);
-  StutterMetrics.incEmitted(1, profile);
+  stutterMetrics.incEmitted(1, profile);
 
   return localShared;
 };
 
-// Register this helper with StutterRegistry so tests/plugins can swap implementations.
-StutterRegistry.registerHelper(stutterNotes);
+// Register this helper with stutterRegistry so tests/plugins can swap implementations.
+stutterRegistry.registerHelper(stutterNotes);

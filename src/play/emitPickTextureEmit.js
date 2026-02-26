@@ -15,7 +15,7 @@ emitPickSourceTextures = function(mode, ctx) {
 
   if (mode === 'chordBurst') {
     let burstIntervals = [3, 4, 7];
-    const scalePCs = HarmonicContext.getField('scale');
+    const scalePCs = harmonicContext.getField('scale');
     if (Array.isArray(scalePCs) && scalePCs.length > 1) {
       const rootPC = noteToEmit % 12;
       const derived = [];
@@ -47,7 +47,7 @@ emitPickSourceTextures = function(mode, ctx) {
     const flurryGap = tpUnit * rf(0.04, 0.09);
 
     let scalePitches = null;
-    const scalePCs = HarmonicContext.getField('scale');
+    const scalePCs = harmonicContext.getField('scale');
     if (Array.isArray(scalePCs) && scalePCs.length > 1) {
       const lo = minMidi;
       const hi = maxMidi;

@@ -16,7 +16,7 @@ require('./interactionHeatMap');
 require('./negotiationEngine');
 // @ts-ignore: side-effect module load
 require('./sectionIntentCurves');
-// @ts-ignore: regime-contextual trust learning (extends AdaptiveTrustScores)
+// @ts-ignore: regime-contextual trust learning (extends adaptiveTrustScores)
 require('./contextualTrust');
 // @ts-ignore: beat-interleaved layer processor (cross-layer beat awareness)
 require('./beatInterleavedProcessor');

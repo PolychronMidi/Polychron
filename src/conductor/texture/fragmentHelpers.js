@@ -1,6 +1,6 @@
 // src/conductor/texture/fragmentHelpers.js - Shared pitch-class fragment extraction.
-// Used by MotivicDensityTracker.
-// Pure query — reads AbsoluteTimeWindow.
+// Used by motivicDensityTracker.
+// Pure query — reads absoluteTimeWindow.
 
 fragmentHelpers = (() => {
   const V = validator.create('fragmentHelpers');
@@ -21,7 +21,7 @@ fragmentHelpers = (() => {
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
-    const notes = AbsoluteTimeWindow.getNotes(query);
+    const notes = absoluteTimeWindow.getNotes(query);
     if (notes.length < fragLen) return [];
 
     /** @type {string[]} */

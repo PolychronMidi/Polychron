@@ -4,7 +4,7 @@
 // for thematic unity. This is the only cross-layer module that persists across
 // sections by design — it's the long-term memory of the composition.
 
-PitchMemoryRecall = (() => {
+pitchMemoryRecall = (() => {
   const V = validator.create('pitchMemoryRecall');
   const MAX_MEMORIES = 64;
   const RECALL_PROBABILITY = 0.2;
@@ -84,9 +84,9 @@ PitchMemoryRecall = (() => {
     if (rf() > RECALL_PROBABILITY) return null;
 
     // Check if a significant event is happening (convergence/downbeat)
-    const hasConvergence = ConvergenceDetector.wasRecent(absTimeMs, activeLayer, 400) ?? false;
+    const hasConvergence = convergenceDetector.wasRecent(absTimeMs, activeLayer, 400) ?? false;
 
-    const hasDownbeat = Boolean(EmergentDownbeat);
+    const hasDownbeat = Boolean(emergentDownbeat);
 
     if (!hasConvergence && !hasDownbeat && rf() > 0.3) return null;
 
@@ -95,7 +95,7 @@ PitchMemoryRecall = (() => {
     let bestIdx = -1;
     let bestScore = -Infinity;
 
-    const sectionPos = TimeStream.getPosition('section');
+    const sectionPos = timeStream.getPosition('section');
     for (let i = 0; i < memories.length; i++) {
       const mem = memories[i];
       // Similarity: does any pitch class match? (boolean — avoids .filter() allocation)
@@ -149,4 +149,4 @@ PitchMemoryRecall = (() => {
 
   return { memorize, recall, getMemoryCount, getRecallCount, reset };
 })();
-CrossLayerRegistry.register('PitchMemoryRecall', PitchMemoryRecall, ['all']);
+crossLayerRegistry.register('pitchMemoryRecall', pitchMemoryRecall, ['all']);
