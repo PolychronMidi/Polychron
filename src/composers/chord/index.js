@@ -8,7 +8,7 @@ require('./chordConfig');
 // @ts-ignore: load side-effect module with globals
 require('./chordRegistry');
 // @ts-ignore: load side-effect module with globals
-require('./chordManager');
+require('./ChordManager');
 
 // @ts-ignore: load side-effect module with globals
 require('./chordUtils');
@@ -28,5 +28,3 @@ chordRegistry.register('progression', (key, quality, type) => {
   const pg = new ProgressionGenerator(key, quality);
   return type ? pg.generate(type) : pg.random();
 });
-
-

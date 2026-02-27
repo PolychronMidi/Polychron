@@ -19,7 +19,7 @@ registerBiasing = {
     const arcRegisterBias = registerBiasing._V.optionalFinite(phraseContext.registerBias, 0);
 
     // Arc-based bias: apply probabilistically to preserve variety
-    if (!finalRegisterBias && m.abs(arcRegisterBias) > VOICE_Manager.arcRegisterBiasThreshold && rf() < VOICE_Manager.arcRegisterBiasChance) {
+    if (!finalRegisterBias && m.abs(arcRegisterBias) > VOICE_MANAGER.arcRegisterBiasThreshold && rf() < VOICE_MANAGER.arcRegisterBiasChance) {
       finalRegisterBias = arcRegisterBias > 0 ? 'higher' : 'lower';
     }
 
