@@ -12,7 +12,7 @@ adaptiveTrustScores = (() => {
   // Trust ceiling: prevents runaway dominance where high-trust systems
   // accumulate ever-more influence via positive feedback (high trust -
   // more influence - more positive outcomes - higher trust).
-  const TRUST_CEILING = 0.75; // max score (- max weight ≈ 1.56)
+  const TRUST_CEILING = 0.75; // max score (- max weight - 1.56)
   let decayCycleCount = 0;
 
   /** @param {string} systemName */

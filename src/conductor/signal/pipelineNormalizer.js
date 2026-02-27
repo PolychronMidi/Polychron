@@ -4,7 +4,7 @@
 // with smooth exponential compression that is C1-continuous at boundaries.
 //
 // Within [softMin, softMax]: product passes through unchanged.
-// Below softMin: exponentially compressed toward hardMin (softMin − range).
+// Below softMin: exponentially compressed toward hardMin (softMin - range).
 // Above softMax: exponentially compressed toward hardMax (softMax + range).
 //
 // Eliminates the need for manual per-module floor/ceiling tuning iterations.
@@ -16,7 +16,7 @@ pipelineNormalizer = (() => {
 
   // Soft-envelope boundaries per pipeline, calibrated from observed products.
   // softMin/softMax: compression onset thresholds (passthrough zone).
-  // range: compression depth; hard floor = softMin − range, hard ceiling = softMax + range.
+  // range: compression depth; hard floor = softMin - range, hard ceiling = softMax + range.
   const BOUNDS = {
     density: { softMin: 0.60, softMax: 1.35, range: 0.20 },
     tension: { softMin: 0.70, softMax: 1.30, range: 0.20 },

@@ -13,7 +13,7 @@ normalizeChordSymbol = function(chordSymbol) {
   }
 
   // Normalize Unicode sharps/flats to ASCII and trim
-  let normalized = chordSymbol.replace(/[♯♭]/g, ch => ch === '♯' ? '#' : 'b').trim();
+  let normalized = chordSymbol.replace(/[\u266F\u266D]/g, ch => ch === '\u266F' ? '#' : 'b').trim();
 
   // Split off a slash-bass if present so we can normalize both parts
   const parts = normalized.split('/');

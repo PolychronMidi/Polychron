@@ -7,9 +7,9 @@
  * density / tension / flicker biases so the signal pipeline responds
  * appropriately to each dynamical phase.
  *
- * Stagnant  - inject variety (density ↑, flicker ↑)
+ * Stagnant  - inject variety (density up, flicker up)
  * Fragmented - dampen extremes (density - 1, tension - 1)
- * Oscillating - counter-cycle (flicker ↓)
+ * Oscillating - counter-cycle (flicker down)
  * Exploring - slight tension lift
  * Coherent / Evolving - neutral (1.0)
  */

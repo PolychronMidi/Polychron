@@ -2,7 +2,7 @@
 // Emits exactly ONE octave-shifted note-on + note-off per call.
 // Gated externally by stutterProb in playNotes - this function does NOT
 // add its own probability layers or burst multiple events.
-// Cooperates with CC effects via beatContext (pan↔register, fade↔velocity).
+// Cooperates with CC effects via beatContext (pan-register, fade-velocity).
 
 const _clampStutterNote = (n, isBassLocal) => {
   if (isBassLocal) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);

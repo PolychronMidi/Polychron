@@ -42,11 +42,11 @@ systems toward a target curve driven by section position.
 | Rhythm weight | 0.3 | Contribution of rhythmic irregularity | Pitch weight, velocity weight, rhythm divisor (2) |
 | Arc floor | 0.2 | Minimum target entropy from section-shape arc | Arc amplitude (0.6) - range is [0.2, 0.8] |
 | Arc amplitude | 0.6 | Bell curve amplitude: 0.2 + 0.6·sin(π·progress) | Arc floor, section length |
-| Arc–intent blend | 0.3 / 0.7 | 30% section arc, 70% sectionIntentCurves target | sectionIntentCurves.entropyTarget |
+| Arc-intent blend | 0.3 / 0.7 | 30% section arc, 70% sectionIntentCurves target | sectionIntentCurves.entropyTarget |
 | PID gain | 2.0 | Proportional response: scale = 1 + error·strength·2 | `regulationStrength`, scale clamp |
 | Scale clamp | [0.3, 2.0] | Min/max regulation scale - prevents extinction or explosion | PID gain, negotiation entropy modulation |
 
-**Sensitivity:** The 0.3/0.7 arc–intent blend is a critical mixing ratio. Raising arc weight above 0.5 makes section shape dominate, reducing intent responsiveness. The PID gain of 2 is aggressive - lowering to 1.5 yields smoother but slower correction.
+**Sensitivity:** The 0.3/0.7 arc-intent blend is a critical mixing ratio. Raising arc weight above 0.5 makes section shape dominate, reducing intent responsiveness. The PID gain of 2 is aggressive - lowering to 1.5 yields smoother but slower correction.
 
 ---
 
@@ -130,8 +130,8 @@ These relationships must hold to prevent runaway behavior:
 
 1. **Density ceiling chain:** `coherenceMonitor.BIAS_CEILING` (1.3) * `negotiationEngine.playScale` max (1.8) = 2.34. This is the theoretical maximum density amplification. Exceeding ~2.5 causes audible note-cramming.
 
-2. **Trust–weight symmetry:** `adaptiveTrustScores.weight` clamp [0.4, 1.8] matches `negotiationEngine.playScale` clamp [0.4, 1.8]. This ensures trust cannot push play probability outside the negotiation's own range.
+2. **Trust-weight symmetry:** `adaptiveTrustScores.weight` clamp [0.4, 1.8] matches `negotiationEngine.playScale` clamp [0.4, 1.8]. This ensures trust cannot push play probability outside the negotiation's own range.
 
 3. **Entropy regulation headroom:** `entropyRegulator.scale` clamp [0.3, 2.0] * negotiation entropy modulator [0.5, 1.5] gives effective range [0.15, 3.0]. The negotiation's own clamps prevent this from manifesting fully.
 
-4. **Streak - hint timing:** At 120 BPM, `STREAK_TRIGGER` = 6 - 3 seconds. Full hint (`ramp / 8`) at 14 beats - 7 seconds. Section lengths are typically 16–64 beats, so hints activate within one section.
+4. **Streak - hint timing:** At 120 BPM, `STREAK_TRIGGER` = 6 - 3 seconds. Full hint (`ramp / 8`) at 14 beats - 7 seconds. Section lengths are typically 16-64 beats, so hints activate within one section.

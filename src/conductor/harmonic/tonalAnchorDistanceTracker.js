@@ -44,8 +44,8 @@ tonalAnchorDistanceTracker = (() => {
     else if (distance <= 4) adventureLevel = 'moderate';
     else adventureLevel = 'far';
 
-    // Tension bias: continuous ramp from distance 0→6.
-    // distance 0 - 0.97 (grounded), 1→6 - ramp 0.97→1.1
+    // Tension bias: continuous ramp from distance 0-6.
+    // distance 0 - 0.97 (grounded), 1-6 - ramp 0.97-1.1
     const tensionBias = 0.97 + clamp(distance / 6, 0, 1) * 0.13;
 
     return { distance, tensionBias, adventureLevel };

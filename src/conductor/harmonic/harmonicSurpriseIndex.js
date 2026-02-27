@@ -49,7 +49,7 @@ harmonicSurpriseIndex = (() => {
       }
     }
 
-    // Normalize: max possible entropy for 144 bigrams (12x12) â‰ˆ 7.17
+    // Normalize: max possible entropy for 144 bigrams (12x12) ~= 7.17
     // But realistic max is much lower; normalize to ~4.5 for practical range
     const surpriseIndex = clamp(entropy / 4.5, 0, 1);
 
@@ -63,8 +63,8 @@ harmonicSurpriseIndex = (() => {
 
   /**
    * Get a tension bias based on harmonic freshness.
-   * Continuous ramp: surpriseIndex 0→0.25 - bias 1.2→1.0 (stale→neutral);
-   * surpriseIndex 0.65→1.0 - bias 1.0→0.92 (fresh→reduce).
+   * Continuous ramp: surpriseIndex 0-0.25 - bias 1.2-1.0 (stale-neutral);
+   * surpriseIndex 0.65-1.0 - bias 1.0-0.92 (fresh-reduce).
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.9 to 1.25
@@ -72,11 +72,11 @@ harmonicSurpriseIndex = (() => {
   function getTensionBias(opts) {
     const profile = getSurpriseProfile(opts);
     if (profile.surpriseIndex < 0.25) {
-      // Stale: 0→0.25 maps to 1.2→1.0
+      // Stale: 0-0.25 maps to 1.2-1.0
       return 1.2 - clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.2;
     }
     if (profile.surpriseIndex > 0.65) {
-      // Fresh: 0.65→1.0 maps to 1.0→0.92
+      // Fresh: 0.65-1.0 maps to 1.0-0.92
       return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.08;
     }
     return 1.0;

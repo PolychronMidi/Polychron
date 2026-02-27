@@ -52,8 +52,8 @@ harmonicDensityOscillator = (() => {
       : 0;
 
     // Tension bias: continuous ramp based on alternation rate.
-    // High alternation (0.4→0.8) - ramp 1.0→1.03 (natural breathing)
-    // Low alternation (0→0.15) - ramp 1.08→1.0 (push for change)
+    // High alternation (0.4-0.8) - ramp 1.0-1.03 (natural breathing)
+    // Low alternation (0-0.15) - ramp 1.08-1.0 (push for change)
     // Mid range - neutral
     let tensionBias = 1;
     if (alternationRate < 0.15) {

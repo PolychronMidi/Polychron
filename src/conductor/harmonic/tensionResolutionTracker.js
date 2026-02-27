@@ -1,4 +1,4 @@
-﻿// src/conductor/tensionResolutionTracker.js - Tracks dissonanceâ†’consonance resolution.
+﻿// src/conductor/tensionResolutionTracker.js - Tracks dissonance->consonance resolution.
 // Detects dangling unresolved tension (dissonant intervals not followed by resolution).
 // Pure query API - modifies derivedTension to penalize sustained unresolved dissonance.
 
@@ -65,7 +65,7 @@ tensionResolutionTracker = (() => {
 
   /**
    * Get a tension bias based on resolution patterns.
-   * Continuous ramp: resolvedRatio 0→1 maps to 1.25→1.0.
+   * Continuous ramp: resolvedRatio 0-1 maps to 1.25-1.0.
    * Low resolution (many unresolved dissonances) - higher tension.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
@@ -73,7 +73,7 @@ tensionResolutionTracker = (() => {
    */
   function getTensionBias(opts) {
     const profile = getResolutionProfile(opts);
-    // Continuous ramp: resolvedRatio 0→1.0 maps to 1.25→1.0
+    // Continuous ramp: resolvedRatio 0-1.0 maps to 1.25-1.0
     return 1.0 + (1.0 - profile.resolvedRatio) * 0.25;
   }
 

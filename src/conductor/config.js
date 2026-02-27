@@ -58,7 +58,7 @@ SUBSUBDIV_VOICES = {
 
 // Sibling voice limits per unit level - max unique pitch classes across all siblings.
 // Once the sibling limit is reached, remaining siblings reuse from existing PC pool.
-// Defaults are roughly 2-3× the per-unit voice count for coherent sibling groups.
+// Defaults are roughly 2-3x the per-unit voice count for coherent sibling groups.
 BEAT_SIBLING_VOICES = { min: 3, max: 12, weights: [5, 10, 20, 25, 15, 10, 5, 3, 2, 1] };
 DIV_SIBLING_VOICES = { min: 2, max: 8, weights: [10, 20, 25, 15, 8, 3, 1] };
 SUBDIV_SIBLING_VOICES = { min: 2, max: 6, weights: [15, 25, 20, 10, 3] };
@@ -135,7 +135,7 @@ STUTTER_VELOCITY_RANGES = {
   bass: { primary: [0.55, 0.85], secondary: [0.75, 1.05] }
 };
 
-// Cross-modulation rules for stutter ↔ CC interactions. Values are multipliers or biases
+// Cross-modulation rules for stutter - CC interactions. Values are multipliers or biases
 // sampled by stutterNotes when beatContext.mod provides per-channel CC intensities.
 STUTTER_CROSSMOD_RULES = {
   // pan intensity increases chance of octave motion, widens shift range, and can increase stutter rate
@@ -482,7 +482,7 @@ PHRASES_ARC_CURVES = {
 
 SILENT_OUTRO_SECONDS=5;
 
-// ── Deep-freeze all config objects ──────────────────────────────────────────
+// -- Deep-freeze all config objects ------------------------------------------
 // Config globals are set once and never mutated at runtime. Freezing them turns
 // any accidental mutation into an immediate crash (Principle 2: Fail Fast).
 // Lambda-bearing objects (PHRASES_ARC_CURVES, RHYTHM_PATTERNS) are safely frozen

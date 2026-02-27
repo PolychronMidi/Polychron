@@ -39,7 +39,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY + (coh.y - 0.5) * 6;
       const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, MIDI_MAX_VALUE);
 
-      // publish modulation bus entry for cross‑mod sampling
+      // publish modulation bus entry for cross-mod sampling
       const norm = clamp(currentValue / MIDI_MAX_VALUE, 0, 1);
       if (!this.beatContext.mod) this.beatContext.mod = {};
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fx: norm });

@@ -8,13 +8,13 @@
 // Keep one declaration per line: `declare var NAME: Type;`
 // The name is extracted by regex - type annotations and comments are safe to add.
 //
-// ── Abbreviation Glossary ──
+// -- Abbreviation Glossary --
 // m   = Math                   rf  = randomFloat          ri  = randomInt
 // rw  = randomWeightedInRange  ra  = randomInRangeOrArray rv  = randomVariation
 // rl  = randomLimitedChange    t   = Tonal.js     c   = polyrhythm calculator
 // p   = pitch bend util        LM  = LayerManager         V   = validator instance (per-module)
 
-// ── Core Interface Types ──
+// -- Core Interface Types --
 // These type the 7 nervous-system globals. Every other module touches at least one.
 
 interface BiasRegistration {
@@ -235,7 +235,7 @@ interface AbsoluteTimeGridAPI {
   reset(channel?: string): void;
 }
 
-// ── Explainability / Trust / Coherence ──
+// -- Explainability / Trust / Coherence --
 
 interface ExplainabilityEntry {
   type: string;
@@ -268,7 +268,7 @@ interface CoherenceMonitorAPI {
   reset(): void;
 }
 
-// ── Conductor subsystem objects ──
+// -- Conductor subsystem objects --
 
 interface ConductorSignalBridgeAPI {
   refresh(ctx: RecorderContext): void;
@@ -326,7 +326,7 @@ interface SignalHealthAnalyzerAPI {
   reset(): void;
 }
 
-// ── System Dynamics Profiler (phase-space trajectory analysis) ──
+// -- System Dynamics Profiler (phase-space trajectory analysis) --
 
 interface SystemDynamicsSnapshot {
   velocity: number;
@@ -385,7 +385,7 @@ interface HarmonicJourneyAPI {
   reset(): void;
 }
 
-// ── Time subsystem ──
+// -- Time subsystem --
 
 type TimeStreamLevel = 'section' | 'phrase' | 'measure' | 'beat' | 'div' | 'subdiv' | 'subsubdiv';
 
@@ -433,7 +433,7 @@ interface LayerManagerAPI {
   resetAll(): void;
 }
 
-// ── Lifecycle / caching utilities ──
+// -- Lifecycle / caching utilities --
 
 interface ModuleLifecycleInstance {
   register(name: string, mod: { reset: Function }, scopes: Array<'all' | 'section' | 'phrase'>): void;
@@ -488,7 +488,7 @@ interface ClosedLoopControllerFactory {
   getSnapshot(): Record<string, { bias: number; error: number; amplitude: number; phase: number }>;
 }
 
-// ── eventCatalog ──
+// -- eventCatalog --
 
 interface EventCatalogAPI {
   names: Readonly<{
@@ -513,7 +513,7 @@ interface EventCatalogAPI {
   validateEmit(name: string, data: object): boolean;
 }
 
-// ── Cross-Layer Module Interfaces ──
+// -- Cross-Layer Module Interfaces --
 
 interface SectionIntentCurvesAPI {
   getIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
@@ -767,7 +767,7 @@ interface CrossLayerLifecycleManagerAPI {
   resetPhrase(): void;
 }
 
-// ── Rhythm / Time / Composer Interfaces ──
+// -- Rhythm / Time / Composer Interfaces --
 
 interface RhythmRegistryAPI {
   register(name: string, fn: (...args: any[]) => any[]): (...args: any[]) => any[];
@@ -871,7 +871,7 @@ interface HarmonicRhythmTrackerAPI {
   reset(): void;
 }
 
-// ── Conductor / Composer / FX Class Interfaces ──
+// -- Conductor / Composer / FX Class Interfaces --
 
 interface PhraseArcManagerAPI {
   arcType: string;
@@ -949,7 +949,7 @@ interface StutterManagerAPI {
 }
 
 
-// ── utils ──
+// -- utils --
 declare var m: typeof Math;
 declare var rf: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
 declare var ri: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
@@ -1021,7 +1021,7 @@ declare var systemSnapshot: any;
 declare var modeQualityMap: any;
 declare var priorsHelpers: any;
 
-// ── conductor ──
+// -- conductor --
 declare var BPM: number;
 declare var PPQ: number;
 declare var currentDensity: number;
@@ -1215,7 +1215,7 @@ declare var feedbackRegistry: any;
 declare var closedLoopController: ClosedLoopControllerFactory;
 declare var beatCache: BeatCacheFactory;
 
-// ── rhythm ──
+// -- rhythm --
 declare var rhythmRegistry: RhythmRegistryAPI;
 declare var rhythmManager: RhythmManagerAPI;
 declare var rhythmValues: RhythmValuesAPI;
@@ -1258,7 +1258,7 @@ declare var trackRhythm: any;
 declare var crossModulateRhythms: any;
 declare var rhythmHistoryTracker: any;
 
-// ── time ──
+// -- time --
 declare var bpmRatio: number;
 declare var bpmRatio2: any;
 declare var bpmRatio3: any;
@@ -1336,7 +1336,7 @@ declare var tempoFeelEngine: TempoFeelEngineAPI;
 declare var timeStream: TimeStreamAPI;
 declare var fractalArcGenerator: { intensity(levelIdx: number): number; composite(): number; arcShape(progress: number): number; reset(): void };
 
-// ── composers ──
+// -- composers --
 declare var normalizeChordSymbol: any;
 declare var MeasureComposer: any;
 declare var ScaleComposer: any;
@@ -1437,7 +1437,7 @@ declare var motifSpreader: any;
 declare var applyMotifToNotes: any;
 declare var motifTransformAdvisor: any;
 
-// ── fx ──
+// -- fx --
 declare var stutterConfig: any;
 declare var lBal: number;
 declare var rBal: number;
@@ -1502,7 +1502,7 @@ declare var beatCount: number;
 declare var sideBias: number;
 declare var stutterFailFast: any;
 
-// ── crossLayer ──
+// -- crossLayer --
 declare var t: any;
 declare var stutterContagion: StutterContagionAPI;
 declare var convergenceDetector: ConvergenceDetectorAPI;
@@ -1546,7 +1546,7 @@ declare var contextualTrust: { record(moduleName: string, payoff: number): void;
 declare var beatInterleavedProcessor: { recordLayerBeat(layer: number, outcome: any): void; getOtherLayerOutcome(myLayer: number): any; getBeatSnapshot(): { layer1: any; layer2: any }; reset(): void };
 declare var harmonicFunctionGraph: { classify(chordRoot: number, keyRoot: number): string; getFunction(): string; tensionBias(): number; reset(): void };
 
-// ── writer ──
+// -- writer --
 declare var formatTime: any;
 declare var logUnit: any;
 declare var pushMultiple: any;
@@ -1560,18 +1560,18 @@ declare var systemManifestMarkdown: {
 declare var systemManifest: { emit(): void };
 declare var outputAnalyzer: { analyse(notes: { pitch: number; startMs: number; durationMs: number; velocity: number }[]): any; reset(): void };
 
-// ── typed constructors (canonical declarations - keep only these) ──
+// -- typed constructors (canonical declarations - keep only these) --
 declare var VoiceLeadingScore: { new(config?: any): VoiceLeadingScoreAPI };
 declare var SimplexNoise: { new(seed?: number): SimplexNoiseAPI };
 declare var FactoryManager: ComposerFactoryAPI;
 
-// ── node / timing ──
+// -- node / timing --
 declare var fs: any;
 declare var finalTick: number;
 declare var path: any;
 declare var endTime: number;
 
-// ── play ──
+// -- play --
 declare var eventBus: EventBusAPI;
 declare var eventCatalog: EventCatalogAPI;
 declare var totalSections: number;
@@ -1602,7 +1602,7 @@ declare var emitPickCrossLayerRecord: any;
 declare var emitPickSourceTextures: any;
 declare var emitPickReflectionTextures: any;
 
-// ── other ──
+// -- other --
 declare var randomFloat: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
 declare var randomInt: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
 declare var randomWeightedInRange: (min: number, max: number, weights: number[]) => number;

@@ -47,7 +47,7 @@ tessituraPressureMonitor = (() => {
     else if (extremeRatio > 0.15) region = 'mild-pressure';
 
     // Continuous ramp: comfortable register - slight boost; extreme - pull-back.
-    // extremeRatio 0→0.1 maps to 1.03→1.0; extremeRatio 0.1→0.6 maps to 1.0→0.88.
+    // extremeRatio 0-0.1 maps to 1.03-1.0; extremeRatio 0.1-0.6 maps to 1.0-0.88.
     let densityBias = 1;
     if (extremeRatio < 0.1) {
       densityBias = 1.0 + clamp((0.1 - extremeRatio) / 0.1, 0, 1) * 0.03;

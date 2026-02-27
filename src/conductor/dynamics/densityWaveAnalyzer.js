@@ -67,18 +67,18 @@ densityWaveAnalyzer = (() => {
 
   /**
    * Get a flicker amplitude modifier based on density wave patterns.
-   * Continuous ramp: flat (amplitude 0→0.05) - 1.15→1.0,
-   * waving (amplitude 0.15→0.5) - 1.0→0.9.
+   * Continuous ramp: flat (amplitude 0-0.05) - 1.15-1.0,
+   * waving (amplitude 0.15-0.5) - 1.0-0.9.
    * @returns {number} - 0.9 to 1.2
    */
   function getFlickerModifier() {
     const profile = getWaveProfile();
     if (profile.waveAmplitude < 0.05) {
-      // Flat: ramp 1.15→1.0 over amplitude 0→0.05
+      // Flat: ramp 1.15-1.0 over amplitude 0-0.05
       return 1.15 - clamp(profile.waveAmplitude / 0.05, 0, 1) * 0.15;
     }
     if (profile.waveAmplitude > 0.15) {
-      // Waving: ramp 1.0→0.9 over amplitude 0.15→0.5
+      // Waving: ramp 1.0-0.9 over amplitude 0.15-0.5
       return 1.0 - clamp((profile.waveAmplitude - 0.15) / 0.35, 0, 1) * 0.1;
     }
     return 1.0;

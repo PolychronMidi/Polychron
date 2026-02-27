@@ -107,9 +107,9 @@ velocityShapeAnalyzer = (() => {
   /**
    * Get combined flicker modifier from velocity shape.
    * Continuous ramp based on punchiness and flatness:
-   *   flat - 1.15, punchiness 0.6→1.0 - 1.0→1.12,
-   *   smooth (punchiness 0→0.2) - 1.0→0.95.
-   * Terraced: ramp 1.0→0.92 based on jumpCount severity.
+   *   flat - 1.15, punchiness 0.6-1.0 - 1.0-1.12,
+   *   smooth (punchiness 0-0.2) - 1.0-0.95.
+   * Terraced: ramp 1.0-0.92 based on jumpCount severity.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.85 to 1.2
@@ -121,15 +121,15 @@ velocityShapeAnalyzer = (() => {
       return 1.0 - clamp(shape.punchiness, 0, 1) * 0.08;
     }
     if (shape.flat) {
-      // Flat: ramp 1.0→1.15 based on how flat (inverse of punchiness)
+      // Flat: ramp 1.0-1.15 based on how flat (inverse of punchiness)
       return 1.0 + clamp((0.2 - shape.punchiness) / 0.2, 0, 1) * 0.15;
     }
     if (shape.punchiness > 0.4) {
-      // Punchy: ramp 1.0→1.12 over punchiness 0.4→1.0
+      // Punchy: ramp 1.0-1.12 over punchiness 0.4-1.0
       return 1.0 + clamp((shape.punchiness - 0.4) / 0.6, 0, 1) * 0.12;
     }
     if (shape.punchiness < 0.2) {
-      // Smooth: ramp 1.0→0.95 over punchiness 0.2→0
+      // Smooth: ramp 1.0-0.95 over punchiness 0.2-0
       return 1.0 - clamp((0.2 - shape.punchiness) / 0.2, 0, 1) * 0.05;
     }
     return 1.0;

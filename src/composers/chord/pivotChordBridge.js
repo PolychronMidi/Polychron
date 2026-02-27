@@ -141,7 +141,7 @@ pivotChordBridge = (() => {
       return bridge;
     }
 
-    // NO SHARED PIVOTS (chromatic distance ≥ 5) - dominant approach
+    // NO SHARED PIVOTS (chromatic distance >= 5) - dominant approach
     // [outgoing I] - [outgoing IV] - [target V] - [target I]
     return [outgoingI, fromChords[3], targetV, targetI];
   }

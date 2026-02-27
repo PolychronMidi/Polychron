@@ -42,7 +42,7 @@ attackDensityProfiler = (() => {
     const sustainRatio = sustains / total;
 
     // Continuous ramp: sustain-heavy - boost density; attack-heavy - reduce.
-    // attackRatio 0→0.3 maps to 1.05→1.0; attackRatio 0.5→1.0 maps to 1.0→0.94.
+    // attackRatio 0-0.3 maps to 1.05-1.0; attackRatio 0.5-1.0 maps to 1.0-0.94.
     let densityBias = 1;
     if (attackRatio < 0.3) {
       densityBias = 1.0 + clamp((0.3 - attackRatio) / 0.3, 0, 1) * 0.05;

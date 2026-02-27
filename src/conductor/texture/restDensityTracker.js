@@ -49,12 +49,12 @@ restDensityTracker = (() => {
   function getOnsetBias(opts) {
     const density = getOnsetDensity(opts);
     const nps = density.notesPerSecond;
-    // Sparse zone: nps 0–3 - bias 1.15–1.0
+    // Sparse zone: nps 0-3 - bias 1.15-1.0
     if (nps <= 3) {
       const ramp = clamp((3 - nps) / 3, 0, 1);
       return 1.0 + ramp * 0.15;
     }
-    // Dense zone: nps 15–40 - bias 1.0–0.85
+    // Dense zone: nps 15-40 - bias 1.0-0.85
     if (nps >= 15) {
       const ramp = clamp((nps - 15) / 25, 0, 1);
       return 1.0 - ramp * 0.15;
@@ -134,12 +134,12 @@ restDensityTracker = (() => {
     // Low ratio = wall of sound, high ratio = airy
     const noteCount = profile.breathCount + 1; // approximate
     const breathRatio = noteCount > 1 ? profile.breathCount / noteCount : 0;
-    // Breathless zone: ratio 0–0.05 - bias 0.85–1.0
+    // Breathless zone: ratio 0-0.05 - bias 0.85-1.0
     if (breathRatio <= 0.05) {
       const ramp = clamp((0.05 - breathRatio) / 0.05, 0, 1);
       return 1.0 - ramp * 0.15;
     }
-    // Airy zone: ratio 0.35–0.60 - bias 1.0–1.15
+    // Airy zone: ratio 0.35-0.60 - bias 1.0-1.15
     if (breathRatio >= 0.35) {
       const ramp = clamp((breathRatio - 0.35) / 0.25, 0, 1);
       return 1.0 + ramp * 0.15;
@@ -148,7 +148,7 @@ restDensityTracker = (() => {
   }
 
   // Single combined registration: onset and breathing were separate registrations
-  // both pinned at 0.85 floor, giving 0.85² = 0.7225 from one module. Merged
+  // both pinned at 0.85 floor, giving 0.85^2 = 0.7225 from one module. Merged
   // into a geometric mean so the module has one voice in the density product.
   conductorIntelligence.registerDensityBias('restDensityTracker', () => {
     const onset = restDensityTracker.getOnsetBias();

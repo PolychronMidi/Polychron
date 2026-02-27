@@ -129,7 +129,7 @@ coherenceMonitor = (() => {
     const deviation = windowRatio - 1.0;
 
     // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
-    // Uses a bell curve centered at phrase midpoint: sin(progress * Ï€) peaks at 0.5.
+    // Uses a bell curve centered at phrase midpoint: sin(progress * pi) peaks at 0.5.
     const phraseProgress = timeStream.normalizedProgress('phrase');
     let phaseGain = 0.35 + 0.4 * m.sin(phraseProgress * m.PI); // 0.35 at edges, 0.75 at center
 

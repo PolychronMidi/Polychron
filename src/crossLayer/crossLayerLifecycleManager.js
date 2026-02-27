@@ -3,7 +3,7 @@
 // here so they participate in scoped resets automatically.
 
 // Register time-subsystem modules into crossLayerRegistry for lifecycle management.
-// They load before crossLayer (utils - … - time - … - crossLayer) so they exist now.
+// They load before crossLayer (utils - ... - time - ... - crossLayer) so they exist now.
 crossLayerRegistry.register('absoluteTimeGrid', absoluteTimeGrid, ['all', 'section']);
 crossLayerRegistry.register('timeStream', { reset: timeStream.resetPositions }, ['all']);
 
@@ -16,7 +16,7 @@ crossLayerLifecycleManager = (() => {
   }
 
   function resetSection() {
-    // After the first section completes, verify the conductor→cross-layer bridge
+    // After the first section completes, verify the conductor-cross-layer bridge
     // is alive. If conductorSignalBridge failed to refresh, cross-layer runs blind.
     if (hasRunSection) {
       const sig = conductorSignalBridge.getSignals();

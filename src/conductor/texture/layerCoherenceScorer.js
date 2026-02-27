@@ -67,7 +67,7 @@ layerCoherenceScorer = (() => {
    * @returns {number} - 0.6 to 1.2
    */
   function getDensityBias() {
-    // Map coherence 0→0.70, 0.5→1.0, 1.0→1.15 (recentered: was 0.6+c*0.6, chronic 0.90)
+    // Map coherence 0-0.70, 0.5-1.0, 1.0-1.15 (recentered: was 0.6+c*0.6, chronic 0.90)
     return clamp(0.70 + lastCoherence * 0.45, 0.70, 1.15);
   }
 
