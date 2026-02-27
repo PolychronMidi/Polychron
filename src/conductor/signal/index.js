@@ -11,6 +11,8 @@ require('./signalTelemetry');
 // @ts-ignore: meta-diagnostic: pipeline health analysis (registers recorder + stateProvider)
 require('./signalHealthAnalyzer');
 // @ts-ignore: meta-diagnostic: phase-space trajectory analysis (registers recorder + stateProvider)
+require('./phaseSpaceMath');
+// @ts-ignore: meta-diagnostic: phase-space trajectory analysis (registers recorder + stateProvider)
 require('./systemDynamicsProfiler');
 // @ts-ignore: regime-reactive damping (reads systemDynamicsProfiler, registers bias triplet)
 require('./regimeReactiveDamping');

@@ -1141,11 +1141,25 @@ declare var dynamicPeakMemory: any;
 declare var rhythmicDensityContrastTracker: any;
 declare var tonalAnchorDistanceTracker: any;
 declare var conductorIntelligence: ConductorIntelligenceAPI;
+declare var conductorDampening: {
+  scaledDamping(registryLength: number): number;
+  progressiveDampen(clamped: number, baseDamping: number, runningProduct: number): number;
+  collectDampened(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>): number;
+  collectDampenedWithAttribution(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>): { product: number; contributions: Array<{ name: string; raw: number; clamped: number }> };
+};
 declare var coherenceMonitor: CoherenceMonitorAPI;
 declare var signalReader: SignalReaderAPI;
 declare var profileAdaptation: ProfileAdaptationAPI;
 declare var signalTelemetry: SignalTelemetryAPI;
 declare var signalHealthAnalyzer: SignalHealthAnalyzerAPI;
+declare var phaseSpaceMath: {
+  magnitude(v: number[]): number;
+  cosine(a: number[], b: number[]): number;
+  stats(data: number[][], nDims: number): { mean: number[]; variance: number[] };
+  coupling(data: number[][], mean: number[], dimNames: string[], nDims: number, nCompositional: number): { matrix: Record<string, number>; strength: number };
+  jacobiEigenvalues(A: number[][], K: number): number[];
+  effectiveDimensionality(data: number[][], mean: number[], nCompositional: number): number;
+};
 declare var systemDynamicsProfiler: SystemDynamicsProfilerAPI;
 declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): number; flickerMod(): number; reset(): void };
 declare var pipelineBalancer: { densityBias(): number; reset(): void };

@@ -43,6 +43,8 @@ require('./dynamismEngine');
 require('./textureBlender');
 // @ts-ignore: load side-effect module with globals
 require('./conductorState');
+// @ts-ignore: progressive deviation dampening engine (must precede conductorIntelligence)
+require('./conductorDampening');
 // @ts-ignore: intelligence registry (must precede globalConductorUpdate & intelligence subdirectories)
 require('./conductorIntelligence');
 // @ts-ignore: signal pipeline infrastructure (normalizer, reader, profiler, health, coupling, etc.)

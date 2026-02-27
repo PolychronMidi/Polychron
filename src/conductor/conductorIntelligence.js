@@ -30,89 +30,17 @@ conductorIntelligence = (() => {
     eventBus.on(EVENTS.SECTION_BOUNDARY, () => lifecycle.resetSection());
   }
 
-  // Shared collection helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Dampening factor: shrinks deviations from 1.0 before multiplying,
-  // preventing many contributors from crushing the product to near-zero.
-  // Auto-scaled per pipeline: base damping (0.6) calibrated for ~20
-  // contributors. Smaller pipelines get proportionally less pass-through
-  // so each module's deviation is attenuated more, reducing volatility.
-  const BASE_DEVIATION_DAMPING = 0.6;
-  const REF_PIPELINE_SIZE = 20;
 
-  /** Compute effective damping scaled by pipeline contributor count and system dynamics. */
-  function _scaledDamping(registryLength) {
-    let base = BASE_DEVIATION_DAMPING;
-    try {
-      const snap = systemDynamicsProfiler.getSnapshot();
-      if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
-        base *= 0.8; // Thicken gravity (less pass-through) when fragmented
-      } else if (snap.regime === 'exploring' || snap.regime === 'coherent') {
-        base *= 1.2; // Loosen gravity (more pass-through) when coherent
-      }
-    } catch { /* ignore */ }
-    return clamp(base * clamp(registryLength / REF_PIPELINE_SIZE, 0.3, 1.0), 0.1, 1.0);
-  }
+  // Dampening engine → conductorDampening global
 
-  // Progressive dampening: as the running product diverges from 1.0,
-  // subsequent deviations in the same direction face stronger dampening.
-  // This prevents coordinated crush (10 modules each pulling to 0.85–0.94)
-  // from accumulating catastrophic suppression, without touching any
-  // individual module's response. Deviations opposing the running product
-  // are given lighter dampening to encourage self-correction.
-  const PROGRESSIVE_STRENGTH = 0.50; // softened (was 0.55) — density crush still 37% with 3 pinned modules
-
-  /**
-   * Compute progressive dampening factor for a single contributor.
-   * @param {number} clamped - contributor's clamped bias value
-   * @param {number} baseDamping - pipeline-scaled base dampening
-   * @param {number} runningProduct - product so far (before this contributor)
-   * @returns {number} dampened value
-   */
-  function _progressiveDampen(clamped, baseDamping, runningProduct) {
-    const deviation = clamped - 1.0;
-    if (m.abs(deviation) < 1e-6) return 1.0;
-
-    let progStrength = PROGRESSIVE_STRENGTH;
-    try {
-      const snap = systemDynamicsProfiler.getSnapshot();
-      if (snap.effectiveDimensionality < 2.0) {
-        progStrength *= 1.5; // Stronger resistance to crush if dimensionality is collapsing
-      }
-    } catch { /* ignore */ }
-
-    // Is this deviation pushing the product further from 1.0?
-    const productDeviation = runningProduct - 1.0;
-    const sameDirection = (deviation < 0 && productDeviation < 0) || (deviation > 0 && productDeviation > 0);
-    // Ramp: product at 0.6 → extra dampening 0.2; product at 0.5 → extra 0.25
-    const drift = m.abs(productDeviation);
-    const extraDampening = sameDirection ? progStrength * clamp(drift, 0, 0.5) : 0;
-    const effectiveDamping = clamp(baseDamping - extraDampening, 0.15, baseDamping);
-    return 1.0 + deviation * effectiveDamping;
-  }
-
-  /** Applies progressive deviation dampening to all pipelines (density, tension, flicker). */
+  /** @returns {number} */
   function _collectDampened(registry) {
-    const damping = _scaledDamping(registry.length);
-    let product = 1;
-    for (let i = 0; i < registry.length; i++) {
-      product *= _progressiveDampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi), damping, product);
-    }
-    return product;
+    return conductorDampening.collectDampened(registry);
   }
 
-  /** Like _collectDampened but with per-contributor attribution. */
+  /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function _collectDampenedWithAttribution(registry) {
-    const damping = _scaledDamping(registry.length);
-    let product = 1;
-    const contributions = [];
-    for (let i = 0; i < registry.length; i++) {
-      const entry = registry[i];
-      const raw = entry.getter();
-      const clamped = clamp(raw, entry.lo, entry.hi);
-      product *= _progressiveDampen(clamped, damping, product);
-      contributions.push({ name: entry.name, raw, clamped });
-    }
-    return { product, contributions };
+    return conductorDampening.collectDampenedWithAttribution(registry);
   }
 
   /** @param {Array<{ name: string }>} registry @param {string} name @param {string} kind */
