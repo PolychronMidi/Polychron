@@ -12,12 +12,13 @@ closedLoopController = (() => {
    *   name: string,
    *   observe: () => number,
    *   target: () => number,
-   *   gain?: number,
+   *   gain?: number | (() => number),
    *   smoothing?: number,
    *   clampRange?: [number, number],
    *   sourceDomain: string,
    *   targetDomain: string,
-   *   invert?: boolean
+   *   invert?: boolean,
+   *   deadband?: number
    * }} ClosedLoopControllerConfig
    */
 
@@ -71,11 +72,14 @@ closedLoopController = (() => {
     const name = config.name;
     const observe = config.observe;
     const target = config.target;
-    const gain = V.optionalFinite(config.gain, 0.5);
+    const gainCfg = config.gain;
+    const gainFn = typeof gainCfg === 'function' ? gainCfg : null;
+    const gainVal = gainFn ? 0 : V.optionalFinite(/** @type {number|undefined} */ (gainCfg), 0.5);
     const smoothing = clamp(V.optionalFinite(config.smoothing, 0.3), 0, 0.99);
     const lo = Array.isArray(config.clampRange) ? V.requireFinite(config.clampRange[0], 'clampRange[0]') : 0.7;
     const hi = Array.isArray(config.clampRange) ? V.requireFinite(config.clampRange[1], 'clampRange[1]') : 1.3;
     const invert = Boolean(config.invert);
+    const deadband = V.optionalFinite(config.deadband, 0);
 
     // Internal state
     let bias = 1.0;
@@ -92,11 +96,18 @@ closedLoopController = (() => {
 
       // Error: positive when observed < target (need boost), negative when observed > target
       const rawError = tgt - observed;
-      lastError = rawError;
+
+      // Apply deadband: errors within the band are treated as zero
+      const abErr = m.abs(rawError);
+      const adjError = abErr <= deadband ? 0 : m.sign(rawError) * (abErr - deadband);
+      lastError = adjError;
+
+      // Resolve gain (may be dynamic)
+      const g = gainFn ? V.requireFinite(gainFn(), name + '.gain()') : gainVal;
 
       // Correction: bias > 1 to boost, < 1 to suppress
       const direction = invert ? -1 : 1;
-      const correction = 1.0 + rawError * gain * direction;
+      const correction = 1.0 + adjError * g * direction;
 
       // EMA smoothing
       const smoothed = bias * smoothing + correction * (1 - smoothing);

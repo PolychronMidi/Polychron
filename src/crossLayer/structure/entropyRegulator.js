@@ -137,11 +137,17 @@ entropyRegulator = (() => {
     return 0.2 + arc * 0.6; // range 0.2 - 0.8
   }
 
-  function _getRawRegulationScale() {
-    const current = measureEntropy();
-    const error = targetEntropy - current;
-    return clamp(1 + error * regulationStrength * 2, 0.3, 2.0);
-  }
+  // Closed-loop controller: steer combined entropy toward target via dynamic gain
+  const _regulationCtrl = closedLoopController.create({
+    name: 'entropyRegulator',
+    observe: measureEntropy,
+    target: () => targetEntropy,
+    gain: () => regulationStrength * 2,
+    smoothing: 0,
+    clampRange: [0.3, 2.0],
+    sourceDomain: 'entropy',
+    targetDomain: 'cross_layer_prob'
+  });
 
   /**
    * Get regulation modifier: how much to scale cross-layer system activity.
@@ -151,15 +157,8 @@ entropyRegulator = (() => {
   function getRegulation() {
     const current = measureEntropy();
     const error = targetEntropy - current;
-    // PID-like: proportional response
-    let scale = _getRawRegulationScale();
-
-    const dampening = feedbackRegistry.getResonanceDampening('entropyRegulator');
-    if (dampening < 1.0) {
-      scale = 1.0 + (scale - 1.0) * dampening;
-    }
-
-    return { scale, currentEntropy: current, targetEntropy, error };
+    _regulationCtrl.refresh();
+    return { scale: _regulationCtrl.getBias(), currentEntropy: current, targetEntropy, error };
   }
 
   /**
@@ -184,29 +183,12 @@ entropyRegulator = (() => {
     regulationStrength = 0.5;
     noteHistory.clear();
     velHistory.clear();
+    _regulationCtrl.reset();
     // _rhythmIrregErrors intentionally NOT reset — accumulates across run for diagnostic
   }
 
   /** @returns {number} total rhythmicIrregularity failures across the run */
   function getRhythmErrors() { return _rhythmIrregErrors; }
-
-  function initialize() {
-    feedbackRegistry.registerLoop(
-      'entropyRegulator',
-      'entropy',
-      'cross_layer_prob',
-      () => {
-        const scale = _getRawRegulationScale();
-        return Math.abs(scale - 1.0) / 1.0;
-      },
-      () => {
-        const scale = _getRawRegulationScale();
-        return Math.sign(scale - 1.0);
-      }
-    );
-  }
-
-  moduleLifecycle.registerInitializer('entropyRegulator', initialize);
 
   return {
     recordSample, measureEntropy, measureRawEntropy, setTarget, getArcTarget,
