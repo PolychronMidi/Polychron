@@ -1,13 +1,5 @@
-﻿// @ts-ignore: load side-effect module with globals
-require('./harmonicContext');
-// @ts-ignore: load side-effect module with globals
-require('./harmonicRhythmTracker');
-// @ts-ignore: load side-effect module with globals
-require('./harmonicJourneyHelpers');
-// @ts-ignore: load side-effect module with globals
-require('./harmonicJourneyPlanner');
-// @ts-ignore: load side-effect module with globals
-require('./harmonicJourney');
+﻿// @ts-ignore: harmonic journey — tonal trajectory planning and shared harmonic state
+require('./journey');
 // @ts-ignore: load side-effect module with globals
 require('./phraseArcProfiler');
 // @ts-ignore: load side-effect module with globals

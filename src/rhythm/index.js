@@ -3,20 +3,8 @@
 require('./rhythmValues');
 // @ts-ignore: side-effect module load
 require('./rhythmModulator');
-// @ts-ignore: side-effect module load
-require('./feedbackAccumulator');
-// @ts-ignore: side-effect module load
-require('./fXFeedbackListener');
-// @ts-ignore: side-effect module load
-require('./stutterFeedbackListener');
-// @ts-ignore: side-effect module load
-require('./emissionFeedbackListener');
-// @ts-ignore: side-effect module load
-require('./journeyRhythmCoupler');
-// @ts-ignore: side-effect module load
-require('./conductorRegulationListener');
-// @ts-ignore: side-effect module load
-require('./drumTextureCoupler');
+// @ts-ignore: feedback listeners (cross-layer eventBus bridges)
+require('./feedback');
 // @ts-ignore: side-effect module load
 require('./rhythmHistoryTracker');
 // @ts-ignore: side-effect module load
@@ -32,15 +20,9 @@ require('./rhythmRegistry');
 // @ts-ignore: side-effect module load
 require('./rhythmManager');
 
-// Ensure drumMap is loaded before drummer (drummer depends on drumMap internals)
-// @ts-ignore: side-effect module load
-require('./drumMap');
-// @ts-ignore: side-effect module load
-require('./drummer');
-// @ts-ignore: side-effect module load
-require('./playDrums');
-// @ts-ignore: side-effect module load
-require('./playDrums2');
+// Drum subsystem (drumMap → drummer → playDrums → playDrums2 → drumTextureCoupler)
+// @ts-ignore: drum pattern generation and texture coupling
+require('./drums');
 // @ts-ignore: side-effect module load
 require('./makeOnsets');
 // @ts-ignore: side-effect module load
@@ -67,5 +49,3 @@ rhythmRegistry.register('closestDivisor', closestDivisor);
 
 // Preserve legacy naked global mapping for backward compatibility
 rhythmMethods = rhythmRegistry.getAll();
-
-

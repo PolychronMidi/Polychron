@@ -55,7 +55,7 @@ systemDynamicsProfiler = (() => {
   // compositionalVariance and adjusts to target ~25% variance share.
   // Self-correcting: too much entropy → amplification drops; too little → rises.
   const _ENTROPY_AMP_TARGET_SHARE = 0.25;
-  const _ENTROPY_AMP_MIN = 1.5; // raised (was 1.0) — Run 11: controller pinned at 1.0 floor but entropy still 58% dominant; 1.5 floor lets tension/flicker maintain enough coupled variance
+  const _ENTROPY_AMP_MIN = 1.0; // lowered (was 1.5) — Run 17: controller at 1.54 (near floor) but entropy 63.9% dominant; ATW bypass + z-score make dead-axis structurally impossible now, so safety floor is unnecessary
   const _ENTROPY_AMP_MAX = 15.0;
   const _ENTROPY_AMP_SMOOTH = 0.12; // slow EMA to avoid oscillation
   let _entropyAmp = 3.0; // initial seed (converges within ~20 beats)
