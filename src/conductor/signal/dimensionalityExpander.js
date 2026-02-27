@@ -39,8 +39,9 @@ dimensionalityExpander = (() => {
   // nudgeable axis exceeds this fraction of total variance, dampen it
   // to restore balance. Without this, a single axis can absorb >50% of
   // variance while overall dimensionality looks healthy (effDim > 2.2).
-  const DOMINANT_AXIS_THRESHOLD = 0.50;
+  const DOMINANT_AXIS_THRESHOLD = 0.35; // lowered (was 0.50) — Run 14: flicker at 39.2% above 25% fair share but below 50% threshold; 0.35 = 1.4× fair share triggers suppression
   const DOMINANT_AXIS_DAMPENING = 0.12;
+  const DOMINANT_MIN_NUDGE = 0.02; // floor so threshold boundary produces meaningful force
 
   // Mapping from variance index to axis name
   const VARIANCE_AXES = ['density', 'tension', 'flicker']; // entropy (idx 3) has no bias
@@ -125,17 +126,17 @@ dimensionalityExpander = (() => {
     if (varRatios && varRatios.length >= 3) {
       for (let i = 0; i < VARIANCE_AXES.length; i++) {
         if (varRatios[i] < DEAD_AXIS_THRESHOLD) {
-          // Dead axis: inject alternating perturbation to revive it
+          // Dead axis: persistent upward bias to displace equilibrium.
+          // Oscillating ±nudge was killed by EMA smoothing (averaged to ~0).
           const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
           const nudge = DEAD_AXIS_PERTURBATION * severity;
-          const dir = (beatCount % 8) < 4 ? 1 : -1; // 4-beat flip (was 8) — faster alternation creates more variance within 32-beat window
-          if (VARIANCE_AXES[i] === 'density') varD = dir * nudge;
-          else if (VARIANCE_AXES[i] === 'tension') varT = dir * nudge;
-          else varF = dir * nudge;
+          if (VARIANCE_AXES[i] === 'density') varD = nudge;
+          else if (VARIANCE_AXES[i] === 'tension') varT = nudge;
+          else varF = nudge;
         } else if (varRatios[i] > DOMINANT_AXIS_THRESHOLD) {
-          // Dominant axis: dampen toward fair share
+          // Dominant axis: dampen toward fair share (floor prevents paper-wall threshold)
           const excess = varRatios[i] - DOMINANT_AXIS_THRESHOLD;
-          const nudge = -DOMINANT_AXIS_DAMPENING * excess;
+          const nudge = -m.max(DOMINANT_AXIS_DAMPENING * excess, DOMINANT_MIN_NUDGE);
           if (VARIANCE_AXES[i] === 'density') varD = nudge;
           else if (VARIANCE_AXES[i] === 'tension') varT = nudge;
           else varF = nudge;

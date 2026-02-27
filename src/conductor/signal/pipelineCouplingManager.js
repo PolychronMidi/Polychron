@@ -49,9 +49,19 @@ pipelineCouplingManager = (() => {
   const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
   const GAIN_RELAX_RATE    = 0.01; // per-beat gain decrease when resolved
 
+  // Regime-aware target relaxation: in 'coherent' regime, pairwise coupling
+  // IS the feature — dimensions deliberately co-evolve. Relax targets so
+  // the coupling manager preserves its gain budget for regimes where
+  // decorrelation is genuinely needed (exploring, drifting, fragmented).
+  const COHERENT_RELAXATION = 1.5;
+
   // Per-pair adaptive state: gain and last-observed |r|
   /** @type {Record<string, { gain: number, lastAbsCorr: number }>} */
   const _pairState = {};
+
+  /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
+  /** @type {Set<string>} */
+  const _saturatedAxes = new Set();
 
   /**
    * Get or create adaptive state for a pair.
@@ -89,6 +99,10 @@ pipelineCouplingManager = (() => {
       return;
     }
 
+    // Regime-aware target scaling
+    const regime = snap.regime;
+    const targetScale = regime === 'coherent' ? COHERENT_RELAXATION : 1.0;
+
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
     let nudgeD = 0;
     let nudgeT = 0;
@@ -111,19 +125,19 @@ pipelineCouplingManager = (() => {
         const corr = matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
 
-        const target = _getTarget(key);
+        const target = _getTarget(key) * targetScale;
         const absCorr = m.abs(corr);
         const ps = _getPairState(key);
 
         // ── Adaptive gain logic ──
         if (absCorr > target) {
-          // Overcoupled: compare to last beat's |r| to decide escalation
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
-          if (!improving) {
-            // Stuck or worsening — escalate gain
+          // Freeze gain if either axis in this pair is saturated —
+          // escalating against the soft-limit ceiling wastes the mechanism.
+          const pairSaturated = _saturatedAxes.has(dimA) || _saturatedAxes.has(dimB);
+          if (!improving && !pairSaturated) {
             ps.gain = clamp(ps.gain + GAIN_ESCALATE_RATE, GAIN_MIN, GAIN_MAX);
           }
-          // If improving, hold current gain (don't escalate, don't relax)
         } else {
           // Below target — relax gain back toward initial
           ps.gain = clamp(ps.gain - GAIN_RELAX_RATE, GAIN_INIT, GAIN_MAX);
@@ -155,6 +169,23 @@ pipelineCouplingManager = (() => {
       }
     }
 
+    // Soft-limit: scale accumulated nudges so raw bias stays within the
+    // pipeline's clamp envelope. The adaptive gain keeps escalating (the
+    // learning is preserved) but the physical output respects bandwidth.
+    // Without this, the conductor clips silently and the gain keeps
+    // escalating against a ceiling, producing max-clamp bias every beat.
+    const SOFT_LIMIT = 0.18; // max deviation from 1.0 per axis
+
+    // Detect saturation BEFORE clamping — used next beat to freeze gains
+    _saturatedAxes.clear();
+    if (m.abs(nudgeD) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('density');
+    if (m.abs(nudgeT) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('tension');
+    if (m.abs(nudgeF) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('flicker');
+
+    nudgeD = clamp(nudgeD, -SOFT_LIMIT, SOFT_LIMIT);
+    nudgeT = clamp(nudgeT, -SOFT_LIMIT, SOFT_LIMIT);
+    nudgeF = clamp(nudgeF, -SOFT_LIMIT, SOFT_LIMIT);
+
     biasDensity = 1.0 + nudgeD;
     biasTension = 1.0 + nudgeT;
     biasFlicker = 1.0 + nudgeF;
@@ -168,6 +199,7 @@ pipelineCouplingManager = (() => {
     biasDensity = 1.0;
     biasTension = 1.0;
     biasFlicker = 1.0;
+    _saturatedAxes.clear();
     // Reset adaptive gains — each section starts fresh
     const keys = Object.keys(_pairState);
     for (let i = 0; i < keys.length; i++) {
@@ -177,9 +209,9 @@ pipelineCouplingManager = (() => {
   }
 
   // --- Self-registration ---
-  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.85, 1.15);
-  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.20);
-  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.88, 1.12);
+  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.82, 1.18);
+  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.82, 1.20);
+  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.82, 1.18);
   conductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   conductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 

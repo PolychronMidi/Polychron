@@ -56,7 +56,7 @@ for (let n1 = N_MIN; n1 <= N_MAX; n1++) {
     for (let n2 = N_MIN; n2 <= N_MAX; n2++) {
       for (let d2 = D_MIN; d2 <= D_MAX; d2++) {
         if (n1 === n2 && d1 === d2) continue; // same meter — no polyrhythm
-
+        if (n1 / d1 === n2 / d2) continue; // same ratio — no polyrhythm
         // Find smallest pm1, pm2 >= 2 with pm1*(n1/d1) == pm2*(n2/d2)
         // Equivalent: pm1 * A == pm2 * B  where A = n1*d2, B = n2*d1
         const A = n1 * d2;
