@@ -5,6 +5,8 @@ require('./validator');
 require('./moduleLifecycle');
 // @ts-ignore: formal registry for closed-loop feedback controllers
 require('./feedbackRegistry');
+// @ts-ignore: reusable closed-loop controller factory (depends on feedbackRegistry)
+require('./closedLoopController');
 // @ts-ignore: per-beat memoization for expensive conductor queries
 require('./beatCache');
 // @ts-ignore: side-effect module load
