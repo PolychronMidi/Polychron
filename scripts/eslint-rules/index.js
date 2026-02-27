@@ -11,6 +11,7 @@ module.exports = {
     'no-conductor-registration-from-crosslayer': require('./no-conductor-registration-from-crosslayer'),
     'no-direct-signal-read': require('./no-direct-signal-read'),
     'validator-name-matches-filename': require('./validator-name-matches-filename'),
-    'case-conventions': require('./case-conventions')
+    'case-conventions': require('./case-conventions'),
+    'no-non-ascii': require('./no-non-ascii')
   }
 };
