@@ -106,7 +106,7 @@ VoiceManager = class VoiceManager {
    * @param {Object} layer - Layer object with voice history
    * @param {number[]} candidateNotes - Available notes for this beat
    * @param {number} voiceCount - How many voices to select
-   * @param {VoiceLeadingScore} scorer - Voice leading scorer instance
+   * @param {VoiceLeadingScoreAPI} scorer - Voice leading scorer instance
    * @param {Object} opts - Additional options (candidateWeights, registerBias, voiceCountMultiplier, phraseContext)
    * @returns {number[]} Selected notes (length = voiceCount)
    */
@@ -132,7 +132,7 @@ VoiceManager = class VoiceManager {
     // Extract phrase context for arc-driven biases
     const phraseContext = (opts && opts.phraseContext && typeof opts.phraseContext === 'object') ? opts.phraseContext : {};
     const arcDensityMultiplier = Number.isFinite(Number(phraseContext.densityMultiplier)) ? phraseContext.densityMultiplier : 1.0;
-    const voiceIndependence = Number.isFinite(Number(phraseContext.voiceIndependence)) ? phraseContext.voiceIndependence : VOICE_Manager.voiceIndependenceDefault;
+    const voiceIndependence = Number.isFinite(Number(phraseContext.voiceIndependence)) ? phraseContext.voiceIndependence : VOICE_MANAGER.voiceIndependenceDefault;
     const runtimeProfile = (opts && opts.runtimeProfile && typeof opts.runtimeProfile === 'object') ? opts.runtimeProfile : null;
     const runtimeVoiceCountMultiplier = (runtimeProfile && Number.isFinite(Number(runtimeProfile.voiceCountMultiplier)))
       ? Number(runtimeProfile.voiceCountMultiplier)
@@ -141,7 +141,7 @@ VoiceManager = class VoiceManager {
     // Apply voice count multiplier: stack chord change emphasis with phrase arc density
     // But only apply arc density influence probabilistically to maintain variety
     const voiceCountMultiplier = Number.isFinite(Number(opts.voiceCountMultiplier)) ? opts.voiceCountMultiplier : runtimeVoiceCountMultiplier;
-    const shouldApplyArcDensity = rf() < (VOICE_Manager.arcDensityChance ?? 0.5);
+    const shouldApplyArcDensity = rf() < (VOICE_MANAGER.arcDensityChance ?? 0.5);
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
     const adjustedVoiceCount = m.max(1, m.round(voiceCount * combinedMultiplier));

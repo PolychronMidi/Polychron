@@ -33,10 +33,29 @@ for (const line of dtsSrc.split(/\r?\n/)) {
 const names = entries.filter(e => e.type === 'name').map(e => e.name);
 if (names.length === 0) throw new Error('generate-globals-dts: no declarations found in ' + GLOBALS_DTS_PATH);
 
+// ── Deduplicate — keep last occurrence (typed beats untyped) ─────────────────
+
+const seen = new Set();
+const deduped = [];
+// Walk entries in reverse so the LAST (typically typed) declaration wins.
+for (let i = entries.length - 1; i >= 0; i--) {
+  const e = entries[i];
+  if (e.type === 'section') { deduped.push(e); continue; }
+  if (seen.has(e.name)) continue;
+  seen.add(e.name);
+  deduped.push(e);
+}
+deduped.reverse();
+
+const uniqueNames = [...new Set(names)];
+if (uniqueNames.length < names.length) {
+  console.log(`generate-globals-dts: deduplicated ${names.length - uniqueNames.length} duplicate declaration(s)`);
+}
+
 // ── Build replacement array body ─────────────────────────────────────────────
 
 const lines = [];
-for (const entry of entries) {
+for (const entry of deduped) {
   if (entry.type === 'section') {
     lines.push('');
     lines.push(`    // ── ${entry.text} ──`);
@@ -68,4 +87,4 @@ const newSrcLines = [
 ];
 
 fs.writeFileSync(BOOTSTRAP_PATH, newSrcLines.join('\n'), 'utf8');
-console.log(`generate-globals-dts: synced ${names.length} globals from globals.d.ts → fullBootstrap.js`);
+console.log(`generate-globals-dts: synced ${uniqueNames.length} globals from globals.d.ts → fullBootstrap.js`);

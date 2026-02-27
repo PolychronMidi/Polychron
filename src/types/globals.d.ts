@@ -104,17 +104,17 @@ interface EventBusAPI {
 
 interface VoiceLeadingScoreAPI {
   weights: Record<string, number>;
-  score(candidate: number, prevNote: number, context: any): number;
-  scoreInterval(interval: number, context: any): number;
-  scoreMotion(motion: number, context: any): number;
-  scoreRange(note: number, context: any): number;
-  scoreLeapRecovery(leap: number, context: any): number;
-  scoreVoiceCrossing(note: number, context: any): number;
-  scoreParallelMotion(motion: number, context: any): number;
-  scoreIntervalQuality(interval: number, context: any): number;
-  scoreConsecutiveLeaps(leap: number, context: any): number;
-  scoreDirectionalBias(motion: number, context: any): number;
-  scoreMaxLeap(leap: number, context: any): number;
+  commonToneWeight: number;
+  contraryMotionPreference: number;
+  dynamism: number;
+  registers: Record<string, number[]>;
+  maxLeapSize: Record<string, number>;
+  maxHistoryDepth: number;
+  history: Array<{ note: number; register: string; interval: number }>;
+  selectNextNote(lastNotes: number[], availableNotes: number[], config?: any): number;
+  analyzeQuality(noteSequence: number[]): { smoothness: number; avgRange: number; leapRecoveries: number };
+  updateConfig(cfg?: any): void;
+  reset(): void;
 }
 
 interface SimplexNoiseAPI {
@@ -1036,7 +1036,7 @@ declare var PHRASES_ARC_CURVES: any;
 declare var MODAL_BORROWING: any;
 declare var NOISE_PROFILES: any;
 declare var COMPOSER_FAMILIES: any;
-declare var VOICE_Manager: any;
+declare var VOICE_MANAGER: any;
 declare var SECTION_TYPES: any;
 declare var SUBSUBDIVS: any;
 declare var DYNAMISM: any;
@@ -1314,13 +1314,11 @@ declare var RandomChromaticComposer: any;
 declare var QuartalComposer: any;
 declare var RandomQuartalComposer: any;
 declare var intervalComposer: any;
-declare var FactoryManager: any;
 declare var factoryProfiles: any;
 declare var factoryProgression: any;
 declare var factoryPoolResolver: any;
 declare var factoryFamilies: any;
 declare var factoryConstructors: any;
-declare var FactoryManager: ComposerFactoryAPI;
 declare var motifChain: MotifChainAPI;
 declare var ProgressionGenerator: any;
 declare var pivotChordBridge: any;
@@ -1340,7 +1338,6 @@ declare var voiceRegistry: any;
 declare var voiceValues: any;
 declare var voiceConfig: any;
 declare var voiceModulator: any;
-declare var VoiceLeadingScore: any;
 declare var voiceLeadingScorers: any;
 declare var voiceLeadingCore: any;
 declare var VOICE_LEADING_PRIOR_TABLES: any;
@@ -1404,7 +1401,6 @@ declare var stutterPlanScheduler: any;
 declare var stutter: StutterManagerAPI;
 declare var setBalanceAndFX: any;
 declare var setBinaural: any;
-declare var SimplexNoise: any;
 declare var fbm: any;
 declare var turbulence: any;
 declare var ridged: any;
@@ -1506,8 +1502,13 @@ declare var systemManifestMarkdown: {
 };
 declare var systemManifest: { emit(): void };
 declare var outputAnalyzer: { analyse(notes: { pitch: number; startMs: number; durationMs: number; velocity: number }[]): any; reset(): void };
+
+// ── typed constructors (canonical declarations — keep only these) ──
 declare var VoiceLeadingScore: { new(config?: any): VoiceLeadingScoreAPI };
 declare var SimplexNoise: { new(seed?: number): SimplexNoiseAPI };
+declare var FactoryManager: ComposerFactoryAPI;
+
+// ── node / timing ──
 declare var fs: any;
 declare var finalTick: number;
 declare var path: any;
@@ -1552,7 +1553,6 @@ declare var randomInRangeOrArray: (v: number | any[] | (() => any)) => any;
 declare var randomLimitedChange: (currentValue: number, minChange: number, maxChange: number, minValue: number, maxValue: number, type?: string) => number;
 declare var randomVariation: (value: number, boostRange?: number[], frequency?: number, deboostRange?: number[]) => number;
 declare var beatRhythm: any;
-declare var divRhythm: any;
 declare var subdivRhythm: any;
 declare var subsubdivRhythm: any;
 declare var sectionIndex: number;

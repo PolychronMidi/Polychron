@@ -13,7 +13,7 @@ MeasureComposer = class MeasureComposer {
     this.recursionDepth=0;
     /** @type {number} Max allowed recursion depth */
     this.MAX_RECURSION=5;
-    /** @type {VoiceLeadingScore|null} Optional voice leading optimizer */
+    /** @type {VoiceLeadingScoreAPI|null} Optional voice leading optimizer */
     this.VoiceLeadingScore=null;
     /** @type {number[]} Historical notes for voice leading context */
     this.voiceHistory=[];
@@ -164,8 +164,8 @@ MeasureComposer = class MeasureComposer {
    * Enables voice leading optimization for this composer.
    * Accepts either a VoiceLeadingScore instance or a configuration object
    * to create one: `enableVoiceLeading({ commonToneWeight: 1 })`.
-   * @param {VoiceLeadingScore|Object} [scorerOrConfig]
-   * @returns {VoiceLeadingScore} the active scorer
+   * @param {VoiceLeadingScoreAPI|Object} [scorerOrConfig]
+   * @returns {VoiceLeadingScoreAPI} the active scorer
    */
   enableVoiceLeading(scorerOrConfig) {
     if (!scorerOrConfig) {
@@ -179,19 +179,19 @@ MeasureComposer = class MeasureComposer {
     }
 
     this.voiceHistory = [];
-    return this.VoiceLeadingScore;
+    return /** @type {VoiceLeadingScoreAPI} */ (this.VoiceLeadingScore);
   }
 
   /**
    * Update voice leading configuration at runtime. If a scorer is present,
    * delegates to its updateConfig; otherwise creates a new scorer with cfg.
    * @param {Object} cfg
-   * @returns {VoiceLeadingScore}
+   * @returns {VoiceLeadingScoreAPI}
    */
   setVoiceLeadingConfig(cfg = {}) {
     if (!this.VoiceLeadingScore) this.enableVoiceLeading(cfg);
     else if (typeof this.VoiceLeadingScore.updateConfig === 'function') this.VoiceLeadingScore.updateConfig(cfg);
-    return this.VoiceLeadingScore;
+    return /** @type {VoiceLeadingScoreAPI} */ (this.VoiceLeadingScore);
   }
 
   /**
@@ -217,7 +217,8 @@ MeasureComposer = class MeasureComposer {
       }
     }
 
-    const selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory, availableNotes, config);
+    const scorer = /** @type {VoiceLeadingScoreAPI} */ (this.VoiceLeadingScore);
+    const selectedNote = scorer.selectNextNote(this.voiceHistory, availableNotes, config);
     this.voiceHistory.push(selectedNote);
 
     // Keep history shallow for memory efficiency
