@@ -14,7 +14,7 @@ narrativeTrajectory = (() => {
   const HISTORY_LEN      = 16;
   const SMOOTHING        = 0.3;
   const STEER_GAIN       = 0.06;       // doubled from 0.03 for audible effect
-  const MONOTONE_THRESHOLD = 0.002;    // lowered from 0.005 — matches EMA-smoothed velocity scale
+  const MONOTONE_THRESHOLD = 0.002;    // lowered from 0.005 - matches EMA-smoothed velocity scale
   const CURVATURE_STEER  = 0.04;       // steer away from pendulum reversals
 
   /** @type {{ t: number, n: number, d: number }[]} */
@@ -65,7 +65,7 @@ narrativeTrajectory = (() => {
     if (velocity < MONOTONE_THRESHOLD && trajectory.length >= 4) {
       steerBias = 1.0 + STEER_GAIN;
     } else if (curvature > 0.5 && trajectory.length >= 4) {
-      // High curvature = pendulum reversal — nudge tension to break cycle
+      // High curvature = pendulum reversal - nudge tension to break cycle
       steerBias = 1.0 + CURVATURE_STEER * clamp(curvature, 0.5, 2.0);
     } else {
       steerBias = 1.0;

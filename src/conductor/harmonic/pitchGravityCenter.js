@@ -52,8 +52,8 @@ pitchGravityCenter = (() => {
       return { octaveBias: 0, direction: 'stable' };
     }
 
-    // Drift > 0 means center is above anchor â†’ pull down
-    // Drift < 0 means center is below anchor â†’ push up
+    // Drift > 0 means center is above anchor - pull down
+    // Drift < 0 means center is below anchor - push up
     const octaveBias = clamp(-gc.drift / 12, -2, 2);
     const direction = gc.drift > 0 ? 'descend' : 'ascend';
 

@@ -1,22 +1,22 @@
-// systemDynamicsProfiler.js — Phase-space trajectory analysis of the signal organism.
+// systemDynamicsProfiler.js - Phase-space trajectory analysis of the signal organism.
 // Treats the entire system as a dynamical entity moving through a multi-dimensional
-// state space. Analyzes the SHAPE of that movement — not individual pipelines, but
+// state space. Analyzes the SHAPE of that movement - not individual pipelines, but
 // the emergent geometry of how all dimensions co-evolve.
 //
 // Five metrics, each invisible to single-pipeline analyzers:
-//   1. Trajectory velocity — how fast the state is changing (stuck vs evolving)
-//   2. Trajectory curvature — turning behavior (straight vs winding)
-//   3. Cross-coupling — rolling correlations between dimension pairs
-//   4. Effective dimensionality — how many independent axes are in use
-//   5. Regime detection — qualitative shifts in system operating mode
+//   1. Trajectory velocity - how fast the state is changing (stuck vs evolving)
+//   2. Trajectory curvature - turning behavior (straight vs winding)
+//   3. Cross-coupling - rolling correlations between dimension pairs
+//   4. Effective dimensionality - how many independent axes are in use
+//   5. Regime detection - qualitative shifts in system operating mode
 //
-// Does NOT modify signal values — pure observation + diagnostics.
+// Does NOT modify signal values - pure observation + diagnostics.
 
 systemDynamicsProfiler = (() => {
-  // ── Phase space dimensions ──
+  // -- Phase space dimensions --
   // Full 6D state space for the coupling matrix (diagnostic exposure).
   // Only the first N_COMPOSITIONAL_DIMS are used for velocity, curvature,
-  // coupling strength, and effective dimensionality — because trust
+  // coupling strength, and effective dimensionality - because trust
   // (governance meta-signal) and phase (monotonic sawtooth) inflate
   // those metrics without reflecting compositional oscillation.
   const DIM_NAMES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
@@ -25,7 +25,7 @@ systemDynamicsProfiler = (() => {
   const WINDOW = 32; // rolling window for statistics
   const MIN_WINDOW = 6; // minimum beats before meaningful analysis
 
-  // ── State ──
+  // -- State --
   /** @type {Array<number[]>} smoothed ring buffer for velocity/curvature */
   const trajectory = [];
   /** @type {Array<number[]>} raw ring buffer for coupling/dimensionality */
@@ -36,11 +36,11 @@ systemDynamicsProfiler = (() => {
   let _entropySampleErrors = 0;
   let _lastEntropyError = '';
 
-  // ── Per-dimension z-score normalization ──
+  // -- Per-dimension z-score normalization --
   // Pipeline products (density/tension/flicker) are multiplicative products of
   // 14-29 modules that mutually smooth, producing tiny variance. Entropy is a
   // single direct ATW measurement with inherently higher variance. Without
-  // normalization, entropy dominates compositionalVariance (96%→72%→58% across
+  // normalization, entropy dominates compositionalVariance (96%-72%-58% across
   // runs) regardless of amplification tuning. Z-scoring each compositional
   // dimension by its own rolling mean/std ensures unit variance by construction.
   // Uses Welford's online algorithm for numerical stability.
@@ -49,13 +49,13 @@ systemDynamicsProfiler = (() => {
   const _zscoreM2 = new Array(N_COMPOSITIONAL_DIMS).fill(0);
   const _ZSCORE_MIN_SAMPLES = 8; // need enough history before z-scoring is meaningful
 
-  // ── Adaptive entropy amplification ──
-  // Instead of a hardcoded multiplier (manually tuned 5→7→12→10→3 across
+  // -- Adaptive entropy amplification --
+  // Instead of a hardcoded multiplier (manually tuned 5-7-12-10-3 across
   // runs), this proportional controller reads the previous beat's
   // compositionalVariance and adjusts to target ~25% variance share.
-  // Self-correcting: too much entropy → amplification drops; too little → rises.
+  // Self-correcting: too much entropy - amplification drops; too little - rises.
   const _ENTROPY_AMP_TARGET_SHARE = 0.25;
-  const _ENTROPY_AMP_MIN = 1.0; // lowered (was 1.5) — Run 17: controller at 1.54 (near floor) but entropy 63.9% dominant; ATW bypass + z-score make dead-axis structurally impossible now, so safety floor is unnecessary
+  const _ENTROPY_AMP_MIN = 1.0; // lowered (was 1.5) - Run 17: controller at 1.54 (near floor) but entropy 63.9% dominant; ATW bypass + z-score make dead-axis structurally impossible now, so safety floor is unnecessary
   const _ENTROPY_AMP_MAX = 15.0;
   const _ENTROPY_AMP_SMOOTH = 0.12; // slow EMA to avoid oscillation
   let _entropyAmp = 3.0; // initial seed (converges within ~20 beats)
@@ -63,7 +63,7 @@ systemDynamicsProfiler = (() => {
   // Regime hysteresis: requires REGIME_HOLD consecutive beats of a new
   // classification before switching. Prevents single-beat noise from
   // flipping the regime and triggering regime-reactive damping oscillations.
-  const REGIME_HOLD = 5; // raised (was 4) — curvature 0.581 near explosive threshold; reduce label flutter
+  const REGIME_HOLD = 5; // raised (was 4) - curvature 0.581 near explosive threshold; reduce label flutter
   let _lastRegime = 'evolving';
   let _candidateRegime = 'evolving';
   let _candidateCount = 0;
@@ -75,13 +75,13 @@ systemDynamicsProfiler = (() => {
   // Adaptive: the profile's density smoothing already attenuates the noisiest
   // dimension. Heavy profile smoothing (explosive=0.5) needs lighter profiler
   // smoothing; light profile smoothing (default=0.8) needs heavier. Targeting
-  // a constant effective responsiveness: profileSmoothing × stateSmoothing ≈ 0.175.
-  const _STATE_SMOOTHING_BASELINE = 0.12; // lowered (was 0.14) — velocity 0.008 in Run 8 still near-stasis; increase responsiveness further
+  // a constant effective responsiveness: profileSmoothing * stateSmoothing ≈ 0.175.
+  const _STATE_SMOOTHING_BASELINE = 0.12; // lowered (was 0.14) - velocity 0.008 in Run 8 still near-stasis; increase responsiveness further
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
 
   // Profile-adaptive oscillating curvature threshold. Explosive profiles
-  // naturally produce higher curvature due to wider parameter swings —
+  // naturally produce higher curvature due to wider parameter swings -
   // a fixed 0.5 threshold misclassifies healthy explosive evolution as
   // oscillation. Resolved lazily alongside state smoothing.
   const _OSCILLATING_CURVATURE_DEFAULT = 0.55;
@@ -114,7 +114,7 @@ systemDynamicsProfiler = (() => {
   /** Adapt entropy amplification to target equal variance share. */
   function _adaptEntropyAmplification() {
     const currentShare = _lastSnapshot.compositionalVariance[3]; // entropy index
-    // Proportional controller: desired = current × (target / actual)
+    // Proportional controller: desired = current * (target / actual)
     // When dead (<0.01), targets maximum; otherwise scales proportionally.
     const targetAmp = currentShare < 0.01
       ? _ENTROPY_AMP_MAX
@@ -140,9 +140,9 @@ systemDynamicsProfiler = (() => {
     };
   }
 
-  // ── Vector math & correlation analysis delegated to phaseSpaceMath ──
+  // -- Vector math & correlation analysis delegated to phaseSpaceMath --
 
-  // ── Core analysis ──
+  // -- Core analysis --
 
   /** Sample the current state vector from live signal data. @returns {number[]} */
   function _sampleState() {
@@ -163,7 +163,7 @@ systemDynamicsProfiler = (() => {
 
     // Compute truly instantaneous entropy directly from absoluteTimeWindow,
     // bypassing entropyRegulator's triple-dampened pipeline (10-note sliding
-    // window → EMA smoothing → beatCache memoization) which produced variance
+    // window - EMA smoothing - beatCache memoization) which produced variance
     // ≈ 0 across 3 consecutive runs. A 1-second ATW query gives real beat-to-
     // beat content changes as notes enter/leave the window.
     let entropy = 0.5;
@@ -179,7 +179,7 @@ systemDynamicsProfiler = (() => {
         }
         const pitchE = entropyMetrics.pitchEntropy(midis);
         const velE = entropyMetrics.velocityVariance(vels);
-        // IOI-based rhythmic irregularity (inline — avoids per-layer ATW re-query)
+        // IOI-based rhythmic irregularity (inline - avoids per-layer ATW re-query)
         let rhythmE = 0;
         const iois = [];
         for (let i = 1; i < recentNotes.length; i++) {
@@ -218,7 +218,7 @@ systemDynamicsProfiler = (() => {
   }
 
   // _stats, _coupling, _effectiveDimensionality, _jacobiEigenvalues
-  // are now in phaseSpaceMath global — called as phaseSpaceMath.stats() etc.
+  // are now in phaseSpaceMath global - called as phaseSpaceMath.stats() etc.
 
   /**
    * Classify the current operating regime based on velocity and curvature patterns.
@@ -230,14 +230,14 @@ systemDynamicsProfiler = (() => {
    */
   function _classifyRegime(avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
     // Thresholds calibrated for adaptive STATE_SMOOTHING targeting effective
-    // responsiveness ≈ 0.175 (profileSmoothing × stateSmoothing). Validated
-    // against explosive (0.5 × 0.35) and default (0.8 × 0.22) profiles.
+    // responsiveness ≈ 0.175 (profileSmoothing * stateSmoothing). Validated
+    // against explosive (0.5 * 0.35) and default (0.8 * 0.22) profiles.
     // Coupling strength and effectiveDim are now scoped to compositional
     // dimensions only (4D, 6 pairs). Thresholds adjusted accordingly.
     // Stagnant: barely moving through state space
     if (avgVelocity < 0.004) return 'stagnant';
     // Oscillating: high curvature (frequent reversals) with moderate velocity.
-    // Threshold is profile-adaptive — explosive tolerates higher curvature.
+    // Threshold is profile-adaptive - explosive tolerates higher curvature.
     if (avgCurvature > _oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
     // Exploring: high velocity + varied curvature + multi-dimensional
     if (avgVelocity > 0.02 && effectiveDim > 2.5) return 'exploring';
@@ -297,9 +297,9 @@ systemDynamicsProfiler = (() => {
     beatsSeen++;
     const rawState = _sampleState();
 
-    // ── Z-score normalize compositional dimensions ──
+    // -- Z-score normalize compositional dimensions --
     // Update Welford accumulators then normalize. Non-compositional dims
-    // (trust, phase) pass through unchanged — they're excluded from
+    // (trust, phase) pass through unchanged - they're excluded from
     // velocity/curvature/variance computations anyway.
     const normalizedState = rawState.slice();
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
@@ -325,15 +325,15 @@ systemDynamicsProfiler = (() => {
     }
     const state = _smoothedState.slice();
 
-    // Smoothed trajectory → velocity/curvature (derivatives need smooth input)
+    // Smoothed trajectory - velocity/curvature (derivatives need smooth input)
     trajectory.push(state);
     if (trajectory.length > WINDOW) trajectory.shift();
 
-    // Normalized trajectory → coupling/dimensionality (z-scored, not EMA-smoothed)
+    // Normalized trajectory - coupling/dimensionality (z-scored, not EMA-smoothed)
     rawTrajectory.push(normalizedState.slice());
     if (rawTrajectory.length > WINDOW) rawTrajectory.shift();
 
-    // Compute velocity (first difference) — compositional dims only.
+    // Compute velocity (first difference) - compositional dims only.
     // Trust and phase are excluded: trust is a governance meta-signal whose
     // density anti-correlation inflates curvature, and phase is monotonic.
     if (trajectory.length >= 2) {
@@ -348,14 +348,14 @@ systemDynamicsProfiler = (() => {
     // Need minimum history for meaningful analysis
     if (trajectory.length < MIN_WINDOW) return;
 
-    // ── Trajectory velocity (mean magnitude of velocity vectors) ──
+    // -- Trajectory velocity (mean magnitude of velocity vectors) --
     let avgVelocity = 0;
     for (let i = 0; i < velocities.length; i++) {
       avgVelocity += phaseSpaceMath.magnitude(velocities[i]);
     }
     avgVelocity /= m.max(1, velocities.length);
 
-    // ── Trajectory curvature (mean angle between consecutive velocities) ──
+    // -- Trajectory curvature (mean angle between consecutive velocities) --
     let avgCurvature = 0;
     let curvCount = 0;
     for (let i = 1; i < velocities.length; i++) {
@@ -371,7 +371,7 @@ systemDynamicsProfiler = (() => {
     const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS);
     const effDim = phaseSpaceMath.effectiveDimensionality(rawTrajectory, mean, N_COMPOSITIONAL_DIMS);
     // per-axis variance ratios for dead-axis detection.
-    // Normalized so they sum to 1.0 — a value near 0 means that axis
+    // Normalized so they sum to 1.0 - a value near 0 means that axis
     // contributes negligible variance to the phase-space trajectory.
     let varTotal = 0;
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) varTotal += variance[d];
@@ -379,7 +379,7 @@ systemDynamicsProfiler = (() => {
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
       varRatios[d] = varTotal > 1e-12 ? variance[d] / varTotal : 1 / N_COMPOSITIONAL_DIMS;
     }
-    // ── Regime classification (with hysteresis) ──
+    // -- Regime classification (with hysteresis) --
     const rawRegime = _classifyRegime(avgVelocity, avgCurvature, effDim, strength);
     const regime = _resolveRegime(rawRegime);
     const grade = _grade(regime);
@@ -459,7 +459,7 @@ systemDynamicsProfiler = (() => {
     }
   }
 
-  // ── Self-register ──
+  // -- Self-register --
   conductorIntelligence.registerRecorder('systemDynamicsProfiler', () => { systemDynamicsProfiler.analyze(); });
   conductorIntelligence.registerStateProvider('systemDynamicsProfiler', () => ({
     dynamicsRegime: _lastSnapshot.regime,
@@ -469,7 +469,7 @@ systemDynamicsProfiler = (() => {
     dynamicsEffectiveDim: _lastSnapshot.effectiveDimensionality,
     dynamicsCouplingStrength: _lastSnapshot.couplingStrength
   }));
-  // Scope 'all' — profiler accumulates across sections because trajectory
+  // Scope 'all' - profiler accumulates across sections because trajectory
   // shape (velocity, curvature, coupling) is meaningful across key changes.
   // Section resets were discarding history in short compositions, causing
   // sparse statistics and unreliable regime classification.

@@ -1,7 +1,7 @@
 // src/conductor/phraseContourArchetypeDetector.js - Phrase contour classification.
 // Classifies recent melodic contours into archetypes: arch, ramp, plateau,
 // valley, zigzag. Signals contour type awareness and variety nudging.
-// Pure query API — consumed via conductorState.
+// Pure query API - consumed via conductorState.
 
 phraseContourArchetypeDetector = (() => {
   const WINDOW_SECONDS = 6;

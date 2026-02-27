@@ -57,7 +57,7 @@ articulationProfiler = (() => {
 
   /**
    * Get a duration selection bias to encourage articulation variety.
-   * Staccato-heavy â†’ boost legato; legato-heavy â†’ boost staccato.
+   * Staccato-heavy - boost legato; legato-heavy - boost staccato.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ legatoBias: number, staccatoBias: number }}

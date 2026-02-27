@@ -1,6 +1,6 @@
-// src/crossLayer/convergenceDetector.js — Polyrhythmic convergence detection.
+// src/crossLayer/convergenceDetector.js - Polyrhythmic convergence detection.
 // Posts every note onset to ATG 'onset' channel. When two layers' onsets land
-// within a tight ms tolerance, that's a convergence point — triggers burst events.
+// within a tight ms tolerance, that's a convergence point - triggers burst events.
 // Burst = coordinated unison note cluster (same pitch class, octave-displaced)
 // creating a momentary "singularity."
 
@@ -123,7 +123,7 @@ convergenceDetector = (() => {
       p(c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
 
-    // No active listeners — emitted for eventCatalog completeness and future extensibility
+    // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,

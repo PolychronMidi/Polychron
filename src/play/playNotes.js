@@ -163,12 +163,12 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     }
   }
 
-  // Enforce per-layer, per-unit remaining voice slots — trim picks if necessary
+  // Enforce per-layer, per-unit remaining voice slots - trim picks if necessary
   if (Array.isArray(picks) && picks.length > 0) {
     const available = m.max(0, V.optionalFinite(Number(remainingVoiceSlotsByLayer[layerName]), V.requireFinite(Number(remainingVoiceSlots), 'remainingVoiceSlots')));
     const allowed = m.max(0, m.min(picks.length, available));
     if (allowed <= 0) {
-      // no budget available for this layer/unit — skip emission
+      // no budget available for this layer/unit - skip emission
       emitNotesEmitted(0, intendedCount, 'voice-budget');
       return trackRhythm(unit, layer, false);
     }

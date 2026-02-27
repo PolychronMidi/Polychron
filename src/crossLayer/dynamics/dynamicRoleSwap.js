@@ -1,6 +1,6 @@
-// src/crossLayer/dynamicRoleSwap.js — Periodic layer behavioral profile swap.
-// Every N phrases, the two layers swap behavioral profiles: dense → sparse,
-// melodic → chordal, etc. Driven by conductorState intensity — swaps happen
+// src/crossLayer/dynamicRoleSwap.js - Periodic layer behavioral profile swap.
+// Every N phrases, the two layers swap behavioral profiles: dense - sparse,
+// melodic - chordal, etc. Driven by conductorState intensity - swaps happen
 // at tension valleys for natural transitions.
 
 dynamicRoleSwap = (() => {

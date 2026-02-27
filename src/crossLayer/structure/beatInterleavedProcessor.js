@@ -11,7 +11,7 @@
  *
  * API:
  *   beatInterleavedProcessor.recordLayerBeat(layer, outcome)
- *   beatInterleavedProcessor.getOtherLayerOutcome(layer) → outcome | null
+ *   beatInterleavedProcessor.getOtherLayerOutcome(layer) - outcome | null
  *   beatInterleavedProcessor.reset()
  *
  * Registered as a cross-layer module with phrase scope.

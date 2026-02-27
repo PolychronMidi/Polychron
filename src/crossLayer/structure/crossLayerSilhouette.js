@@ -1,4 +1,4 @@
-// src/crossLayer/crossLayerSilhouette.js — Holistic combined-output conductor.
+// src/crossLayer/crossLayerSilhouette.js - Holistic combined-output conductor.
 // Observes the combined behavior of all cross-layer modules and produces
 // correctional biases to keep the overall output balanced and musical.
 // Consumes spectralComplementarity ATG 'spectral' channel (dead-end signal).

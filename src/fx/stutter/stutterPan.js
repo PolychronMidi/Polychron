@@ -69,7 +69,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
     eventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: clamp(lastIntensity, 0, 1), tick });
 
-    // Record final pan position for note cooperation —
+    // Record final pan position for note cooperation -
     // negative = left-biased, positive = right-biased, 0 = center
     this.beatContext.panDirections[channelToStutter] = (currentPan - 64) / 64;
 

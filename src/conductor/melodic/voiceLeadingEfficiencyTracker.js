@@ -1,7 +1,7 @@
 // src/conductor/voiceLeadingEfficiencyTracker.js - Voice-leading smoothness tracker.
 // Measures total semitone displacement between successive chord tones across layers.
-// Smooth voice leading (minimal movement) → higher efficiency score.
-// Pure query API — density bias to allow resolution time when choppy.
+// Smooth voice leading (minimal movement) - higher efficiency score.
+// Pure query API - density bias to allow resolution time when choppy.
 
 voiceLeadingEfficiencyTracker = (() => {
   const WINDOW_SECONDS = 6;
@@ -67,7 +67,7 @@ voiceLeadingEfficiencyTracker = (() => {
     // Efficiency: 0 displacement = perfect, >7 = poor
     const efficiency = clamp(1 - avgDisplacement / 7, 0, 1);
 
-    // Density bias: choppy voice leading (low efficiency) → slight density reduction
+    // Density bias: choppy voice leading (low efficiency) - slight density reduction
     // to give room for smoother transitions
     let densityBias = 1;
     if (efficiency < 0.3) {

@@ -2,7 +2,7 @@
 // Used by accentPatternTracker, syncopationDensityTracker, interLayerRhythmAnalyzer,
 // articulationProfiler, durationalContourTracker, rhythmicSymmetryDetector,
 // rhythmicGroupingAnalyzer, onsetRegularityMonitor.
-// Pure query — reads timing globals.
+// Pure query - reads timing globals.
 
 beatGridHelpers = (() => {
   const V = validator.create('beatGridHelpers');

@@ -1,4 +1,4 @@
-// timeGridHelpers.js — Shared binary-search utilities for absoluteTimeWindow and absoluteTimeGrid.
+// timeGridHelpers.js - Shared binary-search utilities for absoluteTimeWindow and absoluteTimeGrid.
 // Both modules store time-sorted arrays and need identical prune + search-start logic.
 
 /**

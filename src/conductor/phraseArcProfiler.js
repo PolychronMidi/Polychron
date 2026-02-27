@@ -53,12 +53,12 @@ phraseArcProfiler = (() => {
 
   /**
    * Generate arc profile functions from PHRASES_ARC_CURVES global.
-   * Throws if the global is missing — arc curves must be centralized in config.
+   * Throws if the global is missing - arc curves must be centralized in config.
    * @returns {Object.<string, {register:Function, density:Function, independence:Function, dynamism:Function}>}
    */
   function generateArcProfiles() {
     if (!PHRASES_ARC_CURVES) {
-      throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined — ensure conductorConfig is loaded first');
+      throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined - ensure conductorConfig is loaded first');
     }
     /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function } }} */
     const adapted = {};

@@ -63,7 +63,7 @@ drumTextureCoupler = (() => {
 
   /**
    * Get current texture-drum coupling intensity (0-1).
-   * Higher values mean more recent texture contrast events â†’ drums should accent.
+   * Higher values mean more recent texture contrast events - drums should accent.
    * @returns {number}
    */
   function getIntensity() {

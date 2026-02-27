@@ -35,7 +35,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
       throw new Error(`BluesComposer.noteSet: pentatonic scale failed for root=${root} type=${type}`);
     }
 
-    // Full blues scale (includes the blue note — b5 for minor, b3 for major)
+    // Full blues scale (includes the blue note - b5 for minor, b3 for major)
     const bluesScale = t.Scale.get(`${root} blues`);
     const bluesNotes = (bluesScale && Array.isArray(bluesScale.notes) && bluesScale.notes.length > 0)
       ? bluesScale.notes
@@ -104,7 +104,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
       const note = typeof n === 'number' ? n : (n && typeof n.note === 'number' ? n.note : null);
       BluesComposer._V.requireFinite(note, 'output note');
       if (rf() < this.blueNoteProb * 0.3) {
-        // Ghost note: shift by ±1 semitone as grace
+        // Ghost note: shift by 1 semitone as grace
         const ghostNote = note + (rf() < 0.5 ? -1 : 1);
         return { note: clamp(ghostNote, 0, 127), _ghost: true };
       }

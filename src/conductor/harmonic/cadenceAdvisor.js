@@ -49,7 +49,7 @@ cadenceAdvisor = (() => {
       return { suggest: true, type: 'authentic', confidence: 0.85 };
     }
 
-    // Near phrase boundaries with sufficient harmonic motion â†’ mild cadence suggestion
+    // Near phrase boundaries with sufficient harmonic motion - mild cadence suggestion
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
     if (phraseCtx && phraseCtx.position > 0.85 && recentChanges.length >= 3) {

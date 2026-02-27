@@ -183,7 +183,7 @@ timeStream = (() => {
 
   /**
    * Reset all positions strictly below the given level to 0.
-   * Called when a parent level advances (e.g. new phrase â†’ reset measure, beat, ...).
+   * Called when a parent level advances (e.g. new phrase - reset measure, beat, ...).
    * @param {string} level
    */
   function resetSubLevels(level) {

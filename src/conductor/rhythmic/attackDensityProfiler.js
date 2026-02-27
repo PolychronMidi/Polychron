@@ -1,11 +1,11 @@
 // src/conductor/attackDensityProfiler.js - Attack vs. sustain note ratio tracker.
 // Measures the ratio of short/percussive (attack-heavy) notes to long/legato
 // (sustain-heavy) notes. Density bias for articulation balance.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 attackDensityProfiler = (() => {
   const WINDOW_SECONDS = 6;
-  const SHORT_THRESHOLD = 0.15; // seconds — notes shorter than this are "attacks"
+  const SHORT_THRESHOLD = 0.15; // seconds - notes shorter than this are "attacks"
 
   // Beat-level cache: getAttackSignal is called 2x per beat (densityBias + stateProvider)
   const _cache = beatCache.create(() => _getAttackSignal());
@@ -41,7 +41,7 @@ attackDensityProfiler = (() => {
     const attackRatio = attacks / total;
     const sustainRatio = sustains / total;
 
-    // Continuous ramp: sustain-heavy → boost density; attack-heavy → reduce.
+    // Continuous ramp: sustain-heavy - boost density; attack-heavy - reduce.
     // attackRatio 0→0.3 maps to 1.05→1.0; attackRatio 0.5→1.0 maps to 1.0→0.94.
     let densityBias = 1;
     if (attackRatio < 0.3) {

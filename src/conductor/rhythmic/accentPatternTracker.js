@@ -79,7 +79,7 @@ accentPatternTracker = (() => {
 
   /**
    * Get a velocity accent bias to encourage variety.
-   * Downbeat-heavy â†’ boost off-beat accents; flat â†’ boost downbeat emphasis.
+   * Downbeat-heavy - boost off-beat accents; flat - boost downbeat emphasis.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ downbeatBias: number, offbeatBias: number }}

@@ -1,6 +1,6 @@
-// motifSpreader.js — hierarchical motif planning across unit levels
+// motifSpreader.js - hierarchical motif planning across unit levels
 // Generates motif groups at each level of the musical hierarchy
-// (measure → beat → div → subdiv → subsubdiv) with parent‑child derivation.
+// (measure - beat - div - subdiv - subsubdiv) with parent‑child derivation.
 // Measure-level master motifs create coherence; child levels derive variations
 // via motifChain transforms + intervalComposer subsets.
 

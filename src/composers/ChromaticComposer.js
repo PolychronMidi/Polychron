@@ -1,6 +1,6 @@
 // ChromaticComposer.js - Chromatic passing tone / enclosure / neighbor-note composition
 // Generates chromatic approach patterns relative to a target scale context.
-// Not the same as "playing the chromatic scale" — this composer uses a target
+// Not the same as "playing the chromatic scale" - this composer uses a target
 // scale to distinguish chord/scale tones from chromatic passing tones and builds
 // idiomatic enclosure, neighbor, and approach figures.
 
@@ -8,7 +8,7 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
   /**
    * @param {string} targetScaleName - Scale to orbit around (e.g., 'major', 'minor')
    * @param {string} root - Root note (e.g., 'C', 'D')
-   * @param {number} [chromaticDensity=0.4] - 0–1, how much chromatic content vs diatonic
+   * @param {number} [chromaticDensity=0.4] - 0-1, how much chromatic content vs diatonic
    */
   constructor(targetScaleName = 'major', root = 'C', chromaticDensity = 0.4) {
     super();
@@ -88,15 +88,15 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
 
       if (rf() < this.chromaticDensity) {
         if (isTargetTone) {
-          // Note is diatonic — ornament it with chromatic approaches
+          // Note is diatonic - ornament it with chromatic approaches
           const pattern = rf();
           if (pattern < 0.35) {
-            // Enclosure: chromatic above + below → target
+            // Enclosure: chromatic above + below - target
             result.push({ note: clamp(midi + 1, 0, 127), _approach: 'enclosure-upper' });
             result.push({ note: clamp(midi - 1, 0, 127), _approach: 'enclosure-lower' });
             result.push(wrapped);
           } else if (pattern < 0.6) {
-            // Upper neighbor: target → step up → back
+            // Upper neighbor: target - step up - back
             result.push(wrapped);
             result.push({ note: clamp(midi + 1, 0, 127), _approach: 'upper-neighbor' });
             result.push(wrapped);
@@ -111,11 +111,11 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
             result.push(wrapped);
           }
         } else {
-          // Note is already chromatic — resolve toward nearest scale tone
+          // Note is already chromatic - resolve toward nearest scale tone
           const below = this._targetPCs.has((midi - 1) % 12) ? midi - 1 : null;
           const above = this._targetPCs.has((midi + 1) % 12) ? midi + 1 : null;
           if (below !== null && above !== null) {
-            // Both neighbors are scale tones — chromatic passing tone between them
+            // Both neighbors are scale tones - chromatic passing tone between them
             result.push({ note: clamp(below, 0, 127), _approach: 'resolve-below' });
             result.push(wrapped);
             result.push({ note: clamp(above, 0, 127), _approach: 'resolve-above' });
@@ -128,12 +128,12 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
             result.push(wrapped);
             result.push({ note: clamp(above, 0, 127), _approach: 'resolve-up' });
           } else {
-            // Isolated chromatic — pass through as color
+            // Isolated chromatic - pass through as color
             result.push(wrapped);
           }
         }
       } else {
-        // Below density threshold — pass through unadorned
+        // Below density threshold - pass through unadorned
         result.push(wrapped);
       }
     }

@@ -1,5 +1,5 @@
-// closedLoopController.js — Reusable factory for closed-loop feedback controllers.
-// Extracts the common observe → deviation → correction cycle found in coherenceMonitor,
+// closedLoopController.js - Reusable factory for closed-loop feedback controllers.
+// Extracts the common observe - deviation - correction cycle found in coherenceMonitor,
 // entropyRegulator, pipelineCouplingManager, regimeReactiveDamping, and adaptiveTrustScores.
 // Each controller auto-registers with feedbackRegistry and provides EMA smoothing,
 // clamp boundaries, and resonance dampening. New feedback loops become 5-line declarations.

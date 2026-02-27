@@ -1,4 +1,4 @@
-// src/crossLayer/rhythm/index.js — Timing, groove, phase & rhythmic interaction.
+// src/crossLayer/rhythm/index.js - Timing, groove, phase & rhythmic interaction.
 
 // @ts-ignore: side-effect module load
 require('./convergenceDetector');

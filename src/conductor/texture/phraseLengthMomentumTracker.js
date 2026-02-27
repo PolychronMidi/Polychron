@@ -50,7 +50,7 @@ phraseLengthMomentumTracker = (() => {
 
   /**
    * Suggest a phrase-length adjustment.
-   * Continuously accelerating â†’ suggest lengthening; continuously expanding â†’ suggest shortening.
+   * Continuously accelerating - suggest lengthening; continuously expanding - suggest shortening.
    * @returns {{ adjustment: number, suggestion: string }}
    */
   function suggestAdjustment() {

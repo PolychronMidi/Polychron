@@ -1,4 +1,4 @@
-// src/crossLayer/harmony/index.js — Pitch, harmonic, melodic & motif coordination.
+// src/crossLayer/harmony/index.js - Pitch, harmonic, melodic & motif coordination.
 
 // @ts-ignore: side-effect module load
 require('./cadenceAlignment');

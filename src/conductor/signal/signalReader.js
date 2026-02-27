@@ -1,7 +1,7 @@
-// signalReader.js — Standardized read API for the conductor signal pipeline.
+// signalReader.js - Standardized read API for the conductor signal pipeline.
 // Provides a thin, stable interface for any module to read density/tension/flicker
 // products, state-provider fields, signal attribution, and explainabilityBus events.
-// All inter-module signal reading goes through signalReader — never call
+// All inter-module signal reading goes through signalReader - never call
 // conductorIntelligence.getSignalSnapshot() or explainabilityBus.queryByType() directly.
 
 signalReader = (() => {
@@ -68,8 +68,8 @@ signalReader = (() => {
    * Query recent explainabilityBus events by type.
    * Load-order note: explainabilityBus is registered in crossLayer (loads after conductor).
    * This call is safe at runtime (beat-processing time) but must NOT be invoked at module
-   * load time — the global will not yet exist.
-   * @param {string} type — event type to filter on
+   * load time - the global will not yet exist.
+   * @param {string} type - event type to filter on
    * @param {number} [limit=10]
    * @returns {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>}
    */

@@ -58,7 +58,7 @@ grooveTemplateAdvisor = (() => {
 
   /**
    * Suggest a groove feel adjustment.
-   * Rigid â†’ add swing/humanize; loose â†’ tighten toward grid.
+   * Rigid - add swing/humanize; loose - tighten toward grid.
    * @returns {{ suggestion: string, swingAmount: number }}
    */
   function suggestGrooveFeel() {
@@ -75,17 +75,17 @@ grooveTemplateAdvisor = (() => {
   /**
    * Get a velocity humanization bias.
    * Continuous ramp based on avgDeviation relative to subdivDur:
-   *   rigid (low deviation) → 1.25, loose (high deviation) → 0.85,
-   *   intermediate → smooth interpolation.
+   *   rigid (low deviation) - 1.25, loose (high deviation) - 0.85,
+   *   intermediate - smooth interpolation.
    * @returns {number} - 0.8 to 1.3
    */
   function getVelocityHumanizeBias() {
     const profile = getGrooveProfile();
-    // rigid: avgDeviation is very low → more humanization needed (bias up)
-    // loose: avgDeviation is very high → less humanization needed (bias down)
+    // rigid: avgDeviation is very low - more humanization needed (bias up)
+    // loose: avgDeviation is very high - less humanization needed (bias down)
     // Map avgDeviation 0→0.1 to bias 1.25→1.0, then 0.1→0.5 to 1.0→0.85
     if (profile.rigid) {
-      // Already flagged as rigid — ramp: deviation 0→threshold maps to 1.25→1.0
+      // Already flagged as rigid - ramp: deviation 0→threshold maps to 1.25→1.0
       return 1.25;
     }
     if (profile.loose) {
@@ -93,7 +93,7 @@ grooveTemplateAdvisor = (() => {
     }
     // In between: avgDeviation relative to subdivDur range.
     // Use swingRatio as a proxy for how human the timing feels.
-    // Balanced swing (0.5) → 1.0; skewed → slight humanization
+    // Balanced swing (0.5) - 1.0; skewed - slight humanization
     const skew = m.abs(profile.swingRatio - 0.5) * 2; // 0–1: how asymmetric
     return 1.0 + clamp(skew, 0, 1) * 0.1;
   }

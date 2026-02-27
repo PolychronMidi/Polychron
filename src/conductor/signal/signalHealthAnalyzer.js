@@ -1,21 +1,21 @@
-// signalHealthAnalyzer.js — Meta-diagnostic: assesses pipeline health per beat.
+// signalHealthAnalyzer.js - Meta-diagnostic: assesses pipeline health per beat.
 // Detects the four failure modes that previously required manual tuning:
-//   1. Boundary saturation — a contributor is pinned at its clamp min/max
-//   2. Multiplicative crush — many contributors pulling product from 1.0
-//   3. Pipeline saturation — product hitting floor/ceiling
-//   4. Trust starvation — trust score decaying toward zero
+//   1. Boundary saturation - a contributor is pinned at its clamp min/max
+//   2. Multiplicative crush - many contributors pulling product from 1.0
+//   3. Pipeline saturation - product hitting floor/ceiling
+//   4. Trust starvation - trust score decaying toward zero
 // Emits health grades into conductorState and explainabilityBus each beat.
-// Does NOT modify signal values — pure observation + diagnostics.
+// Does NOT modify signal values - pure observation + diagnostics.
 
 signalHealthAnalyzer = (() => {
-  // ── Accumulator state (reset per section) ──
+  // -- Accumulator state (reset per section) --
   let beatsSeen = 0;
   /** @type {{ density: number, tension: number, flicker: number }} */
   const pinnedCounts = { density: 0, tension: 0, flicker: 0 };
   /** @type {{ density: number, tension: number }} */
   const saturationCounts = { density: 0, tension: 0 };
 
-  // ── Per-beat health snapshot (cached for stateProvider) ──
+  // -- Per-beat health snapshot (cached for stateProvider) --
   let _lastHealth = _emptyHealth();
 
   /** @returns {SignalHealthSnapshot} */
@@ -169,7 +169,7 @@ signalHealthAnalyzer = (() => {
    */
   function getSummary() {
     const b = m.max(1, beatsSeen);
-    // Recompute trust from the final trust scores — the per-beat _lastHealth.trust
+    // Recompute trust from the final trust scores - the per-beat _lastHealth.trust
     // can be stale because the recorder runs before crossLayerBeatRecord registers
     // the current beat's outcomes.
     const freshTrust = _analyzeTrust();
@@ -211,7 +211,7 @@ signalHealthAnalyzer = (() => {
     _lastHealth = _emptyHealth();
   }
 
-  // ── Self-register ──
+  // -- Self-register --
   conductorIntelligence.registerRecorder('signalHealthAnalyzer', () => { signalHealthAnalyzer.analyze(); });
   conductorIntelligence.registerStateProvider('signalHealthAnalyzer', () => ({
     signalHealthOverall: _lastHealth.overall,

@@ -1,6 +1,6 @@
 // src/conductor/thematicRecallDetector.js - Cross-section pitch-sequence similarity.
 // Compares recent pitch patterns against stored section fingerprints.
-// Pure query API — signals thematic callback opportunities or staleness.
+// Pure query API - signals thematic callback opportunities or staleness.
 
 thematicRecallDetector = (() => {
   const FINGERPRINT_LENGTH = 6; // 6-note interval fingerprint
@@ -54,7 +54,7 @@ thematicRecallDetector = (() => {
       intervals.push(curr - prev);
     }
 
-    // Compare against stored fingerprints (skip last one — that's current section)
+    // Compare against stored fingerprints (skip last one - that's current section)
     let bestSimilarity = 0;
     let bestSection = null;
 

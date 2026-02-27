@@ -1,10 +1,10 @@
-// microUnitAttenuator.js — caps total note-on events across child units of a parent
+// microUnitAttenuator.js - caps total note-on events across child units of a parent
 // Works subtractively: all notes are buffered during a parent's child cycle,
 // then at flush time the lowest-crossModulation events are removed until the
 // cap is satisfied. Survivors are written to the active buffer `c`.
 //
 // Limits per level: ri(2,3) * unitsPerParent
-//   e.g. 4 divsPerBeat → cap = ri(8,12) note-ons across the whole beat's divs
+//   e.g. 4 divsPerBeat - cap = ri(8,12) note-ons across the whole beat's divs
 //
 // Stack-based: supports nested attenuation cycles (div > subdiv > subsubdiv).
 // Each begin() pushes a new frame; flush() pops the innermost frame and writes
@@ -36,7 +36,7 @@ microUnitAttenuator = (() => {
       V.assertArrayLength(attCfg.divRange, 2, 'attCfg.divRange');
       const unitMultiplier = unit === 'subsubdiv' ? rf(attCfg.subsubdivRange[0], attCfg.subsubdivRange[1])
         : unit === 'subdiv' ? rf(attCfg.subdivRange[0], attCfg.subdivRange[1])
-        : rf(attCfg.divRange[0], attCfg.divRange[1]); // div or beat — widest allowance
+        : rf(attCfg.divRange[0], attCfg.divRange[1]); // div or beat - widest allowance
       _stack.push({
         unit,
         limit: m.round(unitMultiplier * n),
@@ -61,7 +61,7 @@ microUnitAttenuator = (() => {
       V.requireFinite(onEvt.tick, 'record.onEvt.tick');
       V.requireFinite(offEvt.tick, 'record.offEvt.tick');
       if (_stack.length === 0) {
-        // No active attenuation — write through immediately
+        // No active attenuation - write through immediately
         c.push(onEvt, offEvt);
         return;
       }
@@ -87,9 +87,9 @@ microUnitAttenuator = (() => {
       if (pairs.length <= limit) {
         survivors = pairs;
       } else {
-        // Sort descending by crossModulation score — highest scores survive
+        // Sort descending by crossModulation score - highest scores survive
         pairs.sort((a, b) => b.score - a.score);
-        // Truncate in-place — avoids allocating a new array via .slice()
+        // Truncate in-place - avoids allocating a new array via .slice()
         pairs.length = limit;
         // Re-sort survivors by tick order so MIDI output stays chronological
         pairs.sort((a, b) => a.on.tick - b.on.tick);

@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Structural Narrative Advisor — Compositional Strategy Memory (E3)
+ * Structural Narrative Advisor - Compositional Strategy Memory (E3)
  *
  * Tracks which composer families and texture profiles have been used
  * across sections. Provides a "variety pressure" density bias that
@@ -38,13 +38,13 @@ structuralNarrativeAdvisor = (() => {
       const total  = familyHistory.length;
       const entropy = unique / Math.max(total, 1);
 
-      // Low entropy → push density up slightly to encourage change
+      // Low entropy - push density up slightly to encourage change
       varietyPressure = 1.0 + VARIETY_GAIN * (1.0 - entropy);
     }
   }
 
   /**
-   * Called each beat via recorder — reads current composer from state.
+   * Called each beat via recorder - reads current composer from state.
    */
   function refresh() {
     const snap = conductorState.getSnapshot();

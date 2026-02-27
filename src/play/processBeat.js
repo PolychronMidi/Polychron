@@ -48,7 +48,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clArcTarget = entropyRegulator.getArcTarget(timeStream.normalizedProgress('section'));
   entropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
   // Regulation aggressiveness scales with deviation from target entropy:
-  // large deviation → stronger regulation, near-target → lighter touch.
+  // large deviation - stronger regulation, near-target - lighter touch.
   const entropyDeviation = m.abs(entropyRegulator.measureEntropy() - clArcTarget);
   entropyRegulator.setRegulationStrength(clamp(0.3 + entropyDeviation * 1.4, 0.2, 0.9));
   const clEntropy = entropyRegulator.getRegulation();
@@ -100,7 +100,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   });
   playProb = clNegotiation.playProb;
   stutterProb = clNegotiation.stutterProb;
-  // negotiationEngine.apply already incorporates entropyScale — do not re-apply via regulate()
+  // negotiationEngine.apply already incorporates entropyScale - do not re-apply via regulate()
 
   // ── [stage: probability-adjust] ───────────────────────────────
   if (clClimaxMods.playProbScale !== 1.0) playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);

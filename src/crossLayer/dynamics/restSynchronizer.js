@@ -1,4 +1,4 @@
-// src/crossLayer/restSynchronizer.js — Coordinated and complementary musical silence.
+// src/crossLayer/restSynchronizer.js - Coordinated and complementary musical silence.
 // Coordinates shared rests (both layers go quiet together for breathing room)
 // and complementary rests (one layer fills when the other rests, creating hocket).
 // Driven by interactionHeatMap pressure and sectionIntentCurves density.

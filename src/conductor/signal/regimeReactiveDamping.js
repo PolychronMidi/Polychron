@@ -7,11 +7,11 @@
  * density / tension / flicker biases so the signal pipeline responds
  * appropriately to each dynamical phase.
  *
- * Stagnant  → inject variety (density ↑, flicker ↑)
- * Fragmented → dampen extremes (density → 1, tension → 1)
- * Oscillating → counter-cycle (flicker ↓)
- * Exploring → slight tension lift
- * Coherent / Evolving → neutral (1.0)
+ * Stagnant  - inject variety (density ↑, flicker ↑)
+ * Fragmented - dampen extremes (density - 1, tension - 1)
+ * Oscillating - counter-cycle (flicker ↓)
+ * Exploring - slight tension lift
+ * Coherent / Evolving - neutral (1.0)
  */
 
 regimeReactiveDamping = (() => {
@@ -40,7 +40,7 @@ regimeReactiveDamping = (() => {
   const REGIME_FLICKER_DIR = {
     stagnant: 1,     // boost
     fragmented: -1,  // dampen
-    oscillating: 0,  // neutral (was -1 — dampening flicker while density is neutral
+    oscillating: 0,  // neutral (was -1 - dampening flicker while density is neutral
                      //   created mechanical anti-correlation r=-0.7 via shared causal path)
     exploring: 0,
     coherent: 0,
@@ -49,22 +49,22 @@ regimeReactiveDamping = (() => {
   };
 
   // Max bias magnitude per signal (how far from 1.0 we can go)
-  const MAX_DENSITY = 0.12;  // → range 0.88–1.12
-  const MAX_TENSION = 0.06;  // → range 0.94–1.06
-  const MAX_FLICKER = 0.15;  // → range 0.85–1.15
+  const MAX_DENSITY = 0.12;  // - range 0.88-1.12
+  const MAX_TENSION = 0.06;  // - range 0.94-1.06
+  const MAX_FLICKER = 0.15;  // - range 0.85-1.15
 
   // Curvature scaling: bias = 1 + dir * max * curvatureGain
-  // At curvature 0 → bias = 1.0 (neutral). At curvature 1.0 → full magnitude.
+  // At curvature 0 - bias = 1.0 (neutral). At curvature 1.0 - full magnitude.
   const CURVATURE_CEILING = 1.0;
 
-  // EMA smoothing on bias outputs — prevents discontinuous jumps on regime
+  // EMA smoothing on bias outputs - prevents discontinuous jumps on regime
   // transitions that feed back as self-induced oscillation via the profiler.
   const BIAS_SMOOTHING = 0.20;
 
   // --- Velocity floor: detect phase-space stasis and inject directional drift ---
   // When velocity stays below threshold for LOW_VEL_BEATS, nudge the least-active
   // axis to restart trajectory movement. This addresses the "near-zero velocity
-  // despite evolving regime" problem — the system equilibrates too fast.
+  // despite evolving regime" problem - the system equilibrates too fast.
   const LOW_VEL_THRESHOLD = 0.015;
   const LOW_VEL_BEATS     = 8;
   const DRIFT_MAGNITUDE   = 0.09;
@@ -99,7 +99,7 @@ regimeReactiveDamping = (() => {
     }
 
     if (lowVelStreak >= LOW_VEL_BEATS && snap && snap.couplingMatrix) {
-      // Find the axis with weakest absolute correlation to others —
+      // Find the axis with weakest absolute correlation to others -
       // perturbing it has the least chance of cascading through coupling.
       const cm = snap.couplingMatrix;
       const dCoup = m.abs(cm['density-tension'] || 0) + m.abs(cm['density-flicker'] || 0);

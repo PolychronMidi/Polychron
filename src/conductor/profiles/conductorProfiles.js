@@ -1,4 +1,4 @@
-// conductorProfiles.js — Conductor profile definitions assembled from focused profile modules.
+// conductorProfiles.js - Conductor profile definitions assembled from focused profile modules.
 
 // Note: per project convention, profile factory modules are required from an index file
 // (`src/conductor/index.js`) so local `require()` calls do not appear outside `index.js`.

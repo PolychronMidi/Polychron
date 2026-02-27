@@ -1,37 +1,14 @@
-// fullBootstrap.js — AUTO-GENERATED from src/types/globals.d.ts by scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
+// fullBootstrap.js - AUTO-GENERATED from src/types/globals.d.ts by scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
 // To add a new validated global: edit globals.d.ts only.
 
 fullBootstrap = (() => {
   /**
-   * AUTO-GENERATED from src/types/globals.d.ts — do not edit by hand.
+   * AUTO-GENERATED from src/types/globals.d.ts - do not edit by hand.
    * Every name in this set is proven-defined by mainBootstrap.assertBootstrapGlobals()
    * before any composition code runs. Typeof-probing these downstream is redundant
    * and banned by the `local/no-typeof-validated-global` ESLint rule.
    */
   const VALIDATED_GLOBALS = Object.freeze([
-    // ── Abbreviation Glossary ──
-
-    // ── Core Interface Types ──
-
-    // ── Explainability / Trust / Coherence ──
-
-    // ── Conductor subsystem objects ──
-
-    // ── System Dynamics Profiler (phase-space trajectory analysis) ──
-
-    // ── Time subsystem ──
-
-    // ── Lifecycle / caching utilities ──
-
-    // ── eventCatalog ──
-
-    // ── Cross-Layer Module Interfaces ──
-
-    // ── Rhythm / Time / Composer Interfaces ──
-
-    // ── Conductor / Composer / FX Class Interfaces ──
-
-    // ── utils ──
     'm',
     'rf',
     'ri',
@@ -102,8 +79,6 @@ fullBootstrap = (() => {
     'systemSnapshot',
     'modeQualityMap',
     'priorsHelpers',
-
-    // ── conductor ──
     'BPM',
     'PPQ',
     'currentDensity',
@@ -284,8 +259,6 @@ fullBootstrap = (() => {
     'feedbackRegistry',
     'closedLoopController',
     'beatCache',
-
-    // ── rhythm ──
     'rhythmRegistry',
     'rhythmManager',
     'rhythmValues',
@@ -327,8 +300,6 @@ fullBootstrap = (() => {
     'trackRhythm',
     'crossModulateRhythms',
     'rhythmHistoryTracker',
-
-    // ── time ──
     'bpmRatio',
     'bpmRatio2',
     'bpmRatio3',
@@ -403,8 +374,6 @@ fullBootstrap = (() => {
     'tempoFeelEngine',
     'timeStream',
     'fractalArcGenerator',
-
-    // ── composers ──
     'normalizeChordSymbol',
     'MeasureComposer',
     'ScaleComposer',
@@ -504,8 +473,6 @@ fullBootstrap = (() => {
     'motifSpreader',
     'applyMotifToNotes',
     'motifTransformAdvisor',
-
-    // ── fx ──
     'stutterConfig',
     'lBal',
     'rBal',
@@ -569,8 +536,6 @@ fullBootstrap = (() => {
     'beatCount',
     'sideBias',
     'stutterFailFast',
-
-    // ── crossLayer ──
     't',
     'stutterContagion',
     'convergenceDetector',
@@ -613,8 +578,6 @@ fullBootstrap = (() => {
     'contextualTrust',
     'beatInterleavedProcessor',
     'harmonicFunctionGraph',
-
-    // ── writer ──
     'formatTime',
     'logUnit',
     'pushMultiple',
@@ -623,19 +586,13 @@ fullBootstrap = (() => {
     'systemManifestMarkdown',
     'systemManifest',
     'outputAnalyzer',
-
-    // ── typed constructors (canonical declarations — keep only these) ──
     'VoiceLeadingScore',
     'SimplexNoise',
     'FactoryManager',
-
-    // ── node / timing ──
     'fs',
     'finalTick',
     'path',
     'endTime',
-
-    // ── play ──
     'eventBus',
     'eventCatalog',
     'totalSections',
@@ -661,8 +618,6 @@ fullBootstrap = (() => {
     'emitPickCrossLayerRecord',
     'emitPickSourceTextures',
     'emitPickReflectionTextures',
-
-    // ── other ──
     'randomFloat',
     'randomInt',
     'randomWeightedInRange',

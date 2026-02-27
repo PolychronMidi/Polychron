@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Output Analyzer — Post-Hoc Musical Coherence Analysis (E12)
+ * Output Analyzer - Post-Hoc Musical Coherence Analysis (E12)
  *
  * After composition completes (called from grandFinale), analyses the
  * MIDI output for structural properties:
@@ -11,7 +11,7 @@
  *   - Rhythmic regularity
  *
  * Results are appended to the system manifest as an 'outputAnalysis'
- * section. Pure post-hoc observation — no feedback into composition.
+ * section. Pure post-hoc observation - no feedback into composition.
  */
 
 outputAnalyzer = (() => {

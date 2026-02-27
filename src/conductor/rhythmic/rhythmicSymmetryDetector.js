@@ -2,7 +2,7 @@
 // Scans recent onset patterns for structural symmetry (palindromes,
 // proportional augmentation/diminution). Signals emerging symmetry
 // vs. when asymmetry should keep things fresh.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 rhythmicSymmetryDetector = (() => {
   const WINDOW_SECONDS = 6;
@@ -65,7 +65,7 @@ rhythmicSymmetryDetector = (() => {
     }
     variance /= ratios.length;
 
-    // Low variance + ratio != 1 → augmentation/diminution detected
+    // Low variance + ratio != 1 - augmentation/diminution detected
     const consistency = m.max(0, 1 - m.sqrt(variance) * 2);
     const isTransformative = m.abs(mean - 1) > 0.1 ? 1 : 0.3;
     return consistency * isTransformative;

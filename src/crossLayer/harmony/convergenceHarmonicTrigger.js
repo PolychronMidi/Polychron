@@ -1,4 +1,4 @@
-// src/crossLayer/convergenceHarmonicTrigger.js — Rhythm→harmony causal link.
+// src/crossLayer/convergenceHarmonicTrigger.js - Rhythm→harmony causal link.
 // When rhythmic convergences happen, this module triggers harmonic changes:
 // modal interchange moments, cadence resolutions, or tonic reaffirmations.
 // Consumes cadenceAlignment tonicBias/dominantBias (dead-end signals).
@@ -68,7 +68,7 @@ convergenceHarmonicTrigger = (() => {
 
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
 
-    // No active listeners — emitted for eventCatalog completeness and future extensibility
+    // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,

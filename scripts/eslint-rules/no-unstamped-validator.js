@@ -2,7 +2,7 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow direct validator.method() calls — use a stamped V = validator.create() instance instead',
+      description: 'Disallow direct validator.method() calls - use a stamped V = validator.create() instance instead',
       recommended: false
     },
     schema: []
@@ -35,7 +35,7 @@ module.exports = {
         if (VALIDATOR_METHODS.has(methodName)) {
           context.report({
             node,
-            message: `Direct validator.${methodName}() call — use a stamped instance instead: const V = validator.create('ModuleName'); V.${methodName}(...)`
+            message: `Direct validator.${methodName}() call - use a stamped instance instead: const V = validator.create('ModuleName'); V.${methodName}(...)`
           });
         }
       }

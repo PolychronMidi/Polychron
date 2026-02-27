@@ -48,10 +48,10 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
       const phrasePhase = this.phraseArcManager.getPhase();
 
       // Map phrase position to tension curve (peak around 0.6-0.75)
-      // Opening: low tension (0-0.25) → 0.2-0.4
-      // Development: rising tension (0.25-0.5) → 0.4-0.7
-      // Climax: peak tension (0.5-0.75) → 0.7-0.95
-      // Resolution: falling tension (0.75-1.0) → 0.95-0.2
+      // Opening: low tension (0-0.25) - 0.2-0.4
+      // Development: rising tension (0.25-0.5) - 0.4-0.7
+      // Climax: peak tension (0.5-0.75) - 0.7-0.95
+      // Resolution: falling tension (0.75-1.0) - 0.95-0.2
       if (phrasePhase === 'opening') {
         effectivePosition = 0.2 + phrasePos * 0.8; // 0.2-0.4
       } else if (phrasePhase === 'development') {

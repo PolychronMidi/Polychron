@@ -1,4 +1,4 @@
-// beatCache.js — Per-beat memoization for expensive conductor queries.
+// beatCache.js - Per-beat memoization for expensive conductor queries.
 // Many conductor modules register both a bias getter AND a stateProvider,
 // both calling the same costly function (typically querying absoluteTimeWindow).
 // This factory wraps such functions so the computation runs at most once per beat.
@@ -7,7 +7,7 @@
 beatCache = (() => {
   /**
    * Wrap an expensive function so it runs at most once per beat.
-   * @param {Function} fn — the expensive computation (no args)
+   * @param {Function} fn - the expensive computation (no args)
    * @returns {{ get: () => any }}
    */
   function create(fn) {

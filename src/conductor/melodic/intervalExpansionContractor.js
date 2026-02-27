@@ -83,13 +83,13 @@ intervalExpansionContractor = (() => {
     if (avgIntervalTrend > 1.5) trend = 'expanding';
     else if (avgIntervalTrend < -1.5) trend = 'contracting';
 
-    // Density bias: rapid expansion â†’ slight reduction to give melodic room;
-    // extreme contraction â†’ slight increase to encourage variety
+    // Density bias: rapid expansion - slight reduction to give melodic room;
+    // extreme contraction - slight increase to encourage variety
     let densityBias = 1;
     if (avgIntervalTrend > 2) {
-      densityBias = 0.96; // expanding fast â†’ give room
+      densityBias = 0.96; // expanding fast - give room
     } else if (avgIntervalTrend < -2) {
-      densityBias = 1.04; // contracting â†’ encourage variety
+      densityBias = 1.04; // contracting - encourage variety
     }
 
     return { trend, densityBias, avgIntervalTrend };

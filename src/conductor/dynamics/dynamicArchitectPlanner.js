@@ -67,25 +67,25 @@ dynamicArchitectPlanner = (() => {
 
   /**
    * Compute the ideal dynamic curve at this macro position.
-   * Classic arch: pp â†’ mp â†’ f â†’ ff(climax ~70%) â†’ mf â†’ p â†’ pp(coda)
+   * Classic arch: pp - mp - f - ff(climax ~70%) - mf - p - pp(coda)
    * @param {number} position 0-1
    * @returns {number} target intensity 0-1
    */
   function idealDynamicCurve(position) {
     // Piecewise arch peaking at 0.7
     if (position < 0.15) {
-      // Opening: gentle ramp 0.2 â†’ 0.4
+      // Opening: gentle ramp 0.2 - 0.4
       return 0.2 + position / 0.15 * 0.2;
     }
     if (position < 0.7) {
-      // Building: 0.4 â†’ 0.85 (climax region)
+      // Building: 0.4 - 0.85 (climax region)
       return 0.4 + (position - 0.15) / 0.55 * 0.45;
     }
     if (position < 0.85) {
-      // Post-climax descent: 0.85 â†’ 0.45
+      // Post-climax descent: 0.85 - 0.45
       return 0.85 - (position - 0.7) / 0.15 * 0.4;
     }
-    // Coda: 0.45 â†’ 0.15
+    // Coda: 0.45 - 0.15
     return 0.45 - (position - 0.85) / 0.15 * 0.3;
   }
 

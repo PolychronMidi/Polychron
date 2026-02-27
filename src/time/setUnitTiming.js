@@ -4,7 +4,7 @@ const V = validator.create('setUnitTiming');
 
 /**
  * Set timing variables for each unit level. Calculates absolute positions using
- * cascading parent position + index × duration pattern. See time.md for details.
+ * cascading parent position + index * duration pattern. See time.md for details.
  * @param {string} unitType - Unit type for timing calculation and logging.
  * @returns {void}
  */

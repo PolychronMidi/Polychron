@@ -2,7 +2,7 @@
 // Analyzes the spatial distribution and coordination of rests (silence gaps)
 // across the polyrhythmic layers. Signals clustered silence (tutti pause)
 // vs. staggered breathing for the conductor to modulate.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 silenceDistributionTracker = (() => {
   const WINDOW_SECONDS = 6;
@@ -54,7 +54,7 @@ silenceDistributionTracker = (() => {
     }
 
     // Cluster score: how synchronized are the silences across layers?
-    // If all layers have max gaps at similar times → clustered (tutti pause)
+    // If all layers have max gaps at similar times - clustered (tutti pause)
     let gapVariance = 0;
     let gapMean = 0;
     for (let i = 0; i < maxGaps.length; i++) gapMean += maxGaps[i];
@@ -64,9 +64,9 @@ silenceDistributionTracker = (() => {
     }
     gapVariance /= maxGaps.length;
 
-    // Low variance in max gaps → clustered silence
+    // Low variance in max gaps - clustered silence
     const clusterScore = clamp(1 - m.sqrt(gapVariance) * 0.5, 0, 1);
-    // High variance → staggered breathing
+    // High variance - staggered breathing
     const staggerScore = clamp(m.sqrt(gapVariance) * 0.5, 0, 1);
 
     // Overall silence ratio

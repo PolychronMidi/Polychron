@@ -1,6 +1,6 @@
-// conductorDampening.js — Progressive deviation dampening engine for conductor pipelines.
+// conductorDampening.js - Progressive deviation dampening engine for conductor pipelines.
 // Extracted from conductorIntelligence.js. Prevents coordinated crush (many modules
-// each pulling to 0.85–0.94) from accumulating catastrophic suppression.
+// each pulling to 0.85-0.94) from accumulating catastrophic suppression.
 
 conductorDampening = (() => {
   // Base damping (0.6) calibrated for ~20 contributors.

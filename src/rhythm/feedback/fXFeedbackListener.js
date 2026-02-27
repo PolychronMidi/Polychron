@@ -1,4 +1,4 @@
-﻿// src/rhythm/FXFeedbackListener.js - eventBus listener for FXâ†’Rhythm feedback loops
+﻿// src/rhythm/FXFeedbackListener.js - eventBus listener for FX-Rhythm feedback loops
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {
@@ -71,8 +71,8 @@ FXFeedbackListener = (() => {
 
   /**
    * Modify rhythmMethods weights based on FX intensity
-   * Higher intensity â†’ favor complex patterns (onsets, euclid)
-   * Lower intensity â†’ favor simple patterns (binary, random)
+   * Higher intensity - favor complex patterns (onsets, euclid)
+   * Lower intensity - favor simple patterns (binary, random)
    * @param {Object} rhythmMethodsObj - from rhythmRegistry.getAll()
    * @returns {Object} copy with adjusted logicweights
    * @throws {Error} if input invalid
@@ -157,7 +157,7 @@ FXFeedbackListener = (() => {
 
       const methodName = spec.method;
       const methodScore = (methodName && methodScores[methodName] !== undefined) ? methodScores[methodName] : 0.5;
-      // method multiplier: at intensity=1 this gives up to +/-25% weighting swing
+      // method multiplier: at intensity=1 this gives up to 25% weighting swing
       const methodMultiplier = 1 + (methodScore - 0.5) * intensity * 0.5;
 
       const newWeights = spec.weights.map((w, idx) => {

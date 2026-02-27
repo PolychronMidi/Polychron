@@ -1,4 +1,4 @@
-// src/utils/modeQualityMap.js — Canonical mode-to-quality mapping.
+// src/utils/modeQualityMap.js - Canonical mode-to-quality mapping.
 // Shared by all priors modules (melodic, harmonic, voiceLeading, rhythm).
 
 modeQualityMap = (() => {
@@ -10,7 +10,7 @@ modeQualityMap = (() => {
 
   /**
    * Normalize a quality or mode string to a canonical quality key.
-   * Returns null for unrecognised input — callers decide how to handle failure.
+   * Returns null for unrecognised input - callers decide how to handle failure.
    * @param {string} input
    * @returns {string | null}
    */
@@ -24,9 +24,9 @@ modeQualityMap = (() => {
   }
 
   /**
-   * Normalize a quality or mode string — throws on unrecognised input.
+   * Normalize a quality or mode string - throws on unrecognised input.
    * @param {string} input
-   * @param {string} label — call-site label for the error message
+   * @param {string} label - call-site label for the error message
    * @returns {string}
    */
   function normalizeOrFail(input, label) {

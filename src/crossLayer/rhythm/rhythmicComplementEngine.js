@@ -1,4 +1,4 @@
-// src/crossLayer/rhythmicComplementEngine.js — Deliberate rhythmic interlocking.
+// src/crossLayer/rhythmicComplementEngine.js - Deliberate rhythmic interlocking.
 // Coordinates rhythmic complementarity between layers: hocket (alternating hits),
 // antiphony (call-response), and canon (delayed imitation).
 // Reads ATW for other layer timing to compute ideal complement positions.
@@ -61,7 +61,7 @@ rhythmicComplementEngine = (() => {
 
     if (mode === 'free') return { tick: onTick, velocityScale: 1.0, modified: false };
 
-    // If this layer is already resting, skip complement — rest takes priority
+    // If this layer is already resting, skip complement - rest takes priority
     if (restSynchronizer.isLayerResting(layer)) return { tick: onTick, velocityScale: 1.0, modified: false };
 
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
@@ -120,9 +120,9 @@ rhythmicComplementEngine = (() => {
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
     const density = V.optionalFinite(intent.densityTarget, 0.5);
 
-    // High interaction + low density → hocket (interleaving gaps)
-    // High interaction + high density → antiphony (dense call/response)
-    // Moderate everything → canon or free
+    // High interaction + low density - hocket (interleaving gaps)
+    // High interaction + high density - antiphony (dense call/response)
+    // Moderate everything - canon or free
     if (interaction > 0.6 && density < 0.4) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
     } else if (interaction > 0.6 && density > 0.6) {

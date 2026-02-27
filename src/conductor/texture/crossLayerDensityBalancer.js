@@ -1,7 +1,7 @@
 // src/conductor/crossLayerDensityBalancer.js - Per-layer onset density balancer.
 // Compares onset density across polyrhythmic layers and detects when one
 // layer dominates. Density bias to rebalance activity across layers.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 crossLayerDensityBalancer = (() => {
   const WINDOW_SECONDS = 6;
@@ -47,11 +47,11 @@ crossLayerDensityBalancer = (() => {
     // Imbalance: 0 = perfectly balanced, 1 = one layer has all activity
     const imbalance = maxCount > 0 ? clamp(1 - minCount / maxCount, 0, 1) : 0;
 
-    // Density bias: high imbalance → slight reduction to allow under-represented
-    // layers to contribute; balanced → normal density
+    // Density bias: high imbalance - slight reduction to allow under-represented
+    // layers to contribute; balanced - normal density
     let densityBias = 1;
     if (imbalance > 0.6) {
-      densityBias = 0.94; // heavily imbalanced → thin dominant layer
+      densityBias = 0.94; // heavily imbalanced - thin dominant layer
     } else if (imbalance > 0.4) {
       densityBias = 0.97;
     }

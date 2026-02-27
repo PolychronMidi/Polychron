@@ -3,13 +3,13 @@
 /**
  * Contextual Trust Learning (E11)
  *
- * Extends the trust system by keying trust scores on (module × regime)
+ * Extends the trust system by keying trust scores on (module * regime)
  * pairs. Different dynamical regimes may warrant different trust weights
  * for the same cross-layer module. This module wraps adaptiveTrustScores
  * with contextual lookup and registers as a cross-layer module.
  *
  * API:
- *   contextualTrust.getWeight(moduleName) → number (regime-aware)
+ *   contextualTrust.getWeight(moduleName) - number (regime-aware)
  *   contextualTrust.record(moduleName, payoff)
  *   contextualTrust.reset()
  */

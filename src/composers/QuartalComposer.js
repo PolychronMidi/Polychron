@@ -8,7 +8,7 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
    * @param {string} scaleName - Scale to draw from (e.g., 'major', 'dorian')
    * @param {string} root - Root note (e.g., 'C', 'D')
    * @param {'quartal'|'quintal'|'mixed'} [voicingType='quartal'] - Interval stacking mode
-   * @param {number} [stackSize=4] - Number of notes per voicing (2–6)
+   * @param {number} [stackSize=4] - Number of notes per voicing (2-6)
    */
   constructor(scaleName = 'major', root = 'C', voicingType = 'quartal', stackSize = 4) {
     super();

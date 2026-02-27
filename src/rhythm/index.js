@@ -20,7 +20,7 @@ require('./rhythmRegistry');
 // @ts-ignore: side-effect module load
 require('./rhythmManager');
 
-// Drum subsystem (drumMap → drummer → playDrums → playDrums2 → drumTextureCoupler)
+// Drum subsystem (drumMap - drummer - playDrums - playDrums2 - drumTextureCoupler)
 // @ts-ignore: drum pattern generation and texture coupling
 require('./drums');
 // @ts-ignore: side-effect module load

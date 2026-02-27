@@ -1,8 +1,8 @@
-// src/crossLayer/pitchMemoryRecall.js — Long-term thematic pitch memory.
+// src/crossLayer/pitchMemoryRecall.js - Long-term thematic pitch memory.
 // Remembers significant pitch patterns across sections (NOT reset at section boundaries).
 // When convergence, cadence, or downbeat events occur, recalls earlier material
 // for thematic unity. This is the only cross-layer module that persists across
-// sections by design — it's the long-term memory of the composition.
+// sections by design - it's the long-term memory of the composition.
 
 pitchMemoryRecall = (() => {
   const V = validator.create('pitchMemoryRecall');
@@ -68,7 +68,7 @@ pitchMemoryRecall = (() => {
 
   /**
    * Attempt recall of a past pitch pattern relevant to the current musical moment.
-   * Triggered by convergence, cadence, or downbeat — uses similarity to current
+   * Triggered by convergence, cadence, or downbeat - uses similarity to current
    * material to find the best match.
    * @param {string} activeLayer
    * @param {number} currentMidi
@@ -98,7 +98,7 @@ pitchMemoryRecall = (() => {
     const sectionPos = timeStream.getPosition('section');
     for (let i = 0; i < memories.length; i++) {
       const mem = memories[i];
-      // Similarity: does any pitch class match? (boolean — avoids .filter() allocation)
+      // Similarity: does any pitch class match? (boolean - avoids .filter() allocation)
       const hasMatch = mem.pitchClasses.includes(currentPC);
       // Prefer memories from different sections (thematic recall, not repetition)
       const sectionDist = Math.abs(sectionPos - mem.sectionIdx);
@@ -139,7 +139,7 @@ pitchMemoryRecall = (() => {
   /** @returns {number} */
   function getRecallCount() { return recallCount; }
 
-  // Persists across section and phrase boundaries by design — this is the
+  // Persists across section and phrase boundaries by design - this is the
   // composition's long-term thematic memory. Only a full resetAll clears it.
   function reset() {
     memories.length = 0;

@@ -62,9 +62,9 @@ ambitusMigrationTracker = (() => {
       else if (diff < -5) trend = 'contracting';
     }
 
-    // Density bias based on range health — continuous ramps
-    // Narrow range (0→12 semitones) → ramp 1.06→1.0
-    // Wide range (36→60 semitones) → ramp 1.0→0.94
+    // Density bias based on range health - continuous ramps
+    // Narrow range (0→12 semitones) - ramp 1.06→1.0
+    // Wide range (36→60 semitones) - ramp 1.0→0.94
     let densityBias = 1;
     if (amb.range < 12) {
       densityBias = 1.0 + (1 - clamp(amb.range / 12, 0, 1)) * 0.06;

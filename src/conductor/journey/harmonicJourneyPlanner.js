@@ -74,7 +74,7 @@ harmonicJourneyPlanner = (() => {
       const moveFn = effectivePool[ri(effectivePool.length - 1)];
       const result = moveFn(currentKey, currentMode);
 
-      // simplify normalizes double-sharps/flats (C## → D, B# → C)
+      // simplify normalizes double-sharps/flats (C## - D, B# - C)
       const simplified = t.Note.simplify(result.key);
       const nextKey = t.Note.pitchClass(simplified || result.key);
       if (!nextKey) {
@@ -125,7 +125,7 @@ harmonicJourneyPlanner = (() => {
         for (let attempt = 0; attempt < 5 && !applied; attempt++) {
           const moveFn = parallelMoves[ri(parallelMoves.length - 1)];
           const result = moveFn(prevKey, prevMode);
-          if (existingModes.has(result.mode)) continue; // same mode — retry
+          if (existingModes.has(result.mode)) continue; // same mode - retry
           const simplified = t.Note.simplify(result.key);
           const nextKey = t.Note.pitchClass(simplified || result.key);
           if (nextKey) {

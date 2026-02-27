@@ -1,6 +1,6 @@
-// profileAdaptation.js — Advisory hints for adaptive profile parameter blending.
+// profileAdaptation.js - Advisory hints for adaptive profile parameter blending.
 // Reads signalReader each beat and computes a hint vector suggesting profile
-// adjustments based on emergent musical content. Does NOT switch profiles —
+// adjustments based on emergent musical content. Does NOT switch profiles -
 // provides advisory signals that conductorConfig can optionally blend.
 
 profileAdaptation = (() => {
@@ -16,12 +16,12 @@ profileAdaptation = (() => {
 
   /**
    * Update streaks and compute hints. Called each beat via registerRecorder.
-   * Reads signalTelemetry trend to modulate streak growth — rising trends
+   * Reads signalTelemetry trend to modulate streak growth - rising trends
    * dampen density-low streaks (system recovering), falling trends amplify them.
    * Skips streak accumulation during anomalies (transient spikes).
    */
   function update() {
-    // Anomalies are transient — don't let them build toward sustained-signal hints
+    // Anomalies are transient - don't let them build toward sustained-signal hints
     if (signalTelemetry.isAnomalyDetected()) return;
 
     const d = signalReader.density();
@@ -46,15 +46,15 @@ profileAdaptation = (() => {
    */
   function getHints() {
     return {
-      // Sustained low density → hint toward restrained energy weights
+      // Sustained low density - hint toward restrained energy weights
       restrainedHint: lowDensityStreak >= STREAK_TRIGGER
         ? clamp((lowDensityStreak - STREAK_TRIGGER) / 8, 0, 1)
         : 0,
-      // Sustained high tension → hint toward explosive phase multipliers
+      // Sustained high tension - hint toward explosive phase multipliers
       explosiveHint: highTensionStreak >= STREAK_TRIGGER
         ? clamp((highTensionStreak - STREAK_TRIGGER) / 8, 0, 1)
         : 0,
-      // Collapsed flicker (no variation) → hint toward atmospheric noise profile
+      // Collapsed flicker (no variation) - hint toward atmospheric noise profile
       atmosphericHint: flatFlickerStreak >= STREAK_TRIGGER
         ? clamp((flatFlickerStreak - STREAK_TRIGGER) / 8, 0, 1)
         : 0

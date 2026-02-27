@@ -7,7 +7,7 @@
 
 (function() {
 
-  // Flicker modifier EMA state — smooths the amplitude envelope
+  // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
   let _prevFlickerMod = 1;
   const FLICKER_SMOOTHING = 0.15;
@@ -21,7 +21,7 @@
     // Compute absolute time once for all recorder calls
     const absTime = Number(beatStartTime);
 
-    // 1. gather context (all globals boot-validated — no typeof guards needed)
+    // 1. gather context (all globals boot-validated - no typeof guards needed)
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
     const harmonicTension = harmonicContext.getField('tension');
@@ -62,7 +62,7 @@
     const densityAttr = conductorIntelligence.collectDensityBiasWithAttribution();
     const registryDensityBias = densityAttr.product;
 
-    // Coherence + emission density corrections (boot-validated globals — direct calls)
+    // Coherence + emission density corrections (boot-validated globals - direct calls)
     // layerCoherenceScorer.getDensityBias() now registered in the density registry
     // (attributed, dampened). Only emission correction remains extra-pipeline.
     const emissionRatio = clamp(Number(emissionFeedbackListener.getEmissionRatio()), 0, 2);
@@ -122,7 +122,7 @@
 
     // 8. Collect tension bias from registry (attributed)
     // Temporal smoothing: density has EMA via getDensitySmoothing(),
-    // but tension had none — contributing to the oscillating regime.
+    // but tension had none - contributing to the oscillating regime.
     // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
@@ -159,7 +159,7 @@
       densityAttribution: densityAttr.contributions,
       tensionAttribution: tensionAttr.contributions,
       flickerAttribution: flickerAttr.contributions,
-      // Extra-pipeline density multipliers — only emission correction remains
+      // Extra-pipeline density multipliers - only emission correction remains
       // outside the registry. layerCoherenceScorer is now in-registry (attributed).
       extraDensityCorrection: densityCorrection,
       extraCoherenceDensityBias: 1.0

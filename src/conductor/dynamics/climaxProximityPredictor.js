@@ -1,7 +1,7 @@
 // src/conductor/climaxProximityPredictor.js - Multi-signal climax prediction.
 // Combines energy momentum, register pressure, density, and tension trends
 // to predict when a climax is approaching, occurring, or spent.
-// Pure query API — prepares density/register/dynamics ramp before peaks.
+// Pure query API - prepares density/register/dynamics ramp before peaks.
 
 climaxProximityPredictor = (() => {
   // Beat-level cache: predict() queries 4 external modules but is called twice
@@ -87,7 +87,7 @@ climaxProximityPredictor = (() => {
   function getTensionBias() {
     const pred = predict();
     if (pred.premature) return 0.8;
-    // Ramp: proximity 0.5→1.0 → bias 1.0→1.15
+    // Ramp: proximity 0.5→1.0 - bias 1.0→1.15
     if (pred.proximity <= 0.5) return 1.0;
     return 1.0 + clamp((pred.proximity - 0.5) / 0.5, 0, 1) * 0.15;
   }

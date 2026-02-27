@@ -61,7 +61,7 @@ motifTransformAdvisor = (() => {
         allowReverse = false;
         allowAugment = false;
         break;
-      // no default — base values already set
+      // no default - base values already set
     }
 
     // Contour-driven adjustments: favor contrary motion
@@ -73,7 +73,7 @@ motifTransformAdvisor = (() => {
       transposeRange = [m.max(transposeRange[0], -2), m.max(transposeRange[1], 5)];
     }
 
-    // Coherence-driven adjustments: low coherence → simpler transforms
+    // Coherence-driven adjustments: low coherence - simpler transforms
     if (coherence < 0.3) {
       transposeRange = [m.max(transposeRange[0], -2), m.min(transposeRange[1], 2)];
       rotateRange = [-1, 1];
@@ -81,7 +81,7 @@ motifTransformAdvisor = (() => {
       allowReverse = false;
     }
 
-    // High excursion (far from home key) → more conservative
+    // High excursion (far from home key) - more conservative
     if (excursion > 3) {
       transposeRange = [m.max(transposeRange[0], -3), m.min(transposeRange[1], 3)];
       allowAugment = false;

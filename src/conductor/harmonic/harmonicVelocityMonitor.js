@@ -48,16 +48,16 @@ harmonicVelocityMonitor = (() => {
 
   /**
    * Get a harmonic-change threshold bias.
-   * Continuous ramp based on mismatch magnitude — avoids step-function
+   * Continuous ramp based on mismatch magnitude - avoids step-function
    * flip-flops that contribute to oscillating regime dynamics.
-   * Harmony too fast → raise threshold (slow it down); too slow → lower it.
+   * Harmony too fast - raise threshold (slow it down); too slow - lower it.
    * @returns {number} - 0.7 to 1.4
    */
   function getChangeThresholdBias() {
     const diag = diagnoseEnergyMatch();
-    // Continuous ramp: mismatch 0 → 1.0, positive → up to 1.07, negative → down to 0.88
+    // Continuous ramp: mismatch 0 - 1.0, positive - up to 1.07, negative - down to 0.88
     if (diag.mismatch > 0) {
-      // Ramp from 1.0 at mismatch=0 to 1.07 at mismatch=0.8+ (was 1.10 — still chronic ceiling)
+      // Ramp from 1.0 at mismatch=0 to 1.07 at mismatch=0.8+ (was 1.10 - still chronic ceiling)
       return 1.0 + clamp(diag.mismatch / 0.8, 0, 1) * 0.07;
     }
     // Ramp from 1.0 at mismatch=0 to 0.88 at mismatch=-0.6-
@@ -66,7 +66,7 @@ harmonicVelocityMonitor = (() => {
 
   /**
    * Get a journey boldness bias.
-   * Continuous ramp — stalling harmony → bolder moves; rushing → more conservative.
+   * Continuous ramp - stalling harmony - bolder moves; rushing - more conservative.
    * @returns {number} - 0.7 to 1.3
    */
   function getJourneyBoldnessBias() {

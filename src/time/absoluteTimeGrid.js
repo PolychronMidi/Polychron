@@ -1,4 +1,4 @@
-// src/time/absoluteTimeGrid.js — Millisecond-precision cross-layer sync grid.
+// src/time/absoluteTimeGrid.js - Millisecond-precision cross-layer sync grid.
 // Unit-agnostic: syncs layers by absolute wall-clock ms, not by musical structure.
 // Designed as an extensible feedback-loop backbone for any cross-layer FX sync.
 // Evolved to a spatial-hashed temporal ledger for O(1) scaling.
@@ -77,7 +77,7 @@ absoluteTimeGrid = (() => {
    * Query a channel for events within a ms tolerance window.
    * @param {string} channel - channel name
    * @param {number} aroundMs - center timestamp to search around
-   * @param {number} toleranceMs - +/- ms tolerance
+   * @param {number} toleranceMs -  ms tolerance
    * @param {Object} [opts]
    * @param {string} [opts.excludeLayer] - skip entries from this layer
    * @param {string} [opts.onlyLayer] - only include entries from this layer
@@ -135,7 +135,7 @@ absoluteTimeGrid = (() => {
    * Zero-allocation: binary search + bounded forward scan, no intermediate array.
    * @param {string} channel - channel name
    * @param {number} aroundMs - center ms
-   * @param {number} toleranceMs - +/- ms window
+   * @param {number} toleranceMs -  ms window
    * @param {string} [excludeLayer] - optional querying layer to exclude from results
    * @returns {ATGEntry|null}
    */

@@ -56,7 +56,7 @@ syncopationDensityTracker = (() => {
 
   /**
    * Bias factor for rhythm pattern weights.
-   * Monotonous â†’ boost syncopated patterns; excessive â†’ boost straight patterns.
+   * Monotonous - boost syncopated patterns; excessive - boost straight patterns.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ syncopationBias: number, straightBias: number }}

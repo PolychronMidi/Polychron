@@ -1,12 +1,12 @@
-// src/crossLayer/entropyRegulator.js — Cross-layer entropy regulation.
-// Measures combined entropy (pitch diversity × rhythmic irregularity × velocity variance)
-// of both layers. Defines a target entropy curve (low → high → low for tension arcs).
+// src/crossLayer/entropyRegulator.js - Cross-layer entropy regulation.
+// Measures combined entropy (pitch diversity * rhythmic irregularity * velocity variance)
+// of both layers. Defines a target entropy curve (low - high - low for tension arcs).
 // Nudges all cross-layer systems up or down to steer total entropy toward the target.
 // Acts as a meta-conductor for the cross-layer systems themselves.
 
 entropyRegulator = (() => {
   const V = validator.create('entropyRegulator');
-  const WINDOW_NOTES = 10; // halved (was 20) — faster window turnover creates more beat-to-beat variance
+  const WINDOW_NOTES = 10; // halved (was 20) - faster window turnover creates more beat-to-beat variance
   const SMOOTHING = 0.3; // exponential smoothing factor
 
   let smoothedEntropy = 0.5;
@@ -184,7 +184,7 @@ entropyRegulator = (() => {
     noteHistory.clear();
     velHistory.clear();
     _regulationCtrl.reset();
-    // _rhythmIrregErrors intentionally NOT reset — accumulates across run for diagnostic
+    // _rhythmIrregErrors intentionally NOT reset - accumulates across run for diagnostic
   }
 
   /** @returns {number} total rhythmicIrregularity failures across the run */

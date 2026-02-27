@@ -1,4 +1,4 @@
-// composerFeedbackAdvisor.js — Closes the loop between musical quality observation and
+// composerFeedbackAdvisor.js - Closes the loop between musical quality observation and
 // composer selection. Reads existing quality signals (repetition fatigue, textural memory,
 // thematic recall, profile adaptation) and produces per-family weight adjustments that
 // factoryFamilies.scoreFamilyCandidateConfig can consume. This makes the composer subsystem
@@ -54,7 +54,7 @@ composerFeedbackAdvisor = (() => {
    * and toward families that would address current musical needs.
    *
    * @param {string[]} availableFamilies - family names from COMPOSER_FAMILIES
-   * @returns {Record<string, number>} family name → weight multiplier (0.3 to 2.0)
+   * @returns {Record<string, number>} family name - weight multiplier (0.3 to 2.0)
    */
   function getFamilyWeightAdjustments(availableFamilies) {
     V.assertArray(availableFamilies, 'availableFamilies');
@@ -83,7 +83,7 @@ composerFeedbackAdvisor = (() => {
         w *= memW;
       }
 
-      // Layer 2: Fatigue response — when melodic content is stale, boost families
+      // Layer 2: Fatigue response - when melodic content is stale, boost families
       // that tend toward different voicing strategies (non-default families get a lift)
       if (signals.fatigueSignal > 0.3) {
         const fatigueBoost = signals.fatigueSignal * 0.4;
@@ -95,7 +95,7 @@ composerFeedbackAdvisor = (() => {
         }
       }
 
-      // Layer 3: Variety pressure from structural narrative — when the system
+      // Layer 3: Variety pressure from structural narrative - when the system
       // has been using the same families repeatedly, amplify less-used options
       if (signals.varietyPressure > 0.3) {
         const varietyScale = signals.varietyPressure * 0.3;
@@ -107,7 +107,7 @@ composerFeedbackAdvisor = (() => {
         }
       }
 
-      // Layer 4: Thematic recall — if we're hearing echoes of earlier material,
+      // Layer 4: Thematic recall - if we're hearing echoes of earlier material,
       // and a specific family could serve as a thematic callback, boost it
       if (signals.thematicStatus === 'echo' || signals.thematicStatus === 'strong-recall') {
         if (recallSuggestion === family) {
@@ -115,9 +115,9 @@ composerFeedbackAdvisor = (() => {
         }
       }
 
-      // Layer 5: Profile adaptation hints — match family character to musical needs
-      // Restrained hint → boost families with calmer character
-      // Explosive hint → boost families with intense character
+      // Layer 5: Profile adaptation hints - match family character to musical needs
+      // Restrained hint - boost families with calmer character
+      // Explosive hint - boost families with intense character
       if (signals.profileHints.restrainedHint > 0.3) {
         // Families containing 'harmonic' or 'modal' tend to be calmer
         if (family.includes('harmonic') || family.includes('modal') || family.includes('tonal')) {
@@ -184,9 +184,9 @@ composerFeedbackAdvisor = (() => {
     return _collectSignals();
   }
 
-  /** No-op reset — stateless query module. Kept explicit per project convention. */
+  /** No-op reset - stateless query module. Kept explicit per project convention. */
   function reset() {
-    // Stateless — reads from authoritative sources each call.
+    // Stateless - reads from authoritative sources each call.
   }
 
   // Self-register: state provider exposes quality signals in system-manifest

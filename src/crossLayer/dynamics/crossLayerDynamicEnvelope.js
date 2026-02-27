@@ -1,4 +1,4 @@
-// src/crossLayer/crossLayerDynamicEnvelope.js — Phrase-level dynamic arcs.
+// src/crossLayer/crossLayerDynamicEnvelope.js - Phrase-level dynamic arcs.
 // Coordinates velocity envelopes across layers: parallel arcs (both crescendo
 // together), complementary arcs (one rises while the other falls), or
 // independent arcs. Provides per-beat velocity scaling factors.
@@ -58,7 +58,7 @@ crossLayerDynamicEnvelope = (() => {
       targetScale = 0.7 + densityTarget * 0.6;
     }
 
-    // Modulate by interaction trend (hot system → slightly louder)
+    // Modulate by interaction trend (hot system - slightly louder)
     targetScale += clamp(trend.slope, -0.5, 0.5) * 0.15;
 
     targetScale = clamp(targetScale, 0.4, 1.6);
@@ -71,7 +71,7 @@ crossLayerDynamicEnvelope = (() => {
   /**
    * Get the velocity scale for a layer at the current moment.
    * @param {string} layer
-   * @returns {number} 0.4–1.6
+   * @returns {number} 0.4-1.6
    */
   function getVelocityScale(layer) {
     return clamp(smoothedScale[layer] ?? 1.0, 0.4, 1.6);

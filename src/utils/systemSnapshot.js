@@ -1,18 +1,18 @@
-// systemSnapshot.js — Captures full system state for diagnostic enrichment on errors.
+// systemSnapshot.js - Captures full system state for diagnostic enrichment on errors.
 // When a validator throw fires, the snapshot is attached so the crash
 // carries the exact harmonic, rhythmic, timing, and layer context of that tick.
 
 systemSnapshot = (() => {
 
   /**
-   * Capture current system state. Safe to call at any point in the lifecycle —
+   * Capture current system state. Safe to call at any point in the lifecycle -
    * returns partial data if globals have not yet loaded.
    * @returns {Object} frozen diagnostic snapshot
    */
   function capture() {
     const snap = { capturedAt: Date.now() };
 
-    // ── Timing context (globals boot-validated; try/catch guards pre-boot calls) ──
+    // -- Timing context (globals boot-validated; try/catch guards pre-boot calls) --
     try {
       snap.timing = {
         sectionIndex, phraseIndex, measureIndex, beatIndex,
@@ -21,22 +21,22 @@ systemSnapshot = (() => {
       };
     } catch { snap.timing = null; }
 
-    // ── timeStream ──
+    // -- timeStream --
     try {
       snap.timeStream = timeStream.snapshot();
     } catch { snap.timeStream = null; }
 
-    // ── Harmonic context ──
+    // -- Harmonic context --
     try {
       snap.harmonic = harmonicContext.get();
     } catch { snap.harmonic = null; }
 
-    // ── Conductor state ──
+    // -- Conductor state --
     try {
       snap.conductor = conductorState.getSnapshot();
     } catch { snap.conductor = null; }
 
-    // ── Layer state ──
+    // -- Layer state --
     try {
       snap.activeLayer = LM.activeLayer;
       const layerKeys = Object.keys(LM.layers);
@@ -53,37 +53,37 @@ systemSnapshot = (() => {
       }
     } catch { snap.layers = null; }
 
-    // ── Density / intensity ──
+    // -- Density / intensity --
     try {
       snap.density = { currentDensity };
     } catch { snap.density = null; }
 
-    // ── coherenceMonitor feedback metrics ──
+    // -- coherenceMonitor feedback metrics --
     try {
       snap.coherence = coherenceMonitor.getMetrics();
     } catch { snap.coherence = null; }
 
-    // ── Cross-layer interaction heat ──
+    // -- Cross-layer interaction heat --
     try {
       snap.systemHeat = interactionHeatMap.getSystemHeat();
     } catch { snap.systemHeat = null; }
 
-    // ── Adaptive trust scores ──
+    // -- Adaptive trust scores --
     try {
       snap.trustScores = adaptiveTrustScores.getSnapshot();
     } catch { snap.trustScores = null; }
 
-    // ── Entropy regulation state ──
+    // -- Entropy regulation state --
     try {
       snap.entropy = entropyRegulator.getRegulation();
     } catch { snap.entropy = null; }
 
-    // ── Human-readable position ──
+    // -- Human-readable position --
     try {
       snap.position = timeStream.positionString();
     } catch { snap.position = null; }
 
-    // ── Last explainability emission ──
+    // -- Last explainability emission --
     try {
       const recent = explainabilityBus.getRecent(1);
       snap.lastExplain = recent.length > 0 ? recent[0] : null;
@@ -106,7 +106,7 @@ systemSnapshot = (() => {
         enumerable: false,
         configurable: true
       });
-    } catch { /* cannot enrich — move on */ }
+    } catch { /* cannot enrich - move on */ }
     return err;
   }
 

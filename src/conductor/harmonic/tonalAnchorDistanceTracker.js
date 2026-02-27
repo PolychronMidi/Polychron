@@ -1,7 +1,7 @@
 // src/conductor/tonalAnchorDistanceTracker.js - Tonal distance from home key tracker.
 // Measures distance in semitones from a running "home key" center,
 // signalling harmonic adventure level. Tension bias proportional to distance.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 tonalAnchorDistanceTracker = (() => {
   const WINDOW_SECONDS = 10;
@@ -45,7 +45,7 @@ tonalAnchorDistanceTracker = (() => {
     else adventureLevel = 'far';
 
     // Tension bias: continuous ramp from distance 0→6.
-    // distance 0 → 0.97 (grounded), 1→6 → ramp 0.97→1.1
+    // distance 0 - 0.97 (grounded), 1→6 - ramp 0.97→1.1
     const tensionBias = 0.97 + clamp(distance / 6, 0, 1) * 0.13;
 
     return { distance, tensionBias, adventureLevel };

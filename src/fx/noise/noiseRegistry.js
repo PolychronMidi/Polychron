@@ -8,7 +8,7 @@ const implementations = {
   // Core 2D noise
   simplex: (x, y, time) => defaultSimplex.noise(x + time * 0.1, y + time * 0.1),
 
-  // 1D variants (y param ignored) — keep `y` referenced for TS no-unused-params
+  // 1D variants (y param ignored) - keep `y` referenced for TS no-unused-params
   perlin: (x, y, time) => { void y; return perlinNoise(x + time); },
   metaRecursive: (x, y, time) => { void y; return metaRecursiveNoise(x + time, 0, ri(6, 12), noiseFunctions[ri(0, noiseFunctions.length - 1)]); },
 
@@ -43,9 +43,9 @@ if (NOISE_GENERATOR_REGISTRY) {
 // Cache generator keys to avoid repeated Object.keys() calls
 generatorKeys = Object.keys(noiseGenerators);
 
-// Get random generator name from registry — texture-biased (#6)
-// During chord bursts → smooth generators (simplex, sine, fbm, gaussian)
-// During flurries → chaotic generators (turbulence, ridged, worley, metaRecursive)
+// Get random generator name from registry - texture-biased (#6)
+// During chord bursts - smooth generators (simplex, sine, fbm, gaussian)
+// During flurries - chaotic generators (turbulence, ridged, worley, metaRecursive)
 randomNoiseGenerator = function() {
   if (drumTextureCoupler) {
     const texMetrics = drumTextureCoupler.getMetrics();

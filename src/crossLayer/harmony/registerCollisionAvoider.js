@@ -51,7 +51,7 @@ registerCollisionAvoider = (() => {
 
     let candidate;
     if (upClearsCollision && downClearsCollision) {
-      // Both directions clear — pick the one in a sparser spectral bin
+      // Both directions clear - pick the one in a sparser spectral bin
       const hist = spectralComplementarity.getHistogram(activeLayer);
       const upBin = upCandidate < 36 ? 0 : upCandidate < 60 ? 1 : upCandidate < 84 ? 2 : 3;
       const downBin = downCandidate < 36 ? 0 : downCandidate < 60 ? 1 : downCandidate < 84 ? 2 : 3;
@@ -61,7 +61,7 @@ registerCollisionAvoider = (() => {
     } else if (downClearsCollision) {
       candidate = downCandidate;
     } else {
-      // Neither direction fully clears — pick the one farther from other.midi
+      // Neither direction fully clears - pick the one farther from other.midi
       candidate = Math.abs(upCandidate - other.midi) >= Math.abs(downCandidate - other.midi)
         ? upCandidate : downCandidate;
     }
@@ -80,7 +80,7 @@ registerCollisionAvoider = (() => {
   }
 
   function reset() {
-    // Stateless — nothing to clear for registerCollisionAvoider. No-op by design.
+    // Stateless - nothing to clear for registerCollisionAvoider. No-op by design.
   }
 
   return { recordNote, avoid, reset };

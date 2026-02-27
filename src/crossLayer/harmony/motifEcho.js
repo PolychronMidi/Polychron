@@ -1,4 +1,4 @@
-// src/crossLayer/motifEcho.js — Cross-layer motif echo / imitative counterpoint.
+// src/crossLayer/motifEcho.js - Cross-layer motif echo / imitative counterpoint.
 // When playMotifs generates a motif in L1, stores its interval sequence.
 // After a delay (1-4 beats in L2's time), injects a transformed echo
 // (retrograde, inversion, augmentation) into L2's motif pool.

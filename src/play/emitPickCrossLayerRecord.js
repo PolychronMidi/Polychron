@@ -1,4 +1,4 @@
-// emitPickCrossLayerRecord.js — Record primary source note into cross-layer tracking systems.
+// emitPickCrossLayerRecord.js - Record primary source note into cross-layer tracking systems.
 // Extracted from playNotesEmitPick to keep the emission orchestrator focused.
 
 const V = validator.create('emitPickCrossLayerRecord');

@@ -1,6 +1,6 @@
-// phaseSpaceMath.js — Pure vector/matrix math for phase-space trajectory analysis.
+// phaseSpaceMath.js - Pure vector/matrix math for phase-space trajectory analysis.
 // Extracted from systemDynamicsProfiler.js. Stateless functions with zero
-// internal state — consumed as a global helper by systemDynamicsProfiler.
+// internal state - consumed as a global helper by systemDynamicsProfiler.
 
 phaseSpaceMath = (() => {
   /**
@@ -36,7 +36,7 @@ phaseSpaceMath = (() => {
 
   /**
    * Rolling mean & variance per dimension over a trajectory window.
-   * @param {Array<number[]>} data - N×D trajectory points
+   * @param {Array<number[]>} data - N*D trajectory points
    * @param {number} nDims - total dimensions to compute over
    * @returns {{ mean: number[], variance: number[] }}
    */
@@ -64,7 +64,7 @@ phaseSpaceMath = (() => {
    * Cross-coupling: rolling correlation matrix between dimension pairs.
    * Returns upper triangle as { 'density-tension': 0.85, ... } plus mean
    * absolute correlation over compositional pairs only.
-   * @param {Array<number[]>} data - N×D trajectory
+   * @param {Array<number[]>} data - N*D trajectory
    * @param {number[]} mean - per-dimension means
    * @param {string[]} dimNames - dimension labels
    * @param {number} nDims - total dimensions
@@ -108,7 +108,7 @@ phaseSpaceMath = (() => {
    * Jacobi eigenvalue algorithm for a small symmetric matrix.
    * Returns eigenvalues (unsorted). Mutates the input matrix.
    * For K=4, converges in < 10 sweeps.
-   * @param {number[][]} A - K×K symmetric matrix (mutated)
+   * @param {number[][]} A - K*K symmetric matrix (mutated)
    * @param {number} K
    * @returns {number[]} eigenvalues
    */
@@ -162,7 +162,7 @@ phaseSpaceMath = (() => {
   /**
    * Effective dimensionality from eigenvalues of the compositional correlation
    * matrix. Result: exp(Shannon entropy of normalized eigenvalues).
-   * @param {Array<number[]>} data - raw trajectory (N×D)
+   * @param {Array<number[]>} data - raw trajectory (N*D)
    * @param {number[]} mean - per-dimension means
    * @param {number} nCompositional - compositional dimension count
    * @returns {number} 1.0 to nCompositional
@@ -172,7 +172,7 @@ phaseSpaceMath = (() => {
     if (n < 3) return 1;
     const K = nCompositional;
 
-    // Build K×K correlation matrix from compositional dims only
+    // Build K*K correlation matrix from compositional dims only
     const R = new Array(K);
     for (let i = 0; i < K; i++) R[i] = new Array(K).fill(0);
 

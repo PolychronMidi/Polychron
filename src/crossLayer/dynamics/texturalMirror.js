@@ -1,4 +1,4 @@
-// src/crossLayer/texturalMirror.js — Cross-layer texture management.
+// src/crossLayer/texturalMirror.js - Cross-layer texture management.
 // Tracks each layer's texture mode and suggests complementary or contrasting
 // textures for the other layer. Consumes dynamicRoleSwap chordalBias/melodicBias
 // (dead-end signals) to drive texture decisions.
@@ -61,7 +61,7 @@ texturalMirror = (() => {
       preferredMode = 'flurry';
     }
 
-    // Weight: higher interaction target → stronger suggestion
+    // Weight: higher interaction target - stronger suggestion
     const weight = clamp(interactionTarget * 0.7, 0.1, 0.8);
 
     return { preferredMode, weight };

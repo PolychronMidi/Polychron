@@ -1,4 +1,4 @@
-// conductorConfig.js — Conductor profile validation, selection, and access.
+// conductorConfig.js - Conductor profile validation, selection, and access.
 // Single authority for the active conductor profile.
 
 conductorConfig = (() => {

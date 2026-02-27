@@ -63,7 +63,7 @@ layerCoherenceScorer = (() => {
 
   /**
    * Get a bias factor for density control based on coherence.
-   * High coherence → allow more density; low → thin out to reduce clashing.
+   * High coherence - allow more density; low - thin out to reduce clashing.
    * @returns {number} - 0.6 to 1.2
    */
   function getDensityBias() {

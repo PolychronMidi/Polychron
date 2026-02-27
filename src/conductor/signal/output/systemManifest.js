@@ -1,4 +1,4 @@
-// systemManifest.js — Emit system-manifest.json and capability-matrix.md after composition.
+// systemManifest.js - Emit system-manifest.json and capability-matrix.md after composition.
 // Captures the organism's configuration and module topology for each run,
 // enabling compositional forensics and newcomer onboarding.
 
@@ -7,12 +7,12 @@ systemManifest = (() => {
 
   /**
    * Write system-manifest.json and capability-matrix.md to output/.
-   * Call after grandFinale() — all registries are fully populated at this point.
+   * Call after grandFinale() - all registries are fully populated at this point.
    */
   function emit() {
     const manifest = _buildManifest();
 
-    // ── Attribution (live call — not cached in manifest) ──
+    // -- Attribution (live call - not cached in manifest) --
     const attribution = {
       density: conductorIntelligence.collectDensityBiasWithAttribution(),
       tension: conductorIntelligence.collectTensionBiasWithAttribution(),
@@ -33,7 +33,7 @@ systemManifest = (() => {
       flicker: _serializeAttribution(attribution.flicker)
     };
 
-    // ── Coherence verdicts ──
+    // -- Coherence verdicts --
     manifest.coherenceVerdicts = coherenceVerdicts.compute(manifest, attribution);
 
     const manifestPath = 'output/system-manifest.json';
@@ -66,17 +66,17 @@ systemManifest = (() => {
 
   /** @returns {object} */
   function _buildManifest() {
-    // ── Registry topology ──
+    // -- Registry topology --
     const registryManifest = mainBootstrap.getRegistryManifest();
 
-    // ── Conductor signal snapshot ──
+    // -- Conductor signal snapshot --
     // Firewall: use signalReader API instead of conductorIntelligence directly.
     const signalSnapshot = signalReader.snapshot();
 
-    // ── Active conductor profile ──
+    // -- Active conductor profile --
     const activeProfile = conductorConfig.getActiveProfileName();
 
-    // ── Harmonic journey plan ──
+    // -- Harmonic journey plan --
     let journeyPlan = [];
     try {
       journeyPlan = harmonicJourney.getPlan().map((stop, i) => ({
@@ -87,10 +87,10 @@ systemManifest = (() => {
         distance: stop.distance
       }));
     } catch {
-      // Journey may not have been planned — non-fatal
+      // Journey may not have been planned - non-fatal
     }
 
-    // ── Config constants snapshot ──
+    // -- Config constants snapshot --
     const configSnapshot = {
       BPM,
       PPQ,
@@ -102,10 +102,10 @@ systemManifest = (() => {
       activeProfile
     };
 
-    // ── Trust payoffs snapshot ──
+    // -- Trust payoffs snapshot --
     const trustPayoffs = MAIN_LOOP_CONTROLS.trustPayoffs;
 
-    // ── Adaptive trust scores (end-of-run state) ──
+    // -- Adaptive trust scores (end-of-run state) --
     let trustSnapshot = {};
     try {
       trustSnapshot = adaptiveTrustScores.getSnapshot();

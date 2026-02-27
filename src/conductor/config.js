@@ -56,7 +56,7 @@ SUBSUBDIV_VOICES = {
   weights: [70,1]
 };
 
-// Sibling voice limits per unit level — max unique pitch classes across all siblings.
+// Sibling voice limits per unit level - max unique pitch classes across all siblings.
 // Once the sibling limit is reached, remaining siblings reuse from existing PC pool.
 // Defaults are roughly 2-3× the per-unit voice count for coherent sibling groups.
 BEAT_SIBLING_VOICES = { min: 3, max: 12, weights: [5, 10, 20, 25, 15, 10, 5, 3, 2, 1] };

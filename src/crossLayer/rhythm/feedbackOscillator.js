@@ -1,10 +1,10 @@
-// src/crossLayer/feedbackOscillator.js — Cross-layer feedback loop oscillation.
-// Layer A posts a reaction → B picks it up and posts its own reaction →
-// A picks up B's reaction → etc. Each round-trip dampens the intensity,
+// src/crossLayer/feedbackOscillator.js - Cross-layer feedback loop oscillation.
+// Layer A posts a reaction - B picks it up and posts its own reaction -
+// A picks up B's reaction - etc. Each round-trip dampens the intensity,
 // creating convergent rhythmic dialogues between layers.
 // Pitch Memory: carries pitch-class info through the loop. When layer A
 // plays a note that feeds back to B, B biases toward the complementary
-// interval (e.g., A plays a 5th → B gravitates toward the tritone).
+// interval (e.g., A plays a 5th - B gravitates toward the tritone).
 
 /** @type {ReadonlyArray<number>} complementary interval map: for each interval 0-11, the "answer" interval */
 const COMPLEMENT_MAP = Object.freeze([6, 5, 4, 3, 8, 7, 0, 5, 4, 3, 2, 1]);
@@ -135,7 +135,7 @@ feedbackOscillator = (() => {
         };
       }
 
-    // Energy decays with each round-trip → subtle micro-accents
+    // Energy decays with each round-trip - subtle micro-accents
     // The receiving layer can use reaction.energy to modulate:
     // - note velocity (boost by energy * 15%)
     // - stutter probability (energy as probability multiplier)
@@ -149,6 +149,6 @@ feedbackOscillator = (() => {
     };
   }
 
-  return { inject, react, applyFeedback, reset() { /* stateless — no per-scope state to clear */ } };
+  return { inject, react, applyFeedback, reset() { /* stateless - no per-scope state to clear */ } };
 })();
 crossLayerRegistry.register('feedbackOscillator', feedbackOscillator, ['all']);

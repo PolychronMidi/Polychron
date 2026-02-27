@@ -1,4 +1,4 @@
-﻿// src/rhythm/journeyRhythmCoupler.js - Harmonic journey â†’ rhythm complexity coupling
+﻿// src/rhythm/journeyRhythmCoupler.js - Harmonic journey - rhythm complexity coupling
 // Bold key moves trigger higher rhythm complexity via eventBus journey-move events
 
 journeyRhythmCoupler = (() => {
@@ -11,8 +11,8 @@ journeyRhythmCoupler = (() => {
 
   /**
    * Map journey move distance + type to a boldness score (0-1).
-   * Distant chromatic moves = high boldness â†’ complex rhythms.
-   * Static holds and gentle returns = low boldness â†’ simple rhythms.
+   * Distant chromatic moves = high boldness - complex rhythms.
+   * Static holds and gentle returns = low boldness - simple rhythms.
    * @param {number} distance - chromatic semitone distance (0-6)
    * @param {string} move - journey move type name
    * @returns {number} boldness 0-1
@@ -69,7 +69,7 @@ journeyRhythmCoupler = (() => {
 
   /**
    * Bias rhythm weights based on journey boldness.
-   * Higher boldness â†’ favor complex rhythm patterns (later weight indices).
+   * Higher boldness - favor complex rhythm patterns (later weight indices).
    * Designed to chain with FXFeedbackListener.biasRhythmWeights() in getRhythm.js.
    * @param {Object} rhythmsObj - rhythm lookup with weights
    * @returns {Object} copy with boldness-biased weights
