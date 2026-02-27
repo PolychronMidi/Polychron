@@ -1,10 +1,10 @@
-// src/utils/priorsHelpers.js — Shared helpers for all priors modules.
+// src/utils/priorsHelpers.js - Shared helpers for all priors modules.
 // Deduplicates resolvePhase, resolveWeightOrDefault, weightedAdjustment.
 
 priorsHelpers = (() => {
   /**
    * Resolve the current phrase phase from opts, phraseContext, or sharedPhraseArcManager.
-   * Full version — checks opts.phase → opts.phraseContext.phase → FactoryManager fallback.
+   * Full version - checks opts.phase - opts.phraseContext.phase - FactoryManager fallback.
    * @param {Object} [opts]
    * @returns {string}
    */
@@ -46,7 +46,7 @@ priorsHelpers = (() => {
 
   /**
    * Convert a prior weight into a signed adjustment value.
-   * weight > 1 → negative adjustment (favoured), weight < 1 → positive (penalised).
+   * weight > 1 - negative adjustment (favoured), weight < 1 - positive (penalised).
    * @param {number} weight
    * @param {number} scale
    * @returns {number}

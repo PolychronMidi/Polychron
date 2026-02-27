@@ -54,9 +54,9 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   }
 
   getCurrentChord() {
-    // ── Texture-responsive harmonic pacing (#5) ──────────────────────────
-    // Sustained chord-burst activity → faster harmonic rhythm (reduce measuresPerChord)
-    // Sustained flurry activity → slower harmonic rhythm (hold chords longer)
+    // -- Texture-responsive harmonic pacing (#5) --------------------------
+    // Sustained chord-burst activity - faster harmonic rhythm (reduce measuresPerChord)
+    // Sustained flurry activity - slower harmonic rhythm (hold chords longer)
     let effectiveMPC = this.measuresPerChord;
     const texMetrics = drumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.3) {
@@ -83,7 +83,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
         return;
       }
     }
-    if (!this.progression || this.progression.length === 0) { throw new Error('HarmonicRhythmComposer.noteSet: no progression defined — skipping'); }
+    if (!this.progression || this.progression.length === 0) { throw new Error('HarmonicRhythmComposer.noteSet: no progression defined - skipping'); }
     const currentChord = this.getCurrentChord();
 
     // Detect chord change

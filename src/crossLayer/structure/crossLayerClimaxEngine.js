@@ -1,4 +1,4 @@
-// src/crossLayer/crossLayerClimaxEngine.js — Multi-parameter climax coordination.
+// src/crossLayer/crossLayerClimaxEngine.js - Multi-parameter climax coordination.
 // Detects and orchestrates climax moments across both layers.
 // When section progress, interaction heat, and conductor intensity all converge
 // above thresholds, coordinates a unified climactic build:

@@ -1,4 +1,4 @@
-﻿// src/rhythm/stutterFeedbackListener.js - eventBus listener for stutter â†’ Rhythm feedback loops
+﻿// src/rhythm/stutterFeedbackListener.js - eventBus listener for stutter - Rhythm feedback loops
 // Mirrors FXFeedbackListener but accumulates stutter activity (CC + note) so
 // rhythm/dynamism systems can respond to stutter intensity.
 
@@ -77,7 +77,7 @@ stutterFeedbackListener = (() => {
         continue;
       }
 
-      // method multiplier: small sway (+/- ~12%) so stutter subtly nudges rhythm choice
+      // method multiplier: small sway ( ~12%) so stutter subtly nudges rhythm choice
       const methodMultiplier = 1 + (intensity - 0.5) * 0.25;
 
       const newWeights = spec.weights.map((w, idx) => {

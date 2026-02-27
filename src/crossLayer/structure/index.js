@@ -1,4 +1,4 @@
-// src/crossLayer/structure/index.js — Section-level orchestration, meta-regulation & diagnostics.
+// src/crossLayer/structure/index.js - Section-level orchestration, meta-regulation & diagnostics.
 
 // @ts-ignore: side-effect module load
 require('./adaptiveTrustScores');

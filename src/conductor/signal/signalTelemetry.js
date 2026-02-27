@@ -1,4 +1,4 @@
-// signalTelemetry.js — Per-beat signal history for post-hoc analysis.
+// signalTelemetry.js - Per-beat signal history for post-hoc analysis.
 // Records a lightweight snapshot of key signal products each beat.
 // Detects anomalies (>30% change from rolling mean) for debugging emergent moments.
 

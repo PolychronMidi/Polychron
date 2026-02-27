@@ -4,14 +4,14 @@
  * Self-Organized Criticality Engine (E13)
  *
  * The crown-jewel evolution. Monitors the system's distance from the
- * "edge of chaos" — the boundary between ordered (low-entropy, high-
+ * "edge of chaos" - the boundary between ordered (low-entropy, high-
  * coupling) and disordered (high-entropy, low-coupling) regimes.
  *
  * Mechanism:
  *   1. Each beat, samples density/tension/flicker deviation from neutral.
  *   2. Computes an "energy" metric (sum of squared deviations).
  *   3. Tracks energy accumulation over a sliding window.
- *   4. When energy exceeds a threshold → "avalanche" (sharp correction).
+ *   4. When energy exceeds a threshold - "avalanche" (sharp correction).
  *   5. Avalanche statistics follow power-law-like distribution (self-similar).
  *   6. Tunable: the threshold adapts to maintain ~20 % avalanche rate.
  *
@@ -68,7 +68,7 @@ criticalityEngine = (() => {
     if (inAvalanche > 0) {
       inAvalanche--;
       currentBias = SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1 - inAvalanche / RECOVERY_BEATS);
-      // Still in recovery — skip accumulation check
+      // Still in recovery - skip accumulation check
     } else if (accumulated > threshold && energyBuffer.length >= WINDOW / 2) {
       // --- Avalanche ---
       avalancheCount++;
@@ -106,7 +106,7 @@ criticalityEngine = (() => {
   function _healthScale(grade) {
     if (grade === 'healthy') return 1.0;
     if (grade === 'strained') return 0.5;
-    return 0; // stressed or critical → skip damping entirely
+    return 0; // stressed or critical - skip damping entirely
   }
 
   function densityBias() {

@@ -1,4 +1,4 @@
-// pipelineNormalizer.js — Adaptive soft-envelope normalization for signal pipelines.
+// pipelineNormalizer.js - Adaptive soft-envelope normalization for signal pipelines.
 //
 // Replaces static floors/ceilings (DENSITY_PRODUCT_FLOOR, TENSION_PRODUCT_CEILING)
 // with smooth exponential compression that is C1-continuous at boundaries.
@@ -55,7 +55,7 @@ pipelineNormalizer = (() => {
   /**
    * Normalize a pipeline product through the soft envelope.
    * @param {'density'|'tension'|'flicker'} pipeline
-   * @param {number} rawProduct — from _collectDampened
+   * @param {number} rawProduct - from _collectDampened
    * @returns {number}
    */
   function normalize(pipeline, rawProduct) {

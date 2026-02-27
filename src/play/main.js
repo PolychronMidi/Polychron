@@ -30,7 +30,7 @@ const composerCtx = {
     if (!Array.isArray(availableFamilies) || availableFamilies.length === 0) return null;
     const phase = mainBootstrap.requireNonEmptyString('conductorState.sectionPhase', conductorState.getField('sectionPhase'));
 
-    // Phase-based family affinity — centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
+    // Phase-based family affinity - centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
     const preferred = boot.phaseAffinity[phase];
     // Only bias if the preferred family exists; otherwise fall through to weighted random
     if (preferred && availableFamilies.includes(preferred)) {

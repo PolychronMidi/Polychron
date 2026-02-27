@@ -57,7 +57,7 @@ temporalProportionTracker = (() => {
         const dist = m.abs(ratio - TARGET_RATIOS[t]);
         if (dist < bestDist) bestDist = dist;
       }
-      // Convert distance to 0-1 quality (0 dist â†’ 1 quality)
+      // Convert distance to 0-1 quality (0 dist - 1 quality)
       totalFit += m.max(0, 1 - bestDist * 0.8);
       pairs++;
     }

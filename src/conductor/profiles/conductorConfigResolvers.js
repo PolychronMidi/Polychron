@@ -1,4 +1,4 @@
-// conductorConfigResolvers.js — Journey FX modulation and noise profile resolution.
+// conductorConfigResolvers.js - Journey FX modulation and noise profile resolution.
 // Extracted from conductorConfig to keep the profile hub focused on accessor dispatch.
 
 /**

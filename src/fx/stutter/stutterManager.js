@@ -5,7 +5,7 @@ const V = validator.create('stutterManager');
 
 class StutterManager {
   constructor() {
-    // Channel tracking — one pool per effect type (no collision)
+    // Channel tracking - one pool per effect type (no collision)
     this.lastUsedCHs = new Set();      // for stutterFade
     this.lastUsedCHs2 = new Set();     // for stutterPan
     this.lastUsedCHs3 = new Set();     // for stutterFX
@@ -18,7 +18,7 @@ class StutterManager {
     this._stutterPan = stutterPan;
     this._stutterFX = stutterFX;
 
-    // Shared state for stutterNotes shift tracking — shared across manager usage
+    // Shared state for stutterNotes shift tracking - shared across manager usage
     this.shared = { shifts: new Map(), global: {} };
 
     // Beat-level context written by CC effects, read by stutterNotes for cooperation
@@ -58,9 +58,9 @@ class StutterManager {
     const EVENTS = V.getEventsOrThrow();
     const eventName = EVENTS.TEXTURE_CONTRAST;
 
-    // ── Texture-contrast eventBus listener (#1 bidirectional dialogue) ──
-    // Chord bursts → trigger micro-stutters with tight rate + wide stereo phase
-    // Flurries → suppress spontaneous stutters (let the runs breathe)
+    // -- Texture-contrast eventBus listener (#1 bidirectional dialogue) --
+    // Chord bursts - trigger micro-stutters with tight rate + wide stereo phase
+    // Flurries - suppress spontaneous stutters (let the runs breathe)
     eventBus.on(eventName, (data) => {
       const composite = Number(data.composite);
       const mode = data.mode;
@@ -68,7 +68,7 @@ class StutterManager {
       this._textureIntensity = this._textureIntensity * this._textureDecay + weight * (1 - this._textureDecay);
       this._lastTextureMode = mode;
 
-      // Chord burst → immediate micro-stutter response on reflection channels
+      // Chord burst - immediate micro-stutter response on reflection channels
       if (mode === 'chordBurst' && composite > 0.3) {
         if (!Array.isArray(reflection)) {
           throw new Error('StutterManager._attachTextureListener: reflection channels array is not available');

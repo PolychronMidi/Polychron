@@ -69,8 +69,8 @@ layerIndependenceScorer = (() => {
 
   /**
    * Get a density bias to balance layer coupling.
-   * Too locked â†’ thin slightly to allow differentiation.
-   * Too diverged â†’ boost slightly the sparser layer.
+   * Too locked - thin slightly to allow differentiation.
+   * Too diverged - boost slightly the sparser layer.
    * @returns {number} - 0.9 to 1.15
    */
   function getDensityBias() {

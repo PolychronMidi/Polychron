@@ -1,5 +1,5 @@
-// systemManifestMarkdown.js — Markdown renderer for capability-matrix.md.
-// Extracted from systemManifest.js. Pure formatting — no side effects, no I/O.
+// systemManifestMarkdown.js - Markdown renderer for capability-matrix.md.
+// Extracted from systemManifest.js. Pure formatting - no side effects, no I/O.
 
 systemManifestMarkdown = (() => {
 
@@ -62,7 +62,7 @@ systemManifestMarkdown = (() => {
       lines.push('### Signal Contributors Without Lifecycle Registration');
       lines.push('');
       lines.push('> These modules provide density/tension/flicker/recorder/stateProvider contributions');
-      lines.push('> but are stateless or beatCache-only — no section reset needed.');
+      lines.push('> but are stateless or beatCache-only - no section reset needed.');
       lines.push('');
       lines.push('| # | Module Name |');
       lines.push('|---|---|');
@@ -172,7 +172,7 @@ systemManifestMarkdown = (() => {
       if (h) {
         const productStr = typeof h.product === 'number' ? h.product.toFixed(4) : '?';
         const crushStr = typeof h.crushFactor === 'number' ? (h.crushFactor * 100).toFixed(0) + '%' : '?';
-        const satStr = typeof h.saturated === 'boolean' ? (h.saturated ? 'YES' : 'no') : (sr !== undefined ? (sr > 0.5 ? 'frequent' : 'no') : '—');
+        const satStr = typeof h.saturated === 'boolean' ? (h.saturated ? 'YES' : 'no') : (sr !== undefined ? (sr > 0.5 ? 'frequent' : 'no') : '-');
         const pinnedStr = typeof pr === 'number' ? (pr * 100).toFixed(0) + '%' : '?';
         lines.push(`| ${p} | ${h.grade || '?'} | ${productStr} | ${crushStr} | ${satStr} | ${pinnedStr} |`);
       }
@@ -247,20 +247,20 @@ systemManifestMarkdown = (() => {
     lines.push('');
     lines.push('| Metric | Value | Interpretation |');
     lines.push('|---|---|---|');
-    lines.push(`| Velocity | ${s.velocity} | ${s.velocity < 0.01 ? 'Barely moving — stuck in attractor' : s.velocity < 0.05 ? 'Slow evolution' : 'Active exploration'} |`);
+    lines.push(`| Velocity | ${s.velocity} | ${s.velocity < 0.01 ? 'Barely moving - stuck in attractor' : s.velocity < 0.05 ? 'Slow evolution' : 'Active exploration'} |`);
     lines.push(`| Curvature | ${s.curvature} | ${s.curvature < 0.3 ? 'Straight-line drift' : s.curvature < 0.7 ? 'Gentle winding' : 'Frequent reversals'} |`);
     lines.push(`| Effective Dimensionality | ${s.effectiveDimensionality} / ${(sd.dimensionNames || []).length} | ${s.effectiveDimensionality < 2 ? 'Collapsed to ~1 axis' : s.effectiveDimensionality < 3.5 ? 'Moderate spread' : 'Rich multi-dimensional'} |`);
     lines.push(`| Coupling Strength | ${s.couplingStrength} | ${s.couplingStrength < 0.2 ? 'Dimensions independent' : s.couplingStrength < 0.45 ? 'Moderate coupling' : 'Strong cross-coupling'} |`);
     lines.push('');
 
     const regimeDescriptions = {
-      stagnant: 'System barely moving through state space — compositional stasis.',
-      oscillating: 'Frequent direction reversals — pendulum-like behavior rather than true evolution.',
-      exploring: 'High velocity + multi-dimensional — actively discovering new territory.',
-      coherent: 'Strong cross-coupling — dimensions evolving together as a unified organism.',
-      fragmented: 'Weak coupling + many axes — dimensions acting independently without coordination.',
-      drifting: 'Slow monotonic change — one-directional evolution without surprise.',
-      evolving: 'Moderate dynamic movement — healthy compositional development.',
+      stagnant: 'System barely moving through state space - compositional stasis.',
+      oscillating: 'Frequent direction reversals - pendulum-like behavior rather than true evolution.',
+      exploring: 'High velocity + multi-dimensional - actively discovering new territory.',
+      coherent: 'Strong cross-coupling - dimensions evolving together as a unified organism.',
+      fragmented: 'Weak coupling + many axes - dimensions acting independently without coordination.',
+      drifting: 'Slow monotonic change - one-directional evolution without surprise.',
+      evolving: 'Moderate dynamic movement - healthy compositional development.',
       initializing: 'Insufficient beats for analysis.'
     };
     const desc = regimeDescriptions[s.regime] || '';

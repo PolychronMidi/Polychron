@@ -1,7 +1,7 @@
 // src/conductor/orchestrationWeightTracker.js - Register-band activity distribution.
 // Measures how musical weight is distributed across bass/mid/treble bands
 // and signals imbalance for the conductor to correct via register nudges.
-// Pure query API — consumed via conductorState.
+// Pure query API - consumed via conductorState.
 
 orchestrationWeightTracker = (() => {
   const WINDOW_SECONDS = 6;

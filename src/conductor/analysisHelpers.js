@@ -2,7 +2,7 @@
 // Used by velocityShapeAnalyzer, durationalContourTracker, energyMomentumTracker,
 // registerMigrationTracker, phraseLengthMomentumTracker, rhythmicComplexityGradient,
 // structuralFormTracker.
-// Pure, stateless helpers — no side effects, no ATW dependency.
+// Pure, stateless helpers - no side effects, no ATW dependency.
 
 analysisHelpers = (() => {
   /**

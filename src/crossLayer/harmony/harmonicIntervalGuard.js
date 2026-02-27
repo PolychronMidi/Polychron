@@ -1,4 +1,4 @@
-// src/crossLayer/harmonicIntervalGuard.js — Cross-layer consonance/dissonance steering.
+// src/crossLayer/harmonicIntervalGuard.js - Cross-layer consonance/dissonance steering.
 // Tracks which intervals appear simultaneously between layers.
 // When intent calls for consonance, nudges cross-layer intervals toward
 // perfect/imperfect consonances. When dissonance is desired, steers toward
@@ -8,7 +8,7 @@ harmonicIntervalGuard = (() => {
   const V = validator.create('harmonicIntervalGuard');
   const MAX_HISTORY = 40;
 
-  // Consonance table: interval class → consonance score 0–1
+  // Consonance table: interval class - consonance score 0-1
   // 0=unison, 1=m2, 2=M2, 3=m3, 4=M3, 5=P4, 6=tritone, 7=P5, 8=m6, 9=M6, 10=m7, 11=M7
   const CONSONANCE = Object.freeze([1, 0.1, 0.25, 0.6, 0.7, 0.85, 0.05, 0.95, 0.65, 0.7, 0.2, 0.15]);
 
@@ -98,7 +98,7 @@ harmonicIntervalGuard = (() => {
     // Apply nudge probability scaled by error magnitude
     if (rf() > Math.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
-    // Find best candidate within ±3 semitones
+    // Find best candidate within 3 semitones
     let bestNote = midi;
     let bestScore = Infinity;
     const lo = Math.max(0, OCTAVE.min * 12, midi - 3);

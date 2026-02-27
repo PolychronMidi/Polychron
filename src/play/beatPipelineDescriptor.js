@@ -1,7 +1,7 @@
-// beatPipelineDescriptor.js — Declarative stage graph for processBeat.
+// beatPipelineDescriptor.js - Declarative stage graph for processBeat.
 // Each stage declares its name, what it depends on (after), and what it produces.
 // Boot-time validation asserts the execution order in processBeat is a valid
-// topological ordering of this graph — if a stage runs before its dependency,
+// topological ordering of this graph - if a stage runs before its dependency,
 // the build fails immediately rather than producing subtle timing bugs.
 
 /**

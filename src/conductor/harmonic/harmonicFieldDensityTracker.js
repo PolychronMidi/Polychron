@@ -1,7 +1,7 @@
 // src/conductor/harmonicFieldDensityTracker.js - Vertical harmonic density tracker.
 // Measures how many simultaneous pitches sound at once (chord thickness)
 // and biases density to manage vertical pile-up or thinness.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 harmonicFieldDensityTracker = (() => {
   const WINDOW_SECONDS = 4;
@@ -56,13 +56,13 @@ harmonicFieldDensityTracker = (() => {
     }
     const avgSimultaneous = sum / clusterSizes.length;
 
-    // Continuous ramp: thin texture → boost density; thick → reduce.
+    // Continuous ramp: thin texture - boost density; thick - reduce.
     // avgSim 0→2.5 maps to 1.05→1.0; avgSim 2.5→7 maps to 1.0→0.9.
     let densityBias = 1;
     if (avgSimultaneous < 2.5) {
       densityBias = 1.0 + clamp((2.5 - avgSimultaneous) / 2.5, 0, 1) * 0.05;
     } else {
-      densityBias = 1.0 - clamp((avgSimultaneous - 2.5) / 4.5, 0, 1) * 0.06; // softened (was 0.10) — permanent 0.90 was chronic drain
+      densityBias = 1.0 - clamp((avgSimultaneous - 2.5) / 4.5, 0, 1) * 0.06; // softened (was 0.10) - permanent 0.90 was chronic drain
     }
 
     return { avgSimultaneous, maxSimultaneous: maxSim, densityBias };

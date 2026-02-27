@@ -69,17 +69,17 @@ onsetDensityProfiler = (() => {
     const d = getDensity();
     if (d.nps === 0) return 1.0;
     const ratio = d.nps / TARGET_NPS;
-    // Continuous ramp: ratio 0.5–1.0 → bias 1.35–1.0, ratio 1.0–3.0 → bias 1.0–0.80
+    // Continuous ramp: ratio 0.5–1.0 - bias 1.35–1.0, ratio 1.0–3.0 - bias 1.0–0.80
     if (ratio <= 1.0) {
       const ramp = clamp((1.0 - ratio) / 0.5, 0, 1);
       return 1.0 + ramp * 0.35;
     }
     // Density-aware attenuation: when conductor density product is low,
     // reduce onset suppression strength to avoid compounding the deficit.
-    // At density 0.85+ → full suppression; at density 0.40 → half suppression.
-    // Threshold raised (was 0.70) — at density 0.693 barely helped.
+    // At density 0.85+ - full suppression; at density 0.40 - half suppression.
+    // Threshold raised (was 0.70) - at density 0.693 barely helped.
     // Uses currentDensity global (previous beat's EMA value) instead of
-    // signalReader.density() — the latter re-enters collectDensityBias,
+    // signalReader.density() - the latter re-enters collectDensityBias,
     // causing infinite recursion since this getter is called from that pipeline.
     const conductorDensity = currentDensity;
     const attenuate = conductorDensity < 0.85
@@ -91,7 +91,7 @@ onsetDensityProfiler = (() => {
 
   /**
    * Get a crossMod bias based on onset density trends.
-   * Accelerating â†’ dampen crossMod; decelerating â†’ boost it.
+   * Accelerating - dampen crossMod; decelerating - boost it.
    * @returns {number} - 0.8 to 1.2
    */
   function getCrossModBias() {

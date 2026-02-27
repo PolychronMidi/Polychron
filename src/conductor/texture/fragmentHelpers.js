@@ -1,6 +1,6 @@
 // src/conductor/texture/fragmentHelpers.js - Shared pitch-class fragment extraction.
 // Used by motivicDensityTracker.
-// Pure query — reads absoluteTimeWindow.
+// Pure query - reads absoluteTimeWindow.
 
 fragmentHelpers = (() => {
   const V = validator.create('fragmentHelpers');
@@ -36,7 +36,7 @@ fragmentHelpers = (() => {
       }
       if (!valid) continue;
 
-      // Build interval key — signed preserves direction, unsigned wraps mod-12
+      // Build interval key - signed preserves direction, unsigned wraps mod-12
       const intervals = [];
       for (let j = 1; j < pcs.length; j++) {
         intervals.push(signed ? pcs[j] - pcs[j - 1] : ((pcs[j] - pcs[j - 1]) + 12) % 12);

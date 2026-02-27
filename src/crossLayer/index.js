@@ -17,7 +17,7 @@ require('./rhythm');
 // @ts-ignore: side-effect module load
 require('./dynamics');
 
-// @ts-ignore: conductorâ†’crossLayer signal bridge (registers recorder + crossLayerRegistry)
+// @ts-ignore: conductor-crossLayer signal bridge (registers recorder + crossLayerRegistry)
 require('./conductorSignalBridge');
 
 // Lifecycle manager loads LAST - after all modules have self-registered.

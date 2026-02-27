@@ -57,14 +57,14 @@ onsetRegularityMonitor = (() => {
 
   /**
    * Get a rhythm variety bias.
-   * Continuous ramp: chaotic (regularity 0) → 0.92; uniform (regularity 1) → 1.2.
+   * Continuous ramp: chaotic (regularity 0) - 0.92; uniform (regularity 1) - 1.2.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.92 to 1.20
    */
   function getRhythmVarietyBias(opts) {
     const profile = getRegularityProfile(opts);
-    // Linear ramp: regularity 0→1 maps to 0.92→1.20 (was 0.88→1.20 — chronic floor pin)
+    // Linear ramp: regularity 0→1 maps to 0.92→1.20 (was 0.88→1.20 - chronic floor pin)
     return 0.92 + profile.regularity * 0.28;
   }
 

@@ -87,7 +87,7 @@ negotiationEngine = (() => {
   }
 
   function reset() {
-    // Stateless by design — no internal state to clear. Intentionally a no-op.
+    // Stateless by design - no internal state to clear. Intentionally a no-op.
     // Kept explicit to satisfy lint rule against silent early returns.
   }
 

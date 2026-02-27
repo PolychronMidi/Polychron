@@ -1,4 +1,4 @@
-// Consolidated rhythm tracking function — explicit context-based API
+// Consolidated rhythm tracking function - explicit context-based API
 const V = validator.create('trackRhythm');
 
 trackRhythm = (unit, layer, played) => {
@@ -60,7 +60,7 @@ trackRhythm = (unit, layer, played) => {
         throw new Error(`trackRhythm: unknown unit "${unit}"`);
   }
 }
-  // If still missing or invalid, this is a critical invariance violation — fail fast.
+  // If still missing or invalid, this is a critical invariance violation - fail fast.
   if (!Array.isArray(rhythmFinal) || idxFinal === undefined || rhythmFinal[idxFinal] === undefined) {
     const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: idx !== undefined, globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: idxFinal !== undefined };
     throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}" - details: ${JSON.stringify(details)}`);

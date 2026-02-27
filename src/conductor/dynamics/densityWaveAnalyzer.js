@@ -1,6 +1,6 @@
 // src/conductor/densityWaveAnalyzer.js - Detects periodic density oscillations.
 // Distinguishes between intentional density waves and flat/monotone density envelopes.
-// Pure query API — amplifies or dampens density flicker for musical shape.
+// Pure query API - amplifies or dampens density flicker for musical shape.
 
 densityWaveAnalyzer = (() => {
   /** @type {Array<{ time: number, density: number }>} */
@@ -67,8 +67,8 @@ densityWaveAnalyzer = (() => {
 
   /**
    * Get a flicker amplitude modifier based on density wave patterns.
-   * Continuous ramp: flat (amplitude 0→0.05) → 1.15→1.0,
-   * waving (amplitude 0.15→0.5) → 1.0→0.9.
+   * Continuous ramp: flat (amplitude 0→0.05) - 1.15→1.0,
+   * waving (amplitude 0.15→0.5) - 1.0→0.9.
    * @returns {number} - 0.9 to 1.2
    */
   function getFlickerModifier() {

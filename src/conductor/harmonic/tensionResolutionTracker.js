@@ -66,7 +66,7 @@ tensionResolutionTracker = (() => {
   /**
    * Get a tension bias based on resolution patterns.
    * Continuous ramp: resolvedRatio 0→1 maps to 1.25→1.0.
-   * Low resolution (many unresolved dissonances) → higher tension.
+   * Low resolution (many unresolved dissonances) - higher tension.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.9 to 1.25

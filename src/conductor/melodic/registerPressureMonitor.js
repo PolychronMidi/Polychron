@@ -1,6 +1,6 @@
 // src/conductor/registerPressureMonitor.js - Monitors pitch-register density across layers.
 // Queries absoluteTimeWindow for pitch distribution across octave bands.
-// Pure query API — guides voice allocation to avoid register crowding.
+// Pure query API - guides voice allocation to avoid register crowding.
 
 registerPressureMonitor = (() => {
   const NUM_BANDS = 10; // octave bands 0-9 (MIDI 0-119)

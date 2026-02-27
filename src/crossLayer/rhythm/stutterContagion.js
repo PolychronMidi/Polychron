@@ -1,4 +1,4 @@
-// src/crossLayer/stutterContagion.js — Cross-layer stutter infection via ATG.
+// src/crossLayer/stutterContagion.js - Cross-layer stutter infection via ATG.
 // When one layer stutters, the other layer picks up a complementary stutter
 // at the same ms-derived tick with decaying intensity.
 
@@ -33,7 +33,7 @@ stutterContagion = (() => {
     if (!recentConvergence) return BASE_DECAY;
     const dist = Math.abs(recentConvergence.timeMs - absTimeMs);
     const recency = 1 - (dist / CONVERGENCE_WINDOW_MS);
-    // Interpolate: recent convergence → ALIGNED (sticky), distant → DIVERGED (loose)
+    // Interpolate: recent convergence - ALIGNED (sticky), distant - DIVERGED (loose)
     return BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
   }
 
@@ -136,6 +136,6 @@ stutterContagion = (() => {
     });
   }
 
-  return { postStutter, checkContagion, apply, reset() { /* stateless — no per-scope state to clear */ } };
+  return { postStutter, checkContagion, apply, reset() { /* stateless - no per-scope state to clear */ } };
 })();
 crossLayerRegistry.register('stutterContagion', stutterContagion, ['all']);

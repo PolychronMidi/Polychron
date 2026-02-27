@@ -1,4 +1,4 @@
-// Rhythm feedback listeners — cross-layer eventBus bridges that modulate rhythm.
+// Rhythm feedback listeners - cross-layer eventBus bridges that modulate rhythm.
 // feedbackAccumulator is the shared factory; everything else composes it.
 // @ts-ignore: side-effect module load
 require('./feedbackAccumulator');

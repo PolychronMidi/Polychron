@@ -1,4 +1,4 @@
-﻿// @ts-ignore: harmonic journey — tonal trajectory planning and shared harmonic state
+﻿// @ts-ignore: harmonic journey - tonal trajectory planning and shared harmonic state
 require('./journey');
 // @ts-ignore: load side-effect module with globals
 require('./phraseArcProfiler');

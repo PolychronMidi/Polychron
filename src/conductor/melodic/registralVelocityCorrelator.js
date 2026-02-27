@@ -2,7 +2,7 @@
 // Analyzes correlation between pitch height and velocity (dynamics).
 // Signals when correlation is too rigid (always loud=high) or too random.
 // Flicker modifier to encourage natural but varied register-dynamic mapping.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 registralVelocityCorrelator = (() => {
   const WINDOW_SECONDS = 8;
@@ -66,9 +66,9 @@ registralVelocityCorrelator = (() => {
     const absCorr = m.abs(correlation);
 
     // Flicker modifier: continuous ramp based on absolute correlation.
-    // High correlation (0.4→1.0) → ramp 1.0→1.1 (break rigid pattern)
-    // Low correlation (0→0.2) → ramp 0.94→1.0 (tighten for coherence)
-    // Mid (0.2→0.4) → neutral
+    // High correlation (0.4→1.0) - ramp 1.0→1.1 (break rigid pattern)
+    // Low correlation (0→0.2) - ramp 0.94→1.0 (tighten for coherence)
+    // Mid (0.2→0.4) - neutral
     let flickerMod = 1;
     if (absCorr > 0.4) {
       flickerMod = 1.0 + clamp((absCorr - 0.4) / 0.6, 0, 1) * 0.1;

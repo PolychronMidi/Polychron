@@ -46,7 +46,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   velocity = rl(baseVelocitySeed, -3, 3, 95, 105);
   velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
 
-  // Unit-level velocity scaling (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 — finer units play softer)
+  // Unit-level velocity scaling (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 - finer units play softer)
   const unitProfile = motifConfig.getUnitProfile(unit);
   if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
     velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
@@ -69,7 +69,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   const noiseInfluence = clamp((influenceX + influenceY) / 2, 0, 1);
   const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
 
-  // Layer ID seed — cached on layer object to avoid recomputing per micro-unit
+  // Layer ID seed - cached on layer object to avoid recomputing per micro-unit
   let layerIdSeed = layer._cachedLayerIdSeed;
   if (layerIdSeed === undefined) {
     const layerIdValue = layer && Object.prototype.hasOwnProperty.call(layer, 'id') ? layer.id : null;

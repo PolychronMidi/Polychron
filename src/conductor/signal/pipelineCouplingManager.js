@@ -12,7 +12,7 @@
  * between runs.
  *
  * Nudgeable axes: density, tension, flicker (conductor biases exist).
- * Entropy has no conductor bias — for pairs involving entropy, the
+ * Entropy has no conductor bias - for pairs involving entropy, the
  * non-entropy partner is nudged.
  */
 
@@ -32,17 +32,17 @@ pipelineCouplingManager = (() => {
   const PAIR_TARGETS = {
     'density-tension':  0.20,
     'density-flicker':  0.20,
-    'density-entropy':  0.30,  // structural — more notes → entropy shifts
+    'density-entropy':  0.30,  // structural - more notes - entropy shifts
     'tension-flicker':  0.25,
     'tension-entropy':  0.25,
     'flicker-entropy':  0.25,
   };
 
-  // ── Adaptive gain parameters ──
+  // -- Adaptive gain parameters --
   // Every pair starts at GAIN_INIT. Each beat, if |r| > target, we check
   // whether the pair is *improving* (|r| dropped since last beat) or
-  // *stuck* (|r| stayed or grew). Stuck → escalate gain. Improving → hold.
-  // Below target → relax gain toward GAIN_INIT.
+  // *stuck* (|r| stayed or grew). Stuck - escalate gain. Improving - hold.
+  // Below target - relax gain toward GAIN_INIT.
   const GAIN_INIT = 0.16;
   const GAIN_MIN  = 0.08;
   const GAIN_MAX  = 0.60;
@@ -50,7 +50,7 @@ pipelineCouplingManager = (() => {
   const GAIN_RELAX_RATE    = 0.01; // per-beat gain decrease when resolved
 
   // Regime-aware target relaxation: in 'coherent' regime, pairwise coupling
-  // IS the feature — dimensions deliberately co-evolve. Relax targets so
+  // IS the feature - dimensions deliberately co-evolve. Relax targets so
   // the coupling manager preserves its gain budget for regimes where
   // decorrelation is genuinely needed (exploring, drifting, fragmented).
   const COHERENT_RELAXATION = 1.5;
@@ -129,17 +129,17 @@ pipelineCouplingManager = (() => {
         const absCorr = m.abs(corr);
         const ps = _getPairState(key);
 
-        // ── Adaptive gain logic ──
+        // -- Adaptive gain logic --
         if (absCorr > target) {
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
-          // Freeze gain if either axis in this pair is saturated —
+          // Freeze gain if either axis in this pair is saturated -
           // escalating against the soft-limit ceiling wastes the mechanism.
           const pairSaturated = _saturatedAxes.has(dimA) || _saturatedAxes.has(dimB);
           if (!improving && !pairSaturated) {
             ps.gain = clamp(ps.gain + GAIN_ESCALATE_RATE, GAIN_MIN, GAIN_MAX);
           }
         } else {
-          // Below target — relax gain back toward initial
+          // Below target - relax gain back toward initial
           ps.gain = clamp(ps.gain - GAIN_RELAX_RATE, GAIN_INIT, GAIN_MAX);
         }
         ps.lastAbsCorr = absCorr;
@@ -176,7 +176,7 @@ pipelineCouplingManager = (() => {
     // escalating against a ceiling, producing max-clamp bias every beat.
     const SOFT_LIMIT = 0.18; // max deviation from 1.0 per axis
 
-    // Detect saturation BEFORE clamping — used next beat to freeze gains
+    // Detect saturation BEFORE clamping - used next beat to freeze gains
     _saturatedAxes.clear();
     if (m.abs(nudgeD) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('density');
     if (m.abs(nudgeT) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('tension');
@@ -200,7 +200,7 @@ pipelineCouplingManager = (() => {
     biasTension = 1.0;
     biasFlicker = 1.0;
     _saturatedAxes.clear();
-    // Reset adaptive gains — each section starts fresh
+    // Reset adaptive gains - each section starts fresh
     const keys = Object.keys(_pairState);
     for (let i = 0; i < keys.length; i++) {
       _pairState[keys[i]].gain = GAIN_INIT;

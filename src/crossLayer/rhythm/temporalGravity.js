@@ -1,7 +1,7 @@
-// src/crossLayer/temporalGravity.js — Temporal gravity wells.
+// src/crossLayer/temporalGravity.js - Temporal gravity wells.
 // Posts note density per ms window to ATG 'density' channel. When one layer
 // hits a dense cluster, the other layer's note ticks get micro-pulled toward
-// the cluster center — creating organic emergent rubato.
+// the cluster center - creating organic emergent rubato.
 
 temporalGravity = (() => {
   const V = validator.create('temporalGravity');
@@ -84,6 +84,6 @@ temporalGravity = (() => {
     return Math.round(originalTickN + direction * pull);
   }
 
-  return { postDensity, measureDensity, applyGravity, reset() { /* stateless — no per-scope state to clear */ } };
+  return { postDensity, measureDensity, applyGravity, reset() { /* stateless - no per-scope state to clear */ } };
 })();
 crossLayerRegistry.register('temporalGravity', temporalGravity, ['all']);

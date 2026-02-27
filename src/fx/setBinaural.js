@@ -69,7 +69,7 @@ setBinaural = () => {
     V.requireFinite(measuresPerPhrase, 'measuresPerPhrase');
     beatsUntilBinauralShift = Math.max(1, numerator * measuresPerPhrase);
 
-    // Recompute pitch bend values from updated offset — stale values cause audible detune
+    // Recompute pitch bend values from updated offset - stale values cause audible detune
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');

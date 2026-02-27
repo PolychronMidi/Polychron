@@ -43,7 +43,7 @@ motivicDensityTracker = (() => {
 
   /**
    * Get a motivic density bias.
-   * Overcrowded â†’ thin density; sparse â†’ boost density.
+   * Overcrowded - thin density; sparse - boost density.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.8 to 1.2

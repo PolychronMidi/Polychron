@@ -51,7 +51,7 @@ rhythmicComplexityGradient = (() => {
 
   /**
    * Get a subdivision depth bias based on complexity trajectory.
-   * Building â†’ allow deeper subdivisions; simplifying â†’ encourage simpler.
+   * Building - allow deeper subdivisions; simplifying - encourage simpler.
    * @returns {number} - 0.8 to 1.3
    */
   function getSubdivisionBias() {

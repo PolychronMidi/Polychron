@@ -54,7 +54,7 @@ durationalContourTracker = (() => {
 
   /**
    * Get duration envelope bias for temporal shaping (cached per beat).
-   * Accelerating â†’ gently resist (boost longer durations); decelerating â†’ gently resist (boost shorter).
+   * Accelerating - gently resist (boost longer durations); decelerating - gently resist (boost shorter).
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ durationBias: number, flickerMod: number }}

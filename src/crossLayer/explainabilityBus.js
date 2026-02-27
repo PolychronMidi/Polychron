@@ -23,7 +23,7 @@ explainabilityBus = (() => {
     }
     const entry = { type, layer, payload, absTimeMs: t };
     entries.push(entry);
-    // Batch evict: let buffer grow past capacity, then splice once — avoids O(n) shift per emit
+    // Batch evict: let buffer grow past capacity, then splice once - avoids O(n) shift per emit
     if (entries.length > MAX_ENTRIES + EVICT_BATCH) {
       entries.splice(0, entries.length - MAX_ENTRIES);
     }
@@ -47,7 +47,7 @@ explainabilityBus = (() => {
 
   /**
    * Return entries matching a specific type, most recent first.
-   * @param {string} type — event type to filter on
+   * @param {string} type - event type to filter on
    * @param {number} [limit=20] max entries to return
    * @returns {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>}
    */

@@ -2,10 +2,10 @@
 // Merges CrossLayerRhythmPhaseTracker + MicroTimingDriftDetector +
 // PolyrhythmicAlignmentTracker + MetricDisplacementDetector.
 // Provides phase relationship, timing drift, alignment flicker, and hemiola detection.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 interLayerRhythmAnalyzer = (() => {
-  // Beat-level caches — each analysis function is called 2+ times per beat
+  // Beat-level caches - each analysis function is called 2+ times per beat
   // (once from flicker/bias registration, once from stateProvider).
   const _phaseCache = beatCache.create(() => interLayerRhythmHelpers.computePhaseRelationship());
   const _driftCache = beatCache.create(() => interLayerRhythmHelpers.computeDriftSignal());

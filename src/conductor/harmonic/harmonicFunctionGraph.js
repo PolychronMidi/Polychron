@@ -16,16 +16,16 @@ harmonicFunctionGraph = (() => {
 
   const CHANNEL = 'harmonicFunction';
 
-  // Scale-degree → function mapping (major-key defaults).
+  // Scale-degree - function mapping (major-key defaults).
   // 0-indexed from root of current key.
   const DEGREE_FUNCTION = {
-    0: 'T',   // I   — tonic
-    1: 'S',   // ii  — subdominant
-    2: 'T',   // iii — tonic substitute
-    3: 'S',   // IV  — subdominant
-    4: 'D',   // V   — dominant
-    5: 'S',   // vi  — subdominant (tonic substitute in some analyses)
-    6: 'D',   // vii — dominant
+    0: 'T',   // I   - tonic
+    1: 'S',   // ii  - subdominant
+    2: 'T',   // iii - tonic substitute
+    3: 'S',   // IV  - subdominant
+    4: 'D',   // V   - dominant
+    5: 'S',   // vi  - subdominant (tonic substitute in some analyses)
+    6: 'D',   // vii - dominant
   };
 
   const FUNCTION_TENSION = {
@@ -40,8 +40,8 @@ harmonicFunctionGraph = (() => {
 
   /**
    * Resolve harmonic function for a given chord root relative to key root.
-   * @param {number} chordRoot  MIDI pitch class 0–11
-   * @param {number} keyRoot    MIDI pitch class 0–11
+   * @param {number} chordRoot  MIDI pitch class 0-11
+   * @param {number} keyRoot    MIDI pitch class 0-11
    * @returns {string} 'T' | 'S' | 'D' | 'A'
    */
   function classify(chordRoot, keyRoot) {

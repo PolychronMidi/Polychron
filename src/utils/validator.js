@@ -183,7 +183,7 @@ validator = (() => {
     try {
       const stack = (new Error()).stack || '';
       const lines = stack.split('\n').map(l => l.trim()).filter(Boolean);
-      // stack[0] = "Error", stack[1] = current fn, stack[2] = caller — prefer that
+      // stack[0] = "Error", stack[1] = current fn, stack[2] = caller - prefer that
       if (lines.length >= 3) {
         const callerLine = lines[2];
         const fnMatch = callerLine.match(/at\s+([^\s(]+)\s*\(/);
@@ -197,7 +197,7 @@ validator = (() => {
         }
       }
     } catch {
-      /* ignore — fall through */
+      /* ignore - fall through */
     }
 
     return 'Module';

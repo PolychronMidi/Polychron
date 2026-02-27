@@ -60,7 +60,7 @@ repetitionFatigueMonitor = (() => {
 
   /**
    * Get a repetition penalty multiplier for note selection.
-   * High fatigue → stronger penalty against repeated pitches.
+   * High fatigue - stronger penalty against repeated pitches.
    * Continuous interpolation avoids chronic ceiling-lock.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
@@ -69,7 +69,7 @@ repetitionFatigueMonitor = (() => {
   function getRepetitionPenalty(opts) {
     const profile = getRepetitionProfile(opts);
     // Continuous ramp: onset at 0.20, full at 1.0. Reduced from 0.15 to 0.12
-    // max to ease tension crush — output 1.143 consuming 95% of [1, 1.15] range.
+    // max to ease tension crush - output 1.143 consuming 95% of [1, 1.15] range.
     if (profile.fatigueLevel <= 0.20) return 1.0;
     const ramp = clamp((profile.fatigueLevel - 0.20) / 0.80, 0, 1);
     return 1.0 + ramp * 0.12;

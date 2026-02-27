@@ -8,8 +8,8 @@
  * VoiceManager requires sufficient candidates for effective voice-leading optimization.
  * When motif buckets provide single notes, this helper expands the pool by adding
  * scale-aware neighbors that match the composer's pitch-class set.
- * Expansion radius adapts per unit level: beats expand wider (±24) for open voicings,
- * while subsubdivs stay narrow (±6) for cluster textures.
+ * Expansion radius adapts per unit level: beats expand wider (24) for open voicings,
+ * while subsubdivs stay narrow (6) for cluster textures.
  */
 candidateExpansion = {
   /** Expansion radius (semitones) per unit level */
@@ -37,7 +37,7 @@ candidateExpansion = {
     for (const baseNote of bases) {
       if (!Number.isFinite(baseNote)) continue;
 
-      // Search ±radius semitones (adaptive per unit level)
+      // Search radius semitones (adaptive per unit level)
       for (let delta = -radius; delta <= radius; delta++) {
         if (delta === 0) continue;
 

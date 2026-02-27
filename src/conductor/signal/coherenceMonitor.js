@@ -90,7 +90,7 @@ coherenceMonitor = (() => {
     // pushing a strong bias, detect the feedback loop and dampen.
     eventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
       const regBias = V.requireFinite(data.densityBias, 'densityBias');
-      // Both biases pushing in the same direction â†’ dampen ours
+      // Both biases pushing in the same direction - dampen ours
       const sameDirection = (regBias > 0 && coherenceBias > 1.0) || (regBias < 0 && coherenceBias < 1.0);
       if (sameDirection) {
         coherenceBias = clamp(
@@ -150,8 +150,8 @@ coherenceMonitor = (() => {
       }
     }
 
-    // If emitting too many notes (deviation > 0) â†’ dampen (bias < 1)
-    // If emitting too few notes (deviation < 0) â†’ boost (bias > 1)
+    // If emitting too many notes (deviation > 0) - dampen (bias < 1)
+    // If emitting too few notes (deviation < 0) - boost (bias > 1)
     const correction = 1.0 - deviation * phaseGain;
 
     // Density-level awareness: the emission-fidelity check above is blind to
@@ -197,7 +197,7 @@ coherenceMonitor = (() => {
       }
       variance /= window.length;
 
-      // High variance â†’ chaos, low variance â†’ stagnation
+      // High variance - chaos, low variance - stagnation
       const rawEntropy = clamp(variance - 0.04, -0.5, 0.5) * 2;
       entropySignal = entropySignal * ENTROPY_DECAY + rawEntropy * (1 - ENTROPY_DECAY);
     }

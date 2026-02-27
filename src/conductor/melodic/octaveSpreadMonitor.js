@@ -69,7 +69,7 @@ octaveSpreadMonitor = (() => {
 
   /**
    * Get a register spread bias.
-   * Clustered â†’ encourage wider spread; already wide â†’ no adjustment.
+   * Clustered - encourage wider spread; already wide - no adjustment.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - bias in semitones to nudge register (-6 to +6)

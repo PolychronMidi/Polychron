@@ -32,7 +32,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
   const cycleTracker = layer._motifCycleTracking;
 
-  // Register any new groups — avoids .map()/.filter()/Set allocation per micro-unit
+  // Register any new groups - avoids .map()/.filter()/Set allocation per micro-unit
   for (let bi = 0; bi < bucket.length; bi++) {
     const gid = bucket[bi].groupId;
     if (gid && !cycleTracker.has(gid)) {

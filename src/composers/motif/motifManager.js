@@ -1,5 +1,5 @@
 // motifManager.js - single manager hub for motif subsystem
-// Orchestrates hierarchical motif planning: measure → beat → div → subdiv → subsubdiv.
+// Orchestrates hierarchical motif planning: measure - beat - div - subdiv - subsubdiv.
 // Coordinates motifConfig, intervalComposer, motifSpreader, motifChain, and
 // motifModulator to produce coherent, parent-derived motif content at every level.
 
@@ -35,7 +35,7 @@ class MotifManager_ {
     if (!layer) throw new Error('motifManager.planMeasure: no layer');
     if (!composer) throw new Error('motifManager.planMeasure: no composer');
     // ── Texture-guided motif variation (#10) ──────────────────────────
-    // Bursts → higher density (harmonic motifs), flurries → lower density (scalar)
+    // Bursts - higher density (harmonic motifs), flurries - lower density (scalar)
     if (drumTextureCoupler) {
       const texMetrics = drumTextureCoupler.getMetrics();
       if (texMetrics.intensity > 0.2) {

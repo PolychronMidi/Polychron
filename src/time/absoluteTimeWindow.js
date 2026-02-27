@@ -161,7 +161,7 @@ absoluteTimeWindow = (() => {
       ? since
       : (lastTime - effectiveWindowSeconds);
 
-    // Query cache: identical (type, layer, cutoff) â†’ reuse prior result array
+    // Query cache: identical (type, layer, cutoff) - reuse prior result array
     const cacheKey = type + ':' + (layer || '') + ':' + cutoff;
     const cached = _queryCache.get(cacheKey);
     if (cached) return cached;

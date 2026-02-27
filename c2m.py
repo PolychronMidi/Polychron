@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert CSV (csv_maestro) files to .mid — accepts filenames as arguments.
+"""Convert CSV (csv_maestro) files to .mid - accepts filenames as arguments.
 
 Usage:
   python c2m.py                 # converts output/output1.csv and output/output2.csv (legacy behavior)

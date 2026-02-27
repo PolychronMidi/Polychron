@@ -1,4 +1,4 @@
-// conductorConfigAccessors.js — Extracted accessor methods for conductorConfig.
+// conductorConfigAccessors.js - Extracted accessor methods for conductorConfig.
 // Pure delegates to dynamics.resolveField() or getProfileTuning() sub-keys.
 // Loaded before conductorConfig.js; called once with { dynamics, getProfileTuning }.
 
@@ -6,7 +6,7 @@ conductorConfigAccessors = (deps) => {
   const { dynamics, getProfileTuning } = deps;
   const V = validator.create('conductorConfigAccessors');
 
-  // ── dynamics.resolveField delegates ───────────────────────────────
+  // -- dynamics.resolveField delegates -------------------------------
 
   function getDensitySmoothing() {
     return dynamics.resolveField('density').smoothing;
@@ -76,7 +76,7 @@ conductorConfigAccessors = (deps) => {
     return Object.assign({}, arcMapping);
   }
 
-  // ── getProfileTuning() delegates ──────────────────────────────────
+  // -- getProfileTuning() delegates ----------------------------------
 
   function getEmissionGateParams() { return getProfileTuning().emissionGate; }
   function getStutterGrainParams() { return getProfileTuning().stutterGrain; }

@@ -14,7 +14,7 @@ verticalIntervalMonitor = (() => {
   const V = validator.create('verticalIntervalMonitor');
 
   const CHANNEL     = 'notePitch';
-  const TOLERANCE   = 80;          // ms — simultaneity window
+  const TOLERANCE   = 80;          // ms - simultaneity window
   const PROB_REDUCE = -0.04;       // playProb penalty on collision
 
   // Interval classes that flag overlap (in semitones mod 12)

@@ -44,7 +44,7 @@ registerMigrationTracker = (() => {
 
   /**
    * Suggest a register correction to counteract drift or monotony.
-   * Ascending â†’ bias downward; descending â†’ bias upward; static â†’ encourage movement.
+   * Ascending - bias downward; descending - bias upward; static - encourage movement.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ registerBias: number, suggestion: string }}

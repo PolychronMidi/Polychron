@@ -52,7 +52,7 @@ dynamicRangeTracker = (() => {
 
   /**
    * Get velocity-spread bias for the flickerAmplitude chain.
-   * Continuous ramp: narrow spread → widen (boost); wide spread → slight reduction.
+   * Continuous ramp: narrow spread - widen (boost); wide spread - slight reduction.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.8 to 1.3
@@ -124,17 +124,17 @@ dynamicRangeTracker = (() => {
   /**
    * Get contrast-driven flicker modifier.
    * Continuous ramp based on dynamic range utilization.
-   * Narrow global range or low recent utilization → amplify flicker.
+   * Narrow global range or low recent utilization - amplify flicker.
    * @returns {number} - 0.95 to 1.2
    */
   function getContrastFlickerModifier() {
     const profile = getContrastProfile();
     if (profile.globalRange < 1) return 1.0;
     if (profile.globalRange < 30) {
-      // Narrow global range — ramp boost: globalRange 0→30 maps to 1.1→1.0
+      // Narrow global range - ramp boost: globalRange 0→30 maps to 1.1→1.0
       return 1.0 + clamp((30 - profile.globalRange) / 30, 0, 1) * 0.1;
     }
-    // Wide global range — ramp based on recent utilization ratio
+    // Wide global range - ramp based on recent utilization ratio
     // utilizationRatio 0→0.8 maps to 1.15→1.0
     const utilizationRatio = profile.recentRange / profile.globalRange;
     return 1.0 + clamp((0.8 - utilizationRatio) / 0.8, 0, 1) * 0.15;

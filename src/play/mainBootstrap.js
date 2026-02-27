@@ -65,7 +65,7 @@ mainBootstrap = (() => {
   /** Verify all required globals exist before main loop starts. */
   function assertBootstrapGlobals() {
     // ── Phase 1: Verify every name in fullBootstrap.VALIDATED_GLOBALS exists ──
-    // This is the ONE place typeof probes are legitimate — proving globals exist
+    // This is the ONE place typeof probes are legitimate - proving globals exist
     // so that no other file needs to. The ESLint rule exempts this file.
     const validated = fullBootstrap.getValidatedGlobalsList();
     const missing = [];
@@ -100,7 +100,7 @@ mainBootstrap = (() => {
     }
     const unlisted = catalogKeys.filter(k => !EXPECTED_EVENTS.includes(k));
     if (unlisted.length > 0) {
-      throw new Error(`mainBootstrap: eventCatalog has unverified events: ${unlisted.join(', ')} — add them to EXPECTED_EVENTS in mainBootstrap.js`);
+      throw new Error(`mainBootstrap: eventCatalog has unverified events: ${unlisted.join(', ')} - add them to EXPECTED_EVENTS in mainBootstrap.js`);
     }
 
     // ── Phase 3: Verify key module methods exist (shape checks beyond typeof) ──

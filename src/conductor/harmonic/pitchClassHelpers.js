@@ -2,7 +2,7 @@
 // Used by chromaticSaturationMonitor, modalColorTracker, pitchClassGravityMap,
 // tonalAnchorDistanceTracker, consonanceDissonanceTracker, tensionResolutionTracker,
 // layerCoherenceScorer.
-// Pure query — reads absoluteTimeWindow.
+// Pure query - reads absoluteTimeWindow.
 
 pitchClassHelpers = (() => {
   const V = validator.create('pitchClassHelpers');

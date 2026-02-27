@@ -65,11 +65,11 @@ consonanceDissonanceTracker = (() => {
    */
   function getTensionBias(opts) {
     const profile = getConsonanceProfile(opts);
-    // Bland side: consonanceRatio 0.5→1.0 → bias 1.0→1.15
+    // Bland side: consonanceRatio 0.5→1.0 - bias 1.0→1.15
     if (profile.consonanceRatio > 0.5) {
       return 1.0 + clamp((profile.consonanceRatio - 0.5) / 0.5, 0, 1) * 0.15;
     }
-    // Harsh side: dissonanceRatio 0.3→0.8 → bias 1.0→0.85
+    // Harsh side: dissonanceRatio 0.3→0.8 - bias 1.0→0.85
     if (profile.dissonanceRatio > 0.3) {
       return 1.0 - clamp((profile.dissonanceRatio - 0.3) / 0.5, 0, 1) * 0.15;
     }

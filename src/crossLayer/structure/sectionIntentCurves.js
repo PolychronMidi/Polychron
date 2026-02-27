@@ -10,7 +10,7 @@ sectionIntentCurves = (() => {
 
   /**
    * Compute section intent from timeStream positions.
-   * Accepts no arguments — reads section/phrase progress and indices directly.
+   * Accepts no arguments - reads section/phrase progress and indices directly.
    */
   function getIntent() {
     const p = clamp(timeStream.compoundProgress('section'), 0, 1);

@@ -1,4 +1,4 @@
-// src/crossLayer/dynamics/index.js — Velocity, envelope, articulation & texture.
+// src/crossLayer/dynamics/index.js - Velocity, envelope, articulation & texture.
 
 // @ts-ignore: side-effect module load
 require('./articulationComplement');

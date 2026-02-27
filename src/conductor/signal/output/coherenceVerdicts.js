@@ -1,6 +1,6 @@
-// coherenceVerdicts.js — Auto-diagnose coherence state from manifest data.
+// coherenceVerdicts.js - Auto-diagnose coherence state from manifest data.
 // Examines signal health, dynamics, attribution, trust, and coupling
-// to produce actionable severity-graded verdicts. Pure computation —
+// to produce actionable severity-graded verdicts. Pure computation -
 // reads structured data, returns verdicts. No side effects.
 
 coherenceVerdicts = (() => {
@@ -42,15 +42,15 @@ coherenceVerdicts = (() => {
       if (!h) continue;
 
       if (h.grade === 'critical') {
-        verdicts.push({ severity: 'critical', area: 'pipeline', finding: `${p} pipeline critical — product ${h.product.toFixed(4)}, crush factor ${(h.crushFactor * 100).toFixed(0)}%.` });
+        verdicts.push({ severity: 'critical', area: 'pipeline', finding: `${p} pipeline critical - product ${h.product.toFixed(4)}, crush factor ${(h.crushFactor * 100).toFixed(0)}%.` });
       } else if (h.grade === 'stressed') {
-        verdicts.push({ severity: 'warning', area: 'pipeline', finding: `${p} pipeline stressed — crush factor ${(h.crushFactor * 100).toFixed(0)}%.` });
+        verdicts.push({ severity: 'warning', area: 'pipeline', finding: `${p} pipeline stressed - crush factor ${(h.crushFactor * 100).toFixed(0)}%.` });
       } else if (h.grade === 'strained' && h.crushFactor > 0.4) {
-        verdicts.push({ severity: 'warning', area: 'pipeline', finding: `${p} pipeline strained with ${(h.crushFactor * 100).toFixed(0)}% crush — multiplicative suppression eroding signal range.` });
+        verdicts.push({ severity: 'warning', area: 'pipeline', finding: `${p} pipeline strained with ${(h.crushFactor * 100).toFixed(0)}% crush - multiplicative suppression eroding signal range.` });
       }
 
       if (h.saturated) {
-        verdicts.push({ severity: 'critical', area: 'pipeline', finding: `${p} pipeline saturated — product hitting floor/ceiling.` });
+        verdicts.push({ severity: 'critical', area: 'pipeline', finding: `${p} pipeline saturated - product hitting floor/ceiling.` });
       }
     }
 
@@ -70,23 +70,23 @@ coherenceVerdicts = (() => {
     const s = sd.snapshot;
 
     if (s.regime === 'stagnant') {
-      verdicts.push({ severity: 'critical', area: 'dynamics', finding: `Regime stagnant (velocity ${s.velocity}) — system stuck in attractor. Signal getters may be producing near-constant values.` });
+      verdicts.push({ severity: 'critical', area: 'dynamics', finding: `Regime stagnant (velocity ${s.velocity}) - system stuck in attractor. Signal getters may be producing near-constant values.` });
     } else if (s.regime === 'oscillating' && s.curvature > 0.5) {
-      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Regime oscillating with high curvature (${s.curvature.toFixed(3)}) — pendulum reversals rather than forward evolution. Look for bias getters that flip between two states.` });
+      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Regime oscillating with high curvature (${s.curvature.toFixed(3)}) - pendulum reversals rather than forward evolution. Look for bias getters that flip between two states.` });
     } else if (s.regime === 'fragmented') {
-      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Regime fragmented — dimensions acting independently without coordination.` });
+      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Regime fragmented - dimensions acting independently without coordination.` });
     } else if (s.regime === 'evolving' || s.regime === 'exploring' || s.regime === 'coherent') {
-      verdicts.push({ severity: 'info', area: 'dynamics', finding: `Regime ${s.regime} — healthy compositional development.` });
+      verdicts.push({ severity: 'info', area: 'dynamics', finding: `Regime ${s.regime} - healthy compositional development.` });
     }
 
     if (s.effectiveDimensionality < 1.5) {
-      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Effective dimensionality collapsed to ${s.effectiveDimensionality.toFixed(2)}/4 — system operating on fewer than 1.5 independent compositional axes. Severe variance imbalance or strong coupling.` });
+      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Effective dimensionality collapsed to ${s.effectiveDimensionality.toFixed(2)}/4 - system operating on fewer than 1.5 independent compositional axes. Severe variance imbalance or strong coupling.` });
     } else if (s.effectiveDimensionality < 2.0) {
-      verdicts.push({ severity: 'info', area: 'dynamics', finding: `Effective dimensionality ${s.effectiveDimensionality.toFixed(2)}/4 — mild variance imbalance across compositional axes. Normal for short sections or pieces with a dominant signal.` });
+      verdicts.push({ severity: 'info', area: 'dynamics', finding: `Effective dimensionality ${s.effectiveDimensionality.toFixed(2)}/4 - mild variance imbalance across compositional axes. Normal for short sections or pieces with a dominant signal.` });
     }
 
     if (s.velocity < 0.01 && s.regime !== 'stagnant') {
-      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Very low velocity (${s.velocity}) despite non-stagnant regime — near stasis.` });
+      verdicts.push({ severity: 'warning', area: 'dynamics', finding: `Very low velocity (${s.velocity}) despite non-stagnant regime - near stasis.` });
     }
   }
 
@@ -101,7 +101,7 @@ coherenceVerdicts = (() => {
     // tension, flicker, entropy). Trust and phase are governance/position
     // signals excluded from velocity/curvature/dimensionality by the profiler.
     // Reporting trust-X or phase-X coupling as warnings creates false positives
-    // — those correlations are structurally expected, not actionable.
+    // - those correlations are structurally expected, not actionable.
     const compositionalPairs = Object.entries(matrix)
       .filter(([pair]) => !pair.includes('trust') && !pair.includes('phase'))
       .filter(([, v]) => m.abs(v) > 0.5)
@@ -111,7 +111,7 @@ coherenceVerdicts = (() => {
       const [pair, corr] = compositionalPairs[i];
       const direction = corr > 0 ? 'co-evolving' : 'anti-correlated';
       const severity = m.abs(corr) > 0.7 ? 'warning' : 'info';
-      verdicts.push({ severity, area: 'coupling', finding: `${pair} strongly ${direction} (r=${corr.toFixed(3)}) — these dimensions may be driven by a shared input or feedback loop.` });
+      verdicts.push({ severity, area: 'coupling', finding: `${pair} strongly ${direction} (r=${corr.toFixed(3)}) - these dimensions may be driven by a shared input or feedback loop.` });
     }
 
     // Governance coupling reported as info-only for diagnostic completeness
@@ -123,7 +123,7 @@ coherenceVerdicts = (() => {
     for (let i = 0; i < governancePairs.length; i++) {
       const [pair, corr] = governancePairs[i];
       const direction = corr > 0 ? 'co-evolving' : 'anti-correlated';
-      verdicts.push({ severity: 'info', area: 'coupling', finding: `${pair} strongly ${direction} (r=${corr.toFixed(3)}) — governance coupling (expected, not actionable).` });
+      verdicts.push({ severity: 'info', area: 'coupling', finding: `${pair} strongly ${direction} (r=${corr.toFixed(3)}) - governance coupling (expected, not actionable).` });
     }
   }
 
@@ -138,15 +138,15 @@ coherenceVerdicts = (() => {
       if (!data || typeof data.score !== 'number') continue;
 
       if (data.score < 0.03) {
-        verdicts.push({ severity: 'warning', area: 'trust', finding: `${name} trust score near zero (${data.score.toFixed(3)}) — system effectively disabled by trust governance.` });
+        verdicts.push({ severity: 'warning', area: 'trust', finding: `${name} trust score near zero (${data.score.toFixed(3)}) - system effectively disabled by trust governance.` });
       } else if (data.score > 0.8) {
-        verdicts.push({ severity: 'info', area: 'trust', finding: `${name} trust very high (${data.score.toFixed(3)}) — weight ${data.weight.toFixed(3)} may be amplifying this system disproportionately.` });
+        verdicts.push({ severity: 'info', area: 'trust', finding: `${name} trust very high (${data.score.toFixed(3)}) - weight ${data.weight.toFixed(3)} may be amplifying this system disproportionately.` });
       }
     }
 
     const sh = manifest.signalHealth;
     if (sh && sh.lastHealth && sh.lastHealth.trust && sh.lastHealth.trust.grade === 'strained') {
-      verdicts.push({ severity: 'warning', area: 'trust', finding: 'Trust ecosystem strained — some systems starving while others thrive.' });
+      verdicts.push({ severity: 'warning', area: 'trust', finding: 'Trust ecosystem strained - some systems starving while others thrive.' });
     }
   }
 
@@ -170,21 +170,21 @@ coherenceVerdicts = (() => {
         const c = data.contributions[j];
         // Detect modules where raw !== clamped (being clipped)
         if (c.raw !== c.clamped) {
-          verdicts.push({ severity: 'warning', area: 'attribution', finding: `${c.name} ${pipeline} bias clipped: raw ${c.raw.toFixed(4)} → clamped ${c.clamped.toFixed(4)}. Module exceeding its registered range.` });
+          verdicts.push({ severity: 'warning', area: 'attribution', finding: `${c.name} ${pipeline} bias clipped: raw ${c.raw.toFixed(4)} - clamped ${c.clamped.toFixed(4)}. Module exceeding its registered range.` });
         }
         // Detect modules stuck at exact floor/ceiling values (0.6000, 0.8000, etc.)
         // that suggest permanent pinning rather than dynamic response
         if (c.clamped === 0.6 && c.name === 'coherenceMonitor') {
-          verdicts.push({ severity: 'info', area: 'attribution', finding: `coherenceMonitor density bias locked at floor (0.60) — system consistently emitting more notes than intended, suppressing density by 40%.` });
+          verdicts.push({ severity: 'info', area: 'attribution', finding: `coherenceMonitor density bias locked at floor (0.60) - system consistently emitting more notes than intended, suppressing density by 40%.` });
         }
       }
 
       // Check if product is floored or capped
       if (data.floored) {
-        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product soft-floored at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) — soft envelope compressing low product.` });
+        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product soft-floored at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) - soft envelope compressing low product.` });
       }
       if (data.capped) {
-        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product soft-capped at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) — soft envelope compressing high product.` });
+        verdicts.push({ severity: 'warning', area: 'attribution', finding: `${pipeline} product soft-capped at ${data.product.toFixed(4)} (raw ${data.rawProduct.toFixed(4)}) - soft envelope compressing high product.` });
       }
     }
   }
@@ -194,14 +194,14 @@ coherenceVerdicts = (() => {
     if (!attribution || !attribution.density || !attribution.density.contributions) return;
     const cm = attribution.density.contributions.find(c => c.name === 'coherenceMonitor');
     if (!cm) return;
-    // Already handled in _checkAttributionExtremes — but check if it's the
+    // Already handled in _checkAttributionExtremes - but check if it's the
     // single largest density suppressor
     const sorted = attribution.density.contributions
       .filter(c => c.clamped < 1.0)
       .sort((a, b) => a.clamped - b.clamped);
     if (sorted.length > 0 && sorted[0].name === 'coherenceMonitor') {
       const suppressionPct = ((1 - sorted[0].clamped) * 100).toFixed(0);
-      verdicts.push({ severity: 'warning', area: 'density', finding: `coherenceMonitor is the single largest density suppressor (${suppressionPct}% reduction) — the system's density floor may be structurally depressed.` });
+      verdicts.push({ severity: 'warning', area: 'density', finding: `coherenceMonitor is the single largest density suppressor (${suppressionPct}% reduction) - the system's density floor may be structurally depressed.` });
     }
   }
 
@@ -213,7 +213,7 @@ coherenceVerdicts = (() => {
    */
   function _checkStaleContributors(attribution, verdicts) {
     if (!attribution) return;
-    const STALE_THRESHOLD = 0.08; // >8% deviation from neutral (was 5% — too many false positives)
+    const STALE_THRESHOLD = 0.08; // >8% deviation from neutral (was 5% - too many false positives)
     const tables = [
       { name: 'density', data: attribution.density },
       { name: 'tension', data: attribution.tension },

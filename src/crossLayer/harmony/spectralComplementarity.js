@@ -1,4 +1,4 @@
-// src/crossLayer/spectralComplementarity.js — Cross-layer spectral gap filling.
+// src/crossLayer/spectralComplementarity.js - Cross-layer spectral gap filling.
 // Tracks running pitch-class histogram per layer. When one layer concentrates
 // in a register, nudges the other to fill spectral gaps (bass or treble).
 // Ensures combined output always has full-spectrum coverage.
@@ -12,7 +12,7 @@ spectralComplementarity = (() => {
 
   /** @type {Map<string, number[]>} recent MIDI notes per layer */
   const noteHistory = new Map();
-  /** @type {Map<string, number[]>} cached raw bin counts per layer — updated incrementally */
+  /** @type {Map<string, number[]>} cached raw bin counts per layer - updated incrementally */
   const binCountsByLayer = new Map();
 
   /** Map a MIDI note to its register bin index (0-3). */
@@ -48,7 +48,7 @@ spectralComplementarity = (() => {
 
   /**
    * Compute register histogram for a layer.
-   * O(1) — reads cached bin counts instead of re-scanning noteHistory.
+   * O(1) - reads cached bin counts instead of re-scanning noteHistory.
    * @param {string} layer
    * @returns {number[]} array of size REGISTER_BINS with normalized 0-1 densities
    */

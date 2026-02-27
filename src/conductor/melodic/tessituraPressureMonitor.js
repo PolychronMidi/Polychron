@@ -1,7 +1,7 @@
 // src/conductor/tessituraPressureMonitor.js - Extreme-register duration tracker.
 // Monitors how long voices stay in extreme high or low registers and biases
 // density toward relief when tessitural pressure is sustained too long.
-// Pure query API — no side effects.
+// Pure query API - no side effects.
 
 tessituraPressureMonitor = (() => {
   const WINDOW_SECONDS = 8;
@@ -46,7 +46,7 @@ tessituraPressureMonitor = (() => {
     else if (highRatio > 0.3) region = 'high-pressure';
     else if (extremeRatio > 0.15) region = 'mild-pressure';
 
-    // Continuous ramp: comfortable register → slight boost; extreme → pull-back.
+    // Continuous ramp: comfortable register - slight boost; extreme - pull-back.
     // extremeRatio 0→0.1 maps to 1.03→1.0; extremeRatio 0.1→0.6 maps to 1.0→0.88.
     let densityBias = 1;
     if (extremeRatio < 0.1) {
@@ -54,8 +54,8 @@ tessituraPressureMonitor = (() => {
     } else {
       const rawSuppression = clamp((extremeRatio - 0.1) / 0.5, 0, 1) * 0.12;
       // Density-aware attenuation: reduce suppression when density is already
-      // below healthy threshold — avoids compounding structural deficit.
-      // At currentDensity 0.90+ → full suppression; at 0.50 → half suppression.
+      // below healthy threshold - avoids compounding structural deficit.
+      // At currentDensity 0.90+ - full suppression; at 0.50 - half suppression.
       const attenuate = currentDensity < 0.90
         ? clamp((currentDensity - 0.50) / 0.40, 0.5, 1.0)
         : 1.0;

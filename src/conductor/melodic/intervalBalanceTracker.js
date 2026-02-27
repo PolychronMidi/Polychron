@@ -117,7 +117,7 @@ intervalBalanceTracker = (() => {
 
   /**
    * Get density multiplier for targetDensity chain.
-   * Very unbalanced intervals â†’ slight density correction.
+   * Very unbalanced intervals - slight density correction.
    * @returns {number}
    */
   function getDensityBias() {
@@ -129,7 +129,7 @@ intervalBalanceTracker = (() => {
 
   /**
    * Get a leap-penalty bias for voice leading scoring.
-   * Monotonous â†’ reduce leap penalty; erratic â†’ increase it.
+   * Monotonous - reduce leap penalty; erratic - increase it.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {number} - 0.5 to 1.5

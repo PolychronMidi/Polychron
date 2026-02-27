@@ -1,4 +1,4 @@
-// src/crossLayer/articulationComplement.js — Cross-layer articulation contrast.
+// src/crossLayer/articulationComplement.js - Cross-layer articulation contrast.
 // When one layer plays legato (long sustains), steers the other toward staccato
 // (short, punchy notes) and vice versa. Creates complementary articulation
 // textures driven by dynamicRoleSwap and sectionIntentCurves.
@@ -72,11 +72,11 @@ articulationComplement = (() => {
     let preferredStutterType = 'fade';
 
     if (otherProfile.isLegato) {
-      // Other is legato → we should be staccato (modulated by own profile)
+      // Other is legato - we should be staccato (modulated by own profile)
       sustainScale = clamp(1.0 - CONTRAST_STRENGTH * interactionTarget + selfLegatoBias, 0.3, 1.0);
       preferredStutterType = 'chop';
     } else if (otherProfile.isStaccato) {
-      // Other is staccato → we should be legato
+      // Other is staccato - we should be legato
       sustainScale = clamp(1.0 + CONTRAST_STRENGTH * interactionTarget, 1.0, 2.0);
       preferredStutterType = 'fade';
     }

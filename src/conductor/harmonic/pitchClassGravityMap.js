@@ -1,7 +1,7 @@
 // src/conductor/pitchClassGravityMap.js - Tonal gravity / pitch-class anchor tracker.
 // Tracks which pitch classes carry the most weight (frequency of occurrence)
 // and signals tonal center stability vs. drift.
-// Pure query API — consumed via conductorState.
+// Pure query API - consumed via conductorState.
 
 pitchClassGravityMap = (() => {
   const WINDOW_SECONDS = 10;

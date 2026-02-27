@@ -1,19 +1,19 @@
 const V = validator.create('playNotesEmitPick');
 let _emitPickDepsValidated = false;
 
-// Beat-level channel cache — flipBin/source/reflection/bass don't change within a beat
+// Beat-level channel cache - flipBin/source/reflection/bass don't change within a beat
 let _chCacheBeat = -1;
 let _chCacheFlip = /** @type {boolean|null} */ (null);
 /** @type {any[]} */ let _cachedSourceChs = [];
 /** @type {any[]} */ let _cachedReflectionChs = [];
 /** @type {any[]} */ let _cachedBassChs = [];
 
-// Beat-level feedback pitch bias — set once from processBeat, read per-pick
+// Beat-level feedback pitch bias - set once from processBeat, read per-pick
 let _beatFeedbackPitchBias = -1;
 /** @param {number} bias */
 setFeedbackPitchBias = function(bias) { _beatFeedbackPitchBias = V.optionalFinite(bias, -1); };
 
-// Beat-level climax modifiers cache — set once from processBeat, read per-pick
+// Beat-level climax modifiers cache - set once from processBeat, read per-pick
 /** @type {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} */
 let _beatClimaxMods = { playProbScale: 1, velocityScale: 1, registerBias: 0, entropyTarget: -1 };
 /** @param {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} mods */
@@ -120,7 +120,7 @@ playNotesEmitPick = function(opts = {}) {
 
   _refreshChannelCache();
   const activeSourceChannels = _cachedSourceChs;
-  const maxTickShift = tpSec * 0.1; // cap cumulative tick displacement to ±10% of tpSec
+  const maxTickShift = tpSec * 0.1; // cap cumulative tick displacement to 10% of tpSec
   for (let sourceIndex = 0; sourceIndex < activeSourceChannels.length; sourceIndex++) {
     const sourceCH = activeSourceChannels[sourceIndex];
     const isPrimary = sourceCH === cCH1;
@@ -209,7 +209,7 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionPreSyncMs = tickToAbsMs(onTick);
     onTick = rhythmicPhaseLock.applyPhaseLock(reflectionPreSyncMs, activeLayerName, onTick).tick;
     onTick = temporalGravity.applyGravity(reflectionPreSyncMs, activeLayerName, onTick);
-    // Cap cumulative tick displacement to ±10% of tpSec
+    // Cap cumulative tick displacement to 10% of tpSec
     if (m.abs(onTick - reflPreShiftTick) > maxTickShift) {
       onTick = reflPreShiftTick + m.sign(onTick - reflPreShiftTick) * maxTickShift;
     }
@@ -255,7 +255,7 @@ playNotesEmitPick = function(opts = {}) {
       const bassPreSyncMs = tickToAbsMs(onTick);
       onTick = rhythmicPhaseLock.applyPhaseLock(bassPreSyncMs, activeLayerName, onTick).tick;
       onTick = temporalGravity.applyGravity(bassPreSyncMs, activeLayerName, onTick);
-      // Cap cumulative tick displacement to ±10% of tpSec
+      // Cap cumulative tick displacement to 10% of tpSec
       if (m.abs(onTick - bassPreShiftTick) > maxTickShift) {
         onTick = bassPreShiftTick + m.sign(onTick - bassPreShiftTick) * maxTickShift;
       }

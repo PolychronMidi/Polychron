@@ -1,6 +1,6 @@
 // src/conductor/energyMomentumTracker.js - Tracks the derivative of composite intensity.
 // Detects rising, falling, or plateaued energy momentum.
-// Pure query API — advises conductor to inject contrast when momentum stalls.
+// Pure query API - advises conductor to inject contrast when momentum stalls.
 
 energyMomentumTracker = (() => {
   /** @type {Array<{ time: number, energy: number }>} */
@@ -88,7 +88,7 @@ energyMomentumTracker = (() => {
 
   /**
    * Get a density adjustment based on momentum.
-   * Plateaued → spike density for contrast; stale → stronger spike.
+   * Plateaued - spike density for contrast; stale - stronger spike.
    * Dampened when tension is already high (prevents runaway energy escalation).
    * @returns {number} - 0.9 to 1.3
    */

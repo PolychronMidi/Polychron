@@ -31,7 +31,7 @@ conductorIntelligence = (() => {
   }
 
 
-  // Dampening engine → conductorDampening global
+  // Dampening engine - conductorDampening global
 
   /** @returns {number} */
   function _collectDampened(registry) {
@@ -217,17 +217,17 @@ conductorIntelligence = (() => {
    * STATE FIELD CONSUMPTION AUDIT (50 providers, 9 directly consumed fields):
    *
    * Fields consumed by conductorState.getField(name):
-   *   sectionPhase         â†’ tempoFeelEngine, main.js
-   *   compositeIntensity   â†’ harmonicVelocityMonitor, main.js (Ã—2), playNotes, processBeat
-   *   phrasePosition       â†’ textureBlender
-   *   phrasePhase          â†’ textureBlender
-   *   key                  â†’ main.js
-   *   mode                 â†’ main.js
+   *   sectionPhase         - tempoFeelEngine, main.js
+   *   compositeIntensity   - harmonicVelocityMonitor, main.js (Ã-2), playNotes, processBeat
+   *   phrasePosition       - textureBlender
+   *   phrasePhase          - textureBlender
+   *   key                  - main.js
+   *   mode                 - main.js
    *
    * Fields consumed by signalReader.state(name):
-   *   profileHintRestrained  â†’ conductorConfigAccessors
-   *   profileHintExplosive   â†’ conductorConfigAccessors
-   *   profileHintAtmospheric â†’ conductorConfigAccessors
+   *   profileHintRestrained  - conductorConfigAccessors
+   *   profileHintExplosive   - conductorConfigAccessors
+   *   profileHintAtmospheric - conductorConfigAccessors
    *
    * All other ~90+ fields are observation-point only: visible in bulk
    * conductorState.getSnapshot() (consumed by playDrums, playDrums2, drummer,
@@ -265,7 +265,7 @@ conductorIntelligence = (() => {
   /**
    * Return every unique name that has registered any contribution
    * (density, tension, flicker, recorder, or stateProvider).
-   * Strips colon-suffixed variants (e.g. 'Foo:bar' â†’ 'Foo') so that
+   * Strips colon-suffixed variants (e.g. 'Foo:bar' - 'Foo') so that
    * modules registering multiple biases under sub-labels are unified.
    * @returns {string[]}
    */

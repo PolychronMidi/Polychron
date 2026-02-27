@@ -1,6 +1,6 @@
 // stutterNotes.js - single octave-shift stutter per note
 // Emits exactly ONE octave-shifted note-on + note-off per call.
-// Gated externally by stutterProb in playNotes — this function does NOT
+// Gated externally by stutterProb in playNotes - this function does NOT
 // add its own probability layers or burst multiple events.
 // Cooperates with CC effects via beatContext (pan↔register, fade↔velocity).
 
@@ -32,7 +32,7 @@ const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = n
     : candidates;
   const pool = filtered.length > 0 ? filtered : candidates;
 
-  // Pan-spatial bias: left→up, right→down
+  // Pan-spatial bias: left-up, right-down
   if (m.abs(panBias) > 0.15 && pool.length > 1) {
     const upCandidates = pool.filter(s => s > 0);
     const downCandidates = pool.filter(s => s < 0);
@@ -100,7 +100,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   if (globalState._lastBeatIndex !== currentBeatIndex) {
     localShared.shifts.clear();
     globalState._lastBeatIndex = currentBeatIndex;
-    // selection sets (reflection/bass) — limit stutter to a small random subset of mirror channels
+    // selection sets (reflection/bass) - limit stutter to a small random subset of mirror channels
     globalState.selectedReflectionChannels = new Set();
     globalState.selectedBassChannels = new Set();
   }
@@ -129,7 +129,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     ? (beatContext.fadeDirection || null)
     : null;
 
-  // Modulation bus (fade/pan/fx) published by CC stutters — used for cross-modulation
+  // Modulation bus (fade/pan/fx) published by CC stutters - used for cross-modulation
   const modBus = (beatContext && beatContext.mod && beatContext.mod[channel]) ? beatContext.mod[channel] : null;
 
   // Cross-mod rules from config (pan/fade/fx influence on stutter behavior)
@@ -154,7 +154,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     }
   }
 
-  // Per-channel coherence overlay (shared noise key) — can bias shifts/decision
+  // Per-channel coherence overlay (shared noise key) - can bias shifts/decision
   const coherenceKey = (beatContext && beatContext.coherenceKey) ? beatContext.coherenceKey : null;
   const cohMod = coherenceKey ? getParameterModulation(channel, coherenceKey, on) : null;
   if (coherenceKey && (!cohMod || !Number.isFinite(Number(cohMod.x)) || !Number.isFinite(Number(cohMod.y)))) {
@@ -182,7 +182,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, MIDI_MAX_VALUE)
     : rawVel;
 
-  // apply cross-mod velocity bias (from beatContext.mod → stutterConfig.fade.velocityScaleBias)
+  // apply cross-mod velocity bias (from beatContext.mod - stutterConfig.fade.velocityScaleBias)
   if (velocityScaleBias && Number.isFinite(Number(velocityScaleBias))) {
     stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
   }

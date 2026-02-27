@@ -1,4 +1,4 @@
-// emitPickTextureEmit.js — Texture mode note emission (chordBurst, flurry)
+// emitPickTextureEmit.js - Texture mode note emission (chordBurst, flurry)
 // for source and reflection channels.
 // Extracted from playNotesEmitPick to keep the emission orchestrator focused.
 

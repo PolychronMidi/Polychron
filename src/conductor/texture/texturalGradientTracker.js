@@ -54,8 +54,8 @@ texturalGradientTracker = (() => {
     // Absolute rate of change - high means rapid texture shift
     const absGradient = m.abs(gradient);
 
-    // flickerMod: rapid changes → widen flicker to accommodate transition,
-    // stable → narrow flicker for consistency (continuous ramp, no step)
+    // flickerMod: rapid changes - widen flicker to accommodate transition,
+    // stable - narrow flicker for consistency (continuous ramp, no step)
     let flickerMod = 1;
     if (absGradient > 0.15) {
       flickerMod = clamp(1 + absGradient * 0.3, 1, 1.15);

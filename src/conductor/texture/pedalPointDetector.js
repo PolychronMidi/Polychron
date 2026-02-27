@@ -82,7 +82,7 @@ pedalPointDetector = (() => {
 
   /**
    * Get a bass movement suggestion.
-   * Stale pedal â†’ encourage bass movement; no pedal â†’ suggest anchoring.
+   * Stale pedal - encourage bass movement; no pedal - suggest anchoring.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ suggestion: string, urgency: number }}

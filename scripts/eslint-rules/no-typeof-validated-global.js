@@ -60,7 +60,7 @@ module.exports = {
         if (validated.has(arg.name)) {
           context.report({
             node,
-            message: `Redundant typeof probe on '${arg.name}' — this global is validated at boot time by mainBootstrap.assertBootstrapGlobals(). Use the global directly or use validator for value checks.`
+            message: `Redundant typeof probe on '${arg.name}' - this global is validated at boot time by mainBootstrap.assertBootstrapGlobals(). Use the global directly or use validator for value checks.`
           });
         }
       }

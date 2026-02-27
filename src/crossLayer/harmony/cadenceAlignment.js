@@ -1,7 +1,7 @@
-// src/crossLayer/cadenceAlignment.js — Cross-layer cadence synchronization.
+// src/crossLayer/cadenceAlignment.js - Cross-layer cadence synchronization.
 // Posts harmonic tension values to ATG 'tension' channel. When both layers
 // independently approach high tension within the same ms window, forces
-// simultaneous resolution — syncing cadence points to the same ms-derived tick.
+// simultaneous resolution - syncing cadence points to the same ms-derived tick.
 
 cadenceAlignment = (() => {
   const V = validator.create('cadenceAlignment');
@@ -71,10 +71,10 @@ cadenceAlignment = (() => {
     const alignment = checkAlignment(absTimeMs, activeLayer, ourTension);
     if (!alignment) return null;
 
-    // Both layers at high tension → strongly bias toward cadential resolution
+    // Both layers at high tension - strongly bias toward cadential resolution
     const intensityBoost = alignment.combinedTension;
 
-    // No active listeners — emitted for eventCatalog completeness and future extensibility
+    // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
       layer: activeLayer,
       combinedTension: alignment.combinedTension,
@@ -91,6 +91,6 @@ cadenceAlignment = (() => {
     };
   }
 
-  return { postTension, checkAlignment, applyAlignment, reset() { /* stateless — no per-scope state to clear */ } };
+  return { postTension, checkAlignment, applyAlignment, reset() { /* stateless - no per-scope state to clear */ } };
 })();
 crossLayerRegistry.register('cadenceAlignment', cadenceAlignment, ['all']);

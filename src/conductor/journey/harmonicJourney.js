@@ -128,7 +128,7 @@ harmonicJourney = (() => {
     const relFn = relationships[ri(relationships.length - 1)];
     const result = relFn(l1Stop.key, l1Stop.mode);
 
-    // Normalize key - simplify strips double-sharps/flats (C## â†’ D, B# â†’ C)
+    // Normalize key - simplify strips double-sharps/flats (C## - D, B# - C)
     const simplified = t.Note.simplify(result.key);
     const normalized = t.Note.pitchClass(simplified || result.key);
     if (!normalized) {

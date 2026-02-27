@@ -47,7 +47,7 @@ modalColorTracker = (() => {
 
   /**
    * Get a note-selection bias to encourage modal variety.
-   * Vanilla â†’ boost color tones; overly colorful â†’ stabilize with chord tones.
+   * Vanilla - boost color tones; overly colorful - stabilize with chord tones.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ colorBias: number, stabilityBias: number }}

@@ -1,8 +1,8 @@
 // src/conductor/melodic/melodicContourTracker.js - Tracks pitch trajectory across recent notes.
 // Reads absoluteTimeWindow to compute phrase-scale contour shape (rising/falling/arching/static).
-// Also provides melodic directionality analysis (ascending/descending bias) — merged from
+// Also provides melodic directionality analysis (ascending/descending bias) - merged from
 // MelodicDirectionalityTracker.
-// Pure query API — no events emitted; polled by globalConductor and motifTransformAdvisor.
+// Pure query API - no events emitted; polled by globalConductor and motifTransformAdvisor.
 
 melodicContourTracker = (() => {
   /** @type {{ shape: string, direction: number, range: number, avgPitch: number }} */

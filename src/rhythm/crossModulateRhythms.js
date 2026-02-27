@@ -31,8 +31,8 @@ crossModulateRhythms = () => {
   (subdivsPerMinute > ri(400,600)*cmScale.penaltyScale ? rf(-.4,-.6) : rf(.1)) + (subdivsOn * rf(-.05,-.15)) +
   (beatRhythm[beatIndex]<1?rf(.4,.5)*s:0) + (divRhythm[divIndex]<1?rf(.3,.4)*s:0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3)*s:0);
 
-  // Texture feedback (#2): texture contrast events inflate crossMod →
-  // wider dynamismEngine flicker → shifted textureBlender probabilities →
+  // Texture feedback (#2): texture contrast events inflate crossMod -
+  // wider dynamismEngine flicker - shifted textureBlender probabilities -
   // self-modulating density wave that no single system controls
   const texIntensity = drumTextureCoupler.getIntensity();
   if (Number.isFinite(texIntensity) && texIntensity > 0) {

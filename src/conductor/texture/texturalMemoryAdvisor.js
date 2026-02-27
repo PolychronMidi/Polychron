@@ -1,6 +1,6 @@
 // src/conductor/texturalMemoryAdvisor.js - Tracks which composer/texture modes have been used.
 // Detects overuse or neglect of certain timbral colors across sections.
-// Pure query API — biases FactoryManager selection toward underused textures.
+// Pure query API - biases FactoryManager selection toward underused textures.
 
 texturalMemoryAdvisor = (() => {
   /** @type {Object.<string, { count: number, lastSection: number }>} */
@@ -31,7 +31,7 @@ texturalMemoryAdvisor = (() => {
    * Get overuse/underuse bias weights for available composers.
    * Underused composers get a boost; overused get a penalty.
    * @param {Array<string>} available - list of available composer names
-   * @returns {Object.<string, number>} - name → weight multiplier (0.5 to 2.0)
+   * @returns {Object.<string, number>} - name - weight multiplier (0.5 to 2.0)
    */
   function getBiasWeights(available) {
     if (!Array.isArray(available) || available.length === 0 || totalSelections === 0) {
@@ -51,7 +51,7 @@ texturalMemoryAdvisor = (() => {
       const share = entry ? entry.count / totalSelections : 0;
       const ratio = share / expectedShare;
 
-      // Overused (ratio > 1.5) → penalty; underused (ratio < 0.5) → boost
+      // Overused (ratio > 1.5) - penalty; underused (ratio < 0.5) - boost
       if (ratio > 1.5) {
         weights[name] = clamp(0.5 + (2 - ratio) * 0.25, 0.5, 1.0);
       } else if (ratio < 0.5) {

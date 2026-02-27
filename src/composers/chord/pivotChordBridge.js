@@ -15,7 +15,7 @@ pivotChordBridge = (() => {
 
   /**
    * Pivot chord ranking by scale degree in the TARGET key.
-   * ii (1) best — sets up V; IV (3) subdominant; vi (5) relative; I (0) tonic.
+   * ii (1) best - sets up V; IV (3) subdominant; vi (5) relative; I (0) tonic.
    * Higher rank = better pivot for establishing the new key.
    */
   const PIVOT_RANK = { 1: 5, 3: 4, 5: 3, 0: 2, 2: 1, 4: 0, 6: 0 };
@@ -98,8 +98,8 @@ pivotChordBridge = (() => {
    * Generate a bridge progression that modulates from one key/mode to another.
    * Uses pivot chords when available (closely related keys), dominant approach otherwise.
    *
-   * With pivot:   [outgoing I] → [pivot chord] → [target V] → [target I]
-   * Without pivot: [outgoing I] → [outgoing IV] → [target V] → [target I]
+   * With pivot:   [outgoing I] - [pivot chord] - [target V] - [target I]
+   * Without pivot: [outgoing I] - [outgoing IV] - [target V] - [target I]
    *
    * @param {string} fromKey
    * @param {string} fromMode
@@ -108,7 +108,7 @@ pivotChordBridge = (() => {
    * @returns {string[]} Array of chord symbols (empty if same key/mode)
    */
   function generateBridge(fromKey, fromMode, toKey, toMode) {
-    // Same key and mode — no bridge needed
+    // Same key and mode - no bridge needed
     if (t.Note.chroma(fromKey) === t.Note.chroma(toKey) && fromMode === toMode) {
       return [];
     }
@@ -133,7 +133,7 @@ pivotChordBridge = (() => {
       const bridge = [outgoingI, pivot.chord, targetV, targetI];
 
       // For ii pivots (strongest), optionally add pre-pivot IV for richer approach
-      // I → IV → pivot(ii) → V → I
+      // I - IV - pivot(ii) - V - I
       if (pivot.toDegree === 1 && fromChords[3] && rf() < 0.5) {
         bridge.splice(1, 0, fromChords[3]);
       }
@@ -141,8 +141,8 @@ pivotChordBridge = (() => {
       return bridge;
     }
 
-    // NO SHARED PIVOTS (chromatic distance ≥ 5) — dominant approach
-    // [outgoing I] → [outgoing IV] → [target V] → [target I]
+    // NO SHARED PIVOTS (chromatic distance ≥ 5) - dominant approach
+    // [outgoing I] - [outgoing IV] - [target V] - [target I]
     return [outgoingI, fromChords[3], targetV, targetI];
   }
 

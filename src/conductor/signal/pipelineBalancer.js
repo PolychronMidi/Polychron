@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Pipeline Balancer — Attribution-Driven Self-Regulation (E5)
+ * Pipeline Balancer - Attribution-Driven Self-Regulation (E5)
  *
  * Reads per-beat density attribution from signalReader. When a single
  * contributor dominates (>45 % of deviation from neutral), injects a
@@ -12,8 +12,8 @@ pipelineBalancer = (() => {
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
-  const AGGREGATE_LIFT       = 0.25;   // raised (was 0.20) — pipelineBalancer only 1.022 at density 0.785
-  const AGG_SMOOTH           = 0.45;   // rolled back (was 0.50) — oscillation solved; lighter EMA preserves beat-to-beat variation
+  const AGGREGATE_LIFT       = 0.25;   // raised (was 0.20) - pipelineBalancer only 1.022 at density 0.785
+  const AGG_SMOOTH           = 0.45;   // rolled back (was 0.50) - oscillation solved; lighter EMA preserves beat-to-beat variation
 
   let counterBias = 1.0;
   let smoothedAggBias = 1.0;

@@ -1,4 +1,4 @@
-// conductorSignalBridge.js — Cross-layer module exposing conductor pipeline signals
+// conductorSignalBridge.js - Cross-layer module exposing conductor pipeline signals
 // to all cross-layer modules via a curated, stable API.
 // Reads signalReader each beat and caches a snapshot so cross-layer modules
 // never need to understand conductorIntelligence internals.
@@ -18,7 +18,7 @@ conductorSignalBridge = (() => {
 
   /**
    * Refresh cached signals from the conductor pipeline.
-   * Called each beat via registered recorder — ctx carries the current beat's values.
+   * Called each beat via registered recorder - ctx carries the current beat's values.
    * compositeIntensity comes from ctx (computed by globalConductorUpdate before recorders run).
    * sectionPhase is read directly from harmonicContext (stable for the entire section).
    * @param {{ absTime: number, compositeIntensity: number, currentDensity: number, harmonicRhythm: number }} ctx

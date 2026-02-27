@@ -27,7 +27,7 @@ dynamismPulse = (() => {
     const depthAmp = baseDepthAmp * flickerProfile.depthScale;
 
     // Scale flicker amplitude with crossModulation feedback:
-    // dense rhythmic activity → wider flicker → more textural contrast
+    // dense rhythmic activity - wider flicker - more textural contrast
     const crossModAmp = clamp(crossModulation / 6, 0, 1); // crossMod typically ranges ~0–6
     const flickerScale = depthAmp * (0.5 + 0.5 * crossModAmp);
 

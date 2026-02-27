@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Dimensionality Expander — prevents phase-space collapse.
+ * Dimensionality Expander - prevents phase-space collapse.
  *
  * When systemDynamicsProfiler reports effectiveDimensionality falling
  * below a threshold, the system has locked into a low-rank trajectory
@@ -33,13 +33,13 @@ dimensionalityExpander = (() => {
   // With 4 axes, uniform distribution = 0.25 each; 0.05 means < 20% of
   // fair share. Catches ANY dead nudgeable axis automatically.
   const DEAD_AXIS_THRESHOLD = 0.05;
-  const DEAD_AXIS_PERTURBATION = 0.12; // raised (was 0.08) — Run 11: flicker at 3.6% below threshold but nudge too small to produce measurable effect
+  const DEAD_AXIS_PERTURBATION = 0.12; // raised (was 0.08) - Run 11: flicker at 3.6% below threshold but nudge too small to produce measurable effect
 
   // Dominant-axis suppression: mirror of dead-axis detection. If a
   // nudgeable axis exceeds this fraction of total variance, dampen it
   // to restore balance. Without this, a single axis can absorb >50% of
   // variance while overall dimensionality looks healthy (effDim > 2.2).
-  const DOMINANT_AXIS_THRESHOLD = 0.35; // lowered (was 0.50) — Run 14: flicker at 39.2% above 25% fair share but below 50% threshold; 0.35 = 1.4× fair share triggers suppression
+  const DOMINANT_AXIS_THRESHOLD = 0.35; // lowered (was 0.50) - Run 14: flicker at 39.2% above 25% fair share but below 50% threshold; 0.35 = 1.4* fair share triggers suppression
   const DOMINANT_AXIS_DAMPENING = 0.12;
   const DOMINANT_MIN_NUDGE = 0.02; // floor so threshold boundary produces meaningful force
 
@@ -127,7 +127,7 @@ dimensionalityExpander = (() => {
       for (let i = 0; i < VARIANCE_AXES.length; i++) {
         if (varRatios[i] < DEAD_AXIS_THRESHOLD) {
           // Dead axis: persistent upward bias to displace equilibrium.
-          // Oscillating ±nudge was killed by EMA smoothing (averaged to ~0).
+          // Oscillating nudge was killed by EMA smoothing (averaged to ~0).
           const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
           const nudge = DEAD_AXIS_PERTURBATION * severity;
           if (VARIANCE_AXES[i] === 'density') varD = nudge;

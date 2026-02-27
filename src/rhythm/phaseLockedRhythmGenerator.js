@@ -92,8 +92,8 @@ phaseLockedRhythmGenerator = (() => {
     }
 
     // Texture-driven phase drift (#9)
-    // Chord bursts â†’ advance phase (layers drift apart â†’ polyrhythmic tension)
-    // Flurries â†’ negative drift (layers re-align â†’ convergence)
+    // Chord bursts - advance phase (layers drift apart - polyrhythmic tension)
+    // Flurries - negative drift (layers re-align - convergence)
     const texMetrics = drumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.2) {
       const driftParams = conductorConfig.getRhythmDriftParams();
