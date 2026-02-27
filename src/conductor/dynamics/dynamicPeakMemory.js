@@ -54,19 +54,19 @@ dynamicPeakMemory = (() => {
     else if (timeSince < 30) peakRecency = 'moderate';
 
     // Tension bias: continuous ramp based on time since last peak/trough.
-    // Peak: timeSince 0→8 - 0.92 (suppress), 8→25 - ramp 0.92→1.0, 25+ - ramp to 1.06.
-    // Trough: timeSince 0→5 - ramp 1.04→1.0.
+    // Peak: timeSince 0-8 - 0.92 (suppress), 8-25 - ramp 0.92-1.0, 25+ - ramp to 1.06.
+    // Trough: timeSince 0-5 - ramp 1.04-1.0.
     let tensionBias = 1;
     if (lastPeak.type === 'peak') {
       if (timeSince < 8) {
-        // Recent peak: ramp 0.92→0.96 over 0→8s
+        // Recent peak: ramp 0.92-0.96 over 0-8s
         tensionBias = 0.92 + clamp(timeSince / 8, 0, 1) * 0.04;
       } else {
-        // Post-cooldown: ramp 0.96→1.06 over 8→40s
+        // Post-cooldown: ramp 0.96-1.06 over 8-40s
         tensionBias = 0.96 + clamp((timeSince - 8) / 32, 0, 1) * 0.1;
       }
     } else {
-      // After trough: ramp 1.04→1.0 over 0→10s
+      // After trough: ramp 1.04-1.0 over 0-10s
       tensionBias = 1.04 - clamp(timeSince / 10, 0, 1) * 0.04;
     }
 

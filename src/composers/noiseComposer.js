@@ -25,7 +25,7 @@ applyComposerPitchNoise = function(selectedNote, context = {}) {
   const voiceId = V.optionalFinite(context.voiceId, 60);
 
   const mod = getParameterModulation(voiceId, 'pitch', currentTime);
-  const pitchVariation = m.round((mod.y - 0.5) * 2 * 4 * noiseProfile.influenceY); // ±2 semitones
+  const pitchVariation = m.round((mod.y - 0.5) * 2 * 4 * noiseProfile.influenceY); // +/-2 semitones
   const variedNote = selectedNote + pitchVariation;
 
   return m.max(0, m.min(127, variedNote));
@@ -51,22 +51,22 @@ applyMelodicTranspositionNoise = function(baseOffset, context = {}, options = {}
   let variationRange;
   if (degreeMode) {
     if (phase === 0) {
-      variationRange = 1; // ±1 degree
+      variationRange = 1; // +/-1 degree
     } else if (phase === 1) {
-      variationRange = 2; // ±2 degrees
+      variationRange = 2; // +/-2 degrees
     } else {
-      variationRange = 1; // ±1 degree
+      variationRange = 1; // +/-1 degree
     }
     if (options && options.scale !== undefined) {
       const scalePC = resolveScalePC(options.scale);
       variationRange = clamp(variationRange, 1, m.max(1, scalePC.length - 1));
     }
   } else if (phase === 0) {
-    variationRange = 3; // ±1-2 semitones
+    variationRange = 3; // +/-1-2 semitones
   } else if (phase === 1) {
-    variationRange = 5; // ±2-3 semitones
+    variationRange = 5; // +/-2-3 semitones
   } else {
-    variationRange = 2; // ±1 semitone
+    variationRange = 2; // +/-1 semitone
   }
 
   const variation = m.round((mod.x - 0.5) * 2 * variationRange * noiseProfile.influenceX);
@@ -85,7 +85,7 @@ applyMelodicPivotNoise = function(pivot, context = {}) {
   const voiceId = V.optionalFinite(context.voiceId, 60);
 
   const mod = getParameterModulation(voiceId, 'melodic', currentTime);
-  const pivotNoise = m.round((mod.y - 0.5) * 2 * 2 * noiseProfile.influenceY); // ±1 semitone
+  const pivotNoise = m.round((mod.y - 0.5) * 2 * 2 * noiseProfile.influenceY); // +/-1 semitone
 
   return clamp(pivot + pivotNoise, 0, 127);
 };

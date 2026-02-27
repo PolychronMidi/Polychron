@@ -15,7 +15,7 @@ const ROOT             = path.join(__dirname, '..');
 const GLOBALS_DTS_PATH = path.join(ROOT, 'src/types/globals.d.ts');
 const BOOTSTRAP_PATH   = path.join(ROOT, 'src/play/fullBootstrap.js');
 
-// ── Parse globals.d.ts ───────────────────────────────────────────────────────
+// -- Parse globals.d.ts -------------------------------------------------------
 
 const dtsSrc = fs.readFileSync(GLOBALS_DTS_PATH, 'utf8');
 
@@ -33,7 +33,7 @@ for (const line of dtsSrc.split(/\r?\n/)) {
 const names = entries.filter(e => e.type === 'name').map(e => e.name);
 if (names.length === 0) throw new Error('generate-globals-dts: no declarations found in ' + GLOBALS_DTS_PATH);
 
-// ── Deduplicate - keep last occurrence (typed beats untyped) ─────────────────
+// -- Deduplicate - keep last occurrence (typed beats untyped) -----------------
 
 const seen = new Set();
 const deduped = [];
@@ -52,13 +52,13 @@ if (uniqueNames.length < names.length) {
   console.log(`generate-globals-dts: deduplicated ${names.length - uniqueNames.length} duplicate declaration(s)`);
 }
 
-// ── Build replacement array body ─────────────────────────────────────────────
+// -- Build replacement array body ---------------------------------------------
 
 const lines = [];
 for (const entry of deduped) {
   if (entry.type === 'section') {
     lines.push('');
-    lines.push(`    // ── ${entry.text} ──`);
+    lines.push(`    // -- ${entry.text} --`);
   } else {
     lines.push(`    '${entry.name}',`);
   }
@@ -66,7 +66,7 @@ for (const entry of deduped) {
 // trim leading blank line
 while (lines.length && lines[0].trim() === '') lines.shift();
 
-// ── Patch VALIDATED_GLOBALS in fullBootstrap.js - globals.d.ts untouched ────
+// -- Patch VALIDATED_GLOBALS in fullBootstrap.js - globals.d.ts untouched ----
 
 const bootstrapSrc = fs.readFileSync(BOOTSTRAP_PATH, 'utf8');
 const srcLines = bootstrapSrc.split(/\r?\n/);

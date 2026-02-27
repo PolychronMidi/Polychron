@@ -18,7 +18,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   let playProb = playProbIn;
   let stutterProb = stutterProbIn;
 
-  // ── [stage: beat-setup] ─────────────────────────────────────────
+  // -- [stage: beat-setup] -----------------------------------------
   if (isL1) beatCount++;
   setUnitTiming('beat');
   setOtherInstruments();
@@ -39,11 +39,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   rf() < boot.stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
   stutter.runDuePlans(beatStart);
 
-  // ── [stage: intent] ───────────────────────────────────────────
+  // -- [stage: intent] -------------------------------------------
   const clAbsMs = beatStartTime * 1000;
   const clIntent = sectionIntentCurves.getIntent();
 
-  // ── [stage: entropy] ──────────────────────────────────────────
+  // -- [stage: entropy] ------------------------------------------
   // Blend section-shape arc (30%) with intent entropy target (70%)
   const clArcTarget = entropyRegulator.getArcTarget(timeStream.normalizedProgress('section'));
   entropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
@@ -53,24 +53,24 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   entropyRegulator.setRegulationStrength(clamp(0.3 + entropyDeviation * 1.4, 0.2, 0.9));
   const clEntropy = entropyRegulator.getRegulation();
 
-  // ── [stage: phase] ────────────────────────────────────────────
+  // -- [stage: phase] --------------------------------------------
   const clPhase = phaseAwareCadenceWindow.update(clAbsMs, layer);
 
-  // ── [stage: climax] ───────────────────────────────────────────
+  // -- [stage: climax] -------------------------------------------
   crossLayerClimaxEngine.tick(clAbsMs);
   const clClimaxMods = crossLayerClimaxEngine.getModifiers(layer);
   // Stash climax modifiers for playNotesEmitPick (avoids re-calling getModifiers per pick)
   setClimaxMods(clClimaxMods);
 
-  // ── [stage: envelope] ─────────────────────────────────────────
+  // -- [stage: envelope] -----------------------------------------
   crossLayerDynamicEnvelope.tick(clAbsMs, layer);
   if (isL1) crossLayerDynamicEnvelope.autoSelectArcType();
 
-  // ── [stage: silhouette] ───────────────────────────────────────
+  // -- [stage: silhouette] ---------------------------------------
   crossLayerSilhouette.tick(clAbsMs, layer);
   const clSilhouetteCorrections = crossLayerSilhouette.getCorrections();
 
-  // ── [stage: rest] ─────────────────────────────────────────────
+  // -- [stage: rest] ---------------------------------------------
   const clRestSignals = {
     heatLevel: interactionHeatMap.getDensity(),
     densityTarget: clIntent.densityTarget,
@@ -79,17 +79,17 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clRest = restSynchronizer.evaluateSharedRest(clAbsMs, layer, clRestSignals);
   const clComplementRest = restSynchronizer.evaluateComplementaryRest(clAbsMs, layer);
 
-  // ── [stage: complement] ───────────────────────────────────────
+  // -- [stage: complement] ---------------------------------------
   rhythmicComplementEngine.autoSelectMode(clAbsMs);
 
-  // ── [stage: tension-cadence] ──────────────────────────────────
+  // -- [stage: tension-cadence] ----------------------------------
   const clTension = requireUnitInterval('conductorState.compositeIntensity', conductorState.getField('compositeIntensity'));
   const clCadence = cadenceAdvisor.shouldCadence();
   V_processBeat.assertPlainObject(clCadence, 'cadenceAdvisor.shouldCadence()');
   V_processBeat.assertBoolean(clCadence.suggest, 'clCadence.suggest');
   const clPhaseSnapshot = { timeMs: clAbsMs, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
 
-  // ── [stage: negotiation] ──────────────────────────────────────
+  // -- [stage: negotiation] --------------------------------------
   const clNegotiation = negotiationEngine.apply(layer, {
     playProb: dynamicRoleSwap.modifyPlayProb(layer, playProb),
     stutterProb,
@@ -102,7 +102,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   stutterProb = clNegotiation.stutterProb;
   // negotiationEngine.apply already incorporates entropyScale - do not re-apply via regulate()
 
-  // ── [stage: probability-adjust] ───────────────────────────────
+  // -- [stage: probability-adjust] -------------------------------
   if (clClimaxMods.playProbScale !== 1.0) playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);
   playProb = clamp(playProb + clSilhouetteCorrections.densityBias, 0, 1);
   // Suppress shared rests during climax approach to protect musical buildup
@@ -119,10 +119,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     stutterProb = clamp(stutterProb * 1.04, 0, 1);
   }
 
-  // ── [stage: emission] ─────────────────────────────────────────
+  // -- [stage: emission] -----------------------------------------
   playNotes('beat', { playProb, stutterProb });
 
-  // ── [stage: post-beat] ────────────────────────────────────────
+  // -- [stage: post-beat] ----------------------------------------
   if (clRest.shouldRest) restSynchronizer.postRest(clAbsMs, layer);
 
   crossLayerBeatRecord({

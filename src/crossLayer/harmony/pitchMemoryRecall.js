@@ -22,7 +22,7 @@ pitchMemoryRecall = (() => {
   /**
    * Memorize a significant pitch pattern for future recall.
    * @param {number[]} intervalDna - sequence of semitone intervals
-   * @param {number[]} pitchClasses - pitch classes 0–11
+   * @param {number[]} pitchClasses - pitch classes 0-11
    * @param {{ convergence?: boolean, cadence?: boolean, downbeat?: boolean }} strengthSignals
    * @param {number} sectionIdx
    */

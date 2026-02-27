@@ -50,7 +50,7 @@ conductorIntelligence = (() => {
     }
   }
 
-  // Density biases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Density biases
   // Each entry: { name, getter, lo, hi }
   // getter() returns a number; clamped to [lo, hi] then multiplied into targetDensity.
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
@@ -88,7 +88,7 @@ conductorIntelligence = (() => {
     };
   }
 
-  // Tension biases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Tension biases
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const tensionBiases = [];
 
@@ -124,7 +124,7 @@ conductorIntelligence = (() => {
     };
   }
 
-  // Flicker modifiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Flicker modifiers
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const flickerModifiers = [];
 
@@ -161,7 +161,7 @@ conductorIntelligence = (() => {
     };
   }
 
-  // Recorders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Recorders
   // Recorders receive a context object each beat and perform side-effects
   // (recording snapshots, updating internal state).
   /**
@@ -197,7 +197,7 @@ conductorIntelligence = (() => {
     }
   }
 
-  // State-field providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // State-field providers
   // Each provider returns an object whose keys map directly to
   // conductorState.updateFromConductor() fields.
   //
@@ -218,7 +218,7 @@ conductorIntelligence = (() => {
    *
    * Fields consumed by conductorState.getField(name):
    *   sectionPhase         - tempoFeelEngine, main.js
-   *   compositeIntensity   - harmonicVelocityMonitor, main.js (Ã-2), playNotes, processBeat
+   *   compositeIntensity   - harmonicVelocityMonitor, main.js (x2), playNotes, processBeat
    *   phrasePosition       - textureBlender
    *   phrasePhase          - textureBlender
    *   key                  - main.js
@@ -260,7 +260,7 @@ conductorIntelligence = (() => {
     return merged;
   }
 
-  // Diagnostics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Diagnostics
 
   /**
    * Return every unique name that has registered any contribution

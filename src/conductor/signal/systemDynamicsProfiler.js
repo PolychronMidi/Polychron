@@ -75,7 +75,7 @@ systemDynamicsProfiler = (() => {
   // Adaptive: the profile's density smoothing already attenuates the noisiest
   // dimension. Heavy profile smoothing (explosive=0.5) needs lighter profiler
   // smoothing; light profile smoothing (default=0.8) needs heavier. Targeting
-  // a constant effective responsiveness: profileSmoothing * stateSmoothing ≈ 0.175.
+  // a constant effective responsiveness: profileSmoothing * stateSmoothing - 0.175.
   const _STATE_SMOOTHING_BASELINE = 0.12; // lowered (was 0.14) - velocity 0.008 in Run 8 still near-stasis; increase responsiveness further
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
@@ -164,7 +164,7 @@ systemDynamicsProfiler = (() => {
     // Compute truly instantaneous entropy directly from absoluteTimeWindow,
     // bypassing entropyRegulator's triple-dampened pipeline (10-note sliding
     // window - EMA smoothing - beatCache memoization) which produced variance
-    // ≈ 0 across 3 consecutive runs. A 1-second ATW query gives real beat-to-
+    // - 0 across 3 consecutive runs. A 1-second ATW query gives real beat-to-
     // beat content changes as notes enter/leave the window.
     let entropy = 0.5;
     try {
@@ -230,7 +230,7 @@ systemDynamicsProfiler = (() => {
    */
   function _classifyRegime(avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
     // Thresholds calibrated for adaptive STATE_SMOOTHING targeting effective
-    // responsiveness ≈ 0.175 (profileSmoothing * stateSmoothing). Validated
+    // responsiveness - 0.175 (profileSmoothing * stateSmoothing). Validated
     // against explosive (0.5 * 0.35) and default (0.8 * 0.22) profiles.
     // Coupling strength and effectiveDim are now scoped to compositional
     // dimensions only (4D, 6 pairs). Thresholds adjusted accordingly.
@@ -366,7 +366,7 @@ systemDynamicsProfiler = (() => {
     }
     if (curvCount > 0) avgCurvature /= curvCount;
 
-    // â"€â"€ Cross-coupling & effective dimensionality (from RAW trajectory) â"€â"€
+    // Cross-coupling & effective dimensionality (from RAW trajectory)
     const { mean, variance } = phaseSpaceMath.stats(rawTrajectory, N_DIMS);
     const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS);
     const effDim = phaseSpaceMath.effectiveDimensionality(rawTrajectory, mean, N_COMPOSITIONAL_DIMS);

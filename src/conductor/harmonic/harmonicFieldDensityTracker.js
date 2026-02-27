@@ -57,7 +57,7 @@ harmonicFieldDensityTracker = (() => {
     const avgSimultaneous = sum / clusterSizes.length;
 
     // Continuous ramp: thin texture - boost density; thick - reduce.
-    // avgSim 0→2.5 maps to 1.05→1.0; avgSim 2.5→7 maps to 1.0→0.9.
+    // avgSim 0-2.5 maps to 1.05-1.0; avgSim 2.5-7 maps to 1.0-0.9.
     let densityBias = 1;
     if (avgSimultaneous < 2.5) {
       densityBias = 1.0 + clamp((2.5 - avgSimultaneous) / 2.5, 0, 1) * 0.05;

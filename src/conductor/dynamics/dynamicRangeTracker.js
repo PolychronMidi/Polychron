@@ -59,7 +59,7 @@ dynamicRangeTracker = (() => {
    */
   function getSpreadBias(opts) {
     const profile = getVelocityProfile(opts);
-    // Continuous ramp: spread 0→30 maps to 1.15→1.0; spread 30→80 maps to 1.0→0.92
+    // Continuous ramp: spread 0-30 maps to 1.15-1.0; spread 30-80 maps to 1.0-0.92
     // (raised floor from 0.88 to 0.92 to reduce flicker crush)
     if (profile.spread <= 30) {
       return 1.15 - (profile.spread / 30) * 0.15;
@@ -131,11 +131,11 @@ dynamicRangeTracker = (() => {
     const profile = getContrastProfile();
     if (profile.globalRange < 1) return 1.0;
     if (profile.globalRange < 30) {
-      // Narrow global range - ramp boost: globalRange 0→30 maps to 1.1→1.0
+      // Narrow global range - ramp boost: globalRange 0-30 maps to 1.1-1.0
       return 1.0 + clamp((30 - profile.globalRange) / 30, 0, 1) * 0.1;
     }
     // Wide global range - ramp based on recent utilization ratio
-    // utilizationRatio 0→0.8 maps to 1.15→1.0
+    // utilizationRatio 0-0.8 maps to 1.15-1.0
     const utilizationRatio = profile.recentRange / profile.globalRange;
     return 1.0 + clamp((0.8 - utilizationRatio) / 0.8, 0, 1) * 0.15;
   }

@@ -64,7 +64,7 @@ mainBootstrap = (() => {
 
   /** Verify all required globals exist before main loop starts. */
   function assertBootstrapGlobals() {
-    // ── Phase 1: Verify every name in fullBootstrap.VALIDATED_GLOBALS exists ──
+    // -- Phase 1: Verify every name in fullBootstrap.VALIDATED_GLOBALS exists --
     // This is the ONE place typeof probes are legitimate - proving globals exist
     // so that no other file needs to. The ESLint rule exempts this file.
     const validated = fullBootstrap.getValidatedGlobalsList();
@@ -82,7 +82,7 @@ mainBootstrap = (() => {
       throw new Error(`mainBootstrap: missing validated globals: ${missing.join(', ')}`);
     }
 
-    // ── Phase 2: Verify eventCatalog event names ──
+    // -- Phase 2: Verify eventCatalog event names --
     const events = V.getEventsOrThrow();
     const EXPECTED_EVENTS = [
       'SECTION_BOUNDARY', 'JOURNEY_MOVE', 'TEXTURE_CONTRAST', 'BEAT_FX_APPLIED',
@@ -103,7 +103,7 @@ mainBootstrap = (() => {
       throw new Error(`mainBootstrap: eventCatalog has unverified events: ${unlisted.join(', ')} - add them to EXPECTED_EVENTS in mainBootstrap.js`);
     }
 
-    // ── Phase 3: Verify key module methods exist (shape checks beyond typeof) ──
+    // -- Phase 3: Verify key module methods exist (shape checks beyond typeof) --
     /** @type {[string, any, string][]} */
     const requiredModules = [
       ['eventBus', eventBus, 'emit'],
@@ -144,7 +144,7 @@ mainBootstrap = (() => {
       }
     });
 
-    // ── Phase 4: Verify initializer methods ──
+    // -- Phase 4: Verify initializer methods --
     /** @type {[string, any][]} */
     const requiredInitializers = [
       ['FXFeedbackListener', FXFeedbackListener],
@@ -163,12 +163,12 @@ mainBootstrap = (() => {
       }
     });
 
-    // ── Phase 5: Verify beat pipeline topological ordering ──
+    // -- Phase 5: Verify beat pipeline topological ordering --
     beatPipelineDescriptor.assertTopologicalOrder();
 
-    // ── Phase 6: moved to assertRegistryPopulation() ──────────────────
+    // -- Phase 6: moved to assertRegistryPopulation() ------------------
     // Registry counts are now verified later in the boot sequence after
-    // conductorIntelligence.initialize() and cross‑layer reset. The original
+    // conductorIntelligence.initialize() and cross-layer reset. The original
     // checks were firing too early when modules register during initialization
     // or under minimal/test builds. See assertRegistryPopulation() below.
   }
@@ -200,7 +200,7 @@ mainBootstrap = (() => {
    * conductorIntelligence.initialize()).
    *
     * The thresholds are intentionally conservative; the real goal is to catch
-    * catastrophic mis‑loads (e.g. entire subsystem index.js omitted) while still
+    * catastrophic mis-loads (e.g. entire subsystem index.js omitted) while still
     * enforcing fail-fast behavior. Any threshold violation throws immediately.
    */
   function assertRegistryPopulation() {

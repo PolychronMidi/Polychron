@@ -9,6 +9,29 @@ fullBootstrap = (() => {
    * and banned by the `local/no-typeof-validated-global` ESLint rule.
    */
   const VALIDATED_GLOBALS = Object.freeze([
+    // -- Abbreviation Glossary --
+
+    // -- Core Interface Types --
+
+    // -- Explainability / Trust / Coherence --
+
+    // -- Conductor subsystem objects --
+
+    // -- System Dynamics Profiler (phase --
+
+    // -- Time subsystem --
+
+    // -- Lifecycle / caching utilities --
+
+    // -- eventCatalog --
+
+    // -- Cross --
+
+    // -- Rhythm / Time / Composer Interfaces --
+
+    // -- Conductor / Composer / FX Class Interfaces --
+
+    // -- utils --
     'm',
     'rf',
     'ri',
@@ -79,6 +102,8 @@ fullBootstrap = (() => {
     'systemSnapshot',
     'modeQualityMap',
     'priorsHelpers',
+
+    // -- conductor --
     'BPM',
     'PPQ',
     'currentDensity',
@@ -259,6 +284,8 @@ fullBootstrap = (() => {
     'feedbackRegistry',
     'closedLoopController',
     'beatCache',
+
+    // -- rhythm --
     'rhythmRegistry',
     'rhythmManager',
     'rhythmValues',
@@ -300,6 +327,8 @@ fullBootstrap = (() => {
     'trackRhythm',
     'crossModulateRhythms',
     'rhythmHistoryTracker',
+
+    // -- time --
     'bpmRatio',
     'bpmRatio2',
     'bpmRatio3',
@@ -374,6 +403,8 @@ fullBootstrap = (() => {
     'tempoFeelEngine',
     'timeStream',
     'fractalArcGenerator',
+
+    // -- composers --
     'normalizeChordSymbol',
     'MeasureComposer',
     'ScaleComposer',
@@ -473,6 +504,8 @@ fullBootstrap = (() => {
     'motifSpreader',
     'applyMotifToNotes',
     'motifTransformAdvisor',
+
+    // -- fx --
     'stutterConfig',
     'lBal',
     'rBal',
@@ -536,6 +569,8 @@ fullBootstrap = (() => {
     'beatCount',
     'sideBias',
     'stutterFailFast',
+
+    // -- crossLayer --
     't',
     'stutterContagion',
     'convergenceDetector',
@@ -578,6 +613,8 @@ fullBootstrap = (() => {
     'contextualTrust',
     'beatInterleavedProcessor',
     'harmonicFunctionGraph',
+
+    // -- writer --
     'formatTime',
     'logUnit',
     'pushMultiple',
@@ -586,13 +623,19 @@ fullBootstrap = (() => {
     'systemManifestMarkdown',
     'systemManifest',
     'outputAnalyzer',
+
+    // -- typed constructors (canonical declarations --
     'VoiceLeadingScore',
     'SimplexNoise',
     'FactoryManager',
+
+    // -- node / timing --
     'fs',
     'finalTick',
     'path',
     'endTime',
+
+    // -- play --
     'eventBus',
     'eventCatalog',
     'totalSections',
@@ -618,6 +661,8 @@ fullBootstrap = (() => {
     'emitPickCrossLayerRecord',
     'emitPickSourceTextures',
     'emitPickReflectionTextures',
+
+    // -- other --
     'randomFloat',
     'randomInt',
     'randomWeightedInRange',

@@ -39,9 +39,9 @@ rhythmicDensityContrastTracker = (() => {
     const contrast = maxD - minD;
 
     // Flicker modifier: continuous ramp based on contrast.
-    // Low contrast (0→0.15) - ramp 1.1→1.0 (add variety)
-    // Mid contrast (0.15→0.6) - ramp 1.0→1.04 (slight amplification)
-    // High contrast (0.6→1.0) - ramp 1.04→0.92 (stabilize)
+    // Low contrast (0-0.15) - ramp 1.1-1.0 (add variety)
+    // Mid contrast (0.15-0.6) - ramp 1.0-1.04 (slight amplification)
+    // High contrast (0.6-1.0) - ramp 1.04-0.92 (stabilize)
     let flickerMod = 1;
     if (contrast < 0.15) {
       flickerMod = 1.1 - clamp(contrast / 0.15, 0, 1) * 0.1;

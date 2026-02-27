@@ -133,7 +133,7 @@ MotifComposer = class MotifComposer {
     });
 
     if (candidates.length === 0) {
-      throw new Error('MotifComposer.generate: candidates empty after building from scaleNotes—fail-fast (no emergency C4 fallback)');
+      throw new Error('MotifComposer.generate: candidates empty after building from scaleNotes - fail-fast (no emergency C4 fallback)');
     }
 
     const seq = [];

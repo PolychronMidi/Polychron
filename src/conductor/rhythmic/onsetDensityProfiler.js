@@ -69,7 +69,7 @@ onsetDensityProfiler = (() => {
     const d = getDensity();
     if (d.nps === 0) return 1.0;
     const ratio = d.nps / TARGET_NPS;
-    // Continuous ramp: ratio 0.5–1.0 - bias 1.35–1.0, ratio 1.0–3.0 - bias 1.0–0.80
+    // Continuous ramp: ratio 0.5-1.0 - bias 1.35-1.0, ratio 1.0-3.0 - bias 1.0-0.80
     if (ratio <= 1.0) {
       const ramp = clamp((1.0 - ratio) / 0.5, 0, 1);
       return 1.0 + ramp * 0.35;

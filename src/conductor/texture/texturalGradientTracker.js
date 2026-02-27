@@ -1,5 +1,5 @@
 ﻿// src/conductor/texturalGradientTracker.js - Rate of change in textural density.
-// Tracks how fast the composite texture (voices Ã— onset rate) is thickening
+// Tracks how fast the composite texture (voices - onset rate) is thickening
 // or thinning over time. Biases toward gradual transitions when rate is too
 // extreme, or allows sudden changes when dramatically appropriate.
 // Pure query API - no side effects.
@@ -60,7 +60,7 @@ texturalGradientTracker = (() => {
     if (absGradient > 0.15) {
       flickerMod = clamp(1 + absGradient * 0.3, 1, 1.15);
     } else if (absGradient < 0.03) {
-      // Continuous ramp: gradient 0→0.03 maps to flickerMod 0.96→1.0
+      // Continuous ramp: gradient 0-0.03 maps to flickerMod 0.96-1.0
       // (raised floor from 0.94 to 0.96 to reduce flicker crush)
       flickerMod = 0.96 + (absGradient / 0.03) * 0.04;
     }

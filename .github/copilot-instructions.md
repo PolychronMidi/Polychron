@@ -106,7 +106,7 @@ Each subsystem `index.js` loads: helpers first, then manager/orchestrator last.
 | `src/time/` | Tick/time math, polyrhythm calculator, layer manager, absolute-time grid | `absoluteTimeGrid`, `LayerManager` |
 | `src/composers/` | Scale, chord, motif, voice-leading composers (one per file). Factory selects and blends. | `FactoryManager` |
 | `src/fx/` | Noise engine (simplex/fbm/worley) + stutter subsystem | `noiseManager`, `StutterManager` |
-| `src/crossLayer/` | 35 modules coordinating L1↔L2 (phase lock, groove transfer, entropy regulation, conductor signal bridge...) | `crossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` |
+| `src/crossLayer/` | 35 modules coordinating L1-L2 (phase lock, groove transfer, entropy regulation, conductor signal bridge...) | `crossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` |
 | `src/writer/` | CSV/MIDI output, diagnostic manifest & capability matrix | `grandFinale`, `systemManifest` |
 | `src/play/` | Top-level loops: section - phrase - measure - beat - div - subdiv - subsubdiv | `main.js` |
 
@@ -119,7 +119,7 @@ The system's nervous system has three layers: conductor (signal producer), cross
 ### Data Flow
 
 ```
-┌─ Conductor ──────────────────────────────────────────────────────┐
+┌- Conductor ------------------------------------------------------┐
 │  ~80+ intelligence modules each register:                        │
 │    densityBias / tensionBias / flickerModifier - multiplicative   │
 │    recorder - side-effect per beat                               │
@@ -127,25 +127,25 @@ The system's nervous system has three layers: conductor (signal producer), cross
 │                                                                  │
 │  globalConductorUpdate: collects products - compositeIntensity   │
 │    ↓                                                             │
-│  signalReader ─── the ONE read API for all signal consumers      │
+│  signalReader --- the ONE read API for all signal consumers      │
 │    ↓                                                             │
 │  conductorSignalBridge (recorder) - caches snapshot each beat    │
-└──────────────────────────────────────────────────────────────────┘
+└------------------------------------------------------------------┘
          ↓ getSignals() / signalReader.*()           ↑ explainabilityBus (diagnostic only)
-┌─ Cross-Layer ────────────────────────────────────────────────────┐
-│  32 modules coordinate L1↔L2 via:                                │
+┌- Cross-Layer ----------------------------------------------------┐
+│  32 modules coordinate L1-L2 via:                                │
 │    absoluteTimeGrid (shared temporal memory, see below)          │
 │    negotiationEngine (conflict arbiter)                          │
 │    adaptiveTrustScores (per-module trust weights, see below)     │
 │    entropyRegulator (meta-conductor steering entropy to target)  │
 │    explainabilityBus (ring buffer of typed diagnostic events)    │
-└──────────────────────────────────────────────────────────────────┘
+└------------------------------------------------------------------┘
          ↓ eventBus events / modified playProb        ↑ NOTES_EMITTED, STUTTER_APPLIED
-┌─ Play Loop ──────────────────────────────────────────────────────┐
+┌- Play Loop ------------------------------------------------------┐
 │  section - phrase - measure - beat - div - subdiv - subsubdiv   │
 │  processBeat: orchestrates cross-layer, emits notes, records     │
 │  coherenceMonitor: compares actual vs intended note output       │
-└──────────────────────────────────────────────────────────────────┘
+└------------------------------------------------------------------┘
 ```
 
 ### Feedback Loops
@@ -155,7 +155,7 @@ The system's nervous system has three layers: conductor (signal producer), cross
 | **Density correction** | `coherenceMonitor` | Compares actual vs intended note output; feeds bias into density product. |
 | **Entropy steering** | `entropyRegulator` | Steers cross-layer systems toward a section-position-driven entropy target. |
 | **Condition hints** | `profileAdaptation` | Detects sustained low-density / high-tension / flat-flicker streaks; advisory hints for `conductorConfig`. |
-| **Trust governance** | `adaptiveTrustScores` | EMA-based weights (0.4–1.8) per cross-layer module. `negotiationEngine` gates which systems act. |
+| **Trust governance** | `adaptiveTrustScores` | EMA-based weights (0.4-1.8) per cross-layer module. `negotiationEngine` gates which systems act. |
 | **Decorrelation** | `pipelineCouplingManager` | Adaptive-gain nudges to decorrelate compositional dimension pairs when coupling exceeds targets. |
 
 `feedbackRegistry` coordinates all closed-loop controllers to prevent catastrophic resonance.
@@ -177,7 +177,7 @@ Shared memory for conductor and cross-layer modules. `post()` to named channels,
 - **`pipelineCouplingManager`** - self-tuning decorrelation: adaptive-gain nudges for 6 compositional-dimension pairs when |r| exceeds targets. Regime-aware. `feedbackRegistry`-enrolled.
 - **`pipelineNormalizer`** - adaptive soft-envelope normalization between dampening and final pipeline output.
 - **`conductorDampening`** - progressive deviation dampening for conductor pipelines. Regime-aware gravity + dimensionality-aware progressive strength. Extracted from `conductorIntelligence`.
-- **`coherenceMonitor`** (in `conductor/signal/`) - closed-loop density feedback (bias 0.60–1.30). Phase-aware, peer-aware, density-level correction. `feedbackRegistry`-enrolled.
+- **`coherenceMonitor`** (in `conductor/signal/`) - closed-loop density feedback (bias 0.60-1.30). Phase-aware, peer-aware, density-level correction. `feedbackRegistry`-enrolled.
 - **`coherenceVerdicts`** (in `conductor/signal/output/`) - auto-diagnoses findings (critical/warning/info) from health, dynamics, attribution, trust, coupling, and stale contributors.
 - **Output:** `system-manifest.json` (machine-readable) + `capability-matrix.md` (human-readable). **Use `system-manifest.json` as the primary diagnostic source.**
 
