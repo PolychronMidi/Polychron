@@ -86,7 +86,7 @@ export default [
       'local/no-conductor-registration-from-crosslayer': 'error',
       'local/no-direct-signal-read': 'error',
       'local/validator-name-matches-filename': 'error',
-      'local/filename-case-conventions': 'error'
+      'local/case-conventions': 'error'
     },
 
   },
