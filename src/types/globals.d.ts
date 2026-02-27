@@ -459,6 +459,34 @@ interface BeatCacheFactory {
   create(fn: () => any): BeatCacheInstance;
 }
 
+interface ClosedLoopControllerInstance {
+  getBias(): number;
+  getError(): number;
+  getAmplitude(): number;
+  getPhase(): number;
+  getMetrics(): { bias: number; error: number; observed: number; target: number; amplitude: number; phase: number };
+  reset(): void;
+  refresh(): void;
+  name: string;
+}
+
+interface ClosedLoopControllerFactory {
+  create(config: {
+    name: string;
+    observe: () => number;
+    target: () => number;
+    gain?: number;
+    smoothing?: number;
+    clampRange?: [number, number];
+    sourceDomain: string;
+    targetDomain: string;
+    invert?: boolean;
+  }): ClosedLoopControllerInstance;
+  getNames(): string[];
+  getCount(): number;
+  getSnapshot(): Record<string, { bias: number; error: number; amplitude: number; phase: number }>;
+}
+
 // ── eventCatalog ──
 
 interface EventCatalogAPI {
@@ -814,6 +842,18 @@ interface DynamismEngineAPI {
   resolve(unit: 'beat' | 'div' | 'subdiv' | 'subsubdiv', opts?: { playProb?: number; stutterProb?: number }): { playProb: number; stutterProb: number; composite: number };
 }
 
+interface ComposerFeedbackAdvisorAPI {
+  getFamilyWeightAdjustments(availableFamilies: string[]): Record<string, number>;
+  scoreCandidateAdjustment(candidateConfig: { type: string; [k: string]: any }): number;
+  getQualitySnapshot(): {
+    fatigueSignal: number;
+    varietyPressure: number;
+    thematicStatus: string;
+    profileHints: { restrainedHint: number; explosiveHint: number; atmosphericHint: number };
+  };
+  reset(): void;
+}
+
 interface TextureBlenderAPI {
   resolve(unit: 'beat' | 'div' | 'subdiv' | 'subsubdiv', composite: number): { mode: 'single' | 'chordBurst' | 'flurry'; velocityScale: number; sustainScale: number };
   getRecentDensity(): number;
@@ -1077,6 +1117,7 @@ declare var intervalBalanceTracker: any;
 declare var interLayerRhythmAnalyzer: any;
 declare var harmonicVelocityMonitor: any;
 declare var texturalMemoryAdvisor: any;
+declare var composerFeedbackAdvisor: ComposerFeedbackAdvisorAPI;
 declare var pitchGravityCenter: any;
 declare var onsetDensityProfiler: any;
 declare var syncopationDensityTracker: any;
@@ -1170,6 +1211,7 @@ declare var structuralNarrativeAdvisor: { recordFamily(family: string): void; ge
 declare var criticalityEngine: { densityBias(): number; tensionBias(): number; flickerMod(): number; getState(): { threshold: number; avalancheCount: number; totalBeats: number; rate: number; inAvalanche: boolean; recentEnergy: number }; reset(): void };
 declare var moduleLifecycle: ModuleLifecycleFactory;
 declare var feedbackRegistry: any;
+declare var closedLoopController: ClosedLoopControllerFactory;
 declare var beatCache: BeatCacheFactory;
 
 // ── rhythm ──

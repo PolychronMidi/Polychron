@@ -33,6 +33,8 @@ require('./structuralFormTracker');
 require('./texturalGradientTracker');
 // @ts-ignore: load side-effect module with globals
 require('./texturalMemoryAdvisor');
+// @ts-ignore: composer quality feedback advisor (depends on texturalMemoryAdvisor, repetitionFatigueMonitor, profileAdaptation)
+require('./composerFeedbackAdvisor');
 // @ts-ignore: load side-effect module with globals
 require('./timbreBalanceTracker');
 // @ts-ignore: load side-effect module with globals

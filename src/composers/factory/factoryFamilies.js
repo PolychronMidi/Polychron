@@ -100,9 +100,23 @@ factoryFamilies = {
       throw new Error('FactoryManager.resolvePhraseFamilyOrFail: family weights must sum to a positive finite number');
     }
 
-    let roll = rf() * totalWeight;
+    // Apply composer feedback advisor quality-driven weight adjustments
+    const advisorWeights = composerFeedbackAdvisor.getFamilyWeightAdjustments(familyNames);
+    let advisedTotal = 0;
     for (const familyName of familyNames) {
-      roll -= Number(families[familyName].weight);
+      const advisorMult = Number(advisorWeights[familyName]);
+      const mult = Number.isFinite(advisorMult) ? advisorMult : 1;
+      advisedTotal += Number(families[familyName].weight) * mult;
+    }
+    if (!Number.isFinite(advisedTotal) || advisedTotal <= 0) {
+      throw new Error('FactoryManager.resolvePhraseFamilyOrFail: advised family weights sum to non-positive value');
+    }
+
+    let roll = rf() * advisedTotal;
+    for (const familyName of familyNames) {
+      const advisorMult = Number(advisorWeights[familyName]);
+      const mult = Number.isFinite(advisorMult) ? advisorMult : 1;
+      roll -= Number(families[familyName].weight) * mult;
       if (roll <= 0) return familyName;
     }
     return familyNames[familyNames.length - 1];
@@ -147,6 +161,9 @@ factoryFamilies = {
     if (previousType && candidateConfig.type === previousType) score += 0.45;
     if (peerType && candidateConfig.type === peerType) score -= 0.35;
     if (previousType && peerType && previousType !== peerType && candidateConfig.type !== peerType) score += 0.1;
+
+    // Layer quality-driven adjustment from composerFeedbackAdvisor
+    score *= composerFeedbackAdvisor.scoreCandidateAdjustment(candidateConfig);
 
     if (!Number.isFinite(score)) {
       throw new Error('FactoryManager.scoreFamilyCandidateConfig: computed score is not finite');

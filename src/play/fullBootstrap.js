@@ -200,6 +200,7 @@ fullBootstrap = (() => {
     'interLayerRhythmAnalyzer',
     'harmonicVelocityMonitor',
     'texturalMemoryAdvisor',
+    'composerFeedbackAdvisor',
     'pitchGravityCenter',
     'onsetDensityProfiler',
     'syncopationDensityTracker',
@@ -281,6 +282,7 @@ fullBootstrap = (() => {
     'criticalityEngine',
     'moduleLifecycle',
     'feedbackRegistry',
+    'closedLoopController',
     'beatCache',
 
     // ── rhythm ──
