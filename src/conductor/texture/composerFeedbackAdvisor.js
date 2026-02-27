@@ -198,6 +198,7 @@ composerFeedbackAdvisor = (() => {
       composerThematicStatus: snap.thematicStatus
     };
   });
+  conductorIntelligence.registerModule('composerFeedbackAdvisor', { reset }, ['section']);
 
   return {
     getFamilyWeightAdjustments,
