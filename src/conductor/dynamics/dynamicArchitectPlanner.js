@@ -14,6 +14,27 @@ dynamicArchitectPlanner = (() => {
   // Beat-level cache: getDynamicPlanSignal is called 2x per beat (tensionBias + stateProvider)
   const _planCache = beatCache.create(() => _getDynamicPlanSignal());
 
+  /** Windowed average intensity from recent snapshots. */
+  function _recentAvgIntensity() {
+    if (snapshots.length < 3) return 0.5;
+    const recent = snapshots.slice(-5);
+    let sum = 0;
+    for (let i = 0; i < recent.length; i++) sum += recent[i].intensity;
+    return sum / recent.length;
+  }
+
+  // Closed-loop controller: observe recent avg intensity, target the ideal curve
+  const _ctrl = closedLoopController.create({
+    name: 'dynamicArchitectPlanner',
+    observe: _recentAvgIntensity,
+    target: () => idealDynamicCurve(getMacroPosition()),
+    gain: 0.25,
+    smoothing: 0,
+    clampRange: [0.9, 1.15],
+    sourceDomain: 'intensity',
+    targetDomain: 'tension'
+  });
+
   /**
    * Record an intensity snapshot.
    * @param {number} intensity - current composite intensity 0-1
@@ -78,23 +99,8 @@ dynamicArchitectPlanner = (() => {
   function _getDynamicPlanSignal() {
     const pos = getMacroPosition();
     const target = idealDynamicCurve(pos);
-
-    // Compute recent average intensity
-    let recentAvg = 0.5;
-    if (snapshots.length >= 3) {
-      const recent = snapshots.slice(-5);
-      let sum = 0;
-      for (let i = 0; i < recent.length; i++) sum += recent[i].intensity;
-      recentAvg = sum / recent.length;
-    }
-
-    // Tension bias: corrective nudge toward the target
-    const deviation = target - recentAvg;
-    // Positive deviation â†’ we're below target â†’ increase tension
-    // Negative â†’ above target â†’ decrease tension
-    const tensionBias = clamp(1 + deviation * 0.25, 0.9, 1.15);
-
-    return { tensionBias, macroPosition: pos, targetIntensity: target };
+    _ctrl.refresh();
+    return { tensionBias: _ctrl.getBias(), macroPosition: pos, targetIntensity: target };
   }
 
   /**
@@ -110,6 +116,7 @@ dynamicArchitectPlanner = (() => {
     snapshots.length = 0;
     pieceStartTime = -1;
     estimatedPieceDuration = 180;
+    _ctrl.reset();
   }
 
   conductorIntelligence.registerTensionBias('dynamicArchitectPlanner', () => dynamicArchitectPlanner.getTensionBias(), 0.9, 1.15);

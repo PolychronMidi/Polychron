@@ -475,12 +475,13 @@ interface ClosedLoopControllerFactory {
     name: string;
     observe: () => number;
     target: () => number;
-    gain?: number;
+    gain?: number | (() => number);
     smoothing?: number;
     clampRange?: [number, number];
     sourceDomain: string;
     targetDomain: string;
     invert?: boolean;
+    deadband?: number;
   }): ClosedLoopControllerInstance;
   getNames(): string[];
   getCount(): number;

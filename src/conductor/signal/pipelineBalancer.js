@@ -67,34 +67,32 @@ pipelineBalancer = (() => {
     return counterBias;
   }
 
-  // --- Tension aggregate lift ---
-  // Mirror of density-side logic: when tension product diverges significantly
-  // from 1.0 due to coordinated small boosts (53% crush), nudge it back.
-  const TENSION_NEUTRAL      = 1.0;
-  const TENSION_STRAINED_GAP = 0.15; // activate when |product - 1.0| > this (was 0.20)
-  const TENSION_LIFT         = 0.14; // max counter-bias magnitude per beat (was 0.08)
-
-  let tensionCounter = 1.0;
+  // --- Tension homeostasis via closedLoopController ---
+  // When tension product diverges from neutral (1.0) by more than the deadband,
+  // nudge it back. Gain = TENSION_LIFT / 0.5 = 0.28 matches the original scaling.
+  const _tensionCtrl = closedLoopController.create({
+    name: 'pipelineBalancer.tension',
+    observe: () => signalReader.tension(),
+    target: () => 1.0,
+    gain: 0.28,
+    smoothing: 0,
+    deadband: 0.15,
+    clampRange: [0.86, 1.14],
+    sourceDomain: 'tension_product',
+    targetDomain: 'tension'
+  });
 
   function refreshTension() {
-    const tensionNow = signalReader.tension();
-    const gap = tensionNow - TENSION_NEUTRAL;
-    if (m.abs(gap) > TENSION_STRAINED_GAP) {
-      // Counter the direction of excess: high tension → suppress, low → boost
-      const deficit = clamp((m.abs(gap) - TENSION_STRAINED_GAP) / 0.5, 0, 1);
-      tensionCounter = 1.0 - m.sign(gap) * TENSION_LIFT * deficit;
-    } else {
-      tensionCounter = 1.0;
-    }
+    _tensionCtrl.refresh();
   }
 
   function tensionBias() {
-    return tensionCounter;
+    return _tensionCtrl.getBias();
   }
 
   function reset() {
     counterBias = 1.0;
-    tensionCounter = 1.0;
+    _tensionCtrl.reset();
   }
 
   // --- Self-registration ---
