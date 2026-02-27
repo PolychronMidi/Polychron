@@ -33,7 +33,7 @@ dimensionalityExpander = (() => {
   // With 4 axes, uniform distribution = 0.25 each; 0.05 means < 20% of
   // fair share. Catches ANY dead nudgeable axis automatically.
   const DEAD_AXIS_THRESHOLD = 0.05;
-  const DEAD_AXIS_PERTURBATION = 0.08;
+  const DEAD_AXIS_PERTURBATION = 0.12; // raised (was 0.08) — Run 11: flicker at 3.6% below threshold but nudge too small to produce measurable effect
 
   // Dominant-axis suppression: mirror of dead-axis detection. If a
   // nudgeable axis exceeds this fraction of total variance, dampen it
@@ -128,7 +128,7 @@ dimensionalityExpander = (() => {
           // Dead axis: inject alternating perturbation to revive it
           const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
           const nudge = DEAD_AXIS_PERTURBATION * severity;
-          const dir = (beatCount % 16) < 8 ? 1 : -1;
+          const dir = (beatCount % 8) < 4 ? 1 : -1; // 4-beat flip (was 8) — faster alternation creates more variance within 32-beat window
           if (VARIANCE_AXES[i] === 'density') varD = dir * nudge;
           else if (VARIANCE_AXES[i] === 'tension') varT = dir * nudge;
           else varF = dir * nudge;

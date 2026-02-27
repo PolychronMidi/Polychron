@@ -3,11 +3,13 @@
 /**
  * Pipeline Coupling Manager (E6)
  *
- * Dynamic decorrelation engine for ALL compositional dimension pairs.
+ * Self-tuning decorrelation engine for ALL compositional dimension pairs.
  * Reads the full coupling matrix from systemDynamicsProfiler each beat
  * and applies decorrelation nudges to any pair whose |r| exceeds its
- * target. This is the meta-solution: no hardcoded pairs, no whack-a-mole
- * when new correlations emerge between runs.
+ * target. Gains are adaptive: they escalate when nudging fails to reduce
+ * coupling (the pair is structurally persistent) and relax when coupling
+ * responds. This eliminates the need for manual per-pair gain tuning
+ * between runs.
  *
  * Nudgeable axes: density, tension, flicker (conductor biases exist).
  * Entropy has no conductor bias — for pairs involving entropy, the
@@ -23,40 +25,59 @@ pipelineCouplingManager = (() => {
   // The 4 compositional dimensions whose pairs we monitor
   const COMPOSITIONAL_DIMS = ['density', 'tension', 'flicker', 'entropy'];
 
-  // Default coupling target and gain for any compositional pair.
+  // Default coupling target for any compositional pair.
   const DEFAULT_TARGET = 0.25;
-  const DEFAULT_GAIN   = 0.16;
 
-  // Per-pair overrides from tuning history (runs 1-9).
-  // Missing pairs fall through to DEFAULT_TARGET / DEFAULT_GAIN.
-  const PAIR_OVERRIDES = {
-    'density-tension':  { target: 0.20, gain: 0.22 }, // -0.528 in Run 9 — gain 0.30 overcorrected; pull back to 0.22
-    'density-flicker':  { target: 0.20, gain: 0.34 }, // 0.589 in Run 10 — re-emerged after t-f fix; gain 0.28→0.34
-    'tension-flicker':  { target: 0.25, gain: 0.36 }, // 0.515 in Run 9 (was 0.417) — most persistent coupling; gain 0.30→0.36
-    'flicker-entropy':  { target: 0.25, gain: 0.12 }, // gentle — entropy nudge is indirect
+  // Per-pair target overrides (targets are structural, not gains).
+  const PAIR_TARGETS = {
+    'density-tension':  0.20,
+    'density-flicker':  0.20,
+    'density-entropy':  0.30,  // structural — more notes → entropy shifts
+    'tension-flicker':  0.25,
+    'tension-entropy':  0.25,
+    'flicker-entropy':  0.25,
   };
 
-  const FATIGUE_RATE     = 0.05;
-  const RECOVERY_RATE    = 0.10;
-  const MAX_FATIGUE_DAMP = 0.80;
+  // ── Adaptive gain parameters ──
+  // Every pair starts at GAIN_INIT. Each beat, if |r| > target, we check
+  // whether the pair is *improving* (|r| dropped since last beat) or
+  // *stuck* (|r| stayed or grew). Stuck → escalate gain. Improving → hold.
+  // Below target → relax gain toward GAIN_INIT.
+  const GAIN_INIT = 0.16;
+  const GAIN_MIN  = 0.08;
+  const GAIN_MAX  = 0.60;
+  const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
+  const GAIN_RELAX_RATE    = 0.01; // per-beat gain decrease when resolved
 
-  // Per-pipeline accumulators and fatigue state
+  // Per-pair adaptive state: gain and last-observed |r|
+  /** @type {Record<string, { gain: number, lastAbsCorr: number }>} */
+  const _pairState = {};
+
+  /**
+   * Get or create adaptive state for a pair.
+   * @param {string} key
+   * @returns {{ gain: number, lastAbsCorr: number }}
+   */
+  function _getPairState(key) {
+    if (!_pairState[key]) {
+      _pairState[key] = { gain: GAIN_INIT, lastAbsCorr: 0 };
+    }
+    return _pairState[key];
+  }
+
+  /**
+   * Get target for a pair key, falling back to default.
+   * @param {string} key
+   * @returns {number}
+   */
+  function _getTarget(key) {
+    return PAIR_TARGETS[key] !== undefined ? PAIR_TARGETS[key] : DEFAULT_TARGET;
+  }
+
+  // Per-pipeline accumulators
   let biasDensity = 1.0;
   let biasTension = 1.0;
   let biasFlicker = 1.0;
-  let fatigueDensity = 0;
-  let fatigueTension = 0;
-  let fatigueFlicker = 0;
-
-  /**
-   * Get target and gain for a pair key, falling back to defaults.
-   * @param {string} pairKey
-   * @returns {{ target: number, gain: number }}
-   */
-  function _getConfig(pairKey) {
-    const ov = PAIR_OVERRIDES[pairKey];
-    return ov || { target: DEFAULT_TARGET, gain: DEFAULT_GAIN };
-  }
 
   function refresh() {
     const snap = systemDynamicsProfiler.getSnapshot();
@@ -90,31 +111,46 @@ pipelineCouplingManager = (() => {
         const corr = matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
 
-        const { target, gain } = _getConfig(key);
+        const target = _getTarget(key);
         const absCorr = m.abs(corr);
+        const ps = _getPairState(key);
+
+        // ── Adaptive gain logic ──
+        if (absCorr > target) {
+          // Overcoupled: compare to last beat's |r| to decide escalation
+          const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
+          if (!improving) {
+            // Stuck or worsening — escalate gain
+            ps.gain = clamp(ps.gain + GAIN_ESCALATE_RATE, GAIN_MIN, GAIN_MAX);
+          }
+          // If improving, hold current gain (don't escalate, don't relax)
+        } else {
+          // Below target — relax gain back toward initial
+          ps.gain = clamp(ps.gain - GAIN_RELAX_RATE, GAIN_INIT, GAIN_MAX);
+        }
+        ps.lastAbsCorr = absCorr;
+
+        // Skip nudge if below target
         if (absCorr <= target) continue;
 
         // Split decorrelation nudge across BOTH nudgeable axes in opposite
         // directions. Single-axis nudging caused accidental co-movement when
-        // multiple pairs pushed the same axis the same way (Run 6: d-f flipped
-        // sign but kept |0.466| — both density and flicker pushed < 1.0).
+        // multiple pairs pushed the same axis the same way.
         const aIsNudgeable = NUDGEABLE_SET.has(dimA);
         const bIsNudgeable = NUDGEABLE_SET.has(dimB);
         if (!aIsNudgeable && !bIsNudgeable) continue;
 
         const excess = absCorr - target;
         const direction = -m.sign(corr);
-        const magnitude = gain * excess;
+        const magnitude = ps.gain * excess;
 
         if (aIsNudgeable && bIsNudgeable) {
-          // Both axes have conductor biases — split the force oppositely
           const half = magnitude * 0.5;
-          _addNudge(dimA, -direction * half); // push A one way
-          _addNudge(dimB, direction * half);  // push B the other
+          _addNudge(dimA, -direction * half);
+          _addNudge(dimB, direction * half);
         } else {
-          // Only one axis nudgeable (entropy pair) — full force on the nudgeable one
-          const target2 = aIsNudgeable ? dimA : dimB;
-          _addNudge(target2, direction * magnitude);
+          const nudgeAxis = aIsNudgeable ? dimA : dimB;
+          _addNudge(nudgeAxis, direction * magnitude);
         }
       }
     }
@@ -122,34 +158,6 @@ pipelineCouplingManager = (() => {
     biasDensity = 1.0 + nudgeD;
     biasTension = 1.0 + nudgeT;
     biasFlicker = 1.0 + nudgeF;
-
-    // --- Fatigue mechanism ---
-    // Sustained high bias accumulates fatigue; fatigue dampens toward 1.0.
-    _applyFatigue('density');
-    _applyFatigue('tension');
-    _applyFatigue('flicker');
-  }
-
-  /**
-   * @param {'density' | 'tension' | 'flicker'} axis
-   */
-  function _applyFatigue(axis) {
-    const bias = axis === 'density' ? biasDensity : axis === 'tension' ? biasTension : biasFlicker;
-    let fatigue = axis === 'density' ? fatigueDensity : axis === 'tension' ? fatigueTension : fatigueFlicker;
-
-    const deviation = m.abs(bias - 1.0);
-    fatigue = deviation > 0.04
-      ? clamp(fatigue + FATIGUE_RATE * deviation, 0, 1)
-      : clamp(fatigue - RECOVERY_RATE, 0, 1);
-
-    let result = bias;
-    if (fatigue > 0) {
-      result = 1.0 + (bias - 1.0) * (1.0 - fatigue * MAX_FATIGUE_DAMP);
-    }
-
-    if (axis === 'density') { biasDensity = result; fatigueDensity = fatigue; }
-    else if (axis === 'tension') { biasTension = result; fatigueTension = fatigue; }
-    else { biasFlicker = result; fatigueFlicker = fatigue; }
   }
 
   function densityBias() { return biasDensity; }
@@ -160,9 +168,12 @@ pipelineCouplingManager = (() => {
     biasDensity = 1.0;
     biasTension = 1.0;
     biasFlicker = 1.0;
-    fatigueDensity = 0;
-    fatigueTension = 0;
-    fatigueFlicker = 0;
+    // Reset adaptive gains — each section starts fresh
+    const keys = Object.keys(_pairState);
+    for (let i = 0; i < keys.length; i++) {
+      _pairState[keys[i]].gain = GAIN_INIT;
+      _pairState[keys[i]].lastAbsCorr = 0;
+    }
   }
 
   // --- Self-registration ---

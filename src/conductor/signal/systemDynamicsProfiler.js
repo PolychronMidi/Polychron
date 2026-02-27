@@ -36,13 +36,26 @@ systemDynamicsProfiler = (() => {
   let _entropySampleErrors = 0;
   let _lastEntropyError = '';
 
+  // ── Per-dimension z-score normalization ──
+  // Pipeline products (density/tension/flicker) are multiplicative products of
+  // 14-29 modules that mutually smooth, producing tiny variance. Entropy is a
+  // single direct ATW measurement with inherently higher variance. Without
+  // normalization, entropy dominates compositionalVariance (96%→72%→58% across
+  // runs) regardless of amplification tuning. Z-scoring each compositional
+  // dimension by its own rolling mean/std ensures unit variance by construction.
+  // Uses Welford's online algorithm for numerical stability.
+  const _zscoreN = new Array(N_COMPOSITIONAL_DIMS).fill(0);
+  const _zscoreMean = new Array(N_COMPOSITIONAL_DIMS).fill(0);
+  const _zscoreM2 = new Array(N_COMPOSITIONAL_DIMS).fill(0);
+  const _ZSCORE_MIN_SAMPLES = 8; // need enough history before z-scoring is meaningful
+
   // ── Adaptive entropy amplification ──
   // Instead of a hardcoded multiplier (manually tuned 5→7→12→10→3 across
   // runs), this proportional controller reads the previous beat's
   // compositionalVariance and adjusts to target ~25% variance share.
   // Self-correcting: too much entropy → amplification drops; too little → rises.
   const _ENTROPY_AMP_TARGET_SHARE = 0.25;
-  const _ENTROPY_AMP_MIN = 1.0;
+  const _ENTROPY_AMP_MIN = 1.5; // raised (was 1.0) — Run 11: controller pinned at 1.0 floor but entropy still 58% dominant; 1.5 floor lets tension/flicker maintain enough coupled variance
   const _ENTROPY_AMP_MAX = 15.0;
   const _ENTROPY_AMP_SMOOTH = 0.12; // slow EMA to avoid oscillation
   let _entropyAmp = 3.0; // initial seed (converges within ~20 beats)
@@ -488,25 +501,40 @@ systemDynamicsProfiler = (() => {
     beatsSeen++;
     const rawState = _sampleState();
 
-    // EMA smooth the state vector to suppress high-frequency module noise
-    // before differentiation. Raw values are used for coupling/variance
-    // to avoid EMA-inflated correlations.
+    // ── Z-score normalize compositional dimensions ──
+    // Update Welford accumulators then normalize. Non-compositional dims
+    // (trust, phase) pass through unchanged — they're excluded from
+    // velocity/curvature/variance computations anyway.
+    const normalizedState = rawState.slice();
+    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
+      _zscoreN[d]++;
+      const delta = rawState[d] - _zscoreMean[d];
+      _zscoreMean[d] += delta / _zscoreN[d];
+      _zscoreM2[d] += delta * (rawState[d] - _zscoreMean[d]);
+      if (_zscoreN[d] >= _ZSCORE_MIN_SAMPLES) {
+        const std = m.sqrt(_zscoreM2[d] / _zscoreN[d]);
+        normalizedState[d] = std > 1e-10 ? (rawState[d] - _zscoreMean[d]) / std : 0;
+      }
+    }
+
+    // EMA smooth the normalized state vector to suppress high-frequency
+    // module noise before differentiation.
     _resolveStateSmoothing();
     if (!_smoothedState) {
-      _smoothedState = rawState.slice();
+      _smoothedState = normalizedState.slice();
     } else {
       for (let d = 0; d < N_DIMS; d++) {
-        _smoothedState[d] = _smoothedState[d] * (1 - _stateSmoothing) + rawState[d] * _stateSmoothing;
+        _smoothedState[d] = _smoothedState[d] * (1 - _stateSmoothing) + normalizedState[d] * _stateSmoothing;
       }
     }
     const state = _smoothedState.slice();
 
-    // Smoothed trajectory â†' velocity/curvature (derivatives need smooth input)
+    // Smoothed trajectory → velocity/curvature (derivatives need smooth input)
     trajectory.push(state);
     if (trajectory.length > WINDOW) trajectory.shift();
 
-    // Raw trajectory â†' coupling/dimensionality (correlations need unsmoothed data)
-    rawTrajectory.push(rawState.slice());
+    // Normalized trajectory → coupling/dimensionality (z-scored, not EMA-smoothed)
+    rawTrajectory.push(normalizedState.slice());
     if (rawTrajectory.length > WINDOW) rawTrajectory.shift();
 
     // Compute velocity (first difference) — compositional dims only.
@@ -628,6 +656,11 @@ systemDynamicsProfiler = (() => {
     _candidateRegime = 'evolving';
     _candidateCount = 0;
     _entropyAmp = 3.0;
+    for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
+      _zscoreN[d] = 0;
+      _zscoreMean[d] = 0;
+      _zscoreM2[d] = 0;
+    }
   }
 
   // ── Self-register ──
