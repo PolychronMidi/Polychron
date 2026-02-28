@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Polychron Live Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--dim:#8b949e;
+--green:#3fb950;--yellow:#d29922;--red:#f85149;--blue:#58a6ff;--purple:#bc8cff}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',Consolas,monospace;font-size:13px;padding:16px}
+h1{font-size:18px;color:var(--blue);margin-bottom:12px;letter-spacing:.5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.card h2{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.metric{display:flex;justify-content:space-between;padding:3px 0}
+.metric .label{color:var(--dim)}
+.metric .value{font-weight:bold;font-variant-numeric:tabular-nums}
+.bar-wrap{height:6px;background:var(--border);border-radius:3px;margin-top:4px}
+.bar{height:100%;border-radius:3px;transition:width .3s ease}
+.bar.green{background:var(--green)}.bar.yellow{background:var(--yellow)}.bar.red{background:var(--red)}.bar.blue{background:var(--blue)}.bar.purple{background:var(--purple)}
+.regime-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:bold;margin:2px}
+.regime-badge.stable{background:#1a3a1a;color:var(--green)}
+.regime-badge.volatile{background:#3a2a0a;color:var(--yellow)}
+.regime-badge.chaotic{background:#3a1a1a;color:var(--red)}
+.regime-badge.critical{background:#2a1a3a;color:var(--purple)}
+#status{font-size:11px;color:var(--dim);margin-bottom:8px}
+#status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+#status .dot.on{background:var(--green)}
+#status .dot.off{background:var(--red)}
+canvas{width:100%;height:100px;display:block;margin-top:8px}
+.trust-row{display:flex;gap:6px;flex-wrap:wrap}
+.trust-chip{font-size:11px;padding:2px 6px;border-radius:3px;background:var(--border)}
+#beat-log{max-height:180px;overflow-y:auto;font-size:11px;line-height:1.6;color:var(--dim)}
+#beat-log .line{border-bottom:1px solid var(--border);padding:2px 0}
+</style>
+</head>
+<body>
+<h1>POLYCHRON LIVE DASHBOARD</h1>
+<div id="status"><span class="dot off" id="dot"></span><span id="status-text">Disconnected</span></div>
+<div class="grid">
+  <div class="card">
+    <h2>Signals</h2>
+    <div class="metric"><span class="label">Density</span><span class="value" id="v-density">--</span></div>
+    <div class="bar-wrap"><div class="bar blue" id="b-density" style="width:0"></div></div>
+    <div class="metric"><span class="label">Tension</span><span class="value" id="v-tension">--</span></div>
+    <div class="bar-wrap"><div class="bar yellow" id="b-tension" style="width:0"></div></div>
+    <div class="metric"><span class="label">Flicker</span><span class="value" id="v-flicker">--</span></div>
+    <div class="bar-wrap"><div class="bar purple" id="b-flicker" style="width:0"></div></div>
+  </div>
+  <div class="card">
+    <h2>Regime</h2>
+    <div id="regime-display"><span class="regime-badge">--</span></div>
+    <div class="metric" style="margin-top:8px"><span class="label">Entropy</span><span class="value" id="v-entropy">--</span></div>
+    <div class="bar-wrap"><div class="bar green" id="b-entropy" style="width:0"></div></div>
+    <div class="metric"><span class="label">Coherence</span><span class="value" id="v-coherence">--</span></div>
+    <div class="bar-wrap"><div class="bar green" id="b-coherence" style="width:0"></div></div>
+  </div>
+  <div class="card">
+    <h2>Trust Scores</h2>
+    <div class="trust-row" id="trust-display">--</div>
+  </div>
+  <div class="card">
+    <h2>Pipeline Coupling</h2>
+    <div class="metric"><span class="label">Coupling Strength</span><span class="value" id="v-coupling">--</span></div>
+    <div class="bar-wrap"><div class="bar blue" id="b-coupling" style="width:0"></div></div>
+    <div id="coupling-matrix" style="margin-top:8px;font-size:11px;color:var(--dim)"></div>
+  </div>
+  <div class="card">
+    <h2>Signal History</h2>
+    <canvas id="chart"></canvas>
+  </div>
+  <div class="card">
+    <h2>Beat Log</h2>
+    <div id="beat-log"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var ws, dot = document.getElementById('dot'), statusText = document.getElementById('status-text');
+  var history = { density: [], tension: [], flicker: [] };
+  var MAX_HIST = 200;
+  var beatCount = 0;
+
+  function connect() {
+    var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(proto + '://' + location.host);
+    ws.onopen = function() { dot.className = 'dot on'; statusText.textContent = 'Connected'; };
+    ws.onclose = function() { dot.className = 'dot off'; statusText.textContent = 'Disconnected - reconnecting...'; setTimeout(connect, 2000); };
+    ws.onerror = function() { ws.close(); };
+    ws.onmessage = function(ev) {
+      try { var msg = JSON.parse(ev.data); handleMessage(msg); } catch(e) {}
+    };
+  }
+
+  function handleMessage(msg) {
+    if (msg.type === 'reset') { beatCount = 0; history = { density: [], tension: [], flicker: [] }; clearLog(); return; }
+    if (msg.type !== 'beat' || !msg.data) return;
+    beatCount++;
+    var d = msg.data;
+
+    // Signals
+    var snap = d.conductorSnap || {};
+    setSignal('density', snap.density);
+    setSignal('tension', snap.tension);
+    setSignal('flicker', snap.flicker);
+
+    // Regime
+    var regime = d.regime || {};
+    setRegime(regime.label || regime.name || '--');
+
+    // Entropy / coherence from negotiation
+    var neg = d.negotiation || {};
+    setBar('entropy', neg.entropy, 'v-entropy', 'b-entropy');
+    setBar('coherence', neg.coherence, 'v-coherence', 'b-coherence');
+
+    // Trust
+    setTrust(d.trustScores || {});
+
+    // Coupling
+    setCoupling(d.couplingMatrix || {});
+
+    // History
+    pushHistory('density', snap.density);
+    pushHistory('tension', snap.tension);
+    pushHistory('flicker', snap.flicker);
+    drawChart();
+
+    // Beat log
+    appendLog(d);
+  }
+
+  function setSignal(name, val) {
+    var v = document.getElementById('v-' + name);
+    var b = document.getElementById('b-' + name);
+    if (val == null) return;
+    var n = typeof val === 'number' ? val : parseFloat(val);
+    if (isNaN(n)) return;
+    v.textContent = n.toFixed(3);
+    b.style.width = Math.min(100, Math.max(0, n * 100)) + '%';
+  }
+
+  function setBar(name, val, vId, bId) {
+    var v = document.getElementById(vId);
+    var b = document.getElementById(bId);
+    if (val == null) return;
+    var n = typeof val === 'number' ? val : parseFloat(val);
+    if (isNaN(n)) return;
+    v.textContent = n.toFixed(3);
+    b.style.width = Math.min(100, Math.max(0, n * 100)) + '%';
+  }
+
+  function setRegime(label) {
+    var el = document.getElementById('regime-display');
+    var cls = 'regime-badge';
+    var l = (label + '').toLowerCase();
+    if (l.indexOf('stable') >= 0 || l.indexOf('convergent') >= 0) cls += ' stable';
+    else if (l.indexOf('volatile') >= 0 || l.indexOf('divergent') >= 0) cls += ' volatile';
+    else if (l.indexOf('chaotic') >= 0 || l.indexOf('critical') >= 0) cls += ' chaotic';
+    else if (l.indexOf('transition') >= 0) cls += ' critical';
+    el.innerHTML = '<span class="' + cls + '">' + label + '</span>';
+  }
+
+  function setTrust(scores) {
+    var el = document.getElementById('trust-display');
+    if (!scores || typeof scores !== 'object') return;
+    var keys = Object.keys(scores).slice(0, 12);
+    el.innerHTML = keys.map(function(k) {
+      var v = typeof scores[k] === 'number' ? scores[k].toFixed(2) : scores[k];
+      return '<span class="trust-chip">' + k + ': ' + v + '</span>';
+    }).join('');
+  }
+
+  function setCoupling(matrix) {
+    if (!matrix || typeof matrix !== 'object') return;
+    var strength = matrix.strength;
+    if (typeof strength === 'number') {
+      document.getElementById('v-coupling').textContent = strength.toFixed(3);
+      document.getElementById('b-coupling').style.width = Math.min(100, Math.max(0, strength * 100)) + '%';
+    }
+    var el = document.getElementById('coupling-matrix');
+    var pairs = [];
+    for (var k in matrix) {
+      if (k !== 'strength' && typeof matrix[k] === 'number') {
+        pairs.push(k + ': ' + matrix[k].toFixed(3));
+      }
+    }
+    el.textContent = pairs.slice(0, 6).join('  |  ');
+  }
+
+  function pushHistory(name, val) {
+    if (val == null || isNaN(val)) return;
+    history[name].push(val);
+    if (history[name].length > MAX_HIST) history[name].shift();
+  }
+
+  function drawChart() {
+    var canvas = document.getElementById('chart');
+    var ctx = canvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    var colors = { density: '#58a6ff', tension: '#d29922', flicker: '#bc8cff' };
+    for (var name in colors) {
+      var arr = history[name];
+      if (arr.length < 2) continue;
+      ctx.strokeStyle = colors[name];
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (var i = 0; i < arr.length; i++) {
+        var x = (i / (MAX_HIST - 1)) * w;
+        var y = h - arr[i] * h;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function appendLog(d) {
+    var el = document.getElementById('beat-log');
+    var snap = d.conductorSnap || {};
+    var reg = d.regime || {};
+    var line = document.createElement('div');
+    line.className = 'line';
+    line.textContent = '#' + beatCount + '  ' +
+      (d.beatKey || '--') + '  d=' + fmt(snap.density) +
+      ' t=' + fmt(snap.tension) + ' f=' + fmt(snap.flicker) +
+      '  [' + (reg.label || reg.name || '?') + ']';
+    el.appendChild(line);
+    if (el.children.length > 80) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLog() {
+    document.getElementById('beat-log').innerHTML = '';
+  }
+
+  function fmt(v) { return (typeof v === 'number') ? v.toFixed(2) : '--'; }
+
+  connect();
+})();
+</script>
+</body>
+</html>

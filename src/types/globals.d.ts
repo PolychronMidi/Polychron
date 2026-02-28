@@ -950,12 +950,124 @@ interface StutterManagerAPI {
   resetChannelTracking(channels?: number[] | null): { cleared: number; lastUsedCHs?: number; lastUsedCHs2?: number; lastUsedCHs3?: number };
 }
 
+// ---------------------------------------------------------------------------
+// Gradient typing: config shapes, profile records, accessor APIs, conductor
+// intelligence module surfaces, and feedback infrastructure
+// ---------------------------------------------------------------------------
+
+/** Config-level range used by SECTIONS, DIVISIONS, VOICES, etc. */
+interface WeightedRange {
+  min: number;
+  max: number;
+  weights?: number[];
+}
+
+// -- Profile record shapes --
+
+interface VoiceProfile {
+  baseVelocity: number;
+  useCorpusVoiceLeadingPriors?: boolean;
+  corpusVoiceLeadingStrength?: number;
+  useCorpusMelodicPriors?: boolean;
+  corpusMelodicStrength?: number;
+}
+
+interface ChordProfile {
+  voices: number;
+  velocityScale: number;
+  inversion: number;
+  baseVelocity: number;
+  useCorpusHarmonicPriors?: boolean;
+  corpusHarmonicStrength?: number;
+}
+
+interface MotifProfile {
+  velocityScale: number;
+  timingOffset: number;
+}
+
+interface RhythmProfile {
+  swing: number;
+  velocityScale: number;
+  useCorpusRhythmPriors?: boolean;
+  corpusRhythmStrength?: number;
+}
+
+interface MotifUnitProfile {
+  density: number;
+  style: string;
+  intervalDensity: number;
+  velocityScale: number;
+}
+
+// -- Config accessor APIs --
+
+interface RhythmConfigAPI {
+  getProfile(name: string): RhythmProfile;
+}
+
+interface VoiceConfigAPI {
+  getProfile(name: string): VoiceProfile;
+}
+
+interface MotifConfigAPI {
+  getProfile(name: string): MotifProfile;
+  getUnitProfile(unit: string): MotifUnitProfile;
+  setUnitProfileOverride(unit: string, props: Partial<MotifUnitProfile>): void;
+}
+
+interface ChordConfigAPI {
+  getProfile(name: string): ChordProfile;
+}
+
+// -- Feedback infrastructure --
+
+interface FeedbackRegistryAPI {
+  registerLoop(name: string, sourceDomain: string, targetDomain: string, getAmplitude: () => number, getPhase: () => number): void;
+  getResonanceDampening(name: string): number;
+  getSnapshot(): { [name: string]: { source: string; target: string; amplitude: number; phase: number; dampening: number } };
+}
+
+// -- Conductor intelligence module APIs --
+
+interface MelodicContourTrackerAPI {
+  update(): void;
+  getContour(): { shape: string; direction: number; range: number; avgPitch: number };
+  getContrastingSuggestion(): { preferredDirection: number; bias: string };
+  getLayerContour(layer: string): { shape: string; direction: number; range: number; avgPitch: number };
+  getDirectionalitySignal(): { direction: string; ascendRatio: number; descendRatio: number; densityBias: number };
+  getDirectionalityDensityBias(): number;
+  reset(): void;
+}
+
+interface RegisterPressureMonitorAPI {
+  getRegisterPressure(opts?: { layer?: string; windowSeconds?: number }): number[];
+  getCrossLayerOverlap(windowSeconds?: number): number;
+  getRegisterBias(layer: string): { octaveBias: number; crowdedBands: number[]; emptyBands: number[] };
+  getPressureSignal(opts?: { windowSeconds?: number }): { highPressure: boolean; lowPressure: boolean };
+}
+
+interface LayerCoherenceScorerAPI {
+  computeCoherence(windowSeconds?: number): number;
+  getCoherence(): number;
+  isInTension(threshold?: number): boolean;
+  getDensityBias(): number;
+  reset(): void;
+}
+
+interface CadenceAdvisorAPI {
+  initialize(): void;
+  shouldCadence(): { suggest: boolean; type: string; confidence: number };
+  getCadenceBias(): { dominantBias: number; tonicBias: number; phase: string };
+  getHarmonicDensity(): number;
+  reset(): void;
+}
 
 // -- utils --
 declare var m: typeof Math;
 declare var rf: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
 declare var ri: (min1?: number, max1?: number, min2?: number, max2?: number) => number;
-declare var rw: (min: number, max: number, weights: number[]) => number;
+declare var rw: (min: number, max: number, weights?: number[]) => number;
 declare var ra: (v: number | any[] | (() => any)) => any;
 declare var rv: (value: number, boostRange?: number[], frequency?: number, deboostRange?: number[]) => number;
 declare var rl: (currentValue: number, minChange: number, maxChange: number, minValue: number, maxValue: number, type?: string) => number;
@@ -1031,22 +1143,22 @@ declare var TUNING_FREQ: number;
 declare var LOG: any;
 declare var BINAURAL: any;
 declare var SILENT_OUTRO_SECONDS: number;
-declare var SECTIONS: any;
-declare var PHRASES_PER_SECTION: any;
-declare var NUMERATOR: any;
-declare var DENOMINATOR: any;
-declare var DIVISIONS: any;
-declare var SUBDIVS: any;
-declare var VOICES: any;
-declare var BEAT_VOICES: any;
-declare var DIV_VOICES: any;
-declare var SUBDIV_VOICES: any;
-declare var SUBSUBDIV_VOICES: any;
+declare var SECTIONS: WeightedRange;
+declare var PHRASES_PER_SECTION: WeightedRange;
+declare var NUMERATOR: WeightedRange;
+declare var DENOMINATOR: WeightedRange;
+declare var DIVISIONS: WeightedRange;
+declare var SUBDIVS: WeightedRange;
+declare var VOICES: WeightedRange;
+declare var BEAT_VOICES: WeightedRange;
+declare var DIV_VOICES: WeightedRange;
+declare var SUBDIV_VOICES: WeightedRange;
+declare var SUBSUBDIV_VOICES: WeightedRange;
 declare var BEAT_SIBLING_VOICES: any;
 declare var DIV_SIBLING_VOICES: any;
 declare var SUBDIV_SIBLING_VOICES: any;
 declare var SUBSUBDIV_SIBLING_VOICES: any;
-declare var OCTAVE: any;
+declare var OCTAVE: WeightedRange;
 declare var primaryInstrument: any;
 declare var secondaryInstrument: any;
 declare var otherInstruments: any;
@@ -1065,10 +1177,10 @@ declare var dynamismEngine: DynamismEngineAPI;
 declare var dynamismPulse: any;
 declare var textureBlender: TextureBlenderAPI;
 declare var conductorState: ConductorStateAPI;
-declare var VOICE_PROFILES: any;
-declare var CHORD_PROFILES: any;
-declare var MOTIF_PROFILES: any;
-declare var RHYTHM_PROFILES: any;
+declare var VOICE_PROFILES: Record<string, VoiceProfile>;
+declare var CHORD_PROFILES: Record<string, ChordProfile>;
+declare var MOTIF_PROFILES: Record<string, MotifProfile>;
+declare var RHYTHM_PROFILES: Record<string, RhythmProfile>;
 declare var RHYTHM_PATTERNS: any;
 declare var RHYTHM_PATTERN_POOLS: any;
 declare var DRUM_MAP: any;
@@ -1080,7 +1192,7 @@ declare var NOISE_PROFILES: any;
 declare var COMPOSER_FAMILIES: any;
 declare var VOICE_MANAGER: any;
 declare var SECTION_TYPES: any;
-declare var SUBSUBDIVS: any;
+declare var SUBSUBDIVS: WeightedRange;
 declare var DYNAMISM: any;
 declare var STUTTER_PROFILES: any;
 declare var STUTTER_VELOCITY_RANGES: any;
@@ -1108,10 +1220,10 @@ declare var conductorConfigResolvers: any;
 declare var conductorConfigAccessors: any;
 declare var conductorConfig: ConductorConfigAPI;
 declare var globalConductor: GlobalConductorAPI;
-declare var melodicContourTracker: any;
-declare var registerPressureMonitor: any;
-declare var layerCoherenceScorer: any;
-declare var cadenceAdvisor: any;
+declare var melodicContourTracker: MelodicContourTrackerAPI;
+declare var registerPressureMonitor: RegisterPressureMonitorAPI;
+declare var layerCoherenceScorer: LayerCoherenceScorerAPI;
+declare var cadenceAdvisor: CadenceAdvisorAPI;
 declare var sectionLengthAdvisor: any;
 declare var dynamicRangeTracker: any;
 declare var restDensityTracker: any;
@@ -1218,7 +1330,7 @@ declare var narrativeTrajectory: { getTrajectory(): { point: { t: number; n: num
 declare var structuralNarrativeAdvisor: { recordFamily(family: string): void; getHistory(): string[]; getVarietyPressure(): number; densityBias(): number; reset(): void };
 declare var criticalityEngine: { densityBias(): number; tensionBias(): number; flickerMod(): number; getState(): { threshold: number; avalancheCount: number; totalBeats: number; rate: number; inAvalanche: boolean; recentEnergy: number }; reset(): void };
 declare var moduleLifecycle: ModuleLifecycleFactory;
-declare var feedbackRegistry: any;
+declare var feedbackRegistry: FeedbackRegistryAPI;
 declare var closedLoopController: ClosedLoopControllerFactory;
 declare var beatCache: BeatCacheFactory;
 
@@ -1226,7 +1338,7 @@ declare var beatCache: BeatCacheFactory;
 declare var rhythmRegistry: RhythmRegistryAPI;
 declare var rhythmManager: RhythmManagerAPI;
 declare var rhythmValues: RhythmValuesAPI;
-declare var rhythmConfig: any;
+declare var rhythmConfig: RhythmConfigAPI;
 declare var rhythmModulator: any;
 declare var RHYTHM_PRIOR_TABLES: any;
 declare var rhythmPriors: any;
@@ -1396,16 +1508,16 @@ declare var harmonicPriors: any;
 declare var chordRegistry: any;
 declare var ChordManager: any;
 declare var chordValues: any;
-declare var chordConfig: any;
+declare var chordConfig: ChordConfigAPI;
 declare var chordModulator: any;
 declare var motifRegistry: any;
 declare var motifManager: MotifManagerAPI;
 declare var motifValues: any;
-declare var motifConfig: any;
+declare var motifConfig: MotifConfigAPI;
 declare var motifModulator: any;
 declare var voiceRegistry: any;
 declare var voiceValues: any;
-declare var voiceConfig: any;
+declare var voiceConfig: VoiceConfigAPI;
 declare var voiceModulator: any;
 declare var voiceLeadingScorers: any;
 declare var voiceLeadingCore: any;
