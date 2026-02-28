@@ -294,6 +294,30 @@ conductorIntelligence = (() => {
   }
 
   /**
+   * Get normalized contributor names for each registry bucket.
+   * Colon-qualified labels are folded to base names (e.g. "Foo:bar" -> "Foo").
+   * @returns {{ density: string[], tension: string[], flicker: string[], recorders: string[], stateProviders: string[] }}
+   */
+  function getRegistryNames() {
+    /** @param {Array<{ name: string }>} registry */
+    function namesFrom(registry) {
+      const out = new Set();
+      for (let i = 0; i < registry.length; i++) {
+        out.add(registry[i].name.split(':')[0]);
+      }
+      return Array.from(out).sort();
+    }
+
+    return {
+      density: namesFrom(densityBiases),
+      tension: namesFrom(tensionBiases),
+      flicker: namesFrom(flickerModifiers),
+      recorders: namesFrom(recorders),
+      stateProviders: namesFrom(stateProviders)
+    };
+  }
+
+  /**
    * Frozen snapshot of all current signal products and state fields.
    * Intended for cross-module reading (e.g., feedback loops, diagnostics).
    * @returns {Readonly<{ densityProduct: number, tensionProduct: number, flickerProduct: number, stateFields: Record<string, any>, counts: Record<string, number> }>}
@@ -334,6 +358,7 @@ conductorIntelligence = (() => {
     collectStateFields,
     getContributorNames,
     getCounts,
+    getRegistryNames,
     getSignalSnapshot
   };
 })();

@@ -86,7 +86,7 @@ onsetDensityProfiler = (() => {
       ? clamp((conductorDensity - 0.40) / 0.45, 0.5, 1.0)
       : 1.0;
     const ramp = clamp((ratio - 1.0) / 2.0, 0, 1);
-    return 1.0 - ramp * 0.20 * attenuate;
+    return 1.0 - ramp * 0.14 * attenuate;
   }
 
   /**
@@ -112,7 +112,7 @@ onsetDensityProfiler = (() => {
     return { combined: all.nps, l1: l1.nps, l2: l2.nps };
   }
 
-  conductorIntelligence.registerDensityBias('onsetDensityProfiler', () => onsetDensityProfiler.getDensityBias(), 0.80, 1.35);
+  conductorIntelligence.registerDensityBias('onsetDensityProfiler', () => onsetDensityProfiler.getDensityBias(), 0.86, 1.35);
   conductorIntelligence.registerStateProvider('onsetDensityProfiler', () => ({
     onsetCrossModBias: clamp(onsetDensityProfiler.getCrossModBias(), 0.8, 1.2)
   }));

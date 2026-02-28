@@ -618,6 +618,7 @@ fullBootstrap = (() => {
     'logUnit',
     'pushMultiple',
     'grandFinale',
+    'traceDrain',
     'coherenceVerdicts',
     'systemManifestMarkdown',
     'systemManifest',

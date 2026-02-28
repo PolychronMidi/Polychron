@@ -174,7 +174,7 @@ pipelineCouplingManager = (() => {
     // learning is preserved) but the physical output respects bandwidth.
     // Without this, the conductor clips silently and the gain keeps
     // escalating against a ceiling, producing max-clamp bias every beat.
-    const SOFT_LIMIT = 0.18; // max deviation from 1.0 per axis
+    const SOFT_LIMIT = 0.14; // max deviation from 1.0 per axis
 
     // Detect saturation BEFORE clamping - used next beat to freeze gains
     _saturatedAxes.clear();
@@ -209,9 +209,9 @@ pipelineCouplingManager = (() => {
   }
 
   // --- Self-registration ---
-  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.82, 1.18);
-  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.82, 1.20);
-  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.82, 1.18);
+  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.86, 1.14);
+  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.86, 1.18);
+  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.86, 1.14);
   conductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   conductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 

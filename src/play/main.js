@@ -43,6 +43,7 @@ FactoryManager.setComposerContext(composerCtx);
 
 moduleLifecycle.initializeAll();
 crossLayerLifecycleManager.resetAll();
+traceDrain.init();
 
 // After initialization, validate that registries are sensibly populated.
 mainBootstrap.assertRegistryPopulation();
@@ -175,6 +176,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   // Emit system manifest and capability matrix for compositional forensics
   systemManifest.emit();
+
+  traceDrain.shutdown();
 }
 
 // Run main only when invoked as the entry script

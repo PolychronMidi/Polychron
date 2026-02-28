@@ -52,14 +52,14 @@ rhythmicComplexityGradient = (() => {
   /**
    * Get a subdivision depth bias based on complexity trajectory.
    * Building - allow deeper subdivisions; simplifying - encourage simpler.
-   * @returns {number} - 0.8 to 1.3
+  * @returns {number} - 0.88 to 1.25
    */
   function getSubdivisionBias() {
     const g = getGradient();
-    if (g.building) return 1.2;
-    if (g.simplifying) return 0.85;
+    if (g.building) return 1.18;
+    if (g.simplifying) return 0.90;
     // If complexity is high and stable, gently encourage simplification
-    if (g.avgComplexity > 0.7 && g.trend === 'stable') return 0.9;
+    if (g.avgComplexity > 0.7 && g.trend === 'stable') return 0.94;
     return 1.0;
   }
 
@@ -68,7 +68,7 @@ rhythmicComplexityGradient = (() => {
     samples.length = 0;
   }
 
-  conductorIntelligence.registerDensityBias('rhythmicComplexityGradient', () => rhythmicComplexityGradient.getSubdivisionBias(), 0.8, 1.3);
+  conductorIntelligence.registerDensityBias('rhythmicComplexityGradient', () => rhythmicComplexityGradient.getSubdivisionBias(), 0.88, 1.25);
   conductorIntelligence.registerRecorder('rhythmicComplexityGradient', (ctx) => { rhythmicComplexityGradient.recordComplexity(ctx.currentDensity, ctx.absTime); });
   conductorIntelligence.registerModule('rhythmicComplexityGradient', { reset }, ['section']);
 

@@ -108,6 +108,23 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     breathing: clBreathing.recommendation
   }, clAbsMs);
 
+  // --- Visual Diagnostic Mode (--trace) ---
+  // Emit a trace-beat event every beat (L1 and L2) for the trace drain
+  if (process.argv.includes('--trace')) {
+    const dynamicsSnapshot = systemDynamicsProfiler.getSnapshot();
+    const tracePayload = {
+      beatKey: `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`,
+      timeMs: clAbsMs,
+      conductorSnap: conductorState.getSnapshot(),
+      negotiation: clNegotiation,
+      trustScores: adaptiveTrustScores.getSnapshot(),
+      regime: dynamicsSnapshot.regime,
+      couplingMatrix: dynamicsSnapshot.couplingMatrix
+    };
+    explainabilityBus.emit('trace-beat', layer, tracePayload, clAbsMs);
+    traceDrain.record(layer, tracePayload);
+  }
+
   // --- Beat key handling (L1 defers, L2 flushes pair + telemetry) ---
   const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
   if (isL1) {

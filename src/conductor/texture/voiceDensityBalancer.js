@@ -61,7 +61,7 @@ voiceDensityBalancer = (() => {
    * Continuous interpolation prevents multiplicative crush with peer density biases.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-   * @returns {number} - 0.85 to 1.3
+  * @returns {number} - 0.88 to 1.3
    */
   function getVoiceCountBias(opts) {
     const vd = getVoiceDensity(opts);
@@ -73,7 +73,7 @@ voiceDensityBalancer = (() => {
     if (vd.avgVoices > 4) {
       // Wider ramp: saturates at 10 voices instead of 8, softer max suppression
       const ramp = clamp((vd.avgVoices - 4) / 6, 0, 1);
-      return 1.0 - ramp * 0.15;
+      return 1.0 - ramp * 0.12;
     }
     return 1.0;
   }
@@ -89,7 +89,7 @@ voiceDensityBalancer = (() => {
     return { l1Avg: l1.avgVoices, l2Avg: l2.avgVoices, balanced };
   }
 
-  conductorIntelligence.registerDensityBias('voiceDensityBalancer', () => voiceDensityBalancer.getVoiceCountBias(), 0.82, 1.3);
+  conductorIntelligence.registerDensityBias('voiceDensityBalancer', () => voiceDensityBalancer.getVoiceCountBias(), 0.88, 1.3);
 
   return {
     getVoiceDensity,

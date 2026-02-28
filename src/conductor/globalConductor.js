@@ -87,12 +87,13 @@ globalConductor = (() => {
     const rawFlickerMod = flickerAttr.product;
     const registryFlickerMod = _prevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
     _prevFlickerMod = registryFlickerMod;
-    // Partial decoupling: flicker base blends compositeIntensity with a
-    // fixed midpoint. Prevents density-flicker anti-correlation (r=-0.7)
-    // caused by compositeIntensity driving both pipelines in lockstep.
-    const flickerBase = compositeIntensity * 0.5 + 0.5;
-    const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod;
+    // Decoupling: flicker base blends compositeIntensity with harmonicRhythm
+    // and a slow independent carrier. This reduces lockstep coupling between
+    // density/tension and flicker while preserving macro energy following.
     const densitySeed = Number(beatStart);
+    const flickerCarrier = 0.5 + 0.5 * m.sin(densitySeed * 0.0017 + harmonicRhythm * m.PI);
+    const flickerBase = clamp(compositeIntensity * 0.35 + harmonicRhythm * 0.25 + flickerCarrier * 0.40, 0, 1.2);
+    const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod;
     const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
                          + rf(-0.03, 0.03) * flickerAmplitude;
