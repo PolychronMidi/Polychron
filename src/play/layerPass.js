@@ -62,11 +62,19 @@ layerPass = (() => {
       timeStream.setBounds('beat', numerator);
       const _mT = Date.now();
 
+      // Conductor update is expensive (~147 function calls). The EMA smoothing
+      // on density/tension/flicker means beat-to-beat resolution adds minimal
+      // information. Compute once per measure on beat 0 and reuse for the rest.
+      // Cross-layer modules in processBeat still modulate probabilities per beat.
+      let measureConductorCtx = null;
+
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
         timeStream.setPosition('beat', beatIndex);
-        const beatCtx = mainBootstrap.getConductorProbabilities();
-        playProb = beatCtx.playProb;
-        stutterProb = beatCtx.stutterProb;
+        if (!measureConductorCtx) {
+          measureConductorCtx = mainBootstrap.getConductorProbabilities();
+        }
+        playProb = measureConductorCtx.playProb;
+        stutterProb = measureConductorCtx.stutterProb;
 
         const beatResult = processBeat(layerId, playProb, stutterProb, boot);
         playProb = beatResult.playProb;

@@ -133,7 +133,7 @@ globalConductor = (() => {
       (Number(resolved.composite) * 0.7 + Number(harmonicTension) * 0.3) * registryTensionBias,
       0, 1
     );
-    const TENSION_SMOOTHING = 0.12;
+    const TENSION_SMOOTHING = 0.25;
     const prevTension = harmonicContext.getField('tension');
     const derivedTension = prevTension * (1 - TENSION_SMOOTHING) + rawTension * TENSION_SMOOTHING;
     harmonicContext.set({ tension: derivedTension });

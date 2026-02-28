@@ -75,11 +75,11 @@ SECTION_TYPES=[
 ];
 PHRASES_PER_SECTION={
   min: 1,
-  max: 2
+  max: 3
 };
 SECTIONS={
-  min: 2,
-  max: 3
+  min: 3,
+  max: 5
 };
 DIVISIONS={
   min: 1,

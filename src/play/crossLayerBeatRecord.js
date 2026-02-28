@@ -7,7 +7,7 @@
  * Record all cross-layer outcomes for one beat.
  * @param {{ layer: string, clAbsMs: number, clIntent: any, clPhase: any, clNegotiation: any,
  *           clBreathing: any, clTension: number, clCadence: any, clPhaseSnapshot: any,
- *           clRest: any, stutterProb: number, isL1: boolean }} opts
+ *           clRest: any, clEntropy: any, stutterProb: number, isL1: boolean }} opts
  */
 const _traceEnabled = process.argv.includes('--trace');
 let _traceSnapBeatCount = -1;
@@ -17,7 +17,7 @@ let _traceCachedDynamicsSnap = null;
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
-    clTension, clCadence, clPhaseSnapshot, clRest, stutterProb, isL1
+    clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1
   } = opts;
   const { requireFiniteNumber, requireUnitInterval } = mainBootstrap;
 
@@ -102,6 +102,13 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const cmp = tp.coherenceMonitor;
   const coherenceOutcome = clamp(1 - Math.abs(coherenceMonitor.getDensityBias() - cmp.neutralBias) * cmp.sensitivity, -1, 1);
   adaptiveTrustScores.registerOutcome('coherenceMonitor', coherenceOutcome);
+  // entropyRegulator: reward when measured entropy tracks target, penalize persistent deviation
+  const entropyError = clEntropy ? m.abs(clEntropy.error) : 0;
+  const entropyOutcome = clamp(1 - entropyError * 3, -1, 1);
+  adaptiveTrustScores.registerOutcome('entropyRegulator', entropyOutcome);
+  // restSynchronizer: reward meaningful shared rests (creates breathing room), penalize excessive silencing
+  const restOutcome = clRest.shouldRest ? 0.3 : 0.05;
+  adaptiveTrustScores.registerOutcome('restSynchronizer', restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // --- Explainability ---

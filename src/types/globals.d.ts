@@ -1190,6 +1190,12 @@ declare var conductorDampening: {
   collectDampened(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>): number;
   collectDampenedWithAttribution(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>): { product: number; contributions: Array<{ name: string; raw: number; clamped: number }> };
 };
+declare var sectionMemory: {
+  snapshot(): void;
+  seed(): void;
+  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string } | null;
+  reset(): void;
+};
 declare var coherenceMonitor: CoherenceMonitorAPI;
 declare var signalReader: SignalReaderAPI;
 declare var profileAdaptation: ProfileAdaptationAPI;
@@ -1598,7 +1604,7 @@ declare var lastVoiceBudgetKey: any;
 declare var velocity: any;
 declare var fullBootstrap: any;
 declare var mainBootstrap: any;
-declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; stutterProb: number; isL1: boolean }) => void;
+declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean }) => void;
 declare var beatPipelineDescriptor: {
   getStages(): ReadonlyArray<{ name: string; after: string[]; produces: string[] }>;
   getStageNames(): string[];

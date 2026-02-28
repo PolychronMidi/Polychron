@@ -76,7 +76,7 @@ pipelineBalancer = (() => {
     target: () => 1.0,
     gain: 0.28,
     smoothing: 0,
-    deadband: 0.15,
+    deadband: 0.25,
     clampRange: [0.86, 1.14],
     sourceDomain: 'tension_product',
     targetDomain: 'tension'
