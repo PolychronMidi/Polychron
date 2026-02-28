@@ -44,16 +44,16 @@ canvas{width:100%;height:100px;display:block;margin-top:8px}
     <div class="bar-wrap"><div class="bar blue" id="b-density" style="width:0"></div></div>
     <div class="metric"><span class="label">Tension</span><span class="value" id="v-tension">--</span></div>
     <div class="bar-wrap"><div class="bar yellow" id="b-tension" style="width:0"></div></div>
-    <div class="metric"><span class="label">Flicker</span><span class="value" id="v-flicker">--</span></div>
-    <div class="bar-wrap"><div class="bar purple" id="b-flicker" style="width:0"></div></div>
+    <div class="metric"><span class="label">Play Prob</span><span class="value" id="v-playprob">--</span></div>
+    <div class="bar-wrap"><div class="bar purple" id="b-playprob" style="width:0"></div></div>
   </div>
   <div class="card">
     <h2>Regime</h2>
     <div id="regime-display"><span class="regime-badge">--</span></div>
-    <div class="metric" style="margin-top:8px"><span class="label">Entropy</span><span class="value" id="v-entropy">--</span></div>
-    <div class="bar-wrap"><div class="bar green" id="b-entropy" style="width:0"></div></div>
-    <div class="metric"><span class="label">Coherence</span><span class="value" id="v-coherence">--</span></div>
-    <div class="bar-wrap"><div class="bar green" id="b-coherence" style="width:0"></div></div>
+    <div class="metric" style="margin-top:8px"><span class="label">Conflict</span><span class="value" id="v-conflict">--</span></div>
+    <div class="bar-wrap"><div class="bar green" id="b-conflict" style="width:0"></div></div>
+    <div class="metric"><span class="label">Phase Confidence</span><span class="value" id="v-phaseconf">--</span></div>
+    <div class="bar-wrap"><div class="bar green" id="b-phaseconf" style="width:0"></div></div>
   </div>
   <div class="card">
     <h2>Trust Scores</h2>
@@ -78,7 +78,7 @@ canvas{width:100%;height:100px;display:block;margin-top:8px}
 <script>
 (function() {
   var ws, dot = document.getElementById('dot'), statusText = document.getElementById('status-text');
-  var history = { density: [], tension: [], flicker: [] };
+  var history = { density: [], tension: [], playprob: [] };
   var MAX_HIST = 200;
   var beatCount = 0;
 
@@ -94,36 +94,36 @@ canvas{width:100%;height:100px;display:block;margin-top:8px}
   }
 
   function handleMessage(msg) {
-    if (msg.type === 'reset') { beatCount = 0; history = { density: [], tension: [], flicker: [] }; clearLog(); return; }
+    if (msg.type === 'reset') { beatCount = 0; history = { density: [], tension: [], playprob: [] }; clearLog(); return; }
     if (msg.type !== 'beat' || !msg.data) return;
     beatCount++;
     var d = msg.data;
 
-    // Signals
-    var snap = d.conductorSnap || {};
-    setSignal('density', snap.density);
+    // Signals (trace uses 'snap', not 'conductorSnap')
+    var snap = d.snap || {};
+    setSignal('density', snap.compositeIntensity);
     setSignal('tension', snap.tension);
-    setSignal('flicker', snap.flicker);
+    setSignal('playprob', snap.playProb);
 
-    // Regime
-    var regime = d.regime || {};
-    setRegime(regime.label || regime.name || '--');
+    // Regime (trace stores regime as a plain string)
+    var regime = typeof d.regime === 'string' ? d.regime : '--';
+    setRegime(regime);
 
-    // Entropy / coherence from negotiation
+    // Conflict / phase confidence from negotiation
     var neg = d.negotiation || {};
-    setBar('entropy', neg.entropy, 'v-entropy', 'b-entropy');
-    setBar('coherence', neg.coherence, 'v-coherence', 'b-coherence');
+    setBar('conflict', neg.conflict, 'v-conflict', 'b-conflict');
+    setBar('phaseconf', neg.phaseConfidence, 'v-phaseconf', 'b-phaseconf');
 
-    // Trust
-    setTrust(d.trustScores || {});
+    // Trust (trace field is 'trust', values are {score, samples, weight})
+    setTrust(d.trust || {});
 
-    // Coupling
-    setCoupling(d.couplingMatrix || {});
+    // Coupling (trace field is 'coupling')
+    setCoupling(d.coupling || {});
 
     // History
-    pushHistory('density', snap.density);
+    pushHistory('density', snap.compositeIntensity);
     pushHistory('tension', snap.tension);
-    pushHistory('flicker', snap.flicker);
+    pushHistory('playprob', snap.playProb);
     drawChart();
 
     // Beat log
@@ -166,7 +166,9 @@ canvas{width:100%;height:100px;display:block;margin-top:8px}
     if (!scores || typeof scores !== 'object') return;
     var keys = Object.keys(scores).slice(0, 12);
     el.innerHTML = keys.map(function(k) {
-      var v = typeof scores[k] === 'number' ? scores[k].toFixed(2) : scores[k];
+      var entry = scores[k];
+      var v = (entry && typeof entry.score === 'number') ? entry.score.toFixed(2) :
+              (typeof entry === 'number') ? entry.toFixed(2) : '--';
       return '<span class="trust-chip">' + k + ': ' + v + '</span>';
     }).join('');
   }
@@ -203,7 +205,7 @@ canvas{width:100%;height:100px;display:block;margin-top:8px}
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
 
-    var colors = { density: '#58a6ff', tension: '#d29922', flicker: '#bc8cff' };
+    var colors = { density: '#58a6ff', tension: '#d29922', playprob: '#bc8cff' };
     for (var name in colors) {
       var arr = history[name];
       if (arr.length < 2) continue;
@@ -221,14 +223,14 @@ canvas{width:100%;height:100px;display:block;margin-top:8px}
 
   function appendLog(d) {
     var el = document.getElementById('beat-log');
-    var snap = d.conductorSnap || {};
-    var reg = d.regime || {};
+    var snap = d.snap || {};
+    var regime = typeof d.regime === 'string' ? d.regime : '?';
     var line = document.createElement('div');
     line.className = 'line';
     line.textContent = '#' + beatCount + '  ' +
-      (d.beatKey || '--') + '  d=' + fmt(snap.density) +
-      ' t=' + fmt(snap.tension) + ' f=' + fmt(snap.flicker) +
-      '  [' + (reg.label || reg.name || '?') + ']';
+      (d.beatKey || '--') + '  d=' + fmt(snap.compositeIntensity) +
+      ' t=' + fmt(snap.tension) + ' pp=' + fmt(snap.playProb) +
+      '  [' + regime + ']';
     el.appendChild(line);
     if (el.children.length > 80) el.removeChild(el.firstChild);
     el.scrollTop = el.scrollHeight;

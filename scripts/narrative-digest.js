@@ -80,8 +80,9 @@ function extractNarrativeEvents(tracePath) {
     try { entry = JSON.parse(lines[i]); } catch (_) { continue; }
 
     const regime = entry.regime || 'unknown';
-    const section = entry.section !== undefined ? entry.section : null;
     const beatKey = entry.beatKey || 'beat-' + i;
+    // beatKey format: "section:phrase:beat:subdivision"
+    const section = beatKey.includes(':') ? parseInt(beatKey.split(':')[0], 10) : null;
 
     // Track regime transitions
     if (regime !== prevRegime && prevRegime !== null) {
@@ -299,13 +300,27 @@ function generateNarrative() {
   }
 
   // ---- Output Summary ----
-  if (manifest && manifest.output) {
-    lines.push('## Output');
-    lines.push('');
-    const out = manifest.output;
-    if (out.L1) lines.push(`- **Layer 1:** ${out.L1.noteCount || '?'} notes`);
-    if (out.L2) lines.push(`- **Layer 2:** ${out.L2.noteCount || '?'} notes`);
-    lines.push('');
+  {
+    const csv1 = path.join(OUTPUT_DIR, 'output1.csv');
+    const csv2 = path.join(OUTPUT_DIR, 'output2.csv');
+    const countNotes = (csvPath) => {
+      if (!fs.existsSync(csvPath)) return 0;
+      let count = 0;
+      for (const line of fs.readFileSync(csvPath, 'utf8').split(/\r?\n/)) {
+        const cols = line.split(',');
+        if (cols.length >= 6 && cols[2] && cols[2].trim() === 'note_on_c' && toNum(cols[5], 0) > 0) count++;
+      }
+      return count;
+    };
+    const n1 = countNotes(csv1);
+    const n2 = countNotes(csv2);
+    if (n1 > 0 || n2 > 0) {
+      lines.push('## Output');
+      lines.push('');
+      lines.push(`- **Layer 1:** ${n1} notes`);
+      lines.push(`- **Layer 2:** ${n2} notes`);
+      lines.push('');
+    }
   }
 
   // ---- Coherence Verdicts ----
