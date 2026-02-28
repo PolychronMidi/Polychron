@@ -9,6 +9,11 @@
  *           clBreathing: any, clTension: number, clCadence: any, clPhaseSnapshot: any,
  *           clRest: any, stutterProb: number, isL1: boolean }} opts
  */
+const _traceEnabled = process.argv.includes('--trace');
+let _traceSnapBeatCount = -1;
+let _traceCachedConductorSnap = null;
+let _traceCachedDynamicsSnap = null;
+
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
@@ -109,17 +114,24 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   }, clAbsMs);
 
   // --- Visual Diagnostic Mode (--trace) ---
-  // Emit a trace-beat event every beat (L1 and L2) for the trace drain
-  if (process.argv.includes('--trace')) {
-    const dynamicsSnapshot = systemDynamicsProfiler.getSnapshot();
+  // Emit a trace-beat event every beat (L1 and L2) for the trace drain.
+  // Conductor + dynamics snapshots are identical for L1 and L2 within the
+  // same beat, so cache them on the L1 pass and reuse for L2.
+  if (_traceEnabled) {
+    if (_traceSnapBeatCount !== beatCount) {
+      _traceCachedConductorSnap = conductorState.getSnapshot();
+      _traceCachedDynamicsSnap = systemDynamicsProfiler.getSnapshot();
+      _traceSnapBeatCount = beatCount;
+    }
     const tracePayload = {
       beatKey: `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`,
       timeMs: clAbsMs,
-      conductorSnap: conductorState.getSnapshot(),
+      conductorSnap: _traceCachedConductorSnap,
       negotiation: clNegotiation,
       trustScores: adaptiveTrustScores.getSnapshot(),
-      regime: dynamicsSnapshot.regime,
-      couplingMatrix: dynamicsSnapshot.couplingMatrix
+      regime: _traceCachedDynamicsSnap.regime,
+      couplingMatrix: _traceCachedDynamicsSnap.couplingMatrix,
+      iterBudget: setUnitTimingBudgetStats.getLastBeat()
     };
     explainabilityBus.emit('trace-beat', layer, tracePayload, clAbsMs);
     traceDrain.record(layer, tracePayload);

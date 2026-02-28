@@ -1295,6 +1295,11 @@ declare var POLYRHYTHM_PAIRS: any;
 declare var getMeterPair: { pick: () => void; reset: () => void };
 declare var getPolyrhythm: any;
 declare var setUnitTiming: any;
+declare var setUnitTimingBudgetStats: {
+  getSummary(): { totalBeats: number; cappedBeats: number; capRate: number; maxRaw: number; avgRaw: number; maxCapped: number };
+  getLastBeat(): { raw: number; capped: number; wasCapped: boolean } | null;
+  reset(): void;
+};
 declare var bestMatch: number;
 declare var subsubsPerSub: number;
 declare var tpUnit: number;

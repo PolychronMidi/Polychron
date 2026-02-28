@@ -30,7 +30,7 @@ pipelineCouplingManager = (() => {
 
   // Per-pair target overrides (targets are structural, not gains).
   const PAIR_TARGETS = {
-    'density-tension':  0.20,
+    'density-tension':  0.15,  // structurally persistent -- needs aggressive target
     'density-flicker':  0.20,
     'density-entropy':  0.30,  // structural - more notes - entropy shifts
     'tension-flicker':  0.25,
@@ -48,6 +48,12 @@ pipelineCouplingManager = (() => {
   const GAIN_MAX  = 0.60;
   const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
   const GAIN_RELAX_RATE    = 0.01; // per-beat gain decrease when resolved
+
+  // Per-pair initial gain overrides for structurally persistent pairs.
+  // density-tension shares many upstream contributors so it starts hotter.
+  const PAIR_GAIN_INIT = {
+    'density-tension': 0.24
+  };
 
   // Regime-aware target relaxation: in 'coherent' regime, pairwise coupling
   // IS the feature - dimensions deliberately co-evolve. Relax targets so
@@ -70,7 +76,8 @@ pipelineCouplingManager = (() => {
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
-      _pairState[key] = { gain: GAIN_INIT, lastAbsCorr: 0 };
+      const initGain = PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT;
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0 };
     }
     return _pairState[key];
   }
@@ -174,7 +181,7 @@ pipelineCouplingManager = (() => {
     // learning is preserved) but the physical output respects bandwidth.
     // Without this, the conductor clips silently and the gain keeps
     // escalating against a ceiling, producing max-clamp bias every beat.
-    const SOFT_LIMIT = 0.14; // max deviation from 1.0 per axis
+    const SOFT_LIMIT = 0.16; // max deviation from 1.0 per axis
 
     // Detect saturation BEFORE clamping - used next beat to freeze gains
     _saturatedAxes.clear();
@@ -203,7 +210,8 @@ pipelineCouplingManager = (() => {
     // Reset adaptive gains - each section starts fresh
     const keys = Object.keys(_pairState);
     for (let i = 0; i < keys.length; i++) {
-      _pairState[keys[i]].gain = GAIN_INIT;
+      const initGain = PAIR_GAIN_INIT[keys[i]] !== undefined ? PAIR_GAIN_INIT[keys[i]] : GAIN_INIT;
+      _pairState[keys[i]].gain = initGain;
       _pairState[keys[i]].lastAbsCorr = 0;
     }
   }

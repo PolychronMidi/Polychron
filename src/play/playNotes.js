@@ -3,6 +3,7 @@
 // stutter scheduling to the naked global `noteCascade` when available.
 
 let _playNotesDepsValidated = false;
+let _measureContextValidated = -1; // beatCount at last validation
 const V = validator.create('playNotes');
 V.assertObject(eventCatalog, 'eventCatalog');
 V.assertObject(eventCatalog.names, 'eventCatalog.names');
@@ -35,9 +36,13 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     stutterProb = 0
   } = opts;
 
-  V.requireDefined(LM, 'LayerManager');
-  V.assertManagerShape(LM, 'LayerManager', ['getComposerFor']);
-  V.assertObject(LM.layers, 'LayerManager.layers');
+  // Validate LM shape once per beat (globals don't change within a beat)
+  if (_measureContextValidated !== beatCount) {
+    V.requireDefined(LM, 'LayerManager');
+    V.assertManagerShape(LM, 'LayerManager', ['getComposerFor']);
+    V.assertObject(LM.layers, 'LayerManager.layers');
+    _measureContextValidated = beatCount;
+  }
   V.assertNonEmptyString(LM.activeLayer, 'LayerManager.activeLayer');
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const layer = LM.layers[activeLayer];
@@ -111,9 +116,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   }
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
-  V.requireDefined(LM, 'LM');
-  V.assertObject(LM.layers, 'LM.layers');
-  V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const layerName = /** @type {string} */ (LM.activeLayer);
   const unitStartValue = V.requireFinite(unitStart, 'unitStart');
   const unitBudgetKey = `${layerName}:${unit}:${unitStartValue}`;
