@@ -15,6 +15,17 @@ adaptiveTrustScores = (() => {
   const TRUST_CEILING = 0.75; // max score (- max weight - 1.56)
   let decayCycleCount = 0;
 
+  // -- Trust journal: ring buffer of significant trust changes --
+  // Modeled after explainabilityBus. Keeps the most impactful trust
+  // transitions across the entire run for post-hoc forensics.
+  const JOURNAL_CAPACITY  = 200;
+  const JOURNAL_EVICT     = 40;
+  /** @type {{ section: number, beat: number, systemName: string, payoff: number, scoreBefore: number, scoreAfter: number, ms: number }[]} */
+  const journal = [];
+  // Only record outcomes whose |payoff| exceeds this threshold to avoid
+  // flooding the journal with routine micro-adjustments.
+  const JOURNAL_PAYOFF_THRESHOLD = 0.15;
+
   /** @param {string} systemName */
   function ensure(systemName) {
     V.assertNonEmptyString(systemName, 'systemName');
@@ -34,9 +45,24 @@ adaptiveTrustScores = (() => {
     V.requireFinite(payoff, 'payoff');
     const state = ensure(systemName);
     const p = clamp(payoff, -1, 1);
+    const scoreBefore = state.score;
     state.score = clamp(state.score * 0.9 + p * 0.1, -1, TRUST_CEILING);
     state.samples += 1;
     state.lastMs = beatStartTime * 1000;
+
+    // Journal significant trust changes for post-run forensics.
+    if (m.abs(p) >= JOURNAL_PAYOFF_THRESHOLD) {
+      if (journal.length >= JOURNAL_CAPACITY) journal.splice(0, JOURNAL_EVICT);
+      journal.push({
+        section: sectionIndex,
+        beat: beatCount,
+        systemName,
+        payoff: p,
+        scoreBefore,
+        scoreAfter: state.score,
+        ms: state.lastMs
+      });
+    }
 
     explainabilityBus.emit('trust-update', 'both', {
       systemName,
@@ -83,11 +109,17 @@ adaptiveTrustScores = (() => {
     return snapshot;
   }
 
+  /** @returns {{ section: number, beat: number, systemName: string, payoff: number, scoreBefore: number, scoreAfter: number, ms: number }[]} */
+  function getJournal() {
+    return journal.slice();
+  }
+
   function reset() {
     scoreBySystem.clear();
     decayCycleCount = 0;
+    journal.length = 0;
   }
 
-  return { registerOutcome, getWeight, decayAll, getSnapshot, reset };
+  return { registerOutcome, getWeight, decayAll, getSnapshot, getJournal, reset };
 })();
 crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);

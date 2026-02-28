@@ -113,6 +113,14 @@ systemManifest = (() => {
       // Non-fatal
     }
 
+    // -- Trust journal (significant trust changes across the run) --
+    let trustJournal = [];
+    try {
+      trustJournal = adaptiveTrustScores.getJournal();
+    } catch {
+      // Non-fatal
+    }
+
     return {
       timestamp: new Date().toISOString(),
       config: configSnapshot,
@@ -139,7 +147,8 @@ systemManifest = (() => {
       pipelineNormalizer: _buildPipelineNormalizer(),
       systemDynamics: _buildSystemDynamics(),
       trustPayoffs,
-      trustScoresEndOfRun: trustSnapshot
+      trustScoresEndOfRun: trustSnapshot,
+      trustJournal
     };
   }
 
