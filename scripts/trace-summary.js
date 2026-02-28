@@ -35,6 +35,37 @@ function finalizeMinMax(stat) {
   };
 }
 
+function percentile(sortedValues, p) {
+  if (!Array.isArray(sortedValues) || sortedValues.length === 0) return null;
+  const pos = (sortedValues.length - 1) * p;
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  if (lo === hi) return sortedValues[lo];
+  const frac = pos - lo;
+  return sortedValues[lo] * (1 - frac) + sortedValues[hi] * frac;
+}
+
+function summarizeTail(values, thresholds) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return { p90: null, p95: null, exceedanceRate: {} };
+  }
+  const sorted = values.slice().sort((a, b) => a - b);
+  const exceedanceRate = {};
+  for (let i = 0; i < thresholds.length; i++) {
+    const t = thresholds[i];
+    let count = 0;
+    for (let j = 0; j < values.length; j++) {
+      if (values[j] >= t) count++;
+    }
+    exceedanceRate[t.toFixed(2)] = Number((count / values.length).toFixed(4));
+  }
+  return {
+    p90: Number(percentile(sorted, 0.90).toFixed(4)),
+    p95: Number(percentile(sorted, 0.95).toFixed(4)),
+    exceedanceRate
+  };
+}
+
 function summarizeTrace(entries) {
   const byLayer = { L1: 0, L2: 0, other: 0 };
   const regimeCounts = {};
@@ -44,7 +75,9 @@ function summarizeTrace(entries) {
   const tension = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
   const flicker = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
   const couplingAbs = {};
-  const trustAbs = {};
+  const couplingSeries = {};
+  const trustScoreAbs = {};
+  const trustWeightAbs = {};
 
   let firstBeatKey = null;
   let lastBeatKey = null;
@@ -82,16 +115,36 @@ function summarizeTrace(entries) {
       const key = couplingKeys[j];
       const value = Math.abs(toNum(cm[key], 0));
       if (!couplingAbs[key]) couplingAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+      if (!couplingSeries[key]) couplingSeries[key] = [];
       updateMinMax(couplingAbs[key], value);
+      couplingSeries[key].push(value);
     }
 
     const trust = e.trust && typeof e.trust === 'object' ? e.trust : {};
     const trustKeys = Object.keys(trust);
     for (let j = 0; j < trustKeys.length; j++) {
       const key = trustKeys[j];
-      const value = Math.abs(toNum(trust[key], 0));
-      if (!trustAbs[key]) trustAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
-      updateMinMax(trustAbs[key], value);
+      const entry = trust[key];
+
+      if (entry && typeof entry === 'object') {
+        const score = Math.abs(toNum(entry.score, NaN));
+        if (Number.isFinite(score)) {
+          if (!trustScoreAbs[key]) trustScoreAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustScoreAbs[key], score);
+        }
+
+        const weight = Math.abs(toNum(entry.weight, NaN));
+        if (Number.isFinite(weight)) {
+          if (!trustWeightAbs[key]) trustWeightAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustWeightAbs[key], weight);
+        }
+      } else {
+        const scalar = Math.abs(toNum(entry, NaN));
+        if (Number.isFinite(scalar)) {
+          if (!trustScoreAbs[key]) trustScoreAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustScoreAbs[key], scalar);
+        }
+      }
     }
   }
 
@@ -102,11 +155,31 @@ function summarizeTrace(entries) {
     couplingSummary[key] = finalizeMinMax(couplingAbs[key]);
   }
 
+  const couplingTail = {};
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    couplingTail[key] = summarizeTail(couplingSeries[key], [0.50, 0.70, 0.85]);
+  }
+
+  const trustScoreSummary = {};
+  const trustScoreKeys = Object.keys(trustScoreAbs).sort();
+  for (let i = 0; i < trustScoreKeys.length; i++) {
+    const key = trustScoreKeys[i];
+    trustScoreSummary[key] = finalizeMinMax(trustScoreAbs[key]);
+  }
+
+  const trustWeightSummary = {};
+  const trustWeightKeys = Object.keys(trustWeightAbs).sort();
+  for (let i = 0; i < trustWeightKeys.length; i++) {
+    const key = trustWeightKeys[i];
+    trustWeightSummary[key] = finalizeMinMax(trustWeightAbs[key]);
+  }
+
   const trustSummary = {};
-  const trustKeys = Object.keys(trustAbs).sort();
+  const trustKeys = Object.keys(trustScoreSummary).sort();
   for (let i = 0; i < trustKeys.length; i++) {
     const key = trustKeys[i];
-    trustSummary[key] = finalizeMinMax(trustAbs[key]);
+    trustSummary[key] = trustScoreSummary[key];
   }
 
   return {
@@ -129,6 +202,9 @@ function summarizeTrace(entries) {
       flicker: finalizeMinMax(flicker)
     },
     couplingAbs: couplingSummary,
+    couplingTail,
+    trustScoreAbs: trustScoreSummary,
+    trustWeightAbs: trustWeightSummary,
     trustAbs: trustSummary
   };
 }

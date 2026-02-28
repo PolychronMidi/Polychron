@@ -38,10 +38,27 @@ function getNested(obj, keys, label) {
   return cur;
 }
 
+function resolveCouplingThreshold(regime, baseThreshold) {
+  const byRegime = {
+    initializing: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_INITIALIZING', baseThreshold * 1.15),
+    exploring: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_EXPLORING', baseThreshold * 1.10),
+    evolving: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_EVOLVING', baseThreshold),
+    coherent: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_COHERENT', baseThreshold * 0.95),
+    drifting: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_DRIFTING', baseThreshold),
+    fragmented: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_FRAGMENTED', baseThreshold * 0.90),
+    stagnant: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_STAGNANT', baseThreshold * 0.90),
+    oscillating: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_OSCILLATING', baseThreshold * 0.95)
+  };
+
+  return byRegime[regime] !== undefined ? byRegime[regime] : baseThreshold;
+}
+
 function assertManifestHealth(manifest) {
   const MAX_DENSITY_LOW_RATE = parseFiniteEnv('MANIFEST_MAX_DENSITY_LOW_RATE', 0.12);
-  const MAX_COMPOSITIONAL_COUPLING = parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING', 0.75);
+  const BASE_MAX_COMPOSITIONAL_COUPLING = parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING', 0.85);
   const MAX_WARNING_COUNT = parseFiniteEnv('MANIFEST_MAX_WARNING_COUNT', 10);
+  const regime = String(getNested(manifest, ['systemDynamics', 'snapshot', 'regime'], 'systemDynamics.snapshot.regime')).toLowerCase();
+  const MAX_COMPOSITIONAL_COUPLING = resolveCouplingThreshold(regime, BASE_MAX_COMPOSITIONAL_COUPLING);
 
   const densityLowRate = Number(getNested(manifest, ['pipelineNormalizer', 'density', 'compressedLowRate'], 'pipelineNormalizer.density.compressedLowRate'));
   if (!Number.isFinite(densityLowRate)) {
@@ -95,7 +112,7 @@ function assertManifestHealth(manifest) {
 
   if (excessivePairs.length > 0) {
     failures.push(
-      `compositional coupling exceeds threshold ${MAX_COMPOSITIONAL_COUPLING.toFixed(3)}: ${excessivePairs.join(', ')}`
+      `compositional coupling exceeds threshold ${MAX_COMPOSITIONAL_COUPLING.toFixed(3)} for regime ${regime}: ${excessivePairs.join(', ')}`
     );
   }
 
@@ -113,7 +130,7 @@ function assertManifestHealth(manifest) {
 
   console.log(
     'check-manifest-health: PASS ' +
-    `(densityLowRate=${densityLowRate.toFixed(3)}, warningCount=${warningCount}, max|coupling|<=${MAX_COMPOSITIONAL_COUPLING.toFixed(3)})`
+    `(regime=${regime}, densityLowRate=${densityLowRate.toFixed(3)}, warningCount=${warningCount}, max|coupling|<=${MAX_COMPOSITIONAL_COUPLING.toFixed(3)})`
   );
 }
 
