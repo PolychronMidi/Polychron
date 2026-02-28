@@ -84,17 +84,17 @@ SECTIONS={
 DIVISIONS={
   min: 1,
   max: 15,
-  weights: [1,15,20,25,20,10,10,7,2,2,1]
+  weights: [1,15,20,25,20,10,7,3,1,1]
 };
 SUBDIVS={
   min: 1,
   max: 15,
-  weights: [5,10,20,15,20,10,20,4,2,1,1,1,1]
+  weights: [5,10,20,15,20,10,12,2,1,1]
 };
 SUBSUBDIVS={
   min: 1,
   max: 15,
-  weights: [5,20,30,20,3,5,1,1,1,1]
+  weights: [5,20,30,20,3,2,1]
 };
 DYNAMISM={
   scaleBase: 0.75,

@@ -5,6 +5,8 @@ traceDrain = (() => {
 
   let isTracing = false;
   let fd = null;
+  const _buffer = [];
+  const FLUSH_INTERVAL = 50; // flush every N records to reduce sync I/O calls
 
   function init() {
     if (!process.argv.includes('--trace')) return;
@@ -26,9 +28,13 @@ traceDrain = (() => {
     }
 
     fd = fs.openSync(filepath, 'a');
+  }
 
-    // We should safely close when main loop completes. But since fs.writeSync is blocking
-    // and process finishes, it will close naturally, or we provide a close method.
+  /** Flush buffered records to disk in a single write. */
+  function _flush() {
+    if (_buffer.length === 0 || fd === null) return;
+    fs.writeSync(fd, _buffer.join(''));
+    _buffer.length = 0;
   }
 
   /**
@@ -49,10 +55,12 @@ traceDrain = (() => {
       coupling: data.couplingMatrix
     };
 
-    fs.writeSync(fd, JSON.stringify(payload) + '\n');
+    _buffer.push(JSON.stringify(payload) + '\n');
+    if (_buffer.length >= FLUSH_INTERVAL) _flush();
   }
 
   function shutdown() {
+    _flush();
     if (fd !== null) {
       try {
         fs.closeSync(fd);
