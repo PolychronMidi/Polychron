@@ -83,7 +83,7 @@ harmonicJourneyPlanner = (() => {
 
       // Consecutive-mode guard: if result preserves the current mode and we have
       // room for variety, retry once with a mode-changing move.
-      if (result.mode === currentMode && steps.length > 0 && s < totalSections - 1) {
+      if (result.mode === currentMode && steps.length > 0) {
         const modeChangers = HJ.getMovePoolForPhase('development');
         const retry = modeChangers[ri(modeChangers.length - 1)](currentKey, currentMode);
         if (retry.mode !== currentMode) {

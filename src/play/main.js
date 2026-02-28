@@ -60,6 +60,8 @@ timeStream.setBounds('section', totalSections);
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   timeStream.setPosition('section', sectionIndex);
+  // Snapshot conductor state before section reset for cross-section narrative memory
+  if (sectionIndex > 0) sectionMemory.snapshot();
   crossLayerLifecycleManager.resetSection();
   phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
   mainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
@@ -80,6 +82,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   // Apply harmonic journey stop for this section (sets harmonicContext for L1)
   harmonicJourney.applyToContext(sectionIndex);
+
+  // Seed new section with attenuated state from previous section
+  if (sectionIndex > 0) sectionMemory.seed();
 
   // Phase-driven conductor profile: match the conductor's character to the structural moment
   conductorConfig.applyPhaseProfile();

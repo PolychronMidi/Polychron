@@ -217,9 +217,10 @@ pipelineCouplingManager = (() => {
   }
 
   // --- Self-registration ---
-  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.86, 1.14);
-  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.86, 1.18);
-  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.86, 1.14);
+  // Registered ranges must accommodate SOFT_LIMIT (0.16): bias in [0.84, 1.16]
+  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.84, 1.16);
+  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.18);
+  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.84, 1.16);
   conductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   conductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 

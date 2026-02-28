@@ -265,6 +265,7 @@ fullBootstrap = (() => {
     'tonalAnchorDistanceTracker',
     'conductorIntelligence',
     'conductorDampening',
+    'sectionMemory',
     'coherenceMonitor',
     'signalReader',
     'profileAdaptation',

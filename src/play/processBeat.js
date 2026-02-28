@@ -127,7 +127,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   crossLayerBeatRecord({
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
-    clTension, clCadence, clPhaseSnapshot, clRest, stutterProb, isL1
+    clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1
   });
 
   return { playProb, stutterProb };
