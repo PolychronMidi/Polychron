@@ -50,8 +50,6 @@ require('./conductorIntelligence');
 // @ts-ignore: signal pipeline infrastructure (normalizer, reader, profiler, health, coupling, etc.)
 require('./signal');
 // @ts-ignore: load side-effect module with globals
-require('./globalConductorUpdate');
-// @ts-ignore: load side-effect module with globals
 require('./globalConductor');
 
 // @ts-ignore: load side-effect module with globals (cross-domain analysis helpers)

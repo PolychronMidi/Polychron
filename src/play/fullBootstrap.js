@@ -107,7 +107,6 @@ fullBootstrap = (() => {
     'BPM',
     'PPQ',
     'currentDensity',
-    'update',
     'TUNING_FREQ',
     'LOG',
     'BINAURAL',

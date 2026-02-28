@@ -257,6 +257,7 @@ interface AdaptiveTrustScoresAPI {
   getWeight(systemName: string): number;
   decayAll(rate?: number): void;
   getSnapshot(): Record<string, any>;
+  getJournal(): { section: number; beat: number; systemName: string; payoff: number; scoreBefore: number; scoreAfter: number; ms: number }[];
   reset(): void;
 }
 
@@ -1025,7 +1026,6 @@ declare var priorsHelpers: any;
 declare var BPM: number;
 declare var PPQ: number;
 declare var currentDensity: number;
-declare var update: any;
 declare var TUNING_FREQ: number;
 declare var LOG: any;
 declare var BINAURAL: any;
