@@ -1141,7 +1141,7 @@ declare var PPQ: number;
 declare var currentDensity: number;
 declare var TUNING_FREQ: number;
 declare var LOG: any;
-declare var BINAURAL: any;
+declare var BINAURAL: WeightedRange;
 declare var SILENT_OUTRO_SECONDS: number;
 declare var SECTIONS: WeightedRange;
 declare var PHRASES_PER_SECTION: WeightedRange;

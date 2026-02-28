@@ -33,6 +33,10 @@ const COMPARISON_PATH = path.join(OUTPUT_DIR, 'fingerprint-comparison.json');
 const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
 const SUMMARY_PATH = path.join(OUTPUT_DIR, 'trace-summary.json');
 const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');
+const CSV_PATHS = [
+  path.join(OUTPUT_DIR, 'output1.csv'),
+  path.join(OUTPUT_DIR, 'output2.csv')
+];
 
 // ---- Tolerance bands for comparison ----
 // Each dimension has a tolerance: deviation within this range is "evolved", beyond is "drifted"
@@ -83,6 +87,24 @@ function variance(arr) {
   return arr.reduce((s, v) => s + (v - m) * (v - m), 0) / (arr.length - 1);
 }
 
+// ---- Parse note_on_c events from MIDI CSV files ----
+
+function parseNotesFromCSV(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const pitches = [];
+  for (const line of raw.split(/\r?\n/)) {
+    // CSV format: track, tick, event_type, channel, pitch, velocity
+    const cols = line.split(',');
+    if (cols.length >= 6 && cols[2] && cols[2].trim() === 'note_on_c') {
+      const pitch = toNum(cols[4], -1);
+      const velocity = toNum(cols[5], 0);
+      if (pitch >= 0 && pitch < 128 && velocity > 0) pitches.push(pitch);
+    }
+  }
+  return pitches;
+}
+
 // ---- Compute fingerprint from trace data ----
 
 function computeFingerprint() {
@@ -99,27 +121,23 @@ function computeFingerprint() {
     }).filter(Boolean);
   }
 
-  // Note counts from manifest
-  const noteCountL1 = manifest && manifest.output && manifest.output.L1 ? toNum(manifest.output.L1.noteCount, 0) : 0;
-  const noteCountL2 = manifest && manifest.output && manifest.output.L2 ? toNum(manifest.output.L2.noteCount, 0) : 0;
-
-  // Pitch distribution entropy from trace
+  // Note counts and pitch distribution from output CSV files
   const pitchCounts = new Array(128).fill(0);
-  for (const e of entries) {
-    if (e.notes && Array.isArray(e.notes)) {
-      for (const n of e.notes) {
-        const midi = toNum(n.midi || n.note || n.pitch, -1);
-        if (midi >= 0 && midi < 128) pitchCounts[midi]++;
-      }
-    }
+  const notesPerLayer = [];
+  for (const csvPath of CSV_PATHS) {
+    const pitches = parseNotesFromCSV(csvPath);
+    notesPerLayer.push(pitches.length);
+    for (const p of pitches) pitchCounts[p]++;
   }
+  const noteCountL1 = notesPerLayer[0] || 0;
+  const noteCountL2 = notesPerLayer[1] || 0;
   const pitchEntropy = entropy(pitchCounts);
 
   // Density variance across beats
   const densities = [];
   for (const e of entries) {
     const snap = e.snap || {};
-    const d = toNum(snap.compositeIntensity || snap.currentDensity, NaN);
+    const d = toNum(snap.compositeIntensity || snap.densityMultiplier, NaN);
     if (Number.isFinite(d)) densities.push(d);
   }
   const densityVariance = variance(densities);

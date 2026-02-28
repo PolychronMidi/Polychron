@@ -121,10 +121,11 @@ function buildMap() {
   const moduleNames = new Set();
 
   // From density/tension/flicker attributions
-  const attributionSources = ['densityAttribution', 'tensionAttribution', 'flickerAttribution'];
-  for (const key of attributionSources) {
-    const attr = manifest[key];
-    if (attr && attr.contributions) {
+  const attributionKeys = ['density', 'tension', 'flicker'];
+  const attribution = manifest.attribution || {};
+  for (const key of attributionKeys) {
+    const attr = attribution[key];
+    if (attr && Array.isArray(attr.contributions)) {
       for (const c of attr.contributions) {
         moduleNames.add(c.name);
       }
@@ -132,11 +133,9 @@ function buildMap() {
   }
 
   // From conductorIntelligence registry
-  if (manifest.conductorIntelligence) {
-    const ci = manifest.conductorIntelligence;
-    if (ci.moduleNames) {
-      for (const n of ci.moduleNames) moduleNames.add(n);
-    }
+  const ci = manifest.registries && manifest.registries.conductorIntelligence;
+  if (ci && ci.moduleNames) {
+    for (const n of ci.moduleNames) moduleNames.add(n);
   }
 
   // Build module entries
@@ -160,13 +159,12 @@ function buildMap() {
 
     // Find bias values from manifest attributions
     const biasValues = {};
-    for (const key of attributionSources) {
-      const attr = manifest[key];
-      if (attr && attr.contributions) {
+    for (const key of attributionKeys) {
+      const attr = attribution[key];
+      if (attr && Array.isArray(attr.contributions)) {
         const c = attr.contributions.find(x => x.name === name);
         if (c) {
-          const pipelineKey = key.replace('Attribution', '');
-          biasValues[pipelineKey] = { raw: c.raw, clamped: c.clamped };
+          biasValues[key] = { raw: c.raw, clamped: c.clamped };
         }
       }
     }
