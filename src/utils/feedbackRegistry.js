@@ -71,6 +71,7 @@ feedbackRegistry = (() => {
   }
 
   function getSnapshot() {
+    /** @type {{ [name: string]: { source: string, target: string, amplitude: number, phase: number, dampening: number } }} */
     const snap = {};
     for (const [name, loop] of loops.entries()) {
       snap[name] = {

@@ -87,7 +87,9 @@ export default [
       'local/no-direct-signal-read': 'error',
       'local/validator-name-matches-filename': 'error',
       'local/case-conventions': 'error',
-      'local/no-non-ascii': 'error'
+      'local/no-non-ascii': 'error',
+      'local/no-unregistered-feedback-loop': 'error',
+      'local/no-direct-conductor-state-from-crosslayer': 'error'
     },
 
   },

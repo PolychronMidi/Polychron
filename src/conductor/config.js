@@ -1,36 +1,50 @@
 // config.js - Central hub of tunable controls and profile tables.
 // exempt from target file length limits due to its role as a centralized config repository.
+//
+// -- Sensitivity Tiers --
+// Every constant is annotated with a tier indicating its impact on emergent behavior.
+// @tier-1 : Feedback loop constants (documented in TUNING_MAP.md). Changing these
+//           alters the fundamental character of composition output. Understand the
+//           full TUNING_MAP and cross-constant invariants before touching.
+// @tier-2 : Musical texture constants. Changes affect timbral quality, rhythmic feel,
+//           harmonic character, but do not risk system stability.
+// @tier-3 : Structural defaults and cosmetic settings. Safe to experiment with freely.
 
-primaryInstrument = getMidiValue('program', 'glockenspiel');
-secondaryInstrument = getMidiValue('program', 'music box');
-otherInstruments=[9,10,11,12,13,14,79,89,97,98,98,98,104,112,114,119,120,121];
-bassInstrument = getMidiValue('program', 'Acoustic Bass');
-bassInstrument2 = getMidiValue('program', 'Synth Bass 2');
-otherBassInstruments=[32,33,34,35,36,37,38,39,40,41,43,44,45,46,48,49,50,51,89,98,98,98,98,98,98,98,98,98,98];
-drumSets=[0,8,16,24,25,32,40,48,127];
-LOG='section,phrase,measure';
-TUNING_FREQ=432;
+/** @tier-3 */ primaryInstrument = getMidiValue('program', 'glockenspiel');
+/** @tier-3 */ secondaryInstrument = getMidiValue('program', 'music box');
+/** @tier-3 */ otherInstruments=[9,10,11,12,13,14,79,89,97,98,98,98,104,112,114,119,120,121];
+/** @tier-3 */ bassInstrument = getMidiValue('program', 'Acoustic Bass');
+/** @tier-3 */ bassInstrument2 = getMidiValue('program', 'Synth Bass 2');
+/** @tier-3 */ otherBassInstruments=[32,33,34,35,36,37,38,39,40,41,43,44,45,46,48,49,50,51,89,98,98,98,98,98,98,98,98,98,98];
+/** @tier-3 */ drumSets=[0,8,16,24,25,32,40,48,127];
+/** @tier-3 */ LOG='section,phrase,measure';
+/** @tier-2 */ TUNING_FREQ=432;
+/** @tier-2 - binaural beat frequency range (Hz) */
 BINAURAL={
   min: 8,
   max: 12
 };
-PPQ=30000;
-BPM=72;
+/** @tier-3 - MIDI resolution (pulses per quarter note) */ PPQ=30000;
+/** @tier-2 - tempo (beats per minute) - affects streak timing in profileAdaptation */ BPM=72;
+/** @tier-2 - polyrhythm numerator range and weight distribution */
 NUMERATOR={
   min: 2,
   max: 20,
   weights: [10,20,30,40,20,10,5,1]
 };
+/** @tier-2 - polyrhythm denominator range and weight distribution */
 DENOMINATOR={
   min: 3,
   max: 20,
   weights: [10,20,30,40,20,10,5,1]
 };
+/** @tier-2 - octave range and weight distribution */
 OCTAVE={
   min: 0,
   max: 9,
   weights: [11,27,33,35,33,35,30,5,2]
 };
+/** @tier-2 - per-beat polyphonic voice count */
 BEAT_VOICES = {
   min: 1,
   max: 5,
@@ -38,19 +52,19 @@ BEAT_VOICES = {
 };
 
 // Per-unit voice limits (child units independent of parent unit counts)
-DIV_VOICES = {
+/** @tier-2 */ DIV_VOICES = {
   min: 1,
   max: 3,
   weights: [60,10,1]
 };
 
-SUBDIV_VOICES = {
+/** @tier-2 */ SUBDIV_VOICES = {
   min: 1,
   max: 2,
   weights: [50,1]
 };
 
-SUBSUBDIV_VOICES = {
+/** @tier-2 */ SUBSUBDIV_VOICES = {
   min: 1,
   max: 2,
   weights: [70,1]
@@ -59,13 +73,14 @@ SUBSUBDIV_VOICES = {
 // Sibling voice limits per unit level - max unique pitch classes across all siblings.
 // Once the sibling limit is reached, remaining siblings reuse from existing PC pool.
 // Defaults are roughly 2-3x the per-unit voice count for coherent sibling groups.
-BEAT_SIBLING_VOICES = { min: 3, max: 12, weights: [5, 10, 20, 25, 15, 10, 5, 3, 2, 1] };
-DIV_SIBLING_VOICES = { min: 2, max: 8, weights: [10, 20, 25, 15, 8, 3, 1] };
-SUBDIV_SIBLING_VOICES = { min: 2, max: 6, weights: [15, 25, 20, 10, 3] };
-SUBSUBDIV_SIBLING_VOICES = { min: 1, max: 4, weights: [20, 25, 10, 3] };
+/** @tier-2 */ BEAT_SIBLING_VOICES = { min: 3, max: 12, weights: [5, 10, 20, 25, 15, 10, 5, 3, 2, 1] };
+/** @tier-2 */ DIV_SIBLING_VOICES = { min: 2, max: 8, weights: [10, 20, 25, 15, 8, 3, 1] };
+/** @tier-2 */ SUBDIV_SIBLING_VOICES = { min: 2, max: 6, weights: [15, 25, 20, 10, 3] };
+/** @tier-2 */ SUBSUBDIV_SIBLING_VOICES = { min: 1, max: 4, weights: [20, 25, 10, 3] };
 
 // Backwards-compatibility alias for older code that still references VOICES
 VOICES = BEAT_VOICES;
+/** @tier-2 - section types with structural weight, phrases, bpm, dynamics */
 SECTION_TYPES=[
   { type: 'intro', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: .9, dynamics: 'pp', motif: [0,2,4,7] },
   { type: 'exposition', weight: 3, phrases: { min: 2, max: 3 }, bpmScale: 1, dynamics: 'mf', motif: [0,4,7,12] },
@@ -73,35 +88,40 @@ SECTION_TYPES=[
   { type: 'conclusion', weight: 2, phrases: { min: 1, max: 2 }, bpmScale: .95, dynamics: 'p', motif: [0,5,7,12] },
   { type: 'coda', weight: 1, phrases: { min: 1, max: 1 }, bpmScale: .9, dynamics: 'pp', motif: [0,7,12] }
 ];
+/** @tier-2 - phrases per section range */
 PHRASES_PER_SECTION={
   min: 1,
   max: 3
 };
+/** @tier-2 - section count range */
 SECTIONS={
   min: 3,
   max: 5
 };
+/** @tier-2 - beat division count range and weight distribution */
 DIVISIONS={
   min: 1,
   max: 15,
   weights: [1,15,20,25,20,10,7,3,1,1]
 };
-SUBDIVS={
+/** @tier-2 */ SUBDIVS={
   min: 1,
   max: 15,
   weights: [5,10,20,15,20,10,12,2,1,1]
 };
-SUBSUBDIVS={
+/** @tier-2 */ SUBSUBDIVS={
   min: 1,
   max: 15,
   weights: [5,20,30,20,3,2,1]
 };
+/** @tier-1 - dynamism engine parameters - affects play/stutter probability scaling */
 DYNAMISM={
   scaleBase: 0.75,
   scaleRange: 0.5,
   playProb: { start: 0.15, mid: 0.2 },
   stutterProb: { end: 0.4, mid: 0.2 }
 };
+/** @tier-2 - composer family weights and member types */
 COMPOSER_FAMILIES={
   diatonicCore: {
     weight: 3,
@@ -124,11 +144,13 @@ COMPOSER_FAMILIES={
     types: ['measure', 'harmonicRhythm', 'tensionRelease', 'melodicDevelopment']
   }
 };
+/** @tier-2 - per-channel stutter probability */
 STUTTER_PROFILES={
   source: { perProb: 0.07 },
   reflection: { perProb: 0.2 },
   bass: { perProb: 0.7 }
 };
+/** @tier-2 - stutter velocity ranges per channel */
 STUTTER_VELOCITY_RANGES = {
   source: { primary: [0.3, 0.7], secondary: [0.45, 0.8] },
   reflection: { primary: [0.25, 0.65], secondary: [0.4, 0.75] },
@@ -137,6 +159,7 @@ STUTTER_VELOCITY_RANGES = {
 
 // Cross-modulation rules for stutter - CC interactions. Values are multipliers or biases
 // sampled by stutterNotes when beatContext.mod provides per-channel CC intensities.
+/** @tier-2 - stutter cross-modulation rules */
 STUTTER_CROSSMOD_RULES = {
   // pan intensity increases chance of octave motion, widens shift range, and can increase stutter rate
   pan: { stutterProbScale: 1.25, shiftRangeBias: 1, stutterRateScale: 1.25 },
@@ -147,6 +170,7 @@ STUTTER_CROSSMOD_RULES = {
 };
 
 // Presets and directive-friendly defaults for higher-level coherence directives
+/** @tier-2 - stutter presets for coherence directives */
 STUTTER_PRESETS = {
   default: {
     crossMod: { pan: { stutterRateScale: 1.25, stutterProbScale: 1.2, shiftRangeBias: 1 }, fade: { velocityScaleBias: 0.12 }, fx: { shiftRangeScale: 1.1 } },
@@ -167,6 +191,7 @@ STUTTER_PRESETS = {
     coherence: { enabled: true, intensity: 0.5 }
   }
 };
+/** @tier-2 - noise generator profiles by intensity level */
 NOISE_PROFILES = {
   micro: {
     generatorX: 'simplex',
@@ -200,6 +225,7 @@ NOISE_PROFILES = {
   }
 };
 
+/** @tier-2 - voice manager parameters */
 VOICE_MANAGER = {
   voiceIndependenceDefault: 0.5, // 0-1 scale (contrapuntal vs homophonic)
   arcDensityChance: 0.5,         // Probability of applying arc density multiplier
@@ -208,12 +234,14 @@ VOICE_MANAGER = {
 };
 
 // Modal borrowing options for ModalInterchangeComposer (parallel mode relationships)
+/** @tier-3 - modal borrowing relationship table */
 MODAL_BORROWING = {
   major: ['minor', 'dorian', 'mixolydian', 'lydian'],
   minor: ['major', 'dorian', 'phrygian', 'locrian']
 };
 
 // Centralized profile definitions (authoritative config; modules should delegate here)
+/** @tier-2 - voice velocity profiles */
 VOICE_PROFILES = {
   default: { baseVelocity: 90 },
   soft: { baseVelocity: 70 },
@@ -229,6 +257,7 @@ VOICE_PROFILES = {
   }
 };
 
+/** @tier-2 - chord voicing profiles */
 CHORD_PROFILES = {
   pop: { voices: 4, velocityScale: 1, inversion: 0, baseVelocity: 100, useCorpusHarmonicPriors: false },
   jazz: { voices: 4, velocityScale: 0.9, inversion: 1, baseVelocity: 90, useCorpusHarmonicPriors: false },
@@ -238,6 +267,7 @@ CHORD_PROFILES = {
   corpusAdaptive: { voices: 4, velocityScale: 0.95, inversion: 1, baseVelocity: 92, useCorpusHarmonicPriors: true, corpusHarmonicStrength: 0.62 }
 };
 
+/** @tier-2 - motif expression profiles */
 MOTIF_PROFILES = {
   default: { velocityScale: 1, timingOffset: 0 },
   sparse: { velocityScale: 0.8, timingOffset: 0.1 },
@@ -246,6 +276,7 @@ MOTIF_PROFILES = {
   legato: { velocityScale: 0.9, timingOffset: 0.06 }
 };
 
+/** @tier-2 - per-unit-level motif density profiles */
 MOTIF_UNIT_PROFILES = {
   measure: { density: 0.7, style: 'random', intervalDensity: 0.7, velocityScale: 1.0 },
   beat: { density: 0.6, style: 'random', intervalDensity: 0.6, velocityScale: 0.95 },
@@ -254,6 +285,7 @@ MOTIF_UNIT_PROFILES = {
   subsubdiv: { density: 0.3, style: 'random', intervalDensity: 0.3, velocityScale: 0.8 }
 };
 
+/** @tier-2 - rhythmic feel profiles */
 RHYTHM_PROFILES = {
   straight: { swing: 0, velocityScale: 1 },
   swung: { swing: 0.2, velocityScale: 1 },
@@ -263,12 +295,14 @@ RHYTHM_PROFILES = {
   corpusAdaptive: { swing: 0.12, velocityScale: 1, useCorpusRhythmPriors: true, corpusRhythmStrength: 0.72 }
 };
 
+/** @tier-3 - fallback stutter cross-mod rules when no directives active */
 STUTTER_CROSSMOD_RULES_FALLBACK = {
   pan: { stutterProbScale: 1.0, shiftRangeBias: 0, stutterRateScale: 1.0 },
   fade: { velocityScaleBias: 0 },
   fx: { shiftRangeScale: 1.0 }
 };
 
+/** @tier-3 - stutter directive system defaults */
 STUTTER_DIRECTIVE_DEFAULTS = {
   coherence: { enabled: false, intensity: 0.8, keyPrefix: 'stutter' },
   phase: { left: 0, right: 0.5, center: 0 },
@@ -282,6 +316,7 @@ STUTTER_DIRECTIVE_DEFAULTS = {
 // CONDUCTOR_DYNAMICS_CONTROLS is defined in conductorDynamicsControls.js to
 // avoid load-order cycles; it is intentionally required earlier by index.js.
 
+/** @tier-1 - main loop controls including trust payoff table (interacts with adaptiveTrustScores) */
 MAIN_LOOP_CONTROLS = {
   phraseFamilyBias: {
     phaseAffinity: {
@@ -315,6 +350,7 @@ MAIN_LOOP_CONTROLS = {
   }
 };
 
+/** @tier-2 - noise profile selection per compositional phase */
 CONDUCTOR_NOISE_PROFILE_BY_PHASE = {
   intro: 'micro',
   opening: 'subtle',
@@ -329,6 +365,7 @@ CONDUCTOR_NOISE_PROFILE_BY_PHASE = {
 
 // 1. Centralized FX CC defaults by channel group.
 // Keys match the `effectNum` used in setBalanceAndFX.js and can be tuned per group.
+/** @tier-3 - MIDI CC default ranges per channel group */
 FX_CC_DEFAULTS = {
   source: {
     1: { min: 0, max: 60, conditionMin: 0, conditionMax: 10 },
@@ -390,6 +427,7 @@ FX_CC_DEFAULTS = {
 };
 
 // 2. Centralized Noise Generator Registry: Defines available noise types and their implementation keys.
+/** @tier-3 - noise generator type registry */
 NOISE_GENERATOR_REGISTRY = {
   simplex: 'simplex',
   perlin: 'perlin',
@@ -402,6 +440,7 @@ NOISE_GENERATOR_REGISTRY = {
 };
 
 // 4. Centralized Rhythm Patterns: Defines standard patterns and their weights/generation methods.
+/** @tier-2 - rhythm pattern definitions with per-level weights */
 RHYTHM_PATTERNS = {
   binary: { weights: [2, 3, 1], method: 'binary', args: (length) => [length] },
   hex: { weights: [2, 3, 1], method: 'hex', args: (length) => [length] },
@@ -421,6 +460,7 @@ RHYTHM_PATTERNS = {
 };
 
 // Centralized per-level rhythm key pools used by getRhythm selection.
+/** @tier-2 - available rhythm pattern keys per beat subdivision level */
 RHYTHM_PATTERN_POOLS = {
   beat: ['binary', 'hex', 'onsets', 'random', 'euclid', 'rotate', 'morph'],
   div: ['binary', 'hex', 'onsets', 'onsets2', 'random', 'random2', 'euclid', 'rotate', 'morph'],
@@ -429,6 +469,7 @@ RHYTHM_PATTERN_POOLS = {
 };
 
 // Centralized drum map (note + velocity range) used by rhythm/drummer.
+/** @tier-3 - drum instrument MIDI note and velocity mappings */
 DRUM_MAP = {
   snare1: { note: 31, velocityRange: [99, 111] },
   snare2: { note: 33, velocityRange: [99, 111] },
@@ -457,6 +498,7 @@ DRUM_MAP = {
 };
 
 // 5. Centralized Phrase Arc Curves: Defines the shape functions for intensity/register over a phrase.
+/** @tier-2 - phrase-level arc shape functions (register, density, dynamism) */
 PHRASES_ARC_CURVES = {
   'arch': {
     register: (p) => Math.sin(Number(p) * Math.PI) * 12 - 6,
@@ -480,7 +522,7 @@ PHRASES_ARC_CURVES = {
   }
 };
 
-SILENT_OUTRO_SECONDS=5;
+/** @tier-3 */ SILENT_OUTRO_SECONDS=5;
 
 // -- Deep-freeze all config objects ------------------------------------------
 // Config globals are set once and never mutated at runtime. Freezing them turns

@@ -158,6 +158,176 @@ function mapProviders(bootOrder, globalSet) {
   return { globalToFile, fileToGlobals, reassigned };
 }
 
+// ---- Scan consumed globals at LOAD TIME only ----
+// Only top-level code runs during require(). References inside function
+// bodies, method definitions, and arrow-function expressions are deferred
+// to runtime — by which point every global has been assigned. We track
+// brace depth: depth 0 = top-level, depth >= 1 = inside a function body.
+// IIFE wrappers (the `= (() => {` / `= (function() {` pattern used by
+// every Polychron module) count as load-time because they execute
+// immediately, so we do NOT increment depth for the opening brace of an
+// IIFE. We detect IIFEs by looking for `(() => {` or `(function` before
+// the opening brace.
+
+function scanConsumed(filePath, globalSet) {
+  const src = fs.readFileSync(filePath, 'utf8');
+  const consumed = new Set();
+  const lines = src.split(/\r?\n/);
+
+  let depth = 0;          // function nesting depth (0 = top-level / IIFE body)
+  let iifeDepthOffset = 0; // how many IIFE braces we're inside (don't count)
+
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const trimmed = line.trimStart();
+
+    // Skip pure comment lines
+    if (trimmed.startsWith('//')) continue;
+
+    // Track brace depth, distinguishing IIFE openers from function openers.
+    // Scan character-by-character (ignoring string literals and comments).
+    let inString = false;
+    let stringChar = '';
+    let inLineComment = false;
+    let inBlockComment = false;
+
+    for (let ci = 0; ci < line.length; ci++) {
+      const ch = line[ci];
+      const next = line[ci + 1] || '';
+
+      // Block comment handling
+      if (inBlockComment) {
+        if (ch === '*' && next === '/') { inBlockComment = false; ci++; }
+        continue;
+      }
+      if (inLineComment) continue;
+      if (ch === '/' && next === '/') { inLineComment = true; continue; }
+      if (ch === '/' && next === '*') { inBlockComment = true; ci++; continue; }
+
+      // String literal handling
+      if (inString) {
+        if (ch === '\\') { ci++; continue; }
+        if (ch === stringChar) inString = false;
+        continue;
+      }
+      if (ch === '\'' || ch === '"' || ch === '`') {
+        inString = true;
+        stringChar = ch;
+        continue;
+      }
+
+      // Brace tracking
+      if (ch === '{') {
+        // Check if this opens an IIFE body: look back for `(() => ` or `(function`
+        const preceding = line.slice(0, ci);
+        const isIIFE = /\(\s*\(\s*\)\s*=>\s*$/.test(preceding) ||
+                        /\(\s*function\s*\w*\s*\([^)]*\)\s*$/.test(preceding);
+        if (isIIFE) {
+          iifeDepthOffset++;
+        } else {
+          depth++;
+        }
+      } else if (ch === '}') {
+        if (iifeDepthOffset > 0) {
+          // Could be closing an IIFE brace — heuristic: if depth is 0, it's
+          // an IIFE closer, otherwise it's a regular function closer.
+          if (depth === 0) {
+            iifeDepthOffset--;
+          } else {
+            depth--;
+          }
+        } else {
+          depth = Math.max(0, depth - 1);
+        }
+      }
+    }
+
+    // Only scan identifiers at load-time depth (top-level or inside IIFE body)
+    if (depth > 0) continue;
+
+    // Skip require lines
+    if (/\brequire\s*\(/.test(line)) continue;
+
+    const idRe = /\b([A-Za-z_$][\w$]*)\b/g;
+    let m;
+    while ((m = idRe.exec(line)) !== null) {
+      if (globalSet.has(m[1])) consumed.add(m[1]);
+    }
+  }
+  return consumed;
+}
+
+// ---- Derive subsystem from relative path ----
+
+function subsystemOf(relPath) {
+  // src/<subsystem>/... → subsystem
+  const match = relPath.match(/^src\/([^/]+)\//);
+  return match ? match[1] : null;
+}
+
+// ---- Intra-subsystem dependency ordering check ----
+// For each subsystem, verify that every global consumed by a module
+// that is provided within the SAME subsystem was provided by an
+// earlier-loaded file.
+
+function checkIntraSubsystemOrder(bootOrder, fileToGlobals, globalToFile, globalSet) {
+  const violations = [];
+
+  // Build: for each file, its boot index
+  const bootIndex = new Map();
+  for (let i = 0; i < bootOrder.length; i++) bootIndex.set(bootOrder[i], i);
+
+  // Build: for each file, the set of globals it consumes
+  const fileConsumes = new Map();
+  for (const filePath of bootOrder) {
+    fileConsumes.set(filePath, scanConsumed(filePath, globalSet));
+  }
+
+  // Group files by subsystem
+  const subsystems = new Map();
+  for (const filePath of bootOrder) {
+    const sub = subsystemOf(rel(filePath));
+    if (!sub) continue;
+    if (!subsystems.has(sub)) subsystems.set(sub, []);
+    subsystems.get(sub).push(filePath);
+  }
+
+  // For each subsystem, check that consumed intra-subsystem globals
+  // were provided by earlier files
+  for (const [sub, files] of subsystems) {
+    // Globals provided by this subsystem
+    const subsystemProviders = new Map();
+    for (const f of files) {
+      const provides = fileToGlobals.get(f) || [];
+      for (const g of provides) subsystemProviders.set(g, f);
+    }
+
+    for (const filePath of files) {
+      const consumed = fileConsumes.get(filePath);
+      for (const g of consumed) {
+        const provider = subsystemProviders.get(g);
+        if (!provider) continue; // provided by another subsystem — OK
+        if (provider === filePath) continue; // self-provided — OK
+
+        const providerIdx = bootIndex.get(provider);
+        const consumerIdx = bootIndex.get(filePath);
+        if (providerIdx > consumerIdx) {
+          violations.push({
+            subsystem: sub,
+            consumer: rel(filePath),
+            provider: rel(provider),
+            global: g,
+            consumerOrder: consumerIdx + 1,
+            providerOrder: providerIdx + 1
+          });
+        }
+      }
+    }
+  }
+
+  return { violations, subsystemCount: subsystems.size };
+}
+
 // ---- Helpers ----
 
 function rel(absPath) {
@@ -174,6 +344,11 @@ function verify() {
   const mapped   = globalToFile.size;
   const orphaned = [...globalSet].filter(n => !globalToFile.has(n));
 
+  // Phase 2: intra-subsystem ordering
+  const { violations, subsystemCount } = checkIntraSubsystemOrder(
+    bootOrder, fileToGlobals, globalToFile, globalSet
+  );
+
   // Write forensic output with metadata envelope
   const output = {
     meta: {
@@ -182,7 +357,9 @@ function verify() {
       globalsDeclared: globalSet.size,
       globalsMapped: mapped,
       orphaned: orphaned,
-      reassigned: reassigned
+      reassigned: reassigned,
+      subsystemCount: subsystemCount,
+      intraSubsystemViolations: violations.length
     },
     bootOrder: bootOrder.map(function(f, i) {
       return {
@@ -190,7 +367,8 @@ function verify() {
         file: rel(f),
         provides: fileToGlobals.get(f) || []
       };
-    })
+    }),
+    intraSubsystemViolations: violations
   };
 
   fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
@@ -198,7 +376,8 @@ function verify() {
 
   console.log(
     'verify-boot-order: ' + bootOrder.length + ' files, ' +
-    mapped + '/' + globalSet.size + ' globals mapped -> output/boot-order.json'
+    mapped + '/' + globalSet.size + ' globals mapped, ' +
+    subsystemCount + ' subsystems checked -> output/boot-order.json'
   );
 
   if (orphaned.length) {
@@ -206,6 +385,21 @@ function verify() {
       'verify-boot-order: ' + orphaned.length + ' runtime-assigned globals (no static provider): ' +
       orphaned.slice(0, 8).join(', ') + (orphaned.length > 8 ? ' ...' : '')
     );
+  }
+
+  if (violations.length) {
+    console.log(
+      'verify-boot-order: ' + violations.length + ' intra-subsystem ordering violation(s):'
+    );
+    for (const v of violations.slice(0, 10)) {
+      console.log(
+        '  [' + v.subsystem + '] ' + v.consumer + ' (#' + v.consumerOrder +
+        ') reads "' + v.global + '" before ' + v.provider + ' (#' + v.providerOrder + ') provides it'
+      );
+    }
+    if (violations.length > 10) {
+      console.log('  ... and ' + (violations.length - 10) + ' more');
+    }
   }
 }
 
