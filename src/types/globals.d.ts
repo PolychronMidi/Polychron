@@ -69,6 +69,7 @@ interface ConductorIntelligenceAPI {
   collectStateFields(): Record<string, unknown>;
   getContributorNames(): string[];
   getCounts(): { density: number; tension: number; flicker: number; recorders: number; stateProviders: number };
+  getRegistryNames(): { density: string[]; tension: string[]; flicker: string[]; recorders: string[]; stateProviders: string[] };
   getSignalSnapshot(): Readonly<SignalSnapshot>;
 }
 
@@ -1551,6 +1552,11 @@ declare var formatTime: any;
 declare var logUnit: any;
 declare var pushMultiple: any;
 declare var grandFinale: any;
+declare var traceDrain: {
+  init(): void;
+  record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
+  shutdown(): void;
+};
 declare var coherenceVerdicts: {
   compute(manifest: any, attribution: { density: any; tension: any; flicker: any }): Array<{ severity: string; area: string; finding: string }>;
 };
