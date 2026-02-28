@@ -155,6 +155,8 @@ globalConductor = (() => {
       tension: derivedTension,
       excursion,
       harmonicRhythm,
+      flicker: registryFlickerMod,
+      flickerAmplitude,
       emissionRatio,
       compositeIntensity: resolved.composite,
       playProb: playOut,
