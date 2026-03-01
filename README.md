@@ -57,7 +57,7 @@ TypeScript (^5.9.3), ESLint (^9.0.0), and related tooling are dev dependencies. 
 
 Polychron does not hardcode musical structure — it steers it. The system generates compositions through a three-layer nervous system:
 
-**Conductor** — 42 intelligence modules cast multiplicative bias votes for density, tension, and flicker. Products are dampened, normalized, and committed to state. `signalReader` is the ONE read API for all consumers.
+**Conductor** — 42 intelligence modules cast multiplicative bias votes for density, tension, and flicker. Products are dampened, normalized, and committed to state. 11 hypermeta self-calibrating controllers auto-tune constants that previously required manual adjustment; a meta-controller watchdog detects and resolves inter-controller conflicts. `signalReader` is the ONE read API for all consumers.
 
   v getSignals() / signalReader.*()          ^ explainabilityBus (diagnostic only)
 
@@ -111,7 +111,7 @@ Core infrastructure consumed by every other subsystem.
 - **`instrumentation`** — Runtime instrumentation and timing
 - **`modeQualityMap`** — Canonical mode-to-quality map shared by priors modules
 - **`priorsHelpers`** — `resolvePhase`, `resolveWeightOrDefault`, `weightedAdjustment`
-- **`moduleLifecycle`** — Scoped-reset registry (`create(ownerName)` → reset by scope: `all`/`section`/`phrase`)
+- **`moduleLifecycle`** — Scoped-reset registry (`create(ownerName)` - reset by scope: `all`/`section`/`phrase`)
 - **`beatCache`** — Deduplication — `create(fn)` ensures at most one evaluation per beat
 - **`feedbackRegistry`** — Coordinates closed-loop controllers to prevent catastrophic resonance
 - **`closedLoopController`** — Base controller abstraction for feedback-enrolled modules
@@ -122,7 +122,7 @@ Core infrastructure consumed by every other subsystem.
 
 ### `src/conductor/` — Intelligence & Signal (127 files across 10 subdirectories)
 
-The brainof the system. 42 modules register with `conductorIntelligence`, contributing 29 density biases, 19 tension biases, 14 flicker modifiers, 29 recorders, and 56 state providers. Organized into specialized domains:
+The brain of the system. 42 modules register with `conductorIntelligence`, contributing 30 density biases, 20 tension biases, 14 flicker modifiers, 29 recorders, and 56 state providers. Organized into specialized domains:
 
 **Top-level orchestration:**
 
@@ -130,7 +130,7 @@ The brainof the system. 42 modules register with `conductorIntelligence`, contri
 - **`globalConductor`** — Orchestrates system-wide coherence — motif density, stutter, play probabilities
 - **`globalConductorUpdate`** — Per-beat collection of all registered bias products
 - **`conductorState`** — Committed signal state snapshot
-- **`conductorDampening`** — Progressive deviation dampening — regime-aware gravity + dimensionality-aware strength
+- **`conductorDampening`** — Progressive deviation dampening — regime-aware gravity + dimensionality-aware strength + centroid controller (density/tension only) + flicker range elasticity (3x accelerated) + meta-telemetry with watchdog feed
 - **`dynamismEngine`** / **`dynamismPulse`** — Dynamic energy tracking and pulse detection
 - **`PhraseArcManager`** / **`phraseArcProfiler`** — Phrase-level arc shaping (attack/sustain/release)
 - **`textureBlender`** — Blends texture signals across layers
@@ -145,7 +145,7 @@ The brainof the system. 42 modules register with `conductorIntelligence`, contri
 - **`melodic/`** (15) — Ambitus migration, counterpoint motion, interval balance, melodic contour, register migration, tessiture pressure, thematic recall, voice-leading efficiency
 - **`rhythmic/`** (15) — Accent patterns, attack density, onset regularity, rhythmic complexity, syncopation density, temporal proportions
 - **`texture/`** (20) — Articulation profiling, layer coherence, motivic density, orchestration weight, repetition fatigue, rest density, structural form, textural gradients, voice density
-- **`signal/`** (16 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry)
+- **`signal/`** (17 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry)
 - **`journey/`** (5) — Harmonic journey planning — key/mode selection across sections
 - **`profiles/`** (15) — Conductor config profiles (default, minimal, atmospheric, explosive, restrained, rhythmic drive) + merging/validation/tuning
 
@@ -258,13 +258,13 @@ The top-level composition engine.
 
 Each pipeline collects multiplicative bias votes from registered modules:
 
-- **Density** (29 biases) — Controls note output probability
-- **Tension** (19 biases) — Shapes harmonic tension and resolution
+- **Density** (30 biases) — Controls note output probability
+- **Tension** (20 biases) — Shapes harmonic tension and resolution
 - **Flicker** (14 modifiers) — Drives rhythmic variation and stutter
 
 All three are dampened + normalized.
 
-Biases are multiplied together (not summed), dampened by `conductorDampening` (regime-aware gravity), normalized by `pipelineNormalizer` (adaptive soft-envelope), and decorrelated by `pipelineCouplingManager` (self-tuning gain nudges when correlation exceeds targets).
+Biases are multiplied together (not summed), dampened by `conductorDampening` (regime-aware gravity + centroid correction + flicker range elasticity), normalized by `pipelineNormalizer` (adaptive soft-envelope), and decorrelated by `pipelineCouplingManager` (self-calibrating targets + adaptive coherent relaxation + gain budget management).
 
 ### Feedback Loops
 
@@ -274,9 +274,25 @@ Five closed-loop feedback systems maintain compositional coherence:
 - **Entropy steering** (`entropyRegulator`) — Steers cross-layer systems toward a section-position-driven entropy target. Scale clamp [0.3, 2.0].
 - **Condition hints** (`profileAdaptation`) — Detects sustained low-density / high-tension / flat-flicker streaks; advisory hints for `conductorConfig`. Streak trigger at 6 beats.
 - **Trust governance** (`adaptiveTrustScores`) — EMA-based weights (0.4–1.8) per cross-layer module. 8 scored systems: `stutterContagion`, `phaseLock`, `cadenceAlignment`, `feedbackOscillator`, `coherenceMonitor`, `convergence`, `entropyRegulator`, `restSynchronizer`.
-- **Decorrelation** (`pipelineCouplingManager`) — Self-tuning decorrelation for 6 compositional-dimension pairs. Adaptive gain, regime-aware.
+- **Decorrelation** (`pipelineCouplingManager`) — Self-tuning decorrelation for 15 dimension pairs. Self-calibrating targets, adaptive gain, regime-aware.
 
 All controllers are enrolled with `feedbackRegistry` to prevent catastrophic resonance.
+
+### Hypermeta Self-Calibrating Controllers
+
+10 meta-controllers auto-tune parameters that previously required manual adjustment between runs:
+
+1. **Self-Calibrating Coupling Targets** (`pipelineCouplingManager`) — Per-pair rolling |r| EMA. Intractable correlations relax targets upward; easily resolved pairs tighten toward baseline. Product-feedback guard freezes tightening when density product drops below 0.75.
+2. **Regime Distribution Equilibrator** (`regimeReactiveDamping`) — 64-beat rolling histogram vs target budget {exploring:35%, coherent:35%, evolving:20%}. Strength 0.25 with squared penalty when exploring exceeds 60%. Tension pin relief valve relaxes ceiling on sustained saturation.
+3. **Pipeline Product Centroid Controller** (`conductorDampening`) — 20-beat product EMA per pipeline. Corrective multiplier (±25%) counteracts chronic drift from 1.0. Density and tension only — flicker axis excluded to avoid fighting elasticity controller.
+4. **Flicker Range Elasticity Controller** (`conductorDampening`) — 32-beat rolling flicker range. 3x accelerated adjustment rate (0.015/beat). Compressed range reduces dampening base; excessive range increases it.
+5. **Trust Starvation Auto-Nourishment** (`adaptiveTrustScores`) — Per-system trust velocity EMA (50-beat horizon). Injects synthetic payoff when velocity stagnates for 100+ beats. Hysteresis: disengages only when velocity exceeds 3x threshold for 50 beats. Nourishment strength decays 10% per application (floor 0.05).
+6. **Adaptive Coherent Relaxation** (`pipelineCouplingManager`) — Derives coherent-regime coupling relaxation from rolling regime share instead of static constant.
+7. **Entropy PI Controller** (`systemDynamicsProfiler`) — Integral term + adaptive alpha + anti-windup (Ki=0.05, clamp ±3.0). Freezes integral accumulation when P and I terms have opposite signs.
+8. **Progressive Strength Auto-Scaling** (`conductorDampening`) — Derives dampening strength from active contributor count instead of hardcoded pipeline-specific multipliers.
+9. **Coupling Gain Budget Manager** (`pipelineCouplingManager`) — Per-axis budget cap (0.24, flicker 0.36) prevents coupling manager from dominating any single pipeline. Product-feedback guard on density axis.
+10. **Meta-Observation Telemetry** (`conductorDampening`) — Per-beat snapshots of meta-controller state emitted to `explainabilityBus` and fed to the meta-controller watchdog.
+11. **Meta-Controller Interaction Watchdog** (`conductorMetaWatchdog`) — Runs every 50 beats, detects opposing correction patterns between controllers on the same axis. Attenuates the weaker controller by 50% when conflict exceeds 30/50 beats. Self-heals when conflict resolves.
 
 For constant values, interaction partners, and cross-constant invariants, see [TUNING_MAP.md](TUNING_MAP.md).
 
@@ -292,7 +308,7 @@ For constant values, interaction partners, and cross-constant invariants, see [T
 - **`fragmented`** — Multiple signals pulling in different directions
 - **`stagnant`** — Flat signals — musical stasis
 
-Regime classification drives dampening strength, decorrelation aggressiveness, and profile adaptation behavior.
+Regime classification drives dampening strength, decorrelation aggressiveness, and profile adaptation behavior. The **regime distribution equilibrator** tracks a 64-beat rolling histogram and auto-modulates bias directions (strength 0.25, squared penalty above 60% exploring) to prevent any single regime from dominating. A **tension pin relief valve** relaxes the tension ceiling when sustained saturation is detected.
 
 ## Conductor Intelligence
 
@@ -311,9 +327,9 @@ conductorIntelligence.registerModule('myModule', { reset() { /* ... */ } }, ['al
 
 1. Module votes (multiplicative biases)
 2. `conductorIntelligence` collects products
-3. `conductorDampening` limits deviation (regime-aware)
+3. `conductorDampening` limits deviation (regime-aware, centroid-corrected density/tension, flicker-elastic)
 4. `pipelineNormalizer` smooths (adaptive envelope)
-5. `pipelineCouplingManager` decorrelates (pair targets)
+5. `pipelineCouplingManager` decorrelates (self-calibrating targets, gain budget, product-feedback guard)
 6. `pipelineBalancer` self-regulates (attribution-driven, deadband 0.25)
 7. `conductorState` commits final signals
 8. `signalReader` exposes to consumers
@@ -325,7 +341,7 @@ conductorIntelligence.registerModule('myModule', { reset() { /* ... */ } }, ['al
 - **Melodic** (15) — Contour, intervals, register, tessiture, counterpoint, thematic recall
 - **Rhythmic** (15) — Accent, onset, syncopation, complexity, symmetry, temporal proportions
 - **Texture** (20) — Articulation, layer coherence, motivic density, rest density, structural form
-- **Signal** (16) — Pipeline health, dynamics profiling, coupling, normalization, coherence
+- **`Signal`** (17 + 11 meta-controllers) — Pipeline health, dynamics profiling, coupling, normalization, coherence, self-calibrating hypermeta controllers, interaction watchdog
 - **Journey** (5) — Harmonic journey planning — key/mode selection, harmonic rhythm
 
 ## Cross-Layer Coordination
@@ -343,7 +359,7 @@ conductorIntelligence.registerModule('myModule', { reset() { /* ... */ } }, ['al
 - **`entropyRegulator`** — Entropy tracking accuracy
 - **`restSynchronizer`** — Meaningful shared rest success
 
-Trust formula: `score = score * 0.9 + payoff * 0.1` (EMA). Weight: `1 + score * 0.75`, clamped to [0.4, 1.8]. `negotiationEngine` consumes these weights to gate which systems get influence.
+Trust formula: `score = score * 0.9 + payoff * 0.1` (EMA). Weight: `1 + score * 0.75`, clamped to [0.4, 1.8]. Trust ceilinged at 0.75. Trust starvation auto-nourishment injects synthetic payoffs when per-system velocity stagnates for 100+ beats; hysteresis prevents premature disengagement (3x threshold for 50 beats). Nourishment strength decays 10% per application (floor 0.05) to prevent trust inflation. `negotiationEngine` consumes these weights to gate which systems get influence.
 
 ### Negotiation Engine
 
@@ -502,7 +518,7 @@ Central hub of tunable constants, annotated with sensitivity tiers:
 - **`DIVISIONS`** / **`SUBDIVS`** / **`SUBSUBDIVS`** — Beat subdivision weight distributions
 - **`BINAURAL`** — Binaural beat configuration
 - **`TENSION_SMOOTHING`** — Tension EMA factor (0.25)
-- **`FLICKER_SMOOTHING`** — Flicker EMA factor (0.15)
+- **`FLICKER_SMOOTHING`** — Flicker EMA factor (0.30)
 
 ### Conductor Profiles
 

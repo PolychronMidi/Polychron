@@ -38,6 +38,8 @@ Modules self-register at load time. Two registries:
 - **`crossLayerRegistry`** - `register(name, module, scopes)` where scopes ⊆ `['all','section','phrase']`
 - **`conductorIntelligence`** - `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`, `registerStateProvider`, `registerModule`
 
+11 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, and inter-controller conflict detection. Never manually tune constants that a meta-controller already manages.
+
 To add a module: write the file, self-register at end of IIFE, require from subsystem `index.js`.
 
 ### 4. Single-Manager Hub per Subsystem
@@ -72,6 +74,7 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **Conductor cannot mutate cross-layer state** - read-only access via getters is fine; writes are banned (ESLint `local/no-direct-crosslayer-write-from-conductor`).
 - **Signal reading:** always through `signalReader`, never `conductorIntelligence.getSignalSnapshot()` directly.
 - **New feedback loops** must register with `feedbackRegistry` to prevent catastrophic resonance.
+- **Meta-controller constants** (coupling targets, coherent relaxation, progressive strength, flicker dampening base) are managed by hypermeta self-calibrating controllers. Never hand-tune these; modify the controller logic instead.
 - **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls.
 
 ## Custom ESLint Rules

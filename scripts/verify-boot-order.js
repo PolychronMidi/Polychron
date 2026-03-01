@@ -299,7 +299,7 @@ function scanConsumed(filePath, globalSet) {
 // ---- Derive subsystem from relative path ----
 
 function subsystemOf(relPath) {
-  // src/<subsystem>/... → subsystem
+  // src/<subsystem>/... - subsystem
   const match = relPath.match(/^src\/([^/]+)\//);
   return match ? match[1] : null;
 }

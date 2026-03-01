@@ -342,7 +342,7 @@ MAIN_LOOP_CONTROLS = {
   trustPayoffs: {
     stutterContagion: { targetScale: 2 },
     phaseLock: { lock: 0.5, drift: 0.15, other: -0.4, confidenceScale: 0.35 },
-    cadenceAlignment: { resolved: 0.85, unresolved: 0.35, gatedNoResult: 0.0, ungated: 0.07 },
+    cadenceAlignment: { resolved: 0.85, unresolved: 0.35, gatedNoResult: 0.02, ungated: 0.07 },
     feedbackOscillator: { energyOffset: 0.05, downbeatScale: 0.25 },
     coherenceMonitor: { neutralBias: 0.85, sensitivity: 1.5 },
     roleSwap: { swapped: 0.35, notSwapped: 0 },

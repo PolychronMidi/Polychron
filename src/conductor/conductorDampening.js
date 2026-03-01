@@ -9,6 +9,32 @@ conductorDampening = (() => {
   const BASE_DEVIATION_DAMPING = 0.6;
   const REF_PIPELINE_SIZE = 20;
 
+  // Track how many contributors produced non-1.0 values last beat per pipeline.
+  // When dormant contributors inflate registryLength, dampening is miscalibrated.
+  /** @type {Map<string, number>} */
+  const _activeCountByPipeline = new Map();
+
+  // -- #3: Pipeline Product Centroid Controller (Hypermeta) --
+  // Tracks rolling product EMA per pipeline and applies slow centroid-
+  // correcting multiplier when products chronically drift from 1.0.
+  // Addresses the density product 0.666 problem without manual tuning.
+  const _CENTROID_EMA = 0.05;               // ~20-beat horizon
+  const _CENTROID_MAX_CORRECTION = 0.25;    // max 25% correction (raised R7 Evo 3)
+  /** @type {Map<string, number>} */
+  const _centroidEma = new Map();
+  /** @type {Map<string, number>} */
+  const _lastCentroidCorrection = new Map();
+
+  // -- #4: Flicker Range Elasticity Controller (Hypermeta) --
+  // Tracks 32-beat rolling flicker range and adjusts dampening base
+  // dynamically. Compressed range -> reduce dampening; excessive range
+  // -> increase dampening. Self-heals flicker range compression.
+  const _FLICKER_RANGE_WINDOW = 32;
+  const _TARGET_FLICKER_RANGE = 0.15;
+  /** @type {number[]} */
+  const _flickerRingBuffer = [];
+  let _flickerDampeningBaseAdj = 0;
+
   // Progressive strength: as the running product diverges from 1.0,
   // subsequent deviations in the same direction face stronger dampening.
   // Deviations opposing the running product get lighter dampening to
@@ -33,9 +59,8 @@ conductorDampening = (() => {
    * @returns {number}
    */
   function scaledDamping(registryLength, pipelineName) {
-    // Flicker pipeline gets lighter dampening (0.78) because its 14 contributors
-    // produce tiny deviations that standard dampening crushes to near-unity.
-    let base = pipelineName === 'flicker' ? 0.78 : BASE_DEVIATION_DAMPING;
+    // Flicker pipeline gets lighter dampening (0.85) plus #4 elasticity adjustment
+    let base = pipelineName === 'flicker' ? 0.85 + _flickerDampeningBaseAdj : BASE_DEVIATION_DAMPING;
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
@@ -44,7 +69,11 @@ conductorDampening = (() => {
         base *= 1.2; // Loosen gravity (more pass-through) when coherent
       }
     } catch { /* ignore */ }
-    return clamp(base * clamp(registryLength / REF_PIPELINE_SIZE, 0.3, 1.0), 0.1, 1.0);
+    // Use effective active count instead of raw registry length when available.
+    // This prevents dormant contributors from inflating the dampening calibration.
+    const activeCount = pipelineName ? (_activeCountByPipeline.get(pipelineName) || registryLength) : registryLength;
+    const effectiveLength = m.max(activeCount, registryLength * 0.5);
+    return clamp(base * clamp(effectiveLength / REF_PIPELINE_SIZE, 0.3, 1.0), 0.1, 1.0);
   }
 
   /**
@@ -52,13 +81,20 @@ conductorDampening = (() => {
    * @param {number} clamped - contributor's clamped bias value
    * @param {number} baseDamping - pipeline-scaled base dampening
    * @param {number} runningProduct - product so far (before this contributor)
+   * @param {string} [pipelineName] - optional pipeline name for per-pipeline tuning
    * @returns {number} dampened value
    */
-  function progressiveDampen(clamped, baseDamping, runningProduct) {
+  function progressiveDampen(clamped, baseDamping, runningProduct, pipelineName) {
     const deviation = clamped - 1.0;
     if (m.abs(deviation) < 1e-6) return 1.0;
 
-    let progStrength = PROGRESSIVE_STRENGTH;
+    // #8: Progressive strength auto-scaling - derive from active contributor
+    // count instead of hardcoded pipeline-specific multipliers. More active
+    // contributors need weaker per-contributor progressive dampening (they
+    // self-cancel via the product dynamics). Replaces the hardcoded 0.5x
+    // flicker special case with a general data-driven formula.
+    const pipelineActiveCount = pipelineName ? (_activeCountByPipeline.get(pipelineName) || REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
+    let progStrength = PROGRESSIVE_STRENGTH * clamp(pipelineActiveCount / REF_PIPELINE_SIZE, 0.3, 1.5);
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.effectiveDimensionality < 2.0) {
@@ -83,9 +119,19 @@ conductorDampening = (() => {
   function collectDampened(registry, pipelineName) {
     const damping = scaledDamping(registry.length, pipelineName);
     let product = 1;
+    let activeCount = 0;
     for (let i = 0; i < registry.length; i++) {
-      product *= progressiveDampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi), damping, product);
+      const raw = registry[i].getter();
+      if (m.abs(raw - 1.0) > 1e-6) activeCount++;
+      product *= progressiveDampen(clamp(raw, registry[i].lo, registry[i].hi), damping, product, pipelineName);
     }
+    if (pipelineName) _activeCountByPipeline.set(pipelineName, activeCount);
+    // #3: Apply centroid correction
+    product = _applyCentroidCorrection(product, pipelineName);
+    // #4: Track flicker range for elasticity controller
+    if (pipelineName === 'flicker') _updateFlickerRange(product);
+    // #10: Meta-observation telemetry
+    _emitMetaTelemetry(product, pipelineName);
     return product;
   }
 
@@ -101,6 +147,7 @@ conductorDampening = (() => {
   function collectDampenedWithAttribution(registry, pipelineName) {
     const damping = scaledDamping(registry.length, pipelineName);
     let product = 1;
+    let activeCount = 0;
     const contributions = [];
     for (let i = 0; i < registry.length; i++) {
       const entry = registry[i];
@@ -133,10 +180,98 @@ conductorDampening = (() => {
       }
 
       const clamped = clamp(raw, lo, hi);
-      product *= progressiveDampen(clamped, damping, product);
+      if (m.abs(raw - 1.0) > 1e-6) activeCount++;
+      product *= progressiveDampen(clamped, damping, product, pipelineName);
       contributions.push({ name: entry.name, raw, clamped });
     }
-    return { product, contributions };
+    if (pipelineName) _activeCountByPipeline.set(pipelineName, activeCount);
+    // #3: Apply centroid correction to attribution product
+    const correctedProduct = _applyCentroidCorrection(product, pipelineName);
+    // #4: Track flicker range for elasticity controller
+    if (pipelineName === 'flicker') _updateFlickerRange(correctedProduct);
+    // #10: Meta-observation telemetry
+    _emitMetaTelemetry(correctedProduct, pipelineName);
+    return { product: correctedProduct, contributions };
+  }
+
+  // -- #3: Centroid correction function (R7 Evo 3: density+tension only) --
+  /**
+   * Applies slow centroid-correcting multiplier when pipeline product
+   * chronically drifts from 1.0. Skips flicker axis to avoid fighting
+   * the flicker range elasticity controller (#4).
+   * @param {number} product
+   * @param {string} [pipelineName]
+   * @returns {number}
+   */
+  function _applyCentroidCorrection(product, pipelineName) {
+    if (!pipelineName) return product;
+    // R7 Evo 3: Skip flicker axis entirely - centroid pull suppresses
+    // needed flicker variance and fights elasticity controller (#4).
+    if (pipelineName === 'flicker') return product;
+    const prev = _centroidEma.get(pipelineName) || 1.0;
+    const updated = prev * (1 - _CENTROID_EMA) + product * _CENTROID_EMA;
+    _centroidEma.set(pipelineName, updated);
+    const drift = updated - 1.0;
+    const correction = clamp(-drift, -_CENTROID_MAX_CORRECTION, _CENTROID_MAX_CORRECTION);
+    _lastCentroidCorrection.set(pipelineName, correction);
+    return product * (1.0 + correction);
+  }
+
+  // -- #4: Flicker range elasticity update --
+  /**
+   * Updates the flicker dampening base adjustment based on rolling range.
+   * @param {number} flickerProduct
+   */
+  function _updateFlickerRange(flickerProduct) {
+    _flickerRingBuffer.push(flickerProduct);
+    if (_flickerRingBuffer.length > _FLICKER_RANGE_WINDOW) _flickerRingBuffer.shift();
+    if (_flickerRingBuffer.length < 8) return;
+    let fMin = Infinity;
+    let fMax = -Infinity;
+    for (let i = 0; i < _flickerRingBuffer.length; i++) {
+      if (_flickerRingBuffer[i] < fMin) fMin = _flickerRingBuffer[i];
+      if (_flickerRingBuffer[i] > fMax) fMax = _flickerRingBuffer[i];
+    }
+    const range = fMax - fMin;
+    if (range < _TARGET_FLICKER_RANGE * 0.6) {
+      // Range compressed: reduce dampening to allow more expression
+      // R7 Evo 2: Tripled adjustment rate (0.005->0.015) for faster response
+      _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj + 0.015, 0, 0.15);
+    } else if (range > _TARGET_FLICKER_RANGE * 2.0) {
+      // Range too wide: increase dampening to rein it in
+      _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj - 0.015, -0.15, 0);
+    } else {
+      // In target range: relax adjustment toward zero
+      _flickerDampeningBaseAdj *= 0.95;
+    }
+  }
+
+  // -- #10: Meta-observation telemetry --
+  /**
+   * Emits per-beat meta-controller diagnostics to explainabilityBus.
+   * @param {number} product
+   * @param {string} [pipelineName]
+   */
+  function _emitMetaTelemetry(product, pipelineName) {
+    if (!pipelineName) return;
+    try {
+      const centroidCorr = _lastCentroidCorrection.get(pipelineName) || 0;
+      explainabilityBus.emit('meta-dampening-telemetry', 'both', {
+        pipeline: pipelineName,
+        product,
+        centroidEma: _centroidEma.get(pipelineName) || 1.0,
+        centroidCorrection: centroidCorr,
+        flickerDampeningBaseAdj: pipelineName === 'flicker' ? _flickerDampeningBaseAdj : 0,
+        activeCount: _activeCountByPipeline.get(pipelineName) || 0
+      });
+      // R7 Evo 9: Feed correction signs to meta-controller watchdog
+      if (centroidCorr !== 0) {
+        conductorMetaWatchdog.recordCorrection(pipelineName, 'centroid', centroidCorr);
+      }
+      if (pipelineName === 'flicker' && _flickerDampeningBaseAdj !== 0) {
+        conductorMetaWatchdog.recordCorrection('flicker', 'elasticity', _flickerDampeningBaseAdj);
+      }
+    } catch { /* pre-boot */ }
   }
 
   return { scaledDamping, progressiveDampen, collectDampened, collectDampenedWithAttribution };

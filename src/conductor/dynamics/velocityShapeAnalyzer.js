@@ -124,13 +124,13 @@ velocityShapeAnalyzer = (() => {
       // Flat: ramp 1.0-1.15 based on how flat (inverse of punchiness)
       return 1.0 + clamp((0.2 - shape.punchiness) / 0.2, 0, 1) * 0.15;
     }
-    if (shape.punchiness > 0.4) {
-      // Punchy: ramp 1.0-1.12 over punchiness 0.4-1.0
-      return 1.0 + clamp((shape.punchiness - 0.4) / 0.6, 0, 1) * 0.12;
+    if (shape.punchiness > 0.35) {
+      // Punchy: ramp 1.0-1.12 over punchiness 0.35-1.0
+      return 1.0 + clamp((shape.punchiness - 0.35) / 0.65, 0, 1) * 0.12;
     }
-    if (shape.punchiness < 0.2) {
-      // Smooth: ramp 1.0-0.95 over punchiness 0.2-0
-      return 1.0 - clamp((0.2 - shape.punchiness) / 0.2, 0, 1) * 0.05;
+    if (shape.punchiness < 0.28) {
+      // Smooth: ramp 1.0-0.95 over punchiness 0.28-0
+      return 1.0 - clamp((0.28 - shape.punchiness) / 0.28, 0, 1) * 0.05;
     }
     return 1.0;
   }

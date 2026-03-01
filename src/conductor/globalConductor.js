@@ -12,7 +12,23 @@ globalConductor = (() => {
   // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
   let _prevFlickerMod = 1;
-  const FLICKER_SMOOTHING = 0.15;
+  const FLICKER_SMOOTHING = 0.30; // raised from 0.15 - doubles tracking responsiveness to widen effective output range
+
+  // Density-flicker additive decorrelation: tracks rolling correlation
+  // between density direction and flicker amplitude direction. When both
+  // move together (high positive correlation), the additive densityFlicker
+  // term is scaled down to break the structural coupling path.
+  let _dfCorrEma = 0; // EMA of sign-agreement (range [-1, 1])
+  const DF_CORR_ALPHA = 0.12;
+
+  // Flicker variance floor: when registryFlickerMod has near-zero variance,
+  // inject small independent noise to prevent statistical lock from inflating
+  // coupling measurements. Uses Welford's online algorithm for rolling std.
+  let _fVarN = 0;
+  let _fVarMean = 1.0;
+  let _fVarM2 = 0;
+  const FLICKER_VARIANCE_FLOOR_STD = 0.008; // inject when rolling std < this
+  const FLICKER_VARIANCE_INJECT = 0.02;     // noise amplitude when below floor
 
   /**
    * Update all dynamic systems based on current musical context.
@@ -85,8 +101,19 @@ globalConductor = (() => {
     // beat-to-beat reversals that inflate trajectory curvature, while
     // preserving the per-beat noise pattern (sine + random terms below).
     const rawFlickerMod = flickerAttr.product;
+    const prevFlickerSnapshot = _prevFlickerMod; // snapshot BEFORE update for direction calc
     const registryFlickerMod = _prevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
     _prevFlickerMod = registryFlickerMod;
+
+    // Flicker variance floor: inject independent noise when rolling std is too low
+    _fVarN++;
+    const fDelta = registryFlickerMod - _fVarMean;
+    _fVarMean += fDelta / _fVarN;
+    _fVarM2 += fDelta * (registryFlickerMod - _fVarMean);
+    const rollingFlickerStd = _fVarN > 4 ? m.sqrt(_fVarM2 / _fVarN) : 1;
+    const flickerVarianceInject = rollingFlickerStd < FLICKER_VARIANCE_FLOOR_STD
+      ? rf(-FLICKER_VARIANCE_INJECT, FLICKER_VARIANCE_INJECT)
+      : 0;
     // Decoupling: flicker base blends compositeIntensity with harmonicRhythm
     // and a slow independent carrier. This reduces lockstep coupling between
     // density/tension and flicker while preserving macro energy following.
@@ -94,9 +121,21 @@ globalConductor = (() => {
     const flickerCarrier = 0.5 + 0.5 * m.sin(densitySeed * 0.0017 + harmonicRhythm * m.PI);
     const flickerBase = clamp(compositeIntensity * 0.35 + harmonicRhythm * 0.25 + flickerCarrier * 0.40, 0, 1.2);
     const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod;
-    const densityFlicker = m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
+
+    // Density-flicker additive decorrelation: scale down the additive term
+    // when density and flicker directions are persistently correlated.
+    const densityDir = targetDensity - currentDensity;
+    const flickerDir = registryFlickerMod - prevFlickerSnapshot; // use pre-update snapshot (fixes R4 bug: was always 0)
+    const signAgreement = (densityDir > 0 && flickerDir > 0) || (densityDir < 0 && flickerDir < 0) ? 1 : -1;
+    _dfCorrEma = _dfCorrEma * (1 - DF_CORR_ALPHA) + signAgreement * DF_CORR_ALPHA;
+    // When correlation is positive (co-moving), attenuate the additive flicker;
+    // when negative or zero, pass through fully. Range: [0.5, 1.0].
+    const dfDecorrelScale = clamp(1.0 - m.max(0, _dfCorrEma) * 0.5, 0.5, 1.0);
+
+    const densityFlicker = (m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
-                         + rf(-0.03, 0.03) * flickerAmplitude;
+                         + rf(-0.03, 0.03) * flickerAmplitude) * dfDecorrelScale
+                         + flickerVarianceInject; // variance floor injection
     const densityBounds = conductorConfig.getDensityBounds();
     const flickeredDensity = clamp(currentDensity + densityFlicker, densityBounds.floor, densityBounds.ceiling);
 

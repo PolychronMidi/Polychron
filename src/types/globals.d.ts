@@ -1663,6 +1663,7 @@ declare var convergenceHarmonicTrigger: ConvergenceHarmonicTriggerAPI;
 declare var texturalMirror: TexturalMirrorAPI;
 declare var crossLayerSilhouette: CrossLayerSilhouetteAPI;
 declare var dimensionalityExpander: { densityBias(): number; tensionBias(): number; flickerBias(): number; getSnapshot(): { urgency: number; densityBias: number; tensionBias: number; flickerBias: number }; reset(): void };
+declare var conductorMetaWatchdog: { recordCorrection(pipeline: string, controllerName: string, correctionSign: number): void; getAttenuation(pipeline: string, controllerName: string): number; getSnapshot(): Record<string, Record<string, number>>; reset(): void };
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };
 declare var polyrhythmicPhasePredictor: { process(ctx: any): number; predictConvergences(): void; reset(): void };
