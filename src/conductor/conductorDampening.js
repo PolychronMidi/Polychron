@@ -15,6 +15,17 @@ conductorDampening = (() => {
   // encourage self-correction.
   const PROGRESSIVE_STRENGTH = 0.50;
 
+  // -- Adaptive clamp widening (self-healing) --
+  // Tracks per-contributor pinning via EMA. When a contributor is persistently
+  // pinned (EMA > threshold), the effective clamp is widened by up to
+  // MAX_WIDEN_FACTOR of the original range. This makes future modules
+  // self-healing - they never need manual range re-tuning.
+  const PINNED_EMA_ALPHA = 0.08;       // slow EMA to detect sustained pinning
+  const PINNED_WIDEN_THRESHOLD = 0.60;  // >60% pinned triggers widening
+  const MAX_WIDEN_FACTOR = 0.15;        // max 15% range extension
+  /** @type {Map<string, { pinnedEma: number, widenLo: number, widenHi: number }>} */
+  const _adaptiveState = new Map();
+
   /**
    * Effective damping scaled by pipeline contributor count and system dynamics.
    * @param {number} registryLength
@@ -76,6 +87,9 @@ conductorDampening = (() => {
 
   /**
    * Like collectDampened but with per-contributor attribution.
+   * Includes adaptive clamp widening: persistently pinned contributors
+   * get their effective clamp range gradually widened so the system
+   * self-heals boundary pinning without manual re-tuning.
    * @param {Array<{ name: string, getter: () => number, lo: number, hi: number }>} registry
    * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
    */
@@ -86,7 +100,34 @@ conductorDampening = (() => {
     for (let i = 0; i < registry.length; i++) {
       const entry = registry[i];
       const raw = entry.getter();
-      const clamped = clamp(raw, entry.lo, entry.hi);
+
+      // -- Adaptive clamp widening --
+      let lo = entry.lo;
+      let hi = entry.hi;
+      let as = _adaptiveState.get(entry.name);
+      if (!as) {
+        as = { pinnedEma: 0, widenLo: 0, widenHi: 0 };
+        _adaptiveState.set(entry.name, as);
+      }
+      const isPinned = (raw < lo || raw > hi) ? 1 : 0;
+      as.pinnedEma = as.pinnedEma * (1 - PINNED_EMA_ALPHA) + isPinned * PINNED_EMA_ALPHA;
+      if (as.pinnedEma > PINNED_WIDEN_THRESHOLD) {
+        const range = hi - lo;
+        const widenAmount = range * MAX_WIDEN_FACTOR * clamp((as.pinnedEma - PINNED_WIDEN_THRESHOLD) / (1 - PINNED_WIDEN_THRESHOLD), 0, 1);
+        // Widen toward the side that's being pinned
+        if (raw < lo) as.widenLo = clamp(as.widenLo + widenAmount * 0.1, 0, range * MAX_WIDEN_FACTOR);
+        if (raw > hi) as.widenHi = clamp(as.widenHi + widenAmount * 0.1, 0, range * MAX_WIDEN_FACTOR);
+        lo -= as.widenLo;
+        hi += as.widenHi;
+      } else {
+        // Relax widening when pinning subsides
+        as.widenLo *= 0.98;
+        as.widenHi *= 0.98;
+        lo -= as.widenLo;
+        hi += as.widenHi;
+      }
+
+      const clamped = clamp(raw, lo, hi);
       product *= progressiveDampen(clamped, damping, product);
       contributions.push({ name: entry.name, raw, clamped });
     }

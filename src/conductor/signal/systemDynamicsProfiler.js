@@ -242,9 +242,16 @@ systemDynamicsProfiler = (() => {
     // Coherent: strong coupling + moving (dimensions move together).
     // Checked BEFORE exploring so that coupled high-velocity systems are
     // recognized as coherent rather than stuck in permanent exploring.
-    if (couplingStrength > 0.30 && avgVelocity > 0.008) return 'coherent';
-    // Exploring: high velocity + multi-dimensional + weak coupling
-    if (avgVelocity > 0.02 && effectiveDim > 2.5 && couplingStrength <= 0.30) return 'exploring';
+    // Coherent momentum: if the system was recently coherent, lower the
+    // threshold by 0.05 to make coherence "sticky" (hysteresis bonus).
+    // This prevents the system from flickering out of coherent into exploring
+    // on single-beat coupling dips.
+    const coherentThreshold = _lastRegime === 'coherent' ? 0.25 : 0.30;
+    if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
+    // Exploring: high velocity + multi-dimensional + weak coupling.
+    // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
+    // exploring into coherent more easily.
+    if (avgVelocity > 0.02 && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)

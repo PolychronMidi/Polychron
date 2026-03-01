@@ -126,7 +126,7 @@ setUnitTiming = (unitType) => {
         const _rawS = activeComposer.getSubdivs();
         const _rawSS = activeComposer.getSubsubdivs();
         const _rawProduct = _rawD * _rawS * _rawSS;
-        const _BASE_MAX = 250;
+        const _BASE_MAX = 400;
         const _isDownbeat = beatIndex === 0;
         const _isFirstMeasure = measureIndex === 0;
         const _boost = (_isDownbeat ? 50 : 0) + (_isFirstMeasure && _isDownbeat ? 50 : 0);

@@ -41,10 +41,10 @@ restDensityTracker = (() => {
   /**
    * Bias factor for rhythm onset probability.
    * Continuous ramp: sparse - boost, dense - suppress.
-    * Output range matches registered clamp [0.88, 1.15] - no boundary pinning.
+    * Output range matches registered clamp [0.90, 1.15] - no boundary pinning.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-    * @returns {number} - 0.88 to 1.15
+    * @returns {number} - 0.90 to 1.15
    */
   function getOnsetBias(opts) {
     const density = getOnsetDensity(opts);
@@ -57,7 +57,7 @@ restDensityTracker = (() => {
     // Dense zone: nps 15-40 - bias 1.0-0.88
     if (nps >= 15) {
       const ramp = clamp((nps - 15) / 25, 0, 1);
-      return 1.0 - ramp * 0.12;
+      return 1.0 - ramp * 0.10;
     }
     return 1.0;
   }
@@ -122,10 +122,10 @@ restDensityTracker = (() => {
   /**
    * Density bias to enforce breathing room.
    * Continuous ramp based on breath ratio: few breaths - suppress, many - boost.
-    * Output range matches registered clamp [0.88, 1.15].
+    * Output range matches registered clamp [0.90, 1.15].
    * @param {Object} [opts]
    * @param {string} [opts.layer]
-    * @returns {number} - 0.88 to 1.15
+    * @returns {number} - 0.90 to 1.15
    */
   function getBreathingDensityBias(opts) {
     const profile = getBreathingProfile(opts);
@@ -137,7 +137,7 @@ restDensityTracker = (() => {
     // Breathless zone: ratio 0-0.05 - bias 0.88-1.0
     if (breathRatio <= 0.05) {
       const ramp = clamp((0.05 - breathRatio) / 0.05, 0, 1);
-      return 1.0 - ramp * 0.12;
+      return 1.0 - ramp * 0.10;
     }
     // Airy zone: ratio 0.35-0.60 - bias 1.0-1.15
     if (breathRatio >= 0.35) {
@@ -154,7 +154,7 @@ restDensityTracker = (() => {
     const onset = restDensityTracker.getOnsetBias();
     const breathing = restDensityTracker.getBreathingDensityBias();
     return m.sqrt(onset * breathing);
-  }, 0.90, 1.15);
+  }, 0.90, 1.20);
 
   return {
     getOnsetDensity,
