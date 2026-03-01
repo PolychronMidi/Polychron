@@ -159,8 +159,8 @@ dynamicRangeTracker = (() => {
     snapshots.length = 0;
   }
 
-  conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:spread', () => dynamicRangeTracker.getSpreadBias(), 0.92, 1.15);
-  conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:contrast', () => dynamicRangeTracker.getContrastFlickerModifier(), 0.95, 1.2);
+  conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:spread', () => dynamicRangeTracker.getSpreadBias(), 0.85, 1.20);
+  conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:contrast', () => dynamicRangeTracker.getContrastFlickerModifier(), 0.88, 1.25);
   conductorIntelligence.registerRecorder('dynamicRangeTracker', (ctx) => { dynamicRangeTracker.recordExtremes(ctx.absTime); });
   conductorIntelligence.registerModule('dynamicRangeTracker', { reset }, ['section']);
 

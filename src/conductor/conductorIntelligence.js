@@ -34,13 +34,13 @@ conductorIntelligence = (() => {
   // Dampening engine - conductorDampening global
 
   /** @returns {number} */
-  function _collectDampened(registry) {
-    return conductorDampening.collectDampened(registry);
+  function _collectDampened(registry, pipelineName) {
+    return conductorDampening.collectDampened(registry, pipelineName);
   }
 
   /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function _collectDampenedWithAttribution(registry) {
-    return conductorDampening.collectDampenedWithAttribution(registry);
+  function _collectDampenedWithAttribution(registry, pipelineName) {
+    return conductorDampening.collectDampenedWithAttribution(registry, pipelineName);
   }
 
   /** @param {Array<{ name: string }>} registry @param {string} name @param {string} kind */
@@ -147,11 +147,11 @@ conductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all flicker modifiers (dampened + soft-envelope normalized) */
-  function collectFlickerModifier() { return pipelineNormalizer.normalize('flicker', _collectDampened(flickerModifiers)); }
+  function collectFlickerModifier() { return pipelineNormalizer.normalize('flicker', _collectDampened(flickerModifiers, 'flicker')); }
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectFlickerModifierWithAttribution() {
-    const result = _collectDampenedWithAttribution(flickerModifiers);
+    const result = _collectDampenedWithAttribution(flickerModifiers, 'flicker');
     const rawProduct = result.product;
     const product = pipelineNormalizer.normalize('flicker', rawProduct);
     return {

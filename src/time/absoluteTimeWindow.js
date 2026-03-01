@@ -33,10 +33,28 @@ absoluteTimeWindow = (() => {
   /** @type {Map<string, number|{count:number,first:ATWEntry|null,last:ATWEntry|null}>} */
   const _scalarCache = new Map();
 
-  /** Prune via shared helper. */
+  // Per-layer running note count. Avoids scanning the full note array for
+  // the common pattern countNotes({ layer }). Decremented on prune, so
+  // it always reflects in-window counts.
+  /** @type {Map<string, number>} */
+  const _layerCounts = new Map();
+  let _totalNoteCount = 0;
+
+  /** Prune via shared helper. Track layer count decrements for notes. */
   function prune(arr, currentTime, windowSeconds) {
     if (!Array.isArray(arr) || arr.length === 0) return;
+    const prevLen = arr.length;
     timeGridPrune(arr, 'time', currentTime, windowSeconds, MAX_ENTRIES);
+    // Update per-layer running counts when note array is pruned
+    if (arr === entries.note && arr.length < prevLen) {
+      // Rebuild counts from surviving entries (prune is infrequent)
+      _layerCounts.clear();
+      _totalNoteCount = arr.length;
+      for (let i = 0; i < arr.length; i++) {
+        const layer = arr[i].layer;
+        if (layer) _layerCounts.set(layer, (_layerCounts.get(layer) || 0) + 1);
+      }
+    }
   }
 
   /**
@@ -77,6 +95,9 @@ absoluteTimeWindow = (() => {
     V.requireFinite(time, 'recordNote.time');
     const arr = entries.note;
     arr.push({ time, layer, midi, velocity, unit: unitLabel });
+    // Update running layer counts
+    _totalNoteCount++;
+    if (layer) _layerCounts.set(layer, (_layerCounts.get(layer) || 0) + 1);
     if (_queryCache.size > 0) _queryCache.clear();
     if (_scalarCache.size > 0) _scalarCache.clear();
     if (arr.length > MAX_ENTRIES) {
@@ -228,6 +249,13 @@ absoluteTimeWindow = (() => {
    * @returns {number}
    */
   function countNotes(opts) {
+    // Fast-path: default-window, no custom since/windowSeconds - use running counts.
+    // This avoids scanning the full note array on every beat-setup call.
+    if (opts === undefined) return _totalNoteCount;
+    if (typeof opts === 'object' && opts !== null &&
+        opts.since === undefined && opts.windowSeconds === undefined && opts.layer) {
+      return _layerCounts.get(opts.layer) || 0;
+    }
     const q = _parseNoteQuery(opts);
     if (!q) return 0;
     const cacheKey = 'count:' + (q.layer || '') + ':' + q.cutoff;
@@ -308,6 +336,8 @@ absoluteTimeWindow = (() => {
     if (entries.chord) entries.chord.length = 0;
     _queryCache.clear();
     _scalarCache.clear();
+    _layerCounts.clear();
+    _totalNoteCount = 0;
   }
 
   return {

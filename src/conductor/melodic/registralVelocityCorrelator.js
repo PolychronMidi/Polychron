@@ -92,7 +92,7 @@ registralVelocityCorrelator = (() => {
     return getCorrelationSignal().flickerMod;
   }
 
-  conductorIntelligence.registerFlickerModifier('registralVelocityCorrelator', () => registralVelocityCorrelator.getFlickerModifier(), 0.9, 1.15);
+  conductorIntelligence.registerFlickerModifier('registralVelocityCorrelator', () => registralVelocityCorrelator.getFlickerModifier(), 0.85, 1.20);
 
   return {
     getCorrelationSignal,

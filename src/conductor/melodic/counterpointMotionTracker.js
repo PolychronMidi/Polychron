@@ -97,6 +97,13 @@ counterpointMotionTracker = (() => {
       counterpointContraryBias: b ? b.contraryBias : 1
     };
   });
+  // Scalar wrapper: dominant parallel motion -> boost tension (1.15),
+  // dominant contrary -> suppress tension (0.88), mixed -> neutral.
+  conductorIntelligence.registerTensionBias('counterpointMotionTracker', () => {
+    const b = counterpointMotionTracker.getMotionBias();
+    // parallelBias 0.8 means parallel is dominant -> boost tension to encourage variety
+    return b.parallelBias < 1.0 ? 1.15 : (b.contraryBias < 1.0 ? 0.88 : 1.0);
+  }, 0.88, 1.15);
 
   return {
     getMotionProfile,

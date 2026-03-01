@@ -7,7 +7,7 @@ cadenceAlignment = (() => {
   const V = validator.create('cadenceAlignment');
   const CHANNEL = 'tension';
   const SYNC_TOLERANCE_MS = 400;
-  const HIGH_TENSION_THRESHOLD = 0.7;
+  const HIGH_TENSION_THRESHOLD = 0.55;
   const EVENTS = eventCatalog.names;
 
   /**
