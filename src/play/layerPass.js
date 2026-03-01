@@ -61,6 +61,10 @@ layerPass = (() => {
       let playProb, stutterProb;
       timeStream.setBounds('beat', numerator);
       const _mT = Date.now();
+      // Per-measure time watchdog: if a measure exceeds this threshold (ms),
+      // reduce the budget cap for remaining beats to bound worst-case runtime.
+      const _MEASURE_TIME_LIMIT_MS = 30000; // 30s soft limit per measure
+      LM.layers[layerId]._budgetOverrideCap = 0; // reset each measure
 
       // Conductor update is expensive (~147 function calls). The EMA smoothing
       // on density/tension/flicker means beat-to-beat resolution adds minimal
@@ -79,6 +83,12 @@ layerPass = (() => {
         const beatResult = processBeat(layerId, playProb, stutterProb, boot);
         playProb = beatResult.playProb;
         stutterProb = beatResult.stutterProb;
+
+        // Time watchdog: if this measure is running long, throttle remaining beats
+        const _elapsed = Date.now() - _mT;
+        if (_elapsed > _MEASURE_TIME_LIMIT_MS && beatIndex < numerator - 1) {
+          LM.layers[layerId]._budgetOverrideCap = 150; // reduced cap for remaining beats
+        }
 
         timeStream.setBounds('div', divsPerBeat);
         microUnitAttenuator.begin('div', divsPerBeat);

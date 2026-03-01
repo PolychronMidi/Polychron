@@ -239,10 +239,12 @@ systemDynamicsProfiler = (() => {
     // Oscillating: high curvature (frequent reversals) with moderate velocity.
     // Threshold is profile-adaptive - explosive tolerates higher curvature.
     if (avgCurvature > _oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
-    // Exploring: high velocity + varied curvature + multi-dimensional
-    if (avgVelocity > 0.02 && effectiveDim > 2.5) return 'exploring';
-    // Coherent: strong coupling + moderate velocity (dimensions move together)
-    if (couplingStrength > 0.40 && avgVelocity > 0.008) return 'coherent';
+    // Coherent: strong coupling + moving (dimensions move together).
+    // Checked BEFORE exploring so that coupled high-velocity systems are
+    // recognized as coherent rather than stuck in permanent exploring.
+    if (couplingStrength > 0.30 && avgVelocity > 0.008) return 'coherent';
+    // Exploring: high velocity + multi-dimensional + weak coupling
+    if (avgVelocity > 0.02 && effectiveDim > 2.5 && couplingStrength <= 0.30) return 'exploring';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)

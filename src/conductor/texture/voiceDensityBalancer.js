@@ -89,7 +89,7 @@ voiceDensityBalancer = (() => {
     return { l1Avg: l1.avgVoices, l2Avg: l2.avgVoices, balanced };
   }
 
-  conductorIntelligence.registerDensityBias('voiceDensityBalancer', () => voiceDensityBalancer.getVoiceCountBias(), 0.88, 1.3);
+  conductorIntelligence.registerDensityBias('voiceDensityBalancer', () => voiceDensityBalancer.getVoiceCountBias(), 0.90, 1.3);
 
   return {
     getVoiceDensity,

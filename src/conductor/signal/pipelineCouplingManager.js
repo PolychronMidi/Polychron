@@ -22,8 +22,13 @@ pipelineCouplingManager = (() => {
   const NUDGEABLE = ['density', 'tension', 'flicker'];
   const NUDGEABLE_SET = new Set(NUDGEABLE);
 
-  // The 4 compositional dimensions whose pairs we monitor
+  // The 4 compositional dimensions whose pairs we monitor, plus 2 observable-
+  // only dimensions (trust, phase) that are not nudgeable but whose coupling
+  // with nudgeable dims must be managed. Phase in particular co-evolves
+  // strongly with flicker (r=0.86 observed) and needs active decorrelation.
   const COMPOSITIONAL_DIMS = ['density', 'tension', 'flicker', 'entropy'];
+  const OBSERVABLE_DIMS = ['trust', 'phase'];
+  const ALL_MONITORED_DIMS = COMPOSITIONAL_DIMS.concat(OBSERVABLE_DIMS);
 
   // Default coupling target for any compositional pair.
   const DEFAULT_TARGET = 0.25;
@@ -36,6 +41,15 @@ pipelineCouplingManager = (() => {
     'tension-flicker':  0.25,
     'tension-entropy':  0.25,
     'flicker-entropy':  0.25,
+    'flicker-phase':    0.15,  // strongly co-evolving - aggressive decorrelation
+    'density-phase':    0.30,
+    'tension-phase':    0.30,
+    'density-trust':    0.30,
+    'tension-trust':    0.30,
+    'flicker-trust':    0.30,
+    'entropy-phase':    0.35,
+    'entropy-trust':    0.35,
+    'trust-phase':      0.35,
   };
 
   // -- Adaptive gain parameters --
@@ -124,10 +138,10 @@ pipelineCouplingManager = (() => {
 
     const matrix = snap.couplingMatrix;
 
-    for (let a = 0; a < COMPOSITIONAL_DIMS.length; a++) {
-      for (let b = a + 1; b < COMPOSITIONAL_DIMS.length; b++) {
-        const dimA = COMPOSITIONAL_DIMS[a];
-        const dimB = COMPOSITIONAL_DIMS[b];
+    for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
+      for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
+        const dimA = ALL_MONITORED_DIMS[a];
+        const dimB = ALL_MONITORED_DIMS[b];
         const key = dimA + '-' + dimB;
         const corr = matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;

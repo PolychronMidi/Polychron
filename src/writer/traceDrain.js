@@ -56,7 +56,7 @@ traceDrain = (() => {
   /**
    * Record one trace beat entry.
    * @param {string} layer
-   * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any }} data
+   * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, stageTiming?: Record<string,number>|null, iterBudget?: any }} data
    */
   function record(layer, data) {
     if (!isTracing || fd === null) return;
@@ -69,7 +69,9 @@ traceDrain = (() => {
       trust: data.trustScores,
       regime: data.regime,
       coupling: data.couplingMatrix,
-      notes: _pendingNotes.length > 0 ? _pendingNotes.slice() : undefined
+      notes: _pendingNotes.length > 0 ? _pendingNotes.slice() : undefined,
+      stageTiming: data.stageTiming || undefined,
+      iterBudget: data.iterBudget || undefined
     };
     // Clear accumulated notes after embedding
     _pendingNotes = [];
