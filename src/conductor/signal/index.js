@@ -4,10 +4,10 @@ require('./pipelineNormalizer');
 require('./coherenceMonitor');
 // @ts-ignore: standardized read API for inter-module signal reading
 require('./signalReader');
-// @ts-ignore: adaptive profile hints (registers recorder + stateProvider)
-require('./profileAdaptation');
 // @ts-ignore: per-beat signal history (registers recorder + stateProvider)
 require('./signalTelemetry');
+// @ts-ignore: adaptive profile hints (registers recorder + stateProvider)
+require('./profileAdaptation');
 // @ts-ignore: meta-diagnostic: pipeline health analysis (registers recorder + stateProvider)
 require('./signalHealthAnalyzer');
 // @ts-ignore: meta-diagnostic: phase-space trajectory analysis (registers recorder + stateProvider)
@@ -30,3 +30,4 @@ require('./criticalityEngine');
 require('./dimensionalityExpander');
 // @ts-ignore: self-organized criticality engine (avalanche-based damping)
 require('./output');
+

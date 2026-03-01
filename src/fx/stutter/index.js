@@ -10,8 +10,6 @@ require('./stutterChannels');
 // @ts-ignore: load side-effect module with globals
 require('./stutterFailFast');
 // @ts-ignore: load side-effect module with globals
-require('./stutterNotes');
-// @ts-ignore: load side-effect module with globals
 require('./stutterFade');
 // @ts-ignore: load side-effect module with globals
 require('./stutterPan');
@@ -23,5 +21,10 @@ require('./stutterExecutePlan');
 require('./stutterPlanScheduler');
 // @ts-ignore: load side-effect module with globals
 require('./stutterManager');
+// @ts-ignore: load side-effect module with globals
+require('./stutterNotes');
+
+
+
 
 

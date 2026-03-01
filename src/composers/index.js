@@ -16,8 +16,6 @@ require('./ScaleComposer');
 // @ts-ignore: load side-effect module with globals
 require('./chord');
 // @ts-ignore: load side-effect module with globals
-require('./ModeComposer');
-// @ts-ignore: load side-effect module with globals
 require('./PentatonicComposer');
 // @ts-ignore: load side-effect module with globals
 require('./BluesComposer');
@@ -28,6 +26,8 @@ require('./QuartalComposer');
 // @ts-ignore: load side-effect module with globals
 require('./TensionReleaseComposer');
 // @ts-ignore: load side-effect module with globals
+require('./ModeComposer');
+// @ts-ignore: load side-effect module with globals
 require('./ModalInterchangeComposer');
 // @ts-ignore: load side-effect module with globals
 require('./HarmonicRhythmComposer');
@@ -36,9 +36,9 @@ require('./melodicDevelopmentVoicingIntent');
 // @ts-ignore: load side-effect module with globals
 require('./MelodicDevelopmentComposer');
 // @ts-ignore: load side-effect module with globals
-require('./motif');
-// @ts-ignore: load side-effect module with globals
 require('./voice');
+// @ts-ignore: load side-effect module with globals
+require('./motif');
 // @ts-ignore: load side-effect module with globals
 require('./profiles');
 // @ts-ignore: load side-effect module with globals
@@ -82,5 +82,3 @@ if (!COMPOSER_PROFILE_POOLS) {
 for (const [poolName, entries] of Object.entries(COMPOSER_PROFILE_POOLS)) {
   normalizeComposerEntriesOrFail(entries, `COMPOSER_PROFILE_POOLS.${poolName}`);
 }
-
-

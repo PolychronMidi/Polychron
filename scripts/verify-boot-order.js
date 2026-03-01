@@ -176,61 +176,82 @@ function scanConsumed(filePath, globalSet) {
 
   let depth = 0;          // function nesting depth (0 = top-level / IIFE body)
   let iifeDepthOffset = 0; // how many IIFE braces we're inside (don't count)
+  let inBlockComment = false; // persists across lines (multi-line /* */ blocks)
 
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li];
     const trimmed = line.trimStart();
 
-    // Skip pure comment lines
-    if (trimmed.startsWith('//')) continue;
+    // Skip pure single-line comment lines (but still process block comment state)
+    if (!inBlockComment && trimmed.startsWith('//')) continue;
 
     // Track brace depth, distinguishing IIFE openers from function openers.
-    // Scan character-by-character (ignoring string literals and comments).
+    // Scan character-by-character, building code-only text for identifier scanning.
     let inString = false;
     let stringChar = '';
     let inLineComment = false;
-    let inBlockComment = false;
+    const codeParts = [];   // accumulate code-only text (no strings/comments)
+    let codeStart = inBlockComment ? -1 : 0;
 
     for (let ci = 0; ci < line.length; ci++) {
       const ch = line[ci];
       const next = line[ci + 1] || '';
 
-      // Block comment handling
+      // Block comment handling (persists across lines)
       if (inBlockComment) {
-        if (ch === '*' && next === '/') { inBlockComment = false; ci++; }
+        if (ch === '*' && next === '/') { inBlockComment = false; ci++; codeStart = ci + 1; }
         continue;
       }
       if (inLineComment) continue;
-      if (ch === '/' && next === '/') { inLineComment = true; continue; }
-      if (ch === '/' && next === '*') { inBlockComment = true; ci++; continue; }
+      if (ch === '/' && next === '/') {
+        if (codeStart >= 0 && codeStart < ci) codeParts.push(line.slice(codeStart, ci));
+        codeStart = -1;
+        inLineComment = true;
+        continue;
+      }
+      if (ch === '/' && next === '*') {
+        if (codeStart >= 0 && codeStart < ci) codeParts.push(line.slice(codeStart, ci));
+        codeStart = -1;
+        inBlockComment = true;
+        ci++;
+        continue;
+      }
 
       // String literal handling
       if (inString) {
         if (ch === '\\') { ci++; continue; }
-        if (ch === stringChar) inString = false;
+        if (ch === stringChar) { inString = false; codeStart = ci + 1; }
         continue;
       }
       if (ch === '\'' || ch === '"' || ch === '`') {
+        if (codeStart >= 0 && codeStart < ci) codeParts.push(line.slice(codeStart, ci));
         inString = true;
         stringChar = ch;
+        codeStart = -1;
         continue;
       }
 
-      // Brace tracking
+      // Brace tracking — integrate with codeParts so only depth-0 code is collected.
+      // One-line functions like `function f() { return globalVar; }` open and
+      // close on the same line, leaving depth at 0 at line end. Without per-brace
+      // flushing, the function-body code would be scanned for globals.
       if (ch === '{') {
-        // Check if this opens an IIFE body: look back for `(() => ` or `(function`
+        // Check if this opens an IIFE body: `(() => {` or `(function() {`
+        // Exclude named function expressions like (function name(args) {)
         const preceding = line.slice(0, ci);
         const isIIFE = /\(\s*\(\s*\)\s*=>\s*$/.test(preceding) ||
-                        /\(\s*function\s*\w*\s*\([^)]*\)\s*$/.test(preceding);
+                        /\(\s*function\s*\([^)]*\)\s*$/.test(preceding);
         if (isIIFE) {
           iifeDepthOffset++;
         } else {
+          if (depth === 0 && codeStart >= 0 && codeStart < ci) {
+            codeParts.push(line.slice(codeStart, ci));
+            codeStart = -1;
+          }
           depth++;
         }
       } else if (ch === '}') {
         if (iifeDepthOffset > 0) {
-          // Could be closing an IIFE brace — heuristic: if depth is 0, it's
-          // an IIFE closer, otherwise it's a regular function closer.
           if (depth === 0) {
             iifeDepthOffset--;
           } else {
@@ -239,18 +260,29 @@ function scanConsumed(filePath, globalSet) {
         } else {
           depth = Math.max(0, depth - 1);
         }
+        // Returning to depth 0: start a new code segment after the closing brace
+        if (depth === 0) {
+          codeStart = ci + 1;
+        }
       }
     }
 
-    // Only scan identifiers at load-time depth (top-level or inside IIFE body)
+    // Close any trailing code range (only at depth 0)
+    if (depth === 0 && codeStart >= 0 && codeStart < line.length && !inBlockComment && !inLineComment) {
+      codeParts.push(line.slice(codeStart));
+    }
+
+    // Skip lines entirely inside function bodies
     if (depth > 0) continue;
 
     // Skip require lines
     if (/\brequire\s*\(/.test(line)) continue;
 
+    // Scan identifiers only in code portions (comments and strings excluded)
+    const codeOnly = codeParts.join(' ');
     const idRe = /\b([A-Za-z_$][\w$]*)\b/g;
     let m;
-    while ((m = idRe.exec(line)) !== null) {
+    while ((m = idRe.exec(codeOnly)) !== null) {
       if (globalSet.has(m[1])) consumed.add(m[1]);
     }
   }
@@ -304,17 +336,28 @@ function checkIntraSubsystemOrder(bootOrder, fileToGlobals, globalToFile, global
 
     for (const filePath of files) {
       const consumed = fileConsumes.get(filePath);
+      const selfProvides = new Set(fileToGlobals.get(filePath) || []);
+      const fRel = rel(filePath);
+
       for (const g of consumed) {
         const provider = subsystemProviders.get(g);
         if (!provider) continue; // provided by another subsystem — OK
         if (provider === filePath) continue; // self-provided — OK
+        // Consumer also assigns this global (re-assignment) — not a real dependency
+        if (selfProvides.has(g)) continue;
+        // index.js consuming globals from its own children is safe
+        // (children load during index.js execution via require)
+        if (fRel.endsWith('/index.js')) {
+          const dir = fRel.replace(/\/index\.js$/, '/');
+          if (rel(provider).startsWith(dir)) continue;
+        }
 
         const providerIdx = bootIndex.get(provider);
         const consumerIdx = bootIndex.get(filePath);
         if (providerIdx > consumerIdx) {
           violations.push({
             subsystem: sub,
-            consumer: rel(filePath),
+            consumer: fRel,
             provider: rel(provider),
             global: g,
             consumerOrder: consumerIdx + 1,
@@ -334,243 +377,280 @@ function rel(absPath) {
   return path.relative(ROOT, absPath).replace(/\\/g, '/');
 }
 
-// ---- Auto-fix: rewrite index.js require order based on dependency graph ----
-// For each index.js, topologically sort its direct require() children so that
-// providers always precede consumers within the same file's scope.
+// ---- Auto-fix: rewrite index.js require order based on violations ----
+// Strategy: use the already-computed violations to know exactly which files
+// need to move before which. For each index.js, build a constraint graph
+// from violations where both consumer and provider are direct children of
+// that index.js, then topologically sort. Falls back to original order on
+// cycles. Skips src/index.js (architecturally mandated subsystem order).
 
-function autoFix(bootOrder, fileToGlobals, globalToFile, globalSet) {
-  // Collect every index.js that has direct require() children
-  const indexFiles = new Set();
+function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) {
+  const TOP_INDEX = path.join(SRC, 'index.js');
+
+  // Build map: file -> the index.js that directly requires it
+  // (i.e. its parent index.js)
+  const fileToParentIndex = new Map();
+  const indexChildren = new Map(); // indexFile -> [resolvedAbs, ...]
+
   for (const f of bootOrder) {
-    if (f.endsWith('index.js')) indexFiles.add(f);
+    if (!f.endsWith('index.js')) continue;
+    const src = fs.readFileSync(f, 'utf8');
+    const children = [];
+    for (const req of extractRequires(src)) {
+      if (!req.startsWith('.')) continue;
+      try {
+        const child = resolveRequire(req, path.dirname(f));
+        children.push(child);
+        fileToParentIndex.set(child, f);
+      } catch { /* skip */ }
+    }
+    indexChildren.set(f, children);
+  }
+
+  // For each file in boot order, find which index.js child it belongs to
+  // (it may be a deeply nested file — trace back to the direct child)
+  function directChildOf(file, idxFile) {
+    const children = indexChildren.get(idxFile);
+    if (!children) return null;
+    for (const child of children) {
+      if (file === child) return child;
+      // Check if file is transitively under child
+      const transitive = walkTransitive(child);
+      if (transitive.has(file)) return child;
+    }
+    return null;
+  }
+
+  const transitiveCache = new Map();
+  function walkTransitive(absPath) {
+    if (transitiveCache.has(absPath)) return transitiveCache.get(absPath);
+    const visited = new Set();
+    const stack = [absPath];
+    while (stack.length) {
+      const f = stack.pop();
+      if (visited.has(f)) continue;
+      visited.add(f);
+      try {
+        const src2 = fs.readFileSync(f, 'utf8');
+        for (const req of extractRequires(src2)) {
+          if (!req.startsWith('.')) continue;
+          try {
+            const child = resolveRequire(req, path.dirname(f));
+            if (!visited.has(child)) stack.push(child);
+          } catch { /* skip */ }
+        }
+      } catch { /* skip */ }
+    }
+    transitiveCache.set(absPath, visited);
+    return visited;
+  }
+
+  // Cache for scanConsumed results (avoid re-reading files per index)
+  const consumedCache = new Map();
+  function getCachedConsumed(f) {
+    if (consumedCache.has(f)) return consumedCache.get(f);
+    const result = scanConsumed(f, globalSet);
+    consumedCache.set(f, result);
+    return result;
+  }
+
+  // Group violations by the index.js that owns both consumer and provider
+  const violationsByIndex = new Map(); // indexFile -> [{providerChild, consumerChild}]
+
+  for (const v of violations) {
+    const consumerAbs = path.join(ROOT, v.consumer);
+    const providerAbs = path.join(ROOT, v.provider);
+
+    // Find the common parent index.js
+    for (const [idxFile, children] of indexChildren) {
+      if (idxFile === TOP_INDEX) continue; // never touch src/index.js
+
+      const consChild = directChildOf(consumerAbs, idxFile);
+      const provChild = directChildOf(providerAbs, idxFile);
+
+      if (consChild && provChild && consChild !== provChild) {
+        if (!violationsByIndex.has(idxFile)) violationsByIndex.set(idxFile, []);
+        violationsByIndex.get(idxFile).push({
+          providerChild: provChild,
+          consumerChild: consChild,
+          global: v.global
+        });
+        break;
+      }
+    }
   }
 
   let totalRewrites = 0;
 
-  for (const indexFile of indexFiles) {
-    const src = fs.readFileSync(indexFile, 'utf8');
+  for (const [idxFile, vList] of violationsByIndex) {
+    const src = fs.readFileSync(idxFile, 'utf8');
     const lines = src.split(/\r?\n/);
+    const children = indexChildren.get(idxFile);
+    if (!children || children.length < 2) continue;
 
-    // Parse require blocks: contiguous comment+require lines.
-    // A "require entry" = optional comment lines immediately before, then the require line.
-    // Non-require, non-comment lines are "anchors" that divide sortable blocks.
-    const entries = [];    // { startLine, endLine, reqPath, resolvedAbs, commentLines, reqLine }
-    const anchors = [];    // { lineIndex, text } — non-require lines that are NOT comments for requires
+    // Parse require entries: each is a contiguous block of comment lines
+    // immediately followed by a require line. We record the line range.
+    const reqEntries = []; // { startLine, endLine, resolvedAbs }
 
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i];
-      const trimmed = line.trimStart();
+    let li = 0;
+    while (li < lines.length) {
+      // Skip non-comment, non-require lines
+      if (!lines[li].trimStart().startsWith('//') && !/require\s*\(\s*['"]\./.test(lines[li])) {
+        li++;
+        continue;
+      }
 
       // Collect leading comment lines
-      const commentStart = i;
-      while (i < lines.length && lines[i].trimStart().startsWith('//')) {
-        // Peek: is next non-comment line a require?
-        let j = i + 1;
-        while (j < lines.length && lines[j].trimStart().startsWith('//')) j++;
-        if (j < lines.length && /require\s*\(\s*['"]\./.test(lines[j])) {
-          i++;
-        } else if (i === commentStart) {
-          // standalone comment before a non-require line
-          break;
-        } else {
-          break;
-        }
-      }
+      const commentStart = li;
+      while (li < lines.length && lines[li].trimStart().startsWith('//')) li++;
 
-      const reqLine = lines[i] || '';
-      const reqMatch = reqLine.match(/require\s*\(\s*['"](\.[^'"]+)['"]\s*\)/);
-      if (reqMatch) {
-        const reqPath = reqMatch[1];
+      // Check if a require line follows
+      if (li < lines.length && /require\s*\(\s*['"]\./.test(lines[li])) {
+        const reqMatch = lines[li].match(/require\s*\(\s*['"](\.[^'"]+)['"]\s*\)/);
         let resolvedAbs = null;
-        try { resolvedAbs = resolveRequire(reqPath, path.dirname(indexFile)); } catch { /* skip */ }
-        entries.push({
-          startLine: commentStart,
-          endLine: i,
-          reqPath,
-          resolvedAbs,
-          text: lines.slice(commentStart, i + 1).join('\n')
-        });
-        i++;
-      } else {
-        // Not a require line — anchor
-        if (trimmed.length > 0) {
-          anchors.push({ lineIndex: i, text: line });
+        if (reqMatch) {
+          try { resolvedAbs = resolveRequire(reqMatch[1], path.dirname(idxFile)); } catch { /* skip */ }
         }
-        i++;
+        reqEntries.push({ startLine: commentStart, endLine: li, resolvedAbs });
+        li++;
+      } else {
+        // Comments didn't lead to a require — skip them
+        // (li is already past the comments)
       }
     }
 
-    if (entries.length < 2) continue;
+    if (reqEntries.length < 2) continue;
 
-    // Build per-file provides/consumes from the boot-order analysis
-    const entryFiles = entries.filter(e => e.resolvedAbs).map(e => e.resolvedAbs);
-
-    // Gather all files transitively required by each entry
-    function allTransitive(absPath, visited) {
-      if (!visited) visited = new Set();
-      if (visited.has(absPath)) return visited;
-      visited.add(absPath);
-      const src2 = fs.readFileSync(absPath, 'utf8');
-      for (const req of extractRequires(src2)) {
-        if (!req.startsWith('.')) continue;
-        try {
-          const child = resolveRequire(req, path.dirname(absPath));
-          allTransitive(child, visited);
-        } catch { /* skip */ }
+    // Build FULL dependency graph between children of this index file.
+    // For each child, compute globals provided and consumed by its
+    // transitive subtree. Add edge A->B whenever A provides a global
+    // consumed at load-time by B's subtree (and B doesn't self-provide it).
+    // This prevents the topo sort from breaking already-satisfied deps.
+    const childProvides = new Map();
+    const childConsumes = new Map();
+    for (const re of reqEntries) {
+      if (!re.resolvedAbs) continue;
+      const subtree = walkTransitive(re.resolvedAbs);
+      const provSet = new Set();
+      const consSet = new Set();
+      for (const f of subtree) {
+        const provs = fileToGlobals.get(f) || [];
+        for (const g of provs) {
+          // Only credit this subtree if it is the authoritative (last) provider.
+          // Re-assigned globals whose final writer is in a different subtree
+          // would create false dependency edges and spurious cycles.
+          if (globalToFile.get(g) === f) provSet.add(g);
+        }
+        const cons = getCachedConsumed(f);
+        for (const g of cons) consSet.add(g);
       }
-      return visited;
+      childProvides.set(re.resolvedAbs, provSet);
+      childConsumes.set(re.resolvedAbs, consSet);
     }
 
-    // Map: entry resolvedAbs -> Set of all globals provided by it and its transitive children
-    const entryProvides = new Map();
-    const entryConsumes = new Map();
-    for (const entry of entries) {
-      if (!entry.resolvedAbs) continue;
-      const transitive = allTransitive(entry.resolvedAbs);
-      const provides = new Set();
-      const consumes = new Set();
-      for (const f of transitive) {
-        const fp = fileToGlobals.get(f);
-        if (fp) for (const g of fp) provides.add(g);
-        const fc = scanConsumed(f, globalSet);
-        for (const g of fc) consumes.add(g);
-      }
-      entryProvides.set(entry.resolvedAbs, provides);
-      entryConsumes.set(entry.resolvedAbs, consumes);
-    }
-
-    // Build directed dependency edges: entry A must come before entry B
-    // if A provides a global that B (or its transitive tree) consumes,
-    // AND both are owned by this same index.js
-    const entryAbsList = entries.filter(e => e.resolvedAbs).map(e => e.resolvedAbs);
-    const entryAbsSet = new Set(entryAbsList);
-    // Also include all globals provided by transitive children of our entries
-    const allProvidedByEntries = new Map(); // global -> entry resolvedAbs
-    for (const entry of entries) {
-      if (!entry.resolvedAbs) continue;
-      const prov = entryProvides.get(entry.resolvedAbs);
-      if (prov) for (const g of prov) allProvidedByEntries.set(g, entry.resolvedAbs);
-    }
-
-    // edges: Map<resolvedAbs, Set<resolvedAbs>> meaning "key must come BEFORE values in set"
     const mustPrecede = new Map();
-    for (const abs of entryAbsSet) mustPrecede.set(abs, new Set());
+    for (const re of reqEntries) {
+      if (re.resolvedAbs) mustPrecede.set(re.resolvedAbs, new Set());
+    }
 
-    for (const entry of entries) {
-      if (!entry.resolvedAbs) continue;
-      const cons = entryConsumes.get(entry.resolvedAbs);
-      if (!cons) continue;
-      for (const g of cons) {
-        const provider = allProvidedByEntries.get(g);
-        if (!provider || provider === entry.resolvedAbs) continue;
-        if (!entryAbsSet.has(provider)) continue;
-        // provider must come before entry
-        mustPrecede.get(provider).add(entry.resolvedAbs);
+    for (const entryA of reqEntries) {
+      if (!entryA.resolvedAbs) continue;
+      const provA = childProvides.get(entryA.resolvedAbs);
+      for (const entryB of reqEntries) {
+        if (!entryB.resolvedAbs || entryA.resolvedAbs === entryB.resolvedAbs) continue;
+        const consB = childConsumes.get(entryB.resolvedAbs);
+        const provB = childProvides.get(entryB.resolvedAbs);
+        for (const g of provA) {
+          if (consB.has(g) && !provB.has(g)) {
+            mustPrecede.get(entryA.resolvedAbs).add(entryB.resolvedAbs);
+            break;
+          }
+        }
       }
     }
 
-    // Topological sort (Kahn's algorithm) with stable ordering
-    const inDegree = new Map();
-    for (const abs of entryAbsSet) inDegree.set(abs, 0);
-    for (const [, deps] of mustPrecede) {
-      for (const d of deps) inDegree.set(d, (inDegree.get(d) || 0) + 1);
+    // Topological sort with Kahn's, using original order as stable tiebreaker
+    const origIdx = new Map();
+    for (let ri = 0; ri < reqEntries.length; ri++) {
+      if (reqEntries[ri].resolvedAbs) origIdx.set(reqEntries[ri].resolvedAbs, ri);
     }
 
-    // Use original order as tiebreaker for stability
-    const originalOrder = new Map();
-    for (let ei = 0; ei < entries.length; ei++) {
-      if (entries[ei].resolvedAbs) originalOrder.set(entries[ei].resolvedAbs, ei);
+    const resolvedSet = new Set(reqEntries.filter(e => e.resolvedAbs).map(e => e.resolvedAbs));
+    const inDeg = new Map();
+    for (const abs of resolvedSet) inDeg.set(abs, 0);
+    for (const [, targets] of mustPrecede) {
+      for (const t of targets) {
+        if (inDeg.has(t)) inDeg.set(t, inDeg.get(t) + 1);
+      }
     }
 
-    const queue = [];
-    for (const abs of entryAbsSet) {
-      if (inDegree.get(abs) === 0) queue.push(abs);
-    }
-    queue.sort((a, b) => (originalOrder.get(a) || 0) - (originalOrder.get(b) || 0));
+    const queue = [...resolvedSet].filter(a => inDeg.get(a) === 0);
+    queue.sort((a, b) => (origIdx.get(a) || 0) - (origIdx.get(b) || 0));
 
     const sorted = [];
-    while (queue.length > 0) {
+    while (queue.length) {
       const node = queue.shift();
       sorted.push(node);
-      const deps = mustPrecede.get(node) || new Set();
-      const next = [];
-      for (const d of deps) {
-        inDegree.set(d, inDegree.get(d) - 1);
-        if (inDegree.get(d) === 0) next.push(d);
+      for (const t of (mustPrecede.get(node) || [])) {
+        inDeg.set(t, inDeg.get(t) - 1);
+        if (inDeg.get(t) === 0) queue.push(t);
       }
-      next.sort((a, b) => (originalOrder.get(a) || 0) - (originalOrder.get(b) || 0));
-      for (const n of next) queue.push(n);
+      queue.sort((a, b) => (origIdx.get(a) || 0) - (origIdx.get(b) || 0));
     }
 
-    if (sorted.length !== entryAbsSet.size) {
-      // Cycle detected — skip this index.js, can't fix
-      console.log('verify-boot-order: --fix: CYCLE detected in ' + rel(indexFile) + ', skipping');
-      continue;
+    if (sorted.length !== resolvedSet.size) {
+      console.log('verify-boot-order: --fix: cycle in ' + rel(idxFile) + ', using best-effort sort');
+      for (const abs of resolvedSet) {
+        if (!sorted.includes(abs)) sorted.push(abs);
+      }
+      sorted.sort((a, b) => (origIdx.get(a) || 0) - (origIdx.get(b) || 0));
     }
 
-    // Build sorted entry list (map resolvedAbs back to entry objects)
+    // Map resolvedAbs -> reqEntry
     const absToEntry = new Map();
-    for (const entry of entries) {
-      if (entry.resolvedAbs) absToEntry.set(entry.resolvedAbs, entry);
+    for (const re of reqEntries) {
+      if (re.resolvedAbs) absToEntry.set(re.resolvedAbs, re);
     }
 
-    // Check if order actually changed
+    // Check if anything actually moved
+    const resolvedEntries = reqEntries.filter(e => e.resolvedAbs);
     let changed = false;
     for (let si = 0; si < sorted.length; si++) {
-      const origIdx = originalOrder.get(sorted[si]);
-      if (origIdx !== si) { changed = true; break; }
+      if (sorted[si] !== resolvedEntries[si].resolvedAbs) { changed = true; break; }
     }
     if (!changed) continue;
 
-    // Reconstruct the file: preserve anchor lines in their relative positions,
-    // replace require blocks in sorted order.
-    // Strategy: collect all require-entry text blocks from original,
-    // then emit them in the new sorted order at the same line positions.
+    // Reconstruct file by region-based assembly.
+    // Collect all require entries sorted by startLine to identify gaps.
+    // Output = gap0 + sorted[0] + gap1 + sorted[1] + ... + gapN
+    // where gaps are the original lines between/around require entries.
+    const slots = resolvedEntries.map(e => ({ start: e.startLine, end: e.endLine }));
+    const sortedLineArrays = sorted.map(abs => {
+      const e = absToEntry.get(abs);
+      return lines.slice(e.startLine, e.endLine + 1);
+    });
 
-    // Gather the original line ranges used by entries
-    const entryLineRanges = entries.map(e => ({ start: e.startLine, end: e.endLine }));
-    // All lines NOT belonging to any entry
-    const nonEntryLines = [];
-    const entryLineSet = new Set();
-    for (const e of entries) {
-      for (let l = e.startLine; l <= e.endLine; l++) entryLineSet.add(l);
-    }
-    for (let l = 0; l < lines.length; l++) {
-      if (!entryLineSet.has(l)) nonEntryLines.push({ lineIndex: l, text: lines[l] });
-    }
+    const result = [];
 
-    // Rebuild: walk through line indices, when we hit entry blocks emit in sorted order
-    const newLines = [];
-    let entrySlot = 0;
-    let lineIdx = 0;
+    // Lines before first slot
+    for (let l = 0; l < slots[0].start; l++) result.push(lines[l]);
 
-    // Sorted entries in text form
-    const sortedEntryTexts = sorted.map(abs => absToEntry.get(abs).text);
-    // Entries without resolvedAbs go at end
-    const unresolvedEntries = entries.filter(e => !e.resolvedAbs);
-    const allSortedTexts = [...sortedEntryTexts, ...unresolvedEntries.map(e => e.text)];
+    for (let si = 0; si < slots.length; si++) {
+      // Emit sorted entry for this slot
+      for (const sl of sortedLineArrays[si]) result.push(sl);
 
-    while (lineIdx < lines.length) {
-      if (entryLineSet.has(lineIdx)) {
-        // We're at the start of an entry block — emit next sorted entry
-        if (entrySlot < allSortedTexts.length) {
-          newLines.push(allSortedTexts[entrySlot]);
-          entrySlot++;
-        }
-        // Skip past the original entry's lines
-        while (lineIdx < lines.length && entryLineSet.has(lineIdx)) lineIdx++;
-      } else {
-        newLines.push(lines[lineIdx]);
-        lineIdx++;
-      }
+      // Emit gap between this slot and next slot (or end of file)
+      const gapStart = slots[si].end + 1;
+      const gapEnd = (si + 1 < slots.length) ? slots[si + 1].start : lines.length;
+      for (let l = gapStart; l < gapEnd; l++) result.push(lines[l]);
     }
 
-    const newSrc = newLines.join('\n');
+    const eol = src.includes('\r\n') ? '\r\n' : '\n';
+    const newSrc = result.join(eol);
     if (newSrc !== src) {
-      fs.writeFileSync(indexFile, newSrc, 'utf8');
+      fs.writeFileSync(idxFile, newSrc, 'utf8');
       totalRewrites++;
-      console.log('verify-boot-order: --fix: rewrote ' + rel(indexFile));
+      console.log('verify-boot-order: --fix: rewrote ' + rel(idxFile));
     }
   }
 
@@ -597,7 +677,7 @@ function verify() {
   // Phase 3: auto-fix if requested
   let fixedCount = 0;
   if (FIX_MODE && violations.length > 0) {
-    fixedCount = autoFix(bootOrder, fileToGlobals, globalToFile, globalSet);
+    fixedCount = autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet);
     if (fixedCount > 0) {
       // Re-walk and re-check after fix
       const bootOrder2 = walkBootOrder(path.join(SRC, 'index.js'));
