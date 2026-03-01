@@ -69,18 +69,20 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 ## Architectural Boundaries
 
 - **Cross-layer cannot write to conductor** - only local `playProb`/`stutterProb` modifications and `explainabilityBus` diagnostics.
+- **Conductor cannot mutate cross-layer state** - read-only access via getters is fine; writes are banned (ESLint `local/no-direct-crosslayer-write-from-conductor`).
 - **Signal reading:** always through `signalReader`, never `conductorIntelligence.getSignalSnapshot()` directly.
 - **New feedback loops** must register with `feedbackRegistry` to prevent catastrophic resonance.
 - **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls.
 
 ## Custom ESLint Rules
 
-15 project-specific rules in `scripts/eslint-rules/`:
+16 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** - PascalCase for classes, camelCase for everything else
 - **`no-conductor-registration-from-crosslayer`** - prevent cross-layer modules from registering with conductor
 - **`no-console-acceptable-warning`** - restrict `console.warn` to `'Acceptable warning: ...'` format
 - **`no-direct-conductor-state-from-crosslayer`** - prevent cross-layer modules from reading `conductorState` directly (must use `conductorSignalBridge`)
+- **`no-direct-crosslayer-write-from-conductor`** - prevent conductor modules from mutating cross-layer state (read-only access allowed)
 - **`no-direct-signal-read`** - ban `conductorIntelligence.getSignalSnapshot()` - use `signalReader`
 - **`no-math-random`** - ban `Math.random()` - use project random sources
 - **`no-non-ascii`** - ban non-ASCII characters in source

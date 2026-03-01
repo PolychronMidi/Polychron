@@ -59,7 +59,7 @@ After the notes are emitted, the system enters the post-beat phase. It has gener
 4. **Coherence Monitor:** **Firewall Boundary 3: Closed-Loop Output Verification.**
 `coherenceMonitor` listens to the output layer and checks if the actual density matches the conductor's intended density. If the stochastic elements under-produced notes, it sends a bias multiplier back to the conductor to slightly boost density on the *next* beat. This is the only way output affects input, and it operates through a dampened, delayed feedback registry, preventing catastrophic resonance.
 
-When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `output/trace.jsonl` (via `traceDrain`), making this full loop replayable over time.
+When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `output/trace.jsonl` (via `traceDrain`), including per-stage timing data (14 named stages, nanosecond precision via `process.hrtime.bigint()`), making this full loop replayable and profilable over time.
 
 ---
 
@@ -67,7 +67,7 @@ When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `ou
 
 Every time you build a new module, you must respect these cellular boundaries:
 
-* **Top-Down Steering Only:** The Conductor sets the climate. The Cross-Layer orchestrates the weather. The play loop experiences it. Cross-layer modules *cannot* write to the conductor directly. They must operate locally via `explainabilityBus` adjustments or influence the `playProb`/`stutterProb` locally out of the conductor's sight.
+* **Top-Down Steering Only:** The Conductor sets the climate. The Cross-Layer orchestrates the weather. The play loop experiences it. Cross-layer modules *cannot* write to the conductor directly. They must operate locally via `explainabilityBus` adjustments or influence the `playProb`/`stutterProb` locally out of the conductor's sight. Conversely, conductor modules *cannot* mutate cross-layer state (ESLint-enforced via `no-direct-crosslayer-write-from-conductor`); read-only access via getters is permitted.
 * **Network Dampening:** Any new feedback loop must register with `feedbackRegistry`. The closed-loop controller mechanism ensures that phase misalignment and thermal loads do not cause feedback loops to resonate and destroy the system's structural integrity.
 * **Absolute AbsoluteTimeGrid:** Modules do not speak directly to each other; they post signals into `absoluteTimeGrid`, and interested modules query the timestamps. This ensures spatial decoupling and guarantees that chronological reasoning remains immutable.
 
