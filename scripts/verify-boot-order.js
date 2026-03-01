@@ -119,7 +119,14 @@ function mapProviders(bootOrder, globalSet) {
     const src      = fs.readFileSync(filePath, 'utf8');
     const provided = [];
 
-    for (const line of src.split(/\r?\n/)) {
+    for (const rawLine of src.split(/\r?\n/)) {
+      // Strip leading inline JSDoc annotation (/** ... */) to detect assignments behind them.
+      // config.js uses patterns like: /** @tier-3 */ PPQ=30000;
+      let line = rawLine;
+      if (line.startsWith('/**')) {
+        const closeIdx = line.indexOf('*/');
+        if (closeIdx !== -1) line = line.slice(closeIdx + 2).trimStart();
+      }
       // Only scan unindented lines (column-0 assignments match global convention)
       if (!line.length || line[0] === ' ' || line[0] === '\t' || line[0] === '/') continue;
 
@@ -141,7 +148,7 @@ function mapProviders(bootOrder, globalSet) {
       //   alias:  rf=randomFloat= -> rf, randomFloat
       // Negative lookbehind excludes property access (obj.prop) without
       // consuming the separator character between chain identifiers.
-      const re = /(?<![.\w$])([A-Za-z_$][\w$]*)\s*=(?!=)/g;
+      const re = /(?<![.\w$])([A-Za-z_$][\w$]*)\s*=(?![=>])/g;
       let m;
       while ((m = re.exec(line)) !== null) record(m[1], filePath, provided);
     }
@@ -369,6 +376,64 @@ function checkIntraSubsystemOrder(bootOrder, fileToGlobals, globalToFile, global
   }
 
   return { violations, subsystemCount: subsystems.size };
+}
+
+// ---- Cross-subsystem dependency ordering check ----
+// Verify that globals consumed by a module in subsystem A, provided by a file
+// in subsystem B, respect the mandated subsystem load order.
+// Mandated order: utils -> conductor -> rhythm -> time -> composers -> fx -> crossLayer -> writer -> play
+
+const SUBSYSTEM_ORDER = ['utils', 'conductor', 'rhythm', 'time', 'composers', 'fx', 'crossLayer', 'writer', 'play'];
+
+function checkCrossSubsystemOrder(bootOrder, fileToGlobals, globalToFile, globalSet) {
+  const violations = [];
+
+  // Build subsystem rank map
+  const subsystemRank = new Map();
+  for (let i = 0; i < SUBSYSTEM_ORDER.length; i++) {
+    subsystemRank.set(SUBSYSTEM_ORDER[i], i);
+  }
+
+  // Build: for each file, the set of globals it consumes
+  const fileConsumes = new Map();
+  for (const filePath of bootOrder) {
+    fileConsumes.set(filePath, scanConsumed(filePath, globalSet));
+  }
+
+  for (const filePath of bootOrder) {
+    const consumerSub = subsystemOf(rel(filePath));
+    if (!consumerSub) continue;
+    const consumerRank = subsystemRank.get(consumerSub);
+    if (consumerRank === undefined) continue;
+
+    const consumed = fileConsumes.get(filePath);
+    const selfProvides = new Set(fileToGlobals.get(filePath) || []);
+
+    for (const g of consumed) {
+      if (selfProvides.has(g)) continue; // self-provided — OK
+      const provider = globalToFile.get(g);
+      if (!provider) continue; // orphaned global — skip
+      const providerSub = subsystemOf(rel(provider));
+      if (!providerSub) continue;
+      if (providerSub === consumerSub) continue; // same subsystem — handled by intra check
+
+      const providerRank = subsystemRank.get(providerSub);
+      if (providerRank === undefined) continue;
+
+      // Violation: consumer loads in a subsystem that comes BEFORE the provider's subsystem
+      if (providerRank > consumerRank) {
+        violations.push({
+          consumer: rel(filePath),
+          consumerSubsystem: consumerSub,
+          provider: rel(provider),
+          providerSubsystem: providerSub,
+          global: g
+        });
+      }
+    }
+  }
+
+  return violations;
 }
 
 // ---- Helpers ----
@@ -674,6 +739,9 @@ function verify() {
     bootOrder, fileToGlobals, globalToFile, globalSet
   );
 
+  // Phase 2b: cross-subsystem ordering
+  const crossViolations = checkCrossSubsystemOrder(bootOrder, fileToGlobals, globalToFile, globalSet);
+
   // Phase 3: auto-fix if requested
   let fixedCount = 0;
   if (FIX_MODE && violations.length > 0) {
@@ -685,20 +753,21 @@ function verify() {
       const check2 = checkIntraSubsystemOrder(
         bootOrder2, prov2.fileToGlobals, prov2.globalToFile, globalSet
       );
+      const crossViolations2 = checkCrossSubsystemOrder(bootOrder2, prov2.fileToGlobals, prov2.globalToFile, globalSet);
       if (check2.violations.length === 0) {
         console.log('verify-boot-order: --fix: all ' + violations.length + ' violations resolved (' + fixedCount + ' index.js files rewritten)');
       } else {
         console.log('verify-boot-order: --fix: reduced violations from ' + violations.length + ' to ' + check2.violations.length + ' (' + fixedCount + ' index.js files rewritten)');
         // Update output with post-fix state
-        writeOutput(bootOrder2, prov2.fileToGlobals, globalSet, prov2.globalToFile, mapped, orphaned, prov2.reassigned, check2.violations, check2.subsystemCount);
+        writeOutput(bootOrder2, prov2.fileToGlobals, globalSet, prov2.globalToFile, mapped, orphaned, prov2.reassigned, check2.violations, check2.subsystemCount, crossViolations2);
         return;
       }
-      writeOutput(bootOrder2, prov2.fileToGlobals, globalSet, prov2.globalToFile, prov2.globalToFile.size, orphaned, prov2.reassigned, check2.violations, check2.subsystemCount);
+      writeOutput(bootOrder2, prov2.fileToGlobals, globalSet, prov2.globalToFile, prov2.globalToFile.size, orphaned, prov2.reassigned, check2.violations, check2.subsystemCount, crossViolations2);
       return;
     }
   }
 
-  writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, orphaned, reassigned, violations, subsystemCount);
+  writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, orphaned, reassigned, violations, subsystemCount, crossViolations);
 
   if (violations.length) {
     console.log(
@@ -716,7 +785,7 @@ function verify() {
   }
 }
 
-function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, orphaned, reassigned, violations, subsystemCount) {
+function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, orphaned, reassigned, violations, subsystemCount, crossViolations) {
   const output = {
     meta: {
       generated: new Date().toISOString(),
@@ -726,7 +795,8 @@ function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, 
       orphaned: orphaned,
       reassigned: reassigned,
       subsystemCount: subsystemCount,
-      intraSubsystemViolations: violations.length
+      intraSubsystemViolations: violations.length,
+      crossSubsystemViolations: crossViolations.length
     },
     bootOrder: bootOrder.map(function(f, i) {
       return {
@@ -735,7 +805,8 @@ function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, 
         provides: fileToGlobals.get(f) || []
       };
     }),
-    intraSubsystemViolations: violations
+    intraSubsystemViolations: violations,
+    crossSubsystemViolations: crossViolations
   };
 
   fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
@@ -752,6 +823,21 @@ function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, 
       'verify-boot-order: ' + orphaned.length + ' runtime-assigned globals (no static provider): ' +
       orphaned.slice(0, 8).join(', ') + (orphaned.length > 8 ? ' ...' : '')
     );
+  }
+
+  if (crossViolations.length) {
+    console.log(
+      'verify-boot-order: ' + crossViolations.length + ' cross-subsystem ordering violation(s):'
+    );
+    for (const v of crossViolations.slice(0, 10)) {
+      console.log(
+        '  ' + v.consumer + ' (' + v.consumerSubsystem + ') reads "' + v.global +
+        '" from ' + v.provider + ' (' + v.providerSubsystem + ')'
+      );
+    }
+    if (crossViolations.length > 10) {
+      console.log('  ... and ' + (crossViolations.length - 10) + ' more');
+    }
   }
 }
 

@@ -163,7 +163,7 @@ interface ConductorStateSnapshot {
   excursion: number; sectionPhase: string;
   phrasePosition: number; phrasePhase: string; phraseDynamism: number;
   registerBias: number; densityMultiplier: number; voiceIndependence: number;
-  compositeIntensity: number; playProb: number; stutterProb: number;
+  compositeIntensity: number; playProb: number; stutterProb: number; flicker: number;
   textureMode: string; textureFatigue: number; densityBias: number;
   crossModBias: number; emissionRatio: number; activeProfile: string;
   extraDensityCorrection: number; extraCoherenceDensityBias: number;
@@ -1722,7 +1722,7 @@ declare var lastVoiceBudgetKey: any;
 declare var velocity: any;
 declare var fullBootstrap: any;
 declare var mainBootstrap: any;
-declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean }) => void;
+declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean; stageTiming?: Record<string, number> | null }) => void;
 /** @boot-advisory */
 declare var beatPipelineDescriptor: {
   getStages(): ReadonlyArray<{ name: string; after: string[]; produces: string[] }>;

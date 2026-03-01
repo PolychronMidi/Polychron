@@ -23,6 +23,7 @@
     compositeIntensity: 0,
     playProb: 0.5,
     stutterProb: 0.3,
+    flicker: 1,
     textureMode: 'single',
     textureFatigue: 0,
     densityBias: 0,
@@ -98,6 +99,7 @@
     snapshot.extraCoherenceDensityBias = V.optionalFinite(Number(_data.extraCoherenceDensityBias), snapshot.extraCoherenceDensityBias);
     snapshot.playProb = clamp(V.optionalFinite(Number(_data.playProb), snapshot.playProb), 0, 1);
     snapshot.stutterProb = clamp(V.optionalFinite(Number(_data.stutterProb), snapshot.stutterProb), 0, 1);
+    snapshot.flicker = clamp(V.optionalFinite(Number(_data.flicker), snapshot.flicker), 0.4, 1.6);
 
     snapshot.textureFatigue = clamp(Number(textureBlender.getRecentDensity()), 0, 1);
 
@@ -193,6 +195,7 @@
     snapshot.binauralFlip = false;
     snapshot.playProb = 0.5;
     snapshot.stutterProb = 0.3;
+    snapshot.flicker = 1;
     snapshot.tick = 0;
     snapshot.updatedAt = Date.now();
   }

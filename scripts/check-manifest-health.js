@@ -53,10 +53,12 @@ function resolveCouplingThreshold(regime, baseThreshold) {
   return byRegime[regime] !== undefined ? byRegime[regime] : baseThreshold;
 }
 
-function assertManifestHealth(manifest) {
+function assertManifestHealth(manifest, manifestPath) {
   const MAX_DENSITY_LOW_RATE = parseFiniteEnv('MANIFEST_MAX_DENSITY_LOW_RATE', 0.12);
   const BASE_MAX_COMPOSITIONAL_COUPLING = parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING', 0.85);
   const MAX_WARNING_COUNT = parseFiniteEnv('MANIFEST_MAX_WARNING_COUNT', 10);
+  const MAX_COUPLING_TAIL_P90 = parseFiniteEnv('MANIFEST_MAX_COUPLING_TAIL_P90', 0.90);
+  const MAX_COUPLING_TAIL_EXCEEDANCE = parseFiniteEnv('MANIFEST_MAX_COUPLING_TAIL_EXCEEDANCE', 0.25);
   const regime = String(getNested(manifest, ['systemDynamics', 'snapshot', 'regime'], 'systemDynamics.snapshot.regime')).toLowerCase();
   const MAX_COMPOSITIONAL_COUPLING = resolveCouplingThreshold(regime, BASE_MAX_COMPOSITIONAL_COUPLING);
 
@@ -124,20 +126,73 @@ function assertManifestHealth(manifest) {
     failures.push(`critical coherence verdicts present: ${criticalFindings.join(' | ')}`);
   }
 
+  // --- Coupling tail risk gate (reads trace-summary.json if available) ---
+  const traceSummaryPath = path.join(path.dirname(manifestPath), 'trace-summary.json');
+  let tailP90Max = null;
+  let tailExceedanceMax = null;
+  if (fs.existsSync(traceSummaryPath)) {
+    try {
+      const traceSummary = JSON.parse(fs.readFileSync(traceSummaryPath, 'utf8'));
+      const couplingTail = traceSummary && traceSummary.couplingTail;
+      if (couplingTail && typeof couplingTail === 'object') {
+        const tailBreaches = [];
+        const exceedanceBreaches = [];
+        const pairKeys = Object.keys(couplingTail);
+        for (let i = 0; i < pairKeys.length; i++) {
+          const pair = pairKeys[i];
+          const tail = couplingTail[pair];
+          if (!tail || typeof tail !== 'object') continue;
+          const p90 = Number(tail.p90);
+          if (Number.isFinite(p90)) {
+            if (tailP90Max === null || p90 > tailP90Max) tailP90Max = p90;
+            if (p90 > MAX_COUPLING_TAIL_P90) {
+              tailBreaches.push(`${pair} p90=${p90.toFixed(4)}`);
+            }
+          }
+          const exc = tail.exceedanceRate;
+          if (exc && typeof exc === 'object') {
+            const excKeys = Object.keys(exc);
+            for (let j = 0; j < excKeys.length; j++) {
+              const rate = Number(exc[excKeys[j]]);
+              if (Number.isFinite(rate)) {
+                if (tailExceedanceMax === null || rate > tailExceedanceMax) tailExceedanceMax = rate;
+                if (Number(excKeys[j]) >= 0.85 && rate > MAX_COUPLING_TAIL_EXCEEDANCE) {
+                  exceedanceBreaches.push(`${pair} exc@${excKeys[j]}=${rate.toFixed(4)}`);
+                }
+              }
+            }
+          }
+        }
+        if (tailBreaches.length > 0) {
+          failures.push(`coupling tail p90 exceeds ${MAX_COUPLING_TAIL_P90.toFixed(2)}: ${tailBreaches.join(', ')}`);
+        }
+        if (exceedanceBreaches.length > 0) {
+          failures.push(`coupling tail exceedance@0.85 exceeds ${MAX_COUPLING_TAIL_EXCEEDANCE.toFixed(2)}: ${exceedanceBreaches.join(', ')}`);
+        }
+      }
+    } catch (err) {
+      // Trace summary is advisory — parse failures are non-fatal
+      console.warn('Acceptable warning: check-manifest-health could not parse trace-summary.json: ' + (err && err.message ? err.message : err));
+    }
+  }
+
   if (failures.length > 0) {
     throw new Error('check-manifest-health: health gate failed: ' + failures.join('; '));
   }
 
   console.log(
     'check-manifest-health: PASS ' +
-    `(regime=${regime}, densityLowRate=${densityLowRate.toFixed(3)}, warningCount=${warningCount}, max|coupling|<=${MAX_COMPOSITIONAL_COUPLING.toFixed(3)})`
+    `(regime=${regime}, densityLowRate=${densityLowRate.toFixed(3)}, warningCount=${warningCount}, max|coupling|<=${MAX_COMPOSITIONAL_COUPLING.toFixed(3)}` +
+    (tailP90Max !== null ? `, tailP90Max=${tailP90Max.toFixed(4)}` : '') +
+    (tailExceedanceMax !== null ? `, tailExcMax=${tailExceedanceMax.toFixed(4)}` : '') +
+    ')'
   );
 }
 
 function main() {
   const manifestPath = path.join(process.cwd(), 'output', 'system-manifest.json');
   const manifest = loadManifest(manifestPath);
-  assertManifestHealth(manifest);
+  assertManifestHealth(manifest, manifestPath);
 }
 
 main();

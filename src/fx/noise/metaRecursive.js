@@ -23,7 +23,7 @@ easingFunctions = [
 
 // Perlin noise implementation
 permutation = [...Array(256)].map(() => ri(0, 255));
-p = [...permutation, ...permutation];
+const perlinP = [...permutation, ...permutation];
 
 fade = function(t) {
   return t * t * t * (t * (t * 6 - 15) + 10);
@@ -43,7 +43,7 @@ perlinNoise = function(x) {
   const X = m.floor(x) & 255;
   x -= m.floor(x);
   const u = fade(x);
-  return lerp(u, grad(p[X], x), grad(p[X+1], x-1));
+  return lerp(u, grad(perlinP[X], x), grad(perlinP[X+1], x-1));
 };
 
 noiseFunctions = [
@@ -74,7 +74,7 @@ metaRecursiveNoise = function(x, depth = 0, maxDepth = ri(6, 12), noiseFunc) {
   const X = m.floor(x) & 255;
   x -= m.floor(x);
   const u = metaRecursiveEaseNoise(fade(x), depth + 1, maxDepth);
-  return lerp(u, grad(p[X], x), grad(p[X+1], x-1));
+  return lerp(u, grad(perlinP[X], x), grad(perlinP[X+1], x-1));
 };
 
 // Meta-recursive 2D using SimplexNoise - combines easing with simplex at multiple scales
