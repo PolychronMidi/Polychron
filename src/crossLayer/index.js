@@ -4,21 +4,25 @@
 // @ts-ignore: side-effect module load
 require('./crossLayerRegistry');
 
+
 // @ts-ignore: side-effect module load
 require('./explainabilityBus');
 
-// Subsystem groups - each subfolder index.js loads its own modules.
-// @ts-ignore: side-effect module load
-require('./structure');
-// @ts-ignore: side-effect module load
-require('./harmony');
+
 // @ts-ignore: side-effect module load
 require('./rhythm');
 // @ts-ignore: side-effect module load
+require('./harmony');
+// @ts-ignore: side-effect module load
 require('./dynamics');
+// Subsystem groups - each subfolder index.js loads its own modules.
+// @ts-ignore: side-effect module load
+require('./structure');
+
 
 // @ts-ignore: conductor-crossLayer signal bridge (registers recorder + crossLayerRegistry)
 require('./conductorSignalBridge');
+
 
 // Lifecycle manager loads LAST - after all modules have self-registered.
 // @ts-ignore: side-effect module load
