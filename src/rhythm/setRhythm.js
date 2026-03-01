@@ -1,4 +1,4 @@
-_random = require('@tonaljs/rhythm-pattern').random;
+// _random provided by patterns.js (same module) - no duplicate assignment needed
 
 const V = validator.create('setRhythm');
 

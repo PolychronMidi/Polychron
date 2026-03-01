@@ -7,7 +7,8 @@
  * Record all cross-layer outcomes for one beat.
  * @param {{ layer: string, clAbsMs: number, clIntent: any, clPhase: any, clNegotiation: any,
  *           clBreathing: any, clTension: number, clCadence: any, clPhaseSnapshot: any,
- *           clRest: any, clEntropy: any, stutterProb: number, isL1: boolean }} opts
+ *           clRest: any, clEntropy: any, stutterProb: number, isL1: boolean,
+ *           stageTiming: Object|null }} opts
  */
 const _traceEnabled = process.argv.includes('--trace');
 let _traceSnapBeatCount = -1;
@@ -17,7 +18,8 @@ let _traceCachedDynamicsSnap = null;
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
-    clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1
+    clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,
+    stageTiming
   } = opts;
   const { requireFiniteNumber, requireUnitInterval } = mainBootstrap;
 
@@ -138,7 +140,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       trustScores: adaptiveTrustScores.getSnapshot(),
       regime: _traceCachedDynamicsSnap.regime,
       couplingMatrix: _traceCachedDynamicsSnap.couplingMatrix,
-      iterBudget: setUnitTimingBudgetStats.getLastBeat()
+      iterBudget: setUnitTimingBudgetStats.getLastBeat(),
+      stageTiming: stageTiming
     };
     explainabilityBus.emit('trace-beat', layer, tracePayload, clAbsMs);
     traceDrain.record(layer, tracePayload);

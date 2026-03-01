@@ -78,6 +78,7 @@ function summarizeTrace(entries) {
   const couplingSeries = {};
   const trustScoreAbs = {};
   const trustWeightAbs = {};
+  const stageTimingAgg = {}; // per-stage min/max/avg across all beats
 
   let firstBeatKey = null;
   let lastBeatKey = null;
@@ -146,6 +147,19 @@ function summarizeTrace(entries) {
         }
       }
     }
+
+    // Accumulate per-stage timing (processBeat hot-path profile)
+    const st = e.stageTiming;
+    if (st && typeof st === 'object') {
+      const stKeys = Object.keys(st);
+      for (let j = 0; j < stKeys.length; j++) {
+        const stage = stKeys[j];
+        const ms = toNum(st[stage], NaN);
+        if (!Number.isFinite(ms)) continue;
+        if (!stageTimingAgg[stage]) stageTimingAgg[stage] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+        updateMinMax(stageTimingAgg[stage], ms);
+      }
+    }
   }
 
   const couplingSummary = {};
@@ -205,7 +219,14 @@ function summarizeTrace(entries) {
     couplingTail,
     trustScoreAbs: trustScoreSummary,
     trustWeightAbs: trustWeightSummary,
-    trustAbs: trustSummary
+    trustAbs: trustSummary,
+    stageTiming: (() => {
+      const stKeys = Object.keys(stageTimingAgg);
+      if (stKeys.length === 0) return null;
+      const result = {};
+      for (let i = 0; i < stKeys.length; i++) result[stKeys[i]] = finalizeMinMax(stageTimingAgg[stKeys[i]]);
+      return result;
+    })()
   };
 }
 

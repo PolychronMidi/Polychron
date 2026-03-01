@@ -14,6 +14,7 @@ module.exports = {
     'case-conventions': require('./case-conventions'),
     'no-non-ascii': require('./no-non-ascii'),
     'no-unregistered-feedback-loop': require('./no-unregistered-feedback-loop'),
-    'no-direct-conductor-state-from-crosslayer': require('./no-direct-conductor-state-from-crosslayer')
+    'no-direct-conductor-state-from-crosslayer': require('./no-direct-conductor-state-from-crosslayer'),
+    'no-direct-crosslayer-write-from-conductor': require('./no-direct-crosslayer-write-from-conductor')
   }
 };
