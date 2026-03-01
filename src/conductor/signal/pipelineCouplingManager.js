@@ -36,20 +36,20 @@ pipelineCouplingManager = (() => {
   // Per-pair target overrides (targets are structural, not gains).
   const PAIR_TARGETS = {
     'density-tension':  0.15,  // structurally persistent -- needs aggressive target
-    'density-flicker':  0.20,
-    'density-entropy':  0.30,  // structural - more notes - entropy shifts
+    'density-flicker':  0.12,  // high tail exceedance (22.8% @0.85) -- aggressive
+    'density-entropy':  0.20,  // structural - more notes - entropy shifts
     'tension-flicker':  0.25,
     'tension-entropy':  0.25,
-    'flicker-entropy':  0.25,
+    'flicker-entropy':  0.18,  // elevated tail (8.8% @0.85) -- tightened
     'flicker-phase':    0.15,  // strongly co-evolving - aggressive decorrelation
     'density-phase':    0.30,
     'tension-phase':    0.30,
     'density-trust':    0.30,
     'tension-trust':    0.30,
     'flicker-trust':    0.30,
-    'entropy-phase':    0.35,
-    'entropy-trust':    0.35,
-    'trust-phase':      0.35,
+    'entropy-phase':    0.25,  // elevated tail (9.2% @0.85) -- tightened
+    'entropy-trust':    0.25,  // tightened for tail control
+    'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
   };
 
   // -- Adaptive gain parameters --
@@ -61,6 +61,7 @@ pipelineCouplingManager = (() => {
   const GAIN_MIN  = 0.08;
   const GAIN_MAX  = 0.60;
   const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
+  const GAIN_EMERGENCY_RATE = 0.06; // 3x escalation when |r| > 2x target
   const GAIN_RELAX_RATE    = 0.01; // per-beat gain decrease when resolved
 
   // Per-pair initial gain overrides for structurally persistent pairs.
@@ -157,7 +158,9 @@ pipelineCouplingManager = (() => {
           // escalating against the soft-limit ceiling wastes the mechanism.
           const pairSaturated = _saturatedAxes.has(dimA) || _saturatedAxes.has(dimB);
           if (!improving && !pairSaturated) {
-            ps.gain = clamp(ps.gain + GAIN_ESCALATE_RATE, GAIN_MIN, GAIN_MAX);
+            // Emergency escalation: when |r| > 2x target, escalate 3x faster
+            const rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
+            ps.gain = clamp(ps.gain + rate, GAIN_MIN, GAIN_MAX);
           }
         } else {
           // Below target - relax gain back toward initial
@@ -191,21 +194,28 @@ pipelineCouplingManager = (() => {
     }
 
     // Soft-limit: scale accumulated nudges so raw bias stays within the
-    // pipeline's clamp envelope. The adaptive gain keeps escalating (the
-    // learning is preserved) but the physical output respects bandwidth.
+    // pipeline's clamp envelope. Health-aware: when signalHealthAnalyzer
+    // reports strained or worse overall health, expand bandwidth by 0.04
+    // to give the coupling manager more room to decorrelate.
     // Without this, the conductor clips silently and the gain keeps
     // escalating against a ceiling, producing max-clamp bias every beat.
-    const SOFT_LIMIT = 0.16; // max deviation from 1.0 per axis
+    let _softLimit = 0.16; // base max deviation from 1.0 per axis
+    try {
+      const healthGrade = signalHealthAnalyzer.getHealth().overall;
+      if (healthGrade === 'strained' || healthGrade === 'stressed' || healthGrade === 'critical') {
+        _softLimit = 0.20; // expanded bandwidth under system stress
+      }
+    } catch { /* pre-boot or first beat */ }
 
     // Detect saturation BEFORE clamping - used next beat to freeze gains
     _saturatedAxes.clear();
-    if (m.abs(nudgeD) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('density');
-    if (m.abs(nudgeT) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('tension');
-    if (m.abs(nudgeF) >= SOFT_LIMIT * 0.9) _saturatedAxes.add('flicker');
+    if (m.abs(nudgeD) >= _softLimit * 0.9) _saturatedAxes.add('density');
+    if (m.abs(nudgeT) >= _softLimit * 0.9) _saturatedAxes.add('tension');
+    if (m.abs(nudgeF) >= _softLimit * 0.9) _saturatedAxes.add('flicker');
 
-    nudgeD = clamp(nudgeD, -SOFT_LIMIT, SOFT_LIMIT);
-    nudgeT = clamp(nudgeT, -SOFT_LIMIT, SOFT_LIMIT);
-    nudgeF = clamp(nudgeF, -SOFT_LIMIT, SOFT_LIMIT);
+    nudgeD = clamp(nudgeD, -_softLimit, _softLimit);
+    nudgeT = clamp(nudgeT, -_softLimit, _softLimit);
+    nudgeF = clamp(nudgeF, -_softLimit, _softLimit);
 
     biasDensity = 1.0 + nudgeD;
     biasTension = 1.0 + nudgeT;
@@ -231,10 +241,10 @@ pipelineCouplingManager = (() => {
   }
 
   // --- Self-registration ---
-  // Registered ranges must accommodate SOFT_LIMIT (0.16): bias in [0.84, 1.16]
-  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.84, 1.16);
-  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.84, 1.18);
-  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.84, 1.16);
+  // Registered ranges accommodate expanded SOFT_LIMIT (0.20): bias in [0.80, 1.20]
+  conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.80, 1.20);
+  conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.80, 1.22);
+  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.80, 1.20);
   conductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   conductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 

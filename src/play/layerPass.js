@@ -84,10 +84,14 @@ layerPass = (() => {
         playProb = beatResult.playProb;
         stutterProb = beatResult.stutterProb;
 
-        // Time watchdog: if this measure is running long, throttle remaining beats
+        // Tiered time watchdog: progressive budget cap based on elapsed time.
+        // 30-60s: moderate cap (150); 60-90s: tight cap (80); 90s+: hard cap (50).
+        // Self-healing: the system automatically throttles computation when a
+        // measure runs long, preventing worst-case runtime without manual tuning.
         const _elapsed = Date.now() - _mT;
         if (_elapsed > _MEASURE_TIME_LIMIT_MS && beatIndex < numerator - 1) {
-          LM.layers[layerId]._budgetOverrideCap = 150; // reduced cap for remaining beats
+          const _cap = _elapsed > 90000 ? 50 : (_elapsed > 60000 ? 80 : 150);
+          LM.layers[layerId]._budgetOverrideCap = _cap;
         }
 
         timeStream.setBounds('div', divsPerBeat);

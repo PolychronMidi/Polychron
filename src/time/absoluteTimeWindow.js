@@ -28,6 +28,10 @@ absoluteTimeWindow = (() => {
   // Cleared on every record() call (new data invalidates cached results).
   /** @type {Map<string, ATWEntry[]>} */
   const _queryCache = new Map();
+  // Scalar cache for countNotes/getNoteBounds: same invalidation as _queryCache.
+  // These methods bypass getEntries so need their own cache.
+  /** @type {Map<string, number|{count:number,first:ATWEntry|null,last:ATWEntry|null}>} */
+  const _scalarCache = new Map();
 
   /** Prune via shared helper. */
   function prune(arr, currentTime, windowSeconds) {
@@ -51,6 +55,7 @@ absoluteTimeWindow = (() => {
       arr.push(e);
       // Invalidate query cache - new data makes cached results stale
       if (_queryCache.size > 0) _queryCache.clear();
+      if (_scalarCache.size > 0) _scalarCache.clear();
       // Only prune when over capacity to avoid O(n) splice on every record
       if (arr.length > MAX_ENTRIES) {
         prune(arr, e.time, DEFAULT_WINDOW_SECONDS);
@@ -73,6 +78,7 @@ absoluteTimeWindow = (() => {
     const arr = entries.note;
     arr.push({ time, layer, midi, velocity, unit: unitLabel });
     if (_queryCache.size > 0) _queryCache.clear();
+    if (_scalarCache.size > 0) _scalarCache.clear();
     if (arr.length > MAX_ENTRIES) {
       prune(arr, time, DEFAULT_WINDOW_SECONDS);
     }
@@ -224,6 +230,9 @@ absoluteTimeWindow = (() => {
   function countNotes(opts) {
     const q = _parseNoteQuery(opts);
     if (!q) return 0;
+    const cacheKey = 'count:' + (q.layer || '') + ':' + q.cutoff;
+    const cached = _scalarCache.get(cacheKey);
+    if (typeof cached === 'number') return cached;
     const arr = entries.note;
     const { layer, startIdx } = q;
     let count = 0;
@@ -233,6 +242,7 @@ absoluteTimeWindow = (() => {
       if (layer && entry.layer !== layer) continue;
       count++;
     }
+    _scalarCache.set(cacheKey, count);
     return count;
   }
 
@@ -267,6 +277,9 @@ absoluteTimeWindow = (() => {
   function getNoteBounds(opts) {
     const q = _parseNoteQuery(opts);
     if (!q) return { count: 0, first: null, last: null };
+    const cacheKey = 'bounds:' + (q.layer || '') + ':' + q.cutoff;
+    const cached = _scalarCache.get(cacheKey);
+    if (cached && typeof cached === 'object' && 'count' in cached) return /** @type {{ count: number, first: ATWEntry|null, last: ATWEntry|null }} */ (cached);
     const arr = entries.note;
     const { layer, startIdx } = q;
     let count = 0;
@@ -280,7 +293,9 @@ absoluteTimeWindow = (() => {
       last = entry;
       count++;
     }
-    return { count, first, last };
+    const result = { count, first, last };
+    _scalarCache.set(cacheKey, result);
+    return result;
   }
 
   /** Get the current window size in seconds. */
@@ -292,6 +307,7 @@ absoluteTimeWindow = (() => {
     if (entries.rhythm) entries.rhythm.length = 0;
     if (entries.chord) entries.chord.length = 0;
     _queryCache.clear();
+    _scalarCache.clear();
   }
 
   return {

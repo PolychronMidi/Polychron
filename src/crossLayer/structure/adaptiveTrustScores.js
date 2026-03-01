@@ -9,6 +9,11 @@ adaptiveTrustScores = (() => {
   const EXPLORATION_NUDGE     = 0.03; // small positive injection per decay cycle
   const EXPLORATION_INTERVAL  = 8;    // apply nudge every N decay cycles
 
+  // Decay floor: scores cannot decay below this minimum. Prevents trust
+  // from collapsing to near-zero for infrequently-active systems where
+  // cumulative decay overwhelms sparse positive payoffs.
+  const DECAY_FLOOR = 0.05;
+
   // Trust ceiling: prevents runaway dominance where high-trust systems
   // accumulate ever-more influence via positive feedback (high trust -
   // more influence - more positive outcomes - higher trust).
@@ -86,13 +91,30 @@ adaptiveTrustScores = (() => {
     decayCycleCount++;
     const applyExploration = (decayCycleCount % EXPLORATION_INTERVAL) === 0;
 
+    // Health-aware exploration: when signalHealthAnalyzer reports trust as
+    // strained or worse, double the exploration nudge to accelerate recovery
+    // of dormant systems. Wires adaptiveTrustScores into the health self-
+    // healing loop without creating a new feedback mechanism.
+    let effectiveNudge = EXPLORATION_NUDGE;
+    try {
+      const trustGrade = signalHealthAnalyzer.getHealth().trust.grade;
+      if (trustGrade === 'strained' || trustGrade === 'stressed' || trustGrade === 'critical') {
+        effectiveNudge = EXPLORATION_NUDGE * 2;
+      }
+    } catch { /* pre-boot or first beat */ }
+
     for (const state of scoreBySystem.values()) {
       state.score *= (1 - decayRate);
+
+      // Decay floor: prevent trust collapse for established systems
+      if (state.samples > 16 && state.score < DECAY_FLOOR) {
+        state.score = DECAY_FLOOR;
+      }
 
       // Exploration bonus: periodically nudge starving systems toward neutral
       // so they occasionally earn enough trust to act via negotiationEngine.
       if (applyExploration && state.score < EXPLORATION_THRESHOLD && state.samples > 16) {
-        state.score = clamp(state.score + EXPLORATION_NUDGE, -1, 1);
+        state.score = clamp(state.score + effectiveNudge, -1, 1);
       }
     }
   }
