@@ -29,10 +29,13 @@ conductorDampening = (() => {
   /**
    * Effective damping scaled by pipeline contributor count and system dynamics.
    * @param {number} registryLength
+   * @param {string} [pipelineName] - optional pipeline name for per-pipeline tuning
    * @returns {number}
    */
-  function scaledDamping(registryLength) {
-    let base = BASE_DEVIATION_DAMPING;
+  function scaledDamping(registryLength, pipelineName) {
+    // Flicker pipeline gets lighter dampening (0.78) because its 14 contributors
+    // produce tiny deviations that standard dampening crushes to near-unity.
+    let base = pipelineName === 'flicker' ? 0.78 : BASE_DEVIATION_DAMPING;
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
@@ -74,10 +77,11 @@ conductorDampening = (() => {
   /**
    * Apply progressive deviation dampening to a full pipeline registry.
    * @param {Array<{ name: string, getter: () => number, lo: number, hi: number }>} registry
+   * @param {string} [pipelineName] - optional pipeline name for per-pipeline tuning
    * @returns {number} dampened product
    */
-  function collectDampened(registry) {
-    const damping = scaledDamping(registry.length);
+  function collectDampened(registry, pipelineName) {
+    const damping = scaledDamping(registry.length, pipelineName);
     let product = 1;
     for (let i = 0; i < registry.length; i++) {
       product *= progressiveDampen(clamp(registry[i].getter(), registry[i].lo, registry[i].hi), damping, product);
@@ -91,10 +95,11 @@ conductorDampening = (() => {
    * get their effective clamp range gradually widened so the system
    * self-heals boundary pinning without manual re-tuning.
    * @param {Array<{ name: string, getter: () => number, lo: number, hi: number }>} registry
+   * @param {string} [pipelineName] - optional pipeline name for per-pipeline tuning
    * @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }}
    */
-  function collectDampenedWithAttribution(registry) {
-    const damping = scaledDamping(registry.length);
+  function collectDampenedWithAttribution(registry, pipelineName) {
+    const damping = scaledDamping(registry.length, pipelineName);
     let product = 1;
     const contributions = [];
     for (let i = 0; i < registry.length; i++) {

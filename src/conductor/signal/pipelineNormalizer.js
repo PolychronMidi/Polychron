@@ -19,7 +19,7 @@ pipelineNormalizer = (() => {
   // range: compression depth; hard floor = softMin - range, hard ceiling = softMax + range.
   const BOUNDS = {
     density: { softMin: 0.50, softMax: 1.40, range: 0.20 },
-    tension: { softMin: 0.70, softMax: 1.30, range: 0.20 },
+    tension: { softMin: 0.70, softMax: 1.40, range: 0.20 },
     flicker: { softMin: 0.70, softMax: 1.30, range: 0.15 }
   };
 

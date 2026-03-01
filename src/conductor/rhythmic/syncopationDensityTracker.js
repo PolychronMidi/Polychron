@@ -76,6 +76,12 @@ syncopationDensityTracker = (() => {
     const b = syncopationDensityTracker.getRhythmBias();
     return { syncopationBias: b ? b.syncopationBias : 1 };
   });
+  // Scalar wrapper: monotonous rhythm -> boost density to create variety (1.12),
+  // excessive syncopation -> reduce density to allow breathing (0.88).
+  conductorIntelligence.registerDensityBias('syncopationDensityTracker', () => {
+    const b = syncopationDensityTracker.getRhythmBias();
+    return b.syncopationBias > 1.0 ? 1.12 : (b.syncopationBias < 1.0 ? 0.88 : 1.0);
+  }, 0.88, 1.12);
 
   return {
     getSyncopationProfile,

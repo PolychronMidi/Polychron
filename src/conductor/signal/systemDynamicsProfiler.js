@@ -67,6 +67,7 @@ systemDynamicsProfiler = (() => {
   let _lastRegime = 'evolving';
   let _candidateRegime = 'evolving';
   let _candidateCount = 0;
+  let _exploringBeats = 0; // duration escalator: consecutive exploring beats
 
   // Pre-differentiation EMA: smooths the raw state vector before computing
   // velocity/curvature. Without this, first-differences amplify beat-to-beat
@@ -246,12 +247,20 @@ systemDynamicsProfiler = (() => {
     // threshold by 0.05 to make coherence "sticky" (hysteresis bonus).
     // This prevents the system from flickering out of coherent into exploring
     // on single-beat coupling dips.
-    const coherentThreshold = _lastRegime === 'coherent' ? 0.25 : 0.30;
+    // Exploring-duration escalator: the longer the system stays in exploring,
+    // the easier it becomes to escape into coherent (self-healing). Every 50
+    // exploring beats lowers the threshold by 0.02, down to 0.18 minimum.
+    const durationBonus = _lastRegime === 'exploring' ? clamp(m.floor(_exploringBeats / 50) * 0.02, 0, 0.12) : 0;
+    const coherentThreshold = (_lastRegime === 'coherent' ? 0.25 : 0.30) - durationBonus;
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
     if (avgVelocity > 0.02 && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
+    // Exploring -> evolving transition: sustained coupling increase while
+    // exploring triggers evolving rather than jumping straight to coherent.
+    // This creates richer regime lifecycle: exploring -> evolving -> coherent.
+    if (_lastRegime === 'exploring' && avgVelocity > 0.008 && couplingStrength > 0.15) return 'evolving';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
@@ -271,11 +280,15 @@ systemDynamicsProfiler = (() => {
       // Reinforce current regime, reset candidate
       _candidateRegime = rawRegime;
       _candidateCount = 0;
+      // Track exploring duration for escalator
+      if (_lastRegime === 'exploring') _exploringBeats++;
       return _lastRegime;
     }
     if (rawRegime === _candidateRegime) {
       _candidateCount++;
       if (_candidateCount >= REGIME_HOLD) {
+        // Reset exploring counter on regime change
+        if (_lastRegime === 'exploring') _exploringBeats = 0;
         _lastRegime = rawRegime;
         _candidateCount = 0;
         return rawRegime;
@@ -460,6 +473,7 @@ systemDynamicsProfiler = (() => {
     _lastRegime = 'evolving';
     _candidateRegime = 'evolving';
     _candidateCount = 0;
+    _exploringBeats = 0;
     _entropyAmp = 3.0;
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
       _zscoreN[d] = 0;

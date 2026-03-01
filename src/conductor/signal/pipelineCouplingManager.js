@@ -44,9 +44,9 @@ pipelineCouplingManager = (() => {
     'flicker-phase':    0.15,  // strongly co-evolving - aggressive decorrelation
     'density-phase':    0.30,
     'tension-phase':    0.30,
-    'density-trust':    0.30,
-    'tension-trust':    0.30,
-    'flicker-trust':    0.30,
+    'density-trust':    0.18,  // highest avg coupling (0.453) -- aggressive
+    'tension-trust':    0.25,
+    'flicker-trust':    0.15,  // inflated by flicker flatness -- aggressive
     'entropy-phase':    0.25,  // elevated tail (9.2% @0.85) -- tightened
     'entropy-trust':    0.25,  // tightened for tail control
     'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened

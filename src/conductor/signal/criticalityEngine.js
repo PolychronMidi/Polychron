@@ -154,7 +154,7 @@ criticalityEngine = (() => {
   // --- Self-registration ---
   conductorIntelligence.registerDensityBias('criticalityEngine', densityBias, 0.88, 1.05);
   conductorIntelligence.registerTensionBias('criticalityEngine', tensionBias, 0.88, 1.05);
-  conductorIntelligence.registerFlickerModifier('criticalityEngine', flickerMod, 0.88, 1.05);
+  conductorIntelligence.registerFlickerModifier('criticalityEngine', flickerMod, 0.82, 1.12);
   conductorIntelligence.registerRecorder('criticalityEngine', refresh);
   conductorIntelligence.registerStateProvider('criticalityEngine', getState);
   conductorIntelligence.registerModule('criticalityEngine', { reset }, ['all']);

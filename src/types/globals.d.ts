@@ -1297,10 +1297,10 @@ declare var rhythmicDensityContrastTracker: any;
 declare var tonalAnchorDistanceTracker: any;
 declare var conductorIntelligence: ConductorIntelligenceAPI;
 declare var conductorDampening: {
-  scaledDamping(registryLength: number): number;
+  scaledDamping(registryLength: number, pipelineName?: string): number;
   progressiveDampen(clamped: number, baseDamping: number, runningProduct: number): number;
-  collectDampened(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>): number;
-  collectDampenedWithAttribution(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>): { product: number; contributions: Array<{ name: string; raw: number; clamped: number }> };
+  collectDampened(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>, pipelineName?: string): number;
+  collectDampenedWithAttribution(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>, pipelineName?: string): { product: number; contributions: Array<{ name: string; raw: number; clamped: number }> };
 };
 declare var sectionMemory: {
   snapshot(): void;
