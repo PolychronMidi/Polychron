@@ -487,7 +487,7 @@ A **drift explainer** (`output/fingerprint-drift-explainer.json`) is auto-genera
 
 ### Feedback Graph Visualization
 
-`scripts/visualize-feedback-graph.js` generates an interactive HTML/SVG visualization (`output/feedback-graph.html`) of the feedback topology from `FEEDBACK_GRAPH.json`. Features:
+`scripts/visualize-feedback-graph.js` generates an interactive HTML/SVG visualization (`output/feedback-graph.html`) of the feedback topology from `doc/FEEDBACK_GRAPH.json`. Features:
 - Circle-layout graph with color-coded edges by latency (immediate/beat/phrase/section)
 - Hover tooltips with mechanism details
 - Node colors by subsystem, firewall legend, invariant status badge
@@ -658,4 +658,4 @@ Two globals from `src/utils/` are used across all priors modules:
 - [output/conductor-map.md](output/conductor-map.md) — Auto-generated conductor intelligence map (per-run)
 - [output/crosslayer-map.md](output/crosslayer-map.md) — Auto-generated cross-layer intelligence map (per-run)
 - [output/narrative-digest.md](output/narrative-digest.md) — Auto-generated prose narrative (per-run)
-- [FEEDBACK_GRAPH.json](FEEDBACK_GRAPH.json) — Feedback loop topology (source of truth for visualization)
+- [doc/FEEDBACK_GRAPH.json](doc/FEEDBACK_GRAPH.json) — Feedback loop topology (source of truth for visualization)
