@@ -173,6 +173,8 @@ playNotesEmitPick = function(opts = {}) {
     if (isPrimary) {
       registerCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTick);
       grooveTransfer.recordTiming(activeLayerName, onTick, unit);
+      // Embed emitted note into trace for downstream analytics (evolution #1)
+      traceDrain.recordNote(noteToEmit, texVel, sourceCH);
       // Record articulation for cross-layer contrast tracking
       articulationComplement.recordSustain(activeLayerName, texSustain, absMsAtOnTick);
       // Record texture mode for texturalMirror

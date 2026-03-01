@@ -82,6 +82,20 @@ mainBootstrap = (() => {
       throw new Error(`mainBootstrap: missing validated globals: ${missing.join(', ')}`);
     }
 
+    // -- Phase 1b: Advisory globals (warn-only, do not throw) --
+    const advisory = fullBootstrap.getAdvisoryGlobalsList();
+    const advisoryMissing = [];
+    /* eslint-disable no-restricted-globals,no-restricted-syntax */
+    for (const name of advisory) {
+      if (typeof globalThis[name] === 'undefined') {
+        advisoryMissing.push(name);
+      }
+    }
+    /* eslint-enable no-restricted-globals,no-restricted-syntax */
+    if (advisoryMissing.length > 0) {
+      console.warn('Acceptable warning: advisory globals missing (non-fatal): ' + advisoryMissing.join(', '));
+    }
+
     // -- Phase 2: Verify eventCatalog event names --
     const events = V.getEventsOrThrow();
     const EXPECTED_EVENTS = [

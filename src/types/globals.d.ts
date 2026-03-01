@@ -1675,18 +1675,24 @@ declare var formatTime: any;
 declare var logUnit: any;
 declare var pushMultiple: any;
 declare var grandFinale: any;
+/** @boot-advisory - trace is diagnostic, composition runs without it */
 declare var traceDrain: {
   init(): void;
   record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
+  recordNote(pitch: number, velocity: number, channel: number): void;
   shutdown(): void;
 };
+/** @boot-advisory */
 declare var coherenceVerdicts: {
   compute(manifest: any, attribution: { density: any; tension: any; flicker: any }): Array<{ severity: string; area: string; finding: string }>;
 };
+/** @boot-advisory */
 declare var systemManifestMarkdown: {
   build(manifest: any, attribution: { density: any; tension: any; flicker: any }): string;
 };
+/** @boot-advisory */
 declare var systemManifest: { emit(): void };
+/** @boot-advisory */
 declare var outputAnalyzer: { analyse(notes: { pitch: number; startMs: number; durationMs: number; velocity: number }[]): any; reset(): void };
 
 // -- typed constructors (canonical declarations - keep only these) --
@@ -1717,6 +1723,7 @@ declare var velocity: any;
 declare var fullBootstrap: any;
 declare var mainBootstrap: any;
 declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean }) => void;
+/** @boot-advisory */
 declare var beatPipelineDescriptor: {
   getStages(): ReadonlyArray<{ name: string; after: string[]; produces: string[] }>;
   getStageNames(): string[];

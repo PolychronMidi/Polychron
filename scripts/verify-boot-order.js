@@ -334,7 +334,252 @@ function rel(absPath) {
   return path.relative(ROOT, absPath).replace(/\\/g, '/');
 }
 
+// ---- Auto-fix: rewrite index.js require order based on dependency graph ----
+// For each index.js, topologically sort its direct require() children so that
+// providers always precede consumers within the same file's scope.
+
+function autoFix(bootOrder, fileToGlobals, globalToFile, globalSet) {
+  // Collect every index.js that has direct require() children
+  const indexFiles = new Set();
+  for (const f of bootOrder) {
+    if (f.endsWith('index.js')) indexFiles.add(f);
+  }
+
+  let totalRewrites = 0;
+
+  for (const indexFile of indexFiles) {
+    const src = fs.readFileSync(indexFile, 'utf8');
+    const lines = src.split(/\r?\n/);
+
+    // Parse require blocks: contiguous comment+require lines.
+    // A "require entry" = optional comment lines immediately before, then the require line.
+    // Non-require, non-comment lines are "anchors" that divide sortable blocks.
+    const entries = [];    // { startLine, endLine, reqPath, resolvedAbs, commentLines, reqLine }
+    const anchors = [];    // { lineIndex, text } — non-require lines that are NOT comments for requires
+
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trimStart();
+
+      // Collect leading comment lines
+      const commentStart = i;
+      while (i < lines.length && lines[i].trimStart().startsWith('//')) {
+        // Peek: is next non-comment line a require?
+        let j = i + 1;
+        while (j < lines.length && lines[j].trimStart().startsWith('//')) j++;
+        if (j < lines.length && /require\s*\(\s*['"]\./.test(lines[j])) {
+          i++;
+        } else if (i === commentStart) {
+          // standalone comment before a non-require line
+          break;
+        } else {
+          break;
+        }
+      }
+
+      const reqLine = lines[i] || '';
+      const reqMatch = reqLine.match(/require\s*\(\s*['"](\.[^'"]+)['"]\s*\)/);
+      if (reqMatch) {
+        const reqPath = reqMatch[1];
+        let resolvedAbs = null;
+        try { resolvedAbs = resolveRequire(reqPath, path.dirname(indexFile)); } catch { /* skip */ }
+        entries.push({
+          startLine: commentStart,
+          endLine: i,
+          reqPath,
+          resolvedAbs,
+          text: lines.slice(commentStart, i + 1).join('\n')
+        });
+        i++;
+      } else {
+        // Not a require line — anchor
+        if (trimmed.length > 0) {
+          anchors.push({ lineIndex: i, text: line });
+        }
+        i++;
+      }
+    }
+
+    if (entries.length < 2) continue;
+
+    // Build per-file provides/consumes from the boot-order analysis
+    const entryFiles = entries.filter(e => e.resolvedAbs).map(e => e.resolvedAbs);
+
+    // Gather all files transitively required by each entry
+    function allTransitive(absPath, visited) {
+      if (!visited) visited = new Set();
+      if (visited.has(absPath)) return visited;
+      visited.add(absPath);
+      const src2 = fs.readFileSync(absPath, 'utf8');
+      for (const req of extractRequires(src2)) {
+        if (!req.startsWith('.')) continue;
+        try {
+          const child = resolveRequire(req, path.dirname(absPath));
+          allTransitive(child, visited);
+        } catch { /* skip */ }
+      }
+      return visited;
+    }
+
+    // Map: entry resolvedAbs -> Set of all globals provided by it and its transitive children
+    const entryProvides = new Map();
+    const entryConsumes = new Map();
+    for (const entry of entries) {
+      if (!entry.resolvedAbs) continue;
+      const transitive = allTransitive(entry.resolvedAbs);
+      const provides = new Set();
+      const consumes = new Set();
+      for (const f of transitive) {
+        const fp = fileToGlobals.get(f);
+        if (fp) for (const g of fp) provides.add(g);
+        const fc = scanConsumed(f, globalSet);
+        for (const g of fc) consumes.add(g);
+      }
+      entryProvides.set(entry.resolvedAbs, provides);
+      entryConsumes.set(entry.resolvedAbs, consumes);
+    }
+
+    // Build directed dependency edges: entry A must come before entry B
+    // if A provides a global that B (or its transitive tree) consumes,
+    // AND both are owned by this same index.js
+    const entryAbsList = entries.filter(e => e.resolvedAbs).map(e => e.resolvedAbs);
+    const entryAbsSet = new Set(entryAbsList);
+    // Also include all globals provided by transitive children of our entries
+    const allProvidedByEntries = new Map(); // global -> entry resolvedAbs
+    for (const entry of entries) {
+      if (!entry.resolvedAbs) continue;
+      const prov = entryProvides.get(entry.resolvedAbs);
+      if (prov) for (const g of prov) allProvidedByEntries.set(g, entry.resolvedAbs);
+    }
+
+    // edges: Map<resolvedAbs, Set<resolvedAbs>> meaning "key must come BEFORE values in set"
+    const mustPrecede = new Map();
+    for (const abs of entryAbsSet) mustPrecede.set(abs, new Set());
+
+    for (const entry of entries) {
+      if (!entry.resolvedAbs) continue;
+      const cons = entryConsumes.get(entry.resolvedAbs);
+      if (!cons) continue;
+      for (const g of cons) {
+        const provider = allProvidedByEntries.get(g);
+        if (!provider || provider === entry.resolvedAbs) continue;
+        if (!entryAbsSet.has(provider)) continue;
+        // provider must come before entry
+        mustPrecede.get(provider).add(entry.resolvedAbs);
+      }
+    }
+
+    // Topological sort (Kahn's algorithm) with stable ordering
+    const inDegree = new Map();
+    for (const abs of entryAbsSet) inDegree.set(abs, 0);
+    for (const [, deps] of mustPrecede) {
+      for (const d of deps) inDegree.set(d, (inDegree.get(d) || 0) + 1);
+    }
+
+    // Use original order as tiebreaker for stability
+    const originalOrder = new Map();
+    for (let ei = 0; ei < entries.length; ei++) {
+      if (entries[ei].resolvedAbs) originalOrder.set(entries[ei].resolvedAbs, ei);
+    }
+
+    const queue = [];
+    for (const abs of entryAbsSet) {
+      if (inDegree.get(abs) === 0) queue.push(abs);
+    }
+    queue.sort((a, b) => (originalOrder.get(a) || 0) - (originalOrder.get(b) || 0));
+
+    const sorted = [];
+    while (queue.length > 0) {
+      const node = queue.shift();
+      sorted.push(node);
+      const deps = mustPrecede.get(node) || new Set();
+      const next = [];
+      for (const d of deps) {
+        inDegree.set(d, inDegree.get(d) - 1);
+        if (inDegree.get(d) === 0) next.push(d);
+      }
+      next.sort((a, b) => (originalOrder.get(a) || 0) - (originalOrder.get(b) || 0));
+      for (const n of next) queue.push(n);
+    }
+
+    if (sorted.length !== entryAbsSet.size) {
+      // Cycle detected — skip this index.js, can't fix
+      console.log('verify-boot-order: --fix: CYCLE detected in ' + rel(indexFile) + ', skipping');
+      continue;
+    }
+
+    // Build sorted entry list (map resolvedAbs back to entry objects)
+    const absToEntry = new Map();
+    for (const entry of entries) {
+      if (entry.resolvedAbs) absToEntry.set(entry.resolvedAbs, entry);
+    }
+
+    // Check if order actually changed
+    let changed = false;
+    for (let si = 0; si < sorted.length; si++) {
+      const origIdx = originalOrder.get(sorted[si]);
+      if (origIdx !== si) { changed = true; break; }
+    }
+    if (!changed) continue;
+
+    // Reconstruct the file: preserve anchor lines in their relative positions,
+    // replace require blocks in sorted order.
+    // Strategy: collect all require-entry text blocks from original,
+    // then emit them in the new sorted order at the same line positions.
+
+    // Gather the original line ranges used by entries
+    const entryLineRanges = entries.map(e => ({ start: e.startLine, end: e.endLine }));
+    // All lines NOT belonging to any entry
+    const nonEntryLines = [];
+    const entryLineSet = new Set();
+    for (const e of entries) {
+      for (let l = e.startLine; l <= e.endLine; l++) entryLineSet.add(l);
+    }
+    for (let l = 0; l < lines.length; l++) {
+      if (!entryLineSet.has(l)) nonEntryLines.push({ lineIndex: l, text: lines[l] });
+    }
+
+    // Rebuild: walk through line indices, when we hit entry blocks emit in sorted order
+    const newLines = [];
+    let entrySlot = 0;
+    let lineIdx = 0;
+
+    // Sorted entries in text form
+    const sortedEntryTexts = sorted.map(abs => absToEntry.get(abs).text);
+    // Entries without resolvedAbs go at end
+    const unresolvedEntries = entries.filter(e => !e.resolvedAbs);
+    const allSortedTexts = [...sortedEntryTexts, ...unresolvedEntries.map(e => e.text)];
+
+    while (lineIdx < lines.length) {
+      if (entryLineSet.has(lineIdx)) {
+        // We're at the start of an entry block — emit next sorted entry
+        if (entrySlot < allSortedTexts.length) {
+          newLines.push(allSortedTexts[entrySlot]);
+          entrySlot++;
+        }
+        // Skip past the original entry's lines
+        while (lineIdx < lines.length && entryLineSet.has(lineIdx)) lineIdx++;
+      } else {
+        newLines.push(lines[lineIdx]);
+        lineIdx++;
+      }
+    }
+
+    const newSrc = newLines.join('\n');
+    if (newSrc !== src) {
+      fs.writeFileSync(indexFile, newSrc, 'utf8');
+      totalRewrites++;
+      console.log('verify-boot-order: --fix: rewrote ' + rel(indexFile));
+    }
+  }
+
+  return totalRewrites;
+}
+
 // ---- Main verification ----
+
+const FIX_MODE = process.argv.includes('--fix');
 
 function verify() {
   const globalSet = parseDeclaredGlobals();
@@ -349,7 +594,49 @@ function verify() {
     bootOrder, fileToGlobals, globalToFile, globalSet
   );
 
-  // Write forensic output with metadata envelope
+  // Phase 3: auto-fix if requested
+  let fixedCount = 0;
+  if (FIX_MODE && violations.length > 0) {
+    fixedCount = autoFix(bootOrder, fileToGlobals, globalToFile, globalSet);
+    if (fixedCount > 0) {
+      // Re-walk and re-check after fix
+      const bootOrder2 = walkBootOrder(path.join(SRC, 'index.js'));
+      const prov2 = mapProviders(bootOrder2, globalSet);
+      const check2 = checkIntraSubsystemOrder(
+        bootOrder2, prov2.fileToGlobals, prov2.globalToFile, globalSet
+      );
+      if (check2.violations.length === 0) {
+        console.log('verify-boot-order: --fix: all ' + violations.length + ' violations resolved (' + fixedCount + ' index.js files rewritten)');
+      } else {
+        console.log('verify-boot-order: --fix: reduced violations from ' + violations.length + ' to ' + check2.violations.length + ' (' + fixedCount + ' index.js files rewritten)');
+        // Update output with post-fix state
+        writeOutput(bootOrder2, prov2.fileToGlobals, globalSet, prov2.globalToFile, mapped, orphaned, prov2.reassigned, check2.violations, check2.subsystemCount);
+        return;
+      }
+      writeOutput(bootOrder2, prov2.fileToGlobals, globalSet, prov2.globalToFile, prov2.globalToFile.size, orphaned, prov2.reassigned, check2.violations, check2.subsystemCount);
+      return;
+    }
+  }
+
+  writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, orphaned, reassigned, violations, subsystemCount);
+
+  if (violations.length) {
+    console.log(
+      'verify-boot-order: ' + violations.length + ' intra-subsystem ordering violation(s):'
+    );
+    for (const v of violations.slice(0, 10)) {
+      console.log(
+        '  [' + v.subsystem + '] ' + v.consumer + ' (#' + v.consumerOrder +
+        ') reads "' + v.global + '" before ' + v.provider + ' (#' + v.providerOrder + ') provides it'
+      );
+    }
+    if (violations.length > 10) {
+      console.log('  ... and ' + (violations.length - 10) + ' more');
+    }
+  }
+}
+
+function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, orphaned, reassigned, violations, subsystemCount) {
   const output = {
     meta: {
       generated: new Date().toISOString(),
@@ -385,21 +672,6 @@ function verify() {
       'verify-boot-order: ' + orphaned.length + ' runtime-assigned globals (no static provider): ' +
       orphaned.slice(0, 8).join(', ') + (orphaned.length > 8 ? ' ...' : '')
     );
-  }
-
-  if (violations.length) {
-    console.log(
-      'verify-boot-order: ' + violations.length + ' intra-subsystem ordering violation(s):'
-    );
-    for (const v of violations.slice(0, 10)) {
-      console.log(
-        '  [' + v.subsystem + '] ' + v.consumer + ' (#' + v.consumerOrder +
-        ') reads "' + v.global + '" before ' + v.provider + ' (#' + v.providerOrder + ') provides it'
-      );
-    }
-    if (violations.length > 10) {
-      console.log('  ... and ' + (violations.length - 10) + ' more');
-    }
   }
 }
 

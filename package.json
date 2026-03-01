@@ -15,8 +15,12 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "main": "node scripts/generate-globals-dts.js && node scripts/verify-boot-order.js && node scripts/check-tuning-invariants.js && npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/play/main.js --trace && node scripts/trace-summary.js && node scripts/check-manifest-health.js && node scripts/generate-dependency-graph.js && node scripts/generate-conductor-map.js && node scripts/golden-fingerprint.js && node scripts/narrative-digest.js",
+    "main": "node scripts/generate-globals-dts.js && node scripts/verify-boot-order.js --fix && node scripts/check-tuning-invariants.js && npm run lint && npm run tc && node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/play/main.js --trace && node scripts/trace-summary.js && node scripts/check-manifest-health.js && node scripts/generate-dependency-graph.js && node scripts/generate-conductor-map.js && node scripts/generate-crosslayer-map.js && node scripts/golden-fingerprint.js && node scripts/narrative-digest.js && node scripts/visualize-feedback-graph.js",
     "dashboard": "node scripts/live-dashboard.js",
+    "replay": "node scripts/trace-replay.js",
+    "snapshot": "node scripts/compare-runs.js --snapshot",
+    "compare": "node scripts/compare-runs.js --against",
+    "diff": "node scripts/diff-compositions.js --against",
     "music21-data": "node scripts/run-with-log.js music21.log python scripts/music21/run_music21_data.py",
     "lint:raw": "eslint . --ext .js --fix",
     "lint": "node scripts/run-with-log.js lint.log npm run lint:raw",
