@@ -57,8 +57,16 @@ systemDynamicsProfiler = (() => {
   const _ENTROPY_AMP_TARGET_SHARE = 0.25;
   const _ENTROPY_AMP_MIN = 1.0; // lowered (was 1.5) - Run 17: controller at 1.54 (near floor) but entropy 63.9% dominant; ATW bypass + z-score make dead-axis structurally impossible now, so safety floor is unnecessary
   const _ENTROPY_AMP_MAX = 15.0;
-  const _ENTROPY_AMP_SMOOTH = 0.12; // slow EMA to avoid oscillation
+  const _ENTROPY_AMP_SMOOTH = 0.12; // base EMA alpha (adaptively raised by error magnitude)
   let _entropyAmp = 3.0; // initial seed (converges within ~20 beats)
+
+  // -- #7: Entropy PI Controller (Hypermeta) --
+  // Adds integral term to the P-only controller for zero steady-state error.
+  // Adaptive alpha converges faster when error is large. Anti-windup clamp
+  // prevents integral saturation during structural entropy dominance.
+  let _entropyIntegralError = 0;
+  const _ENTROPY_KI = 0.05;             // integral gain (R7 Evo 8: raised from 0.03)
+  const _ENTROPY_INTEGRAL_CLAMP = 3.0;  // anti-windup (R7: tightened from 5.0)
 
   // Regime hysteresis: requires REGIME_HOLD consecutive beats of a new
   // classification before switching. Prevents single-beat noise from
@@ -112,15 +120,31 @@ systemDynamicsProfiler = (() => {
   /** @type {SystemDynamicsSnapshot} */
   let _lastSnapshot = _emptySnapshot();
 
-  /** Adapt entropy amplification to target equal variance share. */
+  /** Adapt entropy amplification via PI controller (#7) to target equal variance share. */
   function _adaptEntropyAmplification() {
     const currentShare = _lastSnapshot.compositionalVariance[3]; // entropy index
-    // Proportional controller: desired = current * (target / actual)
-    // When dead (<0.01), targets maximum; otherwise scales proportionally.
-    const targetAmp = currentShare < 0.01
+    const error = _ENTROPY_AMP_TARGET_SHARE - currentShare;
+
+    // #7: Adaptive alpha - converge faster when error is large
+    const alpha = _ENTROPY_AMP_SMOOTH + 0.08 * m.abs(error);
+
+    // #7: Integral accumulation with anti-windup clamp
+    // R7 Evo 8: Freeze integral when P and I terms have opposite signs
+    // to prevent overshoot during error sign transitions.
+    const pTerm = currentShare < 0.01
       ? _ENTROPY_AMP_MAX
       : clamp(_entropyAmp * (_ENTROPY_AMP_TARGET_SHARE / currentShare), _ENTROPY_AMP_MIN, _ENTROPY_AMP_MAX);
-    _entropyAmp = _entropyAmp * (1 - _ENTROPY_AMP_SMOOTH) + targetAmp * _ENTROPY_AMP_SMOOTH;
+    const iTerm = _ENTROPY_KI * _entropyIntegralError;
+    const pDirection = pTerm - _entropyAmp;
+    if (pDirection * iTerm >= 0) {
+      // Same sign or zero: accumulate normally
+      _entropyIntegralError = clamp(_entropyIntegralError + error, -_ENTROPY_INTEGRAL_CLAMP, _ENTROPY_INTEGRAL_CLAMP);
+    }
+    // Opposite signs: freeze integral (anti-windup)
+
+    // PI controller: proportional + integral
+    const targetAmp = clamp(pTerm + iTerm, _ENTROPY_AMP_MIN, _ENTROPY_AMP_MAX);
+    _entropyAmp = _entropyAmp * (1 - alpha) + targetAmp * alpha;
   }
 
   /** @returns {SystemDynamicsSnapshot} */
@@ -250,8 +274,14 @@ systemDynamicsProfiler = (() => {
     // Exploring-duration escalator: the longer the system stays in exploring,
     // the easier it becomes to escape into coherent (self-healing). Every 50
     // exploring beats lowers the threshold by 0.02, down to 0.18 minimum.
+    // R7 Evo 5: Coherent entry threshold lowered by 15% to make
+    // coherent regime more accessible. Coherent floor: when system has
+    // been in exploring for extended periods, further lower the threshold
+    // by up to 0.05 based on exploring duration (adds to duration bonus).
+    const coherentFloorBonus = _exploringBeats > 100 ? clamp((_exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
     const durationBonus = _lastRegime === 'exploring' ? clamp(m.floor(_exploringBeats / 50) * 0.02, 0, 0.12) : 0;
-    const coherentThreshold = (_lastRegime === 'coherent' ? 0.25 : 0.30) - durationBonus;
+    const baseCoherentThreshold = (_lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85; // R7 Evo 5: 15% reduction
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus;
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
@@ -475,6 +505,7 @@ systemDynamicsProfiler = (() => {
     _candidateCount = 0;
     _exploringBeats = 0;
     _entropyAmp = 3.0;
+    _entropyIntegralError = 0; // #7: reset integral on section boundary
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
       _zscoreN[d] = 0;
       _zscoreMean[d] = 0;

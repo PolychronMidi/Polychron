@@ -42,8 +42,8 @@ regimeReactiveDamping = (() => {
     fragmented: -1,  // dampen
     oscillating: 0,  // neutral (was -1 - dampening flicker while density is neutral
                      //   created mechanical anti-correlation r=-0.7 via shared causal path)
-    exploring: 0,
-    coherent: 0,
+    exploring: 1,    // boost variation - inject independent flicker to reduce density-flicker coupling
+    coherent: 0,     // neutral - suppression (was -1) compressed flicker range and inflated coupling via near-zero variance
     evolving: 0,
     drifting: 0,
   };
@@ -75,6 +75,39 @@ regimeReactiveDamping = (() => {
   let _driftF = 0;
   let _injectionCount = 0; // persistent counter for sign alternation (survives streak resets)
 
+  // -- #2: Regime Distribution Equilibrator (Hypermeta) --
+  // Tracks regime occurrences in a rolling window and auto-modulates bias
+  // to steer the distribution toward target budget. When a regime dominates
+  // (e.g. exploring 71%), the equilibrator counteracts the biases that
+  // encourage it, eliminating manual regime-bias re-tuning between rounds.
+  const _REGIME_RING_SIZE = 64;
+  /** @type {string[]} */
+  const _regimeRing = [];
+  const _REGIME_BUDGET = {
+    exploring: 0.35,
+    coherent: 0.35,
+    evolving: 0.20,
+    stagnant: 0.03,
+    fragmented: 0.03,
+    oscillating: 0.02,
+    drifting: 0.02,
+  };
+  const _EQUILIB_STRENGTH = 0.25;
+  let _eqCorrD = 0;
+  let _eqCorrT = 0;
+  let _eqCorrF = 0;
+
+  // -- #7 (R7): Tension Pin Relief Valve --
+  // When tension bias pins at its ceiling for >10 consecutive beats,
+  // temporarily relax the ceiling by 5% to prevent sustained saturation.
+  // Resets after 5 beats of non-pinned output.
+  let _tensionPinStreak = 0;
+  let _tensionUnpinStreak = 0;
+  let _tensionCeilingRelax = 0;  // additive relaxation on MAX_TENSION
+  const _PIN_STREAK_TRIGGER = 10;
+  const _UNPIN_RESET_BEATS = 5;
+  const _PIN_RELAX_STEP = 0.05;  // 5% of MAX_TENSION per trigger
+
   let currentRegime = 'evolving';
   let curvatureGain = 0;
   let _smoothedDensity = 1.0;
@@ -86,6 +119,40 @@ regimeReactiveDamping = (() => {
     currentRegime = snap ? snap.regime : 'evolving';
     const rawCurv = snap ? (snap.curvature || 0) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
+
+    // -- #2: Regime distribution equilibrator --
+    _regimeRing.push(currentRegime);
+    if (_regimeRing.length > _REGIME_RING_SIZE) _regimeRing.shift();
+    if (_regimeRing.length >= 16) {
+      /** @type {Record<string, number>} */
+      const _shares = {};
+      for (let ri = 0; ri < _regimeRing.length; ri++) {
+        _shares[_regimeRing[ri]] = (_shares[_regimeRing[ri]] || 0) + 1;
+      }
+      for (const rk in _shares) _shares[rk] /= _regimeRing.length;
+
+      const expShare = _shares.exploring || 0;
+      const expExcess = m.max(0, expShare - _REGIME_BUDGET.exploring);
+      const cohDeficit = m.max(0, _REGIME_BUDGET.coherent - (_shares.coherent || 0));
+      const evoDeficit = m.max(0, _REGIME_BUDGET.evolving - (_shares.evolving || 0));
+
+      // R7 Evo 1: Squared penalty when exploring exceeds 60% - creates
+      // a soft wall preventing runaway exploring domination.
+      const expPenalty = expShare > 0.60 ? 1.0 + (expShare - 0.60) * (expShare - 0.60) : 1.0;
+
+      // Exploring over-budget: suppress variety-promoting biases
+      _eqCorrD = -expExcess * _EQUILIB_STRENGTH * 0.5 * expPenalty;
+      _eqCorrF = -expExcess * _EQUILIB_STRENGTH * expPenalty;
+      // Coherent/evolving deficit: boost tension (encourages coupling/convergence)
+      _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH;
+
+      // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog
+      try {
+        if (_eqCorrD !== 0) conductorMetaWatchdog.recordCorrection('density', 'equilibrator', _eqCorrD);
+        if (_eqCorrT !== 0) conductorMetaWatchdog.recordCorrection('tension', 'equilibrator', _eqCorrT);
+        if (_eqCorrF !== 0) conductorMetaWatchdog.recordCorrection('flicker', 'equilibrator', _eqCorrF);
+      } catch { /* pre-boot */ }
+    }
 
     // --- Velocity floor logic ---
     const velocity = snap ? (snap.velocity || 0) : 0;
@@ -123,13 +190,40 @@ regimeReactiveDamping = (() => {
       lowVelStreak = 0;
     }
 
-    // Compute raw bias values and apply EMA to prevent discontinuous jumps
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + _driftD;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * MAX_TENSION * curvatureGain + _driftT;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + _driftF;
+    // Compute raw bias values with equilibrator corrections (#2)
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + _driftD + _eqCorrD;
+    // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
+    const effectiveMaxTension = MAX_TENSION + _tensionCeilingRelax;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + _driftT + _eqCorrT;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + _driftF + _eqCorrF;
     _smoothedDensity = _smoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING;
     _smoothedTension = _smoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING;
     _smoothedFlicker = _smoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING;
+
+    // #7 (R7): Update tension pin relief valve state
+    const tensionAtPin = m.abs(_smoothedTension - (1.0 + effectiveMaxTension)) < 0.005
+                      || m.abs(_smoothedTension - (1.0 - effectiveMaxTension)) < 0.005;
+    if (tensionAtPin) {
+      _tensionPinStreak++;
+      _tensionUnpinStreak = 0;
+      if (_tensionPinStreak > _PIN_STREAK_TRIGGER) {
+        _tensionCeilingRelax = clamp(_tensionCeilingRelax + MAX_TENSION * _PIN_RELAX_STEP, 0, MAX_TENSION * 0.30);
+        _tensionPinStreak = 0; // reset so next trigger needs another streak
+        try {
+          explainabilityBus.emit('tension-pin-relief', 'both', {
+            newCeiling: MAX_TENSION + _tensionCeilingRelax,
+            baseCeiling: MAX_TENSION
+          });
+        } catch { /* pre-boot */ }
+      }
+    } else {
+      _tensionUnpinStreak++;
+      _tensionPinStreak = 0;
+      if (_tensionUnpinStreak > _UNPIN_RESET_BEATS) {
+        _tensionCeilingRelax = 0;
+        _tensionUnpinStreak = 0;
+      }
+    }
 
     // Decay drift contribution
     _driftD *= DRIFT_DECAY;
@@ -161,6 +255,15 @@ regimeReactiveDamping = (() => {
     // allow re-detection in the new section, but accumulated drift and
     // injection count carry forward.
     lowVelStreak = 0;
+    // #2: Reset equilibrator ring buffer on section boundary
+    _regimeRing.length = 0;
+    _eqCorrD = 0;
+    _eqCorrT = 0;
+    _eqCorrF = 0;
+    // #7: Reset relief valve
+    _tensionPinStreak = 0;
+    _tensionUnpinStreak = 0;
+    _tensionCeilingRelax = 0;
   }
 
   // --- Self-registration ---

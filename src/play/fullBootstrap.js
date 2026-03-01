@@ -620,6 +620,7 @@ fullBootstrap = (() => {
     'texturalMirror',
     'crossLayerSilhouette',
     'dimensionalityExpander',
+    'conductorMetaWatchdog',
     'conductorSignalBridge',
     'verticalIntervalMonitor',
     'polyrhythmicPhasePredictor',

@@ -15,6 +15,13 @@ let _traceSnapBeatCount = -1;
 let _traceCachedConductorSnap = null;
 let _traceCachedDynamicsSnap = null;
 
+// Cadence alignment drought tracker: counts consecutive beats without a
+// successful cadence result. After DROUGHT_THRESHOLD beats of gatedNoResult/
+// ungated, the next successful fire gets a 2x payoff multiplier to accelerate
+// trust recovery from the cold-start deficit.
+let _cadenceDroughtBeats = 0;
+const CADENCE_DROUGHT_THRESHOLD = 20;
+
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
@@ -87,9 +94,19 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const plp = tp.phaseLock;
   const phaseOutcome = clamp((clPhaseMode === 'lock' ? plp.lock : clPhaseMode === 'drift' ? plp.drift : plp.other) + clPhase.confidence * plp.confidenceScale, -1, 1);
   const cap = tp.cadenceAlignment;
-  const cadenceOutcome = clCadResult
+  let cadenceOutcome = clCadResult
     ? (clCadResult.shouldResolve ? cap.resolved : cap.unresolved)
     : (clCadenceGate ? cap.gatedNoResult : cap.ungated);
+  // Drought bonus: if cadenceAlignment fires after a long drought, double
+  // the payoff to accelerate trust recovery from cold-start deficit.
+  if (clCadResult) {
+    if (_cadenceDroughtBeats >= CADENCE_DROUGHT_THRESHOLD) {
+      cadenceOutcome = clamp(cadenceOutcome * 2.0, -1, 1);
+    }
+    _cadenceDroughtBeats = 0;
+  } else {
+    _cadenceDroughtBeats++;
+  }
   const fop = tp.feedbackOscillator;
   // feedbackOscillator: idle beats get readiness payoff; active gets base + energy
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)

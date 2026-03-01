@@ -72,14 +72,14 @@ durationalContourTracker = (() => {
     // Use slope to interpolate rather than boolean thresholds.
     const beatDur = beatGridHelpers.getBeatDuration();
     const normSlope = beatDur > 0 ? contour.slope / beatDur : 0;
-    if (normSlope < -0.05) {
+    if (normSlope < -0.02) {
       // Accelerating: ramp durationBias 1.0-1.15, flickerMod 1.0-1.1
-      const t = clamp((m.abs(normSlope) - 0.05) / 0.25, 0, 1);
+      const t = clamp((m.abs(normSlope) - 0.02) / 0.28, 0, 1);
       return { durationBias: 1.0 + t * 0.15, flickerMod: 1.0 + t * 0.1 };
     }
-    if (normSlope > 0.05) {
+    if (normSlope > 0.02) {
       // Decelerating: ramp durationBias 1.0-0.85, flickerMod 1.0-1.05
-      const t = clamp((normSlope - 0.05) / 0.25, 0, 1);
+      const t = clamp((normSlope - 0.02) / 0.28, 0, 1);
       return { durationBias: 1.0 - t * 0.15, flickerMod: 1.0 + t * 0.05 };
     }
     return { durationBias: 1.0, flickerMod: 1.0 };

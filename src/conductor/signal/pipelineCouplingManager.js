@@ -38,19 +38,44 @@ pipelineCouplingManager = (() => {
     'density-tension':  0.15,  // structurally persistent -- needs aggressive target
     'density-flicker':  0.12,  // high tail exceedance (22.8% @0.85) -- aggressive
     'density-entropy':  0.20,  // structural - more notes - entropy shifts
-    'tension-flicker':  0.25,
+    'tension-flicker':  0.15,  // shared compositeIntensity upstream -- aggressive
     'tension-entropy':  0.25,
     'flicker-entropy':  0.18,  // elevated tail (8.8% @0.85) -- tightened
     'flicker-phase':    0.15,  // strongly co-evolving - aggressive decorrelation
-    'density-phase':    0.30,
+    'density-phase':    0.15,  // both section-position-driven -- aggressive
     'tension-phase':    0.30,
     'density-trust':    0.18,  // highest avg coupling (0.453) -- aggressive
     'tension-trust':    0.25,
-    'flicker-trust':    0.15,  // inflated by flicker flatness -- aggressive
+    'flicker-trust':    0.20,  // R7 Evo 6: relaxed from 0.15 -- was over-decorrelating new high-coupling pair
     'entropy-phase':    0.25,  // elevated tail (9.2% @0.85) -- tightened
     'entropy-trust':    0.25,  // tightened for tail control
     'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
   };
+
+  // -- #1: Self-Calibrating Coupling Targets (Hypermeta) --
+  // Instead of static PAIR_TARGETS, track rolling |r| per pair and adjust
+  // targets upward when correlations are intractable (gain near max) or
+  // downward when easily resolved. Eliminates manual target re-tuning.
+  const _TARGET_ADAPT_EMA = 0.02;        // ~50-beat horizon for rolling |r|
+  const _TARGET_RELAX_RATE = 0.0015;     // per-beat relaxation when intractable (R7 equalized)
+  const _TARGET_TIGHTEN_RATE = 0.0015;   // per-beat tightening when resolved (R7 equalized)
+  const _TARGET_MIN = 0.08;
+  const _TARGET_MAX = 0.45;
+  /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number }>} */
+  const _adaptiveTargets = {};
+
+  /**
+   * Get or create adaptive target state for a pair.
+   * @param {string} key
+   * @returns {{ baseline: number, current: number, rollingAbsCorr: number }}
+   */
+  function _getAdaptiveTarget(key) {
+    if (!_adaptiveTargets[key]) {
+      const baseline = PAIR_TARGETS[key] !== undefined ? PAIR_TARGETS[key] : DEFAULT_TARGET;
+      _adaptiveTargets[key] = { baseline, current: baseline, rollingAbsCorr: 0 };
+    }
+    return _adaptiveTargets[key];
+  }
 
   // -- Adaptive gain parameters --
   // Every pair starts at GAIN_INIT. Each beat, if |r| > target, we check
@@ -62,7 +87,7 @@ pipelineCouplingManager = (() => {
   const GAIN_MAX  = 0.60;
   const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
   const GAIN_EMERGENCY_RATE = 0.06; // 3x escalation when |r| > 2x target
-  const GAIN_RELAX_RATE    = 0.01; // per-beat gain decrease when resolved
+  const GAIN_RELAX_RATE    = 0.02; // per-beat gain decrease when resolved (raised from 0.01 to prevent gain saturation on intractable pairs)
 
   // Per-pair initial gain overrides for structurally persistent pairs.
   // density-tension shares many upstream contributors so it starts hotter.
@@ -74,7 +99,21 @@ pipelineCouplingManager = (() => {
   // IS the feature - dimensions deliberately co-evolve. Relax targets so
   // the coupling manager preserves its gain budget for regimes where
   // decorrelation is genuinely needed (exploring, drifting, fragmented).
-  const COHERENT_RELAXATION = 1.5;
+  // -- #6: Adaptive Coherent Relaxation (Hypermeta) --
+  // Derive COHERENT_RELAXATION dynamically from rolling coherent-regime
+  // share. When coherent share is below 50%, relax more (coupling IS the
+  // feature during scarce coherent); when above 50%, tighten. Supersedes
+  // the static constant that required manual tuning every round.
+  const _COHERENT_SHARE_EMA_ALPHA = 0.015; // ~64-beat horizon
+  let _coherentShareEma = 0.35;            // initial: assume 35% coherent
+
+  // -- #9: Coupling Gain Budget Manager (Hypermeta) --
+  // Per-axis budget cap prevents coupling manager from dominating any
+  // single pipeline when many pairs simultaneously overcorrelate.
+  // R7 Evo 6: Reduced density-flicker and tension-flicker budgets to
+  // 0.24 each to accommodate flicker-trust as 4th axis.
+  const _AXIS_BUDGET = 0.24;
+  const _FLICKER_AXIS_BUDGET = _AXIS_BUDGET * 1.5; // 0.36
 
   // Per-pair adaptive state: gain and last-observed |r|
   /** @type {Record<string, { gain: number, lastAbsCorr: number }>} */
@@ -98,12 +137,12 @@ pipelineCouplingManager = (() => {
   }
 
   /**
-   * Get target for a pair key, falling back to default.
+   * Get target for a pair key. Returns self-calibrated adaptive target (#1).
    * @param {string} key
    * @returns {number}
    */
   function _getTarget(key) {
-    return PAIR_TARGETS[key] !== undefined ? PAIR_TARGETS[key] : DEFAULT_TARGET;
+    return _getAdaptiveTarget(key).current;
   }
 
   // Per-pipeline accumulators
@@ -121,9 +160,12 @@ pipelineCouplingManager = (() => {
       return;
     }
 
-    // Regime-aware target scaling
+    // #6: Adaptive coherent relaxation - dynamically derived from regime share
     const regime = snap.regime;
-    const targetScale = regime === 'coherent' ? COHERENT_RELAXATION : 1.0;
+    const isCoherent = regime === 'coherent' ? 1 : 0;
+    _coherentShareEma = _coherentShareEma * (1 - _COHERENT_SHARE_EMA_ALPHA) + isCoherent * _COHERENT_SHARE_EMA_ALPHA;
+    const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
+    const targetScale = regime === 'coherent' ? dynamicCoherentRelax : 1.0;
 
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
     let nudgeD = 0;
@@ -168,6 +210,26 @@ pipelineCouplingManager = (() => {
         }
         ps.lastAbsCorr = absCorr;
 
+        // -- #1: Self-calibrate coupling target --
+        const at = _getAdaptiveTarget(key);
+        at.rollingAbsCorr = at.rollingAbsCorr * (1 - _TARGET_ADAPT_EMA) + absCorr * _TARGET_ADAPT_EMA;
+        // Intractable: rolling avg far above target despite near-max gain - relax
+        if (at.rollingAbsCorr > at.current * 1.8 && ps.gain > GAIN_MAX * 0.85) {
+          at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _TARGET_MAX);
+        // Easily resolved: rolling avg well below target - tighten toward baseline
+        // R7 Evo 4: Product-feedback guard -- when density product < 0.75,
+        // freeze tightening to prevent coupling manager from death-spiraling density.
+        } else if (at.rollingAbsCorr < at.current * 0.5) {
+          let canTighten = true;
+          try {
+            const sig = signalReader.snapshot();
+            if ((dimA === 'density' || dimB === 'density') && sig.densityProduct < 0.75) canTighten = false;
+          } catch { /* pre-boot */ }
+          if (canTighten) {
+            at.current = clamp(at.current - _TARGET_TIGHTEN_RATE, _TARGET_MIN, at.baseline);
+          }
+        }
+
         // Skip nudge if below target
         if (absCorr <= target) continue;
 
@@ -193,6 +255,12 @@ pipelineCouplingManager = (() => {
       }
     }
 
+    // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
+    // to prevent coupling manager from dominating ANY single pipeline.
+    if (m.abs(nudgeD) > _AXIS_BUDGET) nudgeD = m.sign(nudgeD) * _AXIS_BUDGET;
+    if (m.abs(nudgeT) > _AXIS_BUDGET) nudgeT = m.sign(nudgeT) * _AXIS_BUDGET;
+    if (m.abs(nudgeF) > _FLICKER_AXIS_BUDGET) nudgeF = m.sign(nudgeF) * _FLICKER_AXIS_BUDGET;
+
     // Soft-limit: scale accumulated nudges so raw bias stays within the
     // pipeline's clamp envelope. Health-aware: when signalHealthAnalyzer
     // reports strained or worse overall health, expand bandwidth by 0.04
@@ -207,15 +275,19 @@ pipelineCouplingManager = (() => {
       }
     } catch { /* pre-boot or first beat */ }
 
+    // Flicker gets wider soft limit (1.5x) to give decorrelation genuine room;
+    // its coupling is highest (0.571/0.622) and hits the base ceiling every beat.
+    const _flickerSoftLimit = _softLimit * 1.5;
+
     // Detect saturation BEFORE clamping - used next beat to freeze gains
     _saturatedAxes.clear();
     if (m.abs(nudgeD) >= _softLimit * 0.9) _saturatedAxes.add('density');
     if (m.abs(nudgeT) >= _softLimit * 0.9) _saturatedAxes.add('tension');
-    if (m.abs(nudgeF) >= _softLimit * 0.9) _saturatedAxes.add('flicker');
+    if (m.abs(nudgeF) >= _flickerSoftLimit * 0.9) _saturatedAxes.add('flicker');
 
     nudgeD = clamp(nudgeD, -_softLimit, _softLimit);
     nudgeT = clamp(nudgeT, -_softLimit, _softLimit);
-    nudgeF = clamp(nudgeF, -_softLimit, _softLimit);
+    nudgeF = clamp(nudgeF, -_flickerSoftLimit, _flickerSoftLimit);
 
     biasDensity = 1.0 + nudgeD;
     biasTension = 1.0 + nudgeT;
@@ -238,13 +310,21 @@ pipelineCouplingManager = (() => {
       _pairState[keys[i]].gain = initGain;
       _pairState[keys[i]].lastAbsCorr = 0;
     }
+    // #1: Reset adaptive targets to baseline on section boundary
+    const targetKeys = Object.keys(_adaptiveTargets);
+    for (let i = 0; i < targetKeys.length; i++) {
+      _adaptiveTargets[targetKeys[i]].current = _adaptiveTargets[targetKeys[i]].baseline;
+      _adaptiveTargets[targetKeys[i]].rollingAbsCorr = 0;
+    }
+    // #6: Reset coherent share EMA
+    _coherentShareEma = 0.35;
   }
 
   // --- Self-registration ---
   // Registered ranges accommodate expanded SOFT_LIMIT (0.20): bias in [0.80, 1.20]
   conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.80, 1.20);
   conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.80, 1.22);
-  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.80, 1.20);
+  conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.70, 1.30);
   conductorIntelligence.registerRecorder('pipelineCouplingManager', refresh);
   conductorIntelligence.registerModule('pipelineCouplingManager', { reset }, ['section']);
 

@@ -20,6 +20,23 @@ adaptiveTrustScores = (() => {
   const TRUST_CEILING = 0.75; // max score (- max weight - 1.56)
   let decayCycleCount = 0;
 
+  // -- #5: Trust Starvation Auto-Nourishment (Hypermeta) --
+  // Tracks per-system trust velocity EMA (rate of change). When velocity
+  // is near zero for >100 beats, the system is stuck and receives a
+  // synthetic payoff proportional to the gap from mean trust. This self-
+  // heals the cadenceAlignment 0.122 starvation pattern without manual
+  // threshold tweaking.
+  const _VELOCITY_EMA_ALPHA = 0.02;         // ~50-beat horizon
+  const _STAGNATION_THRESHOLD = 0.001;      // velocity below this is "stagnant"
+  const _DISENGAGE_THRESHOLD = 0.003;       // R7 Evo 10: 3x threshold for hysteresis disengage
+  const _DISENGAGE_BEATS = 50;              // R7 Evo 10: beats above disengage threshold before stopping
+  const _STAGNATION_BEATS_TRIGGER = 100;    // beats of stagnation before nourishment
+  const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
+  const _MIN_NOURISHMENT_STRENGTH = 0.05;   // R7 Evo 10: floor after decay
+  const _NOURISHMENT_DECAY = 0.90;          // R7 Evo 10: 10% decay per application
+  /** @type {Map<string, { velocityEma: number, stagnantBeats: number, lastScore: number, disengageBeats: number, nourishmentCount: number, effectiveStrength: number }>} */
+  const _velocityState = new Map();
+
   // -- Trust journal: ring buffer of significant trust changes --
   // Modeled after explainabilityBus. Keeps the most impactful trust
   // transitions across the entire run for post-hoc forensics.
@@ -117,6 +134,63 @@ adaptiveTrustScores = (() => {
         state.score = clamp(state.score + effectiveNudge, -1, 1);
       }
     }
+
+    // -- #5: Trust starvation auto-nourishment --
+    // Detect per-system velocity stagnation and inject synthetic payoff
+    // to break out of trust plateaus.
+    let meanTrust = 0;
+    let trustCountForMean = 0;
+    for (const state of scoreBySystem.values()) {
+      meanTrust += state.score;
+      trustCountForMean++;
+    }
+    meanTrust = trustCountForMean > 0 ? meanTrust / trustCountForMean : 0;
+
+    for (const [name, state] of scoreBySystem.entries()) {
+      let vs = _velocityState.get(name);
+      if (!vs) {
+        vs = { velocityEma: 0, stagnantBeats: 0, lastScore: state.score, disengageBeats: 0, nourishmentCount: 0, effectiveStrength: _BASE_NOURISHMENT_STRENGTH };
+        _velocityState.set(name, vs);
+      }
+      const scoreDelta = m.abs(state.score - vs.lastScore);
+      vs.velocityEma = vs.velocityEma * (1 - _VELOCITY_EMA_ALPHA) + scoreDelta * _VELOCITY_EMA_ALPHA;
+      vs.lastScore = state.score;
+
+      // R7 Evo 10: Hysteresis - engage at threshold, disengage at 3x threshold
+      if (vs.velocityEma < _STAGNATION_THRESHOLD) {
+        vs.stagnantBeats++;
+        vs.disengageBeats = 0;
+      } else if (vs.velocityEma > _DISENGAGE_THRESHOLD) {
+        vs.disengageBeats++;
+        if (vs.disengageBeats >= _DISENGAGE_BEATS) {
+          vs.stagnantBeats = 0;
+          vs.disengageBeats = 0;
+        }
+      } else {
+        // In between thresholds: hold current state (hysteresis band)
+        vs.disengageBeats = 0;
+      }
+
+      if (vs.stagnantBeats >= _STAGNATION_BEATS_TRIGGER && state.samples > 32) {
+        const gap = meanTrust - state.score;
+        if (gap > 0) {
+          const syntheticPayoff = clamp(gap * vs.effectiveStrength, 0, 0.10);
+          state.score = clamp(state.score + syntheticPayoff, -1, TRUST_CEILING);
+          vs.stagnantBeats = 0;
+          // R7 Evo 10: Decay nourishment strength per application to prevent trust inflation
+          vs.nourishmentCount++;
+          vs.effectiveStrength = m.max(_MIN_NOURISHMENT_STRENGTH, vs.effectiveStrength * _NOURISHMENT_DECAY);
+          explainabilityBus.emit('trust-nourishment', 'both', {
+            systemName: name,
+            syntheticPayoff,
+            gapFromMean: gap,
+            newScore: state.score,
+            nourishmentCount: vs.nourishmentCount,
+            effectiveStrength: vs.effectiveStrength
+          });
+        }
+      }
+    }
   }
 
   function getSnapshot() {
@@ -140,6 +214,7 @@ adaptiveTrustScores = (() => {
     scoreBySystem.clear();
     decayCycleCount = 0;
     journal.length = 0;
+    _velocityState.clear();
   }
 
   return { registerOutcome, getWeight, decayAll, getSnapshot, getJournal, reset };
