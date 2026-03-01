@@ -11,7 +11,7 @@ At the start of every beat, before any layer knows what it will play, the **Cond
 
 1. **Context Gathering:** The system queries structural context—what section are we in? Are we at the climax? What is the current harmonic excursion and tension?
 2. **Composite Intensity:** Baseline structural cues and harmonic rhythm are merged into a single metric, `compositeIntensity` (0.0 - 1.0).
-3. **The Recorders:** Over 80 intelligence modules (e.g., `dynamicRangeTracker`, `melodicContourAnalyzer`) observe this intensity alongside recent output, updating their internal states.
+3. **The Recorders:** 42 intelligence modules (e.g., `dynamicRangeTracker`, `melodicContourTracker`) observe this intensity alongside recent output, updating their internal states.
 4. **Attributed Biases:** Modules cast "votes" for density, tension, and flicker via multiplicative biases. These votes are gathered, multiplied, and attributed in the `conductorIntelligence` registry.
 5. **Dampening & Normalization:** `conductorDampening` limits extreme deviation based on system regimes, preventing runaway feedback. `pipelineNormalizer` smooths these into actionable targets.
 6. **State Snapshot:** The final resolved signals—`playProb`, `stutterProb`, `density`, `tension`, `flicker`—are committed to `conductorState`.

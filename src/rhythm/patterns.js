@@ -80,3 +80,14 @@ closestDivisor = (x, target = 2) => {
   if (closest === Infinity) { return x; }
   return x % target === 0 ? target : closest;
 };
+
+// Register existing generator methods into the rhythmRegistry (fail-fast)
+rhythmRegistry.register('binary', binary);
+rhythmRegistry.register('hex', hex);
+rhythmRegistry.register('onsets', onsets);
+rhythmRegistry.register('random', random);
+rhythmRegistry.register('prob', prob);
+rhythmRegistry.register('euclid', euclid);
+rhythmRegistry.register('rotate', rotate);
+rhythmRegistry.register('morph', morph);
+rhythmRegistry.register('closestDivisor', closestDivisor);

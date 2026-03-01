@@ -8,6 +8,10 @@ traceDrain = (() => {
   const _buffer = [];
   const FLUSH_INTERVAL = 50; // flush every N records to reduce sync I/O calls
 
+  // Per-beat note accumulator: collects emitted note data between playNotes and traceDrain.record
+  /** @type {Array<{pitch: number, velocity: number, channel: number}>} */
+  let _pendingNotes = [];
+
   function init() {
     if (!process.argv.includes('--trace')) return;
     isTracing = true;
@@ -38,6 +42,18 @@ traceDrain = (() => {
   }
 
   /**
+   * Accumulate a note event for embedding in the next trace record.
+   * Called from playNotesEmitPick for primary source channel notes.
+   * @param {number} pitch - MIDI pitch (0-127)
+   * @param {number} velocity - MIDI velocity (1-127)
+   * @param {number} channel - MIDI channel
+   */
+  function recordNote(pitch, velocity, channel) {
+    if (!isTracing) return;
+    _pendingNotes.push({ pitch, velocity, channel });
+  }
+
+  /**
    * Record one trace beat entry.
    * @param {string} layer
    * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any }} data
@@ -52,8 +68,11 @@ traceDrain = (() => {
       negotiation: data.negotiation,
       trust: data.trustScores,
       regime: data.regime,
-      coupling: data.couplingMatrix
+      coupling: data.couplingMatrix,
+      notes: _pendingNotes.length > 0 ? _pendingNotes.slice() : undefined
     };
+    // Clear accumulated notes after embedding
+    _pendingNotes = [];
 
     _buffer.push(JSON.stringify(payload) + '\n');
     if (_buffer.length >= FLUSH_INTERVAL) _flush();
@@ -71,5 +90,5 @@ traceDrain = (() => {
     }
   }
 
-  return { init, record, shutdown };
+  return { init, record, recordNote, shutdown };
 })();

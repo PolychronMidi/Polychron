@@ -73,7 +73,9 @@ conductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all density biases (dampened + soft-envelope normalized) */
-  function collectDensityBias() { return pipelineNormalizer.normalize('density', _collectDampened(densityBiases)); }
+  function collectDensityBias() {
+    return pipelineNormalizer.normalize('density', _collectDampened(densityBiases));
+  }
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectDensityBiasWithAttribution() {

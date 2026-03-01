@@ -14,8 +14,8 @@ the density product so the system listens to its own song.
 
 | Constant | Value | Role | Interaction Partners |
 |---|---|---|---|
-| `SMOOTHING` | 0.88 | EMA factor for `coherenceBias` - higher = slower adaptation | `BIAS_FLOOR/CEILING`, `phaseGain` |
-| `BIAS_FLOOR` | 0.75 | Min density correction multiplier | `SMOOTHING`, conductorConfig density range |
+| `SMOOTHING` | 0.55 | EMA factor for `coherenceBias` - higher = slower adaptation | `BIAS_FLOOR/CEILING`, `phaseGain` |
+| `BIAS_FLOOR` | 0.60 | Min density correction multiplier | `SMOOTHING`, conductorConfig density range |
 | `BIAS_CEILING` | 1.3 | Max density correction multiplier | `SMOOTHING`, profileAdaptation restrained hint |
 | `WINDOW_SIZE` | 16 | Rolling observation window (beats) | `decayFactor`, entropy variance calc |
 | `ENTROPY_DECAY` | 0.92 | Exponential decay for entropy signal | `rawEntropy` offset/scale, entropyRegulator strength |
@@ -24,7 +24,7 @@ the density product so the system listens to its own song.
 | `rawEntropy` offset | 0.04 | Variance baseline subtracted before scaling | `ENTROPY_DECAY`, scale factor 2 |
 | Attribution spread boost | 1.0 + clamp(spread - 0.25, 0, 0.5) | When density biases disagree (spread > 0.25), correction gets up to 50% stronger | `phaseGain`, `SMOOTHING` |
 
-**Sensitivity:** `SMOOTHING` is the single most impactful constant - lowering it below 0.8 makes density oscillate visibly. `BIAS_CEILING` must stay below the negotiation `playScale` upper clamp (1.8) to avoid runaway density gain.
+**Sensitivity:** `SMOOTHING` is the single most impactful constant - current value 0.55 provides responsive correction with moderate oscillation risk. Raising above 0.85 makes correction sluggish; lowering below 0.4 causes visible density oscillation. `BIAS_CEILING` must stay below the negotiation `playScale` upper clamp (1.8) to avoid runaway density gain.
 
 ---
 
@@ -36,7 +36,7 @@ systems toward a target curve driven by section position.
 | Constant | Value | Role | Interaction Partners |
 |---|---|---|---|
 | `SMOOTHING` | 0.3 | EMA factor for smoothed entropy | Pitch/velocity/rhythm weights |
-| `WINDOW_NOTES` | 20 | Max note history per layer | Pitch entropy uniqueness calc |
+| `WINDOW_NOTES` | 10 | Max note history per layer (halved for faster turnover) | Pitch entropy uniqueness calc |
 | Pitch weight | 0.4 | Contribution of pitch diversity to combined entropy | Velocity weight (0.3), rhythm weight (0.3) |
 | Velocity weight | 0.3 | Contribution of velocity variance to combined entropy | Pitch weight, rhythm weight |
 | Rhythm weight | 0.3 | Contribution of rhythmic irregularity | Pitch weight, velocity weight, rhythm divisor (2) |
@@ -65,7 +65,7 @@ Produces advisory hints consumed by `conductorConfig`.
 | Trend mods (tension) | 1.25 rising / 0.75 falling | Tension trend amplifies/dampens streak | signalTelemetry.getTrend() |
 | Hint ramp divisor | 8 | Beats past trigger before hint reaches 1.0: `(streak − trigger) / 8` | `STREAK_TRIGGER`, conductorConfig phase profiles |
 
-**Sensitivity:** `STREAK_TRIGGER` = 6 at default tempo (~120 BPM) means ~3 seconds of sustained condition before hints activate. The ramp divisor of 8 means full hint intensity at streak = 14 (~7 sec). Lowering `STREAK_TRIGGER` below 4 risks false positives from momentary lulls.
+**Sensitivity:** `STREAK_TRIGGER` = 6 at default tempo (72 BPM) means ~5 seconds of sustained condition before hints activate. The ramp divisor of 8 means full hint intensity at streak = 14 (~12 sec). Lowering `STREAK_TRIGGER` below 4 risks false positives from momentary lulls.
 
 ---
 
@@ -128,10 +128,12 @@ Final probability adjustments applied in the `probability-adjust` pipeline stage
 
 These relationships must hold to prevent runaway behavior:
 
-1. **Density ceiling chain:** `coherenceMonitor.BIAS_CEILING` (1.3) * `negotiationEngine.playScale` max (1.8) = 2.34. This is the theoretical maximum density amplification. Exceeding ~2.5 causes audible note-cramming.
+1. **Density ceiling chain:** `coherenceMonitor.BIAS_CEILING` (1.3) * `negotiationEngine.playScale` max (1.8) = 2.34. This is the theoretical maximum density amplification. The floor chain: `BIAS_FLOOR` (0.60) * `playScale` min (0.4) = 0.24. Exceeding ~2.5 on the ceiling causes audible note-cramming.
 
 2. **Trust-weight symmetry:** `adaptiveTrustScores.weight` clamp [0.4, 1.8] matches `negotiationEngine.playScale` clamp [0.4, 1.8]. This ensures trust cannot push play probability outside the negotiation's own range.
 
 3. **Entropy regulation headroom:** `entropyRegulator.scale` clamp [0.3, 2.0] * negotiation entropy modulator [0.5, 1.5] gives effective range [0.15, 3.0]. The negotiation's own clamps prevent this from manifesting fully.
 
-4. **Streak - hint timing:** At 120 BPM, `STREAK_TRIGGER` = 6 - 3 seconds. Full hint (`ramp / 8`) at 14 beats - 7 seconds. Section lengths are typically 16-64 beats, so hints activate within one section.
+4. **Streak - hint timing:** At 72 BPM, `STREAK_TRIGGER` = 6 ≈ 5 seconds. Full hint (`ramp / 8`) at 14 beats ≈ 12 seconds. Section lengths are typically 16-64 beats, so hints activate within one section.
+
+5. **Coherence monitor responsiveness:** `coherenceMonitor.SMOOTHING` (0.55) means correction responds within ~2 beats (half-life). At `BIAS_FLOOR` 0.60, correction can reduce density by up to 40%. The `check-tuning-invariants.js` script validates all cross-constant invariants automatically on every run.

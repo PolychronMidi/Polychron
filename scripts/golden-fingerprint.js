@@ -282,7 +282,129 @@ function compareFingerprints(current, previous) {
   };
 }
 
-// ---- Main ----
+// ---- Drift Explainer ----
+// When dimensions shift, correlate the change to structural causes in the trace data
+
+function explainDrift(comparison, current, previous) {
+  const explanations = [];
+
+  for (const dim of comparison.dimensions) {
+    if (dim.status === 'stable') continue;
+
+    const explain = { dimension: dim.dimension, delta: dim.delta, tolerance: dim.tolerance };
+
+    switch (dim.dimension) {
+      case 'noteCount': {
+        const ratio = current.noteCount.total / Math.max(1, previous.noteCount.total);
+        const direction = ratio > 1 ? 'more' : 'fewer';
+        explain.cause = `${direction} notes emitted (${previous.noteCount.total} -> ${current.noteCount.total}, ${(Math.abs(ratio - 1) * 100).toFixed(1)}% change)`;
+        // Correlate with density
+        if (current.density.mean !== undefined && previous.density.mean !== undefined) {
+          const densityChange = current.density.mean - previous.density.mean;
+          if (Math.abs(densityChange) > 0.05) {
+            explain.correlates = `density mean shifted ${densityChange > 0 ? 'up' : 'down'} by ${Math.abs(densityChange).toFixed(3)}`;
+          }
+        }
+        // Check layer balance
+        const prevBalance = previous.noteCount.L1 / Math.max(1, previous.noteCount.total);
+        const currBalance = current.noteCount.L1 / Math.max(1, current.noteCount.total);
+        if (Math.abs(prevBalance - currBalance) > 0.1) {
+          explain.layerShift = `L1/L2 balance shifted: ${(prevBalance * 100).toFixed(0)}%/${((1 - prevBalance) * 100).toFixed(0)}% -> ${(currBalance * 100).toFixed(0)}%/${((1 - currBalance) * 100).toFixed(0)}%`;
+        }
+        break;
+      }
+      case 'pitchEntropy': {
+        const direction = current.pitchEntropy > previous.pitchEntropy ? 'increased' : 'decreased';
+        explain.cause = `pitch diversity ${direction} (${previous.pitchEntropy.toFixed(3)} -> ${current.pitchEntropy.toFixed(3)})`;
+        explain.meaning = current.pitchEntropy > previous.pitchEntropy
+          ? 'composition uses a wider spread of pitch classes (more chromatic/exploratory)'
+          : 'composition concentrates on fewer pitch classes (more tonal/focused)';
+        break;
+      }
+      case 'densityVariance': {
+        const direction = current.density.variance > previous.density.variance ? 'increased' : 'decreased';
+        explain.cause = `density variance ${direction} (${previous.density.variance.toFixed(4)} -> ${current.density.variance.toFixed(4)})`;
+        explain.meaning = current.density.variance > previous.density.variance
+          ? 'density fluctuates more across beats (more dynamic contrast)'
+          : 'density is more uniform across beats (flatter dynamic profile)';
+        break;
+      }
+      case 'tensionArc': {
+        const labels = ['opening (0-25%)', 'middle (35-65%)', 'closing (75-100%)'];
+        const shifts = [];
+        for (let i = 0; i < 3; i++) {
+          const d = current.tensionArc[i] - previous.tensionArc[i];
+          if (Math.abs(d) > 0.05) {
+            shifts.push(`${labels[i]}: ${d > 0 ? '+' : ''}${d.toFixed(3)}`);
+          }
+        }
+        explain.cause = shifts.length > 0 ? `tension arc reshaped: ${shifts.join('; ')}` : 'tension arc shape changed subtly across all phases';
+        break;
+      }
+      case 'trustConvergence': {
+        const direction = current.trustConvergence > previous.trustConvergence ? 'higher' : 'lower';
+        explain.cause = `average trust convergence ${direction} (${previous.trustConvergence.toFixed(3)} -> ${current.trustConvergence.toFixed(3)})`;
+        // Find which trust modules shifted most
+        const trustShifts = [];
+        const allKeys = new Set([...Object.keys(current.trustFinal || {}), ...Object.keys(previous.trustFinal || {})]);
+        for (const key of allKeys) {
+          const c = (current.trustFinal || {})[key] || 0;
+          const p = (previous.trustFinal || {})[key] || 0;
+          if (Math.abs(c - p) > 0.1) {
+            trustShifts.push(`${key}: ${p.toFixed(2)} -> ${c.toFixed(2)}`);
+          }
+        }
+        if (trustShifts.length > 0) {
+          explain.modulesShifted = trustShifts;
+        }
+        break;
+      }
+      case 'regimeDistribution': {
+        const shifts = [];
+        const allRegimes = new Set([...Object.keys(current.regimeDistribution), ...Object.keys(previous.regimeDistribution)]);
+        for (const r of allRegimes) {
+          const c = current.regimeDistribution[r] || 0;
+          const p = previous.regimeDistribution[r] || 0;
+          if (Math.abs(c - p) > 0.05) {
+            shifts.push(`${r}: ${(p * 100).toFixed(1)}% -> ${(c * 100).toFixed(1)}%`);
+          }
+        }
+        explain.cause = shifts.length > 0 ? `regime balance shifted: ${shifts.join('; ')}` : 'subtle regime rebalancing';
+        break;
+      }
+      case 'coupling': {
+        explain.cause = `mean coupling deviation: ${dim.delta.toFixed(4)}`;
+        break;
+      }
+      default:
+        explain.cause = 'unknown dimension';
+    }
+
+    explanations.push(explain);
+  }
+
+  // Overall narrative
+  let narrative = '';
+  if (comparison.verdict === 'STABLE') {
+    narrative = 'The composition character is statistically stable. No significant drift detected.';
+  } else if (comparison.verdict === 'EVOLVED') {
+    narrative = 'The composition has evolved in ' + comparison.driftedDimensions + ' dimension(s). ' +
+      'This is within normal creative variation range. ' +
+      explanations.map(e => e.cause).join('. ') + '.';
+  } else {
+    narrative = 'WARNING: Significant character drift across ' + comparison.driftedDimensions + ' dimensions. ' +
+      'This may indicate a regression or fundamental parameter change. ' +
+      explanations.map(e => e.cause).join('. ') + '.';
+  }
+
+  return {
+    meta: { generated: new Date().toISOString(), verdict: comparison.verdict },
+    narrative,
+    explanations
+  };
+}
+
+const EXPLAINER_PATH = path.join(OUTPUT_DIR, 'fingerprint-drift-explainer.json');
 
 function main() {
   // Rotate previous fingerprint
@@ -302,16 +424,24 @@ function main() {
     const comparison = compareFingerprints(fingerprint, previous);
     fs.writeFileSync(COMPARISON_PATH, JSON.stringify(comparison, null, 2), 'utf8');
 
+    // Generate drift explanation
+    const explainer = explainDrift(comparison, fingerprint, previous);
+    fs.writeFileSync(EXPLAINER_PATH, JSON.stringify(explainer, null, 2), 'utf8');
+
     const symbol = comparison.verdict === 'STABLE' ? 'STABLE' :
                    comparison.verdict === 'EVOLVED' ? 'EVOLVED' : 'DRIFTED';
     console.log(
       'golden-fingerprint: ' + symbol +
       ' (' + comparison.driftedDimensions + '/' + comparison.totalDimensions + ' dimensions shifted) -> output/fingerprint-comparison.json'
     );
+    if (explainer.explanations.length > 0) {
+      console.log('golden-fingerprint: drift explainer -> output/fingerprint-drift-explainer.json');
+    }
 
     if (comparison.verdict === 'DRIFTED') {
       console.warn('golden-fingerprint: WARNING - significant character drift detected across ' +
         comparison.driftedDimensions + ' dimensions. Review output/fingerprint-comparison.json.');
+      console.warn('golden-fingerprint: ' + explainer.narrative);
     }
   } else {
     console.log('golden-fingerprint: first run - baseline established -> output/golden-fingerprint.json');

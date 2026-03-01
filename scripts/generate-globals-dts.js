@@ -22,12 +22,21 @@ const dtsSrc = fs.readFileSync(GLOBALS_DTS_PATH, 'utf8');
 const entries   = [];
 const sectionRe = /^\s*\/\/\s*-+\s*(.*?)\s*-+/;
 const declareRe = /^\s*declare\s+var\s+([A-Za-z_$][\w$]*)\s*:/;
+const advisoryRe = /@boot-advisory/;
 
+let nextIsAdvisory = false;
 for (const line of dtsSrc.split(/\r?\n/)) {
+  // Check for @boot-advisory in JSDoc comment preceding a declaration
+  if (advisoryRe.test(line)) {
+    nextIsAdvisory = true;
+    // If this line also has a declare var on it (single-line JSDoc), don't skip
+    const declOnSameLine = line.match(declareRe);
+    if (!declOnSameLine) continue;
+  }
   const sec  = line.match(sectionRe);
   const decl = line.match(declareRe);
-  if      (sec)  entries.push({ type: 'section', text: sec[1] });
-  else if (decl) entries.push({ type: 'name',    name: decl[1] });
+  if      (sec)  { entries.push({ type: 'section', text: sec[1] }); nextIsAdvisory = false; }
+  else if (decl) { entries.push({ type: 'name', name: decl[1], advisory: nextIsAdvisory }); nextIsAdvisory = false; }
 }
 
 const names = entries.filter(e => e.type === 'name').map(e => e.name);
@@ -53,20 +62,49 @@ if (uniqueNames.length < names.length) {
 }
 
 // -- Build replacement array body ---------------------------------------------
+// Separate critical globals from advisory (warn-only) globals
 
-const lines = [];
+const criticalLines = [];
+const advisoryLines = [];
 for (const entry of deduped) {
   if (entry.type === 'section') {
-    lines.push('');
-    lines.push(`    // -- ${entry.text} --`);
+    criticalLines.push('');
+    criticalLines.push(`    // -- ${entry.text} --`);
+    advisoryLines.push('');
+    advisoryLines.push(`    // -- ${entry.text} --`);
+  } else if (entry.advisory) {
+    advisoryLines.push(`    '${entry.name}',`);
   } else {
-    lines.push(`    '${entry.name}',`);
+    criticalLines.push(`    '${entry.name}',`);
   }
 }
-// trim leading blank line
-while (lines.length && lines[0].trim() === '') lines.shift();
+// trim leading blank lines
+while (criticalLines.length && criticalLines[0].trim() === '') criticalLines.shift();
+while (advisoryLines.length && advisoryLines[0].trim() === '') advisoryLines.shift();
+// Remove empty section-only groups from advisory
+const cleanedAdvisory = [];
+for (let i = 0; i < advisoryLines.length; i++) {
+  const line = advisoryLines[i];
+  const isComment = line.trim().startsWith('//') || line.trim() === '';
+  if (isComment) {
+    // Only keep comment if next non-empty line is a quoted name
+    let hasContent = false;
+    for (let j = i + 1; j < advisoryLines.length; j++) {
+      const next = advisoryLines[j].trim();
+      if (next === '' || next.startsWith('//')) continue;
+      if (next.startsWith("'")) hasContent = true;
+      break;
+    }
+    if (hasContent) cleanedAdvisory.push(line);
+  } else {
+    cleanedAdvisory.push(line);
+  }
+}
 
-// -- Patch VALIDATED_GLOBALS in fullBootstrap.js - globals.d.ts untouched ----
+const advisoryCount = deduped.filter(e => e.type === 'name' && e.advisory).length;
+const criticalCount = uniqueNames.length - advisoryCount;
+
+// -- Patch VALIDATED_GLOBALS and ADVISORY_GLOBALS in fullBootstrap.js ----------
 
 const bootstrapSrc = fs.readFileSync(BOOTSTRAP_PATH, 'utf8');
 const srcLines = bootstrapSrc.split(/\r?\n/);
@@ -79,12 +117,43 @@ if (closeIdx === -1) throw new Error('generate-globals-dts: VALIDATED_GLOBALS cl
 
 const closeLine = srcLines[closeIdx]; // preserve original indentation/semicolon
 
-const newSrcLines = [
-  ...srcLines.slice(0, openIdx + 1),
-  ...lines,
-  closeLine,
-  ...srcLines.slice(closeIdx + 1),
-];
+// Check if ADVISORY_GLOBALS already exists
+const advisoryOpenIdx = srcLines.findIndex(l => /const ADVISORY_GLOBALS\s*=\s*Object\.freeze\(\[/.test(l));
+let advisoryCloseIdx = -1;
+if (advisoryOpenIdx !== -1) {
+  advisoryCloseIdx = srcLines.findIndex((l, i) => i > advisoryOpenIdx && /^\s*\]\s*\)\s*;?\s*$/.test(l));
+}
+
+let newSrcLines;
+if (advisoryOpenIdx !== -1 && advisoryCloseIdx !== -1) {
+  // Replace both existing arrays
+  // Build from bottom up to avoid index shifting
+  const afterAdvisory = srcLines.slice(advisoryCloseIdx + 1);
+  const betweenArrays = srcLines.slice(closeIdx + 1, advisoryOpenIdx);
+  newSrcLines = [
+    ...srcLines.slice(0, openIdx + 1),
+    ...criticalLines,
+    closeLine,
+    ...betweenArrays,
+    srcLines[advisoryOpenIdx], // keep the const ADVISORY_GLOBALS = Object.freeze([ line
+    ...cleanedAdvisory,
+    closeLine,
+    ...afterAdvisory
+  ];
+} else {
+  // First time: insert ADVISORY_GLOBALS after VALIDATED_GLOBALS
+  newSrcLines = [
+    ...srcLines.slice(0, openIdx + 1),
+    ...criticalLines,
+    closeLine,
+    '',
+    '  /** @type {readonly string[]} Advisory globals: warn if missing, do not throw. */',
+    '  const ADVISORY_GLOBALS = Object.freeze([',
+    ...cleanedAdvisory,
+    '  ]);',
+    ...srcLines.slice(closeIdx + 1),
+  ];
+}
 
 fs.writeFileSync(BOOTSTRAP_PATH, newSrcLines.join('\n'), 'utf8');
-console.log(`generate-globals-dts: synced ${uniqueNames.length} globals from globals.d.ts - fullBootstrap.js`);
+console.log(`generate-globals-dts: synced ${criticalCount} critical + ${advisoryCount} advisory globals from globals.d.ts -> fullBootstrap.js`);

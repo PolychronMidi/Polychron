@@ -632,11 +632,6 @@ fullBootstrap = (() => {
     'logUnit',
     'pushMultiple',
     'grandFinale',
-    'traceDrain',
-    'coherenceVerdicts',
-    'systemManifestMarkdown',
-    'systemManifest',
-    'outputAnalyzer',
 
     // -- typed constructors (canonical declarations --
     'VoiceLeadingScore',
@@ -666,7 +661,6 @@ fullBootstrap = (() => {
     'fullBootstrap',
     'mainBootstrap',
     'crossLayerBeatRecord',
-    'beatPipelineDescriptor',
     'processBeat',
     'layerPass',
     'playNotesEmitPick',
@@ -743,8 +737,76 @@ fullBootstrap = (() => {
     'polyDenominator',
   ]);
 
+  /** @type {readonly string[]} Advisory globals: warn if missing, do not throw. */
+  const ADVISORY_GLOBALS = Object.freeze([
+    // -- Abbreviation Glossary --
+
+    // -- Core Interface Types --
+
+    // -- Explainability / Trust / Coherence --
+
+    // -- Conductor subsystem objects --
+
+    // -- System Dynamics Profiler (phase --
+
+    // -- Time subsystem --
+
+    // -- Lifecycle / caching utilities --
+
+    // -- eventCatalog --
+
+    // -- Cross --
+
+    // -- Rhythm / Time / Composer Interfaces --
+
+    // -- Conductor / Composer / FX Class Interfaces --
+
+    // --  --
+
+    // --  --
+
+    // -- Profile record shapes --
+
+    // -- Config accessor APIs --
+
+    // -- Feedback infrastructure --
+
+    // -- Conductor intelligence module APIs --
+
+    // -- utils --
+
+    // -- conductor --
+
+    // -- rhythm --
+
+    // -- time --
+
+    // -- composers --
+
+    // -- fx --
+
+    // -- crossLayer --
+
+    // -- writer --
+    'traceDrain',
+    'coherenceVerdicts',
+    'systemManifestMarkdown',
+    'systemManifest',
+    'outputAnalyzer',
+
+    // -- typed constructors (canonical declarations --
+
+    // -- node / timing --
+
+    // -- play --
+    'beatPipelineDescriptor',
+  ]);
+
   /** @type {ReadonlySet<string>} */
   const validatedSet = Object.freeze(new Set(VALIDATED_GLOBALS));
+
+  /** @type {ReadonlySet<string>} */
+  const advisorySet = Object.freeze(new Set(typeof ADVISORY_GLOBALS !== 'undefined' ? ADVISORY_GLOBALS : []));
 
   return {
     /** @returns {ReadonlySet<string>} The set of global names proven at boot. */
@@ -752,6 +814,12 @@ fullBootstrap = (() => {
 
     /** @returns {readonly string[]} The ordered list for iteration. */
     getValidatedGlobalsList() { return VALIDATED_GLOBALS; },
+
+    /** @returns {readonly string[]} Advisory globals (warn-only if missing). */
+    getAdvisoryGlobalsList() { return typeof ADVISORY_GLOBALS !== 'undefined' ? ADVISORY_GLOBALS : []; },
+
+    /** @returns {ReadonlySet<string>} Advisory globals set. */
+    getAdvisoryGlobals() { return advisorySet; },
 
     /**
      * Assert that a global name is in the validated set.

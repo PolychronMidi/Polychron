@@ -19,7 +19,7 @@ Globals are assigned as side-effects of `require()` calls in `index.js` files. N
 
 - Reference globals directly - never alias into intermediary variables.
 - To add a new global: create a side-effect module, require it from the subsystem's `index.js`, declare in `globals.d.ts`. **Never hand-edit `VALIDATED_GLOBALS`** - `scripts/generate-globals-dts.js` rewrites it automatically.
-- Boot validation proves every global exists before the main loop. ESLint `local/no-typeof-validated-global` bans redundant `typeof` probes.
+- Boot validation is **graduated**: critical globals throw on missing, advisory globals (annotated `/** @boot-advisory */` in `globals.d.ts`) warn only. ESLint `local/no-typeof-validated-global` bans redundant `typeof` probes.
 
 ### 2. Fail Fast - Loud Crashes, Never Silent Corruption
 
@@ -75,17 +75,19 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 
 ## Custom ESLint Rules
 
-13 project-specific rules in `scripts/eslint-rules/`:
+15 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** - PascalCase for classes, camelCase for everything else
 - **`no-conductor-registration-from-crosslayer`** - prevent cross-layer modules from registering with conductor
 - **`no-console-acceptable-warning`** - restrict `console.warn` to `'Acceptable warning: ...'` format
+- **`no-direct-conductor-state-from-crosslayer`** - prevent cross-layer modules from reading `conductorState` directly (must use `conductorSignalBridge`)
 - **`no-direct-signal-read`** - ban `conductorIntelligence.getSignalSnapshot()` - use `signalReader`
 - **`no-math-random`** - ban `Math.random()` - use project random sources
 - **`no-non-ascii`** - ban non-ASCII characters in source
 - **`no-requires-outside-index`** - restrict `require()` to `index.js` files
 - **`no-silent-early-return`** - ban silent early returns - fail fast
 - **`no-typeof-validated-global`** - ban `typeof` checks on boot-validated globals
+- **`no-unregistered-feedback-loop`** - require feedback loop registration with `feedbackRegistry` (closedLoopController auto-registers)
 - **`no-unstamped-validator`** - require module name stamp on `validator.create()`
 - **`no-useless-expose-dependencies-comments`** - ban `/* expose-dependencies */` comments
 - **`only-error-throws`** - require `throw new Error(...)` - no throwing strings/objects
@@ -96,3 +98,8 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - [README.md](../README.md) - Comprehensive project overview, architecture, subsystem details, diagnostics
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - Beat lifecycle deep-dive, signal flow from conductor to emission
 - [TUNING_MAP.md](../TUNING_MAP.md) - Feedback loop constants, interaction partners, cross-constant invariants
+- [FEEDBACK_GRAPH.json](../FEEDBACK_GRAPH.json) - Feedback loop topology (source of truth for visualization)
+- `output/conductor-map.md` - Auto-generated conductor intelligence map (per-run)
+- `output/crosslayer-map.md` - Auto-generated cross-layer intelligence map (per-run)
+- `output/narrative-digest.md` - Auto-generated prose narrative (per-run)
+- `output/feedback-graph.html` - Interactive feedback graph visualization (per-run)
