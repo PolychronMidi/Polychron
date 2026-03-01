@@ -117,16 +117,21 @@ setUnitTiming = (unitType) => {
       divsPerBeat = activeComposer.getDivisions();
 
       // --- Micro-unit iteration budget ---
-      // Cap the product D*S*SS to <= MAX_SUBUNITS_PER_BEAT to prevent worst-case
-      // combinatorial explosions (e.g. 15*15*15 = 3375) that dominate runtime.
-      // Scale down the largest factor first. No musical impact: at 72 BPM a beat
-      // is 833ms, so <=200 sub-units still yields <4ms per sub-unit -- well below
-      // the ~5ms perceptual threshold.
+      // Cap the product D*S*SS to prevent worst-case combinatorial explosions
+      // (e.g. 15*15*15 = 3375). Adaptive: downbeats and structurally important
+      // positions get a higher budget; inner beats get a lower budget to
+      // compensate. The per-measure time watchdog in layerPass may further
+      // reduce the cap via activeLayer._budgetOverrideCap.
       { const _rawD = divsPerBeat;
         const _rawS = activeComposer.getSubdivs();
         const _rawSS = activeComposer.getSubsubdivs();
         const _rawProduct = _rawD * _rawS * _rawSS;
-        const _MAX = 200;
+        const _BASE_MAX = 250;
+        const _isDownbeat = beatIndex === 0;
+        const _isFirstMeasure = measureIndex === 0;
+        const _boost = (_isDownbeat ? 50 : 0) + (_isFirstMeasure && _isDownbeat ? 50 : 0);
+        const _overrideCap = activeLayer._budgetOverrideCap || 0;
+        const _MAX = _overrideCap > 0 ? m.min(_BASE_MAX + _boost, _overrideCap) : (_BASE_MAX + _boost);
         _budgetStats.totalBeats++;
         if (_rawProduct > _MAX) {
           _budgetStats.cappedBeats++;

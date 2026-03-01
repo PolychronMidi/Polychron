@@ -152,7 +152,7 @@ intervalBalanceTracker = (() => {
     return { suggestion: 'maintain', targetAvgInterval: profile.avgInterval };
   }
 
-  conductorIntelligence.registerDensityBias('intervalBalanceTracker', () => intervalBalanceTracker.getDensityBias(), 0.94, 1.1);
+  conductorIntelligence.registerDensityBias('intervalBalanceTracker', () => intervalBalanceTracker.getDensityBias(), 0.90, 1.1);
   conductorIntelligence.registerStateProvider('intervalBalanceTracker', () => {
     const b = intervalBalanceTracker.getIntervalBias();
     return {

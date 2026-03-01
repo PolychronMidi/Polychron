@@ -154,7 +154,7 @@ restDensityTracker = (() => {
     const onset = restDensityTracker.getOnsetBias();
     const breathing = restDensityTracker.getBreathingDensityBias();
     return m.sqrt(onset * breathing);
-  }, 0.88, 1.15);
+  }, 0.90, 1.15);
 
   return {
     getOnsetDensity,

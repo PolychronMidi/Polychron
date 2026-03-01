@@ -66,7 +66,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const triggerCountBefore = convergenceHarmonicTrigger.getTriggerCount();
   if (clConvergenceGate.allowHarmonicTrigger) convergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer, alignment: clCadResult });
   const convergenceTriggered = convergenceHarmonicTrigger.getTriggerCount() > triggerCountBefore;
-  adaptiveTrustScores.registerOutcome('convergence', convergenceTriggered ? 0.5 : (clConvergenceIntensity > 0 ? 0.05 : 0.07));
+  adaptiveTrustScores.registerOutcome('convergence', convergenceTriggered ? 0.6 : (clConvergenceIntensity > 0 ? 0.15 : 0.10));
   interactionHeatMap.record('climaxEngine', crossLayerClimaxEngine.isApproaching() ? clamp(crossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
   interactionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
 
@@ -91,11 +91,10 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     ? (clCadResult.shouldResolve ? cap.resolved : cap.unresolved)
     : (clCadenceGate ? cap.gatedNoResult : cap.ungated);
   const fop = tp.feedbackOscillator;
-  // Idle beats get a small positive payoff for readiness; active feedback gets a stronger base boost
-  // so that even low-energy reactions build trust over time.
+  // feedbackOscillator: idle beats get readiness payoff; active gets base + energy
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
-    ? 0.06
-    : clamp(0.15 + clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
+    ? 0.12
+    : clamp(0.20 + clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
   adaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
   adaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
   adaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
@@ -108,8 +107,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const entropyError = clEntropy ? m.abs(clEntropy.error) : 0;
   const entropyOutcome = clamp(1 - entropyError * 3, -1, 1);
   adaptiveTrustScores.registerOutcome('entropyRegulator', entropyOutcome);
-  // restSynchronizer: reward meaningful shared rests (creates breathing room), penalize excessive silencing
-  const restOutcome = clRest.shouldRest ? 0.3 : 0.05;
+  // restSynchronizer: reward meaningful shared rests (breathing room), penalize stagnation
+  const restOutcome = clRest.shouldRest ? 0.5 : 0.08;
   adaptiveTrustScores.registerOutcome('restSynchronizer', restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
 
