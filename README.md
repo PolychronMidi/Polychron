@@ -84,7 +84,7 @@ For a deep-dive, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Three firewalls keep the system musical instead of chaotic:
 
-- **Top-down steering only** — The conductor sets the climate. Cross-layer orchestrates the weather. The play loop experiences it. Cross-layer modules cannot write to the conductor; they modify `playProb`/`stutterProb` locally and emit diagnostics to `explainabilityBus`.
+- **Top-down steering only** — The conductor sets the climate. Cross-layer orchestrates the weather. The play loop experiences it. Cross-layer modules cannot write to the conductor; they modify `playProb`/`stutterProb` locally and emit diagnostics to `explainabilityBus`. Conversely, conductor modules cannot mutate cross-layer state (ESLint-enforced).
 - **Network dampening** — Every feedback loop must register with `feedbackRegistry`. The closed-loop controller mechanism prevents phase misalignment and thermal loads from causing resonance.
 - **Temporal decoupling** — Modules communicate via `absoluteTimeGrid` channels (`post()` / `query()` / `findClosest()` by millisecond time), not direct calls.
 
@@ -412,7 +412,7 @@ The motif subsystem (18 files) provides motivic identity and development:
 - **`output/system-manifest.json`** (JSON) — Machine-readable diagnostic snapshot — config, journey, registries, contributions, health
 - **`output/capability-matrix.md`** (Markdown) — Human-readable summary of system capabilities and module registrations
 - **`output/trace.jsonl`** (JSONL) — Per-beat trace data (when `--trace` enabled) — full pipeline state per beat
-- **`output/trace-summary.json`** (JSON) — Statistical summary of trace (regimes, signals, coupling, trust)
+- **`output/trace-summary.json`** (JSON) — Statistical summary of trace (regimes, signals, coupling, trust, stage timing)
 - **`output/dependency-graph.json`** (JSON) — Machine-readable global dependency graph
 - **`output/conductor-map.json`** + **`conductor-map.md`** — Per-module conductor intelligence map
 - **`output/golden-fingerprint.json`** + **`fingerprint-comparison.json`** — Statistical regression detection
@@ -430,7 +430,7 @@ When `--trace` is passed to `main.js`, `traceDrain` writes a JSONL entry per bea
 - Note emission details (including embedded per-beat `notes` array with pitch, velocity, channel)
 - Pipeline health grades
 
-`scripts/trace-summary.js` processes the trace into a statistical summary after composition.
+`scripts/trace-summary.js` processes the trace into a statistical summary after composition, including per-stage timing aggregates (min/max/avg) when stage profiling data is present.
 
 **Trace Replay:** `npm run replay` launches `scripts/trace-replay.js` for post-hoc trace analysis:
 
@@ -530,13 +530,13 @@ Profiles are defined in `src/conductor/profiles/` and resolved by `conductorConf
 `npm run main` executes this sequence:
 
 1. `node scripts/generate-globals-dts.js` — Regenerates `VALIDATED_GLOBALS` + `ADVISORY_GLOBALS` from `globals.d.ts`
-2. `node scripts/verify-boot-order.js` — Validates subsystem require order + intra-subsystem dependency ordering
+2. `node scripts/verify-boot-order.js` — Validates subsystem require order, intra-subsystem dependency ordering, and cross-subsystem dependency ordering
 3. `node scripts/check-tuning-invariants.js` — Validates cross-constant invariants from [TUNING_MAP.md](TUNING_MAP.md)
-4. `npm run lint` — ESLint with 15 custom rules (auto-fix)
+4. `npm run lint` — ESLint with 16 custom rules (auto-fix)
 5. `npm run tc` — TypeScript type-check via `tsc --noEmit`
 6. `node src/play/main.js --trace` — Runs composition (16GB heap, trace enabled)
 7. `node scripts/trace-summary.js` — Summarizes trace output
-8. `node scripts/check-manifest-health.js` — Validates system manifest health
+8. `node scripts/check-manifest-health.js` — Validates system manifest health and coupling tail risk
 9. `node scripts/generate-dependency-graph.js` — Builds machine-readable dependency graph
 10. `node scripts/generate-conductor-map.js` — Auto-generates conductor intelligence map
 11. `node scripts/generate-crosslayer-map.js` — Auto-generates cross-layer intelligence map
@@ -561,12 +561,13 @@ All steps log to `log/` via `scripts/run-with-log.js`.
 
 ## Custom ESLint Rules
 
-15 project-specific rules in `scripts/eslint-rules/`:
+16 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** — Enforce PascalCase for classes, camelCase for everything else
 - **`no-conductor-registration-from-crosslayer`** — Prevent cross-layer modules from registering with conductor
 - **`no-console-acceptable-warning`** — Restrict `console.warn` to `'Acceptable warning: ...'` format
 - **`no-direct-conductor-state-from-crosslayer`** — Prevent cross-layer modules from reading `conductorState` directly (must use `conductorSignalBridge`)
+- **`no-direct-crosslayer-write-from-conductor`** — Prevent conductor modules from mutating cross-layer state (read-only access allowed)
 - **`no-direct-signal-read`** — Ban `conductorIntelligence.getSignalSnapshot()` — use `signalReader`
 - **`no-math-random`** — Ban `Math.random()` — use project random sources
 - **`no-non-ascii`** — Ban non-ASCII characters in source
@@ -593,8 +594,8 @@ All steps log to `log/` via `scripts/run-with-log.js`.
 - **`output/system-manifest.json`** — Full diagnostic manifest (config, journey, registries, attribution, verdicts)
 - **`output/capability-matrix.md`** — Human-readable capability summary
 - **`output/trace.jsonl`** — Per-beat trace data (when `--trace` enabled)
-- **`output/trace-summary.json`** — Statistical summary of trace data (regimes, signals, coupling, trust)
-- **`output/boot-order.json`** — Boot order with per-file global providers and intra-subsystem violations
+- **`output/trace-summary.json`** — Statistical summary of trace data (regimes, signals, coupling, trust, stage timing)
+- **`output/boot-order.json`** — Boot order with per-file global providers, intra-subsystem violations, and cross-subsystem violations
 - **`output/tuning-invariants.json`** — Cross-constant invariant validation results
 
 ### Analysis Artifacts (generated post-composition)
