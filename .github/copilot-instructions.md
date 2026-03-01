@@ -103,7 +103,7 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - [README.md](../README.md) - Comprehensive project overview, architecture, subsystem details, diagnostics
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - Beat lifecycle deep-dive, signal flow from conductor to emission
 - [TUNING_MAP.md](../TUNING_MAP.md) - Feedback loop constants, interaction partners, cross-constant invariants
-- [FEEDBACK_GRAPH.json](../FEEDBACK_GRAPH.json) - Feedback loop topology (source of truth for visualization)
+- [doc/FEEDBACK_GRAPH.json](../doc/FEEDBACK_GRAPH.json) - Feedback loop topology (source of truth for visualization)
 - `output/conductor-map.md` - Auto-generated conductor intelligence map (per-run)
 - `output/crosslayer-map.md` - Auto-generated cross-layer intelligence map (per-run)
 - `output/narrative-digest.md` - Auto-generated prose narrative (per-run)

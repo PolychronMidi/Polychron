@@ -12,7 +12,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const GRAPH_PATH = path.join(ROOT, 'FEEDBACK_GRAPH.json');
+const GRAPH_PATH = path.join(ROOT, 'doc/FEEDBACK_GRAPH.json');
 const OUTPUT_DIR = path.join(ROOT, 'output');
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');
 const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
