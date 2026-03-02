@@ -1,13 +1,14 @@
 // voiceLeadingAnalyzeQuality.js - analysis helper for VoiceLeadingScore
 
 voiceLeadingAnalyzeQuality = function voiceLeadingAnalyzeQuality(vls, noteSequence) {
-  if (!vls || typeof vls !== 'object') throw new Error('voiceLeadingAnalyzeQuality: VoiceLeadingScore instance is required');
-  if (!Array.isArray(noteSequence)) throw new Error('VoiceLeadingScore.analyzeQuality: expected an array of notes');
+  const V = validator.create('voiceLeadingAnalyzeQuality');
+  V.assertObject(vls, 'vls');
+  V.assertArray(noteSequence, 'noteSequence');
   if (noteSequence.length < 2) {
     return { smoothness: 0, avgRange: 0, leapRecoveries: 0 };
   }
   for (let i = 0; i < noteSequence.length; i++) {
-    if (!Number.isFinite(Number(noteSequence[i]))) throw new Error(`VoiceLeadingScore.analyzeQuality: noteSequence[${i}] is not a finite number`);
+    V.requireFinite(Number(noteSequence[i]), `noteSequence[${i}]`);
   }
 
   let totalCost = 0;

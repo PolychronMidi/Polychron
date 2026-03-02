@@ -1,4 +1,5 @@
 voiceLeadingPriors = (function() {
+  const V = validator.create('voiceLeadingPriors');
   /**
    * @typedef {Object} VoiceLeadingPriorsOpts
    * @property {number} [fromNote] - Starting MIDI note number
@@ -14,29 +15,19 @@ voiceLeadingPriors = (function() {
     if (!quality) throw new Error(`voiceLeadingPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 
     const profile = VOICE_LEADING_PRIOR_TABLES[quality];
-    if (!profile || typeof profile !== 'object') {
-      throw new Error(`voiceLeadingPriors.getProfileOrFail: missing profile for quality "${quality}"`);
-    }
-
-    if (!profile.phaseIntervalWeights || typeof profile.phaseIntervalWeights !== 'object') {
-      throw new Error(`voiceLeadingPriors.getProfileOrFail: profile "${quality}" missing phaseIntervalWeights`);
-    }
-    if (!profile.phaseDirectionWeights || typeof profile.phaseDirectionWeights !== 'object') {
-      throw new Error(`voiceLeadingPriors.getProfileOrFail: profile "${quality}" missing phaseDirectionWeights`);
-    }
-    if (!profile.tendencyWeights || typeof profile.tendencyWeights !== 'object') {
-      throw new Error(`voiceLeadingPriors.getProfileOrFail: profile "${quality}" missing tendencyWeights`);
-    }
+    V.assertObject(profile, 'getProfileOrFail.profile');
+    V.assertObject(profile.phaseIntervalWeights, 'getProfileOrFail.phaseIntervalWeights');
+    V.assertObject(profile.phaseDirectionWeights, 'getProfileOrFail.phaseDirectionWeights');
+    V.assertObject(profile.tendencyWeights, 'getProfileOrFail.tendencyWeights');
 
     return profile;
   }
 
   function resolveTonicPitchClass(opts = {}) {
-    const tonic = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
-      ? opts.tonic
-      : (harmonicContext.getField('key') || null);
+    const tonic = V.optionalType(opts.tonic, 'string')
+      || harmonicContext.getField('key') || null;
 
-    if (typeof tonic !== 'string' || tonic.length === 0) return null;
+    if (tonic === null || tonic.length === 0) return null;
     const chroma = t.Note.chroma(tonic);
     if (!Number.isFinite(Number(chroma))) return null;
     return ((Number(chroma) % 12) + 12) % 12;
@@ -48,33 +39,26 @@ voiceLeadingPriors = (function() {
    * @returns {number} Adjustment value to add to total cost (can be negative)
    */
   function getCandidateAdjustment(opts = {}) {
-    if (!opts || typeof opts !== 'object') {
-      throw new Error('voiceLeadingPriors.getCandidateAdjustment: opts must be an object');
-    }
-    if (!Number.isFinite(Number(opts.fromNote))) {
-      throw new Error('voiceLeadingPriors.getCandidateAdjustment: opts.fromNote must be finite');
-    }
-    if (!Number.isFinite(Number(opts.toNote))) {
-      throw new Error('voiceLeadingPriors.getCandidateAdjustment: opts.toNote must be finite');
-    }
+    V.assertPlainObject(opts, 'getCandidateAdjustment.opts');
+    V.requireFinite(Number(opts.fromNote), 'getCandidateAdjustment.fromNote');
+    V.requireFinite(Number(opts.toNote), 'getCandidateAdjustment.toNote');
 
-    const qualityHint = (typeof opts.quality === 'string' && opts.quality.length > 0)
-      ? opts.quality
-      : (harmonicContext.getField('quality') || 'major');
+    const qualityHint = V.optionalType(opts.quality, 'string')
+      || harmonicContext.getField('quality') || 'major';
 
     const quality = modeQualityMap.normalizeOrNull(qualityHint);
     if (!quality) return 0;
 
     const profile = getProfileOrFail(quality);
     const phase = priorsHelpers.resolvePhase(opts);
-    const intervalMap = (profile.phaseIntervalWeights && profile.phaseIntervalWeights[phase] && typeof profile.phaseIntervalWeights[phase] === 'object')
+    const intervalMap = (profile.phaseIntervalWeights && profile.phaseIntervalWeights[phase] && V.optionalType(profile.phaseIntervalWeights[phase], 'object'))
       ? profile.phaseIntervalWeights[phase]
       : {};
-    const directionMap = (profile.phaseDirectionWeights && profile.phaseDirectionWeights[phase] && typeof profile.phaseDirectionWeights[phase] === 'object')
+    const directionMap = (profile.phaseDirectionWeights && profile.phaseDirectionWeights[phase] && V.optionalType(profile.phaseDirectionWeights[phase], 'object'))
       ? profile.phaseDirectionWeights[phase]
       : {};
 
-    const strength = clamp(Number.isFinite(Number(opts.strength)) ? Number(opts.strength) : 0.8, 0, 2);
+    const strength = clamp(V.optionalFinite(Number(opts.strength), 0.8), 0, 2);
     const from = Number(opts.fromNote);
     const to = Number(opts.toNote);
 
