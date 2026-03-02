@@ -80,6 +80,8 @@ function summarizeTrace(entries) {
   const trustScoreAbs = {};
   const trustWeightAbs = {};
   const stageTimingAgg = {}; // per-stage min/max/avg across all beats
+  const BEAT_SETUP_BUDGET_MS = 200; // R9 Evo 5: flag beats where beat-setup exceeds this
+  let beatSetupExceeded = 0;
 
   let firstBeatKey = null;
   let lastBeatKey = null;
@@ -160,6 +162,9 @@ function summarizeTrace(entries) {
         if (!stageTimingAgg[stage]) stageTimingAgg[stage] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
         updateMinMax(stageTimingAgg[stage], ms);
       }
+      // R9 Evo 5: count beats where beat-setup exceeds the budget
+      const setupMs = toNum(st['beat-setup'], NaN);
+      if (Number.isFinite(setupMs) && setupMs > BEAT_SETUP_BUDGET_MS) beatSetupExceeded++;
     }
   }
 
@@ -227,7 +232,13 @@ function summarizeTrace(entries) {
       const result = {};
       for (let i = 0; i < stKeys.length; i++) result[stKeys[i]] = finalizeMinMax(stageTimingAgg[stKeys[i]]);
       return result;
-    })()
+    })(),
+    beatSetupBudget: {
+      thresholdMs: BEAT_SETUP_BUDGET_MS,
+      exceededCount: beatSetupExceeded,
+      totalBeats: entries.length,
+      exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0
+    }
   };
 }
 

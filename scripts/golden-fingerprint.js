@@ -47,7 +47,7 @@ const TOLERANCES = {
   densityVarianceDelta: 0.20,     // absolute variance change
   tensionArcDistortion: 0.30,     // normalized arc shape distance
   trustConvergenceDelta: 0.25,    // trust score convergence rate change
-  regimeDistributionDelta: 0.30,  // Jensen-Shannon divergence threshold
+  regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
   couplingDelta: 0.25             // mean absolute coupling change
 };
 

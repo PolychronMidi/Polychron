@@ -85,6 +85,16 @@ pipelineCouplingManager = (() => {
   const GAIN_INIT = 0.16;
   const GAIN_MIN  = 0.08;
   const GAIN_MAX  = 0.60;
+
+  // R9 Evo 3: Profile-aware gain ceiling for density-flicker pair.
+  // Explosive profile's flickerTargetRange=0.27 saturates the decorrelation
+  // engine (peak |r|=0.951, 14% exceedance >0.85). Allow 30% extra GAIN_MAX
+  // for this pair so the engine can actually bring it down.
+  let _densityFlickerGainCeiling = GAIN_MAX;
+  /** @param {number} scale */
+  function setDensityFlickerGainScale(scale) {
+    _densityFlickerGainCeiling = GAIN_MAX * scale;
+  }
   const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
   const GAIN_EMERGENCY_RATE = 0.06; // 3x escalation when |r| > 2x target
   const GAIN_RELAX_RATE    = 0.02; // per-beat gain decrease when resolved (raised from 0.01 to prevent gain saturation on intractable pairs)
@@ -202,7 +212,8 @@ pipelineCouplingManager = (() => {
           if (!improving && !pairSaturated) {
             // Emergency escalation: when |r| > 2x target, escalate 3x faster
             const rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
-            ps.gain = clamp(ps.gain + rate, GAIN_MIN, GAIN_MAX);
+            const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
+            ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
         } else {
           // Below target - relax gain back toward initial
@@ -332,5 +343,5 @@ pipelineCouplingManager = (() => {
     () => m.sign(biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, reset };
+  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, reset };
 })();
