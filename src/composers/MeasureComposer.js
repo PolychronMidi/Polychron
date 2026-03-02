@@ -130,9 +130,7 @@ MeasureComposer = class MeasureComposer {
   getNotes(octaveRange=null) {
     // Fail-fast: ensure this.notes exists and is non-empty
     const self = /** @type {any} */ (this);
-    if (!Array.isArray(self.notes) || self.notes.length === 0) {
-      throw new Error(`MeasureComposer.getNotes(): this.notes is invalid - composer=${this?.constructor?.name}, scale=${self?.scale?.name}, notes=${JSON.stringify(self?.notes)}`);
-    }
+    V.assertArray(self.notes, 'this.notes', true);
 
     if (++self.recursionDepth > self.MAX_RECURSION) {
       throw new Error('MeasureComposer.getNotes() exceeded max recursion depth');
@@ -150,9 +148,7 @@ MeasureComposer = class MeasureComposer {
     try {
       const notesOut = measureNotePool.buildNotePool(self.notes, intervals, [minOctave, maxOctave], rootNote);
 
-      if (!Array.isArray(notesOut) || notesOut.length === 0) {
-        throw new Error(`MeasureComposer.getNotes produced empty result: no valid notes generated for intervals [${intervals}], octaveRange ${JSON.stringify(octaveRange)}, rootNote ${rootNote}`);
-      }
+      V.assertArray(notesOut, 'notesOut', true);
 
       return notesOut;
     } finally {
@@ -170,9 +166,15 @@ MeasureComposer = class MeasureComposer {
   enableVoiceLeading(scorerOrConfig) {
     if (!scorerOrConfig) {
       this.VoiceLeadingScore = new VoiceLeadingScore();
-    } else if (typeof scorerOrConfig === 'object' && typeof scorerOrConfig.selectNextNote !== 'function') {
-      // Treat as config
-      this.VoiceLeadingScore = new VoiceLeadingScore(scorerOrConfig);
+    } else if (typeof scorerOrConfig === 'object') {
+      try {
+        V.requireType(scorerOrConfig.selectNextNote, 'function', 'scorerOrConfig.selectNextNote');
+        // Assume an instance
+        this.VoiceLeadingScore = scorerOrConfig;
+      } catch {
+        // Treat as config
+        this.VoiceLeadingScore = new VoiceLeadingScore(scorerOrConfig);
+      }
     } else {
       // Assume an instance
       this.VoiceLeadingScore = scorerOrConfig;

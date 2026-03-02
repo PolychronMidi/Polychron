@@ -2,8 +2,9 @@
 // Extends PentatonicComposer with chromatic approach tones (b3, b5, b7),
 // call-and-response phrase shaping, and ghost note probability.
 
+const V = validator.create('BluesComposer');
+
 BluesComposer = class BluesComposer extends MeasureComposer {
-  static _V = validator.create('BluesComposer');
   /**
    * @param {string} root - Root note (e.g., 'C', 'A')
    * @param {'major'|'minor'} type - Blues tonality
@@ -31,9 +32,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     // Base pentatonic scale (the backbone)
     const pentatonicName = this.type === 'major' ? 'major pentatonic' : 'minor pentatonic';
     const pentatonic = t.Scale.get(`${root} ${pentatonicName}`);
-    if (!pentatonic || !Array.isArray(pentatonic.notes) || pentatonic.notes.length === 0) {
-      throw new Error(`BluesComposer.noteSet: pentatonic scale failed for root=${root} type=${type}`);
-    }
+    V.assertArray(pentatonic.notes, 'pentatonic.notes', true);
 
     // Full blues scale (includes the blue note - b5 for minor, b3 for major)
     const bluesScale = t.Scale.get(`${root} blues`);
@@ -70,9 +69,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
    */
   getNotes(octaveRange = null) {
     const baseNotes = super.getNotes(octaveRange);
-    if (!Array.isArray(baseNotes) || baseNotes.length === 0) {
-      throw new Error('BluesComposer.getNotes: super.getNotes() returned empty');
-    }
+    V.assertArray(baseNotes, 'baseNotes', true);
 
     this._phraseCount++;
     const isResponse = this._phraseCount % 2 === 0;
@@ -124,7 +121,7 @@ RandomBluesComposer = class RandomBluesComposer extends BluesComposer {
   }
 
   noteSet() {
-    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('RandomBluesComposer.noteSet: allNotes not available');
+    V.assertArray(allNotes, 'allNotes', true);
     const randomRoot = allNotes[ri(allNotes.length - 1)];
     const randomType = rf() < 0.5 ? 'major' : 'minor';
     super.noteSet(randomRoot, randomType);

@@ -178,9 +178,8 @@ playNotesEmitPick = function(opts = {}) {
       // Record articulation for cross-layer contrast tracking
       articulationComplement.recordSustain(activeLayerName, texSustain, absMsAtOnTick);
       // Record texture mode for texturalMirror
-      if (!textureMode || typeof textureMode.mode !== 'string' || textureMode.mode.length === 0) {
-        throw new Error(`${unit}.playNotesEmitPick: textureMode.mode must be a non-empty string`);
-      }
+      V.assertObject(textureMode, 'textureMode');
+      V.assertNonEmptyString(textureMode.mode, 'textureMode.mode');
       texturalMirror.recordTexture(activeLayerName, textureMode.mode, absMsAtOnTick);
     }
 

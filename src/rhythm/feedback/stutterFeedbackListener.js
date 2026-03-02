@@ -32,9 +32,7 @@ stutterFeedbackListener = (() => {
       ],
       onInput(data, contribution) {
         const profile = data.profile;
-        if (typeof profile !== 'string' || profile.length === 0) {
-          throw new Error('stutterFeedbackListener: stutter-applied.profile must be a non-empty string');
-        }
+        V.assertNonEmptyString(profile, 'profile');
         if (profile && perProfile[profile] !== undefined) {
           perProfile[profile] = perProfile[profile] * decayRate + contribution * (1 - decayRate);
         }
@@ -64,9 +62,7 @@ stutterFeedbackListener = (() => {
 
   // Small, conservative rhythm-weight bias based on stutter intensity
   function biasRhythmWeights(rhythmsObj, profile = null) {
-    if (!rhythmsObj || typeof rhythmsObj !== 'object') {
-      throw new Error('stutterFeedbackListener.biasRhythmWeights: invalid rhythms object');
-    }
+    V.assertObject(rhythmsObj, 'rhythmsObj');
 
     const intensity = getIntensity(profile);
     const modified = {};

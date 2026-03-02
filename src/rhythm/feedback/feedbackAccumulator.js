@@ -32,15 +32,9 @@
       const EVENTS = V.getEventsOrThrow();
 
       for (const input of options.inputs) {
-        if (!input || typeof input !== 'object') {
-          throw new Error(`feedbackAccumulator.initialize(${options.name}): each input must be an object`);
-        }
-        if (typeof input.eventName !== 'string' || input.eventName.length === 0) {
-          throw new Error(`feedbackAccumulator.initialize(${options.name}): input.eventName must be non-empty string`);
-        }
-        if (typeof input.project !== 'function') {
-          throw new Error(`feedbackAccumulator.initialize(${options.name}): input.project must be a function`);
-        }
+        V.assertObject(input, 'input');
+        V.assertNonEmptyString(input.eventName, 'input.eventName');
+        V.requireType(input.project, 'function', 'input.project');
 
         eventBus.on(input.eventName, (data) => {
           const contribution = input.project(data);

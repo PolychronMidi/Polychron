@@ -74,9 +74,7 @@ dynamicRangeTracker = (() => {
    * @param {number} time - absolute time in seconds
    */
   function recordExtremes(time) {
-    if (typeof time !== 'number' || !Number.isFinite(time)) {
-      throw new Error('dynamicRangeTracker.recordExtremes: time must be finite');
-    }
+    V.requireFinite(time, 'time');
 
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 2 });
     if (notes.length < 2) return;

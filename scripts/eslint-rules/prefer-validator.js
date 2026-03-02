@@ -18,10 +18,33 @@ module.exports = {
     const src = context.getSourceCode().getText();
     if (!src.includes('validator.create(')) return {};
 
+    function isThrowingGuard(node) {
+      let parent = node.parent;
+      while (parent) {
+        if (parent.type === 'IfStatement') {
+          // Check if consequent or alternate has a throw
+          const hasThrow = (stmt) => {
+            if (!stmt) return false;
+            if (stmt.type === 'ThrowStatement') return true;
+            if (stmt.type === 'BlockStatement') {
+              return stmt.body.some(s => s.type === 'ThrowStatement');
+            }
+            return false;
+          };
+          if (hasThrow(parent.consequent) || hasThrow(parent.alternate)) {
+            return true;
+          }
+          return false;
+        }
+        parent = parent.parent;
+      }
+      return false;
+    }
+
     return {
-      // typeof x !== 'type' or typeof x === 'type'
+      // typeof x !== 'type' (guards, not conditionals)
       BinaryExpression(node) {
-        if (node.operator !== '!==' && node.operator !== '===') return;
+        if (node.operator !== '!==') return;
         const { left, right } = node;
         const hasTypeof =
           (left.type === 'UnaryExpression' && left.operator === 'typeof') ||
@@ -48,16 +71,22 @@ module.exports = {
         if (!obj || !prop || obj.type !== 'Identifier') return;
 
         if (obj.name === 'Number' && prop.name === 'isFinite') {
-          context.report({
-            node,
-            message: 'Prefer V.requireFinite() over !Number.isFinite() guard.'
-          });
+          // Only flag if it's a throwing guard
+          if (isThrowingGuard(node)) {
+            context.report({
+              node,
+              message: 'Prefer V.requireFinite() over !Number.isFinite() guard.'
+            });
+          }
         }
         if (obj.name === 'Array' && prop.name === 'isArray') {
-          context.report({
-            node,
-            message: 'Prefer V.assertArray() over !Array.isArray() guard.'
-          });
+          // Only flag if it's a throwing guard
+          if (isThrowingGuard(node)) {
+            context.report({
+              node,
+              message: 'Prefer V.assertArray() over !Array.isArray() guard.'
+            });
+          }
         }
       }
     };

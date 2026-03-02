@@ -68,7 +68,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     if (typeof fromValue === 'number' && typeof target === 'number') {
       return fromValue + (target - fromValue) * t;
     }
-    if (!fromValue || typeof fromValue !== 'object') return target;
+    if (!V.optionalType(fromValue, 'object')) return target;
 
     return lerpObject(fromValue, target, t);
   };

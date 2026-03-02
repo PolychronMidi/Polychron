@@ -21,7 +21,7 @@ motifValidators = {
    */
   getCapabilities(developer) {
     const fallback = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false };
-    if (!developer || typeof developer !== 'object') return fallback;
+    if (!V.optionalType(developer, 'object')) return fallback;
 
     let caps = null;
     if (typeof developer.getCapabilities === 'function') {
@@ -54,7 +54,7 @@ motifValidators = {
     if (scaleNotes.length === 0) {
       throw new Error('motifValidators: scaleNotes must be a non-empty array');
     }
-    if (!developer || typeof developer !== 'object') return;
+    if (!V.optionalType(developer, 'object')) return;
 
     const caps = this.getCapabilities(developer);
     if (!caps.preservesScale) return;

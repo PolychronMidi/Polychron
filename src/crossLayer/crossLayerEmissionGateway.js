@@ -28,12 +28,8 @@ crossLayerEmissionGateway = (() => {
    */
   function emit(sourceModule, buffer, event) {
     V.assertNonEmptyString(sourceModule, 'sourceModule');
-    if (!Array.isArray(buffer)) {
-      throw new Error('crossLayerEmissionGateway: buffer must be an array');
-    }
-    if (!event || typeof event !== 'object') {
-      throw new Error('crossLayerEmissionGateway: event must be an object');
-    }
+    V.assertArray(buffer, 'buffer');
+    V.assertObject(event, 'event');
 
     // Push event to MIDI buffer
     buffer.push(event);

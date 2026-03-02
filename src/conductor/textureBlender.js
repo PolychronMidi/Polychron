@@ -82,12 +82,11 @@ textureBlender = (() => {
    * @returns {{ mode: 'single'|'chordBurst'|'flurry', velocityScale: number, sustainScale: number }}
    */
   function resolve(unit, composite) {
-    if (typeof unit !== 'string' || unit.length === 0) {
+    V.requireType(unit, 'string', 'unit');
+    if (unit.length === 0) {
       throw new Error('textureBlender.resolve: unit must be a non-empty string');
     }
-    if (!Number.isFinite(composite)) {
-      throw new Error('textureBlender.resolve: composite must be a finite number');
-    }
+    V.requireFinite(composite, 'composite');
 
     // Oscillating probability seeds
   const seed = V.optionalFinite(unitStart, V.requireFinite(beatStart, 'beatStart'));

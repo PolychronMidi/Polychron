@@ -1,15 +1,15 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
+const V = validator.create('grandFinale');
+
 grandFinale = () => {
-  if (!LM.layers || typeof LM.layers !== 'object') {
-    throw new Error('grandFinale: LM.layers must be a defined object');
-  }
+  if (!LM.layers) throw new Error('grandFinale: LM.layers must be a defined object');
+  V.assertObject(LM.layers, 'LM.layers');
   const LMCurrent = LM;
   // Collect all layer data
   const layerData = Object.entries(LMCurrent.layers).map(([name, layer]) => {
-    if (!layer || typeof layer !== 'object') {
-      throw new Error(`grandFinale: layer "${name}" must be an object`);
-    }
+    if (!layer) throw new Error(`grandFinale: layer "${name}" must be an object`);
+    V.assertObject(layer, 'layer');
     return {
       name,
       layer: layer,
@@ -23,16 +23,18 @@ grandFinale = () => {
 
     // Finalize buffer
     if (!Array.isArray(buffer)) {
-      if (!buffer || typeof buffer !== 'object' || !Array.isArray(buffer.rows)) {
+      try {
+        V.assertObject(buffer, 'buffer');
+        V.assertArray(buffer.rows, 'buffer.rows');
+      } catch {
         throw new Error(`grandFinale: layer "${name}" buffer must be an array or object with rows array`);
       }
       buffer = buffer.rows;
     }
     buffer = buffer.filter(i => i !== null)
       .map(i => {
-        if (!i || typeof i !== 'object') {
-          throw new Error(`grandFinale: layer "${name}" contains non-object event entry`);
-        }
+        if (!i) throw new Error(`grandFinale: layer "${name}" contains non-object event entry`);
+        V.assertObject(i, 'i');
         const rawTick = i.tick;
         let tickNum = 0;
         if (typeof rawTick === 'string' && rawTick.indexOf('|') !== -1) {
@@ -42,9 +44,7 @@ grandFinale = () => {
         } else if (typeof rawTick === 'string') {
           tickNum = Number(rawTick);
         }
-        if (!Number.isFinite(tickNum)) {
-          throw new Error(`grandFinale: event tick must be a finite number, received "${String(rawTick)}"`);
-        }
+        V.requireFinite(tickNum, 'tickNum');
         let tickVal = tickNum;
         if (tickVal < 0) {
           throw new Error(`grandFinale: event tick must be >= 0, received ${tickVal}`);
@@ -53,7 +53,10 @@ grandFinale = () => {
         return { ...i, tick: tickVal, _tickSortKey: tickVal, _tickRaw: rawTick };
       })
       .sort((a, b) => {
-        if (!Number.isFinite(a._tickSortKey) || !Number.isFinite(b._tickSortKey)) {
+        try {
+          V.requireFinite(a._tickSortKey, 'a._tickSortKey');
+          V.requireFinite(b._tickSortKey, 'b._tickSortKey');
+        } catch {
           throw new Error('grandFinale: sort keys must be finite numbers');
         }
         return a._tickSortKey - b._tickSortKey;
@@ -67,9 +70,7 @@ grandFinale = () => {
       if (!isNaN(_.tick)) {
         const type = _.type === 'on' ? 'note_on_c' : (_.type ? _.type : 'note_off_c');
         const tickNum = _.tick;
-        if (!Number.isFinite(Number(tickNum))) {
-          throw new Error(`grandFinale: event tick must be finite, received ${String(tickNum)}`);
-        }
+        V.requireFinite(tickNum, 'tickNum');
         const tickInt = m.round(Number(tickNum));
 
         // Event with undefined pitch is a serious bug in note generation
@@ -85,10 +86,12 @@ grandFinale = () => {
         if (type === 'note_on_c' || type === 'note_off_c') {
           const ch = Number(_.vals[0]);
           const pitch = Number(_.vals[1]);
-          if (!Number.isFinite(ch) || ch < 0 || ch > 15) {
+          V.requireFinite(ch, 'ch');
+          if (ch < 0 || ch > 15) {
             throw new Error(`${type} event has invalid channel ${_.vals[0]} at tick ${tickInt}: event=${JSON.stringify(_)}`);
           }
-          if (!Number.isFinite(pitch) || pitch < 0 || pitch > MIDI_MAX_VALUE) {
+          V.requireFinite(pitch, 'pitch');
+          if (pitch < 0 || pitch > MIDI_MAX_VALUE) {
             throw new Error(`${type} event has invalid pitch ${_.vals[1]} at tick ${tickInt}: event=${JSON.stringify(_)}`);
           }
           _.vals[0] = m.round(ch);
@@ -98,7 +101,8 @@ grandFinale = () => {
         // Validate velocity for Note_on events (rounded, strict MIDI range)
         if (type === 'note_on_c' && Array.isArray(_.vals) && _.vals.length >= 3) {
           const vel = Number(_.vals[2]);
-          if (!Number.isFinite(vel) || vel < 0 || vel > MIDI_MAX_VALUE) {
+          V.requireFinite(vel, 'vel');
+          if (vel < 0 || vel > MIDI_MAX_VALUE) {
             throw new Error(`note_on_c event has invalid velocity ${_.vals[2]} at tick ${tickInt}: event=${JSON.stringify(_)}`);
           }
           _.vals[2] = m.round(vel);
@@ -109,7 +113,8 @@ grandFinale = () => {
       }
     });
 
-    if (!Number.isFinite(finalTick) || finalTick < 0) {
+    V.requireFinite(finalTick, 'finalTick');
+    if (finalTick < 0) {
       throw new Error(`grandFinale: layer "${name}" produced no valid events (finalTick=${finalTick})`);
     }
     composition += `1,${finalTick},end_track`;

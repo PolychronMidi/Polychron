@@ -96,7 +96,8 @@ factoryFamilies = {
     for (const familyName of familyNames) {
       totalWeight += Number(families[familyName].weight);
     }
-    if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+    V.requireFinite(totalWeight, 'totalWeight');
+    if (totalWeight <= 0) {
       throw new Error('FactoryManager.resolvePhraseFamilyOrFail: family weights must sum to a positive finite number');
     }
 
@@ -108,7 +109,8 @@ factoryFamilies = {
       const mult = Number.isFinite(advisorMult) ? advisorMult : 1;
       advisedTotal += Number(families[familyName].weight) * mult;
     }
-    if (!Number.isFinite(advisedTotal) || advisedTotal <= 0) {
+    V.requireFinite(advisedTotal, 'advisedTotal');
+    if (advisedTotal <= 0) {
       throw new Error('FactoryManager.resolvePhraseFamilyOrFail: advised family weights sum to non-positive value');
     }
 
@@ -165,9 +167,7 @@ factoryFamilies = {
     // Layer quality-driven adjustment from composerFeedbackAdvisor
     score *= composerFeedbackAdvisor.scoreCandidateAdjustment(candidateConfig);
 
-    if (!Number.isFinite(score)) {
-      throw new Error('FactoryManager.scoreFamilyCandidateConfig: computed score is not finite');
-    }
+    V.requireFinite(score, 'score');
     return m.max(0.05, score);
   },
 
@@ -180,7 +180,8 @@ factoryFamilies = {
     const weights = candidateConfigs.map((cfg) => this.scoreFamilyCandidateConfig(cfg, opts));
     let total = 0;
     for (const w of weights) total += Number(w);
-    if (!Number.isFinite(total) || total <= 0) {
+    V.requireFinite(total, 'total');
+    if (total <= 0) {
       throw new Error('FactoryManager.pickWeightedFamilyCandidateOrFail: candidate weights sum to non-positive value');
     }
 

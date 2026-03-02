@@ -7,7 +7,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
     throw new Error('stutterFX: FX_CC_DEFAULTS is required');
   }
   const { eventName } = stutterFailFast.requireEventInfra();
-  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays('stutterFX');
+  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays();
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs3);
 
   channelsArray.forEach(channelToStutter => {
@@ -26,7 +26,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       const baseValue = startValue + (endValue - startValue) * progress;
 
       // Noise-modulate the FX curve - X axis warps the ramp, Y axis adds flutter
-      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fx', tick), `stutterFX channel=${channelToStutter} tick=${tick}`);
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fx', tick));
 
       // If a coherence key exists, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;

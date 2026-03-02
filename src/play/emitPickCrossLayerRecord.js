@@ -68,9 +68,7 @@ emitPickCrossLayerRecord = function(ctx) {
           ? otherRecentEntry.midi
           : (otherRecentEntry.note || NaN)
       );
-      if (!Number.isFinite(otherMidiCandidate)) {
-        throw new Error(`${unit}.emitPickCrossLayerRecord: other layer note history entry must include finite midi or note`);
-      }
+      V.requireFinite(otherMidiCandidate, 'otherMidiCandidate');
       if (otherMidiCandidate > 0) {
         harmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, absMs);
       }

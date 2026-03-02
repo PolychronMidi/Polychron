@@ -14,9 +14,8 @@ motifChain = (() => {
    * @throws {Error} if motif is invalid
    */
   function setActive(motif) {
-    if (!motif || typeof motif.rotate !== 'function') {
-      throw new Error('motifChain.setActive: motif must be a Motif instance with transform methods');
-    }
+    if (!motif) throw new Error('motifChain.setActive: motif must be a Motif instance with transform methods');
+    V.requireType(motif.rotate, 'function', 'motif.rotate');
     activeMotif = motif;
     transforms = []; // Reset transforms when setting new motif
   }
@@ -58,9 +57,7 @@ motifChain = (() => {
 
     for (const { type, args } of transforms) {
       try {
-        if (typeof result[type] !== 'function') {
-          throw new Error(`motifChain.apply: motif has no method "${type}"`);
-        }
+        V.requireType(result[type], 'function', `result[${type}]`);
         result = result[type](...args);
         appliedTransforms.push({ type, args });
       } catch (e) {
@@ -100,9 +97,7 @@ motifChain = (() => {
    */
   function applyToNotes(notes, options = {}) {
     const transformed = apply();
-    if (typeof transformed.applyToNotes !== 'function') {
-      throw new Error('motifChain.applyToNotes: transformed motif missing applyToNotes method');
-    }
+    V.requireType(transformed.applyToNotes, 'function', 'transformed.applyToNotes');
     return transformed.applyToNotes(notes, options);
   }
 

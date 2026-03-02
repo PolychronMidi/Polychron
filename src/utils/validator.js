@@ -54,9 +54,12 @@ validator = (() => {
     return num;
   }
 
-  function assertArray(value, label) {
+  function assertArray(value, label, checkNonEmpty = false) {
     if (!Array.isArray(value)) {
       throw new Error(`${_fromLabel()}: ${label} must be an array`);
+    }
+    if (checkNonEmpty && value.length === 0) {
+      throw new Error(`${_fromLabel()}: ${label} must be a non-empty array`);
     }
     return value;
   }

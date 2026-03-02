@@ -21,13 +21,10 @@ conductorConfigResolvers = function({ getProfileTuning }) {
     /** @type {{distance?:number,move?:string}|null} */
     let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
     if (!stop) {
-      if (!Number.isFinite(Number(sectionIndex))) {
-        throw new Error(`conductorConfigResolvers.getJourneyFxModulation: sectionIndex must be finite, got ${sectionIndex}`);
-      }
+      V.requireFinite(sectionIndex, 'sectionIndex');
       const maybe = harmonicJourney.getStop(Number(sectionIndex));
-      if (!maybe || typeof maybe !== 'object') {
-        throw new Error('conductorConfigResolvers.getJourneyFxModulation: harmonicJourney.getStop returned invalid stop object');
-      }
+      if (!maybe) throw new Error('conductorConfigResolvers.getJourneyFxModulation: harmonicJourney.getStop returned invalid stop object');
+      V.assertObject(maybe, 'maybe');
       stop = maybe;
     }
 

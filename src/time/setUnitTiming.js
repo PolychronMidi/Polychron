@@ -55,9 +55,7 @@ setUnitTiming = (unitType) => {
     V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
     const activeLayerName = /** @type {string} */ (LM.activeLayer);
     activeLayer = LM.layers[activeLayerName];
-    if (!activeLayer || typeof activeLayer !== 'object') {
-      throw new Error(`setUnitTiming: active layer "${activeLayerName}" not found`);
-    }
+    V.assertObject(activeLayer, 'activeLayer');
     activeComposer = LM.getComposerFor(activeLayerName);
   }
 
@@ -89,7 +87,8 @@ setUnitTiming = (unitType) => {
       parentStart = phraseStart;
       tpParent = tpPhrase;
       unitsPerParent = measuresPerPhrase;
-      if (!Number.isFinite(Number(numerator)) || Number(numerator) <= 0) {
+      V.requireFinite(Number(numerator), 'numerator');
+      if (Number(numerator) <= 0) {
         throw new Error(`setUnitTiming(measure): invalid numerator=${numerator} - cannot compute tpBeat`);
       }
       tpBeat = tpMeasure / Number(numerator);
@@ -171,7 +170,8 @@ setUnitTiming = (unitType) => {
       if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer._plannedDivCount !== plannedDivCount) {
         motifManager.planDivs(activeLayer, Number(divsPerBeat), Number(numerator), activeComposer);
       }
-      if (!Array.isArray(activeLayer.divMotifs) || activeLayer.divMotifs.length < plannedDivCount) {
+      V.assertArray(activeLayer.divMotifs, 'activeLayer.divMotifs');
+      if (activeLayer.divMotifs.length < plannedDivCount) {
         throw new Error(`setUnitTiming(beat): motifSpreader failed to populate divMotifs (${activeLayer.divMotifs ? activeLayer.divMotifs.length : 0} / ${plannedDivCount})`);
       }
 

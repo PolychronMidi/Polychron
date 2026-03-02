@@ -44,7 +44,7 @@
 
   function writeHarmonicFromContext() {
     const state = harmonicContext.get();
-    if (!state || typeof state !== 'object') return;
+    if (!V.optionalType(state, 'object')) return;
 
     if (typeof state.key === 'string' && state.key.length > 0) snapshot.key = state.key;
     if (typeof state.mode === 'string' && state.mode.length > 0) snapshot.mode = state.mode;
@@ -69,9 +69,7 @@
   // emissionRatio, playProb, stutterProb, phraseCtx. Registry stateProvider
   // fields are bulk-merged into data but only read if explicitly destructured here.
   function updateFromConductor(data = {}) {
-    if (!data || typeof data !== 'object') {
-      throw new Error('conductorState.updateFromConductor: data must be an object');
-    }
+    V.assertObject(data, 'data');
 
     // Cast to any to satisfy TS/CheckJS when reading dynamically-shaped payloads
     const _data = /** @type {any} */ (data);

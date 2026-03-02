@@ -109,9 +109,7 @@ function getVelocityRange(profile = 'source', isPrimary = true) {
   }
   const profileName = String(profile);
   const ranges = STUTTER_VELOCITY_RANGES[profileName];
-  if (!ranges || typeof ranges !== 'object') {
-    throw new Error(`stutterConfigStore.getVelocityRange: missing velocity ranges for profile "${profileName}"`);
-  }
+  V.assertObject(ranges, 'ranges');
   const key = isPrimary ? 'primary' : 'secondary';
   return assertVelocityPairOrFail(ranges[key], `stutterConfig.velocityRanges.${profileName}.${key}`);
 }

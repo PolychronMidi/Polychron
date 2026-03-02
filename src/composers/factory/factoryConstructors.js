@@ -24,8 +24,8 @@ factoryConstructors = {
       measure: () => new MeasureComposer(),
 
       scale: ({ name = 'major', root = 'C' } = {}) => {
-        if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('FactoryManager.scale: allScales not available');
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.scale: allNotes not available');
+        V.assertArray(allScales, 'allScales', true);
+        V.assertArray(allNotes, 'allNotes', true);
         const n = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
         const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
         return new ScaleComposer(n, r);
@@ -34,7 +34,7 @@ factoryConstructors = {
       chords: ({ progression = ['C'], direction = 'R' } = {}) => {
         let p = progression;
         if (/** @type {any} */ (progression) === 'random') {
-          if (!Array.isArray(allChords) || allChords.length === 0) throw new Error('FactoryManager.chords: allChords not available');
+          V.assertArray(allChords, 'allChords', true);
           const len = ri(2, 5);
           p = [];
           for (let i = 0; i < len; i++) p.push(allChords[ri(allChords.length - 1)]);
@@ -51,11 +51,11 @@ factoryConstructors = {
       },
 
       mode: ({ name = 'ionian', root = 'C' } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.mode: allNotes not available');
+        V.assertArray(allNotes, 'allNotes', true);
         const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
         if (name === 'random') {
           if (root === 'random') {
-            if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('FactoryManager.mode: allModes not available');
+            V.assertArray(allModes, 'allModes', true);
             const pair = allModes[ri(allModes.length - 1)];
             V.assertString(pair, 'pair');
             if (pair.indexOf(' ') > -1) {
@@ -74,37 +74,35 @@ factoryConstructors = {
       },
 
       pentatonic: ({ root = 'C', scaleType = 'major' } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.pentatonic: allNotes not available');
+        V.assertArray(allNotes, 'allNotes', true);
         const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
         const type = scaleType === 'random' ? (['major', 'minor'])[ri(2)] : scaleType;
         return new PentatonicComposer(r, type);
       },
 
       blues: ({ root = 'C', bluesType = 'minor', blueNoteProb = 0.35 } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.blues: allNotes not available');
+        V.assertArray(allNotes, 'allNotes', true);
         const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
         const type = bluesType === 'random' ? (['major', 'minor'])[ri(2)] : bluesType;
         return new BluesComposer(r, type, blueNoteProb);
       },
 
       chromatic: ({ targetScaleName = 'major', root = 'C', chromaticDensity = 0.4 } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.chromatic: allNotes not available');
-        if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('FactoryManager.chromatic: allScales not available');
+        V.assertArray(allNotes, 'allNotes', true);
+        V.assertArray(allScales, 'allScales', true);
         const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
         const s = targetScaleName === 'random' ? allScales[ri(allScales.length - 1)] : targetScaleName;
         return new ChromaticComposer(s, r, chromaticDensity);
       },
 
       quartal: ({ scaleName = 'major', root = 'C', voicingType = 'quartal', stackSize = 4 } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.quartal: allNotes not available');
-        const r = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
-        const s = scaleName === 'random' ? allScales[ri(allScales.length - 1)] : scaleName;
-        const vt = voicingType === 'random' ? (['quartal', 'quintal', 'mixed'])[ri(3)] : voicingType;
-        return new QuartalComposer(s, r, vt, stackSize);
+        V.assertArray(allNotes, 'allNotes', true);
+        V.assertArray(allScales, 'allScales', true);
+        return new QuartalComposer(scaleName, root, voicingType, stackSize);
       },
 
       tensionRelease: ({ key = allNotes[ri(allNotes.length - 1)], quality = 'major', tensionCurve = 0.5, enablePhraseArcs = true, phraseArcOpts = {}, phraseTensionScaling = true, resolvedProfiles = null } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.tensionRelease: allNotes not available');
+        V.assertArray(allNotes, 'allNotes', true);
         const k = FactoryManager.resolveProgressionKeyOrFail(key, 'FactoryManager.tensionRelease', quality);
         const phraseArcManager = enablePhraseArcs ? FactoryManager.getPhraseArcManager(phraseArcOpts) : null;
         const harmonicCorpusOpts = resolveHarmonicCorpusOptions(resolvedProfiles);
@@ -112,14 +110,14 @@ factoryConstructors = {
       },
 
       modalInterchange: ({ key = allNotes[ri(allNotes.length - 1)], primaryMode = 'major', borrowProbability = 0.25, resolvedProfiles = null } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.modalInterchange: allNotes not available');
+        V.assertArray(allNotes, 'allNotes', true);
         const k = FactoryManager.resolveProgressionKeyOrFail(key, 'FactoryManager.modalInterchange', primaryMode);
         const harmonicCorpusOpts = resolveHarmonicCorpusOptions(resolvedProfiles);
         return new ModalInterchangeComposer(k, primaryMode, borrowProbability, harmonicCorpusOpts);
       },
 
       harmonicRhythm: ({ progression = ['I', 'IV', 'V', 'I'], key = 'C', measuresPerChord = 2, quality = 'major', changeEmphasis = 2.0, anticipation = false, settling = true, enablePhraseArcs = true, phraseArcOpts = {}, phraseBoundaryEmphasis = 1.3, resolvedProfiles = null } = {}) => {
-        if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('FactoryManager.harmonicRhythm: allNotes not available');
+        V.assertArray(allNotes, 'allNotes', true);
         const k = FactoryManager.resolveProgressionKeyOrFail(key, 'FactoryManager.harmonicRhythm', quality);
         const phraseArcManager = enablePhraseArcs ? FactoryManager.getPhraseArcManager(phraseArcOpts) : null;
         const harmonicCorpusOpts = resolveHarmonicCorpusOptions(resolvedProfiles);

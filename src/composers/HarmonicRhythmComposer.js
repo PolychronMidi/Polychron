@@ -42,8 +42,13 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.settling = opts.settling ?? true; // Post-change gradual reduction
     // Phrase-level coordination
     if (opts.phraseArcManager !== undefined) {
-      if (!opts.phraseArcManager || (typeof opts.phraseArcManager.isAtBoundary !== 'function' && typeof opts.phraseArcManager.getPhraseContext !== 'function')) {
+      if (!opts.phraseArcManager) {
         throw new Error('HarmonicRhythmComposer: opts.phraseArcManager must implement isAtBoundary() or getPhraseContext()');
+      }
+      try {
+        V.requireType(opts.phraseArcManager.isAtBoundary, 'function', 'opts.phraseArcManager.isAtBoundary');
+      } catch {
+        V.requireType(opts.phraseArcManager.getPhraseContext, 'function', 'opts.phraseArcManager.getPhraseContext');
       }
       this.phraseArcManager = opts.phraseArcManager;
     } else {
@@ -135,9 +140,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     }
     this.noteSet();
     const notes = super.getNotes(octaveRange);
-    if (!Array.isArray(notes) || notes.length === 0) {
-      throw new Error('HarmonicRhythmComposer.getNotes: expected super.getNotes() to return a non-empty array');
-    }
+    V.assertArray(notes, 'notes', true);
     return notes;
   }
 
@@ -182,9 +185,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     const parentIntent = super.getVoicingIntent ? super.getVoicingIntent(candidateNotes) : {};
     // Ensure candidateWeights is available and well-formed
     const candidateWeights = parentIntent && parentIntent.candidateWeights;
-    if (!candidateWeights || typeof candidateWeights !== 'object') {
-      throw new Error('HarmonicRhythmComposer.getVoicingIntent: expected parent getVoicingIntent to return object with candidateWeights');
-    }
+    V.assertObject(candidateWeights, 'candidateWeights');
 
     // Apply harmonic rhythm emphasis to all notes
     const emphasizedWeights = {};

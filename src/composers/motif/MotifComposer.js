@@ -24,17 +24,22 @@ MotifComposer = class MotifComposer {
 
     // length
     if (opts.length !== undefined) {
-      if (!Number.isFinite(Number(opts.length)) || Number(opts.length) <= 0) throw new Error('MotifComposer: options.length must be a positive number');
-      this.length = m.max(1, m.round(Number(opts.length)));
+      const len = Number(opts.length);
+      V.requireFinite(len, 'opts.length');
+      if (len <= 0) throw new Error('MotifComposer: options.length must be a positive number');
+      this.length = m.max(1, m.round(len));
     } else {
       this.length = 4;
     }
 
     // octave range
     if (opts.octaveRange !== undefined) {
-      if (!Array.isArray(opts.octaveRange) || opts.octaveRange.length < 2 || !Number.isFinite(Number(opts.octaveRange[0])) || !Number.isFinite(Number(opts.octaveRange[1]))) {
+      V.assertArray(opts.octaveRange, 'opts.octaveRange');
+      if (opts.octaveRange.length < 2) {
         throw new Error('MotifComposer: options.octaveRange must be an array [min,max] of numbers');
       }
+      V.requireFinite(Number(opts.octaveRange[0]), 'opts.octaveRange[0]');
+      V.requireFinite(Number(opts.octaveRange[1]), 'opts.octaveRange[1]');
       this.octaveRange = [m.round(Number(opts.octaveRange[0])), m.round(Number(opts.octaveRange[1]))];
       if (this.octaveRange[0] > this.octaveRange[1]) throw new Error('MotifComposer: octaveRange min must be <= max');
     } else {
@@ -44,24 +49,31 @@ MotifComposer = class MotifComposer {
     this.useVoiceLeading = Boolean(opts.useVoiceLeading);
 
     if (opts.VoiceLeadingScore !== undefined) {
-      if (!opts.VoiceLeadingScore || typeof opts.VoiceLeadingScore.selectNextNote !== 'function') {
+      if (!opts.VoiceLeadingScore) {
         throw new Error('MotifComposer: options.VoiceLeadingScore provided but invalid');
       }
+      V.requireType(opts.VoiceLeadingScore.selectNextNote, 'function', 'opts.VoiceLeadingScore.selectNextNote');
       this.VoiceLeadingScore = opts.VoiceLeadingScore;
     } else {
       this.VoiceLeadingScore = this.useVoiceLeading ? new VoiceLeadingScore() : null;
     }
 
     if (opts.developFromComposer !== undefined) {
-      if (!opts.developFromComposer || typeof opts.developFromComposer.getNotes !== 'function') throw new Error('MotifComposer: developFromComposer must implement getNotes()');
+      if (!opts.developFromComposer) throw new Error('MotifComposer: developFromComposer must implement getNotes()');
+      V.requireType(opts.developFromComposer.getNotes, 'function', 'opts.developFromComposer.getNotes');
       this.developFromComposer = opts.developFromComposer;
     } else {
       this.developFromComposer = null;
     }
 
     if (opts.measureComposer !== undefined) {
-      if (!opts.measureComposer || (typeof opts.measureComposer.getVoicingIntent !== 'function' && typeof opts.measureComposer.selectNoteWithLeading !== 'function')) {
+      if (!opts.measureComposer) {
         throw new Error('MotifComposer: measureComposer must implement getVoicingIntent() or selectNoteWithLeading()');
+      }
+      try {
+        V.requireType(opts.measureComposer.getVoicingIntent, 'function', 'opts.measureComposer.getVoicingIntent');
+      } catch {
+        V.requireType(opts.measureComposer.selectNoteWithLeading, 'function', 'opts.measureComposer.selectNoteWithLeading');
       }
       this.measureComposer = opts.measureComposer;
     } else {
@@ -82,8 +94,9 @@ MotifComposer = class MotifComposer {
     // Resolve/validate overridable options (fail-fast on invalid types)
     let length;
     if (optsAny.length !== undefined) {
-      if (!Number.isFinite(Number(optsAny.length)) || Number(optsAny.length) <= 0) throw new Error('MotifComposer.generate: invalid length option');
-      length = m.max(1, m.round(Number(optsAny.length)));
+      V.requireFinite(optsAny.length, 'optsAny.length');
+      if (optsAny.length <= 0) throw new Error('MotifComposer.generate: invalid length option');
+      length = m.max(1, m.round(optsAny.length));
     } else {
       length = this.length;
     }
@@ -91,7 +104,8 @@ MotifComposer = class MotifComposer {
     // Prefer developFromComposer if provided in call, else fall back to instance-level composer
     let developer = null;
     if (optsAny.developFromComposer !== undefined) {
-      if (!optsAny.developFromComposer || typeof optsAny.developFromComposer.getNotes !== 'function') throw new Error('MotifComposer.generate: developFromComposer option must implement getNotes()');
+      if (!optsAny.developFromComposer) throw new Error('MotifComposer.generate: developFromComposer option must implement getNotes()');
+      V.requireType(optsAny.developFromComposer.getNotes, 'function', 'optsAny.developFromComposer.getNotes');
       developer = optsAny.developFromComposer;
     } else if (this.developFromComposer !== null) {
       developer = this.developFromComposer;
@@ -109,9 +123,7 @@ MotifComposer = class MotifComposer {
     } else {
       throw new Error('MotifComposer.generate: must provide scaleComposer or developFromComposer - no default fallback');
     }
-    if (!Array.isArray(scaleNotes) || scaleNotes.length === 0) {
-      throw new Error(`MotifComposer.generate: scaleComposer/developFromComposer returned empty or invalid scale notes`);
-    }
+    V.assertArray(scaleNotes, 'scaleNotes', true);
 
     // Validate scale notes against developer contract.
     const windowScale = harmonicContext.getField('scale');
@@ -143,9 +155,7 @@ MotifComposer = class MotifComposer {
     let devNotes = null;
     if (developer) {
       devNotes = developer.getNotes();
-      if (devNotes && !Array.isArray(devNotes)) {
-        throw new Error('MotifComposer.generate: developer.getNotes() returned non-array - fail-fast');
-      }
+      if (devNotes) V.requireType(devNotes, 'array', 'devNotes');
     }
 
     // Validate developer note feed items if present (fail-fast on malformed entries)
@@ -181,8 +191,11 @@ MotifComposer = class MotifComposer {
         if (VC && typeof VC.pickNotesForBeat === 'function') {
           const scorer = mc && mc.VoiceLeadingScore ? mc.VoiceLeadingScore : null;
           const intent = mc && typeof mc.getVoicingIntent === 'function' ? mc.getVoicingIntent(avail) : null;
-          if (intent !== null && (typeof intent !== 'object' || Array.isArray(intent))) {
-            throw new Error('MotifComposer.generate: measureComposer.getVoicingIntent() must return an object or null');
+          if (intent !== null) {
+            V.requireType(intent, 'object', 'intent');
+            if (Array.isArray(intent)) {
+              throw new Error('MotifComposer.generate: measureComposer.getVoicingIntent() must return an object or null');
+            }
           }
           const voiceOpts = Object.assign({ register: 'soprano' }, intent || {});
           // targetLayer should be an object (motifLayer preferred, otherwise measureComposer)

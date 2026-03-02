@@ -25,10 +25,10 @@ moduleLifecycle = (() => {
      */
     function register(name, mod, scopes) {
       V.assertNonEmptyString(name, 'name');
-      if (!mod || typeof mod.reset !== 'function') {
-        throw new Error(`${ownerName}.registerModule: "${name}" must expose reset()`);
-      }
-      if (!Array.isArray(scopes) || scopes.length === 0) {
+      V.assertObject(mod, 'mod');
+      V.requireType(mod.reset, 'function', 'mod.reset');
+      V.assertArray(scopes, 'scopes');
+      if (scopes.length === 0) {
         throw new Error(`${ownerName}.registerModule: "${name}" must declare at least one scope`);
       }
       if (registered.has(name)) {
@@ -68,9 +68,7 @@ moduleLifecycle = (() => {
    */
   function registerInitializer(name, initFn, dependencies = []) {
     V.assertNonEmptyString(name, 'registerInitializer.name');
-    if (typeof initFn !== 'function') {
-      throw new Error(`moduleLifecycle.registerInitializer: "${name}" must provide a function`);
-    }
+    V.requireType(initFn, 'function', 'initFn');
     if (initializers.has(name)) {
       throw new Error(`moduleLifecycle.registerInitializer: duplicate "${name}"`);
     }

@@ -42,7 +42,7 @@ absoluteTimeGrid = (() => {
     V.assertNonEmptyString(channel, 'post.channel');
     V.assertNonEmptyString(layer, 'post.layer');
     const t = V.requireFinite(timeMs, 'post.timeMs');
-    if (typeof data !== 'undefined') V.assertPlainObject(data, 'post.data');
+    if (data !== undefined) V.assertPlainObject(data, 'post.data');
 
     const channelMap = ensureChannel(channel);
     const entry = typeof data === 'undefined' ? { timeMs: t, layer } : data;
@@ -98,14 +98,14 @@ absoluteTimeGrid = (() => {
     const hi = around + tolerance;
     let excludeLayer;
     let onlyLayer;
-    if (typeof opts === 'undefined') {
+    if (opts === undefined) {
       excludeLayer = undefined;
       onlyLayer = undefined;
     } else {
       V.assertPlainObject(opts, 'query.opts');
       ({ excludeLayer, onlyLayer } = opts);
-      if (typeof excludeLayer !== 'undefined') V.assertNonEmptyString(excludeLayer, 'query.opts.excludeLayer');
-      if (typeof onlyLayer !== 'undefined') V.assertNonEmptyString(onlyLayer, 'query.opts.onlyLayer');
+      if (excludeLayer !== undefined) V.assertNonEmptyString(excludeLayer, 'query.opts.excludeLayer');
+      if (onlyLayer !== undefined) V.assertNonEmptyString(onlyLayer, 'query.opts.onlyLayer');
     }
 
     const startBucket = m.floor(lo / BUCKET_SIZE_MS);
@@ -143,7 +143,7 @@ absoluteTimeGrid = (() => {
     V.assertNonEmptyString(channel, 'findClosest.channel');
     const around = V.requireFinite(aroundMs, 'findClosest.aroundMs');
     const tolerance = V.requireFinite(toleranceMs, 'findClosest.toleranceMs');
-    if (typeof excludeLayer !== 'undefined') V.assertNonEmptyString(excludeLayer, 'findClosest.excludeLayer');
+    if (excludeLayer !== undefined) V.assertNonEmptyString(excludeLayer, 'findClosest.excludeLayer');
 
     const channelMap = channels[channel];
     if (!channelMap || channelMap.size === 0) return null;

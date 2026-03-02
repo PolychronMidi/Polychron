@@ -28,9 +28,7 @@ drumTextureCoupler = (() => {
             const mode = data.mode;
             const weight = mode === 'chordBurst' ? 0.7 : mode === 'flurry' ? 0.4 : 0;
             const intensity = weight * (0.5 + composite * 0.5);
-            if (!Number.isFinite(intensity)) {
-              throw new Error(`drumTextureCoupler: invalid intensity ${intensity}`);
-            }
+            V.requireFinite(intensity, 'intensity');
             return clamp(intensity, 0, 1);
           }
         }

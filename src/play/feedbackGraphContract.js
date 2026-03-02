@@ -55,9 +55,7 @@ feedbackGraphContract = (() => {
       throw new Error(`feedbackGraphContract: FEEDBACK_GRAPH.json parse failed: ${err && err.message ? err.message : err}`);
     }
 
-    if (!graph || typeof graph !== 'object') {
-      throw new Error('feedbackGraphContract: FEEDBACK_GRAPH.json must parse to an object');
-    }
+    V.assertObject(graph, 'graph');
 
     const firewalls = graph.firewalls;
     V.assertPlainObject(firewalls, 'firewalls');
@@ -77,9 +75,7 @@ feedbackGraphContract = (() => {
     for (let i = 0; i < loops.length; i++) {
       const loop = loops[i];
       const label = `feedbackLoops[${i}]`;
-      if (!loop || typeof loop !== 'object') {
-        throw new Error(`feedbackGraphContract: ${label} must be an object`);
-      }
+      V.assertObject(loop, 'loop');
 
       V.assertNonEmptyString(loop.id, `${label}.id`);
       // Module names may be dotted (e.g. "pipelineBalancer.tension") - resolve root global.

@@ -51,9 +51,7 @@ class LayerManager {
       layer.bufferName = buffer;
       buf = [];
     } else {
-      if (!Array.isArray(buffer)) {
-        throw new Error('LayerManager.register: buffer must be an array or layer buffer name string');
-      }
+      V.assertArray(buffer, 'buffer');
       buf = buffer;
     }
 

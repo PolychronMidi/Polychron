@@ -27,9 +27,7 @@ mainBootstrap = (() => {
    */
   function getConductorProbabilities() {
     const ctx = globalConductor.update();
-    if (!ctx || typeof ctx !== 'object') {
-      throw new Error('mainBootstrap: globalConductor.update must return an object context');
-    }
+    V.assertObject(ctx, 'ctx');
     return {
       playProb: requireUnitInterval('globalConductor.update.playProb', ctx.playProb),
       stutterProb: requireUnitInterval('globalConductor.update.stutterProb', ctx.stutterProb)
@@ -173,9 +171,7 @@ mainBootstrap = (() => {
       ['textureBlender', textureBlender, 'resolve']
     ];
     requiredModules.forEach(([name, obj, method]) => {
-      if (!obj || typeof obj[/** @type {string} */ (method)] !== 'function') {
-        throw new Error(`mainBootstrap: ${name}.${method} is not available`);
-      }
+      V.requireType(obj[method], 'function', `${name}.${method}`);
     });
 
     // -- Phase 4: Verify initializer methods --
@@ -192,9 +188,7 @@ mainBootstrap = (() => {
       ['cadenceAdvisor', cadenceAdvisor]
     ];
     requiredInitializers.forEach(([name, obj]) => {
-      if (!obj || typeof obj.initialize !== 'function') {
-        throw new Error(`mainBootstrap: ${name}.initialize is not available`);
-      }
+      V.requireType(obj.initialize, 'function', `${name}.initialize`);
     });
 
     // -- Phase 5: Verify beat pipeline topological ordering --

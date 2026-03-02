@@ -4,7 +4,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     throw new Error('stutterPan: stutterFailFast helper is not available');
   }
   const { eventName } = stutterFailFast.requireEventInfra();
-  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays('stutterPan');
+  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays();
   const channelsArray = pickStutterChannels(channels, ri(1, 2), this.lastUsedCHs2);
 
   // Write beat-level pan context for spatial-aware octave shifts (task 7)
@@ -36,13 +36,13 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
-      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', tick), `stutterPan channel=${channelToStutter} tick=${tick}`);
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', tick));
 
       // If coherence key exists, overlay correlated modulation
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterPan coherence key=${coherenceKey} channel=${channelToStutter}`);
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick));
       }
 
       // Y axis controls pan flutter - add oscillation on top of movement

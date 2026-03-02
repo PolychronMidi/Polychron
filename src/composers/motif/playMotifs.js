@@ -46,9 +46,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const cursor = cursorMap.get(targetIndex) ?? 0;
   const bucketEntry = bucket[cursor % bucket.length];
   cursorMap.set(targetIndex, cursor + 1);
-  if (!bucketEntry || !Number.isFinite(Number(bucketEntry.note))) {
-    throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
-  }
+  if (!bucketEntry) throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
+  V.requireFinite(bucketEntry.note, 'bucketEntry.note');
   // Apply working overrides (non-destructive cycle transforms) if available
   const overrideKey = bucketEntry.groupId && Number.isFinite(bucketEntry.seqIndex) ? `${bucketEntry.groupId}:${bucketEntry.seqIndex}` : null;
   const resolvedNote = (overrideKey && layer._workingOverrides && layer._workingOverrides.has(overrideKey))
@@ -58,9 +57,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const activeLayerName = /** @type {string} */ (LM.activeLayer);
   const activeLayer = LM.layers[activeLayerName];
-  if (!activeLayer || typeof activeLayer !== 'object') {
-    throw new Error(`${unit}.playMotifs: active layer "${activeLayerName}" not found`);
-  }
+  if (!activeLayer) throw new Error(`${unit}.playMotifs: active layer "${activeLayerName}" not found`);
+  V.assertObject(activeLayer, 'activeLayer');
   const activeComposer = LM.getComposerFor(activeLayerName);
 
   // Extract valid PCs from active composer
@@ -107,11 +105,9 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Pass voicing options from composer for voice spacing constraints
   const voicingOptions = (activeComposer && typeof activeComposer.voicingOptions === 'object') ? activeComposer.voicingOptions : {};
   const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, Object.assign({ phraseContext }, voicingOptions, runtimeVoiceOptions, runtimeProfile ? { runtimeProfile } : {}));
-  if (!Array.isArray(rawPicks)) {
-    throw new Error(`${unit}.playMotifs: VoiceManager.pickNotesForBeat returned non-array value`);
-  }
-  const picks = rawPicks.map((note, idx) => {
-    if (!Number.isFinite(Number(note))) throw new Error(`${unit}.playMotifs: VoiceManager returned invalid pick at index ${idx}: ${JSON.stringify(note)}`);
+  V.assertArray(rawPicks, 'rawPicks');
+  const picks = rawPicks.map((note) => {
+    V.requireFinite(note, 'note');
     return { note: Number(note) };
   });
 

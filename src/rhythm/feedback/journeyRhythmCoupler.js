@@ -61,9 +61,7 @@ journeyRhythmCoupler = (() => {
 
   function setExternalBias(value) {
     const num = Number(value);
-    if (!Number.isFinite(num)) {
-      throw new Error('journeyRhythmCoupler.setExternalBias: value must be finite');
-    }
+    V.requireFinite(num, 'num');
     _externalBias = clamp(num, 0.5, 1.5);
   }
 
@@ -75,9 +73,7 @@ journeyRhythmCoupler = (() => {
    * @returns {Object} copy with boldness-biased weights
    */
   function biasRhythmWeights(rhythmsObj) {
-    if (!rhythmsObj || typeof rhythmsObj !== 'object') {
-      throw new Error('journeyRhythmCoupler.biasRhythmWeights: invalid rhythms object');
-    }
+    V.assertObject(rhythmsObj, 'rhythmsObj');
 
     const boldness = getBoldness();
     if (boldness < 0.05) return rhythmsObj; // No significant bias - pass through

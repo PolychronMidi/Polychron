@@ -205,9 +205,7 @@ FactoryManager = class FactoryManager {
         const composer = this.create(Object.assign({}, cfg, extraConfig), composerCtx);
         V.requireType(composer.getNotes, 'function', 'composer.getNotes');
         const notes = composer.getNotes();
-        if (!Array.isArray(notes) || notes.length === 0) {
-          throw new Error('composer.getNotes() returned empty or invalid array');
-        }
+        V.assertArray(notes, 'notes', true);
 
         composer._factoryType = cfg.type;
         composer._profileFamily = familyName;

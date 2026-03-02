@@ -31,7 +31,7 @@ fragmentHelpers = (() => {
       let valid = true;
       for (let j = 0; j < fragLen; j++) {
         const midi = notes[i + j].midi;
-        if (typeof midi !== 'number' || !Number.isFinite(midi)) { valid = false; break; }
+        if (!Number.isFinite(midi)) { valid = false; break; }
         pcs.push(((midi % 12) + 12) % 12);
       }
       if (!valid) continue;

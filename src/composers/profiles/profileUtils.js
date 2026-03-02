@@ -93,7 +93,8 @@ const DEFAULT_POOL_SELECTORS = [
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 const assertStringOrFail = (value, label) => {
-  if (typeof value !== 'string' || value.length === 0) {
+  V.requireType(value, 'string', label);
+  if (value.length === 0) {
     throw new Error(`ComposerProfiles: ${label} must be a non-empty string`);
   }
 };
@@ -145,7 +146,9 @@ const cloneComposerEntryOrFail = (entry, label, expectedType = null) => {
 };
 
 const cloneComposerEntriesOrFail = (entries, label, expectedType = null) => {
-  if (!Array.isArray(entries) || entries.length === 0) {
+  try {
+    V.assertArray(entries, label, true);
+  } catch {
     throw new Error(`ComposerProfiles: ${label} must be a non-empty array`);
   }
   return entries.map((entry, i) => cloneComposerEntryOrFail(entry, `${label}[${i}]`, expectedType));
@@ -153,7 +156,9 @@ const cloneComposerEntriesOrFail = (entries, label, expectedType = null) => {
 
 const pickProfileEntriesOrFail = (typeProfiles, type, profileName) => {
   const profileEntries = typeProfiles[profileName];
-  if (!Array.isArray(profileEntries) || profileEntries.length === 0) {
+  try {
+    V.assertArray(profileEntries, `profileEntries for ${profileName}`, true);
+  } catch {
     throw new Error(`ComposerProfiles: profile "${profileName}" missing for type "${type}" while building pools`);
   }
   return cloneComposerEntriesOrFail(profileEntries, `COMPOSER_TYPE_PROFILES.${type}.${profileName}`, type);
