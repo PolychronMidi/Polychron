@@ -16,7 +16,7 @@ function assertPlayNotesDeps() {
   V.assertManagerShape(conductorConfig, 'conductorConfig', ['getEmissionScaling', 'getNoiseProfileForSection']);
   V.assertManagerShape(composerRuntimeProfileAdapter, 'composerRuntimeProfileAdapter', ['getEmissionAdjustments']);
   V.assertManagerShape(textureBlender, 'textureBlender', ['resolve']);
-  V.assertManagerShape(rhythmManager, 'rhythmManager', ['swingOffset']);
+  V.assertManagerShape(RhythmManager, 'RhythmManager', ['swingOffset']);
   V.assertManagerShape(dynamismEngine, 'dynamismEngine', ['resolve']);
   V.assertManagerShape(tempoFeelEngine, 'tempoFeelEngine', ['getTickOffset']);
   V.assertManagerShape(voiceModulator, 'voiceModulator', ['distribute']);
