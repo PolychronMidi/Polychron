@@ -1445,7 +1445,7 @@ declare var beatCache: BeatCacheFactory;
 
 // -- rhythm --
 declare var rhythmRegistry: RhythmRegistryAPI;
-declare var rhythmManager: RhythmManagerAPI;
+declare var RhythmManager: RhythmManagerAPI;
 declare var rhythmValues: RhythmValuesAPI;
 declare var rhythmConfig: RhythmConfigAPI;
 declare var rhythmModulator: any;

@@ -28,7 +28,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   V.requireFinite(Number(tpUnit), 'tpUnit');
   V.requireFinite(Number(beatStart), 'beatStart');
   const swingTicks = V.requireFinite(
-    Number(rhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount)),
+    Number(RhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount)),
     'swingTicks'
   );
   const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;

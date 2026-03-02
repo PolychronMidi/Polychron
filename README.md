@@ -152,7 +152,7 @@ The brain of the system. 42 modules register with `conductorIntelligence`, contr
 
 ### `src/rhythm/` — Pattern Generation (20 files)
 
-- **`rhythmManager`** — Subsystem manager — pattern lifecycle coordination
+- **`RhythmManager`** — Subsystem manager — pattern lifecycle coordination
 - **`rhythmRegistry`** — Pattern and strategy registration
 - **`patterns`** / **`getRhythm`** / **`setRhythm`** — Pattern resolution and assignment
 - **`makeOnsets`** — Onset generation from patterns

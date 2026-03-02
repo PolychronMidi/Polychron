@@ -10,7 +10,7 @@ require('./rhythmPriorsData');
 // @ts-ignore: side-effect module load
 require('./rhythmRegistry');
 // @ts-ignore: side-effect module load
-require('./rhythmManager');
+require('./RhythmManager');
 // Drum subsystem (drumMap - drummer - playDrums - playDrums2 - drumTextureCoupler)
 // @ts-ignore: drum pattern generation and texture coupling
 require('./drums');

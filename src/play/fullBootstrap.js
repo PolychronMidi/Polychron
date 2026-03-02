@@ -310,7 +310,7 @@ fullBootstrap = (() => {
 
     // -- rhythm --
     'rhythmRegistry',
-    'rhythmManager',
+    'RhythmManager',
     'rhythmValues',
     'rhythmConfig',
     'rhythmModulator',
