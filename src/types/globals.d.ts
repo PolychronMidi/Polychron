@@ -1361,6 +1361,29 @@ declare var dynamicPeakMemory: any;
 declare var rhythmicDensityContrastTracker: any;
 declare var tonalAnchorDistanceTracker: any;
 declare var conductorIntelligence: ConductorIntelligenceAPI;
+declare var conductorRecorderRegistry: {
+  registerRecorder(name: string, fn: (ctx: RecorderContext) => void): void;
+  runRecorders(ctx: RecorderContext): void;
+  getNames(): string[];
+  getCount(): number;
+};
+declare var conductorStateProviderRegistry: {
+  registerStateProvider(name: string, getter: () => Record<string, unknown>): void;
+  collectStateFields(): Record<string, unknown>;
+  getNames(): string[];
+  getCount(): number;
+};
+declare var conductorDiagnostics: {
+  create(
+    biasArrays: { density: Array<{name:string}>; tension: Array<{name:string}>; flicker: Array<{name:string}> },
+    collectors: { collectDensityBias: () => number; collectTensionBias: () => number; collectFlickerModifier: () => number }
+  ): {
+    getContributorNames(): string[];
+    getCounts(): { density: number; tension: number; flicker: number; recorders: number; stateProviders: number };
+    getRegistryNames(): { density: string[]; tension: string[]; flicker: string[]; recorders: string[]; stateProviders: string[] };
+    getSignalSnapshot(): Readonly<SignalSnapshot>;
+  };
+};
 declare var conductorDampening: {
   scaledDamping(registryLength: number, pipelineName?: string): number;
   progressiveDampen(clamped: number, baseDamping: number, runningProduct: number): number;

@@ -55,6 +55,13 @@ require('./dynamismEngine');
 require('./textureBlender');
 
 
+// @ts-ignore: intelligence sub-registries (must precede conductorIntelligence)
+require('./conductorRecorderRegistry');
+// @ts-ignore: load side-effect module with globals
+require('./conductorStateProviderRegistry');
+// @ts-ignore: diagnostics factory (must precede conductorIntelligence)
+require('./conductorDiagnostics');
+
 // @ts-ignore: intelligence registry (must precede globalConductorUpdate & intelligence subdirectories)
 require('./conductorIntelligence');
 

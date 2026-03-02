@@ -81,9 +81,10 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 
 ## Custom ESLint Rules
 
-17 project-specific rules in `scripts/eslint-rules/`:
+19 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** - PascalCase for classes, camelCase for everything else
+- **`no-bare-math`** - ban direct `Math.*` access; use the project `m = Math` alias
 - **`no-conductor-registration-from-crosslayer`** - prevent cross-layer modules from registering with conductor
 - **`no-console-acceptable-warning`** - restrict `console.warn` to `'Acceptable warning: ...'` format
 - **`no-direct-buffer-push-from-crosslayer`** - ban direct buffer `push()` in cross-layer modules (use `crossLayerEmissionGateway.emit()`)
@@ -99,6 +100,7 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **`no-unstamped-validator`** - require module name stamp on `validator.create()`
 - **`no-useless-expose-dependencies-comments`** - ban `/* expose-dependencies */` comments
 - **`only-error-throws`** - require `throw new Error(...)` - no throwing strings/objects
+- **`prefer-validator`** - prefer `validator` methods over ad-hoc `typeof`/`Number.isFinite`/`Array.isArray` guards
 - **`validator-name-matches-filename`** - require validator stamp to match filename
 
 ## Related Documentation

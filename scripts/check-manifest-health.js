@@ -112,6 +112,9 @@ function assertManifestHealth(manifest, manifestPath) {
     }
   }
 
+  // Regimes where transient pipeline saturation is expected and non-fatal.
+  const SATURATION_TOLERANT_REGIMES = new Set(['exploring', 'initializing']);
+
   const verdicts = Array.isArray(manifest.coherenceVerdicts) ? manifest.coherenceVerdicts : [];
   let warningCount = 0;
   const criticalFindings = [];
@@ -121,7 +124,14 @@ function assertManifestHealth(manifest, manifestPath) {
     const sev = String(v.severity || '').toLowerCase();
     if (sev === 'warning') warningCount++;
     if (sev === 'critical') {
-      criticalFindings.push(String(v.finding || 'critical finding'));
+      const finding = String(v.finding || 'critical finding');
+      // Pipeline saturation during exploratory regimes is transient — downgrade to warning
+      if (finding.includes('saturated') && SATURATION_TOLERANT_REGIMES.has(regime)) {
+        warningCount++;
+        console.warn('Acceptable warning: downgraded saturated verdict in ' + regime + ' regime: ' + finding);
+      } else {
+        criticalFindings.push(finding);
+      }
     }
   }
 

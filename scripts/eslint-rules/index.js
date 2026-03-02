@@ -16,6 +16,8 @@ module.exports = {
     'no-unregistered-feedback-loop': require('./no-unregistered-feedback-loop'),
     'no-direct-conductor-state-from-crosslayer': require('./no-direct-conductor-state-from-crosslayer'),
     'no-direct-crosslayer-write-from-conductor': require('./no-direct-crosslayer-write-from-conductor'),
-    'no-direct-buffer-push-from-crosslayer': require('./no-direct-buffer-push-from-crosslayer')
+    'no-direct-buffer-push-from-crosslayer': require('./no-direct-buffer-push-from-crosslayer'),
+    'prefer-validator': require('./prefer-validator'),
+    'no-bare-math': require('./no-bare-math')
   }
 };
