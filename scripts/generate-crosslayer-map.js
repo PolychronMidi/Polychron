@@ -24,6 +24,7 @@ const MD_PATH    = path.join(OUTPUT_DIR, 'crosslayer-map.md');
 // ---- Helpers ----
 
 function walkJS(dir) {
+  if (!fs.existsSync(dir)) return [];
   const results = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);

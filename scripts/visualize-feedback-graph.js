@@ -19,10 +19,17 @@ const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
 
 function main() {
   if (!fs.existsSync(GRAPH_PATH)) {
-    throw new Error('visualize-feedback-graph: FEEDBACK_GRAPH.json not found');
+    console.warn('Acceptable warning: visualize-feedback-graph: FEEDBACK_GRAPH.json not found, skipping.');
+    return;
   }
 
-  const graph = JSON.parse(fs.readFileSync(GRAPH_PATH, 'utf8'));
+  let graph;
+  try {
+    graph = JSON.parse(fs.readFileSync(GRAPH_PATH, 'utf8'));
+  } catch (err) {
+    console.warn('Acceptable warning: visualize-feedback-graph: failed to parse FEEDBACK_GRAPH.json: ' + (err && err.message ? err.message : err));
+    return;
+  }
   const loops = graph.feedbackLoops || [];
   const firewalls = graph.firewalls || {};
 

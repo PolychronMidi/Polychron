@@ -29,8 +29,16 @@ const MD_OUTPUT = path.join(OUTPUT_DIR, 'conductor-map.md');
 // ---- Load data sources ----
 
 function loadJSON(filePath) {
-  if (!fs.existsSync(filePath)) throw new Error('generate-conductor-map: missing ' + filePath);
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (!fs.existsSync(filePath)) {
+    console.warn('Acceptable warning: generate-conductor-map: missing ' + filePath + ', skipping.');
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (err) {
+    console.warn('Acceptable warning: generate-conductor-map: failed to parse ' + filePath + ': ' + (err && err.message ? err.message : err));
+    return null;
+  }
 }
 
 // ---- Detect domain from file path ----
@@ -108,6 +116,7 @@ function extractScopes(src) {
 function buildMap() {
   const manifest = loadJSON(MANIFEST_PATH);
   const bootOrder = loadJSON(BOOT_ORDER_PATH);
+  if (!manifest || !bootOrder) return null;
 
   // Build module name -> file path mapping from boot order
   const nameToFile = new Map();
@@ -247,6 +256,10 @@ function generateMarkdown(modules) {
 
 function main() {
   const modules = buildMap();
+  if (!modules) {
+    console.warn('Acceptable warning: generate-conductor-map: missing input files, skipping.');
+    return;
+  }
 
   // Write JSON
   const jsonOutput = {

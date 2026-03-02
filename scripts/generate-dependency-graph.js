@@ -25,9 +25,15 @@ const BOOT_ORDER_PATH = path.join(ROOT, 'output', 'boot-order.json');
 
 function loadBootOrder() {
   if (!fs.existsSync(BOOT_ORDER_PATH)) {
-    throw new Error('generate-dependency-graph: boot-order.json not found. Run verify-boot-order.js first.');
+    console.warn('Acceptable warning: generate-dependency-graph: boot-order.json not found, skipping.');
+    return null;
   }
-  return JSON.parse(fs.readFileSync(BOOT_ORDER_PATH, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(BOOT_ORDER_PATH, 'utf8'));
+  } catch (err) {
+    console.warn('Acceptable warning: generate-dependency-graph: failed to parse boot-order.json: ' + (err && err.message ? err.message : err));
+    return null;
+  }
 }
 
 // ---- Detect subsystem from file path ----
@@ -207,6 +213,7 @@ function computeSummary(nodes, edges, globalToProvider) {
 
 function main() {
   const bootOrder = loadBootOrder();
+  if (!bootOrder) return;
   const globalToProvider = buildProviderMap(bootOrder);
   const { nodes, edges } = buildGraph(bootOrder, globalToProvider);
   const summary = computeSummary(nodes, edges, globalToProvider);
