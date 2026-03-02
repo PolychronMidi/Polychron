@@ -90,7 +90,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
 
   // --- Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs) ---
   const tp = MAIN_LOOP_CONTROLS.trustPayoffs;
-  const stutterOutcome = clamp(1 - Math.abs(stutterProb - clIntent.interactionTarget) * tp.stutterContagion.targetScale, -1, 1);
+  const stutterOutcome = clamp(1 - m.abs(stutterProb - clIntent.interactionTarget) * tp.stutterContagion.targetScale, -1, 1);
   const plp = tp.phaseLock;
   const phaseOutcome = clamp((clPhaseMode === 'lock' ? plp.lock : clPhaseMode === 'drift' ? plp.drift : plp.other) + clPhase.confidence * plp.confidenceScale, -1, 1);
   const cap = tp.cadenceAlignment;
@@ -118,7 +118,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   adaptiveTrustScores.registerOutcome(trustSystems.names.FEEDBACK_OSCILLATOR, feedbackOutcome);
   // coherenceMonitor: bias near neutralBias = coherent (positive), far = correcting (negative)
   const cmp = tp.coherenceMonitor;
-  const coherenceOutcome = clamp(1 - Math.abs(coherenceMonitor.getDensityBias() - cmp.neutralBias) * cmp.sensitivity, -1, 1);
+  const coherenceOutcome = clamp(1 - m.abs(coherenceMonitor.getDensityBias() - cmp.neutralBias) * cmp.sensitivity, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.COHERENCE_MONITOR, coherenceOutcome);
   // entropyRegulator: reward when measured entropy tracks target, penalize persistent deviation
   const entropyError = clEntropy ? m.abs(clEntropy.error) : 0;

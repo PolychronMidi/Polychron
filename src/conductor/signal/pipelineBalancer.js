@@ -23,20 +23,20 @@ pipelineBalancer = (() => {
     if (!attr || !Array.isArray(attr) || attr.length === 0) {
       counterBias = 1.0;
     } else {
-      const totalDev = attr.reduce((s, a) => s + Math.abs(a.value - 1.0), 0);
+      const totalDev = attr.reduce((s, a) => s + m.abs(a.value - 1.0), 0);
       if (totalDev < 0.01) {
         counterBias = 1.0;
       } else {
         let maxDev = 0;
         let maxDir = 0;
         for (const a of attr) {
-          const d = Math.abs(a.value - 1.0);
+          const d = m.abs(a.value - 1.0);
           if (d > maxDev) { maxDev = d; maxDir = a.value - 1.0; }
         }
 
         const share = maxDev / totalDev;
         if (share > DOMINANCE_THRESHOLD) {
-          counterBias = 1.0 - Math.sign(maxDir) * COUNTER_STRENGTH * (share - DOMINANCE_THRESHOLD);
+          counterBias = 1.0 - m.sign(maxDir) * COUNTER_STRENGTH * (share - DOMINANCE_THRESHOLD);
         } else {
           counterBias = 1.0;
         }

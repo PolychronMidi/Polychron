@@ -50,8 +50,8 @@ setBinaural = () => {
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = Math.round(measureStart + ((syncMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = Math.max(0, syncTickRaw);
+    const syncTickRaw = m.round(measureStart + ((syncMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = m.max(0, syncTickRaw);
 
     allNotesOff(syncTick);
 
@@ -67,7 +67,7 @@ setBinaural = () => {
 
     V.requireFinite(numerator, 'numerator');
     V.requireFinite(measuresPerPhrase, 'measuresPerPhrase');
-    beatsUntilBinauralShift = Math.max(1, numerator * measuresPerPhrase);
+    beatsUntilBinauralShift = m.max(1, numerator * measuresPerPhrase);
 
     // Recompute pitch bend values from updated offset - stale values cause audible detune
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
@@ -85,20 +85,20 @@ setBinaural = () => {
       ...binauralR.map(ch => ({ tick: syncTick, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
     );
 
-    const startTick = Math.max(0, syncTick - tpSec / 20);
-    const endTick = Math.max(startTick, syncTick + tpSec / 20);
+    const startTick = m.max(0, syncTick - tpSec / 20);
+    const endTick = m.max(startTick, syncTick + tpSec / 20);
     const steps = 10;
     const tickIncrement = (endTick - startTick) / steps;
     for (let i = 0; i <= steps; i++) {
       const tick = startTick + (tickIncrement * i);
-      const currentVolumeF2 = flipBin ? Math.floor(100 * (1 - (i / steps))) : Math.floor(100 * (i / steps));
-      const currentVolumeT2 = flipBin ? Math.floor(100 * (i / steps)) : Math.floor(100 * (1 - (i / steps)));
+      const currentVolumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
+      const currentVolumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
       const maxVol = rf(.9, 1.2);
       flipBinF2.forEach(ch => {
-        p(c, { tick: tick, type: 'control_c', vals: [ch, 7, Math.round(currentVolumeF2 * maxVol)] });
+        p(c, { tick: tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeF2 * maxVol)] });
       });
       flipBinT2.forEach(ch => {
-        p(c, { tick: tick, type: 'control_c', vals: [ch, 7, Math.round(currentVolumeT2 * maxVol)] });
+        p(c, { tick: tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeT2 * maxVol)] });
       });
     }
   }

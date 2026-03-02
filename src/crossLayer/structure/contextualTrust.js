@@ -41,7 +41,7 @@ contextualTrust = (() => {
     const p = V.requireFinite(payoff, 'payoff');
     const k = _key(moduleName);
     const prev = scores.get(k) || 0;
-    const next = Math.max(LO, Math.min(HI, prev * DECAY + p * (1 - DECAY)));
+    const next = m.max(LO, m.min(HI, prev * DECAY + p * (1 - DECAY)));
     scores.set(k, next);
   }
 
@@ -53,7 +53,7 @@ contextualTrust = (() => {
     const k = _key(moduleName);
     if (scores.has(k)) {
       const s = /** @type {number} */ (scores.get(k));
-      return Math.max(W_LO, Math.min(W_HI, 1 + s * W_SCALE));
+      return m.max(W_LO, m.min(W_HI, 1 + s * W_SCALE));
     }
     // Fallback to global trust
     return adaptiveTrustScores.getWeight(moduleName);

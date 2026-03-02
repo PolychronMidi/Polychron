@@ -58,7 +58,7 @@ verticalIntervalMonitor = (() => {
         timeMs: nowMs,
         totalCollisions: collisionCount,
       }, nowMs);
-      return PROB_REDUCE * Math.min(collisions, 3);
+      return PROB_REDUCE * m.min(collisions, 3);
     }
 
     return 0;

@@ -139,7 +139,7 @@ logClamp = (value, min, max, base = 10) => {
  * @param {number} value - Value to clamp.
  * @param {number} min - Minimum allowed value (log domain).
  * @param {number} max - Maximum allowed value (log domain).
- * @param {number} [base=Math.E] - Exponential base.
+ * @param {number} [base=m.E] - Exponential base.
  * @returns {number} Exponentially clamped value.
  */
 expClamp = (value, min, max, base = m.E) => {

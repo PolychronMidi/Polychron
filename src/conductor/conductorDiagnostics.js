@@ -77,7 +77,7 @@ conductorDiagnostics = (() => {
     /**
      * Frozen snapshot of all current signal products and state fields.
      * Intended for cross-module reading (e.g., feedback loops, diagnostics).
-     * @returns {Readonly<{ densityProduct: number, tensionProduct: number, flickerProduct: number, stateFields: Record<string, any>, counts: Record<string, number> }>}
+     * @returns {Readonly<{ densityProduct: number, tensionProduct: number, flickerProduct: number, stateFields: Record<string, any>, counts: { density: number, tension: number, flicker: number, recorders: number, stateProviders: number } }>}
      */
     function getSignalSnapshot() {
       return Object.freeze({

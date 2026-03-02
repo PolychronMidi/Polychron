@@ -31,7 +31,7 @@ stutterContagion = (() => {
       'onset', absTimeMs, CONVERGENCE_WINDOW_MS
     );
     if (!recentConvergence) return BASE_DECAY;
-    const dist = Math.abs(recentConvergence.timeMs - absTimeMs);
+    const dist = m.abs(recentConvergence.timeMs - absTimeMs);
     const recency = 1 - (dist / CONVERGENCE_WINDOW_MS);
     // Interpolate: recent convergence - ALIGNED (sticky), distant - DIVERGED (loose)
     return BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
@@ -93,8 +93,8 @@ stutterContagion = (() => {
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = Math.round(measureStart + ((matchTimeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = Math.max(0, syncTickRaw);
+    const syncTickRaw = m.round(measureStart + ((matchTimeMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = m.max(0, syncTickRaw);
 
     return {
       syncTick,
@@ -116,7 +116,7 @@ stutterContagion = (() => {
     if (!contagion) return;
 
     // Scale stutter parameters by decayed intensity
-    const numStutters = Math.max(5, Math.round(ri(10, 70) * contagion.intensity));
+    const numStutters = m.max(5, m.round(ri(10, 70) * contagion.intensity));
     const duration = tpSec * rf(.1, .8) * contagion.intensity;
 
     if (contagion.type === 'fade' && stutterFade) {

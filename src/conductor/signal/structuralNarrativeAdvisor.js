@@ -36,7 +36,7 @@ structuralNarrativeAdvisor = (() => {
     } else {
       const unique = familyCounts.size;
       const total  = familyHistory.length;
-      const entropy = unique / Math.max(total, 1);
+      const entropy = unique / m.max(total, 1);
 
       // Low entropy - push density up slightly to encourage change
       varietyPressure = 1.0 + VARIETY_GAIN * (1.0 - entropy);

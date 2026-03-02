@@ -143,14 +143,14 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   let velocityScaleBias = 0;
   if (modBus) {
     if (typeof modBus.pan === 'number') {
-      const panAbs = Math.abs(modBus.pan);
-      shiftRangeBias += Math.round((crossRules.pan.shiftRangeBias ?? 0) * panAbs);
+      const panAbs = m.abs(modBus.pan);
+      shiftRangeBias += m.round((crossRules.pan.shiftRangeBias ?? 0) * panAbs);
     }
     if (typeof modBus.fade === 'number') {
       velocityScaleBias += (crossRules.fade.velocityScaleBias ?? 0) * modBus.fade;
     }
     if (typeof modBus.fx === 'number') {
-      shiftRangeBias += Math.round((crossRules.fx.shiftRangeScale - 1) * modBus.fx);
+      shiftRangeBias += m.round((crossRules.fx.shiftRangeScale - 1) * modBus.fx);
     }
   }
 

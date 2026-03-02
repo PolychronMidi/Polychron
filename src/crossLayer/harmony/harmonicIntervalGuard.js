@@ -93,21 +93,21 @@ harmonicIntervalGuard = (() => {
     // Should we nudge? Only if current consonance is far from target
     const desiredConsonance = 1 - dissonanceTarget;
     const error = currentConsonance - desiredConsonance;
-    if (Math.abs(error) < 0.25) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
+    if (m.abs(error) < 0.25) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Apply nudge probability scaled by error magnitude
-    if (rf() > Math.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
+    if (rf() > m.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Find best candidate within 3 semitones
     let bestNote = midi;
     let bestScore = Infinity;
-    const lo = Math.max(0, OCTAVE.min * 12, midi - 3);
-    const hi = Math.min(127, OCTAVE.max * 12 - 1, midi + 3);
+    const lo = m.max(0, OCTAVE.min * 12, midi - 3);
+    const hi = m.min(127, OCTAVE.max * 12 - 1, midi + 3);
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;
       const candidateConsonance = CONSONANCE[candidateIC];
-      const score = Math.abs(candidateConsonance - desiredConsonance);
+      const score = m.abs(candidateConsonance - desiredConsonance);
       // If pitchBias is set, prefer notes near that pitch class
       const pitchBiasBonus = (pitchBias >= 0 && (candidate % 12) === pitchBias) ? -0.15 : 0;
       if (score + pitchBiasBonus < bestScore) {

@@ -37,8 +37,8 @@ crossLayerDynamicEnvelope = (() => {
     const swapped = dynamicRoleSwap.getIsSwapped();
 
     // Compute base envelope from phrase arc
-    const phraseArc = Math.sin(phraseProgress * Math.PI); // peaks mid-phrase
-    const sectionArc = Math.sin(sectionProgress * Math.PI); // peaks mid-section
+    const phraseArc = m.sin(phraseProgress * m.PI); // peaks mid-phrase
+    const sectionArc = m.sin(sectionProgress * m.PI); // peaks mid-section
 
     let targetScale = 1.0;
 

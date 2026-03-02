@@ -50,7 +50,7 @@ globalConductor = (() => {
     // 2. derive composite intensity (0-1)
     const phaseMult = conductorConfig.getPhaseMultiplier(sectionPhase);
     const arcIntensity = phraseCtx.dynamism * phaseMult;
-    const excursionTension = Math.min(excursion, 6) * 0.05;
+    const excursionTension = m.min(excursion, 6) * 0.05;
     const tensionIntensity = harmonicTension + excursionTension;
 
     const harmonicRhythm = clamp(Number(harmonicRhythmTracker.getHarmonicRhythm()), 0, 1);

@@ -101,7 +101,7 @@ pitchMemoryRecall = (() => {
       // Similarity: does any pitch class match? (boolean - avoids .filter() allocation)
       const hasMatch = mem.pitchClasses.includes(currentPC);
       // Prefer memories from different sections (thematic recall, not repetition)
-      const sectionDist = Math.abs(sectionPos - mem.sectionIdx);
+      const sectionDist = m.abs(sectionPos - mem.sectionIdx);
       const score = mem.strength * 0.4 + (hasMatch ? 0.3 : 0) + clamp(sectionDist * 0.1, 0, 0.3);
       if (score > bestScore) {
         bestScore = score;

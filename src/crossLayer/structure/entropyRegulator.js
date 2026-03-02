@@ -101,7 +101,7 @@ entropyRegulator = (() => {
       smoothedEntropy = 0.5;
       return 0.5;
     }
-    const combined = (totalPitch / count) * PITCH_ENTROPY_WEIGHT + (totalVel / Math.max(count, 1)) * VELOCITY_ENTROPY_WEIGHT + (totalRhythm / 2) * RHYTHM_ENTROPY_WEIGHT;
+    const combined = (totalPitch / count) * PITCH_ENTROPY_WEIGHT + (totalVel / m.max(count, 1)) * VELOCITY_ENTROPY_WEIGHT + (totalRhythm / 2) * RHYTHM_ENTROPY_WEIGHT;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
     lastRawEntropy = combined;
     return smoothedEntropy;
@@ -151,7 +151,7 @@ entropyRegulator = (() => {
    */
   function getArcTarget(sectionProgress) {
     // Bell curve: peaks at 0.5, troughs at 0 and 1
-    const arc = Math.sin(clamp(sectionProgress, 0, 1) * Math.PI);
+    const arc = m.sin(clamp(sectionProgress, 0, 1) * m.PI);
     return ARC_TARGET_FLOOR + arc * ARC_TARGET_RANGE;
   }
 

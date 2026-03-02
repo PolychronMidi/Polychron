@@ -91,7 +91,7 @@ dynamicRoleSwap = (() => {
     // Swapped layers get slight velocity inversion
     const mods = getProfileModifiers(layer);
     const scale = 1 + mods.melodicBias * 0.15;
-    return Math.round(clamp(vel * scale, 1, MIDI_MAX_VALUE));
+    return m.round(clamp(vel * scale, 1, MIDI_MAX_VALUE));
   }
 
   /** @returns {boolean} */

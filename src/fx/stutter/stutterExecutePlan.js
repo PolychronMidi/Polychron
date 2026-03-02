@@ -12,7 +12,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   const on = V.optionalFinite(Number(cfg.on), beatStart);
   const sustain = V.optionalFinite(Number(cfg.sustain), tpSec * 0.25);
   const numStutters = V.optionalFinite(Number(cfg.numStutters), m.max(1, ri(2, 6)));
-  const duration = V.optionalFinite(Number(cfg.duration), Math.max(0.001, (sustain / numStutters) * rf(.9, 1.1)));
+  const duration = V.optionalFinite(Number(cfg.duration), m.max(0.001, (sustain / numStutters) * rf(.9, 1.1)));
 
   const finalChannels = /** @type {number[]} */ ([]);
   if (Array.isArray(cfg.channels) && cfg.channels.length > 0) {
@@ -48,7 +48,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     ['source', 'reflection', 'bass'].forEach((p) => {
       const emitted = metrics.emittedByProfile && metrics.emittedByProfile[p] ? metrics.emittedByProfile[p] : 0;
       const scheduled = metrics.scheduledByProfile && metrics.scheduledByProfile[p] ? metrics.scheduledByProfile[p] : 1;
-      const ratio = emitted / Math.max(1, scheduled);
+      const ratio = emitted / m.max(1, scheduled);
       if (ratio > 0.8 && adj.pan) {
         adj.pan.stutterRateScale = clamp(adj.pan.stutterRateScale + (ratio - 0.8) * sens, 0.8, 3);
       }
@@ -85,12 +85,12 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
         case 'linear': return 1;
         case 'accelerando': return 1 + Number(tn);
         case 'decelerando': return 1 + (1 - Number(tn));
-        case 'sine': return 1 + Math.sin(2 * Math.PI * Number(tn)) * 0.25;
+        case 'sine': return 1 + m.sin(2 * m.PI * Number(tn)) * 0.25;
         case 'pingpong': {
           const frac = Number(tn) - m.floor(Number(tn));
-          return Math.abs((2 * frac) - 1);
+          return m.abs((2 * frac) - 1);
         }
-        case 'oscillate': return 0.5 + 0.5 * Math.sin(2 * Math.PI * Number(tn));
+        case 'oscillate': return 0.5 + 0.5 * m.sin(2 * m.PI * Number(tn));
         default: {
           const numericCurve = Number(curve);
           if (!Number.isFinite(numericCurve)) {
@@ -134,7 +134,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
         : 1;
 
       const jitter = rf(.92, 1.08);
-      const stepPeriodScaled = (baseStepPeriod / Math.max(0.01, Number(rateCurveVal))) / Math.max(0.01, rateScale);
+      const stepPeriodScaled = (baseStepPeriod / m.max(0.01, Number(rateCurveVal))) / m.max(0.01, rateScale);
       const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
 
       stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity ?? 100, binVel: cfg.maxVelocity ?? 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });

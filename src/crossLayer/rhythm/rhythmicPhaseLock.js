@@ -44,7 +44,7 @@ rhythmicPhaseLock = (() => {
     if (!other || !Number.isFinite(other.beatDurationMs)) return null;
 
     // Phase difference as fraction of beat duration (0 = in sync, 0.5 = max opposition)
-    const timeDiff = Math.abs(other.timeMs - absTimeMs);
+    const timeDiff = m.abs(other.timeMs - absTimeMs);
     const phaseDiff = (timeDiff % other.beatDurationMs) / other.beatDurationMs;
     const normalizedPhase = phaseDiff > 0.5 ? 1 - phaseDiff : phaseDiff;
 
@@ -78,16 +78,16 @@ rhythmicPhaseLock = (() => {
       lastLockMs = absTimeMs;
       lockCount++;
       // Quantize: pull toward the other layer's beat grid position
-      const otherTick = Math.round(measureStart + ((phase.otherBeatMs / 1000) - measureStartTime) * tpSec);
-      const pull = Math.round((otherTick - originalTick) * LOCK_STRENGTH);
+      const otherTick = m.round(measureStart + ((phase.otherBeatMs / 1000) - measureStartTime) * tpSec);
+      const pull = m.round((otherTick - originalTick) * LOCK_STRENGTH);
       return { tick: originalTick + pull, mode: 'lock', phaseDiff: phase.phaseDiff };
     }
 
     if (phase.mode === 'repel') {
       // Push away from the other layer's grid
-      const otherTick = Math.round(measureStart + ((phase.otherBeatMs / 1000) - measureStartTime) * tpSec);
+      const otherTick = m.round(measureStart + ((phase.otherBeatMs / 1000) - measureStartTime) * tpSec);
       const direction = originalTick >= otherTick ? 1 : -1;
-      const push = Math.round(tpSec * REPEL_STRENGTH * phase.phaseDiff * 0.1);
+      const push = m.round(tpSec * REPEL_STRENGTH * phase.phaseDiff * 0.1);
       return { tick: originalTick + direction * push, mode: 'repel', phaseDiff: phase.phaseDiff };
     }
 

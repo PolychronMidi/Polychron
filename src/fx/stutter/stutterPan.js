@@ -59,7 +59,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       const norm = (currentPan - 64) / 63; // -1..1
       if (!this.beatContext.mod) this.beatContext.mod = {};
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
-      lastIntensity = Math.abs(norm);
+      lastIntensity = m.abs(norm);
 
       p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }

@@ -91,9 +91,9 @@ criticalityEngine = (() => {
     // --- Adaptive threshold ---
     const rate = totalBeats > 0 ? avalancheCount / totalBeats : 0;
     if (rate > TARGET_RATE) {
-      threshold = Math.min(THRESHOLD_MAX, threshold + ADAPT_RATE);
+      threshold = m.min(THRESHOLD_MAX, threshold + ADAPT_RATE);
     } else if (rate < TARGET_RATE * 0.5) {
-      threshold = Math.max(THRESHOLD_MIN, threshold - ADAPT_RATE);
+      threshold = m.max(THRESHOLD_MIN, threshold - ADAPT_RATE);
     }
   }
 
