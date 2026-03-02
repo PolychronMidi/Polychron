@@ -9,6 +9,37 @@ rhythmicComplementEngine = (() => {
   /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */
   let mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('free');
   const MODE_CHANGE_INTERVAL = 8; // beats between mode re-evaluation
+
+  // Analysis
+  const ANALYSIS_WINDOW_S = 2;
+  const GAP_THRESHOLD_MS = 200;
+
+  // Strength gating
+  const STRENGTH_SCALE = 1.5;
+  const STRENGTH_OFFSET = 0.3;
+  const STRENGTH_GATE = 0.6;
+
+  // Hocket
+  const HOCKET_SHIFT_MIN = 0.3;
+  const HOCKET_SHIFT_MAX = 0.7;
+  const HOCKET_VEL_BOOST = 0.1;
+
+  // Antiphony
+  const ANTIPHONY_DELAY_MIN = 0.08;
+  const ANTIPHONY_DELAY_MAX = 0.2;
+  const ANTIPHONY_VEL_BASE = 0.85;
+  const ANTIPHONY_VEL_SCALE = 0.15;
+
+  // Canon
+  const CANON_GROOVE_SCALE = 0.5;
+  const CANON_VELOCITY = 0.9;
+
+  // Mode selection thresholds
+  const HIGH_INTERACTION = 0.6;
+  const LOW_DENSITY = 0.4;
+  const HIGH_DENSITY = 0.6;
+  const MODERATE_INTERACTION = 0.4;
+
   let beatsSinceChange = 0;
 
   /**
@@ -23,11 +54,11 @@ rhythmicComplementEngine = (() => {
 
     const notes = absoluteTimeWindow.getNotes({
       layer: otherLayer,
-      since: (absTimeMs / 1000) - 2,
-      windowSeconds: 2
+      since: (absTimeMs / 1000) - ANALYSIS_WINDOW_S,
+      windowSeconds: ANALYSIS_WINDOW_S
     });
 
-    if (notes.length < 2) return { gaps: [], density: notes.length / 2, avgIOI: 0 };
+    if (notes.length < 2) return { gaps: [], density: notes.length / ANALYSIS_WINDOW_S, avgIOI: 0 };
 
     const iois = [];
     const gaps = [];
@@ -37,7 +68,7 @@ rhythmicComplementEngine = (() => {
       const dt = (tCurr - tPrev) * 1000;
       if (dt > 0) {
         iois.push(dt);
-        if (dt > 200) gaps.push(tPrev * 1000 + dt / 2); // midpoint of gap
+        if (dt > GAP_THRESHOLD_MS) gaps.push(tPrev * 1000 + dt / 2); // midpoint of gap
       }
     }
 
@@ -67,27 +98,27 @@ rhythmicComplementEngine = (() => {
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
 
     // Only apply strong complement when interaction target is high
-    const strength = clamp(intent.interactionTarget * 1.5 - 0.3, 0, 1);
-    if (rf() > strength * 0.6) return { tick: onTick, velocityScale: 1.0, modified: false };
+    const strength = clamp(intent.interactionTarget * STRENGTH_SCALE - STRENGTH_OFFSET, 0, 1);
+    if (rf() > strength * STRENGTH_GATE) return { tick: onTick, velocityScale: 1.0, modified: false };
 
     if (mode === 'hocket') {
       // Shift onset by half a beat to interleave
       const halfBeatTicks = tpBeat * 0.5;
-      const shift = halfBeatTicks * rf(0.3, 0.7) * strength;
-      return { tick: onTick + shift, velocityScale: 1.0 + strength * 0.1, modified: true };
+      const shift = halfBeatTicks * rf(HOCKET_SHIFT_MIN, HOCKET_SHIFT_MAX) * strength;
+      return { tick: onTick + shift, velocityScale: 1.0 + strength * HOCKET_VEL_BOOST, modified: true };
     }
 
     if (mode === 'antiphony') {
       // Small delay for call-response feel
-      const responseTicks = tpBeat * rf(0.08, 0.2) * strength;
-      return { tick: onTick + responseTicks, velocityScale: 0.85 + strength * 0.15, modified: true };
+      const responseTicks = tpBeat * rf(ANTIPHONY_DELAY_MIN, ANTIPHONY_DELAY_MAX) * strength;
+      return { tick: onTick + responseTicks, velocityScale: ANTIPHONY_VEL_BASE + strength * ANTIPHONY_VEL_SCALE, modified: true };
     }
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
       let grooveOffset = grooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick;
       if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
-      return { tick: onTick + grooveOffset * strength * 0.5, velocityScale: 0.9, modified: grooveOffset !== 0 };
+      return { tick: onTick + grooveOffset * strength * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
     }
 
     return { tick: onTick, velocityScale: 1.0, modified: false };
@@ -123,11 +154,11 @@ rhythmicComplementEngine = (() => {
     // High interaction + low density - hocket (interleaving gaps)
     // High interaction + high density - antiphony (dense call/response)
     // Moderate everything - canon or free
-    if (interaction > 0.6 && density < 0.4) {
+    if (interaction > HIGH_INTERACTION && density < LOW_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
-    } else if (interaction > 0.6 && density > 0.6) {
+    } else if (interaction > HIGH_INTERACTION && density > HIGH_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('antiphony');
-    } else if (interaction > 0.4) {
+    } else if (interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
     } else {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('free');

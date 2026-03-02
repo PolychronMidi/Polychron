@@ -49,34 +49,6 @@ systemDynamicsProfiler = (() => {
   const _zscoreM2 = new Array(N_COMPOSITIONAL_DIMS).fill(0);
   const _ZSCORE_MIN_SAMPLES = 8; // need enough history before z-scoring is meaningful
 
-  // -- Adaptive entropy amplification --
-  // Instead of a hardcoded multiplier (manually tuned 5-7-12-10-3 across
-  // runs), this proportional controller reads the previous beat's
-  // compositionalVariance and adjusts to target ~25% variance share.
-  // Self-correcting: too much entropy - amplification drops; too little - rises.
-  const _ENTROPY_AMP_TARGET_SHARE = 0.25;
-  const _ENTROPY_AMP_MIN = 1.0; // lowered (was 1.5) - Run 17: controller at 1.54 (near floor) but entropy 63.9% dominant; ATW bypass + z-score make dead-axis structurally impossible now, so safety floor is unnecessary
-  const _ENTROPY_AMP_MAX = 15.0;
-  const _ENTROPY_AMP_SMOOTH = 0.12; // base EMA alpha (adaptively raised by error magnitude)
-  let _entropyAmp = 3.0; // initial seed (converges within ~20 beats)
-
-  // -- #7: Entropy PI Controller (Hypermeta) --
-  // Adds integral term to the P-only controller for zero steady-state error.
-  // Adaptive alpha converges faster when error is large. Anti-windup clamp
-  // prevents integral saturation during structural entropy dominance.
-  let _entropyIntegralError = 0;
-  const _ENTROPY_KI = 0.05;             // integral gain (R7 Evo 8: raised from 0.03)
-  const _ENTROPY_INTEGRAL_CLAMP = 3.0;  // anti-windup (R7: tightened from 5.0)
-
-  // Regime hysteresis: requires REGIME_HOLD consecutive beats of a new
-  // classification before switching. Prevents single-beat noise from
-  // flipping the regime and triggering regime-reactive damping oscillations.
-  const REGIME_HOLD = 5; // raised (was 4) - curvature 0.581 near explosive threshold; reduce label flutter
-  let _lastRegime = 'evolving';
-  let _candidateRegime = 'evolving';
-  let _candidateCount = 0;
-  let _exploringBeats = 0; // duration escalator: consecutive exploring beats
-
   // Pre-differentiation EMA: smooths the raw state vector before computing
   // velocity/curvature. Without this, first-differences amplify beat-to-beat
   // noise from 74 independent modules, inflating curvature artificially.
@@ -84,17 +56,10 @@ systemDynamicsProfiler = (() => {
   // Adaptive: the profile's density smoothing already attenuates the noisiest
   // dimension. Heavy profile smoothing (explosive=0.5) needs lighter profiler
   // smoothing; light profile smoothing (default=0.8) needs heavier. Targeting
-  // a constant effective responsiveness: profileSmoothing * stateSmoothing - 0.175.
+  // a constant effective responsiveness: profileSmoothing * stateSmoothing ~ 0.175.
   const _STATE_SMOOTHING_BASELINE = 0.12; // lowered (was 0.14) - velocity 0.008 in Run 8 still near-stasis; increase responsiveness further
   let _stateSmoothing = 0.30; // conservative default, resolved lazily
   let _stateSmoothingResolved = false;
-
-  // Profile-adaptive oscillating curvature threshold. Explosive profiles
-  // naturally produce higher curvature due to wider parameter swings -
-  // a fixed 0.5 threshold misclassifies healthy explosive evolution as
-  // oscillation. Resolved lazily alongside state smoothing.
-  const _OSCILLATING_CURVATURE_DEFAULT = 0.55;
-  let _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
 
   function _resolveStateSmoothing() {
     if (_stateSmoothingResolved) return;
@@ -102,14 +67,12 @@ systemDynamicsProfiler = (() => {
       const profileSmoothing = conductorConfig.getDensitySmoothing();
       _stateSmoothing = clamp(_STATE_SMOOTHING_BASELINE / profileSmoothing, 0.15, 0.40);
 
-      // Scale oscillating threshold by profile character
+      // Scale oscillating threshold by profile character (delegated to regimeClassifier)
       const profileName = conductorConfig.getActiveProfileName();
-      if (profileName === 'explosive') _oscillatingCurvatureThreshold = 0.65;
-      else if (profileName === 'minimal') _oscillatingCurvatureThreshold = 0.45;
-      else _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
+      if (profileName === 'explosive') regimeClassifier.setOscillatingThreshold(0.65);
+      else if (profileName === 'minimal') regimeClassifier.setOscillatingThreshold(0.45);
     } catch {
       _stateSmoothing = 0.30;
-      _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
     }
     _stateSmoothingResolved = true;
   }
@@ -119,33 +82,6 @@ systemDynamicsProfiler = (() => {
 
   /** @type {SystemDynamicsSnapshot} */
   let _lastSnapshot = _emptySnapshot();
-
-  /** Adapt entropy amplification via PI controller (#7) to target equal variance share. */
-  function _adaptEntropyAmplification() {
-    const currentShare = _lastSnapshot.compositionalVariance[3]; // entropy index
-    const error = _ENTROPY_AMP_TARGET_SHARE - currentShare;
-
-    // #7: Adaptive alpha - converge faster when error is large
-    const alpha = _ENTROPY_AMP_SMOOTH + 0.08 * m.abs(error);
-
-    // #7: Integral accumulation with anti-windup clamp
-    // R7 Evo 8: Freeze integral when P and I terms have opposite signs
-    // to prevent overshoot during error sign transitions.
-    const pTerm = currentShare < 0.01
-      ? _ENTROPY_AMP_MAX
-      : clamp(_entropyAmp * (_ENTROPY_AMP_TARGET_SHARE / currentShare), _ENTROPY_AMP_MIN, _ENTROPY_AMP_MAX);
-    const iTerm = _ENTROPY_KI * _entropyIntegralError;
-    const pDirection = pTerm - _entropyAmp;
-    if (pDirection * iTerm >= 0) {
-      // Same sign or zero: accumulate normally
-      _entropyIntegralError = clamp(_entropyIntegralError + error, -_ENTROPY_INTEGRAL_CLAMP, _ENTROPY_INTEGRAL_CLAMP);
-    }
-    // Opposite signs: freeze integral (anti-windup)
-
-    // PI controller: proportional + integral
-    const targetAmp = clamp(pTerm + iTerm, _ENTROPY_AMP_MIN, _ENTROPY_AMP_MAX);
-    _entropyAmp = _entropyAmp * (1 - alpha) + targetAmp * alpha;
-  }
 
   /** @returns {SystemDynamicsSnapshot} */
   function _emptySnapshot() {
@@ -158,7 +94,7 @@ systemDynamicsProfiler = (() => {
       grade: 'healthy',
       couplingMatrix: {},
       compositionalVariance: [0.25, 0.25, 0.25, 0.25],
-      entropyAmplification: _entropyAmp,
+      entropyAmplification: entropyAmplificationController.getAmp(),
       entropySampleErrors: 0,
       entropyRhythmErrors: 0,
       lastEntropyError: ''
@@ -217,8 +153,8 @@ systemDynamicsProfiler = (() => {
           rhythmE = clamp(ioiStd / m.max(ioiMean, 0.001), 0, 1);
         }
         const combined = pitchE * 0.4 + velE * 0.3 + rhythmE * 0.3;
-        _adaptEntropyAmplification();
-        entropy = 0.5 + (combined - 0.5) * _entropyAmp;
+        entropyAmplificationController.adapt(_lastSnapshot.compositionalVariance[3]);
+        entropy = 0.5 + (combined - 0.5) * entropyAmplificationController.getAmp();
       }
     } catch (e) {
       _entropySampleErrors++;
@@ -244,105 +180,7 @@ systemDynamicsProfiler = (() => {
 
   // _stats, _coupling, _effectiveDimensionality, _jacobiEigenvalues
   // are now in phaseSpaceMath global - called as phaseSpaceMath.stats() etc.
-
-  /**
-   * Classify the current operating regime based on velocity and curvature patterns.
-   * @param {number} avgVelocity
-   * @param {number} avgCurvature
-   * @param {number} effectiveDim
-   * @param {number} couplingStrength
-   * @returns {string}
-   */
-  function _classifyRegime(avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
-    // Thresholds calibrated for adaptive STATE_SMOOTHING targeting effective
-    // responsiveness - 0.175 (profileSmoothing * stateSmoothing). Validated
-    // against explosive (0.5 * 0.35) and default (0.8 * 0.22) profiles.
-    // Coupling strength and effectiveDim are now scoped to compositional
-    // dimensions only (4D, 6 pairs). Thresholds adjusted accordingly.
-    // Stagnant: barely moving through state space
-    if (avgVelocity < 0.004) return 'stagnant';
-    // Oscillating: high curvature (frequent reversals) with moderate velocity.
-    // Threshold is profile-adaptive - explosive tolerates higher curvature.
-    if (avgCurvature > _oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
-    // Coherent: strong coupling + moving (dimensions move together).
-    // Checked BEFORE exploring so that coupled high-velocity systems are
-    // recognized as coherent rather than stuck in permanent exploring.
-    // Coherent momentum: if the system was recently coherent, lower the
-    // threshold by 0.05 to make coherence "sticky" (hysteresis bonus).
-    // This prevents the system from flickering out of coherent into exploring
-    // on single-beat coupling dips.
-    // Exploring-duration escalator: the longer the system stays in exploring,
-    // the easier it becomes to escape into coherent (self-healing). Every 50
-    // exploring beats lowers the threshold by 0.02, down to 0.18 minimum.
-    // R7 Evo 5: Coherent entry threshold lowered by 15% to make
-    // coherent regime more accessible. Coherent floor: when system has
-    // been in exploring for extended periods, further lower the threshold
-    // by up to 0.05 based on exploring duration (adds to duration bonus).
-    const coherentFloorBonus = _exploringBeats > 100 ? clamp((_exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
-    const durationBonus = _lastRegime === 'exploring' ? clamp(m.floor(_exploringBeats / 50) * 0.02, 0, 0.12) : 0;
-    const baseCoherentThreshold = (_lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85; // R7 Evo 5: 15% reduction
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus;
-    if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
-    // Exploring: high velocity + multi-dimensional + weak coupling.
-    // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
-    // exploring into coherent more easily.
-    if (avgVelocity > 0.02 && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
-    // Exploring -> evolving transition: sustained coupling increase while
-    // exploring triggers evolving rather than jumping straight to coherent.
-    // This creates richer regime lifecycle: exploring -> evolving -> coherent.
-    if (_lastRegime === 'exploring' && avgVelocity > 0.008 && couplingStrength > 0.15) return 'evolving';
-    // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
-    if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
-    // Drifting: moderate velocity, low curvature (slow one-directional change)
-    if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
-    return 'evolving';
-  }
-
-  /**
-   * Apply hysteresis to regime transitions.
-   * Requires REGIME_HOLD consecutive beats of a new classification before switching.
-   * Prevents single-beat noise from flip-flopping regime-reactive damping.
-   * @param {string} rawRegime - instantaneous classification from _classifyRegime
-   * @returns {string} - stable regime with hysteresis
-   */
-  function _resolveRegime(rawRegime) {
-    if (rawRegime === _lastRegime) {
-      // Reinforce current regime, reset candidate
-      _candidateRegime = rawRegime;
-      _candidateCount = 0;
-      // Track exploring duration for escalator
-      if (_lastRegime === 'exploring') _exploringBeats++;
-      return _lastRegime;
-    }
-    if (rawRegime === _candidateRegime) {
-      _candidateCount++;
-      if (_candidateCount >= REGIME_HOLD) {
-        // Reset exploring counter on regime change
-        if (_lastRegime === 'exploring') _exploringBeats = 0;
-        _lastRegime = rawRegime;
-        _candidateCount = 0;
-        return rawRegime;
-      }
-    } else {
-      // New candidate replaces old
-      _candidateRegime = rawRegime;
-      _candidateCount = 1;
-    }
-    return _lastRegime;
-  }
-
-  /**
-   * Grade the trajectory health.
-   * @param {string} regime
-   * @returns {string}
-   */
-  function _grade(regime) {
-    if (regime === 'exploring' || regime === 'coherent' || regime === 'evolving') return 'healthy';
-    if (regime === 'drifting' || regime === 'fragmented') return 'strained';
-    if (regime === 'oscillating') return 'stressed';
-    if (regime === 'stagnant') return 'critical';
-    return 'healthy';
-  }
+  // _classifyRegime, _resolveRegime, _grade are now in regimeClassifier global.
 
   /** Run per-beat analysis. Called via conductorIntelligence recorder. */
   function analyze() {
@@ -431,10 +269,10 @@ systemDynamicsProfiler = (() => {
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
       varRatios[d] = varTotal > 1e-12 ? variance[d] / varTotal : 1 / N_COMPOSITIONAL_DIMS;
     }
-    // -- Regime classification (with hysteresis) --
-    const rawRegime = _classifyRegime(avgVelocity, avgCurvature, effDim, strength);
-    const regime = _resolveRegime(rawRegime);
-    const grade = _grade(regime);
+    // -- Regime classification (with hysteresis, delegated to regimeClassifier) --
+    const rawRegime = regimeClassifier.classify(avgVelocity, avgCurvature, effDim, strength);
+    const regime = regimeClassifier.resolve(rawRegime);
+    const grade = regimeClassifier.grade(regime);
 
     _lastSnapshot = {
       velocity: m.round(avgVelocity * 10000) / 10000,
@@ -445,7 +283,7 @@ systemDynamicsProfiler = (() => {
       grade,
       couplingMatrix: matrix,
       compositionalVariance: varRatios,
-      entropyAmplification: m.round(_entropyAmp * 100) / 100,
+      entropyAmplification: m.round(entropyAmplificationController.getAmp() * 100) / 100,
       entropySampleErrors: _entropySampleErrors,
       entropyRhythmErrors: entropyRegulator.getRhythmErrors(),
       lastEntropyError: _lastEntropyError
@@ -498,14 +336,9 @@ systemDynamicsProfiler = (() => {
     _smoothedState = null;
     _stateSmoothingResolved = false;
     _stateSmoothing = 0.30;
-    _oscillatingCurvatureThreshold = _OSCILLATING_CURVATURE_DEFAULT;
     _lastSnapshot = _emptySnapshot();
-    _lastRegime = 'evolving';
-    _candidateRegime = 'evolving';
-    _candidateCount = 0;
-    _exploringBeats = 0;
-    _entropyAmp = 3.0;
-    _entropyIntegralError = 0; // #7: reset integral on section boundary
+    entropyAmplificationController.reset();
+    regimeClassifier.reset();
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
       _zscoreN[d] = 0;
       _zscoreMean[d] = 0;

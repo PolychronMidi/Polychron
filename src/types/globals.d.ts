@@ -1386,6 +1386,21 @@ declare var phaseSpaceMath: {
   jacobiEigenvalues(A: number[][], K: number): number[];
   effectiveDimensionality(data: number[][], mean: number[], nCompositional: number): number;
 };
+declare var entropyAmplificationController: {
+  adapt(currentShare: number): void;
+  getAmp(): number;
+  reset(): void;
+};
+declare var regimeClassifier: {
+  classify(avgVelocity: number, avgCurvature: number, effectiveDim: number, couplingStrength: number): string;
+  resolve(rawRegime: string): string;
+  grade(regime: string): string;
+  setOscillatingThreshold(threshold: number): void;
+  getOscillatingThreshold(): number;
+  getExploringBeats(): number;
+  getLastRegime(): string;
+  reset(): void;
+};
 declare var systemDynamicsProfiler: SystemDynamicsProfilerAPI;
 declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): number; flickerMod(): number; reset(): void };
 declare var pipelineBalancer: { densityBias(): number; reset(): void };
@@ -1778,6 +1793,9 @@ declare var endTime: number;
 declare var eventBus: EventBusAPI;
 declare var eventCatalog: EventCatalogAPI;
 declare var trustSystems: TrustSystemsAPI;
+declare var safePreBoot: {
+  call<T>(fn: () => T, fallback?: T): T | undefined;
+};
 declare var totalSections: number;
 declare var phrasesPerSection: number;
 declare var measuresPerPhrase: number;
@@ -1790,6 +1808,9 @@ declare var remainingVoiceSlots: any;
 declare var lastVoiceBudgetKey: any;
 declare var velocity: any;
 declare var fullBootstrap: any;
+declare var feedbackGraphContract: {
+  assert(): void;
+};
 declare var mainBootstrap: any;
 declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean; stageTiming?: Record<string, number> | null }) => void;
 /** @boot-advisory */

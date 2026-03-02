@@ -38,16 +38,32 @@ function getNested(obj, keys, label) {
   return cur;
 }
 
+// Regime scaling factors — shared by coupling matrix and coupling tail gates.
+const REGIME_SCALE = {
+  initializing: 1.15,
+  exploring:    1.10,
+  evolving:     1.00,
+  coherent:     0.95,
+  drifting:     1.00,
+  fragmented:   0.90,
+  stagnant:     0.90,
+  oscillating:  0.95
+};
+
+function regimeScale(regime) {
+  return REGIME_SCALE[regime] !== undefined ? REGIME_SCALE[regime] : 1.0;
+}
+
 function resolveCouplingThreshold(regime, baseThreshold) {
   const byRegime = {
-    initializing: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_INITIALIZING', baseThreshold * 1.15),
-    exploring: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_EXPLORING', baseThreshold * 1.10),
-    evolving: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_EVOLVING', baseThreshold),
-    coherent: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_COHERENT', baseThreshold * 0.95),
-    drifting: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_DRIFTING', baseThreshold),
-    fragmented: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_FRAGMENTED', baseThreshold * 0.90),
-    stagnant: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_STAGNANT', baseThreshold * 0.90),
-    oscillating: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_OSCILLATING', baseThreshold * 0.95)
+    initializing: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_INITIALIZING', baseThreshold * REGIME_SCALE.initializing),
+    exploring: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_EXPLORING', baseThreshold * REGIME_SCALE.exploring),
+    evolving: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_EVOLVING', baseThreshold * REGIME_SCALE.evolving),
+    coherent: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_COHERENT', baseThreshold * REGIME_SCALE.coherent),
+    drifting: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_DRIFTING', baseThreshold * REGIME_SCALE.drifting),
+    fragmented: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_FRAGMENTED', baseThreshold * REGIME_SCALE.fragmented),
+    stagnant: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_STAGNANT', baseThreshold * REGIME_SCALE.stagnant),
+    oscillating: parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING_OSCILLATING', baseThreshold * REGIME_SCALE.oscillating)
   };
 
   return byRegime[regime] !== undefined ? byRegime[regime] : baseThreshold;
@@ -57,10 +73,15 @@ function assertManifestHealth(manifest, manifestPath) {
   const MAX_DENSITY_LOW_RATE = parseFiniteEnv('MANIFEST_MAX_DENSITY_LOW_RATE', 0.12);
   const BASE_MAX_COMPOSITIONAL_COUPLING = parseFiniteEnv('MANIFEST_MAX_COMPOSITIONAL_COUPLING', 0.85);
   const MAX_WARNING_COUNT = parseFiniteEnv('MANIFEST_MAX_WARNING_COUNT', 10);
-  const MAX_COUPLING_TAIL_P90 = parseFiniteEnv('MANIFEST_MAX_COUPLING_TAIL_P90', 0.90);
-  const MAX_COUPLING_TAIL_EXCEEDANCE = parseFiniteEnv('MANIFEST_MAX_COUPLING_TAIL_EXCEEDANCE', 0.25);
+  const BASE_MAX_COUPLING_TAIL_P90 = parseFiniteEnv('MANIFEST_MAX_COUPLING_TAIL_P90', 0.90);
+  const BASE_MAX_COUPLING_TAIL_EXCEEDANCE = parseFiniteEnv('MANIFEST_MAX_COUPLING_TAIL_EXCEEDANCE', 0.25);
   const regime = String(getNested(manifest, ['systemDynamics', 'snapshot', 'regime'], 'systemDynamics.snapshot.regime')).toLowerCase();
+  const scale = regimeScale(regime);
   const MAX_COMPOSITIONAL_COUPLING = resolveCouplingThreshold(regime, BASE_MAX_COMPOSITIONAL_COUPLING);
+  // Apply the same regime scaling to tail gates — exploring/initializing regimes
+  // legitimately produce transient sectional coupling spikes.
+  const MAX_COUPLING_TAIL_P90 = Math.min(BASE_MAX_COUPLING_TAIL_P90 * scale, 1.0);
+  const MAX_COUPLING_TAIL_EXCEEDANCE = BASE_MAX_COUPLING_TAIL_EXCEEDANCE * scale;
 
   const densityLowRate = Number(getNested(manifest, ['pipelineNormalizer', 'density', 'compressedLowRate'], 'pipelineNormalizer.density.compressedLowRate'));
   if (!Number.isFinite(densityLowRate)) {
@@ -182,7 +203,7 @@ function assertManifestHealth(manifest, manifestPath) {
 
   console.log(
     'check-manifest-health: PASS ' +
-    `(regime=${regime}, densityLowRate=${densityLowRate.toFixed(3)}, warningCount=${warningCount}, max|coupling|<=${MAX_COMPOSITIONAL_COUPLING.toFixed(3)}` +
+    `(regime=${regime}, densityLowRate=${densityLowRate.toFixed(3)}, warningCount=${warningCount}, max|coupling|<=${MAX_COMPOSITIONAL_COUPLING.toFixed(3)}, tailP90Limit=${MAX_COUPLING_TAIL_P90.toFixed(3)}` +
     (tailP90Max !== null ? `, tailP90Max=${tailP90Max.toFixed(4)}` : '') +
     (tailExceedanceMax !== null ? `, tailExcMax=${tailExceedanceMax.toFixed(4)}` : '') +
     ')'

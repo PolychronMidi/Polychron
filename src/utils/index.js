@@ -31,5 +31,7 @@ require('./eventCatalog');
 // trustSystems - canonical trust system name constants. Follows eventCatalog pattern.
 // @ts-ignore: side-effect module load
 require('./trustSystems');
+// @ts-ignore: standardized pre-boot catch utility
+require('./safePreBoot');
 // @ts-ignore: side-effect module load
 require('./formatTime');

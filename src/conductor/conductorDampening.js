@@ -254,7 +254,7 @@ conductorDampening = (() => {
    */
   function _emitMetaTelemetry(product, pipelineName) {
     if (!pipelineName) return;
-    try {
+    safePreBoot.call(() => {
       const centroidCorr = _lastCentroidCorrection.get(pipelineName) || 0;
       explainabilityBus.emit('meta-dampening-telemetry', 'both', {
         pipeline: pipelineName,
@@ -271,7 +271,7 @@ conductorDampening = (() => {
       if (pipelineName === 'flicker' && _flickerDampeningBaseAdj !== 0) {
         conductorMetaWatchdog.recordCorrection('flicker', 'elasticity', _flickerDampeningBaseAdj);
       }
-    } catch { /* pre-boot */ }
+    });
   }
 
   return { scaledDamping, progressiveDampen, collectDampened, collectDampenedWithAttribution };

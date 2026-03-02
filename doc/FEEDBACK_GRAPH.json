@@ -23,7 +23,9 @@
       "sourceDomain": "play/outcome (actual notes emitted)",
       "targetDomain": "conductor/densityRegistry (density bias multiplier)",
       "latency": "beat-delayed",
-      "firewallsCrossed": ["REGISTRY_DAMPENING"],
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
       "mechanism": "Compares absolute note yield against target density. Feeds a PID-like corrective multiplier into conductor density calculations."
     },
     {
@@ -51,7 +53,9 @@
       "sourceDomain": "conductor/systemDynamicsProfiler",
       "targetDomain": "conductor/pipelineNormalizer",
       "latency": "phrase-delayed",
-      "firewallsCrossed": ["REGISTRY_DAMPENING"],
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
       "mechanism": "Detects high Pearson correlation between density, tension, and flicker pipelines; nudges outputs via adaptive gain to maintain multidimensional variance."
     },
     {
@@ -60,7 +64,9 @@
       "sourceDomain": "conductor/systemDynamicsProfiler (regime classification)",
       "targetDomain": "conductor/density + tension + flicker pipelines",
       "latency": "beat-delayed",
-      "firewallsCrossed": ["REGISTRY_DAMPENING"],
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
       "mechanism": "Suppresses volatility when regime is exploring by damping density/tension/flicker biases. Equilibrates regime distribution via rolling share tracking."
     },
     {
@@ -69,7 +75,9 @@
       "sourceDomain": "conductor/signalReader (tension product)",
       "targetDomain": "conductor/tension pipeline",
       "latency": "beat-delayed",
-      "firewallsCrossed": ["REGISTRY_DAMPENING"],
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
       "mechanism": "Closed-loop controller nudging tension product toward neutral (1.0) when divergence exceeds deadband. Gain scaled to match original manual lift."
     },
     {
@@ -78,7 +86,9 @@
       "sourceDomain": "conductor/intensity snapshots (recent average)",
       "targetDomain": "conductor/tension (macro dynamic curve)",
       "latency": "beat-delayed",
-      "firewallsCrossed": ["REGISTRY_DAMPENING"],
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
       "mechanism": "Closed-loop controller comparing recent average intensity against an ideal dynamic curve derived from macro position. Corrective multiplier keeps overall loudness arc on track."
     },
     {

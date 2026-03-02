@@ -221,8 +221,8 @@ validator = (() => {
         const msg = String(err && err.message ? err.message : err);
         const stripped = msg.replace(/^[^:]+:\s*/, '');
         const enriched = new Error(`${fromLabel}: ${stripped}`);
-        // Attach system snapshot (loaded after validator; try/catch guards pre-load calls)
-        try { systemSnapshot.enrichError(enriched); } catch { /* not yet loaded */ }
+        // Attach system snapshot (loaded after validator; safePreBoot guards pre-load calls)
+        safePreBoot.call(() => systemSnapshot.enrichError(enriched));
         throw enriched;
       }
     };

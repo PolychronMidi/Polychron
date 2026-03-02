@@ -1,5 +1,25 @@
 sectionIntentCurves = (() => {
   const V = validator.create('sectionIntentCurves');
+
+  // --- Intent curve shaping constants ---
+  const PHRASE_PHASE_SCALE = 0.3;     // phrase contribution to wave phase
+  const WAVE_PHASE_SPEED = 0.07;      // section+phrase modulation speed
+  const DENSITY_BASE = 0.25;
+  const DENSITY_ARC_SCALE = 0.55;
+  const DISSONANCE_BASE = 0.2;
+  const DISSONANCE_WAVE_BASE = 0.35;
+  const DISSONANCE_WAVE_SCALE = 0.45;
+  const INTERACTION_BASE = 0.2;
+  const INTERACTION_WAVE_BASE = 0.25;
+  const INTERACTION_WAVE_SCALE = 0.55;
+  const INTERACTION_ARC_BASE = 0.5;
+  const INTERACTION_ARC_SCALE = 0.5;
+  const ENTROPY_DENSITY_W = 0.35;
+  const ENTROPY_DISSONANCE_W = 0.3;
+  const ENTROPY_INTERACTION_W = 0.35;
+  const ENTROPY_FLOOR = 0.15;
+  const ENTROPY_CEIL = 0.95;
+
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {
     densityTarget: 0.5,
@@ -18,12 +38,12 @@ sectionIntentCurves = (() => {
     const ph = timeStream.getPosition('phrase');
 
     const arc = Math.sin(p * Math.PI);
-    const wave = 0.5 + 0.5 * Math.sin((p + (s + ph * 0.3) * 0.07) * Math.PI * 2);
+    const wave = 0.5 + 0.5 * Math.sin((p + (s + ph * PHRASE_PHASE_SCALE) * WAVE_PHASE_SPEED) * Math.PI * 2);
 
-    const densityTarget = clamp(0.25 + arc * 0.55, 0, 1);
-    const dissonanceTarget = clamp(0.2 + (0.35 + wave * 0.45) * arc, 0, 1);
-    const interactionTarget = clamp(0.2 + (0.25 + wave * 0.55) * (0.5 + arc * 0.5), 0, 1);
-    const entropyTarget = clamp((densityTarget * 0.35) + (dissonanceTarget * 0.3) + (interactionTarget * 0.35), 0.15, 0.95);
+    const densityTarget = clamp(DENSITY_BASE + arc * DENSITY_ARC_SCALE, 0, 1);
+    const dissonanceTarget = clamp(DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc, 0, 1);
+    const interactionTarget = clamp(INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE), 0, 1);
+    const entropyTarget = clamp((densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W), ENTROPY_FLOOR, ENTROPY_CEIL);
 
     lastIntent = { densityTarget, dissonanceTarget, interactionTarget, entropyTarget };
     return lastIntent;

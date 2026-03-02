@@ -9,6 +9,24 @@ entropyRegulator = (() => {
   const WINDOW_NOTES = 10; // halved (was 20) - faster window turnover creates more beat-to-beat variance
   const SMOOTHING = 0.3; // exponential smoothing factor
 
+  // Entropy component weights
+  const PITCH_ENTROPY_WEIGHT = 0.4;
+  const VELOCITY_ENTROPY_WEIGHT = 0.3;
+  const RHYTHM_ENTROPY_WEIGHT = 0.3;
+
+  // Arc target range
+  const ARC_TARGET_FLOOR = 0.2;
+  const ARC_TARGET_RANGE = 0.6;
+
+  // Target blending (arc vs intent)
+  const ARC_BLEND_WEIGHT = 0.3;
+  const INTENT_BLEND_WEIGHT = 0.7;
+
+  // PID regulation
+  const GAIN_SCALE = 2.0;
+  const REGULATION_CLAMP_MIN = 0.3;
+  const REGULATION_CLAMP_MAX = 2.0;
+
   let smoothedEntropy = 0.5;
   let lastRawEntropy = 0.5;
   let targetEntropy = 0.5;
@@ -83,7 +101,7 @@ entropyRegulator = (() => {
       smoothedEntropy = 0.5;
       return 0.5;
     }
-    const combined = (totalPitch / count) * 0.4 + (totalVel / Math.max(count, 1)) * 0.3 + (totalRhythm / 2) * 0.3;
+    const combined = (totalPitch / count) * PITCH_ENTROPY_WEIGHT + (totalVel / Math.max(count, 1)) * VELOCITY_ENTROPY_WEIGHT + (totalRhythm / 2) * RHYTHM_ENTROPY_WEIGHT;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
     lastRawEntropy = combined;
     return smoothedEntropy;
@@ -118,8 +136,8 @@ entropyRegulator = (() => {
    */
   function setTarget(target, arcTarget) {
     if (typeof arcTarget === 'number' && Number.isFinite(arcTarget)) {
-      // Blend section-shape arc (30%) with intent target (70%)
-      targetEntropy = clamp(arcTarget * 0.3 + target * 0.7, 0, 1);
+      // Blend section-shape arc with intent target
+      targetEntropy = clamp(arcTarget * ARC_BLEND_WEIGHT + target * INTENT_BLEND_WEIGHT, 0, 1);
     } else {
       targetEntropy = clamp(target, 0, 1);
     }
@@ -134,7 +152,7 @@ entropyRegulator = (() => {
   function getArcTarget(sectionProgress) {
     // Bell curve: peaks at 0.5, troughs at 0 and 1
     const arc = Math.sin(clamp(sectionProgress, 0, 1) * Math.PI);
-    return 0.2 + arc * 0.6; // range 0.2 - 0.8
+    return ARC_TARGET_FLOOR + arc * ARC_TARGET_RANGE;
   }
 
   // Closed-loop controller: steer combined entropy toward target via dynamic gain
@@ -142,9 +160,9 @@ entropyRegulator = (() => {
     name: 'entropyRegulator',
     observe: measureEntropy,
     target: () => targetEntropy,
-    gain: () => regulationStrength * 2,
+    gain: () => regulationStrength * GAIN_SCALE,
     smoothing: 0,
-    clampRange: [0.3, 2.0],
+    clampRange: [REGULATION_CLAMP_MIN, REGULATION_CLAMP_MAX],
     sourceDomain: 'entropy',
     targetDomain: 'cross_layer_prob'
   });

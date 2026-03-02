@@ -113,12 +113,10 @@ adaptiveTrustScores = (() => {
     // of dormant systems. Wires adaptiveTrustScores into the health self-
     // healing loop without creating a new feedback mechanism.
     let effectiveNudge = EXPLORATION_NUDGE;
-    try {
-      const trustGrade = signalHealthAnalyzer.getHealth().trust.grade;
-      if (trustGrade === 'strained' || trustGrade === 'stressed' || trustGrade === 'critical') {
-        effectiveNudge = EXPLORATION_NUDGE * 2;
-      }
-    } catch { /* pre-boot or first beat */ }
+    const trustGrade = safePreBoot.call(() => signalHealthAnalyzer.getHealth().trust.grade, 'healthy');
+    if (trustGrade === 'strained' || trustGrade === 'stressed' || trustGrade === 'critical') {
+      effectiveNudge = EXPLORATION_NUDGE * 2;
+    }
 
     for (const state of scoreBySystem.values()) {
       state.score *= (1 - decayRate);

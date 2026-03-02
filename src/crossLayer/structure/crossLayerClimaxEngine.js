@@ -10,6 +10,28 @@ crossLayerClimaxEngine = (() => {
   const PEAK_THRESHOLD = 0.82;
   const SMOOTHING = 0.25;
 
+  // Pressure detection
+  const PRESSURE_ONSET = 0.9;
+  const PRESSURE_RANGE = 0.6;
+
+  // Conductor intensity blend
+  const COMPOSITE_WEIGHT = 0.6;
+  const DENSITY_PRESSURE_WEIGHT = 0.2;
+  const TENSION_PRESSURE_WEIGHT = 0.2;
+
+  // Composite climax signal weights
+  const ARC_WEIGHT = 0.25;
+  const CONDUCTOR_WEIGHT = 0.3;
+  const HEAT_WEIGHT = 0.2;
+  const INTENT_WEIGHT = 0.25;
+
+  // Climax modifiers
+  const MAX_PLAY_BOOST = 0.35;
+  const MAX_VELOCITY_BOOST = 0.25;
+  const MAX_REGISTER_WIDEN = 6;
+  const ENTROPY_BASE = 0.5;
+  const ENTROPY_BOOST = 0.4;
+
   let smoothedClimax = 0;
   let peakReached = false;
   let climaxCount = 0;
@@ -26,9 +48,9 @@ crossLayerClimaxEngine = (() => {
 
     const sigs = conductorSignalBridge.getSignals();
     // Blend compositeIntensity with elevated density/tension products for richer peak detection
-    const densityPressure = clamp((sigs.density - 0.9) / 0.6, 0, 1);
-    const tensionPressure = clamp((sigs.tension - 0.9) / 0.6, 0, 1);
-    const conductorIntensity = clamp(sigs.compositeIntensity * 0.6 + densityPressure * 0.2 + tensionPressure * 0.2, 0, 1);
+    const densityPressure = clamp((sigs.density - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
+    const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
+    const conductorIntensity = clamp(sigs.compositeIntensity * COMPOSITE_WEIGHT + densityPressure * DENSITY_PRESSURE_WEIGHT + tensionPressure * TENSION_PRESSURE_WEIGHT, 0, 1);
 
     const heatLevel = clamp(interactionHeatMap.getDensity(), 0, 1);
 
@@ -36,7 +58,7 @@ crossLayerClimaxEngine = (() => {
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;
 
     // Composite climax signal
-    const raw = sectionArc * 0.25 + conductorIntensity * 0.3 + heatLevel * 0.2 + intentPressure * 0.25;
+    const raw = sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing
@@ -61,10 +83,10 @@ crossLayerClimaxEngine = (() => {
     const intensity = clamp((smoothedClimax - APPROACH_THRESHOLD) / (1 - APPROACH_THRESHOLD), 0, 1);
 
     return {
-      playProbScale: 1.0 + intensity * 0.35,     // up to +35% density
-      velocityScale: 1.0 + intensity * 0.25,      // up to +25% velocity
-      registerBias: intensity * 6,                 // widen register by up to 6 semitones
-      entropyTarget: 0.5 + intensity * 0.4         // push entropy toward 0.9
+      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST,
+      velocityScale: 1.0 + intensity * MAX_VELOCITY_BOOST,
+      registerBias: intensity * MAX_REGISTER_WIDEN,
+      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST
     };
   }
 

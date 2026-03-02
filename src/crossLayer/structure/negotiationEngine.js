@@ -1,5 +1,45 @@
 negotiationEngine = (() => {
   const V = validator.create('negotiationEngine');
+
+  // --- Play probability scaling ---
+  const PLAY_DENSITY_BASE = 0.75;
+  const PLAY_DENSITY_SCALE = 0.45;
+  const PLAY_TRUST_BASE = 0.9;
+  const PLAY_TRUST_SCALE = 0.08;
+  const PLAY_SCALE_MIN = 0.4;
+  const PLAY_SCALE_MAX = 1.8;
+
+  // --- Stutter probability scaling ---
+  const STUTTER_INTERACT_BASE = 0.6;
+  const STUTTER_INTERACT_SCALE = 0.75;
+  const STUTTER_TRUST_BASE = 0.85;
+  const STUTTER_TRUST_SCALE = 0.1;
+  const STUTTER_SCALE_MIN = 0.25;
+  const STUTTER_SCALE_MAX = 2.2;
+
+  // --- Entropy modulation ---
+  const PLAY_ENTROPY_BASE = 0.7;
+  const PLAY_ENTROPY_SCALE = 0.3;
+  const PLAY_ENTROPY_MIN = 0.5;
+  const PLAY_ENTROPY_MAX = 1.5;
+  const STUTTER_ENTROPY_BASE = 0.75;
+  const STUTTER_ENTROPY_SCALE = 0.25;
+  const STUTTER_ENTROPY_MIN = 0.5;
+  const STUTTER_ENTROPY_MAX = 1.5;
+
+  // --- Conflict resolution ---
+  const CONFLICT_THRESHOLD = 0.8;
+  const CONFLICT_PLAY_DAMPEN = 0.92;
+  const CONFLICT_STUTTER_DAMPEN = 0.9;
+
+  // --- Cadence gating ---
+  const CADENCE_PHASE_MIN = 0.45;
+  const CADENCE_TRUST_MIN = 0.7;
+
+  // --- Convergence gating ---
+  const CONVERGENCE_TRUST_FLOOR = 0.5;
+  const CONVERGENCE_DOMINANCE = 0.8;
+  const STUTTER_DOWNBEAT_CAP = 1.4;
   /**
    * @param {string} layer
    * @param {{
@@ -25,19 +65,19 @@ negotiationEngine = (() => {
     const phaseConfidence = clamp(V.requireFinite(context.phaseConfidence, 'phaseConfidence'), 0, 1);
   const entropyScale = V.optionalFinite(context.entropyScale, 1);
 
-    const playScale = clamp((0.75 + intent.densityTarget * 0.45) * (0.9 + trustPhase * 0.08), 0.4, 1.8);
-    const stutterScale = clamp((0.6 + intent.interactionTarget * 0.75) * (0.85 + trustStutter * 0.1), 0.25, 2.2);
+    const playScale = clamp((PLAY_DENSITY_BASE + intent.densityTarget * PLAY_DENSITY_SCALE) * (PLAY_TRUST_BASE + trustPhase * PLAY_TRUST_SCALE), PLAY_SCALE_MIN, PLAY_SCALE_MAX);
+    const stutterScale = clamp((STUTTER_INTERACT_BASE + intent.interactionTarget * STUTTER_INTERACT_SCALE) * (STUTTER_TRUST_BASE + trustStutter * STUTTER_TRUST_SCALE), STUTTER_SCALE_MIN, STUTTER_SCALE_MAX);
 
-    let playProb = clamp(context.playProb * playScale * clamp(0.7 + entropyScale * 0.3, 0.5, 1.5), 0, 1);
-    let stutterProb = clamp(context.stutterProb * stutterScale * clamp(0.75 + entropyScale * 0.25, 0.5, 1.5), 0, 1);
+    let playProb = clamp(context.playProb * playScale * clamp(PLAY_ENTROPY_BASE + entropyScale * PLAY_ENTROPY_SCALE, PLAY_ENTROPY_MIN, PLAY_ENTROPY_MAX), 0, 1);
+    let stutterProb = clamp(context.stutterProb * stutterScale * clamp(STUTTER_ENTROPY_BASE + entropyScale * STUTTER_ENTROPY_SCALE, STUTTER_ENTROPY_MIN, STUTTER_ENTROPY_MAX), 0, 1);
 
     const conflict = Math.abs(trustCadence - trustStutter);
-    if (conflict > 0.8) {
-      playProb = clamp(playProb * 0.92, 0, 1);
-      stutterProb = clamp(stutterProb * 0.9, 0, 1);
+    if (conflict > CONFLICT_THRESHOLD) {
+      playProb = clamp(playProb * CONFLICT_PLAY_DAMPEN, 0, 1);
+      stutterProb = clamp(stutterProb * CONFLICT_STUTTER_DAMPEN, 0, 1);
     }
 
-    const allowCadence = Boolean(context.cadenceSuggested) && phaseConfidence >= 0.45 && trustCadence >= 0.7;
+    const allowCadence = Boolean(context.cadenceSuggested) && phaseConfidence >= CADENCE_PHASE_MIN && trustCadence >= CADENCE_TRUST_MIN;
 
     explainabilityBus.emit('negotiation', layer, {
       playProbIn: context.playProb,
@@ -68,15 +108,15 @@ negotiationEngine = (() => {
     const trustStutter = adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION);
 
     // If convergence trust is low, suppress both secondary responders
-    if (trustConvergence < 0.5) {
+    if (trustConvergence < CONVERGENCE_TRUST_FLOOR) {
       return { allowHarmonicTrigger: false, allowDownbeat: false };
     }
 
     // If cadence trust is high and convergence trust is not dominant, skip harmonic trigger
     // to avoid both cadenceAlignment and convergenceHarmonicTrigger firing
-    const allowHarmonicTrigger = trustConvergence >= trustCadence * 0.8;
+    const allowHarmonicTrigger = trustConvergence >= trustCadence * CONVERGENCE_DOMINANCE;
     // If stutter trust is very high, suppress downbeat to avoid stutter + downbeat stacking
-    const allowDownbeat = trustStutter < 1.4;
+    const allowDownbeat = trustStutter < STUTTER_DOWNBEAT_CAP;
 
     explainabilityBus.emit('convergence-gate', layer, {
       trustConvergence, trustCadence, trustStutter,

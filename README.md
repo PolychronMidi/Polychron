@@ -38,7 +38,7 @@ npm install
 npm run main
 ```
 
-This single command runs the full 14-stage pipeline: global generation, boot-order verification, tuning invariant checks, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Output lands in `output/`, logs in `log/`.
+This single command runs the full 15-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Output lands in `output/`, logs in `log/`.
 
 Pass `--seed N` to make composition deterministic (seeded PRNG via mulberry32 replaces `Math.random`):
 
@@ -100,7 +100,7 @@ Each subsystem's `index.js` loads helpers first, then the manager/orchestrator l
 
 ## Subsystem Map
 
-### `src/utils/` — Shared Foundation (16 files)
+### `src/utils/` — Shared Foundation (18 files)
 
 Core infrastructure consumed by every other subsystem.
 
@@ -118,6 +118,7 @@ Core infrastructure consumed by every other subsystem.
 - **`eventCatalog`** — Canonical event type constants
 - **`systemSnapshot`** — Serializable state capture for diagnostics
 - **`formatTime`** — Time formatting utilities
+- **`trustSystems`** — Canonical trust system name constants — eliminates hardcoded trust strings across the codebase. `names` (9 scored systems), `heatMapSystems` (13 heat-map systems), `assertKnownTrustSystem()`, `assertKnownHeatMapSystem()`
 - **`init`** — Bootstrap initialization side-effects
 
 ### `src/conductor/` — Intelligence & Signal (127 files across 10 subdirectories)
@@ -145,7 +146,7 @@ The brain of the system. 42 modules register with `conductorIntelligence`, contr
 - **`melodic/`** (15) — Ambitus migration, counterpoint motion, interval balance, melodic contour, register migration, tessiture pressure, thematic recall, voice-leading efficiency
 - **`rhythmic/`** (15) — Accent patterns, attack density, onset regularity, rhythmic complexity, syncopation density, temporal proportions
 - **`texture/`** (20) — Articulation profiling, layer coherence, motivic density, orchestration weight, repetition fatigue, rest density, structural form, textural gradients, voice density
-- **`signal/`** (17 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry)
+- **`signal/`** (17 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry). Includes **`metaControllerRegistry`** — queryable topology manifest of all 11 hypermeta self-calibrating controllers (axis, file, interactors, snapshot API)
 - **`journey/`** (5) — Harmonic journey planning — key/mode selection across sections
 - **`profiles/`** (15) — Conductor config profiles (default, minimal, atmospheric, explosive, restrained, rhythmic drive) + merging/validation/tuning
 
@@ -222,6 +223,7 @@ Coordinates the two independent metric layers through trust-weighted negotiation
 - **`crossLayerLifecycleManager`** — Orchestrates `resetAll`/`resetSection`/`resetPhrase` across registered modules
 - **`conductorSignalBridge`** — Beat-delayed signal cache — the firewall between conductor and cross-layer
 - **`explainabilityBus`** — Ring buffer of typed diagnostic events for telemetry
+- **`crossLayerEmissionGateway`** — Attributed MIDI buffer write gateway — all cross-layer `push()` calls route through `emit(sourceModule, buffer, event)`, providing per-module emission counts and a centralized boundary guard
 
 **Subdomain modules:**
 
@@ -268,19 +270,22 @@ Biases are multiplied together (not summed), dampened by `conductorDampening` (r
 
 ### Feedback Loops
 
-Five closed-loop feedback systems maintain compositional coherence:
+Eight closed-loop feedback systems maintain compositional coherence:
 
 - **Density correction** (`coherenceMonitor`) — Compares actual vs intended note output; feeds dampened bias (0.60–1.30) into density product. Phase-aware bell gain peaks mid-phrase.
 - **Entropy steering** (`entropyRegulator`) — Steers cross-layer systems toward a section-position-driven entropy target. Scale clamp [0.3, 2.0].
 - **Condition hints** (`profileAdaptation`) — Detects sustained low-density / high-tension / flat-flicker streaks; advisory hints for `conductorConfig`. Streak trigger at 6 beats.
-- **Trust governance** (`adaptiveTrustScores`) — EMA-based weights (0.4–1.8) per cross-layer module. 8 scored systems: `stutterContagion`, `phaseLock`, `cadenceAlignment`, `feedbackOscillator`, `coherenceMonitor`, `convergence`, `entropyRegulator`, `restSynchronizer`.
+- **Trust governance** (`adaptiveTrustScores`) — EMA-based weights (0.4–1.8) per cross-layer module. 9 scored systems (canonical names in `trustSystems.names`): `stutterContagion`, `phaseLock`, `cadenceAlignment`, `feedbackOscillator`, `coherenceMonitor`, `convergence`, `entropyRegulator`, `restSynchronizer`, `roleSwap`.
 - **Decorrelation** (`pipelineCouplingManager`) — Self-tuning decorrelation for 15 dimension pairs. Self-calibrating targets, adaptive gain, regime-aware.
+- **Regime-reactive damping** (`regimeReactiveDamping`) — Suppresses density/tension/flicker volatility when regime is exploring. 64-beat rolling regime share tracking with squared penalty.
+- **Pipeline tension homeostasis** (`pipelineBalancer`) — Closed-loop controller nudging tension product toward neutral (1.0) when divergence exceeds deadband. Attribution-driven gain.
+- **Dynamic architecture** (`dynamicArchitectPlanner`) — Macro-level dynamic curve planning from intensity snapshots. Shapes tension arc across sections.
 
 All controllers are enrolled with `feedbackRegistry` to prevent catastrophic resonance.
 
 ### Hypermeta Self-Calibrating Controllers
 
-10 meta-controllers auto-tune parameters that previously required manual adjustment between runs:
+11 meta-controllers auto-tune parameters that previously required manual adjustment between runs (queryable via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()` / `getInteractors()`):
 
 1. **Self-Calibrating Coupling Targets** (`pipelineCouplingManager`) — Per-pair rolling |r| EMA. Intractable correlations relax targets upward; easily resolved pairs tighten toward baseline. Product-feedback guard freezes tightening when density product drops below 0.75.
 2. **Regime Distribution Equilibrator** (`regimeReactiveDamping`) — 64-beat rolling histogram vs target budget {exploring:35%, coherent:35%, evolving:20%}. Strength 0.25 with squared penalty when exploring exceeds 60%. Tension pin relief valve relaxes ceiling on sustained saturation.
@@ -358,8 +363,13 @@ conductorIntelligence.registerModule('myModule', { reset() { /* ... */ } }, ['al
 - **`convergence`** — Layer convergence quality
 - **`entropyRegulator`** — Entropy tracking accuracy
 - **`restSynchronizer`** — Meaningful shared rest success
+- **`roleSwap`** — Dynamic role-swap effectiveness
+
+All trust system names are canonical constants defined in `trustSystems.names` (9 systems) and `trustSystems.heatMapSystems` (13 heat-map systems). Use `trustSystems.assertKnownTrustSystem(name)` to validate at runtime.
 
 Trust formula: `score = score * 0.9 + payoff * 0.1` (EMA). Weight: `1 + score * 0.75`, clamped to [0.4, 1.8]. Trust ceilinged at 0.75. Trust starvation auto-nourishment injects synthetic payoffs when per-system velocity stagnates for 100+ beats; hysteresis prevents premature disengagement (3x threshold for 50 beats). Nourishment strength decays 10% per application (floor 0.05) to prevent trust inflation. `negotiationEngine` consumes these weights to gate which systems get influence.
+
+> **Convention:** All trust system names are defined as canonical constants in `trustSystems` (see `src/utils/trustSystems.js`). Never hardcode trust system name strings — use `trustSystems.names.STUTTER_CONTAGION`, `trustSystems.heatMapSystems.SPECTRAL_COMPLEMENT`, etc. Boot validation asserts completeness at startup.
 
 ### Negotiation Engine
 
@@ -548,17 +558,18 @@ Profiles are defined in `src/conductor/profiles/` and resolved by `conductorConf
 1. `node scripts/generate-globals-dts.js` — Regenerates `VALIDATED_GLOBALS` + `ADVISORY_GLOBALS` from `globals.d.ts`
 2. `node scripts/verify-boot-order.js` — Validates subsystem require order, intra-subsystem dependency ordering, and cross-subsystem dependency ordering
 3. `node scripts/check-tuning-invariants.js` — Validates cross-constant invariants from [TUNING_MAP.md](TUNING_MAP.md)
-4. `npm run lint` — ESLint with 16 custom rules (auto-fix)
-5. `npm run tc` — TypeScript type-check via `tsc --noEmit`
-6. `node src/play/main.js --trace` — Runs composition (16GB heap, trace enabled)
-7. `node scripts/trace-summary.js` — Summarizes trace output
-8. `node scripts/check-manifest-health.js` — Validates system manifest health and coupling tail risk
-9. `node scripts/generate-dependency-graph.js` — Builds machine-readable dependency graph
-10. `node scripts/generate-conductor-map.js` — Auto-generates conductor intelligence map
-11. `node scripts/generate-crosslayer-map.js` — Auto-generates cross-layer intelligence map
-12. `node scripts/golden-fingerprint.js` — Statistical regression detection (7-dimension fingerprint + drift explainer)
-13. `node scripts/narrative-digest.js` — Generates prose narrative of composition run
-14. `node scripts/visualize-feedback-graph.js` — Generates interactive feedback graph visualization
+4. `node scripts/validate-feedback-graph.js` — Cross-validates `doc/FEEDBACK_GRAPH.json` loop declarations against source-code `feedbackRegistry.registerLoop()` / `closedLoopController` calls. Outputs `output/feedback-graph-validation.json`
+5. `npm run lint` — ESLint with 16 custom rules (auto-fix)
+6. `npm run tc` — TypeScript type-check via `tsc --noEmit`
+7. `node src/play/main.js --trace` — Runs composition (16GB heap, trace enabled)
+8. `node scripts/trace-summary.js` — Summarizes trace output
+9. `node scripts/check-manifest-health.js` — Validates system manifest health and coupling tail risk (regime-scaled thresholds)
+10. `node scripts/generate-dependency-graph.js` — Builds machine-readable dependency graph
+11. `node scripts/generate-conductor-map.js` — Auto-generates conductor intelligence map
+12. `node scripts/generate-crosslayer-map.js` — Auto-generates cross-layer intelligence map
+13. `node scripts/golden-fingerprint.js` — Statistical regression detection (7-dimension fingerprint + drift explainer)
+14. `node scripts/narrative-digest.js` — Generates prose narrative of composition run
+15. `node scripts/visualize-feedback-graph.js` — Generates interactive feedback graph visualization
 
 All steps log to `log/` via `scripts/run-with-log.js`.
 
@@ -625,6 +636,7 @@ All steps log to `log/` via `scripts/run-with-log.js`.
 - **`output/fingerprint-drift-explainer.json`** — Per-dimension causal drift analysis
 - **`output/crosslayer-map.json`** + **`crosslayer-map.md`** — Cross-layer intelligence map (modules, scopes, ATG channels)
 - **`output/feedback-graph.html`** — Interactive SVG feedback topology visualization
+- **`output/feedback-graph-validation.json`** — Feedback graph cross-validation results (loop counts, source-vs-JSON concordance, passes/failures/warnings)
 - **`output/narrative-digest.md`** — Prose narrative of the composition run
 - **`output/run-comparison.json`** — A/B profile comparison results (when `npm run compare` is used)
 - **`output/composition-diff.json`** + **`composition-diff.md`** — Structural composition diff (when `npm run diff` is used)

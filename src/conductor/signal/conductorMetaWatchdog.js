@@ -113,17 +113,15 @@ conductorMetaWatchdog = (() => {
             const newAtten = clamp(currentAtten * _ATTENUATION_FACTOR, 0.1, 1.0);
             pipelineMap.set(weakerController, newAtten);
 
-            try {
-              explainabilityBus.emit('meta-watchdog-conflict', 'both', {
-                pipeline,
-                controllerA: controllers[i],
-                controllerB: controllers[j],
-                opposingBeats: opposingCount,
-                attenuated: weakerController,
-                stronger: strongerController,
-                attenuation: newAtten
-              });
-            } catch { /* pre-boot */ }
+            safePreBoot.call(() => explainabilityBus.emit('meta-watchdog-conflict', 'both', {
+              pipeline,
+              controllerA: controllers[i],
+              controllerB: controllers[j],
+              opposingBeats: opposingCount,
+              attenuated: weakerController,
+              stronger: strongerController,
+              attenuation: newAtten
+            }));
           } else {
             // No conflict: relax attenuations toward 1.0
             const pipelineMap = _attenuations.get(pipeline);

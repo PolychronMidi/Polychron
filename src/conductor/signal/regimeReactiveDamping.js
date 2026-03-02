@@ -147,11 +147,11 @@ regimeReactiveDamping = (() => {
       _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH;
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog
-      try {
+      safePreBoot.call(() => {
         if (_eqCorrD !== 0) conductorMetaWatchdog.recordCorrection('density', 'equilibrator', _eqCorrD);
         if (_eqCorrT !== 0) conductorMetaWatchdog.recordCorrection('tension', 'equilibrator', _eqCorrT);
         if (_eqCorrF !== 0) conductorMetaWatchdog.recordCorrection('flicker', 'equilibrator', _eqCorrF);
-      } catch { /* pre-boot */ }
+      });
     }
 
     // --- Velocity floor logic ---
@@ -209,12 +209,10 @@ regimeReactiveDamping = (() => {
       if (_tensionPinStreak > _PIN_STREAK_TRIGGER) {
         _tensionCeilingRelax = clamp(_tensionCeilingRelax + MAX_TENSION * _PIN_RELAX_STEP, 0, MAX_TENSION * 0.30);
         _tensionPinStreak = 0; // reset so next trigger needs another streak
-        try {
-          explainabilityBus.emit('tension-pin-relief', 'both', {
-            newCeiling: MAX_TENSION + _tensionCeilingRelax,
-            baseCeiling: MAX_TENSION
-          });
-        } catch { /* pre-boot */ }
+        safePreBoot.call(() => explainabilityBus.emit('tension-pin-relief', 'both', {
+          newCeiling: MAX_TENSION + _tensionCeilingRelax,
+          baseCeiling: MAX_TENSION
+        }));
       }
     } else {
       _tensionUnpinStreak++;
