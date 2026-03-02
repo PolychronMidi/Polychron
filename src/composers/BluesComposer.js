@@ -76,8 +76,8 @@ BluesComposer = class BluesComposer extends MeasureComposer {
 
     // Sort notes for directional shaping
     const sorted = [...baseNotes].sort((a, b) => {
-      const aN = typeof a === 'number' ? a : BluesComposer._V.requireFinite(a && a.note, 'BluesComposer.getNotes.sortEntry.note');
-      const bN = typeof b === 'number' ? b : BluesComposer._V.requireFinite(b && b.note, 'BluesComposer.getNotes.sortEntry.note');
+      const aN = typeof a === 'number' ? a : BluesComposer.V.requireFinite(a && a.note, 'BluesComposer.getNotes.sortEntry.note');
+      const bN = typeof b === 'number' ? b : BluesComposer.V.requireFinite(b && b.note, 'BluesComposer.getNotes.sortEntry.note');
       return aN - bN;
     });
 
@@ -99,7 +99,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     // Ghost notes: quiet grace notes at low velocity (marked via _ghost flag)
     const result = shaped.map(n => {
       const note = typeof n === 'number' ? n : (n && typeof n.note === 'number' ? n.note : null);
-      BluesComposer._V.requireFinite(note, 'output note');
+      BluesComposer.V.requireFinite(note, 'output note');
       if (rf() < this.blueNoteProb * 0.3) {
         // Ghost note: shift by 1 semitone as grace
         const ghostNote = note + (rf() < 0.5 ? -1 : 1);

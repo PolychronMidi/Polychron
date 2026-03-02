@@ -28,7 +28,7 @@
 VoiceManager = class VoiceManager {
   constructor() {
     /** @type {ReturnType<typeof validator.create>} */
-    this._V = validator.create('VoiceManager');
+    this.V = validator.create('VoiceManager');
     this.voiceHistoryByLayer = new Map();
   }
 
@@ -80,12 +80,12 @@ VoiceManager = class VoiceManager {
   }
 
   _weightedPick(notes, weights) {
-    this._V.assertArray(notes, '_weightedPick.notes', true);
+    this.V.assertArray(notes, '_weightedPick.notes', true);
     if (!weights) return notes[ri(notes.length - 1)];
 
     let total = 0;
     for (const note of notes) {
-      const w = this._V.optionalFinite(weights && Number(weights[note]), 0);
+      const w = this.V.optionalFinite(weights && Number(weights[note]), 0);
       total += m.max(0, w);
     }
 
@@ -93,7 +93,7 @@ VoiceManager = class VoiceManager {
 
     let roll = rf() * total;
     for (const note of notes) {
-      const w = m.max(0, this._V.optionalFinite(weights && Number(weights[note]), 0));
+      const w = m.max(0, this.V.optionalFinite(weights && Number(weights[note]), 0));
       roll -= w;
       if (roll <= 0) return note;
     }
@@ -111,8 +111,8 @@ VoiceManager = class VoiceManager {
    * @returns {number[]} Selected notes (length = voiceCount)
    */
   pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, opts = {}) {
-    this._V.assertObject(layer, 'pickNotesForBeat.layer');
-    this._V.assertArray(candidateNotes, 'pickNotesForBeat.candidateNotes');
+    this.V.assertObject(layer, 'pickNotesForBeat.layer');
+    this.V.assertArray(candidateNotes, 'pickNotesForBeat.candidateNotes');
 
     const normalized = this._normalizeCandidates(candidateNotes);
     let notePool = normalized.notes;
@@ -123,22 +123,22 @@ VoiceManager = class VoiceManager {
       return [];
     }
 
-    this._V.requireFinite(voiceCount, 'pickNotesForBeat.voiceCount');
+    this.V.requireFinite(voiceCount, 'pickNotesForBeat.voiceCount');
     if (voiceCount <= 0) throw new Error('VoiceManager.pickNotesForBeat: voiceCount must be positive');
 
-    const layerId = this._V.optionalType(layer.id, 'string') || 'default';
+    const layerId = this.V.optionalType(layer.id, 'string') || 'default';
 
     // Extract phrase context for arc-driven biases
-    const phraseContext = /** @type {any} */ (this._V.optionalType(opts && opts.phraseContext, 'object')) || {};
-    const arcDensityMultiplier = this._V.optionalFinite(Number(phraseContext.densityMultiplier), 1.0);
-    const voiceIndependence = this._V.optionalFinite(Number(phraseContext.voiceIndependence), VOICE_MANAGER.voiceIndependenceDefault);
-    const runtimeProfile = /** @type {any} */ (this._V.optionalType(opts && opts.runtimeProfile, 'object')) || null;
-    const runtimeVoiceCountMultiplier = this._V.optionalFinite(
+    const phraseContext = /** @type {any} */ (this.V.optionalType(opts && opts.phraseContext, 'object')) || {};
+    const arcDensityMultiplier = this.V.optionalFinite(Number(phraseContext.densityMultiplier), 1.0);
+    const voiceIndependence = this.V.optionalFinite(Number(phraseContext.voiceIndependence), VOICE_MANAGER.voiceIndependenceDefault);
+    const runtimeProfile = /** @type {any} */ (this.V.optionalType(opts && opts.runtimeProfile, 'object')) || null;
+    const runtimeVoiceCountMultiplier = this.V.optionalFinite(
       runtimeProfile && Number(runtimeProfile.voiceCountMultiplier), 1.0);
 
     // Apply voice count multiplier: stack chord change emphasis with phrase arc density
     // But only apply arc density influence probabilistically to maintain variety
-    const voiceCountMultiplier = this._V.optionalFinite(Number(opts.voiceCountMultiplier), runtimeVoiceCountMultiplier);
+    const voiceCountMultiplier = this.V.optionalFinite(Number(opts.voiceCountMultiplier), runtimeVoiceCountMultiplier);
     const shouldApplyArcDensity = rf() < (VOICE_MANAGER.arcDensityChance ?? 0.5);
     const effectiveArcDensity = shouldApplyArcDensity ? arcDensityMultiplier : 1.0;
     const combinedMultiplier = voiceCountMultiplier * effectiveArcDensity;
@@ -170,7 +170,7 @@ VoiceManager = class VoiceManager {
       for (let i = 0; i < maxVoices; i++) {
         candidatesPerVoice.push([...notePool]);
         const lnv = (voiceHistory[i] === undefined) ? [] : voiceHistory[i];
-        if (voiceHistory[i] !== undefined) this._V.assertArray(voiceHistory[i], `voiceHistory[${i}]`);
+        if (voiceHistory[i] !== undefined) this.V.assertArray(voiceHistory[i], `voiceHistory[${i}]`);
         lastNotesByVoice.push(lnv);
       }
 
@@ -181,13 +181,13 @@ VoiceManager = class VoiceManager {
         minSemitones: opts.minSemitones  // Pass voice spacing constraint
       });
       const selected = voiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
-      this._V.assertArray(selected, 'voiceRegistry.selected');
+      this.V.assertArray(selected, 'voiceRegistry.selected');
       if (selected.length !== maxVoices) {
         throw new Error(`VoiceManager.pickNotesForBeat: voiceRegistry returned invalid selection for layer ${layerId}`);
       }
       // Update history (validate entries)
       for (let i = 0; i < selected.length; i++) {
-        this._V.requireFinite(Number(selected[i]), `voiceRegistry.selected[${i}]`);
+        this.V.requireFinite(Number(selected[i]), `voiceRegistry.selected[${i}]`);
         if (!voiceHistory[i]) voiceHistory[i] = [];
         voiceHistory[i].unshift(Number(selected[i]));
         if (voiceHistory[i].length > 8) voiceHistory[i].pop();
@@ -215,7 +215,7 @@ VoiceManager = class VoiceManager {
       }
 
       // CRITICAL CHECK: note must be a valid number
-      this._V.requireFinite(note, `voice[${i}].note`);
+      this.V.requireFinite(note, `voice[${i}].note`);
 
       selected.push(note);
 

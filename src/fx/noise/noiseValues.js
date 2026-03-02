@@ -76,19 +76,19 @@ safeApplyNoise = function(config, x, y, time) {
 // One-shot unified modulation call (typical integration pattern)
 // Returns {x, y} values 0-1 for parameter modulation
 getParameterModulation = function(voiceId, paramKey, time, generatorName = randomNoiseGenerator()) {
-  const _V = validator.create('noiseValues');
-  const voiceIdNum = _V.requireFinite(Number(voiceId), 'voiceId');
-  _V.assertNonEmptyString(paramKey, 'paramKey');
-  _V.requireFinite(Number(time), 'time');
-  _V.assertNonEmptyString(generatorName, 'generatorName');
+  const V = validator.create('noiseValues');
+  const voiceIdNum = V.requireFinite(Number(voiceId), 'voiceId');
+  V.assertNonEmptyString(paramKey, 'paramKey');
+  V.requireFinite(Number(time), 'time');
+  V.assertNonEmptyString(generatorName, 'generatorName');
 
   const seed = voiceIdNum * 73 + paramKey.length * 43; // deterministic seed from voice+param
   const offsetX = rf(-1000, 1000) + seed;
   const offsetY = rf(-1000, 1000) + seed * 2;
   const x = clampNoiseValue(layeredNoise(generatorName, offsetX, offsetY, Number(time), 0.01, 0.1));
   const y = clampNoiseValue(layeredNoise(generatorName, offsetY, offsetX, Number(time), 0.01, 0.1));
-  _V.requireFinite(x, 'modulation.x');
-  _V.requireFinite(y, 'modulation.y');
+  V.requireFinite(x, 'modulation.x');
+  V.requireFinite(y, 'modulation.y');
   return {
     x,
     y,
