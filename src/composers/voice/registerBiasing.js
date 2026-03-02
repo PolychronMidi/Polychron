@@ -5,7 +5,7 @@
  * Returns filtered note pool and resolved bias choice.
  */
 registerBiasing = {
-  _V: validator.create('registerBiasing'),
+  V: validator.create('registerBiasing'),
   /**
    * Apply register bias filtering to a note pool
    * @param {number[]} notePool - Candidate notes
@@ -16,7 +16,7 @@ registerBiasing = {
    */
   apply(notePool, maxVoices, opts = {}, phraseContext = {}) {
     let finalRegisterBias = opts.registerBias; // 'higher'|'lower'|undefined
-    const arcRegisterBias = registerBiasing._V.optionalFinite(phraseContext.registerBias, 0);
+    const arcRegisterBias = registerBiasing.V.optionalFinite(phraseContext.registerBias, 0);
 
     // Arc-based bias: apply probabilistically to preserve variety
     if (!finalRegisterBias && m.abs(arcRegisterBias) > VOICE_MANAGER.arcRegisterBiasThreshold && rf() < VOICE_MANAGER.arcRegisterBiasChance) {
