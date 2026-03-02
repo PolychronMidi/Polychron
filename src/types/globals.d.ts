@@ -515,6 +515,71 @@ interface EventCatalogAPI {
   validateEmit(name: string, data: object): boolean;
 }
 
+// -- trustSystems --
+
+interface TrustSystemsAPI {
+  names: Readonly<{
+    STUTTER_CONTAGION: 'stutterContagion';
+    PHASE_LOCK: 'phaseLock';
+    CADENCE_ALIGNMENT: 'cadenceAlignment';
+    CONVERGENCE: 'convergence';
+    FEEDBACK_OSCILLATOR: 'feedbackOscillator';
+    COHERENCE_MONITOR: 'coherenceMonitor';
+    ENTROPY_REGULATOR: 'entropyRegulator';
+    REST_SYNCHRONIZER: 'restSynchronizer';
+    ROLE_SWAP: 'roleSwap';
+  }>;
+  heatMapSystems: Readonly<{
+    STUTTER_CONTAGION: 'stutterContagion';
+    CONVERGENCE: 'convergence';
+    TEMPORAL_GRAVITY: 'temporalGravity';
+    VELOCITY_INTERFERENCE: 'velocityInterference';
+    FEEDBACK_OSCILLATOR: 'feedbackOscillator';
+    CADENCE_ALIGNMENT: 'cadenceAlignment';
+    PHASE_LOCK: 'phaseLock';
+    SPECTRAL_COMPLEMENT: 'spectralComplement';
+    ROLE_SWAP: 'roleSwap';
+    MOTIF_ECHO: 'motifEcho';
+    EMERGENT_DOWNBEAT: 'emergentDownbeat';
+    CLIMAX_ENGINE: 'climaxEngine';
+    REST_SYNC: 'restSync';
+  }>;
+  assertKnownTrustSystem(name: string, caller: string): void;
+  assertKnownHeatMapSystem(name: string, caller: string): void;
+}
+
+// -- metaControllerRegistry --
+
+interface MetaControllerEntry {
+  id: number;
+  name: string;
+  file: string;
+  axes: string[];
+  mechanism: string;
+  gain: string;
+  interactsWith: number[];
+  interactionNotes: string;
+}
+
+interface MetaControllerRegistryAPI {
+  getAll(): ReadonlyArray<MetaControllerEntry>;
+  getById(id: number): MetaControllerEntry | undefined;
+  getByAxis(axis: string): MetaControllerEntry[];
+  getInteractors(id: number): MetaControllerEntry[];
+  getSnapshot(): { count: number; axes: string[]; controllers: ReadonlyArray<MetaControllerEntry> };
+}
+
+// -- crossLayerEmissionGateway --
+
+interface CrossLayerEmissionGatewayAPI {
+  emit(sourceModule: string, buffer: any[], event: object): void;
+  emitMultiple(sourceModule: string, buffer: any[], ...events: object[]): void;
+  getCounts(): Readonly<Record<string, number>>;
+  getTotal(): number;
+  getSnapshot(): { counts: Record<string, number>; total: number };
+  reset(): void;
+}
+
 // -- Cross-Layer Module Interfaces --
 
 interface SectionIntentCurvesAPI {
@@ -1643,6 +1708,7 @@ declare var entropyMetrics: EntropyMetricsAPI;
 declare var entropyRegulator: EntropyRegulatorAPI;
 declare var emergentDownbeat: EmergentDownbeatAPI;
 declare var explainabilityBus: ExplainabilityBusAPI;
+declare var crossLayerEmissionGateway: CrossLayerEmissionGatewayAPI;
 declare var adaptiveTrustScores: AdaptiveTrustScoresAPI;
 declare var sectionIntentCurves: SectionIntentCurvesAPI;
 declare var phaseAwareCadenceWindow: PhaseAwareCadenceWindowAPI;
@@ -1664,6 +1730,7 @@ declare var texturalMirror: TexturalMirrorAPI;
 declare var crossLayerSilhouette: CrossLayerSilhouetteAPI;
 declare var dimensionalityExpander: { densityBias(): number; tensionBias(): number; flickerBias(): number; getSnapshot(): { urgency: number; densityBias: number; tensionBias: number; flickerBias: number }; reset(): void };
 declare var conductorMetaWatchdog: { recordCorrection(pipeline: string, controllerName: string, correctionSign: number): void; getAttenuation(pipeline: string, controllerName: string): number; getSnapshot(): Record<string, Record<string, number>>; reset(): void };
+declare var metaControllerRegistry: MetaControllerRegistryAPI;
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };
 declare var polyrhythmicPhasePredictor: { process(ctx: any): number; predictConvergences(): void; reset(): void };
@@ -1710,6 +1777,7 @@ declare var endTime: number;
 // -- play --
 declare var eventBus: EventBusAPI;
 declare var eventCatalog: EventCatalogAPI;
+declare var trustSystems: TrustSystemsAPI;
 declare var totalSections: number;
 declare var phrasesPerSection: number;
 declare var measuresPerPhrase: number;

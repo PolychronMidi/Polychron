@@ -30,5 +30,7 @@ require('./criticalityEngine');
 require('./dimensionalityExpander');
 // @ts-ignore: meta-controller interaction watchdog (detects opposing correction patterns)
 require('./conductorMetaWatchdog');
+// @ts-ignore: central manifest of all 11 hypermeta self-calibrating controllers
+require('./metaControllerRegistry');
 // @ts-ignore: self-organized criticality engine (avalanche-based damping)
 require('./output');

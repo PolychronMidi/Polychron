@@ -28,5 +28,8 @@ require('./instrumentation');
 // (crossLayer, play) can reference eventCatalog.names at module level.
 // @ts-ignore: side-effect module load
 require('./eventCatalog');
+// trustSystems - canonical trust system name constants. Follows eventCatalog pattern.
+// @ts-ignore: side-effect module load
+require('./trustSystems');
 // @ts-ignore: side-effect module load
 require('./formatTime');

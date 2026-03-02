@@ -9,12 +9,7 @@ interactionHeatMap = (() => {
   const WINDOW_SIZE = 64; // rolling window of beats to track
   const HIGH_DENSITY_THRESHOLD = 0.7;
   const LOW_DENSITY_THRESHOLD = 0.2;
-  const SYSTEMS = [
-    'stutterContagion', 'convergence', 'temporalGravity',
-    'velocityInterference', 'feedbackOscillator', 'cadenceAlignment',
-    'phaseLock', 'spectralComplement', 'roleSwap', 'motifEcho', 'emergentDownbeat',
-    'climaxEngine', 'restSync'
-  ];
+  const SYSTEMS = Object.values(trustSystems.heatMapSystems);
 
   /**
    * @typedef {{ systems: Record<string, number>, totalFirings: number, absTimeMs: number }} BeatSnapshot

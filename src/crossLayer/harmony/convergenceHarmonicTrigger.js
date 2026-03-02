@@ -37,7 +37,7 @@ convergenceHarmonicTrigger = (() => {
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system
-    const trustScore = V.requireFinite(adaptiveTrustScores.getWeight('convergence'), 'onConvergence.trustScore');
+    const trustScore = V.requireFinite(adaptiveTrustScores.getWeight(trustSystems.names.CONVERGENCE), 'onConvergence.trustScore');
     if (trustScore < 0.2) return; // too low trust to act
 
     // Determine change type based on cadence alignment state.

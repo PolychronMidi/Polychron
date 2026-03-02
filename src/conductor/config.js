@@ -1,6 +1,28 @@
 // config.js - Central hub of tunable controls and profile tables.
 // exempt from target file length limits due to its role as a centralized config repository.
 //
+// -- Config vs. Profiles: Two Configuration Systems --
+// This file defines STRUCTURAL CONSTANTS: MIDI layout (instruments, PPQ, BPM),
+// structural ranges (sections, phrases, divisions, voices), weight distributions,
+// and tier-1 feedback loop constants. These are static globals shared across all
+// profiles and compositional runs.
+//
+// For BEHAVIORAL TUNING (density curves, tension targets, flicker ranges, stutter
+// parameters, energy weights, emission gating, spatial canvas, noise profiles),
+// see the profile system in src/conductor/profiles/. The profile system provides
+// runtime-switchable musical personalities (default, minimal, atmospheric,
+// explosive, restrained, rhythmicDrive) with merge/validation/override support.
+//
+// Decision guide:
+//   "I want to change MIDI instruments, BPM, PPQ, or voice counts" -> edit this file
+//   "I want to change density/tension/stutter behavior for a musical style" -> edit a profile
+//   "I want a new musical personality" -> create a new profile in profiles/
+//   "I want to change tier-1 feedback constants" -> edit this file, read TUNING_MAP.md first
+//
+// The profile system CANNOT override constants in this file. The two systems are
+// independent: config.js sets the physical/structural substrate, profiles set the
+// behavioral character that runs on top of it.
+//
 // -- Sensitivity Tiers --
 // Every constant is annotated with a tier indicating its impact on emergent behavior.
 // @tier-1 : Feedback loop constants (documented in TUNING_MAP.md). Changing these

@@ -137,7 +137,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const roleSwapResult = dynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
     const rsp = MAIN_LOOP_CONTROLS.trustPayoffs.roleSwap;
     if (roleSwapResult.swapped) {
-      adaptiveTrustScores.registerOutcome('roleSwap', rsp.swapped);
+      adaptiveTrustScores.registerOutcome(trustSystems.names.ROLE_SWAP, rsp.swapped);
     }
     if (roleSwapResult.swapped) {
       explainabilityBus.emit('role-swap', 'both', {

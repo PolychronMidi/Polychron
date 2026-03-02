@@ -117,6 +117,26 @@ mainBootstrap = (() => {
       throw new Error(`mainBootstrap: eventCatalog has unverified events: ${unlisted.join(', ')} - add them to EXPECTED_EVENTS in mainBootstrap.js`);
     }
 
+    // -- Phase 2b: Verify trustSystems canonical names --
+    const EXPECTED_TRUST_NAMES = [
+      'STUTTER_CONTAGION', 'PHASE_LOCK', 'CADENCE_ALIGNMENT', 'CONVERGENCE',
+      'FEEDBACK_OSCILLATOR', 'COHERENCE_MONITOR', 'ENTROPY_REGULATOR',
+      'REST_SYNCHRONIZER', 'ROLE_SWAP'
+    ];
+    const trustNames = trustSystems.names;
+    EXPECTED_TRUST_NAMES.forEach((key) => {
+      requireNonEmptyString(`trustSystems.names.${key}`, trustNames[key]);
+    });
+    const trustKeys = Object.keys(trustNames);
+    const MIN_TRUST_COUNT = 9;
+    if (trustKeys.length < MIN_TRUST_COUNT) {
+      throw new Error(`mainBootstrap: trustSystems.names has only ${trustKeys.length} entries (expected >= ${MIN_TRUST_COUNT})`);
+    }
+    const unlistedTrust = trustKeys.filter(k => !EXPECTED_TRUST_NAMES.includes(k));
+    if (unlistedTrust.length > 0) {
+      throw new Error(`mainBootstrap: trustSystems.names has unverified entries: ${unlistedTrust.join(', ')} - add them to EXPECTED_TRUST_NAMES in mainBootstrap.js`);
+    }
+
     // -- Phase 3: Verify key module methods exist (shape checks beyond typeof) --
     /** @type {[string, any, string][]} */
     const requiredModules = [
@@ -253,7 +273,7 @@ mainBootstrap = (() => {
    * feedback topology still matches live registrations and firewall boundaries.
    */
   function assertFeedbackGraphContract() {
-    const graphPath = path.join(process.cwd(), 'FEEDBACK_GRAPH.json');
+    const graphPath = path.join(process.cwd(), 'doc', 'FEEDBACK_GRAPH.json');
     if (!fs.existsSync(graphPath)) {
       throw new Error(`mainBootstrap: missing FEEDBACK_GRAPH.json at ${graphPath}`);
     }

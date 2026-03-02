@@ -119,8 +119,8 @@ convergenceDetector = (() => {
     for (let bi = 0; bi < burstNotes.length; bi++) {
       const stagger = tpSec * BURST_STAGGER_RATIO * bi;
       const bv = Math.round(clamp(burstVel * rf(BURST_VEL_SCALE_MIN, BURST_VEL_SCALE_MAX), 1, MIDI_MAX_VALUE));
-      p(c, { tick: burstBaseTick + stagger, type: 'on', vals: [primaryCh, burstNotes[bi], bv] });
-      p(c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
+      crossLayerEmissionGateway.emit('convergenceDetector', c, { tick: burstBaseTick + stagger, type: 'on', vals: [primaryCh, burstNotes[bi], bv] });
+      crossLayerEmissionGateway.emit('convergenceDetector', c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
 
     // No active listeners - emitted for eventCatalog completeness and future extensibility
