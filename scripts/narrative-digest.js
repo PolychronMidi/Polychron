@@ -135,7 +135,8 @@ function generateNarrative() {
   lines.push('# Composition Narrative Digest');
   lines.push('');
   lines.push('> Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.');
-  lines.push('> Generated: ' + new Date().toISOString());
+  const traceGeneratedAt = summary && summary.generatedAt ? summary.generatedAt : 'unknown';
+  lines.push('> Generated: ' + new Date().toISOString() + ' | Trace data from: ' + traceGeneratedAt);
   lines.push('');
 
   // ---- Overview ----

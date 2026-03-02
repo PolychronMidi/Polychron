@@ -10,7 +10,8 @@ function parseLine(line, index) {
   try {
     return JSON.parse(line);
   } catch (err) {
-    throw new Error(`trace-summary: invalid JSON at line ${index + 1}: ${err && err.message ? err.message : err}`);
+    console.warn(`Acceptable warning: trace-summary: skipping invalid JSON at line ${index + 1}: ${err && err.message ? err.message : err}`);
+    return null;
   }
 }
 
@@ -242,12 +243,19 @@ function main() {
   const raw = fs.readFileSync(tracePath, 'utf8');
   const lines = raw.split(/\r?\n/).filter(Boolean);
   if (lines.length === 0) {
-    throw new Error('trace-summary: trace.jsonl is empty');
+    console.warn('Acceptable warning: trace-summary: trace.jsonl is empty, skipping.');
+    return;
   }
 
   const entries = [];
   for (let i = 0; i < lines.length; i++) {
-    entries.push(parseLine(lines[i], i));
+    const entry = parseLine(lines[i], i);
+    if (entry !== null) entries.push(entry);
+  }
+
+  if (entries.length === 0) {
+    console.warn('Acceptable warning: trace-summary: no valid entries in trace.jsonl, skipping.');
+    return;
   }
 
   const summary = summarizeTrace(entries);
