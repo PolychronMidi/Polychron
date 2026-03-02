@@ -2,6 +2,9 @@
 // Each intelligence module self-registers its contributions (density biases,
 // tension biases, flicker modifiers, recorders, state-field providers).
 // globalConductorUpdate iterates these registries instead of probing 70+ typeof guards.
+//
+// Sub-registries: conductorRecorderRegistry, conductorStateProviderRegistry
+// Diagnostics: conductorDiagnostics (factory, created below)
 
 conductorIntelligence = (() => {
   const V = validator.create('conductorIntelligence');
@@ -51,8 +54,6 @@ conductorIntelligence = (() => {
   }
 
   // Density biases
-  // Each entry: { name, getter, lo, hi }
-  // getter() returns a number; clamped to [lo, hi] then multiplied into targetDensity.
   /** @type {Array<{ name: string, getter: () => number, lo: number, hi: number }>} */
   const densityBiases = [];
 
@@ -163,176 +164,11 @@ conductorIntelligence = (() => {
     };
   }
 
-  // Recorders
-  // Recorders receive a context object each beat and perform side-effects
-  // (recording snapshots, updating internal state).
-  /**
-   * @typedef {{
-   *   absTime: number,
-   *   compositeIntensity: number,
-   *   currentDensity: number,
-   *   harmonicRhythm: number
-   * }} RecorderContext
-   */
-  /** @type {Array<{ name: string, fn: (ctx: RecorderContext) => void }>} */
-  const recorders = [];
-
-  /**
-   * Register a recorder that runs each beat.
-   * @param {string} name
-   * @param {(ctx: RecorderContext) => void} fn
-   */
-  function registerRecorder(name, fn) {
-    V.assertNonEmptyString(name, 'name');
-    _assertNoDuplicateName(recorders, name, 'recorder');
-    V.requireType(fn, 'function', 'fn');
-    recorders.push({ name, fn });
-  }
-
-  /**
-   * Run all recorders with the given context.
-   * @param {RecorderContext} ctx
-   */
-  function runRecorders(ctx) {
-    for (let i = 0; i < recorders.length; i++) {
-      recorders[i].fn(ctx);
-    }
-  }
-
-  // State-field providers
-  // Each provider returns an object whose keys map directly to
-  // conductorState.updateFromConductor() fields.
-  //
-  // IMPORTANT: Most stateProvider fields are NOT individually consumed today.
-  // Only 4 fields have confirmed consumers (profileHintRestrained,
-  // profileHintExplosive, profileHintAtmospheric via conductorConfigAccessors,
-  // and coherenceEntropy via conductorSignalBridge).
-  // The remaining ~90 fields flow into conductorState bulk snapshots and
-  // explainabilityBus telemetry. They exist as typed observation points -
-  // wire a consumer before assuming they influence behavior.
-  /** @type {Array<{ name: string, getter: () => Record<string, any> }>} */
-  const stateProviders = [];
-
-  /**
-   * Register a state-field provider.
-   *
-   * STATE FIELD CONSUMPTION AUDIT (50 providers, 9 directly consumed fields):
-   *
-   * Fields consumed by conductorState.getField(name):
-   *   sectionPhase         - tempoFeelEngine, main.js
-   *   compositeIntensity   - harmonicVelocityMonitor, main.js (x2), playNotes, processBeat
-   *   phrasePosition       - textureBlender
-   *   phrasePhase          - textureBlender
-   *   key                  - main.js
-   *   mode                 - main.js
-   *
-   * Fields consumed by signalReader.state(name):
-   *   profileHintRestrained  - conductorConfigAccessors
-   *   profileHintExplosive   - conductorConfigAccessors
-   *   profileHintAtmospheric - conductorConfigAccessors
-   *
-   * All other ~90+ fields are observation-point only: visible in bulk
-   * conductorState.getSnapshot() (consumed by playDrums, playDrums2, drummer,
-   * setBinaural, systemSnapshot, harmonicContext, conductorSignalBridge) but
-   * never individually queried by name. This is by design - stateProviders act
-   * as a passive telemetry layer for diagnostic and snapshot consumers.
-   *
-   * @param {string} name
-   * @param {() => Record<string, any>} getter - returns a flat object of conductorState fields
-   */
-  function registerStateProvider(name, getter) {
-    V.assertNonEmptyString(name, 'name');
-    _assertNoDuplicateName(stateProviders, name, 'stateProvider');
-    V.requireType(getter, 'function', 'getter');
-    stateProviders.push({ name, getter });
-  }
-
-  /**
-   * Collect all state fields by merging provider outputs.
-   * @returns {Record<string, any>}
-   */
-  function collectStateFields() {
-    const merged = {};
-    for (let i = 0; i < stateProviders.length; i++) {
-      const fields = stateProviders[i].getter();
-      if (fields && typeof fields === 'object') {
-        Object.assign(merged, fields);
-      }
-    }
-    return merged;
-  }
-
-  // Diagnostics
-
-  /**
-   * Return every unique name that has registered any contribution
-   * (density, tension, flicker, recorder, or stateProvider).
-   * Strips colon-suffixed variants (e.g. 'Foo:bar' - 'Foo') so that
-   * modules registering multiple biases under sub-labels are unified.
-   * @returns {string[]}
-   */
-  function getContributorNames() {
-    const raw = new Set();
-    densityBiases.forEach(e => raw.add(e.name));
-    tensionBiases.forEach(e => raw.add(e.name));
-    flickerModifiers.forEach(e => raw.add(e.name));
-    recorders.forEach(e => raw.add(e.name));
-    stateProviders.forEach(e => raw.add(e.name));
-    // Normalize colon-qualified labels to their base module name
-    const normalized = new Set();
-    raw.forEach(n => normalized.add(n.split(':')[0]));
-    return Array.from(normalized).sort();
-  }
-
-  /** @returns {{ density: number, tension: number, flicker: number, recorders: number, stateProviders: number }} */
-  function getCounts() {
-    return {
-      density: densityBiases.length,
-      tension: tensionBiases.length,
-      flicker: flickerModifiers.length,
-      recorders: recorders.length,
-      stateProviders: stateProviders.length
-    };
-  }
-
-  /**
-   * Get normalized contributor names for each registry bucket.
-   * Colon-qualified labels are folded to base names (e.g. "Foo:bar" -> "Foo").
-   * @returns {{ density: string[], tension: string[], flicker: string[], recorders: string[], stateProviders: string[] }}
-   */
-  function getRegistryNames() {
-    /** @param {Array<{ name: string }>} registry */
-    function namesFrom(registry) {
-      const out = new Set();
-      for (let i = 0; i < registry.length; i++) {
-        out.add(registry[i].name.split(':')[0]);
-      }
-      return Array.from(out).sort();
-    }
-
-    return {
-      density: namesFrom(densityBiases),
-      tension: namesFrom(tensionBiases),
-      flicker: namesFrom(flickerModifiers),
-      recorders: namesFrom(recorders),
-      stateProviders: namesFrom(stateProviders)
-    };
-  }
-
-  /**
-   * Frozen snapshot of all current signal products and state fields.
-   * Intended for cross-module reading (e.g., feedback loops, diagnostics).
-   * @returns {Readonly<{ densityProduct: number, tensionProduct: number, flickerProduct: number, stateFields: Record<string, any>, counts: Record<string, number> }>}
-   */
-  function getSignalSnapshot() {
-    return Object.freeze({
-      densityProduct: collectDensityBias(),
-      tensionProduct: collectTensionBias(),
-      flickerProduct: collectFlickerModifier(),
-      stateFields: collectStateFields(),
-      counts: getCounts()
-    });
-  }
+  // Diagnostics - created via conductorDiagnostics factory
+  const diag = conductorDiagnostics.create(
+    { density: densityBiases, tension: tensionBiases, flicker: flickerModifiers },
+    { collectDensityBias, collectTensionBias, collectFlickerModifier }
+  );
 
   moduleLifecycle.registerInitializer('conductorIntelligence', initialize);
 
@@ -354,13 +190,15 @@ conductorIntelligence = (() => {
     registerFlickerModifier,
     collectFlickerModifier,
     collectFlickerModifierWithAttribution,
-    registerRecorder,
-    runRecorders,
-    registerStateProvider,
-    collectStateFields,
-    getContributorNames,
-    getCounts,
-    getRegistryNames,
-    getSignalSnapshot
+    // delegated to sub-registries
+    registerRecorder: conductorRecorderRegistry.registerRecorder,
+    runRecorders: conductorRecorderRegistry.runRecorders,
+    registerStateProvider: conductorStateProviderRegistry.registerStateProvider,
+    collectStateFields: conductorStateProviderRegistry.collectStateFields,
+    // diagnostics
+    getContributorNames: diag.getContributorNames,
+    getCounts: diag.getCounts,
+    getRegistryNames: diag.getRegistryNames,
+    getSignalSnapshot: diag.getSignalSnapshot
   };
 })();

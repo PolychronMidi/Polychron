@@ -107,37 +107,39 @@ class StutterManager {
     return grain;
   }
 
-  stutterFade(channels, numStutters = undefined, duration = undefined) {
+  /**
+   * Shared stutter invocation: resolves grain defaults, validates, calls impl.
+   * @param {string} label - method name for error messages (e.g. 'stutterFade')
+   * @param {Function} impl - bound implementation (this._stutterFade etc.)
+   * @param {string} grainCountKey - grain param key for stutter count (e.g. 'fadeCount')
+   * @param {string} grainDurationKey - grain param key for duration (e.g. 'fadeDuration')
+   * @param {number[]} channels
+   * @param {number|undefined} numStutters
+   * @param {number|undefined} duration
+   */
+  _invokeStutter(label, impl, grainCountKey, grainDurationKey, channels, numStutters, duration) {
     const grain = this._getStutterGrainParams();
-    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain.fadeCount[0], grain.fadeCount[1]));
-    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain.fadeDuration[0], grain.fadeDuration[1]));
-    if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFade: called with no channels');
-    if (!Number.isFinite(effectiveStutters) || effectiveStutters <= 0) throw new Error('StutterManager.stutterFade: numStutters must be a positive number');
-    if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) throw new Error('StutterManager.stutterFade: duration must be positive');
-    if (typeof this._stutterFade !== 'function') throw new Error('StutterManager.stutterFade: implementation not available');
-    return this._stutterFade.call(this, channels, effectiveStutters, effectiveDuration);
+    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain[grainCountKey][0], grain[grainCountKey][1]));
+    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain[grainDurationKey][0], grain[grainDurationKey][1]));
+    if (!channels || (Array.isArray(channels) && channels.length === 0)) {
+      throw new Error(`StutterManager.${label}: called with no channels`);
+    }
+    if (effectiveStutters <= 0) throw new Error(`StutterManager.${label}: numStutters must be a positive number`);
+    if (effectiveDuration <= 0) throw new Error(`StutterManager.${label}: duration must be positive`);
+    V.requireType(impl, 'function', `${label} implementation`);
+    return impl.call(this, channels, effectiveStutters, effectiveDuration);
+  }
+
+  stutterFade(channels, numStutters = undefined, duration = undefined) {
+    return this._invokeStutter('stutterFade', this._stutterFade, 'fadeCount', 'fadeDuration', channels, numStutters, duration);
   }
 
   stutterPan(channels, numStutters = undefined, duration = undefined) {
-    const grain = this._getStutterGrainParams();
-    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain.panCount[0], grain.panCount[1]));
-    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain.panDuration[0], grain.panDuration[1]));
-    if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterPan: called with no channels');
-    if (!Number.isFinite(effectiveStutters) || effectiveStutters <= 0) throw new Error('StutterManager.stutterPan: numStutters must be a positive number');
-    if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) throw new Error('StutterManager.stutterPan: duration must be positive');
-    if (typeof this._stutterPan !== 'function') throw new Error('StutterManager.stutterPan: implementation not available');
-    return this._stutterPan.call(this, channels, effectiveStutters, effectiveDuration);
+    return this._invokeStutter('stutterPan', this._stutterPan, 'panCount', 'panDuration', channels, numStutters, duration);
   }
 
   stutterFX(channels, numStutters = undefined, duration = undefined) {
-    const grain = this._getStutterGrainParams();
-    const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain.fxCount[0], grain.fxCount[1]));
-    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain.fxDuration[0], grain.fxDuration[1]));
-    if (!channels || (Array.isArray(channels) && channels.length === 0)) throw new Error('StutterManager.stutterFX: called with no channels');
-    if (!Number.isFinite(effectiveStutters) || effectiveStutters <= 0) throw new Error('StutterManager.stutterFX: numStutters must be a positive number');
-    if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) throw new Error('StutterManager.stutterFX: duration must be positive');
-    if (typeof this._stutterFX !== 'function') throw new Error('StutterManager.stutterFX: implementation not available');
-    return this._stutterFX.call(this, channels, effectiveStutters, effectiveDuration);
+    return this._invokeStutter('stutterFX', this._stutterFX, 'fxCount', 'fxDuration', channels, numStutters, duration);
   }
 
   // -----------------------------
