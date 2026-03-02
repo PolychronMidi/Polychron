@@ -28,10 +28,12 @@ absoluteTimeWindow = (() => {
   // Cleared on every record() call (new data invalidates cached results).
   /** @type {Map<string, ATWEntry[]>} */
   const _queryCache = new Map();
-  // Scalar cache for countNotes/getNoteBounds: same invalidation as _queryCache.
+  // Separate caches for countNotes / getNoteBounds: same invalidation as _queryCache.
   // These methods bypass getEntries so need their own cache.
-  /** @type {Map<string, number|{count:number,first:ATWEntry|null,last:ATWEntry|null}>} */
-  const _scalarCache = new Map();
+  /** @type {Map<string, number>} */
+  const _countCache = new Map();
+  /** @type {Map<string, {count:number,first:ATWEntry|null,last:ATWEntry|null}>} */
+  const _boundsCache = new Map();
 
   // Per-layer running note count. Avoids scanning the full note array for
   // the common pattern countNotes({ layer }). Decremented on prune, so
@@ -73,7 +75,8 @@ absoluteTimeWindow = (() => {
       arr.push(e);
       // Invalidate query cache - new data makes cached results stale
       if (_queryCache.size > 0) _queryCache.clear();
-      if (_scalarCache.size > 0) _scalarCache.clear();
+      if (_countCache.size > 0) _countCache.clear();
+      if (_boundsCache.size > 0) _boundsCache.clear();
       // Only prune when over capacity to avoid O(n) splice on every record
       if (arr.length > MAX_ENTRIES) {
         prune(arr, e.time, DEFAULT_WINDOW_SECONDS);
@@ -99,7 +102,8 @@ absoluteTimeWindow = (() => {
     _totalNoteCount++;
     if (layer) _layerCounts.set(layer, (_layerCounts.get(layer) || 0) + 1);
     if (_queryCache.size > 0) _queryCache.clear();
-    if (_scalarCache.size > 0) _scalarCache.clear();
+    if (_countCache.size > 0) _countCache.clear();
+    if (_boundsCache.size > 0) _boundsCache.clear();
     if (arr.length > MAX_ENTRIES) {
       prune(arr, time, DEFAULT_WINDOW_SECONDS);
     }
@@ -259,9 +263,8 @@ absoluteTimeWindow = (() => {
     const q = _parseNoteQuery(opts);
     if (!q) return 0;
     const cacheKey = 'count:' + (q.layer || '') + ':' + q.cutoff;
-    const cached = _scalarCache.get(cacheKey);
-    const cachedNumber = V.optionalType(cached, 'number');
-    if (cachedNumber !== undefined) return V.requireFinite(cachedNumber, 'countNotes.cachedNumber');
+    const cached = _countCache.get(cacheKey);
+    if (cached !== undefined) return cached;
     const arr = entries.note;
     const { layer, startIdx } = q;
     let count = 0;
@@ -271,7 +274,7 @@ absoluteTimeWindow = (() => {
       if (layer && entry.layer !== layer) continue;
       count++;
     }
-    _scalarCache.set(cacheKey, count);
+    _countCache.set(cacheKey, count);
     return count;
   }
 
@@ -307,8 +310,8 @@ absoluteTimeWindow = (() => {
     const q = _parseNoteQuery(opts);
     if (!q) return { count: 0, first: null, last: null };
     const cacheKey = 'bounds:' + (q.layer || '') + ':' + q.cutoff;
-    const cached = _scalarCache.get(cacheKey);
-    if (cached && typeof cached === 'object' && 'count' in cached) return /** @type {{ count: number, first: ATWEntry|null, last: ATWEntry|null }} */ (cached);
+    const cached = _boundsCache.get(cacheKey);
+    if (cached) return cached;
     const arr = entries.note;
     const { layer, startIdx } = q;
     let count = 0;
@@ -323,7 +326,7 @@ absoluteTimeWindow = (() => {
       count++;
     }
     const result = { count, first, last };
-    _scalarCache.set(cacheKey, result);
+    _boundsCache.set(cacheKey, result);
     return result;
   }
 
@@ -336,7 +339,8 @@ absoluteTimeWindow = (() => {
     if (entries.rhythm) entries.rhythm.length = 0;
     if (entries.chord) entries.chord.length = 0;
     _queryCache.clear();
-    _scalarCache.clear();
+    _countCache.clear();
+    _boundsCache.clear();
     _layerCounts.clear();
     _totalNoteCount = 0;
   }

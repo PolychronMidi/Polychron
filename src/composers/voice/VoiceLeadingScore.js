@@ -37,6 +37,7 @@
  */
 VoiceLeadingScore = class VoiceLeadingScore {
   constructor(config = {}) {
+    const V = validator.create('VoiceLeadingScore');
     // Tuning weights for different voice leading rules
     this.weights = {
       smoothMotion: config.smoothMotionWeight ?? 1.0,     // Preference for stepwise motion
@@ -51,7 +52,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
     };
 
     // Dynamism: 0-1 scale controlling rule-breaking frequency (higher = more variation)
-    this.dynamism = typeof config.dynamism === 'number' ? clamp(config.dynamism, 0, 1) : 0.3;
+    this.dynamism = V.optionalFinite(config.dynamism, 0.3);
 
     // Max leap sizes per register (semitones) - soft boundaries
     this.maxLeapSize = {
@@ -74,8 +75,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
     this.maxHistoryDepth = 8; // Increased for consecutive leap tracking
 
     // Tunable defaults (can be set via constructor config or updateConfig)
-    this.commonToneWeight = typeof config.commonToneWeight === 'number' ? clamp(config.commonToneWeight, 0, 1) : 0;
-    this.contraryMotionPreference = typeof config.contraryMotionPreference === 'number' ? clamp(config.contraryMotionPreference, 0, 1) : 0.4;
+    this.commonToneWeight = V.optionalFinite(config.commonToneWeight, 0);
+    this.contraryMotionPreference = V.optionalFinite(config.contraryMotionPreference, 0.4);
   }
 
   /**
@@ -258,18 +259,22 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * - registers
    */
   updateConfig(cfg = {}) {
-    if (typeof cfg !== 'object' || cfg === null) { throw new Error('VoiceLeadingScore.updateConfig: invalid config provided - expected object'); }
+    const V = validator.create('VoiceLeadingScore');
+    V.assertPlainObject(cfg, 'updateConfig.cfg');
     const cfgAny = /** @type {any} */ (cfg);
-    if (cfgAny.weights && typeof cfgAny.weights === 'object') {
+    if (cfgAny.weights) {
+      V.assertPlainObject(cfgAny.weights, 'updateConfig.weights');
       Object.assign(this.weights, cfgAny.weights);
     }
     if (typeof cfgAny.commonToneWeight === 'number') this.commonToneWeight = clamp(cfgAny.commonToneWeight, 0, 1);
     if (typeof cfgAny.contraryMotionPreference === 'number') this.contraryMotionPreference = clamp(cfgAny.contraryMotionPreference, 0, 1);
     if (typeof cfgAny.dynamism === 'number') this.dynamism = clamp(cfgAny.dynamism, 0, 1);
-    if (cfgAny.registers && typeof cfgAny.registers === 'object') {
+    if (cfgAny.registers) {
+      V.assertPlainObject(cfgAny.registers, 'updateConfig.registers');
       this.registers = Object.assign({}, this.registers, cfgAny.registers);
     }
-    if (cfgAny.maxLeapSize && typeof cfgAny.maxLeapSize === 'object') {
+    if (cfgAny.maxLeapSize) {
+      V.assertPlainObject(cfgAny.maxLeapSize, 'updateConfig.maxLeapSize');
       this.maxLeapSize = Object.assign({}, this.maxLeapSize, cfgAny.maxLeapSize);
     }
   }

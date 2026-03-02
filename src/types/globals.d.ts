@@ -130,6 +130,10 @@ interface ValidatorInstance {
   requireFinite(value: unknown, label: string): number;
   optionalFinite(value: unknown): number | undefined;
   optionalFinite(value: unknown, fallback: number): number;
+  optionalType(value: unknown, type: 'number'): number | undefined;
+  optionalType(value: unknown, type: 'string'): string | undefined;
+  optionalType(value: unknown, type: 'boolean'): boolean | undefined;
+  optionalType(value: unknown, type: 'object'): object | undefined;
   optionalType(value: unknown, type: string): unknown | undefined;
   optionalType<T>(value: unknown, type: string, fallback: T): T;
   requireDefined(value: unknown, label: string): unknown;
@@ -1389,6 +1393,7 @@ declare var conductorDampening: {
   progressiveDampen(clamped: number, baseDamping: number, runningProduct: number): number;
   collectDampened(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>, pipelineName?: string): number;
   collectDampenedWithAttribution(registry: Array<{ name: string; getter: () => number; lo: number; hi: number }>, pipelineName?: string): { product: number; contributions: Array<{ name: string; raw: number; clamped: number }> };
+  setFlickerTargetRange(target: number): void;
 };
 declare var sectionMemory: {
   snapshot(): void;
@@ -1420,6 +1425,7 @@ declare var regimeClassifier: {
   grade(regime: string): string;
   setOscillatingThreshold(threshold: number): void;
   getOscillatingThreshold(): number;
+  setCoherentThresholdScale(scale: number): void;
   getExploringBeats(): number;
   getLastRegime(): string;
   reset(): void;

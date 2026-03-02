@@ -3,6 +3,7 @@
 // each pulling to 0.85-0.94) from accumulating catastrophic suppression.
 
 conductorDampening = (() => {
+  const V = validator.create('conductorDampening');
   // Base damping (0.6) calibrated for ~20 contributors.
   // Smaller pipelines get proportionally less pass-through so each module's
   // deviation is attenuated more, reducing volatility.
@@ -30,7 +31,7 @@ conductorDampening = (() => {
   // dynamically. Compressed range -> reduce dampening; excessive range
   // -> increase dampening. Self-heals flicker range compression.
   const _FLICKER_RANGE_WINDOW = 32;
-  const _TARGET_FLICKER_RANGE = 0.15;
+  let _targetFlickerRange = 0.15;
   /** @type {number[]} */
   const _flickerRingBuffer = [];
   let _flickerDampeningBaseAdj = 0;
@@ -233,11 +234,11 @@ conductorDampening = (() => {
       if (_flickerRingBuffer[i] > fMax) fMax = _flickerRingBuffer[i];
     }
     const range = fMax - fMin;
-    if (range < _TARGET_FLICKER_RANGE * 0.6) {
+    if (range < _targetFlickerRange * 0.6) {
       // Range compressed: reduce dampening to allow more expression
       // R7 Evo 2: Tripled adjustment rate (0.005->0.015) for faster response
       _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj + 0.015, 0, 0.15);
-    } else if (range > _TARGET_FLICKER_RANGE * 2.0) {
+    } else if (range > _targetFlickerRange * 2.0) {
       // Range too wide: increase dampening to rein it in
       _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj - 0.015, -0.15, 0);
     } else {
@@ -274,5 +275,16 @@ conductorDampening = (() => {
     });
   }
 
-  return { scaledDamping, progressiveDampen, collectDampened, collectDampenedWithAttribution };
+  /**
+   * Set profile-adaptive flicker target range.
+   * Called by systemDynamicsProfiler during profile resolution.
+   * Wider target lets the elasticity controller tolerate more flicker
+   * expression before crushing, reducing the 50% crush warning.
+   * @param {number} target
+   */
+  function setFlickerTargetRange(target) {
+    _targetFlickerRange = V.requireFinite(target, 'setFlickerTargetRange.target');
+  }
+
+  return { scaledDamping, progressiveDampen, collectDampened, collectDampenedWithAttribution, setFlickerTargetRange };
 })();

@@ -20,6 +20,7 @@ regimeClassifier = (() => {
   let candidateCount = 0;
   let exploringBeats = 0; // duration escalator: consecutive exploring beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
+  let coherentThresholdScale = 1.0; // profile-adaptive multiplier
 
   /**
    * Set the oscillating curvature threshold (profile-adaptive).
@@ -27,6 +28,15 @@ regimeClassifier = (() => {
    */
   function setOscillatingThreshold(threshold) {
     oscillatingCurvatureThreshold = V.requireFinite(threshold, 'threshold');
+  }
+
+  /**
+   * Set profile-adaptive coherent entry threshold scale.
+   * Values < 1.0 make coherent regime easier to enter.
+   * @param {number} scale
+   */
+  function setCoherentThresholdScale(scale) {
+    coherentThresholdScale = V.requireFinite(scale, 'coherentThresholdScale');
   }
 
   /** @returns {number} */
@@ -72,7 +82,7 @@ regimeClassifier = (() => {
     // by up to 0.05 based on exploring duration (adds to duration bonus).
     const coherentFloorBonus = exploringBeats > 100 ? clamp((exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
     const durationBonus = lastRegime === 'exploring' ? clamp(m.floor(exploringBeats / 50) * 0.02, 0, 0.12) : 0;
-    const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85; // R7 Evo 5: 15% reduction
+    const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus;
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
@@ -137,7 +147,8 @@ regimeClassifier = (() => {
     candidateCount = 0;
     exploringBeats = 0;
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
+    coherentThresholdScale = 1.0;
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, getExploringBeats, getLastRegime, reset };
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, getExploringBeats, getLastRegime, reset };
 })();

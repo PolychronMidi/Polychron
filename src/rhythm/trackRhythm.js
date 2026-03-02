@@ -27,51 +27,51 @@ trackRhythm = (unit, layer, played) => {
       incrementCounter(`${key}sOff`);
     }
   } else {
-  const rhythm = layer[`${key}Rhythm`];
-  const idx = layer[`${key}Index`];
-  // Prefer per-context rhythm/index, but fall back to globals when available.
-  let rhythmFinal = Array.isArray(rhythm) ? rhythm : null;
-  let idxFinal = idx;
+    const rhythm = layer[`${key}Rhythm`];
+    const idx = layer[`${key}Index`];
+    // Prefer per-context rhythm/index, but fall back to globals when available.
+    let rhythmFinal = Array.isArray(rhythm) ? rhythm : null;
+    let idxFinal = idx;
 
-  // Try global fallbacks without using globalThis (project convention: naked globals)
-  if (!Array.isArray(rhythmFinal) || idxFinal === undefined) {
-    switch (key) {
-      case 'beat':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(beatRhythm) ? beatRhythm : null;
-        if (idxFinal === undefined) idxFinal = beatIndex;
-        break;
-      case 'div':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(divRhythm) ? divRhythm : null;
-        if (idxFinal === undefined) idxFinal = divIndex;
-        break;
-      case 'subdiv':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subdivRhythm) ? subdivRhythm : null;
-        if (idxFinal === undefined) idxFinal = subdivIndex;
-        break;
-      case 'subsubdiv':
-        if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subsubdivRhythm) ? subsubdivRhythm : null;
-        if (idxFinal === undefined) idxFinal = subsubdivIndex;
-        break;
-      default:
-        throw new Error(`trackRhythm: unknown unit "${unit}"`);
-  }
-}
-  // If still missing or invalid, this is a critical invariance violation - fail fast.
-  rhythmFinal = V.assertArray(rhythmFinal, 'rhythmFinal');
-  if (idxFinal === undefined || rhythmFinal[idxFinal] === undefined) {
-    const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: idx !== undefined, globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: idxFinal !== undefined };
-    throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}" - details: ${JSON.stringify(details)}`);
-  }
-  const val = rhythmFinal[idxFinal];
+    // Try global fallbacks without using globalThis (project convention: naked globals)
+    if (!Array.isArray(rhythmFinal) || idxFinal === undefined) {
+      switch (key) {
+        case 'beat':
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(beatRhythm) ? beatRhythm : null;
+          if (idxFinal === undefined) idxFinal = beatIndex;
+          break;
+        case 'div':
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(divRhythm) ? divRhythm : null;
+          if (idxFinal === undefined) idxFinal = divIndex;
+          break;
+        case 'subdiv':
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subdivRhythm) ? subdivRhythm : null;
+          if (idxFinal === undefined) idxFinal = subdivIndex;
+          break;
+        case 'subsubdiv':
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subsubdivRhythm) ? subsubdivRhythm : null;
+          if (idxFinal === undefined) idxFinal = subsubdivIndex;
+          break;
+        default:
+          throw new Error(`trackRhythm: unknown unit "${unit}"`);
+      }
+    }
+    // If still missing or invalid, this is a critical invariance violation - fail fast.
+    rhythmFinal = V.assertArray(rhythmFinal, 'rhythmFinal');
+    if (idxFinal === undefined || rhythmFinal[idxFinal] === undefined) {
+      const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: idx !== undefined, globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: idxFinal !== undefined };
+      throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}" - details: ${JSON.stringify(details)}`);
+    }
+    const val = rhythmFinal[idxFinal];
 
-  if (val > 0) {
-    incrementCounter(`${key}sOn`);
-    layer[`${key}sOff`] = 0;
-  } else if (val === 0) {
-    layer[`${key}sOn`] = 0;
-    incrementCounter(`${key}sOff`);
-  } else {
-    throw new Error(`trackRhythm: rhythm value for unit "${unit}" must be 0 or > 0, received ${String(val)}`);
+    if (val > 0) {
+      incrementCounter(`${key}sOn`);
+      layer[`${key}sOff`] = 0;
+    } else if (val === 0) {
+      layer[`${key}sOn`] = 0;
+      incrementCounter(`${key}sOff`);
+    } else {
+      throw new Error(`trackRhythm: rhythm value for unit "${unit}" must be 0 or > 0, received ${String(val)}`);
+    }
   }
-} // close else block for played not boolean
-} // close trackRhythm function
+};

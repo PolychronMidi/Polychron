@@ -1,23 +1,24 @@
 // src/events.js - Lightweight event dispatcher for feedback loops
 
 eventBus = (() => {
+  const V = validator.create('events');
   const _listeners = {}; // { eventName: [handlers] }
 
   function on(name, handler) {
-    if (typeof name !== 'string' || !name) throw new Error('eventBus.on: invalid event name');
-    if (typeof handler !== 'function') throw new Error('eventBus.on: handler must be a function');
+    V.assertNonEmptyString(name, 'on.name');
+    V.requireType(handler, 'function', 'on.handler');
     if (!_listeners[name]) _listeners[name] = [];
     _listeners[name].push(handler);
   }
 
   function off(name, handler) {
-    if (typeof name !== 'string' || !name) throw new Error('eventBus.off: invalid event name');
+    V.assertNonEmptyString(name, 'off.name');
     if (!_listeners[name]) return;
     _listeners[name] = _listeners[name].filter(h => h !== handler);
   }
 
   function emit(name, data) {
-    if (typeof name !== 'string' || !name) throw new Error('eventBus.emit: invalid event name');
+    V.assertNonEmptyString(name, 'emit.name');
     eventCatalog.validateEmit(name, data);
     if (!_listeners[name]) return;
     // Fail-fast: let any listener exception bubble
@@ -31,7 +32,7 @@ eventBus = (() => {
   }
 
   function clear(name) {
-    if (typeof name !== 'string' || !name) throw new Error('eventBus.clear: invalid event name');
+    V.assertNonEmptyString(name, 'clear.name');
     delete _listeners[name];
   }
 

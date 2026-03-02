@@ -67,6 +67,7 @@ const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = n
  * @returns {Object} shared state
  */
 stutterNotes = (/** @type {any} */ opts = {}) => {
+  const V = validator.create('stutterNotes');
   const {
     profile = 'source',
     channel,
@@ -81,10 +82,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     emit = true // when false, return planned events instead of calling p()
   } = opts;
 
-  if (typeof channel === 'undefined' || !Number.isFinite(note)) throw new Error('stutterNotes: missing channel or numeric note');
-  if (!Array.isArray(reflection) || !Array.isArray(bass)) {
-    throw new Error('stutterNotes: reflection and bass channel arrays must be defined');
-  }
+  V.requireDefined(channel, 'channel');
+  V.requireFinite(note, 'note');
+  V.assertArray(reflection, 'reflection');
+  V.assertArray(bass, 'bass');
   const baseMidiNote = m.round(Number(note));
   const isBass = profile === 'bass';
 
@@ -134,9 +135,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Cross-mod rules from config (pan/fade/fx influence on stutter behavior)
   const crossRules = stutterConfig.getCrossModRules();
-  if (!crossRules || typeof crossRules !== 'object' || !crossRules.pan || !crossRules.fade || !crossRules.fx) {
-    throw new Error('stutterNotes: stutterConfig.getCrossModRules returned invalid shape');
-  }
+  V.assertObject(crossRules, 'crossRules');
+  V.assertObject(crossRules.pan, 'crossRules.pan');
+  V.assertObject(crossRules.fade, 'crossRules.fade');
+  V.assertObject(crossRules.fx, 'crossRules.fx');
 
   // Apply cross-mod adjustments
   let shiftRangeBias = 0;
@@ -157,8 +159,9 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   // Per-channel coherence overlay (shared noise key) - can bias shifts/decision
   const coherenceKey = (beatContext && beatContext.coherenceKey) ? beatContext.coherenceKey : null;
   const cohMod = coherenceKey ? getParameterModulation(channel, coherenceKey, on) : null;
-  if (coherenceKey && (!cohMod || !Number.isFinite(Number(cohMod.x)) || !Number.isFinite(Number(cohMod.y)))) {
-    throw new Error(`stutterNotes: invalid coherence modulation for key="${coherenceKey}" channel=${channel}`);
+  if (coherenceKey) {
+    V.requireFinite(Number(cohMod.x), 'cohMod.x');
+    V.requireFinite(Number(cohMod.y), 'cohMod.y');
   }
 
   // Pick ONE octave shift (avoid repeating the last shift used on this channel)
@@ -172,9 +175,9 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Velocity: scaled version of the original, with fade-direction coherence
   const velRanges = stutterConfig.getVelocityRange(profile, isPrimary);
-  if (!Array.isArray(velRanges) || velRanges.length < 2 || !Number.isFinite(Number(velRanges[0])) || !Number.isFinite(Number(velRanges[1]))) {
-    throw new Error(`stutterNotes: invalid velocity range for profile="${profile}"`);
-  }
+  V.assertArray(velRanges, 'velRanges');
+  V.requireFinite(Number(velRanges[0]), 'velRanges[0]');
+  V.requireFinite(Number(velRanges[1]), 'velRanges[1]');
   const rawVel = clamp(m.round(
     isPrimary ? velocity * rf(velRanges[0], velRanges[1]) : binVel * rf(velRanges[0], velRanges[1])
   ), 1, MIDI_MAX_VALUE);
@@ -183,7 +186,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     : rawVel;
 
   // apply cross-mod velocity bias (from beatContext.mod - stutterConfig.fade.velocityScaleBias)
-  if (velocityScaleBias && Number.isFinite(Number(velocityScaleBias))) {
+  if (velocityScaleBias && V.optionalType(velocityScaleBias, 'number') !== undefined) {
     stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
   }
 

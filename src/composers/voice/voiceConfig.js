@@ -1,8 +1,9 @@
 // voiceConfig.js - voice-related presets (delegates authoritative profiles to src/conductor/config.js)
 
 voiceConfig = (function() {
+  const V = validator.create('voiceConfig');
   function getProfile(name) {
-    if (!name || typeof name !== 'string') throw new Error('voiceConfig.getProfile: invalid name');
+    V.assertNonEmptyString(name, 'getProfile.name');
     // Prefer centralized VOICE_PROFILES if provided in src/conductor/config.js
     const source = VOICE_PROFILES;
     const p = source[name];

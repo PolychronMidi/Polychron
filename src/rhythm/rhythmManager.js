@@ -1,6 +1,9 @@
 // rhythmManager.js - single manager hub for rhythm subsystem
 
 class RhythmManager_ {
+  /** @type {ValidatorInstance} */
+  static _V;
+  static { this._V = validator.create('rhythmManager'); }
   static listGenerators() { return rhythmRegistry.list(); }
 
   static getGenerator(name) { return rhythmRegistry.get(name); }
@@ -34,7 +37,7 @@ class RhythmManager_ {
 
   static applyToNote(note, hit, profileName, options = {}) {
     const profile = profileName ? rhythmConfig.getProfile(profileName) : null;
-    if (options !== undefined && (typeof options !== 'object' || options === null)) throw new Error('rhythmManager.applyToNote: options must be an object if provided');
+    if (options !== undefined) RhythmManager_._V.assertPlainObject(options, 'applyToNote.options');
     const opts = Object.assign({}, profile || {}, options);
     return rhythmModulator.apply(note, hit, opts);
   }

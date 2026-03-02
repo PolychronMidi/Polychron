@@ -69,8 +69,15 @@ systemDynamicsProfiler = (() => {
 
       // Scale oscillating threshold by profile character (delegated to regimeClassifier)
       const profileName = conductorConfig.getActiveProfileName();
-      if (profileName === 'explosive') regimeClassifier.setOscillatingThreshold(0.65);
-      else if (profileName === 'minimal') regimeClassifier.setOscillatingThreshold(0.45);
+      if (profileName === 'explosive') {
+        regimeClassifier.setOscillatingThreshold(0.65);
+        // R8 Evo 5: lower coherent entry threshold for explosive - 68% exploring is too dominant
+        regimeClassifier.setCoherentThresholdScale(0.80);
+        // R8 Evo 4: widen flicker target range for explosive depthScale 1.8
+        conductorDampening.setFlickerTargetRange(0.15 * 1.8);
+      } else if (profileName === 'minimal') {
+        regimeClassifier.setOscillatingThreshold(0.45);
+      }
     } catch {
       _stateSmoothing = 0.30;
     }
