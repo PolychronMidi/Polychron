@@ -9,17 +9,13 @@ tempoFeelEngine = (() => {
 
   function requirePhraseContextPosition() {
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
-    if (!phraseCtx || typeof phraseCtx !== 'object') {
-      throw new Error('tempoFeelEngine: phrase context must be an object');
-    }
+    V.assertObject(phraseCtx, 'phraseCtx');
     return V.requireFinite(phraseCtx.position, 'phraseCtx.position');
   }
 
   function requireSectionPhase() {
     const phase = conductorState.getField('sectionPhase');
-    if (typeof phase !== 'string' || phase.length === 0) {
-      throw new Error('tempoFeelEngine: conductorState.sectionPhase must be a non-empty string');
-    }
+    V.assertNonEmptyString(phase, 'phase');
     return phase;
   }
 

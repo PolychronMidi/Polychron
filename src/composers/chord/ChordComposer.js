@@ -43,12 +43,8 @@ ChordComposer = class ChordComposer extends MeasureComposer {
    * @param {string} [direction='R'] - 'R' (right), 'L' (left), 'E' (either), '?' (random)
    */
   noteSet(progression,direction='R') {
-    if (progression !== undefined && !Array.isArray(progression)) {
-      throw new Error('ChordComposer.noteSet: progression must be an array if provided');
-    }
-    if (typeof direction !== 'string' || !direction) {
-      throw new Error('ChordComposer.noteSet: direction must be a non-empty string');
-    }
+    if (progression !== undefined) V.requireType(progression, 'array', 'progression');
+    V.assertNonEmptyString(direction, 'direction');
     const arr = Array.isArray(progression) ? progression : [];
     const validatedProgression = arr.map(raw => {
       const asRaw = String(raw);
@@ -142,9 +138,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         throw new Error(`ChordComposer.noteSet: current chord has no notes for scale (${currentChord.symbol})`);
       }
       const key = currentChord.tonic;
-      if (typeof key !== 'string' || !key) {
-          throw new Error(`ChordComposer.noteSet: current chord missing tonic (${currentChord.symbol})`);
-        }
+      V.assertNonEmptyString(key, 'key');
         const quality = currentChord.type || 'unknown';
         harmonicContext.set({ key, quality, scale, chords: chordSymbols });
       }
@@ -160,7 +154,8 @@ RandomChordComposer = class RandomChordComposer extends ChordComposer {
   }
   /** Generates 2-5 random chords */
   noteSet() {
-    if (!Array.isArray(allChords) || allChords.length === 0) throw new Error('RandomChordComposer.noteSet: allChords not available');
+    V.assertArray(allChords, 'allChords');
+    if (allChords.length === 0) throw new Error('RandomChordComposer.noteSet: allChords not available');
     const progressionLength=ri(2,5);
     const randomProgression=[];
     for (let i=0; i < progressionLength; i++) {

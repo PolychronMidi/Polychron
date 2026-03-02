@@ -10,19 +10,11 @@ rhythmPriors = (function() {
     if (!quality) throw new Error(`rhythmPriors.getProfileOrFail: unsupported quality "${qualityInput}"`);
 
     const profile = RHYTHM_PRIOR_TABLES[quality];
-    if (!profile || typeof profile !== 'object') {
-      throw new Error(`rhythmPriors.getProfileOrFail: missing profile for quality "${quality}"`);
-    }
+    V.assertObject(profile, 'profile');
 
-    if (!profile.phaseMethodWeights || typeof profile.phaseMethodWeights !== 'object') {
-      throw new Error(`rhythmPriors.getProfileOrFail: profile "${quality}" missing phaseMethodWeights`);
-    }
-    if (!profile.levelPhaseMultipliers || typeof profile.levelPhaseMultipliers !== 'object') {
-      throw new Error(`rhythmPriors.getProfileOrFail: profile "${quality}" missing levelPhaseMultipliers`);
-    }
-    if (!profile.cadentialMethodWeights || typeof profile.cadentialMethodWeights !== 'object') {
-      throw new Error(`rhythmPriors.getProfileOrFail: profile "${quality}" missing cadentialMethodWeights`);
-    }
+    V.assertObject(profile.phaseMethodWeights, 'profile.phaseMethodWeights');
+    V.assertObject(profile.levelPhaseMultipliers, 'profile.levelPhaseMultipliers');
+    V.assertObject(profile.cadentialMethodWeights, 'profile.cadentialMethodWeights');
 
     return profile;
   }
@@ -32,9 +24,7 @@ rhythmPriors = (function() {
 
     const out = {};
     for (const [name, spec] of Object.entries(rhythms)) {
-      if (!spec || typeof spec !== 'object') {
-        throw new Error(`rhythmPriors.cloneRhythmSpecMapOrFail: invalid rhythm spec "${name}"`);
-      }
+      V.assertObject(spec, 'spec');
       out[name] = Object.assign({}, spec);
       if (Array.isArray(spec.weights)) {
         out[name].weights = spec.weights.slice();
@@ -56,9 +46,7 @@ rhythmPriors = (function() {
    * @returns {Object}
    */
   function getBiasedRhythms(opts = {}) {
-    if (typeof opts !== 'object' || opts === null) {
-      throw new Error('rhythmPriors.getBiasedRhythms: opts must be an object');
-    }
+    V.assertObject(opts, 'opts');
 
     const rhythmsIn = cloneRhythmSpecMapOrFail(opts.rhythms);
 
@@ -90,10 +78,8 @@ rhythmPriors = (function() {
 
     const out = {};
     for (const [name, spec] of Object.entries(rhythmsIn)) {
-      if (!spec || typeof spec !== 'object') {
-        throw new Error(`rhythmPriors.getBiasedRhythms: invalid rhythm spec "${name}"`);
-      }
-      if (typeof spec.method !== 'string' || spec.method.length === 0 || !Array.isArray(spec.weights) || spec.weights.length === 0) {
+      V.assertObject(spec, 'spec');
+      if (!V.optionalType(spec.method, 'string') || spec.method.length === 0 || !Array.isArray(spec.weights) || spec.weights.length === 0) {
         out[name] = spec;
         continue;
       }

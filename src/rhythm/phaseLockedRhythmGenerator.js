@@ -27,9 +27,8 @@ phaseLockedRhythmGenerator = (() => {
    * @returns {void}
    */
   function initializePolyrhythmCoupling(layer1, layer2, ratio1, ratio2) {
-    if (typeof layer1 !== 'string' || !layer1 || typeof layer2 !== 'string' || !layer2) {
-      throw new Error('phaseLockedRhythmGenerator.initializePolyrhythmCoupling: layer names must be non-empty strings');
-    }
+    V.assertNonEmptyString(layer1, 'layer1');
+    V.assertNonEmptyString(layer2, 'layer2');
     if (!Number.isInteger(ratio1) || ratio1 <= 0 || !Number.isInteger(ratio2) || ratio2 <= 0) {
       throw new Error(`phaseLockedRhythmGenerator.initializePolyrhythmCoupling: ratios must be positive integers (got ${ratio1}, ${ratio2})`);
     }
@@ -59,7 +58,8 @@ phaseLockedRhythmGenerator = (() => {
       throw new Error(`phaseLockedRhythmGenerator.generate: failed to execute pattern "${patternName}": ${e && e.message ? e.message : e}`);
     }
 
-    if (!Array.isArray(pattern) || pattern.length === 0) {
+    V.assertArray(pattern, 'pattern');
+    if (pattern.length === 0) {
       throw new Error(`phaseLockedRhythmGenerator.generate: pattern "${patternName}" returned invalid result`);
     }
 
@@ -73,7 +73,7 @@ phaseLockedRhythmGenerator = (() => {
       offset = phases.get(phaseKey);
     } else if (activeLayer) {
       for (const [key, meta] of phases.entries()) {
-        if (typeof key !== 'string' || !key.startsWith('_coupling:')) continue;
+        if (!V.optionalType(key, 'string') || !key.startsWith('_coupling:')) continue;
         const parts = key.split(':');
         const layer1 = parts[1];
         const layer2 = parts[2];
@@ -114,9 +114,7 @@ phaseLockedRhythmGenerator = (() => {
       throw new Error(`phaseLockedRhythmGenerator.generate: rotate() failed: ${e && e.message ? e.message : e}`);
     }
 
-    if (!Array.isArray(rotated)) {
-      throw new Error('phaseLockedRhythmGenerator.generate: rotate() did not return array');
-    }
+    V.assertArray(rotated, 'rotated');
 
     // Note: same pattern can legitimately be used at different lengths for different metrical levels
     // Phase tracking per (patternName, length) tuple allows this
@@ -139,17 +137,13 @@ phaseLockedRhythmGenerator = (() => {
    * @throws {Error} if phase not a valid number
    */
   function lock(patternName, length, phase) {
-    if (typeof patternName !== 'string' || !patternName) {
-      throw new Error('phaseLockedRhythmGenerator.lock: patternName must be non-empty string');
-    }
+    V.assertNonEmptyString(patternName, 'patternName');
 
     if (!Number.isInteger(length) || length <= 0) {
       throw new Error(`phaseLockedRhythmGenerator.lock: length must be positive integer, got ${length}`);
     }
 
-    if (typeof phase !== 'number' || !Number.isFinite(phase)) {
-      throw new Error(`phaseLockedRhythmGenerator.lock: phase must be finite number, got ${phase}`);
-    }
+    V.requireFinite(phase, 'phase');
 
     const phaseKeyBase = activeLayer ? `${activeLayer}:${patternName}` : patternName;
     const phaseKey = `${phaseKeyBase}:${length}`;
@@ -163,9 +157,7 @@ phaseLockedRhythmGenerator = (() => {
    * @returns {number} current phase offset (0 if not yet set)
    */
   function getPhase(patternName, length) {
-    if (typeof patternName !== 'string' || !patternName) {
-      throw new Error('phaseLockedRhythmGenerator.getPhase: patternName must be non-empty string');
-    }
+    V.assertNonEmptyString(patternName, 'patternName');
 
     if (!Number.isInteger(length) || length <= 0) {
       throw new Error(`phaseLockedRhythmGenerator.getPhase: length must be positive integer, got ${length}`);
@@ -185,17 +177,13 @@ phaseLockedRhythmGenerator = (() => {
    * @throws {Error} if delta not a valid number
    */
   function advancePhase(patternName, length, delta, modulo = undefined) {
-    if (typeof patternName !== 'string' || !patternName) {
-      throw new Error('phaseLockedRhythmGenerator.advancePhase: patternName must be non-empty string');
-    }
+    V.assertNonEmptyString(patternName, 'patternName');
 
     if (!Number.isInteger(length) || length <= 0) {
       throw new Error(`phaseLockedRhythmGenerator.advancePhase: length must be positive integer, got ${length}`);
     }
 
-    if (typeof delta !== 'number' || !Number.isFinite(delta)) {
-      throw new Error(`phaseLockedRhythmGenerator.advancePhase: delta must be finite number, got ${delta}`);
-    }
+    V.requireFinite(delta, 'delta');
 
     const current = getPhase(patternName, length);
     let newPhase = current + delta;
@@ -219,9 +207,8 @@ phaseLockedRhythmGenerator = (() => {
    * @returns {number} phase difference (B - A)
    */
   function getPhaseRelationship(patternA, lengthA, patternB, lengthB) {
-    if (typeof patternA !== 'string' || !patternA || typeof patternB !== 'string' || !patternB) {
-      throw new Error('phaseLockedRhythmGenerator.getPhaseRelationship: pattern names must be non-empty strings');
-    }
+    V.assertNonEmptyString(patternA, 'patternA');
+    V.assertNonEmptyString(patternB, 'patternB');
 
     if (!Number.isInteger(lengthA) || lengthA <= 0 || !Number.isInteger(lengthB) || lengthB <= 0) {
       throw new Error(`phaseLockedRhythmGenerator.getPhaseRelationship: lengths must be positive integers (got ${lengthA}, ${lengthB})`);

@@ -1,6 +1,8 @@
 ﻿// motifTransforms.js - Motif transformation strategies
 // Pure permutation transformations for motif sequences
 
+const V = validator.create('motifTransforms');
+
 /**
  * Motif transformation utilities for reverse, rotate, invert, and augment operations.
  * All transformations operate in-place on the provided array for efficiency.
@@ -69,7 +71,6 @@ motifTransforms = {
    * @param {number} semitones - Semitones to shift
    */
   transposePitch(entries, semitones) {
-    const V = validator.create('motifTransforms');
     V.requireFinite(semitones, 'semitones');
     const shift = m.round(Number(semitones));
     if (shift === 0) return;
@@ -135,7 +136,10 @@ motifTransforms = {
    * @throws {Error} If transformation fails
    */
   applyAll(entries, transforms) {
-    if (!Array.isArray(entries) || !Array.isArray(transforms)) {
+    try {
+      V.assertArray(entries, 'entries');
+      V.assertArray(transforms, 'transforms');
+    } catch {
       throw new Error('motifTransforms.applyAll: entries and transforms must be arrays');
     }
 

@@ -58,7 +58,8 @@ conductorConfig = (() => {
   }
 
   function setActiveProfile(name) {
-    if (typeof name !== 'string' || name.length === 0) {
+    V.requireType(name, 'string', 'name');
+    if (name.length === 0) {
       throw new Error('conductorConfig.setActiveProfile: name must be a non-empty string');
     }
     const profiles = getProfilesOrFail();
@@ -99,7 +100,8 @@ conductorConfig = (() => {
   function getPhaseMultiplier(sectionPhase) {
     const profile = dynamics.resolveField('phaseMultipliers');
     V.assertPlainObject(profile, 'conductorConfig.getPhaseMultiplier.phaseMultipliers');
-    if (typeof sectionPhase !== 'string' || sectionPhase.length === 0) {
+    V.requireType(sectionPhase, 'string', 'sectionPhase');
+    if (sectionPhase.length === 0) {
       throw new Error('conductorConfig.getPhaseMultiplier: sectionPhase must be a non-empty string');
     }
     if (!Object.prototype.hasOwnProperty.call(profile, sectionPhase)) {

@@ -5,15 +5,14 @@
 setBalanceAndFX = () => {
 const V = validator.create('setBalanceAndFX');
 const spatialCanvas = conductorConfig.getSpatialCanvasParams();
-if (!spatialCanvas || typeof spatialCanvas !== 'object' || !Array.isArray(spatialCanvas.balOffset) || !Array.isArray(spatialCanvas.sideBias)) {
-  throw new Error('setBalanceAndFX: getSpatialCanvasParams returned invalid shape');
-}
+V.assertObject(spatialCanvas, 'spatialCanvas');
+V.assertArray(spatialCanvas.balOffset, 'spatialCanvas.balOffset');
+V.assertArray(spatialCanvas.sideBias, 'spatialCanvas.sideBias');
 
 const ccGroupScale = spatialCanvas.ccGroupScale;
 const ccRangeScale = spatialCanvas.ccRangeScale;
-if (!ccGroupScale || typeof ccGroupScale !== 'object' || !ccRangeScale || typeof ccRangeScale !== 'object') {
-  throw new Error('setBalanceAndFX: spatialCanvas missing ccGroupScale or ccRangeScale');
-}
+V.assertObject(ccGroupScale, 'ccGroupScale');
+V.assertObject(ccRangeScale, 'ccRangeScale');
 
 const journeyFxModulation = conductorConfig.getJourneyFxModulation();
 
@@ -50,9 +49,7 @@ const resolveRangeScale = (groupName, effectNum) => {
   const groupBase = Number(ccGroupScale[groupName]);
   const groupMul = V.optionalFinite(groupBase, 1);
   const groupMap = ccRangeScale[groupName];
-  if (!groupMap || typeof groupMap !== 'object') {
-    throw new Error(`setBalanceAndFX.resolveRangeScale: missing ccRangeScale group "${groupName}"`);
-  }
+  V.assertObject(groupMap, 'groupMap');
   const specific = Number(groupMap[String(effectNum)]);
   const fallback = Number(groupMap.default);
   const ccMul = V.optionalFinite(specific, V.optionalFinite(fallback, 1));
@@ -75,9 +72,7 @@ const scaleFxRange = (minValue, maxValue, rangeScale) => {
 };
 const requireFiniteScale = (value, name) => {
   const n = Number(value);
-  if (!Number.isFinite(n)) {
-    throw new Error(`setBalanceAndFX: invalid ${name} scale (${value})`);
-  }
+  V.requireFinite(n, name);
   return n;
 };
 const resolveFxDefaults = (groupName, effectNum) => {
@@ -119,9 +114,8 @@ const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefi
   const o = (overrides && typeof overrides === 'object') ? overrides : {};
   const minValue = V.optionalFinite(Number(o.min), Number(defaults.min));
   const maxValue = V.optionalFinite(Number(o.max), Number(defaults.max));
-  if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
-    throw new Error(`setBalanceAndFX.rfx: invalid min/max for group="${groupName}" cc=${effectNum}`);
-  }
+  V.requireFinite(minValue, 'minValue');
+  V.requireFinite(maxValue, 'maxValue');
 
   const rawConditionMin = V.optionalFinite(Number(o.conditionMin), Number(defaults.conditionMin));
   const rawConditionMax = V.optionalFinite(Number(o.conditionMax), Number(defaults.conditionMax));

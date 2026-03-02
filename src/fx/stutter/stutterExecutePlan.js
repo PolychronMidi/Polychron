@@ -2,11 +2,9 @@
 
 stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   const V = validator.create('stutterExecutePlan');
-  if (!stutterMgr || typeof stutterMgr !== 'object') throw new Error('stutterExecutePlan: stutterMgr is required');
+  V.assertObject(stutterMgr, 'stutterMgr');
   const cfg = /** @type {any} */ (Object.assign({}, plan));
-  if (!cfg.profile || typeof cfg.profile !== 'string') {
-    throw new Error('stutterExecutePlan: plan.profile is required');
-  }
+  V.assertNonEmptyString(cfg.profile, 'cfg.profile');
   const profile = cfg.profile;
   const baseNote = V.requireFinite(cfg.note, 'plan.note');
   const on = V.optionalFinite(Number(cfg.on), beatStart);
@@ -26,14 +24,10 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   }
 
   const crossRules = stutterConfig.getCrossModRules();
-  if (!crossRules || typeof crossRules !== 'object') {
-    throw new Error('stutterExecutePlan: invalid crossRules from stutterConfig.getCrossModRules');
-  }
+  V.assertObject(crossRules, 'crossRules');
 
   const directiveDefaults = stutterConfig.getDirectiveDefaults();
-  if (!directiveDefaults || typeof directiveDefaults !== 'object') {
-    throw new Error('stutterExecutePlan: invalid directive defaults from stutterConfig.getDirectiveDefaults');
-  }
+  V.assertObject(directiveDefaults, 'directiveDefaults');
   const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
   if (cfg.preset) {
     const preset = stutterConfig.getPreset(cfg.preset);
@@ -93,9 +87,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
         case 'oscillate': return 0.5 + 0.5 * m.sin(2 * m.PI * Number(tn));
         default: {
           const numericCurve = Number(curve);
-          if (!Number.isFinite(numericCurve)) {
-            throw new Error(`stutterExecutePlan.evalCurve: unsupported curve value ${String(curve)}`);
-          }
+          V.requireFinite(numericCurve, 'numericCurve');
           return numericCurve;
         }
       }

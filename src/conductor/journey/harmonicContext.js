@@ -37,59 +37,63 @@ harmonicContext = (() => {
    * @throws {Error} if updates invalid or required fields missing
    */
   function set(updates) {
-    if (!updates || typeof updates !== 'object') {
-      throw new Error('harmonicContext.set: updates must be an object');
-    }
+    V.assertObject(updates, 'updates');
 
     const { key, mode, quality, scale, chords, tension, excursion, sectionPhase } = updates;
     const changedFields = [];
 
     if (key !== undefined) {
-      if (typeof key !== 'string' || !key) throw new Error('harmonicContext.set: key must be non-empty string');
+      V.requireType(key, 'string', 'key');
+      if (!key) throw new Error('harmonicContext.set: key must be non-empty string');
       if (state.key !== key) changedFields.push('key');
       state.key = key;
     }
 
     if (mode !== undefined) {
-      if (typeof mode !== 'string' || !mode) throw new Error('harmonicContext.set: mode must be non-empty string');
+      V.requireType(mode, 'string', 'mode');
+      if (!mode) throw new Error('harmonicContext.set: mode must be non-empty string');
       if (state.mode !== mode) changedFields.push('mode');
       state.mode = mode;
     }
 
     if (quality !== undefined) {
-      if (typeof quality !== 'string' || !quality) throw new Error('harmonicContext.set: quality must be non-empty string');
+      V.requireType(quality, 'string', 'quality');
+      if (!quality) throw new Error('harmonicContext.set: quality must be non-empty string');
       if (state.quality !== quality) changedFields.push('quality');
       state.quality = quality;
     }
 
     if (scale !== undefined) {
-      if (!Array.isArray(scale) || scale.length === 0) throw new Error('harmonicContext.set: scale must be non-empty array');
+      V.assertArray(scale, 'scale', true);
       if (JSON.stringify(state.scale) !== JSON.stringify(scale)) changedFields.push('scale');
       state.scale = scale;
     }
 
     if (chords !== undefined) {
-      if (!Array.isArray(chords)) throw new Error('harmonicContext.set: chords must be an array');
+      V.assertArray(chords, 'chords');
       if (JSON.stringify(state.chords) !== JSON.stringify(chords)) changedFields.push('chords');
       state.chords = chords;
     }
 
     if (tension !== undefined) {
       const t = Number(tension);
-      if (!Number.isFinite(t) || t < 0 || t > 1) throw new Error('harmonicContext.set: tension must be number 0-1');
+      V.requireFinite(t, 'tension');
+      if (t < 0 || t > 1) throw new Error('harmonicContext.set: tension must be number 0-1');
       if (state.tension !== t) changedFields.push('tension');
       state.tension = t;
     }
 
     if (excursion !== undefined) {
       const e = Number(excursion);
-      if(!Number.isFinite(e) || e < 0) throw new Error('harmonicContext.set: excursion must be non-negative number');
+      V.requireFinite(e, 'excursion');
+      if (e < 0) throw new Error('harmonicContext.set: excursion must be non-negative number');
       if (state.excursion !== e) changedFields.push('excursion');
       state.excursion = e;
     }
 
     if (sectionPhase !== undefined) {
-      if (typeof sectionPhase !== 'string' || !sectionPhase) throw new Error('harmonicContext.set: sectionPhase must be non-empty string');
+      V.requireType(sectionPhase, 'string', 'sectionPhase');
+      if (!sectionPhase) throw new Error('harmonicContext.set: sectionPhase must be non-empty string');
       if (state.sectionPhase !== sectionPhase) changedFields.push('sectionPhase');
       state.sectionPhase = sectionPhase;
     }
@@ -160,9 +164,7 @@ harmonicContext = (() => {
     const scaleName = `${key} ${mode}`;
     try {
       const scaleNotes = t.Scale.get(scaleName).notes;
-      if (!Array.isArray(scaleNotes) || scaleNotes.length === 0) {
-        throw new Error(`scale "${scaleName}" returned empty notes`);
-      }
+      V.assertArray(scaleNotes, 'scaleNotes', true);
       state.scale = scaleNotes;
       state.key = key;
       state.mode = mode;
@@ -178,7 +180,7 @@ harmonicContext = (() => {
    */
   function isNoteInScale(noteInput) {
     const chroma = typeof noteInput === 'number' ? noteInput % 12 : (t && t.Note) ? t.Note.chroma(noteInput) : -1;
-    if (typeof chroma !== 'number' || chroma < 0) return false;
+    if (!Number.isFinite(chroma) || chroma < 0) return false;
     return state.scale.some(n => (typeof n === 'number' ? n : (t && t.Note) ? t.Note.chroma(n) : -1) === chroma);
   }
 

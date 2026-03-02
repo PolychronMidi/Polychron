@@ -34,9 +34,9 @@ feedbackOscillator = (() => {
       ? pitchClass
       : -1;
     let finalImpulseType = 'accent';
-    if (typeof impulseType !== 'undefined') {
-      V.assertNonEmptyString(impulseType, 'impulseType');
-      finalImpulseType = impulseType;
+    const impulseTypeMaybe = V.optionalType(impulseType, 'string');
+    if (impulseTypeMaybe !== undefined) {
+      finalImpulseType = V.assertNonEmptyString(impulseTypeMaybe, 'impulseType');
     }
     absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
       energy: clamp(energy, 0, 1),
@@ -62,9 +62,7 @@ feedbackOscillator = (() => {
       CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
     );
     if (!incoming) return null;
-    if (typeof incoming !== 'object') {
-      throw new Error('feedbackOscillator.react: absoluteTimeGrid.findClosest must return object|null');
-    }
+    V.assertObject(incoming, 'incoming');
     if (!Number.isFinite(incoming.energy) || incoming.energy < MIN_ENERGY) return null;
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
 

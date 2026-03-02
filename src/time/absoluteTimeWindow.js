@@ -158,16 +158,16 @@ absoluteTimeWindow = (() => {
     let layer;
     let since;
     let windowSeconds;
-    if (typeof effectiveOpts === 'undefined') {
+    if (effectiveOpts === undefined) {
       layer = undefined;
       since = undefined;
       windowSeconds = undefined;
     } else {
       V.assertPlainObject(effectiveOpts, 'getEntries.opts');
       ({ layer, since, windowSeconds } = effectiveOpts);
-      if (typeof layer !== 'undefined') V.assertNonEmptyString(layer, 'getEntries.opts.layer');
-      if (typeof since !== 'undefined') V.requireFinite(since, 'getEntries.opts.since');
-      if (typeof windowSeconds !== 'undefined') V.requireFinite(windowSeconds, 'getEntries.opts.windowSeconds');
+      if (layer !== undefined) V.assertNonEmptyString(layer, 'getEntries.opts.layer');
+      if (since !== undefined) V.requireFinite(since, 'getEntries.opts.since');
+      if (windowSeconds !== undefined) V.requireFinite(windowSeconds, 'getEntries.opts.windowSeconds');
     }
     const arr = entries[type];
     if (!Array.isArray(arr) || arr.length === 0) {
@@ -175,7 +175,7 @@ absoluteTimeWindow = (() => {
     }
 
     const last = /** @type {ATWEntry|undefined} */ (arr[arr.length - 1]);
-    if (!last || typeof last.time !== 'number') {
+    if (!last || !V.optionalType(last.time, 'number')) {
       return [];
     }
 
@@ -199,7 +199,7 @@ absoluteTimeWindow = (() => {
     const result = [];
     for (let i = startIdx; i < arr.length; i++) {
       const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
-      if (!entry || typeof entry.time !== 'number') continue;
+      if (!entry || !V.optionalType(entry.time, 'number')) continue;
       if (layer && entry.layer !== layer) continue;
       result.push(entry);
     }
@@ -234,7 +234,7 @@ absoluteTimeWindow = (() => {
       if (windowSeconds !== undefined) V.requireFinite(windowSeconds, 'noteQuery.windowSeconds');
     }
     const last = /** @type {ATWEntry} */ (arr[arr.length - 1]);
-    if (!last || typeof last.time !== 'number') return null;
+    if (!last || !V.optionalType(last.time, 'number')) return null;
     const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
       ? windowSeconds : DEFAULT_WINDOW_SECONDS;
     const cutoff = (typeof since === 'number' && Number.isFinite(since))
@@ -260,13 +260,14 @@ absoluteTimeWindow = (() => {
     if (!q) return 0;
     const cacheKey = 'count:' + (q.layer || '') + ':' + q.cutoff;
     const cached = _scalarCache.get(cacheKey);
-    if (typeof cached === 'number') return cached;
+    const cachedNumber = V.optionalType(cached, 'number');
+    if (cachedNumber !== undefined) return V.requireFinite(cachedNumber, 'countNotes.cachedNumber');
     const arr = entries.note;
     const { layer, startIdx } = q;
     let count = 0;
     for (let i = startIdx; i < arr.length; i++) {
       const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
-      if (!entry || typeof entry.time !== 'number') continue;
+      if (!entry || !V.optionalType(entry.time, 'number')) continue;
       if (layer && entry.layer !== layer) continue;
       count++;
     }
@@ -288,7 +289,7 @@ absoluteTimeWindow = (() => {
     const { layer, cutoff } = q;
     for (let i = arr.length - 1; i >= 0; i--) {
       const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
-      if (!entry || typeof entry.time !== 'number') continue;
+      if (!entry || !V.optionalType(entry.time, 'number')) continue;
       if (entry.time < cutoff) break;
       if (layer && entry.layer !== layer) continue;
       return entry;
@@ -315,7 +316,7 @@ absoluteTimeWindow = (() => {
     /** @type {ATWEntry|null} */ let last = null;
     for (let i = startIdx; i < arr.length; i++) {
       const entry = /** @type {ATWEntry|undefined} */ (arr[i]);
-      if (!entry || typeof entry.time !== 'number') continue;
+      if (!entry || !V.optionalType(entry.time, 'number')) continue;
       if (layer && entry.layer !== layer) continue;
       if (first === null) first = entry;
       last = entry;

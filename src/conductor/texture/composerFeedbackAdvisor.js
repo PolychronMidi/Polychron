@@ -148,7 +148,7 @@ composerFeedbackAdvisor = (() => {
   function scoreCandidateAdjustment(candidateConfig) {
     V.assertPlainObject(candidateConfig, 'candidateConfig');
     const type = candidateConfig.type;
-    if (typeof type !== 'string' || type.length === 0) return 1.0;
+    if (!V.optionalType(type, 'string') || (type && type.length === 0)) return 1.0;
 
     const signals = _collectSignals();
     let adjustment = 1.0;

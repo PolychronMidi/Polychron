@@ -30,12 +30,8 @@ ModeComposer = class ModeComposer extends MeasureComposer {
    * @param {string} root - Root note (e.g., 'C', 'D#')
    */
   noteSet(modeName,root) {
-    if (typeof modeName !== 'string' || !modeName) {
-      throw new Error(`ModeComposer.noteSet: modeName must be non-empty string, got ${typeof modeName}`);
-    }
-    if (typeof root !== 'string' || !root) {
-      throw new Error(`ModeComposer.noteSet: root must be non-empty string, got ${typeof root}`);
-    }
+    V.assertNonEmptyString(modeName, 'modeName');
+    V.assertNonEmptyString(root, 'root');
 
     this.mode = t.Mode.get(modeName);
     if (!this.mode) {
@@ -43,7 +39,8 @@ ModeComposer = class ModeComposer extends MeasureComposer {
     }
 
     this.notes = t.Mode.notes(this.mode, root);
-    if (!Array.isArray(this.notes) || this.notes.length === 0) {
+    V.assertArray(this.notes, 'this.notes');
+    if (this.notes.length === 0) {
       throw new Error(`ModeComposer.noteSet: mode="${modeName}" root="${root}" produced empty notes`);
     }
     this.intervalOptions = {
@@ -68,7 +65,8 @@ RandomModeComposer = class RandomModeComposer extends ModeComposer {
   }
   /** Randomly selects mode and root from venue.js data */
   noteSet() {
-    if (!Array.isArray(allModes) || allModes.length === 0) throw new Error('RandomModeComposer.noteSet: allModes not available');
+    V.assertArray(allModes, 'allModes');
+    if (allModes.length === 0) throw new Error('RandomModeComposer.noteSet: allModes not available');
     const randomMode=allModes[ri(allModes.length - 1)];
     const [root,modeName]=randomMode.split(' ');
     this.root=root;

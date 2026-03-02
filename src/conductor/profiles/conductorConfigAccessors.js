@@ -91,7 +91,8 @@ conductorConfigAccessors = (deps) => {
     const weights = getProfileTuning().feedbackMix;
     V.assertPlainObject(weights, 'conductorConfig.getFeedbackMixWeights.feedbackMix');
     const sum = Number(weights.fx) + Number(weights.stutter) + Number(weights.journey);
-    if (!Number.isFinite(sum) || sum <= 0) {
+    V.requireFinite(sum, 'sum');
+    if (sum <= 0) {
       throw new Error(`conductorConfig.getFeedbackMixWeights: invalid weight sum ${sum}`);
     }
     return {
@@ -105,7 +106,8 @@ conductorConfigAccessors = (deps) => {
     const blend = getProfileTuning().intensityBlend;
     V.assertPlainObject(blend, 'conductorConfig.getGlobalIntensityBlend.intensityBlend');
     const sum = Number(blend.arc) + Number(blend.tension);
-    if (!Number.isFinite(sum) || sum <= 0) {
+    V.requireFinite(sum, 'sum');
+    if (sum <= 0) {
       throw new Error(`conductorConfig.getGlobalIntensityBlend: invalid blend sum ${sum}`);
     }
     return {

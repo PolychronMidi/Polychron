@@ -56,9 +56,8 @@ entropyMetrics = (() => {
     for (let i = 1; i < notes.length; i++) {
       const currentTime = Number(notes[i].time);
       const previousTime = Number(notes[i - 1].time);
-      if (!Number.isFinite(currentTime) || !Number.isFinite(previousTime)) {
-        throw new Error('entropyMetrics: note time entries must be finite');
-      }
+      V.requireFinite(currentTime, 'currentTime');
+      V.requireFinite(previousTime, 'previousTime');
       const dt = currentTime - previousTime;
       if (dt > 0) iois.push(dt);
     }

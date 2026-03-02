@@ -30,8 +30,8 @@ feedbackRegistry = (() => {
     V.assertNonEmptyString(name, 'name');
     V.assertNonEmptyString(sourceDomain, 'sourceDomain');
     V.assertNonEmptyString(targetDomain, 'targetDomain');
-    if (typeof getAmplitude !== 'function') throw new Error('getAmplitude must be a function');
-    if (typeof getPhase !== 'function') throw new Error('getPhase must be a function');
+    V.requireType(getAmplitude, 'function', 'getAmplitude');
+    V.requireType(getPhase, 'function', 'getPhase');
 
     loops.set(name, { name, sourceDomain, targetDomain, getAmplitude, getPhase });
   }

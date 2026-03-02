@@ -23,12 +23,8 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    * @param {string} root
    */
   noteSet(scaleName, root) {
-    if (scaleName !== undefined && typeof scaleName !== 'string') {
-      throw new Error('ScaleComposer.noteSet: scaleName must be a string if provided');
-    }
-    if (root !== undefined && typeof root !== 'string') {
-      throw new Error('ScaleComposer.noteSet: root must be a string if provided');
-    }
+    if (scaleName !== undefined) V.requireType(scaleName, 'string', 'scaleName');
+    if (root !== undefined) V.requireType(root, 'string', 'root');
     const name = scaleName ?? '';
     const rt = root ?? '';
     const scaleKey = `${rt} ${name}`.trim();
@@ -38,7 +34,11 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
       throw new Error(`ScaleComposer.noteSet: t.Scale.get threw for ${scaleKey}: ${e && e.stack ? e.stack : e}`);
     }
 
-    if (!this.scale || !Array.isArray(this.scale.notes) || this.scale.notes.length === 0) {
+    if (!this.scale) {
+      throw new Error(`ScaleComposer.noteSet: scale lookup failed for "${scaleKey}" and no fallback available`);
+    }
+    V.assertArray(this.scale.notes, 'this.scale.notes');
+    if (this.scale.notes.length === 0) {
       throw new Error(`ScaleComposer.noteSet: scale lookup failed for "${scaleKey}" and no fallback available`);
     }
     this.notes = this.scale.notes;
@@ -62,15 +62,14 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
    * @returns {number}
    */
   selectNoteWithLeading(candidates = []) {
-    if (!Array.isArray(candidates) || candidates.length === 0) {
+    V.assertArray(candidates, 'candidates');
+    if (candidates.length === 0) {
       throw new Error('ScaleComposer.selectNoteWithLeading: no candidate notes provided');
     }
 
     let selectedNote;
     if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
-      if (typeof this.voiceHistory !== 'undefined' && !Array.isArray(this.voiceHistory)) {
-        throw new Error('ScaleComposer.selectNoteWithLeading: voiceHistory must be an array if provided');
-      }
+      V.requireType(this.voiceHistory, 'array', 'this.voiceHistory');
       selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
     }
 
@@ -93,8 +92,8 @@ RandomScaleComposer = class RandomScaleComposer extends ScaleComposer {
   }
   /** Randomly selects scale and root from venue.js data */
   noteSet() {
-    if (!Array.isArray(allScales) || allScales.length === 0) throw new Error('RandomScaleComposer.noteSet: allScales not available');
-    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('RandomScaleComposer.noteSet: allNotes not available');
+    V.assertArray(allScales, 'allScales', true);
+    V.assertArray(allNotes, 'allNotes', true);
     const randomScale=allScales[ri(allScales.length - 1)];
     const randomRoot=allNotes[ri(allNotes.length - 1)];
     super.noteSet(randomScale,randomRoot);

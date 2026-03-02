@@ -11,9 +11,8 @@ trackRhythm = (unit, layer, played) => {
     const existing = layer[counterKey];
     if (existing === undefined) {
       layer[counterKey] = 1;
-    } else if (!Number.isFinite(existing)) {
-      throw new Error(`trackRhythm: counter "${counterKey}" must be finite when defined`);
     } else {
+      V.requireFinite(existing, 'existing');
       layer[counterKey] = existing + 1;
     }
   };
@@ -27,10 +26,7 @@ trackRhythm = (unit, layer, played) => {
       layer[`${key}sOn`] = 0;
       incrementCounter(`${key}sOff`);
     }
-    return;
-  }
-
-  // Otherwise, derive from the rhythm array as before
+  } else {
   const rhythm = layer[`${key}Rhythm`];
   const idx = layer[`${key}Index`];
   // Prefer per-context rhythm/index, but fall back to globals when available.
@@ -61,7 +57,8 @@ trackRhythm = (unit, layer, played) => {
   }
 }
   // If still missing or invalid, this is a critical invariance violation - fail fast.
-  if (!Array.isArray(rhythmFinal) || idxFinal === undefined || rhythmFinal[idxFinal] === undefined) {
+  rhythmFinal = V.assertArray(rhythmFinal, 'rhythmFinal');
+  if (idxFinal === undefined || rhythmFinal[idxFinal] === undefined) {
     const details = { unit, key, layerHasRhythm: Array.isArray(rhythm), layerIdxDefined: idx !== undefined, globalHasRhythm: Array.isArray(rhythmFinal), globalIdxDefined: idxFinal !== undefined };
     throw new Error(`trackRhythm: missing rhythm or index for unit "${unit}" - details: ${JSON.stringify(details)}`);
   }
@@ -76,5 +73,5 @@ trackRhythm = (unit, layer, played) => {
   } else {
     throw new Error(`trackRhythm: rhythm value for unit "${unit}" must be 0 or > 0, received ${String(val)}`);
   }
-  return;
-}
+} // close else block for played not boolean
+} // close trackRhythm function

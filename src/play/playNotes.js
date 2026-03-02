@@ -151,9 +151,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Delegate motif selection and transformation to playMotifs
   const picks = playMotifs(unit, layer);
-  if (!Array.isArray(picks)) {
-    throw new Error(`${unit}.playNotes: playMotifs must return an array`);
-  }
+  V.assertArray(picks, 'picks');
   intendedCount = picks.length;
 
   // Apply voiceModulator to get per-pick velocity distribution

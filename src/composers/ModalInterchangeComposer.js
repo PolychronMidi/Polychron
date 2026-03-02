@@ -42,7 +42,11 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     const modeIndex = ri(this.borrowModes.length - 1);
     const borrowMode = this.borrowModes[modeIndex];
     const borrowScale = t.Scale.get(`${this.key} ${borrowMode}`);
-    if (!borrowScale || !Array.isArray(borrowScale.notes) || borrowScale.notes.length === 0) {
+    if (!borrowScale) {
+      throw new Error(`ModalInterchangeComposer.borrowChord: borrow scale ${borrowMode} has no notes`);
+    }
+    V.assertArray(borrowScale.notes, 'borrowScale.notes');
+    if (borrowScale.notes.length === 0) {
       throw new Error(`ModalInterchangeComposer.borrowChord: borrow scale ${borrowMode} has no notes`);
     }
     const borrowPatterns = {

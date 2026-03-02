@@ -47,9 +47,7 @@ factoryProfiles = {
   },
 
   validateCapabilityProfiles(capabilityProfiles) {
-    if (!capabilityProfiles || typeof capabilityProfiles !== 'object') {
-      throw new Error('factoryProfiles.validateCapabilityProfiles: capabilityProfiles must be an object');
-    }
+    V.assertObject(capabilityProfiles, 'capabilityProfiles');
     const entries = Object.entries(capabilityProfiles);
     const normalized = {};
     for (const [type, profile] of entries) {
@@ -63,15 +61,11 @@ factoryProfiles = {
   },
 
   validateProfileSchemaFactoryCompatibility(getConstructorOptionKeysByType) {
-    if (typeof getConstructorOptionKeysByType !== 'function') {
-      throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: getConstructorOptionKeysByType must be a function');
-    }
+    V.requireType(getConstructorOptionKeysByType, 'function', 'getConstructorOptionKeysByType');
     V.assertManagerShape(composerProfileValidation, 'composerProfileValidation', ['getAllowedKeysByTypeOrFail']);
 
     const schemaKeysByType = composerProfileValidation.getAllowedKeysByTypeOrFail();
-    if (!schemaKeysByType || typeof schemaKeysByType !== 'object') {
-      throw new Error('factoryProfiles.validateProfileSchemaFactoryCompatibility: schema key map is invalid');
-    }
+    V.assertObject(schemaKeysByType, 'schemaKeysByType');
 
     const factoryKeysByType = getConstructorOptionKeysByType();
     for (const [type, schemaKeys] of Object.entries(schemaKeysByType)) {
@@ -97,9 +91,7 @@ factoryProfiles = {
   },
 
   resolveRuntimeProfiles(config = {}) {
-    if (config !== undefined && (typeof config !== 'object' || config === null)) {
-      throw new Error('factoryProfiles.resolveRuntimeProfiles: config must be an object');
-    }
+    if (config !== undefined) V.assertObject(config, 'config');
     V.assertManagerShape(composerRuntimeProfileAdapter, 'composerRuntimeProfileAdapter', ['resolveRuntimeProfilesOrFail']);
     return composerRuntimeProfileAdapter.resolveRuntimeProfilesOrFail(config, 'FactoryManager.resolveRuntimeProfiles');
   },

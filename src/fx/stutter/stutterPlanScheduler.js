@@ -39,7 +39,7 @@ stutterPlanScheduler = (() => {
   function runPlan(stutterMgr, planIdOrCfg = {}) {
     V.assertObject(stutterMgr, 'stutterMgr');
     const plan = /** @type {any} */ ((typeof planIdOrCfg === 'string') ? stutterMgr.plans.get(planIdOrCfg) : planIdOrCfg);
-    if (!plan || typeof plan !== 'object') throw new Error('stutterPlanScheduler.runPlan: invalid plan');
+    V.assertObject(plan, 'plan');
     return executePlan(stutterMgr, plan);
   }
 

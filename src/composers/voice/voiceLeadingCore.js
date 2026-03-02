@@ -29,9 +29,8 @@ voiceLeadingCore = {
     // Validate inputs
     V.requireDefined(scorer, 'scorer');
     V.requireFinite(candidate, 'candidate');
-    V.assertArray(lastNotes, 'lastNotes');
-    if (!Array.isArray(lastNotes) || lastNotes.length === 0) throw new Error('voiceLeadingCore.computeCandidateScore: lastNotes must be non-empty array');
-    for (let i = 0; i < lastNotes.length; i++) if (!Number.isFinite(Number(lastNotes[i]))) throw new Error(`voiceLeadingCore.computeCandidateScore: lastNotes[${i}] must be finite number`);
+    V.assertArray(lastNotes, 'lastNotes', true);
+    for (let i = 0; i < lastNotes.length; i++) V.requireFinite(lastNotes[i], `lastNotes[${i}]`);
 
     const lastNote = Number(lastNotes[0]);
     const interval = m.abs(candidate - lastNote);
@@ -39,7 +38,8 @@ voiceLeadingCore = {
     // Determine current register
     let currentRegister = 'soprano';
     if (opts && opts.register !== undefined) {
-      if (typeof opts.register !== 'string' || !scorer.registers[opts.register]) throw new Error('voiceLeadingCore.computeCandidateScore: opts.register, if provided, must be a valid register name');
+      V.requireType(opts.register, 'string', 'opts.register');
+      if (!scorer.registers[opts.register]) throw new Error('voiceLeadingCore.computeCandidateScore: opts.register, if provided, must be a valid register name');
       currentRegister = opts.register;
     }
 
@@ -154,12 +154,8 @@ voiceLeadingCore = {
    * @returns {{ [note: number]: number }} Candidate weight map
    */
   buildPCWeights(candidateNotes, referenceNotes, matchWeight = 1, nonMatchWeight = 0) {
-    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) {
-      throw new Error('voiceLeadingCore.buildPCWeights: candidateNotes must be a non-empty array');
-    }
-    if (!Array.isArray(referenceNotes) || referenceNotes.length === 0) {
-      throw new Error('voiceLeadingCore.buildPCWeights: referenceNotes must be a non-empty array');
-    }
+    V.assertArray(candidateNotes, 'candidateNotes', true);
+    V.assertArray(referenceNotes, 'referenceNotes', true);
 
     const referencePCs = new Set();
     for (const item of referenceNotes) {
@@ -182,9 +178,7 @@ voiceLeadingCore = {
     /** @type {{ [note: number]: number }} */
     const weights = {};
     for (const note of candidateNotes) {
-      if (!Number.isFinite(Number(note))) {
-        throw new Error(`voiceLeadingCore.buildPCWeights: candidate note ${note} is not finite`);
-      }
+      V.requireFinite(note, 'note');
       const pc = ((Number(note) % 12) + 12) % 12;
       weights[note] = referencePCs.has(pc) ? matchWeight : nonMatchWeight;
     }

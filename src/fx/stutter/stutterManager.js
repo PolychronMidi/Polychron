@@ -40,15 +40,11 @@ class StutterManager {
     V.assertManagerShape(stutterPlanScheduler, 'stutterPlanScheduler', ['schedulePlan']);
     V.assertManagerShape(SC, 'stutterConfig', ['getConfig', 'getDirectiveDefaults']);
     this.config = SC.getConfig();
-    if (!this.config || typeof this.config !== 'object') {
-      throw new Error('StutterManager: stutterConfig.getConfig returned invalid config');
-    }
+    V.assertObject(this.config, 'this.config');
 
     // Default directive applied each beat unless overridden (keeps features active by default)
     this.defaultDirective = SC.getDirectiveDefaults();
-    if (!this.defaultDirective || typeof this.defaultDirective !== 'object') {
-      throw new Error('StutterManager: invalid default directive from stutterConfig.getDirectiveDefaults');
-    }
+    V.assertObject(this.defaultDirective, 'this.defaultDirective');
 
     // fx loads before play/eventBus; listener is attached lazily from prepareBeat().
   }
@@ -70,12 +66,8 @@ class StutterManager {
 
       // Chord burst - immediate micro-stutter response on reflection channels
       if (mode === 'chordBurst' && composite > 0.3) {
-        if (!Array.isArray(reflection)) {
-          throw new Error('StutterManager._attachTextureListener: reflection channels array is not available');
-        }
-        if (typeof this._stutterPan !== 'function') {
-          throw new Error('StutterManager._attachTextureListener: stutterPan implementation not available');
-        }
+        V.assertArray(reflection, 'reflection');
+        V.requireType(this._stutterPan, 'function', 'this._stutterPan');
         const reflChs = reflection.slice(0, 2);
         if (reflChs.length > 0) {
           const microRate = clamp(m.round(24 + composite * 16), 24, 48);
@@ -101,9 +93,7 @@ class StutterManager {
 
   _getStutterGrainParams() {
     const grain = conductorConfig.getStutterGrainParams();
-    if (!grain || typeof grain !== 'object') {
-      throw new Error('StutterManager._getStutterGrainParams: invalid grain params');
-    }
+    V.assertObject(grain, 'grain');
     return grain;
   }
 
@@ -202,9 +192,7 @@ class StutterManager {
 
     // merge default directive into unit-stutter opts when present (coherence only currently)
     provided.beatContext = this.beatContext;
-    if (!provided.beatContext || typeof provided.beatContext !== 'object') {
-      throw new Error('StutterManager.scheduleStutterForUnit: beatContext must be set before scheduling');
-    }
+    V.assertObject(provided.beatContext, 'provided.beatContext');
     if (!provided.beatContext.coherenceKey && this.defaultDirective && this.defaultDirective.coherence && this.defaultDirective.coherence.enabled) {
       const prefix = this.defaultDirective.coherence.keyPrefix || 'stutter';
       const seed = provided.coherenceGroup || provided.coherenceKey || 'unit';
@@ -232,12 +220,8 @@ class StutterManager {
         ? clamp(1 - this._textureIntensity * 1.5, 0.1, 0.5) // lower selection chance
         : 0.5;
 
-      if (!Array.isArray(reflection)) {
-        throw new Error('StutterManager.prepareBeat: reflection channels array is not available');
-      }
-      if (!Array.isArray(bass)) {
-        throw new Error('StutterManager.prepareBeat: bass channels array is not available');
-      }
+      V.assertArray(reflection, 'reflection');
+      V.assertArray(bass, 'bass');
       const reflCandidates = reflection.slice();
       for (const ch of reflCandidates) if (this.beatContext.selectedReflectionChannels.size < 2 && rf() < textureSuppression) this.beatContext.selectedReflectionChannels.add(ch);
       const bassCandidates = bass.slice();
@@ -246,9 +230,7 @@ class StutterManager {
 
     // Apply default coherence key if enabled in defaultDirective
     const def = this.defaultDirective;
-    if (!def || typeof def !== 'object') {
-      throw new Error('StutterManager.prepareBeat: defaultDirective is not initialized');
-    }
+    V.assertObject(def, 'def');
     if (def.coherence && def.coherence.enabled) {
       const prefix = (def.coherence && typeof def.coherence.keyPrefix === 'string' && def.coherence.keyPrefix.length > 0) ? def.coherence.keyPrefix : 'stutter';
       const seed = `${m.round(V.requireFinite(measureIndex, 'measureIndex'))}:${m.round(V.requireFinite(beatIndex, 'beatIndex'))}`;

@@ -8,20 +8,16 @@ stutterFailFast = (() => {
     return { eventName };
   }
 
-  function requireChannelArrays(caller) {
-    if (!Array.isArray(reflection)) {
-      throw new Error(`${caller}: reflection channel array is not available`);
-    }
-    if (!Array.isArray(bass)) {
-      throw new Error(`${caller}: bass channel array is not available`);
-    }
+  function requireChannelArrays() {
+    V.assertArray(reflection, 'reflection');
+    V.assertArray(bass, 'bass');
     return { reflectionChannels: reflection, bassChannels: bass };
   }
 
-  function assertModulationXY(mod, label) {
-    if (!mod || !Number.isFinite(Number(mod.x)) || !Number.isFinite(Number(mod.y))) {
-      throw new Error(`stutterFailFast: ${label} modulation must have finite x/y`);
-    }
+  function assertModulationXY(mod) {
+    V.assertObject(mod, 'mod');
+    V.requireFinite(mod.x, 'mod.x');
+    V.requireFinite(mod.y, 'mod.y');
     return mod;
   }
 

@@ -138,7 +138,7 @@ interface ValidatorInstance {
   assertRange(value: unknown, lo: number, hi: number, label: string): number;
   assertObject(value: unknown, label: string): object;
   assertPlainObject(value: unknown, label: string): Record<string, unknown>;
-  assertArray(value: unknown, label: string): any[];
+  assertArray(value: unknown, label: string, checkNonEmpty?: boolean): any[];
   assertNonEmptyString(value: unknown, label: string): string;
   assertKeysPresent(obj: object, keys: string[], label: string): void;
   assertAllowedKeys(obj: object, keys: string[], label: string): void;

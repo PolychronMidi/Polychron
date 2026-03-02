@@ -24,7 +24,8 @@ microUnitAttenuator = (() => {
      */
     begin(unit, unitsPerParent) {
       const n = Number(unitsPerParent);
-      if (!Number.isFinite(n) || n <= 0) throw new Error(`microUnitAttenuator.begin: invalid unitsPerParent=${unitsPerParent}`);
+      V.requireFinite(n, 'n');
+      if (n <= 0) throw new Error(`microUnitAttenuator.begin: invalid unitsPerParent=${unitsPerParent}`);
       // Unit-aware caps: deeper units get tighter limits to prevent texture overload
       // Ranges driven by conductorConfig profile for per-profile density shaping
       V.assertObject(conductorConfig, 'conductorConfig');

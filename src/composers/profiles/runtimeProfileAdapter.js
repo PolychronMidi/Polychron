@@ -191,7 +191,7 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
  * @returns {Object}
  */
 const getVoiceSelectionOptions = (runtimeProfile = null) => {
-  if (!runtimeProfile || typeof runtimeProfile !== 'object') return {};
+  if (!V.optionalType(runtimeProfile, 'object')) return {};
   const options = {};
   if (isFiniteNumber(/** @type {any} */ (runtimeProfile).voiceCountMultiplier)) {
     options.voiceCountMultiplier = Number(/** @type {any} */ (runtimeProfile).voiceCountMultiplier);
@@ -212,7 +212,7 @@ const getVoiceSelectionOptions = (runtimeProfile = null) => {
  * @returns {{ baseVelocity: number|null, velocityScale: number, timingOffsetUnits: number, swingAmount: number }}
  */
 const getEmissionAdjustments = (runtimeProfile = null) => {
-  if (!runtimeProfile || typeof runtimeProfile !== 'object') {
+  if (!V.optionalType(runtimeProfile, 'object')) {
     return { baseVelocity: null, velocityScale: 1, timingOffsetUnits: 0, swingAmount: 0 };
   }
   return {

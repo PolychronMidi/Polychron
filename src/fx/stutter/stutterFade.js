@@ -4,7 +4,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
     throw new Error('stutterFade: stutterFailFast helper is not available');
   }
   const { eventName } = stutterFailFast.requireEventInfra();
-  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays('stutterFade');
+  const { reflectionChannels, bassChannels } = stutterFailFast.requireChannelArrays();
   const channelsArray = pickStutterChannels(channels, ri(1, 5), this.lastUsedCHs);
 
   // Write beat-level fade context for note-velocity coherence (task 8)
@@ -54,12 +54,12 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       }
 
       // Apply noise modulation to fade curve
-      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fade', tick), `stutterFade channel=${channelToStutter} tick=${tick}`);
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fade', tick));
       // If a plan coherenceKey is present, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterFade coherence key=${coherenceKey} channel=${channelToStutter}`);
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick));
       }
 
       // Modulate volume by noise influence (combine local + coherence)

@@ -36,7 +36,8 @@ PentatonicComposer = class PentatonicComposer extends MeasureComposer {
   getNotes(octaveRange = null) {
     // Return full note pool for centralized voice selection
     const notes = super.getNotes(octaveRange);
-    if (!Array.isArray(notes) || notes.length === 0) {
+    V.assertArray(notes, 'notes');
+    if (notes.length === 0) {
       throw new Error('PentatonicComposer.getNotes: expected super.getNotes() to return a non-empty array');
     }
     return notes;
@@ -52,7 +53,8 @@ RandomPentatonicComposer = class RandomPentatonicComposer extends PentatonicComp
   }
 
   noteSet() {
-    if (!Array.isArray(allNotes) || allNotes.length === 0) throw new Error('RandomPentatonicComposer.noteSet: allNotes not available');
+    V.assertArray(allNotes, 'allNotes');
+    if (allNotes.length === 0) throw new Error('RandomPentatonicComposer.noteSet: allNotes not available');
     const randomRoot = allNotes[ri(allNotes.length - 1)];
     const randomType = rf() < 0.5 ? 'major' : 'minor';
     super.noteSet(randomRoot, randomType);

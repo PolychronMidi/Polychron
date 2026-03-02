@@ -21,9 +21,7 @@ FXFeedbackListener = (() => {
             const stereoPan = V.requireFinite(data.stereoPan, 'beat-fx-applied.stereoPan');
             const velocityShift = V.requireFinite(data.velocityShift, 'beat-fx-applied.velocityShift');
             const intensity = stereoPan * velocityShift;
-            if (!Number.isFinite(intensity)) {
-              throw new Error(`FXFeedbackListener: invalid intensity ${intensity}`);
-            }
+            V.requireFinite(intensity, 'intensity');
             return clamp(intensity, 0, 1);
           }
         },
@@ -78,9 +76,7 @@ FXFeedbackListener = (() => {
    * @throws {Error} if input invalid
    */
   function biasRhythmMethods(rhythmMethodsObj) {
-    if (!rhythmMethodsObj || typeof rhythmMethodsObj !== 'object') {
-      throw new Error('FXFeedbackListener.biasRhythmMethods: invalid input object');
-    }
+    V.assertObject(rhythmMethodsObj, 'rhythmMethodsObj');
 
     const intensity = getIntensity();
     const biased = {};
@@ -103,9 +99,7 @@ FXFeedbackListener = (() => {
     // - intensity === 0 => score === 1 - baseComplexity (favor simple methods)
     // - intensity === 0.5 => score === 0.5 (neutral)
     for (const [name, method] of Object.entries(rhythmMethodsObj)) {
-      if (typeof method !== 'function') {
-        throw new Error(`FXFeedbackListener.biasRhythmMethods: method "${name}" is not a function`);
-      }
+      V.requireType(method, 'function', `method "${name}"`);
 
       const baseComplexity = (complexityMap[name] !== undefined) ? complexityMap[name] : 0.5;
       const score = clamp(baseComplexity * intensity + (1 - baseComplexity) * (1 - intensity), 0, 1);
@@ -134,9 +128,7 @@ FXFeedbackListener = (() => {
    * @returns {Object} modified with intensity-based bias
    */
   function biasRhythmWeights(rhythmsObj) {
-    if (!rhythmsObj || typeof rhythmsObj !== 'object') {
-      throw new Error('FXFeedbackListener.biasRhythmWeights: invalid rhythms object');
-    }
+    V.assertObject(rhythmsObj, 'rhythmsObj');
 
     const intensity = getIntensity();
     const modified = {};

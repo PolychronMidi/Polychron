@@ -24,14 +24,18 @@ PhraseArcManager = class PhraseArcManager {
     const validArcTypes = ['arch', 'rise-fall', 'build-resolve', 'wave'];
     if (opts.arcType === undefined) {
       this.arcType = 'arch';
-    } else if (typeof opts.arcType !== 'string' || !validArcTypes.includes(opts.arcType)) {
-      throw new Error('PhraseArcManager: invalid arcType');
     } else {
+      V.requireType(opts.arcType, 'string', 'opts.arcType');
+      if (!validArcTypes.includes(opts.arcType)) {
+        throw new Error('PhraseArcManager: invalid arcType');
+      }
       this.arcType = opts.arcType;
     }
     this._registerRangeOverride = (opts.registerRange !== undefined) ? V.requireFinite(Number(opts.registerRange), 'opts.registerRange') : null;
     if (opts.densityRange !== undefined) {
-      if (!opts.densityRange || typeof opts.densityRange !== 'object' || !('min' in opts.densityRange && 'max' in opts.densityRange)) {
+      if (!opts.densityRange) throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');
+      V.assertObject(opts.densityRange, 'opts.densityRange');
+      if (!('min' in opts.densityRange && 'max' in opts.densityRange)) {
         throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');
       }
       this._densityRangeOverride = opts.densityRange;

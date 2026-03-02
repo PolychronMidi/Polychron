@@ -28,9 +28,7 @@ intervalComposer = {
     if (Number(scaleLength) <= 0) {
       throw new Error(`intervalComposer.selectIntervals: invalid scaleLength=${scaleLength}`);
     }
-    if (opts !== null && typeof opts !== 'object') {
-      throw new Error(`intervalComposer.selectIntervals: opts must be an object, got ${typeof opts}`);
-    }
+    if (opts !== null) V.requireType(opts, 'object', 'opts');
 
     const len = Number(scaleLength);
     const options = opts;

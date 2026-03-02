@@ -24,9 +24,8 @@ conductorConfigValidateProfile = (profile, label) => {
 
   for (const key of REQUIRED_TOP_KEYS) {
     if (key === 'journeyBoldness') continue;
-    if (!profile[key] || typeof profile[key] !== 'object') {
-      throw new Error(`conductorConfig.validateProfileOrFail: ${label}.${key} must be an object`);
-    }
+    if (!profile[key]) throw new Error(`conductorConfig.validateProfileOrFail: ${label}.${key} must be an object`);
+    V.assertObject(profile[key], `profile[${key}]`);
   }
 
   for (const key of REQUIRED_DENSITY_KEYS) {
@@ -35,21 +34,24 @@ conductorConfigValidateProfile = (profile, label) => {
   assertFiniteRange(profile.density.floor, 0, 1, `${label}.density.floor`);
   assertFiniteRange(profile.density.ceiling, 0, 1, `${label}.density.ceiling`);
   if (profile.density.floor > profile.density.ceiling) throw new Error(`conductorConfig: ${label}.density.floor must be <= ceiling`);
-  if (!Array.isArray(profile.density.range) || profile.density.range.length !== 2) throw new Error(`conductorConfig: ${label}.density.range must be [min, max]`);
+  V.assertArray(profile.density.range, 'profile.density.range');
+  if (profile.density.range.length !== 2) throw new Error(`conductorConfig: ${label}.density.range must be [min, max]`);
   assertFiniteRange(profile.density.range[0], 0, 1, `${label}.density.range[0]`);
   assertFiniteRange(profile.density.range[1], 0, 1, `${label}.density.range[1]`);
   assertFiniteRange(profile.density.smoothing, 0, 1, `${label}.density.smoothing`);
 
-  if (typeof profile.phaseMultipliers !== 'object') throw new Error(`conductorConfig: ${label}.phaseMultipliers must be an object`);
+  V.assertObject(profile.phaseMultipliers, 'profile.phaseMultipliers');
   for (const [phase, mult] of Object.entries(profile.phaseMultipliers)) {
     const num = Number(mult);
-    if (!Number.isFinite(num) || num < 0 || num > 3) {
+    V.requireFinite(num, `num for ${phase}`);
+    if (num < 0 || num > 3) {
       throw new Error(`conductorConfig: ${label}.phaseMultipliers.${phase} must be finite in [0, 3]`);
     }
   }
 
   for (const key of REQUIRED_ARCMAPPING_KEYS) {
-    if (typeof profile.arcMapping[key] !== 'string' || !VALID_ARC_TYPES.includes(profile.arcMapping[key])) {
+    V.requireType(profile.arcMapping[key], 'string', `profile.arcMapping[${key}]`);
+    if (!VALID_ARC_TYPES.includes(profile.arcMapping[key])) {
       throw new Error(`conductorConfig: ${label}.arcMapping.${key} must be one of ${VALID_ARC_TYPES.join(', ')}`);
     }
   }
@@ -57,14 +59,14 @@ conductorConfigValidateProfile = (profile, label) => {
   for (const key of REQUIRED_STUTTER_KEYS) {
     if (profile.stutter[key] === undefined) throw new Error(`conductorConfig: ${label}.stutter.${key} is required`);
   }
-  if (!Array.isArray(profile.stutter.rateTiers) || profile.stutter.rateTiers.length === 0) {
-    throw new Error(`conductorConfig: ${label}.stutter.rateTiers must be a non-empty array`);
-  }
+  V.assertArray(profile.stutter.rateTiers, 'profile.stutter.rateTiers', true);
   for (let index = 0; index < profile.stutter.rateTiers.length; index++) {
     const tier = profile.stutter.rateTiers[index];
-    if (!tier || typeof tier !== 'object') throw new Error(`conductorConfig: ${label}.stutter.rateTiers[${index}] must be an object`);
+    if (!tier) throw new Error(`conductorConfig: ${label}.stutter.rateTiers[${index}] must be an object`);
+    V.assertObject(tier, `tier[${index}]`);
     assertFiniteRange(tier.threshold, 0, 1, `${label}.stutter.rateTiers[${index}].threshold`);
-    if (!Number.isFinite(Number(tier.rate)) || Number(tier.rate) <= 0) throw new Error(`conductorConfig: ${label}.stutter.rateTiers[${index}].rate must be positive`);
+    V.requireFinite(tier.rate, `tier.rate`);
+    if (Number(tier.rate) <= 0) throw new Error(`conductorConfig: ${label}.stutter.rateTiers[${index}].rate must be positive`);
   }
   assertFiniteRange(profile.stutter.coherenceFlip, 0, 1, `${label}.stutter.coherenceFlip`);
   assertFiniteRange(profile.stutter.rateCurveFlip, 0, 1, `${label}.stutter.rateCurveFlip`);
@@ -81,7 +83,8 @@ conductorConfigValidateProfile = (profile, label) => {
   for (const key of REQUIRED_FLICKER_KEYS) {
     if (profile.flicker[key] === undefined) throw new Error(`conductorConfig: ${label}.flicker.${key} is required`);
     const num = Number(profile.flicker[key]);
-    if (!Number.isFinite(num) || num < 0 || num > 5) {
+    V.requireFinite(num, `num for ${key}`);
+    if (num < 0 || num > 5) {
       throw new Error(`conductorConfig: ${label}.flicker.${key} must be finite in [0, 5]`);
     }
   }
@@ -89,7 +92,8 @@ conductorConfigValidateProfile = (profile, label) => {
   for (const key of REQUIRED_CLIMAX_KEYS) {
     if (profile.climaxBoost[key] === undefined) throw new Error(`conductorConfig: ${label}.climaxBoost.${key} is required`);
     const num = Number(profile.climaxBoost[key]);
-    if (!Number.isFinite(num) || num < 0.5 || num > 3) {
+    V.requireFinite(num, `num for ${key}`);
+    if (num < 0.5 || num > 3) {
       throw new Error(`conductorConfig: ${label}.climaxBoost.${key} must be finite in [0.5, 3]`);
     }
   }
@@ -110,7 +114,8 @@ conductorConfigValidateProfile = (profile, label) => {
   }
 
   for (const key of REQUIRED_ATTENUATION_KEYS) {
-    if (!Array.isArray(profile.attenuation[key]) || profile.attenuation[key].length !== 2) {
+    V.assertArray(profile.attenuation[key], `profile.attenuation[${key}]`);
+    if (profile.attenuation[key].length !== 2) {
       throw new Error(`conductorConfig: ${label}.attenuation.${key} must be [min, max]`);
     }
     assertFiniteRange(profile.attenuation[key][0], 0, 20, `${label}.attenuation.${key}[0]`);
@@ -133,7 +138,8 @@ conductorConfigValidateProfile = (profile, label) => {
   for (const key of REQUIRED_EMISSION_KEYS) {
     if (profile.emission[key] === undefined) throw new Error(`conductorConfig: ${label}.emission.${key} is required`);
     if (key === 'noiseProfile') {
-      if (typeof profile.emission[key] !== 'string' || profile.emission[key].length === 0) {
+      V.requireType(profile.emission[key], 'string', `profile.emission[${key}]`);
+      if (profile.emission[key].length === 0) {
         throw new Error(`conductorConfig: ${label}.emission.noiseProfile must be a non-empty string`);
       }
     } else {
