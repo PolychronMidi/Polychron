@@ -44,7 +44,7 @@ crossLayerClimaxEngine = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
     // Gather signals
-    const sectionArc = Math.sin(clamp(timeStream.compoundProgress('section'), 0, 1) * Math.PI); // peaks mid-section
+    const sectionArc = m.sin(clamp(timeStream.compoundProgress('section'), 0, 1) * m.PI); // peaks mid-section
 
     const sigs = conductorSignalBridge.getSignals();
     // Blend compositeIntensity with elevated density/tension products for richer peak detection

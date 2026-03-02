@@ -71,7 +71,7 @@ negotiationEngine = (() => {
     let playProb = clamp(context.playProb * playScale * clamp(PLAY_ENTROPY_BASE + entropyScale * PLAY_ENTROPY_SCALE, PLAY_ENTROPY_MIN, PLAY_ENTROPY_MAX), 0, 1);
     let stutterProb = clamp(context.stutterProb * stutterScale * clamp(STUTTER_ENTROPY_BASE + entropyScale * STUTTER_ENTROPY_SCALE, STUTTER_ENTROPY_MIN, STUTTER_ENTROPY_MAX), 0, 1);
 
-    const conflict = Math.abs(trustCadence - trustStutter);
+    const conflict = m.abs(trustCadence - trustStutter);
     if (conflict > CONFLICT_THRESHOLD) {
       playProb = clamp(playProb * CONFLICT_PLAY_DAMPEN, 0, 1);
       stutterProb = clamp(stutterProb * CONFLICT_STUTTER_DAMPEN, 0, 1);

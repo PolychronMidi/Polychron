@@ -61,8 +61,8 @@ motifSpreader = {
       getCapabilities: () => ({ preservesScale: false, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: true })
     } : composer;
 
-    const minDiv = Math.max(1, Math.floor(Number(planDivsPerBeat) * rf(0.1, 0.5)));
-    const maxDiv = Math.max(1, Math.floor(Number(planDivsPerBeat) * rf(0.5, 1.5)));
+    const minDiv = m.max(1, m.floor(Number(planDivsPerBeat) * rf(0.1, 0.5)));
+    const maxDiv = m.max(1, m.floor(Number(planDivsPerBeat) * rf(0.5, 1.5)));
     let remainingDivs = divCount;
     const groupsDiv = [];
     if (remainingDivs <= maxDiv) {
@@ -83,21 +83,21 @@ motifSpreader = {
     let divOffset = 0;
     groupsDiv.forEach((gDivLen, groupIdx) => {
       const mcGroup = new MotifComposer({ useVoiceLeading: Boolean(composer && composer.VoiceLeadingScore) });
-      const length = Math.max(1, m.round(gDivLen * ri(1, 3)));
+      const length = m.max(1, m.round(gDivLen * ri(1, 3)));
       const motifGroup = mcGroup.generate({ length, developFromComposer: developComposer, measureComposer: composer });
       if (!motifGroup || (!motifGroup.sequence && !motifGroup.events)) throw new Error('motifSpreader.spreadDivs: MotifComposer.generate() returned invalid structure - fail-fast');
       const seq = motifGroup.sequence || motifGroup.events;
       if (!Array.isArray(seq)) throw new Error('motifSpreader.spreadDivs: motif sequence is not an array - fail-fast');
-      const totalEvents = Math.max(1, seq.length);
+      const totalEvents = m.max(1, seq.length);
       const groupStart = divOffset;
-      const groupEnd = Math.min(divCount - 1, divOffset + gDivLen - 1);
+      const groupEnd = m.min(divCount - 1, divOffset + gDivLen - 1);
       const span = groupEnd - groupStart + 1;
       const groupId = `div${divOffset}-${gDivLen}-${groupIdx}`;
 
       for (let d = 0; d < span; d++) {
         const targetDiv = groupStart + d;
-        const startEvt = Math.floor(d * totalEvents / span);
-        const endEvt = Math.floor((d + 1) * totalEvents / span);
+        const startEvt = m.floor(d * totalEvents / span);
+        const endEvt = m.floor((d + 1) * totalEvents / span);
         if (startEvt < endEvt) {
           for (let ei = startEvt; ei < endEvt; ei++) {
             const evt = seq[ei];

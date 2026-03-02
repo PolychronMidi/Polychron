@@ -105,8 +105,8 @@ coherenceMonitor = (() => {
       'coherenceMonitor',
       'notes_emitted',
       'density',
-      () => Math.abs(coherenceBias - 1.0) / (BIAS_CEILING - 1.0),
-      () => Math.sign(coherenceBias - 1.0)
+      () => m.abs(coherenceBias - 1.0) / (BIAS_CEILING - 1.0),
+      () => m.sign(coherenceBias - 1.0)
     );
 
     initialized = true;

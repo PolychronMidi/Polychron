@@ -48,8 +48,8 @@ cadenceAlignment = (() => {
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = Math.round(measureStart + ((other.timeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = Math.max(0, syncTickRaw);
+    const syncTickRaw = m.round(measureStart + ((other.timeMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = m.max(0, syncTickRaw);
 
     return {
       aligned: true,

@@ -34,20 +34,20 @@ registerCollisionAvoider = (() => {
     V.requireFinite(midi, 'midi');
     V.requireFinite(tick, 'tick');
 
-    const lo = Math.max(0, OCTAVE.min * 12);
-    const hi = Math.min(127, OCTAVE.max * 12 - 1);
+    const lo = m.max(0, OCTAVE.min * 12);
+    const hi = m.min(127, OCTAVE.max * 12 - 1);
     const boundedMidi = clamp(midi, lo, hi);
 
     const absMs = tickToMs(tick);
     const other = absoluteTimeGrid.findClosest(CHANNEL, absMs, TIME_TOLERANCE_MS, activeLayer);
     if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
-    if (Math.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
+    if (m.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
     // Choose octave displacement that favors spectrally sparse bins
     const upCandidate = clamp(boundedMidi + 12, lo, hi);
     const downCandidate = clamp(boundedMidi - 12, lo, hi);
-    const upClearsCollision = Math.abs(upCandidate - other.midi) >= COLLISION_SEMITONES;
-    const downClearsCollision = Math.abs(downCandidate - other.midi) >= COLLISION_SEMITONES;
+    const upClearsCollision = m.abs(upCandidate - other.midi) >= COLLISION_SEMITONES;
+    const downClearsCollision = m.abs(downCandidate - other.midi) >= COLLISION_SEMITONES;
 
     let candidate;
     if (upClearsCollision && downClearsCollision) {
@@ -62,7 +62,7 @@ registerCollisionAvoider = (() => {
       candidate = downCandidate;
     } else {
       // Neither direction fully clears - pick the one farther from other.midi
-      candidate = Math.abs(upCandidate - other.midi) >= Math.abs(downCandidate - other.midi)
+      candidate = m.abs(upCandidate - other.midi) >= m.abs(downCandidate - other.midi)
         ? upCandidate : downCandidate;
     }
 

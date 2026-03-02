@@ -46,18 +46,18 @@ narrativeTrajectory = (() => {
     const dt = smoothed.t - prev.t;
     const dn = smoothed.n - prev.n;
     const dd = smoothed.d - prev.d;
-    velocity = Math.sqrt(dt * dt + dn * dn + dd * dd);
+    velocity = m.sqrt(dt * dt + dn * dn + dd * dd);
 
     // Curvature approximation from last 3 points
     if (trajectory.length >= 3) {
       const a = trajectory[trajectory.length - 3];
       const b = trajectory[trajectory.length - 2];
       const c = trajectory[trajectory.length - 1];
-      const ab = Math.sqrt((b.t - a.t) ** 2 + (b.n - a.n) ** 2 + (b.d - a.d) ** 2);
-      const bc = Math.sqrt((c.t - b.t) ** 2 + (c.n - b.n) ** 2 + (c.d - b.d) ** 2);
-      const ac = Math.sqrt((c.t - a.t) ** 2 + (c.n - a.n) ** 2 + (c.d - a.d) ** 2);
+      const ab = m.sqrt((b.t - a.t) ** 2 + (b.n - a.n) ** 2 + (b.d - a.d) ** 2);
+      const bc = m.sqrt((c.t - b.t) ** 2 + (c.n - b.n) ** 2 + (c.d - b.d) ** 2);
+      const ac = m.sqrt((c.t - a.t) ** 2 + (c.n - a.n) ** 2 + (c.d - a.d) ** 2);
       const s = (ab + bc + ac) / 2;
-      const area = Math.sqrt(Math.max(0, s * (s - ab) * (s - bc) * (s - ac)));
+      const area = m.sqrt(m.max(0, s * (s - ab) * (s - bc) * (s - ac)));
       curvature = ab + bc > 0.0001 ? (4 * area) / (ab * bc * ac + 1e-9) : 0;
     }
 

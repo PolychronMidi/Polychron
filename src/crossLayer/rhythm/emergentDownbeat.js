@@ -59,7 +59,7 @@ emergentDownbeat = (() => {
    */
   function accentVelocity(velocity, strength) {
     const boost = 1 + ACCENT_VELOCITY_BOOST * strength;
-    return Math.round(clamp(velocity * boost, 1, MIDI_MAX_VALUE));
+    return m.round(clamp(velocity * boost, 1, MIDI_MAX_VALUE));
   }
 
   /**
@@ -73,11 +73,11 @@ emergentDownbeat = (() => {
     if (strength < 0.5) return; // only for strong downbeats
 
     const bassNote = (midi % 12) + BASS_REINFORCE_OCTAVE * 12;
-    const lo = Math.max(0, OCTAVE.min * 12 - 1);
+    const lo = m.max(0, OCTAVE.min * 12 - 1);
     const hi = OCTAVE.max * 12 - 1;
     if (bassNote < lo || bassNote > hi) return;
 
-    const bassVel = Math.round(clamp(velocity * 0.7, 1, MIDI_MAX_VALUE));
+    const bassVel = m.round(clamp(velocity * 0.7, 1, MIDI_MAX_VALUE));
     const bassSustain = tpBeat * rf(0.6, 1.2);
     crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart, type: 'on', vals: [cCH3, bassNote, bassVel] });
     crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart + bassSustain, vals: [cCH3, bassNote] });
@@ -92,7 +92,7 @@ emergentDownbeat = (() => {
   function widenStereo(layer, strength) {
     if (strength < 0.4) return;
 
-    const offset = Math.round(STEREO_WIDEN_AMOUNT * strength);
+    const offset = m.round(STEREO_WIDEN_AMOUNT * strength);
     const leftCh = (layer === 'L1') ? lCH1 : lCH2;
     const rightCh = (layer === 'L1') ? rCH1 : rCH2;
 

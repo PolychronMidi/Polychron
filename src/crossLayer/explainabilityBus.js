@@ -35,7 +35,7 @@ explainabilityBus = (() => {
 
   /** @param {number} [limit=50] */
   function getRecent(limit) {
-    const lim = Math.max(1, Math.floor(V.optionalFinite(limit, 50)));
+    const lim = m.max(1, m.floor(V.optionalFinite(limit, 50)));
     return entries.slice(-lim);
   }
 
@@ -53,7 +53,7 @@ explainabilityBus = (() => {
    */
   function queryByType(type, limit) {
     V.assertNonEmptyString(type, 'type');
-    const lim = Math.max(1, Math.floor(V.optionalFinite(limit, 20)));
+    const lim = m.max(1, m.floor(V.optionalFinite(limit, 20)));
     const out = [];
     for (let i = entries.length - 1; i >= 0 && out.length < lim; i--) {
       if (entries[i].type === type) out.push(entries[i]);

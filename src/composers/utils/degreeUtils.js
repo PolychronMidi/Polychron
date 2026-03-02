@@ -43,14 +43,14 @@ midiToDegree = function(noteOrMidi, scale = null, opts = {}) {
 
   if (degree === -1) {
     if (!opts || opts.quantize !== true) throw new Error('midiToDegree: note pitch class is not in scale');
-    const baseOct = Math.floor(midi / 12);
+    const baseOct = m.floor(midi / 12);
     let bestIdx = -1;
     let bestDist = Infinity;
     let bestMidi = midi;
     for (let i = 0; i < scalePC.length; i++) {
       const candidates = [baseOct - 1, baseOct, baseOct + 1].map(oct => oct * 12 + scalePC[i]);
       for (const cand of candidates) {
-        const d = Math.abs(cand - midi);
+        const d = m.abs(cand - midi);
         if (d < bestDist) {
           bestDist = d;
           bestIdx = i;
@@ -63,7 +63,7 @@ midiToDegree = function(noteOrMidi, scale = null, opts = {}) {
     midiUsed = bestMidi;
   }
 
-  const octave = Math.floor(midiUsed / 12);
+  const octave = m.floor(midiUsed / 12);
   const absDegree = octave * scalePC.length + degree;
   return { degree, octave, absDegree, midi: midiUsed, scalePC };
 };
@@ -85,7 +85,7 @@ degreeToMidi = function(degree, scale = null, octave = 4, opts = {}) {
 
   const d = Number(degree);
   const degInOct = ((d % len) + len) % len;
-  const octShift = Math.floor(d / len);
+  const octShift = m.floor(d / len);
   const rawMidi = (Number(octave) + octShift) * 12 + scalePC[degInOct];
   return (opts && opts.clampToMidi === false) ? rawMidi : clamp(rawMidi, 0, 127);
 };
@@ -102,7 +102,7 @@ transposeByDegree = function(noteOrMidi, scale = null, degreeOffset = 0, opts = 
   const transformOne = (input) => {
     const info = midiToDegree(input, scale, { quantize: Boolean(opts && opts.quantize) });
     const targetAbs = info.absDegree + degreeOffset;
-    const targetOct = Math.floor(targetAbs / info.scalePC.length);
+    const targetOct = m.floor(targetAbs / info.scalePC.length);
     const targetDeg = ((targetAbs % info.scalePC.length) + info.scalePC.length) % info.scalePC.length;
     const outMidiRaw = targetOct * 12 + info.scalePC[targetDeg];
     const outMidi = (opts && opts.clampToMidi === false) ? outMidiRaw : clamp(outMidiRaw, 0, MIDI_MAX_VALUE);

@@ -145,7 +145,7 @@ interactionHeatMap = (() => {
    */
   function getTrend() {
     if (history.length < 8) return { trend: 'stable', slope: 0 };
-    const half = Math.floor(history.length / 2);
+    const half = m.floor(history.length / 2);
     const firstHalf = history.slice(0, half);
     const secondHalf = history.slice(half);
     const avgFirst = firstHalf.reduce((s, snap) => s + snap.totalFirings, 0) / firstHalf.length;

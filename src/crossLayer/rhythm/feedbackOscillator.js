@@ -94,8 +94,8 @@ feedbackOscillator = (() => {
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = Math.round(measureStart + ((incomingTimeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = Math.max(0, syncTickRaw);
+    const syncTickRaw = m.round(measureStart + ((incomingTimeMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = m.max(0, syncTickRaw);
 
     // Post our reaction for the other layer to pick up (with evolved pitch)
     absoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {

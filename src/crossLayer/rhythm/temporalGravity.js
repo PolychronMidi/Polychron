@@ -68,7 +68,7 @@ temporalGravity = (() => {
     if (wellDensity < 0.3) return originalTickN;
 
     // Pull strength proportional to density and proximity
-    const dist = Math.abs(wellTimeMs - absTimeMs);
+    const dist = m.abs(wellTimeMs - absTimeMs);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
 
@@ -76,12 +76,12 @@ temporalGravity = (() => {
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const wellTick = Math.round(measureStart + ((wellTimeMs / 1000) - measureStartTime) * tpSec);
+    const wellTick = m.round(measureStart + ((wellTimeMs / 1000) - measureStartTime) * tpSec);
     const direction = wellTick > originalTickN ? 1 : -1;
     const maxPull = tpSec * pullStrength;
-    const pull = Math.min(maxPull, Math.abs(wellTick - originalTickN) * 0.5);
+    const pull = m.min(maxPull, m.abs(wellTick - originalTickN) * 0.5);
 
-    return Math.round(originalTickN + direction * pull);
+    return m.round(originalTickN + direction * pull);
   }
 
   return { postDensity, measureDensity, applyGravity, reset() { /* stateless - no per-scope state to clear */ } };

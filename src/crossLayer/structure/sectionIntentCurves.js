@@ -37,8 +37,8 @@ sectionIntentCurves = (() => {
     const s = timeStream.getPosition('section');
     const ph = timeStream.getPosition('phrase');
 
-    const arc = Math.sin(p * Math.PI);
-    const wave = 0.5 + 0.5 * Math.sin((p + (s + ph * PHRASE_PHASE_SCALE) * WAVE_PHASE_SPEED) * Math.PI * 2);
+    const arc = m.sin(p * m.PI);
+    const wave = 0.5 + 0.5 * m.sin((p + (s + ph * PHRASE_PHASE_SCALE) * WAVE_PHASE_SPEED) * m.PI * 2);
 
     const densityTarget = clamp(DENSITY_BASE + arc * DENSITY_ARC_SCALE, 0, 1);
     const dissonanceTarget = clamp(DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc, 0, 1);

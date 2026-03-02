@@ -26,8 +26,8 @@ fractalArcGenerator = (() => {
    * progress  [0,1]
    */
   function arcShape(progress) {
-    const p = Math.max(0, Math.min(1, progress));
-    return 0.5 * (1 - Math.cos(2 * Math.PI * p));
+    const p = m.max(0, m.min(1, progress));
+    return 0.5 * (1 - m.cos(2 * m.PI * p));
   }
 
   /**

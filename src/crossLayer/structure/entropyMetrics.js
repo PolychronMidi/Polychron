@@ -19,9 +19,9 @@ entropyMetrics = (() => {
     for (let i = 0; i < 12; i++) {
       if (counts[i] === 0) continue;
       const p = counts[i] / n;
-      H -= p * Math.log2(p);
+      H -= p * m.log2(p);
     }
-    return clamp(H / Math.log2(12), 0, 1);
+    return clamp(H / m.log2(12), 0, 1);
   }
 
   /**
@@ -34,7 +34,7 @@ entropyMetrics = (() => {
     const mean = velocities.reduce((a, b) => a + b, 0) / velocities.length;
     const variance = velocities.reduce((s, v) => s + (v - mean) * (v - mean), 0) / velocities.length;
     // Max std-dev is ~45 (half of 127/sqrt(3)), normalised accordingly
-    return clamp(Math.sqrt(variance) / 45, 0, 1);
+    return clamp(m.sqrt(variance) / 45, 0, 1);
   }
 
   /**
@@ -64,7 +64,7 @@ entropyMetrics = (() => {
     }
     if (iois.length < 2) return 0;
     const mean = iois.reduce((a, b) => a + b, 0) / iois.length;
-    const cv = Math.sqrt(iois.reduce((s, v) => s + (v - mean) * (v - mean), 0) / iois.length) / Math.max(mean, 0.001);
+    const cv = m.sqrt(iois.reduce((s, v) => s + (v - mean) * (v - mean), 0) / iois.length) / m.max(mean, 0.001);
     return clamp(cv, 0, 1);
   }
 

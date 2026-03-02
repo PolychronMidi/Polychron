@@ -47,7 +47,7 @@ motifIdentityMemory = (() => {
     const up = intervals.filter(v => v > 0).length;
     const down = intervals.filter(v => v < 0).length;
     const contour = up > down ? 'up' : down > up ? 'down' : 'mixed';
-    const confidence = clamp((Math.abs(intervals[0]) + Math.abs(intervals[1]) + Math.abs(intervals[2])) / 18, 0, 1);
+    const confidence = clamp((m.abs(intervals[0]) + m.abs(intervals[1]) + m.abs(intervals[2])) / 18, 0, 1);
 
     const identity = { intervalDna, contour, confidence, absTimeMs };
     const identities = ensureIdentities(layer);

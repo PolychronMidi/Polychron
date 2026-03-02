@@ -49,7 +49,7 @@ absoluteTimeGrid = (() => {
     entry.timeMs = t;
     entry.layer = layer;
 
-    const bucketIdx = Math.floor(t / BUCKET_SIZE_MS);
+    const bucketIdx = m.floor(t / BUCKET_SIZE_MS);
     let bucket = channelMap.get(bucketIdx);
     if (!bucket) {
       bucket = [];
@@ -65,7 +65,7 @@ absoluteTimeGrid = (() => {
     }
 
     // Prune old buckets (O(1) cleanup instead of O(n) array splice)
-    const oldestAllowedBucket = Math.floor((t - DEFAULT_WINDOW_MS) / BUCKET_SIZE_MS);
+    const oldestAllowedBucket = m.floor((t - DEFAULT_WINDOW_MS) / BUCKET_SIZE_MS);
     for (const key of channelMap.keys()) {
       if (key < oldestAllowedBucket) {
         channelMap.delete(key);
@@ -108,8 +108,8 @@ absoluteTimeGrid = (() => {
       if (typeof onlyLayer !== 'undefined') V.assertNonEmptyString(onlyLayer, 'query.opts.onlyLayer');
     }
 
-    const startBucket = Math.floor(lo / BUCKET_SIZE_MS);
-    const endBucket = Math.floor(hi / BUCKET_SIZE_MS);
+    const startBucket = m.floor(lo / BUCKET_SIZE_MS);
+    const endBucket = m.floor(hi / BUCKET_SIZE_MS);
     const result = [];
 
     for (let b = startBucket; b <= endBucket; b++) {
@@ -151,8 +151,8 @@ absoluteTimeGrid = (() => {
     const lo = around - tolerance;
     const hi = around + tolerance;
 
-    const startBucket = Math.floor(lo / BUCKET_SIZE_MS);
-    const endBucket = Math.floor(hi / BUCKET_SIZE_MS);
+    const startBucket = m.floor(lo / BUCKET_SIZE_MS);
+    const endBucket = m.floor(hi / BUCKET_SIZE_MS);
 
     /** @type {ATGEntry|null} */ let best = null;
     let bestDist = Infinity;
@@ -167,7 +167,7 @@ absoluteTimeGrid = (() => {
         const e = bucket[i];
         if (e.timeMs > hi) break;
         if (excludeLayer && e.layer === excludeLayer) continue;
-        const dist = Math.abs(e.timeMs - around);
+        const dist = m.abs(e.timeMs - around);
         if (dist < bestDist) {
           best = e;
           bestDist = dist;

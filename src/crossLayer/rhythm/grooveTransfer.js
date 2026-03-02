@@ -104,7 +104,7 @@ grooveTransfer = (() => {
     }
 
     const shifted = tickN + localTransfer * DAMPING;
-    return Math.round(shifted);
+    return m.round(shifted);
   }
 
   function reset() {

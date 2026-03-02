@@ -68,9 +68,9 @@ harmonicJourneyHelpers = (() => {
     const noteA = t.Note.get(from);
     const noteB = t.Note.get(to);
     if (noteA.empty || noteB.empty || !noteA.coord || !noteB.coord) return 0;
-    const diff = Math.abs(noteA.coord[0] - noteB.coord[0]);
+    const diff = m.abs(noteA.coord[0] - noteB.coord[0]);
     const circleDist = diff % 12;
-    return Math.min(circleDist, 12 - circleDist);
+    return m.min(circleDist, 12 - circleDist);
   };
 
   const getSectionPhase = (sectionIndex, totalSections) => {

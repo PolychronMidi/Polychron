@@ -72,7 +72,7 @@ polyrhythmicPhasePredictor = (() => {
 
     let minDist = Infinity;
     for (const t of predictions) {
-      const d = Math.abs(t - nowMs);
+      const d = m.abs(t - nowMs);
       if (d < minDist) minDist = d;
     }
 

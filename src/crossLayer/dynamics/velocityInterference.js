@@ -88,17 +88,17 @@ velocityInterference = (() => {
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength
-      const alignment = Math.min(Math.abs(ourDelta), Math.abs(otherDelta));
+      const alignment = m.min(m.abs(ourDelta), m.abs(otherDelta));
       const boost = clamp(alignment / 30, 0, 0.15); // max 15% boost
-      const reinforced = Math.round(clamp(baseVelocityN * (1 + boost), 1, MIDI_MAX_VALUE));
+      const reinforced = m.round(clamp(baseVelocityN * (1 + boost), 1, MIDI_MAX_VALUE));
       writeVizCC(activeLayer, 'reinforce');
       return { velocity: reinforced, mode: 'reinforce' };
     }
 
     // Opposing dynamics: reduce velocity to create spectral space
-    const opposition = Math.min(Math.abs(ourDelta), Math.abs(otherDelta));
+    const opposition = m.min(m.abs(ourDelta), m.abs(otherDelta));
     const reduction = clamp(opposition / 50, 0, 0.1); // max 10% reduction
-    const separated = Math.round(clamp(baseVelocityN * (1 - reduction), 1, MIDI_MAX_VALUE));
+    const separated = m.round(clamp(baseVelocityN * (1 - reduction), 1, MIDI_MAX_VALUE));
     writeVizCC(activeLayer, 'separate');
     return { velocity: separated, mode: 'separate' };
   }

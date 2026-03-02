@@ -89,7 +89,7 @@ spectralComplementarity = (() => {
       variance += diff * diff;
     }
     variance /= REGISTER_BINS;
-    const gapWeight = clamp(Math.sqrt(variance) * 2, 0, 1);
+    const gapWeight = clamp(m.sqrt(variance) * 2, 0, 1);
 
     return { gaps, dominant, gapWeight };
   }
@@ -121,7 +121,7 @@ spectralComplementarity = (() => {
     else targetMidi = pc + 84; // treble: octave 7
 
     // Clamp to OCTAVE range
-    const lo = Math.max(0, OCTAVE.min * 12 - 1);
+    const lo = m.max(0, OCTAVE.min * 12 - 1);
     const hi = OCTAVE.max * 12 - 1;
     targetMidi = clamp(targetMidi, lo, hi);
 

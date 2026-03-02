@@ -1,6 +1,6 @@
 // randoms.js - Random number generation utilities with inclusive ranges and weighted selections.
 //
-// Deterministic mode: pass --seed <N> on the CLI to replace Math.random with
+// Deterministic mode: pass --seed <N> on the CLI to replace m.random with
 // a seeded mulberry32 PRNG. Every run with the same seed produces identical output.
 
 (() => {
@@ -14,8 +14,8 @@
     // mulberry32: fast, well-distributed 32-bit PRNG
     m.random = () => {
       s |= 0; s = s + 0x6D2B79F5 | 0;
-      let t = Math.imul(s ^ s >>> 15, 1 | s);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      let t = m.imul(s ^ s >>> 15, 1 | s);
+      t = t + m.imul(t ^ t >>> 7, 61 | t) ^ t;
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
     console.warn('Acceptable warning: randoms deterministic mode enabled (seed=' + seedValue + ')');

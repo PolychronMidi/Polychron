@@ -32,8 +32,8 @@ convergenceDetector = (() => {
     V.requireFinite(midi, 'midi');
     V.requireFinite(velocity, 'velocity');
     absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
-      midi: clamp(Math.round(midi), 0, 127),
-      velocity: clamp(Math.round(velocity), 1, MIDI_MAX_VALUE)
+      midi: clamp(m.round(midi), 0, 127),
+      velocity: clamp(m.round(velocity), 1, MIDI_MAX_VALUE)
     });
   }
 
@@ -58,21 +58,21 @@ convergenceDetector = (() => {
     lastConvergenceMs = absTimeMs;
 
     // Rarity: tighter alignment = higher rarity score (0-1)
-    const dist = Math.abs(match.timeMs - absTimeMs);
+    const dist = m.abs(match.timeMs - absTimeMs);
     const rarity = 1 - (dist / CONVERGENCE_TOLERANCE_MS);
 
     // Convert to this layer's tick space
     V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = Math.round(measureStart + ((match.timeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = Math.max(0, syncTickRaw);
+    const syncTickRaw = m.round(measureStart + ((match.timeMs / 1000) - measureStartTime) * tpSec);
+    const syncTick = m.max(0, syncTickRaw);
 
     return {
       syncTick,
       rarity: clamp(rarity, 0, 1),
-      otherMidi: clamp(Math.round(V.requireFinite(match.midi, 'match.midi')), 0, 127),
-      otherVelocity: clamp(Math.round(V.requireFinite(match.velocity, 'match.velocity')), 1, MIDI_MAX_VALUE)
+      otherMidi: clamp(m.round(V.requireFinite(match.midi, 'match.midi')), 0, 127),
+      otherVelocity: clamp(m.round(V.requireFinite(match.velocity, 'match.velocity')), 1, MIDI_MAX_VALUE)
     };
   }
 
@@ -96,20 +96,20 @@ convergenceDetector = (() => {
 
     // === BURST EVENT: coordinated unison singularity ===
     // Both notes share a pitch class; emit octave-displaced cluster
-    const boundedCurrentMidi = clamp(Math.round(currentMidi), 0, 127);
+    const boundedCurrentMidi = clamp(m.round(currentMidi), 0, 127);
     const burstPC = ((boundedCurrentMidi % 12) + 12) % 12;
     const burstBaseTick = conv.syncTick;
-    const burstVel = Math.round(clamp(
+    const burstVel = m.round(clamp(
       ((currentVelocity + conv.otherVelocity) / 2) * (0.9 + conv.rarity * 0.3),
       1, MIDI_MAX_VALUE
     ));
     // Pick octave spread based on rarity: rarer = wider spread
     const octaveSpread = conv.rarity > 0.7 ? 3 : conv.rarity > 0.4 ? 2 : 1;
     const burstNotes = [];
-    const lo = Math.max(0, OCTAVE.min * 12);
-    const hi = Math.min(127, OCTAVE.max * 12 - 1);
+    const lo = m.max(0, OCTAVE.min * 12);
+    const hi = m.min(127, OCTAVE.max * 12 - 1);
     for (let oi = -octaveSpread; oi <= octaveSpread; oi++) {
-      const n = burstPC + (Math.round(boundedCurrentMidi / 12) + oi) * 12;
+      const n = burstPC + (m.round(boundedCurrentMidi / 12) + oi) * 12;
       if (n >= lo && n <= hi) burstNotes.push(n);
     }
     // Limit to BURST_VOICES and schedule via p(c,...)
@@ -118,7 +118,7 @@ convergenceDetector = (() => {
     const primaryCh = (activeLayer === 'L1') ? cCH1 : cCH2;
     for (let bi = 0; bi < burstNotes.length; bi++) {
       const stagger = tpSec * BURST_STAGGER_RATIO * bi;
-      const bv = Math.round(clamp(burstVel * rf(BURST_VEL_SCALE_MIN, BURST_VEL_SCALE_MAX), 1, MIDI_MAX_VALUE));
+      const bv = m.round(clamp(burstVel * rf(BURST_VEL_SCALE_MIN, BURST_VEL_SCALE_MAX), 1, MIDI_MAX_VALUE));
       crossLayerEmissionGateway.emit('convergenceDetector', c, { tick: burstBaseTick + stagger, type: 'on', vals: [primaryCh, burstNotes[bi], bv] });
       crossLayerEmissionGateway.emit('convergenceDetector', c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
@@ -153,7 +153,7 @@ convergenceDetector = (() => {
     const window = V.optionalFinite(windowMs, 250);
     const lastMs = Number(lastConvergenceByLayer[layer]);
     if (!Number.isFinite(lastMs)) return false;
-    return (absTimeMs - lastMs) <= Math.max(0, window);
+    return (absTimeMs - lastMs) <= m.max(0, window);
   }
 
   /**

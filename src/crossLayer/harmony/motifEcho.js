@@ -97,7 +97,7 @@ motifEcho = (() => {
       case 'inversion':
         return intervals.map(i => -i);
       case 'augmentation':
-        return intervals.map(i => Math.round(i * 1.5));
+        return intervals.map(i => m.round(i * 1.5));
       case 'retrograde-inversion':
         return [...intervals].reverse().map(i => -i);
       default:
@@ -130,7 +130,7 @@ motifEcho = (() => {
       const transformed = applyTransform(echo.intervals, echo.transform);
 
       // Convert intervals to absolute MIDI notes anchored on currentMidi
-      const lo = Math.max(0, OCTAVE.min * 12 - 1);
+      const lo = m.max(0, OCTAVE.min * 12 - 1);
       const hi = OCTAVE.max * 12 - 1;
       const notes = [currentMidi];
       let cursor = currentMidi;

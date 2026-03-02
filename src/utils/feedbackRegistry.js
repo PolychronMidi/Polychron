@@ -61,7 +61,7 @@ feedbackRegistry = (() => {
         const otherPhase = other.getPhase();
         const otherAmp = other.getAmplitude();
 
-        if (otherAmp > 0.5 && Math.sign(myPhase) === Math.sign(otherPhase)) {
+        if (otherAmp > 0.5 && m.sign(myPhase) === m.sign(otherPhase)) {
           dampening *= 0.7; // Apply 30% dampening
         }
       }

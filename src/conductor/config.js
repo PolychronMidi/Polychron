@@ -523,13 +523,13 @@ DRUM_MAP = {
 /** @tier-2 - phrase-level arc shape functions (register, density, dynamism) */
 PHRASES_ARC_CURVES = {
   'arch': {
-    register: (p) => Math.sin(Number(p) * Math.PI) * 12 - 6,
-    density: (p) => Math.sin(Number(p) * Math.PI) * 0.4 + 0.8,
+    register: (p) => m.sin(Number(p) * m.PI) * 12 - 6,
+    density: (p) => m.sin(Number(p) * m.PI) * 0.4 + 0.8,
     dynamism: () => 1.0
   },
   'wave': {
-    register: (p) => Math.sin(Number(p) * Math.PI * 2) * 8,
-    density: (p) => Math.cos(Number(p) * Math.PI) * 0.3 + 0.9,
+    register: (p) => m.sin(Number(p) * m.PI * 2) * 8,
+    density: (p) => m.cos(Number(p) * m.PI) * 0.3 + 0.9,
     dynamism: (p) => 0.8 + Number(p) * 0.4
   },
   'rise-fall': {

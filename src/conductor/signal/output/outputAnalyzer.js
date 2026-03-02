@@ -38,14 +38,14 @@ outputAnalyzer = (() => {
     // Shannon entropy of pitch-class distribution
     let pcEntropy = 0;
     for (const p of pcDist) {
-      if (p > 0) pcEntropy -= p * Math.log2(p);
+      if (p > 0) pcEntropy -= p * m.log2(p);
     }
 
     // --- Interval histogram ---
     const intervals = new Map();
     const sorted = [...notes].sort((a, b) => a.startMs - b.startMs);
     for (let i = 1; i < sorted.length; i++) {
-      const iv = Math.abs(sorted[i].pitch - sorted[i - 1].pitch) % 12;
+      const iv = m.abs(sorted[i].pitch - sorted[i - 1].pitch) % 12;
       intervals.set(iv, (intervals.get(iv) || 0) + 1);
     }
 
@@ -54,13 +54,13 @@ outputAnalyzer = (() => {
     const startMs  = sorted[0].startMs;
     const endMs    = sorted[sorted.length - 1].startMs;
     const span     = endMs - startMs;
-    const bins     = Math.max(1, Math.ceil(span / windowMs));
+    const bins     = m.max(1, m.ceil(span / windowMs));
     const densityCurve = new Array(bins).fill(0);
     for (const n of sorted) {
-      const bin = Math.min(bins - 1, Math.floor((n.startMs - startMs) / windowMs));
+      const bin = m.min(bins - 1, m.floor((n.startMs - startMs) / windowMs));
       densityCurve[bin]++;
     }
-    const avgDensity = total / Math.max(1, span / 1000);
+    const avgDensity = total / m.max(1, span / 1000);
 
     // --- Rhythmic regularity (CV of inter-onset intervals) ---
     const iois = [];
@@ -72,7 +72,7 @@ outputAnalyzer = (() => {
     if (iois.length > 1) {
       const mean = iois.reduce((s, x) => s + x, 0) / iois.length;
       const variance = iois.reduce((s, x) => s + (x - mean) ** 2, 0) / iois.length;
-      ioiCV = mean > 0 ? Math.sqrt(variance) / mean : 0;
+      ioiCV = mean > 0 ? m.sqrt(variance) / mean : 0;
     }
 
     return {

@@ -83,7 +83,7 @@ articulationComplement = (() => {
 
     // Role swap inverts the contrast
     if (swapped) {
-      sustainScale = 1.0 / Math.max(0.3, sustainScale);
+      sustainScale = 1.0 / m.max(0.3, sustainScale);
       sustainScale = clamp(sustainScale, 0.3, 2.0);
     }
 
