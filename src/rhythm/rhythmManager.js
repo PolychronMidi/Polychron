@@ -1,9 +1,9 @@
-// rhythmManager.js - single manager hub for rhythm subsystem
+// RhythmManager.js - single manager hub for rhythm subsystem
 
-class RhythmManager_ {
+RhythmManager = class RhythmManager {
   /** @type {ValidatorInstance} */
-  static _V;
-  static { this._V = validator.create('rhythmManager'); }
+  static V;
+  static { this.V = validator.create('RhythmManager'); }
   static listGenerators() { return rhythmRegistry.list(); }
 
   static getGenerator(name) { return rhythmRegistry.get(name); }
@@ -16,7 +16,7 @@ class RhythmManager_ {
 
     // fallback behavior: use existing getRhythm logic via globals - but fail fast if no candidate
     const p = getRhythm(level, length, pattern, method, ...args);
-    if (!p) throw new Error('rhythmManager.getPattern: getRhythm returned falsy pattern');
+    if (!p) throw new Error('RhythmManager.getPattern: getRhythm returned falsy pattern');
     return p;
   }
 
@@ -37,10 +37,8 @@ class RhythmManager_ {
 
   static applyToNote(note, hit, profileName, options = {}) {
     const profile = profileName ? rhythmConfig.getProfile(profileName) : null;
-    if (options !== undefined) RhythmManager_._V.assertPlainObject(options, 'applyToNote.options');
+    if (options !== undefined) RhythmManager.V.assertPlainObject(options, 'applyToNote.options');
     const opts = Object.assign({}, profile || {}, options);
     return rhythmModulator.apply(note, hit, opts);
   }
 }
-
-rhythmManager = RhythmManager_;
