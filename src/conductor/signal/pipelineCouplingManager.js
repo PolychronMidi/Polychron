@@ -221,10 +221,8 @@ pipelineCouplingManager = (() => {
         // freeze tightening to prevent coupling manager from death-spiraling density.
         } else if (at.rollingAbsCorr < at.current * 0.5) {
           let canTighten = true;
-          try {
-            const sig = signalReader.snapshot();
-            if ((dimA === 'density' || dimB === 'density') && sig.densityProduct < 0.75) canTighten = false;
-          } catch { /* pre-boot */ }
+          const sig = safePreBoot.call(() => signalReader.snapshot(), null);
+          if (sig && (dimA === 'density' || dimB === 'density') && sig.densityProduct < 0.75) canTighten = false;
           if (canTighten) {
             at.current = clamp(at.current - _TARGET_TIGHTEN_RATE, _TARGET_MIN, at.baseline);
           }
@@ -268,12 +266,10 @@ pipelineCouplingManager = (() => {
     // Without this, the conductor clips silently and the gain keeps
     // escalating against a ceiling, producing max-clamp bias every beat.
     let _softLimit = 0.16; // base max deviation from 1.0 per axis
-    try {
-      const healthGrade = signalHealthAnalyzer.getHealth().overall;
-      if (healthGrade === 'strained' || healthGrade === 'stressed' || healthGrade === 'critical') {
-        _softLimit = 0.20; // expanded bandwidth under system stress
-      }
-    } catch { /* pre-boot or first beat */ }
+    const healthGrade = safePreBoot.call(() => signalHealthAnalyzer.getHealth().overall, 'healthy');
+    if (healthGrade === 'strained' || healthGrade === 'stressed' || healthGrade === 'critical') {
+      _softLimit = 0.20; // expanded bandwidth under system stress
+    }
 
     // Flicker gets wider soft limit (1.5x) to give decorrelation genuine room;
     // its coupling is highest (0.571/0.622) and hits the base ceiling every beat.

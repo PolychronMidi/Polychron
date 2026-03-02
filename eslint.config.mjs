@@ -90,7 +90,8 @@ export default [
       'local/no-non-ascii': 'error',
       'local/no-unregistered-feedback-loop': 'error',
       'local/no-direct-conductor-state-from-crosslayer': 'error',
-      'local/no-direct-crosslayer-write-from-conductor': 'error'
+      'local/no-direct-crosslayer-write-from-conductor': 'error',
+      'local/no-direct-buffer-push-from-crosslayer': 'error'
     },
 
   },

@@ -95,7 +95,10 @@ final `playProb` / `stutterProb` values.
 ## 5. Trust Governance - `adaptiveTrustScores`
 
 EMA-based trust weights per cross-layer module. Payoff table defined in
-`MAIN_LOOP_CONTROLS.trustPayoffs`.
+`MAIN_LOOP_CONTROLS.trustPayoffs`. All trust system names are canonical
+constants defined in `trustSystems` (`src/utils/trustSystems.js`) — 9 scored
+systems in `trustSystems.names`, 13 heat-map systems in
+`trustSystems.heatMapSystems`. Never hardcode trust name strings.
 
 | Constant | Value | Role | Interaction Partners |
 |---|---|---|---|
@@ -137,3 +140,5 @@ These relationships must hold to prevent runaway behavior:
 4. **Streak - hint timing:** At 72 BPM, `STREAK_TRIGGER` = 6 ≈ 5 seconds. Full hint (`ramp / 8`) at 14 beats ≈ 12 seconds. Section lengths are typically 16-64 beats, so hints activate within one section.
 
 5. **Coherence monitor responsiveness:** `coherenceMonitor.SMOOTHING` (0.55) means correction responds within ~2 beats (half-life). At `BIAS_FLOOR` 0.60, correction can reduce density by up to 40%. The `check-tuning-invariants.js` script validates all cross-constant invariants automatically on every run.
+
+6. **Coupling tail regime scaling:** `check-manifest-health.js` applies the same regime scale factors to coupling tail p90 and exceedance thresholds as to the coupling matrix gate. Exploring regime relaxes thresholds by 10% (x1.10), coherent tightens by 5% (x0.95). This prevents transient sectional coupling spikes from failing the health gate during exploratory behavior.

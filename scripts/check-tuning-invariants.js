@@ -64,26 +64,21 @@ function extractConstants() {
     coherence_WINDOW_SIZE: extractConst(coherence, /WINDOW_SIZE\s*=\s*(\d+)/),
     coherence_ENTROPY_DECAY: extractConst(coherence, /ENTROPY_DECAY\s*=\s*([\d.]+)/),
 
-    // negotiationEngine - extract from play scale clamp
-    negotiation_playScale_min: (() => {
-      const m = negotiation.match(/playScale\s*=\s*clamp\([^,]+,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-      return m ? parseFloat(m[1]) : null;
-    })(),
-    negotiation_playScale_max: (() => {
-      const m = negotiation.match(/playScale\s*=\s*clamp\([^,]+,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-      return m ? parseFloat(m[2]) : null;
-    })(),
-    negotiation_stutterScale_min: (() => {
-      const m = negotiation.match(/stutterScale\s*=\s*clamp\([^,]+,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-      return m ? parseFloat(m[1]) : null;
-    })(),
-    negotiation_stutterScale_max: (() => {
-      const m = negotiation.match(/stutterScale\s*=\s*clamp\([^,]+,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-      return m ? parseFloat(m[2]) : null;
-    })(),
-    negotiation_conflict_threshold: extractConst(negotiation, /conflict\s*>\s*([\d.]+)/),
-    negotiation_cadence_phase_min: extractConst(negotiation, /phaseConfidence\s*>=\s*([\d.]+)/),
-    negotiation_cadence_trust_min: extractConst(negotiation, /trustCadence\s*>=\s*([\d.]+)/),
+    // negotiationEngine - extract named constants (post-refactor) or inline literals (legacy)
+    negotiation_playScale_min: extractConst(negotiation, /PLAY_SCALE_MIN\s*=\s*([\d.]+)/) ||
+      (() => { const m = negotiation.match(/playScale\s*=\s*clamp\([^,]+,\s*([\d.]+)\s*,\s*[\d.]+\s*\)/); return m ? parseFloat(m[1]) : null; })(),
+    negotiation_playScale_max: extractConst(negotiation, /PLAY_SCALE_MAX\s*=\s*([\d.]+)/) ||
+      (() => { const m = negotiation.match(/playScale\s*=\s*clamp\([^,]+,\s*[\d.]+\s*,\s*([\d.]+)\s*\)/); return m ? parseFloat(m[2]) : null; })(),
+    negotiation_stutterScale_min: extractConst(negotiation, /STUTTER_SCALE_MIN\s*=\s*([\d.]+)/) ||
+      (() => { const m = negotiation.match(/stutterScale\s*=\s*clamp\([^,]+,\s*([\d.]+)\s*,\s*[\d.]+\s*\)/); return m ? parseFloat(m[1]) : null; })(),
+    negotiation_stutterScale_max: extractConst(negotiation, /STUTTER_SCALE_MAX\s*=\s*([\d.]+)/) ||
+      (() => { const m = negotiation.match(/stutterScale\s*=\s*clamp\([^,]+,\s*[\d.]+\s*,\s*([\d.]+)\s*\)/); return m ? parseFloat(m[2]) : null; })(),
+    negotiation_conflict_threshold: extractConst(negotiation, /CONFLICT_THRESHOLD\s*=\s*([\d.]+)/) ||
+      extractConst(negotiation, /conflict\s*>\s*([\d.]+)/),
+    negotiation_cadence_phase_min: extractConst(negotiation, /CADENCE_PHASE_MIN\s*=\s*([\d.]+)/) ||
+      extractConst(negotiation, /phaseConfidence\s*>=\s*([\d.]+)/),
+    negotiation_cadence_trust_min: extractConst(negotiation, /CADENCE_TRUST_MIN\s*=\s*([\d.]+)/) ||
+      extractConst(negotiation, /trustCadence\s*>=\s*([\d.]+)/),
 
     // adaptiveTrustScores
     trust_EMA_decay: extractConst(trust, /score\s*\*\s*([\d.]+)\s*\+/),
@@ -99,15 +94,11 @@ function extractConstants() {
     })(),
     trust_CEILING: extractConst(trust, /TRUST_CEILING\s*=\s*([\d.]+)/),
 
-    // entropyRegulator
-    entropy_clampRange_min: (() => {
-      const m = entropy.match(/clampRange\s*:\s*\[\s*([\d.]+)\s*,\s*([\d.]+)\s*\]/);
-      return m ? parseFloat(m[1]) : null;
-    })(),
-    entropy_clampRange_max: (() => {
-      const m = entropy.match(/clampRange\s*:\s*\[\s*([\d.]+)\s*,\s*([\d.]+)\s*\]/);
-      return m ? parseFloat(m[2]) : null;
-    })(),
+    // entropyRegulator - extract named constants (post-refactor) or inline clampRange (legacy)
+    entropy_clampRange_min: extractConst(entropy, /REGULATION_CLAMP_MIN\s*=\s*([\d.]+)/) ||
+      (() => { const m = entropy.match(/clampRange\s*:\s*\[\s*([\d.]+)\s*,\s*([\d.]+)\s*\]/); return m ? parseFloat(m[1]) : null; })(),
+    entropy_clampRange_max: extractConst(entropy, /REGULATION_CLAMP_MAX\s*=\s*([\d.]+)/) ||
+      (() => { const m = entropy.match(/clampRange\s*:\s*\[\s*([\d.]+)\s*,\s*([\d.]+)\s*\]/); return m ? parseFloat(m[2]) : null; })(),
 
     // profileAdaptation
     profile_DENSITY_LOW_THRESHOLD: extractConst(profile, /DENSITY_LOW_THRESHOLD\s*=\s*([\d.]+)/),

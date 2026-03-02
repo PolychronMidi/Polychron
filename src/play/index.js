@@ -25,8 +25,9 @@ require('./layerPass');
 require('./main');
 // @ts-ignore: side-effect module load - declarative beat stage graph (must precede processBeat)
 require('./beatPipelineDescriptor');
+// @ts-ignore: side-effect module load - feedback graph contract validation (helper for mainBootstrap)
+require('./feedbackGraphContract');
 // @ts-ignore: side-effect module load
 require('./mainBootstrap');
 // @ts-ignore: side-effect module load
 require('./fullBootstrap');
-
