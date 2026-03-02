@@ -58,7 +58,7 @@ deduped.reverse();
 
 const uniqueNames = [...new Set(names)];
 if (uniqueNames.length < names.length) {
-  console.log(`generate-globals-dts: deduplicated ${names.length - uniqueNames.length} duplicate declaration(s)`);
+  console.log(`generate-globals-dts: deduplicated ${names.length - uniqueNames.length} duplicate declaration(s): ${[...seen].filter(n => names.indexOf(n) !== names.lastIndexOf(n)).join(', ')}`);
 }
 
 // -- Build replacement array body ---------------------------------------------

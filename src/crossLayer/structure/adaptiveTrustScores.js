@@ -48,11 +48,18 @@ adaptiveTrustScores = (() => {
   // flooding the journal with routine micro-adjustments.
   const JOURNAL_PAYOFF_THRESHOLD = 0.15;
 
+  // R9 Evo 4: Warm-start overrides for systems that need early trust to
+  // accumulate signal (e.g. cadenceAlignment needs phrase boundaries).
+  const WARM_START = {
+    cadenceAlignment: 0.25
+  };
+
   /** @param {string} systemName */
   function ensure(systemName) {
     V.assertNonEmptyString(systemName, 'systemName');
     if (!scoreBySystem.has(systemName)) {
-      scoreBySystem.set(systemName, { score: 0, samples: 0, lastMs: 0 });
+      const initScore = WARM_START[systemName] !== undefined ? WARM_START[systemName] : 0;
+      scoreBySystem.set(systemName, { score: initScore, samples: 0, lastMs: 0 });
     }
     const state = scoreBySystem.get(systemName);
     if (!state) throw new Error('adaptiveTrustScores: failed to initialize state for ' + systemName);
