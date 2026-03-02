@@ -57,15 +57,15 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   spectralComplementarity.postSpectralState(clAbsMs, layer);
 
   // --- Interaction heat map ---
-  interactionHeatMap.record('stutterContagion', clamp(stutterProb, 0, 1));
-  interactionHeatMap.record('temporalGravity', clDensity);
-  interactionHeatMap.record('cadenceAlignment', clCadResult ? 0.8 : 0);
-  interactionHeatMap.record('phaseLock', clPhaseMode === 'lock' ? 1 : 0);
-  interactionHeatMap.record('feedbackOscillator', clFeedbackEnergy);
-  interactionHeatMap.record('roleSwap', dynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
+  interactionHeatMap.record(trustSystems.heatMapSystems.STUTTER_CONTAGION, clamp(stutterProb, 0, 1));
+  interactionHeatMap.record(trustSystems.heatMapSystems.TEMPORAL_GRAVITY, clDensity);
+  interactionHeatMap.record(trustSystems.heatMapSystems.CADENCE_ALIGNMENT, clCadResult ? 0.8 : 0);
+  interactionHeatMap.record(trustSystems.heatMapSystems.PHASE_LOCK, clPhaseMode === 'lock' ? 1 : 0);
+  interactionHeatMap.record(trustSystems.heatMapSystems.FEEDBACK_OSCILLATOR, clFeedbackEnergy);
+  interactionHeatMap.record(trustSystems.heatMapSystems.ROLE_SWAP, dynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
 
   const clConvergenceIntensity = convergenceDetector.wasRecent(clAbsMs, layer, 300) ? 1 : 0;
-  interactionHeatMap.record('convergence', clConvergenceIntensity);
+  interactionHeatMap.record(trustSystems.heatMapSystems.CONVERGENCE, clConvergenceIntensity);
   // Gate convergence reactions through negotiationEngine to prevent triple-stacking
   const clConvergenceGate = clConvergenceIntensity > 0
     ? negotiationEngine.gateConvergence(layer)
@@ -73,9 +73,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const triggerCountBefore = convergenceHarmonicTrigger.getTriggerCount();
   if (clConvergenceGate.allowHarmonicTrigger) convergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer, alignment: clCadResult });
   const convergenceTriggered = convergenceHarmonicTrigger.getTriggerCount() > triggerCountBefore;
-  adaptiveTrustScores.registerOutcome('convergence', convergenceTriggered ? 0.6 : (clConvergenceIntensity > 0 ? 0.15 : 0.20));
-  interactionHeatMap.record('climaxEngine', crossLayerClimaxEngine.isApproaching() ? clamp(crossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
-  interactionHeatMap.record('restSync', clRest.shouldRest ? 0.9 : 0);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE, convergenceTriggered ? 0.6 : (clConvergenceIntensity > 0 ? 0.15 : 0.20));
+  interactionHeatMap.record(trustSystems.heatMapSystems.CLIMAX_ENGINE, crossLayerClimaxEngine.isApproaching() ? clamp(crossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
+  interactionHeatMap.record(trustSystems.heatMapSystems.REST_SYNC, clRest.shouldRest ? 0.9 : 0);
 
   // --- Emergent downbeat ---
   const edSignals = {
@@ -85,7 +85,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     phaseLock: clPhaseMode === 'lock'
   };
   const clDownbeat = emergentDownbeat.applyIfDownbeat(clAbsMs, layer, edSignals, 0, velocity);
-  interactionHeatMap.record('emergentDownbeat', clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
+  interactionHeatMap.record(trustSystems.heatMapSystems.EMERGENT_DOWNBEAT, clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
   if (clDownbeat) feedbackOscillator.inject(clAbsMs, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
 
   // --- Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs) ---
@@ -112,21 +112,21 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
     ? 0.12
     : clamp(0.20 + clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
-  adaptiveTrustScores.registerOutcome('stutterContagion', stutterOutcome);
-  adaptiveTrustScores.registerOutcome('phaseLock', phaseOutcome);
-  adaptiveTrustScores.registerOutcome('cadenceAlignment', cadenceOutcome);
-  adaptiveTrustScores.registerOutcome('feedbackOscillator', feedbackOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.STUTTER_CONTAGION, stutterOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.PHASE_LOCK, phaseOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CADENCE_ALIGNMENT, cadenceOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.FEEDBACK_OSCILLATOR, feedbackOutcome);
   // coherenceMonitor: bias near neutralBias = coherent (positive), far = correcting (negative)
   const cmp = tp.coherenceMonitor;
   const coherenceOutcome = clamp(1 - Math.abs(coherenceMonitor.getDensityBias() - cmp.neutralBias) * cmp.sensitivity, -1, 1);
-  adaptiveTrustScores.registerOutcome('coherenceMonitor', coherenceOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.COHERENCE_MONITOR, coherenceOutcome);
   // entropyRegulator: reward when measured entropy tracks target, penalize persistent deviation
   const entropyError = clEntropy ? m.abs(clEntropy.error) : 0;
   const entropyOutcome = clamp(1 - entropyError * 3, -1, 1);
-  adaptiveTrustScores.registerOutcome('entropyRegulator', entropyOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.ENTROPY_REGULATOR, entropyOutcome);
   // restSynchronizer: reward meaningful shared rests (breathing room), penalize stagnation
   const restOutcome = clRest.shouldRest ? 0.5 : 0.08;
-  adaptiveTrustScores.registerOutcome('restSynchronizer', restOutcome);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // --- Explainability ---

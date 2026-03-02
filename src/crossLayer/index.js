@@ -8,6 +8,8 @@ require('./crossLayerRegistry');
 // @ts-ignore: side-effect module load
 require('./explainabilityBus');
 
+// @ts-ignore: thin gateway for cross-layer MIDI buffer writes (attribution + density tracking)
+require('./crossLayerEmissionGateway');
 
 // @ts-ignore: side-effect module load
 require('./rhythm');

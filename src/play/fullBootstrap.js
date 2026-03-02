@@ -25,6 +25,12 @@ fullBootstrap = (() => {
 
     // -- eventCatalog --
 
+    // -- trustSystems --
+
+    // -- metaControllerRegistry --
+
+    // -- crossLayerEmissionGateway --
+
     // -- Cross --
 
     // -- Rhythm / Time / Composer Interfaces --
@@ -600,6 +606,7 @@ fullBootstrap = (() => {
     'entropyRegulator',
     'emergentDownbeat',
     'explainabilityBus',
+    'crossLayerEmissionGateway',
     'adaptiveTrustScores',
     'sectionIntentCurves',
     'phaseAwareCadenceWindow',
@@ -621,6 +628,7 @@ fullBootstrap = (() => {
     'crossLayerSilhouette',
     'dimensionalityExpander',
     'conductorMetaWatchdog',
+    'metaControllerRegistry',
     'conductorSignalBridge',
     'verticalIntervalMonitor',
     'polyrhythmicPhasePredictor',
@@ -648,6 +656,7 @@ fullBootstrap = (() => {
     // -- play --
     'eventBus',
     'eventCatalog',
+    'trustSystems',
     'totalSections',
     'phrasesPerSection',
     'measuresPerPhrase',
@@ -755,6 +764,12 @@ fullBootstrap = (() => {
     // -- Lifecycle / caching utilities --
 
     // -- eventCatalog --
+
+    // -- trustSystems --
+
+    // -- metaControllerRegistry --
+
+    // -- crossLayerEmissionGateway --
 
     // -- Cross --
 

@@ -117,7 +117,7 @@ velocityInterference = (() => {
     const startTick = V.requireFinite(beatStart, 'writeVizCC.beatStart');
     const ch = (layer === 'L1') ? cCH1 : cCH2;
     const val = mode === 'reinforce' ? VIZ_REINFORCE : mode === 'separate' ? VIZ_SEPARATE : VIZ_NEUTRAL;
-    c.push({ tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
+    crossLayerEmissionGateway.emit('velocityInterference', c, { tick: startTick, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
   return { postVelocity, measureDelta, applyInterference, reset() { /* stateless - no per-scope state to clear */ } };
